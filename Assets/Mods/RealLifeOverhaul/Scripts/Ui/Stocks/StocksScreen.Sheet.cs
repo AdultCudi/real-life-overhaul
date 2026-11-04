@@ -294,12 +294,17 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Left and Right step a field of the sheet that is a choice or a stepper.</summary>
         public bool Steps(int command)
         {
-            return _sheet.Open && (command == StocksSheetLay.Pick || command == StocksSheetLay.Type);
+            return _sheet.Open ? command == StocksSheetLay.Pick || command == StocksSheetLay.Type : CompanySteps(command);
         }
 
         public void Step(int command, int arg, int step)
         {
-            if (!_sheet.Open || _sheetModel == null || arg < 0 || arg >= _sheetModel.Fields.Length)
+            if (!_sheet.Open)
+            {
+                CompanyStep(command, step);
+                return;
+            }
+            if (_sheetModel == null || arg < 0 || arg >= _sheetModel.Fields.Length)
             {
                 return;
             }
@@ -995,9 +1000,7 @@ namespace RealLifeOverhaul.Ui
             // The buttons stand as laid: open the company, then cancel when the order is open and not forced.
             if (k != null && index == 0)
             {
-                _stock = k.Id;
-                _focus = -1;
-                _page = StocksPage.Company;
+                OpenCompany(k.Id);
                 _sheet.Close();
                 return true;
             }

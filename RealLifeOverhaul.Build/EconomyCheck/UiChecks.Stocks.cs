@@ -37,7 +37,9 @@ internal static partial class Program
         UiAppWindow.NavCommand, UiDataTable.First + UiDataTable.Head, UiDataTable.First + UiDataTable.Filter, UiDataTable.First + UiDataTable.Search,
         UiDataTable.First + UiDataTable.Row, UiChart.First + UiChart.Point, UiChartDesk.Command, UiStatement.First + UiStatement.Period,
         UiStatement.First + UiStatement.Group, UiStatement.First + UiStatement.Line, UiTrack.First + UiTrack.Step, UiDecision.ChoiceCommand,
-        UiDecision.ButtonCommand, StocksLay.Choice, StocksLay.Tool, StocksLay.Chip, StocksLay.Less, StocksLay.More, StocksLay.Place, StocksLay.Instead,
+        UiDecision.ButtonCommand, UiChartDesk.Rail, StocksCompanyLay.Range, StocksCompanyLay.Type, StocksCompanyLay.Chip, StocksCompanyLay.AddIndicator, StocksCompanyLay.Pick,
+        StocksCompanyLay.Big, StocksCompanyLay.Side, StocksCompanyLay.Kind, StocksCompanyLay.Life, StocksCompanyLay.AlertAdd, StocksCompanyLay.PutBack,
+        StocksLay.Less, StocksLay.More, StocksLay.Place,
         StocksLay.Alert, StocksLay.Empty, StocksLay.Shares, StocksLay.Act, StocksLay.PriceLess, StocksLay.PriceMore, StocksLay.PricePlain, StocksLay.Watch,
         StocksLay.Second + UiDataTable.Head, StocksLay.Second + UiDataTable.Filter, StocksLay.Second + UiDataTable.Search, StocksLay.Second + UiDataTable.Row,
         StocksLay.Second + UiDataTable.Clear, UiDataTable.First + UiDataTable.Clear, StocksSheetLay.Pick, StocksSheetLay.Switch, StocksSheetLay.Less, StocksSheetLay.More,
@@ -119,5 +121,6 @@ internal static partial class Program
         }
         Check(filled <= file.NewShares, "stocks: the book does not hand out more shares than were offered");
         StocksActionChecks();
+        StocksChartChecks();
     }
 }

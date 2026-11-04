@@ -825,6 +825,16 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\StocksSheetState.cs" Link="Mod\StocksSheetState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\StocksSheetLay.cs" Link="Mod\StocksSheetLay.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\StocksSheets.cs" Link="Mod\StocksSheets.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\StocksIndicators.cs" Link="Mod\StocksIndicators.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\StocksCompany.cs" Link="Mod\StocksCompany.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\StocksSignals.cs" Link="Mod\StocksSignals.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\StocksChartControl.cs" Link="Mod\StocksChartControl.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\StocksCompanyLay.cs" Link="Mod\StocksCompanyLay.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\StocksOrderLay.cs" Link="Mod\StocksOrderLay.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\UiChartTools.cs" Link="Mod\UiChartTools.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\UiChartDesk.Plot.cs" Link="Mod\UiChartDesk.Plot.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\UiChartDesk.Marks.cs" Link="Mod\UiChartDesk.Marks.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiSegments.cs" Link="Mod\UiSegments.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCatalogue.cs" Link="Mod\UiCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiAlbum.cs" Link="Mod\UiAlbum.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPhotoViewer.cs" Link="Mod\UiPhotoViewer.cs" />

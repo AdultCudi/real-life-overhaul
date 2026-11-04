@@ -24,4 +24,19 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The mouse rests on a target (its command and argument), or has left it (command -1).</summary>
         void Pointed(int command, int arg);
     }
+
+    /// <summary>
+    /// A screen that follows the mouse across one target (a chart's plot reads the candle under it, a rail names the tool): the
+    /// host tells it each move over a target whose command it asks for, in px of the layout. A target that is one box, not a
+    /// row of them, keeps a screen under the targets a layer may hold (UiCheckRules.MostTargets). Cost: one comparison a pointer
+    /// move over any target; the screen lays out again only when what the pointer reads changes.
+    /// </summary>
+    public interface IUiTracking
+    {
+        /// <summary>Whether the target of this command wants the pointer's moves.</summary>
+        bool Tracks(int command);
+
+        /// <summary>The pointer moved over a target of that command and argument, to a place in px of the layout.</summary>
+        void Moved(int command, int arg, float x, float y);
+    }
 }

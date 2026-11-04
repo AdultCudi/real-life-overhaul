@@ -7,7 +7,7 @@ using RealLifeOverhaul.Ui;
 /// </summary>
 internal static partial class UiSamples
 {
-    public static string[] StockStates => Join(StockBaseStates, StockOfferStates);   // joined on asking: static fields of two files start in no fixed order
+    public static string[] StockStates => Join(Join(StockBaseStates, StockCompanyStates), StockOfferStates);   // joined on asking: static fields of two files start in no fixed order
 
     private static string[] Join(string[] a, string[] b)
     {
@@ -19,9 +19,7 @@ internal static partial class UiSamples
 
     private static readonly string[] StockBaseStates =
     {
-        "market_boom", "market_crash", "companies", "watch", "watch_empty", "company_today", "company_days", "company_weeks",
-        "company_months", "company_years", "company_area", "ticket", "portfolio_empty", "portfolio_full", "orders", "history",
-        "listing", "long"
+        "market_boom", "market_crash", "companies", "watch", "watch_empty", "ticket", "portfolio_empty", "portfolio_full", "orders", "history", "listing"
     };
 
     public static StocksModel Stocks(UiWords t, string state)
@@ -164,56 +162,6 @@ internal static partial class UiSamples
             SearchPlaceholder = t("reallife_stk_search", "Find a company"),
             EmptyIcon = UiIcon.ChartLineUp
         };
-    }
-
-    private static void Company(StocksModel m, UiWords t, string state)
-    {
-        bool area = state == "company_area";
-        m.Head = new UiFirmHeadModel { Name = "Greenmarket Foods", Glyph = UiIcon.Building, Kind = "GMF", KindIcon = UiIcon.Tag, Chips = new[] { t("reallife_mkt_sector_groceries", "Groceries") }, ChipTones = new[] { UiRole.None } };
-        m.Note = t("reallife_stk_fund", "A fund") + " " + t("reallife_mkt_buy", "Buy").ToLowerInvariant() + " 4000 GMF";
-        m.Figures = new[] { new UiFigureModel { Label = t("reallife_mkt_col_price", "Price"), Value = "$37.00", Change = "+1.40%", Good = true, Trend = new[] { 30f, 32f, 31f, 35f, 37f } } };
-        m.FactLabels = new[] { t("reallife_mkt_col_pe", "P/E"), t("reallife_mkt_col_yield", "Yield"), t("reallife_stk_open", "Open"), t("reallife_stk_high", "High"), t("reallife_stk_low", "Low"), t("reallife_mkt_col_volume", "Volume") };
-        m.FactValues = new[] { "18.0", "2.4%", "$36.20", "$37.40", "$35.90", "182400" };
-        int n = 24;
-        var close = new float[n];
-        var open = new float[n];
-        var high = new float[n];
-        var low = new float[n];
-        var vol = new float[n];
-        var sma = new float[n];
-        for (int i = 0; i < n; i++)
-        {
-            close[i] = 3400 + i * 12;
-            open[i] = close[i] - 20;
-            high[i] = close[i] + 30;
-            low[i] = open[i] - 25;
-            vol[i] = 1000 + i * 40;
-            sma[i] = i < 5 ? float.NaN : 3380 + i * 10;
-        }
-        m.Desk = new UiChartDeskModel
-        {
-            Kind = area ? 2 : state == "company_days" ? 1 : 0,
-            Title = "GMF", Open = open, High = high, Low = low, Close = close, Volume = vol, Focus = n - 1,
-            LastTag = "$37.00", LastUp = true, Read = t("reallife_stk_read", "Last") + " $37.00",
-            Lines = new[] { new UiChartLine { Name = t("reallife_mkt_overlay_sma20", "Average of 20"), Values = sma, Tint = UiTokens.Chart(0) } },
-            Panes = state == "company_weeks" || state == "company_months" ? new[] { new UiChartLine { Name = t("reallife_stk_rsi", "RSI"), Values = sma, Tint = UiTokens.Chart(2) } } : new UiChartLine[0],
-            Marks = new[] { new UiChartMark { FromX = 2, ToX = 20, FromY = 3450, ToY = 3600, Tint = UiRole.Accent } }
-        };
-        m.Chips = new[] { t("reallife_mkt_overlay_sma20", "Average of 20"), t("reallife_stk_add_indicator", "+ Indicator") };
-        m.Tools = new[] { "1", "2", "3", "4", "5", "6", "7", "8", t("reallife_stk_clear", "Clear") };
-        m.Tool = 1;
-        m.Signals = new[] { t("reallife_stk_sig_sma_up", "Price is over its 50 day average."), t("reallife_stk_sig_rsi_mid", "RSI is in the middle.") };
-        m.Ticket = new StocksTicket
-        {
-            Side = t("reallife_mkt_buy", "Buy"), Kind = t("reallife_stk_market_order", "Market"), Life = t("reallife_stk_day", "Day"),
-            Shares = "100", Limit = t("reallife_stk_max", "Most you can buy"), Max = "2,400",
-            Cost = "$3,700", Fee = "$5", Total = "$3,705", CashAfter = t("reallife_stk_cash_after", "Cash after"),
-            After = t("reallife_stk_position_after", "Position after") + " 100",
-            Place = t("reallife_stk_place", "Place order"), Instead = t("reallife_stk_sell_instead", "Sell instead")
-        };
-        m.PromptPlace = m.Ticket.Place;
-        m.PromptOther = m.Ticket.Instead;
-        m.Alerts = new[] { t("reallife_stk_alert", "Alert") + " $36.00" };
     }
 
     private static void Ticket(StocksModel m, UiWords t)

@@ -56,10 +56,11 @@ namespace RealLifeOverhaul.Ui
             m.PromptSelect = words("reallife_ui_prompt_select", "Select");
         }
 
-        public static StocksModel Page(MarketState state, StocksPage page, int stockId, int tool, bool buy, OrderType type,
-            OrderLife life, long qty, int sort, int sector, int size, int focus, int rule, string find, UiWords words,
+        public static StocksModel Page(MarketState state, StocksPage page, int stockId, StocksView view, bool buy, OrderType type,
+            OrderLife life, long qty, int sort, int sector, int size, int rule, string find, UiWords words,
             MarketDirector director = null, bool done = false, int kind = 0, int price = 0)
         {
+            Built++;
             var m = new StocksModel { Title = words("reallife_mkt_app", "Stocks"), Page = page };
             Nav(m, words);
             if (state == null)
@@ -73,7 +74,7 @@ namespace RealLifeOverhaul.Ui
                 case StocksPage.Companies: m.Table = Companies(state, words, false, sort, sector, size, find); break;
                 case StocksPage.Watch: m.Table = Companies(state, words, true, sort, sector, size, find); break;
                 case StocksPage.Market: Market(m, state, words, sort, sector, size, find); break;
-                case StocksPage.Company: Company(m, state, stockId, tool, buy, type, life, qty, focus, words, kind, price, director); break;
+                case StocksPage.Company: Company(m, state, stockId, view ?? new StocksView(), buy, life, qty, words, kind, price, director); break;
                 case StocksPage.Ticket: Ticket(m, state, stockId, buy, type, life, qty, words); break;
                 case StocksPage.Portfolio: Portfolio(m, state, words); break;
                 case StocksPage.Orders: OrdersPage(m, state, words, done); break;
@@ -189,393 +190,6 @@ namespace RealLifeOverhaul.Ui
             };
         }
 
-        private static void Company(StocksModel m, MarketState state, int stockId, int tool, bool buy, OrderType type, OrderLife life, long qty, int focus, UiWords words,
-            int kind = 0, int price = 0, MarketDirector d = null)
-        {
-            Stock s = state.Stock(stockId) ?? First(state);
-            if (s == null)
-            {
-                m.EmptyTitle = words("reallife_stk_market_empty", "No companies are listed");
-                m.EmptyBody = words("reallife_stk_market_empty_body", "Listed companies show here with the day's move.");
-                return;
-            }
-            int bp = StocksMath.ChangeBp(s.PrevClose, s.Last);
-            m.Head = new UiFirmHeadModel
-            {
-                Name = s.Name, Glyph = UiIcon.Building, Kind = s.Ticker, KindIcon = UiIcon.Tag,
-                Chips = new[] { MarketText.Sector(s.Sector) }, ChipTones = new[] { UiRole.None }
-            };
-            m.Note = TapeLine(state, s.Id, words);
-            m.Figures = new[] { Fig(words("reallife_mkt_col_price", "Price"), MarketText.Price(s.Last), bp) };
-            m.FactLabels = new[]
-            {
-                words("reallife_mkt_col_pe", "P/E"), words("reallife_mkt_col_yield", "Yield"), words("reallife_stk_cap", "Market cap"), words("reallife_stk_open", "Open"),
-                words("reallife_stk_high", "High"), words("reallife_stk_low", "Low"), words("reallife_mkt_col_volume", "Volume")
-            };
-            int pe = StocksMath.PeTimes100(s.Last, s.Results.Count > 0 ? s.Results[s.Results.Count - 1].Eps : 0);
-            m.FactValues = new[]
-            {
-                pe > 0 ? (pe / 100f).ToString("0.0") : words("reallife_stk_none", "None"),
-                MarketText.Percent(StocksMath.YieldBp(s.Last, s.DpsCents)),
-                MarketText.Large(MarketIndex.Value(s)),
-                MarketText.Price(s.Open), MarketText.Price(s.High), MarketText.Price(s.Low), s.DayVolume.ToString()
-            };
-            m.Desk = Desk(state, s, focus, words);
-            m.Tool = tool;
-            m.Tools = new[] { " ", " ", " ", " ", " ", " ", " ", " ", " ", words("reallife_stk_clear", "Clear") };
-            m.Chips = Chips(state, words);
-            m.Signals = SignalLines(s, words);
-            m.Ticket = TicketOf(state, s, buy, type, life, qty, words, kind, price, d);
-            m.PromptPlace = m.Ticket.Place;
-            m.PromptOther = m.Ticket.Instead;
-            int alerts = 1;
-            for (int i = 0; i < state.Charts.Alerts.Count && alerts < 3; i++)
-            {
-                if (state.Charts.Alerts[i].StockId == s.Id)
-                {
-                    alerts++;
-                }
-            }
-            m.Alerts = new string[alerts];
-            m.Alerts[0] = words("reallife_stk_alert_add", "Add an alert");
-            int n = 1;
-            for (int i = 0; i < state.Charts.Alerts.Count && n < m.Alerts.Length; i++)
-            {
-                if (state.Charts.Alerts[i].StockId == s.Id)
-                {
-                    m.Alerts[n++] = words("reallife_stk_alert", "Alert") + " " + MarketText.Price(state.Charts.Alerts[i].Cents);
-                }
-            }
-        }
-
-        private static string[] Chips(MarketState state, UiWords words)
-        {
-            var list = new List<string>(8);
-            list.Add(FrameWord(state.Charts.Frame, words));
-            list.Add(KindWord(state.Charts.Kind, words));
-            if ((state.Charts.Layers & (int)ChartLayer.Sma20) != 0)
-            {
-                list.Add(words("reallife_mkt_overlay_sma20", "Average of 20"));
-            }
-            if ((state.Charts.Layers & (int)ChartLayer.Sma50) != 0)
-            {
-                list.Add(words("reallife_mkt_overlay_sma50", "Average of 50"));
-            }
-            if ((state.Charts.Layers & (int)ChartLayer.Ema20) != 0)
-            {
-                list.Add(words("reallife_mkt_overlay_ema20", "Weighted average of 20"));
-            }
-            if ((state.Charts.Layers & (int)ChartLayer.Bollinger) != 0)
-            {
-                list.Add(words("reallife_mkt_overlay_bollinger", "Bollinger bands"));
-            }
-            if (state.Charts.FirstPane != ChartPane.None)
-            {
-                list.Add(Pane(state.Charts.FirstPane, words));
-            }
-            if (state.Charts.SecondPane != ChartPane.None)
-            {
-                list.Add(Pane(state.Charts.SecondPane, words));
-            }
-            list.Add(words("reallife_stk_add_indicator", "+ Indicator"));
-            return list.ToArray();
-        }
-
-        private static string FrameWord(int frame, UiWords words)
-        {
-            string[] keys = { "reallife_mkt_frame_today", "reallife_mkt_frame_days", "reallife_mkt_frame_weeks", "reallife_mkt_frame_months", "reallife_mkt_frame_years" };
-            string[] english = { "Today", "Days", "Weeks", "Months", "Years" };
-            int i = frame >= 0 && frame < keys.Length ? frame : (int)ChartFrame.Days;
-            return words(keys[i], english[i]);
-        }
-
-        private static string KindWord(int kind, UiWords words)
-        {
-            if (kind == 1)
-            {
-                return words("reallife_stk_kind_line", "Line");
-            }
-            if (kind == 2)
-            {
-                return words("reallife_stk_kind_area", "Area");
-            }
-            return words("reallife_stk_kind_candles", "Candles");
-        }
-
-        private static string Pane(ChartPane pane, UiWords words)
-        {
-            switch (pane)
-            {
-                case ChartPane.Rsi: return words("reallife_stk_rsi", "RSI");
-                case ChartPane.Macd: return words("reallife_stk_macd", "MACD");
-                case ChartPane.Stochastic: return words("reallife_stk_stoch", "Stochastic");
-                case ChartPane.Atr: return words("reallife_stk_atr", "ATR");
-                default: return words("reallife_stk_obv", "On balance volume");
-            }
-        }
-
-        private static string[] SignalLines(Stock s, UiWords words)
-        {
-            int n = Math.Min(s.Daily.Count, 80);
-            if (n < 2)
-            {
-                return new string[0];
-            }
-            var close = new double[n];
-            int from = s.Daily.Count - n;
-            for (int i = 0; i < n; i++)
-            {
-                close[i] = s.Daily[from + i].C;
-            }
-            var a = new double[n];
-            var b = new double[n];
-            var c = new double[n];
-            var scratch = new double[n];
-            ChartSignal signal = ChartBook.Signals(close, n, a, b, c, scratch);
-            return new[]
-            {
-                Way(signal.Sma, words, "reallife_stk_sig_sma_up", "Price is over its 50 day average.",
-                    "reallife_stk_sig_sma_down", "Price is under its 50 day average.", "reallife_stk_sig_wait", "Not enough days for a reading yet."),
-                Way(signal.Rsi, words, "reallife_stk_sig_rsi_high", "RSI is overbought.",
-                    "reallife_stk_sig_rsi_low", "RSI is oversold.", "reallife_stk_sig_rsi_mid", "RSI is in the middle."),
-                Way(signal.Macd, words, "reallife_stk_sig_macd_up", "MACD is over its signal.",
-                    "reallife_stk_sig_macd_down", "MACD is under its signal.", "reallife_stk_sig_wait", "Not enough days for a reading yet."),
-                Way(signal.Band, words, "reallife_stk_sig_band_up", "Price is outside the upper band.",
-                    "reallife_stk_sig_band_down", "Price is outside the lower band.", "reallife_stk_sig_band_in", "Price is inside the bands.")
-            };
-        }
-
-        private static string Way(int n, UiWords words, string upKey, string up, string downKey, string down,
-            string midKey, string mid)
-        {
-            if (n > 0)
-            {
-                return words(upKey, up);
-            }
-            if (n < 0)
-            {
-                return words(downKey, down);
-            }
-            return words(midKey, mid);
-        }
-
-        private static UiChartDeskModel Desk(MarketState state, Stock s, int focus, UiWords words)
-        {
-            var built = new List<Candle>(128);
-            LoadCandles(state, s, state.Charts.Frame, built);
-            int n = Math.Min(built.Count, 48);
-            var m = new UiChartDeskModel
-            {
-                Kind = state.Charts.Kind, Title = s.Ticker, Focus = n > 0 ? n - 1 : -1,
-                EmptyTitle = words("reallife_stk_chart_empty", "No candles yet"),
-                EmptyBody = words("reallife_stk_chart_empty_body", "Candles appear as the market trades.")
-            };
-            if (n == 0)
-            {
-                return m;
-            }
-            m.Open = new float[n];
-            m.High = new float[n];
-            m.Low = new float[n];
-            m.Close = new float[n];
-            m.Volume = new float[n];
-            int from = built.Count - n;
-            var close = new double[n];
-            var high = new double[n];
-            var low = new double[n];
-            var vol = new double[n];
-            for (int i = 0; i < n; i++)
-            {
-                Candle c = built[from + i];
-                m.Open[i] = c.O;
-                m.High[i] = c.H;
-                m.Low[i] = c.L;
-                m.Close[i] = c.C;
-                m.Volume[i] = c.V;
-                close[i] = c.C;
-                high[i] = c.H;
-                low[i] = c.L;
-                vol[i] = c.V;
-            }
-            int at = focus >= 0 && focus < n ? focus : n - 1;
-            m.Focus = at;
-            m.LastTag = MarketText.Price(s.Last);
-            m.LastUp = s.Last >= s.PrevClose;
-            Candle read = built[from + at];
-            m.Read = words("reallife_stk_open", "Open") + " " + MarketText.Price(read.O) + "  " + words("reallife_stk_high", "High") + " " + MarketText.Price(read.H)
-                + "  " + words("reallife_stk_low", "Low") + " " + MarketText.Price(read.L) + "  " + words("reallife_stk_read", "Last") + " " + MarketText.Price(read.C);
-            m.Lines = Overlays(state, close, n, words);
-            m.Panes = Panes(state, close, high, low, vol, n, words);
-            m.Marks = Marks(state, s.Id, from);
-            return m;
-        }
-
-        /// <summary>The candle's place in the frame the desk is showing, so a drawing stays on that candle.</summary>
-        public static int ChartIndex(MarketState state, Stock s, int shown)
-        {
-            if (state == null || s == null)
-            {
-                return Math.Max(0, shown);
-            }
-            var built = new List<Candle>(128);
-            LoadCandles(state, s, state.Charts.Frame, built);
-            int n = Math.Min(built.Count, 48);
-            int origin = Math.Max(0, built.Count - n);
-            int at = shown < 0 ? Math.Max(0, n - 1) : Math.Min(shown, Math.Max(0, n - 1));
-            return origin + at;
-        }
-
-        private static void LoadCandles(MarketState state, Stock s, int frame, List<Candle> into)
-        {
-            into.Clear();
-            if (frame <= (int)ChartFrame.Today)
-            {
-                Candle[] bars = s.BarCount > 0 ? s.Bars : s.LastBars;
-                int count = s.BarCount > 0 ? s.BarCount : s.LastBarCount;
-                for (int i = 0; i < count; i++)
-                {
-                    into.Add(bars[i]);
-                }
-                return;
-            }
-            bool session = MarketCatalogue.TradingDay(state.Day) && state.Phase >= MarketCatalogue.PhaseOpen && state.Phase < MarketCatalogue.PhaseClose;
-            Candle today = session ? new Candle(state.Day, s.Open, Math.Max(s.High, s.Last), Math.Min(s.Low, s.Last), s.Last, s.DayVolume) : default(Candle);
-            MarketHistory.Build(s.Daily, s.Monthly, today, (Timeframe)frame, Math.Max(8, state.YearDays), into);
-        }
-
-        private static UiChartLine[] Overlays(MarketState state, double[] close, int n, UiWords words)
-        {
-            var lines = new List<UiChartLine>(6);
-            var a = new double[n];
-            var b = new double[n];
-            var c = new double[n];
-            if ((state.Charts.Layers & (int)ChartLayer.Sma20) != 0)
-            {
-                MarketIndicators.Sma(close, n, 20, a);
-                lines.Add(Line(words("reallife_mkt_overlay_sma20", "Average of 20"), a, UiTokens.Chart(0)));
-            }
-            if ((state.Charts.Layers & (int)ChartLayer.Sma50) != 0)
-            {
-                MarketIndicators.Sma(close, n, 50, a);
-                lines.Add(Line(words("reallife_mkt_overlay_sma50", "Average of 50"), a, UiTokens.Chart(1)));
-            }
-            if ((state.Charts.Layers & (int)ChartLayer.Ema20) != 0)
-            {
-                MarketIndicators.Ema(close, n, 20, a);
-                lines.Add(Line(words("reallife_mkt_overlay_ema20", "Weighted average of 20"), a, UiTokens.Chart(2)));
-            }
-            if ((state.Charts.Layers & (int)ChartLayer.Bollinger) != 0)
-            {
-                MarketIndicators.Bollinger(close, n, 20, 2.0, a, b, c);
-                lines.Add(Line(words("reallife_mkt_overlay_bollinger", "Bollinger bands"), b, UiTokens.Chart(3)));
-                lines.Add(Line(words("reallife_mkt_overlay_bollinger", "Bollinger bands"), c, UiTokens.Chart(4)));
-            }
-            return lines.ToArray();
-        }
-
-        private static UiChartLine[] Panes(MarketState state, double[] close, double[] high, double[] low, double[] vol, int n, UiWords words)
-        {
-            int count = (state.Charts.FirstPane != ChartPane.None ? 1 : 0) + (state.Charts.SecondPane != ChartPane.None ? 1 : 0);
-            if (count == 0)
-            {
-                return new UiChartLine[0];
-            }
-            var panes = new UiChartLine[count];
-            int at = 0;
-            if (state.Charts.FirstPane != ChartPane.None)
-            {
-                panes[at++] = PaneLine(state.Charts.FirstPane, close, high, low, vol, n, words);
-            }
-            if (state.Charts.SecondPane != ChartPane.None)
-            {
-                panes[at] = PaneLine(state.Charts.SecondPane, close, high, low, vol, n, words);
-            }
-            return panes;
-        }
-
-        private static UiChartLine PaneLine(ChartPane pane, double[] close, double[] high, double[] low, double[] vol, int n, UiWords words)
-        {
-            var a = new double[n];
-            var b = new double[n];
-            var c = new double[n];
-            var scratch = new double[n];
-            switch (pane)
-            {
-                case ChartPane.Macd:
-                    MarketIndicators.Macd(close, n, 12, 26, 9, a, b, c, scratch);
-                    break;
-                case ChartPane.Stochastic:
-                    MarketIndicators.Stochastic(high, low, close, n, 14, 3, a, b);
-                    break;
-                case ChartPane.Atr:
-                    MarketIndicators.Atr(high, low, close, n, 14, a);
-                    break;
-                case ChartPane.Obv:
-                    MarketIndicators.Obv(close, vol, n, a);
-                    break;
-                default:
-                    MarketIndicators.Rsi(close, n, 14, a);
-                    break;
-            }
-            return Line(Pane(pane, words), a, UiTokens.Chart(5));
-        }
-
-        private static UiChartMark[] Marks(MarketState state, int stockId, int origin)
-        {
-            int count = 0;
-            for (int i = 0; i < state.Charts.Drawings.Count; i++)
-            {
-                if (state.Charts.Drawings[i].StockId == stockId)
-                {
-                    count++;
-                }
-            }
-            if (count == 0)
-            {
-                return new UiChartMark[0];
-            }
-            var marks = new List<UiChartMark>(count);
-            for (int i = 0; i < state.Charts.Drawings.Count; i++)
-            {
-                ChartDrawing d = state.Charts.Drawings[i];
-                if (d.StockId != stockId)
-                {
-                    continue;
-                }
-                float x0 = d.FromIndex - origin;
-                float x1 = d.ToIndex - origin;
-                if (d.Kind == ChartMark.Fibonacci)
-                {
-                    Fib(marks, x0, x1, d.FromCents, d.ToCents);
-                }
-                else
-                {
-                    marks.Add(new UiChartMark { FromX = x0, ToX = x1, FromY = d.FromCents, ToY = d.Kind == ChartMark.Level ? d.FromCents : d.ToCents, Tint = UiRole.Text });
-                }
-            }
-            return marks.ToArray();
-        }
-
-        private static void Fib(List<UiChartMark> marks, float x0, float x1, int fromCents, int toCents)
-        {
-            int[] share = { 382, 500, 618 };
-            for (int i = 0; i < share.Length; i++)
-            {
-                int y = fromCents + (toCents - fromCents) * share[i] / 1000;
-                marks.Add(new UiChartMark { FromX = x0, ToX = x1, FromY = y, ToY = y, Tint = UiTokens.Chart(i) });
-            }
-        }
-
-        private static UiChartLine Line(string name, double[] values, UiRole tint)
-        {
-            var v = new float[values.Length];
-            for (int i = 0; i < values.Length; i++)
-            {
-                v[i] = double.IsNaN(values[i]) ? float.NaN : (float)values[i];
-            }
-            return new UiChartLine { Name = name, Values = v, Tint = tint };
-        }
-
         private static readonly string[] KindKeys = { "reallife_stk_market_order", "reallife_stk_limit", "reallife_mkt_type_stop_loss", "reallife_mkt_type_take_profit" };
         private static readonly string[] KindEnglish = { "Market", "Limit", "Stop loss", "Take profit" };
 
@@ -620,7 +234,8 @@ namespace RealLifeOverhaul.Ui
             int price = Math.Max(1, s.Last);
             int limit = TicketPrice(state, s, !buy, kind, typedPrice);
             long value = MarketTrading.Value(qty, price, buy);
-            long fee = MarketTrading.Commission(value, MarketCatalogue.CommissionLeastAtStart);
+            int least = d != null ? d.CommissionLeast : MarketCatalogue.CommissionLeastAtStart;   // the fee rule's floor, at today's prices
+            long fee = MarketTrading.Commission(value, least);
             long total = buy ? value + fee : Math.Max(0, value - fee);
             string why = null;
             bool worked = false;
@@ -643,14 +258,30 @@ namespace RealLifeOverhaul.Ui
                     why = MarketText.Fill("reallife_mkt_inv_ticket_worked", "most", MarketTrading.MostPerOrder(s).ToString("N0"), "days", InvestRules.MarketDays(qty, s.Adv).ToString());
                 }
             }
-            long cash = state.Account.Cash;
-            long most = MostShares(cash, price, buy);
+            // The cash an order spends is the player's and the broker's (what Estimate counts), not the margin account's own money.
+            long cash = d != null ? d.Spendable : state.Account.Cash;
+            long most = buy ? StocksMath.MostToBuy(cash, type == OrderType.Market ? price : limit, least) : Math.Max(0L, held);
             Position position = state.Position(s.Id);
             long afterShares = held + (buy ? qty : -qty);
             long cost = position != null ? position.Cost : 0;
             long afterCost = buy ? cost + value + fee : cost;
             long average = afterShares != 0 ? afterCost / Math.Abs(afterShares) : 0;
             int back = position != null && position.Shares > 0 && Settings.MarketsReinvest ? InvestRules.ReinvestOf(position.Reinvest) : -1;
+            string[] priceKeys = { null, "reallife_stk_limit_price", "reallife_stk_stop_price", "reallife_stk_profit_price" };
+            string[] priceEnglish = { null, "Limit price", "Stop price", "Take profit price" };
+            var rows = new List<StocksRow>(5);
+            if (type == OrderType.Market)
+            {
+                rows.Add(new StocksRow { Label = words("reallife_stk_row_price", "Price"), Value = MarketText.Price(price) });
+            }
+            rows.Add(new StocksRow { Label = words("reallife_stk_row_cost", "Cost"), Value = MarketText.Money(value) });
+            rows.Add(new StocksRow { Label = words("reallife_stk_row_fee", "Fee"), Value = MarketText.Money(fee) });
+            rows.Add(new StocksRow { Label = words("reallife_stk_row_total", "Total"), Value = MarketText.Money(total) });
+            rows.Add(new StocksRow
+            {
+                Label = buy ? words("reallife_stk_row_most_buy", "Most you can buy") : words("reallife_stk_row_most_sell", "Most you can sell"),
+                Value = most.ToString("N0")
+            });
             return new StocksTicket
             {
                 Side = buy ? words("reallife_mkt_buy", "Buy") : words("reallife_mkt_sell", "Sell"),
@@ -665,33 +296,29 @@ namespace RealLifeOverhaul.Ui
                 Total = MarketText.Money(total),
                 CashAfter = MarketText.Money(Math.Max(0, cash - (buy ? total : -total))),
                 After = words("reallife_stk_position_after", "Position after") + " " + afterShares + "  " + MarketText.Money(average),
-                Place = words("reallife_stk_place", "Place order"),
+                Place = buy ? words("reallife_stk_place_buy", "Place buy order") : words("reallife_stk_place_sell", "Place sell order"),
                 Instead = closing ? null : buy ? words("reallife_stk_sell_instead", "Sell instead") : words("reallife_stk_buy_instead", "Buy instead"),
                 Why = why,
                 PlaceDisabled = why != null && !worked,
                 Watch = state.Watching(s.Id) ? words("reallife_mkt_unwatch", "Unwatch") : words("reallife_mkt_watch", "Watch"),
-                PutBack = back >= 0 ? InvestText.Reinvest(back) : null
+                PutBack = back >= 0 ? InvestText.Reinvest(back) : null,
+                Title = words("reallife_stk_order_title", "Order"),
+                CashWords = MarketText.Fill("reallife_stk_cash_line", "cash", MarketText.Money(cash)),
+                Sides = new[] { words("reallife_mkt_buy", "Buy"), words("reallife_mkt_sell", "Sell") },
+                Kinds = new[] { words(KindKeys[0], KindEnglish[0]), words(KindKeys[1], KindEnglish[1]), words(KindKeys[2], KindEnglish[2]), words(KindKeys[3], KindEnglish[3]) },
+                Lives = new[] { words("reallife_stk_day", "Day"), words("reallife_stk_gtc", "Until cancelled") },
+                SideAt = buy ? 0 : 1,
+                KindAt = kind,
+                LifeAt = life == OrderLife.UntilCancelled ? 1 : 0,
+                LifeLabel = words("reallife_stk_good_for", "Good for"),
+                SharesLabel = words("reallife_mkt_col_shares", "Shares"),
+                PriceLabel = kind > 0 ? words(priceKeys[kind], priceEnglish[kind]) : null,
+                PutBackLabel = words("reallife_stk_put_back", "Dividends put back"),
+                Rows = rows.ToArray(),
+                MostRow = rows.Count - 1,
+                Most = most,
+                Buying = buy
             };
-        }
-
-        private static long MostShares(long cash, int price, bool buy)
-        {
-            if (!buy || cash <= 0 || price <= 0)
-            {
-                return 0;
-            }
-            long guess = cash * 100L / price;
-            for (int i = 0; i < 6 && guess > 0; i++)
-            {
-                long v = MarketTrading.Value(guess, price, true);
-                if (v + MarketTrading.Commission(v, MarketCatalogue.CommissionLeastAtStart) <= cash)
-                {
-                    return guess;
-                }
-                long next = guess * 99L / 100L;
-                guess = next < guess ? next : guess - 1;
-            }
-            return Math.Max(0, guess);
         }
 
         private static void Ticket(StocksModel m, MarketState state, int stockId, bool buy, OrderType type, OrderLife life, long qty, UiWords words)
@@ -1014,15 +641,6 @@ namespace RealLifeOverhaul.Ui
             return lines.ToArray();
         }
 
-        private static string TapeLine(MarketState state, int stockId, UiWords words)
-        {
-            if (!state.Names.Latest(stockId, out TradePrint p))
-            {
-                return null;
-            }
-            return Who(p, state, words);
-        }
-
         private static string Who(TradePrint p, MarketState state, UiWords words)
         {
             string who;
@@ -1043,8 +661,9 @@ namespace RealLifeOverhaul.Ui
                 default: who = words("reallife_stk_rule", "Rule"); break;
             }
             Stock s = state.Stock(p.StockId);
-            string side = p.Side == TradeSide.Buy ? words("reallife_mkt_buy", "Buy") : words("reallife_mkt_sell", "Sell");
-            return who + " " + side.ToLowerInvariant() + " " + p.Size + " " + (s != null ? s.Ticker : string.Empty);
+            // A whole sentence in the player's language ("A broker sold 124 ARE"), not the verb of the order button put after a name.
+            return MarketText.Fill(p.Side == TradeSide.Buy ? "reallife_stk_tape_buy" : "reallife_stk_tape_sell", "who", who, "size", p.Size.ToString("N0"),
+                "ticker", s != null ? s.Ticker : string.Empty);
         }
 
         private static Stock First(MarketState state)

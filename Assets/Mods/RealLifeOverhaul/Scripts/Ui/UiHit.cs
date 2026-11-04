@@ -11,7 +11,7 @@ namespace RealLifeOverhaul.Ui
     /// nothing, the engine calls it on pointer events.
     /// </summary>
     public sealed class UiHit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler, IScrollHandler, IPointerDownHandler, IBeginDragHandler,
-        IDragHandler, IEndDragHandler
+        IDragHandler, IEndDragHandler, IPointerMoveHandler
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("ui", "UiHit", typeof(UiHit));   // the engine's calls of it (Core/Guard)
 
@@ -77,6 +77,24 @@ namespace RealLifeOverhaul.Ui
             try
             {
                 _view.PointerExited?.Invoke(_node);
+            }
+            catch (Exception e)
+            {
+                Guard.Fail(FrameGuard, e);
+            }
+        }
+
+        // The pointer moving over a face: told only for a target that asked for its moves (a chart's plot), and nothing else.
+        public void OnPointerMove(PointerEventData data)
+        {
+            if (FrameGuard.Off || _view == null || _node < 0 || data == null || _view.Tracked == null || _view.PointerMoved == null || !_view.Tracked(_node))
+            {
+                return;
+            }
+            try
+            {
+                _view.ToLayout(data.position, data.pressEventCamera, out Vector2 px);
+                _view.PointerMoved(_node, new UiDragPoint { Phase = UiDrag.Move, X = px.x, Y = px.y });
             }
             catch (Exception e)
             {

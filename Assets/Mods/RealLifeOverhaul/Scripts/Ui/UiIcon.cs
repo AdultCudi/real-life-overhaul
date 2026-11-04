@@ -162,6 +162,17 @@ namespace RealLifeOverhaul.Ui
         Upload,        // up to the Workshop
         Books,         // a library
         Download,      // into the library
+        ToolCursor,     // the chart's pointer tool
+        ToolTrend,      // the chart's trend line
+        ToolLevel,      // the chart's horizontal line
+        ToolFib,        // the chart's Fibonacci levels
+        ToolRay,        // the chart's ray
+        ToolRect,       // the chart's rectangle
+        ToolMeasure,    // the chart's measure
+        ToolText,       // the chart's note
+        ToolSnap,       // the chart's level that snaps to a price
+        Expand,         // a chart to the whole window
+        Shrink,         // a chart back to its place
         Count
     }
 
