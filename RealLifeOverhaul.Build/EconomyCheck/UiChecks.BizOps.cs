@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using RealLifeOverhaul.Ui;
 
 internal static partial class Program
@@ -125,6 +126,118 @@ internal static partial class Program
     }
 
     // An item of the scene whose words are these (the kit lays words whole; the text cuts a long one when it is drawn).
+    // The lanes' shades: every lane in the open hours is one shade (nothing laid over it), the closed hours are darker on every lane but a
+    // cleaning station (which takes any hour), a lane that cannot take the chosen person is dimmed with its reason where its warning goes,
+    // a + stands on each free hour a press would fill (every one while a person is chosen, one under the mouse otherwise), and the board
+    // says what each shade means.
+    private static void BizOpsShadeChecks()
+    {
+        UiWords t = UiWords("en");
+        UiFrame frame = UiFrame.FullMenu(16f / 9f, "BizMan");
+        string fault = null;
+        int lanesChecked = 0, pluses = 0, dimmed = 0, aimed = 0;
+        foreach (string state in new[] { "schedule_full", "schedule_tens", "schedule_place" })
+        {
+            var s = new UiScene();
+            BizManModel m = UiSamples.BizOps(t, state);
+            BizManPages.Lay(s, m, frame, true, UiDefaultKeys.Keyboard);
+            UiBoardModel bd = m.Ops.Board;
+            float perHour = bd.RulerW / Math.Max(1, bd.LastHour - bd.FirstHour);
+            var closed = new bool[bd.Lanes.Length, BizOpsRules.Hours];
+            var dim = new bool[bd.Lanes.Length];
+            var plus = new bool[bd.Lanes.Length, BizOpsRules.Hours];
+            var aim = new bool[bd.Lanes.Length, BizOpsRules.Hours];
+            for (int k = 0; k < s.ItemCount; k++)
+            {
+                UiItem it = s.Items[k];
+                if (it.Clip < 0 || (it.Kind != UiKind.Box && it.Kind != UiKind.Icon))
+                {
+                    continue;
+                }
+                int lane = (int)Math.Floor(it.Y / UiBoard.LaneHeight);
+                if (lane < 0 || lane >= bd.Lanes.Length)
+                {
+                    continue;
+                }
+                float rx = bd.RulerX - s.Clips[it.Clip].X;
+                for (int h = 0; h < BizOpsRules.Hours; h++)
+                {
+                    float mid = rx + (h + 0.5f) * perHour;
+                    bool covers = it.X <= mid && mid <= it.X + it.W;
+                    if (it.Kind == UiKind.Box && it.Fill == UiRole.Field && (it.Flags & UiFlags.Decor) != 0 && it.H > UiTokens.S4)
+                    {
+                        closed[lane, h] |= covers;
+                    }
+                    else if (it.Kind == UiKind.Box && it.Fill == UiRole.Scrim && covers)
+                    {
+                        dim[lane] = true;
+                    }
+                    else if (it.Kind == UiKind.Box && it.Fill == UiRole.AccentSoft && covers)
+                    {
+                        aim[lane, h] = true;
+                    }
+                    else if (it.Kind == UiKind.Icon && it.Icon == UiIcon.Plus && Math.Abs(it.X + it.W / 2f - mid) < 1f)
+                    {
+                        plus[lane, h] = true;
+                    }
+                }
+            }
+            for (int i = 0; i < bd.Lanes.Length; i++)
+            {
+                lanesChecked++;
+                UiBoardLane lane = bd.Lanes[i];
+                bool blocked = !string.IsNullOrEmpty(lane.Blocked);
+                dimmed += dim[i] ? 1 : 0;
+                for (int h = 0; h < BizOpsRules.Hours; h++)
+                {
+                    bool open = bd.OpenHours[h];
+                    pluses += plus[i, h] ? 1 : 0;
+                    aimed += aim[i, h] ? 1 : 0;
+                    string at = state + ", lane " + i + ", hour " + h;
+                    if (!lane.Cleaning && closed[i, h] == open && fault == null)
+                    {
+                        fault = at + (open ? ": an open hour is shaded as closed" : ": a closed hour is not shaded");
+                    }
+                    if (lane.Cleaning && closed[i, h] && fault == null)
+                    {
+                        fault = at + ": a cleaning station's hour is shaded as shut";
+                    }
+                    if (open && !lane.Cleaning && !blocked && !aim[i, h] && !dim[i] && closed[i, h] && fault == null)
+                    {
+                        fault = at + ": an open hour has a shade of its own with no reason";
+                    }
+                    if (plus[i, h] != UiBoard.ShowsPlus(bd, i, h) && fault == null)
+                    {
+                        fault = at + (plus[i, h] ? ": a + stands where a press places nothing" : ": a free hour has no +");
+                    }
+                    if (aim[i, h] && !(i == bd.HoverLane && h == bd.HoverHour) && fault == null)
+                    {
+                        fault = at + ": a lifted cell that is not under the mouse";
+                    }
+                }
+                if (blocked != dim[i] && fault == null)
+                {
+                    fault = state + ", lane " + i + (blocked ? ": a lane that cannot take the person is not dimmed" : ": a lane is dimmed with no reason");
+                }
+            }
+            bool said = OpsSays(s, bd.LegendOpen) && OpsSays(s, bd.LegendClosed) && OpsSays(s, bd.LegendAdd) && OpsSays(s, bd.LegendCleaning)
+                        && (state != "schedule_place" || (OpsSays(s, bd.LegendBlocked) && OpsSays(s, bd.Lanes[3].Blocked) && bd.Placing != null));
+            if (!said && fault == null)
+            {
+                fault = state + ": the legend does not say what the shades mean (open " + OpsSays(s, bd.LegendOpen) + ", closed " + OpsSays(s, bd.LegendClosed) + ", add " + OpsSays(s, bd.LegendAdd)
+                        + ", cleaning " + OpsSays(s, bd.LegendCleaning) + ", blocked " + OpsSays(s, bd.LegendBlocked) + ", reason " + OpsSays(s, bd.Lanes[3].Blocked) + ")";
+            }
+        }
+        Check(fault == null && lanesChecked >= 15 && pluses >= 20 && dimmed == 1 && aimed == 1,
+            "bizops: the lanes keep one shade through the open hours, the closed hours darker (a cleaning station's not), a lane that cannot take the chosen person dimmed with its reason, "
+            + "a + on each free hour a press would fill, and a legend saying what each shade means (" + lanesChecked + " lanes, " + pluses + " plus signs, " + dimmed + " dimmed, " + aimed + " aimed"
+            + (fault == null ? "" : "; " + fault) + ")");
+        string src = File.ReadAllText(System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizMan\Ops\BizManScreen.Schedule.cs")));
+        Check(src.Contains("ScheduleHelper.HasSkillForWorkstation(id, whoId)") && src.Contains("BizOpsRules.CanStart(open, taken, cleaning, h)") && src.Contains("public bool Tracks(int command) => command == UiBoard.LaneCommand")
+              && src.Contains("if (arg != _hoverLane || hour != _hoverHour)"),
+            "bizops: the screen gives each lane the game's own skill test and hour rule, and lays out again for the hour under the mouse only when the lane or the hour changes");
+    }
+
     private static bool OpsSays(UiScene s, string words)
     {
         for (int i = 0; words != null && i < s.ItemCount; i++)
@@ -139,6 +252,7 @@ internal static partial class Program
 
     private static void BizOpsLayoutChecks()
     {
+        BizOpsShadeChecks();
         UiWords t = UiWords("en");
         UiFrame frame = UiFrame.FullMenu(16f / 9f, "BizMan");
         var s = new UiScene();
@@ -157,6 +271,59 @@ internal static partial class Program
             "bizops: the full day shows its facts and both its problems over the board, each hour's staff against the planner's need under it, and Fill the gaps");
         Check(s.FindNode(BizManPages.OpsSearch, 0) < 0 && full.Ops.FactActions.Length == 1 && Array.FindIndex(full.Actions, a => a.Label == full.Ops.FactActions[0].Label) < 0,
             "bizops: a place of five stations shows no lanes' search, and Fill the gaps stands with the day's facts, not among the game's own day buttons");
+        // The staff placed over needed: one cell for each hour that wants staff, standing in its hour's column on the ruler, apart from the
+        // next, the placed figure over the needed one (no string of figures run together), short hours in the danger's colours.
+        foreach (string state in new[] { "schedule_full", "schedule_tens" })
+        {
+            var cs = new UiScene();
+            BizManModel cm = UiSamples.BizOps(t, state);
+            BizManPages.Lay(cs, cm, frame, true, UiDefaultKeys.Keyboard);
+            UiBoardModel bd = cm.Ops.Board;
+            float perHour = bd.RulerW / Math.Max(1, bd.LastHour - bd.FirstHour);
+            int cells = 0, drawn = 0, outside = 0, touching = 0, tooWide = 0, wrongTone = 0, unsaid = 0;
+            float prevRight = float.MinValue;
+            for (int h = bd.FirstHour; h < bd.LastHour; h++)
+            {
+                if (string.IsNullOrEmpty(bd.Cover[h]))
+                {
+                    continue;
+                }
+                cells++;
+                int i = h - bd.FirstHour;
+                UiBoard.CoverCell(bd.RulerX, perHour, i, out float cx, out float cw);
+                outside += cx < bd.RulerX + i * perHour - 0.01f || cx + cw > bd.RulerX + (i + 1) * perHour + 0.01f ? 1 : 0;
+                touching += cx < prevRight + 0.01f ? 1 : 0;
+                prevRight = cx + cw;
+                tooWide += UiTextRules.Width(bd.Cover[h], UiStyle.SmallStrong) > cw || UiTextRules.Width(bd.Needed[h], UiStyle.Small) > cw ? 1 : 0;
+                UiRole wantEdge = bd.Short[h] ? UiRole.Danger : UiRole.None;
+                bool box = false, placed = false, needed = false;
+                for (int k = 0; k < cs.ItemCount; k++)
+                {
+                    UiItem it = cs.Items[k];
+                    bool here = Math.Abs(it.X - cx) < 0.01f && Math.Abs(it.W - cw) < 0.01f;
+                    box |= here && it.Kind == UiKind.Box && it.Fill == UiRole.Band && it.Edge == wantEdge;
+                    placed |= here && it.Kind == UiKind.Text && it.Text == bd.Cover[h] && it.Style == UiStyle.SmallStrong;
+                    needed |= here && it.Kind == UiKind.Text && it.Text == bd.Needed[h] && it.Style == UiStyle.Small;
+                }
+                drawn += box ? 1 : 0;
+                wrongTone += box ? 0 : 1;
+                unsaid += placed && needed ? 0 : 1;
+            }
+            Check(cells >= 8 && drawn == cells && outside == 0 && touching == 0 && tooWide == 0 && unsaid == 0 && wrongTone == 0,
+                "bizops: the staff row (" + state + ") has a cell for each of its " + cells + " hours in that hour's column, none touching the next, the placed figure over the needed one inside it and"
+                + " short hours in the danger's colours (" + outside + " outside, " + touching + " touching, " + tooWide + " too wide, " + unsaid + " unsaid, " + wrongTone + " wrong)");
+        }
+        string pageSource = File.ReadAllText(System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizMan\BizManScreen.Page.cs")));
+        string en1 = File.ReadAllText(System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales\en.json")));
+        Check(pageSource.Contains("alerts.Count == 1 ? UiText.T(\"reallife_ui_bizman_sum_alert_one\")") && en1.Contains("\"reallife_ui_bizman_sum_alert_one\": \"1 alert\""),
+            "bizman: one alert reads \"1 alert\", not \"1 alerts\"; the singular key is used where the count is one");
+        foreach (string lang in new[] { "en", "pt", "zh-cn" })
+        {
+            UiWords w = UiWords(lang);
+            string one = w("reallife_ui_bizman_sum_alert_one", "MISSING"), many = w("reallife_ui_bizman_sum_alerts", "MISSING"), goods = w("reallife_ui_bizops_goods_one", "MISSING"), piece = w("reallife_ui_bizops_output_one", "MISSING");
+            Check(one != "MISSING" && one.Contains("1") && !one.Contains("{count}") && many.Contains("{count}") && goods != "MISSING" && goods.Contains("1") && piece != "MISSING" && piece.Contains("1"),
+                "bizman: the singular count labels (one alert, one good, one piece an hour) exist in " + lang);
+        }
         s = new UiScene();
         BizManModel empty = UiSamples.BizOps(t, "schedule_empty");
         BizManPages.Lay(s, empty, UiFrame.FullMenu(21f / 9f, "BizMan"), true, UiDefaultKeys.Keyboard);   // at 16:9 the game's five day buttons leave it no room

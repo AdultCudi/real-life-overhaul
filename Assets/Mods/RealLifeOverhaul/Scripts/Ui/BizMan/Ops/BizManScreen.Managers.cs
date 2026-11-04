@@ -934,7 +934,8 @@ namespace RealLifeOverhaul.Ui
                 o.Stops[i] = new BizOpsStop
                 {
                     Name = pick >= 0 && pick < options.Length ? options[pick] : UiText.T("common_unassigned"),
-                    Line = (Loc(Get<TextLocalizationComponent>(GameContract.StopName, d)) ?? string.Empty) + ", " + UiText.Fill("reallife_ui_bizops_goods_count", "count", UiText.Whole(goods))
+                    Line = (Loc(Get<TextLocalizationComponent>(GameContract.StopName, d)) ?? string.Empty) + ", "
+                        + (goods == 1 ? UiText.T("reallife_ui_bizops_goods_one") : UiText.Fill("reallife_ui_bizops_goods_count", "count", UiText.Whole(goods)))
                         + (open != null ? ", " + open : string.Empty),
                     Open = i == _stop, Warn = faded != null && faded.alpha < 0.99f, Removable = remove != null && remove.gameObject.activeInHierarchy,
                     Open2 = open, OpenTone = OpenTone(to != null && !to.IsUndefined() ? BuildingHelper.GetBuildingRegistration(to) : null)

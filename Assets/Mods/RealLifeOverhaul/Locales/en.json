@@ -31121,5 +31121,15 @@
   "reallife_flare_dm_hello_2": "Hello, are you new around here? I think we live close by.",
   "reallife_flare_dm_hello_3": "Hey. Your name keeps coming up around the city. How are you getting on?",
   "reallife_news_not_yet": "Not yet: from day {day}",
-  "reallife_news_where": "Where people live"
+  "reallife_news_where": "Where people live",
+  "reallife_ui_bizman_sum_alert_one": "1 alert",
+  "reallife_ui_bizops_goods_one": "1 good",
+  "reallife_ui_bizops_output_one": "Output 1 piece an hour",
+  "reallife_ui_rivals_week_from": "From day {day}",
+  "reallife_ui_bizops_lane_blocked": "No matching skill",
+  "reallife_ui_bizops_legend_open": "Open hours",
+  "reallife_ui_bizops_legend_closed": "Closed hours",
+  "reallife_ui_bizops_legend_add": "Press an hour to add a shift",
+  "reallife_ui_bizops_legend_cleaning": "Cleaning stations take any hour",
+  "reallife_ui_bizops_legend_blocked": "Cannot take the chosen person"
 }

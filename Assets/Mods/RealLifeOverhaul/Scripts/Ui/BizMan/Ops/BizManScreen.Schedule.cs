@@ -146,6 +146,66 @@ namespace RealLifeOverhaul.Ui
             Filler(sch);
         }
 
+        // A lane's own state for the board's shades and its plus signs: a cleaning station (every hour is its own), the hours a shift may
+        // start at now (the game's own hour button: open and not taken, none on a closed day), and why the person chosen beside the board
+        // cannot take it (the game's own skill test, ScheduleHelper.HasSkillForWorkstation).
+        private static void LaneState(ref UiBoardLane lane, string id, EmployeeInstance who, string whoId, bool[] open, bool dayOpen)
+        {
+            bool cleaning = ScheduleHelper.IsCleaningStation(id);
+            bool[] taken = Taken(id);
+            lane.Cleaning = cleaning;
+            for (int h = 0; dayOpen && h < BizOpsRules.Hours; h++)
+            {
+                lane.Free |= BizOpsRules.CanStart(open, taken, cleaning, h) ? 1 << h : 0;
+            }
+            if (who != null && !ScheduleHelper.HasSkillForWorkstation(id, whoId))
+            {
+                lane.Blocked = UiText.T("reallife_ui_bizops_lane_blocked");
+            }
+        }
+
+        // What the shades under the board mean, the person chosen to place, and the hour the mouse rests on.
+        private void Shades(UiBoardModel board, EmployeeInstance who)
+        {
+            bool cleaning = false, blocked = false;
+            for (int i = 0; i < board.Lanes.Length; i++)
+            {
+                cleaning |= board.Lanes[i].Cleaning;
+                blocked |= !string.IsNullOrEmpty(board.Lanes[i].Blocked);
+            }
+            board.Placing = who != null && who.characterData != null ? who.characterData.name : null;
+            board.HoverLane = _hoverLane < board.Lanes.Length ? _hoverLane : -1;
+            board.HoverHour = board.HoverLane >= 0 ? _hoverHour : -1;
+            board.LegendOpen = UiText.T("reallife_ui_bizops_legend_open");
+            board.LegendClosed = UiText.T("reallife_ui_bizops_legend_closed");
+            board.LegendAdd = UiText.T("reallife_ui_bizops_legend_add");
+            board.LegendCleaning = cleaning ? UiText.T("reallife_ui_bizops_legend_cleaning") : null;
+            board.LegendBlocked = blocked ? UiText.T("reallife_ui_bizops_legend_blocked") : null;
+        }
+
+        // The mouse's rest on a lane's hour, for the + the board draws there; read through IUiTracking, which asks only for the lanes.
+        private int _hoverLane = -1, _hoverHour = -1;
+
+        /// <summary>The lanes follow the pointer, so the hour it rests on can show its +.</summary>
+        public bool Tracks(int command) => command == UiBoard.LaneCommand && _m.Part == BizManPart.Schedule;
+
+        /// <summary>The pointer moved over a lane: the board lays out again only when the lane or its hour changed.</summary>
+        public void Moved(int command, int arg, float x, float y)
+        {
+            UiBoardModel board = _m.Ops != null ? _m.Ops.Board : null;
+            if (command != UiBoard.LaneCommand || board == null)
+            {
+                return;
+            }
+            int hour = UiBoardRules.MinuteAt(board, x) / 60;
+            if (arg != _hoverLane || hour != _hoverHour)
+            {
+                _hoverLane = arg;
+                _hoverHour = hour;
+                _dirty = true;
+            }
+        }
+
         // The lanes as the game lists its workstations (its search applied), each its glyph and its words, and their shifts.
         private void Lanes(BizManBusiness b, ScheduleScrollerController lanes, UiBoardModel board)
         {
@@ -157,6 +217,9 @@ namespace RealLifeOverhaul.Ui
             board.Lanes = new UiBoardLane[n];
             var shifts = new List<UiBoardShift>(32);
             UiIcon kind = BizManRules.KindIcon(b.buildingRegistration.businessTypeName, b.building != null ? b.building.BuildingType : null);
+            EmployeeInstance who = _crewPick != null ? ScheduleHelper.GetScheduleEmployeeById(_crewPick) : null;   // the person chosen beside the board, if any
+            bool[] open = ScheduleHelper.OpeningHoursState ?? new bool[BizOpsRules.Hours];
+            bool dayOpen = ScheduleHelper.CurrentScheduleDay != null && ScheduleHelper.CurrentScheduleDay.isOpen;
             for (int i = 0; i < n; i++)
             {
                 ScheduleWorkstationModel w = data[i];
@@ -170,6 +233,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;   // a theatre's stage has no hours of its own
                 }
+                LaneState(ref board.Lanes[i], w.workstationId, who, _crewPick, open, dayOpen);
                 List<WorkShift> on = ScheduleHelper.GetWorkShiftsByWorkstationId(w.workstationId);
                 for (int k = 0; k < on.Count; k++)
                 {
@@ -187,6 +251,7 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             board.Shifts = shifts.ToArray();
+            Shades(board, who);
             board.Chosen = _chosen != null ? _shifts.IndexOf(_dragged ?? _chosen) : _dragged != null ? _shifts.IndexOf(_dragged) : -1;
             if (board.Chosen < 0)
             {
@@ -801,6 +866,7 @@ namespace RealLifeOverhaul.Ui
             int busiest = 0;
             bool any = false;
             var cover = new string[BizOpsRules.Hours];
+            var needed = new string[BizOpsRules.Hours];
             var shortHour = new bool[BizOpsRules.Hours];
             var bars = new float[BizOpsRules.Hours];
             for (int h = 0; h < BizOpsRules.Hours; h++)
@@ -811,7 +877,8 @@ namespace RealLifeOverhaul.Ui
             {
                 if (_neededAt[h] > 0 || _placedAt[h] > 0)
                 {
-                    cover[h] = UiText.Fill("reallife_ui_bizops_cover_figure", "placed", UiText.Whole(_placedAt[h]), "needed", UiText.Whole(_neededAt[h]));
+                    cover[h] = UiText.Whole(_placedAt[h]);    // a figure for each hour's column: the staff placed, the staff needed under it
+                    needed[h] = UiText.Whole(_neededAt[h]);
                     any = true;
                 }
                 shortHour[h] = _placedAt[h] < _neededAt[h];
@@ -824,6 +891,7 @@ namespace RealLifeOverhaul.Ui
             board.CoverTitle = UiText.T("reallife_ui_bizops_cover_title");
             board.CoverLine = busiest > 0 ? UiText.T("reallife_ui_bizops_cover_line") : null;
             board.Cover = cover;
+            board.Needed = needed;
             board.Short = shortHour;
             board.Bars = busiest > 0 ? bars : null;
         }

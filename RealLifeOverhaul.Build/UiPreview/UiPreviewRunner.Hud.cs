@@ -19,6 +19,7 @@ public static partial class UiPreviewRunner
     static partial void AddHud(List<Screen> screens)
     {
         screens.Add(Hud("hud_bar", "13.jpg", (s, f, d, k) => UiSamples.HudBarScene(s, f, d, k, English, false, false, false), UiDraw.SettingsPillCommand, 0, "LLRRRRRRRRRRRRRRR"));
+        screens.Add(Hud("hud_bar_fps", "13.jpg", (s, f, d, k) => UiSamples.HudBarScene(s, f, d, k, English, false, false, false, false, 144), UiDraw.NeedsPillCommand, 0, "LLRRRRRRRRRRRRRRR"));
         screens.Add(Hud("hud_bar_paused", "02.jpg", (s, f, d, k) => UiSamples.HudBarScene(s, f, d, k, English, true, false, false), UiDraw.TimePillCommand, 1, "LLR"));
         screens.Add(Hud("hud_bar_fast", "02.jpg", (s, f, d, k) => UiSamples.HudBarScene(s, f, d, k, English, false, true, false), UiDraw.NeedsPillCommand, 0, "LRRRRRRRRRRR"));
         screens.Add(Hud("hud_bar_night", "11.jpg", (s, f, d, k) => UiSamples.HudBarScene(s, f, d, k, English, false, false, true), UiDraw.AlertsPillCommand, 0, "RRRRRRRRRRRR"));

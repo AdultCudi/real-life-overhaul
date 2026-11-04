@@ -85,8 +85,12 @@ internal static partial class UiSamples
     }
 
     /// <summary>The bar alone over the street: walking at speed, paused, fast-forwarding, at night, or with the clock held.</summary>
-    public static void HudBarScene(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool paused, bool fast, bool night, bool locked = false) =>
-        Hud(s, f, dark, k, t, new UiHudModel(), HudBar(t, paused, fast, night, locked));
+    public static void HudBarScene(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool paused, bool fast, bool night, bool locked = false, int fps = 0)
+    {
+        UiStatusModel bar = HudBar(t, paused, fast, night, locked);
+        bar.Fps = fps;   // the game's show-FPS option on: the figure before the needs
+        Hud(s, f, dark, k, t, new UiHudModel(), bar);
+    }
 
     // ------------------------------------------------------------------------------------------------- info panels
 
