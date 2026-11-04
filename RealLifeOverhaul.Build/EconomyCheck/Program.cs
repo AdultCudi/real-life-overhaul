@@ -113,6 +113,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--kit-prompt")
+        {
+            KitPromptChecks();   // (the keys' prompts and the app tray alone, while working on them: KitPromptChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--toasts")
         {
             ToastChecks();   // (the game's toasts on the kit alone, while working on them: ToastChecks.cs)
@@ -259,6 +265,7 @@ internal static partial class Program
             UiKit();   // (the interface kit alone, while working on it: UiChecks.cs)
             UiIconChecks();   // (the icons: Phosphor's outlines, both variants, filled as their winding says, pinned and regenerated: UiIconChecks.cs)
             HudKitChecks();   // (the HUD's pieces and host: the zoom, the world prompt clamped, the pills, the activity, the money, no key taken, the cost: UiHudChecks.cs)
+            MinimapChecks();   // (the minimap's card above the kit's bar and clear of its pieces, its canvas between the HUD and the windows: UiMinimapChecks.cs)
             UiGrids();        // (the app window's page shapes and the kit's links: UiGridChecks.cs)
             PhoneKitChecks();   // (the kit phone: its pages, nav bar, height, colours, sources: UiChecks.Phone.cs)
             ActivityKitChecks();   // (the activity panel, time skip, funeral and time of day tool on the kit: UiChecks.Activity.cs)
@@ -816,6 +823,7 @@ internal static partial class Program
         UiKit();        // the interface kit: tokens, fonts, text, motion, focus, every registered screen at every frame, language and look, the rules failing once, sources, texts, timings (UiChecks.cs)
         UiIconChecks(); // the icons: Phosphor's outlines, both variants, filled as their winding says, pinned and regenerated (UiIconChecks.cs)
         HudKitChecks(); // the HUD's pieces and host: the UI zoom, the world prompt inside the screen at every frame, every pill whole in every language, the activity's states, the money's changes, no key taken, the cost (UiHudChecks.cs)
+        MinimapChecks(); // the minimap's card above the kit's bar and clear of its pieces, its canvas between the HUD and the windows (UiMinimapChecks.cs)
         PauseMenuChecks();   // the pause menu: the time played in the save, a save's age and the time in words, the game's save list and loading (PauseMenuChecks.cs)
         UiGrids();      // the app window's page shapes (diary, board, reader, settings list, conversation, message list, feed, edition) and the kit's links (UiGridChecks.cs)
         PhoneKitChecks();   // the kit phone: every app on one page, the nav bar still, its own height, the apps' colours, the sources (UiChecks.Phone.cs)

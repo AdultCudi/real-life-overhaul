@@ -98,8 +98,10 @@ Use these, and never draw a part of your own. All are in `UiDraw.Chrome.cs` unle
   right and a hairline under it. Every panel wears one.
 - **Status bar** (`StatusBar`): along the foot, a row of app tiles (the open one filled cyan) and a row of pills: the
   time and the game's speed, the season, the place, the money, the needs as meters and the alerts, from `UiChrome.Bar`
-  (`UiStatusModel`). A field left empty leaves its pill out. The keys' prompts stand at the right of the app row while
-  the keys lead. A template's last call, `UiDraw.PromptBar`, draws it. In the game it shows the time, the day and the
+  (`UiStatusModel`). A field left empty leaves its pill out. The keys' prompts stand as key chips in a lane over the bar's
+  right end while the keys lead (`UiDraw.KeyChips`, `UiFrame.PromptLane`), never on the strip, so the app row keeps its
+  place whatever they say; a window ends above the lane, and a panel docked at the right has the chips stand left of it.
+  A template's last call, `UiDraw.PromptBar`, draws it. In the game it shows the time, the day and the
   money (`UiGame.Bar`). The needs, the season and the apps wait for the HUD wave.
 - **Icon tiles and buttons** (`Tile`, `IconButton`): an icon in its own colour on a neutral slate tile, as Cities:
   Skylines II's tool buttons (a warm colour faded on slate turns brown), or the cyan fill with dark ink when it is the

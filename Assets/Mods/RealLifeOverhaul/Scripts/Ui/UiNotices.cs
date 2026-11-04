@@ -17,6 +17,7 @@ namespace RealLifeOverhaul.Ui
         public UiNotice[] Cards = new UiNotice[0];
         public int CardCount;
         public float Top = UiTokens.S4;   // px: where the game's stack starts (the mod's panels push it down)
+        public float AvoidX, AvoidY, AvoidW, AvoidH;   // px of the layout: the mod's minimap card, kept clear of; 0 wide for none
     }
 
     /// <summary>The notice list: every notice the game kept, newest first, with Clear all.</summary>
@@ -90,12 +91,25 @@ namespace RealLifeOverhaul.Ui
             s.Begin("notices", frame.Width, frame.Height, dark);
             s.Pointer = true;   // the keys stay the player's: a card is pressed by pointing
             s.Floats = true;
-            float x = UiDraw.SnapDown(frame.Width - UiTokens.S4 - CardWidth), y = UiDraw.Snap(m.Top);
+            float y = UiDraw.Snap(m.Top);
             int from = Math.Max(0, m.CardCount - MostCards);
+            float x = UiDraw.SnapDown(frame.Width - UiTokens.S4 - CardWidth);
+            UiHudRules.Clear(ref x, ref y, CardWidth, StackHeight(m, from), frame.Width, m.AvoidX, m.AvoidY, m.AvoidW, m.AvoidH);
             for (int i = from; i < m.CardCount; i++)
             {
                 y += Card(s, ref m.Cards[i], i, x, y) + UiTokens.S2;
             }
+        }
+
+        // The cards shown, the steps between them included: what the stack covers, to keep it off the minimap's card.
+        private static float StackHeight(UiNoticeCardsModel m, int from)
+        {
+            float h = 0f;
+            for (int i = from; i < m.CardCount; i++)
+            {
+                h += CardHeight(ref m.Cards[i]) + (i > from ? UiTokens.S2 : 0f);
+            }
+            return h;
         }
 
         /// <summary>A card's height for its words.</summary>
