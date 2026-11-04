@@ -369,7 +369,7 @@ internal static partial class Program
         Check(MemberText(executives, "private void ExecutivesMonth(").Contains("HierarchyLog.Paid") && MemberText(executives, "private Escalation Propose(").Contains("HierarchyLog.Proposed")
               && ModSource(@"Economy\Company\CompanyDirector.Regions.cs").Contains("HierarchyLog.Appointed") && ModSource(@"Economy\Company\CompanyDirector.Regions.cs").Contains("HierarchyLog.Replaced")
               && MemberText(escalations, "private bool MoveOne(").Contains("HierarchyLog.Moved") && MemberText(escalations, "private bool TopUp(").Contains("HierarchyLog.TopUp")
-              && MemberText(escalations, "private void Settled(").Contains("CompanyDay.Settled(") && MemberText(escalations, "private void PassUp(").Contains("CompanyDay.PassedUp(")
+              && MemberText(ModSource(@"Economy\Company\CompanyDay.cs"), "public static bool TryOne(").Contains("Settled(h, e") && MemberText(escalations, "private void PassUp(").Contains("CompanyDay.PassedUp(")
               && MemberText(ModSource(@"Economy\Company\CompanyDay.cs"), "public static void Settled(").Contains("HierarchyLog.Settled")
               && MemberText(ModSource(@"Economy\Company\CompanyDay.cs"), "public static void PassedUp(").Contains("HierarchyLog.Passed"),
             "hierarchy log: every decision above the managers is written down, what it changed, by whom, and each executive's month's pay");

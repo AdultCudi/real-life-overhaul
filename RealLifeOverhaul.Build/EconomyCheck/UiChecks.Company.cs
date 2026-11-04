@@ -276,7 +276,7 @@ internal static partial class Program
         var orphans = new StringBuilder();
         var unhandled = new StringBuilder();
         string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company"));
-        string live = System.IO.File.ReadAllText(System.IO.Path.Combine(folder, "CompanyLive.Do.cs"));
+        string live = System.IO.File.ReadAllText(System.IO.Path.Combine(folder, "CompanyLive.Do.cs")) + System.IO.File.ReadAllText(System.IO.Path.Combine(folder, "CompanyLiveDoes.cs"));   // the press map is game-free (CompanyLiveDoes), the live source runs it
         foreach (CompanyDo d in Enum.GetValues(typeof(CompanyDo)))
         {
             if (d == CompanyDo.None)
