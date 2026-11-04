@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using BigAmbitions.Characters.Skills;
+using BigAmbitions.DayNightCycle;
 using Entities;
 using Helpers;
 using Localizor;
@@ -570,30 +571,49 @@ namespace RealLifeOverhaul.Economy
             ById.Clear();
         }
 
-        /// <summary>The hours each employee with an agreed raise worked on the ending day, before the game's run clears them.</summary>
-        public static void NoteHours(CompanyState state)
+        /// <summary>
+        /// The hours each employee with an agreed raise worked on the ending day, before the game's run clears them, and, for everybody, whether the day
+        /// was worked short of the day planned (<see cref="StaffRules.LateDay"/>): one pass a day over the staff, a look-up each.
+        /// </summary>
+        public static void NoteHours(CompanyState state, int endedDay)
         {
             List<StaffFile> staff = state.Staff;
-            bool any = false;
-            for (int i = 0; i < staff.Count; i++)
-            {
-                staff[i].Hours = 0;
-                any |= staff[i].Raise > 0;
-            }
-            if (!any)
-            {
-                return;
-            }
+            DayOfWeekOrdered weekday = TimeHelper.GetDayOfWeek(endedDay);
             for (int i = 0; i < staff.Count; i++)
             {
                 StaffFile f = staff[i];
-                EmployeeInstance e = f.Raise > 0 ? Employee(f.Id) : null;
-                if (e != null)
+                f.Hours = 0;
+                EmployeeInstance e = Employee(f.Id);
+                if (e == null)
+                {
+                    continue;
+                }
+                bool driver = e.IsAssignedToAnyBusiness() && e.HasSkill(DeliveryDriver);
+                if (f.Raise > 0)
                 {
                     // The game pays a delivery driver a fixed day whatever the count says, and so does the raise.
-                    f.Hours = e.IsAssignedToAnyBusiness() && e.HasSkill(DeliveryDriver) ? DriverHours : Mathf.Max(0, e.workedHoursToday) * 100;
+                    f.Hours = driver ? DriverHours : Mathf.Max(0, e.workedHoursToday) * 100;
+                }
+                if (!driver)
+                {
+                    StaffRules.LateDay(f, PlannedHours(e, weekday), e.workedHoursToday, e.isAbsent || e.isTrainingDay);
                 }
             }
+        }
+
+        // The hours the business's schedule has an employee work on a day of the week; 0 for a day off or an employee with no business.
+        private static int PlannedHours(EmployeeInstance e, DayOfWeekOrdered weekday)
+        {
+            BuildingRegistration reg = e.assignedAddress != null && !e.assignedAddress.IsUndefined() ? BuildingHelper.GetBuildingRegistration(e.assignedAddress) : null;
+            List<ScheduleDay> week = reg != null ? reg.scheduleDays : null;
+            for (int d = 0; week != null && d < week.Count; d++)
+            {
+                if (week[d] != null && week[d].day == weekday)
+                {
+                    return e.GetWorkingHoursOnDay(week[d]);
+                }
+            }
+            return 0;
         }
 
         public static EmployeeInstance Employee(string id)

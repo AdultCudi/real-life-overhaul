@@ -74,7 +74,6 @@ namespace RealLifeOverhaul.Economy
         public const int SpeedDays = 4;             // days of waiting, on average, at which the speed grade reaches nothing: a request lapses in that time
         public const int JudgeLearn = 8;            // decisions from which a month's own mistakes weigh as much as the skill's chance of one
         public const int HireLate = 3;              // late days an employee is let go after, by a manager who hires and lets go
-        public const int CrewMost = 12;             // staff a manager who hires and lets go keeps a place to, at most
 
         public const int MistakeMost = 300;         // thousandths: a decision's chance of a mistake at a skill of nothing
         public const int ReviewCut = 400;           // thousandths of that chance a regional manager at a skill of 100 takes away
@@ -401,6 +400,15 @@ namespace RealLifeOverhaul.Economy
         public static bool Match(int offer, int ceiling, bool mistake)
         {
             return offer > 0 && offer <= ceiling && !mistake;
+        }
+
+        /// <summary>
+        /// Whether a manager who hires and lets go of crew lets somebody go for being late: <see cref="ManagerCatalogue.HireLate"/> late days running, and
+        /// only when the job board has somebody to take their place inside the wage band and the budget, so a place is never left short by it.
+        /// </summary>
+        public static bool LetGo(int lateDays, bool replacementAvailable)
+        {
+            return lateDays >= ManagerCatalogue.HireLate && replacementAvailable;
         }
 
         /// <summary>The budget left this month, never less than nothing.</summary>

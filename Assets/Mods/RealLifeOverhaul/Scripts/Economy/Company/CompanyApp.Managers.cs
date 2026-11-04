@@ -526,6 +526,10 @@ namespace RealLifeOverhaul.Economy
                         : d.A == -4 ? CompanyText.T("reallife_mgr_did_rota_kept_less", "after", d.B.ToString(), "wanted", d.C.ToString(), "now", d.D.ToString())
                         : CompanyText.T("reallife_mgr_did_rota", "shifts", d.A.ToString(), "covered", d.B.ToString(), "wanted", d.C.ToString());
                 case ManagerTask.Hiring:
+                    if (d.F == 1)
+                    {
+                        return CompanyText.T("reallife_mgr_did_letgo", "name", name, "days", d.D.ToString());
+                    }
                     return CompanyText.T("reallife_mgr_did_hire", "name", name, "skill", d.B.ToString(), "wage", CompanyText.Wage(d.A));
                 default:
                     return string.Empty;

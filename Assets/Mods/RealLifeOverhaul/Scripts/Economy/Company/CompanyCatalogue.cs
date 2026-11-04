@@ -111,6 +111,8 @@ namespace RealLifeOverhaul.Economy
         public static readonly int[] SickStanding = { -3, 0, 2 };           // standing a sick day gives, by policy
         public const int SickPolicyDefault = 1;
         public const int SickDayHours = 8;          // hours, when the game has no weekly hours for somebody
+        public const int LateShort = 1;             // hours short of the day planned that make a late day: arriving late or leaving early (the game counts whole hours)
+        public const int LateMost = 99;             // late days kept running for one employee
 
         public static readonly int[] PoachChance = { 0, 15, 25, 40 };       // thousandths a day that a rival approaches somebody who fits
         public const int PoachSkill = 50;           // the game's skill value from which a rival wants somebody

@@ -21,6 +21,7 @@ namespace RealLifeOverhaul.Economy
         public int PoachRest;           // no new offer before this day
         public int LeaveDay;            // the day they go; 0 while they stay
         public string Rival = string.Empty;
+        public int LateDays;            // working days running they were short of the day planned by an hour or more (StaffRules.LateDay); a full day clears it
 
         // Read from the game; never saved.
         public string Name = string.Empty;

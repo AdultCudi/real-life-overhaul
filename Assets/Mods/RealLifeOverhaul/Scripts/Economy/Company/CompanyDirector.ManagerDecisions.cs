@@ -578,30 +578,17 @@ namespace RealLifeOverhaul.Economy
             {
                 m.Keep = mp.Place.Staff;
             }
+            LetGoLate(mp, who, day, hour);   // somebody late three days running, if the board has somebody for their place: the hire below fills it
             if (m.Keep - mp.Place.Staff <= 0)
             {
                 return;
             }
             BuildingRegistration reg = mp.Place.Reg;
-            ManagerGame.Candidates(reg, _candidates);
-            int count = _candidates.Count;
+            int count = ReadCandidates(mp);
             if (count == 0)
             {
                 HireFromRegion(mp, who, day, hour);   // the policy's next source: the region's other boards
                 return;
-            }
-            if (_hireWage.Length < count)
-            {
-                _hireWage = new int[count * 2];
-                _hireGoing = new int[count * 2];
-                _hireSkill = new int[count * 2];
-            }
-            int income = mp.Shop != null ? mp.Shop.Income : UnityEngine.Mathf.RoundToInt(CityEconomy.DistrictIncome(mp.District));
-            for (int i = 0; i < count; i++)
-            {
-                _hireWage[i] = ManagerGame.WageNow(_candidates[i], _index);
-                _hireGoing[i] = ManagerGame.Going(_candidates[i], _index, _cycle, income);
-                _hireSkill[i] = ManagerGame.SkillOf(_candidates[i]);
             }
             int left = ManagerRules.Left(BudgetOf(m), m.Spent), roll;
             int band = Rule(mp, PolicyField.PayBand), cap = Rule(mp, PolicyField.HirePayCap), floor = Rule(mp, PolicyField.SkillFloor);
@@ -637,6 +624,75 @@ namespace RealLifeOverhaul.Economy
             _candidates.Clear();
             Logger?.Info("Company: " + who + " (manager, skill " + skill + ") hired " + name + " (skill " + d.B + ", " + d.A + " an hour in hundredths) from the job board of "
                          + mp.Place.Name + " to keep " + m.Keep + " staff; " + cost + " of the month's budget" + (pick != fair ? ", a mistake: a better candidate was there" : string.Empty) + ".");
+        }
+
+        // The place's own job board's candidates read into the arrays the pick looks at: their pay now, the going rate for them and their skill. Their number.
+        private int ReadCandidates(ManagedPlace mp)
+        {
+            ManagerGame.Candidates(mp.Place.Reg, _candidates);
+            int count = _candidates.Count;
+            if (count == 0)
+            {
+                return 0;
+            }
+            if (_hireWage.Length < count)
+            {
+                _hireWage = new int[count * 2];
+                _hireGoing = new int[count * 2];
+                _hireSkill = new int[count * 2];
+            }
+            int income = mp.Shop != null ? mp.Shop.Income : UnityEngine.Mathf.RoundToInt(CityEconomy.DistrictIncome(mp.District));
+            for (int i = 0; i < count; i++)
+            {
+                _hireWage[i] = ManagerGame.WageNow(_candidates[i], _index);
+                _hireGoing[i] = ManagerGame.Going(_candidates[i], _index, _cycle, income);
+                _hireSkill[i] = ManagerGame.SkillOf(_candidates[i]);
+            }
+            return count;
+        }
+
+        // Somebody late three days running (StaffRules.LateDay) is let go the game's own way (Core/StaffLeave) when the place's job board has somebody to
+        // hire in their place inside the wage band, the skill floor and the month's budget (ManagerRules.LetGo): a place is never left short by it, never
+        // the last of its staff, never the manager themselves. The hire that follows in the same pass keeps the crew at the number kept.
+        private bool LetGoLate(ManagedPlace mp, string who, int day, int hour)
+        {
+            ManagerFile m = mp.Own;
+            StaffFile worst = null;
+            for (int i = 0; i < _state.Staff.Count; i++)
+            {
+                StaffFile f = _state.Staff[i];
+                if (f.Place == mp.Place.Place && f.Id != m.Id && f.LeaveDay == 0 && f.LateDays >= ManagerCatalogue.HireLate && (worst == null || f.LateDays > worst.LateDays))
+                {
+                    worst = f;
+                }
+            }
+            if (worst == null || mp.Place.Staff <= 1)
+            {
+                return false;
+            }
+            int count = ReadCandidates(mp), left = ManagerRules.Left(BudgetOf(m), m.Spent);
+            bool replace = count > 0 && PolicyRules.Pick(_hireWage, _hireGoing, _hireSkill, count, Rule(mp, PolicyField.PayBand), Rule(mp, PolicyField.HirePayCap),
+                Rule(mp, PolicyField.SkillFloor), left, false) >= 0;
+            _candidates.Clear();
+            if (!ManagerRules.LetGo(worst.LateDays, replace))
+            {
+                return false;
+            }
+            EmployeeInstance e = CompanyGame.Employee(worst.Id);
+            if (e == null || CompanyBridges.Leave == null || !CompanyBridges.Leave(e))
+            {
+                return false;
+            }
+            int days = worst.LateDays;
+            worst.LateDays = 0;
+            mp.Place.Staff--;
+            Decision d = Record(mp, ManagerTask.Hiring, worst.Id, who, day, hour, false);
+            d.F = 1;   // let go; a hire has none
+            d.D = days;
+            d.State = DecisionState.Closed;   // a resignation is the game's own: nothing to put back
+            d.Detail = ManagerStore.Word(worst.Name);
+            Logger?.Info("Company: " + who + " (manager) let " + worst.Name + " go from " + mp.Place.Name + " after " + days + " late day(s) running; the job board has somebody to take their place.");
+            return true;
         }
 
         private Decision LastSet(ManagerTask task, string place, string subject)
@@ -759,6 +815,10 @@ namespace RealLifeOverhaul.Economy
                 }
                 case ManagerTask.Hiring:
                 {
+                    if (d.F == 1)
+                    {
+                        return Never(out why, "reallife_mgr_undo_sacked");   // let go: the game's own resignation
+                    }
                     RotaPlace p = PlaceOf(d.Place);
                     EmployeeInstance e = ManagerGame.Employee(d.Subject);
                     if (p == null || e == null || !ManagerGame.At(e, p.Reg))

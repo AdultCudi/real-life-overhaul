@@ -144,6 +144,19 @@ namespace RealLifeOverhaul.Economy
             return StaffNote.None;
         }
 
+        /// <summary>
+        /// One working day's lateness. A day worked short of the day planned by <see cref="CompanyCatalogue.LateShort"/> hours or more is a late day and is
+        /// counted running; a full day clears the count. A day off, a day sick or a day of training (<paramref name="away"/>), or no day planned, changes nothing.
+        /// </summary>
+        public static void LateDay(StaffFile f, int planned, int worked, bool away)
+        {
+            if (planned <= 0 || away)
+            {
+                return;
+            }
+            f.LateDays = planned - Math.Max(0, worked) >= CompanyCatalogue.LateShort ? Math.Min(CompanyCatalogue.LateMost, f.LateDays + 1) : 0;
+        }
+
         /// <summary>Whether a raise to the going rate may be given unasked: as often as they would ask.</summary>
         public static bool CanGive(StaffFile f, int day)
         {

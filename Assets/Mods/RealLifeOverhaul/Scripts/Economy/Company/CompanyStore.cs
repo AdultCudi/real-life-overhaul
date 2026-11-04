@@ -75,6 +75,7 @@ namespace RealLifeOverhaul.Economy
                 t.Append(i > 0 ? ";" : string.Empty).Append(Clean(f.Id)).Append('|').Append(Clean(f.Place)).Append('|');
                 Join(t, f.Standing, f.Raise, f.UnderDays, f.AskDay, f.AskTo, f.AskRest, f.PoachDay, f.PoachOffer, f.PoachRest, f.LeaveDay);
                 t.Append('|').Append(Clean(f.Rival));
+                t.Append('|').Append(f.LateDays.ToString(Inv));   // after the rival: a newer figure goes at the end, an older line has none
             }
             t.Append("^c:");
             for (int i = Math.Max(0, s.Claims.Count - CompanyCatalogue.ClaimsMost), n = 0; i < s.Claims.Count; i++, n++)
@@ -161,7 +162,8 @@ namespace RealLifeOverhaul.Economy
                                         Id = c[0], Place = c[1], Standing = CompanyCatalogue.Clamp(I(c, 2, CompanyCatalogue.StandingStart), 0, CompanyCatalogue.StandingMost),
                                         Raise = Math.Max(0, I(c, 3)), UnderDays = Math.Max(0, I(c, 4)), AskDay = Math.Max(0, I(c, 5)), AskTo = Math.Max(0, I(c, 6)),
                                         AskRest = Math.Max(0, I(c, 7)), PoachDay = Math.Max(0, I(c, 8)), PoachOffer = Math.Max(0, I(c, 9)), PoachRest = Math.Max(0, I(c, 10)),
-                                        LeaveDay = Math.Max(0, I(c, 11)), Rival = c.Length > 12 ? c[12] : string.Empty
+                                        LeaveDay = Math.Max(0, I(c, 11)), Rival = c.Length > 12 ? c[12] : string.Empty,
+                                        LateDays = CompanyCatalogue.Clamp(I(c, 13), 0, CompanyCatalogue.LateMost)
                                     });
                                 }
                             }
