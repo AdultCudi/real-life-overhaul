@@ -13,7 +13,8 @@ namespace RealLifeOverhaul.Ui
     public sealed partial class FlareScreen : IUiScreen, IUiTypingSubmit, IUiTypingQuiet, IFlareKitHost
     {
         public const int FeedMost = 100, NoticesMost = FlareDirector.KitNoticesMost, ThreadsMost = 40, BubblesMost = 80, ResultsMost = 30, ReviewsMost = 40,
-            InfluencersMost = 30, CardsMost = 24, StoriesMost = FlareFace.MostStories, WhoMost = 5, ExploreWhoMost = 12, TrendsMost = 5, HistoryMost = 8, NeedsMost = 4;   // the side drops the rows that do not fit
+            InfluencersMost = 30, CardsMost = 24, StoriesMost = FlareFace.MostStories, WhoMost = 5, ExploreWhoMost = 12, TrendsMost = 5, HistoryMost = 8,
+            NeedsMost = 4;   // the side drops the rows that do not fit
 
         private readonly FlareDirector _flare;
         private readonly FlareFaceModel _m = new FlareFaceModel();

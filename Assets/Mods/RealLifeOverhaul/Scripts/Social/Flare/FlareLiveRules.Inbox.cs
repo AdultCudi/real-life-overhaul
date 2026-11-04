@@ -26,8 +26,8 @@ namespace RealLifeOverhaul.Flare
         public const int NoticeHour = 21;      // the evening a day's follows and a campaign's post are told at
         public const int OfferHour = 9;        // the morning an offer comes in
 
-        private static readonly List<string> _tagScratch = new List<string>(4);
-        private static readonly List<int> _countScratch = new List<int>(4);
+        private static readonly List<string> TagScratch = new List<string>(4);
+        private static readonly List<int> CountScratch = new List<int>(4);
         private static readonly Comparison<FlareNotice> Newest = (a, b) => b.At.CompareTo(a.At);
         private static readonly Comparison<FlareThread> NewestThread = (a, b) => b.At.CompareTo(a.At);
 
@@ -91,7 +91,7 @@ namespace RealLifeOverhaul.Flare
                     });
                 }
             }
-            FlareNoticeRules.AddDerived(f, now, ads, into, _tagScratch, _countScratch);
+            FlareNoticeRules.AddDerived(f, now, ads, into, TagScratch, CountScratch);
             into.Sort(Newest);
             if (into.Count > most)
             {

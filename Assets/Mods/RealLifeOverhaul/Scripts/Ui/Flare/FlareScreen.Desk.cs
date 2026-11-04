@@ -293,11 +293,13 @@ namespace RealLifeOverhaul.Ui
             st.Creator = FlareText.Money((int)Math.Min(int.MaxValue, last / 100));
             if (in_ < 0)
             {
-                st.CreatorLine = FlareText.Fill("reallife_flare_kit_creator_locked", "tier", FlareText.Tier(FlareTier.Influencer), "count", FlareFeedRules.Count(FlareRules.TierFrom[(int)FlareTier.Influencer]));
+                st.CreatorLine = FlareText.Fill("reallife_flare_kit_creator_locked", "tier", FlareText.Tier(FlareTier.Influencer), "count",
+                    FlareFeedRules.Count(FlareRules.TierFrom[(int)FlareTier.Influencer]));
             }
             else if (last > 0)
             {
-                st.CreatorLine = FlareText.Fill("reallife_flare_kit_creator_paid", "total", FlareText.Money((int)Math.Min(int.MaxValue, total / 100)), "days", in_.ToString(CultureInfo.InvariantCulture));
+                st.CreatorLine = FlareText.Fill("reallife_flare_kit_creator_paid", "total", FlareText.Money((int)Math.Min(int.MaxValue, total / 100)), "days",
+                    in_.ToString(CultureInfo.InvariantCulture));
             }
             else
             {

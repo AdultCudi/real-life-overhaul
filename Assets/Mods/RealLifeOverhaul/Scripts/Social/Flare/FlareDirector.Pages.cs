@@ -53,7 +53,8 @@ namespace RealLifeOverhaul.Flare
             }
             _file.Bio = FlareDeskRules.CleanBio(bio);
             _file.Banner = FlareDeskRules.CleanBanner(banner);
-            Logger?.Info("Flare: the player wrote their profile (" + (_file.Bio != null ? _file.Bio.Length + " characters" : "no words") + ", " + (_file.Banner != null ? "a banner picked" : "the newest picture across it") + ").");
+            Logger?.Info("Flare: the player wrote their profile (" + (_file.Bio != null ? _file.Bio.Length + " characters" : "no words") + ", "
+                         + (_file.Banner != null ? "a banner picked" : "the newest picture across it") + ").");
             Changed();
             return true;
         }

@@ -55,7 +55,8 @@ namespace RealLifeOverhaul.Flare
             int best = -1, bestRating = 0;
             for (int i = 0; i < bt.Count && i < c.BusinessCount; i++)
             {
-                if (i == b || bt.Kind[i] != bt.Kind[b] || bt.District[i] != bt.District[b] || bt.Owner[i] == (byte)Population.Owner.Player || bt.Owner[i] == (byte)Population.Owner.Guest || bt.Key[i] == null)
+                bool theirs = bt.Owner[i] != (byte)Population.Owner.Player && bt.Owner[i] != (byte)Population.Owner.Guest;
+                if (i == b || bt.Kind[i] != bt.Kind[b] || bt.District[i] != bt.District[b] || !theirs || bt.Key[i] == null)
                 {
                     continue;
                 }
