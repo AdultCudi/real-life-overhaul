@@ -143,6 +143,7 @@ internal static partial class Program
         if (args.Length == 1 && args[0] == "--estate-w4")
         {
             EstateWave4();
+            DealerWave4();
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -621,6 +622,7 @@ internal static partial class Program
         MomCall();   // the family dinner call: the ring answered from its notice and the phone, the dinner offered by Mom's call and Family, one table of dates (MomCallChecks.cs)
         Estate();
         EstateWave4();   // named tenants, the rent record, booked servicing, improvements, the city's rents and their save (EstateWave4Checks.cs)
+        DealerWave4();   // the other dealers' cars and prices, looks, an auction's bids and their save (DealerWave4Checks.cs)
         Online();
         Logistics();   // delivery trips and food spoilage: departures, timeline, loads, fuel, wages, the rivals' books, batches, shelf life and both saves (LogisticsChecks.cs)
         Services();

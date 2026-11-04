@@ -27,6 +27,8 @@ namespace RealLifeOverhaul.Economy.Dealership
         public readonly List<DealerCover> Covers = new List<DealerCover>(16);
         public readonly List<DealerSale> Sales = new List<DealerSale>(DealerCatalogue.SalesKept);
         public readonly List<DealerDelivery> Deliveries = new List<DealerDelivery>(4);
+        /// <summary>The other dealers' cars (wave 4: reallife:dealer_rivals): what a buyer compares the player's price with.</summary>
+        public readonly List<RivalCar> Rivals = new List<RivalCar>(RivalRules.Most);
 
         /// <summary>The cars on their way to a showroom: each holds a place of its lot until it arrives.</summary>
         public int Inbound(string place)
@@ -237,6 +239,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         public int Spot = -1;               // its place on the lot
         public int OutUntil = -1;           // out on a test drive until this hour
         public int ShopUntil = -1;          // in the workshop until this hour
+        public int ViewsToday, ViewsLast;   // buyers who looked at it today and yesterday (wave 4: reallife:dealer_views)
     }
 
     /// <summary>A car of the day's market: a new one from the wholesaler, one a private owner sells, or a lot of the trade auction.</summary>
@@ -260,6 +263,20 @@ namespace RealLifeOverhaul.Economy.Dealership
         public int Ceiling;                 // a lot: the most the room will bid
         public int Bids;                    // a lot: bids made so far
         public bool Gone;                   // sold to someone else, withdrawn or bought: kept for the day so the app can say so
+        public readonly BidEntry[] BidLog = new BidEntry[DealerCatalogue.BidsKept];   // a lot: the last bids, newest first (wave 4: reallife:dealer_bids)
+        public int BidLogCount;
+
+        /// <summary>A bid is written first in the log; the oldest falls off the end.</summary>
+        public void LogBid(int bidder, int hour, int amount)
+        {
+            int keep = System.Math.Min(BidLog.Length, BidLogCount + 1);
+            for (int i = keep - 1; i > 0; i--)
+            {
+                BidLog[i] = BidLog[i - 1];
+            }
+            BidLog[0] = new BidEntry { Bidder = bidder, Hour = hour, Amount = amount };
+            BidLogCount = keep;
+        }
     }
 
     /// <summary>A customer's offer on a car of a dealership's.</summary>
@@ -287,6 +304,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         public int TradeKm, TradeCondition, TradeAllowance;
         public int Extras;                  // a bit for each extra they would take (DealerCatalogue.ExtraKinds)
         public int Lift;                    // added to the chance a counter is taken: an event that ran when they came
+        public int Looks;                   // how many times they looked at the car before making the offer (wave 4: reallife:dealer_views)
     }
 
     /// <summary>A car sold on the dealership's own finance: what is still owed, and how it is being paid.</summary>

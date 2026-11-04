@@ -64,6 +64,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             if (_state.MarketDay != day)
             {
                 DealerRules.Morning(_state, day, _models, _colours, level);
+                RivalRules.Morning(_state, day, _models, level);
                 for (int y = 0; y < _state.Yards.Count; y++)
                 {
                     DealerRules.CloseDay(_state, _state.Yards[y], day);

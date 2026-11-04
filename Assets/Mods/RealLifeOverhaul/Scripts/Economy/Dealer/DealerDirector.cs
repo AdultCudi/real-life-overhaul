@@ -198,6 +198,11 @@ namespace RealLifeOverhaul.Economy.Dealership
             DealerType.Dress();
             DealerGame.Models(_models, _colours);
             int gone = ReadYards(), lost = Reconcile();
+            DealerExtraStore.Read(_state, save.modData);
+            if (_state.Rivals.Count == 0)
+            {
+                RivalRules.Morning(_state, save.Day, _models, Prices.Level);   // a save from before has no rival cars yet: they are put out at once
+            }
             int now = Now;
             bool gap = _state.LastHour < 0 || now - _state.LastHour > CatchUp || now < _state.LastHour;
             if (gap)
@@ -545,6 +550,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 save.modData = new Dictionary<string, string>();
             }
             save.modData[DealerStore.Key] = DealerStore.Write(_state);
+            DealerExtraStore.Write(_state, save.modData);
             WriteBays(save);
             if (_beforeTests != null)
             {
