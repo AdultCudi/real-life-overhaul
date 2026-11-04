@@ -26641,5 +26641,21 @@
   "reallife_svc_rsale_takings": "Hasılatı: haftada yaklaşık {amount}.",
   "reallife_svc_rsale_how": "Onu BizMan'deki bir devralma gibi, aynı diplomalarla satın alırsınız. Orada sizin işletmeniz olur.",
   "reallife_svc_rsale_buy": "Bu işletmeyi satın al",
-  "reallife_hud_fast_why": "Oyun hızlı ileri almayı yalnızca bunu destekleyen bir etkinlik sırasında, bir binanın içinde sunar."
+  "reallife_hud_fast_why": "Oyun hızlı ileri almayı yalnızca bunu destekleyen bir etkinlik sırasında, bir binanın içinde sunar.",
+  "reallife_study_why_floor": "Kursun istediği bir beceri asgari seviyenin altında.",
+  "reallife_study_why_seats": "Bu kursun tüm koltukları dolu.",
+  "reallife_work_note_passed_over": "{name}, {employer} şirketinde bir sonraki basamağı aldı: haftalar boyunca kaydı sizinkinden daha iyiydi.",
+  "reallife_work_note_other_got_it": "{name}, {employer} şirketinde pozisyonu aldı: işveren tüm adayları değerlendirdi ve bu kişiyi seçti.",
+  "reallife_study_note_employee_follows": "Ekibinizden {name} de {course} kursuna kaydoldu.",
+  "reallife_hustle_thing_espresso_machine": "Espresso makinesi",
+  "reallife_hustle_thing_commercial_grill": "Ticari ızgara",
+  "reallife_hustle_thing_display_fridge": "Vitrin buzdolabı",
+  "reallife_hustle_thing_dough_mixer": "Hamur yoğurma makinesi",
+  "reallife_hustle_thing_chest_freezer": "Sandık tipi dondurucu",
+  "reallife_hustle_thing_coffee_pallet": "Kahve çekirdeği paleti",
+  "reallife_hustle_thing_flour_pallet": "Un paleti",
+  "reallife_hustle_thing_tinned_goods_lot": "Konserve ürün partisi",
+  "reallife_hustle_thing_bottled_water_lot": "Şişe su partisi",
+  "reallife_hustle_kind_machine": "Makine",
+  "reallife_hustle_kind_stock": "Stok"
 }

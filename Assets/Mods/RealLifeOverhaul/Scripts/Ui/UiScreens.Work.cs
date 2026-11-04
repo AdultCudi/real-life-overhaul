@@ -1,0 +1,118 @@
+using System.Collections.Generic;
+
+namespace RealLifeOverhaul.Ui
+{
+    public static partial class UiScreens
+    {
+        // Career, Campus, Open Roles and the Marketplace: each an app window on the kit, each with its own switch in the work section.
+        static partial void AddWork(List<UiScreenDef> screens)
+        {
+            string[] keys = WorkKeys();
+            screens.Add(new UiScreenDef("career", UiTemplate.AppWindow, "WorkScreen", keys).Switch(UiScreenSwitches.Work));
+            screens.Add(new UiScreenDef("campus", UiTemplate.AppWindow, "WorkScreen", keys).Switch(UiScreenSwitches.Work));
+            screens.Add(new UiScreenDef("open_roles", UiTemplate.AppWindow, "WorkScreen", keys).Switch(UiScreenSwitches.Work));
+            screens.Add(new UiScreenDef("marketplace", UiTemplate.AppWindow, "WorkScreen", keys).Switch(UiScreenSwitches.Work));
+        }
+
+        // Every label the work apps write (the pages ask for these and no others).
+        private static string[] WorkKeys()
+        {
+            return new[]
+            {
+                "reallife_campus_app", "reallife_campus_button_child_decline", "reallife_campus_button_child_pay",
+                "reallife_campus_button_graduate", "reallife_campus_button_pay", "reallife_campus_button_withdraw",
+                "reallife_campus_col_attended", "reallife_campus_col_course", "reallife_campus_col_exam",
+                "reallife_campus_col_fee", "reallife_campus_col_length", "reallife_campus_col_next",
+                "reallife_campus_col_school", "reallife_campus_tab_courses", "reallife_campus_tab_family",
+                "reallife_campus_tab_results", "reallife_campus_tab_schools", "reallife_campus_tab_skills",
+                "reallife_campus_tab_studying", "reallife_career_app", "reallife_career_button_accept",
+                "reallife_career_button_apply", "reallife_career_button_ask_large", "reallife_career_button_ask_small",
+                "reallife_career_button_campus", "reallife_career_button_decline", "reallife_career_button_interview",
+                "reallife_career_button_map", "reallife_career_button_register", "reallife_career_button_resign",
+                "reallife_career_button_vacancies", "reallife_career_button_withdraw", "reallife_career_col_pay",
+                "reallife_career_col_where", "reallife_career_confirm_resign_body", "reallife_career_confirm_resign_title",
+                "reallife_career_job_none", "reallife_career_job_retired", "reallife_career_kind_applied",
+                "reallife_career_off_body", "reallife_career_row_now", "reallife_career_row_rate",
+                "reallife_career_row_spell", "reallife_career_tab_applications", "reallife_career_tab_cv",
+                "reallife_career_tab_ladder", "reallife_career_tab_own", "reallife_career_tab_start",
+                "reallife_hire_button_shortlist", "reallife_hustle_app", "reallife_hustle_button_book",
+                "reallife_hustle_button_cancel", "reallife_hustle_button_decline", "reallife_hustle_button_offer",
+                "reallife_hustle_button_unlist", "reallife_hustle_tab_freelance", "reallife_hustle_tab_listings",
+                "reallife_hustle_tab_offers", "reallife_hustle_tab_yours", "reallife_ibox_chip_leaving",
+                "reallife_ladder_aiming", "reallife_ladder_button_no", "reallife_ladder_button_up",
+                "reallife_ladder_button_yes", "reallife_ladder_empty", "reallife_ladder_task_cover",
+                "reallife_ladder_task_demand", "reallife_ladder_task_hire", "reallife_life_button_retire",
+                "reallife_life_button_rise", "reallife_own_button_drop", "reallife_own_button_take",
+                "reallife_own_kind_open", "reallife_roles_app", "reallife_roles_tab_applicants",
+                "reallife_roles_tab_jobs", "reallife_roles_tab_market", "reallife_roles_tab_search",
+                "reallife_roles_tab_team", "reallife_study_why_already", "reallife_study_why_floor",
+                "reallife_study_why_passed", "reallife_study_why_seats", "reallife_ui_prompt_back",
+                "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_work_accept_at",
+                "reallife_work_ad_closed", "reallife_work_ad_line", "reallife_work_ad_open",
+                "reallife_work_already_hired", "reallife_work_already_shortlisted", "reallife_work_also_applied",
+                "reallife_work_app_line", "reallife_work_button_open", "reallife_work_buy_now",
+                "reallife_work_by_gpa", "reallife_work_cat_furniture", "reallife_work_cat_machines",
+                "reallife_work_cat_stock", "reallife_work_cat_vehicles", "reallife_work_class_rank",
+                "reallife_work_classes_desk", "reallife_work_classmate", "reallife_work_close_ad",
+                "reallife_work_col_against", "reallife_work_col_against_worth", "reallife_work_col_answer",
+                "reallife_work_col_applicant", "reallife_work_col_applicants", "reallife_work_col_asked",
+                "reallife_work_col_asking", "reallife_work_col_asks", "reallife_work_col_buyer",
+                "reallife_work_col_child", "reallife_work_col_client", "reallife_work_col_credits",
+                "reallife_work_col_due", "reallife_work_col_fee", "reallife_work_col_firm",
+                "reallife_work_col_first_post", "reallife_work_col_from", "reallife_work_col_going_rate",
+                "reallife_work_col_grade", "reallife_work_col_hours", "reallife_work_col_job",
+                "reallife_work_col_level", "reallife_work_col_looking", "reallife_work_col_matter",
+                "reallife_work_col_offer", "reallife_work_col_open", "reallife_work_col_paid",
+                "reallife_work_col_pay", "reallife_work_col_pay_from", "reallife_work_col_pay_hour",
+                "reallife_work_col_pay_up_to", "reallife_work_col_place", "reallife_work_col_post_held",
+                "reallife_work_col_posts", "reallife_work_col_pupils", "reallife_work_col_results",
+                "reallife_work_col_role", "reallife_work_col_rung", "reallife_work_col_seats",
+                "reallife_work_col_seller", "reallife_work_col_sent", "reallife_work_col_skill",
+                "reallife_work_col_stage", "reallife_work_col_state", "reallife_work_col_thing",
+                "reallife_work_col_to", "reallife_work_col_trade", "reallife_work_col_where",
+                "reallife_work_col_who", "reallife_work_col_worth", "reallife_work_competing_offer",
+                "reallife_work_contract_line", "reallife_work_credits_earned", "reallife_work_cv_now",
+                "reallife_work_decide", "reallife_work_empty_applications", "reallife_work_empty_cv",
+                "reallife_work_empty_jobs", "reallife_work_empty_management", "reallife_work_empty_own",
+                "reallife_work_empty_professions", "reallife_work_enrol_for", "reallife_work_exam_open",
+                "reallife_work_filter_all", "reallife_work_filter_near", "reallife_work_filter_open",
+                "reallife_work_filter_qualify", "reallife_work_floor_line", "reallife_work_gig_line",
+                "reallife_work_gpa", "reallife_work_group_career", "reallife_work_group_find",
+                "reallife_work_haggled_out", "reallife_work_hire_at", "reallife_work_in_class",
+                "reallife_work_kind_higher", "reallife_work_kind_short", "reallife_work_kind_trade",
+                "reallife_work_ladder_at", "reallife_work_list_at", "reallife_work_listing_line",
+                "reallife_work_market_lead", "reallife_work_market_off", "reallife_work_months",
+                "reallife_work_more_from", "reallife_work_n_people", "reallife_work_nav_applications",
+                "reallife_work_nav_cv", "reallife_work_nav_jobs", "reallife_work_nav_management",
+                "reallife_work_nav_my_job", "reallife_work_nav_own", "reallife_work_nav_professions",
+                "reallife_work_need_qualified", "reallife_work_need_skills", "reallife_work_needs_course",
+                "reallife_work_needs_licence", "reallife_work_needs_met", "reallife_work_needs_more",
+                "reallife_work_next_shift", "reallife_work_no_ads", "reallife_work_no_applicants",
+                "reallife_work_no_children", "reallife_work_no_gigs", "reallife_work_no_listings",
+                "reallife_work_no_money", "reallife_work_no_offers", "reallife_work_no_results",
+                "reallife_work_no_schools", "reallife_work_no_skills", "reallife_work_no_team",
+                "reallife_work_no_yours", "reallife_work_not_passed", "reallife_work_not_yet",
+                "reallife_work_not_yet_graduate", "reallife_work_nothing_here", "reallife_work_nothing_owed",
+                "reallife_work_nothing_studying", "reallife_work_nothing_to_decide", "reallife_work_off",
+                "reallife_work_offer_line", "reallife_work_on_shift", "reallife_work_open_to_you",
+                "reallife_work_over", "reallife_work_owned_line", "reallife_work_passed",
+                "reallife_work_post_line", "reallife_work_prof_line", "reallife_work_rank_of",
+                "reallife_work_rated", "reallife_work_record", "reallife_work_result_line",
+                "reallife_work_rival_note", "reallife_work_rival_offer", "reallife_work_roles_off",
+                "reallife_work_rung_next", "reallife_work_rung_you", "reallife_work_search_lead",
+                "reallife_work_self_taught", "reallife_work_skills_lead", "reallife_work_so_far",
+                "reallife_work_sold_elsewhere", "reallife_work_stand_performance", "reallife_work_stand_punctuality",
+                "reallife_work_stand_reliability", "reallife_work_stand_teamwork", "reallife_work_standing",
+                "reallife_work_status_late", "reallife_work_status_on_time", "reallife_work_student",
+                "reallife_work_studying_line", "reallife_work_tag_discount", "reallife_work_take_counter",
+                "reallife_work_teacher", "reallife_work_transcript", "reallife_work_under",
+                "reallife_work_under_way", "reallife_work_underway", "reallife_work_up_for_post",
+                "reallife_work_walk_away", "reallife_work_week_hours", "reallife_work_week_pay",
+                "reallife_work_why_applied", "reallife_work_why_skills", "reallife_work_why_unqualified",
+                "reallife_work_with_them", "reallife_work_years", "reallife_work_you_mark",
+                "reallife_work_you_qualify", "reallife_work_your_class", "reallife_work_your_lead",
+                "reallife_work_your_team"
+            };
+        }
+    }
+}

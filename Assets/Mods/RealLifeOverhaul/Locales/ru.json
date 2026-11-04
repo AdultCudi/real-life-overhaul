@@ -26641,5 +26641,21 @@
   "reallife_svc_rsale_takings": "Выручка: около {amount} в неделю.",
   "reallife_svc_rsale_how": "Вы покупаете его так же, как при поглощении в BizMan, с теми же дипломами. Он становится вашим бизнесом там.",
   "reallife_svc_rsale_buy": "Купить этот бизнес",
-  "reallife_hud_fast_why": "В игре ускорение времени доступно только во время занятия, которое его допускает, внутри здания."
+  "reallife_hud_fast_why": "В игре ускорение времени доступно только во время занятия, которое его допускает, внутри здания.",
+  "reallife_study_why_floor": "Навык, который требует курс, ниже нужного уровня.",
+  "reallife_study_why_seats": "Все места на этом курсе заняты.",
+  "reallife_work_note_passed_over": "{name} получил следующую ступень в {employer}: его показатели за недели были лучше ваших.",
+  "reallife_work_note_other_got_it": "{name} получил должность в {employer}: работодатель оценил всех кандидатов и выбрал именно этого человека.",
+  "reallife_study_note_employee_follows": "{name} из вашей команды тоже записался на {course}.",
+  "reallife_hustle_thing_espresso_machine": "Эспрессо-машина",
+  "reallife_hustle_thing_commercial_grill": "Профессиональный гриль",
+  "reallife_hustle_thing_display_fridge": "Витринный холодильник",
+  "reallife_hustle_thing_dough_mixer": "Тестомес",
+  "reallife_hustle_thing_chest_freezer": "Морозильный ларь",
+  "reallife_hustle_thing_coffee_pallet": "Паллета с кофейными зернами",
+  "reallife_hustle_thing_flour_pallet": "Паллета с мукой",
+  "reallife_hustle_thing_tinned_goods_lot": "Партия консервов",
+  "reallife_hustle_thing_bottled_water_lot": "Партия бутилированной воды",
+  "reallife_hustle_kind_machine": "Машина",
+  "reallife_hustle_kind_stock": "Запасы"
 }

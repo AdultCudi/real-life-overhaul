@@ -26641,5 +26641,21 @@
   "reallife_svc_rsale_takings": "Son chiffre d'affaires : environ {amount} par semaine.",
   "reallife_svc_rsale_how": "Vous l'achetez comme lors d'un rachat dans BizMan, avec les mêmes diplômes. Elle devient votre entreprise à cet endroit.",
   "reallife_svc_rsale_buy": "Acheter cette entreprise",
-  "reallife_hud_fast_why": "Le jeu n'offre l'avance rapide que pendant une activité qui la permet, dans un bâtiment."
+  "reallife_hud_fast_why": "Le jeu n'offre l'avance rapide que pendant une activité qui la permet, dans un bâtiment.",
+  "reallife_study_why_floor": "Une compétence exigée par le cours est en dessous du minimum.",
+  "reallife_study_why_seats": "Toutes les places de ce cours sont prises.",
+  "reallife_work_note_passed_over": "{name} a obtenu l'échelon suivant chez {employer} : son dossier sur les semaines était meilleur que le vôtre.",
+  "reallife_work_note_other_got_it": "{name} a obtenu le poste chez {employer} : l'employeur a étudié chaque candidature et a choisi cette personne.",
+  "reallife_study_note_employee_follows": "{name}, de votre équipe, s'est aussi inscrit à {course}.",
+  "reallife_hustle_thing_espresso_machine": "Machine à espresso",
+  "reallife_hustle_thing_commercial_grill": "Grill professionnel",
+  "reallife_hustle_thing_display_fridge": "Vitrine réfrigérée",
+  "reallife_hustle_thing_dough_mixer": "Pétrin",
+  "reallife_hustle_thing_chest_freezer": "Congélateur coffre",
+  "reallife_hustle_thing_coffee_pallet": "Palette de grains de café",
+  "reallife_hustle_thing_flour_pallet": "Palette de farine",
+  "reallife_hustle_thing_tinned_goods_lot": "Lot de conserves",
+  "reallife_hustle_thing_bottled_water_lot": "Lot d'eau en bouteille",
+  "reallife_hustle_kind_machine": "Machine",
+  "reallife_hustle_kind_stock": "Stock"
 }
