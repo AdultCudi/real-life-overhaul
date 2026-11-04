@@ -29,7 +29,7 @@ namespace RealLifeOverhaul.Ui
             Column(s, at, m.Left, actions, amounts, x, y, cw, bottom, keys);
             if (two)
             {
-                Column(s, at, m.Right, actions, amounts, x + cw + gap, y, w - cw - gap, bottom, keys);
+                Column(s, at, m.Right, actions, amounts, x + cw + gap, y, UiDraw.SnapDown(w - cw - gap), bottom, keys);
             }
         }
 

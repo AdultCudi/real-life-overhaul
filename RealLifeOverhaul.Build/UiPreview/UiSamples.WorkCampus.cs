@@ -163,10 +163,8 @@ internal static partial class UiSamples
             }
             entries.Add(new UiDiaryEntry { Day = 9, Icon = UiIcon.ClipboardText, Title = w.F("reallife_work_diary_homework", "Homework due: {course}", "course", "Introduction to Accounting") });
             entries.Add(new UiDiaryEntry { Day = 16, Icon = UiIcon.ClipboardText, Title = w.F("reallife_work_diary_homework", "Homework due: {course}", "course", "Spanish, Level 1") });
-            entries.Add(new UiDiaryEntry { Day = 20, Icon = UiIcon.Coin, Title = w.F("reallife_work_diary_fee", "Fee instalment, {course}", "course", "Retail Management"), Value = "$700" });
             entries.Add(new UiDiaryEntry { Day = 23, Icon = UiIcon.Scales, Title = w.F("reallife_work_diary_exam", "Exam: {course}", "course", "Introduction to Accounting"), Value = "10:00" });
             entries.Add(new UiDiaryEntry { Day = 26, Icon = UiIcon.Scales, Title = w.F("reallife_work_diary_oral", "Oral test: {course}", "course", "Spanish, Level 1"), Value = "19:00" });
-            entries.Add(new UiDiaryEntry { Day = 27, Icon = UiIcon.ClipboardText, Title = w.F("reallife_work_diary_homework", "Homework due: {course}", "course", "Spanish, Level 1") });
         }
         m.Entries = entries.ToArray();
         t.Diary = new WorkDiary { Month = m };

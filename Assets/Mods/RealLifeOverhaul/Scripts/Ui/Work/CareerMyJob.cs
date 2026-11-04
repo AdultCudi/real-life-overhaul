@@ -17,7 +17,7 @@ namespace RealLifeOverhaul.Ui
         {
             // the profile's own buttons: leaving first and quiet, the main one last
             var ordered = new List<UiActionModel>(4);
-            ordered.AddRange(leave);
+            more.InsertRange(0, leave);   // leaving is a row of its own under the head: in a long language the head's buttons would stand over its status
             if (heads.Count > 1)
             {
                 ordered.Add(heads[1]);
