@@ -26,20 +26,20 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Portrait(s, on, cx + UiDraw.SnapDown((Side - face) / 2f), cy + UiTokens.S8, face, seller, UiColour.HueOf(seller), UiRole.None);
             float ny = cy + UiTokens.S8 + face + UiTokens.S4;
             UiDraw.Text(s, on, cx + UiTokens.S4, ny, Side - UiTokens.S4 * 2f, UiStyle.Title, UiRole.Text, seller, UiFlags.Centre | UiFlags.Truncate);
-            ny += UiTextRules.LineHeight(UiStyle.Title) + UiTokens.S1;
+            ny += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)) + UiTokens.S1;
             UiDraw.Text(s, on, cx + UiTokens.S4, ny, Side - UiTokens.S4 * 2f, UiStyle.Small, UiRole.Text2, r.Line, UiFlags.Centre | UiFlags.Truncate);
-            ny += UiTextRules.LineHeight(UiStyle.Small) + UiTokens.S3;
+            ny += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S3;
             if (!string.IsNullOrEmpty(r.Status))
             {
                 float chip = Math.Min(Side - UiTokens.S4 * 2f, UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(r.Status, UiStyle.SmallStrong) + UiTokens.S1));
                 UiDraw.Chip(s, on, cx + (Side - chip) / 2f, ny, r.Status, r.Tone, chip);
             }
             // the card's words at the right
-            float tx = cx + Side + UiTokens.S8, ty = cy + UiTokens.S8;
+            float tx = UiDraw.Snap(cx + Side + UiTokens.S8), ty = cy + UiTokens.S8;
             UiDraw.Text(s, on, tx, ty, inner, UiStyle.SectionHeader, UiRole.Text2, r.Kicker, UiFlags.Label | UiFlags.Truncate);
-            ty += UiTextRules.LineHeight(UiStyle.SectionHeader) + UiTokens.S2;
+            ty += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2;
             UiDraw.Text(s, on, tx, ty, inner, UiStyle.AppTitle, UiRole.AccentText, r.Name, UiFlags.Label | UiFlags.Truncate);
-            ty += UiTextRules.LineHeight(UiStyle.AppTitle) + UiTokens.S4;
+            ty += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.AppTitle)) + UiTokens.S4;
             if (!string.IsNullOrEmpty(r.Sentence))
             {
                 int id = UiDraw.Text(s, on, tx, ty, inner, UiStyle.Body, UiRole.Text2, r.Sentence, UiFlags.Wrap | UiFlags.Truncate, 3);
@@ -48,25 +48,25 @@ namespace RealLifeOverhaul.Ui
             if (r.Figures.Count > 0)
             {
                 float slot = UiDraw.SnapDown(inner / r.Figures.Count);
-                float lh = UiTextRules.LineHeight(UiStyle.SectionHeader);
+                float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader));
                 for (int i = 0; i < r.Figures.Count; i++)
                 {
                     UiDraw.Text(s, on, tx + i * slot, ty, slot - UiTokens.S3, UiStyle.SectionHeader, UiRole.Text2, r.Figures[i].Key, UiFlags.Label | UiFlags.Truncate);
                     UiDraw.Text(s, on, tx + i * slot, ty + lh + UiTokens.S1, slot - UiTokens.S3, UiStyle.Number, UiRole.Text, r.Figures[i].Value, UiFlags.Truncate);
                 }
-                ty += lh + UiTokens.S1 + UiTextRules.LineHeight(UiStyle.Number) + UiTokens.S5;
+                ty += lh + UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Number)) + UiTokens.S5;
             }
             if (amounts.Length > 0)
             {
                 string label = r.Hint;
                 UiDraw.Text(s, on, tx, ty, inner, UiStyle.SectionHeader, UiRole.Text2, label, UiFlags.Label | UiFlags.Truncate);
-                ty += UiTextRules.LineHeight(UiStyle.SectionHeader) + UiTokens.S2;
+                ty += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2;
                 WorkAmount a = amounts[0];
-                UiDraw.Stepper(s, on, tx, ty, Math.Min(inner, 320f), a.Figure, a.CanLess, a.CanMore, WorkCmd.Less, WorkCmd.Type, WorkCmd.More, 0, false);
+                UiDraw.Stepper(s, on, tx, ty, UiDraw.SnapDown(Math.Min(inner, 320f)), a.Figure, a.CanLess, a.CanMore, WorkCmd.Less, WorkCmd.Type, WorkCmd.More, 0, false);
                 ty += UiTokens.Control + UiTokens.S5;
             }
             // the choices stand at the card's foot: a button and what choosing it does, in a column of one width
-            float foot = choices.Length * (Choice + UiTokens.S2) + (string.IsNullOrEmpty(why) ? 0f : UiTextRules.LineHeight(UiStyle.Small) + UiTokens.S2);
+            float foot = choices.Length * (Choice + UiTokens.S2) + (string.IsNullOrEmpty(why) ? 0f : UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2);
             ty = Math.Max(ty, cy + ch - UiTokens.S8 - foot);
             float bw = 0f;
             for (int i = 0; i < choices.Length; i++)

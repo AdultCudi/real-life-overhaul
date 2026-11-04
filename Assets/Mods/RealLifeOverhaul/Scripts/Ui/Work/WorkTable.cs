@@ -58,7 +58,7 @@ namespace RealLifeOverhaul.Ui
             float aside = m.Aside != null ? AsideWidth : 0f;
             float gap = UiTokens.S6;
             float ax = x, tx = x + aside + (aside > 0f ? gap : 0f);
-            float tw = w - aside - (aside > 0f ? gap : 0f) - panel - (panel > 0f ? gap : 0f);
+            float tw = UiDraw.SnapDown(w - aside - (aside > 0f ? gap : 0f) - panel - (panel > 0f ? gap : 0f));
             if (m.Aside != null)
             {
                 Aside(s, at, m, ax, y, aside, bottom - y);
@@ -120,7 +120,7 @@ namespace RealLifeOverhaul.Ui
             float cx = x;
             for (int i = 0; i < m.Chips.Length; i++)
             {
-                cx += Chip(s, at, m.Chips[i], i == m.ChosenChip, cx, y + (UiTokens.Control - h) / 2f, h) + UiTokens.S2;
+                cx += Chip(s, at, m.Chips[i], i == m.ChosenChip, cx, y + UiDraw.SnapDown((UiTokens.Control - h) / 2f), h) + UiTokens.S2;
             }
             if (!string.IsNullOrEmpty(m.SearchHint))
             {
@@ -168,12 +168,12 @@ namespace RealLifeOverhaul.Ui
                 int face = UiDraw.Box(s, at, x + UiTokens.S2, iy, w - UiTokens.S2 * 2f, rowH, on ? UiRole.RowSel : UiRole.None, UiRole.None,
                     UiTokens.RadiusLarge, on ? UiFlags.Selected : UiFlags.None);
                 UiAt inside = at.In(face);
-                float tile = UiTokens.ControlSmall, tx = x + UiTokens.S3, ty = iy + (rowH - tile) / 2f;
+                float tile = UiTokens.ControlSmall, tx = x + UiTokens.S3, ty = iy + UiDraw.SnapDown((rowH - tile) / 2f);
                 int t = UiDraw.Tile(s, inside, tx, ty, tile, UiRole.None, false);
                 UiDraw.Icon(s, inside.In(t), tx + (tile - UiTokens.Icon) / 2f, ty + (tile - UiTokens.Icon) / 2f, UiTokens.Icon, r.Icon, r.Tint, UiFlags.Middle | UiFlags.Centre, true);
                 float count = string.IsNullOrEmpty(r.Status) ? 0f : UiTextRules.Width(r.Status, UiStyle.BodyStrong) + UiTokens.S1;
                 float nx = tx + tile + UiTokens.S3, nw = x + w - UiTokens.S3 - nx - count - (count > 0f ? UiTokens.S2 : 0f);
-                float lh = UiTextRules.LineHeight(UiStyle.Title), sh = UiTextRules.LineHeight(UiStyle.Small), top = iy + (rowH - lh - sh) / 2f;
+                float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)), top = iy + UiDraw.SnapDown((rowH - lh - sh) / 2f);
                 UiDraw.Text(s, inside, nx, top, nw, UiStyle.Title, UiRole.Text, r.Name, UiFlags.Truncate | UiFlags.Middle);
                 UiDraw.Text(s, inside, nx, top + lh, nw, UiStyle.Small, UiRole.Text2, r.Sub, UiFlags.Truncate | UiFlags.Middle);
                 if (count > 0f)
@@ -195,7 +195,7 @@ namespace RealLifeOverhaul.Ui
             if (!string.IsNullOrEmpty(a.Foot))
             {
                 float fh = UiTextRules.WrappedHeight(a.Foot, UiStyle.Small, w - UiTokens.S4 * 2f, 4);
-                UiDraw.Text(s, at, x + UiTokens.S4, y + h - UiTokens.S4 - fh, w - UiTokens.S4 * 2f, UiStyle.Small, UiRole.Text2, a.Foot, UiFlags.Wrap | UiFlags.Truncate, 4);
+                UiDraw.Text(s, at, x + UiTokens.S4, UiDraw.Snap(y + h - UiTokens.S4 - fh), w - UiTokens.S4 * 2f, UiStyle.Small, UiRole.Text2, a.Foot, UiFlags.Wrap | UiFlags.Truncate, 4);
             }
         }
 

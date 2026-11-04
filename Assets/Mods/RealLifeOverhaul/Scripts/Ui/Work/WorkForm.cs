@@ -218,7 +218,7 @@ namespace RealLifeOverhaul.Ui
                 case WorkField.Bar:
                     UiDraw.TextMiddle(s, at, x, y, UiTokens.PairRow, UiDraw.SnapDown(w * 0.34f), UiStyle.Body, UiRole.Text, r.Bar.Label, UiFlags.Truncate);
                     float label = UiDraw.SnapDown(w * 0.34f), value = UiTextRules.Width("100", UiStyle.BodyStrong) + UiTokens.S1;
-                    UiDraw.Meter(s, at, x + label, y + (UiTokens.PairRow - UiTokens.S1) / 2f, w - label - value - UiTokens.S2, UiTokens.S1, r.Bar.Value, UiTokens.Grade(r.Bar.Value));
+                    UiDraw.Meter(s, at, x + label, y + (UiTokens.PairRow - UiTokens.S1) / 2f, UiDraw.SnapDown(w - label - value - UiTokens.S2), UiTokens.S1, r.Bar.Value, UiTokens.Grade(r.Bar.Value));
                     UiDraw.TextMiddle(s, at, x + w - value, y, UiTokens.PairRow, value, UiStyle.BodyStrong, UiTokens.Grade(r.Bar.Value),
                         r.Bar.Value.ToString(System.Globalization.CultureInfo.InvariantCulture), UiFlags.Right);
                     break;
@@ -228,7 +228,7 @@ namespace RealLifeOverhaul.Ui
                     UiDraw.Icon(s, at.In(t), x + (tile - UiTokens.Icon) / 2f, ty + (tile - UiTokens.Icon) / 2f, UiTokens.Icon, r.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
                     float vw = string.IsNullOrEmpty(r.Value) ? 0f : Math.Min(w * 0.3f, UiTextRules.Width(r.Value, UiStyle.BodyStrong) + UiTokens.S1);
                     float tx = x + tile + UiTokens.S3, tw = w - tile - UiTokens.S3 - vw - (vw > 0f ? UiTokens.S2 : 0f);
-                    float lh = UiTextRules.LineHeight(UiStyle.Title), sh = UiTextRules.LineHeight(UiStyle.Small), top = y + (h - lh - sh) / 2f;
+                    float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)), top = y + (h - lh - sh) / 2f;
                     UiDraw.Text(s, at, tx, top, tw, UiStyle.Title, UiRole.Text, r.Label, UiFlags.Truncate | UiFlags.Middle);
                     UiDraw.Text(s, at, tx, top + lh, tw, UiStyle.Small, UiRole.Text2, r.Hint, UiFlags.Truncate | UiFlags.Middle);
                     if (vw > 0f)

@@ -67,7 +67,8 @@ internal static partial class UiSamples
         UiIcon[] icons = { UiIcon.PaintBrush, UiIcon.Headset, UiIcon.HardDrives, UiIcon.Globe, UiIcon.Bug };
         for (int i = 0; i < ads.Length; i++)
         {
-            var r = new WorkRow { Id = i + 1, Icon = icons[i], Name = ads[i][0], Sub = ads[i][1], Cells = new[] { null, ads[i][2], ads[i][3], ads[i][4], ads[i][5] }, Values = new[] { 0, 0, int.Parse(ads[i][3]) * 8, 0, 0 },
+            var r = new WorkRow { Id = i + 1, Icon = icons[i], Name = ads[i][0], Sub = ads[i][1], Cells = new[] { null, ads[i][2], ads[i][3],
+                ads[i][4], ads[i][5] }, Values = new[] { 0, 0, int.Parse(ads[i][3]) * 8, 0, 0 },
                 Status = ads[i][5], Tone = i == 3 ? UiRole.Warn : UiRole.Ok, Chip = ads[i][5], ChipTone = i == 3 ? UiRole.Warn : UiRole.Ok, Group = i };
             r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_pay_up_to", "Pay up to"), ads[i][4] + "/h"));
             r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_posts", "Posts to fill"), ads[i][2]));
@@ -90,11 +91,12 @@ internal static partial class UiSamples
                 hired.People.Add(new WorkPerson { Name = "Jonah Reyes", Role = "QA lead, day 394", Ring = UiRole.Ok });
                 r.Sections.Add(hired);
             }
-            r.Acts.Add(WkAct(WorkKinds.GoTab, w.T("reallife_hire_button_applicants", "Applicants"), UiButtonKind.Primary, UiIcon.People, null, true, 1));
+            r.Acts.Add(WkAct(WorkKinds.GoTab, w.T("reallife_hire_button_applicants", "Applicants"), UiButtonKind.Secondary, UiIcon.People, null, true, 1));
             r.Acts.Add(WkAct(104, w.T("reallife_work_close_ad", "Close the ad"), UiButtonKind.Destructive, UiIcon.Close, null, false, r.Id));
             t.Rows.Add(r);
         }
-        var rival = new WorkRow { Id = 90, Icon = UiIcon.Flag, Name = "Game designer", Sub = "Guo Interactive", Cells = new[] { null, "-", "-", "$44", "Rival ad" }, Status = "Rival ad", Tone = UiRole.Muted, Chip = "Rival ad", ChipTone = UiRole.Muted, Group = 9 };
+        var rival = new WorkRow { Id = 90, Icon = UiIcon.Flag, Name = "Game designer", Sub = "Guo Interactive", Cells = new[] { null, "-", "-", "$44",
+            "Rival ad" }, Status = "Rival ad", Tone = UiRole.Muted, Chip = "Rival ad", ChipTone = UiRole.Muted, Group = 9 };
         rival.Sentence = "A rival firm hires the same line and pays $44 an hour, 4% over the going rate. Their applicants may take an offer before yours.";
         t.Rows.Add(rival);
         return t;
@@ -130,7 +132,8 @@ internal static partial class UiSamples
         terms.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_pay_least", "Pay from"), Stepper = 4 });
         terms.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_skill", "Minimum skill"), Stepper = 5 });
         terms.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_days", "The ad runs"), Stepper = 7 });
-        terms.Rows.Add(new WorkFormRow { Field = WorkField.Switch, Label = w.T("reallife_work_ad_boost", "Boost the ad"), On = false, Act = WkAct(106, w.T("reallife_work_ad_boost", "Boost the ad"), UiButtonKind.Secondary, UiIcon.Rocket) });
+        terms.Rows.Add(new WorkFormRow { Field = WorkField.Switch, Label = w.T("reallife_work_ad_boost", "Boost the ad"), On = false, Act = WkAct(106,
+            w.T("reallife_work_ad_boost", "Boost the ad"), UiButtonKind.Secondary, UiIcon.Rocket) });
         form.Right.Add(terms);
         var sum = new WorkFormBand { Title = w.T("reallife_work_ad_summary", "What it comes to") };
         sum.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_ad_going", "Going rate"), Value = "$34.00" });
@@ -147,7 +150,8 @@ internal static partial class UiSamples
     {
         var t = new WorkTab { Shape = WorkShape.Table, Search = w.T("reallife_work_search_people", "Search people") };
         t.Columns = new[] { WkCol(w.T("reallife_work_col_applicant", "Applicant"), UiCellKind.Person), WkCol(w.T("reallife_work_skill_craft", "Craft"), UiCellKind.Meter, 120),
-            WkCol(w.T("reallife_work_skill_ideas", "Ideas"), UiCellKind.Meter, 120), WkCol(w.T("reallife_work_skill_team", "Team"), UiCellKind.Meter, 120), WkCol(w.T("reallife_work_col_asks", "Asks"), UiCellKind.Money, 72),
+            WkCol(w.T("reallife_work_skill_ideas", "Ideas"), UiCellKind.Meter, 120), WkCol(w.T("reallife_work_skill_team", "Team"), UiCellKind.Meter,
+                120), WkCol(w.T("reallife_work_col_asks", "Asks"), UiCellKind.Money, 72),
             WkCol(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 152) };
         t.EmptyTitle = w.T("reallife_work_no_applicants_title", "No applicants yet");
         t.EmptyBody = w.T("reallife_work_no_applicants", "Applicants arrive over a few days and other firms hire too. A boosted ad brings more.");
@@ -183,7 +187,8 @@ internal static partial class UiSamples
             bool competing = i == 0;
             UiRole tone = competing ? UiRole.Warn : p[6].StartsWith("Notice") ? UiRole.Muted : UiRole.Ok;
             var r = new WorkRow { Id = i + 1, Person = p[0], Name = p[0], Sub = "From " + p[1], Ring = UiRole.Ok, Group = 1, Cells = new[] { null, p[2], p[3], p[4], p[5], StateWord(w, p[6]) },
-                Values = new[] { 0, int.Parse(p[2]), int.Parse(p[3]), int.Parse(p[4]), 0, 0 }, Status = StateWord(w, p[6]), Tone = tone, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, tone } };
+                Values = new[] { 0, int.Parse(p[2]), int.Parse(p[3]), int.Parse(p[4]), 0, 0 }, Status = StateWord(w, p[6]), Tone = tone,
+                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, tone } };
             r.Open = WkAct(110, string.Empty, UiButtonKind.Secondary, UiIcon.Person, null, true, r.Id);
             r.Sub = "29, game designer at " + p[1] + " for 4 years";
             r.Sub = "From " + p[1];
@@ -198,8 +203,10 @@ internal static partial class UiSamples
             if (i == 0)
             {
                 var work = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_so_far_title", "Work so far") };
-                work.Pairs.Add(new KeyValuePair<string, string>(w.F("reallife_work_job_line", "{role}, {firm}", "role", w.T("reallife_work_role_designer", "Game designer"), "firm", "Tidewater Interactive"), w.F("reallife_work_years_now", "{n} years, now", "n", "4")));
-                work.Pairs.Add(new KeyValuePair<string, string>(w.F("reallife_work_job_line", "{role}, {firm}", "role", w.T("reallife_work_role_junior_designer", "Junior designer"), "firm", "Pixel Harbour Games"), w.F("reallife_work_n_years", "{n} years", "n", "2")));
+                work.Pairs.Add(new KeyValuePair<string, string>(w.F("reallife_work_job_line", "{role}, {firm}", "role",
+                    w.T("reallife_work_role_designer", "Game designer"), "firm", "Tidewater Interactive"), w.F("reallife_work_years_now", "{n} years, now", "n", "4")));
+                work.Pairs.Add(new KeyValuePair<string, string>(w.F("reallife_work_job_line", "{role}, {firm}", "role",
+                    w.T("reallife_work_role_junior_designer", "Junior designer"), "firm", "Pixel Harbour Games"), w.F("reallife_work_n_years", "{n} years", "n", "2")));
                 r.Sections.Add(work);
             }
             var fit = new WorkSection { Part = WorkPart.Checks, Title = w.T("reallife_work_fit_for_role", "Fit for the role") };
@@ -208,7 +215,9 @@ internal static partial class UiSamples
             r.Sections.Add(fit);
             if (competing)
             {
-                var offer = new WorkSection { Part = WorkPart.Note, Lead = w.T("reallife_work_competing_offer_lead", "Competing offer"), Text = w.F("reallife_work_rival_offer_line", "{rival} offered {pay} an hour. They answer by {day}. Offer at least as much to hire them.", "rival", "Guo Interactive", "pay", "$44", "day", "day 405"), NoteIcon = UiIcon.Flag };
+                var offer = new WorkSection { Part = WorkPart.Note, Lead = w.T("reallife_work_competing_offer_lead", "Competing offer"),
+                    Text = w.F("reallife_work_rival_offer_line",
+                    "{rival} offered {pay} an hour. They answer by {day}. Offer at least as much to hire them.", "rival", "Guo Interactive", "pay", "$44", "day", "day 405"), NoteIcon = UiIcon.Flag };
                 r.Sections.Add(offer);
             }
             int ask = int.Parse(p[5].Substring(1));
@@ -238,7 +247,8 @@ internal static partial class UiSamples
         if (state.StartsWith("Notice, "))
         {
             string n = state.Substring(8);
-            return w.F("reallife_work_notice_of", "Notice, {n}", "n", n.Replace("weeks", w.T("reallife_work_weeks_word", "weeks")).Replace("week", w.T("reallife_work_week_word", "week")).Replace("days", w.T("reallife_work_days_word", "days")));
+            return w.F("reallife_work_notice_of", "Notice, {n}", "n", n.Replace("weeks", w.T("reallife_work_weeks_word", "weeks")).Replace("week",
+                w.T("reallife_work_week_word", "week")).Replace("days", w.T("reallife_work_days_word", "days")));
         }
         return state;
     }
@@ -248,14 +258,17 @@ internal static partial class UiSamples
         var t = new WorkTab { Shape = WorkShape.Table, Search = w.T("reallife_work_search_people", "Search people"), AllWord = w.T("reallife_work_filter_all_word", "All"),
             Chips = new[] { w.T("reallife_work_family_creative", "Creative"), w.T("reallife_work_family_technical", "Technical"), w.T("reallife_work_family_support", "Support") } };
         t.Columns = new[] { WkCol(w.T("reallife_work_col_seeker", "Looking for work"), UiCellKind.Person), WkCol(w.T("reallife_work_col_level", "Level"), UiCellKind.Text, 96),
-            WkCol(w.T("reallife_work_skill_craft", "Craft"), UiCellKind.Meter, 120), WkCol(w.T("reallife_work_col_asks", "Asks"), UiCellKind.Money, 72), WkCol(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 152) };
+            WkCol(w.T("reallife_work_skill_craft", "Craft"), UiCellKind.Meter, 120), WkCol(w.T("reallife_work_col_asks", "Asks"), UiCellKind.Money,
+                72), WkCol(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 152) };
         t.EmptyTitle = w.T("reallife_work_market_empty_title", "Nobody is on the market");
         t.EmptyBody = w.T("reallife_work_market_lead", "Professionals looking for work show here by line. Post an ad and the ones who fit apply.");
         string[][] seekers =
         {
             new[] { "Dana Whelan", "Game design", "Mid", "74", "$34", "Looking", "0" }, new[] { "Pavel Novak", "Game design", "Senior", "86", "$48", "In work, 2 weeks", "0" },
-            new[] { "Mei Tanaka", "Support", "Junior", "55", "$21", "Looking", "2" }, new[] { "Owen Fraser", "Data centre", "Mid", "69", "$30", "Looking", "1" }, new[] { "Sade Bello", "Network", "Senior", "81", "$46", "In work, 4 weeks", "1" },
-            new[] { "Luca Ferri", "Game design", "Junior", "48", "$22", "Looking", "0" }, new[] { "Hanna Voss", "Support", "Mid", "66", "$26", "Looking", "2" }, new[] { "Idris Cole", "Testing", "Mid", "63", "$27", "Looking", "2" }
+            new[] { "Mei Tanaka", "Support", "Junior", "55", "$21", "Looking", "2" }, new[] { "Owen Fraser", "Data centre", "Mid", "69", "$30",
+                "Looking", "1" }, new[] { "Sade Bello", "Network", "Senior", "81", "$46", "In work, 4 weeks", "1" },
+            new[] { "Luca Ferri", "Game design", "Junior", "48", "$22", "Looking", "0" }, new[] { "Hanna Voss", "Support", "Mid", "66", "$26",
+                "Looking", "2" }, new[] { "Idris Cole", "Testing", "Mid", "63", "$27", "Looking", "2" }
         };
         t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_looking", "Looking"), seekers.Length.ToString()));
         t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_rival_ads", "Rival ads"), "9"));
@@ -263,7 +276,8 @@ internal static partial class UiSamples
         for (int i = 0; i < seekers.Length; i++)
         {
             string[] s = seekers[i];
-            var r = new WorkRow { Id = i + 1, Person = s[0], Name = s[0], Sub = s[1], Ring = UiRole.Ok, Group = int.Parse(s[6]), Cells = new[] { null, s[2], s[3], s[4], s[5] }, Values = new[] { 0, 0, int.Parse(s[3]), 0, 0 },
+            var r = new WorkRow { Id = i + 1, Person = s[0], Name = s[0], Sub = s[1], Ring = UiRole.Ok, Group = int.Parse(s[6]), Cells = new[] { null,
+                s[2], s[3], s[4], s[5] }, Values = new[] { 0, 0, int.Parse(s[3]), 0, 0 },
                 Status = s[5], Tone = s[5].StartsWith("In work") ? UiRole.Muted : UiRole.Ok };
             r.Sentence = s[1] + ", " + s[2].ToLowerInvariant() + ". Asks " + s[4] + " an hour.";
             var attrs = new WorkSection { Part = WorkPart.Bars, Title = w.T("reallife_work_attributes", "Attributes") };
@@ -272,7 +286,8 @@ internal static partial class UiSamples
             var facts = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_the_seeker", "The seeker") };
             facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_asks", "Asks"), s[4] + "/h"));
             facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_going_rate", "Going rate"), "$" + (int.Parse(s[4].Substring(1)) - 2) + "/h"));
-            facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_notice", "Notice"), s[5].StartsWith("In work") ? w.F("reallife_work_n_days", "{n} days", "n", (14 + i).ToString()) : w.T("reallife_work_none_word", "None")));
+            facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_notice", "Notice"),
+                s[5].StartsWith("In work") ? w.F("reallife_work_n_days", "{n} days", "n", (14 + i).ToString()) : w.T("reallife_work_none_word", "None")));
             facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_rival_ads", "Rival ads"), (i % 3 + 1).ToString()));
             r.Sections.Add(attrs);
             r.Sections.Add(facts);
@@ -291,7 +306,8 @@ internal static partial class UiSamples
         t.Amounts.Add(new WorkAmount { Id = 0, Value = role, Min = 0, Max = roles.Length - 1, Words = roles, Figure = roles[role] });
         t.Amounts.Add(new WorkAmount { Id = 1, Value = level, Min = 0, Max = 2, Words = levels, Figure = levels[level] });
         t.Amounts.Add(new WorkAmount { Id = 2, Value = crew, Min = 1, Max = 12, Figure = crew.ToString() });
-        var form = new WorkFormModel { Lead = w.T("reallife_work_search_lead", "A search firm finds senior people, and a crew search finds technicians for a data centre. Its fee is a share of a year's pay.") };
+        var form = new WorkFormModel { Lead = w.T("reallife_work_search_lead",
+            "A search firm finds senior people, and a crew search finds technicians for a data centre. Its fee is a share of a year's pay.") };
         var brief = new WorkFormBand { Title = w.T("reallife_work_brief_title", "Brief a search firm") };
         brief.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_col_role", "Role"), Stepper = 0 });
         brief.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_col_level", "Level"), Stepper = 1 });
@@ -317,7 +333,8 @@ internal static partial class UiSamples
     private static WorkTab RolesTeam(UtilitiesWords w)
     {
         var t = new WorkTab { Shape = WorkShape.Table, Search = w.T("reallife_work_search_people", "Search people") };
-        t.Columns = new[] { WkCol(w.T("reallife_work_col_name", "Name"), UiCellKind.Person), WkCol(w.T("reallife_work_col_role", "Role"), UiCellKind.Text, 168), WkCol(w.T("reallife_work_skill_craft", "Craft"), UiCellKind.Meter, 120),
+        t.Columns = new[] { WkCol(w.T("reallife_work_col_name", "Name"), UiCellKind.Person), WkCol(w.T("reallife_work_col_role", "Role"),
+            UiCellKind.Text, 168), WkCol(w.T("reallife_work_skill_craft", "Craft"), UiCellKind.Meter, 120),
             WkCol(w.T("reallife_work_col_pay", "Pay"), UiCellKind.Money, 80), WkCol(w.T("reallife_work_col_morale", "Morale"), UiCellKind.Meter, 112) };
         t.EmptyTitle = w.T("reallife_work_no_team_title", "Nobody is on your payroll");
         t.EmptyBody = w.T("reallife_work_no_team", "Hire from the applicants and they join here, each with a page for their file, career and contract.");
@@ -335,7 +352,8 @@ internal static partial class UiSamples
         for (int i = 0; i < team.Length; i++)
         {
             string[] p = team[i];
-            var r = new WorkRow { Id = i + 1, Person = p[0], Name = p[0], Sub = p[5], Ring = UiRole.Ok, Cells = new[] { null, p[1], p[2], p[3], p[4] }, Values = new[] { 0, 0, int.Parse(p[2]), 0, int.Parse(p[4]) } };
+            var r = new WorkRow { Id = i + 1, Person = p[0], Name = p[0], Sub = p[5], Ring = UiRole.Ok, Cells = new[] { null, p[1], p[2], p[3],
+                p[4] }, Values = new[] { 0, 0, int.Parse(p[2]), 0, int.Parse(p[4]) } };
             r.Open = WkAct(111, string.Empty, UiButtonKind.Secondary, UiIcon.Person, null, true, r.Id);
             r.Sentence = p[1] + ", " + p[5];
             var file = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_person_file", "File") };
@@ -357,9 +375,11 @@ internal static partial class UiSamples
 
     private static WorkTab RolesPerson(UtilitiesWords w, WorkView v)
     {
-        var t = new WorkTab { Shape = WorkShape.Form, Sub = true, PersonTabs = new[] { w.T("reallife_work_person_file", "File"), w.T("reallife_work_person_career", "Career"), w.T("reallife_work_person_contract", "Contract") } };
+        var t = new WorkTab { Shape = WorkShape.Form, Sub = true, PersonTabs = new[] { w.T("reallife_work_person_file", "File"),
+            w.T("reallife_work_person_career", "Career"), w.T("reallife_work_person_contract", "Contract") } };
         var form = new WorkFormModel { Head = new UiProfileModel { Name = "Kenji Mori", Hue = UiColour.HueOf("Kenji Mori"), Ring = UiRole.Ok, Role = "Producer, senior", RoleIcon = UiIcon.Briefcase,
-            Employer = "Pioneer Game Studio", EmployerIcon = UiIcon.Store, Status = "Settled", StatusTone = UiRole.Ok, FactLabels = new[] { "Pay", "Hired", "Notice" }, FactValues = new[] { "$38 an hour", "Day 389", "30 days" } } };
+            Employer = "Pioneer Game Studio", EmployerIcon = UiIcon.Store, Status = "Settled", StatusTone = UiRole.Ok, FactLabels = new[] { "Pay",
+                "Hired", "Notice" }, FactValues = new[] { "$38 an hour", "Day 389", "30 days" } } };
         t.Acts.Add(WkAct(WorkKinds.Back, w.T("reallife_work_back_to_team", "Back to the team"), UiButtonKind.Secondary, UiIcon.Back, null, true));
         if (v.PageTab == 0)
         {
@@ -401,8 +421,10 @@ internal static partial class UiSamples
             contract.Foot = WkAct(132, w.T("reallife_work_raise_pay", "Raise their pay"), UiButtonKind.Primary, UiIcon.TrendUp);
             form.Left.Add(contract);
             var leave = new WorkFormBand { Title = w.T("reallife_work_leaving", "Letting them go") };
-            leave.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_buyout_label", "Buy out their notice"), Act = WkAct(133, w.T("reallife_hire_button_buyout", "Buy out their notice"), UiButtonKind.Secondary, UiIcon.Coin) });
-            leave.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_release_label", "Release them"), Act = WkAct(134, w.T("reallife_work_release", "Release"), UiButtonKind.Destructive, UiIcon.SignOut) });
+            leave.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_buyout_label", "Buy out their notice"),
+                Act = WkAct(133, w.T("reallife_hire_button_buyout", "Buy out their notice"), UiButtonKind.Secondary, UiIcon.Coin) });
+            leave.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_release_label", "Release them"), Act = WkAct(134,
+                w.T("reallife_work_release", "Release"), UiButtonKind.Destructive, UiIcon.SignOut) });
             form.Right.Add(leave);
         }
         t.Form = form;

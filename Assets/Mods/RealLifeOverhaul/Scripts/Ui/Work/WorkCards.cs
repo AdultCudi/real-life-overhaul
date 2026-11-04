@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class WorkCards
     {
-        public const float Least = 232f, Course = 228f, Listing = 228f, Tile = 112f;
+        public const float Least = 232f, Course = 236f, Listing = 228f, Tile = 112f;
 
         public static void Lay(UiScene s, UiAt at, WorkCardsModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
@@ -65,7 +65,7 @@ namespace RealLifeOverhaul.Ui
             }
             for (int i = 0; i < m.Chips.Length; i++)
             {
-                cx += WorkTable.Chip(s, at, m.Chips[i], i == m.ChosenChip, cx, y + (UiTokens.Control - h) / 2f, h) + UiTokens.S2;
+                cx += WorkTable.Chip(s, at, m.Chips[i], i == m.ChosenChip, cx, y + UiDraw.SnapDown((UiTokens.Control - h) / 2f), h) + UiTokens.S2;
             }
             if (!string.IsNullOrEmpty(m.SearchHint))
             {
@@ -129,22 +129,23 @@ namespace RealLifeOverhaul.Ui
         {
             WorkRow r = m.Cards[i];
             bool chosen = i == m.Chosen;
-            int face = UiDraw.Box(s, at, x, y, w, h, chosen ? UiRole.RowSel : UiRole.Band, UiRole.None, UiTokens.RadiusLarge, chosen ? UiFlags.Selected : UiFlags.None);
+            int face = UiDraw.Box(s, at, x, y, w, h, chosen ? UiRole.RowSel : UiRole.Row, UiRole.None, UiTokens.RadiusLarge, chosen ? UiFlags.Selected : UiFlags.None);
             UiAt inside = at.In(face);
             if (string.IsNullOrEmpty(r.Seller))
             {
-                CourseCard(s, inside, r, x, y, w, h);
+                CourseCard(s, inside, r, x, y, w, h, chosen);
             }
             else
             {
-                ListingCard(s, inside, r, x, y, w, h);
+                ListingCard(s, inside, r, x, y, w, h, chosen);
             }
             UiDraw.Node(s, at, x, y, w, h, WorkCmd.Card, i, face, false, list, row);
         }
 
         // A course: the subject's glyph on a tile at the left, its level as a tag at the right, then name, school, a line, the next class, a rule and the foot.
-        private static void CourseCard(UiScene s, UiAt at, WorkRow r, float x, float y, float w, float h)
+        private static void CourseCard(UiScene s, UiAt at, WorkRow r, float x, float y, float w, float h, bool chosen)
         {
+            UiRole quiet = chosen ? UiRole.Text : UiRole.Text2;   // the chosen card's fill is lighter: its quiet words are the main ink
             float pad = UiTokens.S4, iw = w - pad * 2f, tile = UiTokens.IconTile;
             int t = UiDraw.Tile(s, at, x + pad, y + pad, tile, UiRole.None, false);
             UiDraw.Icon(s, at.In(t), x + pad + (tile - UiTokens.Icon) / 2f, y + pad + (tile - UiTokens.Icon) / 2f, UiTokens.Icon, r.Icon, r.Tint, UiFlags.Middle | UiFlags.Centre, true);
@@ -155,28 +156,29 @@ namespace RealLifeOverhaul.Ui
             }
             float cy = y + pad + tile + UiTokens.S3;
             UiDraw.Text(s, at, x + pad, cy, iw, UiStyle.Title, UiRole.Text, r.Name, UiFlags.Truncate);
-            cy += UiTextRules.LineHeight(UiStyle.Title) + UiTokens.S1;
-            UiDraw.Text(s, at, x + pad, cy, iw, UiStyle.Small, UiRole.Text2, r.Sub, UiFlags.Truncate);
-            cy += UiTextRules.LineHeight(UiStyle.Small) + UiTokens.S2;
+            cy += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)) + UiTokens.S1;
+            UiDraw.Text(s, at, x + pad, cy, iw, UiStyle.Small, quiet, r.Sub, UiFlags.Truncate);
+            cy += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2;
             if (!string.IsNullOrEmpty(r.Line))
             {
                 UiDraw.Text(s, at, x + pad, cy, iw, UiStyle.Body, UiRole.Text, r.Line, UiFlags.Truncate);
             }
-            float foot = y + h - pad - UiTextRules.LineHeight(UiStyle.BodyStrong);
-            float next = foot - UiTokens.S3 * 2f - UiTextRules.LineHeight(UiStyle.BodyStrong) - UiTokens.Hairline;
+            float foot = y + h - pad - UiDraw.Snap(UiTextRules.LineHeight(UiStyle.BodyStrong));
+            float next = UiDraw.SnapDown(foot - UiTokens.S3 * 2f - UiDraw.Snap(UiTextRules.LineHeight(UiStyle.BodyStrong)) - UiTokens.S1);
             if (!string.IsNullOrEmpty(r.NextLabel))
             {
-                UiDraw.Text(s, at, x + pad, next, iw * 0.5f, UiStyle.Body, UiRole.Text2, r.NextLabel, UiFlags.Truncate);
+                UiDraw.Text(s, at, x + pad, next, iw * 0.5f, UiStyle.Body, quiet, r.NextLabel, UiFlags.Truncate);
                 UiDraw.Text(s, at, x + w - pad - iw * 0.5f, next, iw * 0.5f, UiStyle.BodyStrong, UiRole.Text, r.NextValue, UiFlags.Right | UiFlags.Truncate);
             }
             UiDraw.Box(s, at, x + pad, foot - UiTokens.S3, iw, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
-            UiDraw.Text(s, at, x + pad, foot, iw * 0.5f, UiStyle.Body, UiRole.Text2, r.FootLeft, UiFlags.Truncate);
+            UiDraw.Text(s, at, x + pad, foot, iw * 0.5f, UiStyle.Body, quiet, r.FootLeft, UiFlags.Truncate);
             UiDraw.Text(s, at, x + w - pad - iw * 0.5f, foot, iw * 0.5f, UiStyle.BodyStrong, UiRole.Text, r.FootRight, UiFlags.Right | UiFlags.Truncate);
         }
 
         // A listing: the picture or glyph of the thing on a tile over the card's width, name, price and how far it stands from its worth, the seller.
-        private static void ListingCard(UiScene s, UiAt at, WorkRow r, float x, float y, float w, float h)
+        private static void ListingCard(UiScene s, UiAt at, WorkRow r, float x, float y, float w, float h, bool chosen)
         {
+            UiRole quiet = chosen ? UiRole.Text : UiRole.Text2;
             float pad = UiTokens.S3, iw = w - pad * 2f;
             int t = UiDraw.Box(s, at, x + pad, y + pad, iw, Tile, UiRole.Tile, UiRole.None, UiTokens.RadiusLarge);
             if (!string.IsNullOrEmpty(r.Picture))
@@ -199,7 +201,7 @@ namespace RealLifeOverhaul.Ui
             }
             float cy = y + pad + Tile + UiTokens.S3;
             UiDraw.Text(s, at, x + pad + UiTokens.S1, cy, iw - UiTokens.S2, UiStyle.Title, UiRole.Text, r.Name, UiFlags.Truncate);
-            cy += UiTextRules.LineHeight(UiStyle.Title) + UiTokens.S1;
+            cy += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)) + UiTokens.S1;
             float under = string.IsNullOrEmpty(r.Under) ? 0f : UiTextRules.Width(r.Under, UiStyle.BodyStrong) + UiTokens.S2;
             UiDraw.Text(s, at, x + pad + UiTokens.S1, cy, iw - under - UiTokens.S3, UiStyle.BodyStrong, UiRole.Text, r.Price, UiFlags.Truncate);
             if (under > 0f)
@@ -209,7 +211,7 @@ namespace RealLifeOverhaul.Ui
             }
             float face = UiTokens.AvatarSmall - UiTokens.S2, fy = y + h - pad - face;
             UiDraw.Portrait(s, at, x + pad + UiTokens.S1, fy, face, r.Seller, UiColour.HueOf(r.Seller), UiRole.None);
-            UiDraw.TextMiddle(s, at, x + pad + UiTokens.S1 + face + UiTokens.S2, fy, face, iw - face - UiTokens.S3, UiStyle.Small, UiRole.Text2, r.Seller, UiFlags.Truncate);
+            UiDraw.TextMiddle(s, at, x + pad + UiTokens.S1 + face + UiTokens.S2, fy, face, iw - face - UiTokens.S3, UiStyle.Small, quiet, r.Seller, UiFlags.Truncate);
         }
     }
 }

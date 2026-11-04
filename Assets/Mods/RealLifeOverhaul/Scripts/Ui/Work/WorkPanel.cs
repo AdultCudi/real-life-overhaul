@@ -26,7 +26,7 @@ namespace RealLifeOverhaul.Ui
             {
                 buttons |= actions[k].Kind != UiButtonKind.Chip;
             }
-            float whyH = buttons && !string.IsNullOrEmpty(why) ? UiTextRules.WrappedHeight(why, UiStyle.Small, iw, 2) + UiTokens.S2 : 0f;
+            float whyH = buttons && !string.IsNullOrEmpty(why) ? UiDraw.Snap(UiTextRules.WrappedHeight(why, UiStyle.Small, iw, 2) + UiTokens.S2) : 0f;
             int rows = buttons ? ButtonRows(actions, iw, keys) : 0;
             float buttonsH = rows * UiTokens.Control + (rows - 1) * UiTokens.S2;
             if (buttons)
@@ -135,7 +135,7 @@ namespace RealLifeOverhaul.Ui
             float tx = x + face + UiTokens.S3, tw = w - face - UiTokens.S3;
             string below = string.IsNullOrEmpty(r.Chip) ? r.Sub : r.HeadSub;   // with a chip the table's second line is not said again
             bool two = !string.IsNullOrEmpty(below) || !string.IsNullOrEmpty(r.Chip);
-            float lh = UiTextRules.LineHeight(UiStyle.Number), sh = UiTextRules.LineHeight(UiStyle.Small);
+            float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Number)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
             float top = y + (face - lh - (two ? sh + UiTokens.S1 : 0f)) / 2f;
             UiDraw.Text(s, at, tx, UiDraw.Snap(top), tw, UiStyle.Number, UiRole.Text, UiTextRules.Cut(title ?? string.Empty, UiStyle.Number, tw), UiFlags.Truncate | UiFlags.Middle);
             if (!string.IsNullOrEmpty(r.Chip))
@@ -157,7 +157,7 @@ namespace RealLifeOverhaul.Ui
         private static float Figures(UiScene s, UiAt at, WorkRow r, float x, float y, float w)
         {
             int n = r.Figures.Count, rows = (n + 1) / 2;
-            float lh = UiTextRules.LineHeight(UiStyle.SectionHeader), vh = UiTextRules.LineHeight(UiStyle.Number);
+            float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)), vh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Number));
             float cell = UiDraw.Snap(lh + vh + UiTokens.S1 + UiTokens.S2);
             float total = rows * cell + UiTokens.S3 * 2f + (rows - 1) * UiTokens.S1;
             UiDraw.Box(s, at, x, y, w, total, UiRole.Field, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
@@ -232,7 +232,7 @@ namespace RealLifeOverhaul.Ui
                     {
                         WorkBar b = sec.Bars[i];
                         UiDraw.TextMiddle(s, at, x, y, UiTokens.PairRow, label, UiStyle.Body, UiRole.Text, b.Label, UiFlags.Truncate);
-                        float bw = w - label - value - UiTokens.S2;
+                        float bw = UiDraw.SnapDown(w - label - value - UiTokens.S2);
                         UiRole grade = UiTokens.Grade(b.Value);
                         UiDraw.Meter(s, at, x + label, y + (UiTokens.PairRow - UiTokens.S1) / 2f, bw, UiTokens.S1, b.Value, UiRole.Accent);
                         UiDraw.TextMiddle(s, at, x + w - value, y, UiTokens.PairRow, UiTextRules.Width("100", UiStyle.BodyStrong), UiStyle.BodyStrong,
@@ -304,7 +304,7 @@ namespace RealLifeOverhaul.Ui
             }
             float right = string.IsNullOrEmpty(p.Right) ? 0f : Math.Min(w * 0.3f, UiTextRules.Width(p.Right, UiStyle.BodyStrong) + UiTokens.S1);
             float tx = x + face + UiTokens.S3, tw = w - face - UiTokens.S3 - right - (right > 0f ? UiTokens.S2 : 0f);
-            float lh = UiTextRules.LineHeight(UiStyle.Title), sh = UiTextRules.LineHeight(UiStyle.Small);
+            float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
             float top = y + (PersonLine - lh - sh) / 2f;
             UiDraw.Text(s, at, tx, top, tw, UiStyle.Title, UiRole.Text, p.Name, UiFlags.Truncate | UiFlags.Middle);
             UiDraw.Text(s, at, tx, top + lh, tw, UiStyle.Small, UiRole.Text2, p.Role, UiFlags.Truncate | UiFlags.Middle);
@@ -318,7 +318,7 @@ namespace RealLifeOverhaul.Ui
         public static float NoteHeight(string lead, string text, float w)
         {
             float tw = w - UiTokens.S3 * 2f - UiTokens.S3 - (UiTokens.Control - UiTokens.S2);
-            float h = (string.IsNullOrEmpty(lead) ? 0f : UiTextRules.LineHeight(UiStyle.BodyStrong) + UiTokens.S1) + UiTextRules.WrappedHeight(text ?? string.Empty, UiStyle.Body, tw, 4);
+            float h = (string.IsNullOrEmpty(lead) ? 0f : UiDraw.Snap(UiTextRules.LineHeight(UiStyle.BodyStrong)) + UiTokens.S1) + UiTextRules.WrappedHeight(text ?? string.Empty, UiStyle.Body, tw, 4);
             return UiDraw.Snap(Math.Max(UiTokens.Control - UiTokens.S2, h) + UiTokens.S3 * 2f);
         }
 
@@ -335,7 +335,7 @@ namespace RealLifeOverhaul.Ui
             if (!string.IsNullOrEmpty(lead))
             {
                 UiDraw.Text(s, at, tx, ty, tw, UiStyle.BodyStrong, UiRole.Text, lead, UiFlags.Truncate);
-                ty += UiTextRules.LineHeight(UiStyle.BodyStrong) + UiTokens.S1;
+                ty += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.BodyStrong)) + UiTokens.S1;
             }
             UiDraw.Text(s, at, tx, ty, tw, UiStyle.Body, UiRole.Text2, text, UiFlags.Wrap | UiFlags.Truncate, 4);
         }

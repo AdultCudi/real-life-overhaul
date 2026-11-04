@@ -270,7 +270,7 @@ namespace RealLifeOverhaul.Ui
             {
                 float lw = UiDraw.SnapDown(cw * 0.6f), gap = UiTokens.S8, rw = cw - lw - gap;
                 UiDraw.Text(s, at, x, y, cw, UiStyle.Number, UiRole.Text, title, UiFlags.Truncate);
-                int id = UiDraw.Text(s, at, x, y + UiTextRules.LineHeight(UiStyle.Number) + UiTokens.S2, cw, UiStyle.Body, UiRole.Text2, line, UiFlags.Wrap | UiFlags.Truncate, 2);
+                int id = UiDraw.Text(s, at, x, y + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Number)) + UiTokens.S2, cw, UiStyle.Body, UiRole.Text2, line, UiFlags.Wrap | UiFlags.Truncate, 2);
                 float cy = UiDraw.Snap(s.Items[id].Y + s.Items[id].H) + UiTokens.S4;
                 float right = x + cw;
                 for (int i = actions.Length - 1; i >= 0; i--)
@@ -294,7 +294,7 @@ namespace RealLifeOverhaul.Ui
                     float chip = UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(r.Status ?? string.Empty, UiStyle.SmallStrong) + UiTokens.S1);
                     float pay = UiTextRules.Width(r.Price ?? string.Empty, UiStyle.BodyStrong) + UiTokens.S1;
                     float nx = x + UiTokens.S3 + tile + UiTokens.S3, nw = lw - (nx - x) - chip - pay - UiTokens.S4 * 3f;
-                    float lh = UiTextRules.LineHeight(UiStyle.Title), sh = UiTextRules.LineHeight(UiStyle.Small), top = ly + (56f - lh - sh) / 2f;
+                    float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)), top = ly + (56f - lh - sh) / 2f;
                     UiDraw.Text(s, inside, nx, top, nw, UiStyle.Title, UiRole.Text, r.Name, UiFlags.Truncate | UiFlags.Middle);
                     UiDraw.Text(s, inside, nx, top + lh, nw, UiStyle.Small, UiRole.Text2, r.Sub, UiFlags.Truncate | UiFlags.Middle);
                     UiDraw.TextMiddle(s, inside, x + lw - UiTokens.S4 - chip - UiTokens.S4 - pay, ly, 56f, pay, UiStyle.BodyStrong, UiRole.Text, r.Price, UiFlags.Right);

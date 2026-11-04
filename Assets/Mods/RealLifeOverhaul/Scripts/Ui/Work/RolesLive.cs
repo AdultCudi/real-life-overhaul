@@ -208,7 +208,7 @@ namespace RealLifeOverhaul.Ui
                     r.Sections.Add(hiredHere);
                 }
                 r.Acts.Add(new WorkAct { Kind = WorkKinds.GoTab, Arg = 1, Label = w.T("reallife_hire_button_applicants", "Applicants"),
-                    Style = UiButtonKind.Primary, Icon = UiIcon.People, Opens = true });
+                    Style = UiButtonKind.Secondary, Icon = UiIcon.People, Opens = true });
                 r.Acts.Add(new WorkAct { Kind = Close, Arg = ad.Id, Label = w.T("reallife_work_close_ad", "Close the ad"), Style = UiButtonKind.Destructive, Icon = UiIcon.Close });
                 t.Rows.Add(r);
             }
