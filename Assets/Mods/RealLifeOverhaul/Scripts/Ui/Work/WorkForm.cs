@@ -231,7 +231,8 @@ namespace RealLifeOverhaul.Ui
                         if (!string.IsNullOrEmpty(r.Label))
                         {
                             said = Math.Min(lw, UiDraw.Snap(UiTextRules.Width(r.Label, UiStyle.Body) + UiTokens.S4));
-                            UiStyle ink = UiTextRules.Width(r.Label, UiStyle.Body) > lw ? UiStyle.Small : UiStyle.Body;   // a label the long buttons beside it leave no room for stands in the small cut
+                            UiStyle ink = UiTextRules.Width(r.Label,
+                                UiStyle.Body) > lw ? UiStyle.Small : UiStyle.Body;   // a label the long buttons beside it leave no room for stands in the small cut
                             UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, string.IsNullOrEmpty(r.Why) ? lw : said, ink, UiRole.Text, r.Label, UiFlags.Label | UiFlags.Truncate);
                         }
                         if (!string.IsNullOrEmpty(r.Why) && lw - said > UiTokens.S16)

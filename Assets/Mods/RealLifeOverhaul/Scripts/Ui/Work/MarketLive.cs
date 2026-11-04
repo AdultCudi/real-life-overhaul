@@ -353,7 +353,8 @@ namespace RealLifeOverhaul.Ui
                 r.Bands.Add(WorkBands.Tiles(w.T("reallife_work_more_from", "More from this seller"), icons, names, kinds, prices));
             }
             var before = new WorkFormBand { Title = w.T("reallife_work_before_buy", "Before you buy") };
-            before.Rows.Add(new WorkFormRow { Field = WorkField.Check, Label = w.F("reallife_work_you_have_money", "You have the {price}", "price", HustleText.Money(l.Asking)), On = HustleGame.Cash >= l.Asking });
+            before.Rows.Add(new WorkFormRow { Field = WorkField.Check, Label = w.F("reallife_work_you_have_money", "You have the {price}", "price",
+                HustleText.Money(l.Asking)), On = HustleGame.Cash >= l.Asking });
             before.Rows.Add(new WorkFormRow { Field = WorkField.Check, Label = w.T("reallife_work_room_to_keep", "Room for it among your things"), On = s.Items.Count < HustleCatalogue.OwnedMost });
             r.Bands.Add(before);
         }

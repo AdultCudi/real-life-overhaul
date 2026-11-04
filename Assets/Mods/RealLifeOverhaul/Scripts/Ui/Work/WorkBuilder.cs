@@ -82,7 +82,8 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>"1 week", "6 weeks": one is not a plural.</summary>
-        public static string Weeks(UtilitiesWords w, int n) => n == 1 ? w.T("reallife_work_one_week", "1 week") : w.F("reallife_work_n_weeks", "{n} weeks", "n", n.ToString(System.Globalization.CultureInfo.InvariantCulture));
+        public static string Weeks(UtilitiesWords w, int n) => n == 1 ? w.T("reallife_work_one_week", "1 week") : w.F("reallife_work_n_weeks", "{n} weeks", "n",
+            n.ToString(System.Globalization.CultureInfo.InvariantCulture));
 
         /// <summary>A figure that has no value yet, said in words (never a bare dash).</summary>
         public static string NotYet(UtilitiesWords w) => w.T("reallife_work_not_yet_cell", "Not yet");

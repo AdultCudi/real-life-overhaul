@@ -587,7 +587,8 @@ namespace RealLifeOverhaul.Ui
                 Opening o = w.Openings[k];
                 if (o.Prof == p.Id && o.Open(day))
                 {
-                    hiring.People.Add(new WorkPerson { Name = CareersText.Employer(o.Employer), Role = CareersText.Title(o.Prof, o.Rank), Right = CareersText.Rate(Prices.At(o.Pay)), Icon = UiIcon.Store });
+                    hiring.People.Add(new WorkPerson { Name = CareersText.Employer(o.Employer), Role = CareersText.Title(o.Prof, o.Rank),
+                        Right = CareersText.Rate(Prices.At(o.Pay)), Icon = UiIcon.Store });
                 }
             }
             return hiring;

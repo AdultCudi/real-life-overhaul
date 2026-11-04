@@ -259,7 +259,8 @@ namespace RealLifeOverhaul.Ui
                 var r = new WorkRow { Id = 900 + i, Icon = UiIcon.Flag, Name = TechText.FamilyName((TFamily)family) + ", " + TechText.Level(ra.Level),
                     Sub = ra.Rival, Status = w.T("reallife_work_rival_ad", "Rival ad"),
                     Tone = UiRole.Muted, Chip = w.T("reallife_work_rival_ad", "Rival ad"), ChipTone = UiRole.Muted, Group = 900 + i,
-                    Cells = new[] { null, string.Empty, string.Empty, first >= 0 ? TechText.Rate(d.GoingFor(first, ra.Level) * (10000 + ra.PayBp) / 10000) : string.Empty, w.T("reallife_work_rival_ad", "Rival ad") },
+                    Cells = new[] { null, string.Empty, string.Empty, first >= 0 ? TechText.Rate(d.GoingFor(first,
+                        ra.Level) * (10000 + ra.PayBp) / 10000) : string.Empty, w.T("reallife_work_rival_ad", "Rival ad") },
                     Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.Muted },
                     Sentence = w.F("reallife_work_rival_ad_line", "{rival} hires the same line and pays {bp} over the going rate. Their applicants may take an offer before yours.", "rival", ra.Rival,
                         "bp", TechText.Bp(ra.PayBp)) };
@@ -268,7 +269,8 @@ namespace RealLifeOverhaul.Ui
             t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_open_posts", "Open posts"), openPosts.ToString(Inv)));
             t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_waiting", "Applicants waiting"), waiting.ToString(Inv)));
             t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_hired_month", "Hired this month"), hired.Count.ToString(Inv)));
-            WorkBands.AddIfAny(t.Below, WorkBands.Tiles(w.T("reallife_work_band_pay_vs_going", "Your pay against the going rate"), payIcons.ToArray(), payNames.ToArray(), payHints.ToArray(), payValues.ToArray()));
+            WorkBands.AddIfAny(t.Below, WorkBands.Tiles(w.T("reallife_work_band_pay_vs_going", "Your pay against the going rate"), payIcons.ToArray(),
+                payNames.ToArray(), payHints.ToArray(), payValues.ToArray()));
             WorkBands.AddIfAny(t.Below, WorkBands.Tiles(w.T("reallife_work_band_closing", "Closing soon"), closeIcons.ToArray(), closeNames.ToArray(), closeHints.ToArray(), closeValues.ToArray()));
             return t;
         }

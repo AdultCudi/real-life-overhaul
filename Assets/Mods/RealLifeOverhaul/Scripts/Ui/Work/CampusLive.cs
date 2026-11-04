@@ -310,7 +310,8 @@ namespace RealLifeOverhaul.Ui
                 string attended = e.Seen > 0 ? (e.Done * 100 / e.Seen).ToString(Inv) + "%" : WorkBuilder.NotYet(w);
                 bool examOpen = e.At == EnrolStage.Exam || e.At == EnrolStage.Retake;
                 var r = new WorkRow { Id = c.Id, Icon = WorkGlyphs.Course(c), Name = CareersText.Course(c.Id), Sub = d.PlaceOf(c, (StudyMode)e.Mode),
-                    Status = examOpen ? w.T("reallife_work_exam_open", "Exam open") : StartsOrUnderWay(w, e, next, day), Tone = examOpen ? UiRole.Warn : e.Seen == 0 && next > 0 && next / (24 * 60) > day ? UiRole.Muted : UiRole.Accent };
+                    Status = examOpen ? w.T("reallife_work_exam_open", "Exam open") : StartsOrUnderWay(w, e, next, day),
+                        Tone = examOpen ? UiRole.Warn : e.Seen == 0 && next > 0 && next / (24 * 60) > day ? UiRole.Muted : UiRole.Accent };
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_next", "Next class"),
                     next > 0 ? CareersText.Day(next / (24 * 60)) + " " + CareersText.TimeOfDay(next % (24 * 60)) : WorkBuilder.None(w)));
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_attended", "Attended"), attended));
@@ -431,7 +432,8 @@ namespace RealLifeOverhaul.Ui
                 int term = e.Start / quarter;
                 AddMark(terms, term, quarter, w, new WorkMark { Id = c.Id, Icon = WorkGlyphs.Course(c), Course = CareersText.Course(c.Id), Place = d.PlaceOf(c, (StudyMode)e.Mode),
                     Credits = RosterRules.CreditsOf(c).ToString(Inv), Attendance = StudyRules.Attendance(e).ToString(Inv) + "%", AttendanceGrade = StudyRules.Attendance(e),
-                    Exam = passed || failed ? e.Score.ToString(Inv) : WorkBuilder.NotYet(w), ExamGrade = passed || failed ? e.Score : -1, Letter = passed || failed ? RosterRules.LetterOf(e.Score) : null,
+                    Exam = passed || failed ? e.Score.ToString(Inv) : WorkBuilder.NotYet(w), ExamGrade = passed || failed ? e.Score : -1,
+                        Letter = passed || failed ? RosterRules.LetterOf(e.Score) : null,
                     Percent = passed || failed ? e.Score.ToString(Inv) + "%" : WorkBuilder.NotYet(w), LetterGrade = passed || failed ? e.Score : -1,
                     Status = passed ? (c.Cert >= 0 || c.Kind == CourseKind.Certificate ? w.T("reallife_work_licence_won", "Licence won") : w.T("reallife_work_passed", "Passed"))
                         : failed ? w.T("reallife_work_repeat", "Repeat") : w.T("reallife_work_left", "Left"), Tone = passed ? UiRole.Ok : failed ? UiRole.Warn : UiRole.Muted });
@@ -446,7 +448,8 @@ namespace RealLifeOverhaul.Ui
                 }
                 results++;
                 AddMark(terms, e.Start / quarter, quarter, w, new WorkMark { Id = c.Id, Icon = WorkGlyphs.Course(c), Course = CareersText.Course(c.Id), Place = d.PlaceOf(c, (StudyMode)e.Mode),
-                    Credits = RosterRules.CreditsOf(c).ToString(Inv), Attendance = StudyRules.Attendance(e).ToString(Inv) + "%", AttendanceGrade = StudyRules.Attendance(e), Exam = WorkBuilder.NotYet(w), Percent = WorkBuilder.NotYet(w),
+                    Credits = RosterRules.CreditsOf(c).ToString(Inv), Attendance = StudyRules.Attendance(e).ToString(Inv) + "%",
+                        AttendanceGrade = StudyRules.Attendance(e), Exam = WorkBuilder.NotYet(w), Percent = WorkBuilder.NotYet(w),
                     Status = StartsOrUnderWay(w, e, StudyRules.NextClass(e, day, CareersGame.MinuteOfDay, -1), day), Tone = UiRole.Accent });
             }
             if (results == 0)
@@ -683,9 +686,11 @@ namespace RealLifeOverhaul.Ui
                 ChildStudy c = d.ChildOf(kids[i].Name);
                 bool offered = c != null && c.At == ChildStep.Offered && c.Course >= 0;
                 var k = new WorkKid { Name = kids[i].Name, Ring = UiRole.Ok, Fund = typical > 0 ? Math.Max(0, Math.Min(100, kids[i].Fund * 100 / typical)) : -1,
-                    Role = c != null && c.Course >= 0 ? CareersText.Course(c.Course) : kids[i].Grown ? w.T("reallife_work_no_course_yet", "No course yet") : w.T("reallife_work_after_growing", "University comes later"),
+                    Role = c != null && c.Course >= 0 ? CareersText.Course(c.Course) : kids[i].Grown ? w.T("reallife_work_no_course_yet",
+                        "No course yet") : w.T("reallife_work_after_growing", "University comes later"),
                     FundLabel = w.T("reallife_work_college_fund", "College fund"),
-                    FundNote = typical > 0 ? w.F("reallife_work_fund_of", "{fund} of {cost}", "fund", CareersText.Money(kids[i].Fund), "cost", CareersText.Money(typical)) : CareersText.Money(kids[i].Fund),
+                    FundNote = typical > 0 ? w.F("reallife_work_fund_of", "{fund} of {cost}", "fund", CareersText.Money(kids[i].Fund), "cost",
+                        CareersText.Money(typical)) : CareersText.Money(kids[i].Fund),
                     FactLabels = new[] { w.T("reallife_work_kid_age", "Age"), w.T("reallife_work_kid_school", "School"), w.T("reallife_work_col_state", "State") },
                     FactValues = new[] { ((int)kids[i].Age).ToString(Inv), SchoolWords(w, kids[i].School), ChildState(w, kids[i], c) } };
                 funds += kids[i].Fund;
@@ -718,7 +723,8 @@ namespace RealLifeOverhaul.Ui
                 Act = new WorkAct { Kind = Tutor, Label = w.T("reallife_campus_button_tutor", "Give a tutoring session"),
                 Style = UiButtonKind.Secondary, Icon = UiIcon.Cap, Why = why == null ? null : w.T(why, "You cannot tutor now.") } });
             form.Left.Insert(0, tutor);
-            WorkBands.AddIfAny(form.Left, WorkBands.Tiles(w.T("reallife_work_band_degrees_offered", "Degrees on offer"), offerIcons.ToArray(), offerNames.ToArray(), offerHints.ToArray(), offerFees.ToArray()));
+            WorkBands.AddIfAny(form.Left, WorkBands.Tiles(w.T("reallife_work_band_degrees_offered", "Degrees on offer"), offerIcons.ToArray(), offerNames.ToArray(),
+                offerHints.ToArray(), offerFees.ToArray()));
             t.Form = form;
             return t;
         }
@@ -742,7 +748,8 @@ namespace RealLifeOverhaul.Ui
 
         private static string SchoolWords(UtilitiesWords w, int school)
         {
-            return school == 2 ? w.T("reallife_work_school_private", "Private school") : school == 1 ? w.T("reallife_work_school_state", "State school") : w.T("reallife_work_school_none", "No school yet");
+            return school == 2 ? w.T("reallife_work_school_private", "Private school") : school == 1 ? w.T("reallife_work_school_state",
+                "State school") : w.T("reallife_work_school_none", "No school yet");
         }
 
         private static string ChildState(UtilitiesWords w, ChildView kid, ChildStudy c)
@@ -808,7 +815,8 @@ namespace RealLifeOverhaul.Ui
                 if (f.Head != 0)
                 {
                     var head = new WorkSection { Part = WorkPart.People, Title = w.T("reallife_work_the_head", "The head") };
-                    head.People.Add(new WorkPerson { Name = RealLifeOverhaul.Schools.SchoolsGame.Person(f.Head), Role = w.F("reallife_work_head_skill_line", "Head teacher, skill {n}", "n", f.HeadSkill.ToString(Inv)) });
+                    head.People.Add(new WorkPerson { Name = RealLifeOverhaul.Schools.SchoolsGame.Person(f.Head), Role = w.F("reallife_work_head_skill_line",
+                        "Head teacher, skill {n}", "n", f.HeadSkill.ToString(Inv)) });
                     row.Sections.Add(head);
                 }
                 if (f.Id == RealLifeOverhaul.Schools.SchoolRules.CampusId)

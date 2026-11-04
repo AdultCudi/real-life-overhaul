@@ -379,7 +379,8 @@ namespace RealLifeOverhaul.Ui
             {
                 icons[i] = FamilyGlyph((TFamily)sorted[i][0]);
                 names[i] = TechText.FamilyName((TFamily)sorted[i][0]);
-                hints[i] = byShortage ? w.F("reallife_work_shortage_n", "Shortage {n}", "n", TechText.Mille(sorted[i][1])) : w.F("reallife_work_looking_n", "{n} looking", "n", sorted[i][2].ToString(Inv));
+                hints[i] = byShortage ? w.F("reallife_work_shortage_n", "Shortage {n}", "n", TechText.Mille(sorted[i][1])) : w.F("reallife_work_looking_n",
+                    "{n} looking", "n", sorted[i][2].ToString(Inv));
                 values[i] = sorted[i][3] > 0 ? TechText.Rate(sorted[i][3]) : WorkBuilder.None(w);
             }
             WorkBands.AddIfAny(t.Below, WorkBands.Tiles(title, icons, names, hints, values));
@@ -569,7 +570,8 @@ namespace RealLifeOverhaul.Ui
                 // what the row does not say: what the person is worth on the market, when they were last looked at, and how worn they are
                 var now = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_now", "Now") };
                 now.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_going_pay", "Going pay"), TechText.Rate(goingPay)));
-                now.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_last_review", "Last review"), f.Rating > 0 ? f.Rating.ToString(Inv) + " / 5, " + TechText.Day(f.ReviewDay) : WorkBuilder.NotYet(w)));
+                now.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_last_review", "Last review"),
+                    f.Rating > 0 ? f.Rating.ToString(Inv) + " / 5, " + TechText.Day(f.ReviewDay) : WorkBuilder.NotYet(w)));
                 now.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_hired_on", "Joined"), TechText.Day(f.Joined)));
                 r.Sections.Add(now);
                 var worn = new WorkSection { Part = WorkPart.Bars, Title = w.T("reallife_work_skills_word", "Skills and wear") };

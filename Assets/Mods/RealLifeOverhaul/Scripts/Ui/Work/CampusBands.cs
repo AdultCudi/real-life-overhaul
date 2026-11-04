@@ -61,7 +61,8 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             near.Sort((a, b) => (25 - t.Skills[a].Value % 25).CompareTo(25 - t.Skills[b].Value % 25));
-            string[] names = { w.T("reallife_work_level_novice", "Novice"), w.T("reallife_work_level_competent", "Competent"), w.T("reallife_work_level_skilled", "Skilled"), w.T("reallife_work_level_expert", "Expert") };
+            string[] names = { w.T("reallife_work_level_novice", "Novice"), w.T("reallife_work_level_competent", "Competent"), w.T("reallife_work_level_skilled",
+                "Skilled"), w.T("reallife_work_level_expert", "Expert") };
             var by = new string[4];
             for (int i = 0; i < 4; i++)
             {
@@ -81,7 +82,7 @@ namespace RealLifeOverhaul.Ui
                 hints[i] = w.F("reallife_work_next_level", "{level} at {n}", "level", names[Math.Min(3, next / 25)], "n", next.ToString());
                 values[i] = w.F("reallife_work_n_to_go", "{n} to go", "n", (next - v).ToString());
             }
-            WorkBands.AddIfAny(t.Below, WorkBands.Tiles(w.T("reallife_work_band_next_level", "Nearest the next level"), icons, labels, hints, values));
+            WorkBands.AddIfAny(t.Below, WorkBands.Tiles(w.T("reallife_work_band_next_level", "Closest to a new level"), icons, labels, hints, values));
         }
 
         /// <summary>A band of courses, each a tile with what it adds under its name and its fee at the right: the foot of Skills and of Results.</summary>
