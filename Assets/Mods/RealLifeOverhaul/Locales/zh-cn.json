@@ -31410,5 +31410,7 @@
   "reallife_ui_dealer_sort_price": "按价格",
   "reallife_ui_dealer_sort_days": "停放最久",
   "reallife_ui_dealer_kicker_bay": "{name}，{bay}号车位，{state}",
-  "reallife_ui_dealer_search": "搜索车型"
+  "reallife_ui_dealer_search": "搜索车型",
+  "reallife_ui_dealer_the_car": "这辆车",
+  "reallife_ui_dealer_l_margin_offer": "按报价的利润"
 }

@@ -458,6 +458,17 @@ internal static partial class UiSamples
         {
             new UiFactCardModel
             {
+                Title = W(t, "reallife_ui_dealer_the_car", "The car"), Heading = true,
+                Lines = new[]
+                {
+                    UiFactLine.Row(W(t, "reallife_ui_dealer_l_cost", "Cost, all in"), "$72,300"), UiFactLine.Row(W(t, "reallife_ibox_worth", "Worth"), "$83,800"),
+                    UiFactLine.Row(W(t, "reallife_ui_dealer_l_margin_offer", "Margin at the offer"), "+$9,700", UiRole.OkText), UiFactLine.Row(W(t, "reallife_ui_dealer_l_condition", "Condition"), "92%"),
+                    UiFactLine.Row(W(t, "reallife_ui_dealer_l_km", "Mileage"), "12,400 km"),
+                    UiFactLine.Say(Fx(W(t, "reallife_ui_dealer_rival_asks", "{name} asks {price} for the same model."), "name", "Halden Motors", "price", "$86,900"))
+                }
+            },
+            new UiFactCardModel
+            {
                 Title = W(t, "reallife_ui_dealer_with_it", "With the car"), Heading = true,
                 Lines = new[] { UiFactLine.Say(Fx(W(t, "reallife_dealer_deal_finance", "They would put down {deposit}% and pay over {weeks} weeks. Their rating is {grade}."), "deposit", "20", "weeks", "8", "grade", "B")) }
             }

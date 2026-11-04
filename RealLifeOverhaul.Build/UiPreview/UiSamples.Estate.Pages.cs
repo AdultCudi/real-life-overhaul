@@ -228,7 +228,7 @@ internal static partial class UiSamples
             new UiDataColumn { Title = W(t, "reallife_ui_estate_col_value", "Value"), Kind = UiCellKind.Money, Width = 128f },
             new UiDataColumn { Title = W(t, "reallife_ui_estate_col_commission", "Commission"), Kind = UiCellKind.Money, Width = 128f },
             new UiDataColumn { Title = W(t, "reallife_ui_estate_col_hours", "Hours"), Kind = UiCellKind.Figure, Width = 80f },
-            new UiDataColumn { Title = W(t, "reallife_ui_estate_col_state", "State"), Kind = UiCellKind.Chip, Width = 128f },
+            new UiDataColumn { Title = W(t, "reallife_ui_estate_col_state", "State"), Kind = UiCellKind.Chip, Width = 184f },
             new UiDataColumn { Title = W(t, "reallife_ui_estate_col_day", "Day"), Kind = UiCellKind.Date, Width = 104f }
         };
         var lines = new List<UiFactLine>();
@@ -244,8 +244,8 @@ internal static partial class UiSamples
             lines.Add(UiFactLine.Row(W(t, "reallife_estate_agency_office", "Office"), "7 5th Avenue"));
             lines.Add(UiFactLine.Say(Fx(W(t, "reallife_estate_agency_staff", "{count} negotiators give {hours} hours a day."), "count", "2", "hours", "11.5")));
             lines.Add(UiFactLine.Section(W(t, "reallife_estate_agency_reputation", "What the districts think")));
-            lines.Add(UiFactLine.Row("Midtown", "62%, " + Fx(W(t, "reallife_estate_agency_chance", "{chance} of instructions"), "chance", "14%")));
-            lines.Add(UiFactLine.Row("Uptown", "48%, " + Fx(W(t, "reallife_estate_agency_chance", "{chance} of instructions"), "chance", "11%")));
+            lines.Add(UiFactLine.Say("Midtown: 62%, " + Fx(W(t, "reallife_estate_agency_chance", "{chance} of instructions"), "chance", "14%")));
+            lines.Add(UiFactLine.Say("Uptown: 48%, " + Fx(W(t, "reallife_estate_agency_chance", "{chance} of instructions"), "chance", "11%")));
             actions.Add(EstateButton(runs, W(t, "reallife_estate_btn_close_agency", "Close the agency"), UiButtonKind.Destructive, UiIcon.None, UiAction.Count));
         }
         var side = new UiFactCardModel { Title = W(t, "reallife_estate_tab_agency", "Agency"), Heading = true, Lines = lines.ToArray(), Actions = actions.ToArray() };
@@ -292,7 +292,7 @@ internal static partial class UiSamples
         var cols = new[]
         {
             new UiDataColumn { Title = W(t, "reallife_ui_estate_col_car", "Car"), Kind = UiCellKind.Tile, Width = 0f },
-            new UiDataColumn { Title = W(t, "reallife_ui_estate_col_state", "State"), Kind = UiCellKind.Chip, Width = 128f },
+            new UiDataColumn { Title = W(t, "reallife_ui_estate_col_state", "State"), Kind = UiCellKind.Chip, Width = 184f },
             new UiDataColumn { Title = W(t, "reallife_ui_estate_col_rate_day", "Rate a day"), Kind = UiCellKind.Money, Width = 120f },
             new UiDataColumn { Title = W(t, "reallife_ui_estate_col_hires", "Hires"), Kind = UiCellKind.Figure, Width = 80f },
             new UiDataColumn { Title = W(t, "reallife_ui_estate_col_takings", "Takings"), Kind = UiCellKind.Money, Width = 112f },

@@ -141,17 +141,17 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_dealer_growth_event", "reallife_ui_dealer_growth_mission", "reallife_ui_dealer_growth_rep",
                 "reallife_ui_dealer_growth_sub", "reallife_ui_dealer_held_by", "reallife_ui_dealer_hour_ago", "reallife_ui_dealer_hours_ago",
                 "reallife_ui_dealer_if_you_win", "reallife_ui_dealer_kicker_bay", "reallife_ui_dealer_l_condition", "reallife_ui_dealer_l_cost",
-                "reallife_ui_dealer_l_km", "reallife_ui_dealer_l_margin", "reallife_ui_dealer_l_source", "reallife_ui_dealer_l_worth",
-                "reallife_ui_dealer_left_for_you", "reallife_ui_dealer_looked_times", "reallife_ui_dealer_lots_sub", "reallife_ui_dealer_market_sub",
-                "reallife_ui_dealer_no_bids", "reallife_ui_dealer_offers_sub", "reallife_ui_dealer_on_lot", "reallife_ui_dealer_rep_line",
-                "reallife_ui_dealer_report_average", "reallife_ui_dealer_report_sub", "reallife_ui_dealer_rival_asks", "reallife_ui_dealer_search",
-                "reallife_ui_dealer_sort_bay", "reallife_ui_dealer_sort_days", "reallife_ui_dealer_sort_price", "reallife_ui_dealer_staff_floor",
-                "reallife_ui_dealer_staff_floor_what", "reallife_ui_dealer_stock_worth", "reallife_ui_dealer_sums", "reallife_ui_dealer_sw_extras",
-                "reallife_ui_dealer_sw_finance", "reallife_ui_dealer_sw_fixed", "reallife_ui_dealer_sw_warranty", "reallife_ui_dealer_terms",
-                "reallife_ui_dealer_time_left", "reallife_ui_dealer_views", "reallife_ui_dealer_walk_away", "reallife_ui_dealer_with_it",
-                "reallife_ui_dealer_worth_lot", "reallife_ui_dealer_you", "reallife_ui_dealer_you_pay", "reallife_ui_dealer_your_bid",
-                "reallife_ui_dealer_your_counter", "reallife_ui_dealer_your_offer", "reallife_ui_prompt_back", "reallife_ui_prompt_move",
-                "reallife_ui_prompt_select"
+                "reallife_ui_dealer_l_km", "reallife_ui_dealer_l_margin", "reallife_ui_dealer_l_margin_offer", "reallife_ui_dealer_l_source",
+                "reallife_ui_dealer_l_worth", "reallife_ui_dealer_left_for_you", "reallife_ui_dealer_looked_times", "reallife_ui_dealer_lots_sub",
+                "reallife_ui_dealer_market_sub", "reallife_ui_dealer_no_bids", "reallife_ui_dealer_offers_sub", "reallife_ui_dealer_on_lot",
+                "reallife_ui_dealer_rep_line", "reallife_ui_dealer_report_average", "reallife_ui_dealer_report_sub", "reallife_ui_dealer_rival_asks",
+                "reallife_ui_dealer_search", "reallife_ui_dealer_sort_bay", "reallife_ui_dealer_sort_days", "reallife_ui_dealer_sort_price",
+                "reallife_ui_dealer_staff_floor", "reallife_ui_dealer_staff_floor_what", "reallife_ui_dealer_stock_worth", "reallife_ui_dealer_sums",
+                "reallife_ui_dealer_sw_extras", "reallife_ui_dealer_sw_finance", "reallife_ui_dealer_sw_fixed", "reallife_ui_dealer_sw_warranty",
+                "reallife_ui_dealer_terms", "reallife_ui_dealer_the_car", "reallife_ui_dealer_time_left", "reallife_ui_dealer_views",
+                "reallife_ui_dealer_walk_away", "reallife_ui_dealer_with_it", "reallife_ui_dealer_worth_lot", "reallife_ui_dealer_you",
+                "reallife_ui_dealer_you_pay", "reallife_ui_dealer_your_bid", "reallife_ui_dealer_your_counter", "reallife_ui_dealer_your_offer",
+                "reallife_ui_prompt_back", "reallife_ui_prompt_move", "reallife_ui_prompt_select"
             };
         }
     }

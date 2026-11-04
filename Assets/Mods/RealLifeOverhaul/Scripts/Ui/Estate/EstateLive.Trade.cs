@@ -194,7 +194,7 @@ namespace RealLifeOverhaul.Ui
                 var cols = new[]
                 {
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_car"), Kind = UiCellKind.Tile, Width = 0f },
-                    new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_state"), Kind = UiCellKind.Chip, Width = 136f },
+                    new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_state"), Kind = UiCellKind.Chip, Width = 184f },
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_rate_day"), Kind = UiCellKind.Money, Width = 120f },
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_hires"), Kind = UiCellKind.Figure, Width = 80f },
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_takings"), Kind = UiCellKind.Money, Width = 112f },

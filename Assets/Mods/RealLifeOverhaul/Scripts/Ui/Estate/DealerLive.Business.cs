@@ -242,7 +242,27 @@ namespace RealLifeOverhaul.Ui
                 _m.Left = new[] { new UiFactCardModel { Title = DealerText.T("reallife_ibox_sec_offer"), Heading = true, Lines = lines.ToArray(), Actions = actions.ToArray() } };
                 if (extra.Count > 0)
                 {
-                    _m.Right = new[] { new UiFactCardModel { Title = DealerText.T("reallife_ui_dealer_with_it"), Heading = true, Lines = extra.ToArray() } };
+                    // The car itself first (what it cost and is worth, what the offer leaves, how the other dealers ask), then what the buyer brings with it.
+                    int worth = DealerDirector.Worth(car, _level), margin = offer - car.Cost;
+                    var carLines = new List<UiFactLine>(7)
+                    {
+                        UiFactLine.Row(DealerText.T("reallife_ui_dealer_l_cost"), Money(car.Cost)),
+                        UiFactLine.Row(DealerText.T("reallife_ibox_worth"), Money(worth)),
+                        UiFactLine.Row(DealerText.T("reallife_ui_dealer_l_margin_offer"), (margin >= 0 ? "+" : "-") + Money(Math.Abs(margin)), margin >= 0 ? UiRole.OkText : UiRole.DangerText),
+                        UiFactLine.Row(DealerText.T("reallife_ui_dealer_l_condition"), DealerText.Condition(car.Condition)),
+                        UiFactLine.Row(DealerText.T("reallife_ui_dealer_l_km"), DealerText.Km(car.Km))
+                    };
+                    int rivalAt;
+                    int cheapest = RivalRules.Cheapest(_s, car.Type, out rivalAt);
+                    carLines.Add(UiFactLine.Say(cheapest > 0 && rivalAt >= 0
+                        ? DealerText.T("reallife_ui_dealer_rival_asks", "name", DealerCatalogue.RivalNames[rivalAt % DealerCatalogue.RivalNames.Length], "price", Money(cheapest))
+                        : DealerText.T("reallife_ui_dealer_no_rival")));
+                    var cards = new List<UiFactCardModel>(2) { new UiFactCardModel { Title = DealerText.T("reallife_ui_dealer_the_car"), Heading = true, Lines = carLines.ToArray() } };
+                    if (extra.Count > 0)
+                    {
+                        cards.Add(new UiFactCardModel { Title = DealerText.T("reallife_ui_dealer_with_it"), Heading = true, Lines = extra.ToArray() });
+                    }
+                    _m.Right = cards.ToArray();
                 }
             }
 
@@ -529,7 +549,7 @@ namespace RealLifeOverhaul.Ui
                 _m.Shape = EstateShape.Chart;
                 _m.HeadIcon = UiIcon.Chart;
                 _m.HeadTitle = DealerText.T(ReportKeys[(int)kind]);
-                _m.HeadSub = DealerText.T("reallife_ui_dealer_report_sub", "place", yard != null ? yard.Name : DealerText.T("reallife_dealer_report_all"), "days", days.ToString(Inv), "average", DealerCatalogue.AverageDays.ToString(Inv));
+                _m.HeadSub = DealerText.Fill("reallife_ui_dealer_report_sub", "place", yard != null ? yard.Name : DealerText.T("reallife_dealer_report_all"), "days", days.ToString(Inv), "average", DealerCatalogue.AverageDays.ToString(Inv));
                 _m.Chart = model;
                 var kinds = new UiActionModel[ReportKeys.Length];
                 for (int i = 0; i < kinds.Length; i++)

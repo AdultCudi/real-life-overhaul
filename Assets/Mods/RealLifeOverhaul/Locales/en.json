@@ -31410,5 +31410,7 @@
   "reallife_ui_dealer_sort_price": "By price",
   "reallife_ui_dealer_sort_days": "Longest on the lot",
   "reallife_ui_dealer_kicker_bay": "{name}, bay {bay}, {state}",
-  "reallife_ui_dealer_search": "Search a model"
+  "reallife_ui_dealer_search": "Search a model",
+  "reallife_ui_dealer_the_car": "The car",
+  "reallife_ui_dealer_l_margin_offer": "Margin at the offer"
 }

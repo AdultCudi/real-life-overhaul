@@ -228,7 +228,7 @@ namespace RealLifeOverhaul.Ui
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_value"), Kind = UiCellKind.Money, Width = 128f },
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_commission"), Kind = UiCellKind.Money, Width = 128f },
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_hours"), Kind = UiCellKind.Figure, Width = 80f },
-                    new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_state"), Kind = UiCellKind.Chip, Width = 136f },
+                    new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_state"), Kind = UiCellKind.Chip, Width = 184f },
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_day"), Kind = UiCellKind.Date, Width = 104f }
                 };
                 TableShape(UiIcon.Key, EstateText.T("reallife_estate_tab_agency"), agency.Running ? EstateGame.NameOf(agency.Office) : EstateText.T("reallife_estate_row_no_agency"), null, null, cols, rows, keys, AgencySide(agency),
@@ -257,7 +257,7 @@ namespace RealLifeOverhaul.Ui
                         DistrictRep d = agency.Districts[i];
                         if (d.SqmPrice > 0)
                         {
-                            lines.Add(UiFactLine.Row(EstateText.District(d.Name), EstateText.Level(d.Rep) + ", " + EstateText.T("reallife_estate_agency_chance", "chance", EstateText.Share(AgencyRules.InstructionChance(d.Rep, _c.Cycle)))));
+                            lines.Add(UiFactLine.Say(EstateText.District(d.Name) + ": " + EstateText.Level(d.Rep) + ", " + EstateText.T("reallife_estate_agency_chance", "chance", EstateText.Share(AgencyRules.InstructionChance(d.Rep, _c.Cycle)))));
                         }
                     }
                     actions.Add(_runs.Button(EstateText.T("reallife_estate_btn_close_agency"), UiButtonKind.Destructive, UiIcon.None, UiAction.Count, () => Show(() => _d.CloseAgency())));

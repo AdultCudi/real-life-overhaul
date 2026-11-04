@@ -156,7 +156,7 @@ namespace RealLifeOverhaul.Ui
             {
                 int worth = DealerDirector.Worth(car, _level), days = _day - car.Bought;
                 int step = DealerRules.AskStepOf(worth, car.Asking);
-                m.DetailKicker = car.Spot >= 0 ? DealerText.T("reallife_ui_dealer_kicker_bay", "name", yard.Name, "bay", (car.Spot + 1).ToString(Inv), "state", State(yard, car))
+                m.DetailKicker = car.Spot >= 0 ? DealerText.Fill("reallife_ui_dealer_kicker_bay", "name", yard.Name, "bay", (car.Spot + 1).ToString(Inv), "state", State(yard, car))
                     : DealerText.T("reallife_ui_dealer_kicker_car", "name", yard.Name, "state", State(yard, car));
                 int trade = DealerRules.TradePrice(worth), margin = car.Asking - car.Cost;
                 var labels = new List<string>(8);
