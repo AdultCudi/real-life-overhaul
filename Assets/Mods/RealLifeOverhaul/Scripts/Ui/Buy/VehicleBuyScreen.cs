@@ -253,7 +253,7 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             _kind = UiText.T(KindKeys[kind - 1]);
-            _seats = UiText.Whole(CarCatalogue.Seats(t.vehicleTypeName, spec.Kind));
+            _seats = CarCatalogue.SeatsKnown(t.vehicleTypeName) ? UiText.Whole(CarCatalogue.Seats(t.vehicleTypeName, spec.Kind)) : null;   // a guess by kind is not shown
             float per100 = t.IsMotorVehicle ? FuelUseRules.Per100(t.enginePower, t.maxSpeed) : 0f;   // the game's own reckoning, as the item panel's range
             if (per100 > 0f)
             {

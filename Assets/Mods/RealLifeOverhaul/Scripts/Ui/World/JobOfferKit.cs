@@ -150,7 +150,8 @@ namespace RealLifeOverhaul.Ui
         private static string Line(Address at)
         {
             CareersDirector careers = CareersDirector.Instance;
-            Careers.Application a = careers != null && careers.Work != null && at != null ? OfferLineRules.Find(careers.Work.Applications, at.streetName, at.streetNumber) : null;
+            Careers.Application a = careers != null && careers.Work != null && at != null
+                ? OfferLineRules.Find(careers.Work.Applications, at.streetName, at.streetNumber, TimeHelper.CurrentDay) : null;
             if (a != null)
             {
                 return UiText.T(OfferLineRules.Key(OfferLineRules.Band(a.Stage, a.Score)));

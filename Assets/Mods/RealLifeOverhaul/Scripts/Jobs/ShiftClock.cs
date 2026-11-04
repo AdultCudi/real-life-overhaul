@@ -169,7 +169,7 @@ namespace RealLifeOverhaul
 
         LabelInfo[] ISkippableShift.SkipLabels()
         {
-            int left = _shift.ClockLeft;
+            int left = ((ISkippableShift)this).SkipMinutes / _each;   // the part the slider keeps, as its sum under the slider says
             int minutes = left * _each;
             Color32 white = WorldPanel.White();
             string things = JobText.T(_unitsKey);

@@ -496,9 +496,10 @@ namespace RealLifeOverhaul.Economy
         private void NameDoubleBooking(ManagedPlace mp, RotaSheet sheet, string who)
         {
             int doubles = ManagerRules.DoubleBooked(sheet.Now, sheet.Problem.Stations, sheet.Problem.Workers, out int worker, out int cell);
-            if (doubles <= 0 || worker < 0 || worker >= sheet.Workers.Count || sheet.Workers[worker] == null || sheet.Workers[worker].characterData == null)
+            if (!ManagerRules.DoubleIsNew(_doubleTold, mp.Place.Place, worker, cell, doubles) || worker >= sheet.Workers.Count || sheet.Workers[worker] == null
+                || sheet.Workers[worker].characterData == null)
             {
-                return;
+                return;   // none, or the one told already: a booking that stands is told once, not each Sunday
             }
             string person = sheet.Workers[worker].characterData.name;
             Logger?.Info("Company: " + who + " (manager of " + mp.Place.Name + ") found " + doubles + " hour(s) of the week's rota with a person on two stations at once, the first "
@@ -509,6 +510,8 @@ namespace RealLifeOverhaul.Economy
                 { "day", CompanyText.T(DayKeys[cell / RotaCatalogue.Hours]) }, { "count", doubles.ToString() }
             }, 12f);
         }
+
+        private readonly Dictionary<string, long> _doubleTold = new Dictionary<string, long>(8);   // a place's double booking last told
 
         private static readonly string[] DayKeys =
         {

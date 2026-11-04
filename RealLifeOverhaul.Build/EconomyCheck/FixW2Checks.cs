@@ -149,7 +149,7 @@ internal static partial class Program
         var applications = new List<RealLifeOverhaul.Careers.Application>();
         RealLifeOverhaul.Careers.Application Make(string street, int number, ApplyStep stage, int score)
         {
-            var a = new RealLifeOverhaul.Careers.Application { Stage = (int)stage, Score = score };
+            var a = new RealLifeOverhaul.Careers.Application { Stage = (int)stage, Score = score, InterviewDay = 90 };
             a.Post.Street = street;
             a.Post.Number = number;
             return a;
@@ -158,13 +158,19 @@ internal static partial class Program
         applications.Add(Make("Elm Street", 12, ApplyStep.Accepted, 90));
         applications.Add(Make("Oak Road", 3, ApplyStep.Offered, 80));
         applications.Add(Make("Elm Street", 12, ApplyStep.Rejected, 20));
-        RealLifeOverhaul.Careers.Application found = OfferLineRules.Find(applications, "Elm Street", 12);
-        Check(found != null && found.Score == 90 && OfferLineRules.Find(applications, "Oak Road", 3).Score == 80 && OfferLineRules.Find(applications, "Elm Street", 13) == null
-              && OfferLineRules.Find(null, "Elm Street", 12) == null && OfferLineRules.Find(new List<RealLifeOverhaul.Careers.Application>(), "x", 1) == null,
+        RealLifeOverhaul.Careers.Application found = OfferLineRules.Find(applications, "Elm Street", 12, 100);
+        Check(found != null && found.Score == 90 && OfferLineRules.Find(applications, "Oak Road", 3, 100).Score == 80 && OfferLineRules.Find(applications, "Elm Street", 13, 100) == null
+              && OfferLineRules.Find(null, "Elm Street", 12, 100) == null && OfferLineRules.Find(new List<RealLifeOverhaul.Careers.Application>(), "x", 1, 100) == null,
             "job offer: the newest interviewed application for the very building, none for another building or an empty file");
         Check(OfferLineRules.Key(OfferLineRules.Liked) == "reallife_ui_world_offer_liked" && OfferLineRules.Key(OfferLineRules.Fine) == "reallife_ui_world_offer_fine"
               && OfferLineRules.Key(OfferLineRules.Narrow) == "reallife_ui_world_offer_narrow" && OfferLineRules.Key(OfferLineRules.None) == null,
             "job offer: each band has its text, and none says nothing");
+        var old = Make("Elm Street", 12, ApplyStep.Offered, 90);
+        old.InterviewDay = 20;   // sat long ago: it does not colour a later offer
+        var oldList = new List<RealLifeOverhaul.Careers.Application> { old };
+        Check(OfferLineRules.Find(oldList, "Elm Street", 12, 100) == null && OfferLineRules.Find(oldList, "Elm Street", 12, 20 + OfferLineRules.RecentDays) != null
+              && OfferLineRules.Find(oldList, "Elm Street", 12, 21 + OfferLineRules.RecentDays) == null,
+            "job offer: an interview older than " + OfferLineRules.RecentDays + " days does not colour a later offer");
         string kit = W2Source("Ui/World/JobOfferKit.cs");
         Check(kit.Contains("_m.Body = building != null ? Line(building.Address) : null;") && kit.Contains("OfferLineRules.Find(careers.Work.Applications") && kit.Contains("mine.fired"),
             "job offer: the card sets its body from the interview, else the game's record of a firing there, else nothing");
@@ -237,8 +243,11 @@ internal static partial class Program
         Check(inRange && CarCatalogue.Seats("ba:vehicletype_limo", CarKind.Luxury) == 8 && CarCatalogue.Seats("ba:vehicletype_ferdinand112", kind) == 2
               && CarCatalogue.Seats("ba:vehicletype_honzamimic", CarKind.Economy) == 5 && CarCatalogue.Seats(null, CarKind.Untouched) == 1,
             "vehicle: every car's seats are between one and eight; a sports car seats two, a limousine eight, an untouched ride one");
+        Check(CarCatalogue.SeatsKnown("ba:vehicletype_limo") && CarCatalogue.SeatsKnown("ba:vehicletype_honzamimic") && CarCatalogue.SeatsKnown("ba:vehicletype_ferdinand112")
+              && !CarCatalogue.SeatsKnown("ba:vehicletype_unknown_car") && !CarCatalogue.SeatsKnown(null) && CarCatalogue.Seats("ba:vehicletype_unknown_car", CarKind.Sports) == 2,
+            "vehicle: seats are shown only for a car the table names; a guess by kind stays out of the purchase screen");
         string buy = W2Source("Ui/Buy/VehicleBuyScreen.cs"), panel = W2Source("Ui/Buy/ItemPanelKit.cs");
-        Check(buy.Contains("FuelUseRules.Per100(t.enginePower, t.maxSpeed)") && buy.Contains("CarCatalogue.Seats(t.vehicleTypeName, spec.Kind)") && buy.Contains("reallife_ui_buy_fuel_use")
+        Check(buy.Contains("FuelUseRules.Per100(t.enginePower, t.maxSpeed)") && buy.Contains("CarCatalogue.SeatsKnown(t.vehicleTypeName)") && buy.Contains("reallife_ui_buy_fuel_use")
               && buy.Contains("reallife_ui_buy_seats") && panel.Contains("FuelUseRules.PerKm(body.powertrain.engine.maxPower, fuel.efficiency, fuel.idleConsumption, fuel.consumptionMultiplier, car.vehicleType.maxSpeed)"),
             "vehicle: the purchase states fuel use and seats, the item panel's range uses the same fuel rule");
         Check(panel.Contains("_m.Owner = car != null ? UiText.T(mine ? \"reallife_ui_buy_yours\" : \"reallife_ui_buy_not_yours\") : null;") && panel.Contains("GoingPublic.MineVehicle(car)"),
@@ -286,9 +295,11 @@ internal static partial class Program
         Check(plant.Contains("Today(item, made, reg, perHour);") && plant.Contains("EmployeeHelper.GetEmployeeAtStationAndHour(reg, item.id, h)") && plant.Contains("item.IsWorkstationActive(reg)")
               && plant.Contains("reallife_ui_bizops_today_line"),
             "factory table today: the machine's page states what it made today, said as about, from the table's worker hours and pace");
+        Check(BizOpsRules.RunHourKnown(10, 10, false) && !BizOpsRules.RunHourKnown(10, 10, true) && !BizOpsRules.RunHourKnown(9, 10, false) && !BizOpsRules.RunHourKnown(-1, 10, false),
+            "delivery log: the fixed run hour is stated only for today's run on a route Send now was not used on today, never for an earlier day");
         string managers = W2Source("Ui/BizMan/Ops/BizManScreen.Managers.cs");
-        Check(managers.Contains("RunHour.GetFormattedTime(0f)") && managers.Contains("reallife_ui_bizops_run_at"),
-            "delivery log: a run of an earlier day is stated with the game's fixed run hour; the record keeps the day only");
+        Check(managers.Contains("BizOpsRules.RunHourKnown(last, today, SentToday(route))") && managers.Contains("reallife_ui_bizops_run_at"),
+            "delivery log: the screen asks that rule before it says an hour");
     }
 
     private static void W2Rival()
@@ -333,10 +344,21 @@ internal static partial class Program
         Check(doubles == 2 && worker == 1 && first == cell, "manager rota check: a person on two stations at once is counted by the hour (2) and the first is named (worker 1, Tuesday 10:00)");
         Check(ManagerRules.DoubleBooked(plan, 2, 1, out int w2, out int c2) == 1 && w2 == 0 && c2 == cell + 5,
             "manager rota check: a worker the planner does not read (past its list) is not named");
+        // A booking that stands is told once, not each Sunday: three weeks with the same one, then it goes and comes back.
+        var told = new Dictionary<string, long>();
+        int tellings = 0;
+        for (int standing = 0; standing < 3; standing++)
+        {
+            tellings += ManagerRules.DoubleIsNew(told, "shop", worker, first, doubles) ? 1 : 0;
+        }
+        bool gone = !ManagerRules.DoubleIsNew(told, "shop", -1, -1, 0) && told.Count == 0;
+        bool again = ManagerRules.DoubleIsNew(told, "shop", worker, first, doubles);
+        bool changed = ManagerRules.DoubleIsNew(told, "shop", worker, first, doubles + 1) && ManagerRules.DoubleIsNew(told, "other", worker, first, doubles);
+        Check(tellings == 1 && gone && again && changed, "manager rota check: a double booking that stands for three weeks is told once, told again when it comes back or changes, and each place is its own");
         // The kit's schedule names the same: the day's problem list reads the same shape (a person in two shifts overlapping in hours).
         string screen = W2Source("Ui/BizMan/Ops/BizManScreen.Schedule.cs"), director = W2Source("Economy/Company/CompanyDirector.ManagerDecisions.cs");
         Check(screen.Contains("reallife_ui_bizops_problem_double") && director.Contains("ManagerRules.DoubleBooked(sheet.Now, sheet.Problem.Stations, sheet.Problem.Workers, out int worker, out int cell)")
-              && director.Contains("reallife_mgr_rota_double") && director.Contains("NameDoubleBooking(mp, sheet, who);"),
+              && director.Contains("reallife_mgr_rota_double") && director.Contains("NameDoubleBooking(mp, sheet, who);") && director.Contains("ManagerRules.DoubleIsNew(_doubleTold, mp.Place.Place, worker, cell, doubles)"),
             "manager rota check: the manager names a double booking at the weekly check, as BizMan's problem list does for the day shown");
 
         // Fill the gaps through RotaLedger: a day open 09:00 to 17:00, the station's lane busy 12 to 14, the person busy 10 to 11.
@@ -399,6 +421,21 @@ internal static partial class Program
 
     private static void W2TimeSkip()
     {
+        // Fred's keys: only Interact (and Cancel while the line can be closed); none under the pause menu, options, All apps or a box.
+        Check(UiForeignRules.KitHasOverlayKeys(false, false, false, false) && !UiForeignRules.KitHasOverlayKeys(true, false, false, false) && !UiForeignRules.KitHasOverlayKeys(false, true, false, false)
+              && !UiForeignRules.KitHasOverlayKeys(false, false, true, false) && !UiForeignRules.KitHasOverlayKeys(false, false, false, true),
+            "Fred's keys: the card has its keys only while no pause menu or options, no full menu, no box and no other mod's window is up");
+        string host = W2Source("Ui/UiHost.cs"), gameHost = W2Source("Ui/Host/UiGameHost.cs"), game = W2Source("Ui/UiGame.cs"), kits = W2Source("Ui/Dialog/DialogKits.cs"), spoken = W2Source("Ui/Dialog/MonologueScreen.cs");
+        Check(kits.Contains("public bool Exclusive => false;") && kits.Contains("IUiGameInteract") && gameHost.Contains("_host.TakesInteract = way.Keys && !way.Exclusive && _screen is IUiGameInteract;")
+              && host.Contains("else if (TakesInteract)") && host.Contains("_input.TakeInteract();") && game.Contains("PlayerAction.Interact.Reset();"),
+            "Fred's keys: only Interact is taken from the game, never the seven keys of a take all");
+        string takeInteract = game.Substring(game.IndexOf("private static void ResetInteract", StringComparison.Ordinal), 100);
+        Check(!takeInteract.Contains("Confirm") && !takeInteract.Contains("Rotate") && !takeInteract.Contains("Cancel"), "Fred's keys: taking Interact resets no other action");
+        Check(host.Contains("_screen is IUiGameBack back && !back.TakesBack") && spoken.Contains("IUiGameBack") && spoken.Contains("b.isActiveAndEnabled && b.interactable"),
+            "Fred's keys: Cancel is the card's only while the game's close can be pressed; otherwise it stays the game's");
+        Check(gameHost.Contains("Hold(!UiForeignRules.KitHasOverlayKeys(") && gameHost.Contains("global::UI.MiniMenu.MiniMenu.IsOpen") && gameHost.Contains("global::UI.Smartphone.FullMenu.IsOpen")
+              && gameHost.Contains("UiBoxes.Up || UiBoxes.Over"),
+            "Fred's keys: the card's keys rest (its host held) under the pause menu, options, All apps and a box");
         Check(UiTimeSkip.Speed(60f, true, 0f) == 60 && UiTimeSkip.Speed(60f, false, 143.6f) == 144 && UiTimeSkip.Speed(0.2f, true, 0f) == 1 && UiTimeSkip.Speed(60f, false, -3f) == 1,
             "time skip: the pace is the whole distance a second when constant, else the curve's value, at least 1");
         Check(Math.Abs(UiTimeSkip.Along(100f, 100f) - 0f) < 0.0001f && Math.Abs(UiTimeSkip.Along(100f, 25f) - 0.75f) < 0.0001f && UiTimeSkip.Along(100f, 0f) == 1f && UiTimeSkip.Along(0f, 5f) == 1f

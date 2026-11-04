@@ -70,6 +70,12 @@ namespace RealLifeOverhaul.Ui
             return best;
         }
 
+        /// <summary>
+        /// Whether a route's last run was at the game's fixed nightly hour: only a run of today, on a route Send now was not used on today,
+        /// can be told so (the record holds the day only, and Send now's own record keeps today alone).
+        /// </summary>
+        public static bool RunHourKnown(int lastRunDay, int today, bool sentNowToday) => lastRunDay >= 0 && lastRunDay >= today && !sentNowToday;
+
         public const int TodayFrom = 6;   // the hour a table's day is counted from: "made since 06:00"
 
         /// <summary>

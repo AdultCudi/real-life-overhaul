@@ -449,6 +449,7 @@ namespace RealLifeOverhaul
                 {
                     _slide.Slide(value);
                     _total = Mathf.Max(1, _shift.SkipMinutes);
+                    _labels = _shift.SkipLabels();   // its pay and time lines follow the part the slider keeps
                 }
             }
             catch (Exception fault)

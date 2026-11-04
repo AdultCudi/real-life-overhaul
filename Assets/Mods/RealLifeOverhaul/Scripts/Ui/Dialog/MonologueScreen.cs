@@ -17,7 +17,7 @@ namespace RealLifeOverhaul.Ui
     /// line is over (the game's card slides away for two seconds more, unseen), and the next line follows as the game
     /// sends it. It takes no key. Cost: a look at a signature four times a second while a line shows.
     /// </summary>
-    public sealed class MonologueScreen : IUiScreen
+    public sealed class MonologueScreen : IUiScreen, IUiGameBack
     {
         private const float Every = 0.25f;
         private const int ProgressStep = 5;        // the bar moves in steps of a twentieth: a layout a step, not a frame
@@ -110,6 +110,17 @@ namespace RealLifeOverhaul.Ui
 
         public void Wheel(int clip, float notches)
         {
+        }
+
+        /// <summary>Cancel is the card's only while the game's close can be pressed now; else it stays the game's (the pause menu's).</summary>
+        public bool TakesBack
+        {
+            get
+            {
+                Transform close = _card != null ? _card.Find("Close") : null;
+                Button b = close != null ? close.GetComponent<Button>() : null;
+                return b != null && b.isActiveAndEnabled && b.interactable;
+            }
         }
 
         // The game's own close on the line now: the line ends as it ends when the player closes the game's card.

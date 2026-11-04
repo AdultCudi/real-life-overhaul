@@ -62,7 +62,7 @@ namespace RealLifeOverhaul
 
         LabelInfo[] ISkippableShift.SkipLabels()
         {
-            int left = LeftToServe;
+            int left = ((ISkippableShift)this).SkipMinutes / _minutesEach;   // the part the slider keeps
             int minutes = left * _minutesEach;
             Color32 white = WorldPanel.White();
             var time = new LabelInfo("reallife_job_skip_info_time", new { count = left, hours = minutes / 60, minutes = minutes % 60 }, white);

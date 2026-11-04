@@ -11,6 +11,7 @@ namespace RealLifeOverhaul.Careers
     public static class OfferLineRules
     {
         public const int None = 0, Narrow = 1, Fine = 2, Liked = 3;
+        public const int RecentDays = 30;   // an interview older than this does not colour a later offer
 
         /// <summary>How warm the interview was: 0 for an application that was not interviewed to an offer, else by the score it was rated at.</summary>
         public static int Band(int stage, int score)
@@ -22,13 +23,13 @@ namespace RealLifeOverhaul.Careers
             return score >= ProRules.OfferPass + 15 ? Liked : score >= ProRules.OfferPass ? Fine : Narrow;
         }
 
-        /// <summary>The player's newest interviewed application for a post at an address, or null.</summary>
-        public static Application Find(IList<Application> applications, string street, int number)
+        /// <summary>The player's newest interviewed application for a post at an address, sat within <see cref="RecentDays"/> of <paramref name="today"/>, or null.</summary>
+        public static Application Find(IList<Application> applications, string street, int number, int today)
         {
             for (int i = applications != null ? applications.Count - 1 : -1; i >= 0; i--)
             {
                 Application a = applications[i];
-                if (a != null && a.Post.Street == street && a.Post.Number == number && Band(a.Stage, a.Score) != None)
+                if (a != null && a.Post.Street == street && a.Post.Number == number && Band(a.Stage, a.Score) != None && today - a.InterviewDay <= RecentDays)
                 {
                     return a;
                 }

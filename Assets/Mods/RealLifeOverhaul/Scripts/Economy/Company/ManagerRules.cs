@@ -247,6 +247,26 @@ namespace RealLifeOverhaul.Economy
             return count;
         }
 
+        /// <summary>
+        /// Whether a double booking is news: it is told once, as (worker, first cell, hours) for a place, and again only when it changes.
+        /// A week with none forgets the place, so one that comes back is told afresh. Not saved: a load tells a standing one once more.
+        /// </summary>
+        public static bool DoubleIsNew(System.Collections.Generic.Dictionary<string, long> told, string place, int worker, int cell, int count)
+        {
+            if (count <= 0 || worker < 0 || cell < 0)
+            {
+                told.Remove(place);
+                return false;
+            }
+            long key = ((long)worker * 1000 + cell) * 1000 + count;
+            if (told.TryGetValue(place, out long last) && last == key)
+            {
+                return false;
+            }
+            told[place] = key;
+            return true;
+        }
+
         // Each worker's hours in a week: one for every cell of a station they hold.
         private static void Count(RotaPlan plan, int stations, int workers, int[] hours)
         {
