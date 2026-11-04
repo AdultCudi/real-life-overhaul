@@ -157,11 +157,14 @@ namespace RealLifeOverhaul.Map25
             }
             Map25Colour tone = Map25Palette.Tone(_tone).Scale(_vary);
             Map25Colour paneTone = tone;   // a pane is translucent over whatever wall is under it, tinted or not
-            bool tinted = city.TintShare.Length > i && city.TintShare[i] > 0f;
+            // The game's highlight is the full map's: the minimap has no pointer and shows none, so its blocks stay as they are whatever the city holds (the set is built once, from a city
+            // that may have tints in it, and is never written again).
+            float share = detail.Fine && city.TintShare.Length > i ? city.TintShare[i] : 0f;
+            bool tinted = share > 0f;
             Map25Colour tint = tinted ? city.Tint[i] : default;
             if (tinted)
             {
-                tone = Map25Palette.Tinted(tone, tint, city.TintShare[i]);
+                tone = Map25Palette.Tinted(tone, tint, share);
             }
             bool drawPanes = panes && detail.Fine;
             _paneScale = drawPanes ? PaneScale(n, h) : 1f;
@@ -169,7 +172,7 @@ namespace RealLifeOverhaul.Map25
             for (int e = 0; e < n; e++)
             {
                 int f = (e + 1) % n;
-                Wall(t, _x[e], _z[e], _x[f], _z[f], y0, h, tone, paneTone, detail, e, tinted, tint, ref awningRng, drawPanes);
+                Wall(t, _x[e], _z[e], _x[f], _z[f], y0, h, tone, paneTone, detail, e, tint, share, ref awningRng, drawPanes);
             }
             Extents(_x, _z, n, out float ux, out float uz, out float u0, out float u1, out float v0, out float v1);
             float width = Math.Min(u1 - u0, v1 - v0);
@@ -236,7 +239,7 @@ namespace RealLifeOverhaul.Map25
         }
 
         private void Wall(Map25Builders t, float ax, float az, float bx, float bz, float y0, float h, Map25Colour tone, Map25Colour paneTone, Map25Detail detail,
-                          int edge, bool tinted, Map25Colour tint, ref Map25Rng awningRng, bool panes)
+                          int edge, Map25Colour tint, float share, ref Map25Rng awningRng, bool panes)
         {
             float dx = bx - ax, dz = bz - az;
             float length = (float)Math.Sqrt(dx * dx + dz * dz);
@@ -278,7 +281,7 @@ namespace RealLifeOverhaul.Map25
             }
             if (_shop && detail.Fine && (nz > 0.75f || nz < -0.75f) && length >= 9f)
             {
-                Awnings(t.Fronts, ax, az, ux, uz, nx, nz, length, y0, tinted, tint, tone, factor, ref awningRng);
+                Awnings(t.Fronts, ax, az, ux, uz, nx, nz, length, y0, tint, share, paneTone, factor, ref awningRng);
             }
         }
 

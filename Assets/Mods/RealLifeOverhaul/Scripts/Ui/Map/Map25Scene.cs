@@ -481,9 +481,10 @@ namespace RealLifeOverhaul.Map25
 
         /// <summary>
         /// Draws the picture into <paramref name="target"/> as <paramref name="view"/> sees it. Everything out of view is left out whole
-        /// chunks at a time. Order: water, land, green ground, roads and their lane marking, the game's zones, the rings, the player's cone
+        /// chunks at a time. Order: water, land, green ground, roads and their lane marking, the game's zones, the rings of the tinted
+        /// buildings (the full map's only: the minimap has no pointer and shows no highlight), the player's cone
         /// and halo, the contact patches, the trees, the blocks (the only things that write depth) with their crowns and awnings when they
-        /// stand tall enough, the windows over them, the route and its faint copy over the blocks, the roof lines of the tinted ones,
+        /// stand tall enough, the windows over them, the route and its faint copy over the blocks, the roof lines of the tinted ones (the full map's),
         /// and the distance's fade. <see cref="Map25Rules.Draws"/> says which kinds a view has.
         /// </summary>
         public void Draw(RenderTexture target, Map25View view, in Map25Frame frame, int detail)
@@ -510,11 +511,13 @@ namespace RealLifeOverhaul.Map25
             DrawGroup(cmd, _under[1], view, false, identity, _flat);   // green ground
             DrawGroup(cmd, _under[2], view, false, identity, _flat);   // roads
             DrawGroup(cmd, _under[3], view, false, identity, _flat);   // their lane marking
+            int which = detail < _sets.Length ? detail : 0;
+            bool fine = _sets[which].Detail.Fine;   // only the full map shows the game's highlights: the minimap has no pointer, so no ring or roof line either
             if (_zonesOn)
             {
                 cmd.DrawMesh(_zones, identity, _blend, 0, 0);
             }
-            if (_ringsOn)
+            if (_ringsOn && fine)
             {
                 cmd.DrawMesh(_rings, identity, _blend, 0, 0);
             }
@@ -527,7 +530,6 @@ namespace RealLifeOverhaul.Map25
             }
             Matrix4x4 rise = Matrix4x4.identity;
             rise.m11 = view.Rise;
-            int which = detail < _sets.Length ? detail : 0;
             Group[] kinds = _kinds[which];
             if (Map25Rules.Draws(Map25Kind.Contacts, view.Rise))
             {
@@ -552,7 +554,7 @@ namespace RealLifeOverhaul.Map25
                 cmd.DrawMesh(_route, identity, _solid, 0, 0);
                 cmd.DrawMesh(_ghost, identity, _blend, 0, 0);
             }
-            if (_marksOn)
+            if (_marksOn && fine)
             {
                 cmd.DrawMesh(_marks, rise, _blend, 0, 0);
             }

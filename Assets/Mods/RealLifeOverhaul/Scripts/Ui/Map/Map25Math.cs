@@ -163,6 +163,12 @@ namespace RealLifeOverhaul.Map25
         {
             return c <= 0.04045f ? c / 12.92f : (float)Math.Pow((c + 0.055f) / 1.055f, 2.4f);
         }
+
+        /// <summary>The inverse of <see cref="Linear"/>: light as it is written in an sRGB picture, which is what the eye gets of the picture.</summary>
+        public static float Encode(float light)
+        {
+            return light <= 0.0031308f ? light * 12.92f : 1.055f * (float)Math.Pow(light, 1f / 2.4f) - 0.055f;
+        }
     }
 
     /// <summary>A small seeded generator (xorshift on a hashed seed): the same seed, the same numbers, on every machine.</summary>

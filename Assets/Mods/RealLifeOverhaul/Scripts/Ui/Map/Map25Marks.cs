@@ -18,7 +18,61 @@ namespace RealLifeOverhaul.Map25
         public const float ConeMini = 55f / 300f;          // of the minimap's width
         public const float HaloFull = 30f / 1080f;         // the halo's radius
         public const float HaloMini = 11.6f / 300f;
-        public const float ConeAlpha = 0.17f, HaloAlpha = 0.30f, ConeHalfAngle = 30f;
+        public const float ConeHalfAngle = 30f;
+
+        /// <summary>
+        /// What the eye gets of the view cone and the halo over an avenue, as shares of the route's colour: the mockups' own, 0.17 and 0.30 (their CSS blends the colours as they are
+        /// written). The picture is blended in linear light (its texture is sRGB), where the same opacities would show 0.28 and 0.44, near twice as strong, so the opacities it
+        /// blends with are worked out from these shares (<see cref="AlphaFor"/>), not taken as the mockups' numbers.
+        /// </summary>
+        public const float ConeShare = 0.17f, HaloShare = 0.30f;
+
+        /// <summary>The opacities the cone and the halo are drawn with.</summary>
+        public static readonly float ConeAlpha = AlphaFor(ConeShare), HaloAlpha = AlphaFor(HaloShare);
+
+        /// <summary>
+        /// The share of <paramref name="mark"/> that a mark of opacity <paramref name="alpha"/> shows over <paramref name="ground"/> in the colours the eye gets (the picture blends
+        /// in linear light and is seen as written): the part of the change that lies along the mark's direction, the three channels together. Colours as written (sRGB, 0 to 1).
+        /// </summary>
+        public static float Seen(float alpha, Map25Colour ground, Map25Colour mark)
+        {
+            float along = 0f, whole = 0f;
+            for (int c = 0; c < 3; c++)
+            {
+                float g = c == 0 ? ground.R : c == 1 ? ground.G : ground.B, m = c == 0 ? mark.R : c == 1 ? mark.G : mark.B;
+                float lit = Map25Math.Encode(Map25Math.Linear(g) + alpha * (Map25Math.Linear(m) - Map25Math.Linear(g)));
+                along += (lit - g) * (m - g);
+                whole += (m - g) * (m - g);
+            }
+            return whole > 0f ? along / whole : 0f;
+        }
+
+        /// <summary>The colour the eye gets of a mark of opacity <paramref name="alpha"/> over a ground, as 8 bit numbers (what the preview's pixels hold).</summary>
+        public static void SeenRgb(float alpha, Map25Colour ground, Map25Colour mark, out int r, out int g, out int b)
+        {
+            r = (int)(Map25Math.Encode(Map25Math.Linear(ground.R) + alpha * (Map25Math.Linear(mark.R) - Map25Math.Linear(ground.R))) * 255f + 0.5f);
+            g = (int)(Map25Math.Encode(Map25Math.Linear(ground.G) + alpha * (Map25Math.Linear(mark.G) - Map25Math.Linear(ground.G))) * 255f + 0.5f);
+            b = (int)(Map25Math.Encode(Map25Math.Linear(ground.B) + alpha * (Map25Math.Linear(mark.B) - Map25Math.Linear(ground.B))) * 255f + 0.5f);
+        }
+
+        /// <summary>The opacity that shows <paramref name="share"/> of the route's colour over an avenue (by halving: the share rises with the opacity).</summary>
+        public static float AlphaFor(float share)
+        {
+            float low = 0f, high = 1f;
+            for (int i = 0; i < 32; i++)
+            {
+                float middle = (low + high) * 0.5f;
+                if (Seen(middle, Map25Palette.Avenue, Map25Palette.Route) < share)
+                {
+                    low = middle;
+                }
+                else
+                {
+                    high = middle;
+                }
+            }
+            return (low + high) * 0.5f;
+        }
 
         /// <summary>
         /// Half the width in metres of the route's line where a pixel spans <paramref name="metresPerPixel"/> m, on a picture

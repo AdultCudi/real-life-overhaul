@@ -34,6 +34,7 @@ public static class Map25Preview
         public float Heading, Pitch, Across;
         public At Where = At.Route;
         public bool Mini, Fog, Pins, Marks = true;
+        public bool Bare;            // the same picture without the player's view cone and halo, for measuring their share of the colour in rendered pixels
         public int Aa;               // multisampling of the picture: 0 for what the game's pictures have (2 for the full map, 4 for the minimap)
         public int Detail;           // for At.Building: which kind of building (see Pick); 0 the one the pointer is on
         public bool AtJunction;      // the player stands on the first junction of the route, looking north: the cone shows on the open ground
@@ -154,7 +155,7 @@ public static class Map25Preview
                 }
             }
             w.Notes = "the owner's footprints and water; heights a model" + (tall ? " (deliberately tall)" : "") + "; roads from the gaps (" + real.Avenues.Count + " avenues, " + real.Streets.Count + " streets); "
-                      + trees + " made-up trees (street rows and a park at " + w.ParkX.ToString("F0") + ", " + w.ParkZ.ToString("F0") + ")";
+                      + trees + " made-up trees (a street tree every 28 m, none in the water, and a park at " + w.ParkX.ToString("F0") + ", " + w.ParkZ.ToString("F0") + ")";
         }
         else
         {
@@ -178,21 +179,28 @@ public static class Map25Preview
             w.CoastZ = 0f;
             w.Notes = "the made-up city of the checks" + (tall ? " (deliberately tall)" : "");
         }
-        Color[] colours = { new Color(0.247f, 0.812f, 0.557f), new Color(0.937f, 0.478f, 0.353f), new Color(0.553f, 0.486f, 0.941f), new Color(0.941f, 0.698f, 0.227f) };
-        for (int k = 0; k < w.Tinted.Length; k++)
-        {
-            Color c = colours[k % colours.Length];
-            w.City.Tint[w.Tinted[k]] = new Map25Colour(c.r, c.g, c.b);
-            w.City.TintShare[w.Tinted[k]] = Map25Palette.TintShare;
-        }
-        w.City.Tint[w.Hover] = new Map25Colour(1f, 1f, 1f);
-        w.City.TintShare[w.Hover] = Map25Palette.HoverShare;
+        // As in the game: the sets are built from a city nothing is highlighted in (NavScene.Job), and the highlights come later, one building at a time, by the scene's retint of
+        // the full map's set (NavScene.Tint). The minimap's set is never tinted, so its pictures show no highlight and no ring.
         w.Full = Map25Set.Build(w.City, Map25Detail.Full, -0.3f);
         w.Small = Map25Set.Build(w.City, Map25Detail.Small, -0.3f);
         w.Scene = new Map25Scene(new[] { w.Full, w.Small }, under, w.City.MinX, w.City.MinZ, w.City.MaxX, w.City.MaxZ);
         while (w.Scene.Upload(200.0))
         {
         }
+        Color[] colours = { new Color(0.247f, 0.812f, 0.557f), new Color(0.937f, 0.478f, 0.353f), new Color(0.553f, 0.486f, 0.941f), new Color(0.941f, 0.698f, 0.227f) };
+        var generator = new Map25Blocks();
+        var scratch = new Map25Builders(4096);
+        for (int k = 0; k < w.Tinted.Length; k++)
+        {
+            Color c = colours[k % colours.Length];
+            w.City.Tint[w.Tinted[k]] = new Map25Colour(c.r, c.g, c.b);
+            w.City.TintShare[w.Tinted[k]] = Map25Palette.TintShare;
+            w.Scene.Retint(w.City, w.Tinted[k], generator, scratch);
+        }
+        w.City.Tint[w.Hover] = new Map25Colour(1f, 1f, 1f);
+        w.City.TintShare[w.Hover] = Map25Palette.HoverShare;
+        w.Scene.Retint(w.City, w.Hover, generator, scratch);
+        w.Scene.Refresh();
         return w;
     }
 
@@ -235,6 +243,8 @@ public static class Map25Preview
         };
         if (!tall)
         {
+            looks.Add(new Look { Name = p + "full_flat_bare", Width = 1920, Height = 1080, Pitch = 90f, Across = 800f, Bare = true });
+            looks.Add(new Look { Name = p + "mini_flat_bare", Width = 600, Height = 600, Pitch = 90f, Across = 260f, Mini = true, Where = At.Start, Bare = true });
             looks.Add(new Look { Name = p + "full_tilt_aa1", Width = 1920, Height = 1080, Heading = -16f, Pitch = 47f, Across = 760f, Fog = true, Pins = true, Aa = 1 });
             looks.Add(new Look { Name = p + "full_p65", Width = 1920, Height = 1080, Pitch = 65f, Across = 780f });
             looks.Add(new Look { Name = p + "full_p75", Width = 1920, Height = 1080, Pitch = 75f, Across = 780f });
@@ -409,7 +419,7 @@ public static class Map25Preview
         target.Create();
         var frame = new Map25Frame
         {
-            Player = true, PlayerX = playerX, PlayerY = 0f, PlayerZ = playerZ, Heading = 0f, Fog = look.Fog,
+            Player = !look.Bare, PlayerX = playerX, PlayerY = 0f, PlayerZ = playerZ, Heading = 0f, Fog = look.Fog,
             ConeRadius = Map25Marks.ConeMetres(look.Mini, pixels, mpp), HaloRadius = Map25Marks.HaloMetres(look.Mini, pixels, mpp)
         };
         w.Scene.Draw(target, view, frame, look.Mini ? 1 : 0);

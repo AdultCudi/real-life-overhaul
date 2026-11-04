@@ -104,8 +104,9 @@ namespace RealLifeOverhaul.Map25
             }
         }
 
-        // A shop's awnings: a slanted strip out of the wall at the top of the shop front, in the business's colour (the tint's on a tinted building), with a dark valance hanging from its edge.
-        private static void Awnings(Map25Builder f, float ax, float az, float ux, float uz, float nx, float nz, float length, float y0, bool tinted, Map25Colour tint, Map25Colour tone,
+        // A shop's awnings: a slanted strip out of the wall at the top of the shop front, in the business's colour (lifted towards the tint by the building's tint share, as its walls
+        // are: the game's hover is white at 0.28, so a hovered shop's awning is its own colour a little lighter, never white), with a dark valance hanging from its edge.
+        private static void Awnings(Map25Builder f, float ax, float az, float ux, float uz, float nx, float nz, float length, float y0, Map25Colour tint, float share, Map25Colour plain,
                                     float factor, ref Map25Rng rng)
         {
             int segments = Math.Max(1, (int)(length / 12f));
@@ -113,7 +114,11 @@ namespace RealLifeOverhaul.Map25
             for (int s = 0; s < segments; s++)
             {
                 int pick = rng.Int(Map25Palette.Awnings.Length);
-                Map25Colour a = tinted ? tint : Map25Palette.Awnings[pick].Mix(tone, 0.30f);
+                Map25Colour a = Map25Palette.Awnings[pick].Mix(plain, 0.30f);
+                if (share > 0f)
+                {
+                    a = Map25Palette.Tinted(a, tint, share);
+                }
                 a = a.Scale(0.80f + 0.35f * factor);
                 float s0 = s * seg + 1.4f, s1 = (s + 1) * seg - 1.4f;
                 float x0 = ax + ux * s0, z0 = az + uz * s0, x1 = ax + ux * s1, z1 = az + uz * s1;

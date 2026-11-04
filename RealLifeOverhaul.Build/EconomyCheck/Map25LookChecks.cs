@@ -60,11 +60,53 @@ internal static partial class Program
             Check(fullMb < 11.5 && smallMb < 3.4 && full.Vertices / (double)real.City.Count < 560 && full.Layers[(int)Map25Kind.Panes].Vertices < 340000 && needles == 0 && tallest < 100f && high < real.City.Count / 12,
                 "2.5D map: on the owner's own 883 footprints (" + (tall ? "deliberately tall" : "ordinary") + " heights) the full detail is " + fullMb.ToString("F1") + " MB, the minimap's " + smallMb.ToString("F1")
                 + " MB, " + (full.Vertices / (double)real.City.Count).ToString("F0") + " vertices a building, no block is a needle, the tallest is " + tallest.ToString("F0") + " m and " + high + " are over 50 m");
+            if (tall)
+            {
+                continue;
+            }
+            // the previews' made-up roads and trees (round 2 of the critic: roads ran out into the sea, and a tree every 7 m on each avenue overstated the street trees)
+            real.FindGrid(-420f, -480f, 440f, 520f);
+            real.Roads(out float[] roadX, out _, out float[] roadZ, out _, out _, out _, out bool[] usable, out _, out int roadCount);
+            int used = 0, wet = 0;
+            for (int i = 0; i < roadCount; i++)
+            {
+                if (usable[i])
+                {
+                    used++;
+                    wet += real.IsLand(roadX[i], roadZ[i]) ? 0 : 1;
+                }
+            }
+            real.Trees(out float[] treeX, out float[] treeZ, out int treeCount, out _, out _);
+            int wetTrees = 0;
+            for (int i = 0; i < treeCount; i++)
+            {
+                wetTrees += real.IsLand(treeX[i], treeZ[i]) ? 0 : 1;
+            }
+            float closest = float.MaxValue;
+            for (int a = 0; a < real.Avenues.Count; a++)
+            {
+                var along = new List<float>();
+                for (int i = 0; i < treeCount; i++)
+                {
+                    if (Math.Abs(Math.Abs(treeX[i] - real.Avenues[a]) - (real.AvenueWidth[a] * 0.5f + 1.5f)) < 0.01f)
+                    {
+                        along.Add(treeZ[i]);
+                    }
+                }
+                along.Sort();
+                for (int i = 1; i < along.Count; i++)
+                {
+                    closest = Math.Min(closest, along[i] - along[i - 1]);
+                }
+            }
+            Check(used > 1000 && wet == 0 && wetTrees == 0 && closest >= 20f,
+                "2.5D map: on the owner's own footprints the preview's made-up roads and trees keep to the land (" + used + " road points and " + treeCount + " trees, none in the water) and a street tree stands no nearer than "
+                + closest.ToString("F0") + " m to the next along its avenue (one every 28 m)");
         }
     }
 
-    // One building of a given ground and height, drawn into fresh builders (its height is taken as the drawn one).
-    private static Map25Builders Map25One(float width, float depth, float height, long key, bool full, bool panes = true)
+    // One building of a given ground and height, drawn into fresh builders (its height is taken as the drawn one), with the game's highlight on it when a share of a tint is given.
+    private static Map25Builders Map25One(float width, float depth, float height, long key, bool full, bool panes = true, Map25Colour tint = default, float share = 0f)
     {
         var city = new Map25City();
         city.Reserve(1, 4);
@@ -75,9 +117,75 @@ internal static partial class Program
         Array.Copy(hz, city.HullZ, 4);
         city.Height[0] = height;
         city.Key[0] = key;
+        city.Tint[0] = tint;
+        city.TintShare[0] = share;
         var builders = new Map25Builders(8192);
         new Map25Blocks().Generate(builders, city, 0, full ? Map25Detail.Full : Map25Detail.Small, panes);
         return builders;
+    }
+
+    // A vertex colour as it is written (sRGB, 0 to 1): the chunk holds half floats of the linear light.
+    private static float[] Map25Written(Map25Chunk chunk, int vertex)
+    {
+        var written = new float[3];
+        for (int k = 0; k < 3; k++)
+        {
+            written[k] = Map25Math.Encode((float)BitConverter.UInt16BitsToHalf(chunk.Col[vertex * 4 + k]));
+        }
+        return written;
+    }
+
+    // The lightest channel of any vertex of a chunk, as written.
+    private static float Map25Lightest(Map25Chunk chunk)
+    {
+        float most = 0f;
+        for (int v = 0; v < chunk.Vertices; v++)
+        {
+            for (int k = 0; k < 3; k++)
+            {
+                most = Math.Max(most, Map25Math.Encode((float)BitConverter.UInt16BitsToHalf(chunk.Col[v * 4 + k])));
+            }
+        }
+        return most;
+    }
+
+    private static bool Map25SameColours(Map25Chunk a, Map25Chunk b)
+    {
+        if (a.Vertices != b.Vertices)
+        {
+            return false;
+        }
+        for (int i = 0; i < a.Vertices * 4; i++)
+        {
+            if (a.Col[i] != b.Col[i])
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // Whether a place on the ground is under one of the triangles of the chunks (a triangle with no area covers nothing).
+    private static bool Map25Covers(Map25Chunk[] chunks, float x, float z)
+    {
+        foreach (Map25Chunk c in chunks)
+        {
+            for (int i = 0; i + 2 < c.Indices; i += 3)
+            {
+                int a = c.Idx[i], b = c.Idx[i + 1], d = c.Idx[i + 2];
+                float ax = c.Pos[a * 3], az = c.Pos[a * 3 + 2], bx = c.Pos[b * 3], bz = c.Pos[b * 3 + 2], dx = c.Pos[d * 3], dz = c.Pos[d * 3 + 2];
+                if (Math.Abs((bx - ax) * (dz - az) - (bz - az) * (dx - ax)) < 1e-3f)
+                {
+                    continue;
+                }
+                float s0 = (bx - ax) * (z - az) - (bz - az) * (x - ax), s1 = (dx - bx) * (z - bz) - (dz - bz) * (x - bx), s2 = (ax - dx) * (z - dz) - (az - dz) * (x - dx);
+                if (!((s0 < 0f || s1 < 0f || s2 < 0f) && (s0 > 0f || s1 > 0f || s2 > 0f)))
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
     }
 
     private static void Map25HeightChecks(Map25Map map)
@@ -199,9 +307,11 @@ internal static partial class Program
         Check(!Map25Rules.Draws(Map25Kind.Crowns, Map25View.LeastRise) && Map25Rules.Draws(Map25Kind.Crowns, 1f), "2.5D map: the crown is its own kind, drawn only when the blocks stand: the flat map has no frame inside a frame");
         // the awnings: on the north and south walls of a shop only, standing out 1.25 m with a valance, in their own kind
         Map25Builders shop = null;
+        long shopKey = 0;
         for (long key = 1; key < 400 && (shop == null || shop.Fronts.Vertices == 0); key++)
         {
             shop = Map25One(40f, 30f, 20f, key, true);
+            shopKey = key;
         }
         Map25Chunk awnings = shop.Fronts.ToChunk();
         float minX = float.MaxValue, maxX = float.MinValue, minZ = float.MaxValue, maxZ = float.MinValue;
@@ -215,6 +325,38 @@ internal static partial class Program
         Check(awnings.Vertices == 48 && minX >= 0f && maxX <= 40f && Math.Abs(minZ + 1.25f) < 0.01f && Math.Abs(maxZ - 31.25f) < 0.01f,
             "2.5D map: a shop's awnings are on its two 40 m walls (three to a wall, a strip and a valance each) and none on the 30 m ones, each standing out 1.25 m (" + awnings.Vertices + " vertices)");
         Check(!Map25Rules.Draws(Map25Kind.Fronts, 0.4f) && Map25Rules.Draws(Map25Kind.Fronts, 0.6f), "2.5D map: awnings are drawn from a half height of the blocks, so a flat map has no bars beside the shop fronts");
+        // the game's hover is white at the hover share, a filter's highlight a colour at the tint share: a shop's awning is its own colour lifted that much towards it, as its walls
+        // are, never the raw tint (a hovered shop's awning was pure white, the brightest speck of the picture), and nothing of a hovered building is near white
+        Map25Colour white = new Map25Colour(1f, 1f, 1f), green = Map25Colour.Hex(0x3FCF8E);
+        Map25Builders plainShop = Map25One(40f, 30f, 20f, shopKey, true), hoverShop = Map25One(40f, 30f, 20f, shopKey, true, true, white, Map25Palette.HoverShare);
+        Map25Builders greenShop = Map25One(40f, 30f, 20f, shopKey, true, true, green, Map25Palette.TintShare);
+        Map25Chunk hoverBlocks = hoverShop.Blocks.ToChunk(), hoverCrowns = hoverShop.Crowns.ToChunk(), hoverFronts = hoverShop.Fronts.ToChunk();   // a builder hands its vertices out once
+        Map25Chunk plainBlocks = plainShop.Blocks.ToChunk(), greenBlocks = greenShop.Blocks.ToChunk();
+        float lightest = Math.Max(Map25Lightest(hoverBlocks), Math.Max(Map25Lightest(hoverCrowns), Map25Lightest(hoverFronts)));
+        float[] plainAwning = Map25Written(plainShop.Fronts.ToChunk(), 0), hoverAwning = Map25Written(hoverFronts, 0), greenAwning = Map25Written(greenShop.Fronts.ToChunk(), 0);
+        bool lifted = true;
+        for (int c = 0; c < 3; c++)
+        {
+            lifted &= hoverAwning[c] - plainAwning[c] >= 0.01f && hoverAwning[c] - plainAwning[c] <= 0.32f;
+        }
+        bool notRaw = Math.Abs(greenAwning[0] - green.R) > 0.04f || Math.Abs(greenAwning[1] - green.G) > 0.04f || Math.Abs(greenAwning[2] - green.B) > 0.04f;
+        Check(lightest < 0.95f && Math.Max(hoverAwning[0], Math.Max(hoverAwning[1], hoverAwning[2])) < 0.92f && lifted && notRaw && greenAwning[1] - greenAwning[0] > plainAwning[1] - plainAwning[0],
+            "2.5D map: a hovered shop's awning is its own colour a little lighter, not white (the lightest written channel of the hovered building is " + lightest.ToString("F2") + ", its awning's " + Math.Max(hoverAwning[0], Math.Max(hoverAwning[1], hoverAwning[2])).ToString("F2")
+            + "), and a highlighted shop's awning is lifted towards the highlight's colour by its share, not the raw colour");
+        // the minimap shows no highlight: a city with tints in it builds the same minimap blocks as one without, and the full map's blocks show them
+        Map25Builders miniPlain = Map25One(40f, 30f, 20f, shopKey, false), miniTinted = Map25One(40f, 30f, 20f, shopKey, false, true, green, Map25Palette.TintShare);
+        Map25Builders miniHover = Map25One(40f, 30f, 20f, shopKey, false, true, white, Map25Palette.HoverShare);
+        bool miniSame = true;
+        for (int k = 0; k < Map25Builders.Kinds; k++)
+        {
+            Map25Chunk plainKind = miniPlain.All[k].ToChunk();
+            miniSame &= Map25SameColours(plainKind, miniTinted.All[k].ToChunk()) && Map25SameColours(plainKind, miniHover.All[k].ToChunk());
+        }
+        Check(miniSame && !Map25SameColours(plainBlocks, greenBlocks) && !Map25SameColours(plainBlocks, hoverBlocks),
+            "2.5D map: the minimap's blocks show no highlight, whatever tints the city holds when the set is built (it has no pointer), and the full map's blocks show a hover and a tint");
+        string drawBody = Map25Body(ModSource(@"Ui\Map\Map25Scene.cs"), "public void Draw(");
+        Check(drawBody.Contains("_sets[which].Detail.Fine") && drawBody.Contains("_ringsOn && fine") && drawBody.Contains("_marksOn && fine"),
+            "2.5D map: the rings and roof lines of tinted buildings are drawn in the full map only: the minimap has no pointer and shows no highlight, whatever the scene holds");
         // the water tank: four thin legs, a drum on them with a gap under it, a lid and a cone
         MethodInfo tank = typeof(Map25Blocks).GetMethod("Tank", BindingFlags.NonPublic | BindingFlags.Static);
         var b = new Map25Builder(256);
@@ -299,6 +441,102 @@ internal static partial class Program
         }
         Check(none.Length == 0 && verges.Length == 0 && green.Length > 0 && area > 2800 && area < 7000 && near,
             "2.5D map: a row of a hundred street trees, or one on each side of an avenue, makes no green ground and 130 trees in 56 by 56 m make a park of " + area.ToString("F0") + " square metres, none far from a tree");
+        Map25GreenChecks();
+    }
+
+    // The green ground is closed and rounded as a ground is drawn (the critic of round 2: square holes where the trees thin, and stair-stepped edges): a thin place is no hole, a lone
+    // square is no park, a corner is a slant, and an edge that curves does not step.
+    private static void Map25GreenChecks()
+    {
+        // a hole: seven by seven squares of trees (nine to a square) but six trees in all in the middle three by three, so the rule leaves the middle square bare among green ones
+        var hx = new List<float>();
+        var hz = new List<float>();
+        for (int sx = 0; sx < 7; sx++)
+        {
+            for (int sz = 0; sz < 7; sz++)
+            {
+                if (sx >= 2 && sx <= 4 && sz >= 2 && sz <= 4)
+                {
+                    if (sz != 3)
+                    {
+                        hx.Add(1000f + sx * 10f + 5f);   // one tree in each square of the top and bottom rows of the middle block: six, and the squares between them bare
+                        hz.Add(1000f + sz * 10f + 5f);
+                    }
+                    continue;
+                }
+                for (int k = 0; k < 9; k++)
+                {
+                    hx.Add(1000f + sx * 10f + 2.5f + (k % 3) * 2.5f);
+                    hz.Add(1000f + sz * 10f + 2.5f + (k / 3) * 2.5f);
+                }
+            }
+        }
+        Map25Chunk[] holed = Map25Ground.Greens(hx.ToArray(), hz.ToArray(), hx.Count, 900f, 900f, 1200f, 1200f, 0f);
+        bool holeShut = Map25Covers(holed, 1035f, 1035f) && Map25Covers(holed, 1005f, 1035f) && Map25Covers(holed, 1065f, 1035f) && Map25Covers(holed, 1035f, 1005f);
+        // a lone square: seven trees, one each in seven of the nine squares of a block: the rule makes the middle square green and no other
+        var lx = new List<float>();
+        var lz = new List<float>();
+        for (int k = 0; k < 9; k++)
+        {
+            if (k == 1 || k == 7)
+            {
+                continue;
+            }
+            lx.Add(1200f + (k % 3) * 10f + 5f);
+            lz.Add(1200f + (k / 3) * 10f + 5f);
+        }
+        Map25Chunk[] lone = Map25Ground.Greens(lx.ToArray(), lz.ToArray(), lx.Count, 1100f, 1100f, 1300f, 1300f, 0f);
+        // a corner is a slant: an 80 by 80 m square of trees, nine to every 10 by 10 m, has its ground cut across at each corner, and is whole along its edges
+        var sx2 = new List<float>();
+        var sz2 = new List<float>();
+        for (int cx = 0; cx < 8; cx++)
+        {
+            for (int cz = 0; cz < 8; cz++)
+            {
+                for (int k = 0; k < 9; k++)
+                {
+                    sx2.Add(1400f + cx * 10f + 2.5f + (k % 3) * 2.5f);
+                    sz2.Add(1400f + cz * 10f + 2.5f + (k / 3) * 2.5f);
+                }
+            }
+        }
+        Map25Chunk[] square = Map25Ground.Greens(sx2.ToArray(), sz2.ToArray(), sx2.Count, 1300f, 1300f, 1600f, 1600f, 0f);
+        bool slant = !Map25Covers(square, 1391f, 1391f) && !Map25Covers(square, 1489f, 1489f) && !Map25Covers(square, 1391f, 1489f) && !Map25Covers(square, 1489f, 1391f)
+                     && Map25Covers(square, 1391f, 1440f) && Map25Covers(square, 1440f, 1391f) && Map25Covers(square, 1488f, 1440f) && Map25Covers(square, 1440f, 1488f) && Map25Covers(square, 1440f, 1440f);
+        // an outline that curves does not step: a round wood of 60 m radius, its left edge read every 2 metres up it, moves by no more than a slant's worth between two readings
+        var rng = new Map25Rng(33);
+        var rx = new List<float>();
+        var rz = new List<float>();
+        while (rx.Count < 230)
+        {
+            float tx = rng.Range(-60f, 60f), tz = rng.Range(-60f, 60f);
+            if (tx * tx + tz * tz <= 3600f)
+            {
+                rx.Add(1700f + tx);
+                rz.Add(1700f + tz);
+            }
+        }
+        Map25Chunk[] round = Map25Ground.Greens(rx.ToArray(), rz.ToArray(), rx.Count, 1600f, 1600f, 1800f, 1800f, 0f);
+        float last = float.NaN, widest = 0f;
+        int rows = 0, jumps = 0;
+        for (float z = 1700f - 40f; z <= 1700f + 40f; z += 2f)
+        {
+            float left = float.NaN;
+            for (float x = 1620f; x <= 1700f && float.IsNaN(left); x += 1f)
+            {
+                left = Map25Covers(round, x, z) ? x : left;
+            }
+            if (!float.IsNaN(left) && !float.IsNaN(last))
+            {
+                widest = Math.Max(widest, Math.Abs(left - last));
+                jumps += Math.Abs(left - last) > 5.5f ? 1 : 0;
+            }
+            last = left;
+            rows += float.IsNaN(left) ? 0 : 1;
+        }
+        Check(holeShut && lone.Length == 0 && slant && rows >= 38 && jumps <= 2,
+            "2.5D map: the green ground is closed and rounded: a thin place among the trees is no square hole, a lone dense square is no park, the corners of a wood are slanted, and the edge of a round one "
+            + "jumps by more than 5 m between two readings 2 m apart " + jumps + " times in " + rows + " (a stair of 10 m squares jumps by 10 every few readings)");
     }
 
     private static void Map25MarkChecks(Map25Map map)
@@ -311,8 +549,19 @@ internal static partial class Program
         Check(Math.Abs(fullLine - 7f) < 0.01f && Math.Abs(miniLine - 4.2f) < 0.01f && Math.Abs(fullCone - 142f) < 0.1f && Math.Abs(miniCone - 55f) < 0.1f && Math.Abs(fullHalo - 30f) < 0.1f && Math.Abs(miniHalo - 11.6f) < 0.1f,
             "2.5D map: the route's line is 7 pixels on a full map 1080 high and 4.2 on a minimap 300 wide, the view cone 142 and 55 pixels long, the halo 30 and 11.6 across, at any zoom");
         float onAvenue = fullLine * Map25Marks.CasingShare / 46f;
-        Check(onAvenue < 0.28f && Math.Abs(Map25Marks.RouteHalf(false, 2160f, m) / Map25Marks.RouteHalf(false, 1080f, m) - 2f) < 1e-3f && Map25Marks.ConeAlpha == 0.17f && Map25Marks.HaloAlpha == 0.30f,
-            "2.5D map: the route with its casing takes " + (100 * onAvenue).ToString("F0") + " per cent of a 46 pixel avenue (it took 68), it grows with the screen, the cone's fill is 0.17 and the halo's 0.30");
+        Check(onAvenue < 0.28f && Math.Abs(Map25Marks.RouteHalf(false, 2160f, m) / Map25Marks.RouteHalf(false, 1080f, m) - 2f) < 1e-3f,
+            "2.5D map: the route with its casing takes " + (100 * onAvenue).ToString("F0") + " per cent of a 46 pixel avenue (it took 68) and it grows with the screen");
+        // the view cone and the halo as the eye gets them, not as the constant says: the picture is blended in linear light, where an opacity of 0.17 shows 0.28 of the route's
+        // colour over the avenue (the first and second builds' cone, near twice the mockup's); the mockup's own pixels over the avenue are (47, 67, 87) to (52, 86, 111)
+        Map25Colour avenue = Map25Palette.Avenue, route = Map25Palette.Route;
+        float coneSeen = Map25Marks.Seen(Map25Marks.ConeAlpha, avenue, route), haloSeen = Map25Marks.Seen(Map25Marks.HaloAlpha, avenue, route), plain = Map25Marks.Seen(0.17f, avenue, route);
+        Map25Marks.SeenRgb(Map25Marks.ConeAlpha, avenue, route, out int coneR, out int coneG, out int coneB);
+        float onStreet = Map25Marks.Seen(Map25Marks.ConeAlpha, Map25Palette.Street, route), onGround = Map25Marks.Seen(Map25Marks.ConeAlpha, Map25Palette.Block, route);
+        Check(Math.Abs(coneSeen - 0.17f) < 0.005f && Math.Abs(haloSeen - 0.30f) < 0.005f && plain > 0.26f && Math.Abs(coneR - 52) <= 3 && Math.Abs(coneG - 86) <= 3 && Math.Abs(coneB - 111) <= 3
+              && onStreet < 0.22f && onGround < 0.25f,
+            "2.5D map: the view cone shows 0.17 of the route's colour and the halo 0.30 over an avenue as the eye gets them, (" + coneR + ", " + coneG + ", " + coneB + ") over the avenue's (47, 67, 87) where the mockup's is (52, 86, 111), "
+            + "an opacity of 0.17 in linear light would show " + plain.ToString("F2") + " (opacities " + Map25Marks.ConeAlpha.ToString("F3") + " and " + Map25Marks.HaloAlpha.ToString("F3") + "), and over the streets and the dark ground no more than "
+            + Math.Max(onStreet, onGround).ToString("F2"));
         bool steps = true;
         for (float h = 0.2f; h < 40f; h *= 1.07f)
         {

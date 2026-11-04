@@ -224,25 +224,49 @@ namespace RealLifeOverhaul.Map25
             }
         }
 
-        private static void Chain(List<float> px, List<float> pz, List<float> sp, List<int[]> chains, float x0, float z0, float x1, float z1, int direction, float speed)
+        /// <summary>True where the water grid has land (byte 0); a place outside the grid is not land. The made-up roads and trees keep to it: the real city has no road in the sea.</summary>
+        public bool IsLand(float x, float z)
+        {
+            int c = (int)Math.Floor((x - OriginX) / Cell), r = (int)Math.Floor((z - OriginZ) / Cell);
+            return c >= 0 && c < Columns && r >= 0 && r < Rows && Cells[r * Columns + c] != 1;
+        }
+
+        // One lane as chains of points every 10 m, only over land: a lane that crosses the water is cut where the land ends and begins again where it comes back.
+        private void Chain(List<float> px, List<float> pz, List<float> sp, List<int[]> chains, float x0, float z0, float x1, float z1, int direction, float speed)
         {
             float l = (float)Math.Sqrt((x1 - x0) * (x1 - x0) + (z1 - z0) * (z1 - z0));
             int steps = Math.Max(1, (int)(l / 10f));
-            var ids = new int[steps + 1];
+            var run = new List<int>(steps + 1);
             for (int s = 0; s <= steps; s++)
             {
                 int at = direction > 0 ? s : steps - s;
-                ids[s] = px.Count;
-                px.Add(x0 + (x1 - x0) * at / steps);
-                pz.Add(z0 + (z1 - z0) * at / steps);
+                float x = x0 + (x1 - x0) * at / steps, z = z0 + (z1 - z0) * at / steps;
+                if (!IsLand(x, z))
+                {
+                    EndRun(run, chains);
+                    continue;
+                }
+                run.Add(px.Count);
+                px.Add(x);
+                pz.Add(z);
                 sp.Add(speed);
             }
-            chains.Add(ids);
+            EndRun(run, chains);
+        }
+
+        private static void EndRun(List<int> run, List<int[]> chains)
+        {
+            if (run.Count >= 2)
+            {
+                chains.Add(run.ToArray());
+            }
+            run.Clear();
         }
 
         /// <summary>
-        /// Trees: a row along each avenue of the window every 14 m on both sides, and a park of a tree to every 70 square metres (150 to 900) in the largest hole between the buildings that
-        /// is not a road (found on an 8 m grid, at least 48 by 48 m). <paramref name="park"/> is that hole's middle, or the window's if none was found.
+        /// Trees: along each avenue of the window one every 28 m, from one side and the other in turn (street trees thinned to a quarter of the first previews', which overstated
+        /// them: the mockup's flat map has trees only in its park), and a park of a tree to every 70 square metres (150 to 900) in the largest hole between the buildings that
+        /// is not a road (found on an 8 m grid, at least 48 by 48 m). None stands in the water. <paramref name="park"/> is that hole's middle, or the window's if none was found.
         /// </summary>
         public void Trees(out float[] x, out float[] z, out int count, out float parkX, out float parkZ)
         {
@@ -251,12 +275,16 @@ namespace RealLifeOverhaul.Map25
             var rng = new Map25Rng(91);
             for (int a = 0; a < Avenues.Count; a++)
             {
-                for (float zz = WindowZ0; zz < WindowZ1; zz += 14f)
+                int side = a & 1;   // the first tree of an avenue stands on a side that alternates from avenue to avenue
+                for (float zz = WindowZ0; zz < WindowZ1; zz += 28f)
                 {
-                    tx.Add(Avenues[a] - AvenueWidth[a] * 0.5f - 1.5f);
-                    tz.Add(zz + rng.Range(-1.5f, 1.5f));
-                    tx.Add(Avenues[a] + AvenueWidth[a] * 0.5f + 1.5f);
-                    tz.Add(zz + rng.Range(-1.5f, 1.5f));
+                    float at = Avenues[a] + (side == 0 ? -1f : 1f) * (AvenueWidth[a] * 0.5f + 1.5f), along = zz + rng.Range(-1.5f, 1.5f);
+                    side ^= 1;
+                    if (IsLand(at, along))
+                    {
+                        tx.Add(at);
+                        tz.Add(along);
+                    }
                 }
             }
             const float g = 8f;
@@ -344,8 +372,12 @@ namespace RealLifeOverhaul.Map25
                 int park = Math.Max(150, Math.Min(900, (int)((x1 - x0) * (z1 - z0) / 70f)));   // a tree to every 70 square metres of it, at the most 900
                 for (int k = 0; k < park; k++)
                 {
-                    tx.Add(rng.Range(x0, x1));
-                    tz.Add(rng.Range(z0, z1));
+                    float tree = rng.Range(x0, x1), row = rng.Range(z0, z1);
+                    if (IsLand(tree, row))
+                    {
+                        tx.Add(tree);
+                        tz.Add(row);
+                    }
                 }
             }
             x = tx.ToArray();

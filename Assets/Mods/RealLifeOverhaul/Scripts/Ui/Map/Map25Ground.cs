@@ -269,7 +269,10 @@ namespace RealLifeOverhaul.Map25
         /// <summary>
         /// The green ground of the parks, from the trees: a <see cref="TreeCell"/> metre square is green when at least <see cref="GreenTrees"/>
         /// trees stand in it and the eight round it (a thicket and a park are, a row of street trees is not). The game keeps no polygon of
-        /// a park, only its trees (TreeController.AllTrees), so a park is where they stand together. Squares along a row are joined; chunks as the land's.
+        /// a park, only its trees (TreeController.AllTrees), so a park is where they stand together. The squares are then closed and rounded as a ground is drawn:
+        /// a square the green ones hold a majority of (five of the nine round it, itself counted) is green, a lone one or a spur of one square is not, so a thin place
+        /// among the trees is no square hole and a thicket's edge is no stair; and the outline is cut through the middle of the squares' edges, as the land's coast is, so a
+        /// corner is a slant and a park a polygon. The trees themselves stand where they stand. Squares along a row are joined; chunks as the land's.
         /// </summary>
         public static Map25Chunk[] Greens(float[] x, float[] z, int count, float minX, float minZ, float maxX, float maxZ, float y)
         {
@@ -283,9 +286,13 @@ namespace RealLifeOverhaul.Map25
                     trees[gz * columns + gx]++;
                 }
             }
+            byte[] ground = GreenSquares(trees, columns, rows);
             int block = Math.Max(1, (int)Math.Round(Map25Set.Cell / TreeCell));
             var chunks = new List<Map25Chunk>(32);
             var b = new Map25Builder(1024);
+            var f = new float[4];
+            var px = new float[8];
+            var pz = new float[8];
             float originX = minX - TreeCell, originZ = minZ - TreeCell;
             for (int bz = 0; bz < rows; bz += block)
             {
@@ -296,17 +303,21 @@ namespace RealLifeOverhaul.Map25
                         int run = -1;
                         for (int gx = bx; gx <= Math.Min(bx + block, columns); gx++)
                         {
-                            bool green = false;
-                            if (gx < Math.Min(bx + block, columns) && gx > 0 && gx < columns - 1 && gz > 0 && gz < rows - 1)
+                            int inside = 0;
+                            bool whole = false;
+                            if (gx < Math.Min(bx + block, columns))
                             {
-                                int near = 0;
-                                for (int k = 0; k < 9; k++)
+                                f[0] = GreenField(ground, columns, rows, gx, gz);
+                                f[1] = GreenField(ground, columns, rows, gx + 1, gz);
+                                f[2] = GreenField(ground, columns, rows, gx + 1, gz + 1);
+                                f[3] = GreenField(ground, columns, rows, gx, gz + 1);
+                                for (int k = 0; k < 4; k++)
                                 {
-                                    near += trees[(gz + k / 3 - 1) * columns + gx + k % 3 - 1];
+                                    inside += f[k] >= 0.5f ? 1 : 0;
                                 }
-                                green = near >= GreenTrees;
+                                whole = inside == 4;
                             }
-                            if (green)
+                            if (whole)
                             {
                                 run = run < 0 ? gx : run;
                                 continue;
@@ -317,6 +328,22 @@ namespace RealLifeOverhaul.Map25
                                 b.Flat(x0, y, z0, x1, y, z0, x1, y, z0 + TreeCell, x0, y, z0 + TreeCell, Map25Palette.Park, 1f);
                                 run = -1;
                             }
+                            if (inside == 0 || gx >= Math.Min(bx + block, columns))
+                            {
+                                continue;
+                            }
+                            int m = Clip(f, originX + gx * TreeCell, originZ + gz * TreeCell, TreeCell, px, pz);
+                            if (m >= 3)
+                            {
+                                int first = b.Vertex(px[0], y, pz[0], Map25Palette.Park);
+                                int prev = b.Vertex(px[1], y, pz[1], Map25Palette.Park);
+                                for (int k = 2; k < m; k++)
+                                {
+                                    int next = b.Vertex(px[k], y, pz[k], Map25Palette.Park);
+                                    b.Triangle(first, prev, next);
+                                    prev = next;
+                                }
+                            }
                         }
                     }
                     if (b.Vertices > 0)
@@ -326,6 +353,52 @@ namespace RealLifeOverhaul.Map25
                 }
             }
             return chunks.ToArray();
+        }
+
+        // The green squares: the rule of the trees (seven in the nine squares round it), then a majority filter, so a hole of a square or two among the trees is filled and a lone
+        // square or a spur of one is dropped. 1 for green, by square.
+        private static byte[] GreenSquares(byte[] trees, int columns, int rows)
+        {
+            var rule = new byte[columns * rows];
+            for (int gz = 1; gz < rows - 1; gz++)
+            {
+                for (int gx = 1; gx < columns - 1; gx++)
+                {
+                    int near = 0;
+                    for (int k = 0; k < 9; k++)
+                    {
+                        near += trees[(gz + k / 3 - 1) * columns + gx + k % 3 - 1];
+                    }
+                    rule[gz * columns + gx] = (byte)(near >= GreenTrees ? 1 : 0);
+                }
+            }
+            var ground = new byte[columns * rows];
+            for (int gz = 0; gz < rows; gz++)
+            {
+                for (int gx = 0; gx < columns; gx++)
+                {
+                    int green = 0;
+                    for (int k = 0; k < 9; k++)
+                    {
+                        int cx = gx + k % 3 - 1, cz = gz + k / 3 - 1;
+                        green += cx >= 0 && cx < columns && cz >= 0 && cz < rows ? rule[cz * columns + cx] : 0;
+                    }
+                    ground[gz * columns + gx] = (byte)(green >= 5 ? 1 : 0);
+                }
+            }
+            return ground;
+        }
+
+        // The green share at a corner of the grid: the mean of the four squares round it (a square outside the grid is not green).
+        private static float GreenField(byte[] ground, int columns, int rows, int vx, int vz)
+        {
+            int sum = 0;
+            for (int k = 0; k < 4; k++)
+            {
+                int cx = vx - 1 + (k & 1), cz = vz - 1 + (k >> 1);
+                sum += cx >= 0 && cx < columns && cz >= 0 && cz < rows ? ground[cz * columns + cx] : 0;
+            }
+            return sum * 0.25f;
         }
 
         /// <summary>
