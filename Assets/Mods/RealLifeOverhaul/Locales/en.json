@@ -30919,5 +30919,7 @@
   "reallife_fin_cut_title": "Cut your prices?",
   "reallife_fin_cut_body": "Your own shops' prices go down {percent}% for {days} days and your pricing plans are held while it lasts. They go back by themselves at the end.",
   "reallife_fin_standing_none": "Nothing yet",
-  "reallife_fin_note_exported": "The statement is written to statement.csv in the mod's folder."
+  "reallife_fin_note_exported": "The statement is written to statement.csv in the mod's folder.",
+  "reallife_fin_floor_ok": "Banks lend from {threshold}. You are {above} points over it, so they will lend to you.",
+  "reallife_fin_floor_no": "Banks lend from {threshold}. You are {below} points under it, so no bank will lend to you now."
 }

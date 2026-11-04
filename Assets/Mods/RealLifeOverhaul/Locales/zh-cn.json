@@ -30919,5 +30919,7 @@
   "reallife_fin_cut_title": "降价吗？",
   "reallife_fin_cut_body": "你自己店铺的价格将下降{percent}%，持续{days}天，期间定价方案会被暂停。到期后会自动恢复。",
   "reallife_fin_standing_none": "暂无",
-  "reallife_fin_note_exported": "账单已写入模组文件夹中的 statement.csv。"
+  "reallife_fin_note_exported": "账单已写入模组文件夹中的 statement.csv。",
+  "reallife_fin_floor_ok": "银行从 {threshold} 分起放贷。你高出 {above} 分，所以银行会借钱给你。",
+  "reallife_fin_floor_no": "银行从 {threshold} 分起放贷。你低了 {below} 分，所以现在没有银行会借钱给你。"
 }

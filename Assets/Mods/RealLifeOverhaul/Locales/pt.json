@@ -30919,5 +30919,7 @@
   "reallife_fin_cut_title": "Reduzir seus preços?",
   "reallife_fin_cut_body": "Os preços das suas lojas caem {percent}% por {days} dias e seus planos de preço ficam suspensos enquanto durar. Eles voltam sozinhos no fim.",
   "reallife_fin_standing_none": "Nada ainda",
-  "reallife_fin_note_exported": "O extrato foi salvo em statement.csv na pasta do mod."
+  "reallife_fin_note_exported": "O extrato foi salvo em statement.csv na pasta do mod.",
+  "reallife_fin_floor_ok": "Os bancos emprestam a partir de {threshold}. Você está {above} pontos acima, então eles vão emprestar a você.",
+  "reallife_fin_floor_no": "Os bancos emprestam a partir de {threshold}. Você está {below} pontos abaixo, então nenhum banco vai emprestar a você agora."
 }
