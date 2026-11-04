@@ -54,7 +54,8 @@ namespace RealLifeOverhaul.Economy
         Marketing = 2,
         Licences = 3,
         Accountant = 4,
-        Count = 5
+        Rent = 5,       // the rise a lease's renewal added to the game's rent
+        Count = 6
     }
 
     /// <summary>

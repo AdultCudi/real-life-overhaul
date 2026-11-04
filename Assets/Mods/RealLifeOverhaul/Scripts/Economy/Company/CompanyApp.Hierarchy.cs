@@ -21,7 +21,7 @@ namespace RealLifeOverhaul.Economy
         private static readonly string[] EscalationKeys =
         {
             "reallife_hier_kind_gap", "reallife_hier_kind_budget", "reallife_hier_kind_demand", "reallife_hier_kind_mood", "reallife_hier_kind_wave",
-            "reallife_hier_kind_kpi", "reallife_hier_kind_exception", "reallife_hier_kind_proposal"
+            "reallife_hier_kind_kpi", "reallife_hier_kind_exception", "reallife_hier_kind_proposal", "reallife_hier_kind_lease"
         };
         private static readonly string[] EscalationStateKeys =
         {
@@ -256,6 +256,11 @@ namespace RealLifeOverhaul.Economy
                     case EscalationKind.Wave:
                         InfoBox.Button(buttons, InfoBox.Positive, "reallife_hier_do_raise", () => _director.HierarchySettle(id, 0));
                         break;
+                    case EscalationKind.Lease:
+                        InfoBox.Button(buttons, InfoBox.Positive, "reallife_hier_do_renew", () => _director.HierarchySettle(id, CompanyDirector.AnswerAgree));
+                        InfoBox.Button(buttons, InfoBox.Additional, "reallife_hier_do_haggle", () => _director.HierarchySettle(id, CompanyDirector.AnswerHaggle));
+                        InfoBox.Button(buttons, InfoBox.Negative, "reallife_hier_do_hold", () => _director.HierarchySettle(id, CompanyDirector.AnswerRefuse));
+                        break;
                     case EscalationKind.Exception:
                     case EscalationKind.Proposal:
                         InfoBox.Button(buttons, InfoBox.Positive, e.Kind == (int)EscalationKind.Proposal ? "reallife_hier_do_approve" : "reallife_hier_do_agree",
@@ -264,7 +269,7 @@ namespace RealLifeOverhaul.Economy
                             () => _director.HierarchySettle(id, 1));
                         break;
                 }
-                if (e.Kind != (int)EscalationKind.Exception && e.Kind != (int)EscalationKind.Proposal)
+                if (e.Kind != (int)EscalationKind.Exception && e.Kind != (int)EscalationKind.Proposal && e.Kind != (int)EscalationKind.Lease)
                 {
                     InfoBox.Button(buttons, InfoBox.Additional, "reallife_hier_do_dismiss", () => _director.HierarchyDismiss(id));
                 }
@@ -327,6 +332,9 @@ namespace RealLifeOverhaul.Economy
                         "ceiling", CompanyText.Wage(e.B));
                 case EscalationKind.Proposal:
                     return ProposalWords(e);
+                case EscalationKind.Lease:
+                    return CompanyText.Fill("reallife_hier_say_lease", "business", e.Detail, "days", e.C.ToString(), "rent", CompanyText.Money(_director.Monthly(e.B)),
+                        "share", CompanyText.Share(e.A > 0 ? (int)((e.B - e.A) * 1000L / e.A) : 0));
                 default:
                     return string.Empty;
             }

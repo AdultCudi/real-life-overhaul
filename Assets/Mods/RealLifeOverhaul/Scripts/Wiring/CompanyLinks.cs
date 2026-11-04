@@ -54,6 +54,7 @@ namespace RealLifeOverhaul
                 CompanyBridges.Close = Close;
                 CompanyBridges.Dispute = Dispute;
                 CompanyBridges.Rival = Rival;
+                CompanyBridges.Pressure = Rivals.RivalDirector.PremiumOf;
                 CompanyBridges.Leave = Leave;
                 CompanyBridges.Held = TechLinks.Holds;
                 BusinessDirector.Held = Offered;

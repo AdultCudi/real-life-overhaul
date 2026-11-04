@@ -1,0 +1,385 @@
+using System;
+using System.Collections.Generic;
+using System.Globalization;
+using System.Text;
+
+namespace RealLifeOverhaul.Economy
+{
+    /// <summary>
+    /// One lease on rented premises, by its place. The game has no end date for a rent: the lease is the mod's, a term and a renewal day over the
+    /// game's own rent, which is never changed. What a renewal adds to the rent is a rise, paid on top of the game's rent a day as a business cost
+    /// (as an agreed raise is paid on top of a wage). Saved under <see cref="LeaseStore.Key"/>.
+    /// </summary>
+    public sealed class LeaseFile
+    {
+        public string Place = string.Empty;
+        public int Start, Term;         // the first day of the term and its length in days: it renews on <see cref="End"/>
+        public int Rent;                // the game's rent a day when this was last read, whole money: the figure the rise is a share of
+        public int Rise;                // per mille over Rent that renewals have agreed, in all
+        public int Offer;               // per mille over Rent, in all, that the landlord asks at the coming renewal; 0 until the offer is made
+        public int Asked;               // the day the offer was made; 0 until then
+        public int Renewals;            // terms renewed under this lease
+        public bool Hold;               // the offer was declined: month to month at the rent paid now, a premium over it, asked again at the month's end
+        public int Last;                // per mille the last renewal raised the rent by (what the last answer came to), for the page
+        public bool Haggled;            // the landlord was asked to take less at this renewal: once
+        public int Answer;              // what was answered to the offer, taking effect on the day the lease ends: 0 nothing yet, 1 accepted, 2 declined (LeaseRules.Accepted, Declined)
+
+        // Read from the game; never saved.
+        public string Name = string.Empty;
+        public string District = string.Empty;
+
+        /// <summary>The day the term ends and the lease renews.</summary>
+        public int End => Start + Term;
+
+        /// <summary>Per mille over the game's rent the rent runs at today: the agreed rise, and the hold-over's premium while the offer is declined.</summary>
+        public int Running => Rise + (Hold ? LeaseRules.HoldPremium : 0);
+    }
+
+    /// <summary>What the leases keep for a save: the leases themselves, a ring of the city's renewals by month, and the day the last pass ran.</summary>
+    public sealed class LeaseState
+    {
+        public readonly List<LeaseFile> Leases = new List<LeaseFile>(8);
+        public readonly List<int> Trend = new List<int>(LeaseRules.TrendKept);   // the city's mean rise at a renewal, per mille, a month each, the newest last
+        public int TrendDay;            // the first day of the month the newest figure is of
+
+        public LeaseFile Of(string place)
+        {
+            for (int i = 0; i < Leases.Count; i++)
+            {
+                if (string.Equals(Leases[i].Place, place, StringComparison.Ordinal))
+                {
+                    return Leases[i];
+                }
+            }
+            return null;
+        }
+    }
+
+    /// <summary>
+    /// Leases, game-free (EconomyCheck compiles them): a term seeded for each place, the landlord's offer 14 days before it ends (what the city's
+    /// own landlords have been asking in the district, plus a seeded spread, plus what a rival buying up the district adds), what each answer comes
+    /// to, and the city's own leases, which renew by the very same rule (<see cref="Offer"/>) from a seed and a district alone, so they need no state.
+    /// The player's renewals and the city's use one function: whatever a landlord does to the player, they do to the city's businesses.
+    /// </summary>
+    public static class LeaseRules
+    {
+        public const int NoticeDays = 14;           // days before a lease ends that the landlord makes the offer
+        public const int RiseMost = 250;            // per mille: the most one renewal can raise the rent by
+        public const int SpreadLow = -20, SpreadHigh = 40;   // per mille: a landlord's own draw around the city's trend
+        public const int HoldPremium = 100;         // per mille over the game's rent while month to month
+        public const int HaggleChance = 400;        // per mille that a landlord halves their rise when asked once
+        public const int TrendKept = 12;            // months of the city's renewals kept
+        public const int CityLeases = 8;            // the city's own leases in a district that are followed (stateless: from the seed alone)
+        public const int PressureShare = 500;       // per mille of a rival's buying up in the district that lands on a renewal's rise
+        public static readonly int[] TermMonths = { 6, 12, 12, 24, 36 };
+        private const int PurposeTerm = 301, PurposeRise = 302, PurposeHaggle = 303, PurposeCity = 304;
+
+        /// <summary>A lease's term in days for a place: a seeded choice of 6, 12, 12, 24 or 36 months, never under a month's days.</summary>
+        public static int Term(int seed, string place, int renewal, int monthDays)
+        {
+            int months = TermMonths[ManagerRules.Roll(seed, renewal, place, PurposeTerm, string.Empty) % TermMonths.Length];
+            return Math.Max(1, months) * Math.Max(1, monthDays);
+        }
+
+        /// <summary>
+        /// The rise a landlord asks at a renewal, per mille over the rent now paid: the city's trend (what landlords in the district have been asking),
+        /// their own seeded draw around it, and a share of what a rival buying up the district adds. Never under nothing, never over <see cref="RiseMost"/>.
+        /// The one rule for every lease: the player's, a rival's and the city's.
+        /// </summary>
+        public static int Rise(int seed, string key, int renewal, int trend, int pressure)
+        {
+            int roll = ManagerRules.Roll(seed, renewal, key, PurposeRise, string.Empty);
+            int spread = SpreadLow + roll * (SpreadHigh - SpreadLow + 1) / 1000;
+            return CompanyCatalogue.Clamp(trend + spread + Math.Max(0, pressure) * PressureShare / 1000, 0, RiseMost);
+        }
+
+        /// <summary>The offer for a lease coming to its end: the rent's rise in all, over the game's rent, per mille.</summary>
+        public static int Offer(LeaseFile l, int seed, int trend, int pressure)
+        {
+            return CompanyCatalogue.Clamp(l.Rise + Rise(seed, l.Place, l.Renewals + 1, trend, pressure), 0, 4 * RiseMost);
+        }
+
+        /// <summary>Whether the landlord makes the offer today: none made yet, and the lease ends within the notice.</summary>
+        public static bool OfferDue(LeaseFile l, int day)
+        {
+            return l.Offer == 0 && l.Asked == 0 && day >= Math.Max(l.Start, l.End - NoticeDays) && day < l.End;
+        }
+
+        public const int Accepted = 1, Declined = 2;
+
+        /// <summary>Whether an offer waits for an answer: made, not answered, and the lease not yet at its end.</summary>
+        public static bool Waiting(LeaseFile l, int day)
+        {
+            return l.Offer > 0 && l.Answer == 0 && day < l.End;
+        }
+
+        /// <summary>The rent a day at a rise over the game's rent, whole money.</summary>
+        public static int RentAt(int rent, int risePermille)
+        {
+            return (int)Math.Min(int.MaxValue / 4, (long)Math.Max(0, rent) * (1000 + Math.Max(0, risePermille)) / 1000);
+        }
+
+        /// <summary>What a lease costs on top of the game's rent in a day, whole money: the rent's rise as it runs.</summary>
+        public static int TopUp(LeaseFile l)
+        {
+            return (int)Math.Min(int.MaxValue / 4, (long)Math.Max(0, l.Rent) * Math.Max(0, l.Running) / 1000);
+        }
+
+        /// <summary>The rise an offer asks over the rent paid now, per mille of that rent (what the page says: "up 8%").</summary>
+        public static int OfferOver(LeaseFile l)
+        {
+            int now = 1000 + l.Running;
+            return l.Offer > 0 ? (int)(((long)(1000 + l.Offer) - now) * 1000 / Math.Max(1, now)) : 0;
+        }
+
+        /// <summary>Whether an offer is inside a manager's limit (per mille over the rent paid now): their own to accept; past it, it is the owner's.</summary>
+        public static bool Within(LeaseFile l, int limitPermille)
+        {
+            return l.Offer > 0 && OfferOver(l) <= limitPermille;
+        }
+
+        /// <summary>
+        /// An answer to the offer, taking effect on the day the lease ends (the rent runs as it does until then); false when no offer waits. Accepting
+        /// agrees the rise for a new term; declining keeps the tenant month to month at the rent paid now and a premium over it.
+        /// </summary>
+        public static bool Respond(LeaseFile l, int day, bool accept)
+        {
+            if (!Waiting(l, day))
+            {
+                return false;
+            }
+            l.Answer = accept ? Accepted : Declined;
+            return true;
+        }
+
+        /// <summary>
+        /// The day a lease has come to its end with an offer made: the answer is applied. Accepted, or left unanswered (the landlord renews at their
+        /// own figure), the rise is agreed and a new term begins from the day the old one ended; declined, the tenant stays month to month and is
+        /// asked again at the month's end. True when something was settled.
+        /// </summary>
+        public static bool Settle(LeaseFile l, int day, int seed, int monthDays)
+        {
+            if (l.Offer <= 0 || day < l.End)
+            {
+                return false;
+            }
+            int from = l.End;
+            if (l.Answer == Declined)
+            {
+                l.Hold = true;
+                l.Last = 0;
+                l.Term = Math.Max(1, monthDays);
+            }
+            else
+            {
+                l.Last = OfferOver(l);
+                l.Rise = l.Offer;
+                l.Renewals++;
+                l.Hold = false;
+                l.Term = Term(seed, l.Place, l.Renewals, monthDays);
+            }
+            l.Start = from + l.Term <= day ? day : from;   // the old clock goes on, unless days were skipped past the whole new term
+            l.Offer = l.Asked = l.Answer = 0;
+            l.Haggled = false;
+            return true;
+        }
+
+        /// <summary>
+        /// A landlord asked once to take less: with <see cref="HaggleChance"/> they halve their rise (to what is over the rent now), else the offer stands.
+        /// True when it came down. Seeded by the place, the renewal and the day, so asking again the same day gives the same answer.
+        /// </summary>
+        public static bool Haggle(LeaseFile l, int seed, int day)
+        {
+            if (!CanHaggle(l, day))
+            {
+                return false;
+            }
+            l.Haggled = true;   // asked: whatever the answer, not again at this renewal
+            if (ManagerRules.Roll(seed, day, l.Place, PurposeHaggle, l.Renewals.ToString(CultureInfo.InvariantCulture)) >= HaggleChance)
+            {
+                return false;
+            }
+            l.Offer = l.Rise + (l.Offer - l.Rise) / 2;
+            return true;
+        }
+
+        /// <summary>Whether the landlord may be asked to take less: an offer waits, it rises the rent, and nobody has asked at this renewal.</summary>
+        public static bool CanHaggle(LeaseFile l, int day)
+        {
+            return Waiting(l, day) && !l.Haggled && l.Offer > l.Rise;
+        }
+
+        /// <summary>A lease made for premises seen first: a seeded term, starting today.</summary>
+        public static LeaseFile Begin(int seed, string place, int rent, int day, int monthDays)
+        {
+            var l = new LeaseFile { Place = place, Start = day, Rent = Math.Max(0, rent) };
+            l.Term = Term(seed, place, 0, monthDays);
+            return l;
+        }
+
+        // ---------------------------------------------------------------- the city's own leases: stateless, by the same rule
+
+        /// <summary>
+        /// One of the city's businesses' leases in a district, as a function of the seed alone: its term in days, its start offset in its first term, so
+        /// that renewals fall on different days, the way the player's would.
+        /// </summary>
+        public static void CityLease(int seed, string district, int n, int monthDays, out int term, out int phase)
+        {
+            string key = district + "#" + n.ToString(CultureInfo.InvariantCulture);
+            term = Term(seed, key, 0, monthDays);
+            phase = ManagerRules.Roll(seed, 0, key, PurposeCity, string.Empty) * term / 1000;
+        }
+
+        /// <summary>
+        /// What the city's landlords did in a district on a day: how many of its leases came to their end and the sum of the rises they asked
+        /// (by <see cref="Rise"/> with the trend given), per mille. The city's leases renew every term and take the landlord's offer.
+        /// </summary>
+        public static int CityDay(int seed, string district, int day, int monthDays, int trend, int pressure, out int renewed)
+        {
+            renewed = 0;
+            int sum = 0;
+            for (int n = 0; n < CityLeases; n++)
+            {
+                int term, phase;
+                CityLease(seed, district, n, monthDays, out term, out phase);
+                if (day <= phase || (day - phase) % term != 0)
+                {
+                    continue;
+                }
+                int renewal = (day - phase) / term;
+                sum += Rise(seed, district + "#" + n.ToString(CultureInfo.InvariantCulture), renewal, trend, pressure);
+                renewed++;
+            }
+            return sum;
+        }
+
+        /// <summary>The month's mean rise at a city renewal in a district, per mille, added to the ring; a month with no renewal keeps the last figure.</summary>
+        public static void KeepTrend(List<int> ring, int sum, int renewed)
+        {
+            int last = ring.Count > 0 ? ring[ring.Count - 1] : 0;
+            ring.Add(renewed > 0 ? sum / renewed : last);
+            while (ring.Count > TrendKept)
+            {
+                ring.RemoveAt(0);
+            }
+        }
+
+        /// <summary>The city's trend: the mean of the months kept, per mille; 0 before any month has been kept (the landlord's own draw alone).</summary>
+        public static int TrendOf(List<int> ring)
+        {
+            if (ring == null || ring.Count == 0)
+            {
+                return 0;
+            }
+            long sum = 0;
+            for (int i = 0; i < ring.Count; i++)
+            {
+                sum += ring[i];
+            }
+            return (int)(sum / ring.Count);
+        }
+    }
+
+    /// <summary>The leases in the save, game-free: "v=1^h:trendDay^t:the ring of the city's months^l:leases". A newer version adds fields at the end of a record.</summary>
+    public static class LeaseStore
+    {
+        public const string Key = "reallife:co_leases";
+        public const int Version = 1;
+        public const int LeasesMost = 64;
+        private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+
+        public static string Write(LeaseState s)
+        {
+            var t = new StringBuilder(64 + s.Leases.Count * 64);
+            t.Append("v=").Append(Version).Append("^h:").Append(s.TrendDay.ToString(Inv));
+            t.Append("^t:");
+            for (int i = 0; i < s.Trend.Count && i < LeaseRules.TrendKept; i++)
+            {
+                t.Append(i > 0 ? "|" : string.Empty).Append(s.Trend[i].ToString(Inv));
+            }
+            t.Append("^l:");
+            for (int i = 0; i < s.Leases.Count && i < LeasesMost; i++)
+            {
+                LeaseFile l = s.Leases[i];
+                t.Append(i > 0 ? ";" : string.Empty);
+                t.Append(l.Start.ToString(Inv)).Append('|').Append(l.Term.ToString(Inv)).Append('|').Append(l.Rent.ToString(Inv)).Append('|').Append(l.Rise.ToString(Inv)).Append('|')
+                    .Append(l.Offer.ToString(Inv)).Append('|').Append(l.Asked.ToString(Inv)).Append('|').Append(l.Renewals.ToString(Inv)).Append('|').Append(l.Hold ? '1' : '0').Append('|')
+                    .Append(l.Last.ToString(Inv)).Append('|').Append(CompanyStore.Clean(l.Place)).Append('|').Append(l.Answer.ToString(Inv)).Append('|').Append(l.Haggled ? '1' : '0');
+            }
+            return t.ToString();
+        }
+
+        /// <summary>Reads a line; null for one that is not this feature's.</summary>
+        public static LeaseState Read(string text, out int version)
+        {
+            version = 0;
+            if (string.IsNullOrEmpty(text) || !text.StartsWith("v=", StringComparison.Ordinal))
+            {
+                return null;
+            }
+            try
+            {
+                string[] parts = text.Split('^');
+                if (!int.TryParse(parts[0].Substring(2), NumberStyles.Integer, Inv, out version) || version < 1)
+                {
+                    return null;
+                }
+                var s = new LeaseState();
+                bool header = false;
+                for (int p = 1; p < parts.Length; p++)
+                {
+                    string part = parts[p];
+                    if (part.Length < 2 || part[1] != ':')
+                    {
+                        continue;
+                    }
+                    string body = part.Substring(2);
+                    switch (part[0])
+                    {
+                        case 'h':
+                            s.TrendDay = Math.Max(0, I(body.Split('|'), 0));
+                            header = true;
+                            break;
+                        case 't':
+                            foreach (string one in body.Length == 0 ? new string[0] : body.Split('|'))
+                            {
+                                int v;
+                                if (int.TryParse(one, NumberStyles.Integer, Inv, out v) && s.Trend.Count < LeaseRules.TrendKept)
+                                {
+                                    s.Trend.Add(CompanyCatalogue.Clamp(v, 0, LeaseRules.RiseMost));
+                                }
+                            }
+                            break;
+                        case 'l':
+                            foreach (string record in body.Length == 0 ? new string[0] : body.Split(';'))
+                            {
+                                string[] c = record.Split('|');
+                                if (c.Length >= 10 && c[9].Length > 0 && s.Leases.Count < LeasesMost && s.Of(c[9]) == null)
+                                {
+                                    s.Leases.Add(new LeaseFile
+                                    {
+                                        Start = Math.Max(0, I(c, 0)), Term = Math.Max(1, I(c, 1, 1)), Rent = Math.Max(0, I(c, 2)),
+                                        Rise = CompanyCatalogue.Clamp(I(c, 3), 0, 4 * LeaseRules.RiseMost), Offer = CompanyCatalogue.Clamp(I(c, 4), 0, 4 * LeaseRules.RiseMost),
+                                        Asked = Math.Max(0, I(c, 5)), Renewals = Math.Max(0, I(c, 6)), Hold = I(c, 7) != 0, Last = CompanyCatalogue.Clamp(I(c, 8), -1000, 4 * LeaseRules.RiseMost),
+                                        Place = c[9], Answer = CompanyCatalogue.Clamp(I(c, 10), 0, LeaseRules.Declined), Haggled = I(c, 11) != 0
+                                    });
+                                }
+                            }
+                            break;
+                    }
+                }
+                return header ? s : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        private static int I(string[] c, int at, int fallback = 0)
+        {
+            int value;
+            return at < c.Length && int.TryParse(c[at], NumberStyles.Integer, Inv, out value) ? value : fallback;
+        }
+    }
+}

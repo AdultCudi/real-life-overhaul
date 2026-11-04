@@ -831,6 +831,17 @@ namespace RealLifeOverhaul.Economy
                     }
                     return CompanyBridges.Leave != null ? UndoCan : NotNow(out why, "reallife_mgr_undo_changed");
                 }
+                case ManagerTask.Marketing:
+                    return Never(out why, "reallife_mgr_undo_paid");   // booked and paid
+                case ManagerTask.Leases:
+                {
+                    LeaseFile l = LeaseAt(d.Place);
+                    if (l == null || l.Answer == 0 || day >= l.End)
+                    {
+                        return Never(out why, "reallife_mgr_undo_lease_late");   // the lease has run to its end, or the answer was changed since
+                    }
+                    return UndoCan;
+                }
                 default:
                     return Never(out why, "reallife_mgr_undo_nothing");
             }
@@ -1013,6 +1024,15 @@ namespace RealLifeOverhaul.Economy
                     if (CompanyBridges.Leave(e) && m != null)
                     {
                         m.Spent = Math.Max(0, m.Spent - d.C);
+                    }
+                    break;
+                }
+                case ManagerTask.Leases:
+                {
+                    LeaseFile l = LeaseAt(d.Place);
+                    if (l != null)
+                    {
+                        l.Answer = 0;   // the offer waits for the owner again, with the days it has left
                     }
                     break;
                 }

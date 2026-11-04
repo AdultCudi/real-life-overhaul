@@ -14,7 +14,8 @@ namespace RealLifeOverhaul.Economy
         Kpi = 5,            // a place's figures off its targets past the tolerance for days
         Exception = 6,      // a raise or an offer past the pay band, waiting for whoever may agree it
         Proposal = 7,       // an executive's change to a company rule, for the owner to approve
-        Count = 8
+        Lease = 8,          // a landlord's offer at a lease's renewal past what the manager may agree: always the owner's
+        Count = 9
     }
 
     /// <summary>Where an escalation stands. Saved as a number.</summary>
@@ -44,7 +45,8 @@ namespace RealLifeOverhaul.Economy
             {
                 case EscalationKind.Gap:
                 case EscalationKind.Kpi: return ExecSeat.Coo;
-                case EscalationKind.Budget: return ExecSeat.Cfo;
+                case EscalationKind.Budget:
+                case EscalationKind.Lease: return ExecSeat.Cfo;
                 default: return ExecSeat.Chro;
             }
         }

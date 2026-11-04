@@ -41,7 +41,7 @@ namespace RealLifeOverhaul.Economy
             TaxFile x = s.Tax;
             t.Append("^t:");
             Join(t, x.QuarterFrom, x.Quarter, x.Costs[0], x.Costs[1], x.Costs[2], x.Costs[3], x.Costs[4], x.ReturnDue, x.ReturnQuarter, x.ReturnTakings, x.ReturnCosts,
-                x.ReturnPenalties, x.LateRun, x.Accountant, x.AccountantNext, x.Risk, x.Saved, x.Owed, x.LastAudit, x.CaseNumber, x.QuietUntil);
+                x.ReturnPenalties, x.LateRun, x.Accountant, x.AccountantNext, x.Risk, x.Saved, x.Owed, x.LastAudit, x.CaseNumber, x.QuietUntil, x.Costs[5]);   // the rent's rise after the rest: a newer figure goes at the end
             t.Append("^s:");
             for (int i = 0; i < s.Shops.Count && i < CompanyCatalogue.ShopsMost; i++)
             {
@@ -216,9 +216,9 @@ namespace RealLifeOverhaul.Economy
         {
             x.QuarterFrom = Math.Max(0, I(c, 0));
             x.Quarter = Math.Max(1, I(c, 1, 1));
-            for (int k = 0; k < x.Costs.Length; k++)
+            for (int k = 0; k <= (int)CostKind.Accountant; k++)
             {
-                x.Costs[k] = Math.Max(0, I(c, 2 + k));
+                x.Costs[k] = Math.Max(0, I(c, 2 + k));   // the five the first version kept; the rent's rise is at the end of the record
             }
             x.ReturnDue = Math.Max(0, I(c, 7));
             x.ReturnQuarter = Math.Max(0, I(c, 8));
@@ -234,6 +234,7 @@ namespace RealLifeOverhaul.Economy
             x.LastAudit = Math.Max(0, I(c, 18));
             x.CaseNumber = Math.Max(0, I(c, 19));
             x.QuietUntil = Math.Max(0, I(c, 20));   // absent from older saves: no quiet time
+            x.Costs[(int)CostKind.Rent] = Math.Max(0, I(c, 21));   // absent from older saves: no rent rise paid
         }
 
         private static ShopFile Shop(string[] c)

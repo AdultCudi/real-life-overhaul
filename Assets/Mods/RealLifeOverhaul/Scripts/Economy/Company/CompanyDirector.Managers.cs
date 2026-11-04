@@ -30,6 +30,7 @@ namespace RealLifeOverhaul.Economy
         public const int TabManagers = 6;
         public const int LimitWage = 0, LimitStock = 1, LimitPriceLow = 2, LimitPriceHigh = 3, LimitBudget = 4, LimitKeep = 5;
         public const int LimitPriceStance = 6, LimitPriceMargin = 7, LimitPriceNinety = 8, LimitPriceCost = 9, LimitPriceStep = 10;   // the place's price strategy
+        public const int LimitMarketing = 11, LimitLease = 12;
 
         private ManagerState _mgr;
         private bool _mgrBroken;
@@ -387,6 +388,8 @@ namespace RealLifeOverhaul.Economy
                 case ManagerTask.Prices: DecidePrices(mp, skill, review, who, day, hour); break;
                 case ManagerTask.Rota: DecideRota(mp, skill, review, who, day, hour); break;
                 case ManagerTask.Hiring: DecideHiring(mp, skill, review, who, day, hour); break;
+                case ManagerTask.Marketing: DecideMarketing(mp, skill, review, who, day, hour); break;
+                case ManagerTask.Leases: DecideLeases(mp, skill, review, who, day, hour); break;
             }
         }
 
@@ -662,6 +665,8 @@ namespace RealLifeOverhaul.Economy
                 case LimitPriceNinety: m.Strategy.Ninety = step > 0; break;
                 case LimitPriceCost: m.Strategy.OverCost = step > 0; break;
                 case LimitPriceStep: m.Strategy.Step = PriceStrategyRules.Steps[CompanyCatalogue.Clamp(step, 0, PriceStrategyRules.Steps.Length - 1)]; break;
+                case LimitMarketing: m.MarketingStep = CompanyCatalogue.Clamp(step, 0, ManagerCatalogue.MarketingSteps.Length - 1); break;
+                case LimitLease: m.LeaseStep = CompanyCatalogue.Clamp(step, 0, ManagerCatalogue.LeaseRises.Length - 1); break;
             }
             if (limit == LimitWage || limit == LimitBudget)
             {
@@ -709,6 +714,14 @@ namespace RealLifeOverhaul.Economy
             if (!RotaOn)
             {
                 blocked |= ManagerRules.Bit(ManagerTask.Rota);
+            }
+            if (!On(CompanyPart.Marketing))
+            {
+                blocked |= ManagerRules.Bit(ManagerTask.Marketing);
+            }
+            if (!LeasesOn)
+            {
+                blocked |= ManagerRules.Bit(ManagerTask.Leases);
             }
             if (mp != null && mp.Kind == ManagedKind.Shop && (ManagerGame.PricingManagerCovers(mp.District) || CompanyBridges.PricesKeptAt(mp.Place.Place)))
             {

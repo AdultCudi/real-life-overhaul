@@ -175,6 +175,9 @@ namespace RealLifeOverhaul.Economy
         partial void HierarchySave(GameInstance save);
         partial void HierarchyDay(int day);
         partial void HierarchyHour(int day, int hour);
+        partial void LeaseLoad(GameInstance save);
+        partial void LeaseSave(GameInstance save);
+        partial void LeaseDay(int day);
         partial void PricePlansLoad(GameInstance save);
         partial void PricePlansSave(GameInstance save);
         partial void PricePlansHour(int day, int hour);
@@ -315,6 +318,7 @@ namespace RealLifeOverhaul.Economy
             RotaRead();
             ManagerLoad(save);
             HierarchyLoad(save);   // after the managers: a save from before the policy keeps their own limits as their stores' rules
+            LeaseLoad(save);
             PricePlansLoad(save);
             BuildAlerts(today);
             Logger?.Info("Company: " + (fresh ? "opened for this save" : "state loaded (version " + version + ")") + " on day " + today + ". "

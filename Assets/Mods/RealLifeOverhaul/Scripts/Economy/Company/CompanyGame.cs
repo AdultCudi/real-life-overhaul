@@ -131,8 +131,12 @@ namespace RealLifeOverhaul.Economy
         /// <summary>For a test: a professional of a role and level joins the professions' own payroll at a place; false if they could not.</summary>
         public static Func<string, int, int, bool> HireProfessional;
 
+        /// <summary>What a rival buying up a district adds to the rises landlords ask at a lease's renewal there, per mille; 0 where none does.</summary>
+        public static Func<string, int> Pressure;
+
         public static void Reset()
         {
+            Pressure = null;
             Professionals = null;
             HireProfessional = null;
             Comfort = null;
@@ -174,6 +178,7 @@ namespace RealLifeOverhaul.Economy
         public int Statements;          // of those days, the statements the game has
         public int Takings, Profit;     // yesterday's, by the game's statement
         public bool HasBooks;           // the game has a statement for yesterday
+        public int Rent;                // the game's rent a day at the premises, whole money; 0 where the player owns the building
         public int Staff, Low, Standing, Sick;   // staff, those standing low, their standing summed, those off sick
         public int Asked;               // per cent of customers the company asks for here now
         public bool Applied;            // something of the company's is in the game's figure
@@ -186,6 +191,7 @@ namespace RealLifeOverhaul.Economy
     internal static partial class CompanyGame
     {
         public const string RaiseKey = "reallife_transaction_co_raise";
+        public const string LeaseKey = "reallife_transaction_co_lease";   // the rise a lease's renewal added to the game's rent: a business cost, deductible
         public const string BonusKey = "reallife_transaction_co_bonus";   // a one-off bonus in place of a raise: a wage cost, deductible
         public const string SickKey = "reallife_transaction_co_sick";
         public const string OvertimeKey = "reallife_transaction_co_overtime";
@@ -289,6 +295,7 @@ namespace RealLifeOverhaul.Economy
                 shop.Name = string.IsNullOrEmpty(reg.BusinessName) ? "?" : reg.BusinessName;
                 shop.Address = reg.Address;
                 shop.District = GameRegistrations.District(reg);
+                shop.Rent = reg.BuildingOwnedByPlayer ? 0 : Mathf.Max(0, Mathf.RoundToInt(reg.RentPerDay));
                 shop.Income = Mathf.RoundToInt(CityEconomy.DistrictIncome(shop.District));
                 shop.Needs = LicenceRules.Needs(Is(type, FoodTypes), Is(type, AlcoholTypes), OpensLate(reg));
                 shop.Taste = Is(type, WellOffTypes) ? 1 : Is(type, PriceTypes) ? -1 : 0;

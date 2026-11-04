@@ -24,7 +24,8 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The deductible costs by <see cref="CostKind"/>: the app's lines and the labels in the game's tax notice.</summary>
         public static readonly string[] CostKeys =
         {
-            "reallife_co_deduct_wages", "reallife_co_deduct_premiums", "reallife_co_deduct_marketing", "reallife_co_deduct_licences", "reallife_co_deduct_accountant"
+            "reallife_co_deduct_wages", "reallife_co_deduct_premiums", "reallife_co_deduct_marketing", "reallife_co_deduct_licences", "reallife_co_deduct_accountant",
+            "reallife_co_deduct_rent"
         };
 
         public static string T(string key)

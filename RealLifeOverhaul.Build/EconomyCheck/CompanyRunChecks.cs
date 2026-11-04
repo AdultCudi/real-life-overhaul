@@ -6,5 +6,6 @@ internal static partial class Program
         CompanyAnswers();   // a bonus and a raise of the limit as answers (CompanyAnswerChecks.cs)
         CompanyDown();      // the managers' grades and a question handed down to the executive (CompanyDownChecks.cs)
         CompanyLate();      // late days and the manager who lets go (CompanyLateChecks.cs)
+        CompanyLeases();    // leases, the manager's marketing and lease answers (CompanyLeaseChecks.cs)
     }
 }

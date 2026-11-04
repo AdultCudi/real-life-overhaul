@@ -334,6 +334,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLadder.Week.cs" Link="Mod\RotaLadder.Week.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaStore.cs" Link="Mod\RotaStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ManagerRules.cs" Link="Mod\ManagerRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\LeaseRules.cs" Link="Mod\LeaseRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ManagerState.cs" Link="Mod\ManagerState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ManagerStore.cs" Link="Mod\ManagerStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\PriceStrategy.cs" Link="Mod\PriceStrategy.cs" />

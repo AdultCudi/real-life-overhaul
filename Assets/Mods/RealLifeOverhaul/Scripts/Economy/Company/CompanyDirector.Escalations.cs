@@ -1014,6 +1014,16 @@ namespace RealLifeOverhaul.Economy
                     case EscalationKind.Proposal:
                         done = Decide(e, how == 0, day, hour);
                         break;
+                    case EscalationKind.Lease:
+                        if (how == AnswerHaggle)
+                        {
+                            LeaseHaggle(e.Place);   // asked once: the question stays open with the new figure
+                        }
+                        else
+                        {
+                            LeaseAnswer(e.Place, how == AnswerAgree);   // closes it itself
+                        }
+                        break;
                 }
             }
             catch (Exception ex)
@@ -1032,7 +1042,7 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>The owner's answers to an exception: the kind's own (agree), the other (refuse), a one-off bonus, and a raise of the manager's limit that stands.</summary>
-        public const int AnswerAgree = 0, AnswerRefuse = 1, AnswerBonus = 2, AnswerLimit = 3;
+        public const int AnswerAgree = 0, AnswerRefuse = 1, AnswerBonus = 2, AnswerLimit = 3, AnswerHaggle = 4;
 
         /// <summary>Whether the owner's bonus answer is open for an exception: only for a request for a raise, which a bonus answers; a rival's offer it does not.</summary>
         internal bool CanBonus(Escalation e)

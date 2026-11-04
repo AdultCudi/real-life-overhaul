@@ -12,8 +12,10 @@ namespace RealLifeOverhaul.Economy
         Stock = 4,      // the week's order of a repeating delivery contract, set to keep the stock floor
         Prices = 5,     // the prices, within the price band, where no pricing manager of the game's covers the district
         Rota = 6,       // the week's rota, written by the rota planner
-        Hiring = 7,     // somebody from the place's own job board hired to keep the staff it had
-        Count = 8
+        Hiring = 7,     // somebody from the place's own job board hired to keep the staff it had; somebody late three days running let go
+        Marketing = 8,  // a campaign of the company's own kinds booked at a business with none, inside the month's marketing limit
+        Leases = 9,     // the landlord's offer at a renewal, answered inside a rise limit
+        Count = 10
     }
 
     /// <summary>Where a decision stands. Saved as a number.</summary>
@@ -74,6 +76,7 @@ namespace RealLifeOverhaul.Economy
         public const int SpeedDays = 4;             // days of waiting, on average, at which the speed grade reaches nothing: a request lapses in that time
         public const int JudgeLearn = 8;            // decisions from which a month's own mistakes weigh as much as the skill's chance of one
         public const int HireLate = 3;              // late days an employee is let go after, by a manager who hires and lets go
+        public const int CampaignLeast = 3;         // per cent of customers a campaign must add to be worth a manager booking it
 
         public const int MistakeMost = 300;         // thousandths: a decision's chance of a mistake at a skill of nothing
         public const int ReviewCut = 400;           // thousandths of that chance a regional manager at a skill of 100 takes away
@@ -86,6 +89,7 @@ namespace RealLifeOverhaul.Economy
         public const int PriceHour = 8;             // the hour prices are looked at (PricingManagerSettings.updateHour)
         public const int StaffHour = 9;             // the hour requests, offers, overtime and claims are answered
         public const int HireHour = 11;             // the hour the job board's candidates are looked at
+        public const int MarketHour = 10;           // the hour a campaign is looked at
         public const int StockHour = 12;            // the hour of a Sunday the week's orders are set: eight hours before the game's lock
         public const int RotaHour = 21;             // the hour of a Sunday the week's rota is written
         public const int DigestHour = 18;           // the hour the day's decisions are told in one notice
@@ -126,8 +130,8 @@ namespace RealLifeOverhaul.Economy
             switch (kind)
             {
                 case ManagedKind.Shop: return (1 << (int)ManagerTask.Count) - 1;
-                case ManagedKind.Works: return Bit(ManagerTask.Stock) | Bit(ManagerTask.Rota) | Bit(ManagerTask.Hiring);
-                default: return Bit(ManagerTask.Stock) | Bit(ManagerTask.Hiring);
+                case ManagedKind.Works: return Bit(ManagerTask.Stock) | Bit(ManagerTask.Rota) | Bit(ManagerTask.Hiring) | Bit(ManagerTask.Leases);
+                default: return Bit(ManagerTask.Stock) | Bit(ManagerTask.Hiring) | Bit(ManagerTask.Leases);
             }
         }
 
@@ -166,6 +170,8 @@ namespace RealLifeOverhaul.Economy
                 case ManagerTask.Overtime:
                 case ManagerTask.Claims: return hour == ManagerCatalogue.StaffHour;
                 case ManagerTask.Hiring: return hour == ManagerCatalogue.HireHour;
+                case ManagerTask.Marketing: return hour == ManagerCatalogue.MarketHour;
+                case ManagerTask.Leases: return hour == ManagerCatalogue.StaffHour;
                 case ManagerTask.Stock: return sunday && hour == ManagerCatalogue.StockHour;
                 case ManagerTask.Rota: return sunday && hour == ManagerCatalogue.RotaHour;
                 default: return false;
@@ -409,6 +415,30 @@ namespace RealLifeOverhaul.Economy
         public static bool LetGo(int lateDays, bool replacementAvailable)
         {
             return lateDays >= ManagerCatalogue.HireLate && replacementAvailable;
+        }
+
+        /// <summary>
+        /// The campaign a manager books: of those on offer (their cost and the customers they add, per cent) the best effect for the money that fits what
+        /// is left of the month's marketing limit and adds at least <paramref name="least"/> per cent; ties go to the cheaper. A mistake takes the cheapest
+        /// that fits instead, never one past the limit. -1 for none.
+        /// </summary>
+        public static int Campaign(int[] cost, int[] effect, int count, int left, int least, bool mistake)
+        {
+            int best = -1, cheapest = -1;
+            for (int i = 0; i < count; i++)
+            {
+                if (cost[i] <= 0 || cost[i] > left || effect[i] < least)
+                {
+                    continue;
+                }
+                cheapest = cheapest < 0 || cost[i] < cost[cheapest] ? i : cheapest;
+                if (best < 0 || (long)effect[i] * cost[best] > (long)effect[best] * cost[i]
+                    || ((long)effect[i] * cost[best] == (long)effect[best] * cost[i] && cost[i] < cost[best]))
+                {
+                    best = i;
+                }
+            }
+            return mistake ? cheapest : best;
         }
 
         /// <summary>The budget left this month, never less than nothing.</summary>

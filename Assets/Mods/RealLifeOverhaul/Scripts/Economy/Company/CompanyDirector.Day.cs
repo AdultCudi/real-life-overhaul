@@ -197,6 +197,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     ManagerDay(day);   // the allowances are yesterday's costs: in the books read next
                 }
+                LeaseDay(day);   // after the managers read the places: the rent's rises paid, an offer made, an answer applied
                 using (HotSpots.Time(HotBooksDay))
                 {
                     Books(day, next);
@@ -275,6 +276,7 @@ namespace RealLifeOverhaul.Economy
             RotaSave(save);
             ManagerSave(save);
             HierarchySave(save);
+            LeaseSave(save);
             PricePlansSave(save);
             if (_beforeTests != null)
             {
