@@ -34,7 +34,8 @@ namespace RealLifeOverhaul.Ui
         Answered = 256,  // a review already answered: no Reply
         Off = 512,       // its button cannot be pressed now
         Chosen = 1024,
-        Comment = 2048   // a comment under a post: it is liked and answered, not shared
+        Comment = 2048,  // a comment under a post: it is liked and answered, not shared
+        Person = 4096    // the account is a person: a painted face, with a ring when the game has a mood for them
     }
 
     /// <summary>One row of a Flare list. Only what it shows: the screen fills it from the account, the samples by hand.</summary>
@@ -56,6 +57,8 @@ namespace RealLifeOverhaul.Ui
         public UiIcon Icon;      // a notice's or a card's glyph
         public UiRole Tint;      // ...and its colour
         public int Stars;        // a review's stars, 1 to 5
+        public UiRole Ring;      // a person's mood as the ring round their face (None: no mood known)
+        public float[] Shares;   // an influencer's figures: a bar behind each, 0 to 1 (a negative share: none), parallel to the figures in Tags
         public float Height;     // measured by the face at its list's width
     }
 
@@ -104,6 +107,30 @@ namespace RealLifeOverhaul.Ui
         public bool Following;
         public bool Verified;
         public string Edit;          // the Edit profile button; null on another's
+        public bool Person;          // a person: a painted face...
+        public UiRole Ring;          // ...with their mood as its ring, None when it is not known
+    }
+
+    /// <summary>The influencer chosen on the hire page: who they are, where their followers live, what the last campaigns did and what hiring them for this business should bring.</summary>
+    public sealed class FlareHireModel
+    {
+        public bool Shown;
+        public string Name, Handle;
+        public float Hue;
+        public UiRole Ring;                              // how reliably they deliver (their record), as the ring round their face
+        public bool Verified;
+        public int Row = -1;                             // the list row of the influencer: the button's argument
+        public string AudienceTitle;
+        public string[] AudienceLabels = new string[0], AudienceFigures = new string[0];
+        public float[] AudienceShares = new float[0];
+        public string AudienceEmpty;
+        public string LastTitle, LastEmpty;
+        public string[] LastLines = new string[0], LastFigures = new string[0];
+        public int[] LastTones = new int[0];             // 1 good, -1 bad, 0 plain
+        public string[] ForecastLabels = new string[0], ForecastFigures = new string[0];
+        public string Note;                              // flops and viral in a hundred
+        public string Hire;                              // the button: "Hire for $1,250"; null when it cannot be done
+        public bool HireOff;
     }
 
     /// <summary>A business's page: which business, its stars, what Flare brought it and a warning when its reviews turn.</summary>
@@ -196,10 +223,14 @@ namespace RealLifeOverhaul.Ui
         public string Post = "Post";
         public string MyName = string.Empty, MyHandle = string.Empty;
         public float MyHue;
+        public UiRole MyRing;                            // the player's own mood, as the ring round their face
+        public UiRole DetailRing;                        // a conversation's other person
+        public bool DetailPerson;
         public string Move = "Move", Select = "Select", Back = "Back";
         public string MarkAll;                           // Notifications: the button that marks them all read; null hides it
         public bool MarkAllOff;
         public readonly FlareCityModel City = new FlareCityModel();
+        public readonly FlareHireModel Hire = new FlareHireModel();
 
         // The column beside Home, Explore, Notifications, Profile and a post's thread.
         public string SearchHint, WeekTitle, StudioLink, TrendTitle, WhoTitle, FollowWord, FollowingWord;
@@ -324,11 +355,15 @@ namespace RealLifeOverhaul.Ui
                 frame.Title = words("reallife_flare_app", "Flare");
             }
             s.Begin(m.Name, frame.Width, frame.Height, dark);
+            UiIcon mark = frame.Icon;
+            frame.Icon = UiIcon.None;   // the strip's glyph is Flare's flame in its orange (the kit's own is the accent's), drawn below
             int panel = UiDraw.Window(s, frame, null, keys);
+            frame.Icon = mark;
             frame.Window(out float wx, out float wy, out float ww, out float wh);
             float top = wy + UiFrame.Strip, h = UiDraw.SnapDown(wh - UiFrame.Strip);
             UiAt at = UiAt.Screen.In(panel);
-            Nav(s, at.InRegion(RegionNav), m, wx, top, NavWidth, h);
+            UiDraw.Icon(s, at, wx + UiTokens.S3, wy + (UiFrame.Strip - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Fire, UiRole.Chart2, UiFlags.Middle | UiFlags.Chrome, true);
+            Nav(s, at.InRegion(RegionNav), m, frame.Title, wx, top, NavWidth, h);
             float mx = wx + NavWidth, rest = ww - NavWidth;
             UiDraw.Box(s, at, mx, top, UiTokens.Hairline, h, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
             bool side = HasSide(m.Page);
@@ -358,7 +393,8 @@ namespace RealLifeOverhaul.Ui
             UiDraw.PromptBar(s, frame, keys);
         }
 
-        // The target focus starts on: the chosen tab of the page, else the first target the page drew; never the nav's first row, which is not where the player is.
+        // The target focus starts on: the chosen tab of the page, else the first target the page drew; a page with none (news is read, not pressed) starts
+        // on its own place in the nav. Never the window's close button, which is the way out, and never the nav's first row, which is not where the player is.
         private static int PageStart(UiScene s, int from, FlareFaceModel m)
         {
             int first = -1;
@@ -372,6 +408,13 @@ namespace RealLifeOverhaul.Ui
                 if (s.Nodes[i].Command == TabCommand && s.Nodes[i].Arg == m.Tab)
                 {
                     return i;
+                }
+            }
+            for (int i = 0; first < 0 && i < from; i++)
+            {
+                if (!s.Nodes[i].Disabled && s.Nodes[i].Command == NavCommand && s.Nodes[i].Arg == m.Page)
+                {
+                    first = i;
                 }
             }
             return first;
@@ -398,12 +441,17 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------ the nav
 
-        private static void Nav(UiScene s, UiAt at, FlareFaceModel m, float x, float y, float w, float h)
+        private static void Nav(UiScene s, UiAt at, FlareFaceModel m, string brand, float x, float y, float w, float h)
         {
             float ix = x + UiTokens.S4, iw = w - UiTokens.S8;
-            // The flame is Flare's mark, in its orange; the window's strip already says the name, and the kit repeats no title
-            // under its masthead (the mockup's wordmark would).
+            // The flame and the wordmark are Flare's mark, in its orange, as the mockup has them at the head of the nav.
             UiDraw.Icon(s, at, ix + UiTokens.S2, y + UiTokens.S4, UiTokens.S8, UiIcon.Fire, UiRole.Chart2, UiFlags.None, true);
+            if (!string.IsNullOrEmpty(brand))
+            {
+                float wx = ix + UiTokens.S2 + UiTokens.S8 + UiTokens.S2;
+                UiDraw.TextMiddle(s, at, wx, y + UiTokens.S4, UiTokens.S8, ix + iw - wx, UiStyle.Display, UiRole.Chart2, brand.ToLowerInvariant(),
+                    UiFlags.Label | UiFlags.Truncate | UiFlags.Chrome);   // the mark of the app, not a page's own words: it is the title in its brand's lettering
+            }
             float iy = y + UiTokens.S4 + UiTokens.S8 + UiTokens.S4;
             int n = m.Nav != null ? m.Nav.Length : 0;
             int page = m.Page == Thread ? -1 : m.Page;
@@ -422,7 +470,7 @@ namespace RealLifeOverhaul.Ui
             {
                 int card = UiDraw.Box(s, at, ix, ay, iw, UiTokens.S12, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
                 UiAt inCard = at.In(card);
-                UiDraw.Avatar(s, inCard, ix + UiTokens.S1, ay + UiTokens.S1, UiTokens.AvatarRow, m.MyName, m.MyHue);
+                Face(s, inCard, ix + UiTokens.S1, ay + UiTokens.S1, UiTokens.AvatarRow, m.MyName, m.MyHue, true, m.MyRing, false);
                 float tx = ix + UiTokens.S1 + UiTokens.AvatarRow + UiTokens.S3, tw = ix + iw - tx - UiTokens.S2;
                 UiDraw.Text(s, inCard, tx, ay + UiTokens.S1, tw, UiStyle.Title, UiRole.Text, m.MyName, UiFlags.Truncate);
                 UiDraw.Text(s, inCard, tx, ay + UiTokens.S6, tw, UiStyle.Small, UiRole.Text2, m.MyHandle, UiFlags.Truncate);
@@ -471,7 +519,7 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Icon(s, inSearch, cx + UiTokens.S4, cy + (UiTokens.Control - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Search, UiRole.Text2, UiFlags.Middle);
                 bool caret = UiDraw.Typing(s, FieldCommand, SearchField);
                 float tx = cx + UiTokens.S4 + UiTokens.Icon + UiTokens.S3, room = cw - UiTokens.S12 - UiTokens.Icon, lead = caret ? UiDraw.CaretRoom : 0f;
-                UiDraw.TextMiddle(s, inSearch, tx + lead, cy, UiTokens.Control, room - lead, UiStyle.Body, UiRole.Muted, m.SearchHint, UiFlags.Label | UiFlags.Truncate);
+                Hint(s, UiDraw.TextMiddle(s, inSearch, tx + lead, cy, UiTokens.Control, room - lead, UiStyle.Body, UiRole.Muted, m.SearchHint, UiFlags.Label | UiFlags.Truncate));
                 if (caret)
                 {
                     UiDraw.CaretAfter(s, inSearch, tx, cy, UiTokens.Control, null, UiStyle.Body, room);
@@ -603,7 +651,7 @@ namespace RealLifeOverhaul.Ui
                 float bx = ix + iw - bw;
                 int face = UiDraw.Box(s, inCard, ix, cy, bx - UiTokens.S2 - ix, row, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
                 UiAt inRow = inCard.In(face);
-                UiDraw.Avatar(s, inRow, ix, cy + UiTokens.S2, UiTokens.AvatarRow, r.Name, r.Hue);
+                Face(s, inRow, ix, cy + UiTokens.S2, UiTokens.AvatarRow, r.Name, r.Hue, (r.Flags & FlareRowFlags.Person) != 0, r.Ring, false);
                 float tx = ix + UiTokens.AvatarRow + UiTokens.S3, tw = bx - UiTokens.S2 - tx;
                 UiDraw.Text(s, inRow, tx, cy + UiTokens.S2, tw, UiStyle.Title, UiRole.Text, r.Name, UiFlags.Truncate);
                 UiDraw.Text(s, inRow, tx, cy + UiTokens.S2 + UiTokens.S6, tw, UiStyle.Small, UiRole.Text2, r.Handle, UiFlags.Truncate);
@@ -614,6 +662,49 @@ namespace RealLifeOverhaul.Ui
         }
 
         // ------------------------------------------------------------------------------------------------ parts
+
+        /// <summary>
+        /// A person's face: painted from their name on the ring of their mood (no ring where the game has no mood for them); an account that is not a
+        /// person (a business, the city's offices) keeps its initials on its colour. With <paramref name="across"/> the face may stand over its box's edge.
+        /// </summary>
+        public static int Face(UiScene s, UiAt at, float x, float y, float size, string name, float hue, bool person, UiRole ring, bool across)
+        {
+            if (!person)
+            {
+                int disc = UiDraw.Avatar(s, at, x, y, size, name, hue);
+                s.Items[disc].Flags |= across ? UiFlags.Overflow : UiFlags.None;
+                return disc;
+            }
+            float stroke = ring == UiRole.None ? 0f : UiTokens.Hairline * 2f;
+            int face = UiDraw.Portrait(s, at, x + stroke, y + stroke, size - stroke * 2f, name, hue, ring);
+            if (stroke > 0f)
+            {
+                s.Items[face].Flags |= UiFlags.Middle | UiFlags.Centre;   // inside its ring by a hairline step, not a grid one
+            }
+            if (across)
+            {
+                s.Items[face].Flags |= UiFlags.Overflow;
+                if (ring != UiRole.None)
+                {
+                    s.Items[face - 1].Flags |= UiFlags.Overflow;
+                }
+            }
+            return face;
+        }
+
+        /// <summary>The ring of a face for the social life's mood, -2 a rough day to +2 a great one.</summary>
+        public static UiRole MoodRing(int mood) => mood > 0 ? UiRole.Ok : mood == 0 ? UiRole.Warn : UiRole.Danger;
+
+        /// <summary>The ring of a review's stars: the customer's mood on leaving, four and five content, three unsure, one and two cross.</summary>
+        public static UiRole StarRing(int stars) => stars >= 4 ? UiRole.Ok : stars == 3 ? UiRole.Warn : UiRole.Danger;
+
+        /// <summary>A placeholder's words a step dimmer than the words typed over it.</summary>
+        public static void Hint(UiScene s, int words)
+        {
+            s.Items[words].Alpha = HintAlpha;
+        }
+
+        private const float HintAlpha = 0.8f;   // the most the field's ground leaves a placeholder's words and still 4.5:1
 
         /// <summary>A line's height in a style, rounded up to the grid.</summary>
         public static float L(UiStyle style) => UiDraw.Snap(UiTextRules.LineHeight(style));
@@ -736,8 +827,12 @@ namespace RealLifeOverhaul.Ui
             bool caret = UiDraw.Typing(s, FieldCommand, field);   // the field that takes the keys shows where the next letter goes
             float room = x + w - tx - UiTokens.S4, lead = caret && !typed ? UiDraw.CaretRoom : 0f;
             string shown = caret && typed ? UiDraw.Typed(text, UiStyle.Body, room) : typed ? text : hint;
-            UiDraw.TextMiddle(s, inside, tx + lead, y, h, room - lead, UiStyle.Body, typed ? UiRole.Text : UiRole.Muted, shown,
+            int words = UiDraw.TextMiddle(s, inside, tx + lead, y, h, room - lead, UiStyle.Body, typed ? UiRole.Text : UiRole.Muted, shown,
                 typed ? UiFlags.Truncate : UiFlags.Label | UiFlags.Truncate);
+            if (!typed)
+            {
+                Hint(s, words);
+            }
             if (caret)
             {
                 UiDraw.CaretAfter(s, inside, tx, y, h, typed ? shown : null, UiStyle.Body, room);

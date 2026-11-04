@@ -50,9 +50,10 @@ namespace RealLifeOverhaul.Ui
         {
             int box = UiDraw.Box(s, at, x, y, w, ComposerHeight, UiRole.None, UiRole.None, 0f);
             UiAt inBox = at.In(box);
-            UiDraw.Avatar(s, inBox, x + UiTokens.S4, y + UiTokens.S4, UiTokens.AvatarRow, m.MyName, m.MyHue);
+            Face(s, inBox, x + UiTokens.S4, y + UiTokens.S4, UiTokens.AvatarRow, m.MyName, m.MyHue, true, m.MyRing, false);
             float tx = x + ContentX, tw = w - ContentX - UiTokens.S4;
             int hint = UiDraw.Box(s, inBox, tx, y + UiTokens.S4, tw, UiTokens.Control, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
+            // on the panel's own slate, where Muted is already as dim as the words may be
             UiDraw.TextMiddle(s, inBox.In(hint), tx, y + UiTokens.S4, UiTokens.Control, tw, UiStyle.Body, UiRole.Muted, m.ComposerHint, UiFlags.Truncate);
             UiDraw.Node(s, inBox, tx, y + UiTokens.S4, tw, UiTokens.Control, ComposerCommand, 0, hint);
             float py = y + UiTokens.S4 + UiTokens.Control + UiTokens.S3;
@@ -194,7 +195,7 @@ namespace RealLifeOverhaul.Ui
             int head = UiDraw.Box(s, at, x, y, w, headH, UiRole.None, UiRole.None, 0f);
             UiAt inHead = at.In(head);
             float hx = x + UiTokens.S4;
-            UiDraw.Avatar(s, inHead, hx, y + UiTokens.S4, UiTokens.AvatarRow, m.DetailName, m.DetailHue);
+            Face(s, inHead, hx, y + UiTokens.S4, UiTokens.AvatarRow, m.DetailName, m.DetailHue, m.DetailPerson, m.DetailRing, false);
             float lw = string.IsNullOrEmpty(m.DetailLink) ? 0f : Math.Min(UiDraw.Snap(UiTextRules.Width(m.DetailLink, UiStyle.Title) + UiTokens.S4), UiDraw.SnapDown(w * 0.4f));
             float tx = hx + UiTokens.AvatarRow + UiTokens.S3, tw = x + w - tx - lw - UiTokens.S8;
             UiDraw.Text(s, inHead, tx, y + UiTokens.S4, tw, UiStyle.Title, UiRole.Text, m.DetailName, UiFlags.Truncate);
@@ -259,7 +260,7 @@ namespace RealLifeOverhaul.Ui
             float ax = x + UiTokens.S4, ay = y + BannerHeight - UiTokens.AvatarHero / 2f - UiTokens.S1;
             int ring = UiDraw.Circle(s, at.In(banner), ax, ay, UiTokens.AvatarHero + UiTokens.S2, UiTokens.AvatarHero + UiTokens.S2, UiRole.Panel);
             s.Items[ring].Flags |= UiFlags.Overflow;
-            UiDraw.Avatar(s, at.In(ring), ax + UiTokens.S1, ay + UiTokens.S1, UiTokens.AvatarHero, p.Name, p.Hue);
+            Face(s, at.In(ring), ax + UiTokens.S1, ay + UiTokens.S1, UiTokens.AvatarHero, p.Name, p.Hue, p.Person, p.Ring, false);
             float cy = y + BannerHeight + UiTokens.S3;
             if (!string.IsNullOrEmpty(p.Follow))
             {

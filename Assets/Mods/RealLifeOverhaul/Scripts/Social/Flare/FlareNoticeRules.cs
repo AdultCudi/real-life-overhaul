@@ -109,7 +109,8 @@ namespace RealLifeOverhaul.Flare
 
         /// <summary>
         /// The notices the account's own records tell: a tier passed, the followers a post brought, a tag trending that a post of the player's
-        /// is part of, and the promoted posts of the city's businesses that compete with one of the player's shops (the same kind of thing sold, or the same district). Added to <paramref name="into"/>, none ahead of now.
+        /// is part of, and the promoted posts of the city's businesses that compete with one of the player's shops (the same kind of thing
+        /// sold, or the same district). Added to <paramref name="into"/>, none ahead of now.
         /// </summary>
         public static void AddDerived(FlareFile f, long now, IReadOnlyList<FlareAd> ads, List<FlareNotice> into, List<string> tags, List<int> counts)
         {

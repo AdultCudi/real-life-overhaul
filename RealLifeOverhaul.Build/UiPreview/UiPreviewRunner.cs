@@ -33,6 +33,7 @@ public static partial class UiPreviewRunner
         public int FocusCommand = -1, FocusArg;
         public int HoverCommand = -1, HoverArg;   // the target the mouse rests on in the hover shot, or the second target
         public Vector2Int[] Walk;
+        public bool Tour;         // the pad path is every target of the top layer in turn, by the nearest not yet reached (UiPreviewRunner.TourOf): a screen that must be fully reachable
         public string Backdrop;   // the game's world behind it, a picture's file in the backdrops folder, or null for black
         public int App = -1;      // the app the status bar marks as open
         public bool Extra;        // also a hover shot and a keys shot (the prototype's two that show input)
@@ -326,7 +327,7 @@ public static partial class UiPreviewRunner
             }
             if (shot.Path && focus >= 0 && !shot.Screen.NoKeys)
             {
-                FocusPath(host, scene, focus, shot.Screen.Walk);
+                FocusPath(host, scene, focus, shot.Screen.Tour ? TourOf(scene, focus) : shot.Screen.Walk);
             }
             Canvas.ForceUpdateCanvases();
             foreach (TMP_Text t in root.GetComponentsInChildren<TMP_Text>(true))
@@ -424,6 +425,72 @@ public static partial class UiPreviewRunner
             t.color = new Color(0.08f, 0.06f, 0.02f, 1f);
             t.text = (i + 1).ToString(CultureInfo.InvariantCulture);
         }
+    }
+
+    // The d-pad moves that reach every target of the top layer from the first: a breadth first walk of what UiFocusRules.Next gives, to the nearest target not yet reached, again
+    // and again (right, down, left, up are tried in that order, so a row is gone along and the next taken back). The log says how many of them it reached.
+    private static Vector2Int[] TourOf(UiScene scene, int start)
+    {
+        int top = UiFocusRules.TopLayer(scene);
+        var want = new HashSet<int>();
+        for (int n = 0; n < scene.NodeCount; n++)
+        {
+            if (scene.Nodes[n].Layer == top && !scene.Nodes[n].Disabled && !UiDraw.IsChrome(scene.Nodes[n].Command))
+            {
+                want.Add(n);
+            }
+        }
+        var order = new[] { Right, Down, Left, Up };
+        var moves = new List<Vector2Int>();
+        var seen = new HashSet<int> { start };
+        int at = start;
+        while (true)
+        {
+            var from = new Dictionary<int, KeyValuePair<int, Vector2Int>>();
+            var queue = new Queue<int>();
+            queue.Enqueue(at);
+            from[at] = new KeyValuePair<int, Vector2Int>(-1, Vector2Int.zero);
+            int found = -1;
+            while (queue.Count > 0 && found < 0)
+            {
+                int cur = queue.Dequeue();
+                foreach (Vector2Int d in order)
+                {
+                    int next = UiFocusRules.Next(scene, cur, d.x, d.y);
+                    if (next < 0 || next >= scene.NodeCount || from.ContainsKey(next) || scene.Nodes[next].Layer != top)
+                    {
+                        continue;
+                    }
+                    from[next] = new KeyValuePair<int, Vector2Int>(cur, d);
+                    if (want.Contains(next) && !seen.Contains(next))
+                    {
+                        found = next;
+                        break;
+                    }
+                    queue.Enqueue(next);
+                }
+            }
+            if (found < 0)
+            {
+                break;
+            }
+            var path = new List<Vector2Int>();
+            for (int n = found; from[n].Key >= 0; n = from[n].Key)
+            {
+                path.Add(from[n].Value);
+                seen.Add(n);
+            }
+            path.Reverse();
+            moves.AddRange(path);
+            at = found;
+        }
+        int reached = 0;
+        foreach (int n in want)
+        {
+            reached += seen.Contains(n) ? 1 : 0;
+        }
+        Debug.Log(Tag + "pad tour: " + reached + " of " + want.Count + " targets reached in " + moves.Count + " moves");
+        return moves.ToArray();
     }
 
     private static Vector2 Centre(UiScene scene, int node)

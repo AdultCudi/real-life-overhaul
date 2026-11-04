@@ -31,6 +31,29 @@ namespace RealLifeOverhaul.Ui
             SheetBody(s, at.In(card), k, cx + UiTokens.S6, cy + UiTokens.S6, inner, true);
         }
 
+        // The chips of a group stand in a grid of equal chips, as many to a row as the room takes and the rows of the same count, so the rows end together and the d-pad's
+        // down stays in its column (a plain wrap of chips of their own widths ended each row somewhere else).
+        private static void ChipGrid(string[] chips, float room, out float chip, out int columns)
+        {
+            int n = Math.Min(chips.Length, GroupStride);
+            float widest = 0f, all = 0f;
+            for (int i = 0; i < n; i++)
+            {
+                widest = Math.Max(widest, PillWidth(chips[i]));
+                all += PillWidth(chips[i]) + UiTokens.S2;
+            }
+            if (all - UiTokens.S2 <= room)
+            {
+                chip = 0f;      // they all fit in one row at their own widths: no grid
+                columns = n;
+                return;
+            }
+            chip = Math.Min(room, widest);
+            columns = Math.Max(1, Math.Min(n, (int)Math.Floor((room + UiTokens.S2) / (chip + UiTokens.S2))));
+            int rows = (n + columns - 1) / columns;
+            columns = (n + rows - 1) / rows;   // the rows as even as they can be
+        }
+
         // The sheet's parts from the top: measured with draw false, laid with it true. Returns the height they take.
         private static float SheetBody(UiScene s, UiAt at, FlareSheetModel k, float x, float y, float w, bool draw)
         {
@@ -101,8 +124,12 @@ namespace RealLifeOverhaul.Ui
                     string shown = caret && typed
                         ? UiTextRules.LastLines(k.FieldText, UiStyle.Body, room - UiDraw.CaretRoom, SheetLines, out last)
                         : typed ? k.FieldText : k.FieldHint;
-                    UiDraw.Text(s, at.In(field), tx + lead, cy + UiTokens.S3, room - lead, UiStyle.Body, typed ? UiRole.Text : UiRole.Muted, shown,
+                    int words = UiDraw.Text(s, at.In(field), tx + lead, cy + UiTokens.S3, room - lead, UiStyle.Body, typed ? UiRole.Text : UiRole.Muted, shown,
                         UiFlags.Wrap | UiFlags.Truncate | (typed ? UiFlags.None : UiFlags.Label), SheetLines);
+                    if (!typed)
+                    {
+                        Hint(s, words);
+                    }
                     if (caret)
                     {
                         int line = typed ? Math.Max(0, UiTextRules.Lines(shown, UiStyle.Body, room - UiDraw.CaretRoom, SheetLines, out float _) - 1) : 0;
@@ -135,7 +162,13 @@ namespace RealLifeOverhaul.Ui
             }
             // The groups of chips, each beside its label, wrapped to the room the label leaves (so a long sheet still fits the window).
             int groups = Math.Min(k.Groups.Length, k.Chips.Length);
-            float labelW = UiDraw.SnapDown(w * 0.3f), chipsX = x + labelW;
+            float labelW = 0f;
+            for (int g = 0; g < groups; g++)
+            {
+                labelW = Math.Max(labelW, UiDraw.Snap(UiTextRules.Width(k.Groups[g], UiStyle.SectionHeader) + UiTokens.S4));   // the labels take what they need, the chips the rest
+            }
+            labelW = Math.Max(UiDraw.SnapDown(w * 0.18f), Math.Min(labelW, UiDraw.SnapDown(w * 0.3f)));
+            float chipsX = x + labelW;
             for (int g = 0; g < groups; g++)
             {
                 string[] chips = k.Chips[g];
@@ -147,23 +180,25 @@ namespace RealLifeOverhaul.Ui
                 {
                     UiDraw.TextMiddle(s, at, x, cy, UiTokens.ControlSmall, labelW - UiTokens.S2, UiStyle.SectionHeader, UiRole.Text2, k.Groups[g], UiFlags.Label | UiFlags.Truncate);
                 }
-                float px = chipsX;
                 int chosen = g < k.Chosen.Length ? k.Chosen[g] : -1;
-                for (int i = 0; i < chips.Length && i < GroupStride; i++)
+                ChipGrid(chips, x + w - chipsX, out float pw, out int columns);
+                int count = Math.Min(chips.Length, GroupStride);
+                float natural = chipsX;
+                for (int i = 0; i < count; i++)
                 {
-                    float pw = Math.Min(x + w - chipsX, PillWidth(chips[i]));
-                    if (px + pw > x + w && px > chipsX)
+                    if (draw && pw > 0f)
                     {
-                        px = chipsX;
-                        cy += UiTokens.ControlSmall + UiTokens.S2;
+                        Pill(s, at, chipsX + (i % columns) * (pw + UiTokens.S2), cy + (i / columns) * (UiTokens.ControlSmall + UiTokens.S2), pw, chips[i],
+                            i == chosen ? PillKind.Chosen : PillKind.Line, SheetChipCommand, g * GroupStride + i);
                     }
-                    if (draw)
+                    else if (draw)
                     {
-                        Pill(s, at, px, cy, pw, chips[i], i == chosen ? PillKind.Chosen : PillKind.Line, SheetChipCommand, g * GroupStride + i);
+                        float cw = PillWidth(chips[i]);
+                        Pill(s, at, natural, cy, cw, chips[i], i == chosen ? PillKind.Chosen : PillKind.Line, SheetChipCommand, g * GroupStride + i);
+                        natural += cw + UiTokens.S2;
                     }
-                    px += pw + UiTokens.S2;
                 }
-                cy += UiTokens.ControlSmall + UiTokens.S3;
+                cy += ((count + columns - 1) / columns - 1) * (UiTokens.ControlSmall + UiTokens.S2) + UiTokens.ControlSmall + UiTokens.S3;
             }
             // The options, a row each with what it does under its name.
             for (int i = 0; i < k.Options.Length; i++)

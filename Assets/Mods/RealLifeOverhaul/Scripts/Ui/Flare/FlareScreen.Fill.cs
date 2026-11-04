@@ -120,6 +120,8 @@ namespace RealLifeOverhaul.Ui
             _m.MyName = _flare != null ? _flare.MyName : string.Empty;
             _m.MyHandle = _flare != null ? _flare.MyHandle : string.Empty;
             _m.MyHue = UiColour.HueOf("me");
+            _m.MyRing = UiTokens.Grade(FlareGame.PlayerHappiness());   // the player's own mood, as the HUD has it
+            FaceSources.Player(_m.MyName);
             if (file == null)
             {
                 return;
@@ -163,6 +165,7 @@ namespace RealLifeOverhaul.Ui
                 r.Handle = AccountLine(_whoKeys[i], handle);
                 r.Hue = UiColour.HueOf(_whoKeys[i]);
                 r.Flags = (Following(_whoKeys[i]) ? FlareRowFlags.Following : FlareRowFlags.None) | (verified ? FlareRowFlags.Verified : FlareRowFlags.None);
+                Look(_whoKeys[i], ref r);
             }
         }
 
@@ -444,6 +447,7 @@ namespace RealLifeOverhaul.Ui
             r.Handle = AccountLine(key, handle);
             r.Hue = UiColour.HueOf(key);
             r.Flags = (following ? FlareRowFlags.Following : FlareRowFlags.None) | (verified ? FlareRowFlags.Verified : FlareRowFlags.None);
+            Look(key, ref r);
             r.Button = Followable(key) ? FlareText.T(following ? "reallife_flare_follow_on" : "reallife_flare_follow") : null;
         }
 
@@ -823,6 +827,7 @@ namespace RealLifeOverhaul.Ui
                 r.Text = t.Last != null && t.Last.Mine ? you + last : last;
                 r.Value = t.Unread > 0 ? t.Unread.ToString(CultureInfo.InvariantCulture) : null;
                 r.Flags = (t.Unread > 0 && t.With != _with ? FlareRowFlags.Unread : FlareRowFlags.None) | (t.With == _with ? FlareRowFlags.Chosen : FlareRowFlags.None);
+                Look(t.With, ref r);
             }
             _m.List.EmptyIcon = UiIcon.Message;
             _m.List.EmptyTitle = FlareText.T(_inbox.Trim().Length > 0 ? "reallife_flare_kit_empty_search" : "reallife_flare_empty_messages");
@@ -873,6 +878,11 @@ namespace RealLifeOverhaul.Ui
             _m.Detail.Foot = true;
             _m.DetailName = ThreadName(_with, name);
             _m.DetailHue = UiColour.HueOf(_with);
+            FlareRow who = default(FlareRow);
+            who.Name = _m.DetailName;
+            Look(_with, ref who);
+            _m.DetailPerson = (who.Flags & FlareRowFlags.Person) != 0;
+            _m.DetailRing = who.Ring;
             _m.DetailLine = KindOf(_with);
             _m.DetailLink = _with.StartsWith("d:", StringComparison.Ordinal) ? null : FlareText.T("reallife_flare_kit_view_profile");
             _m.Send = FlareText.T("reallife_flare_send");
@@ -899,6 +909,11 @@ namespace RealLifeOverhaul.Ui
             FlareProfileModel h = _m.Profile;
             Account(key, out h.Name, out h.Handle, out h.Bio, out h.Verified);
             h.Hue = UiColour.HueOf(me ? "me" : key);
+            FlareRow face = default(FlareRow);
+            face.Name = h.Name;
+            Look(key, ref face);
+            h.Person = (face.Flags & FlareRowFlags.Person) != 0;
+            h.Ring = face.Ring;
             h.Edit = me ? FlareText.T("reallife_flare_kit_edit_profile") : null;
             if (me)
             {

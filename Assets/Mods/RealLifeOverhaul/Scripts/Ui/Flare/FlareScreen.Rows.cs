@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using RealLifeOverhaul.Flare;
 
 namespace RealLifeOverhaul.Ui
@@ -100,6 +101,7 @@ namespace RealLifeOverhaul.Ui
             r.Flags = (verified ? FlareRowFlags.Verified : FlareRowFlags.None) | (p.Liked ? FlareRowFlags.Liked : FlareRowFlags.None)
                       | (p.Reposted ? FlareRowFlags.Reposted : FlareRowFlags.None) | (comment ? FlareRowFlags.Comment : FlareRowFlags.None)
                       | (p.Author == FlareAuthor.Player ? FlareRowFlags.Mine : FlareRowFlags.None);
+            LookOfPost(p, ref r, key);
             string built = _flare.WordsFor(p, name);
             string words = p.Text ?? built;
             r.Text = FlareFeedRules.Plain(words);
@@ -217,6 +219,69 @@ namespace RealLifeOverhaul.Ui
         }
 
         private static bool HasTag(string topic, string tag) => FlareFeedRules.HasTag(topic, tag);
+
+        // ------------------------------------------------------------------------------------------------ the face an account wears
+
+        // A person's face is painted from their name on the ring of their mood where the game has one (a friend's mood, the player's happiness, an influencer's record);
+        // a business, a brand or an office keeps its initials. The name is set before this is asked.
+        private void Look(string key, ref FlareRow r)
+        {
+            if (string.IsNullOrEmpty(key))
+            {
+                return;
+            }
+            FlareFile file = _flare.File;
+            int n;
+            if (key == "me" || key == _flare.MeKey)
+            {
+                r.Flags |= FlareRowFlags.Person;
+                r.Ring = _m.MyRing;
+            }
+            else if (key.StartsWith("i:", StringComparison.Ordinal) && int.TryParse(key.Substring(2), out n))
+            {
+                FlareInfluencer inf = file != null ? file.Influencer(n) : null;
+                if (inf != null)
+                {
+                    r.Flags |= FlareRowFlags.Person;
+                    r.Ring = UiTokens.Grade(inf.Reliability);
+                }
+            }
+            else if (key.Length > 1 && key[0] == 'f' && int.TryParse(key.Substring(1), out n) && _flare.Person(n, out FlarePerson person))
+            {
+                r.Flags |= FlareRowFlags.Person;
+                r.Ring = FlareFace.MoodRing(person.Mood);
+                UiFaces.Traits(r.Name, person.Female, person.Age);
+            }
+            else if (key.Length > 1 && key[0] == 'c' && key[1] != ':' && int.TryParse(key.Substring(1), out n) && n >= 0 && n < _flare.Citizens.Count)
+            {
+                FlareCitizen c = _flare.Citizens[n];
+                r.Flags |= FlareRowFlags.Person;
+                UiFaces.Traits(r.Name, c.Female, c.Age);   // no mood is known of the city's people: no ring
+            }
+        }
+
+        // The face a post's author wears: the account is told from who wrote it, since a friend's or the player's own post has no key.
+        private void LookOfPost(FlarePost p, ref FlareRow r, string key)
+        {
+            switch (p.Author)
+            {
+                case FlareAuthor.Player:
+                    Look("me", ref r);
+                    break;
+                case FlareAuthor.Friend:
+                    Look("f" + p.Who.ToString(CultureInfo.InvariantCulture), ref r);
+                    break;
+                case FlareAuthor.Citizen:
+                    Look("c" + p.Who.ToString(CultureInfo.InvariantCulture), ref r);
+                    break;
+                case FlareAuthor.Influencer:
+                    Look("i:" + p.Who.ToString(CultureInfo.InvariantCulture), ref r);
+                    break;
+                default:
+                    Look(key, ref r);
+                    break;
+            }
+        }
 
         // ------------------------------------------------------------------------------------------------ who wrote it
 
@@ -392,7 +457,10 @@ namespace RealLifeOverhaul.Ui
                 case RowAct.Business: return OpenBusiness(r.Id);
                 case RowAct.Review:
                 case RowAct.Note: return OpenReply(r);
-                case RowAct.Hire: return OpenHire(r.Id);
+                case RowAct.Hire:
+                    _hireSel = r.Id;   // the row chooses the influencer the card under the table tells of; the button hires them
+                    _dirty = true;
+                    return true;
                 default: return false;
             }
         }

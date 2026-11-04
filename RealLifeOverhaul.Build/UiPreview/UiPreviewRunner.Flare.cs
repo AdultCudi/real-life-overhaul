@@ -40,11 +40,38 @@ public static partial class UiPreviewRunner
         Add("reply_sheet", "02.jpg", FlareFace.OptionCommand, 1, "D");
         Typed(Add("photo_picker", "13.jpg", FlareFace.PickerPhotoCommand, 2, "D"), FlareFace.PickerField);
         Add("notices_sales", "02.jpg", FlareFace.MarkAllCommand, 0, "DDDR");
-        Add("city_new", "13.jpg", FlareFace.NavCommand, 8, "DDDDRD");
-        Add("compose_report", "11.jpg", FlareFace.SheetChipCommand, 2, "DDDDDDDD");
-        Add("compose_moment", "02.jpg", FlareFace.SheetChipCommand, 1, "DDDDDDRD");
-        Add("ad_sheet", "13.jpg", FlareFace.SheetConfirmCommand, 0, "DDDDDDD");
+        // The pad walks of the sheets and the new city page go through every chip, Cancel and Post (a serpentine: along a row, down, back along the next), the page's from its
+        // first control to the nav and Post.
+        Add("city_new", "13.jpg", FlareFace.NavCommand, 8, null).Tour = true;
+        Add("compose_report", "11.jpg", FlareFace.SheetChipCommand, 2, null).Tour = true;
+        Add("compose_moment", "02.jpg", FlareFace.SheetChipCommand, 1, null).Tour = true;
+        Add("ad_sheet", "13.jpg", FlareFace.SheetConfirmCommand, 0, null).Tour = true;
         Typed(Add("edit_sheet", "02.jpg", FlareFace.SheetConfirmCommand, 0, "DDDD"), FlareFace.BioField);
+        // The wide languages, where a label is longest: the hire table's header, the sheet's chips and the city page (the owner's bar: no word cut in any language).
+        foreach (string lang in new[] { "pt", "zh-cn" })
+        {
+            AddIn(lang, "hire", "02.jpg", FlareFace.ButtonCommand, 0, "DD");
+            AddIn(lang, "compose_report", "11.jpg", FlareFace.SheetChipCommand, 2, null).Tour = true;
+            AddIn(lang, "city_new", "13.jpg", FlareFace.NavCommand, 8, null).Tour = true;
+        }
+
+        Screen AddIn(string lang, string state, string backdrop, int hover, int arg, string walk)
+        {
+            UiWords words = DialogWords(lang);
+            var made = new Screen
+            {
+                Name = "flare_" + state + Suffix(lang),
+                AppName = "Flare",
+                Icon = UiIcon.Fire,
+                Backdrop = backdrop,
+                HoverCommand = hover,
+                HoverArg = arg,
+                Walk = walk != null ? Moves(walk) : null,
+                Lay = (s, f, d, k) => UiSamples.Flare(s, f, d, k, words, state)
+            };
+            screens.Add(made);
+            return made;
+        }
 
         Screen Add(string state, string backdrop, int hover, int arg, string walk)
         {
@@ -56,7 +83,7 @@ public static partial class UiPreviewRunner
                 Backdrop = backdrop,
                 HoverCommand = hover,
                 HoverArg = arg,
-                Walk = Moves(walk),
+                Walk = walk != null ? Moves(walk) : null,
                 Lay = (s, f, d, k) => UiSamples.Flare(s, f, d, k, ModEnglish, state)
             };
             screens.Add(screen);
@@ -65,6 +92,7 @@ public static partial class UiPreviewRunner
 
         void Typed(Screen screen, int field) => Typing(screen, FlareFace.FieldCommand, field);
     }
+
 
     private static readonly Dictionary<string, Sprite> FlarePictures = new Dictionary<string, Sprite>();
     private static string _flareMock;

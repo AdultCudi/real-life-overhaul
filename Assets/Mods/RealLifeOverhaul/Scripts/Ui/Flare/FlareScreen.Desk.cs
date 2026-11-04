@@ -154,6 +154,9 @@ namespace RealLifeOverhaul.Ui
             r.Name = name;
             r.Hue = UiColour.HueOf(key ?? name);
             r.Stars = FlareRules.Clamp(p.Arg, 1, 5);
+            LookOfPost(p, ref r, key);
+            r.Flags |= FlareRowFlags.Person;   // someone wrote it, a person: their face is ringed by how they left
+            r.Ring = FlareFace.StarRing(r.Stars);
             r.Time = Ago(p.At, now);
             r.Text = FlareFeedRules.Plain(p.Text ?? _flare.WordsFor(p, name));
             FlarePost answer = MyAnswer(file, p.Id);
@@ -188,6 +191,8 @@ namespace RealLifeOverhaul.Ui
             r.Name = _flare.ReviewerName(n.Person);
             r.Stars = FlareRules.Clamp(n.Stars, 1, 5);
             r.Hue = UiColour.HueOf(r.Name ?? "?");
+            r.Flags |= FlareRowFlags.Person;   // a resident who shopped there: their face is ringed by how they left (the stars of the review)
+            r.Ring = FlareFace.StarRing(r.Stars);
             r.Time = Ago(FlareLiveRules.Now(n.Day, FlareLiveRules.NoticeHour, 0), now);
             r.Text = NoteWords(n, shop.Name);
             if (!string.IsNullOrEmpty(n.Answer))
@@ -523,9 +528,20 @@ namespace RealLifeOverhaul.Ui
             }
             FlareShop chosen = shops.Count > 0 ? shops[Math.Max(0, Math.Min(_shop, shops.Count - 1))] : default(FlareShop);
             FlareDeskRules.Sort(_hireable, _kit.Sort == 1 && shops.Count > 0, chosen);
+            // The one the table has chosen (the first until another is pressed, or when the filters took it out): the card under the table is theirs.
+            int pick = 0;
+            for (int i = 0; i < _hireable.Count && _hireSel >= 0; i++)
+            {
+                pick = _hireable[i].Id == _hireSel ? i : pick;
+            }
+            _m.Hire.Shown = false;
             for (int i = 0; i < _hireable.Count && _m.List.Count < InfluencersMost; i++)
             {
-                InfluencerRow(_hireable[i], place, today, shops.Count > 0 ? (FlareShop?)chosen : null);
+                InfluencerRow(_hireable[i], place, today, shops.Count > 0 ? (FlareShop?)chosen : null, i == pick);
+                if (i == pick)
+                {
+                    HireCard(file, _hireable[i], place, shops.Count > 0 ? (FlareShop?)chosen : null, _m.List.Count - 1, today, now);
+                }
             }
             _m.HeadLine = shops.Count == 0 ? FlareText.T("reallife_flare_kit_hire_need_business")
                 : FlareText.Fill("reallife_flare_kit_hire_line", "count", FlareText.N(_hireable.Count), "business", shops[Math.Max(0, Math.Min(_shop, shops.Count - 1))].Name ?? "?");
@@ -534,7 +550,7 @@ namespace RealLifeOverhaul.Ui
             _m.List.EmptyBody = FlareText.T("reallife_flare_kit_no_influencers_body");
         }
 
-        private void InfluencerRow(FlareInfluencer inf, string place, int today, FlareShop? shop)
+        private void InfluencerRow(FlareInfluencer inf, string place, int today, FlareShop? shop, bool picked)
         {
             string key = "i:" + inf.Id.ToString(CultureInfo.InvariantCulture);
             Account(key, out string name, out string handle, out _, out bool verified);
@@ -545,8 +561,12 @@ namespace RealLifeOverhaul.Ui
             r.Name = name;
             r.Handle = FlareText.Fill("reallife_flare_kit_influencer_line", "handle", handle, "niche", FlareText.Niche(inf.Niche), "district", FlareText.District(inf.District));
             r.Hue = UiColour.HueOf(key);
-            r.Flags = verified ? FlareRowFlags.Verified : FlareRowFlags.None;
-            string fit = shop.HasValue ? FlareDeskRules.FitPercent(FlareDeskRules.FitOf(inf, shop.Value)).ToString(CultureInfo.InvariantCulture) + "%" : "-";
+            r.Flags = (verified ? FlareRowFlags.Verified : FlareRowFlags.None) | (picked ? FlareRowFlags.Chosen : FlareRowFlags.None);
+            Look(key, ref r);
+            int fitPercent = shop.HasValue ? FlareDeskRules.FitPercent(FlareDeskRules.FitOf(inf, shop.Value)) : -1;
+            string fit = fitPercent >= 0 ? fitPercent.ToString(CultureInfo.InvariantCulture) + "%" : "-";
+            // A bar behind the engagement (against twelve in a hundred, a great deal) and the fit (a whole hundred is a perfect one).
+            r.Shares = new[] { -1f, Math.Min(1f, inf.Engagement / EngagementGreat), fitPercent >= 0 ? fitPercent / 100f : -1f, -1f, -1f };
             r.Tags = new[]
             {
                 FlareText.T("reallife_flare_kit_fig_followers"), FlareFeedRules.Count(inf.Followers),
@@ -560,6 +580,75 @@ namespace RealLifeOverhaul.Ui
             {
                 r.Flags |= FlareRowFlags.Off;
             }
+        }
+
+        private const float EngagementGreat = 1200f;   // hundredths of a per cent: twelve in a hundred answering is the most a bar shows
+
+        // The chosen influencer under the table: the audience in the city, the last campaigns they ran, what hiring them for the business should bring, and the button.
+        private void HireCard(FlareFile file, FlareInfluencer inf, string place, FlareShop? shop, int row, int today, long now)
+        {
+            FlareHireModel d = _m.Hire;
+            string key = "i:" + inf.Id.ToString(CultureInfo.InvariantCulture);
+            Account(key, out string name, out string handle, out _, out bool verified);
+            d.Shown = true;
+            d.Name = name;
+            d.Handle = FlareText.Fill("reallife_flare_kit_influencer_line", "handle", handle, "niche", FlareText.Niche(inf.Niche), "district", FlareText.District(inf.District));
+            d.Hue = UiColour.HueOf(key);
+            d.Ring = UiTokens.Grade(inf.Reliability);
+            d.Verified = verified;
+            d.Row = row;
+            FlareExpect ex = _flare.HireExpect(inf, place);
+            d.ForecastLabels = new[] { FlareText.T("reallife_flare_kit_fig_likely"), FlareText.T("reallife_flare_kit_fig_takings"), FlareText.T("reallife_flare_kit_fig_price") };
+            d.ForecastFigures = new[] { FlareText.N(ex.Visitors), Signed(ex.Cents), FlareText.Money(Prices.At(FlareCast.Price(inf))) };
+            bool booked = inf.BookedUntil >= today && !string.IsNullOrEmpty(inf.BookedBy);
+            d.Hire = place == null || booked ? null : FlareText.Fill("reallife_flare_kit_hire_pay", "money", FlareText.Money(Prices.At(FlareCast.Price(inf))));
+            d.HireOff = false;
+            bool fits = shop.HasValue && shop.Value.District != null && shop.Value.District == inf.District;
+            d.Note = FlareText.Fill(fits ? "reallife_flare_kit_hire_card_fits" : "reallife_flare_kit_hire_card_far", "flop", (ex.Flop / 10).ToString(CultureInfo.InvariantCulture), "viral",
+                (ex.Viral / 10).ToString(CultureInfo.InvariantCulture));
+            d.AudienceTitle = FlareText.T("reallife_flare_kit_audience_title");
+            d.AudienceEmpty = FlareText.T("reallife_flare_kit_hire_audience_none");
+            if (_flare.AudienceOf(inf.Id, _bandNames, _bandCounts, out int rest, out int total) && _bandCounts.Count > 0)
+            {
+                int most = Math.Max(1, _bandCounts[0]), n = Math.Min(4, _bandNames.Count);
+                d.AudienceLabels = new string[n];
+                d.AudienceFigures = new string[n];
+                d.AudienceShares = new float[n];
+                for (int i = 0; i < n; i++)
+                {
+                    d.AudienceLabels[i] = FlareText.District(_bandNames[i]);
+                    d.AudienceFigures[i] = (_bandCounts[i] * 100 / Math.Max(1, total)).ToString(CultureInfo.InvariantCulture) + "%";
+                    d.AudienceShares[i] = _bandCounts[i] / (float)most;
+                }
+            }
+            else
+            {
+                d.AudienceLabels = d.AudienceFigures = None;
+                d.AudienceShares = new float[0];
+            }
+            d.LastTitle = FlareText.T("reallife_flare_kit_hire_last");
+            d.LastEmpty = FlareText.T("reallife_flare_kit_hire_last_none");
+            int shown = 0;
+            string[] lines = new string[3], figures = new string[3];
+            int[] tones = new int[3];
+            for (int i = file.PastHires.Count - 1; i >= 0 && shown < 3; i--)
+            {
+                FlarePastHire h = file.PastHires[i];
+                if (h.Who != inf.Id)
+                {
+                    continue;
+                }
+                lines[shown] = (h.Name ?? "?") + ", " + Ago(FlareLiveRules.Now(h.Day, FlareLiveRules.NoticeHour, 0), now);
+                figures[shown] = h.Flopped ? FlareText.T("reallife_flare_kit_result_flop") : FlareText.Fill("reallife_flare_kit_visitors_n", "count", FlareText.N(h.Visitors));
+                tones[shown] = h.Flopped ? -1 : h.Cents > 0 ? 1 : 0;
+                shown++;
+            }
+            d.LastLines = new string[shown];
+            d.LastFigures = new string[shown];
+            d.LastTones = new int[shown];
+            Array.Copy(lines, d.LastLines, shown);
+            Array.Copy(figures, d.LastFigures, shown);
+            Array.Copy(tones, d.LastTones, shown);
         }
 
         // ------------------------------------------------------------------------------------------------ in the city

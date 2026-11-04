@@ -142,7 +142,7 @@ namespace RealLifeOverhaul.Ui
         private static string Num(int n) => n.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
 
         /// <summary>A card of figures: its label, then the figures two to a row, each over its own label.</summary>
-        private static void FiguresCard(UiScene s, UiAt at, string title, string[] figures, string[] labels, float x, float y, float w, float h)
+        private static void FiguresCard(UiScene s, UiAt at, string title, string[] figures, string[] labels, float x, float y, float w, float h, int columns = 2)
         {
             int card = Card(s, at, x, y, w, h);
             UiAt inCard = at.In(card);
@@ -150,11 +150,11 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Text(s, inCard, ix, cy, iw, UiStyle.SectionHeader, UiRole.Text2, title, UiFlags.Label | UiFlags.Truncate);
             cy += L(UiStyle.SectionHeader) + UiTokens.S3;
             int n = Math.Min(figures.Length, labels.Length);
-            float colW = UiDraw.SnapDown((iw - UiTokens.S3) / 2f);
+            float colW = UiDraw.SnapDown((iw - UiTokens.S3 * (columns - 1)) / columns);
             float rowH = L(UiStyle.Number) + L(UiStyle.Small) + UiTokens.S3;
             for (int i = 0; i < n; i++)
             {
-                float fx = ix + (i % 2) * (colW + UiTokens.S3), fy = cy + (i / 2) * rowH;
+                float fx = ix + (i % columns) * (colW + UiTokens.S3), fy = cy + (i / columns) * rowH;
                 if (fy + rowH > y + h)
                 {
                     break;
@@ -173,7 +173,7 @@ namespace RealLifeOverhaul.Ui
             FlareStudioModel st = m.Studio;
             float bottom = y + h;
             float cy = y + PageHead(s, at, x, y, w, m.Head, m.HeadLine, false);
-            float cx = x + UiTokens.S4, inner = w - UiTokens.S8;
+            float cx = x + UiTokens.S4, inner = w - UiTokens.S8, right = cx + inner;
             int n = Math.Min(4, st.Labels.Length);
             if (n > 0)
             {
@@ -181,35 +181,40 @@ namespace RealLifeOverhaul.Ui
                 for (int i = 0; i < n; i++)
                 {
                     float tx = cx + i * (tw + UiTokens.S3);
-                    StatCard(s, at, tx, cy, tw, StatHeight, st.Labels[i], At(st.Figures, i), At(st.Deltas, i), i < st.Tones.Length ? st.Tones[i] : 0);
+                    // the last takes the rest, so the rows end together
+                    StatCard(s, at, tx, cy, i == n - 1 ? right - tx : tw, StatHeight, st.Labels[i], At(st.Figures, i), At(st.Deltas, i), i < st.Tones.Length ? st.Tones[i] : 0);
                 }
                 cy += StatHeight + UiTokens.S4;
             }
+            // The tier card is as tall as its words; the followers' line and the creator income stand beside it, to the same foot; the results run the page's whole width under them.
             float rw = UiDraw.SnapDown(inner * 0.34f), lw = inner - rw - UiTokens.S4;
             float rx = cx + lw + UiTokens.S4;
-            TierCard(s, at, st, rx, cy, rw, bottom - UiTokens.S4 - cy);
-            int line = Card(s, at, cx, cy, lw, LineCardHeight);
+            float tierH = Math.Min(bottom - UiTokens.S4 - cy, TierCard(s, at, st, rx, cy, rw, 0f, false));
+            TierCard(s, at, st, rx, cy, rw, tierH, true);
+            const float creatorH = 76f;
+            bool creator = !string.IsNullOrEmpty(st.CreatorTitle);
+            float lineH = creator ? tierH - creatorH - UiTokens.S3 : tierH;
+            int line = Card(s, at, cx, cy, lw, lineH);
             UiAt inLine = at.In(line);
             UiDraw.Text(s, inLine, cx + UiTokens.S4, cy + UiTokens.S4, lw - UiTokens.S8, UiStyle.SectionHeader, UiRole.Text2, st.LineTitle, UiFlags.Label | UiFlags.Truncate);
             float sy = cy + UiTokens.S4 + L(UiStyle.SectionHeader) + UiTokens.S3;
             if (Drawn(st.Line))
             {
-                UiDraw.Spark(s, inLine, cx + UiTokens.S4, sy, lw - UiTokens.S8, cy + LineCardHeight - UiTokens.S4 - sy, st.Line, UiRole.Chart2);
+                UiDraw.Spark(s, inLine, cx + UiTokens.S4, sy, lw - UiTokens.S8, cy + lineH - UiTokens.S4 - sy, st.Line, UiRole.Chart2);
             }
-            cy += LineCardHeight + UiTokens.S3;
-            if (!string.IsNullOrEmpty(st.CreatorTitle))
+            if (creator)
             {
-                const float creatorH = 76f;
-                int creator = Card(s, at, cx, cy, lw, creatorH);
-                UiAt inCreator = at.In(creator);
-                UiDraw.Text(s, inCreator, cx + UiTokens.S4, cy + UiTokens.S3, lw - UiTokens.S8, UiStyle.SectionHeader, UiRole.Text2, st.CreatorTitle, UiFlags.Label | UiFlags.Truncate);
+                float oy = cy + lineH + UiTokens.S3;
+                int income = Card(s, at, cx, oy, lw, creatorH);
+                UiAt inCreator = at.In(income);
+                UiDraw.Text(s, inCreator, cx + UiTokens.S4, oy + UiTokens.S3, lw - UiTokens.S8, UiStyle.SectionHeader, UiRole.Text2, st.CreatorTitle, UiFlags.Label | UiFlags.Truncate);
                 float figW = UiDraw.Snap(UiTextRules.Width(st.Creator, UiStyle.Number) + UiTokens.S3);
-                UiDraw.Text(s, inCreator, cx + UiTokens.S4, cy + UiTokens.S3 + L(UiStyle.SectionHeader), figW, UiStyle.Number, UiRole.Text, st.Creator, UiFlags.Truncate);
-                UiDraw.Text(s, inCreator, cx + UiTokens.S4 + figW, cy + UiTokens.S3 + L(UiStyle.SectionHeader) + (L(UiStyle.Number) - L(UiStyle.Small)), lw - UiTokens.S8 - figW, UiStyle.Small,
+                UiDraw.Text(s, inCreator, cx + UiTokens.S4, oy + UiTokens.S3 + L(UiStyle.SectionHeader), figW, UiStyle.Number, UiRole.Text, st.Creator, UiFlags.Truncate);
+                UiDraw.Text(s, inCreator, cx + UiTokens.S4 + figW, oy + UiTokens.S3 + L(UiStyle.SectionHeader) + (L(UiStyle.Number) - L(UiStyle.Small)), lw - UiTokens.S8 - figW, UiStyle.Small,
                     UiRole.Text2, st.CreatorLine, UiFlags.Truncate);
-                cy += creatorH + UiTokens.S3;
             }
-            List(s, at, m.List, cx - UiTokens.S4, cy, lw + UiTokens.S4, bottom - cy, keys);
+            cy += tierH + UiTokens.S3;
+            List(s, at, m.List, x, cy, w, bottom - cy, keys);
         }
 
         /// <summary>A figure on its own card: its label in small capitals, the figure, and what changed in its tone.</summary>
@@ -228,49 +233,68 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // Sponsorship: the tier, how far to the next, and what each tier unlocks, ticked when it is open.
-        private static void TierCard(UiScene s, UiAt at, FlareStudioModel st, float x, float y, float w, float h)
+        // Sponsorship: the tier, how far to the next, and what each tier unlocks, ticked when it is open. Measured with draw false (its height as its words take it),
+        // laid with it true into the height given.
+        private static float TierCard(UiScene s, UiAt at, FlareStudioModel st, float x, float y, float w, float h, bool draw)
         {
-            int card = Card(s, at, x, y, w, h);
-            UiAt inCard = at.In(card);
             float ix = x + UiTokens.S4, iw = w - UiTokens.S8, cy = y + UiTokens.S4;
-            UiDraw.Text(s, inCard, ix, cy, iw, UiStyle.SectionHeader, UiRole.Text2, st.TierTitle, UiFlags.Label | UiFlags.Truncate);
-            cy += L(UiStyle.SectionHeader) + UiTokens.S2;
-            UiDraw.Text(s, inCard, ix, cy, iw, UiStyle.Number, UiRole.Text, st.Tier, UiFlags.Truncate);
-            cy += L(UiStyle.Number) + UiTokens.S3;
-            int track = UiDraw.Box(s, inCard, ix, cy, iw, UiTokens.S2, UiRole.Track, UiRole.None, UiTokens.S1);
-            float share = Math.Max(0f, Math.Min(1f, st.TierShare));
-            if (share > 0f)
+            UiAt inCard = at;
+            int track = -1;
+            if (draw)
             {
-                UiDraw.Box(s, inCard.In(track), ix, cy, Math.Max(UiTokens.S2, iw * share), UiTokens.S2, UiRole.Chart2, UiRole.None, UiTokens.S1, UiFlags.Share);
+                int card = Card(s, at, x, y, w, h);
+                inCard = at.In(card);
+                UiDraw.Text(s, inCard, ix, cy, iw, UiStyle.SectionHeader, UiRole.Text2, st.TierTitle, UiFlags.Label | UiFlags.Truncate);
+            }
+            cy += L(UiStyle.SectionHeader) + UiTokens.S2;
+            if (draw)
+            {
+                UiDraw.Text(s, inCard, ix, cy, iw, UiStyle.Number, UiRole.Text, st.Tier, UiFlags.Truncate);
+            }
+            cy += L(UiStyle.Number) + UiTokens.S3;
+            if (draw)
+            {
+                track = UiDraw.Box(s, inCard, ix, cy, iw, UiTokens.S2, UiRole.Track, UiRole.None, UiTokens.S1);
+                float share = Math.Max(0f, Math.Min(1f, st.TierShare));
+                if (share > 0f)
+                {
+                    UiDraw.Box(s, inCard.In(track), ix, cy, Math.Max(UiTokens.S2, iw * share), UiTokens.S2, UiRole.Chart2, UiRole.None, UiTokens.S1, UiFlags.Share);
+                }
             }
             cy += UiTokens.S2 + UiTokens.S2;
             if (!string.IsNullOrEmpty(st.TierLine))
             {
-                UiDraw.Text(s, inCard, ix, cy, iw, UiStyle.Small, UiRole.Text2, st.TierLine, UiFlags.Wrap | UiFlags.Truncate, 2);
+                if (draw)
+                {
+                    UiDraw.Text(s, inCard, ix, cy, iw, UiStyle.Small, UiRole.Text2, st.TierLine, UiFlags.Wrap | UiFlags.Truncate, 2);
+                }
                 cy += UiDraw.Snap(UiTextRules.WrappedHeight(st.TierLine, UiStyle.Small, iw, 2)) + UiTokens.S3;
             }
             float rowH = UiTokens.S8;
             for (int i = 0; i < st.Perks.Length; i++)
             {
-                if (cy + rowH > y + h - UiTokens.S4)
+                if (draw && cy + rowH > y + h - UiTokens.S4)
                 {
                     break;
                 }
-                string perk = st.Perks[i];
-                bool open = perk != null && perk.Length > 0 && perk[0] == '+';
-                string words = open ? perk.Substring(1) : perk != null && perk.Length > 0 && perk[0] == '-' ? perk.Substring(1) : perk;
-                int row = UiDraw.Box(s, inCard, ix, cy, iw, rowH, UiRole.None, UiRole.None, 0f);
-                UiAt inRow = inCard.In(row);
-                UiDraw.Icon(s, inRow, ix, cy + (rowH - UiTokens.Icon) / 2f, UiTokens.Icon, open ? UiIcon.Check : UiIcon.Lock, open ? UiRole.OkText : UiRole.Text2, UiFlags.Middle, open);
-                UiDraw.TextMiddle(s, inRow, ix + UiTokens.Icon + UiTokens.S2, cy, rowH, iw - UiTokens.Icon - UiTokens.S2, UiStyle.Body, open ? UiRole.Text : UiRole.Text2, words, UiFlags.Truncate);
+                if (draw)
+                {
+                    string perk = st.Perks[i];
+                    bool open = perk != null && perk.Length > 0 && perk[0] == '+';
+                    string words = open ? perk.Substring(1) : perk != null && perk.Length > 0 && perk[0] == '-' ? perk.Substring(1) : perk;
+                    int row = UiDraw.Box(s, inCard, ix, cy, iw, rowH, UiRole.None, UiRole.None, 0f);
+                    UiAt inRow = inCard.In(row);
+                    UiDraw.Icon(s, inRow, ix, cy + (rowH - UiTokens.Icon) / 2f, UiTokens.Icon, open ? UiIcon.Check : UiIcon.Lock, open ? UiRole.OkText : UiRole.Text2, UiFlags.Middle, open);
+                    UiDraw.TextMiddle(s, inRow, ix + UiTokens.Icon + UiTokens.S2, cy, rowH, iw - UiTokens.Icon - UiTokens.S2, UiStyle.Body, open ? UiRole.Text : UiRole.Text2, words, UiFlags.Truncate);
+                }
                 cy += rowH;
             }
+            return UiDraw.Snap(cy + UiTokens.S4 - y);
         }
 
         // ------------------------------------------------------------------------------------------------ In the city
 
-        public const float CityBandHeight = 176f;
+        public const float CityBandHeight = 176f, CityBandNew = 112f;
 
         private static void CityPage(UiScene s, UiAt at, FlareFaceModel m, float x, float y, float w, float h, IUiKeys keys)
         {
@@ -281,15 +305,15 @@ namespace RealLifeOverhaul.Ui
             cy += UiTokens.S3;
             if (c.Shown)
             {
-                float gap = UiTokens.S4, lw = UiDraw.SnapDown((inner - gap) * 0.6f), rw = inner - lw - gap;
-                DonutCard(s, at, c, cx, cy, lw, CityBandHeight);
-                FiguresCard(s, at, c.WeekTitle, c.WeekFigures, c.WeekLabels, cx + lw + gap, cy, rw, CityBandHeight);
-                cy += CityBandHeight + UiTokens.S3;
+                // A new account has no followers to count: its band is as short as its words, and the week's figures stand in a row beside them.
+                bool followers = c.Names.Length > 0;
+                float band = followers ? CityBandHeight : CityBandNew;
+                float gap = UiTokens.S4, lw = UiDraw.SnapDown((inner - gap) * (followers ? 0.6f : 0.5f)), rw = inner - lw - gap;
+                DonutCard(s, at, c, cx, cy, lw, band);
+                FiguresCard(s, at, c.WeekTitle, c.WeekFigures, c.WeekLabels, cx + lw + gap, cy, rw, band, followers ? 2 : 3);
+                cy += band + UiTokens.S3;
             }
-            if (!c.Shown || m.List.Count > 0)
-            {
-                List(s, at, m.List, cx, cy, inner + UiTokens.S3, y + h - cy, keys);   // a new account's page says it once, in the band
-            }
+            List(s, at, m.List, cx, cy, inner + UiTokens.S3, y + h - cy, keys);   // with nothing in it the list says so once, in its own words
         }
 
         // The followers by district: the donut, and beside it each district named with its followers; or why there is nothing to show.
@@ -314,55 +338,6 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDraw.Text(s, inCard, lx, cy + used + UiTokens.S1, x + w - UiTokens.S4 - lx, UiStyle.Small, UiRole.Text2, c.DonutRest, UiFlags.Truncate);
             }
-        }
-
-        // ------------------------------------------------------------------------------------------------ Hire
-
-        private static void HirePage(UiScene s, UiAt at, FlareFaceModel m, float x, float y, float w, float h, IUiKeys keys)
-        {
-            float bottom = y + h;
-            float cy = y + PageHead(s, at, x, y, w, m.Head, m.HeadLine, false);
-            FlareBusinessModel b = m.Business;
-            if (b.Picker.Length > 0)
-            {
-                cy += Picks(s, at, x + UiTokens.S4, cy, w - UiTokens.S8, b.Picker, b.Chosen, PickCommand) + UiTokens.S2;
-            }
-            if (b.Picker2.Length > 0 || b.Sort.Length > 0)
-            {
-                // The order at the right (by followers, by fit), the niches across the rest.
-                float sortW = 0f;
-                for (int i = 0; i < b.Sort.Length; i++)
-                {
-                    sortW += PillWidth(b.Sort[i]) + UiTokens.S2;
-                }
-                float sx = x + w - UiTokens.S4 - sortW + UiTokens.S2;
-                for (int i = 0; i < b.Sort.Length; i++)
-                {
-                    float pw = PillWidth(b.Sort[i]);
-                    Pill(s, at, sx, cy, pw, b.Sort[i], i == b.SortChosen ? PillKind.Chosen : PillKind.Line, SortCommand, i);
-                    sx += pw + UiTokens.S2;
-                }
-                Picks(s, at, x + UiTokens.S4, cy, w - UiTokens.S8 - sortW - UiTokens.S2, b.Picker2, b.Chosen2, NicheCommand);
-                cy += UiTokens.ControlSmall + UiTokens.S4;
-            }
-            else
-            {
-                cy += UiTokens.S2;
-            }
-            if (m.List.Count > 0 && m.List.Rows[0].Tags != null)
-            {
-                // One header for the columns: what each figure is, over its column.
-                string[] labels = m.List.Rows[0].Tags;
-                int cols = labels.Length / 2;
-                float rowW = w - UiTokens.S8 - UiTokens.S3, fx = x + UiTokens.S4 + HireFigureX(rowW, cols);
-                for (int i = 0; i < cols; i++)
-                {
-                    UiDraw.Text(s, at, fx + i * HireColumn, cy, HireColumn - UiTokens.S3, UiStyle.SectionHeader, UiRole.Text2, labels[i * 2],
-                        UiFlags.Label | UiFlags.Right | UiFlags.Wrap | UiFlags.Truncate, 2);
-                }
-                cy += UiTokens.S8;
-            }
-            List(s, at, m.List, x + UiTokens.S4, cy, w - UiTokens.S8, bottom - cy, keys);
         }
     }
 }

@@ -751,6 +751,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Flare\FlareFace.cs" Link="Mod\FlareFace.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Flare\FlareFace.Pages.cs" Link="Mod\FlareFace.Pages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Flare\FlareFace.Desk.cs" Link="Mod\FlareFace.Desk.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Flare\FlareFace.Hire.cs" Link="Mod\FlareFace.Hire.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Flare\FlareFace.Rows.cs" Link="Mod\FlareFace.Rows.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Flare\FlareFace.Sheet.cs" Link="Mod\FlareFace.Sheet.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Flare\FlareFace.Picker.cs" Link="Mod\FlareFace.Picker.cs" />

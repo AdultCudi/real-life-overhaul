@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using RealLifeOverhaul.Flare;
 using RealLifeOverhaul.Population;
+using RealLifeOverhaul.Ui;
 
 // Round 3 of the Flare audit fix: the to-let walk and the day's round driven through a stub bridge (a day's finish never pays for the walk, a pass is
 // queued at start-up and walked a slice at a time), the city ads ring over many days through the real day pass, and a Rival notice meaning a rival.
@@ -12,6 +13,22 @@ internal static partial class Program
         FlareRoundToLet();
         FlareRoundRing();
         FlareRoundWiring();
+        FlareRoundFaces();
+    }
+
+    // The trend's tag comes from its key, never from its words in the player's language; a person's ring is their mood, a review's its stars.
+    private static void FlareRoundFaces()
+    {
+        string eating = FlareCityViews.TrendTag(FlareCityViews.TrendKindKey(3)), coffee = FlareCityViews.TrendTag(FlareCityViews.TrendKindKey(4));
+        Check(eating == "eatingout" && coffee == "coffee" && FlareCityViews.TrendTag(RealLifeOverhaul.Tech.StudioViews.GenreKey(2)) == "rpg" && FlareCityViews.TrendTag("reallife_other") == null && FlareCityViews.TrendTag(null) == null,
+            "flare round: a trend's tag is made from its key (" + eating + ", " + coffee + "), the same in every language");
+        Check(FlareFace.MoodRing(2) == UiRole.Ok && FlareFace.MoodRing(1) == UiRole.Ok && FlareFace.MoodRing(0) == UiRole.Warn && FlareFace.MoodRing(-1) == UiRole.Danger && FlareFace.MoodRing(-2) == UiRole.Danger
+              && FlareFace.StarRing(5) == UiRole.Ok && FlareFace.StarRing(4) == UiRole.Ok && FlareFace.StarRing(3) == UiRole.Warn && FlareFace.StarRing(2) == UiRole.Danger && FlareFace.StarRing(1) == UiRole.Danger,
+            "flare round: the ring round a face is the person's mood (the social life's, -2 to +2) and a reviewer's is how they left (their stars)");
+        string pages = PlayFile("Ui", "Flare", "FlareScreen.Rows.cs") + PlayFile("Ui", "Flare", "FlareScreen.Fill.cs") + PlayFile("Ui", "Flare", "FlareScreen.Desk.cs");
+        Check(pages.Contains("r.Ring = FlareFace.MoodRing(person.Mood);") && pages.Contains("r.Ring = UiTokens.Grade(inf.Reliability);") && pages.Contains("_m.MyRing = UiTokens.Grade(FlareGame.PlayerHappiness());")
+              && pages.Contains("r.Ring = FlareFace.StarRing(r.Stars);") && PlayFile("Wiring", "FlareLinks.cs").Contains("Mood = p.Mood"),
+            "flare round: the screen fills the rings from the social life's mood, the HUD's happiness, an influencer's record and a review's stars");
     }
 
     // A city of buildings the bridge walks: every fourth is to let, in one of three districts. Counts what the bridge was asked.
