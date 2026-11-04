@@ -152,7 +152,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     Peer c = f.Peers[i];
                     cj.Peers.Add(new CareerPeer { Name = c.Name, Role = CareersText.Title(p.Id, Math.Min(p.Ranks.Length - 1, c.Rank)),
-                        Score = c.Score, Hue = UiColour.HueOf(c.Name),
+                        Score = c.Score, Team = c.Teamwork, Hue = UiColour.HueOf(c.Name),
                         Tag = c.Role == (int)PeerRole.UpForPost ? W.T("reallife_work_up_for_post",
                             "up for the post") : c.Role == (int)PeerRole.Lead ? W.T("reallife_work_your_lead", "your lead") : null });
                     if (c.Role == (int)PeerRole.UpForPost)
@@ -205,7 +205,7 @@ namespace RealLifeOverhaul.Ui
                 for (int k = 0; k < others.Count; k++)
                 {
                     r.Others.Add(new CareerPeer { Name = others[k].Name, Role = CareersText.Title(o.Prof, others[k].Rank),
-                        Day = CareersText.Day(others[k].Day), Score = others[k].Score, Hue = UiColour.HueOf(others[k].Name) });
+                        Day = CareersText.Day(others[k].Day), Score = others[k].Score, Team = others[k].Teamwork, Hue = UiColour.HueOf(others[k].Name) });
                 }
                 r.Acts.Add(CareerAct.Apply);
                 r.Why.Add(applied ? W.T("reallife_work_why_applied",

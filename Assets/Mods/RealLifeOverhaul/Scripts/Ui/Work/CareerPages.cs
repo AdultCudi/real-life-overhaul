@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.Ui
     public sealed class CareerNeed { public string Words, Have; public bool Met; }
 
     /// <summary>A person beside the player: a colleague on the shift or another applicant.</summary>
-    public sealed class CareerPeer { public string Name, Role, Tag, Day; public int Score; public float Hue; }
+    public sealed class CareerPeer { public string Name, Role, Tag, Day; public int Score, Team; public float Hue; }
 
     /// <summary>The job the player holds.</summary>
     public sealed class CareerJob
@@ -194,7 +194,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     CareerPeer c = j.Peers[i];
                     people[i] = new UiPersonRow { Name = c.Name, Hue = c.Hue, RoleIcon = UiIcon.Person, Role = c.Tag != null ? c.Role + ", " + c.Tag : c.Role,
-                        FirstLabel = w.T("reallife_work_stand_performance", "Performance"), First = c.Score, SecondLabel = null, Second = -1 };
+                        FirstLabel = w.T("reallife_work_stand_performance", "Performance"), First = c.Score,
+                        SecondLabel = w.T("reallife_work_stand_teamwork", "Teamwork"), Second = c.Team };
                 }
                 b.People(w.T("reallife_work_on_shift", "On shift with you"), j.Peers.Count.ToString(), people, null);
                 if (j.RivalName != null && j.Mine.Length >= 2)
@@ -284,7 +285,7 @@ namespace RealLifeOverhaul.Ui
                         CareerPeer c = chosen.Others[i];
                         people[i] = new UiPersonRow { Name = c.Name, Hue = c.Hue, RoleIcon = UiIcon.Person, Role = c.Role + ", " + c.Day,
                             FirstLabel = w.T("reallife_work_record", "Record"), First = c.Score,
-                            SecondLabel = null, Second = -1 };
+                            SecondLabel = w.T("reallife_work_stand_teamwork", "Teamwork"), Second = c.Team };
                     }
                     b.People(w.T("reallife_work_also_applied", "Also applied"), w.F("reallife_work_n_people", "{n} people", "n",
                         chosen.Others.Count.ToString()), people, null);
@@ -305,7 +306,7 @@ namespace RealLifeOverhaul.Ui
         private static UiColumn[] JobColumns(UtilitiesWords w) => new[]
         {
             WorkBuilder.Col(w.T("reallife_work_col_job", "Job"), 0f, false, true), WorkBuilder.Col(w.T("reallife_work_col_where", "Where"), 184f),
-            WorkBuilder.Col(w.T("reallife_work_col_hours", "Hours"), 184f), WorkBuilder.Col(w.T("reallife_work_col_pay_hour", "Pay an hour"), 140f, true),
+            WorkBuilder.Col(w.T("reallife_work_col_pay_hour", "Pay an hour"), 140f, true),
             WorkBuilder.Col(w.T("reallife_work_col_against", "Against yours"), 140f, true)
         };
 

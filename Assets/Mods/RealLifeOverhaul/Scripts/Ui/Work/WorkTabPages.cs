@@ -147,20 +147,32 @@ namespace RealLifeOverhaul.Ui
                 b.Table(null, t.Columns, t.GradeColumn, rows, new WorkDo[rows.Length], at);
             }
             List<WorkPerson> people = chosen != null && chosen.People.Count > 0 ? chosen.People : t.People;
-            if (people.Count > 0)
+            if (people.Count > 0 && people.TrueForAll(x => x.Score2 < 0))
+            {
+                // people with a single figure are a short table (name, what they are, the figure): the people block always draws two bars
+                var more = new UiAppRow[people.Count];
+                for (int i = 0; i < more.Length; i++)
+                {
+                    WorkPerson p = people[i];
+                    more[i] = WorkBuilder.Row(p.Icon, UiRole.None, new[] { p.Name, p.Role, p.Score >= 0 ? p.Score.ToString(System.Globalization.CultureInfo.InvariantCulture) : "-" });
+                }
+                b.M.MoreTitle = chosen != null && chosen.People.Count > 0 && chosen.PeopleTitle != null ? chosen.PeopleTitle : t.PeopleTitle;
+                b.M.MoreColumns = new[] { WorkBuilder.Col(people[0].Label ?? string.Empty, 0f, false, true), WorkBuilder.Col(string.Empty, 184f), WorkBuilder.Col(string.Empty, 96f, true) };
+                b.M.MoreRows = more;
+                b.Page.MoreRows = new WorkDo[more.Length];
+            }
+            else if (people.Count > 0)
             {
                 var list = new UiPersonRow[people.Count];
                 var opens = new WorkDo[people.Count];
                 for (int i = 0; i < list.Length; i++)
                 {
                     WorkPerson p = people[i];
-                    list[i] = new UiPersonRow { Name = p.Name, Hue = UiColour.HueOf(p.Name ?? string.Empty), RoleIcon = p.Icon, Role = p.Role,
-                        FirstLabel = p.Label, First = p.Score,
+                    list[i] = new UiPersonRow { Name = p.Name, Hue = UiColour.HueOf(p.Name ?? string.Empty), RoleIcon = p.Icon, Role = p.Role, FirstLabel = p.Label, First = p.Score,
                         SecondLabel = p.Label2, Second = p.Score2 };
                     opens[i] = p.Open != null ? WorkBuilder.Do(p.Open.Kind, p.Open.Arg, p.Open.Why, p.Open.Opens) : default(WorkDo);
                 }
-                b.People(chosen != null && chosen.People.Count > 0 && chosen.PeopleTitle != null ? chosen.PeopleTitle : t.PeopleTitle, t.PeopleCount,
-                    list, opens);
+                b.People(chosen != null && chosen.People.Count > 0 && chosen.PeopleTitle != null ? chosen.PeopleTitle : t.PeopleTitle, t.PeopleCount, list, opens);
                 m.Note = t.Note;
                 m.NoteTone = t.NoteTone;
             }

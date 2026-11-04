@@ -71,7 +71,7 @@ internal static partial class UiSamples
                 NextTitle = "Next shift, starts in 15 minutes", NextLine = "Mon 09:00 to 17:00",
                     Desk = "Click your desk in the depot office to open the work panel and start the shift.",
                 NextNote = "Hudson Yards depot", Progress = 0, Performance = 82, Punctuality = 94, Teamwork = 71, Reliability = 88,
-                    WeekHours = "32 of 40", WeekPay = "$688 before tax",
+                    WeekHours = "32 of 40", WeekPay = "$688",
                 RivalName = "Marcus Lee", Mine = new[] { 71, 72, 74, 73, 77, 78, 77, 79, 81, 80, 81, 82 }, Theirs = new[] { 70, 71, 72, 70, 74, 75,
                     76, 76, 77, 78, 78, 79 }
             };
@@ -80,9 +80,9 @@ internal static partial class UiSamples
             j.Rungs.Add(new CareerRung { Title = "Shift lead", Pay = "$26.00", State = 2 });
             j.Rungs.Add(new CareerRung { Title = "Depot supervisor", Pay = "$33.00", State = 2 });
             j.Rungs.Add(new CareerRung { Title = "Depot manager", Pay = "$44.00", State = 2 });
-            j.Peers.Add(new CareerPeer { Name = "Marcus Lee", Role = "Senior picker", Tag = "up for the post", Score = 79 });
-            j.Peers.Add(new CareerPeer { Name = "Pilar Duran", Role = "Shift lead", Tag = "your lead", Score = 90 });
-            j.Peers.Add(new CareerPeer { Name = "Oleg Kozlov", Role = "Forklift driver", Score = 84 });
+            j.Peers.Add(new CareerPeer { Name = "Marcus Lee", Role = "Senior picker", Tag = "up for the post", Score = 79, Team = 72 });
+            j.Peers.Add(new CareerPeer { Name = "Pilar Duran", Role = "Shift lead", Tag = "your lead", Score = 90, Team = 88 });
+            j.Peers.Add(new CareerPeer { Name = "Oleg Kozlov", Role = "Forklift driver", Score = 84, Team = 76 });
             f.Job = j;
         }
         var jobs = new[]
@@ -105,8 +105,8 @@ internal static partial class UiSamples
             r.Needs.Add(new CareerNeed { Words = "Teamwork 75", Met = false, Have = "you have 71" });
             if (i == 0)
             {
-                r.Others.Add(new CareerPeer { Name = "Marcus Lee", Role = "Senior picker", Day = "Day 399", Score = 79 });
-                r.Others.Add(new CareerPeer { Name = "Nia Brooks", Role = "Picker", Day = "Day 400", Score = 74 });
+                r.Others.Add(new CareerPeer { Name = "Marcus Lee", Role = "Senior picker", Day = "Day 399", Score = 79, Team = 70 });
+                r.Others.Add(new CareerPeer { Name = "Nia Brooks", Role = "Picker", Day = "Day 400", Score = 74, Team = 66 });
             }
             r.Acts.Add(CareerAct.Apply);
             r.Acts.Add(CareerAct.ShowPost);
