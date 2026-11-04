@@ -130,7 +130,7 @@ internal static partial class UiSamples
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_next", "Next class"), live[i][2]));
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_attended", "Attended"), live[i][3]));
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_exam", "Exam"), live[i][4]));
-                if (i == 0)
+                if (i < 0)
                 {
                     r.Acts.Add(WkAct(101, w.T("reallife_campus_button_pay", "Pay what is owed"), UiButtonKind.Secondary, UiIcon.Coin,
                         i == 0 ? null : w.T("reallife_work_nothing_owed", "Nothing is owed."), false, r.Id));

@@ -35,7 +35,7 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        public const float CardHeight = 192f;
+        public const float CardHeight = 232f;
 
         private static void CourseCard(UiScene s, UiAt at, WorkRow r, UiActionModel[] actions, int[] cardActs, int index, float x, float y, float w, float h, IUiKeys keys)
         {
@@ -309,7 +309,7 @@ namespace RealLifeOverhaul.Ui
 
         private static void Bar(UiScene s, UiAt at, WorkBar b, float x, float y, float w)
         {
-            float label = Math.Min(UiDraw.SnapDown(w * 0.34f), 150f), value = UiTextRules.Width("100", UiStyle.BodyStrong) + UiTextRules.Width("+00", UiStyle.Small) + UiTokens.S3;
+            float label = Math.Min(UiDraw.SnapDown(w * 0.34f), 148f), value = UiTextRules.Width("100", UiStyle.BodyStrong) + UiTextRules.Width("+00", UiStyle.Small) + UiTokens.S3;
             UiDraw.TextMiddle(s, at, x, y, UiTokens.PairRow, label, UiStyle.Body, UiRole.Text, b.Label, UiFlags.Truncate);
             UiDraw.Meter(s, at, x + label, y + (UiTokens.PairRow - UiTokens.S1) / 2f, UiDraw.SnapDown(w - label - value - UiTokens.S2), UiTokens.S1, b.Value, UiTokens.Grade(b.Value));
             UiDraw.TextMiddle(s, at, x + w - value, y, UiTokens.PairRow, UiTextRules.Width("100", UiStyle.BodyStrong), UiStyle.BodyStrong,

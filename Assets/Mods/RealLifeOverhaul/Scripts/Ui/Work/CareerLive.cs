@@ -297,11 +297,10 @@ namespace RealLifeOverhaul.Ui
                 var r = new WorkRow
                 {
                     Id = o.Id, Icon = WorkGlyphs.Profession(o.Prof), Name = title, Sub = employer, HeadSub = where, Chip = employer, ChipTone = UiRole.Accent, Status = status, Tone = tone,
-                    Cells = new[] { null, where, null, CareersText.Hours(p), CareersText.Rate(pay), mine > 0 ? WorkBuilder.Percent(against) : "-", status },
-                    Values = new[] { 0, 0, 0, 0, 0, against < 0 ? -1 : against > 0 ? 1 : 0, 0 },
-                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, tone },
-                    Mask = (open ? 1 : 0) | (eligible ? 2 : 0) | (near ? 4 : 0),
-                    Locate = new WorkAct { Kind = (int)CareerAct.ShowPost, Arg = o.Id, Label = words.T("reallife_career_button_map", "Show on map"), Opens = true }
+                    Cells = new[] { null, where, CareersText.Hours(p), CareersText.Rate(pay), mine > 0 ? WorkBuilder.Percent(against) : "-", status },
+                    Values = new[] { 0, 0, 0, 0, against < 0 ? -1 : against > 0 ? 1 : 0, 0 },
+                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, tone },
+                    Mask = (open ? 1 : 0) | (eligible ? 2 : 0) | (near ? 4 : 0)
                 };
                 r.Figures.Add(new KeyValuePair<string, string>(words.T("reallife_career_col_pay", "Pay"), words.F("reallife_career_row_rate", "{rate} an hour", "rate", CareersText.Rate(pay))));
                 r.Figures.Add(new KeyValuePair<string, string>(words.T("reallife_work_col_hours", "Hours"), CareersText.Hours(p)));
@@ -389,7 +388,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < rows.Count && i < 5; i++)
             {
                 WorkRow r = rows[i];
-                _facts.Best.Add(new WorkRow { Id = r.Id, Icon = r.Icon, Name = r.Name, Sub = r.Sub + ", " + r.Cells[1], Price = r.Cells[4] + "/h", Status = r.Cells[6], Tone = UiRole.Ok });
+                _facts.Best.Add(new WorkRow { Id = r.Id, Icon = r.Icon, Name = r.Name, Sub = r.Sub + ", " + r.Cells[1], Price = r.Cells[3] + "/h", Status = r.Cells[5], Tone = UiRole.Ok });
             }
         }
 

@@ -24,11 +24,10 @@ internal static partial class UiSamples
         string status = needs == 0 ? qualify : needs == 1 ? w.F("reallife_work_needs_n_more", "Needs {n} more", "n", "1") : needs == 2 ? w.F("reallife_work_needs_n_more", "Needs {n} more", "n", "2")
             : w.T("reallife_work_needs_licence", "Needs a licence");
         UiRole tone = needs == 0 ? UiRole.Ok : UiRole.Warn;
-        var r = new WorkRow { Id = id, Icon = icon, Name = title, Sub = employer, Cells = new[] { null, where, null, hours, pay, WorkBuilder.Percent(against), status },
-            Values = new[] { 0, 0, 0, 0, 0, against < 0 ? -1 : against > 0 ? 1 : 0, 0 },
-            Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, tone }, Status = status, Tone = tone };
+        var r = new WorkRow { Id = id, Icon = icon, Name = title, Sub = employer, Cells = new[] { null, where, hours, pay, WorkBuilder.Percent(against), status },
+            Values = new[] { 0, 0, 0, 0, against < 0 ? -1 : against > 0 ? 1 : 0, 0 },
+            Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, tone }, Status = status, Tone = tone };
         r.Mask = 1 | (needs == 0 ? 2 : 0) | (id % 3 == 0 ? 4 : 0);
-        r.Locate = new WorkAct { Kind = 101, Arg = id, Label = w.T("reallife_career_button_map", "Show on map"), Opens = true };
         r.Chip = employer;
         r.ChipTone = UiRole.Accent;
         r.HeadSub = where;
@@ -109,9 +108,9 @@ internal static partial class UiSamples
         {
             foreach (WorkRow r in f.Jobs.Rows)
             {
-                if ((r.Cells[6] == "You qualify" || r.Cells[6] == w.T("reallife_work_you_qualify", "You qualify")) && f.Best.Count < 5)
+                if ((r.Cells[5] == "You qualify" || r.Cells[5] == w.T("reallife_work_you_qualify", "You qualify")) && f.Best.Count < 5)
                 {
-                    f.Best.Add(new WorkRow { Id = r.Id, Icon = r.Icon, Name = r.Name, Sub = r.Sub + ", " + r.Cells[1], Price = r.Cells[4] + "/h", Status = r.Cells[6], Tone = UiRole.Ok });
+                    f.Best.Add(new WorkRow { Id = r.Id, Icon = r.Icon, Name = r.Name, Sub = r.Sub + ", " + r.Cells[1], Price = r.Cells[3] + "/h", Status = r.Cells[5], Tone = UiRole.Ok });
                 }
             }
         }

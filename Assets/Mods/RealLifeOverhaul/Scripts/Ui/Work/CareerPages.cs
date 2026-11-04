@@ -130,9 +130,10 @@ namespace RealLifeOverhaul.Ui
                 EmptyIcon = UiIcon.Briefcase, EmptyTitle = w.T("reallife_work_empty_jobs_title", "No post is open today"),
                 EmptyBody = w.T("reallife_work_empty_jobs", "Employers post their vacancies each morning. The professions show what to train for in the meantime."),
                 EmptyActLabel = w.T("reallife_career_button_professions", "See the professions"), EmptyAct = new WorkAct { Kind = WorkKinds.GoTab, Arg = Professions, Opens = true } };
-            t.Columns = new[] { Col(w.T("reallife_work_col_job", "Job"), UiCellKind.Tile), Col(w.T("reallife_work_col_where", "Where"), UiCellKind.Text, 128), Col(string.Empty, UiCellKind.Action, 32),
+            t.Columns = new[] { Col(w.T("reallife_work_col_job", "Job"), UiCellKind.Tile), Col(w.T("reallife_work_col_where", "Where"), UiCellKind.Text, 128),
                 Col(w.T("reallife_work_col_hours", "Hours"), UiCellKind.Text, 128), Col(w.T("reallife_work_col_pay_hour", "Pay an hour"), UiCellKind.Money, 96),
-                Col(w.T("reallife_work_col_against", "Against yours"), UiCellKind.Trend, 104), Col(w.T("reallife_work_col_you", "You"), UiCellKind.Chip, 172) };
+                Col(w.T("reallife_work_col_against", "Against yours"), UiCellKind.Trend, 104), Col(w.T("reallife_work_col_you", "You"),
+                    UiCellKind.Chip, 172) };   // Show on map is the detail's button: a row's own action is not reached by the d-pad
             return t;
         }
 
