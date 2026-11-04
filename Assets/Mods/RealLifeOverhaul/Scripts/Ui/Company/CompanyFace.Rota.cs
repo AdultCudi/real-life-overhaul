@@ -281,6 +281,22 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- the week
 
+        // Whether any shift of the week is gold: a request the plan could not meet.
+        private static bool UnmetIn(CompanyRotaPerson[] people)
+        {
+            for (int i = 0; i < people.Length; i++)
+            {
+                for (int d = 0; people[i].Tones != null && d < people[i].Tones.Length; d++)
+                {
+                    if (people[i].Tones[d] != UiRole.None)
+                    {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
         // The week: the people by day with the hours of the chosen day beside them; a shop of three people or fewer lays it out across the page with the hours of the day under it.
         private static void WeekPage(UiScene s, UiAt at, CompanyLayout lay, CompanyView v, CompanyWords w, CompanyRotaPlace p, float x, float y, float width, float bottom)
         {
@@ -295,7 +311,7 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             float gap = UiTokens.S6, hw = UiDraw.SnapDown(Math.Min(width * 0.26f, 320f)), gw = width - hw - gap;
-            float each = UiDraw.SnapDown((bottom - y - 96f) / Math.Max(1, p.People.Length));
+            float each = UiDraw.SnapDown((bottom - y - 96f - (UnmetIn(p.People) ? UiTokens.PairRow + UiTokens.S2 : 0f)) / Math.Max(1, p.People.Length));
             WeekGrid(s, atM, lay, w, p.People, p.DayNames, p.Day, p.DayTotals, p.TotalHours, title, p.Weekly, true, x, y, gw, bottom, Math.Max(GridRowLeast, Math.Min(GridRowMost, each)));
             HourBars(s, at.InRegion(RegionSide), p, x + gw + gap, y, hw, bottom);
         }
@@ -330,7 +346,7 @@ namespace RealLifeOverhaul.Ui
             UiDraw.TextMiddle(s, at, x + personW + dayW * 7f, cy, UiTokens.Chip, hoursW, UiStyle.SectionHeader, UiRole.Muted, w.T("reallife_rota_hours", "Hours"),
                 UiFlags.Label | UiFlags.Right | UiFlags.Truncate);
             cy += UiTokens.Chip + UiTokens.S2;
-            float footer = UiTokens.PairRow + UiTokens.S4;
+            float footer = UiTokens.PairRow + UiTokens.S4 + (UnmetIn(people) ? UiTokens.PairRow + UiTokens.S2 : 0f);
             int fit = (int)Math.Max(1f, Math.Floor((bottom - cy - footer) / rowH));
             int shown = Math.Min(people.Length, fit);
             for (int i = 0; i < shown; i++)
@@ -395,7 +411,18 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.TextMiddle(s, at, x + personW + d * dayW, cy, UiTokens.PairRow, dayW, UiStyle.BodyStrong, UiRole.Text, dayTotals[d] ?? string.Empty, UiFlags.Centre | UiFlags.Truncate);
             }
             UiDraw.TextMiddle(s, at, x + personW + dayW * 7f, cy, UiTokens.PairRow, hoursW, UiStyle.BodyStrong, UiRole.Text, totalHours ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
-            return cy + UiTokens.PairRow + UiTokens.S4;
+            float end = cy + UiTokens.PairRow + UiTokens.S4;
+            // A gold shift is a request the plan could not meet (a person who asked to be off and is on): without a word for it the colour is a puzzle, so the key says it under the totals.
+            if (UnmetIn(people) && end + UiTokens.PairRow <= bottom)
+            {
+                string key = w.T("reallife_rota_legend_unmet", "Asked to be off, kept on");
+                UiDraw.Box(s, at, x + personW, end + (UiTokens.PairRow - UiTokens.StatusDot) / 2f, UiTokens.StatusDot, UiTokens.StatusDot, UiRole.Warn, UiRole.None, UiTokens.RadiusSmall,
+                    UiFlags.Decor);
+                UiDraw.TextMiddle(s, at, x + personW + UiTokens.StatusDot + UiTokens.S2, end, UiTokens.PairRow, Math.Max(0f, width - personW - UiTokens.StatusDot - UiTokens.S2), UiStyle.Small,
+                    UiRole.Text2, key, UiFlags.Truncate);
+                end += UiTokens.PairRow + UiTokens.S2;
+            }
+            return end;
         }
 
         // The chosen day hour by hour: a bar of who is on shift against a tick where the planner needs them, short hours in red. The rows grow with the room.
@@ -507,7 +534,7 @@ namespace RealLifeOverhaul.Ui
             }
             float slot = UiDraw.SnapDown(width / n), figH = UiTokens.PairRow, labelH = UiTokens.PairRow;
             float plotH = UiDraw.SnapDown(height - figH - labelH);
-            if (slot < UiTokens.S6 || plotH < UiTokens.S8)
+            if (slot < UiTokens.S5 || plotH < UiTokens.S8)
             {
                 return;
             }
@@ -797,7 +824,7 @@ namespace RealLifeOverhaul.Ui
             // The week at the left and, beside it, what the plan changes in the opening hours (the week alone across the page where it changes none).
             bool beside = l.Changes.Length > 0;
             float gap = UiTokens.S6, side = beside ? UiDraw.SnapDown(Math.Max(300f, Math.Min(380f, width * 0.34f))) : 0f, gw = width - (beside ? side + gap : 0f);
-            float rowH = Math.Max(44f, Math.Min(GridRowMost, UiDraw.SnapDown((bottom - cy - 92f) / Math.Max(1, l.People.Length))));
+            float rowH = Math.Max(44f, Math.Min(GridRowMost, UiDraw.SnapDown((bottom - cy - 92f - (UnmetIn(l.People) ? UiTokens.PairRow + UiTokens.S2 : 0f)) / Math.Max(1, l.People.Length))));
             float end = WeekGrid(s, at, lay, w, l.People, p.DayNames, -1, l.DayTotals, l.TotalHours, w.T("reallife_rota_the_week", "The week"), null, false, x, cy, gw, bottom, rowH);
             if (!beside)
             {
@@ -814,6 +841,50 @@ namespace RealLifeOverhaul.Ui
                 }
                 sy += h;
             }
+            // Under what it changes, how many are on shift in each hour of an ordinary day of the week above: the shape of the plan, read from the same shifts.
+            CompanyFloor shape = ShapeOf(l.People, w.T("reallife_rota_look_shape", "On shift by hour, an average day"));
+            if (shape != null && bottom - sy - UiTokens.S3 >= 192f)
+            {
+                FloorChart(s, at, shape, sx, sy + UiTokens.S3, side, bottom - sy - UiTokens.S3);
+            }
+        }
+
+        // The crew on shift in each hour averaged over the seven days, from the people's shifts as "07-15" (null for a day off); null where nobody works.
+        private static CompanyFloor ShapeOf(CompanyRotaPerson[] people, string title)
+        {
+            int from = 24, to = 0;
+            var spans = new System.Collections.Generic.List<int[]>(people.Length * 7);
+            for (int i = 0; i < people.Length; i++)
+            {
+                for (int d = 0; people[i].Shifts != null && d < people[i].Shifts.Length; d++)
+                {
+                    string shift = people[i].Shifts[d];
+                    int dash = string.IsNullOrEmpty(shift) ? -1 : shift.IndexOf('-');
+                    int a, b;
+                    if (dash > 0 && int.TryParse(shift.Substring(0, dash), out a) && int.TryParse(shift.Substring(dash + 1), out b) && b > a)
+                    {
+                        spans.Add(new[] { a, b });
+                        from = Math.Min(from, a);
+                        to = Math.Max(to, b);
+                    }
+                }
+            }
+            if (spans.Count == 0)
+            {
+                return null;
+            }
+            var floor = new CompanyFloor { Title = title, Hours = new string[to - from], Crew = new int[to - from] };
+            for (int h = from; h < to; h++)
+            {
+                int total = 0;
+                for (int i = 0; i < spans.Count; i++)
+                {
+                    total += h >= spans[i][0] && h < spans[i][1] ? 1 : 0;
+                }
+                floor.Hours[h - from] = h.ToString("00");
+                floor.Crew[h - from] = (total + 3) / 7;   // rounded to the nearest whole person
+            }
+            return floor;
         }
 
         // A run of hours the plan opens or closes: a plus or a minus on a tile, when and what it is worth, and why in as many lines as it needs. Returns its height, or 0 where it

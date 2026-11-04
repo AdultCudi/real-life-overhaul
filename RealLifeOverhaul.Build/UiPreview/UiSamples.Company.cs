@@ -10,7 +10,7 @@ internal static partial class UiSamples
     {
         "overview_big", "overview_tall", "overview_one", "overview_shop", "overview_quiet", "question", "lease_question", "gap_question", "deep_question", "company_off",
         "staff_big", "staff_summary", "staff_offer", "staff_give", "staff_strike", "staff_overtime", "staff_one",
-        "managers_big", "managers_owner", "managers_region", "managers_post", "managers_none", "managers_flat", "managers_off",
+        "managers_big", "managers_owner", "managers_handover", "managers_region", "managers_post", "managers_none", "managers_flat", "managers_off",
         "managers_sub_appoint", "managers_sub_decisions", "managers_sub_task", "managers_sub_inbox", "managers_sub_policy", "managers_sub_rule", "managers_sub_templates",
         "managers_sub_dashboard", "managers_sub_regiondash", "managers_sub_seat", "managers_sub_tpl_own", "managers_sub_seat_pick", "managers_sub_seat_filled",
         "rota_big", "rota_day", "rota_advice", "rota_look", "rota_look_hire", "rota_edit", "rota_edit_other", "rota_one", "rota_refused", "rota_off",
@@ -33,6 +33,66 @@ internal static partial class UiSamples
         return english;
     }
 
+    // A sample's word that the live screen reads from a key (a skill, a kind of decision, a campaign, a seat): the key's text in the language of the shot, the English where the key is new.
+    private static readonly System.Collections.Generic.Dictionary<string, string> SampleKeys = new System.Collections.Generic.Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        { "Customer service", "reallife_staff_skill_customer_service" },
+        { "Cooking", "reallife_study_skill_cooking" },
+        { "Cleaning", "reallife_staff_skill_cleaning" },
+        { "Driving", "reallife_study_skill_driving" },
+        { "Logistics", "reallife_mkt_sector_logistics" },
+        { "Programming", "reallife_staff_skill_programmer" },
+        { "Barista", "reallife_study_course_barista" },
+        { "Raises", "reallife_mgr_task_raises" },
+        { "Rival offers", "reallife_mgr_task_offers" },
+        { "Overtime", "reallife_mgr_task_overtime" },
+        { "Insurance claims", "reallife_mgr_task_claims" },
+        { "Stock", "reallife_mgr_task_stock" },
+        { "Prices", "reallife_mgr_task_prices" },
+        { "Hiring", "reallife_mgr_task_hiring" },
+        { "Leases", "reallife_mgr_task_leases" },
+        { "Discount week", "reallife_co_campaign_discount" },
+        { "Radio", "reallife_co_campaign_radio" },
+        { "Standard week", "reallife_rota_plan_standard" },
+        { "Every day", "reallife_planner_repeat_daily" },
+        { "Chief financial officer", "reallife_ladder_rung_executive_cfo" },
+        { "Chief operating officer", "reallife_ladder_rung_executive_coo" },
+        { "Chief human resources officer", "reallife_ladder_rung_executive_chro" },
+        { "To hire", "reallife_rota_to_hire" },
+        { "no cost", "reallife_co_q_nocost_note" },
+        { "Hours a day", "reallife_co_emp_hours_day" },
+        { "Careless", "reallife_co_accountant_0" },
+        { "Careful", "reallife_co_accountant_1" },
+        { "Honest", "reallife_co_accountant_2" },
+        { "Flyers", "reallife_co_campaign_flyers" },
+        { "Marketing", "reallife_mgr_task_marketing" },
+        { "Rota", "reallife_mgr_task_rota" }
+    };
+
+    private static string Tr(CompanyWords w, string english) => SampleKeys.TryGetValue(english, out string key) ? w.T(key, english) : english;
+
+    // A licence's name as the screen writes it: the key's lower case phrase with its first letter raised.
+    private static string Lic(CompanyWords w, string kind)
+    {
+        string english = kind == "hygiene" ? "food hygiene" : kind == "signage" ? "signage" : kind == "fire" ? "fire safety certificate" : "bonded storage permit";
+        return CompanyTextCapital(w.T("reallife_co_licence_" + kind, english));
+    }
+
+    // A talent's role and level as the screen writes them: the role's key, a comma, the level's key.
+    private static string Role(CompanyWords w, string role, string english, string level) => w.T("reallife_talent_role_" + role, english) + ", " + w.T("reallife_talent_level_" + level, level);
+
+    // A kind of place as the managers' pages name it: a business, a factory or office, a warehouse.
+    private static string Kind(CompanyWords w, string kind) => kind == "Warehouse" ? w.T("reallife_mgr_kind_warehouse", "Warehouse") : kind == "Office" ? w.T("reallife_mgr_kind_works", "Factory or office") : w.T("reallife_mgr_kind_shop", "Business");
+
+    // A weekday as the screen writes it: the game's own name for it, cut to three letters where a column is narrow.
+    private static string Wd(CompanyWords w, int day, bool shortForm)
+    {
+        string[] keys = { "common_monday", "common_tuesday", "common_wednesday", "common_thursday", "common_friday", "common_saturday", "common_sunday" };
+        string[] english = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+        string name = w.T(keys[day], english[day]);
+        return shortForm && name.Length > 3 ? name.Substring(0, 3) : name;
+    }
+
     private static CompanyAct CA(CompanyDo d, string s = null, int a = 0, int b = 0, int c = 0, string s2 = null) => CompanyAct.Of(d, s, a, b, c, s2);
 
     private static CompanyButton CB(string label, UiButtonKind kind, UiAction key, CompanyAct act, UiIcon icon = UiIcon.None, bool disabled = false, string why = null, bool arms = false) =>
@@ -48,7 +108,7 @@ internal static partial class UiSamples
         {
             string place = "mgr:Speedy Bites~7";
             v.Pick[CompanyView.Managers] = place;
-            v.Pick[CompanyView.Managers] = state == "managers_owner" ? "own" : state == "managers_region" || state == "managers_sub_regiondash" ? "reg:Midtown" : state == "managers_post" ? "post:Pioneer Game Studio~9" : state == "managers_sub_seat" ? "seat:3" : place;
+            v.Pick[CompanyView.Managers] = state == "managers_owner" || state == "managers_handover" ? "own" : state == "managers_region" || state == "managers_sub_regiondash" ? "reg:Midtown" : state == "managers_post" ? "post:Pioneer Game Studio~9" : state == "managers_sub_seat" ? "seat:3" : place;
             v.SubPick[CompanyView.Managers] = state == "managers_sub_tpl_own" ? "pk:o1" : state == "managers_sub_seat_pick" ? "xc:pro1" : string.Empty;
             v.Pick[CompanyView.Managers] = state == "managers_sub_tpl_own" ? place : state == "managers_sub_seat_filled" ? "exe:1" : v.Pick[CompanyView.Managers];
             v.Sub[CompanyView.Managers] = state == "managers_sub_appoint" ? CompanyView.SubAppoint : state == "managers_sub_decisions" ? CompanyView.SubDecision : state == "managers_sub_task" ? CompanyView.SubTask
@@ -136,12 +196,12 @@ internal static partial class UiSamples
         var q = new CompanyQuestion
         {
             Id = 1, Kicker = w.F("reallife_co_q_kicker_manager", "A manager's question, {place}", "place", "Speedy Bites, 7 5th Avenue"), Title = w.T("reallife_co_q_raise_title", "A raise above my limit"),
-            Headline = SF("{name} asks for {pay} an hour. {manager} can approve up to {limit}.", "name", "Dev Kapoor", "pay", "$19", "manager", "Ray", "limit", "$18"),
-            Body = SF("{name} has worked both registers for 41 days and covered the lunch rush all week. Another raise this month goes over {manager}'s limit.", "name", "Dev", "manager", "Ray"),
+            Headline = w.F("reallife_hier_say_exception", "{name} asks for {asked} an hour; the limit is {ceiling}.", "name", "Dev Kapoor", "asked", "$19.00", "ceiling", "$18.00"),
+            Body = w.T("reallife_hier_what_yours", "Yours to decide: nobody under you may settle it."),
             Asker = "Ray Walsh", AskerRole = w.T("reallife_co_q_manager_asks", "Manager"), AskerHue = 0.55f, AskerRing = UiRole.Warn,
-            Subject = "Dev Kapoor", SubjectRole = w.F("reallife_co_q_cashier_days", "{skill}, {days} days", "skill", "Customer service", "days", "41"), SubjectRing = UiRole.Ok,
-            FactLabels = new[] { w.T("reallife_co_q_now", "Now"), w.T("reallife_co_q_asks_for", "Asks for"), w.T("reallife_co_q_limit", "Limit"), "Covered this week" },
-            FactValues = new[] { "$17 / h", "$19 / h", "$18 / h", "38 h" },
+            Subject = "Dev Kapoor", SubjectRole = w.F("reallife_co_q_cashier_days", "{skill}, {days} days", "skill", Tr(w, "Customer service"), "days", "41"), SubjectRing = UiRole.Ok,
+            FactLabels = new[] { w.T("reallife_co_q_now", "Now"), w.T("reallife_co_q_asks_for", "Asks for"), w.T("reallife_co_q_limit", "Limit"), w.T("reallife_co_q_standing", "Standing") },
+            FactValues = new[] { "$17.00 / h", "$19.00 / h", "$18.00 / h", "58" },
             OpenLabel = w.F("reallife_co_open_page", "Open {name}'s page", "name", "Ray"), Open = CA(CompanyDo.Go, "mgr:Speedy Bites~7", CompanyView.Managers),
             Selected = 0
         };
@@ -195,24 +255,24 @@ internal static partial class UiSamples
     {
         var q = new CompanyQuestion
         {
-            Id = deep ? 4 : 3, Kicker = w.F("reallife_co_q_kicker_manager", "A manager's question, {place}", "place", "Speedy Bites, 7 5th Avenue"), Title = "The crew is short",
-            Headline = w.F("reallife_hier_say_gap", "{staff} staff, {keep} wanted since day {day}", "staff", "7", "keep", "9", "day", "209"),
-            Body = SF("Two hours a day have nobody on the grill. {manager} cannot hire past the budget this month.", "manager", "Ray"),
+            Id = deep ? 4 : 3, Kicker = w.F("reallife_co_q_kicker_manager", "A manager's question, {place}", "place", "Speedy Bites, 7 5th Avenue"), Title = w.T("reallife_hier_kind_gap", "Staff short"),
+            Headline = w.F("reallife_hier_say_gap", "{staff} of the {keep} staff kept, short since day {day}.", "staff", "7", "keep", "9", "day", "209"),
+            Body = w.T("reallife_hier_what_yours", "Yours to decide: nobody under you may settle it."),
             Asker = "Ray Walsh", AskerRole = w.T("reallife_co_q_manager_asks", "Manager"), AskerHue = 0.55f, AskerRing = UiRole.Warn,
-            FactLabels = new[] { "Staff", "Wanted", w.T("reallife_co_q_budget", "Budget left") },
-            FactValues = new[] { "7", "9", "$90" }, OpenLabel = w.F("reallife_co_open_page", "Open {name}'s page", "name", "Ray"), Open = CA(CompanyDo.Go, "mgr:Speedy Bites~7", CompanyView.Managers), Deep = deep, Selected = 0
+            FactLabels = new[] { w.T("reallife_co_f_staff", "Staff"), w.T("reallife_co_f_since", "Since") }, FactValues = new[] { "7", w.F("reallife_mgr_row_day", "Day {day}", "day", "209") },
+            OpenLabel = w.F("reallife_co_open_page", "Open {name}'s page", "name", "Ray"), Open = CA(CompanyDo.Go, "mgr:Speedy Bites~7", CompanyView.Managers), Deep = deep, Selected = 0
         };
         q.Choices = deep ? new CompanyChoice[0] : new[]
         {
             new CompanyChoice
             {
                 Name = w.T("reallife_hier_do_fill", "Fill the gaps now"), Button = w.T("reallife_hier_do_fill", "Fill the gaps now"), Note = w.T("reallife_co_q_now_note", "now"), Act = CA(CompanyDo.Settle, null, 3, 0),
-                Lines = new[] { new CompanyConsequence { Text = SF("Hires {count} from the job board, about {amount} a week", "count", "2", "amount", "$1,150"), Tone = UiConsequence.Loss, Change = 1 } }
+                Lines = new[] { new CompanyConsequence { Text = w.T("reallife_co_q_gap_line", "A person from the staff board, at the going rate"), Tone = UiConsequence.Loss, Change = 1 } }
             },
             new CompanyChoice
             {
                 Name = w.T("reallife_hier_do_dismiss", "Dismiss"), Button = w.T("reallife_hier_do_dismiss", "Dismiss"), Note = w.T("reallife_co_q_nocost_note", "no cost"), Act = CA(CompanyDo.Dismiss, null, 3),
-                Lines = new[] { new CompanyConsequence { Text = "The gap stays; the question comes back in a week", Tone = -1, Change = 0 } }
+                Lines = new[] { new CompanyConsequence { Text = w.T("reallife_co_q_dismiss_line", "It comes back if it stays true"), Tone = -1, Change = 0 } }
             }
         };
         return q;
@@ -224,10 +284,10 @@ internal static partial class UiSamples
         {
             Id = 2, Kicker = w.F("reallife_co_q_kicker_manager", "A manager's question, {place}", "place", "Hudson Warehouse, Hell's Kitchen"), Title = w.T("reallife_co_q_lease_title", "A lease is up for renewal"),
             Headline = w.F("reallife_co_q_lease_head", "The lease at {place} renews in {days} days: {rent} a month, up {rise}.", "place", "Hudson Warehouse", "days", "9", "rent", "$6,800", "rise", "8%"),
-            Body = SF("{manager} may agree a rise of up to {limit}. This one is past it, so it is yours. The landlord holds the premises at the new rent from the day the lease ends.", "manager", "Omar", "limit", "5%"),
+            Body = w.T("reallife_hier_what_yours", "Yours to decide: nobody under you may settle it."),
             Asker = "Omar Haddad", AskerRole = w.T("reallife_co_q_manager_asks", "Manager"), AskerHue = 0.75f, AskerRing = UiRole.Warn,
             FactLabels = new[] { w.T("reallife_co_q_rent_now", "Rent now"), w.T("reallife_co_q_rent_offer", "Offered"), w.T("reallife_co_q_term", "New term"), w.T("reallife_co_q_rise_limit", "Rise") },
-            FactValues = new[] { "$6,300", "$6,800", "24 months", "7.9%" },
+            FactValues = new[] { "$6,300", "$6,800", w.F("reallife_co_q_months", "{count} months", "count", "24"), "7.9%" },
             OpenLabel = w.F("reallife_co_open_page", "Open {name}'s page", "name", "Omar"), Open = CA(CompanyDo.Go, "mgr:Hudson Warehouse~4", CompanyView.Managers),
             Selected = 0
         };
@@ -271,8 +331,8 @@ internal static partial class UiSamples
             o.ResultNote = w.F("reallife_co_after_day", "after day {day}", "day", "7");
             o.Waiting = new[]
             {
-                new CompanyWaiting { Name = "Signage permit is missing", Line = SF("{business} trades without it; an inspector may call", "business", "Corner Cafe"), Icon = UiIcon.Receipt, Open = CA(CompanyDo.Go, null, CompanyView.Tax), OpenLabel = w.T("reallife_co_open", "Open") },
-                new CompanyWaiting { Name = "Four hours with nobody on shift", Line = SF("{business}, Tuesday and Thursday", "business", "Corner Cafe"), Icon = UiIcon.Calendar, Open = CA(CompanyDo.Go, null, CompanyView.Rota), OpenLabel = w.T("reallife_co_open", "Open") }
+                new CompanyWaiting { Name = Lic(w, "signage") + ", Corner Cafe", Line = w.F("reallife_co_lic_fine", "Trading without it: {amount} when an inspector next calls.", "amount", "$600"), Icon = UiIcon.Receipt, Open = CA(CompanyDo.Go, null, CompanyView.Tax), OpenLabel = w.T("reallife_co_open", "Open") },
+                new CompanyWaiting { Name = w.T("reallife_hier_kind_gap", "Staff short") + ", Corner Cafe", Line = w.F("reallife_hier_say_gap", "{staff} of the {keep} staff kept, short since day {day}.", "staff", "1", "keep", "2", "day", "7"), Icon = UiIcon.Calendar, Open = CA(CompanyDo.Go, null, CompanyView.Rota), OpenLabel = w.T("reallife_co_open", "Open") }
             };
             o.WaitingCount = "2";
             o.Next = new CompanyWaiting
@@ -318,14 +378,14 @@ internal static partial class UiSamples
         o.TotalLabel = w.T("reallife_co_all_businesses", "All businesses");
         o.Done = new[]
         {
-            new CompanyDone { When = "08:10", Text = SF("{name} reordered buns and patties for {business}", "name", "Ray Walsh", "business", "Speedy Bites"), Money = "-" + CM(410), Tone = -1 },
-            new CompanyDone { When = "09:30", Text = SF("{name} lowered rose prices {percent} on slow stock", "name", "Tessa Brandt", "percent", "6%"), Money = "+" + CM(85), Tone = 1 },
-            new CompanyDone { When = "10:45", Text = SF("{name} booked a courier from Harbourside Freight HSF", "name", "Meera Iyer"), Money = "-" + CM(240), Tone = -1 },
-            new CompanyDone { When = "11:20", Text = SF("{name} moved {person} from the fryer to the grill", "name", "Ray Walsh", "person", "Lena Adler"), Money = "no cost", Tone = 0 },
-            new CompanyDone { When = "11:55", Text = SF("{name} turned away a supplier who asked {percent} more", "name", "Tessa Brandt", "percent", "12%"), Money = "+" + CM(140), Tone = 1 },
-            new CompanyDone { When = "13:05", Text = SF("{name} gave {person} the whole raise, {amount} an hour", "name", "Ray Walsh", "person", "Lena Adler", "amount", "$0.50"), Money = "-" + CM(4), Tone = -1 },
-            new CompanyDone { When = "14:20", Text = SF("{name} booked a flyer week for {business}", "name", "Tessa Brandt", "business", "Bloom & Co"), Money = "-" + CM(180), Tone = -1 },
-            new CompanyDone { When = "15:40", Text = SF("{name} wrote the week's rota for {business}", "name", "Ray Walsh", "business", "Speedy Bites"), Money = "no cost", Tone = 0 }
+            new CompanyDone { When = "08:10", Text = w.F("reallife_mgr_did_stock", "Set {count} products of the delivery on day {day}.", "count", "6", "day", "3"), Money = "-" + CM(410), Tone = -1 },
+            new CompanyDone { When = "09:30", Text = w.F("reallife_mgr_did_prices", "Repriced {count} products.", "count", "4"), Money = "+" + CM(85), Tone = 1 },
+            new CompanyDone { When = "10:45", Text = w.F("reallife_mgr_did_claim_put", "Put in the claim for {cover}: it pays {amount}.", "cover", w.T("reallife_co_cover_fire", "Fire").ToLowerInvariant(), "amount", "$3,600"), Money = "-" + CM(240), Tone = -1 },
+            new CompanyDone { When = "11:20", Text = w.F("reallife_mgr_did_overtime_agree", "Agreed overtime at {amount} a day.", "amount", "$190"), Money = Tr(w, "no cost"), Tone = 0 },
+            new CompanyDone { When = "11:55", Text = w.F("reallife_mgr_did_offer_match", "Matched {rival}'s offer of {wage} an hour to {name}.", "rival", "Harbour Grill", "wage", "$18.50", "name", "Lena Adler"), Money = "+" + CM(140), Tone = 1 },
+            new CompanyDone { When = "13:05", Text = w.F("reallife_mgr_did_raise_agree", "Gave {name} the whole raise, {raise} an hour.", "name", "Lena Adler", "raise", "$0.50"), Money = "-" + CM(4), Tone = -1 },
+            new CompanyDone { When = "14:20", Text = w.F("reallife_mgr_did_marketing", "Booked {campaign}: {amount}, {percent}% more customers for {days} days.", "campaign", Tr(w, "Flyers"), "amount", "$180", "percent", "12", "days", "4"), Money = "-" + CM(180), Tone = -1 },
+            new CompanyDone { When = "15:40", Text = w.F("reallife_mgr_did_rota", "Wrote the week's rota: {shifts} shifts, {covered} of {wanted} hours covered.", "shifts", "52", "covered", "112", "wanted", "112"), Money = Tr(w, "no cost"), Tone = 0 }
         };
         if (quiet)
         {
@@ -336,9 +396,9 @@ internal static partial class UiSamples
         o.Lead.Kicker = w.F("reallife_co_needs_you", "Needs you now, {manager}, {place}", "manager", "Ray Walsh", "place", "Speedy Bites");
         o.Waiting = new[]
         {
-            new CompanyWaiting { Name = "Meera Iyer, " + "Operations", Line = SF("{business} lease renews in {days} days: {rent} a month, up {rise}", "business", "Hudson Warehouse", "days", "9", "rent", "$6,800", "rise", "8%"),
+            new CompanyWaiting { Name = "Omar Haddad, Hudson Warehouse", Line = w.F("reallife_co_q_lease_head", "The lease at {place} renews in {days} days: {rent} a month, up {rise}.", "place", "Hudson Warehouse", "days", "9", "rent", "$6,800", "rise", "8%"),
                 Hue = 0.75f, Ring = UiRole.Warn, Open = CA(CompanyDo.Go, "card", 2), OpenLabel = w.T("reallife_co_open", "Open") },
-            new CompanyWaiting { Name = "Tessa Brandt, Bloom & Co", Line = SF("Order {count} more tulips for Saturday, {amount}", "count", "400", "amount", "$620"), Hue = 0.9f, Ring = UiRole.Warn,
+            new CompanyWaiting { Name = "Tessa Brandt, Bloom & Co", Line = w.F("reallife_hier_say_budget", "{spent} of the month's {budget} spent.", "spent", "$380", "budget", "$400"), Hue = 0.9f, Ring = UiRole.Warn,
                 Open = CA(CompanyDo.Go, "mgr:Bloom & Co~214", CompanyView.Managers), OpenLabel = w.T("reallife_co_open", "Open") }
         };
         o.WaitingCount = "2";
@@ -359,7 +419,7 @@ internal static partial class UiSamples
             c.Title = "Speedy Bites";
             c.Sub = SF("7 5th Avenue, {district}", "district", "Midtown");
             c.Icon = UiIcon.ForkKnife;
-            c.Chips = new[] { "Waiting for you", "Open" };
+            c.Chips = new[] { w.T("reallife_co_waiting_for_you", "Waiting for you"), w.T("reallife_ibox_chip_open", "Open") };
             c.ChipTones = new[] { UiRole.Warn, UiRole.Ok };
             c.FactLabels = new[] { w.T("reallife_co_f_staff", "Staff"), w.T("reallife_co_f_takings", "Takings"), w.T("reallife_co_f_profit", "Profit"), w.T("reallife_co_f_standing", "Standing") };
             c.FactValues = new[] { "9", CM(4860), "+" + CM(1140), "72" };
@@ -376,7 +436,7 @@ internal static partial class UiSamples
         blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Row, Text = w.T("reallife_co_r_rival", "Nearest rival"), Value = w.F("reallife_co_rival_line", "{name}, about {amount} a day (the game's estimate)", "name", panel ? "Brooklyn Brew" : "Midtown Grill", "amount", panel ? "$460" : "$4,100") });
         if (panel)
         {
-            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Note, Text = SF("The game has no statement for this business yet. Figures come after its first full day.") });
+            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Note, Text = w.T("reallife_co_no_books", "The game has no statement for this business yet. Figures come after its first full day.") });
         }
         else
         {
@@ -388,14 +448,14 @@ internal static partial class UiSamples
             Kind = CompanyBlockKind.Items, Items = panel
                 ? new[]
                 {
-                    new CompanyItem { Title = "Hygiene certificate", Icon = UiIcon.Drop, Sub = w.F("reallife_mgr_row_day", "Day {day}", "day", "140"), Chip = w.T("reallife_co_row_lic_valid", "Valid"), ChipTone = UiRole.Ok, Grade = -1, Press = true, Act = CA(CompanyDo.Go, "lic:Corner Cafe~12:0", CompanyView.Tax, CompanyView.SubLicence) },
-                    new CompanyItem { Title = "Signage permit", Icon = UiIcon.Tag, Chip = w.T("reallife_co_row_lic_missing", "Missing"), ChipTone = UiRole.Danger, Grade = -1, Press = true, Act = CA(CompanyDo.Go, "lic:Corner Cafe~12:3", CompanyView.Tax, CompanyView.SubLicence) }
+                    new CompanyItem { Title = Lic(w, "hygiene"), Icon = UiIcon.Drop, Sub = w.F("reallife_mgr_row_day", "Day {day}", "day", "140"), Chip = w.T("reallife_co_row_lic_valid", "Valid"), ChipTone = UiRole.Ok, Grade = -1, Press = true, Act = CA(CompanyDo.Go, "lic:Corner Cafe~12:0", CompanyView.Tax, CompanyView.SubLicence) },
+                    new CompanyItem { Title = Lic(w, "signage"), Icon = UiIcon.Tag, Chip = w.T("reallife_co_row_lic_missing", "Missing"), ChipTone = UiRole.Danger, Grade = -1, Press = true, Act = CA(CompanyDo.Go, "lic:Corner Cafe~12:3", CompanyView.Tax, CompanyView.SubLicence) }
                 }
                 : new[]
                 {
-                    new CompanyItem { Title = "Hygiene certificate", Icon = UiIcon.Drop, Sub = w.F("reallife_mgr_row_day", "Day {day}", "day", "260"), Chip = w.T("reallife_co_row_lic_auto", "Renews itself"), ChipTone = UiRole.Ok, Grade = -1, Press = true, Act = CA(CompanyDo.Go, "lic:Speedy Bites~7:0", CompanyView.Tax, CompanyView.SubLicence) },
-                    new CompanyItem { Title = "Fire safety", Icon = UiIcon.Fire, Sub = w.F("reallife_mgr_row_day", "Day {day}", "day", "217"), Chip = w.T("reallife_co_row_lic_soon", "Runs out soon"), ChipTone = UiRole.Warn, Grade = -1, Press = true, Act = CA(CompanyDo.Go, "lic:Speedy Bites~7:4", CompanyView.Tax, CompanyView.SubLicence) },
-                    new CompanyItem { Title = "Signage permit", Icon = UiIcon.Tag, Chip = w.T("reallife_co_row_lic_missing", "Missing"), ChipTone = UiRole.Danger, Grade = -1, Press = true, Act = CA(CompanyDo.Go, "lic:Speedy Bites~7:3", CompanyView.Tax, CompanyView.SubLicence) }
+                    new CompanyItem { Title = Lic(w, "hygiene"), Icon = UiIcon.Drop, Sub = w.F("reallife_mgr_row_day", "Day {day}", "day", "260"), Chip = w.T("reallife_co_row_lic_auto", "Renews itself"), ChipTone = UiRole.Ok, Grade = -1, Press = true, Act = CA(CompanyDo.Go, "lic:Speedy Bites~7:0", CompanyView.Tax, CompanyView.SubLicence) },
+                    new CompanyItem { Title = Lic(w, "fire"), Icon = UiIcon.Fire, Sub = w.F("reallife_mgr_row_day", "Day {day}", "day", "217"), Chip = w.T("reallife_co_row_lic_soon", "Runs out soon"), ChipTone = UiRole.Warn, Grade = -1, Press = true, Act = CA(CompanyDo.Go, "lic:Speedy Bites~7:4", CompanyView.Tax, CompanyView.SubLicence) },
+                    new CompanyItem { Title = Lic(w, "signage"), Icon = UiIcon.Tag, Chip = w.T("reallife_co_row_lic_missing", "Missing"), ChipTone = UiRole.Danger, Grade = -1, Press = true, Act = CA(CompanyDo.Go, "lic:Speedy Bites~7:3", CompanyView.Tax, CompanyView.SubLicence) }
                 }
         });
         if (!panel)
@@ -427,9 +487,9 @@ internal static partial class UiSamples
         {
             string[][] crew =
             {
-                new[] { "Dev Kapoor", "Customer service", "$17.00", "0.35" }, new[] { "Lena Adler", "Cooking", "$16.50", "0.1" }, new[] { "Rui Tanaka", "Customer service", "$15.90", "0.5" },
-                new[] { "Ines Duarte", "Cooking", "$16.20", "0.15" }, new[] { "Hana Sato", "Cleaning", "$15.60", "0.8" }, new[] { "Leo Martin", "Cooking", "$16.00", "0.3" },
-                new[] { "Maya Okafor", "Customer service", "$18.20", "0.6" }, new[] { "Tomas Reyes", "Cleaning", "$15.40", "0.8" }, new[] { "Sana Malik", "Cooking", "$24.00", "0.25" }
+                new[] { "Dev Kapoor", Tr(w, "Customer service"), "$17.00", "0.35" }, new[] { "Lena Adler", Tr(w, "Cooking"), "$16.50", "0.1" }, new[] { "Rui Tanaka", Tr(w, "Customer service"), "$15.90", "0.5" },
+                new[] { "Ines Duarte", Tr(w, "Cooking"), "$16.20", "0.15" }, new[] { "Hana Sato", Tr(w, "Cleaning"), "$15.60", "0.8" }, new[] { "Leo Martin", Tr(w, "Cooking"), "$16.00", "0.3" },
+                new[] { "Maya Okafor", Tr(w, "Customer service"), "$18.20", "0.6" }, new[] { "Tomas Reyes", Tr(w, "Cleaning"), "$15.40", "0.8" }, new[] { "Sana Malik", Tr(w, "Cooking"), "$24.00", "0.25" }
             };
             var rows = new CompanyItem[crew.Length];
             for (int i = 0; i < crew.Length; i++)

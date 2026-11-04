@@ -933,6 +933,24 @@ namespace RealLifeOverhaul.Ui
             {
                 blocks.Add(Buttons(buttons.ToArray()));
             }
+            if (plan.Blocks.Count > 0)
+            {
+                var from = new int[plan.Blocks.Count];
+                var to = new int[plan.Blocks.Count];
+                var crew = new int[plan.Blocks.Count];
+                for (int i = 0; i < from.Length; i++)
+                {
+                    from[i] = plan.Blocks[i].From;
+                    to[i] = plan.Blocks[i].To;
+                    crew[i] = plan.Blocks[i].Crew;
+                }
+                int staff = 0;
+                for (int i = 0; i < d.State.Staff.Count; i++)
+                {
+                    staff += d.State.Staff[i].Place == place ? 1 : 0;
+                }
+                blocks.AddRange(CompanyBlocks.FloorAsks(w.W, from, to, crew, staff));
+            }
             card.Blocks = blocks.ToArray();
             return card;
         }

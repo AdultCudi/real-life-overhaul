@@ -158,6 +158,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.Managers.cs" Link="Mod\Company\CompanyFace.Managers.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.Profile.cs" Link="Mod\Company\CompanyFace.Profile.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyGlyphs.cs" Link="Mod\Company\CompanyGlyphs.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyBlocks.cs" Link="Mod\Company\CompanyBlocks.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.Rota.cs" Link="Mod\Company\CompanyFace.Rota.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.Tax.cs" Link="Mod\Company\CompanyFace.Tax.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyScreen.cs" Link="Mod\Company\CompanyScreen.cs" />

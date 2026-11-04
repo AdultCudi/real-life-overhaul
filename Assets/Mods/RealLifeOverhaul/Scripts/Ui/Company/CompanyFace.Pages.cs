@@ -666,6 +666,11 @@ namespace RealLifeOverhaul.Ui
             float cx = below ? x : x + cw - chips, cy = below ? y + SwitchRow : y + Mid(SwitchRow, UiTokens.Chip);
             for (int i = 0; i < options.Length; i++)
             {
+                if (below && cx > x && cx + UiDraw.ButtonWidth(UiButtonKind.Chip, options[i], UiIcon.None, UiAction.Count, null) > x + cw)
+                {
+                    cx = x;   // chips with long names (an accountant's firm) go on a line of their own where the column is narrow, never out of it
+                    cy += UiTokens.Chip + UiTokens.S2;
+                }
                 CompanyAct act = b.Acts != null && i < b.Acts.Length ? b.Acts[i] : default(CompanyAct);
                 int index = lay.Add(new CompanyButton { Label = options[i], Act = act, Disabled = b.Disabled });
                 cx += ChoiceChip(s, at, cx, cy, options[i], i == b.Chosen, Opt, index, b.Disabled) + UiTokens.S2;

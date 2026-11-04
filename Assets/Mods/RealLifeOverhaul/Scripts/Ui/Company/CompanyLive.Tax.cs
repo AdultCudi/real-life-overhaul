@@ -399,6 +399,9 @@ namespace RealLifeOverhaul.Ui
             }
             blocks.Add(Buttons(Btn(CompanyText.T("reallife_co_return_file"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.ReturnFile), UiAction.Alt, UiIcon.Check, false, !order, !order
                 ? CompanyText.T("reallife_co_return_books") : null)));
+            // What each accountant would take and save on this return, so that who files it is chosen with the figures in view.
+            blocks.Add(Sec(w.T("reallife_co_acc_terms_sec", "What an accountant costs")));
+            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = AccountantTerms(d, t, w) });
             card.Blocks = blocks.ToArray();
             return card;
         }
@@ -524,6 +527,16 @@ namespace RealLifeOverhaul.Ui
                 FactLabels = new[] { w.T("reallife_co_f_saved", "Tax kept back"), w.T("reallife_co_f_risk", "Audit risk") },
                 FactValues = new[] { CompanyText.Money(t.Saved), CompanyText.Share(TaxRules.AuditChance(t, d.Today) / 10) }
             };
+            var every = new List<CompanyItem>(4);
+            for (int i = 0; i < d.Shops.Count && every.Count < 4; i++)
+            {
+                every.Add(new CompanyItem
+                {
+                    Grade = -1, Title = d.Shops[i].Name, Icon = UiIcon.Store, Sub = w.T("reallife_co_row_hidden", "Cash off the books"), Figure = d.Shops[i].File.Hide + "%",
+                    Chip = d.Shops[i] == shop ? CompanyText.T("reallife_ui_bizops_pick") : null, ChipTone = UiRole.Ok, Press = d.Shops[i] != shop,
+                    Act = CompanyAct.Of(CompanyDo.Go, "hide:" + d.Shops[i].File.Place, CompanyView.Tax, CompanyView.SubHide)
+                });
+            }
             card.Blocks = new[]
             {
                 Note(CompanyText.T("reallife_co_hide_what", "percent", CompanyGame.TaxPercent.ToString())),
@@ -536,7 +549,9 @@ namespace RealLifeOverhaul.Ui
                     "most", CompanyText.Share(CompanyCatalogue.RiskMost / 10))),
                 Note(CompanyText.T(level == CompanyCatalogue.Relaxed ? "reallife_co_hide_audit_relaxed" : "reallife_co_hide_audit", "fine", CompanyText.Share(CompanyCatalogue.FineShare[level]),
                     "sum", CompanyText.Money(CompanyCatalogue.CourtSum))),
-                Note(CompanyText.T("reallife_co_hide_threshold"))
+                Note(CompanyText.T("reallife_co_hide_threshold")),
+                Sec(w.T("reallife_co_hide_every", "Every business"), every.Count.ToString()),
+                new CompanyBlock { Kind = CompanyBlockKind.Items, Items = every.ToArray() }
             };
             return card;
         }
@@ -578,6 +593,31 @@ namespace RealLifeOverhaul.Ui
                 "hours", CompanyCatalogue.LicenceClosedHours.ToString()), UiRole.WarnText));
             blocks.Add(Sec(w.T("reallife_co_lic_why_sec", "Why you need it")));
             blocks.Add(Note(CompanyText.T(LicenceWhyKeys[kind], "hour", CompanyCatalogue.LateHour.ToString(), "early", CompanyCatalogue.EarlyHour.ToString())));
+            // The business's other permits as rows, each with its fee and how it stands: what else it needs to trade, beside the one in view.
+            var others = new List<CompanyItem>(4);
+            for (int k = 0; k < shop.File.Permits.Length && others.Count < 4; k++)
+            {
+                Licence o = shop.File.Permits[k];
+                if (k == kind || !(LicenceRules.Valid(o, day) || o.Pending || LicenceRules.Needed(shop.Needs, k)))
+                {
+                    continue;
+                }
+                bool ok = LicenceRules.Valid(o, day);
+                others.Add(new CompanyItem
+                {
+                    Grade = -1, Title = CompanyText.Capital(CompanyText.Licence(k)), Icon = LicenceIcons[Math.Min(k, LicenceIcons.Length - 1)],
+                        Sub = CompanyText.T("reallife_co_lic_term_value", "days",
+                        CompanyCatalogue.LicenceTerm[k].ToString()), Figure = CompanyText.Money(LicenceRules.Fee(k, d.Index)),
+                    Chip = CompanyText.T(ok ? "reallife_ibox_chip_valid" : o.Pending ? "reallife_co_row_lic_pending" : "reallife_ibox_chip_missing"),
+                    ChipTone = ok ? UiRole.Ok : o.Pending ? UiRole.Warn : UiRole.Danger, Press = true, Act = CompanyAct.Of(CompanyDo.Go, "lic:" + place + ":" + k,
+                        CompanyView.Tax, CompanyView.SubLicence)
+                });
+            }
+            if (others.Count > 0)
+            {
+                blocks.Add(Sec(w.F("reallife_co_lic_others", "Other permits at {business}", "business", shop.Name), others.Count.ToString()));
+                blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = others.ToArray() });
+            }
             card.Blocks = blocks.ToArray();
             return card;
         }

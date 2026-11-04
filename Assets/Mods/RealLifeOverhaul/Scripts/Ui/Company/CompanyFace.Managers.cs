@@ -35,6 +35,7 @@ namespace RealLifeOverhaul.Ui
             lay.Offset[CompanyLayout.SlotTree] = tree.Offset;
             lay.List[CompanyLayout.SlotTree] = list;
             lay.Clip[CompanyLayout.SlotTree] = list >= 0 && list < s.ListCount ? s.Lists[list].Clip : (short)-1;
+            TreeCount(s, at.InRegion(RegionList), m, w, list, UiOrgTree.FootHeight(tree), x, treeW, bottom);
             float px = x + treeW + gap, pw = cw - treeW - gap;
             UiDraw.JoinColumns(s, x, x + treeW, x + cw, -1);
             if (m.Profile == null)
@@ -45,6 +46,35 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             ProfilePage(s, at.InRegion(RegionMain), m.Profile, v, w, lay, px, y, pw, bottom, keys);
+        }
+
+        // A short tree leaves its column bare above the foot link: the count of what it holds stands there, under the last row, only where the rows end well clear of the foot (a long tree scrolls
+        // and has no such room).
+        private static void TreeCount(UiScene s, UiAt at, CompanyManagersFacts m, CompanyWords w, short list, float foot, float x, float treeW, float bottom)
+        {
+            if (list < 0 || list >= s.ListCount || s.Lists[list].Clip < 0)
+            {
+                return;
+            }
+            UiClip clip = s.Clips[s.Lists[list].Clip];
+            float rows = UiTokens.PairRow + UiTokens.S1, need = rows * 3f + UiTokens.S4;
+            float end = UiDraw.Snap(clip.Y + Math.Min(clip.ContentHeight, clip.H)) + UiTokens.S4;
+            if (clip.ContentHeight > clip.H + 0.5f || bottom - foot - end < need)
+            {
+                return;
+            }
+            int managers = 0, posts = 0, needs = 0;
+            for (int i = 0; i < m.TreeIds.Length; i++)
+            {
+                managers += m.TreeIds[i].StartsWith("mgr:", StringComparison.Ordinal) ? 1 : 0;
+                posts += m.TreeIds[i].StartsWith("post:", StringComparison.Ordinal) ? 1 : 0;
+                needs += i < m.TreeNeeds.Length && m.TreeNeeds[i] && !m.TreeIds[i].StartsWith("post:", StringComparison.Ordinal) ? 1 : 0;
+            }
+            float y = end;
+            UiDraw.InfoRow(s, at, x + UiTokens.S3, y, treeW - UiTokens.S3 * 2f, w.T("reallife_co_tab_managers", "Managers"), managers.ToString(), false, -1, 0, UiRole.Text);
+            UiDraw.InfoRow(s, at, x + UiTokens.S3, y + rows, treeW - UiTokens.S3 * 2f, w.T("reallife_co_tree_open_posts", "Open posts"), posts.ToString(), false, -1, 0, UiRole.Text);
+            UiDraw.InfoRow(s, at, x + UiTokens.S3, y + rows * 2f, treeW - UiTokens.S3 * 2f, w.T("reallife_mgr_filter_needs", "Needs you"), needs.ToString(), false, -1, 0,
+                needs > 0 ? UiRole.WarnText : UiRole.Text);
         }
 
         // ------------------------------------------------------------------------------------------------- the tree and its two filters
@@ -65,20 +95,29 @@ namespace RealLifeOverhaul.Ui
                 return 0f;
             }
             int state = v.State, district = Math.Max(0, Math.Min(districts, v.District));
-            float each = byState && byDistrict ? UiDraw.SnapDown((treeW - UiTokens.S2) / 2f) : treeW, cx = x;
+            string stateLabel = state == CompanyView.StateNeeds ? w.T("reallife_mgr_filter_needs", "Needs you") : state == CompanyView.StatePosts ? w.T("reallife_co_tree_open_posts", "Open posts")
+                : w.T("reallife_co_flt_places", "All places");
+            string districtLabel = district == 0 ? w.T("reallife_tab_all_districts", "All districts") : m.Districts[district - 1];
+            // Two chips share the column by what their words need: the shorter keeps its own width and the other has the rest, so that a language's longer "all districts" is not cut.
+            float first = treeW, second = treeW, cx = x;
+            if (byState && byDistrict)
+            {
+                float n1 = UiDraw.ButtonWidth(UiButtonKind.Chip, stateLabel, UiIcon.None, UiAction.Count, null);
+                float n2 = UiDraw.ButtonWidth(UiButtonKind.Chip, districtLabel, UiIcon.None, UiAction.Count, null);
+                float half = UiDraw.SnapDown((treeW - UiTokens.S2) / 2f);
+                first = n1 <= half ? n1 : n2 <= half ? treeW - UiTokens.S2 - n2 : half;
+                second = treeW - UiTokens.S2 - first;
+            }
             if (byState)
             {
-                string label = state == CompanyView.StateNeeds ? w.T("reallife_mgr_filter_needs", "Needs you") : state == CompanyView.StatePosts ? w.T("reallife_co_tree_open_posts", "Open posts")
-                    : w.T("reallife_co_flt_places", "All places");
                 int next = (state + 1) % CompanyView.StateCount + district * CompanyView.DistrictStep;
-                FilterChip(s, at, cx, y, each, label, state != CompanyView.StateAll, next);
-                cx += each + UiTokens.S2;
+                FilterChip(s, at, cx, y, first, stateLabel, state != CompanyView.StateAll, next);
+                cx += first + UiTokens.S2;
             }
             if (byDistrict)
             {
-                string label = district == 0 ? w.T("reallife_tab_all_districts", "All districts") : m.Districts[district - 1];
                 int next = state + (district + 1) % (districts + 1) * CompanyView.DistrictStep;
-                FilterChip(s, at, cx, y, each, label, district != 0, next);
+                FilterChip(s, at, cx, y, second, districtLabel, district != 0, next);
             }
             return UiTokens.Chip + UiTokens.S3;
         }

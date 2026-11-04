@@ -611,6 +611,13 @@ namespace RealLifeOverhaul.Ui
                 });
             }
             blocks.Add(Note(CompanyApp.EscalationSays(d, e)));
+            // What the question weighs and what each answer comes to, read here so the page is the whole story; the answer itself is given on the question's card.
+            CompanyQuestion asked = e.Open ? QuestionOf(d, e, w, true) : null;
+            CompanyBlock facts = CompanyBlocks.Facts(asked), answers = CompanyBlocks.Answers(asked);
+            if (facts != null)
+            {
+                blocks.Add(facts);
+            }
             var buttons = new List<CompanyButton>(4);
             if (yours)
             {
@@ -639,6 +646,11 @@ namespace RealLifeOverhaul.Ui
                     UiAction.Count, UiIcon.Sliders));
                 blocks.Add(Buttons(links.ToArray()));
             }
+            if (answers != null)
+            {
+                blocks.Add(Sec(w.T("reallife_hier_sec_answers", "What you could do"), answers.Items.Length.ToString()));
+                blocks.Add(answers);
+            }
             blocks.Add(Sec(w.T("reallife_hier_sec_story", "The story")));
             // One line for when it was raised and by whom; the log under it holds only what happened after.
             blocks.Add(Note(w.F("reallife_hier_raised_by", "Raised on day {day} by {name}.", "day", e.Day.ToString(), "name", asker ?? CompanyApp.HolderWords(e))));
@@ -656,7 +668,10 @@ namespace RealLifeOverhaul.Ui
             {
                 blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Lines, Rows = lines.ToArray() });
             }
-            blocks.Add(Note(CompanyText.T(yours ? "reallife_hier_what_yours" : e.Open ? "reallife_hier_what_others" : "reallife_hier_what_closed")));
+            if (answers == null || !yours)
+            {
+                blocks.Add(Note(CompanyText.T(yours ? "reallife_hier_what_yours" : e.Open ? "reallife_hier_what_others" : "reallife_hier_what_closed")));   // what the answers above say, once
+            }
             card.Blocks = blocks.ToArray();
             return card;
         }
@@ -751,11 +766,10 @@ namespace RealLifeOverhaul.Ui
                 page.Card = RuleCard(d, hs, PolicyCatalogue.Defs[fi], kind, scope, area, w, back);
                 return true;
             }
-            var top = new CompanyCard { Kicker = w.T("reallife_hier_dir_policy", "Policy centre"), Title = w.T("reallife_pol_sec_scope", "This scope"), Icon = UiIcon.Sliders, Back = BackTo(w, back) };
+            var top = new CompanyCard { Kicker = ScopeName(d, kind, scope), Title = w.T("reallife_pol_sec_scope", "This scope"), Icon = UiIcon.Sliders, Back = BackTo(w, back) };
             PolicySet mine = kind == CompanyDirector.ScopeCompany ? null : kind == CompanyDirector.ScopeRegion ? region : store;
             // The rules this scope sets itself (the company: those that differ from the starting policy), as rows with their own glyphs.
-            var set = new List<CompanyItem>(8);
-            int setTotal = 0;
+            int setTotal = 0, heldTotal = 0;
             for (int f = 0; f < PolicyCatalogue.Defs.Length; f++)
             {
                 PolicyDef def = PolicyCatalogue.Defs[f];
@@ -766,21 +780,20 @@ namespace RealLifeOverhaul.Ui
                     continue;
                 }
                 setTotal++;
-                if (set.Count < 6)
-                {
-                    set.Add(new CompanyItem
-                    { Grade = -1,
-                        Id = "pf:" + f, Title = CompanyApp.RuleName(def.Field), Sub = CompanyText.T(PolicyCatalogue.CategoryKeys[(int)def.Category]), Icon = CompanyGlyphs.Policy((int)def.Field),
-                        Figure = CompanyApp.PolicyStepName(def.Field, step), Chip = RuleHeld(hs, def, region, store) ? CompanyText.T("reallife_co_held") : null, ChipTone = UiRole.Warn,
-                        Press = true, Act = CompanyAct.Of(CompanyDo.Go, back, CompanyView.Managers, CompanyView.SubPolicy, 0, "pf:" + f)
-                    });
-                }
+                heldTotal += RuleHeld(hs, def, region, store) ? 1 : 0;
             }
             var blocks = new List<CompanyBlock>(8) { Note(CompanyText.T("reallife_pol_what")) };
-            blocks.Add(Sec(CompanyText.T("reallife_pol_own"), kind == CompanyDirector.ScopeCompany ? CompanyText.T("reallife_pol_own_all") : setTotal.ToString()));
-            if (set.Count > 0)
+            // The left list already names each rule and where it stands, so this page counts them and shows what the list does not: the places the scope reaches.
+            blocks.Add(Row(CompanyText.T("reallife_pol_own"), kind == CompanyDirector.ScopeCompany ? CompanyText.T("reallife_pol_own_all") : setTotal.ToString()));
+            if (heldTotal > 0)
             {
-                blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = set.ToArray() });
+                blocks.Add(Row(w.T("reallife_pol_held_rules", "Rules held to the scope above"), heldTotal.ToString(), UiRole.WarnText));
+            }
+            CompanyItem[] under = PlacesUnder(d, hs, kind, scope, w);
+            if (under.Length > 0)
+            {
+                blocks.Add(Sec(w.T("reallife_pol_sec_under", "Places under it"), under.Length.ToString()));
+                blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = under });
             }
             blocks.AddRange(new[]
             {
@@ -856,8 +869,9 @@ namespace RealLifeOverhaul.Ui
                     Act = CompanyAct.Of(CompanyDo.RuleSet, scope, (int)field, current - 1 - offset, kind), Act2 = CompanyAct.Of(CompanyDo.RuleSet, scope, (int)field, current + 1 - offset, kind)
                 });
             }
-            blocks.Add(Sec(w.T("reallife_pol_sec_force", "In force")));
-            blocks.Add(Row(CompanyText.T("reallife_pol_scope_company"), CompanyApp.PolicyStepName(field, hs.Company.Of(field))));
+            CompanyItem[] binds = BindRows(d, hs, def, w);
+            blocks.Add(Sec(w.T("reallife_pol_sec_binds", "Where it holds"), binds.Length.ToString()));
+            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = binds });
             blocks.Add(Row(CompanyText.T("reallife_pol_col_force"), CompanyApp.PolicyStepName(field, d.ScopeRule(kind, scope, field))));
             if (!company && own != null && own.Sets(field) && PolicyRules.Past(def.Way, above, own.Of(field)))
             {
@@ -866,6 +880,86 @@ namespace RealLifeOverhaul.Ui
             blocks.Add(Note(CompanyText.T(def.Way == PolicyWay.LooseUp ? "reallife_pol_way_up" : def.Way == PolicyWay.LooseDown ? "reallife_pol_way_down" : "reallife_pol_way_company")));
             card.Blocks = blocks.ToArray();
             return card;
+        }
+
+        // The places a scope reaches (all of them for the company), each with its manager's portrait and how many rules the place sets itself: the page's own news, since the list says which rules.
+        private static CompanyItem[] PlacesUnder(CompanyDirector d, HierarchyState hs, int kind, string scope, Words w)
+        {
+            var rows = new List<CompanyItem>(6);
+            for (int i = 0; i < d.Managed.Count && rows.Count < 6; i++)
+            {
+                ManagedPlace mp = d.Managed[i];
+                if ((kind == CompanyDirector.ScopeStore && mp.Place.Place != scope) || (kind == CompanyDirector.ScopeRegion && mp.Area != scope))
+                {
+                    continue;
+                }
+                PolicySet store = hs.Store(mp.Place.Place);
+                int own = store != null ? store.Count : 0;
+                var item = new CompanyItem
+                {
+                    Grade = -1, Figure = own > 0 ? own.ToString() : null, Note = own > 0 ? CompanyText.T("reallife_pol_set_here_row") : null, Press = true,
+                    Act = CompanyAct.Of(CompanyDo.Go, "mgr:" + mp.Place.Place, CompanyView.Managers, CompanyView.SubPolicy)
+                };
+                if (mp.Own != null)
+                {
+                    Face(mp.Own.Name, mp.Own.Id);
+                    item.Title = mp.Own.Name;
+                    item.Sub = mp.Place.Name;
+                    item.Face = true;
+                    item.Hue = UiColour.HueOf(mp.Own.Name);
+                    item.Ring = d.PostOf(mp) == PostState.InPost ? UiRole.Ok : UiRole.Warn;
+                }
+                else
+                {
+                    item.Title = mp.Place.Name;
+                    item.Sub = CompanyText.T("reallife_mgr_empty_post");
+                    item.Icon = UiIcon.Store;
+                }
+                rows.Add(item);
+            }
+            return rows.ToArray();
+        }
+
+        // The scopes a rule holds at, from the company down: what each has it at, whether it sets the rule itself or follows the scope above, and the places that stand under it.
+        private static CompanyItem[] BindRows(CompanyDirector d, HierarchyState hs, PolicyDef def, Words w)
+        {
+            PolicyField field = def.Field;
+            string own = CompanyText.T("reallife_pol_set_here_row"), above = CompanyText.T("reallife_pol_as_above");
+            var rows = new List<CompanyItem>(6)
+            {
+                new CompanyItem { Grade = -1, Title = CompanyText.T("reallife_pol_scope_company"), Icon = UiIcon.Briefcase, Sub = own, Figure = CompanyApp.PolicyStepName(field, hs.Company.Of(field)) }
+            };
+            if (def.Way == PolicyWay.CompanyOnly)
+            {
+                return rows.ToArray();
+            }
+            IReadOnlyList<string> areas = d.ManagerDistricts;
+            for (int i = 0; i < areas.Count && rows.Count < 3; i++)
+            {
+                PolicySet region = hs.Region(areas[i]);
+                rows.Add(new CompanyItem
+                {
+                    Grade = -1, Title = CompanyDirector.AreaName(areas[i]), Icon = UiIcon.MapTrifold, Sub = region != null && region.Sets(field) ? own : above,
+                    Figure = CompanyApp.PolicyStepName(field, d.ScopeRule(CompanyDirector.ScopeRegion, areas[i], field)), Chip = RuleHeld(hs, def, region, null)
+                        ? CompanyText.T("reallife_co_held") : null,
+                    ChipTone = UiRole.Warn
+                });
+            }
+            for (int i = 0; i < d.Managed.Count && rows.Count < 6; i++)
+            {
+                ManagedPlace mp = d.Managed[i];
+                PolicySet store = hs.Store(mp.Place.Place);
+                if (store == null || !store.Sets(field))
+                {
+                    continue;
+                }
+                rows.Add(new CompanyItem
+                {
+                    Grade = -1, Title = mp.Place.Name, Icon = UiIcon.Store, Sub = own, Figure = CompanyApp.PolicyStepName(field, d.ScopeRule(CompanyDirector.ScopeStore, mp.Place.Place, field)),
+                    Chip = RuleHeld(hs, def, mp.Area != null ? hs.Region(mp.Area) : null, store) ? CompanyText.T("reallife_co_held") : null, ChipTone = UiRole.Warn
+                });
+            }
+            return rows.ToArray();
         }
 
         // ------------------------------------------------------------------------------------------------- templates
@@ -1239,6 +1333,7 @@ namespace RealLifeOverhaul.Ui
                 blocks.Add(Buttons(Btn(CompanyText.T("reallife_mgr_appoint"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.SeatAppoint, p.Id, seatNo), UiAction.Alt, UiIcon.Check, false, x != null
                     && x.Id == p.Id,
                     CompanyText.T("reallife_mgr_in_post"))));
+                AddWatch(blocks, d, seat, w);
                 card.Blocks = blocks.ToArray();
             }
             else
@@ -1251,6 +1346,7 @@ namespace RealLifeOverhaul.Ui
                     card.ChipTones = new[] { UiRole.Muted };
                     blocks.Add(Note(CompanyText.T("reallife_hier_seat_hire", "roles", SeatRolesOf(seat))));
                     blocks.Add(Note(CompanyText.T("reallife_hier_exec_pick")));
+                    AddWatch(blocks, d, seat, w);
                 }
                 else
                 {
@@ -1276,6 +1372,7 @@ namespace RealLifeOverhaul.Ui
                     }
                     blocks.Add(Buttons(Btn(CompanyText.T("reallife_mgr_stand_down"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.SeatStandDown, null, seatNo), UiAction.Count, UiIcon.Close,
                         true)));
+                    AddWatch(blocks, d, seat, w);
                     var lines = new List<CompanyDone>(5);
                     for (int i = hs.Entries.Count - 1; i >= 0 && lines.Count < LogShown; i--)
                     {
@@ -1295,6 +1392,56 @@ namespace RealLifeOverhaul.Ui
             }
             page.Card = card;
             return true;
+        }
+
+        // What a seat has its eye on, place by place from the managers' own figures: the finance chief the month's budget against what was spent, the people chief how the crew stands, the
+        // operating chief how many decisions the manager made.
+        private static void AddWatch(List<CompanyBlock> blocks, CompanyDirector d, ExecSeat seat, Words w)
+        {
+            var rows = new List<CompanyItem>(5);
+            int total = 0;
+            for (int i = 0; i < d.Managed.Count; i++)
+            {
+                ManagedPlace mp = d.Managed[i];
+                if (mp.Own == null)
+                {
+                    continue;
+                }
+                total++;
+                if (rows.Count >= 5)
+                {
+                    continue;
+                }
+                ManagerFile m = mp.Own;
+                Face(m.Name, m.Id);
+                int count, standing = d.StandingAt(mp.Place.Place, out count), budget = d.BudgetOf(m);
+                var item = new CompanyItem
+                {
+                    Title = m.Name, Sub = mp.Place.Name, Face = true, Hue = UiColour.HueOf(m.Name), Ring = d.PostOf(mp) == PostState.InPost ? UiRole.Ok : UiRole.Warn, Grade = -1
+                };
+                if (seat == ExecSeat.Cfo)
+                {
+                    item.Grade = budget > 0 ? Math.Min(100, m.Spent * 100 / budget) : -1;
+                    item.Figure = CompanyText.Money(m.Spent);
+                    item.Note = w.F("reallife_co_of_budget", "of {amount}", "amount", CompanyText.Money(budget));
+                }
+                else if (seat == ExecSeat.Chro)
+                {
+                    item.Grade = count > 0 ? standing : -1;
+                    item.Figure = count > 0 ? standing.ToString() : null;
+                    item.Note = count > 0 ? w.T("reallife_co_crew_standing", "crew standing") : null;
+                }
+                else
+                {
+                    item.Figure = w.F("reallife_co_f_decisions", "{count} decisions", "count", m.Decided.ToString());
+                }
+                rows.Add(item);
+            }
+            if (rows.Count > 0)
+            {
+                blocks.Add(Sec(w.T("reallife_hier_sec_watch", "What they would watch"), total.ToString()));
+                blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = rows.ToArray() });
+            }
         }
 
         private static string SeatRolesOf(ExecSeat seat)

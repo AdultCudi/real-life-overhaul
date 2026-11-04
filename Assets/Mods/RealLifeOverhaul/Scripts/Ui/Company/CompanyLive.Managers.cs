@@ -645,9 +645,11 @@ namespace RealLifeOverhaul.Ui
                 month.Clear();
                 // What a manager would decide, from the decisions the catalogue gives every kind of place: the owner sees what there is to hand over.
                 var every = new List<CompanyItem>(ManagerTaskCount);
+                var start = new ManagerFile();   // the steps a new manager starts at: the limit each kind of decision would have
                 for (int t = 0; t < (int)ManagerTask.Count; t++)
                 {
-                    every.Add(new CompanyItem { Grade = -1, Title = CompanyApp.TaskTitle(t), Sub = CompanyApp.TaskWhat(t), Icon = TaskIcons[Math.Min(t, TaskIcons.Length - 1)] });
+                    string line = CompanyApp.TaskLine(start, (ManagerTask)t);
+                    every.Add(new CompanyItem { Grade = -1, Title = CompanyApp.TaskTitle(t), Sub = string.IsNullOrEmpty(line) ? null : line, Icon = TaskIcons[Math.Min(t, TaskIcons.Length - 1)] });
                 }
                 left.Add(Sec(w.T("reallife_co_hand_over", "What you can hand over"), every.Count.ToString()));
                 left.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = every.ToArray() });
@@ -682,10 +684,48 @@ namespace RealLifeOverhaul.Ui
                     });
                 }
             }
+            if (managers > 0)
+            {
+                AddStillYours(right, d, w);
+            }
             left.Add(new CompanyBlock { Kind = CompanyBlockKind.Break });
             left.AddRange(right);
             p.More = left.ToArray();
             return p;
+        }
+
+        // The kinds of decision some place's manager does not hold yet, each with how many of the place managers do: what the owner can still hand over.
+        private static void AddStillYours(List<CompanyBlock> blocks, CompanyDirector d, Words w)
+        {
+            int places = 0;
+            for (int i = 0; i < d.ManagerData.Managers.Count; i++)
+            {
+                places += d.ManagerData.Managers[i].Region ? 0 : 1;
+            }
+            var rows = new List<CompanyItem>(ManagerTaskCount);
+            var start = new ManagerFile();
+            for (int t = 0; t < (int)ManagerTask.Count && places > 0; t++)
+            {
+                int held = 0;
+                for (int i = 0; i < d.ManagerData.Managers.Count; i++)
+                {
+                    ManagerFile m = d.ManagerData.Managers[i];
+                    held += !m.Region && ManagerRules.Has(m.Tasks, (ManagerTask)t) ? 1 : 0;
+                }
+                if (held < places)
+                {
+                    rows.Add(new CompanyItem
+                    {
+                        Grade = -1, Title = CompanyApp.TaskTitle(t), Sub = CompanyApp.TaskLine(start, (ManagerTask)t), Icon = TaskIcons[Math.Min(t, TaskIcons.Length - 1)],
+                        Figure = w.F("reallife_co_held_by", "{count} of {total}", "count", held.ToString(), "total", places.ToString())
+                    });
+                }
+            }
+            if (rows.Count > 0)
+            {
+                blocks.Add(Sec(w.T("reallife_co_hand_over", "What you can hand over"), rows.Count.ToString()));
+                blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = rows.ToArray() });
+            }
         }
 
         private static int OpenCount(HierarchyState h)

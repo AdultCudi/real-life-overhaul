@@ -16,7 +16,7 @@ internal static partial class UiSamples
     private static readonly string[] RotaRoles = { "Customer service", "Cooking", "Customer service", "Cleaning", "Cooking", "Customer service", "Cooking", "Cleaning", "Customer service" };
 
     // Everybody of a shop on their shifts: each starts at the hour their number gives, works the same hours five days a week with two days off set apart, and the day totals add up.
-    private static CompanyRotaPerson[] RotaWeek(int count, int[] starts, int length, int variant, bool toHire, int[] dayTotals, out int total)
+    private static CompanyRotaPerson[] RotaWeek(CompanyWords w, int count, int[] starts, int length, int variant, bool toHire, int[] dayTotals, out int total)
     {
         var people = new CompanyRotaPerson[count + (toHire ? 1 : 0)];
         total = 0;
@@ -43,7 +43,7 @@ internal static partial class UiSamples
             total += hours;
             people[i] = new CompanyRotaPerson
             {
-                Name = hire ? SF("To hire") : RotaNames[i % RotaNames.Length], Role = hire ? SF("Customer service, $18.00 an hour") : RotaRoles[i % RotaRoles.Length], Hue = 0.1f + i * 0.14f, Ring = UiRole.Ok,
+                Name = hire ? Tr(w, "To hire") : RotaNames[i % RotaNames.Length], Role = hire ? w.F("reallife_rota_to_hire_role", "{skill}, {wage} an hour", "skill", Tr(w, "Customer service"), "wage", "$18.00") : Tr(w, RotaRoles[i % RotaRoles.Length]), Hue = 0.1f + i * 0.14f, Ring = UiRole.Ok,
                 Shifts = shifts, Tones = tones, Hours = hours + "h", HoursTone = !hire && i == 4 && variant == 0 ? UiRole.WarnText : UiRole.None, ToHire = hire
             };
         }
@@ -67,7 +67,7 @@ internal static partial class UiSamples
         string inUse = w.T("reallife_rota_in_use", "In use");
         if (one)
         {
-            rows.Add(new CompanyRow { Id = "p:Corner Cafe~12", Title = "Corner Cafe", Sub = "Cafe, " + w.F("reallife_co_rota_open", "open {hours} h a week", "hours", "84"), Icon = UiIcon.Calendar,
+            rows.Add(new CompanyRow { Id = "p:Corner Cafe~12", Title = "Corner Cafe", Sub = Kind(w, "Cafe") + ", " + w.F("reallife_co_rota_open", "open {hours} h a week", "hours", "84"), Icon = UiIcon.Calendar,
                 Figure = w.F("reallife_co_row_gap_short", "{hours} h short", "hours", "14"), FigureTone = UiRole.WarnText, Note = w.F("reallife_co_tree_staff", "{count} staff", "count", "2") });
             rows.Add(new CompanyRow { Id = "pl:Corner Cafe~12:1", Title = w.T("reallife_rota_plan_standard", "Standard week"), Sub = w.T("reallife_rota_repeat_every", "Every week"), Icon = UiIcon.ClipboardText, Dim = true, Nested = true,
                 Chip = inUse, ChipTone = UiRole.Ok });
@@ -76,14 +76,14 @@ internal static partial class UiSamples
         }
         else
         {
-            rows.Add(new CompanyRow { Id = "p:Speedy Bites~7", Title = "Speedy Bites", Sub = "Restaurant, " + w.F("reallife_co_rota_open", "open {hours} h a week", "hours", "112"), Icon = UiIcon.Calendar,
+            rows.Add(new CompanyRow { Id = "p:Speedy Bites~7", Title = "Speedy Bites", Sub = Kind(w, "Cafe") + ", " + w.F("reallife_co_rota_open", "open {hours} h a week", "hours", "112"), Icon = UiIcon.Calendar,
                 Figure = w.T("reallife_rota_row_covered", "Covered"), FigureTone = UiRole.OkText, Note = w.F("reallife_co_tree_staff", "{count} staff", "count", "9") });
             rows.Add(new CompanyRow { Id = "pl:Speedy Bites~7:1", Title = w.T("reallife_rota_plan_standard", "Standard week"), Sub = w.T("reallife_rota_repeat_every", "Every week"), Icon = UiIcon.ClipboardText, Dim = true, Nested = true,
                 Chip = inUse, ChipTone = UiRole.Ok });
             rows.Add(new CompanyRow { Id = "pl:Speedy Bites~7:2", Title = "Quiet week", Sub = w.T("reallife_rota_repeat_odd", "Odd weeks"), Icon = UiIcon.ClipboardText, Dim = true, Nested = true });
             rows.Add(new CompanyRow { Id = "pl:Speedy Bites~7:3", Title = "Holiday week", Sub = w.F("reallife_rota_plan_range", "Days {from} to {to}", "from", "220", "to", "226"),
                 Icon = UiIcon.ClipboardText, Dim = true, Nested = true });
-            rows.Add(new CompanyRow { Id = "p:Bloom & Co~214", Title = "Bloom & Co", Sub = "Shop, " + w.F("reallife_co_rota_open", "open {hours} h a week", "hours", "72"), Icon = UiIcon.Calendar,
+            rows.Add(new CompanyRow { Id = "p:Bloom & Co~214", Title = "Bloom & Co", Sub = Kind(w, "Shop") + ", " + w.F("reallife_co_rota_open", "open {hours} h a week", "hours", "72"), Icon = UiIcon.Calendar,
                 Figure = w.F("reallife_co_row_gap_short", "{hours} h short", "hours", "6"), FigureTone = UiRole.WarnText, Note = w.F("reallife_co_tree_staff", "{count} staff", "count", "5") });
             rows.Add(new CompanyRow { Id = "pl:Bloom & Co~214:1", Title = w.T("reallife_rota_plan_standard", "Standard week"), Sub = w.T("reallife_rota_repeat_every", "Every week"), Icon = UiIcon.ClipboardText, Dim = true, Nested = true,
                 Chip = inUse, ChipTone = UiRole.Ok });
@@ -95,7 +95,7 @@ internal static partial class UiSamples
         {
             r.Places.Chosen = rows[i].Id == pick ? i : r.Places.Chosen;
         }
-        var p = new CompanyRotaPlace { Id = id, Name = one ? "Corner Cafe" : "Speedy Bites", Sub = (one ? "Cafe, " : "Restaurant, ") + w.F("reallife_co_rota_open", "open {hours} h a week", "hours", open) };
+        var p = new CompanyRotaPlace { Id = id, Name = one ? "Corner Cafe" : "Speedy Bites", Sub = Kind(w, "Cafe") + ", " + w.F("reallife_co_rota_open", "open {hours} h a week", "hours", open) };
         if (state == "rota_refused")
         {
             p.Name = "Hudson Warehouse";
@@ -103,7 +103,7 @@ internal static partial class UiSamples
             p.Refused = w.T("reallife_rota_warehouse", "A warehouse keeps no rota. The game gives its drivers their vehicles on the warehouse's own page.");
             CompanyAct staff = CA(CompanyDo.Go, null, CompanyView.Staff, CompanyView.SubMain);
             string[] crew = { "Hugo Brandt", "Mei Lin", "Carlos Vega", "Tomas Reyes" };
-            string[] kinds = { "Driving", "Driving", "Logistics", "Driving" };
+            string[] kinds = { Tr(w, "Driving"), Tr(w, "Driving"), Tr(w, "Logistics"), Tr(w, "Driving") };
             var crewItems = new CompanyItem[crew.Length];
             for (int i = 0; i < crew.Length; i++)
             {
@@ -136,18 +136,18 @@ internal static partial class UiSamples
         int[] starts = one ? new[] { 7, 12 } : new[] { 7, 11, 15 };
         int length = one ? 7 : 8;
         int count = one ? 2 : 9;
-        CompanyRotaPerson[] people = RotaWeek(count, starts, length, 0, false, dayTotals, out total);
+        CompanyRotaPerson[] people = RotaWeek(w, count, starts, length, 0, false, dayTotals, out total);
         if (one)
         {
             people[0].Name = "Ana Costa";
-            people[0].Role = "Barista";
+            people[0].Role = Tr(w, "Barista");
             people[1].Name = "Jin Park";
-            people[1].Role = "Cook";
+            people[1].Role = Tr(w, "Cooking");
             people[1].Hours = "35h";
             people[0].HoursTone = UiRole.None;
         }
         p.Weekly = w.F("reallife_rota_weekly", "Week {week}, open {hours} hours", "week", "31", "hours", open);
-        p.PlanNames = one ? new[] { "Standard week", "Quiet week" } : new[] { "Standard week", "Quiet week", "Holiday week" };
+        p.PlanNames = one ? new[] { Tr(w, "Standard week"), "Quiet week" } : new[] { Tr(w, "Standard week"), "Quiet week", "Holiday week" };
         p.PlanChosen = state == "rota_edit_other" ? 1 : 0;
         p.Ahead = one ? w.F("reallife_co_plan_ahead", "{plan} holds from day {from} to day {to}: up to {cap} each, and {floor} crew hours of floor a week against this plan", "plan", "Quiet week", "from", "190", "to", "196", "cap", w.F("reallife_rota_hours_n", "{hours} h", "hours", "28"), "floor", "-14") : w.F("reallife_co_plan_ahead", "{plan} holds from day {from} to day {to}: up to {cap} each, and {floor} crew hours of floor a week against this plan", "plan", "Holiday week", "from", "220",
             "to", "226", "cap", w.F("reallife_rota_hours_n", "{hours} h", "hours", "32"), "floor", "+8");
@@ -174,7 +174,7 @@ internal static partial class UiSamples
         p.ModeOptions = new[] { w.T("reallife_rota_mode_auto_short", "Auto"), w.T("reallife_rota_mode_staff", "Staff first"), w.T("reallife_rota_mode_lean", "Lean") };
         p.ModeActs = new[] { CA(CompanyDo.RotaMode, p.Id, 0), CA(CompanyDo.RotaMode, p.Id, 1), CA(CompanyDo.RotaMode, p.Id, 2) };
         p.Mode = 0;
-        p.DayNames = new[] { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
+        p.DayNames = new[] { Wd(w, 0, true), Wd(w, 1, true), Wd(w, 2, true), Wd(w, 3, true), Wd(w, 4, true), Wd(w, 5, true), Wd(w, 6, true) };
         p.Day = 1;
         p.People = people;
         p.DayTotals = new string[7];
@@ -209,8 +209,8 @@ internal static partial class UiSamples
                 p.Needed[h - from] = h >= b[0] && h < b[1] ? b[2] : p.Needed[h - from];
             }
         }
-        p.DayTitle = w.F("reallife_rota_day_title_short", "{day}, hour by hour", "day", "Tuesday");
-        p.DayShort = "Tuesday";
+        p.DayTitle = w.F("reallife_rota_day_title_short", "{day}, hour by hour", "day", Wd(w, 1, false));
+        p.DayShort = Wd(w, 1, false);
         p.DayNote = w.F("reallife_rota_from_to", "{from} to {to}", "from", from.ToString("00") + ":00", "to", to.ToString("00") + ":00");
         p.Legend = new[] { w.T("reallife_rota_legend_on", "On shift"), w.T("reallife_rota_legend_short", "Short"), w.T("reallife_rota_legend_need", "Needed") };
         p.NeedsTitle = w.T("reallife_rota_needs", "Needs by time");
@@ -287,7 +287,7 @@ internal static partial class UiSamples
     {
         p.AdviceTitle = w.T("reallife_rota_advice_title", "The planner's advice");
         p.AdviceNote = w.F("reallife_rota_advice_hire", "Advised: {plan}. It is worth about {amount} a week more than the week as it is.", "plan", w.F("reallife_rota_plan_hire", "Hire {count}: {who}",
-            "count", "1", "who", "Customer service"), "amount", CM(310));
+            "count", "1", "who", Tr(w, "Customer service")), "amount", CM(310));
         p.Rungs = new[]
         {
             new CompanyRung
@@ -307,8 +307,8 @@ internal static partial class UiSamples
             },
             new CompanyRung
             {
-                Name = w.F("reallife_rota_plan_hire", "Hire {count}: {who}", "count", "1", "who", "Customer service"), Line = w.F("reallife_rota_needs_hire", "One more for {who} at about {wage} an hour", "who",
-                    "Customer service", "wage", "$18.00"),
+                Name = w.F("reallife_rota_plan_hire", "Hire {count}: {who}", "count", "1", "who", Tr(w, "Customer service")), Line = w.F("reallife_rota_needs_hire", "One more for {who} at about {wage} an hour", "who",
+                    Tr(w, "Customer service"), "wage", "$18.00"),
                 Hours = w.F("reallife_rota_plan_hours_all", "{hours} open", "hours", "112"), Net = CM(2790), Gain = w.F("reallife_rota_plan_gain", "{amount} a week more", "amount", CM(150)), Advised = true,
                 Use = CB(w.T("reallife_rota_use_after", "Use these hours once you have hired"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.RotaFill, p.Id, 2), UiIcon.Check, true,
                     w.T("reallife_rota_hire_where", "Hire in the MyEmployees app on your phone, or from a job board in the building.")),
@@ -321,14 +321,14 @@ internal static partial class UiSamples
         string hoursOf(int n) => w.F("reallife_rota_hours_n", "{hours} h", "hours", n.ToString());
         p.Folk = new[]
         {
-            new CompanyRotaFolk { Name = "Zara Quinn", Role = "Cooking", Asks = between("20", "32"), Figure = hoursOf(36), Plan = 36, Least = 20, Most = 32, Hue = 0.66f, Ring = UiRole.Warn,
+            new CompanyRotaFolk { Name = "Zara Quinn", Role = Tr(w, "Cooking"), Asks = between("20", "32"), Figure = hoursOf(36), Plan = 36, Least = 20, Most = 32, Hue = 0.66f, Ring = UiRole.Warn,
                 Tone = UiRole.WarnText, Note = w.F("reallife_rota_hours_over", "{hours} h over", "hours", "4") },
-            new CompanyRotaFolk { Name = "Rui Tanaka", Role = "Customer service", Asks = between("32", "40"), Figure = hoursOf(28), Plan = 28, Least = 32, Most = 40, Hue = 0.8f, Ring = UiRole.Ok,
+            new CompanyRotaFolk { Name = "Rui Tanaka", Role = Tr(w, "Customer service"), Asks = between("32", "40"), Figure = hoursOf(28), Plan = 28, Least = 32, Most = 40, Hue = 0.8f, Ring = UiRole.Ok,
                 Tone = UiRole.WarnText, Note = w.F("reallife_rota_hours_under", "{hours} h under", "hours", "4") },
-            new CompanyRotaFolk { Name = "Dev Kapoor", Role = "Customer service", Asks = between("20", "40"), Figure = hoursOf(36), Plan = 36, Least = 20, Most = 40, Hue = 0.1f, Ring = UiRole.Ok },
-            new CompanyRotaFolk { Name = "Lena Adler", Role = "Cooking", Asks = w.F("reallife_rota_asks_least", "at least {least} hours a week", "least", "24"), Figure = hoursOf(32), Plan = 32, Least = 24,
+            new CompanyRotaFolk { Name = "Dev Kapoor", Role = Tr(w, "Customer service"), Asks = between("20", "40"), Figure = hoursOf(36), Plan = 36, Least = 20, Most = 40, Hue = 0.1f, Ring = UiRole.Ok },
+            new CompanyRotaFolk { Name = "Lena Adler", Role = Tr(w, "Cooking"), Asks = w.F("reallife_rota_asks_least", "at least {least} hours a week", "least", "24"), Figure = hoursOf(32), Plan = 32, Least = 24,
                 Hue = 0.24f, Ring = UiRole.Ok },
-            new CompanyRotaFolk { Name = "Noa Silva", Role = "Customer service", Asks = between("16", "32"), Figure = hoursOf(32), Plan = 32, Least = 16, Most = 32, Hue = 0.38f, Ring = UiRole.Ok }
+            new CompanyRotaFolk { Name = "Noa Silva", Role = Tr(w, "Customer service"), Asks = between("16", "32"), Figure = hoursOf(32), Plan = 32, Least = 16, Most = 32, Hue = 0.38f, Ring = UiRole.Ok }
         };
         p.Beside = new[]
         {
@@ -349,18 +349,18 @@ internal static partial class UiSamples
     {
         var dayTotals = new int[7];
         int total;
-        CompanyRotaPerson[] people = RotaWeek(9, starts, length, rung, rung == 2, dayTotals, out total);
+        CompanyRotaPerson[] people = RotaWeek(w, 9, starts, length, rung, rung == 2, dayTotals, out total);
         for (int i = 0; i < 9; i++)
         {
-            people[i].Role = RotaRoles[i] + ", " + w.F("reallife_rota_was_hours", "was {hours} h", "hours", p.People[i].Hours.TrimEnd('h'));
+            people[i].Role = Tr(w, RotaRoles[i]) + ", " + w.F("reallife_rota_was_hours", "was {hours} h", "hours", p.People[i].Hours.TrimEnd('h'));
         }
         var look = new CompanyRotaLook
         {
-            Name = rung == 1 ? w.T("reallife_rota_plan_best", "Best with the people you have") : w.F("reallife_rota_plan_hire", "Hire {count}: {who}", "count", "1", "who", "Customer service"),
-            Line = rung == 1 ? w.T("reallife_rota_needs_rota", "A new rota for the hours you keep") : w.F("reallife_rota_needs_hire", "One more for {who} at about {wage} an hour", "who", "Customer service",
+            Name = rung == 1 ? w.T("reallife_rota_plan_best", "Best with the people you have") : w.F("reallife_rota_plan_hire", "Hire {count}: {who}", "count", "1", "who", Tr(w, "Customer service")),
+            Line = rung == 1 ? w.T("reallife_rota_needs_rota", "A new rota for the hours you keep") : w.F("reallife_rota_needs_hire", "One more for {who} at about {wage} an hour", "who", Tr(w, "Customer service"),
                 "wage", "$18.00"),
             Why = rung == 1 ? w.T("reallife_rota_why_best_rota", "The opening hours stay. The rota is made again so that more customers are served, the floor is cleaned when it matters and nobody's demands are passed over.")
-                : w.F("reallife_rota_why_hire", "One more for {who} keeps {hours} more hours with the crew there. Customers served a week more: {customers}.", "who", "Customer service", "hours", "8", "customers",
+                : w.F("reallife_rota_why_hire", "One more for {who} keeps {hours} more hours with the crew there. Customers served a week more: {customers}.", "who", Tr(w, "Customer service"), "hours", "8", "customers",
                     "140"),
             Advised = rung == 2, People = people, TotalHours = total + "h", DayTotals = new string[7],
             FigureLabels = new[] { w.T("reallife_rota_look_open", "Open a week"), w.T("reallife_rota_sum_wages_label", "Wages"), w.T("reallife_rota_sum_net_label", "Net"),
@@ -375,9 +375,9 @@ internal static partial class UiSamples
         }
         look.Changes = new[]
         {
-            new CompanyRotaChange { Title = "Saturday: " + w.F("reallife_rota_change_open", "Opens {from} to {to}", "from", "22:00", "to", "23:00"), Sub = w.T("reallife_rota_change_why_open",
+            new CompanyRotaChange { Title = Wd(w, 5, false) + ": " + w.F("reallife_rota_change_open", "Opens {from} to {to}", "from", "22:00", "to", "23:00"), Sub = w.T("reallife_rota_change_why_open",
                 "They pay with the crew this plan has."), Figure = "+" + CM(120), Opens = true },
-            new CompanyRotaChange { Title = "Tuesday: " + w.F("reallife_rota_change_close", "Closes {from} to {to}", "from", "07:00", "to", "08:00"), Sub = w.T("reallife_rota_change_why_pay",
+            new CompanyRotaChange { Title = Wd(w, 1, false) + ": " + w.F("reallife_rota_change_close", "Closes {from} to {to}", "from", "07:00", "to", "08:00"), Sub = w.T("reallife_rota_change_why_pay",
                 "The customers bring less than the smallest crew is paid. More customers in these hours would keep them."), Figure = "-" + CM(30) }
         };
         if (rung == 2)
@@ -396,7 +396,7 @@ internal static partial class UiSamples
     {
         int id = other ? 2 : 1;
         int[][] blocks = other ? new[] { new[] { 7, 15, 2 }, new[] { 15, 23, 2 } } : new[] { new[] { 7, 11, 2 }, new[] { 11, 15, 5 }, new[] { 15, 23, 3 } };
-        string name = other ? "Quiet week" : "Standard week";
+        string name = other ? "Quiet week" : Tr(w, "Standard week");
         var c = new CompanyCard
         {
             Kicker = p.Name, Title = name, Icon = UiIcon.Calendar, Chips = new[] { other ? w.T("reallife_rota_not_in_use", "Not in use") : w.T("reallife_rota_in_use", "In use") },
@@ -443,6 +443,16 @@ internal static partial class UiSamples
         }
         list.Add(CBtns(CB(w.T("reallife_rota_block_add", "Add a block"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.PlanChange, p.Id, id, 6, 715), UiIcon.Plus),
             CB(w.T("reallife_rota_block_remove", "Remove the last"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.PlanChange, p.Id, id, 8, 0, (blocks.Length - 1).ToString()), UiIcon.Close, true)));
+        var from = new int[blocks.Length];
+        var to = new int[blocks.Length];
+        var crew = new int[blocks.Length];
+        for (int i = 0; i < blocks.Length; i++)
+        {
+            from[i] = blocks[i][0];
+            to[i] = blocks[i][1];
+            crew[i] = blocks[i][2];
+        }
+        list.AddRange(CompanyBlocks.FloorAsks(w, from, to, crew, 9));   // Speedy Bites has nine people
         c.Blocks = list.ToArray();
         r.Edit = c;
         var floor = new CompanyFloor { Title = w.T("reallife_rota_floor_chart", "The floor by hour"), Hours = new string[16], Crew = new int[16] };

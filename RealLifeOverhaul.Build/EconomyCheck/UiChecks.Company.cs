@@ -78,6 +78,60 @@ internal static partial class Program
         Check(worst < 5.0, "company face cost: the heaviest of " + heavy.Length + " pages (" + worstState + ") lays out in " + worst.ToString("0.00") + " ms, the " + heavy.Length + " together in " + total.ToString("0.00") + " ms: one layout when the facts change or the player acts, nothing per frame");
     }
 
+    // The pad's way into a page follows reading order: Right from the sidebar lands on the top of the page's left column, in every state, so that the first press goes where the eye does and the
+    // path then runs down the column and across to the next. A state whose page has no target at all is skipped.
+    private static void CompanyPadOrderChecks()
+    {
+        UiWords en = UiWords("en");
+        var wrong = new StringBuilder();
+        int states = 0;
+        foreach (string state in UiSamples.CompanyStates)
+        {
+            var s = new UiScene();
+            CompanyFace.Lay(s, UiSamples.CompanyFactsOf(en, state), UiSamples.CompanyViewOf(state), UiSamples.CompanyWordsOf(en), new CompanyLayout(), UiFrame.FullMenu(16f / 9f, "Company"), true, UiDefaultKeys.Keyboard);
+            float pageX = 0f;
+            int nav = -1;
+            for (int i = 0; i < s.NodeCount; i++)
+            {
+                if (s.Nodes[i].Command == UiAppWindow.NavCommand && nav < 0)
+                {
+                    nav = i;
+                    pageX = s.Nodes[i].X + s.Nodes[i].W;
+                }
+            }
+            if (nav < 0)
+            {
+                continue;   // a card over the world has no sidebar
+            }
+            float left = float.MaxValue;
+            for (int i = 0; i < s.NodeCount; i++)
+            {
+                UiNode n = s.Nodes[i];
+                if (n.Layer == 0 && !n.Disabled && n.Command != UiAppWindow.NavCommand && n.X >= pageX)
+                {
+                    left = Math.Min(left, n.X);
+                }
+            }
+            if (left == float.MaxValue)
+            {
+                continue;
+            }
+            states++;
+            int to = s.Nodes[nav].Right;
+            bool ok = to >= 0 && s.Nodes[to].X < left + 40f;
+            for (int i = 0; ok && i < s.NodeCount; i++)
+            {
+                UiNode n = s.Nodes[i];
+                ok = !(n.Layer == 0 && !n.Disabled && n.Command != UiAppWindow.NavCommand && n.X >= pageX && n.X < left + 40f && n.Y < s.Nodes[to].Y - 0.5f);
+            }
+            if (!ok)
+            {
+                wrong.Append(" ").Append(state).Append("[to=" + to + " left=" + left + " pageX=" + pageX + (to >= 0 ? " toX=" + s.Nodes[to].X + " toY=" + s.Nodes[to].Y : "") + "]");
+            }
+        }
+        Check(wrong.Length == 0 && states > 40, "company pad: Right from the sidebar lands on the top of the page's left column in every state (" + states + " states)" + (wrong.Length > 0 ? ", not in:" + wrong : string.Empty));
+    }
+
     // The managers' tree and its two filters (the places waiting for you, the open posts, one district): what each keeps in the sample and in a company of the cap's size, and that a
     // chip turns through every value and that the page keeps to the targets a layer may hold.
     private static void CompanyFilterChecks()
@@ -272,6 +326,7 @@ internal static partial class Program
         Console.WriteLine("    company face: " + pressed + " targets pressed in " + UiSamples.CompanyStates.Length + " states, " + drawn.Count + " kinds of action drawn");
         CompanyCost();
         CompanyFilterChecks();
+        CompanyPadOrderChecks();
         // No action without a page that draws it, and none without the live source's handler: an orphan either way is a button nobody can press or a press nothing answers.
         var orphans = new StringBuilder();
         var unhandled = new StringBuilder();

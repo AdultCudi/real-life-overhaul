@@ -438,6 +438,33 @@ namespace RealLifeOverhaul.Ui
                     shown++;
                 }
             }
+            // Who works beside them, with what each is paid against the going rate: the person's pay is read against the room it is paid in.
+            var mates = new List<CompanyItem>(3);
+            int others = 0;
+            for (int i = 0; i < d.State.Staff.Count; i++)
+            {
+                StaffFile o = d.State.Staff[i];
+                if (o.Place != p.Place || o.Id == p.Id)
+                {
+                    continue;
+                }
+                others++;
+                if (mates.Count < 3)
+                {
+                    Face(o.Name, o.Id);
+                    mates.Add(new CompanyItem
+                    {
+                        Title = o.Name, Sub = CompanyGame.SkillName(o.Id), Face = true, Hue = UiColour.HueOf(o.Name), Ring = StaffRules.StandsLow(o) ? UiRole.Danger : UiRole.Ok, Grade = -1,
+                        Figure = w.PerHour(o.Paid), Note = w.F("reallife_co_going", "going {wage}", "wage", CompanyText.Wage(o.Going)), Press = true,
+                        Act = CompanyAct.Of(CompanyDo.Go, "emp:" + o.Id, CompanyView.Staff)
+                    });
+                }
+            }
+            if (mates.Count > 0)
+            {
+                blocks.Add(Sec(w.F("reallife_co_emp_beside", "Beside them at {business}", "business", d.ShopName(p.Place)), others.ToString()));
+                blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = mates.ToArray() });
+            }
             if (d.State.Staff.Count <= SmallCrew)
             {
                 SickBlocks(blocks, d.State, w);   // a small crew has no summary page: the policy stands under the person

@@ -73,6 +73,7 @@ namespace RealLifeOverhaul.Ui
                     default: TaxPage(s, at, f, v, w, lay, x, y, cw, bottom, keys); break;
                 }
             }
+            SidebarIntoPage(s);
             for (int i = 0; i < 3; i++)
             {
                 s.AddPrompt(i == 0 ? UiAction.Move : i == 1 ? UiAction.Confirm : UiAction.Back,
@@ -85,6 +86,47 @@ namespace RealLifeOverhaul.Ui
                 s.AddPrompt(UiAction.Alt, UiTextRules.Cut(lay.Acts[lay.Main].Label ?? string.Empty, UiStyle.BodyStrong, 168f));
             }
             UiDraw.PromptBar(s, frame, keys);
+        }
+
+        /// <summary>
+        /// The way from the sidebar into a page, in reading order: Right from any entry goes to the top of the page's left column, where the eye goes next, and not to whatever target stands nearest
+        /// the entry's own height (the second row of a list, a switch half way down the card). The page's first column is the one its leftmost target stands in.
+        /// </summary>
+        private static void SidebarIntoPage(UiScene s)
+        {
+            float pageX = 0f;   // the sidebar's right edge: a row that bleeds a little past the page's margin still belongs to the page
+            for (int i = 0; i < s.NodeCount; i++)
+            {
+                if (s.Nodes[i].Command == UiAppWindow.NavCommand)
+                {
+                    pageX = Math.Max(pageX, s.Nodes[i].X + s.Nodes[i].W);
+                }
+            }
+            float left = float.MaxValue;
+            for (int i = 0; i < s.NodeCount; i++)
+            {
+                UiNode n = s.Nodes[i];
+                if (n.Layer == 0 && !n.Disabled && n.Command != UiAppWindow.NavCommand && n.X >= pageX)
+                {
+                    left = Math.Min(left, n.X);
+                }
+            }
+            int first = -1;
+            for (int i = 0; i < s.NodeCount && left < float.MaxValue; i++)
+            {
+                UiNode n = s.Nodes[i];
+                if (n.Layer == 0 && !n.Disabled && n.Command != UiAppWindow.NavCommand && n.X >= pageX && n.X < left + 40f && (first < 0 || n.Y < s.Nodes[first].Y))
+                {
+                    first = i;
+                }
+            }
+            for (int i = 0; i < s.NodeCount && first >= 0; i++)
+            {
+                if (s.Nodes[i].Command == UiAppWindow.NavCommand)
+                {
+                    s.Nodes[i].Right = first;
+                }
+            }
         }
 
         /// <summary>The sidebar: your company, then money and rules, each entry its own glyph.</summary>

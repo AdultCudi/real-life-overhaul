@@ -64,7 +64,7 @@ namespace RealLifeOverhaul.Ui
             string pick = v.Pick[CompanyView.Marketing] ?? string.Empty;
             page.List.Chosen = ChosenRow(page.List.Rows, pick);
             CompanyShop shop = pick.StartsWith("push:", StringComparison.Ordinal) ? d.ShopAt(pick.Substring(5)) : null;
-            int index;
+            int index = -1;
             CampaignReport report = pick.StartsWith("rep:", StringComparison.Ordinal) && int.TryParse(pick.Substring(4), out index) && index >= 0 && index < s.Reports.Count ? s.Reports[index] : null;
             if (shop != null)
             {
@@ -72,21 +72,63 @@ namespace RealLifeOverhaul.Ui
             }
             else if (report != null)
             {
-                page.Card = ReportCard(report, w);
+                page.Card = ReportCard(d, report, index, w);
             }
             else
             {
                 page.List.Chosen = -1;
+                var blocks = new List<CompanyBlock>(10) { Note(CompanyText.T("reallife_co_push_intro")) };
+                SummaryBlocks(blocks, s, w);
+                blocks.Add(Sec(w.T("reallife_ibox_sec_how", "How it is measured")));
+                blocks.Add(Note(CompanyText.T("reallife_co_push_measure")));
+                blocks.Add(Note(CompanyText.T("reallife_co_push_game")));
+                blocks.Add(Note(CompanyText.T("reallife_co_push_pick")));
                 page.Top = new CompanyCard
                 {
-                    Kicker = w.T("reallife_co_tab_marketing", "Marketing"), Title = w.T("reallife_co_marketing_title", "Campaigns"), Icon = UiIcon.Megaphone,
-                    Blocks = new[]
-                    {
-                        Note(CompanyText.T("reallife_co_push_intro")), Sec(w.T("reallife_ibox_sec_how", "How it is measured")), Note(CompanyText.T("reallife_co_push_measure")),
-                        Note(CompanyText.T("reallife_co_push_game")), Note(CompanyText.T("reallife_co_push_pick"))
-                    }
+                    Kicker = w.T("reallife_co_tab_marketing", "Marketing"), Title = w.T("reallife_co_marketing_title", "Campaigns"), Icon = UiIcon.Megaphone, Blocks = blocks.ToArray()
                 };
             }
+        }
+
+        // What the kept reports add up to, and which kind of campaign has paid best: a business that has run none has nothing to total, and the page says only what a campaign is.
+        private static void SummaryBlocks(List<CompanyBlock> blocks, CompanyState s, Words w)
+        {
+            if (s.Reports.Count == 0)
+            {
+                return;
+            }
+            int kinds = CompanyCatalogue.CampaignKinds;
+            var count = new int[kinds];
+            var returns = new long[kinds];
+            long spent = 0, extra = 0;
+            for (int i = 0; i < s.Reports.Count; i++)
+            {
+                CampaignReport r = s.Reports[i];
+                int k = CompanyCatalogue.Clamp(r.Kind, 0, kinds - 1);
+                spent += r.Cost;
+                extra += r.Extra;
+                count[k]++;
+                returns[k] += r.Return;
+            }
+            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Figures, Options = new[] { w.T("reallife_co_f_spent", "Spent"), w.T("reallife_co_f_extra", "Extra profit"),
+                w.T("reallife_co_f_campaigns", "Campaigns") }, Values = new[] { CompanyText.Money((int)spent), CompanyText.Money((int)extra), s.Reports.Count.ToString() } });
+            var rows = new List<CompanyItem>(kinds);
+            for (int k = 0; k < kinds; k++)
+            {
+                if (count[k] == 0)
+                {
+                    continue;
+                }
+                int average = (int)(returns[k] / count[k]);
+                rows.Add(new CompanyItem
+                {
+                    Grade = -1, Title = CompanyText.Campaign(k), Icon = UiIcon.Megaphone, Sub = w.F("reallife_co_push_n", "Campaigns: {count}", "count",
+                        count[k].ToString()), Figure = CompanyText.Percent(average),
+                    FigureTone = average > 0 ? UiRole.OkText : UiRole.DangerText, Note = w.T("reallife_co_report_return_avg", "return")
+                });
+            }
+            blocks.Add(Sec(w.T("reallife_co_push_kinds_sec", "Which kind pays"), rows.Count.ToString()));
+            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = rows.ToArray() });
         }
 
         // A part that is off says so under its own name, with what that means.
@@ -118,14 +160,15 @@ namespace RealLifeOverhaul.Ui
                     Value = running ? w.F("reallife_co_push_left", "{count} days left", "count", Math.Max(0, length - done).ToString()) : null, Number = running ? done * 100 / length : 0,
                         Tone = UiRole.Ok });
                 blocks.Add(Note(CompanyText.T("reallife_co_push_report_due", "day", file.PushEnd.ToString())));
-                Earlier(blocks, d, shop, w);
+                AddParts(blocks, d, shop, file.Push, w);
+                Earlier(blocks, d, shop.Name, -1, w);
                 card.Blocks = blocks.ToArray();
                 return card;
             }
             if (!d.Promoted(shop))
             {
                 blocks.Add(Note(CompanyText.T(EmpireMotors.IsDealership(shop.Reg) ? "reallife_co_push_empire" : "reallife_co_push_no_figure")));
-                Earlier(blocks, d, shop, w);
+                Earlier(blocks, d, shop.Name, -1, w);
                 card.Blocks = blocks.ToArray();
                 return card;
             }
@@ -159,10 +202,28 @@ namespace RealLifeOverhaul.Ui
             string economy = CompanyText.Share(CompanyCatalogue.CampaignCycle[CompanyCatalogue.Clamp((int)d.Cycle, 0, 3)]);
             blocks.Add(Note(CompanyText.T("reallife_co_push_parts", "own", CompanyText.Percent(CompanyCatalogue.CampaignFootfall[kind]), "district", CompanyText.Share(suit), "economy", economy)
                 + (repeat < 1000 ? " " + CompanyText.T("reallife_co_push_repeat", "share", CompanyText.Share(repeat)) : string.Empty)));
-            Earlier(blocks, d, shop, w);
+            Earlier(blocks, d, shop.Name, -1, w);
+            blocks.Add(Sec(w.T("reallife_ibox_sec_how", "How it is measured")));
+            blocks.Add(Note(CompanyText.T("reallife_co_push_measure")));
             blocks.Add(Buttons(Btn(CompanyText.T("reallife_co_push_book"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.CampaignBook, shop.File.Place, kind), UiAction.Alt, UiIcon.Check)));
             card.Blocks = blocks.ToArray();
             return card;
+        }
+
+        // What a campaign's effect is made of, one row a part, as the quote works it out: the kind's own figure, how much the district counts for it, the
+        // economy, and repeat custom where it counts less.
+        private static void AddParts(List<CompanyBlock> blocks, CompanyDirector d, CompanyShop shop, int kind, Words w)
+        {
+            int cost, percent, suit, repeat;
+            d.CampaignQuote(shop, kind, out cost, out percent, out suit, out repeat);
+            blocks.Add(Sec(w.T("reallife_co_push_parts_sec", "What makes up the effect"), CompanyText.Percent(percent)));
+            blocks.Add(Row(w.T("reallife_co_push_part_own", "The campaign's own figure"), CompanyText.Percent(CompanyCatalogue.CampaignFootfall[kind])));
+            blocks.Add(Row(w.T("reallife_co_push_part_district", "The district counts for"), CompanyText.Share(suit)));
+            blocks.Add(Row(w.T("reallife_co_push_part_economy", "The economy counts for"), CompanyText.Share(CompanyCatalogue.CampaignCycle[CompanyCatalogue.Clamp((int)d.Cycle, 0, 3)])));
+            if (repeat < 1000)
+            {
+                blocks.Add(Row(w.T("reallife_co_push_part_repeat", "Repeat customers count for"), CompanyText.Share(repeat)));
+            }
         }
 
         // The profit a campaign left over its cost; one that cost more than it brought says "less", not a negative "extra".
@@ -172,14 +233,14 @@ namespace RealLifeOverhaul.Ui
         }
 
         // What the business's earlier campaigns did, newest first: the kind, the day it ended, the customers it brought and the profit it left; a row opens its report.
-        private static void Earlier(List<CompanyBlock> blocks, CompanyDirector d, CompanyShop shop, Words w)
+        private static void Earlier(List<CompanyBlock> blocks, CompanyDirector d, string business, int except, Words w)
         {
             CompanyState s = d.State;
             var items = new List<CompanyItem>(3);
             for (int i = s.Reports.Count - 1; i >= 0 && items.Count < 3; i--)
             {
                 CampaignReport r = s.Reports[i];
-                if (r.Name != shop.Name)
+                if (r.Name != business || i == except)
                 {
                     continue;
                 }
@@ -197,7 +258,7 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        private static CompanyCard ReportCard(CampaignReport r, Words w)
+        private static CompanyCard ReportCard(CompanyDirector d, CampaignReport r, int index, Words w)
         {
             var card = new CompanyCard
             {
@@ -226,6 +287,18 @@ namespace RealLifeOverhaul.Ui
             blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Compare, Text = w.T("reallife_co_f_profit", "Profit"), Value = CompanyText.Money(r.ProfitBefore),
                 Sub = CompanyText.Money(r.ProfitDuring),
                 Tone = r.ProfitDuring > r.ProfitBefore ? UiRole.OkText : r.ProfitDuring < r.ProfitBefore ? UiRole.DangerText : UiRole.None });
+            // The days differ in number before and during, so a day on average is the fair comparison: what an ordinary day brought, then a day of the campaign.
+            int before = Math.Max(1, r.DaysBefore), during = Math.Max(1, r.DaysDuring);
+            blocks.Add(Sec(w.T("reallife_co_report_per_day", "A day on average")));
+            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Compare, Text = w.T("reallife_co_f_customers", "Customers"),
+                Value = (r.CustomersBefore / before).ToString(), Sub = (r.CustomersDuring / during).ToString(),
+                Tone = r.CustomersDuring / during > r.CustomersBefore / before ? UiRole.OkText : UiRole.None, Options = heads });
+            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Compare, Text = w.T("reallife_co_f_takings", "Takings"),
+                Value = CompanyText.Money(r.TakingsBefore / before), Sub = CompanyText.Money(r.TakingsDuring / during),
+                Tone = r.TakingsDuring / during > r.TakingsBefore / before ? UiRole.OkText : UiRole.None });
+            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Compare, Text = w.T("reallife_co_f_profit", "Profit"),
+                Value = CompanyText.Money(r.ProfitBefore / before), Sub = CompanyText.Money(r.ProfitDuring / during),
+                Tone = r.ProfitDuring / during > r.ProfitBefore / before ? UiRole.OkText : UiRole.None });
             blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Break });
             blocks.Add(Sec(w.T("reallife_ibox_sec_money", "The money")));
             blocks.Add(Row(w.T("reallife_co_f_extra", "Extra profit"), CompanyText.Money(r.Extra), r.Extra > 0 ? UiRole.OkText : UiRole.None));
@@ -237,6 +310,7 @@ namespace RealLifeOverhaul.Ui
             {
                 blocks.Add(Note(CompanyText.T("reallife_co_report_no_return")));
             }
+            Earlier(blocks, d, r.Name, index, w);
             card.Blocks = blocks.ToArray();
             return card;
         }
@@ -310,7 +384,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (claim != null)
             {
-                page.Card = ClaimCard(claim, w);
+                page.Card = ClaimCard(d, claim, w);
             }
             else if (shop != null)
             {
@@ -319,21 +393,56 @@ namespace RealLifeOverhaul.Ui
             else
             {
                 page.List.Chosen = -1;
+                var blocks = new List<CompanyBlock>(12)
+                {
+                    Sec(CompanyText.T("reallife_co_cover_what")), Note(CompanyText.T("reallife_co_cover_what_fire")), Note(CompanyText.T("reallife_co_cover_what_theft")),
+                    Note(CompanyText.T("reallife_co_cover_what_liability"))
+                };
+                // Each kind against the businesses: how many hold it and what it costs a day, as a bar; then the latest claims, so the page says where the money has gone and where it is exposed.
+                var held = new List<CompanyItem>(CompanyCatalogue.CoverKinds);
+                for (int k = 0; k < CompanyCatalogue.CoverKinds && shops.Count > 0; k++)
+                {
+                    int have = 0, cost = 0;
+                    for (int i = 0; i < shops.Count; i++)
+                    {
+                        Policy p = shops[i].File.Cover[k];
+                        have += p.Active ? 1 : 0;
+                        cost += p.Active ? p.Premium : 0;
+                    }
+                    held.Add(new CompanyItem
+                    {
+                        Title = w.F("reallife_co_row_cover_title", "{cover} cover", "cover", CompanyText.Capital(CompanyText.Cover(k))),
+                            Sub = w.F("reallife_co_covered_of", "{count} of {total} businesses", "count",
+                            have.ToString(), "total", shops.Count.ToString()), Icon = k == (int)CoverKind.Fire ? UiIcon.Fire : k == (int)CoverKind.Theft ? UiIcon.Lock : UiIcon.ShieldCheck,
+                        Grade = have * 100 / shops.Count, Figure = have > 0 ? CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(cost)) : null
+                    });
+                }
+                if (held.Count > 0)
+                {
+                    blocks.Add(Sec(w.T("reallife_co_cover_held", "Held now")));
+                    blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = held.ToArray() });
+                }
+                var recent = new List<CompanyItem>(3);
+                for (int i = s.Claims.Count - 1; i >= 0 && recent.Count < 3; i--)
+                {
+                    recent.Add(ClaimRow(s.Claims[i], w));
+                }
+                if (recent.Count > 0)
+                {
+                    blocks.Add(Sec(w.T("reallife_co_claims_recent", "Latest claims"), s.Claims.Count.ToString()));
+                    blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = recent.ToArray() });
+                }
+                blocks.Add(Note(CompanyText.T("reallife_co_cover_pick")));
                 page.Top = new CompanyCard
                 {
                     Kicker = w.T("reallife_co_tab_cover", "Cover"), Title = w.T("reallife_co_cover_title", "Insurance"), Icon = UiIcon.ShieldCheck,
                     FactLabels = new[] { w.T("reallife_co_f_premiums", "Premiums"), w.T("reallife_co_f_claims_open", "Claims to put in") },
-                    FactValues = new[] { CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(premiums)), open.ToString() },
-                    Blocks = new[]
-                    {
-                        Sec(CompanyText.T("reallife_co_cover_what")), Note(CompanyText.T("reallife_co_cover_what_fire")), Note(CompanyText.T("reallife_co_cover_what_theft")),
-                        Note(CompanyText.T("reallife_co_cover_what_liability")), Note(CompanyText.T("reallife_co_cover_pick"))
-                    }
+                    FactValues = new[] { CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(premiums)), open.ToString() }, Blocks = blocks.ToArray()
                 };
             }
         }
 
-        private static CompanyCard ClaimCard(Claim c, Words w)
+        private CompanyCard ClaimCard(CompanyDirector d, Claim c, Words w)
         {
             var card = new CompanyCard
             {
@@ -374,8 +483,50 @@ namespace RealLifeOverhaul.Ui
                     CompanyText.Share(CompanyCatalogue.ClaimLoading))));
                 blocks.Add(Buttons(Btn(CompanyText.T("reallife_co_claim_do"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.ClaimFile, null, c.Id), UiAction.Alt, UiIcon.Check)));
             }
+            // The cover's record with this insurer and the claims the business has made before: how near the insurer is to refusing, and what the others came to.
+            for (int i = 0; i < d.Shops.Count; i++)
+            {
+                if (d.Shops[i].Name != c.Name)
+                {
+                    continue;
+                }
+                Policy p = d.Shops[i].File.Cover[CompanyCatalogue.Clamp(c.Kind, 0, CompanyCatalogue.CoverKinds - 1)];
+                int most = Math.Max(1, CompanyCatalogue.InsurerClaimsMost[c.Insurer]), claimed = p.Active ? p.Claims : CoverRules.Carried(p);
+                blocks.Add(Sec(w.T("reallife_co_policy_claims_sec", "Claim record")));
+                blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Meter, Text = CompanyText.T("reallife_tab_co_claim"), Value = w.F("reallife_rota_blocks_count", "{count} of {most}", "count",
+                    claimed.ToString(), "most", most.ToString()), Number = Math.Min(100, claimed * 100 / most), Tone = claimed >= most - 1 ? UiRole.Warn : UiRole.Ok });
+                break;
+            }
+            var before = new List<CompanyItem>(3);
+            for (int i = d.State.Claims.Count - 1; i >= 0 && before.Count < 3; i--)
+            {
+                Claim o = d.State.Claims[i];
+                if (o.Id == c.Id || o.Name != c.Name)
+                {
+                    continue;
+                }
+                before.Add(ClaimRow(o, w));
+            }
+            if (before.Count > 0)
+            {
+                blocks.Add(Sec(w.T("reallife_co_claims_before", "Earlier claims here"), before.Count.ToString()));
+                blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = before.ToArray() });
+            }
             card.Blocks = blocks.ToArray();
             return card;
+        }
+
+        // A claim as a row: the cover and business, the day, what it paid, how it stands; a press opens it.
+        private static CompanyItem ClaimRow(Claim o, Words w)
+        {
+            return new CompanyItem
+            {
+                Grade = -1, Title = CompanyText.T("reallife_co_claim_title", "cover", CompanyText.Cover(o.Kind), "business", o.Name), Sub = CompanyText.Day(o.Day), Icon = UiIcon.ShieldCheck,
+                Figure = CompanyText.Money(o.Payout), Chip = CompanyText.T(o.Stage == ClaimStage.Open ? "reallife_ibox_chip_open" : o.Stage == ClaimStage.Filed ? "reallife_ibox_chip_filed"
+                    : o.Stage == ClaimStage.Paid ? "reallife_ibox_chip_paid" : "reallife_ibox_chip_lapsed"),
+                ChipTone = o.Stage == ClaimStage.Open ? UiRole.Warn : o.Stage == ClaimStage.Paid ? UiRole.Ok : UiRole.Muted, Press = true,
+                    Act = CompanyAct.Of(CompanyDo.Go, "claim:" + o.Id, CompanyView.Cover)
+            };
         }
 
         private CompanyCard PolicyCard(CompanyDirector d, CompanyShop shop, int kind, CompanyView v, Words w)
@@ -415,6 +566,21 @@ namespace RealLifeOverhaul.Ui
             else
             {
                 blocks.Add(Row(CompanyText.Label("reallife_co_claim_insurer"), CompanyText.Insurer(insurer)));
+                // The others' terms for the same cover, to read against the one held: no press, the policy is bought and cancelled on this page.
+                var terms = new CompanyItem[CompanyCatalogue.Insurers];
+                for (int i = 0; i < terms.Length; i++)
+                {
+                    terms[i] = new CompanyItem
+                    {
+                        Title = CompanyText.Insurer(i), Icon = UiIcon.Bank, Tint = UiRole.None, Grade = -1,
+                        Sub = CompanyText.T("reallife_co_policy_excess", "share", CompanyText.Share(CompanyCatalogue.InsurerExcessShare[i]), "least",
+                            CompanyText.Money(CompanyCatalogue.InsurerExcessLeast[i])),
+                        Figure = CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(d.Quote(shop, kind, i))), Chip = i == insurer ? CompanyText.T("reallife_ibox_chip_covered") : null,
+                        ChipTone = UiRole.Ok
+                    };
+                }
+                blocks.Add(Sec(w.T("reallife_co_policy_quotes", "What each insurer asks")));
+                blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = terms });
             }
             blocks.Add(Note(CompanyText.T("reallife_co_policy_excess", "share", CompanyText.Share(CompanyCatalogue.InsurerExcessShare[insurer]), "least",
                 CompanyText.Money(CompanyCatalogue.InsurerExcessLeast[insurer]))));
