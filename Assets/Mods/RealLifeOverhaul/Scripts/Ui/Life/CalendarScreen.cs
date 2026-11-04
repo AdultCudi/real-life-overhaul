@@ -4,73 +4,37 @@ using Helpers;
 using RealLifeOverhaul.Calendar;
 using RealLifeOverhaul.GameUi;
 using RealLifeOverhaul.Planner;
-using UI.Notification;
-using UnityEngine;
 
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
-    /// The Calendar on the kit: the month as a diary, today's weather, and tomorrow under the chosen day. The old page
-    /// stays for when this screen's switch is off. Cost: a look and a layout when the month or the chosen day changes.
+    /// The Calendar on the kit: its skin over the game. Everything the screen does is <see cref="CalendarFlow"/>'s (game-free, so
+    /// the checks press every target); this lays its model out and gives it the game's day, entries, weather and apps. The old
+    /// page stays for when this screen's switch is off. Cost: a look and a layout when the month, the chosen day or the hour changes.
     /// </summary>
     public sealed class CalendarScreen : IUiScreen
     {
-        private readonly CalendarDirector _director;
-        private readonly UiCalModel _model = new UiCalModel();
-        private readonly List<UiDiaryEntry> _entries = new List<UiDiaryEntry>(32);
-        private int _month = -1;
-        private int _chosen = 1;
-        private int _sig = int.MinValue;
+        private readonly CalendarFlow _flow;
 
         public CalendarScreen(CalendarDirector director)
         {
-            _director = director;
+            _flow = new CalendarFlow(new Host(director), UiText.Words);
         }
 
         public string Id => "calendar";
 
-        public bool Dirty => _sig != Signature();
+        public bool Dirty => _flow.Dirty;
 
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
-            Build();
-            _sig = Signature();
-            LifePages.Calendar(s, _model, frame, dark, keys);
+            if (_flow.Dirty)
+            {
+                _flow.Build();
+            }
+            LifePages.Calendar(s, _flow.Model, frame, dark, keys);
         }
 
-        public bool Press(int command, int arg)
-        {
-            if (command == UiDiary.DayCommand && arg >= 1)
-            {
-                _chosen = arg;
-                return true;
-            }
-            if (command == UiDiary.MonthCommand)
-            {
-                _month += arg < 0 ? -1 : 1;
-                _chosen = 1;
-                return true;
-            }
-            if (command == LifePages.Add)
-            {
-                TextBox.Ask("reallife_planner_note_placeholder", "common_confirm", text =>
-                {
-                    string clean = PlannerStore.Clean(text);
-                    if (clean.Length > 0)
-                    {
-                        PlannerStore.AddNote(clean, ChosenDay(), 9 * 60);
-                    }
-                    _sig = int.MinValue;
-                }, null, string.Empty, false, PlannerStore.TitleLength);
-                return true;
-            }
-            if (command == LifePages.Second)
-            {
-                PlannerDirector.Instance?.Open();
-                return true;
-            }
-            return command == UiDiary.EntryCommand;
-        }
+        public bool Press(int command, int arg) => _flow.Press(command, arg);
 
         public void Focused(int command, int arg)
         {
@@ -78,24 +42,9 @@ namespace RealLifeOverhaul.Ui
 
         public bool Back() => false;
 
-        public void Tab(int step)
-        {
-            _month += step < 0 ? -1 : 1;
-            _chosen = 1;
-        }
+        public void Tab(int step) => _flow.Tab(step);
 
-        public bool Act(UiAction action)
-        {
-            if (action == UiAction.Alt)
-            {
-                return Press(LifePages.Add, 0);
-            }
-            if (action == UiAction.Option)
-            {
-                return Press(LifePages.Second, 0);
-            }
-            return false;
-        }
+        public bool Act(UiAction action) => _flow.Act(action);
 
         public void Reveal(int list, int index)
         {
@@ -105,113 +54,76 @@ namespace RealLifeOverhaul.Ui
         {
         }
 
-        private int Signature() => _month * 1000 + _chosen * 17 + TimeHelper.CurrentDay + TimeHelper.CurrentHour;
-
-        private void Build()
+        /// <summary>The game as the Calendar's flow asks for it.</summary>
+        private sealed class Host : ICalendarHost
         {
-            int today = TimeHelper.CurrentDay;
-            int year = GameCalendar.DaysPerYear;
-            if (_month < 0)
+            private readonly CalendarDirector _director;
+
+            public Host(CalendarDirector director)
             {
-                _month = CalendarRules.MonthOf(today, year);
+                _director = director;
             }
-            int from = CalendarRules.MonthStart(_month, year);
-            int length = CalendarRules.MonthLength(_month, year);
-            if (_chosen > length)
+
+            public int Today => TimeHelper.CurrentDay;
+
+            public int Hour => TimeHelper.CurrentHour;
+
+            public int YearDays => GameCalendar.DaysPerYear;
+
+            public void Look(int month, List<CalendarEntry> into)
             {
-                _chosen = length;
-            }
-            _director?.Look(_month);
-            _entries.Clear();
-            int chosenDay = from + _chosen - 1;
-            int count = 0, done = 0;
-            if (_director != null)
-            {
-                for (int i = 0; i < _director.List.Items.Count; i++)
+                if (_director == null)
                 {
-                    CalendarEntry e = _director.List.Items[i];
-                    int day = e.Day - from + 1;
-                    if (day < 1 || day > length)
-                    {
-                        continue;
-                    }
-                    if (day == _chosen || day == _chosen + 1)
-                    {
-                        _entries.Add(new UiDiaryEntry
-                        {
-                            Day = day, Icon = e.Group == CalendarGroup.Money ? UiIcon.Coin : e.Group == CalendarGroup.City ? UiIcon.Building : UiIcon.Calendar,
-                            Title = string.IsNullOrEmpty(e.Title) ? UiText.T("reallife_ui_life_a_plan") : e.Title, Value = e.Value,
-                        });
-                    }
-                    if (day == _chosen)
-                    {
-                        count++;
-                    }
+                    return;
                 }
+                _director.Look(month);
+                into.AddRange(_director.List.Items);
             }
-            PlannerDirector planner = PlannerDirector.Instance;
-            if (planner != null)
+
+            public void Plan(int day, List<PlannerEntry> into)
             {
-                planner.Look(chosenDay, chosenDay, false);
-                for (int i = 0; i < planner.List.Items.Count; i++)
+                PlannerDirector planner = PlannerDirector.Instance;
+                if (planner == null)
                 {
-                    if (planner.List.Items[i].Day == chosenDay && planner.List.Items[i].Done)
-                    {
-                        done++;
-                    }
+                    return;
                 }
+                planner.Look(day, day, true);
+                into.AddRange(planner.List.Items);
             }
-            string[] days =
+
+            public string Clock(int minuteOfDay) => PlannerText.Clock(minuteOfDay);
+
+            public string Money(float amount) => PlannerText.Money(amount);
+
+            // the sky as the camera reads it, the air's degrees as the HUD works them out, in the unit the game is set to
+            public bool Weather(out string skyKey, out string skyEnglish, out int celsius, out bool imperial)
             {
-                UiText.T("common_monday"), UiText.T("common_tuesday"), UiText.T("common_wednesday"), UiText.T("common_thursday"),
-                UiText.T("common_friday"), UiText.T("common_saturday"), UiText.T("common_sunday"),
-            };
-            _model.Title = UiText.T("reallife_calendar_app");
-            _model.Add = UiText.T("reallife_ui_life_add");
-            _model.Open = UiText.T("reallife_ui_life_open_planner");
-            _model.Move = UiText.T("reallife_ui_prompt_move");
-            _model.Select = UiText.T("reallife_ui_prompt_select");
-            _model.Back = UiText.T("reallife_ui_prompt_back");
-            _model.Weather = chosenDay == today ? WeatherLine() : null;
-            _model.Diary = new UiDiaryModel
+                string token = Photos.PhotoShot.Token();
+                skyKey = Photos.PhotoShot.Words(token);
+                skyEnglish = null;
+                celsius = Photos.PhotoShot.Degrees(token);
+                imperial = UnitHelper.useImperial;
+                return true;
+            }
+
+            public string AppName(string appId) => PhoneApp.TitleOf(appId);
+
+            public bool OpenApp(string appId) => PhoneApp.OpenById(appId);
+
+            public void OpenPlanner()
             {
-                Month = MonthName(_month, year) + ", " + UiText.Fill("reallife_ui_life_week", "week", CalendarRules.WeekNumber(from).ToString()),
-                Weekdays = days, Lead = MonthViewRules.Lead(from), Length = length,
-                Today = today >= from && today < from + length ? today - from + 1 : 0,
-                Chosen = _chosen, PastBefore = today >= from && today < from + length ? today - from + 1 : 0,
-                Entries = _entries.ToArray(),
-                ChosenTitle = UiText.Fill("reallife_ui_life_day_line", "count", count.ToString(), "done", done.ToString()),
-                ChosenEmpty = UiText.T("reallife_ui_life_nothing_day"),
-                AheadTitle = UiText.T("reallife_ui_life_tomorrow"),
-                More = UiText.T("reallife_ui_life_more"),
-            };
-        }
+                PlannerDirector.Instance?.Open();
+            }
 
-        private int ChosenDay()
-        {
-            int year = GameCalendar.DaysPerYear;
-            return CalendarRules.MonthStart(_month < 0 ? CalendarRules.MonthOf(TimeHelper.CurrentDay, year) : _month, year) + _chosen - 1;
-        }
+            public void AskTitle(string initial, Action<string> done)
+            {
+                TextBox.Ask("reallife_planner_note_placeholder", "common_confirm", text => done(text), null, initial ?? string.Empty, false, PlannerStore.TitleLength);
+            }
 
-        private static readonly string[] MonthKeys =
-        {
-            "reallife_calendar_month_1", "reallife_calendar_month_2", "reallife_calendar_month_3", "reallife_calendar_month_4",
-            "reallife_calendar_month_5", "reallife_calendar_month_6", "reallife_calendar_month_7", "reallife_calendar_month_8",
-            "reallife_calendar_month_9", "reallife_calendar_month_10", "reallife_calendar_month_11", "reallife_calendar_month_12",
-        };
-
-        private static string MonthName(int month, int year)
-        {
-            int inYear = CalendarRules.MonthInYear(month, year);
-            int at = inYear >= 1 && inYear <= MonthKeys.Length ? inYear - 1 : 0;
-            return UiText.T(MonthKeys[at]);
-        }
-
-        private static string WeatherLine()
-        {
-            string token = Photos.PhotoShot.Token();
-            int celsius = Photos.PhotoShot.Degrees(token);
-            return UiText.Fill("reallife_ui_life_weather", "sky", UiText.T(Photos.PhotoShot.Words(token)), "temp", celsius.ToString() + " C");
+            public void Notice(string key)
+            {
+                UI.Notification.Notifications.ShowError(key, null, false);
+            }
         }
     }
 }

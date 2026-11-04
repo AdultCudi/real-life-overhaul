@@ -25,10 +25,12 @@ namespace RealLifeOverhaul.Calendar
         public string Title;
         public string Value;         // the words at its right: an hour, an amount, "By 17:00"; null for none
         public string App;           // the id of the mod's app that deals with it; null for none
+        public bool Done;            // dealt with already (a Planner note ticked off): the day's header counts it
 
         internal void Reset()
         {
             Source = Title = Value = App = null;
+            Done = false;
             A = B = Day = Sign = 0;
             Start = -1;
             Amount = 0f;
