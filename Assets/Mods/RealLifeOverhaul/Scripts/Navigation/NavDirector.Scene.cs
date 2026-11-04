@@ -1,6 +1,8 @@
 using System;
+using System.Text;
 using Localizor;
 using RealLifeOverhaul.Map25;
+using UI.Load;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Nav
@@ -18,15 +20,19 @@ namespace RealLifeOverhaul.Nav
         private bool _map25GaveUp;
         private string[] _roadName;
         private int _roadAt;
-        private bool _namesMade;
+        private bool _namesMade, _routeFed;
+        private const float LongFrame = 0.05f;      // seconds: a frame this long gets no slice of the scene's meshes
+
+        // The city map's own picture is wanted: its option is on, no other mod owns the map, and no picture of it has come out black on this machine.
+        private bool FullWanted => Settings.Map25 && !_voogle && !NavMapLatch.Drew(NavMapLatch.Full);
 
         // Whether the minimap's base is wanted for the 2.5D map, though the flat picture is not.
-        private bool SceneWantsBase => (Settings.Map25 && !_voogle) || (Settings.Minimap25 && Settings.Minimap);
+        private bool SceneWantsBase => FullWanted || (Settings.Minimap25 && Settings.Minimap);
 
         // On the slow tick, after the base: the scene begun when something wants it and its data is there, dropped when nothing does.
         private void SceneWanted(bool wantMinimap)
         {
-            bool full = Settings.Map25 && !_voogle;
+            bool full = FullWanted;
             if (!full && !(wantMinimap && Settings.Minimap25))
             {
                 SceneRemove();
@@ -45,6 +51,11 @@ namespace RealLifeOverhaul.Nav
             {
                 _scene.Begin(data, _graph);
             }
+            if (_scene.Ready && !_routeFed)
+            {
+                _routeFed = true;
+                FeedRoute();   // the route as it is, into the strips of the scene just made
+            }
             if (full && _scene.Ready && _map25 == null && !_map25GaveUp)
             {
                 _map25 = NavMap25.Make(_scene);
@@ -53,9 +64,13 @@ namespace RealLifeOverhaul.Nav
                 {
                     Logger?.Warn("Navigation: the city map's marker layer was not found, so the city map stays the game's own (no 2.5D picture).");
                 }
-                else if (_mapOpen)
+                else
                 {
-                    OpenPicture(true);
+                    ArrangeMap();
+                    if (_mapOpen)
+                    {
+                        OpenPicture(true);
+                    }
                 }
             }
             if (!full && _map25 != null)
@@ -105,9 +120,62 @@ namespace RealLifeOverhaul.Nav
             }
             if (open)
             {
+                Player();   // where the player stands now, for the cone and the marker (the slow tick may not have run with the minimap and the GPS off)
                 _map25.Player(_px, _py, _pz, _follow != null ? _follow.eulerAngles.y : _heading);
             }
             _map25.Open(open);
+        }
+
+        // The one place that says where the game's marker layer's children stand: the 2.5D picture first, the mod's own route line over it, every pin of the game's over both.
+        // Called whenever either is made and whenever the map opens, so which of the two was made last, and whether the game added a pin meanwhile, never matters.
+        private void ArrangeMap()
+        {
+            NavMapLayers.Indices(_map25 != null, _map != null, out int picture, out int route);
+            if (picture >= 0)
+            {
+                _map25.Rect.SetSiblingIndex(picture);
+            }
+            if (route >= 0)
+            {
+                _map.Rect.SetSiblingIndex(route);
+            }
+        }
+
+        // The route into the scene's own strips (the full map's picture and the minimap's both draw it, each in a few of its own pixels), and both told to draw again.
+        private void FeedRoute()
+        {
+            if (_scene.Ready)
+            {
+                _scene.Scene.SetRoute(_lineCount < 2 ? null : _lineX, _lineY, _lineZ, _lineCount, _scene.Y0);
+            }
+            if (_hud != null)
+            {
+                _hud.SceneRouteChanged();
+            }
+            if (_map25 != null)
+            {
+                _map25.RouteChanged();
+            }
+        }
+
+        // The district view changed what a zone looks like: the open map's picture looks at the zones and the highlights again.
+        private void PokeMap()
+        {
+            if (_map25 != null && _mapOpen)
+            {
+                _map25.Poke();
+            }
+        }
+
+        // The map check after the map shut (MapParts, RLO-PERF-022): the picture's object, texture, camera mask and tilt, and tints given back.
+        private int Map25Look(StringBuilder line)
+        {
+            if (_map25 == null)
+            {
+                line?.Append("2.5D city map: none made");
+                return 0;
+            }
+            return _map25.Held(line);
         }
 
         // Everything of the 2.5D map goes: the picture, the meshes and the city.
@@ -120,6 +188,7 @@ namespace RealLifeOverhaul.Nav
             }
             _map25GaveUp = false;
             _namesMade = false;
+            _routeFed = false;
             _roadName = null;
             _roadAt = 0;
             if (_scene.State != NavScene.Stage.Idle)
@@ -155,10 +224,10 @@ namespace RealLifeOverhaul.Nav
             _hud.SceneStrip(_districtText, _graph.Ready ? _graph.StreetNear(_px, _py, _pz) : null);
         }
 
-        // Once a frame while the scene's meshes are made.
+        // Once a frame while the scene's meshes are made: not behind the loading screen (the base's own step waits too) and not in a frame that is already long.
         private void SceneStep()
         {
-            if (_scene.Busy)
+            if (_scene.Busy && !LoadScene.isLoading && Time.unscaledDeltaTime < LongFrame)
             {
                 _scene.Step();
             }

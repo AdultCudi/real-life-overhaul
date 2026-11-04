@@ -309,6 +309,7 @@ namespace RealLifeOverhaul.Districts
             {
                 district.Zone.gameObject.SetActive(true);
             }
+            Nav.NavBridges.MapLooks?.Invoke();   // the 2.5D city map draws the zones into its picture: it looks at them again
         }
 
         /// <summary>A zone back in the game's own colour and hidden; the game's own filters show it again if ticked.</summary>
@@ -318,6 +319,7 @@ namespace RealLifeOverhaul.Districts
             {
                 Paint(district.Zone, district.OwnColour);
                 district.Zone.gameObject.SetActive(false);
+                Nav.NavBridges.MapLooks?.Invoke();
             }
         }
 

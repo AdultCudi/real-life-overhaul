@@ -1,4 +1,6 @@
 using System;
+using System.Runtime.CompilerServices;
+using System.Text;
 using BAModAPI;
 using Cinemachine;
 using Helpers;
@@ -12,13 +14,14 @@ namespace RealLifeOverhaul.Nav
     /// <summary>
     /// The full map in 2.5D (docs/features/navigation.md, "The city map in 2.5D"): while the game's city map is open and its camera
     /// has come to rest, the blocks of <see cref="NavScene"/> are drawn into a render texture the size of the screen from the game's
-    /// own camera, and shown under the game's pins, the route and its panels; the game's own camera draws nothing meanwhile (its
-    /// culling mask is set to none, and the game gives it its own mask back when the map shuts). The game picks, hovers and tints
-    /// buildings through its real ones, so the picture reads each building's layer and tint colour in slices and writes them into the
-    /// blocks. The camera's pitch follows its distance: flat from afar, the game's own tilt close. It stands down, and the game's map
-    /// is as it was, in subway mode, taxi mode and when anything throws. Cost: nothing while the map is shut (the object is inactive,
-    /// the texture released); open and still, a few comparisons and a slice of 128 buildings a frame; open and moving, one draw of
-    /// the chunks in view into the texture.
+    /// own camera, and shown under the game's pins and its panels; the game's own camera draws nothing meanwhile (its culling mask is set to none,
+    /// and the game gives it its own mask back when the map shuts). The game picks, hovers and tints buildings through its real ones, so the
+    /// picture reads each building's layer and tint colour and writes them into the blocks, but only after something that changes them
+    /// (<see cref="NavMapLights"/>: the map opening, the pointer on another building, a card, the filters' work), and the game's neighbourhood zones, which are planes over
+    /// the city it no longer draws, are drawn into the picture in their colours. The camera's pitch follows its distance: flat from afar, the game's own tilt
+    /// close, and every way of standing down (the option off, another mod's route, a fault, a black picture, the map shut) gives it the game's own tilt back.
+    /// Cost: nothing while the map is shut (the object is inactive, the texture released); open and still, three comparisons and the camera's
+    /// matrices a frame; open and moving, one draw of the chunks in view into the texture.
     /// </summary>
     [DefaultExecutionOrder(30000)]   // after the camera's brain has put the camera where it goes this frame
     public sealed class NavMap25 : MonoBehaviour
@@ -28,10 +31,13 @@ namespace RealLifeOverhaul.Nav
         public const string ObjectName = "RealLife Map 2.5D";
         private const float FadeSeconds = 0.4f;       // the blocks come in over this long once the camera has come to rest
         private const float MostSide = 2560f;         // pixels on the longer side of the picture: more is no clearer on a flat picture
-        private const int Slice = 128;                // buildings read for a tint in a frame
         private const float RestMetres = 0.5f;        // the camera has come to rest when it is this near the game's map camera
+        private const float ZoneY = 0.05f;            // metres over the ground the game's zones are drawn at
 
         public static IModLogger Logger;
+
+        /// <summary>True while a picture stands over the game's own city: the mod's route line of the city map (NavCityMap) leaves the route to it.</summary>
+        public static bool PictureStands { get; private set; }
 
         private NavScene _scene;
         private RectTransform _rect;
@@ -44,22 +50,31 @@ namespace RealLifeOverhaul.Nav
         private Camera _camera;
         private Transform _virtual;
         private CityBuildingController[] _by;
-        private bool[] _lit;
-        private int _readFrom;
+        private readonly NavMapLights _lights = new NavMapLights();
         private readonly MaterialPropertyBlock _block = new MaterialPropertyBlock();
         private static readonly int SelectionColour = Shader.PropertyToID("_SelectionColor");
+        private static readonly int ZoneColour = Shader.PropertyToID("_UnlitColor");
         private float _alpha;
-        private bool _masked, _dirty = true, _failed, _said, _probed;
+        private bool _masked, _dirty = true, _failed, _said, _probed, _pitched, _zonesDirty = true, _zonesShown;
         private readonly NavMapNames _streets = new NavMapNames();
         private float _px, _py, _pz, _heading;
         private bool _hasPlayer;
         private float _flatX, _flatZ = 1f;
         private float _lastWidth, _lastHeight;
+        private readonly float[] _zoneCorners = new float[Map25Zones.MostZones * 8], _zoneAlpha = new float[Map25Zones.MostZones], _matrix = new float[16];
+        private readonly Map25Colour[] _zoneColour = new Map25Colour[Map25Zones.MostZones];
+        private MeshFilter[] _zoneMesh;
 
         /// <summary>The game's map is not drawn over: another mod owns it, or this was switched off.</summary>
         public bool Standing { get; private set; }
 
-        /// <summary>Makes the object in the game's pin layer, switched off. Null if the game's map is not there.</summary>
+        /// <summary>The object, for the one place that decides where the marker layer's children stand (<see cref="NavMapLayers"/>).</summary>
+        public RectTransform Rect => _rect;
+
+        /// <summary>
+        /// Makes the object in the game's pin layer, switched off. Null if the game's map is not there. Where it stands among the layer's
+        /// children is <see cref="NavDirector"/>'s to say.
+        /// </summary>
         public static NavMap25 Make(NavScene scene)
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
@@ -72,7 +87,6 @@ namespace RealLifeOverhaul.Nav
             made.SetActive(false);
             var rect = (RectTransform)made.transform;
             rect.SetParent(layer, false);
-            rect.SetAsFirstSibling();   // under every pin and the route
             rect.anchorMin = rect.anchorMax = rect.pivot = Vector2.zero;
             rect.anchoredPosition = Vector2.zero;
             var map = made.AddComponent<NavMap25>();
@@ -84,23 +98,27 @@ namespace RealLifeOverhaul.Nav
             return map;
         }
 
-        /// <summary>The map opened or shut; the object is switched on and off with it.</summary>
+        /// <summary>
+        /// The map opened or shut; the object is switched on and off with it. Shut, every tint it took into the blocks is taken out again and
+        /// the game's map camera has its own tilt back.
+        /// </summary>
         public void Open(bool open)
         {
             if (gameObject.activeSelf != open)
             {
                 if (open)
                 {
-                    _rect.SetAsFirstSibling();
                     _alpha = 0f;
                     _dirty = true;
                     _masked = false;
-                    _readFrom = 0;
-                    _failed = false;
+                    _zonesDirty = true;
+                    _lights.Reset(_scene != null && _scene.Ready ? _scene.City.Count : 0);
+                    _lights.Poke();   // the game applies its filters as it opens: one pass to find them
                 }
                 else
                 {
                     Release();
+                    ClearTints();
                 }
                 gameObject.SetActive(open);
             }
@@ -122,6 +140,19 @@ namespace RealLifeOverhaul.Nav
             _heading = heading;
             _hasPlayer = true;
             _dirty = true;
+        }
+
+        /// <summary>The route changed: the picture is drawn again at the next frame.</summary>
+        public void RouteChanged()
+        {
+            _dirty = true;
+        }
+
+        /// <summary>Something on the open map changed its look that the game does not announce (the district view put a colour on a zone): the zones and the highlights are looked at again.</summary>
+        public void Poke()
+        {
+            _zonesDirty = true;
+            _lights.Poke();
         }
 
         private static readonly int HotLateUpdate = HotSpots.Slot("Navigation: NavMap25.LateUpdate");
@@ -151,7 +182,7 @@ namespace RealLifeOverhaul.Nav
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
             CityMap map = city != null ? city.cityMap : null;
-            if (_failed || map == null || !CityMap.IsOpen || !_scene.Ready)
+            if (_failed || NavMapLatch.Drew(NavMapLatch.Full) || map == null || !CityMap.IsOpen || !_scene.Ready)
             {
                 Hide(map);
                 return;
@@ -170,6 +201,7 @@ namespace RealLifeOverhaul.Nav
             if (map.isSubwayMode || map.IsTaxiMode)
             {
                 Tilt(map, Map25View.TiltPitch, false);   // the game's own map, as it is
+                _pitched = false;
                 Hide(map);
                 return;
             }
@@ -181,6 +213,7 @@ namespace RealLifeOverhaul.Nav
                 return;
             }
             Standing = true;
+            PictureStands = true;
             Show(map);
             if (!_said && Meta.Dev.Verbose && _target != null)
             {
@@ -232,6 +265,25 @@ namespace RealLifeOverhaul.Nav
             var direction = new Vector3(_flatX * Mathf.Cos(radians), -Mathf.Sin(radians), _flatZ * Mathf.Cos(radians));
             _virtual.position = pivot - direction * distance;
             _virtual.rotation = Quaternion.LookRotation(direction);
+            _pitched = want != Map25View.TiltPitch || next != Map25View.TiltPitch;
+        }
+
+        // The game's own tilt back on its map camera: whatever way the picture stands down, and when the map shuts (the game keeps the
+        // direction it last had, and has no control of the pitch to undo ours).
+        private void RestorePitch()
+        {
+            if (!_pitched || _virtual == null)
+            {
+                return;
+            }
+            _pitched = false;
+            CityManager city = InstanceBehavior<CityManager>.Instance;
+            CityMap map = city != null ? city.cityMap : null;
+            if (map != null && map.cityMapCam != null)
+            {
+                Tilt(map, Map25View.TiltPitch, false);
+                _pitched = false;
+            }
         }
 
         private void Show(CityMap map)
@@ -258,7 +310,7 @@ namespace RealLifeOverhaul.Nav
                 _masked = true;
                 _camera.cullingMask = 0;   // the game's own city is not drawn behind the picture; the game gives its mask back when the map shuts
             }
-            Mirror();
+            Lights();
             Matrix4x4 view = _camera.worldToCameraMatrix, projection = _camera.projectionMatrix;
             for (int i = 0; i < 16; i++)
             {
@@ -278,12 +330,26 @@ namespace RealLifeOverhaul.Nav
             Array.Copy(_projection, _lastProjection, 16);
             _dirty = false;
             float pitch = Mathf.Asin(Mathf.Clamp(-_camera.transform.forward.y, -1f, 1f)) * Mathf.Rad2Deg;
-            _view.Set(_viewMatrix, _projection, pitch);
+            // the scene's ground is the median street: the game's view is moved the same, so the picture lies where the game's own city does
+            _view.Set(_viewMatrix, _projection, pitch, _scene.Y0);
             _scene.Scene.Refresh();
+            if (_zonesDirty)
+            {
+                ReadZones();
+            }
+            // the lines and marks are a few pixels, however far the camera is: their metres are what a pixel is where the middle of the picture lies
+            float gx = _px, gz = _pz;
+            if (!_view.GroundAhead(out gx, out gz) && _hasPlayer)
+            {
+                gx = _px;
+                gz = _pz;
+            }
+            float mpp = _view.MetresPerPixel(gx, 0f, gz, _target.width);
+            _scene.Scene.SetRouteHalf(Map25Marks.Step(Map25Marks.RouteHalf(false, _target.height, mpp)));
             var frame = new Map25Frame
             {
                 Player = _hasPlayer, PlayerX = _px, PlayerY = _py - _scene.Y0, PlayerZ = _pz, Heading = _heading,
-                ConeRadius = Mathf.Max(30f, map.cityMapCam.distance * 0.3f), Fog = pitch < 70f
+                ConeRadius = Map25Marks.ConeMetres(false, _target.height, mpp), HaloRadius = Map25Marks.HaloMetres(false, _target.height, mpp), Fog = pitch < 70f
             };
             _scene.Scene.Draw(_target, _view, frame, 0);
             if (!_probed)
@@ -291,8 +357,10 @@ namespace RealLifeOverhaul.Nav
                 _probed = true;
                 if (Map25Scene.Blank(_target))
                 {
-                    Logger?.Warn("Navigation: the 2.5D city map drew nothing (its picture is black), so the city map stays the game's own.");
-                    _failed = true;
+                    if (NavMapLatch.Mark(NavMapLatch.Full))
+                    {
+                        Logger?.Warn("Navigation: the 2.5D city map drew nothing (its picture is black), so the city map stays the game's own for this session.");
+                    }
                     Release();
                     return;
                 }
@@ -304,7 +372,7 @@ namespace RealLifeOverhaul.Nav
 
         private void MakeTarget(int width, int height)
         {
-            Release();
+            ReleaseTarget();
             float scale = Mathf.Min(1f, MostSide / Mathf.Max(width, height));
             _targetWidth = width;
             _targetHeight = height;
@@ -399,10 +467,27 @@ namespace RealLifeOverhaul.Nav
             return rect;
         }
 
-        // Reads the tint the game put on some of its buildings (the layer it moved a highlighted one to, and the colour in its property
-        // block) for a slice of them a frame, and writes it into the blocks: hover, picked, the filters' tints, Going Public's players.
-        private void Mirror()
+        // Once a frame while the picture shows: the three things that tell the game's highlights moved (the filters have work, the pointer is on another building, another
+        // building's card is open), and, while a pass is under way, a slice of the buildings read. Nothing else is read while none changed.
+        private void Lights()
         {
+            if (_lights.Hulls != _scene.City.Count)
+            {
+                _lights.Reset(_scene.City.Count);   // the city came into being (or changed) while the map was open
+                _lights.Poke();
+            }
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            bool working = CityMapFilters.Work.HasPendingWork;
+            int hover = RuntimeHelpers.GetHashCode(MouseController.currentTargetEntity);
+            int selected = uis != null && uis.buildingResume != null ? RuntimeHelpers.GetHashCode(uis.buildingResume.CityBuildingController) : 0;
+            if (!_lights.Step(working, hover, selected, out int from, out int to))
+            {
+                return;
+            }
+            if (from == 0)
+            {
+                _zonesDirty = true;   // a pass begins with the zones, whose changes the game does not announce either
+            }
             if (_by == null)
             {
                 Gather();
@@ -412,8 +497,8 @@ namespace RealLifeOverhaul.Nav
                 }
             }
             int outlined = LayerHelper.BuildingOutlinedLayerIndex;
-            int end = Mathf.Min(_by.Length, _readFrom + Slice);
-            for (int i = _readFrom; i < end; i++)
+            bool changed = false;
+            for (int i = from; i < to && i < _by.Length; i++)
             {
                 CityBuildingController building = _by[i];
                 MeshRenderer lod = building != null ? building.lodVersion : null;
@@ -432,16 +517,100 @@ namespace RealLifeOverhaul.Nav
                         colour = _block.GetColor(SelectionColour);
                     }
                 }
-                if (on || _lit[i])
+                if (on || _lights.IsLit(i))
                 {
                     if (_scene.Tint(i, on, colour))
                     {
-                        _dirty = true;   // drawn again only when a tint really changed
+                        changed = true;   // drawn again only when a tint really changed
                     }
-                    _lit[i] = on;
+                    _lights.Set(i, on);
                 }
             }
-            _readFrom = end >= _by.Length ? 0 : end;
+            if (changed)
+            {
+                _scene.RefreshMarks();
+                _dirty = true;
+            }
+        }
+
+        // Every tint the picture took into the blocks taken out again (the map shut, or the picture stood down): the blocks are as the game's city is.
+        private void ClearTints()
+        {
+            if (_scene == null || !_scene.Ready)
+            {
+                _lights.Reset(0);
+                return;
+            }
+            int cursor = 0;
+            bool any = false;
+            for (int hull = _lights.TakeNext(ref cursor); hull >= 0; hull = _lights.TakeNext(ref cursor))
+            {
+                any |= _scene.Tint(hull, false, default);
+            }
+            if (any)
+            {
+                _scene.RefreshMarks();
+            }
+            _lights.Reset(_scene.City.Count);
+        }
+
+        // The game's neighbourhood zones that show, drawn into the picture in the colour each has (the district view's tints and the game's
+        // own filters' alike): the game's zones are planes in a city this picture covers.
+        private void ReadZones()
+        {
+            _zonesDirty = false;
+            CityManager city = InstanceBehavior<CityManager>.Instance;
+            if (city == null || city.cityMap == null || city.cityMap.cityMapNeighborhoodZones == null)
+            {
+                return;
+            }
+            CityMapNeighborhoodZones.CityMapNeighborhoodZone[] zones = CityMapNeighborhoodZones.Zones;
+            if (zones == null)
+            {
+                return;
+            }
+            if (_zoneMesh == null || _zoneMesh.Length != zones.Length)
+            {
+                _zoneMesh = new MeshFilter[zones.Length];
+                for (int i = 0; i < zones.Length; i++)
+                {
+                    _zoneMesh[i] = zones[i] != null && zones[i].zoneRenderer != null ? zones[i].zoneRenderer.GetComponent<MeshFilter>() : null;
+                }
+            }
+            int n = 0;
+            for (int i = 0; i < zones.Length && n < Map25Zones.MostZones; i++)
+            {
+                MeshRenderer zone = zones[i] != null ? zones[i].zoneRenderer : null;
+                MeshFilter filter = _zoneMesh[i];
+                if (zone == null || filter == null || filter.sharedMesh == null || !zone.enabled || !zone.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+                Matrix4x4 m = zone.transform.localToWorldMatrix;
+                for (int k = 0; k < 16; k++)
+                {
+                    _matrix[k] = m[k];
+                }
+                Bounds b = filter.sharedMesh.bounds;
+                Map25Zones.Rectangle(_matrix, b.center.x, b.center.y, b.center.z, b.extents.x, b.extents.y, b.extents.z, out float x0, out float z0, out float x1, out float z1);
+                Map25Zones.Corners(x0, z0, x1, z1, _zoneCorners, n);
+                zone.GetPropertyBlock(_block);
+                Color c = new Color(1f, 0f, 0f, 0.47f);   // the zone material's own colour, when neither the block nor the material says
+                if (_block.HasColor(ZoneColour))
+                {
+                    c = _block.GetColor(ZoneColour);
+                }
+                else if (zone.sharedMaterial != null && zone.sharedMaterial.HasProperty(ZoneColour))
+                {
+                    c = zone.sharedMaterial.GetColor(ZoneColour);
+                }
+                _zoneColour[n] = new Map25Colour(c.r, c.g, c.b);
+                _zoneAlpha[n] = c.a;
+                n++;
+            }
+            _zonesShown = n > 0;
+            _scene.Scene.SetZones(_zoneCorners, _zoneColour, _zoneAlpha, n, ZoneY);
+            _dirty = true;
         }
 
         // Which of the game's buildings each outline is, by address (a pass over the game's list: once, as the map first shows).
@@ -456,11 +625,11 @@ namespace RealLifeOverhaul.Nav
             var found = new CityBuildingController[data.Hulls];
             NavBaseGame.Find(buildings, data, found);
             _by = found;
-            _lit = new bool[data.Hulls];
         }
 
         private void Hide(CityMap map)
         {
+            PictureStands = false;
             if (!Standing && !_image.enabled)
             {
                 return;
@@ -473,37 +642,98 @@ namespace RealLifeOverhaul.Nav
             {
                 _player.gameObject.SetActive(false);
             }
+            GiveCameraBack(map);
+        }
+
+        // The game's own culling mask given back while the map is still open (subway or taxi mode, or the picture standing down): its own map.
+        private void GiveCameraBack(CityMap map)
+        {
             if (_masked && map != null && CityMap.IsOpen && _camera != null)
             {
-                _camera.cullingMask = PlayerPrefSettings.LowDetailCityMap ? map.cityMapMaskLowDetail : map.cityMapMask;   // subway or taxi mode: the game's own map
+                _camera.cullingMask = PlayerPrefSettings.LowDetailCityMap ? map.cityMapMaskLowDetail : map.cityMapMask;
             }
             _masked = false;
         }
 
+        // Every way the picture stops standing: the texture let go, the game's culling mask and its map camera's tilt given back.
         private void Release()
         {
+            PictureStands = false;
             if (_image != null)
             {
                 _image.enabled = false;
                 _image.texture = null;
             }
+            ReleaseTarget();
+            if (_masked && _camera != null && CityMap.IsOpen)
+            {
+                CityManager city = InstanceBehavior<CityManager>.Instance;
+                CityMap map = city != null ? city.cityMap : null;
+                GiveCameraBack(map);
+            }
+            _masked = false;
+            Standing = false;
+            RestorePitch();
+        }
+
+        private void ReleaseTarget()
+        {
             if (_target != null)
             {
                 _target.Release();
                 UnityEngine.Object.Destroy(_target);
                 _target = null;
             }
-            if (_masked && _camera != null && CityMap.IsOpen)
+        }
+
+        /// <summary>
+        /// For the map check after the map shut (<see cref="MapParts"/>, RLO-PERF-022): what the picture still holds changed or alive: its object, its texture, the game's
+        /// camera masked or tilted, a tint in the blocks. 0 when all is as it was before the map opened.
+        /// </summary>
+        public int Held(StringBuilder line)
+        {
+            int held = 0;
+            bool first = true;
+            line?.Append("2.5D city map: ");
+            if (gameObject.activeSelf)
             {
-                CityManager city = InstanceBehavior<CityManager>.Instance;
-                CityMap map = city != null ? city.cityMap : null;
-                if (map != null)
-                {
-                    _camera.cullingMask = PlayerPrefSettings.LowDetailCityMap ? map.cityMapMaskLowDetail : map.cityMapMask;   // switched off with the map still open: the game's own map
-                }
+                held++;
+                Note(line, ref first, "object on");
             }
-            _masked = false;
-            Standing = false;
+            if (_target != null)
+            {
+                held++;
+                Note(line, ref first, "texture alive");
+            }
+            if (_masked)
+            {
+                held++;
+                Note(line, ref first, "camera masked");
+            }
+            if (_pitched)
+            {
+                held++;
+                Note(line, ref first, "camera tilted");
+            }
+            if (_lights.Lit > 0)
+            {
+                held++;
+                Note(line, ref first, "tints kept");
+            }
+            if (held == 0)
+            {
+                line?.Append("given back");
+            }
+            return held;
+        }
+
+        private static void Note(StringBuilder line, ref bool first, string what)
+        {
+            if (line != null)
+            {
+                line.Append(first ? string.Empty : ", ").Append(what);
+            }
+            first = false;
         }
 
         private void OnDisable()
@@ -514,6 +744,7 @@ namespace RealLifeOverhaul.Nav
         private void OnDestroy()
         {
             Release();
+            ClearTints();
         }
     }
 }

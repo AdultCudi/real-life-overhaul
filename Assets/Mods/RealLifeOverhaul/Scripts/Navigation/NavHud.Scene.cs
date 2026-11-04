@@ -28,13 +28,11 @@ namespace RealLifeOverhaul.Nav
         private bool _sceneOn, _sceneTilted;
         private int _sceneWidth, _sceneHeight;
         private float _sceneX, _sceneZ, _sceneTurn = float.MaxValue, _sceneAcross, _sceneDrawn;
-        private bool _sceneDirty = true, _sceneMarksDirty, _sceneRouteStale;
-        private float[] _sceneRouteY;
-        private int _sceneRouteCount;
+        private bool _sceneDirty = true, _sceneMarksDirty;
         private float _scenePlayerX, _scenePlayerY, _scenePlayerZ, _scenePlayerHeading;
 
-        /// <summary>True once the first draw of the picture came out black: the director then leaves the minimap flat.</summary>
-        public bool SceneBroken { get; private set; }
+        /// <summary>True once a draw of the picture came out black, kept for the session (<see cref="NavMapLatch"/>): the director then leaves the minimap flat.</summary>
+        public bool SceneBroken => NavMapLatch.Drew(NavMapLatch.Minimap);
 
         private bool _sceneProbed;
 
@@ -67,7 +65,6 @@ namespace RealLifeOverhaul.Nav
             _sceneFrom = source;
             StripShow(on);
             _sceneDirty = true;
-            _sceneRouteStale = true;
             _sceneTurn = float.MaxValue;
             if (_scenePicture != null)
             {
@@ -102,19 +99,9 @@ namespace RealLifeOverhaul.Nav
             _sceneMarksDirty = true;
         }
 
-        /// <summary>The route again (as the director's arrays hold it): drawn into the picture, which is drawn again.</summary>
-        public void SceneRoute(float[] y, int count)
+        /// <summary>The route changed (the director has written it into the scene's strips): the picture is drawn again.</summary>
+        public void SceneRouteChanged()
         {
-            _sceneRouteY = y;
-            _sceneRouteCount = count;
-            _sceneRouteStale = true;
-        }
-
-        // The route into the scene's own strips, once it is on and made.
-        private void SceneRouteNow()
-        {
-            _sceneRouteStale = false;
-            _sceneFrom.Scene.SetRoute(_sceneRouteCount < 2 ? null : RouteX, _sceneRouteY, RouteZ, _sceneRouteCount, RouteWidth * 0.5f, _sceneFrom.Y0);
             _sceneDirty = true;
         }
 
@@ -127,10 +114,6 @@ namespace RealLifeOverhaul.Nav
             if (!_sceneOn || _sceneFrom == null || !_sceneFrom.Ready || !_mapOn || _mapHeight <= 0f)
             {
                 return;
-            }
-            if (_sceneRouteStale)
-            {
-                SceneRouteNow();
             }
             int width = Mathf.Clamp(Mathf.RoundToInt(ViewWidth * Screen.height / 2160f), 96, 1024);
             int height = Mathf.Clamp(Mathf.RoundToInt(_mapHeight * Screen.height / 2160f), 96, 1024);
@@ -152,15 +135,21 @@ namespace RealLifeOverhaul.Nav
                 float y0 = _sceneFrom.Y0;
                 _sceneView.Look(tx, py - y0, tz, turn, _sceneTilted ? TiltPitch : 89.5f, metresAcross, width / (float)height);
                 _sceneFrom.Scene.Refresh();
-                var frame = new Map25Frame { Player = true, PlayerX = px, PlayerY = py - y0, PlayerZ = pz, Heading = heading, ConeRadius = metresAcross * 0.30f, Fog = _sceneTilted };
+                // the route, the cone and the halo are a few pixels of the picture, as the mockup has them: their metres are what a pixel is at the player
+                float mpp = _sceneView.MetresPerPixel(tx, 0f, tz, width);
+                _sceneFrom.Scene.SetRouteHalf(Map25Marks.Step(Map25Marks.RouteHalf(true, width, mpp)));
+                var frame = new Map25Frame
+                {
+                    Player = true, PlayerX = px, PlayerY = py - y0, PlayerZ = pz, Heading = heading, Fog = _sceneTilted,
+                    ConeRadius = Map25Marks.ConeMetres(true, width, mpp), HaloRadius = Map25Marks.HaloMetres(true, width, mpp)
+                };
                 _sceneFrom.Scene.Draw(_sceneTarget, _sceneView, frame, 1);
                 if (!_sceneProbed)
                 {
                     _sceneProbed = true;
-                    SceneBroken = Map25Scene.Blank(_sceneTarget);
-                    if (SceneBroken)
+                    if (Map25Scene.Blank(_sceneTarget) && NavMapLatch.Mark(NavMapLatch.Minimap))
                     {
-                        Logger?.Warn("Navigation: the minimap's 2.5D picture drew nothing (it is black), so the minimap stays flat.");
+                        Logger?.Warn("Navigation: the minimap's 2.5D picture drew nothing (it is black), so the minimap stays flat for this session.");
                     }
                 }
                 _sceneX = px;

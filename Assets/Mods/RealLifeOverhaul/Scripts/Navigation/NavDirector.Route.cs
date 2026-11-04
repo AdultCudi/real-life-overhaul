@@ -480,12 +480,12 @@ namespace RealLifeOverhaul.Nav
                 _hud.RouteX = _lineX;
                 _hud.RouteZ = _lineZ;
                 _hud.Route(_lineCount);
-                _hud.SceneRoute(_lineY, _lineCount);
             }
             if (_map != null)
             {
                 _map.SetRoute(_lineX, _lineY, _lineZ, _lineCount);
             }
+            FeedRoute();
         }
 
         // The two lines, each put together again only when a figure in it has changed.

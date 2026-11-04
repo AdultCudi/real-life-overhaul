@@ -4,8 +4,8 @@ namespace RealLifeOverhaul.Map25
 {
     /// <summary>
     /// How the map is seen: a camera, either one of the minimap's own (a point, the way up the picture, a pitch, how many metres
-    /// across) or the game's (its two matrices, copied), with the planes of its view, the place a point has on the picture and
-    /// the place on the ground a point of the picture shows. <see cref="Rise"/> is how tall the blocks stand: 1 from a pitch of 60
+    /// across) or the game's (its two matrices, copied and lowered to the scene's ground), with the planes of its view, the place a
+    /// point has on the picture and the metres a pixel is. <see cref="Rise"/> is how tall the blocks stand: 1 from a pitch of 60
     /// degrees down, 0 from 80 up, so seen from above the map is flat. Arrays are made once; setting the view allocates nothing.
     /// </summary>
     public sealed class Map25View
@@ -40,11 +40,19 @@ namespace RealLifeOverhaul.Map25
             Finish();
         }
 
-        /// <summary>The game's camera, from the matrices it has this frame (the world to the camera, and the projection that went with it).</summary>
-        public void Set(float[] view, float[] projection, float pitchDegrees)
+        /// <summary>
+        /// The game's camera, from the matrices it has this frame (the world to the camera, and the projection that went with it). The
+        /// scene's ground plane is the world's lowered by <paramref name="lowerBy"/> metres (the median street), so the view is moved the
+        /// same: a scene point (x, y, z) is the world's (x, y + lowerBy, z), and the picture lies exactly where the game's own city does.
+        /// </summary>
+        public void Set(float[] view, float[] projection, float pitchDegrees, float lowerBy)
         {
             Array.Copy(view, View, 16);
             Array.Copy(projection, Projection, 16);
+            for (int r = 0; r < 4; r++)
+            {
+                View[12 + r] += lowerBy * View[4 + r];
+            }
             PitchDegrees = pitchDegrees;
             Rise = RiseOf(pitchDegrees);
             Finish();
@@ -81,6 +89,47 @@ namespace RealLifeOverhaul.Map25
         public bool Project(float x, float y, float z, out float u, out float v)
         {
             return Map25Math.Project(ViewProjection, x, y, z, out u, out v);
+        }
+
+        /// <summary>
+        /// How many metres one pixel of a picture <paramref name="pixelsAcross"/> wide spans at a place (along the way the camera's right hand
+        /// goes on the ground): what a line or a cone of a few pixels is in metres there. 1 when the place is behind the camera.
+        /// </summary>
+        public float MetresPerPixel(float x, float y, float z, int pixelsAcross)
+        {
+            float rx = View[0], rz = View[8];
+            float l = (float)Math.Sqrt(rx * rx + rz * rz);
+            if (l < 1e-4f)
+            {
+                return 1f;
+            }
+            rx /= l;
+            rz /= l;
+            if (!Project(x - rx * 0.5f, y, z - rz * 0.5f, out float u0, out _) || !Project(x + rx * 0.5f, y, z + rz * 0.5f, out float u1, out _))
+            {
+                return 1f;
+            }
+            float pixelsPerMetre = Math.Abs(u1 - u0) * pixelsAcross;
+            return pixelsPerMetre > 1e-4f ? 1f / pixelsPerMetre : 1f;
+        }
+
+        /// <summary>The place on the scene's ground (y = 0) that the middle of the picture shows; false when the camera does not look down at it.</summary>
+        public bool GroundAhead(out float x, out float z)
+        {
+            float ex = -(View[0] * View[12] + View[1] * View[13] + View[2] * View[14]);
+            float ey = -(View[4] * View[12] + View[5] * View[13] + View[6] * View[14]);
+            float ez = -(View[8] * View[12] + View[9] * View[13] + View[10] * View[14]);
+            float fx = -View[2], fy = -View[6], fz = -View[10];
+            if (fy > -0.02f)
+            {
+                x = ex;
+                z = ez;
+                return false;
+            }
+            float t = -ey / fy;
+            x = ex + fx * t;
+            z = ez + fz * t;
+            return true;
         }
 
         /// <summary>Whether a chunk's box (with its blocks standing <see cref="Rise"/> as tall) is in view.</summary>

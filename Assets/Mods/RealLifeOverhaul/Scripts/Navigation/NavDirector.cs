@@ -65,7 +65,8 @@ namespace RealLifeOverhaul.Nav
             Instance = this;
             NavMarks.Reset();
             _onMap = Guard.Wrap<bool>(OnMap);
-            MapParts.Add("route on the map", MapLook);   // asked after the map shut, with Developer diagnostics on (Diagnostics/SessionWatch.Map)
+            MapParts.Add("route on the map", MapLook);   // asked after the map shut, with Developer diagnostics on (Diagnostics/SessionWatch.Map); the 2.5D picture is in it
+            NavBridges.MapLooks = PokeMap;                // the district view changed a zone's colour: the picture looks at the zones again
             OtherMods.Look(Logger);   // done once for the city already; a loop over the table
             _voogle = OtherMods.VoogleRoute.Loaded;
             ScenePrewarm.AddLate("navigation: the road graph, the walking graph and the minimap's two pictures being made", PrewarmRoads);
@@ -102,6 +103,10 @@ namespace RealLifeOverhaul.Nav
         private void OnDestroy()
         {
             GlobalEvents.onCityMapToggle -= _onMap;
+            if (NavBridges.MapLooks == (Action)PokeMap)
+            {
+                NavBridges.MapLooks = null;
+            }
             Remove();
             _base.Drop(false);   // the picture is kept for the next load of the same city
             SceneRemove();
@@ -237,6 +242,8 @@ namespace RealLifeOverhaul.Nav
             }
             BaseWanted(wantMap);
             SceneWanted(wantMap);
+            BaseRedraw();
+            bool inGame = SaveGameManager.Current != null && !LoadScene.isLoading;
             if (!wantMap && !wantGps)
             {
                 if (_hud != null || _map != null || _hasGoal)
@@ -247,22 +254,22 @@ namespace RealLifeOverhaul.Nav
                 {
                     _graph.Step();   // the 2.5D city map alone is on: its roads are still made a step a tick
                 }
+                if (inGame && Settings.Map25 && !_voogle)
+                {
+                    KeepMapEvent();   // the 2.5D city map needs the map's own event whatever the minimap and the GPS are
+                }
                 return;
             }
             if (!_graph.Finished)
             {
                 _graph.Step();   // one step a tick, where the prewarm could not make it
             }
-            if (SaveGameManager.Current == null || LoadScene.isLoading)
+            if (!inGame)
             {
                 Show(false);
                 return;
             }
-            EventHold.Keep(ref GlobalEvents.onCityMapToggle, _onMap, ref _mapSeen);   // the game clears its events on every load
-            if (CityMap.IsOpen != _mapOpen)
-            {
-                OnMap(CityMap.IsOpen);
-            }
+            KeepMapEvent();
             if (!wantGps && _map != null)
             {
                 UnityEngine.Object.Destroy(_map.gameObject);   // the GPS was switched off: nothing of it stays on the city map
@@ -338,6 +345,16 @@ namespace RealLifeOverhaul.Nav
                                  + Mathf.RoundToInt(_hud.ViewHeight) + " units; road picture " + (_graph.Picture != null ? "there" : "not there yet") + "; "
                                  + NavMarks.All.Count + " places known, " + NavHud.Pool + " markers pooled.");
                 }
+            }
+        }
+
+        // The game clears its events on every load: the one for the city map opening is held, and the map's state is looked at when the event was missed.
+        private void KeepMapEvent()
+        {
+            EventHold.Keep(ref GlobalEvents.onCityMapToggle, _onMap, ref _mapSeen);
+            if (CityMap.IsOpen != _mapOpen)
+            {
+                OnMap(CityMap.IsOpen);
             }
         }
 

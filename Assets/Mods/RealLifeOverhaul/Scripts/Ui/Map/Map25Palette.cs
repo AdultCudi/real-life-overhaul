@@ -45,6 +45,7 @@ namespace RealLifeOverhaul.Map25
     {
         public static readonly Map25Colour Water = Map25Colour.Hex(0x0F2233);
         public static readonly Map25Colour Block = Map25Colour.Hex(0x1D2B38);
+        public static readonly Map25Colour Park = Map25Colour.Hex(0x1D3A35);
         public static readonly Map25Colour Avenue = Map25Colour.Hex(0x2F4357);
         public static readonly Map25Colour Street = Map25Colour.Hex(0x2A3D50);
         public static readonly Map25Colour Window = Map25Colour.Hex(0xA9C0D3);
@@ -55,7 +56,10 @@ namespace RealLifeOverhaul.Map25
         public static readonly Map25Colour Rooftop = Map25Colour.Hex(0x6F7D8A);
         public static readonly Map25Colour Tank = Map25Colour.Hex(0x5A4A3E);
         public static readonly Map25Colour TankTop = Map25Colour.Hex(0x76644F);
+        public static readonly Map25Colour TankCone = Map25Colour.Hex(0x675645);
         public static readonly Map25Colour Leg = Map25Colour.Hex(0x2C3238);
+        public static readonly Map25Colour TreeBase = Map25Colour.Hex(0x2F6B55);
+        public static readonly Map25Colour TreeTop = Map25Colour.Hex(0x3B8466);
 
         public static readonly Map25Colour[] Tones =
         {
@@ -71,7 +75,19 @@ namespace RealLifeOverhaul.Map25
         public const float TintShare = 0.68f;
 
         /// <summary>The same for the white of the game's hover and picked outline.</summary>
-        public const float HoverShare = 0.40f;
+        public const float HoverShare = 0.28f;
+
+        /// <summary>
+        /// How much of a window pane is the window colour, and how much of the wall under it shows through (the mockup's dashes: 24 per cent
+        /// opacity of a colour 70 per cent window).
+        /// </summary>
+        public const float PaneAlpha = 0.24f, PaneShare = 0.70f, LitAlpha = 0.75f;
+
+        /// <summary>The ground ring round a tinted building: the tint over the ground at this opacity, and its outline at the other.</summary>
+        public const float RingFill = 0.20f, RingLine = 0.62f;
+
+        /// <summary>The distance in metres from the ground at which the foot of a wall has lost its darkening (see <see cref="Foot"/>).</summary>
+        public const float FootKnee = 12f, FootEnd = 28f;
 
         /// <summary>How light a wall is by the way it faces (the outward normal in the plan, x east, z north): west walls lightest, east darkest.</summary>
         public static float WallFactor(float nx, float nz)
@@ -80,20 +96,23 @@ namespace RealLifeOverhaul.Map25
             return 0.72f + 0.20f * l;
         }
 
-        /// <summary>The darkening at the foot of a wall, as a share of its colour: 0.55 at the ground, 0.14 at 42 per cent of its height, none at the top.</summary>
-        public static float Foot(float t)
+        /// <summary>
+        /// The darkening at the foot of a wall, as a share of its colour, by the metres above the ground it is at: 0.55 at the ground, 0.14 at 12 m, none from 28 m.
+        /// (The mockups' gradient is a share of a 28 m wall; in metres a tall wall's foot is no taller than a low one's.)
+        /// </summary>
+        public static float Foot(float metres)
         {
-            if (t <= 0f)
+            if (metres <= 0f)
             {
                 return 0.55f;
             }
-            if (t < 0.42f)
+            if (metres < FootKnee)
             {
-                return 0.55f + (0.14f - 0.55f) * (t / 0.42f);
+                return 0.55f + (0.14f - 0.55f) * (metres / FootKnee);
             }
-            if (t < 1f)
+            if (metres < FootEnd)
             {
-                return 0.14f * (1f - (t - 0.42f) / 0.58f);
+                return 0.14f * (1f - (metres - FootKnee) / (FootEnd - FootKnee));
             }
             return 0f;
         }

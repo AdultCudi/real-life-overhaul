@@ -42,6 +42,12 @@ namespace RealLifeOverhaul.Nav
 
         /// <summary>True for a building of the game's list that the mod made: left out when the city is measured, so the kept file is the game's city alone. Default: none.</summary>
         public static Func<CityBuildingController, bool> NotMeasured;
+
+        /// <summary>
+        /// Called by the one that changes how something on the open city map looks without the game telling anyone (the district view putting a colour on a zone): the
+        /// 2.5D picture, which draws the zones into its own picture, looks at them again. Set by the director; null when it is not there. Default: none.
+        /// </summary>
+        public static Action MapLooks;
     }
 
     /// <summary>The feature's words with their {placeholders} filled in; called when a line changes, never per frame.</summary>

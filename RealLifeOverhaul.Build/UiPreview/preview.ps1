@@ -39,6 +39,8 @@ $gameFiles = @('UiGame*.cs', 'UiDirector*.cs', 'UiText.cs', 'UiGuide.cs')
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money') -Filter *.cs -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike '*Live.cs' -and $_.Name -notlike '*Live.*.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\News') -Filter *.cs -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike 'NewsLive*.cs' -and $_.Name -ne 'NewsPeopleRules.cs' -and $_.Name -ne 'NewsReadingPage.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map') -Filter *.cs -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike '*Live.cs' -and $_.Name -notlike '*Live.*.cs' -and $_.Name -notlike '*Game.cs' -and $_.Name -notlike '*Screen.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
+# The 2.5D map's made-up city and the owner's real footprints are preview and check code, kept out of the mod: they come from the shared build folder.
+@('Map25Fixture.cs', 'Map25Real.cs') | ForEach-Object { Copy-Item (Join-Path $repo (Join-Path 'RealLifeOverhaul.Build\Shared' $_)) (Join-Path $preview 'Kit') }
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui') -Filter *.cs | Where-Object {
     $name = $_.Name
     -not ($gameFiles | Where-Object { $name -like $_ })

@@ -65,14 +65,16 @@ namespace RealLifeOverhaul.Nav
                 _map.Clicks = true;
                 _map.Open(open);
             }
+            ArrangeMap();   // both are there now: the picture first, the route over it
         }
 
-        // The map check after the map shut (Diagnostics/SessionWatch.Map): the route's object off with the map.
+        // The map check after the map shut (Diagnostics/SessionWatch.Map): the route's object off with the map, and the 2.5D picture, its texture, the game's
+        // camera's mask and tilt and the tints given back (what the mod draws for the open map is one part of it).
         private int MapLook(StringBuilder line)
         {
             bool shown = _map != null && _map.gameObject.activeSelf;
-            line?.Append("route on the map: ").Append(_mapOpen ? "still as for the open map" : shown ? "its object still shown" : "off with the map");
-            return _mapOpen || shown ? 1 : 0;
+            line?.Append("route on the map: ").Append(_mapOpen ? "still as for the open map" : shown ? "its object still shown" : "off with the map").Append("; ");
+            return (_mapOpen || shown ? 1 : 0) + Map25Look(line);
         }
 
         // Two clicks on one spot of the open map: that spot is the destination.

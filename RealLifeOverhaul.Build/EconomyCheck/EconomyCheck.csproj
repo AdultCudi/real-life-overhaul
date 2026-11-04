@@ -847,7 +847,17 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Blocks.cs" Link="Mod\Map25Blocks.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Set.cs" Link="Mod\Map25Set.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Ground.cs" Link="Mod\Map25Ground.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Fixture.cs" Link="Mod\Map25Fixture.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Height.cs" Link="Mod\Map25Height.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Layer.cs" Link="Mod\Map25Layer.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Blocks.Panes.cs" Link="Mod\Map25Blocks.Panes.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Blocks.Props.cs" Link="Mod\Map25Blocks.Props.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Blocks.Contact.cs" Link="Mod\Map25Blocks.Contact.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Under.cs" Link="Mod\Map25Under.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Zones.cs" Link="Mod\Map25Zones.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Marks.cs" Link="Mod\Map25Marks.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Navigation\NavMapLights.cs" Link="Mod\NavMapLights.cs" />
+    <Compile Include="..\Shared\Map25Fixture.cs" Link="Shared\Map25Fixture.cs" />
+    <Compile Include="..\Shared\Map25Real.cs" Link="Shared\Map25Real.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25View.cs" Link="Mod\Map25View.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiForeignMark.cs" Link="Mod\UiForeignMark.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiBreaker.cs" Link="Mod\UiBreaker.cs" />

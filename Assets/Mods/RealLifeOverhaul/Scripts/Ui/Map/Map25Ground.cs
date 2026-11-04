@@ -6,19 +6,28 @@ namespace RealLifeOverhaul.Map25
     /// <summary>
     /// What lies under the blocks, from the data the minimap already keeps: the land as a smooth outline (marching squares over
     /// the 8 m water grid, so a coast is a line and not steps), the roads as a band along every lane (the same 4.6 m the flat
-    /// minimap draws), and the lines of the GPS (the route as one strip, the player's view cone). In 192 m chunks like the blocks,
-    /// built once on a pool thread. Game-free.
+    /// minimap draws) with a dashed lane line on the avenues, the trees the game keeps and the green ground where they stand close
+    /// together, and the small things that change while the map is open (a ring on the ground round a tinted building, the game's
+    /// neighbourhood zones, the route and the player's view cone). In 192 m chunks like the blocks, built once on a pool thread. Game-free.
     /// </summary>
     public static class Map25Ground
     {
         public const float RoadHalf = 2.3f;        // metres either side of a lane's middle
         public const float FastLane = 12f;         // metres a second from which a road is an avenue, drawn a little lighter
+        public const float LaneEdge = 1.7f;        // metres a lane's marking lies to the left of its middle
+        public const float DashHalf = 0.13f;       // half the width of a dash of lane marking
+        public const float DashLong = 4f;          // metres: a dash is this long on a lane edge of 9 m or more, and a share of the edge on a shorter one
+        public const float TreeCell = 10f;         // metres: the squares the trees are counted in
+        public const int GreenTrees = 7;           // trees in the nine squares round one before it is green ground (a row of street trees on each side of an avenue has six at the most)
 
         private const int Flush = 58000;
 
-        /// <summary>The roads: every lane that costs nothing extra (not a change of lane) between two usable points, one chunk a cell.</summary>
+        /// <summary>
+        /// The roads: every lane that costs nothing extra (not a change of lane) between two usable points, one chunk a cell; and, in
+        /// <paramref name="lanes"/>, the lane marking of the avenues over them (one dash a lane edge, on the left of the lane, where it meets the oncoming lane's).
+        /// </summary>
         public static Map25Chunk[] Roads(float[] x, float[] y, float[] z, int[] edgeStart, int[] edgeTo, float[] edgeExtra, bool[] usable, float[] speed, int count,
-                                         float originX, float originZ, float width, float height, float y0)
+                                         float originX, float originZ, float width, float height, float y0, out Map25Chunk[] lanes)
         {
             int cellsX = Math.Max(1, (int)(width / Map25Set.Cell) + 1), cellsZ = Math.Max(1, (int)(height / Map25Set.Cell) + 1);
             int edges = 0;
@@ -71,7 +80,10 @@ namespace RealLifeOverhaul.Map25
                 order[counts[cellOf[k]] + fill[cellOf[k]]++] = k;
             }
             var chunks = new List<Map25Chunk>(64);
+            var dashChunks = new List<Map25Chunk>(32);
             var b = new Map25Builder(8192);
+            var d = new Map25Builder(2048);
+            Map25Colour marking = Map25Palette.Avenue.Mix(new Map25Colour(1f, 1f, 1f), 0.20f);
             for (int c = 0; c < cellsX * cellsZ; c++)
             {
                 for (int at = counts[c]; at < counts[c + 1]; at++)
@@ -98,8 +110,43 @@ namespace RealLifeOverhaul.Map25
                 {
                     chunks.Add(b.ToChunk());
                 }
+                // the marking of the cell's avenues, after all its roads, so no band of a later lane is laid over it
+                for (int at = counts[c]; at < counts[c + 1]; at++)
+                {
+                    int i = from[order[at]], j = to[order[at]];
+                    if (speed == null || speed[i] < FastLane)
+                    {
+                        continue;
+                    }
+                    if (d.Vertices > Flush)
+                    {
+                        dashChunks.Add(d.ToChunk());
+                    }
+                    Dash(d, x[i], z[i], x[j], z[j], (y[i] + y[j]) * 0.5f - y0 + 0.05f, marking);
+                }
+                if (d.Vertices > 0)
+                {
+                    dashChunks.Add(d.ToChunk());
+                }
             }
+            lanes = dashChunks.ToArray();
             return chunks.ToArray();
+        }
+
+        /// <summary>One dash of lane marking on a lane's left edge, in the middle of the lane's piece between two points: 4 m long, or half of a shorter piece.</summary>
+        public static void Dash(Map25Builder b, float x0, float z0, float x1, float z1, float y, Map25Colour colour)
+        {
+            float dx = x1 - x0, dz = z1 - z0;
+            float l = (float)Math.Sqrt(dx * dx + dz * dz);
+            if (l < 1f)
+            {
+                return;
+            }
+            float ux = dx / l, uz = dz / l;
+            float length = l >= DashLong * 2.25f ? DashLong : l * 0.45f;
+            float mx = (x0 + x1) * 0.5f - uz * LaneEdge, mz = (z0 + z1) * 0.5f + ux * LaneEdge;
+            float hx = ux * length * 0.5f, hz = uz * length * 0.5f, wx = -uz * DashHalf, wz = ux * DashHalf;
+            b.Flat(mx - hx + wx, y, mz - hz + wz, mx + hx + wx, y, mz + hz + wz, mx + hx - wx, y, mz + hz - wz, mx - hx - wx, y, mz - hz - wz, colour, 1f);
         }
 
         /// <summary>
@@ -217,6 +264,219 @@ namespace RealLifeOverhaul.Map25
                 }
             }
             return m;
+        }
+
+        /// <summary>
+        /// The green ground of the parks, from the trees: a <see cref="TreeCell"/> metre square is green when at least <see cref="GreenTrees"/>
+        /// trees stand in it and the eight round it (a thicket and a park are, a row of street trees is not). The game keeps no polygon of
+        /// a park, only its trees (TreeController.AllTrees), so a park is where they stand together. Squares along a row are joined; chunks as the land's.
+        /// </summary>
+        public static Map25Chunk[] Greens(float[] x, float[] z, int count, float minX, float minZ, float maxX, float maxZ, float y)
+        {
+            int columns = Math.Max(1, (int)((maxX - minX) / TreeCell) + 3), rows = Math.Max(1, (int)((maxZ - minZ) / TreeCell) + 3);
+            var trees = new byte[columns * rows];
+            for (int i = 0; i < count; i++)
+            {
+                int gx = (int)((x[i] - minX) / TreeCell) + 1, gz = (int)((z[i] - minZ) / TreeCell) + 1;
+                if (gx >= 1 && gx < columns - 1 && gz >= 1 && gz < rows - 1 && trees[gz * columns + gx] < 255)
+                {
+                    trees[gz * columns + gx]++;
+                }
+            }
+            int block = Math.Max(1, (int)Math.Round(Map25Set.Cell / TreeCell));
+            var chunks = new List<Map25Chunk>(32);
+            var b = new Map25Builder(1024);
+            float originX = minX - TreeCell, originZ = minZ - TreeCell;
+            for (int bz = 0; bz < rows; bz += block)
+            {
+                for (int bx = 0; bx < columns; bx += block)
+                {
+                    for (int gz = bz; gz < Math.Min(bz + block, rows); gz++)
+                    {
+                        int run = -1;
+                        for (int gx = bx; gx <= Math.Min(bx + block, columns); gx++)
+                        {
+                            bool green = false;
+                            if (gx < Math.Min(bx + block, columns) && gx > 0 && gx < columns - 1 && gz > 0 && gz < rows - 1)
+                            {
+                                int near = 0;
+                                for (int k = 0; k < 9; k++)
+                                {
+                                    near += trees[(gz + k / 3 - 1) * columns + gx + k % 3 - 1];
+                                }
+                                green = near >= GreenTrees;
+                            }
+                            if (green)
+                            {
+                                run = run < 0 ? gx : run;
+                                continue;
+                            }
+                            if (run >= 0)
+                            {
+                                float x0 = originX + run * TreeCell, x1 = originX + gx * TreeCell, z0 = originZ + gz * TreeCell;
+                                b.Flat(x0, y, z0, x1, y, z0, x1, y, z0 + TreeCell, x0, y, z0 + TreeCell, Map25Palette.Park, 1f);
+                                run = -1;
+                            }
+                        }
+                    }
+                    if (b.Vertices > 0)
+                    {
+                        chunks.Add(b.ToChunk());
+                    }
+                }
+            }
+            return chunks.ToArray();
+        }
+
+        /// <summary>
+        /// The trees: each a six sided dome (a base ring on a trunk's height, a ring a little narrower and higher, and a point), in two
+        /// greens, 13 vertices and 18 triangles, its size and turn taken from its place so every machine draws the same tree. Drawn with the blocks, so a flat map has a flat disc.
+        /// One chunk a cell.
+        /// </summary>
+        public static Map25Chunk[] Trees(float[] x, float[] z, int count, float minX, float minZ, float maxX, float maxZ, float y)
+        {
+            int cellsX = Math.Max(1, (int)((maxX - minX) / Map25Set.Cell) + 1), cellsZ = Math.Max(1, (int)((maxZ - minZ) / Map25Set.Cell) + 1);
+            var cellOf = new int[count];
+            var counts = new int[cellsX * cellsZ + 1];
+            for (int i = 0; i < count; i++)
+            {
+                int gx = Math.Min(cellsX - 1, Math.Max(0, (int)((x[i] - minX) / Map25Set.Cell)));
+                int gz = Math.Min(cellsZ - 1, Math.Max(0, (int)((z[i] - minZ) / Map25Set.Cell)));
+                cellOf[i] = gz * cellsX + gx;
+                counts[cellOf[i] + 1]++;
+            }
+            for (int c = 0; c < cellsX * cellsZ; c++)
+            {
+                counts[c + 1] += counts[c];
+            }
+            var order = new int[count];
+            var fill = new int[cellsX * cellsZ];
+            for (int i = 0; i < count; i++)
+            {
+                order[counts[cellOf[i]] + fill[cellOf[i]]++] = i;
+            }
+            var chunks = new List<Map25Chunk>(32);
+            var b = new Map25Builder(4096);
+            for (int c = 0; c < cellsX * cellsZ; c++)
+            {
+                for (int at = counts[c]; at < counts[c + 1]; at++)
+                {
+                    if (b.Vertices > Flush)
+                    {
+                        chunks.Add(b.ToChunk());
+                    }
+                    int i = order[at];
+                    Tree(b, x[i], z[i], y, TreeSeed(x[i], z[i]));
+                }
+                if (b.Vertices > 0)
+                {
+                    chunks.Add(b.ToChunk());
+                }
+            }
+            return chunks.ToArray();
+        }
+
+        /// <summary>The seed of a tree standing at a place: the same place gives the same tree.</summary>
+        public static uint TreeSeed(float x, float z)
+        {
+            return (uint)((int)(x * 4f) * 73856093) ^ (uint)((int)(z * 4f) * 19349663);
+        }
+
+        private static void Tree(Map25Builder b, float cx, float cz, float y, uint seed)
+        {
+            var rng = new Map25Rng(seed);
+            float r = rng.Range(2.6f, 4.4f), turn = rng.Float() * 1.0472f;
+            Map25Colour low = Map25Palette.TreeBase.Scale(0.86f), mid = Map25Palette.TreeBase.Mix(Map25Palette.TreeTop, 0.5f), high = Map25Palette.TreeTop;
+            float yb = y + 1.8f, ym = yb + 0.9f * r;
+            int apex = b.Vertex(cx, yb + 1.5f * r, cz, high);
+            var ring = new int[12];
+            for (int s = 0; s < 6; s++)
+            {
+                float a = turn + s * 1.0472f;
+                float ca = (float)Math.Cos(a), sa = (float)Math.Sin(a);
+                ring[s] = b.Vertex(cx + ca * 0.72f * r, ym, cz + sa * 0.72f * r, mid);
+                ring[6 + s] = b.Vertex(cx + ca * r, yb, cz + sa * r, low);
+            }
+            for (int s = 0; s < 6; s++)
+            {
+                int n = (s + 1) % 6;
+                b.Triangle(apex, ring[n], ring[s]);
+                b.Quad(ring[s], ring[n], ring[6 + n], ring[6 + s]);
+            }
+        }
+
+        /// <summary>
+        /// A ring on the ground round a tinted building, in its tint: the footprint grown <paramref name="grow"/> metres, filled faintly, with a
+        /// stronger line of <paramref name="line"/> metres round its edge. It reads when a taller block hides the building.
+        /// </summary>
+        public static void Ring(Map25Builder b, Map25City city, int hull, Map25Colour colour, float grow, float line, float y)
+        {
+            int start = city.HullStart[hull], n = city.HullStart[hull + 1] - start;
+            if (n < 3 || n > 32)
+            {
+                return;
+            }
+            var x = new float[n];
+            var z = new float[n];
+            var ox = new float[n];
+            var oz = new float[n];
+            var ix = new float[n];
+            var iz = new float[n];
+            for (int k = 0; k < n; k++)
+            {
+                x[k] = city.HullX[start + k];
+                z[k] = city.HullZ[start + k];
+            }
+            Map25Blocks.Inset(x, z, n, -grow, ox, oz);
+            Map25Blocks.Inset(x, z, n, -(grow - line), ix, iz);
+            int first = b.Vertex(ix[0], y, iz[0], colour, Map25Palette.RingFill);
+            int prev = b.Vertex(ix[1], y, iz[1], colour, Map25Palette.RingFill);
+            for (int k = 2; k < n; k++)
+            {
+                int next = b.Vertex(ix[k], y, iz[k], colour, Map25Palette.RingFill);
+                b.Triangle(first, prev, next);
+                prev = next;
+            }
+            for (int k = 0; k < n; k++)
+            {
+                int f = (k + 1) % n;
+                b.Flat(ox[k], y, oz[k], ox[f], y, oz[f], ix[f], y, iz[f], ix[k], y, iz[k], colour, Map25Palette.RingLine);
+            }
+        }
+
+        /// <summary>
+        /// The outline of a tinted building's roof, <paramref name="line"/> metres wide, at the roof's height: drawn over the blocks, so a taller
+        /// one cannot hide where the building is.
+        /// </summary>
+        public static void RoofLine(Map25Builder b, Map25City city, int hull, Map25Colour colour, float line, float alpha)
+        {
+            int start = city.HullStart[hull], n = city.HullStart[hull + 1] - start;
+            if (n < 3 || n > 32)
+            {
+                return;
+            }
+            var x = new float[n];
+            var z = new float[n];
+            var ox = new float[n];
+            var oz = new float[n];
+            for (int k = 0; k < n; k++)
+            {
+                x[k] = city.HullX[start + k];
+                z[k] = city.HullZ[start + k];
+            }
+            Map25Blocks.Inset(x, z, n, -line, ox, oz);
+            float y = city.BaseY[hull] + city.Height[hull];
+            for (int k = 0; k < n; k++)
+            {
+                int f = (k + 1) % n;
+                b.Flat(ox[k], y, oz[k], ox[f], y, oz[f], x[f], y, z[f], x[k], y, z[k], colour, alpha);
+            }
+        }
+
+        /// <summary>A zone of the game's neighbourhood layer: four corners round, in a colour with its own opacity, flat at <paramref name="y"/>.</summary>
+        public static void Zone(Map25Builder b, float x0, float z0, float x1, float z1, float x2, float z2, float x3, float z3, Map25Colour colour, float alpha, float y)
+        {
+            b.Flat(x0, y, z0, x1, y, z1, x2, y, z2, x3, y, z3, colour, alpha);
         }
 
         /// <summary>

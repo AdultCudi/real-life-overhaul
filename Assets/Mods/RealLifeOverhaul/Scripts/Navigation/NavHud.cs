@@ -129,7 +129,7 @@ namespace RealLifeOverhaul.Nav
         public void SetPicture(Texture picture)
         {
             _roadsImage.texture = picture;
-            _roadsImage.enabled = picture != null && !_alone;
+            _roadsImage.enabled = picture != null && !_alone && !_sceneOn;   // the 2.5D picture is the minimap's ground while it is on
             _px = float.MaxValue;
         }
 
@@ -145,7 +145,7 @@ namespace RealLifeOverhaul.Nav
             _baseWidth = worldWidth;
             _baseHeight = worldHeight;
             _baseImage.texture = picture;
-            _baseImage.enabled = picture != null && worldWidth > 0f && worldHeight > 0f;
+            _baseImage.enabled = picture != null && worldWidth > 0f && worldHeight > 0f && !_sceneOn;
             _px = float.MaxValue;
         }
 
@@ -157,7 +157,7 @@ namespace RealLifeOverhaul.Nav
                 return;
             }
             _alone = alone;
-            _roadsImage.enabled = !alone && _roadsImage.texture != null;
+            _roadsImage.enabled = !alone && _roadsImage.texture != null && !_sceneOn;
             _spin.gameObject.SetActive(!alone);
         }
 

@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Threading;
@@ -10,18 +11,20 @@ namespace RealLifeOverhaul.Nav
 {
     /// <summary>
     /// The 2.5D map's city, made once from what the minimap already measured (<see cref="NavBaseData"/>: every building's outline,
-    /// its ground and height, the water grid) and the road graph: the blocks in two details (the full map's and the minimap's),
-    /// the land and the roads, all in chunks. The arithmetic runs on a pool thread from arrays nothing else writes (about 30 ms
-    /// outside the game); the meshes are made on the main thread a slice a frame (at most 0.6 ms). Nothing is made until the
-    /// minimap's base is, and nothing at all with both options off. A tint is a write to the few vertices of one building in two
-    /// meshes. Cost a frame once made: none (the picture is drawn by <see cref="NavMap25"/> and the panel, and only when the view moves).
+    /// its ground and height, the water grid), the road graph and the game's trees: the blocks in two details (the full map's and the minimap's),
+    /// the land, the green ground of the parks, the roads with their lane marking and the trees, all in chunks. The arithmetic runs on a pool thread
+    /// from arrays nothing else writes (about 50 ms outside the game); the meshes are made on the main thread a slice a frame (at most 0.6 ms).
+    /// Nothing is made until the minimap's base is, and nothing at all with both options off. A tint is a write to the few vertices of one
+    /// building in the full map's meshes. Cost a frame once made: none (the picture is drawn by <see cref="NavMap25"/> and the panel, and only when the view moves).
     /// </summary>
     public sealed class NavScene
     {
         public static IModLogger Logger;
 
         private const double SliceMilliseconds = 0.6;   // of a frame, while the meshes are made
-        private const float GroundY = -0.3f;            // the shadows' height under the scene's ground plane's zero
+        private const float GroundY = -0.3f;            // the contact patches' height under the scene's ground plane's zero
+        private const int MostTrees = 14000;            // trees taken from the game: past this, every second one
+        private const float MarksY = 0.08f;             // metres over the ground the rings round tinted buildings lie
 
         public enum Stage { Idle, Building, Uploading, Ready, Failed }
 
@@ -29,9 +32,11 @@ namespace RealLifeOverhaul.Nav
         {
             public NavBaseData Data;
             public NavGraph Graph;
+            public float[] TreeX, TreeZ;
+            public int Trees;
             public Map25City City;
             public Map25Set Full, Small;
-            public Map25Chunk[] Roads, Land;
+            public Map25Under Under;
             public float Y0;
             public volatile bool Done;
             public volatile string Fault;
@@ -46,9 +51,10 @@ namespace RealLifeOverhaul.Nav
                     Full = Map25Set.Build(City, Map25Detail.Full, GroundY);
                     Small = Map25Set.Build(City, Map25Detail.Small, GroundY);
                     RouteSearch roads = Graph.Drive;
-                    Roads = Map25Ground.Roads(roads.X, roads.Y, roads.Z, roads.EdgeStart, roads.EdgeTo, roads.EdgeExtra, Graph.Usable, Graph.Speed, roads.Count,
-                                              Graph.OriginX, Graph.OriginZ, Graph.WorldWidth, Graph.WorldHeight, Y0);
-                    Land = Map25Ground.Land(Data.Cells, Data.Columns, Data.Rows, Data.Cell, Data.OriginX, Data.OriginZ, GroundY * 0.5f);
+                    Under = Map25Under.Make(Data.Cells, Data.Columns, Data.Rows, Data.Cell, Data.OriginX, Data.OriginZ, GroundY * 0.5f,
+                                            roads.X, roads.Y, roads.Z, roads.EdgeStart, roads.EdgeTo, roads.EdgeExtra, Graph.Usable, Graph.Speed, roads.Count,
+                                            Graph.OriginX, Graph.OriginZ, Graph.WorldWidth, Graph.WorldHeight, Y0,
+                                            TreeX, TreeZ, Trees, City.MinX - 100f, City.MinZ - 100f, City.MaxX + 100f, City.MaxZ + 100f);
                     Milliseconds = watch.Elapsed.TotalMilliseconds;
                 }
                 catch (Exception e)
@@ -61,7 +67,8 @@ namespace RealLifeOverhaul.Nav
 
         private Job _job;
         private readonly Map25Blocks _generator = new Map25Blocks();
-        private readonly Map25Builder _scratch = new Map25Builder(4096);
+        private readonly Map25Builders _scratch = new Map25Builders(4096);
+        private int[] _marks = new int[0];
         private double _uploadMilliseconds;
         private int _uploadFrames;
 
@@ -77,7 +84,7 @@ namespace RealLifeOverhaul.Nav
         public bool Busy => State == Stage.Building || State == Stage.Uploading;
         public bool Ready => State == Stage.Ready && Scene != null;
 
-        /// <summary>Starts the pool thread's part; the base's data and the graph must be there and stay as they are.</summary>
+        /// <summary>Starts the pool thread's part; the base's data and the graph must be there and stay as they are. The game's trees are read here, on the main thread.</summary>
         public void Begin(NavBaseData data, NavGraph graph)
         {
             if (State != Stage.Idle || data == null || graph == null || !graph.Finished || data.Hulls == 0)
@@ -92,8 +99,34 @@ namespace RealLifeOverhaul.Nav
             }
             Data = data;
             _job = new Job { Data = data, Graph = graph };
+            ReadTrees(_job);
             State = Stage.Building;
             ThreadPool.QueueUserWorkItem(_job.Run);
+        }
+
+        // Where the game's trees stand (TreeController.AllTrees, which every tree joins as it starts): two arrays of places, once, a few hundred microseconds.
+        private static void ReadTrees(Job job)
+        {
+            List<TreeController> all = TreeController.AllTrees;
+            int stride = all.Count > MostTrees ? (all.Count + MostTrees - 1) / MostTrees : 1;
+            var x = new float[all.Count / stride + 1];
+            var z = new float[x.Length];
+            int n = 0;
+            for (int i = 0; i < all.Count; i += stride)
+            {
+                TreeController tree = all[i];
+                if (tree == null)
+                {
+                    continue;
+                }
+                Vector3 at = tree.transform.position;
+                x[n] = at.x;
+                z[n] = at.z;
+                n++;
+            }
+            job.TreeX = x;
+            job.TreeZ = z;
+            job.Trees = n;
         }
 
         /// <summary>
@@ -122,10 +155,11 @@ namespace RealLifeOverhaul.Nav
                 }
                 City = job.City;
                 Y0 = job.Y0;
-                Scene = new Map25Scene(new[] { job.Full, job.Small }, job.Land, job.Roads, City.MinX, City.MinZ, City.MaxX, City.MaxZ);
-                Summary = City.Count + " buildings, " + job.Full.Blocks.Length + " + " + job.Small.Blocks.Length + " block chunks (" + job.Full.Vertices + " + " + job.Small.Vertices + " vertices, "
-                          + job.Full.Triangles + " + " + job.Small.Triangles + " triangles), " + job.Land.Length + " land and " + job.Roads.Length + " road chunks, made in "
-                          + job.Milliseconds.ToString("F0", CultureInfo.InvariantCulture) + " ms off the main thread";
+                Scene = new Map25Scene(new[] { job.Full, job.Small }, job.Under, City.MinX, City.MinZ, City.MaxX, City.MaxZ);
+                CultureInfo plain = CultureInfo.InvariantCulture;
+                Summary = City.Count + " buildings, " + job.Full.Vertices + " + " + job.Small.Vertices + " block vertices (" + job.Full.Triangles + " + " + job.Small.Triangles + " triangles, "
+                          + job.Full.Layers[(int)Map25Kind.Panes].Vertices + " of them windows), " + job.Under.Land.Length + " land, " + job.Under.Roads.Length + " road and " + job.Under.Trees.Length
+                          + " tree chunks (" + job.Trees + " trees, " + job.Under.Greens.Length + " green), made in " + job.Milliseconds.ToString("F0", plain) + " ms off the main thread";
                 _job = null;
                 State = Stage.Uploading;
                 return true;
@@ -147,7 +181,10 @@ namespace RealLifeOverhaul.Nav
             return false;
         }
 
-        /// <summary>Gives building <paramref name="hull"/> a tint (the game's highlight colour), or takes it away; the blocks' colours are written at once. False when it was already so.</summary>
+        /// <summary>
+        /// Gives building <paramref name="hull"/> a tint (the game's highlight colour), or takes it away; the full map's blocks' colours are written at once (the
+        /// minimap's blocks show no highlight). False when it was already so.
+        /// </summary>
         public bool Tint(int hull, bool on, Color32 colour)
         {
             if (!Ready || hull < 0 || hull >= City.Count)
@@ -161,9 +198,30 @@ namespace RealLifeOverhaul.Nav
             }
             City.Tint[hull] = new Map25Colour(colour.r / 255f, colour.g / 255f, colour.b / 255f);
             City.TintShare[hull] = share;
-            // the first set is the full map's, the second the minimap's: a tint reaches both
             Scene.Retint(City, hull, _generator, _scratch);
             return true;
+        }
+
+        /// <summary>The rings and roof lines of the tinted buildings (not the hovered one, which is white) written again, after a pass that changed tints.</summary>
+        public void RefreshMarks()
+        {
+            if (!Ready)
+            {
+                return;
+            }
+            if (_marks.Length < City.Count)
+            {
+                _marks = new int[City.Count];
+            }
+            int count = 0;
+            for (int i = 0; i < City.Count; i++)
+            {
+                if (City.TintShare[i] == Map25Palette.TintShare)
+                {
+                    _marks[count++] = i;
+                }
+            }
+            Scene.SetMarks(City, _marks, count, MarksY);
         }
 
         private void Fail(string why)
