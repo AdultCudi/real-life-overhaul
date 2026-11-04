@@ -468,7 +468,7 @@ public static partial class UiPreviewRunner
                 if (own != null && own.faceInfo.pointSize > 0f)
                 {
                     var face = asset.faceInfo;
-                    float scale = face.pointSize / own.faceInfo.pointSize;
+                    float scale = (float)face.pointSize / own.faceInfo.pointSize;
                     face.ascentLine = own.faceInfo.ascentLine * scale;
                     face.descentLine = own.faceInfo.descentLine * scale;
                     face.lineHeight = own.faceInfo.lineHeight * scale;
