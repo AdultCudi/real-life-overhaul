@@ -408,6 +408,9 @@ internal static partial class UiSamples
         }
         if (!none)
         {
+            labels.Add(t("reallife_ui_bizops_rival_crew", "Nearest rival's crew"));
+            values.Add(t("reallife_ui_bizops_rival_crew_value", "{count} staff at {name}").Replace("{count}", "4").Replace("{name}", "Corner Roasters"));
+            warn.Add(false);
             labels.Add(t("reallife_ui_bizops_week_planned", "Week planned"));
             values.Add(t("reallife_ui_bizops_hours_of", "{count} of {most} h").Replace("{count}", full ? "212" : "0").Replace("{most}", "240"));
             warn.Add(true);
@@ -1093,6 +1096,7 @@ internal static partial class UiSamples
             OpsButton(t("bizman_schedule_manage_employee_tooltip", "Manage employee"), UiIcon.Person, false, true),
             OpsInfo(t("reallife_ui_bizops_output", "Output"), "36x Roasted coffee beans / hour", true),
             OpsInfo(t("reallife_ui_bizops_pace", "Pace"), t("reallife_ui_bizops_pace_minutes", "One every {minutes} min").Replace("{minutes}", "2"), true),
+            OpsInfo(t("reallife_ui_bizops_today", "This table today"), t("reallife_ui_bizops_today_line", "About {count} made, worth about {amount}").Replace("{count}", "180").Replace("{amount}", "$1,260"), true),
             OpsHeading(t("bizman_factory_material_consumption_title", "Material consumption"), true),
             OpsInfo("40x Green coffee beans", t("reallife_ui_bizops_in_stock", "{count} in stock").Replace("{count}", "1,860"), true),
             OpsInfo("4x Burlap sack", t("reallife_ui_bizops_in_stock", "{count} in stock").Replace("{count}", "12"), true),

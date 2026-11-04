@@ -226,6 +226,7 @@ namespace RealLifeOverhaul.Ui
                 // A panel of the game's over the world with keys of its own: the kit reads them, and takes them from the game when it answers the same.
                 _host.PointerOnly = !way.Keys;
                 _host.Exclusive = way.Exclusive;
+                _host.TakesInteract = way.Keys && !way.Exclusive && _screen is IUiGameInteract;
                 if (way.Blocks && _root.GetComponent<Image>() == null)
                 {
                     _root.AddComponent<Image>().color = new Color(0f, 0f, 0f, 0f);
@@ -449,6 +450,13 @@ namespace RealLifeOverhaul.Ui
             }
             if (_screen.Kind != UiGameKind.App)
             {
+                if (_screen.Kind == UiGameKind.Overlay && _screen is IUiGameWay keyed && keyed.Keys)
+                {
+                    // An overlay with keys of its own (Fred's card): the game's pause menu, options, blueprints, All apps, a box or another
+                    // mod's window over the world has the keys first, so Escape there is the game's, never this card's Skip.
+                    Hold(!UiForeignRules.KitHasOverlayKeys(global::UI.MiniMenu.MiniMenu.IsOpen || global::Scenes.MainMenu.Options.IsVisible
+                        || global::BlueprintsUI.BlueprintsPanel.IsOpen, global::UI.Smartphone.FullMenu.IsOpen, UiBoxes.Up || UiBoxes.Over, UiForeignWindows.Up));
+                }
                 if (_screen.Kind == UiGameKind.Box)
                 {
                     Hold(UiForeignWindows.Up);   // a window of another mod's over a question: its keys first

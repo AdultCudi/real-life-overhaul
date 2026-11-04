@@ -15,6 +15,8 @@ namespace RealLifeOverhaul
         private ShiftSkip _skip;
         private int _skipLeft;        // customers the clock had to serve when it started
         private int _skipDone;        // ...and how many of them it has, so far
+        private int _skipHours;       // the hours the slider keeps before the clock starts; 0: all the customers still to come
+        private bool _skipRunning;    // the clock is on: its length is fixed
 
         private void OfferSkip()
         {
@@ -32,11 +34,35 @@ namespace RealLifeOverhaul
         string ISkippableShift.SkipTitle => Ctx.Shift != null
             ? JobText.T("reallife_career_shift_title", "title", JobText.T(Ctx.Shift.Rank.TitleKey), "employer", JobText.T(Ctx.Shift.Employer.NameKey)) : _title;
 
-        int ISkippableShift.SkipMinutes => LeftToServe * _minutesEach;
+        int ISkippableShift.SkipMinutes => (_skipRunning ? _skipLeft : ShiftFactsRules.Units(_skipHours, LeftToServe, _minutesEach)) * _minutesEach;
+
+        // The clock's length is the player's to pick before it starts: from one hour to the customers still to come. It can stop part way,
+        // since the customers it has served by then are paid and the rest are left to serve by hand (SkipEnded).
+        int ISlidingShift.SlideLeast => 1;
+
+        int ISlidingShift.SlideMost => ShiftFactsRules.MostHours(LeftToServe * _minutesEach);
+
+        int ISlidingShift.SlideNow => _skipHours > 0 ? Mathf.Min(_skipHours, ((ISlidingShift)this).SlideMost) : ((ISlidingShift)this).SlideMost;
+
+        void ISlidingShift.Slide(int value) => _skipHours = ShiftFactsRules.Chosen(value, ((ISlidingShift)this).SlideMost);
+
+        (string key, object arguments) ISlidingShift.SlideInfo() => ("common_hours", new { hours = ((ISlidingShift)this).SlideNow });
+
+        int IShiftFacts.PayFor(int minutes)
+        {
+            int left = _skipRunning ? _skipLeft : ShiftFactsRules.Units(_skipHours, LeftToServe, _minutesEach);
+            return ShiftFactsRules.Pay(PayEach, Mathf.Min(left, minutes / _minutesEach), ShiftRates.Share);
+        }
+
+        string IShiftFacts.SkillKey => ShiftFactsRules.SkillKey(_def, null);
+
+        float IShiftFacts.SkillFor(int minutes) => ShiftFactsRules.Skill(_def.UnitSkill, minutes / _minutesEach);
+
+        float IShiftFacts.StressRate => HomeBalance.StressJobShift;
 
         LabelInfo[] ISkippableShift.SkipLabels()
         {
-            int left = LeftToServe;
+            int left = ((ISkippableShift)this).SkipMinutes / _minutesEach;   // the part the slider keeps
             int minutes = left * _minutesEach;
             Color32 white = WorldPanel.White();
             var time = new LabelInfo("reallife_job_skip_info_time", new { count = left, hours = minutes / 60, minutes = minutes % 60 }, white);
@@ -57,8 +83,9 @@ namespace RealLifeOverhaul
             _front = -1;
             _came = _served + _lost;
             ReleaseLookers();
-            _skipLeft = LeftToServe;
+            _skipLeft = ShiftFactsRules.Units(_skipHours, LeftToServe, _minutesEach);
             _skipDone = 0;
+            _skipRunning = true;
             if (Meta.Dev.Verbose)
             {
                 Ctx.Logger?.Info("Jobs: vendor: the rest of the shift is left to the clock: " + _skipLeft + " customers, " + (_skipLeft * _minutesEach) + " game minutes, at "
@@ -81,13 +108,14 @@ namespace RealLifeOverhaul
             int count = whole ? _skipLeft : Mathf.Min(_skipLeft, minutes / _minutesEach);
             _skipDone = 0;
             _skipLeft = 0;
+            _skipRunning = false;
             _nextArrival = Time.time + 2f;
             _panelState = int.MinValue;
             float energyBefore = SaveGameManager.Current != null ? SaveGameManager.Current.Energy : 0f;
             int pay = 0;
             if (count > 0)
             {
-                pay = Mathf.RoundToInt(count * PayEach * ShiftRates.Share);
+                pay = ShiftFactsRules.Pay(PayEach, count, ShiftRates.Share);
                 _served += count;
                 _came = _served + _lost;
                 _clockPay += pay;

@@ -166,6 +166,21 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        public void TakeInteract()
+        {
+            try
+            {
+                ResetInteract();
+            }
+            catch (Exception e) when (Guard.Missing(e))
+            {
+                Guard.DoesWithout(e, "holding the game's own Interact back while a spoken line's card answers it");
+            }
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void ResetInteract() => PlayerAction.Interact.Reset();
+
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static void ResetAll()
         {

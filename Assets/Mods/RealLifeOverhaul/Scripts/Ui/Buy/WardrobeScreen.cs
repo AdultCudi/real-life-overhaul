@@ -29,11 +29,13 @@ namespace RealLifeOverhaul.Ui
         private string _seen;
         private float _next;
         private bool _dirty = true;
-        private const int All = 0, Owned = 1, Mod = 2;                // the grid's filters
+        private const int All = 0, Owned = 1, Mod = 2, Fresh = 3;     // the grid's filters (Fresh: the shop's New)
         private readonly List<int> _shown = new List<int>(64);        // the pieces the filter and the search let through, in the game's order
         private UiCatalogueCard[] _all = new UiCatalogueCard[0];     // every piece's card, and whether it is owned or the mod's
-        private bool[] _owned = new bool[0], _mod = new bool[0];
-        private readonly int[] _filterOf = new int[3];                // the filter each pill stands for
+        private bool[] _owned = new bool[0], _mod = new bool[0], _fresh = new bool[0];
+        private string _visitKey = string.Empty;                       // the category and count the New flags were made for: they are made again only when it changes
+        private int _freshCount;
+        private readonly int[] _filterOf = new int[4];                // the filter each pill stands for
         private int _filterKind, _filterSig = -1;
         private string _search = string.Empty;
         private readonly List<string> _basketNames = new List<string>(4);
@@ -342,7 +344,14 @@ namespace RealLifeOverhaul.Ui
                 _all = new UiCatalogueCard[_pieces.Count];
                 _owned = new bool[_pieces.Count];
                 _mod = new bool[_pieces.Count];
+                _fresh = new bool[_pieces.Count];
+                _visitKey = string.Empty;
             }
+            bool shop = _kind == WardrobeKind.Clothes && Leisure.ClothesScreen.Shopping;
+            string category = shop ? Category() : null;
+            string visit = shop ? category + "|" + _pieces.Count : string.Empty;
+            bool visiting = shop && visit != _visitKey;   // a category (or a changed count) newly shown: its garments are checked against what the shop showed before, and now shown
+            _freshCount = visiting ? 0 : _freshCount;
             int chosenAt = -1, ownedCount = 0, modCount = 0;
             _m.ChosenName = null;
             _m.ChosenDetail = null;
@@ -378,6 +387,17 @@ namespace RealLifeOverhaul.Ui
                 };
                 _owned[i] = corner != null && corner == owned;
                 _mod[i] = _bands.Count > 0;
+                if (visiting)
+                {
+                    string id = (sprite != null ? sprite.name : null) ?? name;
+                    _fresh[i] = Leisure.ClothesSeen.IsNew(category, id);
+                    _freshCount += _fresh[i] ? 1 : 0;
+                    Leisure.ClothesSeen.Show(category, id);
+                }
+                else if (!shop)
+                {
+                    _fresh[i] = false;
+                }
                 ownedCount += _owned[i] ? 1 : 0;
                 modCount += _mod[i] ? 1 : 0;
                 Transform chosen = p.Find("Selected");
@@ -389,7 +409,8 @@ namespace RealLifeOverhaul.Ui
                 }
                 _sb.Append(_all[i].Picture).Append(name).Append(corner).Append(';');
             }
-            Filter(_pieces.Count, ownedCount, modCount, chosenAt);
+            _visitKey = visiting ? visit : shop ? _visitKey : string.Empty;
+            Filter(_pieces.Count, ownedCount, modCount, shop ? _freshCount : 0, chosenAt);
             _sb.Append(chosenAt).Append('|').Append(_filterKind).Append(_search).Append('|');
         }
 
@@ -406,7 +427,7 @@ namespace RealLifeOverhaul.Ui
 
         // The pills over the grid with their counts, where they tell pieces apart (Owned in the shop, the mod's own beside the
         // game's in the wardrobe), and the clothes' search by name: the grid shows what both let through, in the game's order.
-        private void Filter(int n, int owned, int mod, int chosen)
+        private void Filter(int n, int owned, int mod, int fresh, int chosen)
         {
             int pills = 0;
             _filterOf[pills++] = All;
@@ -417,6 +438,10 @@ namespace RealLifeOverhaul.Ui
             if (mod > 0 && mod < n)
             {
                 _filterOf[pills++] = Mod;
+            }
+            if (fresh > 0)
+            {
+                _filterOf[pills++] = Fresh;
             }
             pills = pills > 1 ? pills : 0;   // All alone tells nothing apart
             int at = -1;
@@ -429,7 +454,7 @@ namespace RealLifeOverhaul.Ui
                 _filterKind = All;
                 at = pills > 0 ? 0 : -1;
             }
-            int sig = (n * 1000 + owned) * 1000 + mod;
+            int sig = ((n * 1000 + owned) * 1000 + mod) * 1000 + fresh;
             if (sig != _filterSig || _m.Filters.Length < pills)
             {
                 _filterSig = sig;
@@ -437,8 +462,9 @@ namespace RealLifeOverhaul.Ui
                 for (int i = 0; i < pills; i++)
                 {
                     int k = _filterOf[i];
-                    _m.Filters[i] = UiText.T(k == Owned ? "reallife_ui_buy_filter_owned" : k == Mod ? "reallife_ui_buy_filter_rlo" : "reallife_ui_buy_filter_all")
-                        .Replace("{count}", (k == Owned ? owned : k == Mod ? mod : n).ToString(CultureInfo.InvariantCulture));
+                    _m.Filters[i] = UiText.T(k == Owned ? "reallife_ui_buy_filter_owned" : k == Mod ? "reallife_ui_buy_filter_rlo" :
+                        k == Fresh ? "reallife_ui_buy_filter_new" : "reallife_ui_buy_filter_all")
+                        .Replace("{count}", (k == Owned ? owned : k == Mod ? mod : k == Fresh ? fresh : n).ToString(CultureInfo.InvariantCulture));
                 }
             }
             _m.FilterCount = pills;
@@ -450,7 +476,7 @@ namespace RealLifeOverhaul.Ui
             _shown.Clear();
             for (int i = 0; i < n; i++)
             {
-                bool through = (_filterKind != Owned || _owned[i]) && (_filterKind != Mod || _mod[i]);
+                bool through = (_filterKind != Owned || _owned[i]) && (_filterKind != Mod || _mod[i]) && (_filterKind != Fresh || _fresh[i]);
                 if (through && (q.Length == 0 || (_all[i].Name != null && _all[i].Name.IndexOf(q, StringComparison.OrdinalIgnoreCase) >= 0)))
                 {
                     _shown.Add(i);
@@ -468,6 +494,14 @@ namespace RealLifeOverhaul.Ui
                 g.Chosen = _shown[i] == chosen ? i : g.Chosen;
             }
             g.CardCount = _shown.Count;
+        }
+
+        // The category shown, as the shop keeps what it has shown: the game's tab, and its kind when it has kinds (a pair of ids).
+        private string Category()
+        {
+            int tab = _m.Tab >= 0 && _m.Tab < _tabs.Count ? _tabs[_m.Tab].categoryId : -1;
+            string sub = _m.Sub >= 0 && _m.Sub < _subs.Count ? _subs[_m.Sub].linkId : string.Empty;
+            return tab.ToString(CultureInfo.InvariantCulture) + "." + sub;
         }
 
         // What the shop's basket holds (the mod's clothes shop: each piece on and not owned, with its price), made again only

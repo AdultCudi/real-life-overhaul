@@ -84,6 +84,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 Line(entry, UiText.Fill("reallife_ui_dialog_cost_items", "count", count.ToString(CultureInfo.CurrentCulture), "slot", Chosen(heading, 1)), 0);
                 Line(entry, UiText.Fill("reallife_ui_dialog_cost_on_delivery", "amount", Money(delivery.TotalPrice)), -1, -1);
+                Line(entry, UiText.Fill("reallife_ui_dialog_deliver_to", "place", Chosen(heading, 0)), 0);
                 return;
             }
             if (form.TryGetComponent(out VehicleContractSettings vehicle))
@@ -95,6 +96,10 @@ namespace RealLifeOverhaul.Ui
                     return;
                 }
                 Line(entry, vehicle.isDelivery ? "reallife_ui_dialog_cost_on_delivery" : "reallife_ui_dialog_cost_now", Total(heading), -1, -1);
+                if (vehicle.isDelivery)
+                {
+                    Line(entry, UiText.Fill("reallife_ui_dialog_deliver_to", "place", Chosen(heading, 1)), 0);
+                }
                 return;
             }
             if (form.TryGetComponent(out MovingServiceContractSettings moving))

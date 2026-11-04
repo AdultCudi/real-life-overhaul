@@ -15,7 +15,7 @@ namespace RealLifeOverhaul
     /// over the cart; the right drink quickly earns a tip, the wrong one costs patience, and three walk-offs end the shift.
     /// Calling out (<see cref="Hawk"/>) brings more; the rest can be left to the game's clock (<see cref="ShiftSkip"/>).
     /// </summary>
-    public sealed partial class VendorJob : Job, ISkippableShift
+    public sealed partial class VendorJob : Job, ISlidingShift, IShiftFacts
     {
         private enum Guest { None, Coming, Queued, Stepping, Ordering, Served, Leaving }
 
@@ -317,7 +317,7 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            slip = new PaySlip { Units = _skipDone, Base = Mathf.RoundToInt(_skipDone * PayEach * ShiftRates.Share) };
+            slip = new PaySlip { Units = _skipDone, Base = ShiftFactsRules.Pay(PayEach, _skipDone, ShiftRates.Share) };
             return true;
         }
 

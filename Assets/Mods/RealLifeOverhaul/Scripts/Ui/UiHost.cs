@@ -62,6 +62,7 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>The screen stands over a panel of the game's that answers the same keys: the host takes them from the game each frame.</summary>
         public bool Exclusive;
+        public bool TakesInteract;   // only Interact is taken from the game each frame, for a card that answers it and no other key
 
         /// <summary>The screen takes no key, only the pointer (the notices over the world: a toast never steals the player's walk).</summary>
         public bool PointerOnly;
@@ -290,6 +291,10 @@ namespace RealLifeOverhaul.Ui
             {
                 _input.TakeAll();
             }
+            else if (TakesInteract)
+            {
+                _input.TakeInteract();
+            }
             if (_state.Pointed && _mode.PointerMoved())
             {
                 LeadChanged();
@@ -373,7 +378,7 @@ namespace RealLifeOverhaul.Ui
                 EndDrag(true);   // Back lets go of a drag, and what it moved goes back
                 return;
             }
-            if (_state.Back)
+            if (_state.Back && !(_screen is IUiGameBack back && !back.TakesBack))   // a screen that cannot answer Cancel now leaves it the game's
             {
                 int cancel = UiFocusRules.Keyed(_scene, UiAction.Back);
                 if (cancel >= 0)

@@ -177,10 +177,10 @@ public static partial class UiPreviewRunner
         return new Screen
         {
             Name = "monologue_" + state + Suffix(lang), AppName = "Spoken lines", Backdrop = state == "fred_long" ? "05.jpg" : state == "fred_more" ? "11.jpg" : "13.jpg",
-            Bar = UiSamples.WalkingBar, NoKeys = true, HoverCommand = UiMonologue.CloseCommand, HoverArg = 0,
+            Bar = UiSamples.WalkingBar, HoverCommand = UiMonologue.CloseCommand, HoverArg = 0, Walk = Moves("L"),
             Lay = (s, f, d, k) =>
             {
-                UiMonologue.Lay(s, UiSamples.Monologue(t, state), f, d);
+                UiMonologue.Lay(s, UiSamples.Monologue(t, state), f, d, k);
                 UiDraw.StatusBar(s, f, k);
             }
         };

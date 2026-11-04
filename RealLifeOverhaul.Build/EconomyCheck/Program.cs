@@ -107,6 +107,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--fixw2")
+        {
+            FixW2Audit();   // the logic audit's fixes of wave 2 alone (FixW2Checks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--dayspread")
         {
             DaySpreadAll();   // the game's midnight spread over frames alone (DaySpreadChecks.cs)
@@ -833,6 +839,7 @@ internal static partial class Program
         CinemaFixes();  // a film with a friend: rested as in the game's own cinema seat, given back on every way out (CinemaFixChecks.cs)
         PartnerTalk();    // the partner: Social's calls, texts and outings count as talking for family life (PartnerTalkChecks.cs)
         MealFixes();    // a completed meal fills once by the game's food and records bought food through the bridge
+        FixW2Audit();   // the logic audit of wave 2: the part-day slider of every shift that can stop part way, the funeral's backup, the offer's interview line, the clothes New filter, a car's fuel use and seats, the cargo move, a table's day, the rival's crew, the manager's double booking, Fill the gaps, the time skip's pace, the texts and cost lines, and 84 days (FixW2Checks.cs)
         ClientHours();  // cleaning and stocking: a client open for the walk and the work, one closing calls the job off, the clock paid up to closing (ClientHoursChecks.cs)
         TechFixes();    // the tech sector: a board that cannot hire, a pitch whose meeting never opened, the utilities asked safely, an interview cut short (TechFixChecks.cs)
         TechMoves();    // a tech firm moved by the moving company: its data follows whole, a save left behind is put back, nothing followed with a doubt (TechMoveChecks.cs)
