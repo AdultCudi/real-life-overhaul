@@ -16,7 +16,7 @@ namespace RealLifeOverhaul.Rivals
         public string District = string.Empty, Type = string.Empty;
         public LeaseFile Lease;                                 // its premises: a term, the landlord's offer before it ends, the answer, the renewal
         public readonly List<StaffFile> Crew = new List<StaffFile>(RivalFirms.CrewMost);
-        public string Seat = string.Empty;                      // the game's rival business this outlet stands on (its address, RivalSeat.Key); empty: a seeded stand-in, the game had none of the kind there
+        public string Seat = string.Empty;                      // the game's rival business it stands on (its address, RivalSeat.Key); empty: a seeded stand-in, the game had none there
         public readonly List<string> Out = new List<string>(RivalFirms.OutMost);   // the game's own people the firm let go (their ids): the crew is not read back for them
         public int NextHire = 1;                                // numbers the ids of its hires
         public int Hires, LetGo, Raises, Renewals, Holds;       // what its days have done
@@ -46,7 +46,9 @@ namespace RealLifeOverhaul.Rivals
     /// </summary>
     public interface IRivalSeats
     {
-        /// <summary>A rival's business of this kind in the district, not one in <paramref name="taken"/>: chosen from the candidates by <paramref name="pick"/> (0 to 999, seeded). Null with none.</summary>
+        /// <summary>
+        /// A rival's business of this kind in the district, not one in <paramref name="taken"/>: chosen from the candidates by <paramref name="pick"/> (0 to 999, seeded). Null with none.
+        /// </summary>
         RivalSeat Find(string district, string type, IList<string> taken, int pick);
 
         /// <summary>The business at a key as it is now; null when it is gone (sold, closed, its rival out of the game).</summary>
@@ -228,7 +230,10 @@ namespace RealLifeOverhaul.Rivals
             return f;
         }
 
-        /// <summary>What the city pays this person, hundredths an hour: for the game's own people their game wage at today's prices, otherwise the catalogue's rate for their skill; both moved by the city's pay.</summary>
+        /// <summary>
+        /// What the city pays this person, hundredths an hour: for the game's own people their game wage at today's prices, otherwise the catalogue's rate for their skill; both
+        /// moved by the city's pay.
+        /// </summary>
         public static int Going(RivalOutlet o, StaffFile f, int index, int drift)
         {
             return o.Seat.Length > 0 && f.Base > 0 ? CompanyCatalogue.AtPrices(f.Base, index) * (1000 + drift) / 1000 : Going(f, index, drift);

@@ -34,14 +34,16 @@ namespace RealLifeOverhaul.Ui
 
         private static bool Run(CompanyDirector d, CompanyAct a)
         {
-            return CompanyDoes.Run(d, Opens.Instance, a);   // the map from a press to the director's call is game-free: the checks run it against a recording director
+            return CompanyLiveDoes.Run(d, Opens.Instance, a);   // the map from a press to the director's call is game-free: the checks run it against a recording director
         }
 
-        // The numbers the actions carry, game-free (CompanyDoes), pinned to the director's own: a mismatch fails to compile.
-        private const int PinNumbers = 1 / (CompanyDirector.AnswerAgree == CompanyDoes.Agree && CompanyDirector.AnswerHaggle == CompanyDoes.Haggle && CompanyDirector.PlanName == CompanyDoes.PlanName
-            && CompanyDirector.LimitWage == CompanyDoes.LimitWage && CompanyDirector.LimitStock == CompanyDoes.LimitStock && CompanyDirector.LimitPriceLow == CompanyDoes.LimitPriceLow
-            && CompanyDirector.LimitPriceHigh == CompanyDoes.LimitPriceHigh && CompanyDirector.LimitBudget == CompanyDoes.LimitBudget && CompanyDirector.LimitKeep == CompanyDoes.LimitKeep
-            && CompanyDirector.LimitMarketing == CompanyDoes.LimitMarketing && CompanyDirector.LimitLease == CompanyDoes.LimitLease && CompanyDirector.PlanHours == 4 ? 1 : 0);
+        // The numbers the actions carry, game-free (CompanyLiveDoes), pinned to the director's own: a mismatch fails to compile.
+        private const int PinNumbers = 1 / (CompanyDirector.AnswerAgree == CompanyLiveDoes.Agree && CompanyDirector.AnswerHaggle == CompanyLiveDoes.Haggle
+            && CompanyDirector.PlanName == CompanyLiveDoes.PlanName
+            && CompanyDirector.LimitWage == CompanyLiveDoes.LimitWage && CompanyDirector.LimitStock == CompanyLiveDoes.LimitStock && CompanyDirector.LimitPriceLow == CompanyLiveDoes.LimitPriceLow
+            && CompanyDirector.LimitPriceHigh == CompanyLiveDoes.LimitPriceHigh && CompanyDirector.LimitBudget == CompanyLiveDoes.LimitBudget && CompanyDirector.LimitKeep == CompanyLiveDoes.LimitKeep
+            && CompanyDirector.LimitMarketing == CompanyLiveDoes.LimitMarketing && CompanyDirector.LimitLease == CompanyLiveDoes.LimitLease
+            && CompanyDirector.PlanHours == 4 ? 1 : 0);
 
         // The other apps and the game's own screens a press opens.
         private sealed class Opens : ICompanyOpens

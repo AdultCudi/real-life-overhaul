@@ -138,7 +138,10 @@ namespace RealLifeOverhaul.Economy
             return l.Asked > 0;
         }
 
-        /// <summary>Marks the offer as made on a day (never day 0, which would read as none): the one write of <see cref="LeaseFile.Asked"/> that every lease, the player's and a rival's, goes through.</summary>
+        /// <summary>
+        /// Marks the offer as made on a day (never day 0, which would read as none): the one write of <see cref="LeaseFile.Asked"/> that every lease, the player's and a rival's,
+        /// goes through.
+        /// </summary>
         public static void Make(LeaseFile l, int offer, int day)
         {
             l.Offer = offer;

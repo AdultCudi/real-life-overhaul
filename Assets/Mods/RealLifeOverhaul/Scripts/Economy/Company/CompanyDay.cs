@@ -308,7 +308,8 @@ namespace RealLifeOverhaul.Economy
                     continue;
                 }
                 var kind = (EscalationKind)e.Kind;
-                if (HandDown(h, e, w.Managers.At(e.Place), w.ExecutiveInPost(EscalationRules.AreaOf(kind)), w.Rule(e.Place, PolicyField.Approver), w.Rule(e.Place, PolicyField.Sources), you, day, hour))
+                if (HandDown(h, e, w.Managers.At(e.Place), w.ExecutiveInPost(EscalationRules.AreaOf(kind)), w.Rule(e.Place, PolicyField.Approver), w.Rule(e.Place, PolicyField.Sources),
+                        you, day, hour))
                 {
                     handed++;
                     w.HandedDown(e);
@@ -351,7 +352,10 @@ namespace RealLifeOverhaul.Economy
             return false;
         }
 
-        /// <summary>Every open escalation held below the owner tried once by its holder (<see cref="TryOne"/>); with <paramref name="exceptionsOnly"/> only the exceptions to the pay band. Returns how many were settled.</summary>
+        /// <summary>
+        /// Every open escalation held below the owner tried once by its holder (<see cref="TryOne"/>); with <paramref name="exceptionsOnly"/> only the exceptions to the pay band.
+        /// Returns how many were settled.
+        /// </summary>
         public static int HandleRound(ICompanyDay w, int day, int hour, bool exceptionsOnly)
         {
             HierarchyState h = w.Hierarchy;

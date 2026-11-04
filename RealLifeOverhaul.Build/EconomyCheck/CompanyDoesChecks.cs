@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Ui;
 
-// Every action of the Company screen run through the map the live screen uses (CompanyDoes.Run) against a recording director: each kind reaches the one director call it stands
+// Every action of the Company screen run through the map the live screen uses (CompanyLiveDoes.Run) against a recording director: each kind reaches the one director call it stands
 // for, with the figures it carries, and the kinds that are the screen's own reach nothing. (Review 2: the live half was only a text test.)
 internal static partial class Program
 {
@@ -115,9 +115,9 @@ internal static partial class Program
             Pair(CompanyAct.Of(CompanyDo.Dismiss, null, 12), "HierarchyDismiss(12)"),
             Pair(CompanyAct.Of(CompanyDo.TryNow, null, 14), "HierarchyTryNow(14)"),
             Pair(CompanyAct.Of(CompanyDo.Pass, null, 15), "HierarchyPass(15)"),
-            Pair(CompanyAct.Of(CompanyDo.LeaseAnswer, "Elm~7", CompanyDoes.Agree), "LeaseAnswer(Elm~7,True)"),
+            Pair(CompanyAct.Of(CompanyDo.LeaseAnswer, "Elm~7", CompanyLiveDoes.Agree), "LeaseAnswer(Elm~7,True)"),
             Pair(CompanyAct.Of(CompanyDo.LeaseAnswer, "Elm~7", 1), "LeaseAnswer(Elm~7,False)"),
-            Pair(CompanyAct.Of(CompanyDo.LeaseAnswer, "Elm~7", CompanyDoes.Haggle), "LeaseHaggle(Elm~7)"),
+            Pair(CompanyAct.Of(CompanyDo.LeaseAnswer, "Elm~7", CompanyLiveDoes.Haggle), "LeaseHaggle(Elm~7)"),
             Pair(CompanyAct.Of(CompanyDo.RaiseAnswer, "e4", (int)RaiseAnswer.Bonus), "AnswerRaise(e4,Bonus)"),
             Pair(CompanyAct.Of(CompanyDo.RaiseGive, "e4"), "GiveRaise(e4)"),
             Pair(CompanyAct.Of(CompanyDo.OfferAnswer, "e4", 1), "AnswerOffer(e4,True)"),
@@ -149,13 +149,13 @@ internal static partial class Program
             Pair(CompanyAct.Of(CompanyDo.PlanCopy, "Elm~7"), "RotaPlanCopy(Elm~7,3)"),
             Pair(CompanyAct.Of(CompanyDo.PlanUse, "Elm~7", 5), "RotaPlanUse(Elm~7,5)"),
             Pair(CompanyAct.Of(CompanyDo.PlanDelete, "Elm~7", 5), "RotaPlanDelete(Elm~7,5)"),
-            Pair(CompanyAct.Of(CompanyDo.PlanChange, "Elm~7", 5, CompanyDoes.PlanName, 0, "Lean week"), "RotaPlanRename(Elm~7,5,Lean week)"),
+            Pair(CompanyAct.Of(CompanyDo.PlanChange, "Elm~7", 5, CompanyLiveDoes.PlanName, 0, "Lean week"), "RotaPlanRename(Elm~7,5,Lean week)"),
             Pair(CompanyAct.Of(CompanyDo.PlanChange, "Elm~7", 0, CompanyDirectorPlanHours, 40, "2"), "RotaPlanChange(Elm~7,3," + CompanyDirectorPlanHours + ",40,2)"),
             Pair(CompanyAct.Of(CompanyDo.TaskSet, "Elm~7", (int)ManagerTask.Leases, 1), "ManagerTaskSet(Elm~7,Leases,True)"),
             Pair(CompanyAct.Of(CompanyDo.TaskSet, "Elm~7", -1, 1), "ManagerHandDown(Elm~7,True)"),
-            Pair(CompanyAct.Of(CompanyDo.LimitSet, "Elm~7", CompanyDoes.LimitLease, 3), "ManagerLimit(Elm~7,12,3)"),
-            Pair(CompanyAct.Of(CompanyDo.LimitSet, "Elm~7", CompanyDoes.LimitKeep, 0, 9), "ManagerLimit(Elm~7,5,9)"),
-            Pair(CompanyAct.Of(CompanyDo.LimitSet, "Elm~7", CompanyDoes.LimitWage, 0, 12), "ManagerLimit(Elm~7,0," + NearestStep(ManagerCatalogue.WageBands, 120) + ")"),
+            Pair(CompanyAct.Of(CompanyDo.LimitSet, "Elm~7", CompanyLiveDoes.LimitLease, 3), "ManagerLimit(Elm~7,12,3)"),
+            Pair(CompanyAct.Of(CompanyDo.LimitSet, "Elm~7", CompanyLiveDoes.LimitKeep, 0, 9), "ManagerLimit(Elm~7,5,9)"),
+            Pair(CompanyAct.Of(CompanyDo.LimitSet, "Elm~7", CompanyLiveDoes.LimitWage, 0, 12), "ManagerLimit(Elm~7,0," + NearestStep(ManagerCatalogue.WageBands, 120) + ")"),
             Pair(CompanyAct.Of(CompanyDo.StandDown, "Elm~7", 1), "ManagerStandDown(Elm~7,True)"),
             Pair(CompanyAct.Of(CompanyDo.Appoint, "e4", 0, 0, 0, "Elm~7"), "ManagerAppoint(Elm~7,e4)"),
             Pair(CompanyAct.Of(CompanyDo.HandBack, "Elm~7"), "ManagerHandBack(Elm~7)"),
@@ -183,7 +183,7 @@ internal static partial class Program
         foreach (var one in table)
         {
             var rec = new DoesRecorder();
-            bool done = CompanyDoes.Run(rec, rec, one.Key);
+            bool done = CompanyLiveDoes.Run(rec, rec, one.Key);
             covered.Add(one.Key.Do);
             bool ok = done && rec.Calls.Count == 1 && rec.Calls[0].StartsWith(one.Value, StringComparison.Ordinal);
             reached += ok ? 1 : 0;
@@ -201,9 +201,9 @@ internal static partial class Program
         Check(missing.Length == 0, "company presses: every kind of action of the screen is pressed here" + (missing.Length > 0 ? ", not these:" + missing : string.Empty));
         // The screen's own (moving about) and a kind with nothing to act on reach no call.
         var none = new DoesRecorder();
-        bool go = CompanyDoes.Run(none, none, CompanyAct.Of(CompanyDo.Go, null, 3)), nothing = CompanyDoes.Run(none, none, CompanyAct.Of(CompanyDo.None));
+        bool go = CompanyLiveDoes.Run(none, none, CompanyAct.Of(CompanyDo.Go, null, 3)), nothing = CompanyLiveDoes.Run(none, none, CompanyAct.Of(CompanyDo.None));
         none.HavePlans = false;
-        bool noPlan = CompanyDoes.Run(none, none, CompanyAct.Of(CompanyDo.PlanChange, "Elm~7", 5, 1, 4)) || CompanyDoes.Run(none, none, CompanyAct.Of(CompanyDo.PlanCopy, "Elm~7", 5));
+        bool noPlan = CompanyLiveDoes.Run(none, none, CompanyAct.Of(CompanyDo.PlanChange, "Elm~7", 5, 1, 4)) || CompanyLiveDoes.Run(none, none, CompanyAct.Of(CompanyDo.PlanCopy, "Elm~7", 5));
         Check(!go && !nothing && !noPlan && none.Calls.Count == 0, "company presses: moving about is the screen's own and reaches no call, and a plan that is not there is not acted on");
         Console.WriteLine("  the company's presses through the live map: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed");
     }

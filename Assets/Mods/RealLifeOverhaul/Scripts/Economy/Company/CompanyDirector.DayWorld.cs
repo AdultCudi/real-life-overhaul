@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.Economy
     /// </summary>
     public sealed partial class CompanyDirector : ICompanyDay, RealLifeOverhaul.Ui.ICompanyDoes
     {
-        // The screen's presses (Ui/Company/CompanyLive.Does.cs) reach the director's own members; the few that are not public are given here.
+        // The screen's presses (Ui/Company/CompanyLiveDoes.cs) reach the director's own members; the few that are not public are given here.
         RotaPlanSet RealLifeOverhaul.Ui.ICompanyDoes.PlansOf(string place) => RotaPlansOf(place, true);
 
         string RealLifeOverhaul.Ui.ICompanyDoes.Say(string key, string name, string value) => CompanyText.T(key, name, value);
@@ -138,7 +138,8 @@ namespace RealLifeOverhaul.Economy
         {
             ManagedPlace mp = ManagedAt(e.Place);
             var kind = (EscalationKind)e.Kind;
-            Logger?.Info("Company: the " + kind + " question of " + (mp != null ? mp.Place.Name : e.Place) + ", left with you a day, was passed down to the " + EscalationRules.AreaOf(kind) + " executive.");
+            Logger?.Info("Company: the " + kind + " question of " + (mp != null ? mp.Place.Name : e.Place) + ", left with you a day, was passed down to the "
+                         + EscalationRules.AreaOf(kind) + " executive.");
         }
 
         int ICompanyDay.MarketRent(string place, string district, int rent) => MarketOf(district, place, rent);

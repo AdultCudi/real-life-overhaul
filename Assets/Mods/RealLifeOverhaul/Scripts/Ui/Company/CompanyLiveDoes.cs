@@ -5,7 +5,7 @@ namespace RealLifeOverhaul.Ui
 {
     /// <summary>
     /// What the Company screen asks of the director when a button is pressed: the calls of the old app's buttons, by the director's own names. The director implements it; the
-    /// checks hand in a recording one, so that every action can be run through the very mapping the live screen uses (<see cref="CompanyDoes.Run"/>) and each be seen to reach the
+    /// checks hand in a recording one, so that every action can be run through the very mapping the live screen uses (<see cref="CompanyLiveDoes.Run"/>) and each be seen to reach the
     /// right call with the right figures. Game-free.
     /// </summary>
     internal interface ICompanyDoes
@@ -85,7 +85,7 @@ namespace RealLifeOverhaul.Ui
     }
 
     /// <summary>The map from a press (<see cref="CompanyAct"/>) to the director's call, game-free. The live screen runs exactly this.</summary>
-    internal static class CompanyDoes
+    internal static class CompanyLiveDoes
     {
         // The director's numbers the actions carry (CompanyDirector.AnswerAgree and the rest); the live screen pins them equal at compile time (CompanyLive.Do.cs).
         public const int Agree = 0, Haggle = 4;

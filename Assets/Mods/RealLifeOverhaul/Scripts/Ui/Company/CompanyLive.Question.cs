@@ -191,7 +191,8 @@ namespace RealLifeOverhaul.Ui
                 new CompanyChoice
                 {
                     Name = w.T("reallife_co_q_c_haggle", "Haggle for a smaller rise"), Button = w.T("reallife_co_q_haggle_do", "Haggle"), Note = w.T("reallife_co_q_once_note", "once"),
-                    Act = CompanyAct.Of(CompanyDo.LeaseAnswer, e.Place, CompanyDirector.AnswerHaggle), Disabled = l != null && (l.Haggled || rise <= 0), Why = l != null && l.Haggled ? w.T("reallife_co_q_haggled",
+                    Act = CompanyAct.Of(CompanyDo.LeaseAnswer, e.Place, CompanyDirector.AnswerHaggle), Disabled = l != null && (l.Haggled || rise <= 0),
+                    Why = l != null && l.Haggled ? w.T("reallife_co_q_haggled",
                         "The landlord was asked once already.") : rise <= 0 ? w.T("reallife_co_q_nohaggle", "The landlord asks for no rise.") : null,
                     Lines = new[] { new CompanyConsequence { Text = w.T("reallife_co_q_haggle_line", "The landlord may meet you half way, or hold firm"), Tone = 0, Change = 0 } }
                 },

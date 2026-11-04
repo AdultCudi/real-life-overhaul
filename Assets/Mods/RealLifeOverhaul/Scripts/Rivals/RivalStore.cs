@@ -97,7 +97,8 @@ namespace RealLifeOverhaul.Rivals
             return b.ToString();
         }
 
-        // O|move|tycoon|district|type|next hire|hires|let go|raises|renewals|holds|rent paid|wages paid|the lease (its fields joined by ',')|the crew (people split by '/', their fields by ',')|seat|let go ids
+        // O|move|tycoon|district|type|next hire|hires|let go|raises|renewals|holds|rent paid|wages paid|the lease (its fields joined by ',')|
+        //   the crew (people split by '/', their fields by ',')|seat|let go ids
         private static void WriteOutlet(StringBuilder b, RivalOutlet o)
         {
             b.Append("\nO|").Append(o.Move.ToString(Inv));
