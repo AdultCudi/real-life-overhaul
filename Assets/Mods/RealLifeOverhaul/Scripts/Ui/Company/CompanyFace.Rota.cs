@@ -311,7 +311,7 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.TextMiddle(s, at, x + width * 0.4f, cy, UiTokens.PairRow, width * 0.6f, UiStyle.Small, UiRole.AccentText, weekly, UiFlags.Right | UiFlags.Truncate);
             }
             cy += UiTokens.PairRow + UiTokens.S1;
-            float personW = UiDraw.SnapDown(Math.Min(width * 0.26f, 220f)), hoursW = 64f;
+            float personW = UiDraw.SnapDown(Math.Min(Math.Max(width * 0.26f, 188f), 220f)), hoursW = 64f;   // wide enough for a role to stand whole
             float dayW = UiDraw.SnapDown((width - personW - hoursW) / 7f);
             for (int d = 0; d < 7; d++)
             {

@@ -24,7 +24,7 @@ internal static partial class UiSamples
         if (!one)
         {
             rows.Add(new CompanyRow { Id = "strike:Speedy Bites~7", Title = w.T("reallife_co_row_strike", "Strike called"), Sub = "Speedy Bites", Icon = UiIcon.Megaphone, Figure = w.F("reallife_co_row_strike_from", "from day {day}", "day", "216"), Chip = w.T("reallife_co_row_answer", "Answer"), ChipTone = UiRole.Danger });
-            rows.Add(new CompanyRow { Id = "ot:Hudson Warehouse~4", Title = w.T("reallife_co_row_overtime", "Overtime offered"), Sub = "Hudson Warehouse", Icon = UiIcon.Clock, Figure = w.F("reallife_co_row_a_day", "{amount} a day", "amount", "$96"), Chip = w.T("reallife_co_row_answer", "Answer"), ChipTone = UiRole.Warn });
+            rows.Add(new CompanyRow { Id = "ot:Hudson Warehouse~4", Title = w.T("reallife_co_row_overtime", "Overtime offered"), Sub = "Hudson Warehouse", Icon = UiIcon.Clock, Figure = w.F("reallife_co_row_a_day", "{amount} a day", "amount", "$190"), Chip = w.T("reallife_co_row_answer", "Answer"), ChipTone = UiRole.Warn });
             rows.Add(new CompanyRow { Id = "emp:dev", Title = "Dev Kapoor", Sub = "Speedy Bites", Face = true, Hue = 0.35f, Ring = UiRole.Warn, Figure = "$17.00 / h", Note = w.F("reallife_co_going", "going {wage}", "wage", "$19.00"), Chip = w.T("reallife_co_row_asks", "Asks for a raise"), ChipTone = UiRole.Warn });
             rows.Add(new CompanyRow { Id = "emp:lena", Title = "Lena Adler", Sub = "Speedy Bites", Face = true, Hue = 0.1f, Ring = UiRole.Warn, Figure = "$16.50 / h", Note = w.F("reallife_co_going", "going {wage}", "wage", "$16.50"), Chip = w.T("reallife_co_row_offer", "Rival's offer"), ChipTone = UiRole.Danger });
             rows.Add(new CompanyRow { Id = "emp:maya", Title = "Maya Okafor", Sub = "Bloom & Co", Face = true, Hue = 0.6f, Ring = UiRole.Warn, Figure = "$18.20 / h", Note = w.F("reallife_co_going", "going {wage}", "wage", "$19.70"),
@@ -39,7 +39,7 @@ internal static partial class UiSamples
             };
             for (int i = 0; i < more.Length; i++)
             {
-                rows.Add(new CompanyRow { Id = "emp:" + more[i][0], Title = more[i][1], Sub = more[i][2], Face = true, Hue = float.Parse(more[i][4], System.Globalization.CultureInfo.InvariantCulture), Ring = UiRole.Ok,
+                rows.Add(new CompanyRow { Id = "emp:" + more[i][0], Title = more[i][1], Sub = more[i][2], Face = true, Hue = float.Parse(more[i][4], System.Globalization.CultureInfo.InvariantCulture), Ring = i < 4 ? UiRole.Danger : UiRole.Ok,
                     Figure = "$" + more[i][3] + " / h", Note = w.F("reallife_co_going", "going {wage}", "wage", "$" + more[i][3]) });
             }
         }
@@ -96,7 +96,7 @@ internal static partial class UiSamples
     {
         var c = new CompanyCard { Kicker = w.T("reallife_co_tab_staff", "Staff"), Title = w.T("reallife_co_staff_title", "Your staff"), Icon = UiIcon.People };
         c.FactLabels = one ? new[] { w.T("reallife_co_f_staff", "Staff") } : new[] { w.T("reallife_co_f_staff", "Staff"), w.T("reallife_co_f_underpaid", "Underpaid"), w.T("reallife_co_f_low", "Standing low") };
-        c.FactValues = one ? new[] { "2" } : new[] { "31", "4", "2" };
+        c.FactValues = one ? new[] { "2" } : new[] { "31", "4", "5" };
         var blocks = new List<CompanyBlock>();
         if (one)
         {
@@ -137,7 +137,7 @@ internal static partial class UiSamples
             Kind = CompanyBlockKind.Choice, Text = w.T("reallife_co_staff_sick", "Sick pay"), Options = new[] { w.T("reallife_co_sick_none", "None"), w.T("reallife_co_sick_statutory", "Statutory"), w.T("reallife_co_sick_generous", "Generous") },
             Chosen = 1, Acts = new[] { CA(CompanyDo.SickPolicy, null, 0), CA(CompanyDo.SickPolicy, null, 1), CA(CompanyDo.SickPolicy, null, 2) }
         });
-        blocks.Add(CNote(w.F("reallife_co_staff_sick_what", "Somebody off sick is paid {share} of a day, and their standing moves {standing} a day.", "share", "50%", "standing", "0")));
+        blocks.Add(CNote(w.F("reallife_co_staff_sick_flat", "Off sick: paid {share} of a day's pay. Their standing does not change.", "share", "50%")));
         blocks.Add(CNote(w.T("reallife_co_staff_market", "A rival may offer your people more when they are paid under the going rate.")));
         if (!one)
         {
@@ -254,7 +254,7 @@ internal static partial class UiSamples
                 }
             },
             CSec(w.T("reallife_co_strike_ways", "Ways to settle it")),
-            CRow(w.T("reallife_co_strike_do_raise", "Raise everyone to the going rate"), "$3.40"),
+            CRow(w.T("reallife_co_strike_do_raise", "Raise everyone to the going rate"), "$3.40 / h"),
             CRow(w.T("reallife_co_strike_do_payment", "A one-off payment to each"), "$540"),
             CNote(w.F("reallife_co_strike_sit", "Or sit it out until day {day}.", "day", "218")),
             CBtns(CB(w.T("reallife_co_strike_do_raise", "Raise everyone to the going rate"), UiButtonKind.Primary, UiAction.Alt, CA(CompanyDo.StrikeAnswer, "Speedy Bites~7", 0), UiIcon.Check),
@@ -275,7 +275,7 @@ internal static partial class UiSamples
             CNote(w.F("reallife_co_overtime_by", "Answer by day {day}.", "day", "217"), UiRole.WarnText),
             CNote(w.F("reallife_co_overtime_what", "The crew offers {hours} extra hours a day for {days} days.", "hours", "2", "days", "5")),
             CSec(w.T("reallife_ibox_sec_terms", "Terms")),
-            CRow(w.L("reallife_co_overtime_cost", "Cost"), w.F("reallife_co_row_a_day", "{amount} a day", "amount", "$96")),
+            CRow(w.L("reallife_co_overtime_cost", "Cost"), w.F("reallife_co_row_a_day", "{amount} a day", "amount", "$190")),
             CRow(w.L("reallife_co_overtime_gain", "Footfall served"), "+12%"),
             CSec(w.T("reallife_co_staff_people", "Your people")),
             new CompanyBlock
@@ -329,7 +329,7 @@ internal static partial class UiSamples
         if (f.Deep)
         {
             Add("cap:exec", ONode(UiOrgKind.Caption, 0, w.T("reallife_co_tree_executive", "Executive")));
-            Add("exe:1", ONode(UiOrgKind.Person, 1, "Ethan Brooks", "Chief operating officer", w.F("reallife_co_tree_managers", "{count} managers", "count", "3"), true, 0.15f));
+            Add("exe:1", ONode(UiOrgKind.Person, 1, "Ethan Brooks", "Chief operating officer", w.F("reallife_co_tree_managers", "{count} managers", "count", "4"), true, 0.15f));
             Add("mgr:Speedy Bites~7", ONode(UiOrgKind.Person, 2, "Ray Walsh", "Speedy Bites", w.F("reallife_co_tree_staff", "{count} staff", "count", "9"), true, 0.55f), "Midtown", true);
             Add("crew:dev", ONode(UiOrgKind.Person, 3, "Dev Kapoor", null, "Customer service", false, 0.35f, UiRole.None));
             Add("crew:lena", ONode(UiOrgKind.Person, 3, "Lena Adler", null, "Cooking", false, 0.1f, UiRole.None));
@@ -382,7 +382,7 @@ internal static partial class UiSamples
                 break;
             default:
                 m.Chosen = "mgr:Speedy Bites~7";
-                m.Profile = ManagerProfileSample(w);
+                m.Profile = ManagerProfileSample(w, bare);
                 break;
         }
         if (tail.StartsWith("sub_", System.StringComparison.Ordinal))
@@ -391,7 +391,7 @@ internal static partial class UiSamples
         }
     }
 
-    private static CompanyProfile ManagerProfileSample(CompanyWords w)
+    private static CompanyProfile ManagerProfileSample(CompanyWords w, bool noExecutive = false)
     {
         string place = "Speedy Bites~7";
         var p = new CompanyProfile
@@ -427,10 +427,10 @@ internal static partial class UiSamples
                 Less = CA(CompanyDo.LimitSet, place, 4, 1), More = CA(CompanyDo.LimitSet, place, 4, 3), Typed = CA(CompanyDo.LimitSet, place, 4, 2) }
         };
         p.RouteTitle = w.F("reallife_co_route_title", "Questions {name} cannot decide go to", "name", "Ray");
-        p.RouteSub = w.F("reallife_co_route_sub", "{name} picks up what you leave for a day", "name", "Ethan Brooks");
-        p.RouteOptions = new[] { w.T("reallife_hier_you", "You"), "Ethan Brooks" };
-        p.RouteChosen = 1;
-        p.RouteActs = new[] { CA(CompanyDo.TaskSet, place, -1, 0), CA(CompanyDo.TaskSet, place, -1, 1) };
+        p.RouteSub = noExecutive ? null : w.F("reallife_co_route_sub", "{name} picks up what you leave for a day", "name", "Ethan Brooks");
+        p.RouteOptions = noExecutive ? new[] { w.T("reallife_hier_you", "You") } : new[] { w.T("reallife_hier_you", "You"), "Ethan Brooks" };
+        p.RouteChosen = noExecutive ? 0 : 1;
+        p.RouteActs = noExecutive ? new[] { CA(CompanyDo.TaskSet, place, -1, 0) } : new[] { CA(CompanyDo.TaskSet, place, -1, 0), CA(CompanyDo.TaskSet, place, -1, 1) };
         p.GradesTitle = w.F("reallife_co_how_doing", "How {name} is doing", "name", "Ray");
         p.GradeLabels = new[] { w.T("reallife_co_g_judgement", "Judgement"), w.T("reallife_co_g_speed", "Speed"), w.T("reallife_co_g_thrift", "Thrift"), w.T("reallife_co_g_morale", "Crew morale") };
         p.GradeValues = new[] { 92, 74, 61, 72 };
@@ -485,7 +485,7 @@ internal static partial class UiSamples
             more.Add(CSec(w.T("reallife_mgr_sec_directory", "Your managers"), "6"));
             var rows = new List<CompanyItem>();
             string[] names = { "Ray Walsh", "Tessa Brandt", "Omar Haddad", "Meera Iyer", "Priya Nair", "Ethan Brooks" };
-            string[] subs = { "Speedy Bites", "Bloom & Co", "Hudson Warehouse", "Regional, Midtown", "Pioneer Game Studio", "Cooking" };
+            string[] subs = { "Speedy Bites", "Bloom & Co", "Hudson Warehouse", "Regional, Midtown", "Chief human resources officer", "Chief operating officer" };
             float[] hues = { 0.55f, 0.9f, 0.75f, 0.75f, 0.4f, 0.15f };
             int[] standing = { 72, 81, 64, 68, 77, 58 };
             for (int i = 0; i < 6; i++)
@@ -548,14 +548,14 @@ internal static partial class UiSamples
         var p = new CompanyProfile
         {
             Id = "reg:Midtown", Name = "Meera Iyer", Role = w.F("reallife_co_tree_region", "Regional, {district}", "district", "Midtown"), Hue = 0.75f, Ring = UiRole.Ok, Status = w.T("reallife_mgr_in_post", "In post"), StatusTone = UiRole.Ok,
-            FactLabels = new[] { w.T("reallife_co_f_since", "Since"), w.T("reallife_co_f_places", "Places"), w.T("reallife_co_f_standing_in", "Standing in"), w.T("reallife_co_f_decisions_n", "Decisions") }, FactValues = new[] { "Day 88", "6", "68", "41" }
+            FactLabels = new[] { w.T("reallife_co_f_since", "Since"), w.T("reallife_co_f_places", "Places"), w.T("reallife_co_f_standing_in", "Standing in"), w.T("reallife_co_f_decisions_n", "Decisions") }, FactValues = new[] { "Day 88", "3", "68", "41" }
         };
         p.GradesTitle = w.F("reallife_co_how_doing", "How {name} is doing", "name", "Meera");
         p.GradeLabels = new[] { w.T("reallife_co_g_judgement", "Judgement"), w.T("reallife_co_g_speed", "Speed"), w.T("reallife_co_g_morale", "Crew morale"), w.T("reallife_hier_fig_score", "Score") };
         p.GradeValues = new[] { 88, 71, 68, 77 };
         p.More = new[]
         {
-            CSec(w.T("reallife_mgr_region_their_places", "Their places"), "6"),
+            CSec(w.T("reallife_mgr_region_their_places", "Their places"), "3"),
             new CompanyBlock
             {
                 Kind = CompanyBlockKind.Items, Items = new[]
@@ -563,9 +563,6 @@ internal static partial class UiSamples
                     new CompanyItem { Title = "Ray Walsh", Sub = "Speedy Bites", Face = true, Hue = 0.55f, Ring = UiRole.Ok, Grade = 72, Figure = "72", Press = true, Act = CA(CompanyDo.Go, "mgr:Speedy Bites~7", CompanyView.Managers) },
                     new CompanyItem { Title = "Pioneer Game Studio", Sub = w.T("reallife_mgr_empty_post", "Empty post"), Icon = UiIcon.Store, Grade = 64, Figure = "64", Press = true, Act = CA(CompanyDo.Go, "post:Pioneer Game Studio~9", CompanyView.Managers) },
                     new CompanyItem { Title = "Noor Haddad", Sub = "Midtown Deli", Face = true, Hue = 0.2f, Ring = UiRole.Ok, Grade = 69, Figure = "69", Press = true, Act = CA(CompanyDo.Go, "mgr:Speedy Bites~7", CompanyView.Managers) },
-                    new CompanyItem { Title = "Jonah Reyes", Sub = "Fifth Avenue Books", Face = true, Hue = 0.45f, Ring = UiRole.Ok, Grade = 75, Figure = "75", Press = true, Act = CA(CompanyDo.Go, "mgr:Speedy Bites~7", CompanyView.Managers) },
-                    new CompanyItem { Title = "Ines Park", Sub = "Midtown Gym", Face = true, Hue = 0.3f, Ring = UiRole.Warn, Grade = 58, Figure = "58", Press = true, Act = CA(CompanyDo.Go, "mgr:Speedy Bites~7", CompanyView.Managers) },
-                    new CompanyItem { Title = "Corner Cafe", Sub = w.T("reallife_mgr_empty_post", "Empty post"), Icon = UiIcon.Store, Grade = 61, Figure = "61", Press = true, Act = CA(CompanyDo.Go, "post:Pioneer Game Studio~9", CompanyView.Managers) }
                 }
             },
             new CompanyBlock { Kind = CompanyBlockKind.Break },
@@ -611,7 +608,7 @@ internal static partial class UiSamples
             {
                 Kind = CompanyBlockKind.Items, Items = new[]
                 {
-                    new CompanyItem { Title = "Ray Walsh", Sub = "Customer service", Face = true, Hue = 0.55f, Ring = UiRole.None, Grade = 78, Figure = "$23.50", Note = w.F("reallife_co_skill_n", "skill {n}", "n", "78"), Press = true, Act = CA(CompanyDo.Go, "post:Pioneer Game Studio~9", CompanyView.Managers, CompanyView.SubAppoint, 0, "mc:ray") },
+                    new CompanyItem { Title = "Ines Park", Sub = "Customer service", Face = true, Hue = 0.3f, Ring = UiRole.None, Grade = 78, Figure = "$23.50", Note = w.F("reallife_co_skill_n", "skill {n}", "n", "78"), Press = true, Act = CA(CompanyDo.Go, "post:Pioneer Game Studio~9", CompanyView.Managers, CompanyView.SubAppoint, 0, "mc:ray") },
                     new CompanyItem { Title = "Maya Okafor", Sub = "Customer service", Face = true, Hue = 0.6f, Ring = UiRole.None, Grade = 71, Figure = "$18.20", Note = w.F("reallife_co_skill_n", "skill {n}", "n", "71"), Press = true, Act = CA(CompanyDo.Go, "post:Pioneer Game Studio~9", CompanyView.Managers, CompanyView.SubAppoint, 0, "mc:maya") },
                     new CompanyItem { Title = "Lena Adler", Sub = "Cooking", Face = true, Hue = 0.1f, Ring = UiRole.None, Grade = 64, Figure = "$16.50", Note = w.F("reallife_co_skill_n", "skill {n}", "n", "64"), Press = true, Act = CA(CompanyDo.Go, "post:Pioneer Game Studio~9", CompanyView.Managers, CompanyView.SubAppoint, 0, "mc:lena") },
                     new CompanyItem { Title = "Dev Kapoor", Sub = "Customer service", Face = true, Hue = 0.35f, Ring = UiRole.None, Grade = 59, Figure = "$17.00", Note = w.F("reallife_co_skill_n", "skill {n}", "n", "59"), Press = true, Act = CA(CompanyDo.Go, "post:Pioneer Game Studio~9", CompanyView.Managers, CompanyView.SubAppoint, 0, "mc:dev") }
@@ -779,7 +776,7 @@ internal static partial class UiSamples
                     new CompanyRow { Id = "pf:1", Title = "Most a hire is paid", Icon = CompanyGlyphs.Policy(1), Figure = "100%", Sub = w.T("reallife_pol_as_above", "As above") },
                     new CompanyRow { Caption = true, Title = w.T("reallife_pol_cat_pay", "Pay") },
                     new CompanyRow { Id = "pf:3", Title = w.T("reallife_pol_field_pay_band", "Pay band"), Icon = CompanyGlyphs.Policy(3), Figure = "110%", Sub = w.T("reallife_pol_set_here_row", "Set here"), Chip = w.T("reallife_co_held", "Held"), ChipTone = UiRole.Warn },
-                    new CompanyRow { Id = "pf:4", Title = w.T("reallife_pol_field_raise_most", "Largest raise"), Icon = CompanyGlyphs.Policy(4), Figure = "No limit", Sub = w.T("reallife_pol_as_above", "As above") },
+                    new CompanyRow { Id = "pf:4", Title = w.T("reallife_pol_field_raise_most", "Largest raise"), Icon = CompanyGlyphs.Policy(4), Figure = "5%", Sub = w.T("reallife_pol_set_here_row", "Set here") },
                     new CompanyRow { Caption = true, Title = w.T("reallife_pol_cat_escalation", "Escalation") },
                     new CompanyRow { Id = "pf:21", Title = w.T("reallife_pol_field_unmet_days", "Days a request may wait"), Icon = CompanyGlyphs.Policy(21), Figure = "2 days", Sub = w.T("reallife_pol_as_above", "As above") }
                 };
@@ -933,7 +930,7 @@ internal static partial class UiSamples
                     Kicker = w.F("reallife_mgr_row_region", "Region {district}", "district", "Midtown"), Sub = "Meera Iyer", Title = w.T("reallife_hier_dash_title", "Store dashboard"), Icon = UiIcon.ChartPie,
                     Back = CBack(w, "reg:Midtown", CompanyView.Managers),
                     FactLabels = new[] { w.T("reallife_co_f_places", "Places"), w.T("reallife_co_f_gaps", "Gaps"), w.T("reallife_co_f_standing", "Standing"), w.T("reallife_co_f_pending", "Pending") },
-                    FactValues = new[] { "3/3", "1", "68", "1" }
+                    FactValues = new[] { "2/3", "1", "68", "1" }
                 };
                 c.Blocks = new[]
                 {
@@ -968,8 +965,8 @@ internal static partial class UiSamples
                     Title = w.T("reallife_co_candidates", "Who could do it"), Count = "2", Chosen = pick ? 0 : -1,
                     Rows = new[]
                     {
-                        new CompanyRow { Id = "xc:pro1", Title = "Noah Feldman", Sub = "Finance, senior", Face = true, Hue = 0.2f, Ring = UiRole.None, Figure = "$42.00", Note = "Pioneer HQ" },
-                        new CompanyRow { Id = "xc:pro2", Title = "Ines Duarte", Sub = "Finance, lead", Face = true, Hue = 0.5f, Ring = UiRole.None, Figure = "$55.00", Note = "Pioneer HQ" }
+                        new CompanyRow { Id = "xc:pro1", Title = filled ? "Marta Silva" : "Noah Feldman", Sub = filled ? "Operations, senior" : "Finance, senior", Face = true, Hue = 0.2f, Ring = UiRole.None, Figure = filled ? "$46.00" : "$42.00", Note = "Pioneer HQ" },
+                        new CompanyRow { Id = "xc:pro2", Title = filled ? "Jonah Reyes" : "Ines Duarte", Sub = filled ? "Operations, lead" : "Finance, lead", Face = true, Hue = 0.5f, Ring = UiRole.None, Figure = filled ? "$58.00" : "$55.00", Note = "Pioneer HQ" }
                     }
                 };
                 var c = new CompanyCard { Kicker = w.T("reallife_hier_seats", "Executive seats"), Title = "Chief financial officer", Icon = UiIcon.IdBadge, Back = CBack(w, "seat:3", CompanyView.Managers), Chips = new[] { w.T("reallife_mgr_empty_post", "Empty post") }, ChipTones = new[] { UiRole.Muted } };

@@ -56,7 +56,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     Id = "rep:" + i, Title = CompanyText.Campaign(r.Kind), Sub = r.Name + ", " + CompanyText.Day(r.From
                         + r.Days - 1), Icon = UiIcon.ClipboardText, Figure = CompanyText.Percent(r.Footfall),
-                    FigureTone = r.Footfall > 0 ? UiRole.OkText : UiRole.None, Note = CompanyText.T("reallife_co_row_extra", "amount", CompanyText.Money(r.Extra))
+                    FigureTone = r.Footfall > 0 ? UiRole.OkText : UiRole.None, Note = ExtraText(r.Extra)
                 });
             }
             page.List = new CompanyList { Title = w.T("reallife_co_tab_marketing", "Marketing"), Count = shops.Count.ToString(), Rows = rows.ToArray(),
@@ -159,6 +159,12 @@ namespace RealLifeOverhaul.Ui
             return card;
         }
 
+        // The profit a campaign left over its cost; one that cost more than it brought says "less", not a negative "extra".
+        private static string ExtraText(int extra)
+        {
+            return extra >= 0 ? CompanyText.T("reallife_co_row_extra", "amount", CompanyText.Money(extra)) : CompanyText.T("reallife_co_row_less", "amount", CompanyText.Money(-extra));
+        }
+
         // What the business's earlier campaigns did, newest first: the kind, the day it ended, the customers it brought and the profit it left; a row opens its report.
         private static void Earlier(List<CompanyBlock> blocks, CompanyDirector d, CompanyShop shop, Words w)
         {
@@ -174,7 +180,7 @@ namespace RealLifeOverhaul.Ui
                 items.Add(new CompanyItem
                 {
                     Title = CompanyText.Campaign(r.Kind), Sub = CompanyText.Day(r.From + r.Days - 1), Icon = UiIcon.ClipboardText, Figure = CompanyText.Percent(r.Footfall),
-                    FigureTone = r.Footfall > 0 ? UiRole.OkText : UiRole.None, Note = CompanyText.T("reallife_co_row_extra", "amount", CompanyText.Money(r.Extra)), Grade = -1, Press = true,
+                    FigureTone = r.Footfall > 0 ? UiRole.OkText : UiRole.None, Note = ExtraText(r.Extra), Grade = -1, Press = true,
                     Act = CompanyAct.Of(CompanyDo.Go, "rep:" + i, CompanyView.Marketing)
                 });
             }

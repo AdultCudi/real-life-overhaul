@@ -31638,5 +31638,7 @@
   "reallife_rota_floor_chart": "按小时的营业大厅",
   "reallife_co_rota_open": "每周营业 {hours} 小时",
   "reallife_co_staff_answer_by": "请在第 {day} 天前答复",
-  "reallife_co_strike_low_sec": "满意度低的员工"
+  "reallife_co_strike_low_sec": "满意度低的员工",
+  "reallife_co_staff_sick_flat": "请病假：获得一天工资的{share}。其声望不变。",
+  "reallife_co_row_less": "少 {amount}"
 }

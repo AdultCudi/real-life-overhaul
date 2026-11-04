@@ -139,7 +139,7 @@ internal static partial class UiSamples
             Headline = SF("{name} asks for {pay} an hour. {manager} can approve up to {limit}.", "name", "Dev Kapoor", "pay", "$19", "manager", "Ray", "limit", "$18"),
             Body = SF("{name} has worked both registers for 41 days and covered the lunch rush all week. Another raise this month goes over {manager}'s limit.", "name", "Dev", "manager", "Ray"),
             Asker = "Ray Walsh", AskerRole = w.T("reallife_co_q_manager_asks", "Manager, asks"), AskerHue = 0.55f, AskerRing = UiRole.Warn,
-            Subject = "Dev Kapoor", SubjectRole = w.F("reallife_co_q_cashier_days", "{skill}, {days} days", "skill", "Cashier", "days", "41"), SubjectRing = UiRole.Ok,
+            Subject = "Dev Kapoor", SubjectRole = w.F("reallife_co_q_cashier_days", "{skill}, {days} days", "skill", "Customer service", "days", "41"), SubjectRing = UiRole.Ok,
             FactLabels = new[] { w.T("reallife_co_q_now", "Now"), w.T("reallife_co_q_asks_for", "Asks for"), w.T("reallife_co_q_limit", "Limit"), "Covered this week" },
             FactValues = new[] { "$17 / h", "$19 / h", "$18 / h", "38 h" },
             OpenLabel = w.F("reallife_co_open_page", "Open {name}'s page", "name", "Ray"), Open = CA(CompanyDo.Go, "mgr:Speedy Bites~7", CompanyView.Managers),

@@ -257,8 +257,11 @@ namespace RealLifeOverhaul.Ui
                 acts[i] = CompanyAct.Of(CompanyDo.SickPolicy, null, i);
             }
             blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Choice, Text = w.T("reallife_co_staff_sick", "Sick pay"), Options = options, Chosen = s.SickPolicy, Acts = acts });
-            blocks.Add(Note(CompanyText.T("reallife_co_staff_sick_what", "share", CompanyText.Share(CompanyCatalogue.SickShare[s.SickPolicy]),
-                "standing", CompanyText.Percent(CompanyCatalogue.SickStanding[s.SickPolicy]).TrimEnd('%'))));
+            // A policy that leaves the standing as it is says so, instead of a change "by 0".
+            blocks.Add(Note(CompanyCatalogue.SickStanding[s.SickPolicy] == 0
+                ? CompanyText.T("reallife_co_staff_sick_flat", "share", CompanyText.Share(CompanyCatalogue.SickShare[s.SickPolicy]))
+                : CompanyText.T("reallife_co_staff_sick_what", "share", CompanyText.Share(CompanyCatalogue.SickShare[s.SickPolicy]),
+                    "standing", CompanyText.Percent(CompanyCatalogue.SickStanding[s.SickPolicy]).TrimEnd('%'))));
             blocks.Add(Note(CompanyText.T("reallife_co_staff_market")));
             if (!few)
             {
@@ -406,7 +409,7 @@ namespace RealLifeOverhaul.Ui
                 Sec(w.T("reallife_co_strike_low_sec", "Who stands low")),
                 new CompanyBlock { Kind = CompanyBlockKind.Items, Items = CrewItems(d, place, w, true, 6) },
                 Sec(CompanyText.T("reallife_co_strike_ways")),
-                Row(CompanyText.T("reallife_co_strike_do_raise"), CompanyText.Wage(d.StrikeCost(place, StrikeAnswer.Raise))),
+                Row(CompanyText.T("reallife_co_strike_do_raise"), w.PerHour(d.StrikeCost(place, StrikeAnswer.Raise))),
                 Row(CompanyText.T("reallife_co_strike_do_payment"), CompanyText.Money(d.StrikeCost(place, StrikeAnswer.Payment))),
                 Note(CompanyText.T("reallife_co_strike_sit", "day", file.StrikeEnd.ToString())),
                 Buttons(

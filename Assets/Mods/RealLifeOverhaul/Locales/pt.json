@@ -31638,5 +31638,7 @@
   "reallife_rota_floor_chart": "O salão por hora",
   "reallife_co_rota_open": "aberto {hours} h por semana",
   "reallife_co_staff_answer_by": "responda até o dia {day}",
-  "reallife_co_strike_low_sec": "Quem está com a moral baixa"
+  "reallife_co_strike_low_sec": "Quem está com a moral baixa",
+  "reallife_co_staff_sick_flat": "Afastado por doença: recebe {share} do pagamento de um dia. O prestígio dele não muda.",
+  "reallife_co_row_less": "{amount} a menos"
 }

@@ -250,9 +250,20 @@ namespace RealLifeOverhaul.Ui
                 return cy;
             }
             int rows = (int)Math.Max(1f, Math.Floor((limit - cy) / PersonRow));
+            if (rows < o.Managers.Length && rows > 1 && (limit - cy) - rows * PersonRow < UiTokens.PairRow)
+            {
+                rows--;   // the room for the count of the rest
+            }
             for (int i = 0; i < Math.Min(o.Managers.Length, rows); i++)
             {
                 cy += ManagerLine(s, at, lay, ref o.Managers[i], x, cy, rw);
+            }
+            if (rows < o.Managers.Length && limit - cy >= UiTokens.PairRow)
+            {
+                // The managers that have no room are counted, so that "All N" never disagrees with the rows.
+                UiDraw.TextMiddle(s, at, x + UiTokens.AvatarRow + UiTokens.S3, cy, UiTokens.PairRow, rw - UiTokens.AvatarRow - UiTokens.S3, UiStyle.Small, UiRole.Muted,
+                    w.F("reallife_co_and_more", "and {count} more", "count", (o.Managers.Length - rows).ToString()), UiFlags.Truncate);
+                cy += UiTokens.PairRow;
             }
             return cy;
         }

@@ -90,7 +90,7 @@ internal static partial class UiSamples
             rows.Add(new CompanyRow { Id = "p:Hudson Warehouse~4", Title = "Hudson Warehouse", Sub = "Warehouse", Icon = UiIcon.Calendar, Figure = w.T("reallife_rota_row_none", "No rota"),
                 FigureTone = UiRole.Muted, Note = w.F("reallife_co_tree_staff", "{count} staff", "count", "4") });
         }
-        r.Places = new CompanyList { Title = w.T("reallife_rota_tab", "Rota"), Count = one ? "1" : "4", Rows = rows.ToArray(), Chosen = -1 };
+        r.Places = new CompanyList { Title = w.T("reallife_rota_tab", "Rota"), Count = one ? "1" : "3", Rows = rows.ToArray(), Chosen = -1 };
         for (int i = 0; i < rows.Count; i++)
         {
             r.Places.Chosen = rows[i].Id == pick ? i : r.Places.Chosen;
