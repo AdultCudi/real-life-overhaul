@@ -76,7 +76,7 @@ namespace RealLifeOverhaul.Ui
                     new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_asking"), Kind = UiCellKind.Money, Width = 104f },
                     new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_against"), Kind = UiCellKind.Meter, Width = 120f },
                     new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_left"), Kind = UiCellKind.Text, Width = 80f },
-                    new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_state"), Kind = UiCellKind.Chip, Width = 144f }
+                    new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_state"), Kind = UiCellKind.Chip, Width = 200f }
                 };
                 int sold = 0, margin = 0;
                 for (int y = 0; y < _s.Yards.Count; y++)
@@ -290,7 +290,7 @@ namespace RealLifeOverhaul.Ui
                     new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_owed_paid"), Kind = UiCellKind.Money, Width = 112f },
                     new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_weekly"), Kind = UiCellKind.Money, Width = 104f },
                     new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_until"), Kind = UiCellKind.Date, Width = 96f },
-                    new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_state"), Kind = UiCellKind.Chip, Width = 160f }
+                    new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_state"), Kind = UiCellKind.Chip, Width = 200f }
                 };
                 var side = new UiFactCardModel
                 {
@@ -371,11 +371,11 @@ namespace RealLifeOverhaul.Ui
                 _v.Pick = null;
                 var cols = new[]
                 {
-                    new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_what"), Kind = UiCellKind.Tile, Width = 0f },
+                    new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_what"), Kind = UiCellKind.Tile, Width = 216f },
                     new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_showroom"), Kind = UiCellKind.Text, Width = 176f },
                     new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_progress"), Kind = UiCellKind.Text, Width = 144f },
-                    new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_about"), Kind = UiCellKind.Text, Width = 200f },
-                    new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_state"), Kind = UiCellKind.Chip, Width = 152f }
+                    new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_about"), Kind = UiCellKind.Text, Width = 0f },
+                    new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_state"), Kind = UiCellKind.Chip, Width = 200f }
                 };
                 var side = new UiFactCardModel
                 {

@@ -234,6 +234,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateBalance.cs" Link="Mod\EstateBalance.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateStore.cs" Link="Mod\EstateStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateTenants.cs" Link="Mod\EstateTenants.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateDay.cs" Link="Mod\EstateDay.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateExtraStore.cs" Link="Mod\EstateExtraStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\RentMap.cs" Link="Mod\RentMap.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Online\OnlineCatalogue.cs" Link="Mod\OnlineCatalogue.cs" />

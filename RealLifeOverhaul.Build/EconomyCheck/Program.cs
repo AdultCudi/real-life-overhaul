@@ -171,6 +171,8 @@ internal static partial class Program
         {
             EstateWave4();
             DealerWave4();
+            EstateRun();
+            DealerRun();
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -650,6 +652,8 @@ internal static partial class Program
         Estate();
         EstateWave4();   // named tenants, the rent record, booked servicing, improvements, the city's rents and their save (EstateWave4Checks.cs)
         DealerWave4();   // the other dealers' cars and prices, looks, an auction's bids and their save (DealerWave4Checks.cs)
+        EstateRun();   // a hundred and twenty days of the property business through its day entries, a save on day 30 and one from before (EstateRunChecks.cs)
+        DealerRun();   // ninety days of the dealership through its hour, the same (DealerRunChecks.cs)
         Online();
         Logistics();   // delivery trips and food spoilage: departures, timeline, loads, fuel, wages, the rivals' books, batches, shelf life and both saves (LogisticsChecks.cs)
         Services();

@@ -123,15 +123,15 @@ namespace RealLifeOverhaul.Ui
                 }
                 string[] filterKeys = { "reallife_ui_dealer_filter_all", "reallife_ui_dealer_filter_new", "reallife_ui_dealer_filter_used", "reallife_ui_dealer_filter_shop" };
                 string[] sortKeys = { "reallife_ui_dealer_sort_bay", "reallife_ui_dealer_sort_price", "reallife_ui_dealer_sort_days" };
-                _m.FilterChips = new UiActionModel[filterKeys.Length];
-                for (int i = 0; i < filterKeys.Length; i++)
+                _m.FilterChips = new UiActionModel[cars > 0 ? filterKeys.Length : 0];
+                for (int i = 0; i < _m.FilterChips.Length; i++)
                 {
                     int at = i;
                     _m.FilterChips[i] = _runs.Button(DealerText.T(filterKeys[i], "count", held[i].ToString(Inv)), UiButtonKind.Chip, UiIcon.None, UiAction.Count, () => Show(() => _v.Filter = at));
                 }
                 _m.FilterAt = filter;
-                _m.SortChips = new UiActionModel[sortKeys.Length];
-                for (int i = 0; i < sortKeys.Length; i++)
+                _m.SortChips = new UiActionModel[cars > 0 ? sortKeys.Length : 0];
+                for (int i = 0; i < _m.SortChips.Length; i++)
                 {
                     int at = i;
                     _m.SortChips[i] = _runs.Button(DealerText.T(sortKeys[i]), UiButtonKind.Chip, UiIcon.None, UiAction.Count, () => Show(() => _v.Sort = at));

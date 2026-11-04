@@ -163,9 +163,7 @@ namespace RealLifeOverhaul.Economy
         // The city's inspection of a let building whose day has come; with 'now' (a test) whatever its day.
         private Inspection InspectNow(EstateHolding h, int day, bool now)
         {
-            EstateRules.Schedule(h, _state.Seed, day);
-            Inspection r = EstateRules.Inspect(h, day, _climate, now);
-            RecordInspection(h, r, day);
+            Inspection r = EstateDay.Inspect(_state, h, day, _climate, now);
             string pick = "own:" + h.Place;
             if (r.Done && r.Passed)
             {

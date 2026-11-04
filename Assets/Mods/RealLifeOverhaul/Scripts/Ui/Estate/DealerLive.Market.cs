@@ -68,7 +68,8 @@ namespace RealLifeOverhaul.Ui
                             Money(l.Kind == ListingKind.Used && l.Countered > 0 ? l.Countered : l.Asking), state, chip },
                         Values = new[] { (int)(auction ? UiIcon.Tag : l.Kind == ListingKind.Used ? UiIcon.Car : UiIcon.Store), 0, 0, 0, 0, 0, 0 },
                         Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, auction ? (l.Leader == 0 ? UiRole.Ok : l.Leader > 0 ? UiRole.Warn : UiRole.Notice) : UiRole.Notice },
-                        Subs = new[] { DealerGame.ColourName(l.Colour), null, null, null, null, null, null }
+                        Subs = new[] { DealerGame.ColourName(l.Colour), null, null, null, null, null, null },
+                        Pictures = new[] { DealerLive.PictureOf(l.Type, out float _), null, null, null, null, null, null }
                     });
                     keys.Add("list:" + l.Id);
                     news += l.Kind == ListingKind.Wholesale ? 1 : 0;
@@ -259,8 +260,11 @@ namespace RealLifeOverhaul.Ui
                         })));
                 }
                 right.AddRange(ifWin);
-                right.Add(UiFactLine.Section(DealerText.T("reallife_ui_dealer_bidders", "count", l.BidLogCount.ToString(Inv))));
-                if (l.BidLogCount == 0)
+                if (l.BidLogCount > 0)
+                {
+                    right.Add(UiFactLine.Section(DealerText.T("reallife_ui_dealer_bidders", "count", l.BidLogCount.ToString(Inv))));
+                }
+                else
                 {
                     right.Add(UiFactLine.Say(DealerText.T("reallife_ui_dealer_no_bids")));
                 }
@@ -269,7 +273,7 @@ namespace RealLifeOverhaul.Ui
                     BidEntry b = l.BidLog[i];
                     string who = b.Bidder == 0 ? DealerText.T("reallife_ui_dealer_you") : DealerCatalogue.RivalNames[(b.Bidder - 1) % DealerCatalogue.RivalNames.Length];
                     int ago = Math.Max(0, _now - b.Hour);
-                    right.Add(UiFactLine.Row(who + ", " + (ago == 0 ? DealerText.T("reallife_ui_dealer_this_hour") : ago == 1 ? DealerText.T("reallife_ui_dealer_hour_ago") : DealerText.T("reallife_ui_dealer_hours_ago", "hours", ago.ToString(Inv))), Money(b.Amount), b.Bidder == 0 ? UiRole.AccentText : UiRole.None));
+                    right.Add(UiFactLine.Who(who, ago == 0 ? DealerText.T("reallife_ui_dealer_this_hour") : ago == 1 ? DealerText.T("reallife_ui_dealer_hour_ago") : DealerText.T("reallife_ui_dealer_hours_ago", "hours", ago.ToString(Inv)), Money(b.Amount), b.Bidder == 0 ? UiRole.AccentText : UiRole.None));
                 }
                 if (l.Bids > l.BidLogCount)
                 {

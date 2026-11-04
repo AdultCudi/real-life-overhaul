@@ -13,7 +13,8 @@ namespace RealLifeOverhaul.Ui
         Switch,         // a label and the game's toggle (On)
         Step,           // a figure to move between a minus and a plus (Value), with what it means under it (Hint)
         Heading,        // a section's label in capitals, with a hairline over it
-        Gap             // a step of room
+        Gap,            // a step of room
+        Person          // a face with a name and a line under it (Hint), and a figure at the right (Value, in Ink)
     }
 
     /// <summary>One line of a fact card. Commands: a link and a switch run <see cref="Command"/>; a step's minus runs it and its plus runs <see cref="Command2"/>; every one with <see cref="Arg"/>.</summary>
@@ -26,11 +27,35 @@ namespace RealLifeOverhaul.Ui
         public bool On, Met, CanLess, CanMore, Disabled;
         public int Command, Command2, Arg;
 
-        public static UiFactLine Row(string label, string value, UiRole ink = UiRole.None) => new UiFactLine { Kind = UiFactKind.Row, Label = label, Value = value, Ink = ink };
+        /// <summary>Words the old apps wrote with the game's rich-text marks (bold, colour) as plain words: the kit sets its own emphasis.</summary>
+        public static string Plain(string words)
+        {
+            if (string.IsNullOrEmpty(words) || words.IndexOf('<') < 0)
+            {
+                return words;
+            }
+            var sb = new System.Text.StringBuilder(words.Length);
+            for (int i = 0; i < words.Length; i++)
+            {
+                if (words[i] == '<')
+                {
+                    int end = words.IndexOf('>', i);
+                    if (end > i && end - i <= 24 && (words[i + 1] == '/' || char.IsLetter(words[i + 1])))
+                    {
+                        i = end;
+                        continue;
+                    }
+                }
+                sb.Append(words[i]);
+            }
+            return sb.ToString();
+        }
 
-        public static UiFactLine Say(string words, UiRole ink = UiRole.None) => new UiFactLine { Kind = UiFactKind.Sentence, Value = words, Ink = ink };
+        public static UiFactLine Row(string label, string value, UiRole ink = UiRole.None) => new UiFactLine { Kind = UiFactKind.Row, Label = Plain(label), Value = Plain(value), Ink = ink };
 
-        public static UiFactLine Tick(string words, bool met) => new UiFactLine { Kind = UiFactKind.Check, Value = words, Met = met };
+        public static UiFactLine Say(string words, UiRole ink = UiRole.None) => new UiFactLine { Kind = UiFactKind.Sentence, Value = Plain(words), Ink = ink };
+
+        public static UiFactLine Tick(string words, bool met) => new UiFactLine { Kind = UiFactKind.Check, Value = Plain(words), Met = met };
 
         public static UiFactLine Bar(string label, int fill) => new UiFactLine { Kind = UiFactKind.Meter, Label = label, Fill = fill };
 
@@ -45,6 +70,8 @@ namespace RealLifeOverhaul.Ui
         public static UiFactLine Section(string label) => new UiFactLine { Kind = UiFactKind.Heading, Label = label };
 
         public static UiFactLine Space() => new UiFactLine { Kind = UiFactKind.Gap };
+
+        public static UiFactLine Who(string name, string line, string value, UiRole ink = UiRole.None) => new UiFactLine { Kind = UiFactKind.Person, Label = name, Hint = line, Value = value, Ink = ink };
     }
 
     /// <summary>A panel of facts and what to do about them: a title with a state chip, a line under it, the lines and the buttons.</summary>
@@ -170,6 +197,8 @@ namespace RealLifeOverhaul.Ui
                     return UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S4;
                 case UiFactKind.Gap:
                     return UiTokens.S3;
+                case UiFactKind.Person:
+                    return UiTokens.S12;
                 default:
                     return UiTokens.PairRow;
             }
@@ -202,6 +231,18 @@ namespace RealLifeOverhaul.Ui
                 case UiFactKind.Step:
                     Step(s, at, l, x, y, w);
                     break;
+                case UiFactKind.Person:
+                {
+                    float face = UiTokens.AvatarSmall, figure = Math.Min(UiDraw.SnapDown(w * 0.4f), UiDraw.Snap(UiTextRules.Width(l.Value ?? string.Empty, UiStyle.BodyStrong) + UiTokens.S1));
+                    UiDraw.Portrait(s, at, x, y + UiDraw.SnapDown((UiTokens.S12 - face) / 2f), face, l.Label, UiColour.HueOf(l.Label ?? string.Empty), UiRole.None);
+                    float tx = x + face + UiTokens.S3, tw = w - face - UiTokens.S3 - figure - UiTokens.S3;
+                    float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
+                    float top = y + UiDraw.SnapDown((UiTokens.S12 - lh - sh) / 2f);
+                    UiDraw.Text(s, at, tx, top, tw, UiStyle.Title, UiRole.Text, l.Label, UiFlags.Truncate | UiFlags.Middle);
+                    UiDraw.Text(s, at, tx, top + lh, tw, UiStyle.Small, UiRole.Text2, l.Hint, UiFlags.Truncate | UiFlags.Middle);
+                    UiDraw.TextMiddle(s, at, x + w - figure, y, UiTokens.S12, figure, UiStyle.BodyStrong, l.Ink == UiRole.None ? UiRole.Text : l.Ink, l.Value, UiFlags.Right | UiFlags.Truncate);
+                    break;
+                }
                 case UiFactKind.Heading:
                     UiDraw.Box(s, at, x, y, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
                     UiDraw.Text(s, at, x, y + UiTokens.S3, w, UiStyle.SectionHeader, UiRole.Text2, l.Label, UiFlags.Label | UiFlags.Truncate);

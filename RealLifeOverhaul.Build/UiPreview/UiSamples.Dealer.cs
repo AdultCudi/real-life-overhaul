@@ -142,15 +142,15 @@ internal static partial class UiSamples
         m.Catalogue = c;
         string[][] chips = { new[] { "reallife_ui_dealer_filter_all", "All {count}", "12" }, new[] { "reallife_ui_dealer_filter_new", "New {count}", "3" }, new[] { "reallife_ui_dealer_filter_used", "Used {count}", "7" },
             new[] { "reallife_ui_dealer_filter_shop", "In the workshop {count}", "2" } };
-        m.FilterChips = new UiActionModel[chips.Length];
-        for (int i = 0; i < chips.Length; i++)
+        m.FilterChips = new UiActionModel[count > 0 ? chips.Length : 0];
+        for (int i = 0; i < m.FilterChips.Length; i++)
         {
             runs.Add(Yes);
             m.FilterChips[i] = new UiActionModel { Label = Fx(W(t, chips[i][0], chips[i][1]), "count", chips[i][2]), Kind = UiButtonKind.Chip, Command = EstateFace.ActionCommand, Arg = runs.Count - 1 };
         }
         string[][] sorts = { new[] { "reallife_ui_dealer_sort_bay", "By bay number" }, new[] { "reallife_ui_dealer_sort_price", "By price" }, new[] { "reallife_ui_dealer_sort_days", "Longest on the lot" } };
-        m.SortChips = new UiActionModel[sorts.Length];
-        for (int i = 0; i < sorts.Length; i++)
+        m.SortChips = new UiActionModel[count > 0 ? sorts.Length : 0];
+        for (int i = 0; i < m.SortChips.Length; i++)
         {
             runs.Add(Yes);
             m.SortChips[i] = new UiActionModel { Label = W(t, sorts[i][0], sorts[i][1]), Kind = UiButtonKind.Chip, Command = EstateFace.ActionCommand, Arg = runs.Count - 1 };
@@ -334,7 +334,6 @@ internal static partial class UiSamples
             UiFactLine.Row(W(t, "reallife_ui_dealer_held_by", "Held by"), nobid ? W(t, "reallife_dealer_state_no_bid", "No bid yet") : Fx(W(t, "reallife_dealer_state_rival", "{rival} leads"), "rival", "Halden Motors")),
             UiFactLine.Bar(Fx(W(t, "reallife_ui_dealer_time_left", "Time left, {time}"), "time", "2 hours"), 40),
             EstateStep(runs, W(t, "reallife_ui_dealer_your_bid", "Your bid"), "$30,000", Fx(W(t, "reallife_ui_dealer_bid_hint", "Bids go up by {step}, so the least you can bid is {least}."), "step", "$200", "least", nobid ? "$21,600" : "$29,600")),
-            UiFactLine.Section(Fx(W(t, "reallife_ui_dealer_bidders", "Bidders, the last {count}"), "count", nobid ? "0" : "4"))
         };
         int win = Array.FindIndex(a.Left.Lines, f => f.Kind == UiFactKind.Heading);
         if (win >= 0)
@@ -342,7 +341,11 @@ internal static partial class UiSamples
             var ifWin = new UiFactLine[a.Left.Lines.Length - win];
             Array.Copy(a.Left.Lines, win, ifWin, 0, ifWin.Length);
             Array.Resize(ref a.Left.Lines, win);
-            lines.InsertRange(lines.Count - 1, ifWin);
+            lines.AddRange(ifWin);
+        }
+        if (!nobid)
+        {
+            lines.Add(UiFactLine.Section(Fx(W(t, "reallife_ui_dealer_bidders", "Bidders, the last {count}"), "count", "4")));
         }
         if (nobid)
         {
@@ -357,7 +360,7 @@ internal static partial class UiSamples
             foreach (string[] b in bids)
             {
                 int ago = int.Parse(b[1]) / 60 + 1;
-                lines.Add(UiFactLine.Row(b[0] + ", " + (ago == 1 ? W(t, "reallife_ui_dealer_hour_ago", "an hour ago") : Fx(W(t, "reallife_ui_dealer_hours_ago", "{hours} hours ago"), "hours", ago.ToString())), b[2]));
+                lines.Add(UiFactLine.Who(b[0], ago == 1 ? W(t, "reallife_ui_dealer_hour_ago", "an hour ago") : Fx(W(t, "reallife_ui_dealer_hours_ago", "{hours} hours ago"), "hours", ago.ToString()), b[2]));
             }
         }
         a.Right = new UiFactCardModel
@@ -373,6 +376,21 @@ internal static partial class UiSamples
         m.Auction = a;
     }
 
+    // A longer list for a preview: the rows again for other people, so a table stands as full as a busy showroom's.
+    private static void Pad(List<UiDataRow> rows, int to, params string[] names)
+    {
+        int first = rows.Count;
+        for (int i = 0; rows.Count < to; i++)
+        {
+            UiDataRow from = rows[i % first];
+            UiDataRow copy = from;
+            copy.Cells = (string[])from.Cells.Clone();
+            copy.Cells[0] = names[i % names.Length];
+            copy.Hue = UiColourHue(copy.Cells[0]);
+            rows.Add(copy);
+        }
+    }
+
     private static void DealerOffers(UiWords t, EstateModel m, List<Func<bool>> runs)
     {
         var rows = new List<UiDataRow>
@@ -384,6 +402,7 @@ internal static partial class UiSamples
             Row(new[] { W(t, "reallife_dealer_to_trade", "The trade"), "Volta SUV", "$41,200", "$34,100", string.Empty, "Day 211", Fx(W(t, "reallife_dealer_state_sold", "Sold, margin {margin}"), "margin", "$7,100") }, new[] { 0, (int)UiIcon.Car, 0, 0, -1, 0, 0 },
                 new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.Ok }, new[] { "Pioneer Motors", string.Empty, null, null, null, null, null })
         };
+        Pad(rows, 9, "Priya Nair", "Theo Brandt", "Lena Hoffmann", "Imani Cole", "Owen Park", "Yuki Tanaka");
         var cols = new[]
         {
             new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_buyer", "Buyer"), Kind = UiCellKind.Person, Width = 0f },
@@ -392,7 +411,7 @@ internal static partial class UiSamples
             new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_asking", "Asking"), Kind = UiCellKind.Money, Width = 104f },
             new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_against", "Against asking"), Kind = UiCellKind.Meter, Width = 120f },
             new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_left", "Time left"), Kind = UiCellKind.Text, Width = 80f },
-            new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_state", "State"), Kind = UiCellKind.Chip, Width = 144f }
+            new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_state", "State"), Kind = UiCellKind.Chip, Width = 200f }
         };
         var side = new UiFactCardModel
         {
@@ -455,6 +474,7 @@ internal static partial class UiSamples
             Row(new[] { "Theo Brandt", "Volta SUV", "$1,240", string.Empty, "Day 290", W(t, "reallife_dealer_tier_extended", "Silver") }, new[] { 0, (int)UiIcon.ShieldCheck, 0, 0, 0, 0 },
                 new[] { UiRole.None, UiRole.None, UiRole.Warn, UiRole.None, UiRole.None, UiRole.Notice }, new[] { "Pioneer Motors", Fx(W(t, "reallife_ui_dealer_claims", "{count} claims"), "count", "1"), null, null, null, null }, UiColourHue("Theo Brandt"))
         };
+        Pad(rows, 9, "Sofia Marchetti", "Marcus Bell", "Owen Park", "Imani Cole", "Priya Nair", "Yuki Tanaka");
         var cols = new[]
         {
             new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_customer", "Customer"), Kind = UiCellKind.Person, Width = 0f },
@@ -462,7 +482,7 @@ internal static partial class UiSamples
             new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_owed_paid", "Owed or paid out"), Kind = UiCellKind.Money, Width = 112f },
             new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_weekly", "A week"), Kind = UiCellKind.Money, Width = 104f },
             new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_until", "Until"), Kind = UiCellKind.Date, Width = 96f },
-            new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_state", "State"), Kind = UiCellKind.Chip, Width = 160f }
+            new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_state", "State"), Kind = UiCellKind.Chip, Width = 200f }
         };
         var side = new UiFactCardModel
         {
@@ -520,10 +540,10 @@ internal static partial class UiSamples
         };
         var cols = new[]
         {
-            new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_what", "What"), Kind = UiCellKind.Tile, Width = 0f },
+            new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_what", "What"), Kind = UiCellKind.Tile, Width = 216f },
             new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_showroom", "Showroom"), Kind = UiCellKind.Text, Width = 176f },
             new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_progress", "Progress"), Kind = UiCellKind.Text, Width = 144f },
-            new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_about", "What it does"), Kind = UiCellKind.Text, Width = 200f },
+            new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_about", "What it does"), Kind = UiCellKind.Text, Width = 0f },
             new UiDataColumn { Title = W(t, "reallife_ui_dealer_col_state", "State"), Kind = UiCellKind.Chip, Width = 152f }
         };
         var side = new UiFactCardModel

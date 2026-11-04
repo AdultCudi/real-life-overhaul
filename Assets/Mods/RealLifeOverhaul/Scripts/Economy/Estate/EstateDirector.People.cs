@@ -30,87 +30,35 @@ namespace RealLifeOverhaul.Economy
         // named here, once, the same on every machine. Their strain on the rent (a lost job, a wage the rent is too much of) is read each morning.
         private void PeopleMorning(EstateHolding h, int day)
         {
-            ITenantPool pool = EstateBridges.Pool != null ? EstateBridges.Pool() : null;
-            for (int n = 0; n < h.Units.Count; n++)
-            {
-                EstateUnit u = h.Units[n];
-                if (!u.Let)
-                {
-                    u.Strain = 0;
-                    continue;
-                }
-                if (u.PersonId <= 0 && pool != null)
-                {
-                    TenantRules.Name(h, n, pool, _state.Seed, day, TakenPerson);
-                }
-                u.Strain = pool != null ? TenantRules.Strain(pool, u.PersonId, u.Rent) : 0;
-            }
-        }
-
-        private bool TakenPerson(int id)
-        {
-            for (int i = 0; i < _state.Holdings.Count; i++)
-            {
-                List<EstateUnit> units = _state.Holdings[i].Units;
-                for (int n = 0; n < units.Count; n++)
-                {
-                    if (units[n].PersonId == id)
-                    {
-                        return true;
-                    }
-                }
-            }
-            return false;
+            EstateDay.People(_state, h, day, EstateBridges.Pool != null ? EstateBridges.Pool() : null);
         }
 
         // A lease has just started: the tenant is named at once, so the page shows who it is.
         private void NameLease(EstateHolding h, int unit)
         {
-            ITenantPool pool = EstateBridges.Pool != null ? EstateBridges.Pool() : null;
-            if (pool != null)
-            {
-                TenantRules.Name(h, unit, pool, _state.Seed, Save.Day, TakenPerson);
-            }
+            EstateDay.Lease(_state, h, unit, Save.Day, EstateBridges.Pool != null ? EstateBridges.Pool() : null);
         }
 
         // ------------------------------------------------------------------------------------------------- rent record and inspections
-
-        private void RecordRent(EstateUnit u, TenancyDay d, int day)
-        {
-            RentRecordRules.Day(u, d.Missed, d.Lump, day, MacroCatalogue.MonthDays(_climate.DaysPerYear));
-        }
-
-        private static void RecordInspection(EstateHolding h, Inspection r, int day)
-        {
-            if (!r.Done)
-            {
-                return;
-            }
-            h.LastInspectDay = day;
-            h.LastInspectScore = r.Score;
-            h.LastInspect = (int)(r.Passed ? InspectResult.Passed : InspectResult.Failed);
-        }
 
         // ------------------------------------------------------------------------------------------------- booked servicing
 
         // The visits booked for today are paid and done; a visit the money does not cover waits a day and the player is told.
         private void ServicesMorning(EstateHolding h, int day)
         {
-            ServiceBooking b = ServiceRules.NextDue(h, day);
-            for (int guard = 0; b != null && guard < EstateCatalogue.ServicesMost; guard++)
-            {
-                if (!Cost(b.Fee, EstateGame.RepairsKey, h.Name, h.Place, "a booked " + EstateText.Fault(b.Kind) + " service", false))
+            EstateDay.Services(h, day, _climate.DaysPerYear,
+                b => Cost(b.Fee, EstateGame.RepairsKey, h.Name, h.Place, "a booked " + EstateText.Fault(b.Kind) + " service", false),
+                (b, done) =>
                 {
-                    b.Day = day + 1;
-                    Tell(NotificationType.Warning, "reallife_estate_note_service_broke", Data("building", h.Name, "amount", EstateText.Money(b.Fee)), TabWorks, "own:" + h.Place);
-                    break;
-                }
-                h.CallsYear += b.Fee;
-                h.CostYear += b.Fee;
-                ServiceRules.Complete(h, b, day, _climate.DaysPerYear);
-                Tell(NotificationType.Success, "reallife_estate_note_service_done", Data("building", h.Name, "fault", EstateText.Fault(b.Kind), "amount", EstateText.Money(b.Fee)), TabWorks, "own:" + h.Place);
-                b = ServiceRules.NextDue(h, day);
-            }
+                    if (done)
+                    {
+                        Tell(NotificationType.Success, "reallife_estate_note_service_done", Data("building", h.Name, "fault", EstateText.Fault(b.Kind), "amount", EstateText.Money(b.Fee)), TabWorks, "own:" + h.Place);
+                    }
+                    else
+                    {
+                        Tell(NotificationType.Warning, "reallife_estate_note_service_broke", Data("building", h.Name, "amount", EstateText.Money(b.Fee)), TabWorks, "own:" + h.Place);
+                    }
+                });
         }
 
         /// <summary>Books a service for a kind of fault at a building, the earliest day it can be done. False when it cannot be (booked already, the most booked, no building).</summary>
@@ -206,11 +154,7 @@ namespace RealLifeOverhaul.Economy
                 _rentRead = null;
                 _rentsNext = _rents;   // the read before it is the next one's room
                 _rents = done;
-                int month = done.Day / Math.Max(1, done.MonthDays);
-                if (RentRingRules.Month(_state, month, Math.Max(0, done.MeanUnit((int)EstateUse.Homes))))
-                {
-                    RentRingRules.Mark(_state, done);
-                }
+                EstateDay.Ring(_state, done);
                 Changed();
                 return true;
             }

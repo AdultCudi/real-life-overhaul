@@ -240,8 +240,7 @@ namespace RealLifeOverhaul.Economy
             EstateUnit u = h.Units[unit];
             int days = u.ArrearsDays, rent = u.Rent;
             bool onPlan = u.OnPlan;
-            TenancyDay d = EstateRules.Day(h, unit, _state.Seed, day, _climate, Duties);
-            RecordRent(u, d, day);
+            TenancyDay d = EstateDay.Unit(_state, h, unit, day, _climate, Duties);
             string name = EstateText.UnitName(h, unit), pick = UnitPick(h, unit);
             if (d.Lump > 0)
             {
