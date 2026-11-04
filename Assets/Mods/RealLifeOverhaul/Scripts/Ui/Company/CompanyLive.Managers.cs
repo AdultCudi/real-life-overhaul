@@ -449,6 +449,7 @@ namespace RealLifeOverhaul.Ui
             p.CrewTitle = w.F("reallife_co_crew_title", "{name}'s crew", "name", FirstName(m.Name));
             p.CrewCount = crewTotal > 0 ? w.F("reallife_co_staff_count_n", "{count} staff", "count", crewTotal.ToString()) : null;
             p.Crew = crew.ToArray();
+            p.CrewTotal = crewTotal;
             // What can be done with the post.
             var buttons = new List<CompanyButton>(2)
             {
@@ -619,7 +620,8 @@ namespace RealLifeOverhaul.Ui
                 places.Add(new CompanyItem
                 {
                     Title = mp.Own.Name, Sub = mp.Place.Name, Face = true, Hue = UiColour.HueOf(mp.Own.Name), Ring = d.PostOf(mp) == PostState.InPost ? UiRole.Ok : UiRole.Warn,
-                    Grade = count > 0 ? standing : -1, Figure = count > 0 ? standing.ToString() : null, Press = true, Act = CompanyAct.Of(CompanyDo.Go, "mgr:" + mp.Place.Place, CompanyView.Managers)
+                    Grade = count > 0 ? standing : -1, Figure = count > 0 ? standing.ToString() : null, Note = count > 0 ? w.T("reallife_co_crew_standing", "crew standing") : null, Press = true,
+                    Act = CompanyAct.Of(CompanyDo.Go, "mgr:" + mp.Place.Place, CompanyView.Managers)
                 });
             }
             if (places.Count > 0)
@@ -641,33 +643,16 @@ namespace RealLifeOverhaul.Ui
             {
                 left.Add(Note(CompanyText.T("reallife_co_no_managers")));   // nothing to count for a company that has no manager: no month of zeros
                 month.Clear();
-            }
-            var right = month;
-            // The businesses that have no manager yet, as rows that open the post.
-            var open = new List<CompanyItem>(2 * CrewShown);
-            int openTotal = 0;
-            for (int i = 0; i < d.Managed.Count; i++)
-            {
-                ManagedPlace mp = d.Managed[i];
-                if (mp.Own != null)
+                // What a manager would decide, from the decisions the catalogue gives every kind of place: the owner sees what there is to hand over.
+                var every = new List<CompanyItem>(ManagerTaskCount);
+                for (int t = 0; t < (int)ManagerTask.Count; t++)
                 {
-                    continue;
+                    every.Add(new CompanyItem { Grade = -1, Title = CompanyApp.TaskTitle(t), Sub = CompanyApp.TaskWhat(t), Icon = TaskIcons[Math.Min(t, TaskIcons.Length - 1)] });
                 }
-                openTotal++;
-                if (open.Count < 2 * CrewShown)
-                {
-                    open.Add(new CompanyItem
-                    {
-                        Grade = -1, Title = mp.Place.Name, Sub = CompanyApp.PlaceKindName(mp.Kind) + ", " + CompanyText.District(mp.District), Icon = UiIcon.Store, Press = true,
-                        Act = CompanyAct.Of(CompanyDo.Go, "post:" + mp.Place.Place, CompanyView.Managers)
-                    });
-                }
+                left.Add(Sec(w.T("reallife_co_hand_over", "What you can hand over"), every.Count.ToString()));
+                left.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = every.ToArray() });
             }
-            if (open.Count > 0)
-            {
-                right.Insert(0, new CompanyBlock { Kind = CompanyBlockKind.Items, Items = open.ToArray() });
-                right.Insert(0, Sec(w.T("reallife_co_tree_open_posts", "Open posts"), openTotal.ToString()));
-            }
+            var right = month;   // (the open posts are the tree's list at the left: said once, there)
             if (h != null)
             {
                 right.Add(Sec(w.T("reallife_co_owner_levels", "Levels")));

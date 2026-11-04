@@ -193,6 +193,7 @@ namespace RealLifeOverhaul.Economy
                         PartFault(part, "the day", e);
                     }
                 }
+                ReserveFreed();   // with the tax part off nothing tops up or pays the reserve out: what was set aside goes back to the cash, not held for a part that does not run
                 using (HotSpots.Time(HotManagersDay))
                 {
                     ManagerDay(day);   // the allowances are yesterday's costs: in the books read next

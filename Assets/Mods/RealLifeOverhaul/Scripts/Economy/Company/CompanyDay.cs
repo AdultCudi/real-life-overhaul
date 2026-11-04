@@ -56,6 +56,34 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>The days a request waited, put in the ring of whoever settled it.</summary>
         void Took(string place, string who, int days);
+
+        // ---- the hierarchy's rounds (CompanyDay.HandDownRound, TryOne, HandleRound)
+
+        /// <summary>Whether the place is one the company manages (a question about a place it no longer runs is cleared); the manager of it is Managers.At(place).</summary>
+        bool Managed(string place);
+
+        /// <summary>The executive of a seat if they are at work; null for none.</summary>
+        ExecutiveFile ExecutiveOf(ExecSeat seat);
+
+        /// <summary>Who holds an escalation at its level, and whether they are in post to try it.</summary>
+        bool HolderAt(Escalation e, out string who);
+
+        /// <summary>The holder's own try at an escalation by its kind, under the policy: true when it is settled.</summary>
+        bool SettleBy(Escalation e, int level, string who, int day, int hour);
+
+        /// <summary>A try is over and its writes made: settled at a level, or passed up to <paramref name="level"/> (the log line and the count of what came to the owner).</summary>
+        void Tried(Escalation e, TryWas was, string who, int level);
+
+        /// <summary>A question left with the owner a day was handed down to the area's executive.</summary>
+        void HandedDown(Escalation e);
+
+        // ---- a lease's day (CompanyDay.LeaseShop)
+
+        /// <summary>The market rent a day for these premises from the property feature; 0 where it knows none.</summary>
+        int MarketRent(string place, string district, int rent);
+
+        /// <summary>The pressure a rival's buying up puts on a district's landlords, per mille.</summary>
+        int Pressure(string district);
     }
 
     /// <summary>What a manager's lease hour came to.</summary>
@@ -262,7 +290,137 @@ namespace RealLifeOverhaul.Economy
             return d;
         }
 
+        // ---------------------------------------------------------------- the hierarchy's rounds
+
+        /// <summary>
+        /// The owner's questions left a day, for a manager who gives them that way: handed down once to the area's executive (<see cref="HandDown"/>), who tries them in the round
+        /// that follows. The one loop the director's day and the run of the checks both make. Returns how many were handed down.
+        /// </summary>
+        public static int HandDownRound(ICompanyDay w, string you, int day, int hour)
+        {
+            HierarchyState h = w.Hierarchy;
+            int handed = 0;
+            for (int i = 0; h != null && i < h.Escalations.Count; i++)
+            {
+                Escalation e = h.Escalations[i];
+                if (!e.Open || e.Level < EscalationRules.LevelOwner || e.Place.Length == 0 || !w.Managed(e.Place))
+                {
+                    continue;
+                }
+                var kind = (EscalationKind)e.Kind;
+                if (HandDown(h, e, w.Managers.At(e.Place), w.ExecutiveInPost(EscalationRules.AreaOf(kind)), w.Rule(e.Place, PolicyField.Approver), w.Rule(e.Place, PolicyField.Sources), you, day, hour))
+                {
+                    handed++;
+                    w.HandedDown(e);
+                }
+            }
+            return handed;
+        }
+
+        /// <summary>
+        /// One escalation tried by its holder: settled by the kind's own settle (<see cref="ICompanyDay.SettleBy"/>), found lapsed, or passed up to the next who may settle it; one about
+        /// a place no longer managed is cleared. True when it was settled.
+        /// </summary>
+        public static bool TryOne(ICompanyDay w, Escalation e, int day, int hour)
+        {
+            HierarchyState h = w.Hierarchy;
+            if (!w.Managed(e.Place))
+            {
+                h.Close(e, EscalationState.Cleared, string.Empty, day);
+                return false;
+            }
+            string who;
+            bool inPost = w.HolderAt(e, out who);
+            int level = e.Level;
+            var kind = (EscalationKind)e.Kind;
+            bool done;
+            TryWas was = Try(e, inPost, w.Rule(e.Place, PolicyField.Approver), w.Rule(e.Place, PolicyField.Sources), () => w.SettleBy(e, level, who, day, hour), out done);
+            if (was == TryWas.Lapsed)
+            {
+                return done;   // settled, or what it asked about lapsed meanwhile
+            }
+            if (was == TryWas.Settled)
+            {
+                Settled(h, e, who, level == EscalationRules.LevelExecutive ? w.ExecutiveOf(EscalationRules.AreaOf(kind)) : null, level, day, hour);
+                w.Tried(e, was, who, level);
+                return true;
+            }
+            int next = Holder(w, kind, e.Place, e.Level);
+            PassedUp(h, e, next, who, day, hour);
+            w.Tried(e, was, who, next);
+            return false;
+        }
+
+        /// <summary>Every open escalation held below the owner tried once by its holder (<see cref="TryOne"/>); with <paramref name="exceptionsOnly"/> only the exceptions to the pay band. Returns how many were settled.</summary>
+        public static int HandleRound(ICompanyDay w, int day, int hour, bool exceptionsOnly)
+        {
+            HierarchyState h = w.Hierarchy;
+            int settled = 0;
+            for (int i = 0; h != null && i < h.Escalations.Count; i++)
+            {
+                Escalation e = h.Escalations[i];
+                if (!e.Open || e.Level >= EscalationRules.LevelOwner || (exceptionsOnly && e.Kind != (int)EscalationKind.Exception))
+                {
+                    continue;
+                }
+                settled += TryOne(w, e, day, hour) ? 1 : 0;
+            }
+            return settled;
+        }
+
         // ---------------------------------------------------------------- a lease
+
+        /// <summary>What one rented place's lease came to on a day.</summary>
+        public struct LeaseDayWas
+        {
+            public LeaseFile Lease;             // null: no lease could be made (the leases are at their cap)
+            public int TopUp;                   // the rent's rise to pay for yesterday, whole money, as it stood before today's renewal
+            public bool Settled;                // the lease came to its end and its answer was applied today
+            public bool Silent;                 // ...with nobody having answered: the landlord's own figure
+            public int End;                     // the day the lease ended or ends, as it stood when the offer was made
+            public bool Offered;                // the landlord's offer was made today
+            public OfferWas Offer;              // ...and what it came to
+        }
+
+        /// <summary>
+        /// One rented place's lease for the day, the one step the director's day and the run of the checks both take: a lease made for premises seen first, the rise to be paid
+        /// worked out, a lease at its end settled, or the landlord's offer made when it is due (<see cref="Offer"/>). The caller books the rise and tells what was settled.
+        /// </summary>
+        public static LeaseDayWas LeaseShop(ICompanyDay w, LeaseState leases, string place, string name, string district, int rent, bool managerRuns, int trend, int monthDays, int day)
+        {
+            var was = new LeaseDayWas();
+            LeaseFile l = leases.Of(place);
+            if (l == null)
+            {
+                if (leases.Leases.Count >= LeaseStore.LeasesMost)
+                {
+                    return was;
+                }
+                l = LeaseRules.Begin(w.Seed, place, rent, day, monthDays);   // an old save's, or a new business's: starts today, a seeded term
+                leases.Leases.Add(l);
+            }
+            l.Rent = rent;
+            l.Name = name;
+            l.District = district;
+            was.Lease = l;
+            was.TopUp = LeaseRules.TopUp(l);
+            was.Silent = LeaseRules.Made(l) && l.Answer == 0 && day >= l.End;
+            if (LeaseRules.Settle(l, day, w.Seed, monthDays))
+            {
+                was.Settled = true;
+            }
+            else
+            {
+                was.Silent = false;
+                if (LeaseRules.OfferDue(l, day))
+                {
+                    was.Offered = true;
+                    was.End = l.End;
+                    was.Offer = Offer(w, place, l, managerRuns, trend, w.Pressure(district), w.MarketRent(place, district, l.Rent), monthDays, day);
+                }
+            }
+            return was;
+        }
 
         /// <summary>
         /// The landlord's offer made today (<see cref="LeaseRules.OfferDue"/>): the rise they ask, the market rent the property feature gives where it knows one.
@@ -271,13 +429,10 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static OfferWas Offer(ICompanyDay w, string place, LeaseFile l, bool managerRuns, int trend, int pressure, int market, int monthDays, int day)
         {
-            l.Offer = LeaseRules.Offer(l, w.Seed, trend, pressure, market);
-            l.Asked = day;
-            l.Answer = 0;
-            if (day >= l.End)
+            LeaseRules.Make(l, LeaseRules.Offer(l, w.Seed, trend, pressure, market), day);   // an offer of no rise is an offer too
+            if (day >= l.End && LeaseRules.Settle(l, day, w.Seed, monthDays))
             {
-                LeaseRules.Settle(l, day, w.Seed, monthDays);   // nobody had the notice: the landlord's own figure, from the day it ended
-                LeaseClosed(w, place, day);
+                LeaseClosed(w, place, day);   // nobody had the notice: the landlord's own figure, from the day it ended
                 return OfferWas.Renewed;
             }
             if (managerRuns)

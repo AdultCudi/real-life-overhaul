@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BigAmbitions.Rivals;
 using Entities;
 using Helpers;
 using Streets;
@@ -148,6 +149,23 @@ namespace RealLifeOverhaul.Economy
         public static void OpenSale(string place) => ServicesDirector.OpenSale(place);
 
         /// <summary>
+        /// Whether a registration is a rival's business a page or an outlet may read: owned by a rival of the game's that is still in the game, named, not behind a DLC the
+        /// player lacks, not an address the game sets aside, and none of the player's (nor another player's, which looks rented by the player on this machine).
+        /// </summary>
+        internal static bool RivalShopUsable(BuildingRegistration r)
+        {
+            try
+            {
+                return r != null && !string.IsNullOrEmpty(r.businessOwnerRivalId) && !r.RentedByPlayer && !string.IsNullOrEmpty(r.BusinessName) && !RivalsHelper.IsRivalDefeated(r.businessOwnerRivalId)
+                    && !GameDlc.Gated(r) && (r.Address == null || !RivalsHelper.IgnoredAddresses.Contains(r.Address)) && !GoingPublic.Mine(r);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>
         /// The nearest business of the same kind in a shop's district that a rival owns, and the mean of the game's last seven daily takings for it: the game's own estimate
         /// (BuildingRegistration.dailyIncomes, which the game keeps twenty days of for every business a rival owns). False where there is none. Read when a business's page
         /// is read, never per frame.
@@ -165,20 +183,23 @@ namespace RealLifeOverhaul.Economy
                     return false;
                 }
                 float best = float.MaxValue;
+                BuildingRegistration nearest = null;
                 for (int i = 0; i < all.Count; i++)
                 {
                     BuildingRegistration r = all[i];
-                    if (r == null || string.IsNullOrEmpty(r.businessOwnerRivalId) || r.RentedByPlayer || string.IsNullOrEmpty(r.BusinessName) || r.dailyIncomes == null || r.dailyIncomes.Count == 0
+                    if (!RivalShopUsable(r) || r.dailyIncomes == null || r.dailyIncomes.Count == 0
                         || !string.Equals(r.businessTypeName, mine.businessTypeName, StringComparison.Ordinal) || !string.Equals(GameRegistrations.District(r), shop.District,
                             StringComparison.Ordinal))
                     {
                         continue;
                     }
-                    // Nearness by the address: the same street first, by how far apart the numbers are, then the rest of the district.
+                    // Nearness by the address: the same street first, by how far apart the numbers are, then the rest of the district. A tie goes to the lower street name and number,
+                    // so the answer is the save's and not the order the game lists its registrations in.
                     float away = string.Equals(r.StreetName, mine.StreetName, StringComparison.Ordinal) ? Mathf.Abs(r.StreetNumber - mine.StreetNumber) : 100000f;
-                    if (away < best)
+                    if (away < best || (away == best && nearest != null && Before(r, nearest)))
                     {
                         best = away;
+                        nearest = r;
                         name = r.BusinessName;
                         int from = Mathf.Max(0, r.dailyIncomes.Count - 7);
                         float sum = 0f;
@@ -196,6 +217,12 @@ namespace RealLifeOverhaul.Economy
                 name = null;
                 return false;
             }
+        }
+
+        private static bool Before(BuildingRegistration a, BuildingRegistration b)
+        {
+            int by = string.CompareOrdinal(a.StreetName, b.StreetName);
+            return by != 0 ? by < 0 : a.StreetNumber < b.StreetNumber;
         }
 
         /// <summary>The company's line in the stock market (Markets/Listing); null where it is not listed.</summary>

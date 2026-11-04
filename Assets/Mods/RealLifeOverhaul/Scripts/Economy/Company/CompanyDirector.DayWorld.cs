@@ -7,8 +7,13 @@ namespace RealLifeOverhaul.Economy
     /// The director as the world a day's decisions meet (ICompanyDay): its switches, its cash through the game's money, its notices, its records and the game's own
     /// leave. The decisions are CompanyDay's, the same code the run of the checks calls; this is only what they ask of the game.
     /// </summary>
-    public sealed partial class CompanyDirector : ICompanyDay
+    public sealed partial class CompanyDirector : ICompanyDay, RealLifeOverhaul.Ui.ICompanyDoes
     {
+        // The screen's presses (Ui/Company/CompanyLive.Does.cs) reach the director's own members; the few that are not public are given here.
+        RotaPlanSet RealLifeOverhaul.Ui.ICompanyDoes.PlansOf(string place) => RotaPlansOf(place, true);
+
+        string RealLifeOverhaul.Ui.ICompanyDoes.Say(string key, string name, string value) => CompanyText.T(key, name, value);
+
         int ICompanyDay.Seed => _state.Seed;
 
         bool ICompanyDay.On(CompanyPart part) => On(part);
@@ -94,5 +99,50 @@ namespace RealLifeOverhaul.Economy
         {
             Took(ManagedAt(place), who, days);
         }
+
+        bool ICompanyDay.Managed(string place) => ManagedAt(place) != null;
+
+        ExecutiveFile ICompanyDay.ExecutiveOf(ExecSeat seat) => ExecutiveAtWork(seat);
+
+        bool ICompanyDay.HolderAt(Escalation e, out string who)
+        {
+            ManagedPlace mp = ManagedAt(e.Place);
+            who = string.Empty;
+            return mp != null && HolderName(e, mp, out who);
+        }
+
+        bool ICompanyDay.SettleBy(Escalation e, int level, string who, int day, int hour)
+        {
+            ManagedPlace mp = ManagedAt(e.Place);
+            return mp != null && Settle(e, mp, level, who, day, hour);
+        }
+
+        void ICompanyDay.Tried(Escalation e, TryWas was, string who, int level)
+        {
+            ManagedPlace mp = ManagedAt(e.Place);
+            if (mp == null)
+            {
+                return;
+            }
+            if (was == TryWas.Settled)
+            {
+                Logger?.Info("Company: " + who + " settled the " + (EscalationKind)e.Kind + " escalation of " + mp.Place.Name + ".");
+                return;
+            }
+            _ownerNew += level == EscalationRules.LevelOwner ? 1 : 0;
+            Logger?.Info("Company: the " + (EscalationKind)e.Kind + " escalation of " + mp.Place.Name + " passed up to " + HolderWords(level, (EscalationKind)e.Kind, mp)
+                         + (who.Length > 0 ? " by " + who + ", who could not settle it under the policy" : string.Empty) + ".");
+        }
+
+        void ICompanyDay.HandedDown(Escalation e)
+        {
+            ManagedPlace mp = ManagedAt(e.Place);
+            var kind = (EscalationKind)e.Kind;
+            Logger?.Info("Company: the " + kind + " question of " + (mp != null ? mp.Place.Name : e.Place) + ", left with you a day, was passed down to the " + EscalationRules.AreaOf(kind) + " executive.");
+        }
+
+        int ICompanyDay.MarketRent(string place, string district, int rent) => MarketOf(district, place, rent);
+
+        int ICompanyDay.Pressure(string district) => Pressure(district);
     }
 }

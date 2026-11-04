@@ -142,32 +142,27 @@ namespace RealLifeOverhaul.Economy
                     {
                         continue;
                     }
-                    LeaseFile l = _leases.Of(shop.File.Place);
+                    // The one step the run of the checks takes too (CompanyDay.LeaseShop); a lease that ended while days were skipped is renewed at the landlord's figure.
+                    ManagedPlace mp = ManagedAt(shop.File.Place);
+                    bool manager = mp != null && mp.Own != null && ManagerRules.Runs(mp.Own.Tasks, mp.Kind, ManagerTask.Leases);
+                    CompanyDay.LeaseDayWas was = CompanyDay.LeaseShop(this, _leases, shop.File.Place, shop.Name, shop.District, shop.Rent, manager, LeaseTrend, monthDays, day);
+                    LeaseFile l = was.Lease;
                     if (l == null)
                     {
-                        if (_leases.Leases.Count >= LeaseStore.LeasesMost)
-                        {
-                            continue;
-                        }
-                        l = LeaseRules.Begin(_state.Seed, shop.File.Place, shop.Rent, day, monthDays);   // an old save's, or a new business's: starts today, a seeded term
-                        _leases.Leases.Add(l);
+                        continue;
                     }
-                    l.Rent = shop.Rent;
-                    l.Name = shop.Name;
-                    l.District = shop.District;
-                    int topUp = LeaseRules.TopUp(l);
-                    if (topUp > 0)
+                    if (was.TopUp > 0)
                     {
-                        Cost(topUp, CompanyGame.LeaseKey, shop, shop.Name, CostKind.Rent, day - 1,
+                        Cost(was.TopUp, CompanyGame.LeaseKey, shop, shop.Name, CostKind.Rent, day - 1,
                             "the rent's rise of " + CompanyText.Share(l.Running) + " over the game's rent of " + l.Rent + " a day, for day " + (day - 1), true);
                     }
-                    if (LeaseRules.Settle(l, day, _state.Seed, monthDays))
+                    if (was.Settled)
                     {
                         Settled(l, shop, day);
                     }
-                    else if (LeaseRules.OfferDue(l, day))
+                    else if (was.Offered)
                     {
-                        MakeOffer(l, shop, day);   // also for a lease that ended while days were skipped: renewed at the landlord's figure
+                        OfferMade(l, shop, was, day);
                     }
                 }
                 _leases.Leases.Sort((a, b) => a.End.CompareTo(b.End));
@@ -202,12 +197,10 @@ namespace RealLifeOverhaul.Economy
 
         // The landlord's offer, fourteen days before the lease ends: a manager with the Leases task answers it at their hour inside their limit; otherwise
         // the owner is asked, as an escalation where the hierarchy runs and as a notice always.
-        private void MakeOffer(LeaseFile l, CompanyShop shop, int day)
+        private void OfferMade(LeaseFile l, CompanyShop shop, CompanyDay.LeaseDayWas day0, int day)
         {
-            ManagedPlace mp = ManagedAt(l.Place);
-            bool manager = mp != null && mp.Own != null && ManagerRules.Runs(mp.Own.Tasks, mp.Kind, ManagerTask.Leases);
-            int end = l.End;
-            OfferWas was = CompanyDay.Offer(this, l.Place, l, manager, LeaseTrend, Pressure(l.District), MarketOf(l), MonthDays, day);
+            int end = day0.End;
+            OfferWas was = day0.Offer;
             int asked = was == OfferWas.Renewed ? l.Rise : l.Offer;
             Logger?.Info("Company: the landlord of " + shop.Name + " asks " + LeaseRules.RentAt(l.Rent, asked) + " a day (the game's rent " + l.Rent + ", " + asked
                 + " per mille over it) when the lease ends in "
@@ -221,11 +214,11 @@ namespace RealLifeOverhaul.Economy
         }
 
         // The market rent a day for a lease's premises, from the one function the property feature feeds (CompanyBridges.MarketRent); 0 where it knows none.
-        private static int MarketOf(LeaseFile l)
+        private static int MarketOf(string district, string place, int rent)
         {
             try
             {
-                return CompanyBridges.MarketRent != null ? Math.Max(0, CompanyBridges.MarketRent(l.District, l.Place, l.Rent)) : 0;
+                return CompanyBridges.MarketRent != null ? Math.Max(0, CompanyBridges.MarketRent(district, place, rent)) : 0;
             }
             catch (Exception)
             {
@@ -237,11 +230,11 @@ namespace RealLifeOverhaul.Economy
         // on the lease question. The question is answered from the app whether the hierarchy runs or not.
         private void TellLease(LeaseFile l, CompanyShop shop, int day)
         {
-            Tell(NotificationType.Warning, "reallife_co_note_lease_offer", new Dictionary<string, string>
+            Tell(NotificationType.Warning, LeaseRules.OfferNote(l), new Dictionary<string, string>
             {
                 { "business", shop.Name }, { "days", (l.End - day).ToString(CultureInfo.InvariantCulture) }, { "rent", CompanyText.Money(Monthly(LeaseRules.RentAt(l.Rent, l.Offer))) },
                 { "share", CompanyText.Share(LeaseRules.OfferOver(l)) }
-            }, TabOverview, "ls:" + l.Place);
+            }, TabOverview, LeaseRules.NoticePick(l.Place));
         }
 
         // A day's rent in a month's money, as the pages say rents.
@@ -256,7 +249,7 @@ namespace RealLifeOverhaul.Economy
             CompanyDay.LeaseClosed(this, l.Place, day);
             Logger?.Info("Company: the lease of " + shop.Name + " " + (l.Hold ? "was not renewed: month to month at the rent paid now and a premium of " + CompanyText.Share(LeaseRules.HoldPremium)
                                                                   : "was renewed for " + l.Term + " days to day " + l.End + ", the rent " + LeaseRules.RentAt(l.Rent, l.Rise) + " a day") + ".");
-            Notify(NotificationType.Info, l.Hold ? "reallife_co_note_lease_hold" : "reallife_co_note_lease_renewed", new Dictionary<string, string>
+            Notify(NotificationType.Info, LeaseRules.RenewedNote(l), new Dictionary<string, string>
             {
                 { "business", shop.Name }, { "rent", CompanyText.Money(Monthly(LeaseRules.RentAt(l.Rent, l.Running))) }, { "end", l.End.ToString(CultureInfo.InvariantCulture) },
                 { "share", CompanyText.Share(l.Last) }

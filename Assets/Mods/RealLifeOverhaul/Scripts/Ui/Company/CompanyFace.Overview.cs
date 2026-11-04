@@ -72,10 +72,69 @@ namespace RealLifeOverhaul.Ui
                     cy += DoneLine(s, main, lay, ref o.Done[i], x, cy, lw, DoneRow, bottom);
                 }
             }
+            // What the business's panel holds past its break (the licences and the cover held) stands at the left under what waits, where the column would end short.
+            CompanyBlock[] beside = AfterBreak(o.Shop.Blocks, out CompanyBlock[] before);
+            if (beside.Length > 0)
+            {
+                cy += UiTokens.S2;
+                for (int i = 0; i < beside.Length && cy < bottom; i++)
+                {
+                    cy = Block(s, main, lay, v, w, beside[i], x, cy, lw, bottom, keys);
+                }
+            }
             float rx = x + lw + gap;
             float toolsH = o.Tools != null && o.Tools.Length > 0 ? UiTokens.Control + UiTokens.S4 : 0f;
-            CardPage(s, at.InRegion(RegionSide), o.Shop, v, w, lay, rx, top, rw, bottom - toolsH, keys);
+            CompanyCard panel = beside.Length > 0 ? WithBlocks(o.Shop, before) : o.Shop;
+            CardPage(s, at.InRegion(RegionSide), panel, v, w, lay, rx, top, rw, bottom - toolsH, keys);
             ToolsRow(s, at.InRegion(RegionSide), lay, v, o, rx, rw, bottom, keys);
+        }
+
+        // The blocks of a card before its first break, and those after it.
+        private static CompanyBlock[] AfterBreak(CompanyBlock[] blocks, out CompanyBlock[] before)
+        {
+            int at = -1;
+            for (int i = 0; i < blocks.Length && at < 0; i++)
+            {
+                at = blocks[i].Kind == CompanyBlockKind.Break ? i : -1;
+            }
+            before = at < 0 ? blocks : new CompanyBlock[at];
+            if (at < 0)
+            {
+                return new CompanyBlock[0];
+            }
+            Array.Copy(blocks, before, at);
+            var after = new CompanyBlock[blocks.Length - at - 1];
+            Array.Copy(blocks, at + 1, after, 0, after.Length);
+            return after;
+        }
+
+        private static CompanyCard WithBlocks(CompanyCard c, CompanyBlock[] blocks) => new CompanyCard
+        {
+            Kicker = c.Kicker, Title = c.Title, Sub = c.Sub, Icon = c.Icon, Tint = c.Tint, Face = c.Face, FaceName = c.FaceName, Hue = c.Hue, Ring = c.Ring, Chips = c.Chips, ChipTones = c.ChipTones,
+            FactLabels = c.FactLabels, FactValues = c.FactValues, Blocks = blocks, Back = c.Back, Empty = c.Empty
+        };
+
+        /// <summary>
+        /// Moves the sections with these titles (each with the block after it) to the end of a card's blocks, behind a break: the one-business panel keeps its figures, campaign and actions at
+        /// the right and puts the licences and the cover at the left, under what waits.
+        /// </summary>
+        internal static void AsideSections(System.Collections.Generic.List<CompanyBlock> blocks, params string[] titles)
+        {
+            var moved = new System.Collections.Generic.List<CompanyBlock>(4);
+            for (int i = blocks.Count - 2; i >= 0; i--)
+            {
+                if (blocks[i].Kind == CompanyBlockKind.Section && Array.IndexOf(titles, blocks[i].Text) >= 0)
+                {
+                    moved.Insert(0, blocks[i + 1]);
+                    moved.Insert(0, blocks[i]);
+                    blocks.RemoveRange(i, 2);
+                }
+            }
+            if (moved.Count > 0)
+            {
+                blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Break });
+                blocks.AddRange(moved);
+            }
         }
 
         // One thing that waits for the owner, as a card of its own: who or what, the line under it and the button that opens it. A page of few things is made of cards, not rows.

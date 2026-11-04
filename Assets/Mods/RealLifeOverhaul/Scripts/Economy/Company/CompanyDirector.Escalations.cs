@@ -54,8 +54,8 @@ namespace RealLifeOverhaul.Economy
                 }
                 Forgotten();
                 RegionRound(day, Save.Hour);   // the regional managers appoint and replace before the escalations are handled
-                int handed = HandDownRound(day);
-                int settled = Handle(day, Save.Hour, false);
+                int handed = CompanyDay.HandDownRound(this, CompanyText.T("reallife_hier_you"), day, Save.Hour);
+                int settled = CompanyDay.HandleRound(this, day, Save.Hour, false);
                 Week(day);
                 TellOwner();
                 if (Verbose)
@@ -82,7 +82,7 @@ namespace RealLifeOverhaul.Economy
             try
             {
                 _ownerNew = 0;
-                Handle(day, hour, true);
+                CompanyDay.HandleRound(this, day, hour, true);
                 TellOwner();
             }
             catch (Exception e)
@@ -122,31 +122,6 @@ namespace RealLifeOverhaul.Economy
                 int first = asked > 0 && offered > 0 ? Math.Min(asked, offered) : Math.Max(asked, offered);
                 t.Oldest = first > 0 && (t.Oldest == 0 || first < t.Oldest) ? first : t.Oldest;
             }
-        }
-
-        // The owner's questions left a day, for a manager who gives them that way: passed down once to the area's executive, who tries them in the round
-        // that follows under the policy (settled, with the log's "settled by" naming them, or passed back to the owner for good).
-        private int HandDownRound(int day)
-        {
-            int handed = 0;
-            for (int i = 0; i < _hier.Escalations.Count; i++)
-            {
-                Escalation e = _hier.Escalations[i];
-                if (!e.Open || e.Level < EscalationRules.LevelOwner || e.Place.Length == 0)
-                {
-                    continue;
-                }
-                ManagedPlace mp = ManagedAt(e.Place);
-                var kind = (EscalationKind)e.Kind;
-                if (mp == null || !CompanyDay.HandDown(_hier, e, mp.Own, ExecutiveAtWork(EscalationRules.AreaOf(kind)) != null, Rule(mp, PolicyField.Approver), Rule(mp, PolicyField.Sources),
-                        CompanyText.T("reallife_hier_you"), day, Save.Hour))
-                {
-                    continue;
-                }
-                handed++;
-                Logger?.Info("Company: the " + kind + " question of " + mp.Place.Name + ", left with you a day, was passed down to the " + EscalationRules.AreaOf(kind) + " executive.");
-            }
-            return handed;
         }
 
         /// <summary>A manager's switch: a question they cannot decide, left with the owner a day, passes to the area's executive (the policy decides what they may settle).</summary>
@@ -367,53 +342,6 @@ namespace RealLifeOverhaul.Economy
             return "you";
         }
 
-        /// <summary>
-        /// Every open escalation held below the owner tried once by its holder; settled, or passed to the next holder who may
-        /// settle it. With <paramref name="exceptionsOnly"/> only the exceptions to the pay band, at the staff hour. Returns
-        /// how many were settled.
-        /// </summary>
-        private int Handle(int day, int hour, bool exceptionsOnly)
-        {
-            int settled = 0;
-            for (int i = 0; i < _hier.Escalations.Count; i++)
-            {
-                Escalation e = _hier.Escalations[i];
-                if (!e.Open || e.Level >= EscalationRules.LevelOwner || (exceptionsOnly && e.Kind != (int)EscalationKind.Exception))
-                {
-                    continue;
-                }
-                settled += TryOne(e, day, hour) ? 1 : 0;
-            }
-            return settled;
-        }
-
-        // One escalation tried by its holder (CompanyDay.Try): settled by the kind's own settle, found lapsed, or passed up. True when settled.
-        private bool TryOne(Escalation e, int day, int hour)
-        {
-            ManagedPlace mp = ManagedAt(e.Place);
-            if (mp == null)
-            {
-                Close(e, EscalationState.Cleared, string.Empty, day);
-                return false;
-            }
-            string who;
-            bool inPost = HolderName(e, mp, out who);
-            int level = e.Level;
-            bool done;
-            TryWas was = CompanyDay.Try(e, inPost, Rule(mp, PolicyField.Approver), Rule(mp, PolicyField.Sources), () => Settle(e, mp, level, who, day, hour), out done);
-            if (was == TryWas.Lapsed)
-            {
-                return done;   // settled, or what it asked about lapsed meanwhile
-            }
-            if (was == TryWas.Settled)
-            {
-                Settled(e, mp, who, day, hour);
-                return true;
-            }
-            PassUp(e, mp, who, day, hour);
-            return false;
-        }
-
         private bool HolderName(Escalation e, ManagedPlace mp, out string who)
         {
             who = string.Empty;
@@ -456,14 +384,6 @@ namespace RealLifeOverhaul.Economy
         private bool GapFilled(ManagedPlace mp)
         {
             return mp.Own == null || mp.Own.Keep <= 0 || mp.Place.Staff >= mp.Own.Keep;
-        }
-
-        private void Settled(Escalation e, ManagedPlace mp, string who, int day, int hour)
-        {
-            int level = e.Level;
-            ExecutiveFile x = level == EscalationRules.LevelExecutive ? ExecutiveAtWork(EscalationRules.AreaOf((EscalationKind)e.Kind)) : null;
-            CompanyDay.Settled(_hier, e, who, x, level, day, hour);
-            Logger?.Info("Company: " + who + " settled the " + (EscalationKind)e.Kind + " escalation of " + mp.Place.Name + ".");
         }
 
         private void PassUp(Escalation e, ManagedPlace mp, string who, int day, int hour)
@@ -1093,7 +1013,7 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             _ownerNew = 0;
-            TryOne(e, Save.Day, Save.Hour);
+            CompanyDay.TryOne(this, e, Save.Day, Save.Hour);
             TellOwner();
             Changed();
         }

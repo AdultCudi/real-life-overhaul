@@ -16,8 +16,8 @@ namespace RealLifeOverhaul.Economy
         public int Start, Term;         // the first day of the term and its length in days: it renews on <see cref="End"/>
         public int Rent;                // the game's rent a day when this was last read, whole money: the figure the rise is a share of
         public int Rise;                // per mille over Rent that renewals have agreed, in all
-        public int Offer;               // per mille over Rent, in all, that the landlord asks at the coming renewal; 0 until the offer is made
-        public int Asked;               // the day the offer was made; 0 until then
+        public int Offer;               // per mille over Rent, in all, that the landlord asks at the coming renewal; 0 is a real offer too (the same rent): whether one is made is Asked
+        public int Asked;               // the day the offer was made; 0 until then. The one fact that an offer is made (LeaseRules.Made): an offer of no rise is still an offer
         public int Renewals;            // terms renewed under this lease
         public bool Hold;               // the offer was declined: month to month at the rent paid now, a premium over it, asked again at the month's end
         public int Last;                // per mille the last renewal raised the rent by (what the last answer came to), for the page
@@ -126,13 +126,24 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static bool OfferDue(LeaseFile l, int day)
         {
-            return l.Offer == 0 && l.Asked == 0 && day >= Math.Max(l.Start, l.End - NoticeDays);
+            return !Made(l) && day >= Math.Max(l.Start, l.End - NoticeDays);
         }
 
-        /// <summary>Whether an offer was made after its lease had ended (the notice window was skipped), so that nobody had a chance to answer it.</summary>
-        public static bool Skipped(LeaseFile l, int day)
+        /// <summary>
+        /// Whether the landlord has made the offer for the coming renewal. It is its own fact, not "the offer is over nothing": a landlord may ask the same rent (an
+        /// offer of 0 over it), and that is an offer that renews, is within any manager's limit and is told as such.
+        /// </summary>
+        public static bool Made(LeaseFile l)
         {
-            return l.Offer > 0 && l.Answer == 0 && day >= l.End && l.Asked >= l.End;
+            return l.Asked > 0;
+        }
+
+        /// <summary>Marks the offer as made on a day (never day 0, which would read as none): the one write of <see cref="LeaseFile.Asked"/> that every lease, the player's and a rival's, goes through.</summary>
+        public static void Make(LeaseFile l, int offer, int day)
+        {
+            l.Offer = offer;
+            l.Asked = Math.Max(1, day);
+            l.Answer = 0;
         }
 
         public const int Accepted = 1, Declined = 2;
@@ -140,7 +151,19 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Whether an offer waits for an answer: made, not answered, and the lease not yet at its end.</summary>
         public static bool Waiting(LeaseFile l, int day)
         {
-            return l.Offer > 0 && l.Answer == 0 && day < l.End;
+            return Made(l) && l.Answer == 0 && day < l.End;
+        }
+
+        /// <summary>The notice that tells the owner of an offer: with a rise, its share; an offer of no rise says the rent stays the same.</summary>
+        public static string OfferNote(LeaseFile l)
+        {
+            return OfferOver(l) > 0 ? "reallife_co_note_lease_offer" : "reallife_co_note_lease_offer_same";
+        }
+
+        /// <summary>The notice that tells a lease came to its end and was settled: held over, renewed with a rise, or renewed at the same rent.</summary>
+        public static string RenewedNote(LeaseFile l)
+        {
+            return l.Hold ? "reallife_co_note_lease_hold" : l.Last > 0 ? "reallife_co_note_lease_renewed" : "reallife_co_note_lease_renewed_same";
         }
 
         /// <summary>The rent a day at a rise over the game's rent, whole money.</summary>
@@ -159,13 +182,13 @@ namespace RealLifeOverhaul.Economy
         public static int OfferOver(LeaseFile l)
         {
             int now = 1000 + l.Running;
-            return l.Offer > 0 ? (int)(((long)(1000 + l.Offer) - now) * 1000 / Math.Max(1, now)) : 0;
+            return Made(l) ? (int)(((long)(1000 + l.Offer) - now) * 1000 / Math.Max(1, now)) : 0;
         }
 
         /// <summary>Whether an offer is inside a manager's limit (per mille over the rent paid now): their own to accept; past it, it is the owner's.</summary>
         public static bool Within(LeaseFile l, int limitPermille)
         {
-            return l.Offer > 0 && OfferOver(l) <= limitPermille;
+            return Made(l) && OfferOver(l) <= limitPermille;
         }
 
         /// <summary>
@@ -189,7 +212,7 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static bool Settle(LeaseFile l, int day, int seed, int monthDays)
         {
-            if (l.Offer <= 0 || day < l.End)
+            if (!Made(l) || day < l.End)
             {
                 return false;
             }
@@ -251,6 +274,18 @@ namespace RealLifeOverhaul.Economy
                 h = (h ^ place[i]) * 16777619u;
             }
             return -(int)(1 + (h & 0x3FFFFFFFu));
+        }
+
+        /// <summary>What the notice of an offer carries as its pick, so that a click on it opens the question: "ls:" and the place.</summary>
+        public static string NoticePick(string place)
+        {
+            return "ls:" + place;
+        }
+
+        /// <summary>The question a notice's pick opens (<see cref="NoticePick"/>): the lease's number, negative; 0 for a pick that is no lease's.</summary>
+        public static int QuestionOfPick(string pick)
+        {
+            return pick != null && pick.StartsWith("ls:", StringComparison.Ordinal) && pick.Length > 3 ? QuestionId(pick.Substring(3)) : 0;
         }
 
         /// <summary>A lease made for premises seen first: a seeded term, starting today.</summary>
@@ -405,7 +440,7 @@ namespace RealLifeOverhaul.Economy
             {
                 Start = Math.Max(0, I(c, 0)), Term = Math.Max(1, I(c, 1, 1)), Rent = Math.Max(0, I(c, 2)),
                 Rise = CompanyCatalogue.Clamp(I(c, 3), 0, 4 * LeaseRules.RiseMost), Offer = CompanyCatalogue.Clamp(I(c, 4), 0, 4 * LeaseRules.RiseMost),
-                Asked = Math.Max(0, I(c, 5)), Renewals = Math.Max(0, I(c, 6)), Hold = I(c, 7) != 0, Last = CompanyCatalogue.Clamp(I(c, 8), -1000, 4 * LeaseRules.RiseMost),
+                Asked = Math.Max(I(c, 4) > 0 ? 1 : 0, I(c, 5)), Renewals = Math.Max(0, I(c, 6)), Hold = I(c, 7) != 0, Last = CompanyCatalogue.Clamp(I(c, 8), -1000, 4 * LeaseRules.RiseMost),
                 Place = c[9], Answer = CompanyCatalogue.Clamp(I(c, 10), 0, LeaseRules.Declined), Haggled = I(c, 11) != 0, Told = Math.Max(0, I(c, 12))
             };
         }

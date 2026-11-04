@@ -136,6 +136,15 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             StaffFile picked = pick.StartsWith("emp:", StringComparison.Ordinal) ? s.Employee(pick.Substring(4)) : null;
+            if (pick.Length == 0 && rows.Count > 0 && s.Staff.Count <= SmallCrew)
+            {
+                // A crew this small has no summary to read first: its first person is shown, their page holding what the summary would (the sick pay too).
+                for (int i = 0; i < rows.Count && picked == null; i++)
+                {
+                    picked = rows[i].Id.StartsWith("emp:", StringComparison.Ordinal) ? s.Employee(rows[i].Id.Substring(4)) : null;
+                    page.List.Chosen = picked != null ? i : page.List.Chosen;
+                }
+            }
             CompanyShop strike = pick.StartsWith("strike:", StringComparison.Ordinal) ? d.ShopAt(pick.Substring(7)) : null;
             CompanyShop overtime = pick.StartsWith("ot:", StringComparison.Ordinal) ? d.ShopAt(pick.Substring(3)) : null;
             if (picked != null)
@@ -157,7 +166,7 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        private const int StaffStatuses = 5, StaffSorts = 6;
+        private const int StaffStatuses = 5, StaffSorts = 6, SmallCrew = 4;
 
         // Two people in the order of a column of the old table: the name, the business, the pay (highest first), the standing (lowest first, who needs a word), the skill (highest first).
         private static int StaffOrder(StaffFile a, StaffFile b, int by, CompanyDirector d)
@@ -175,7 +184,7 @@ namespace RealLifeOverhaul.Ui
         // The staff's own page: how many, who is underpaid and who stands low, the answer for all the raises asked at once, and the sick pay policy.
         private CompanyCard StaffSummary(CompanyDirector d, CompanyState s, int under, int low, Words w)
         {
-            var c = new CompanyCard { Kicker = w.T("reallife_co_tab_staff", "Staff"), Title = w.T("reallife_co_staff_title", "Your staff"), Icon = UiIcon.People };
+            var c = new CompanyCard { Title = w.T("reallife_co_staff_title", "Your staff"), Icon = UiIcon.People };
             var labels = new List<string> { w.T("reallife_co_f_staff", "Staff") };
             var values = new List<string> { s.Staff.Count.ToString() };
             if (under > 0)
@@ -248,7 +257,19 @@ namespace RealLifeOverhaul.Ui
                     blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = asking.ToArray() });
                 }
             }
-            blocks.Add(Sec(w.T("reallife_co_staff_sick", "Sick pay")));
+            SickBlocks(blocks, s, w);
+            blocks.Add(Note(CompanyText.T("reallife_co_staff_market")));
+            if (!few)
+            {
+                blocks.Add(Note(CompanyText.T("reallife_co_staff_picked")));
+            }
+            c.Blocks = blocks.ToArray();
+            return c;
+        }
+
+        // The sick pay policy: one label, its choice, and what the choice does to pay and standing.
+        private static void SickBlocks(List<CompanyBlock> blocks, CompanyState s, Words w)
+        {
             var options = new string[CompanyText.SickKeys.Length];
             var acts = new CompanyAct[options.Length];
             for (int i = 0; i < options.Length; i++)
@@ -262,13 +283,6 @@ namespace RealLifeOverhaul.Ui
                 ? CompanyText.T("reallife_co_staff_sick_flat", "share", CompanyText.Share(CompanyCatalogue.SickShare[s.SickPolicy]))
                 : CompanyText.T("reallife_co_staff_sick_what", "share", CompanyText.Share(CompanyCatalogue.SickShare[s.SickPolicy]),
                     "standing", CompanyText.Percent(CompanyCatalogue.SickStanding[s.SickPolicy]).TrimEnd('%'))));
-            blocks.Add(Note(CompanyText.T("reallife_co_staff_market")));
-            if (!few)
-            {
-                blocks.Add(Note(CompanyText.T("reallife_co_staff_picked")));
-            }
-            c.Blocks = blocks.ToArray();
-            return c;
         }
 
         // A member of staff: who they are and what they earn, what they ask, an offer from a rival, and how they feel.
@@ -279,8 +293,8 @@ namespace RealLifeOverhaul.Ui
             {
                 Kicker = w.T("reallife_co_tab_staff", "Staff"), Title = p.Name, Sub = d.ShopName(p.Place), Face = true, Hue = UiColour.HueOf(p.Name),
                 Ring = p.AskDay > 0 || p.PoachDay > 0 || p.LeaveDay > 0 ? UiRole.Warn : UiRole.Ok,
-                FactLabels = new[] { w.T("reallife_co_f_paid", "Paid"), w.T("reallife_co_f_going", "Going rate"), w.T("reallife_co_f_standing", "Standing"), w.T("reallife_co_f_mood", "Mood") },
-                FactValues = new[] { CompanyText.Wage(p.Paid), CompanyText.Wage(p.Going), p.Standing.ToString(), p.Mood.ToString() },
+                FactLabels = new[] { w.T("reallife_co_f_paid", "Paid"), w.T("reallife_co_f_going", "Going rate") },
+                FactValues = new[] { CompanyText.Wage(p.Paid), CompanyText.Wage(p.Going) },
                 Back = new[] { Btn(w.T("reallife_co_back", "Back"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "", CompanyView.Staff), UiAction.Count, UiIcon.Back) }
             };
             var chips = new List<string>(2);
@@ -385,6 +399,10 @@ namespace RealLifeOverhaul.Ui
                     blocks.Add(Row(CompanyText.Day(dec.Day), "+" + CompanyText.Wage(dec.A), UiRole.OkText));
                     shown++;
                 }
+            }
+            if (d.State.Staff.Count <= SmallCrew)
+            {
+                SickBlocks(blocks, d.State, w);   // a small crew has no summary page: the policy stands under the person
             }
             c.Blocks = blocks.ToArray();
             return c;

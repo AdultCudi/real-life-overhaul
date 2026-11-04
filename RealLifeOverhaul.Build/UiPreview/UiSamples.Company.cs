@@ -441,6 +441,10 @@ internal static partial class UiSamples
             blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Section, Text = w.T("reallife_co_staff_people", "Your people"), Value = "9" });
             blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = rows });
         }
+        if (panel)
+        {
+            CompanyFace.AsideSections(blocks, w.T("reallife_co_r_licences", "Licences"), w.T("reallife_co_r_cover", "Cover held"));
+        }
         c.Blocks = blocks.ToArray();
         return c;
     }

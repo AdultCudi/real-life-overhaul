@@ -108,6 +108,43 @@ internal static partial class Program
             return CompanyDay.Written(_w.M, _w.M.At(place), place, task, subject, who, day, hour, mistake);
         }
 
+        // The hierarchy's rounds and a lease's day are CompanyDay's (HandDownRound, HandleRound, LeaseShop): the run answers only what they ask of the world.
+        public bool Managed(string place) => true;
+
+        public ExecutiveFile ExecutiveOf(ExecSeat seat) => _w.H.Executives.Find(x => x.Area == (int)seat);
+
+        public bool HolderAt(Escalation e, out string who)
+        {
+            ExecutiveFile x = e.Level == EscalationRules.LevelExecutive ? ExecutiveOf(EscalationRules.AreaOf((EscalationKind)e.Kind)) : null;
+            who = x != null ? x.Name : string.Empty;
+            return x != null;
+        }
+
+        public bool SettleBy(Escalation e, int level, string who, int day, int hour)
+        {
+            int agreed;
+            return (EscalationKind)e.Kind == EscalationKind.Exception && CompanyDay.Approve(this, e, e.Place, level, who, false, day, hour, out agreed);
+        }
+
+        public void Tried(Escalation e, TryWas was, string who, int level)
+        {
+            if (was == TryWas.Settled)
+            {
+                _w.ExecSettled++;
+                return;
+            }
+            _w.OwnerNew += level == EscalationRules.LevelOwner ? 1 : 0;
+            _w.ExecPassed++;
+        }
+
+        public void HandedDown(Escalation e)
+        {
+        }
+
+        public int MarketRent(string place, string district, int rent) => 0;
+
+        public int Pressure(string district) => RunPressure(district, _w.Day);
+
         public void Took(string place, string who, int days)
         {
             ManagerFile m = _w.M.At(place);

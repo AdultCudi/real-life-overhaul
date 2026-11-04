@@ -104,8 +104,12 @@ namespace RealLifeOverhaul.Rivals
         /// <summary>Opens the Finance app on the rivals' page.</summary>
         public static Action Open;
 
+        // ---- the game's rival businesses (RivalSeatsGame): the crew and rent an outlet stands on
+        public static IRivalSeats Seats;
+
         public static void Reset()
         {
+            Seats = null;
             LeaseTrend = null;
             LeaseRenewed = null;
             Worth = null;

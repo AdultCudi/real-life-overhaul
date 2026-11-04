@@ -264,7 +264,7 @@ namespace RealLifeOverhaul.Rivals
         {
             int monthDays = Math.Max(1, _world.YearDays / 12), index = Math.Max(10, _world.Level / 10), trend = RivalBridges.LeaseTrend != null ? RivalBridges.LeaseTrend() : 0;
             int before = _file.Outlets.Count;
-            long paid = RivalFirms.Day(_file, _file.Seed, day, monthDays, trend, index, RivalBridges.LeaseRenewed);
+            long paid = RivalFirms.Day(_file, _file.Seed, day, monthDays, trend, index, RivalBridges.LeaseRenewed, RivalBridges.Seats);
             if (_file.Outlets.Count > 0 || before > 0)
             {
                 Logger?.Info("Rivals: " + _file.Outlets.Count + " outlet(s) run by the tycoons paid " + paid + " in wages and rent on day " + day + ".");

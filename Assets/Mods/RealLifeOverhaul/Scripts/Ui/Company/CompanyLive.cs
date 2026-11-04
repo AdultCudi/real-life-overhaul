@@ -76,9 +76,9 @@ namespace RealLifeOverhaul.Ui
                     _wantedPick = kind == "rota:" ? "p:" + rest : pick;
                     break;
                 case CompanyDirector.TabOverview:
-                    if (kind == "ls:")
+                    if (LeaseRules.QuestionOfPick(pick) != 0)
                     {
-                        _wantedQuestion = LeaseRules.QuestionId(rest);   // the landlord's offer, answered whether the hierarchy runs or not
+                        _wantedQuestion = LeaseRules.QuestionOfPick(pick);   // the landlord's offer, answered whether the hierarchy runs or not
                         _wantedPick = string.Empty;
                     }
                     break;

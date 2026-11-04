@@ -87,8 +87,8 @@ namespace RealLifeOverhaul.Ui
         private static void FilterChip(UiScene s, UiAt at, float x, float y, float most, string label, bool active, int arg)
         {
             float w = Math.Min(most, UiDraw.ButtonWidth(UiButtonKind.Chip, label, UiIcon.None, UiAction.Count, null));
-            int face = UiDraw.Box(s, at, x, y, w, UiTokens.Chip, active ? UiRole.Accent : UiRole.AccentSoft, UiRole.None, UiTokens.RadiusMedium, active ? UiFlags.Selected : UiFlags.None);
-            UiDraw.TextMiddle(s, at.In(face), x + UiTokens.S4, y, UiTokens.Chip, Math.Max(0f, w - UiTokens.S4 * 2f), UiStyle.Button, active ? UiRole.OnAccent : UiRole.AccentText, label,
+            int face = UiDraw.Box(s, at, x, y, w, UiTokens.Chip, active ? UiRole.Accent : UiRole.Field, UiRole.None, UiTokens.RadiusMedium, active ? UiFlags.Selected : UiFlags.None);
+            UiDraw.TextMiddle(s, at.In(face), x + UiTokens.S4, y, UiTokens.Chip, Math.Max(0f, w - UiTokens.S4 * 2f), UiStyle.Button, active ? UiRole.OnAccent : UiRole.Text, label,
                 UiFlags.Centre | UiFlags.Truncate);
             UiDraw.Node(s, at, x, y, w, UiTokens.Chip, Filter, arg, face);
         }

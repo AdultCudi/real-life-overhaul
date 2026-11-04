@@ -185,14 +185,14 @@ namespace RealLifeOverhaul.Ui
                 {
                     Name = w.T("reallife_co_q_c_renew", "Renew at the offered rent"), Button = w.T("reallife_co_q_renew_do", "Renew the lease"), Note = w.T("reallife_co_q_standing_note", "standing"),
                     Act = CompanyAct.Of(CompanyDo.LeaseAnswer, e.Place, CompanyDirector.AnswerAgree),
-                    Lines = new[] { new CompanyConsequence { Text = w.F("reallife_co_q_rent_year", "About {amount} a year more in rent", "amount", w.Money(yearMore)), Tone = UiConsequence.Loss,
-                        Change = 1 } }
+                    Lines = new[] { new CompanyConsequence { Text = rise > 0 ? w.F("reallife_co_q_rent_year", "About {amount} a year more in rent", "amount", w.Money(yearMore))
+                        : w.T("reallife_co_q_rent_same", "The rent stays as it is"), Tone = rise > 0 ? UiConsequence.Loss : 0, Change = rise > 0 ? 1 : 0 } }
                 },
                 new CompanyChoice
                 {
                     Name = w.T("reallife_co_q_c_haggle", "Haggle for a smaller rise"), Button = w.T("reallife_co_q_haggle_do", "Haggle"), Note = w.T("reallife_co_q_once_note", "once"),
-                    Act = CompanyAct.Of(CompanyDo.LeaseAnswer, e.Place, CompanyDirector.AnswerHaggle), Disabled = l != null && l.Haggled, Why = l != null && l.Haggled ? w.T("reallife_co_q_haggled",
-                        "The landlord was asked once already.") : null,
+                    Act = CompanyAct.Of(CompanyDo.LeaseAnswer, e.Place, CompanyDirector.AnswerHaggle), Disabled = l != null && (l.Haggled || rise <= 0), Why = l != null && l.Haggled ? w.T("reallife_co_q_haggled",
+                        "The landlord was asked once already.") : rise <= 0 ? w.T("reallife_co_q_nohaggle", "The landlord asks for no rise.") : null,
                     Lines = new[] { new CompanyConsequence { Text = w.T("reallife_co_q_haggle_line", "The landlord may meet you half way, or hold firm"), Tone = 0, Change = 0 } }
                 },
                 new CompanyChoice
@@ -203,8 +203,10 @@ namespace RealLifeOverhaul.Ui
                 }
             };
             q.Choices = choices.ToArray();
-            q.Headline = w.F("reallife_co_q_lease_head", "The lease at {place} renews in {days} days: {rent} a month, up {rise}.", "place", business, "days", days.ToString(), "rent",
-                w.Money(d.Monthly(offered)), "rise", CompanyText.Share(rise));
+            q.Headline = rise > 0 ? w.F("reallife_co_q_lease_head", "The lease at {place} renews in {days} days: {rent} a month, up {rise}.", "place", business, "days", days.ToString(), "rent",
+                w.Money(d.Monthly(offered)), "rise", CompanyText.Share(rise))
+                : w.F("reallife_co_q_lease_head_same", "The lease at {place} renews in {days} days: the rent stays at {rent} a month.", "place", business, "days", days.ToString(), "rent",
+                w.Money(d.Monthly(offered)));
         }
 
         // A manager's budget nearly spent: top it up for the month, or leave it.

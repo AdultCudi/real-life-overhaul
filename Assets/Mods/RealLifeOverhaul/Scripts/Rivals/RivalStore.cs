@@ -15,6 +15,10 @@ namespace RealLifeOverhaul.Rivals
     ///        listed|outbid day,poach day,press day,lobby day,takeover day|break-up money|break-up day
     ///     M|id|tycoon|kind|state|announced|comes|ends|amount|second|rented|test|place|name|district|type|who   a move
     ///     C|id|tycoon|kind|day|cost|move                                                                       a counter
+    ///     O|move|tycoon|district|type|next hire|hires|let go|raises|renewals|holds|rent paid|wages paid|lease|crew|seat|let go ids
+    ///                                                      an outlet a tycoon runs (RivalFirms): its lease (fields joined by ','), its crew (people split by '/'),
+    ///                                                      the game's rival business it stands on (its address; empty for a seeded stand-in) and the ids of the
+    ///                                                      game's people the firm let go (split by '/'). The last two are newer than the rest: an older line loads without them.
     ///
     /// Numbers in the invariant culture. A newer version adds fields at the end or lines with a new letter: the reader
     /// takes the fields it knows, skips unknown lines and drops a move or counter of an unknown kind. A line it cannot read
@@ -93,7 +97,7 @@ namespace RealLifeOverhaul.Rivals
             return b.ToString();
         }
 
-        // O|move|tycoon|district|type|next hire|hires|let go|raises|renewals|holds|rent paid|wages paid|the lease (its fields joined by ',')|the crew (people split by '/', their fields by ',')
+        // O|move|tycoon|district|type|next hire|hires|let go|raises|renewals|holds|rent paid|wages paid|the lease (its fields joined by ',')|the crew (people split by '/', their fields by ',')|seat|let go ids
         private static void WriteOutlet(StringBuilder b, RivalOutlet o)
         {
             b.Append("\nO|").Append(o.Move.ToString(Inv));
@@ -113,6 +117,11 @@ namespace RealLifeOverhaul.Rivals
                     .Append(s.Raise.ToString(Inv)).Append(',').Append(s.Standing.ToString(Inv)).Append(',').Append(s.UnderDays.ToString(Inv)).Append(',').Append(s.AskDay.ToString(Inv)).Append(',')
                     .Append(s.AskTo.ToString(Inv)).Append(',').Append(s.AskRest.ToString(Inv)).Append(',').Append(s.LateDays.ToString(Inv));
             }
+            b.Append('|').Append(Clean(o.Seat)).Append('|');
+            for (int i = 0; i < o.Out.Count && i < RivalFirms.OutMost; i++)
+            {
+                b.Append(i > 0 ? "/" : string.Empty).Append(Clean(o.Out[i]).Replace('/', ' '));
+            }
         }
 
         private static void Outlet(RivalFile f, string[] c)
@@ -130,8 +139,18 @@ namespace RealLifeOverhaul.Rivals
             var o = new RivalOutlet
             {
                 Move = I(c, 1), Tycoon = tycoon, District = c[3], Type = c[4], Lease = lease, NextHire = Math.Max(1, I(c, 5)), Hires = I(c, 6), LetGo = I(c, 7), Raises = I(c, 8), Renewals = I(c, 9),
-                Holds = I(c, 10), Rent = L(c, 11), Wages = L(c, 12)
+                Holds = I(c, 10), Rent = L(c, 11), Wages = L(c, 12), Seat = c.Length > 15 ? c[15] : string.Empty
             };
+            if (c.Length > 16 && c[16].Length > 0)
+            {
+                foreach (string gone in c[16].Split('/'))
+                {
+                    if (gone.Length > 0 && o.Out.Count < RivalFirms.OutMost)
+                    {
+                        o.Out.Add(gone);
+                    }
+                }
+            }
             lease.District = o.District;
             lease.Name = RivalFirms.Key(o);
             foreach (string person in c[14].Length == 0 ? new string[0] : c[14].Split('/'))
@@ -153,7 +172,7 @@ namespace RealLifeOverhaul.Rivals
                 s.AskTo = I(p, 7);
                 s.AskRest = I(p, 8);
                 s.LateDays = I(p, 9);
-                s.DayHours = RivalFirms.HoursADay * 100;
+                s.DayHours = RivalFirms.HoursADay * 100;   // (a seat's people have their own hours again on the next day's read)
                 o.Crew.Add(s);
             }
             f.Outlets.Add(o);

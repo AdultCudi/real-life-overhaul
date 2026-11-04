@@ -171,7 +171,15 @@ namespace RealLifeOverhaul.Ui
                 }
                 cy += UiTokens.S4;
             }
-            PaidList(s, at, lay, t, x, cy, width, bottom, out bool drawn);
+            cy = PaidList(s, at, lay, t, x, cy, width, bottom, out bool drawn);
+            if (t.Extra.Length > 0 && bottom - cy >= UiTokens.PairRow + LineRow)
+            {
+                cy = Section(s, at, lay, x, cy, width, t.ExtraTitle);
+                for (int i = 0; i < t.Extra.Length && cy + LineRow <= bottom; i++)
+                {
+                    cy += LineItem(s, at, lay, ref t.Extra[i], x, cy, width);
+                }
+            }
             return drawn;
         }
 
@@ -210,6 +218,13 @@ namespace RealLifeOverhaul.Ui
                     q.Tone == UiRole.None ? UiRole.Text : q.Tone, q.Value);
                 cy += StatementRow;
             }
+            if (t.QuarterLen > 0 && cy + UiTokens.PairRow + UiTokens.S3 <= bottom)
+            {
+                // How far through the quarter it is: the figures above are of this much of it.
+                Pair(s, at, x, cy, UiTokens.PairRow, width, UiStyle.Body, UiRole.Text2, t.QuarterDayText ?? string.Empty, UiStyle.Body, UiRole.Text, null);
+                UiDraw.Meter(s, at, x, cy + UiTokens.PairRow + UiTokens.S1, width, UiTokens.S1, Math.Max(0, Math.Min(100, t.QuarterDay * 100 / Math.Max(1, t.QuarterLen))), UiRole.Accent);
+                cy += UiTokens.PairRow + UiTokens.S3 + UiTokens.S2;
+            }
             for (int i = 0; i < t.ReserveControls.Length && cy + SwitchRow <= bottom; i++)
             {
                 cy = Block(s, at, lay, v, w, t.ReserveControls[i], x, cy, width, bottom, keys);
@@ -225,6 +240,15 @@ namespace RealLifeOverhaul.Ui
                 for (int i = 0; i < t.Tools.Length && cy + LineRow <= bottom; i++)
                 {
                     cy += LineItem(s, at, lay, ref t.Tools[i], x, cy, width);
+                }
+                cy += UiTokens.S3;
+            }
+            if (t.Terms.Length > 0 && bottom - cy >= UiTokens.PairRow + LineRow)
+            {
+                cy = Section(s, at, lay, x, cy, width, t.TermsTitle);
+                for (int i = 0; i < t.Terms.Length && cy + LineRow <= bottom; i++)
+                {
+                    cy += LineItem(s, at, lay, ref t.Terms[i], x, cy, width);
                 }
                 cy += UiTokens.S3;
             }

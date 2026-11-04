@@ -82,6 +82,8 @@ namespace RealLifeOverhaul.Ui
             t.LicencesTitle = w.T("reallife_co_licences", "Licences and permits");
             t.LicencesCount = lic.Count > 0 ? lic.Count.ToString() : null;
             t.LicencesEmpty = CompanyText.T("reallife_co_lic_intro");
+            t.ExtraTitle = w.T("reallife_co_lic_not_needed", "Permits this business does not need");
+            t.Extra = PermitsNotNeeded(d, w);
             if (!tax)
             {
                 t.ComingUp = ComingOf(coming);
@@ -115,7 +117,12 @@ namespace RealLifeOverhaul.Ui
                     : UiRole.OkText });
             }
             t.Quarter = lines.ToArray();
+            t.QuarterLen = d.QuarterDays;
+            t.QuarterDay = Math.Max(0, Math.Min(d.QuarterDays, day - tf.QuarterFrom + 1));
+            t.QuarterDayText = w.F("reallife_co_quarter_day", "Day {day} of {days}", "day", t.QuarterDay.ToString(), "days", d.QuarterDays.ToString());
             ReserveFacts(t, d, v, w, q, tf);
+            t.TermsTitle = w.T("reallife_co_acc_terms_sec", "What an accountant costs");
+            t.Terms = AccountantTerms(d, tf, w);
             // The lead: the return waiting for the owner, else the reserve falling short.
             TaxLead(t, d, v, w, q, tf, day);
             // Coming up.
@@ -396,6 +403,48 @@ namespace RealLifeOverhaul.Ui
             return card;
         }
 
+        // The three accountants and what each costs and does: the same terms the accountant's page holds, as rows, so that the choice is seen before it is opened.
+        private static CompanyItem[] AccountantTerms(CompanyDirector d, TaxFile t, Words w)
+        {
+            var rows = new CompanyItem[CompanyCatalogue.Accountants];
+            for (int i = 0; i < rows.Length; i++)
+            {
+                rows[i] = new CompanyItem
+                {
+                    Title = CompanyText.Accountant(i),
+                    Sub = CompanyText.T("reallife_co_acc_terms_line", "saves", CompanyText.Share(CompanyCatalogue.AccountantSaving[i]), "risk", CompanyText.Share(CompanyCatalogue.AccountantRisk[i])),
+                    Figure = CompanyText.T("reallife_co_row_a_month", "amount", CompanyText.Money(TaxRules.Fee(i, d.Index, false))),
+                    Chip = t.Accountant == i ? CompanyText.T("reallife_mgr_in_post") : null, ChipTone = UiRole.Ok, Press = true, Grade = -1,
+                    Act = CompanyAct.Of(CompanyDo.Go, "acc", CompanyView.Tax, CompanyView.SubAccountant)
+                };
+            }
+            return rows;
+        }
+
+        // The kinds of permit that no business of the company needs yet, each with its fee and term: what the catalogue has beyond the rows above, in the room a small company leaves.
+        private static CompanyItem[] PermitsNotNeeded(CompanyDirector d, Words w)
+        {
+            var rows = new List<CompanyItem>(CompanyCatalogue.LicenceKinds);
+            IReadOnlyList<CompanyShop> shops = d.Shops;
+            for (int k = 0; k < CompanyCatalogue.LicenceKinds; k++)
+            {
+                bool needed = false;
+                for (int i = 0; i < shops.Count && !needed; i++)
+                {
+                    needed = LicenceRules.Needed(shops[i].Needs, k);
+                }
+                if (!needed)
+                {
+                    rows.Add(new CompanyItem
+                    {
+                        Title = CompanyText.Capital(CompanyText.Licence(k)), Sub = CompanyText.T("reallife_co_lic_term_value", "days", CompanyCatalogue.LicenceTerm[k].ToString()),
+                        Figure = CompanyText.Money(LicenceRules.Fee(k, d.Index)), Grade = -1
+                    });
+                }
+            }
+            return rows.ToArray();
+        }
+
         private CompanyCard AccountantCard(CompanyDirector d, CompanyView v, Words w, TaxFile t, CompanyButton[] back)
         {
             bool hiding = d.Hidden() > 0;
@@ -479,6 +528,8 @@ namespace RealLifeOverhaul.Ui
                 new CompanyBlock { Kind = CompanyBlockKind.Choice, Text = w.T("reallife_co_hide_label", "Cash off the books"), Options = options, Chosen = at, Acts = acts },
                 new CompanyBlock { Kind = CompanyBlockKind.Break },
                 Sec(w.T("reallife_ibox_sec_risk", "The risk")),
+                new CompanyBlock { Kind = CompanyBlockKind.Meter, Text = w.T("reallife_co_f_risk", "Audit risk"), Value = CompanyText.Share(TaxRules.AuditChance(t, d.Today) / 10),
+                    Number = Math.Min(100, TaxRules.AuditChance(t, d.Today) * 100 / Math.Max(1, CompanyCatalogue.RiskMost)), Tone = UiRole.Warn },
                 Note(CompanyText.T("reallife_co_hide_risk", "grow", (CompanyCatalogue.RiskPerPercent / 100f).ToString("0.##"), "fall", (CompanyCatalogue.RiskDecay / 100f).ToString("0.##"),
                     "most", CompanyText.Share(CompanyCatalogue.RiskMost / 10))),
                 Note(CompanyText.T(level == CompanyCatalogue.Relaxed ? "reallife_co_hide_audit_relaxed" : "reallife_co_hide_audit", "fine", CompanyText.Share(CompanyCatalogue.FineShare[level]),

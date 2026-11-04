@@ -57,6 +57,7 @@ namespace RealLifeOverhaul.Ui
         public CompanyDone[] Log = new CompanyDone[0];
         public CompanyAct LogOpen;
         public string CrewTitle, CrewCount;
+        public int CrewTotal;                   // the crew there are, of which Crew holds the first rows: the rest are told as "and N more"
         public CompanyItem[] Crew = new CompanyItem[0];
         public CompanyButton[] Buttons = new CompanyButton[0];
         public string Note;
@@ -252,8 +253,13 @@ namespace RealLifeOverhaul.Ui
         public string LicencesEmpty;
         // Coming up.
         public CompanyDone[] ComingUp = new CompanyDone[0];
-        // The quarter so far.
+        // The quarter so far; where it has begun, how far through it the day is (the bar under the figures)
         public string QuarterTitle, QuarterRange;
+        public int QuarterDay, QuarterLen;
+        public string QuarterDayText;
+        // The permits the businesses do not need, with their fee and term (under what is coming up), and the accountants' terms (under the tools): what the tax page can do, said whole.
+        public string ExtraTitle, TermsTitle;
+        public CompanyItem[] Extra = new CompanyItem[0], Terms = new CompanyItem[0];
         public CompanyStatementLine[] Quarter = new CompanyStatementLine[0];
         public CompanyBlock[] ReserveControls = new CompanyBlock[0];    // what the owner does with the reserve: the figure to set aside, the finance chief's top-up switch
         // Paid this year.

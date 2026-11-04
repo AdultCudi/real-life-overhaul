@@ -140,7 +140,10 @@ namespace RealLifeOverhaul.Ui
             if (p.Crew.Length > 0 && bottom - ry >= UiTokens.PairRow + ListRow)
             {
                 ry = Section(s, at, lay, c2x, ry, c2w, p.CrewTitle, p.CrewCount);
-                int fit = (int)Math.Max(1f, Math.Floor((bottom - ry + ListGap) / (ListRow + ListGap)));
+                // The rows that fit leave a line for "and N more" when the crew is longer than the rows that stand, so that a list is never cut by the frame without saying so.
+                int fit = (int)Math.Max(1f, Math.Floor((bottom - ry + ListGap - (p.CrewTotal > 1 ? UiTokens.PairRow : 0f)) / (ListRow + ListGap)));
+                fit = Math.Min(fit, p.Crew.Length);
+                int more = Math.Max(0, p.CrewTotal - fit);
                 for (int i = 0; i < Math.Min(p.Crew.Length, fit); i++)
                 {
                     ref CompanyItem it = ref p.Crew[i];
@@ -153,6 +156,12 @@ namespace RealLifeOverhaul.Ui
                         UiDraw.Node(s, at, c2x, ry, c2w, ListRow, Item, index, face);
                     }
                     ry += ListRow + ListGap;
+                }
+                if (more > 0 && ry + UiTokens.PairRow <= bottom + ListGap)
+                {
+                    UiDraw.TextMiddle(s, at, c2x + UiTokens.AvatarRow + UiTokens.S3, ry, UiTokens.PairRow, c2w - UiTokens.AvatarRow - UiTokens.S3, UiStyle.Small, UiRole.Muted,
+                        w.F("reallife_co_and_more", "and {count} more", "count", more.ToString()), UiFlags.Truncate);
+                    ry += UiTokens.PairRow;
                 }
             }
             for (int i = 0; i < p.More.Length && ry < bottom; i++)

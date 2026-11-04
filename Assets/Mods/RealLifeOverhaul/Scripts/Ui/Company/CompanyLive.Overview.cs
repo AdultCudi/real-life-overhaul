@@ -562,6 +562,10 @@ namespace RealLifeOverhaul.Ui
                     blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = crew });
                 }
             }
+            if (!page)
+            {
+                CompanyFace.AsideSections(blocks, w.T("reallife_co_r_licences", "Licences"), w.T("reallife_co_r_cover", "Cover held"));   // the panel of a one business company
+            }
             c.Blocks = blocks.ToArray();
             return c;
         }

@@ -158,7 +158,7 @@ namespace RealLifeOverhaul.Ui
 
         // The card's buttons stand in one row inside the card: when the words of a language make the row too wide, the link to the asker's page is cut to "Open", and where it still does
         // not fit it goes (the Lead has the link, and the inbox's card has the links of the question).
-        private static CompanyButton[] FitButtons(CompanyButton[] buttons, CompanyWords w, IUiKeys keys)
+        private static CompanyButton[] FitButtons(CompanyButton[] buttons, CompanyWords w, IUiKeys keys, string who = null)
         {
             float room = UiDecision.Width - 296f - UiTokens.S8 * 2f;
             for (int pass = 0; pass < 2; pass++)
@@ -182,7 +182,7 @@ namespace RealLifeOverhaul.Ui
                     else if (pass == 0)
                     {
                         CompanyButton shorter = buttons[i];
-                        shorter.Label = w.T("reallife_co_open", "Open");
+                        shorter.Label = string.IsNullOrEmpty(who) ? w.T("reallife_co_open", "Open") : w.F("reallife_co_page_of", "{name}'s page", "name", who);
                         kept.Add(shorter);
                     }
                 }
@@ -210,7 +210,8 @@ namespace RealLifeOverhaul.Ui
             {
                 lines.Add(q.AskerRole);
             }
-            CompanyButton[] buttons = FitButtons(QuestionButtons(q, v, w), w, keys);
+            string asker = string.IsNullOrEmpty(q.Asker) ? null : q.Asker.Split(' ')[0];
+            CompanyButton[] buttons = FitButtons(QuestionButtons(q, v, w), w, keys, asker);
             var actions = new UiActionModel[buttons.Length];
             for (int i = 0; i < buttons.Length; i++)
             {

@@ -17,6 +17,7 @@ internal static partial class Program
         DayLongJump();
         DayEntriesAlone();
         DayMarketRent();
+        LeaseZeroOffers();   // an offer of nothing is an offer (LeaseZeroChecks.cs)
         Console.WriteLine("  the day entries through their switches, a long jump of days and the market rent: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed");
     }
 
@@ -131,10 +132,16 @@ internal static partial class Program
         Check(CompanyDay.OwnerAnswers(world, m.Place, new LeaseFile { Place = "Nowhere~1" }, true, "You", Epoch + 6) == false, "day entries: the owner's answer to a lease with no offer does nothing");
         // The lease question has a number of its own when no escalation stands behind it, and the notice that opens it maps to that number.
         int elm = LeaseRules.QuestionId("Elm~7");
-        string uiDir = FindCompanyDirectory() != null ? FindCompanyDirectory().Replace(System.IO.Path.Combine("Scripts", "Economy", "Company"), System.IO.Path.Combine("Scripts", "Ui", "Company")) : null;
-        string liveText = uiDir != null ? SourceText(uiDir, "CompanyLive.cs") : string.Empty;
-        Check(elm < 0 && elm == LeaseRules.QuestionId("Elm~7") && elm != LeaseRules.QuestionId("Dock~4") && liveText.Contains("kind == \"ls:\"") && liveText.Contains("LeaseRules.QuestionId(rest)"),
-            "lease question: a lease with no escalation behind it has a number of its own (negative, the same each time), and the notice's \"ls:\" pick opens it, hierarchy or none");
+        string pick = LeaseRules.NoticePick("Elm~7");
+        Check(elm < 0 && elm == LeaseRules.QuestionId("Elm~7") && elm != LeaseRules.QuestionId("Dock~4"), "lease question: a lease with no escalation behind it has a number of its own (negative, the same each time)");
+        Check(LeaseRules.QuestionOfPick(pick) == elm && LeaseRules.QuestionOfPick(LeaseRules.NoticePick("Dock~4")) == LeaseRules.QuestionId("Dock~4") && LeaseRules.QuestionOfPick("he:12") == 0
+              && LeaseRules.QuestionOfPick("ls:") == 0 && LeaseRules.QuestionOfPick(null) == 0 && LeaseRules.QuestionOfPick("mp:Elm~7") == 0,
+            "lease question: the notice an offer sends carries a pick, and that pick pressed opens the lease's own question, hierarchy or none; no other pick does");
+        var notices = new CoWorld { Seed = RunSeed };
+        var noticeWorld = new CoDayWorld(notices);
+        noticeWorld.LeaseNotice("Elm~7", new LeaseFile { Place = "Elm~7" }, Epoch + 5);
+        Check(notices.NoticeLog.Count == 1 && notices.NoticeLog[0] == "Elm~7@" + (Epoch + 5) && LeaseRules.QuestionOfPick(LeaseRules.NoticePick(notices.NoticeLog[0].Substring(0, notices.NoticeLog[0].IndexOf('@')))) == elm,
+            "lease question: and the place a notice names is the place the pick opens");
         // A manager hires a place up to twelve crew; past that the gap is the owner's.
         Check(CompanyDay.Wants(new ManagerFile { Keep = 20 }, 11) && !CompanyDay.Wants(new ManagerFile { Keep = 20 }, 12) && !CompanyDay.Wants(new ManagerFile { Keep = 6 }, 6) && CompanyDay.Wants(new ManagerFile { Keep = 6 }, 5),
             "day entries: a manager hires while the crew they are told to keep is not there and it is under " + ManagerCatalogue.HireCrewMost + ", and no further");
@@ -155,7 +162,7 @@ internal static partial class Program
             "market rent: the ask moves " + LeaseRules.MarketShare + " per mille of the way to the market (a market of 260 over the rent of 200 is 300 per mille over it)");
         Check(toward >= 0, "market rent: the share of the way is a share");
         string dir = FindCompanyDirectory(), leases = dir != null ? SourceText(dir, "CompanyDirector.Leases.cs") : string.Empty, game = dir != null ? SourceText(dir, "CompanyGame.cs") : string.Empty;
-        Check(leases.Contains("CompanyBridges.MarketRent(l.District, l.Place, l.Rent)") && leases.Contains("MarketOf(l)") && game.Contains("public static Func<string, string, int, int> MarketRent;") && game.Contains("MarketRent = null;"),
+        Check(leases.Contains("CompanyBridges.MarketRent(district, place, rent)") && SourceText(dir, "CompanyDirector.DayWorld.cs").Contains("MarketOf(district, place, rent)") && game.Contains("public static Func<string, string, int, int> MarketRent;") && game.Contains("MarketRent = null;"),
             "market rent: the director takes the market rent from CompanyBridges.MarketRent alone, which the property feature feeds and the bridges reset");
     }
 }

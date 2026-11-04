@@ -213,6 +213,8 @@ internal static partial class UiSamples
 
     // ------------------------------------------------------------------------------------------------- Tax and licences
 
+    private static string CompanyTextCapital(string s) => string.IsNullOrEmpty(s) ? s : char.ToUpperInvariant(s[0]) + s.Substring(1);
+
     private static void CompanyTax(CompanyFacts f, CompanyWords w, string state)
     {
         CompanyTaxFacts t = f.Tax;
@@ -237,6 +239,8 @@ internal static partial class UiSamples
         if (one)
         {
             lic.Clear();
+            lic.Add(new CompanyLicence { Id = "lic:Corner Cafe~12:0", Icon = UiIcon.Drop, Name = w.T("reallife_co_licence_hygiene", "food hygiene"), Place = "Corner Cafe", State = w.T("reallife_co_row_lic_valid", "Valid"), StateTone = UiRole.Ok, Day = "Day 140",
+                Open = CA(CompanyDo.Go, "lic:Corner Cafe~12:0", CompanyView.Tax, CompanyView.SubLicence) });
             lic.Add(new CompanyLicence { Id = "lic:Corner Cafe~12:3", Icon = UiIcon.Tag, Name = "Signage permit", Place = "Corner Cafe", State = w.T("reallife_co_row_lic_missing", "Missing"), StateTone = UiRole.Danger, Open = CA(CompanyDo.Go, "lic:Corner Cafe~12:3", CompanyView.Tax, CompanyView.SubLicence),
                 HasAction = true, Action = CB(w.T("reallife_co_lic_buy", "Apply"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.LicenceBuy, "Corner Cafe~12", 3), UiIcon.Check) });
         }
@@ -288,6 +292,32 @@ internal static partial class UiSamples
         t.PropertyTitle = w.T("reallife_co_property_tax", "Property tax");
         t.Property = one ? new CompanyStatementLine[0] : new[] { new CompanyStatementLine { Label = "Hudson Warehouse", Value = CM(2140) } };
         t.PropertyNote = one ? w.T("reallife_co_property_rented", "Rented premises: the property tax is inside the rent.") : w.T("reallife_co_property_note", "Counted so far this tax year.");
+        if (one)
+        {
+            // A first quarter, seven days in: how far through it the day is, what each accountant costs and does, and the permits the cafe does not need yet.
+            t.QuarterLen = 90;
+            t.QuarterDay = 7;
+            t.QuarterDayText = w.F("reallife_co_quarter_day", "Day {day} of {days}", "day", "7", "days", "90");
+            t.TermsTitle = w.T("reallife_co_acc_terms_sec", "What an accountant costs");
+            int[] fees = { 300, 700, 1500 }, saves = { 20, 40, 70 }, risks = { 1000, 800, 600 };
+            var terms = new CompanyItem[3];
+            for (int i = 0; i < 3; i++)
+            {
+                terms[i] = new CompanyItem { Title = w.T("reallife_co_accountant_" + i, i == 0 ? "Quay Street Bookkeeping" : i == 1 ? "Marlow & Finch" : "Ashdown Chartered"),
+                    Sub = w.F("reallife_co_acc_terms_line", "saves {saves} of the tax, audit risk {risk} of the usual", "saves", saves[i] / 10f + "%", "risk", risks[i] / 10 + "%"),
+                    Figure = w.F("reallife_co_row_a_month", "{amount} a month", "amount", CM(fees[i])), Press = true, Grade = -1, Act = CA(CompanyDo.Go, "acc", CompanyView.Tax, CompanyView.SubAccountant) };
+            }
+            t.Terms = terms;
+            t.ExtraTitle = w.T("reallife_co_lic_not_needed", "Permits this business does not need");
+            string[] kinds = { "fire", "seating", "delivery", "bonded" }, names = { "fire safety certificate", "outdoor seating permit", "delivery vehicle permit", "bonded storage permit" };
+            int[] permitFees = { 350, 250, 200, 600 }, days = { 60, 30, 30, 60 };
+            var extra = new CompanyItem[4];
+            for (int i = 0; i < 4; i++)
+            {
+                extra[i] = new CompanyItem { Title = CompanyTextCapital(w.T("reallife_co_licence_" + kinds[i], names[i])), Sub = w.F("reallife_co_lic_term_value", "{days} days", "days", days[i].ToString()), Figure = CM(permitFees[i]), Grade = -1 };
+            }
+            t.Extra = extra;
+        }
         if (state == "tax_lead" || state == "tax_big")
         {
             t.HasLead = true;
@@ -347,7 +377,8 @@ internal static partial class UiSamples
                     CNote(w.F("reallife_co_hide_what", "Cash you keep off the books pays no tax, at {percent}%.", "percent", "20")),
                     new CompanyBlock { Kind = CompanyBlockKind.Choice, Text = w.T("reallife_co_hide_label", "Cash off the books"), Options = new[] { "0%", "5%", "10%" }, Chosen = 1, Acts = new[] { CA(CompanyDo.HideSet, "Speedy Bites~7", 0), CA(CompanyDo.HideSet, "Speedy Bites~7", 5), CA(CompanyDo.HideSet, "Speedy Bites~7", 10) } },
                     new CompanyBlock { Kind = CompanyBlockKind.Break },
-                    CSec(w.T("reallife_ibox_sec_risk", "The risk")), CNote(w.F("reallife_co_hide_risk", "The audit chance grows {grow} a day for each per cent and falls {fall} a day, to at most {most}.", "grow", "0.2", "fall", "0.1", "most", "30%")),
+                    CSec(w.T("reallife_ibox_sec_risk", "The risk")), new CompanyBlock { Kind = CompanyBlockKind.Meter, Text = w.T("reallife_co_f_risk", "Audit risk"), Value = "0.4%", Number = 1, Tone = UiRole.Warn },
+                    CNote(w.F("reallife_co_hide_risk", "The audit chance grows {grow} a day for each per cent and falls {fall} a day, to at most {most}.", "grow", "0.2", "fall", "0.1", "most", "30%")),
                     CNote(w.F("reallife_co_hide_audit", "An audit fines {fine} of what was hidden, and goes to court from {sum}.", "fine", "50%", "sum", CM(5000))), CNote(w.T("reallife_co_hide_threshold", "Nothing is checked while the sum stays small."))
                 }
             };

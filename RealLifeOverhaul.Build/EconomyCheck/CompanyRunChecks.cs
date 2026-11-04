@@ -27,9 +27,11 @@ internal static partial class Program
         CompanyLicenceKinds();  // the four licence kinds added, applications and the fire certificate's link to the cover (CompanyLicenceChecks.cs)
         CompanyTaxReserve();    // the quarter's tax, the reserve, the past returns and the save (CompanyTaxChecks.cs)
         RivalFirmChecks();  // the rivals' businesses hire, let go and lease by the same rules (RivalFirmChecks.cs)
+        RivalSeatChecks();  // ...on the game's own rival businesses: their people, wages and rent (RivalSeatChecks.cs)
         CompanyRun();       // a hundred and twenty days of all of it together, a save on day 30 and an old save (this file)
         CompanyRunPins();   // the director's source calls what the run calls, in the order the run calls it (this file)
         CompanyDayVariants();   // the day entries through their switches, a long jump of days and the market rent (CompanyDayChecks.cs)
+        CompanyDoesChecks();    // every action of the screen through the live map against a recording director (CompanyDoesChecks.cs)
     }
 
     // ---------------------------------------------------------------- the world of the run
@@ -408,32 +410,24 @@ internal static partial class Program
                 continue;
             }
             string place = w.S.Shops[i].Place;
-            LeaseFile l = w.L.Of(place);
-            if (l == null)
-            {
-                l = LeaseRules.Begin(w.Seed, place, rents[i], day, RunMonth);   // an old save's premises: a lease from the day it loads
-                w.L.Leases.Add(l);
-            }
-            l.Rent = rents[i];
-            l.Name = place;
-            l.District = i % 2 == 0 ? "Midtown" : "Harbour";
-            w.Cash -= LeaseRules.TopUp(l);
-            bool silent = l.Offer > 0 && l.Answer == 0 && day >= l.End;
-            if (LeaseRules.Settle(l, day, w.Seed, RunMonth))
+            ManagerFile m = w.M.At(place);
+            bool manager = w.ManagersOn && m != null && ManagerRules.Runs(m.Tasks, ManagedKind.Shop, ManagerTask.Leases);
+            // The very step the director's day takes (CompanyDay.LeaseShop): a lease made for premises seen first, the rise, the end settled or the offer made.
+            CompanyDay.LeaseDayWas was = CompanyDay.LeaseShop(world, w.L, place, place, i % 2 == 0 ? "Midtown" : "Harbour", rents[i], manager, LeaseRules.TrendOf(w.L.Trend), RunMonth, day);
+            LeaseFile l = was.Lease;
+            w.Cash -= was.TopUp;
+            if (was.Settled)
             {
                 w.Renewals++;
                 w.Holds += l.Hold ? 1 : 0;
-                w.SilentRenewals += silent ? 1 : 0;
+                w.SilentRenewals += was.Silent ? 1 : 0;
                 CompanyDay.LeaseClosed(world, place, day);
             }
-            else if (LeaseRules.OfferDue(l, day))
+            else if (was.Offered)
             {
-                ManagerFile m = w.M.At(place);
-                bool manager = w.ManagersOn && m != null && ManagerRules.Runs(m.Tasks, ManagedKind.Shop, ManagerTask.Leases);
-                OfferWas was = CompanyDay.Offer(world, place, l, manager, LeaseRules.TrendOf(w.L.Trend), RunPressure(l.District, day), 0, RunMonth, day);
                 w.Offers++;
-                w.Renewals += was == OfferWas.Renewed ? 1 : 0;
-                w.Skipped += was == OfferWas.Renewed ? 1 : 0;
+                w.Renewals += was.Offer == OfferWas.Renewed ? 1 : 0;
+                w.Skipped += was.Offer == OfferWas.Renewed ? 1 : 0;
             }
             else if (l.Told != 0 && LeaseRules.Waiting(l, day) && OwnerDelay(place) > 0)
             {
@@ -471,17 +465,7 @@ internal static partial class Program
             w.H.Company.Steps[(int)PolicyField.PayBand] = 0;
             w.H.Company.Steps[(int)PolicyField.ExceptionMargin] = 0;
         }
-        for (int i = 0; i < w.H.Escalations.Count; i++)
-        {
-            Escalation e = w.H.Escalations[i];
-            if (!e.Open || e.Level < EscalationRules.LevelOwner || e.Place.Length == 0)
-            {
-                continue;
-            }
-            var kind = (EscalationKind)e.Kind;
-            w.HandedDown += CompanyDay.HandDown(w.H, e, w.M.At(e.Place), world.ExecutiveInPost(EscalationRules.AreaOf(kind)), world.Rule(e.Place, PolicyField.Approver),
-                world.Rule(e.Place, PolicyField.Sources), "You", day, 0) ? 1 : 0;
-        }
+        w.HandedDown += CompanyDay.HandDownRound(world, "You", day, 0);
         CoHandle(w, world, day, 0, false);
         for (int i = 0; i < w.H.Escalations.Count; i++)
         {
@@ -518,33 +502,7 @@ internal static partial class Program
     // the settle for its kind (the exceptions' own approval, CompanyDay.Approve) says it is settled; otherwise it goes up. What is counted is what the settle returned.
     private static void CoHandle(CoWorld w, CoDayWorld world, int day, int hour, bool exceptionsOnly)
     {
-        for (int i = 0; i < w.H.Escalations.Count; i++)
-        {
-            Escalation e = w.H.Escalations[i];
-            if (!e.Open || e.Level >= EscalationRules.LevelOwner || (exceptionsOnly && e.Kind != (int)EscalationKind.Exception))
-            {
-                continue;
-            }
-            var kind = (EscalationKind)e.Kind;
-            int level = e.Level, agreed;
-            ExecutiveFile x = level == EscalationRules.LevelExecutive ? w.H.Executives.Find(v => v.Area == (int)EscalationRules.AreaOf(kind)) : null;
-            string who = x != null ? x.Name : string.Empty;
-            bool done;
-            TryWas was = CompanyDay.Try(e, x != null, world.Rule(e.Place, PolicyField.Approver), world.Rule(e.Place, PolicyField.Sources),
-                () => kind == EscalationKind.Exception && CompanyDay.Approve(world, e, e.Place, level, who, false, day, hour, out agreed), out done);
-            if (was == TryWas.Settled)
-            {
-                CompanyDay.Settled(w.H, e, who, x, level, day, hour);
-                w.ExecSettled++;
-            }
-            else if (was == TryWas.Passed)
-            {
-                int next = CompanyDay.Holder(world, kind, e.Place, e.Level);
-                CompanyDay.PassedUp(w.H, e, next, who, day, hour);
-                w.OwnerNew += next == EscalationRules.LevelOwner ? 1 : 0;
-                w.ExecPassed++;
-            }
-        }
+        CompanyDay.HandleRound(world, day, hour, exceptionsOnly);
     }
 
     // The Sunday write: the plan in use for the week, a dated plan over the standing one while its days last, the odd weeks' plan on odd weeks.
@@ -872,17 +830,23 @@ internal static partial class Program
         string reserve = SourceText(dir, "CompanyDirector.TaxReserve.cs"), esc = SourceText(dir, "CompanyDirector.Escalations.cs"), decisions = SourceText(dir, "CompanyDirector.ManagerDecisions.cs");
         string managers = SourceText(dir, "CompanyDirector.Managers.cs"), plans = SourceText(dir, "CompanyDirector.RotaPlans.cs"), lic = SourceText(dir, "CompanyDirector.Licences.cs");
         string game = SourceText(dir, "CompanyGame.cs"), staff = SourceText(dir, "CompanyDirector.Staff.cs"), rotaRead = SourceText(dir, "RotaGame.Read.cs"), day2 = SourceText(dir, "CompanyDay.cs");
-        Check(RunInOrder(day, "Read(day, false, true", "PartDay(part, day)", "ManagerDay(day)", "LeaseDay(day)", "Books(day, next)", "HierarchyDay(day)"),
-            "company run pins: the day reads, runs the parts, then the managers, the leases, the books and the hierarchy, as the run does");
-        Check(RunInOrder(leases, "CityMonth(day, monthDays)", "LeaseRules.Begin(", "LeaseRules.TopUp(l)", "LeaseRules.Settle(l, day", "LeaseRules.OfferDue(l, day)", "MakeOffer(l, shop, day)"),
-            "company run pins: the lease day: the city's month, a lease begun, the rise paid, the lease settled or the offer made, in the run's order");
-        Check(leases.Contains("CompanyDay.Lease(this") && leases.Contains("CompanyDay.Offer(this") && leases.Contains("CompanyDay.OwnerAnswers(this") && leases.Contains("CompanyDay.OwnerHaggles(this")
+        Check(RunInOrder(day, "Read(day, false, true", "PartDay(part, day)", "ReserveFreed()", "ManagerDay(day)", "LeaseDay(day)", "Books(day, next)", "HierarchyDay(day)") && reserve.Contains("TaxRules.Release(t)")
+              && reserve.Contains("t.Reserve <= 0 || On(CompanyPart.Tax)"),
+            "company run pins: the day reads, runs the parts, frees a reserve the tax part no longer runs, then the managers, the leases, the books and the hierarchy, as the run does");
+        var held = new TaxFile { Reserve = 1840 };
+        int freed = TaxRules.Release(held);
+        Check(freed == 1840 && held.Reserve == 0 && TaxRules.Release(held) == 0, "company run pins: money set aside goes back whole, once (" + freed + "), which the day does when the tax part is off");
+        Check(RunInOrder(leases, "CityMonth(day, monthDays)", "CompanyDay.LeaseShop(this", "Settled(l, shop, day)", "OfferMade(l, shop, was, day)")
+              && RunInOrder(day2, "public static LeaseDayWas LeaseShop(", "LeaseRules.Begin(", "LeaseRules.TopUp(l)", "LeaseRules.Settle(l, day", "LeaseRules.OfferDue(l, day)", "Offer(w, place, l, managerRuns"),
+            "company run pins: the lease day: the city's month, then one shared step for each place (CompanyDay.LeaseShop: a lease begun, the rise worked out, the lease settled or the offer made), then the director's notices");
+        Check(leases.Contains("CompanyDay.Lease(this") && day2.Contains("Offer(w, place, l, managerRuns") && leases.Contains("CompanyDay.OwnerAnswers(this") && leases.Contains("CompanyDay.OwnerHaggles(this")
               && day2.Contains("LeaseRules.Within(l, limit)") && day2.Contains("LeaseRules.Respond(l, day, accept)") && leases.Contains("LeaseRules.CityMonth(_leases") && leases.Contains("_leases.RivalRenewed("),
             "company run pins: the offer, the manager's limit and answer, the owner asked past it once, the owner's answers, and the city's renewals that keep the trend");
         Check(RunInOrder(tax, "ReserveYear(day)", "TaxRules.QuarterOver(t, day, QuarterDays)", "TaxRules.Close(t, takings", "ReserveClose(day)", "FileReturn(true)", "TaxRules.LateDay(t, day)")
               && reserve.Contains("TaxRules.TopUp(t, CompanyGame.Cash)") && reserve.Contains("TaxRules.Year(t,"),
             "company run pins: the tax day: the year, the quarter's close, the finance chief's top-up, the return filed, the late day, in the run's order");
-        Check(esc.Contains("CompanyDay.HandDown(_hier") && esc.Contains("CompanyDay.Try(e") && esc.Contains("CompanyDay.Settled(_hier") && esc.Contains("CompanyDay.PassedUp(_hier") && esc.Contains("CompanyDay.Approve(this")
+        Check(esc.Contains("CompanyDay.HandDownRound(this") && esc.Contains("CompanyDay.HandleRound(this") && esc.Contains("CompanyDay.TryOne(this") && esc.Contains("CompanyDay.Approve(this")
+              && day2.Contains("HandDown(h, e, w.Managers.At(e.Place)") && day2.Contains("Try(e, inPost,") && day2.Contains("Settled(h, e, who,") && day2.Contains("PassedUp(h, e, next,")
               && day2.Contains("EscalationRules.HandsDown(") && day2.Contains("EscalationRules.Tries(") && day2.Contains("public static bool Approve("),
             "company run pins: the hierarchy's day hands down by CompanyDay.HandDown, the holder's try is CompanyDay.Try with the settle's own result, and what settles an exception is CompanyDay.Approve");
         Check(decisions.Contains("CompanyDay.Raise(this") && day2.Contains("ManagerRules.OrBonus(") && day2.Contains("ManagerRules.AddSpeed(") && day2.Contains("ManagerRules.RaiseAnswerFor(") && decisions.Contains("CompanyDay.LetGo(this")
@@ -890,7 +854,7 @@ internal static partial class Program
             "company run pins: a manager's answer is CompanyDay.Raise (a bonus where a refusal would be, OrBonus, and its wait in the ring, AddSpeed), the let-go is CompanyDay.LetGo, the hire CompanyDay.Hire, lateness is counted by StaffRules.LateDay and an ask comes from StaffRules.Day");
         // The director and the run call the very same entries: each is called from the director's source and from the run's, so that neither can do it another way.
         string runText = RunSource();
-        string[] entries = { "Deciding", "Raise", "Lease", "Offer", "LetGo", "Hire", "HandDown", "Try", "Settled", "PassedUp", "Approve", "Holder", "OwnerAnswers", "OwnerHaggles", "LeaseClosed" };
+        string[] entries = { "Deciding", "Raise", "Lease", "LeaseShop", "LetGo", "Hire", "HandDownRound", "HandleRound", "Approve", "OwnerAnswers", "OwnerHaggles", "LeaseClosed" };
         string missing = string.Empty;
         string directors = decisions + leases + esc + managers + SourceText(dir, "CompanyDirector.DayWorld.cs");
         foreach (string entry in entries)

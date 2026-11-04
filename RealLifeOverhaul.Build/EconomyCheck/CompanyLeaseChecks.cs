@@ -70,6 +70,7 @@ internal static partial class Program
         int offer = LeaseRules.Offer(l, Seed, 30, 0, 0);
         Check(offer == 40 + LeaseRules.Rise(Seed, "Main~1", 1, 30, 0) && offer >= 40, "lease offer: what is agreed already and the rise asked now (" + offer + ")");
         l.Offer = 120;
+        l.Asked = 90;   // (an offer is made when it has its day)
         Check(LeaseRules.RentAt(200, 120) == 224 && LeaseRules.RentAt(200, 0) == 200 && LeaseRules.RentAt(0, 500) == 0 && LeaseRules.RentAt(200, -50) == 200,
             "lease rent: the game's rent and the rise over it, whole money");
         Check(LeaseRules.OfferOver(l) == (int)((1120L - 1040) * 1000 / 1040), "lease offer: the page says how much more than the rent paid now (" + LeaseRules.OfferOver(l) + ")");
@@ -78,7 +79,10 @@ internal static partial class Program
         Check(LeaseRules.OfferOver(l) == 80, "lease offer: 8% over a rent with no rise is 8%");
         Check(LeaseRules.Within(l, 80) && !LeaseRules.Within(l, 79) && LeaseRules.Within(l, 200), "manager limit: an offer is theirs to answer up to their limit and not a thousandth past it");
         l.Offer = 0;
+        l.Asked = 0;
         Check(!LeaseRules.Within(l, 1000), "manager limit: no offer, nothing to answer");
+        l.Asked = 90;
+        Check(LeaseRules.Within(l, 0), "manager limit: an offer of no rise is inside any limit");
         // The day the offer is made: inside the notice, once.
         var due = new LeaseFile { Place = "Main~1", Start = 100, Term = 360 };
         Check(!LeaseRules.OfferDue(due, due.End - LeaseRules.NoticeDays - 1) && LeaseRules.OfferDue(due, due.End - LeaseRules.NoticeDays) && LeaseRules.OfferDue(due, due.End - 1)
@@ -124,6 +128,7 @@ internal static partial class Program
         Check(LeaseRules.Settle(late, 9000, Seed, MonthDays) && late.Start == 9000, "lease answer: days skipped past the whole new term start it today, never in the past");
         LeaseFile none = Make();
         none.Offer = 0;
+        none.Asked = 0;
         Check(!LeaseRules.Respond(none, 450, true) && !LeaseRules.Settle(none, 9000, Seed, MonthDays), "lease answer: no offer, no answer and nothing to settle");
         LeaseFile after = Make();
         Check(!LeaseRules.Respond(after, 460, true), "lease answer: none after the lease has ended");
@@ -287,7 +292,7 @@ internal static partial class Program
         Check(before != null && before.Leases.Count == 2 && before.Leases[0].Answer == LeaseRules.Accepted && before.Leases[0].Told == 0, "lease save: a record from before the day the owner was told loads with the rest and none told");
         string wild = line.Replace("|450|", "|-5|").Replace("|90|", "|99999|");
         LeaseState bound = LeaseStore.Read(wild, out version);
-        Check(bound != null && bound.Leases[0].Asked == 0 && bound.Leases[0].Offer <= 4 * LeaseRules.RiseMost, "lease save: figures out of range are bounded on reading");
+        Check(bound != null && bound.Leases[0].Asked == 1 && bound.Leases[0].Offer <= 4 * LeaseRules.RiseMost, "lease save: figures out of range are bounded on reading");
         var big = new LeaseState();
         for (int i = 0; i < 200; i++)
         {

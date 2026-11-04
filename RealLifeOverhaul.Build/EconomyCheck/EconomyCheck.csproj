@@ -151,6 +151,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyView.cs" Link="Mod\Company\CompanyView.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyWords.cs" Link="Mod\Company\CompanyWords.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.cs" Link="Mod\Company\CompanyFace.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyLive.Does.cs" Link="Mod\Company\CompanyLive.Does.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.Overview.cs" Link="Mod\Company\CompanyFace.Overview.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.Question.cs" Link="Mod\Company\CompanyFace.Question.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.Pages.cs" Link="Mod\Company\CompanyFace.Pages.cs" />
