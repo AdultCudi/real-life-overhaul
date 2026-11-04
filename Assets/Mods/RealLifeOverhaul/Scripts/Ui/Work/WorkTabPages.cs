@@ -208,7 +208,8 @@ namespace RealLifeOverhaul.Ui
 
         private static SplitDetail Detail(WorkRow r)
         {
-            var d = new SplitDetail { Icon = r.Icon, Title = r.Cells.Length > 0 ? r.Cells[0] : string.Empty, Status = r.Status, Tone = r.Tone, Sentence = r.Detail, PeopleTitle = r.PeopleTitle,
+            var d = new SplitDetail { Icon = r.Icon, Title = r.Cells.Length > 0 ? r.Cells[0] : string.Empty, Status = r.Status, Tone = r.Tone,
+                Sentence = r.Detail, PeopleTitle = r.PeopleTitle,
                 NeedsTitle = r.NeedsTitle };
             d.Facts.AddRange(r.Facts);
             d.Needs.AddRange(r.Needs);

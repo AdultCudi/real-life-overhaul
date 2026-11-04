@@ -162,7 +162,8 @@ namespace RealLifeOverhaul.Ui
                 for (int i = 0; i < f.Shifts.Count; i++)
                 {
                     ShiftRecord sr = f.Shifts[i];
-                    cj.Shifts.Add(new CareerShift { Day = CareersText.Day(sr.Day), Hours = (sr.Minutes / 60f).ToString("0.#", Inv) + "h", Score = sr.Score, Pay = CareersText.Money(sr.Pay) });
+                    cj.Shifts.Add(new CareerShift { Day = CareersText.Day(sr.Day), Hours = (sr.Minutes / 60f).ToString("0.#", Inv) + "h",
+                        Score = sr.Score, Pay = CareersText.Money(sr.Pay) });
                 }
                 for (int i = 0; i < f.Peers.Count; i++)
                 {
@@ -194,9 +195,11 @@ namespace RealLifeOverhaul.Ui
             ProRank r = p.Ranks[next];
             cj.NextRung = CareersText.Title(p.Id, next);
             int need = LifeRules.Paced(r.Days, GameCalendar.DaysPerYear), had = day - job.RankDay;
-            cj.Needs.Add(new CareerNeed { Words = W.F("reallife_work_need_days", "{n} days in this role", "n", need.ToString(Inv)), Met = had >= need, Have = W.F("reallife_work_you_have", "you have {n}", "n", Math.Max(0, had).ToString(Inv)) });
+            cj.Needs.Add(new CareerNeed { Words = W.F("reallife_work_need_days", "{n} days in this role", "n", need.ToString(Inv)),
+                Met = had >= need, Have = W.F("reallife_work_you_have", "you have {n}", "n", Math.Max(0, had).ToString(Inv)) });
             int points = ProRules.Points(d.Study, p, next), asked = ProRules.Need(d.Study, p, next);
-            cj.Needs.Add(new CareerNeed { Words = W.F("reallife_work_need_skill_points", "Skills at {n} points", "n", asked.ToString(Inv)), Met = points >= asked, Have = W.F("reallife_work_you_have", "you have {n}", "n", points.ToString(Inv)) });
+            cj.Needs.Add(new CareerNeed { Words = W.F("reallife_work_need_skill_points", "Skills at {n} points", "n", asked.ToString(Inv)),
+                Met = points >= asked, Have = W.F("reallife_work_you_have", "you have {n}", "n", points.ToString(Inv)) });
             if (r.Quals.Length > 0)
             {
                 bool held = false;
@@ -206,7 +209,8 @@ namespace RealLifeOverhaul.Ui
                 }
                 cj.Needs.Add(new CareerNeed { Words = CareersText.Course(r.Quals[0]), Met = held });
             }
-            cj.Needs.Add(new CareerNeed { Words = W.F("reallife_work_need_rating", "A review rating of {n}", "n", LifeRules.PromoteRating.ToString(Inv)), Met = job.Rating >= LifeRules.PromoteRating,
+            cj.Needs.Add(new CareerNeed { Words = W.F("reallife_work_need_rating", "A review rating of {n}", "n",
+                LifeRules.PromoteRating.ToString(Inv)), Met = job.Rating >= LifeRules.PromoteRating,
                 Have = job.Rating > 0 ? W.F("reallife_work_you_have", "you have {n}", "n", job.Rating.ToString(Inv)) : null });
         }
 

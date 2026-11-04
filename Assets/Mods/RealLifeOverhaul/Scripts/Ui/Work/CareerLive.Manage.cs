@@ -23,12 +23,14 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             CityCompany c = f.Company;
-            _facts.ManagementChips = new[] { W.T("reallife_work_filter_everything", "Everything"), W.T("reallife_work_group_decide", "To decide"), W.T("reallife_work_group_policy", "Policy"),
+            _facts.ManagementChips = new[] { W.T("reallife_work_filter_everything", "Everything"), W.T("reallife_work_group_decide", "To decide"),
+                W.T("reallife_work_group_policy", "Policy"),
                 W.T("reallife_work_group_ask", "Requests"), W.T("reallife_work_group_staff", "Staff"), W.T("reallife_work_group_stores", "Stores") };
             for (int i = 0; i < f.Tasks.Count; i++)
             {
                 LadderTask t = f.Tasks[i];
-                var r = new CareerRow { Id = t.Id, Icon = UiIcon.People, Group = GroupDecide, Cells = new[] { TaskTitle(t), t.Store >= 0 && t.Store < c.Stores.Count ? c.Stores[t.Store].Name : "-",
+                var r = new CareerRow { Id = t.Id, Icon = UiIcon.People, Group = GroupDecide, Cells = new[] { TaskTitle(t), t.Store >= 0
+                    && t.Store < c.Stores.Count ? c.Stores[t.Store].Name : "-",
                     W.T("reallife_work_decide", "Decide"), CareersText.Day(t.Lapse) }, Status = W.T("reallife_work_decide", "Decide"), Tone = UiRole.Warn, Detail = TaskTitle(t) };
                 r.Acts.Add(CareerAct.TaskYes); r.Why.Add(string.Empty);
                 r.Acts.Add(CareerAct.TaskNo); r.Why.Add(string.Empty);
@@ -42,7 +44,8 @@ namespace RealLifeOverhaul.Ui
                 CareerLadderRules.Range(p, field, out int value, out int least, out int most, out int step);
                 bool mine = (int)CareerLadderRules.SeatOf(field) == f.Seat;
                 string name = CareersText.T(LadderRanks.Key("policy", field.ToString().ToLowerInvariant()));
-                var r = new CareerRow { Id = i, Icon = UiIcon.Sliders, Group = GroupPolicy, Cells = new[] { name, c.Name, PolicyValue(field, value), mine ? W.T("reallife_work_yours", "Yours") : "-" },
+                var r = new CareerRow { Id = i, Icon = UiIcon.Sliders, Group = GroupPolicy, Cells = new[] { name, c.Name, PolicyValue(field, value),
+                    mine ? W.T("reallife_work_yours", "Yours") : "-" },
                     Detail = name + ": " + PolicyValue(field, value) + ". " + CareersText.T("reallife_ladder_policy_about") };
                 if (mine)
                 {
@@ -51,17 +54,21 @@ namespace RealLifeOverhaul.Ui
                 }
                 _facts.Management.Add(r);
             }
-            var ask = new CareerRow { Id = 0, Icon = UiIcon.Message, Group = GroupAsk, Cells = new[] { W.T("reallife_ladder_sec_requests", "Ask your manager"), CareersText.Employer(c.Name), "-", "-" },
+            var ask = new CareerRow { Id = 0, Icon = UiIcon.Message, Group = GroupAsk, Cells = new[] { W.T("reallife_ladder_sec_requests",
+                "Ask your manager"), CareersText.Employer(c.Name), "-", "-" },
                 Detail = CareersText.T("reallife_ladder_sec_requests") };
             ask.Acts.Add(CareerAct.AskShiftEarlier); ask.Why.Add(f.Ask != 0 ? W.T("reallife_work_already_asked", "You have asked for something already.") : string.Empty);
             ask.Acts.Add(CareerAct.AskShiftLater); ask.Why.Add(f.Ask != 0 ? W.T("reallife_work_already_asked", "You have asked for something already.") : string.Empty);
-            ask.Acts.Add(CareerAct.AskEquipment); ask.Why.Add(f.Equipped ? W.T("reallife_work_granted", "Already granted.") : f.Ask != 0 ? W.T("reallife_work_already_asked", "You have asked for something already.") : string.Empty);
-            ask.Acts.Add(CareerAct.AskInsurance); ask.Why.Add(f.Insured ? W.T("reallife_work_granted", "Already granted.") : f.Ask != 0 ? W.T("reallife_work_already_asked", "You have asked for something already.") : string.Empty);
+            ask.Acts.Add(CareerAct.AskEquipment); ask.Why.Add(f.Equipped ? W.T("reallife_work_granted",
+                "Already granted.") : f.Ask != 0 ? W.T("reallife_work_already_asked", "You have asked for something already.") : string.Empty);
+            ask.Acts.Add(CareerAct.AskInsurance); ask.Why.Add(f.Insured ? W.T("reallife_work_granted",
+                "Already granted.") : f.Ask != 0 ? W.T("reallife_work_already_asked", "You have asked for something already.") : string.Empty);
             ask.Acts.Add(CareerAct.Aiming); ask.Why.Add(string.Empty);
             _facts.Management.Add(ask);
             if (c.Stores.Count > 0 && LadderRanks.Has(f.Rung, RungPower.Rota) && f.Rung == (int)Rung.StoreManager)
             {
-                var rota = new CareerRow { Id = 0, Icon = UiIcon.Clock, Group = GroupAsk, Cells = new[] { W.T("reallife_ladder_sec_rota", "The store's rota"), c.Stores[0].Name, CareersText.T("reallife_ladder_rota_" + c.Stores[0].Rota), "-" },
+                var rota = new CareerRow { Id = 0, Icon = UiIcon.Clock, Group = GroupAsk, Cells = new[] { W.T("reallife_ladder_sec_rota",
+                    "The store's rota"), c.Stores[0].Name, CareersText.T("reallife_ladder_rota_" + c.Stores[0].Rota), "-" },
                     Detail = CareersText.T("reallife_ladder_sec_rota") };
                 for (int k = 0; k < 3; k++)
                 {
@@ -77,7 +84,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;
                 }
-                var r = new CareerRow { Id = pe.Id, Icon = UiIcon.Person, Group = GroupStaff, Grade = pe.Morale, Cells = new[] { pe.Name, pe.Store >= 0 && pe.Store < c.Stores.Count ? c.Stores[pe.Store].Name : "-",
+                var r = new CareerRow { Id = pe.Id, Icon = UiIcon.Person, Group = GroupStaff, Grade = pe.Morale, Cells = new[] { pe.Name,
+                    pe.Store >= 0 && pe.Store < c.Stores.Count ? c.Stores[pe.Store].Name : "-",
                     CareersText.Rate(Prices.At(pe.Wage)), pe.Morale.ToString() }, Detail = pe.Name };
                 r.Acts.Add(CareerAct.Raise); r.Why.Add(string.Empty);
                 _facts.Management.Add(r);
@@ -85,7 +93,8 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < c.Stores.Count; i++)
             {
                 Outlet st = c.Stores[i];
-                _facts.Management.Add(new CareerRow { Id = i, Icon = UiIcon.Store, Group = GroupStores, Grade = st.Results, Cells = new[] { st.Name, CareersText.T("reallife_ladder_rota_" + st.Rota),
+                _facts.Management.Add(new CareerRow { Id = i, Icon = UiIcon.Store, Group = GroupStores, Grade = st.Results, Cells = new[] { st.Name,
+                    CareersText.T("reallife_ladder_rota_" + st.Rota),
                     CareerLadderRules.StaffAt(c, i).ToString() + " / " + st.Needed.ToString(), st.Results.ToString() }, Detail = st.Name });
             }
             if (_facts.Management.Count == 0)
@@ -124,7 +133,8 @@ namespace RealLifeOverhaul.Ui
         private void ReadOwnWork(CareersDirector d, WorkFile w, int day)
         {
             Job j = w.Job;
-            var row = new CareerRow { Id = 0, Icon = UiIcon.Briefcase, Group = 1, Cells = new[] { W.T("reallife_own_practice", "Your own practice"), "-", "-", "-" }, Detail = W.T("reallife_own_practice_about", "Work for yourself: a practice of your profession, or a company of your own.") };
+            var row = new CareerRow { Id = 0, Icon = UiIcon.Briefcase, Group = 1, Cells = new[] { W.T("reallife_own_practice", "Your own practice"),
+                "-", "-", "-" }, Detail = W.T("reallife_own_practice_about", "Work for yourself: a practice of your profession, or a company of your own.") };
             if (w.Practice.Open)
             {
                 row.Cells[1] = CareersText.ProName(w.Practice.Prof);
@@ -138,7 +148,8 @@ namespace RealLifeOverhaul.Ui
             if (j != null)
             {
                 row.Acts.Add(CareerAct.Found); row.Why.Add(d.CanFoundLeave(j) == null ? string.Empty : W.T(d.CanFoundLeave(j), "You cannot found a company from this job."));
-                row.Acts.Add(CareerAct.FoundWith); row.Why.Add(d.CanFoundLeave(j) == null && d.ColleaguesFirm() != null ? string.Empty : W.T("reallife_work_no_colleagues", "No colleagues would come with you."));
+                row.Acts.Add(CareerAct.FoundWith); row.Why.Add(d.CanFoundLeave(j) == null
+                    && d.ColleaguesFirm() != null ? string.Empty : W.T("reallife_work_no_colleagues", "No colleagues would come with you."));
                 if (d.CanPracticeLeave(j) == null)
                 {
                     row.Acts.Add(CareerAct.PracticeLeaveAct); row.Why.Add(string.Empty);
@@ -155,7 +166,8 @@ namespace RealLifeOverhaul.Ui
         private void ReadRetire(CareersDirector d)
         {
             string why = d.CanRetire();
-            var r = new CareerRow { Id = 0, Icon = UiIcon.SignOut, Cells = new[] { W.T("reallife_life_button_retire", "Retire"), "-", "-", "-" }, Detail = W.T("reallife_work_retire_about", "Retire and the pension pays out from your pot.") };
+            var r = new CareerRow { Id = 0, Icon = UiIcon.SignOut, Cells = new[] { W.T("reallife_life_button_retire", "Retire"), "-", "-", "-" },
+                Detail = W.T("reallife_work_retire_about", "Retire and the pension pays out from your pot.") };
             r.Acts.Add(CareerAct.Retire);
             r.Why.Add(why == null ? string.Empty : W.T(why, "You cannot retire yet."));
             _facts.Cv.Add(r);
@@ -171,10 +183,12 @@ namespace RealLifeOverhaul.Ui
                 case CareerAct.AnswerA: return Said(d.AnswerMatter(true), d);
                 case CareerAct.AnswerB: return Said(d.AnswerMatter(false), d);
                 case CareerAct.WalkOut:
-                    GameConfirm.Show("reallife_career_confirm_walk_title".Localize(), "reallife_career_confirm_walk_body".Localize(), () => Said(d.WalkOut(), d), null, null, null, true, true);
+                    GameConfirm.Show("reallife_career_confirm_walk_title".Localize(), "reallife_career_confirm_walk_body".Localize(),
+                        () => Said(d.WalkOut(), d), null, null, null, true, true);
                     return true;
                 case CareerAct.Retire:
-                    GameConfirm.Show("reallife_life_confirm_retire_title".Localize(), "reallife_life_confirm_retire_body".Localize(), () => Said(d.Retire(), d), null, null, null, true, true);
+                    GameConfirm.Show("reallife_life_confirm_retire_title".Localize(), "reallife_life_confirm_retire_body".Localize(),
+                        () => Said(d.Retire(), d), null, null, null, true, true);
                     return true;
                 case CareerAct.PolicyMore: return Said(d.LadderPolicy((PolicyField)arg, 1), d);
                 case CareerAct.PolicyLess: return Said(d.LadderPolicy((PolicyField)arg, -1), d);

@@ -157,12 +157,15 @@ namespace RealLifeOverhaul.Ui
                 r.Facts.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_fee", "Fee"), CareersText.Money(fee)));
                 r.Facts.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_length", "Classes"), c.Timetabled ? c.Sessions.ToString(Inv) : "-"));
                 r.Facts.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_seats", "Seats left"), seats));
-                r.Facts.Add(new KeyValuePair<string, string>(w.T("reallife_work_before_fee", "You have the fee"), cash >= owe ? w.T("reallife_work_yes", "Yes") : w.T("reallife_work_short_by", "No, short by") + " " + CareersText.Money(owe - cash)));
+                r.Facts.Add(new KeyValuePair<string, string>(w.T("reallife_work_before_fee", "You have the fee"),
+                    cash >= owe ? w.T("reallife_work_yes", "Yes") : w.T("reallife_work_short_by", "No, short by") + " " + CareersText.Money(owe - cash)));
                 RealLifeOverhaul.Careers.Job job = d.Work != null ? d.Work.Job : null;
                 if (job != null && c.Timetabled)
                 {
                     WorkFit fit = StudyRules.Fit(c, StudyMode.FullTime, job.Def, out int _, out int _);
-                    r.Facts.Add(new KeyValuePair<string, string>(w.T("reallife_work_before_evenings", "Class times free"), fit == WorkFit.Fits ? w.T("reallife_work_yes", "Yes") : fit == WorkFit.Clash ? w.T("reallife_work_clash", "Clashes with your shifts") : w.T("reallife_work_leave_early", "Yes, leaving early")));
+                    r.Facts.Add(new KeyValuePair<string, string>(w.T("reallife_work_before_evenings", "Class times free"),
+                        fit == WorkFit.Fits ? w.T("reallife_work_yes", "Yes") : fit == WorkFit.Clash ? w.T("reallife_work_clash",
+                        "Clashes with your shifts") : w.T("reallife_work_leave_early", "Yes, leaving early")));
                 }
                 if (RosterRules.Floor(c, out int fs, out int fn))
                 {
@@ -290,7 +293,8 @@ namespace RealLifeOverhaul.Ui
                         vals[k] = averages[k] / 100f;
                     }
                     t.Chart = new UiChartModel { Kind = UiChartKind.Line, Title = w.T("reallife_work_gpa_by_term", "Grade point average by quarter"), Points = pts,
-                        Series = new[] { new UiSeries { Label = w.T("reallife_work_gpa", "Grade point average"), Values = vals, Tint = UiRole.Accent } }, Format = v => v.ToString("0.0", Inv) };
+                        Series = new[] { new UiSeries { Label = w.T("reallife_work_gpa", "Grade point average"), Values = vals,
+                            Tint = UiRole.Accent } }, Format = v => v.ToString("0.0", Inv) };
                 }
                 t.PeopleTitle = w.T("reallife_work_your_class", "Your class");
                 t.PeopleCount = w.T("reallife_work_by_gpa", "by grade point average");

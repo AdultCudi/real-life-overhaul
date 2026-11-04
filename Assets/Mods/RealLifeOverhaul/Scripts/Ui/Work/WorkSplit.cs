@@ -58,9 +58,11 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Box(s, at, dx, y, dw, bottom - y, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
             float ix = dx + UiTokens.S4, iw = dw - UiTokens.S4 * 2f, iy = y + UiTokens.S4;
             int tile = UiDraw.Tile(s, at, ix, iy, UiTokens.IconTile, UiRole.None, false);
-            UiDraw.Icon(s, at.In(tile), ix + UiDraw.SnapDown((UiTokens.IconTile - UiTokens.Icon) / 2f), iy + UiDraw.SnapDown((UiTokens.IconTile - UiTokens.Icon) / 2f), UiTokens.Icon, d.Icon, UiRole.None, UiFlags.Middle, true);
+            UiDraw.Icon(s, at.In(tile), ix + UiDraw.SnapDown((UiTokens.IconTile - UiTokens.Icon) / 2f),
+                iy + UiDraw.SnapDown((UiTokens.IconTile - UiTokens.Icon) / 2f), UiTokens.Icon, d.Icon, UiRole.None, UiFlags.Middle, true);
             float nx = ix + UiTokens.IconTile + UiTokens.S3, nw = iw - UiTokens.IconTile - UiTokens.S3;
-            UiDraw.TextMiddle(s, at, nx, iy, UiTokens.IconTile / 2f + UiTokens.S1, nw, UiStyle.Title, UiRole.Text, UiTextRules.Cut(d.Title ?? string.Empty, UiStyle.Title, nw), UiFlags.Label | UiFlags.Truncate);
+            UiDraw.TextMiddle(s, at, nx, iy, UiTokens.IconTile / 2f + UiTokens.S1, nw, UiStyle.Title, UiRole.Text,
+                UiTextRules.Cut(d.Title ?? string.Empty, UiStyle.Title, nw), UiFlags.Label | UiFlags.Truncate);
             if (!string.IsNullOrEmpty(d.Status))
             {
                 UiDraw.Chip(s, at, nx, iy + UiTokens.IconTile / 2f + UiTokens.S2, d.Status, d.Tone, nw);
