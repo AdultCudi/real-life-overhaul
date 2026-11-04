@@ -141,7 +141,8 @@ namespace RealLifeOverhaul.Ui
             }
             if (rows < t.Licences.Length)
             {
-                UiDraw.TextMiddle(s, at, x, cy, UiTokens.PairRow, width, UiStyle.Small, UiRole.Muted, w.F("reallife_co_and_more", "and {count} more", "count", (t.Licences.Length - rows).ToString()), UiFlags.Truncate);
+                UiDraw.TextMiddle(s, at, x, cy, UiTokens.PairRow, width, UiStyle.Small, UiRole.Muted, w.F("reallife_co_and_more", "and {count} more", "count", (t.Licences.Length - rows).ToString()),
+                    UiFlags.Truncate);
                 cy += UiTokens.PairRow;
             }
             cy += UiTokens.S4;
@@ -211,13 +212,14 @@ namespace RealLifeOverhaul.Ui
         }
 
         // A compact line: its words at the left, a chip, its figure at the right; a target when it opens something.
-        internal static float LineItem(UiScene s, UiAt at, CompanyLayout lay, ref CompanyItem it, float x, float y, float width)
+        private static float LineItem(UiScene s, UiAt at, CompanyLayout lay, ref CompanyItem it, float x, float y, float width)
         {
             bool press = it.Press && it.Act.Do != CompanyDo.None;
             int face = UiDraw.Box(s, at, x - UiTokens.S2, y, width + UiTokens.S4, LineRow, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
             UiAt inside = at.In(face);
             float fw = string.IsNullOrEmpty(it.Figure) ? 0f : Math.Min(UiDraw.SnapDown(width * 0.4f), UiDraw.Snap(UiTextRules.Width(it.Figure, UiStyle.BodyStrong) + UiTokens.S1));
-            float cw2 = string.IsNullOrEmpty(it.Chip) ? 0f : Math.Min(UiDraw.SnapDown(width * 0.34f), UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(it.Chip, UiStyle.SmallStrong) + UiTokens.S1));
+            float cw2 = string.IsNullOrEmpty(it.Chip) ? 0f : Math.Min(UiDraw.SnapDown(width * 0.34f), UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(it.Chip,
+                UiStyle.SmallStrong) + UiTokens.S1));
             float tw = width - fw - (fw > 0f ? UiTokens.S3 : 0f) - cw2 - (cw2 > 0f ? UiTokens.S3 : 0f);
             float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
             bool two = !string.IsNullOrEmpty(it.Sub);
@@ -233,7 +235,8 @@ namespace RealLifeOverhaul.Ui
             }
             if (fw > 0f)
             {
-                UiDraw.TextMiddle(s, inside, x + width - fw, y, LineRow, fw, UiStyle.BodyStrong, it.FigureTone == UiRole.None ? UiRole.Text : it.FigureTone, it.Figure, UiFlags.Right | UiFlags.Truncate);
+                UiDraw.TextMiddle(s, inside, x + width - fw, y, LineRow, fw, UiStyle.BodyStrong, it.FigureTone == UiRole.None ? UiRole.Text : it.FigureTone, it.Figure,
+                    UiFlags.Right | UiFlags.Truncate);
             }
             if (press)
             {

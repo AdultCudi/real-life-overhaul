@@ -43,7 +43,8 @@ namespace RealLifeOverhaul.Ui
                     : gaps ? w.F("reallife_co_row_gap_short", "{hours} h short", "hours", p.GapHours.ToString()) : CompanyText.T("reallife_rota_row_covered");
                 rows.Add(new CompanyRow
                 {
-                    Id = "p:" + p.Place, Title = p.Name, Sub = RotaGame.TypeName(p.Reg) + ", " + hours, Icon = UiIcon.Calendar, Figure = state, Note = w.F("reallife_co_tree_staff", "{count} staff", "count", p.Staff.ToString()),
+                    Id = "p:" + p.Place, Title = p.Name, Sub = RotaGame.TypeName(p.Reg) + ", " + hours, Icon = UiIcon.Calendar, Figure = state, Note = w.F("reallife_co_tree_staff", "{count} staff",
+                        "count", p.Staff.ToString()),
                     FigureTone = p.Type == RotaType.Warehouse ? UiRole.Muted : p.Staff == 0 ? UiRole.DangerText : gaps ? UiRole.WarnText : UiRole.OkText
                 });
                 if (p.Place == place)
@@ -101,7 +102,8 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < set.Plans.Count; i++)
             {
                 RotaPlanFile p = set.Plans[i];
-                string range = p.Dated ? CompanyText.T("reallife_rota_plan_range", "from", p.From.ToString(), "to", p.To.ToString()) : CompanyText.T(RepeatKeys[CompanyCatalogue.Clamp(p.Parity, 0, 2)]);
+                string range = p.Dated ? CompanyText.T("reallife_rota_plan_range", "from", p.From.ToString(), "to", p.To.ToString()) : CompanyText.T(RepeatKeys[CompanyCatalogue.Clamp(p.Parity, 0,
+                    2)]);
                 rows.Add(new CompanyRow
                 {
                     Id = "pl:" + place + ":" + p.Id, Title = p.Name, Sub = range, Icon = UiIcon.ClipboardText, Dim = true,
@@ -175,7 +177,8 @@ namespace RealLifeOverhaul.Ui
             p.Edit = Btn(w.T("reallife_rota_edit", "Edit"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, null, CompanyView.Rota, CompanyView.SubEdit), UiAction.Count, UiIcon.Sliders);
             p.Copy = Btn(w.T("reallife_rota_copy", "Copy plan"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.PlanCopy, place, id), UiAction.Count, UiIcon.ClipboardText, false,
                 set != null && set.Plans.Count >= RotaPlanRules.PlansMost, CompanyText.T("reallife_rota_plans_most", "count", RotaPlanRules.PlansMost.ToString()));
-            p.Fill = Btn(CompanyText.T("reallife_rota_fill"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.RotaFill, place, -1), UiAction.Alt, UiIcon.Check, false, refusal != null, refusal != null ? CompanyApp.RotaRefusedWords(refusal) : null);
+            p.Fill = Btn(CompanyText.T("reallife_rota_fill"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.RotaFill, place, -1), UiAction.Alt, UiIcon.Check, false, refusal != null, refusal != null
+                ? CompanyApp.RotaRefusedWords(refusal) : null);
             if (d.RotaHasUndo(place))
             {
                 p.Back = Btn(CompanyText.T("reallife_rota_back"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.RotaBack, place), UiAction.Count, UiIcon.Back, true);
@@ -243,7 +246,8 @@ namespace RealLifeOverhaul.Ui
                 string name = RotaGame.WorkerName(who);
                 var person = new CompanyRotaPerson
                 {
-                    Name = name, Role = RotaGame.Skills(who), Hue = UiColour.HueOf(name), Ring = sheet.Problem.Worker[wk].Mood < 40 ? UiRole.Danger : sheet.Problem.Worker[wk].Mood < 70 ? UiRole.Warn : UiRole.Ok,
+                    Name = name, Role = RotaGame.Skills(who), Hue = UiColour.HueOf(name), Ring = sheet.Problem.Worker[wk].Mood < 40 ? UiRole.Danger : sheet.Problem.Worker[wk].Mood < 70 ? UiRole.Warn
+                        : UiRole.Ok,
                     Shifts = new string[7], Tones = new UiRole[7]
                 };
                 int hours = 0;
@@ -300,7 +304,8 @@ namespace RealLifeOverhaul.Ui
             RotaWeekSum s2 = now.Sum;
             if (shop.HasCustomers)
             {
-                p.SummaryLabels = new[] { w.T("reallife_rota_sum_served", "Served"), w.T("reallife_rota_sum_lost", "Lost"), w.T("reallife_rota_sum_wages_label", "Wages"), w.T("reallife_rota_sum_net_label", "Net") };
+                p.SummaryLabels = new[] { w.T("reallife_rota_sum_served", "Served"), w.T("reallife_rota_sum_lost", "Lost"), w.T("reallife_rota_sum_wages_label", "Wages"),
+                    w.T("reallife_rota_sum_net_label", "Net") };
                 p.SummaryValues = new[] { s2.Served.ToString(), (s2.LostUnmanned + s2.LostFull).ToString(), CompanyApp.RotaMoneyWords(-s2.Wages), CompanyApp.RotaMoneyWords(s2.Net) };
                 p.SummaryTones = new[] { UiRole.None, s2.LostUnmanned + s2.LostFull > 0 ? UiRole.WarnText : UiRole.None, UiRole.None, s2.Net >= 0 ? UiRole.OkText : UiRole.DangerText };
             }
@@ -491,10 +496,13 @@ namespace RealLifeOverhaul.Ui
                 bool usable = !hires && CompanyDirector.RotaRungOf(sheet, i) != null && refusal == null;
                 rungs[i] = new CompanyRung
                 {
-                    Name = CompanyApp.RotaPlanWords(sheet, r), Line = CompanyApp.RotaNeedsWords(sheet, r) + (r.Left.Count > 0 ? " " + CompanyText.T("reallife_rota_plan_leaves", "count", r.Left.Count.ToString())
+                    Name = CompanyApp.RotaPlanWords(sheet, r), Line = CompanyApp.RotaNeedsWords(sheet, r) + (r.Left.Count > 0 ? " " + CompanyText.T("reallife_rota_plan_leaves", "count",
+                        r.Left.Count.ToString())
                         : r.Out > 0 ? " " + CompanyText.T("reallife_rota_plan_outside", "count", r.Out.ToString()) : string.Empty),
-                    Hours = unmanned ? CompanyText.T("reallife_rota_plan_hours", "hours", r.Sum.Hours.ToString(), "manned", r.Sum.Manned.ToString()) : CompanyText.T("reallife_rota_plan_hours_all", "hours", r.Sum.Hours.ToString()),
-                    Net = shop.HasCustomers ? CompanyApp.RotaMoneyWords(r.Sum.Net) : CompanyApp.RotaMoneyWords(-r.Sum.Wages), Gain = i == 0 ? null : r.Gain > 0 ? CompanyText.T("reallife_rota_plan_gain", "amount", CompanyApp.RotaMoneyWords(r.Gain)) : null,
+                    Hours = unmanned ? CompanyText.T("reallife_rota_plan_hours", "hours", r.Sum.Hours.ToString(), "manned", r.Sum.Manned.ToString()) : CompanyText.T("reallife_rota_plan_hours_all",
+                        "hours", r.Sum.Hours.ToString()),
+                    Net = shop.HasCustomers ? CompanyApp.RotaMoneyWords(r.Sum.Net) : CompanyApp.RotaMoneyWords(-r.Sum.Wages), Gain = i == 0 ? null : r.Gain > 0
+                        ? CompanyText.T("reallife_rota_plan_gain", "amount", CompanyApp.RotaMoneyWords(r.Gain)) : null,
                     Advised = i == l.Recommended && l.Count > 1,
                     Use = Btn(CompanyText.T(hires ? "reallife_rota_use_after" : "reallife_rota_use_plan"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.RotaFill, place, i),
                         UiAction.Count, UiIcon.Check, false, !usable, hires ? CompanyText.T("reallife_rota_hire_where") : refusal != null ? CompanyApp.RotaRefusedWords(refusal) : null)
@@ -510,7 +518,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     string range = CompanyApp.RotaRangeWords(sheet, advisedRung, wk, out int standing);
                     string asks = wk < sheet.Fixed.Length && sheet.Fixed[wk] ? CompanyText.T("reallife_rota_person_fixed") : CompanyApp.RotaAsksWords(sheet.Problem.Worker[wk]);
-                    beside.Add(Row(RotaGame.WorkerName(sheet.Workers[wk]) + ", " + asks, range ?? CompanyText.T("reallife_rota_person_hours", "now", CompanyApp.RotaWorkerHours(l.Rungs[0], wk).ToString(),
+                    beside.Add(Row(RotaGame.WorkerName(sheet.Workers[wk]) + ", " + asks, range ?? CompanyText.T("reallife_rota_person_hours", "now", CompanyApp.RotaWorkerHours(l.Rungs[0],
+                        wk).ToString(),
                         "plan", CompanyApp.RotaWorkerHours(advisedRung, wk).ToString()), standing == 2 ? UiRole.WarnText : standing == 1 ? UiRole.OkText : UiRole.None));
                 }
             }
@@ -534,7 +543,8 @@ namespace RealLifeOverhaul.Ui
             AddWaysOut(beside, d, sheet, l.Rungs[l.Recommended]);
             if (sheet.Late)
             {
-                beside.Add(Note(CompanyText.T("reallife_rota_note_late", "fee", CompanyText.Money(LicenceRules.Fee((int)LicenceKind.Late, d.Index)), "days", CompanyCatalogue.LicenceTerm[(int)LicenceKind.Late].ToString()), UiRole.WarnText));
+                beside.Add(Note(CompanyText.T("reallife_rota_note_late", "fee", CompanyText.Money(LicenceRules.Fee((int)LicenceKind.Late, d.Index)), "days",
+                    CompanyCatalogue.LicenceTerm[(int)LicenceKind.Late].ToString()), UiRole.WarnText));
             }
             if (shop.Cleaned)
             {
@@ -585,7 +595,8 @@ namespace RealLifeOverhaul.Ui
             }
             int id = plan.Id;
             bool inUse = d.RotaPlanFor(place, d.RotaPlanDay()) == plan;
-            card.Chips = new[] { inUse ? w.T("reallife_rota_in_use", "In use") : plan.Dated ? CompanyText.T("reallife_rota_plan_range", "from", plan.From.ToString(), "to", plan.To.ToString()) : w.T("reallife_rota_not_in_use", "Not in use") };
+            card.Chips = new[] { inUse ? w.T("reallife_rota_in_use", "In use") : plan.Dated ? CompanyText.T("reallife_rota_plan_range", "from", plan.From.ToString(), "to", plan.To.ToString())
+                : w.T("reallife_rota_not_in_use", "Not in use") };
             card.ChipTones = new[] { inUse ? UiRole.Ok : UiRole.Muted };
             var blocks = new List<CompanyBlock>(16);
             blocks.Add(new CompanyBlock
@@ -615,7 +626,8 @@ namespace RealLifeOverhaul.Ui
                 Act2 = CompanyAct.Of(CompanyDo.PlanChange, place, id, RotaPlanFieldTo, plan.To <= 0 ? Math.Max(plan.From, d.Today) + 7 : plan.To + 7),
                 Act3 = CompanyAct.Of(CompanyDo.PlanChange, place, id, RotaPlanFieldTo)
             });
-            blocks.Add(Sec(w.T("reallife_rota_needs", "Needs by time"), CompanyText.T("reallife_rota_blocks_count", "count", plan.Blocks.Count.ToString(), "most", RotaPlanRules.BlocksMost.ToString())));
+            blocks.Add(Sec(w.T("reallife_rota_needs", "Needs by time"), CompanyText.T("reallife_rota_blocks_count", "count", plan.Blocks.Count.ToString(), "most",
+                RotaPlanRules.BlocksMost.ToString())));
             blocks.Add(Note(CompanyText.T("reallife_rota_needs_what")));
             for (int i = 0; i < plan.Blocks.Count; i++)
             {
@@ -632,11 +644,13 @@ namespace RealLifeOverhaul.Ui
             var buttons = new List<CompanyButton>(4);
             if (plan.Blocks.Count < RotaPlanRules.BlocksMost)
             {
-                buttons.Add(Btn(CompanyText.T("reallife_rota_block_add"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.PlanChange, place, id, RotaPlanFieldBlock, 700 + 15), UiAction.Count, UiIcon.Plus));
+                buttons.Add(Btn(CompanyText.T("reallife_rota_block_add"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.PlanChange, place, id, RotaPlanFieldBlock, 700 + 15), UiAction.Count,
+                    UiIcon.Plus));
             }
             for (int i = plan.Blocks.Count - 1; i >= 0 && i == plan.Blocks.Count - 1; i--)
             {
-                buttons.Add(Btn(CompanyText.T("reallife_rota_block_remove"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.PlanChange, place, id, RotaPlanFieldBlockDelete, 0, i.ToString()), UiAction.Count, UiIcon.Close, true));
+                buttons.Add(Btn(CompanyText.T("reallife_rota_block_remove"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.PlanChange, place, id, RotaPlanFieldBlockDelete, 0, i.ToString()),
+                    UiAction.Count, UiIcon.Close, true));
             }
             if (buttons.Count > 0)
             {

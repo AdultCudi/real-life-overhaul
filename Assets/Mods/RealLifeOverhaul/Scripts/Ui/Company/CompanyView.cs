@@ -95,7 +95,8 @@ namespace RealLifeOverhaul.Ui
         /// <summary>A copy of this view's choices, for the checks.</summary>
         public CompanyView Copy()
         {
-            var v = new CompanyView { Tab = Tab, Question = Question, Choice = Choice, Typing = Typing, TypingKind = TypingKind, TypingId = TypingId, Day = Day, Amount = Amount, Insurer = Insurer, Kind = Kind,
+            var v = new CompanyView { Tab = Tab, Question = Question, Choice = Choice, Typing = Typing, TypingKind = TypingKind, TypingId = TypingId, Day = Day, Amount = Amount, Insurer = Insurer,
+                Kind = Kind,
                 Filter = Filter, Armed = Armed, ArmedId = ArmedId, Folded = Folded };
             Array.Copy(Pick, v.Pick, Tabs);
             Array.Copy(Sub, v.Sub, Tabs);

@@ -98,7 +98,8 @@ namespace RealLifeOverhaul.Ui
                     coo = seat == ExecSeat.Coo ? x : coo;
                     if (x == null)
                     {
-                        nodes.Add(new UiOrgNode { Kind = UiOrgKind.Post, Level = 1, Name = CompanyDirector.SeatName(seat), Sub = w.T("reallife_mgr_empty_post", "Empty post"), Right = w.T("reallife_co_tree_hire", "Appoint") });
+                        nodes.Add(new UiOrgNode { Kind = UiOrgKind.Post, Level = 1, Name = CompanyDirector.SeatName(seat), Sub = w.T("reallife_mgr_empty_post", "Empty post"),
+                            Right = w.T("reallife_co_tree_hire", "Appoint") });
                         ids.Add("seat:" + (int)seat);
                         continue;
                     }
@@ -106,7 +107,8 @@ namespace RealLifeOverhaul.Ui
                     nodes.Add(new UiOrgNode
                     {
                         Kind = UiOrgKind.Person, Level = 1, Name = x.Name, Sub = CompanyDirector.SeatName(seat), Hue = UiColour.HueOf(x.Name), Ring = x.Seen ? UiRole.Ok : UiRole.Warn,
-                        Right = seat == ExecSeat.Coo ? w.F("reallife_co_tree_managers", "{count} managers", "count", managersUnder.ToString()) : null, HasKids = seat == ExecSeat.Coo && managersUnder > 0
+                        Right = seat == ExecSeat.Coo ? w.F("reallife_co_tree_managers", "{count} managers", "count", managersUnder.ToString()) : null, HasKids = seat == ExecSeat.Coo
+                            && managersUnder > 0
                     });
                     ids.Add("exe:" + (int)seat);
                     Face(x.Name, x.Id);
@@ -142,7 +144,8 @@ namespace RealLifeOverhaul.Ui
                     ManagedPlace mp = d.ManagedAt(posts[i]);
                     nodes.Add(new UiOrgNode
                     {
-                        Kind = UiOrgKind.Post, Level = 1, Name = w.F("reallife_co_tree_post", "Manager of {place}", "place", mp.Place.Name), Sub = CompanyApp.PlaceKindName(mp.Kind) + ", " + CompanyText.District(mp.District),
+                        Kind = UiOrgKind.Post, Level = 1, Name = w.F("reallife_co_tree_post", "Manager of {place}", "place", mp.Place.Name), Sub = CompanyApp.PlaceKindName(mp.Kind) + ", "
+                            + CompanyText.District(mp.District),
                         Right = w.T("reallife_co_tree_hire", "Appoint")
                     });
                     ids.Add("post:" + posts[i]);
@@ -294,7 +297,8 @@ namespace RealLifeOverhaul.Ui
                 Status = CompanyText.T(post == PostState.InPost ? "reallife_mgr_in_post" : "reallife_mgr_off_sick"), StatusTone = post == PostState.InPost ? UiRole.Ok : UiRole.Warn
             };
             Face(m.Name, m.Id);
-            p.FactLabels = new[] { w.T("reallife_co_f_manager_since", "Manager since"), w.T("reallife_co_f_wage", "Wage"), w.T("reallife_co_f_this_month", "This month"), w.T("reallife_co_f_asked", "Asked you") };
+            p.FactLabels = new[] { w.T("reallife_co_f_manager_since", "Manager since"), w.T("reallife_co_f_wage", "Wage"), w.T("reallife_co_f_this_month", "This month"), w.T("reallife_co_f_asked",
+                "Asked you") };
             p.FactValues = new[] { CompanyText.Day(m.From), w.PerHour(d.PayOf(m)), w.F("reallife_co_f_decisions", "{count} decisions", "count", m.Decided.ToString()), asked.ToString() };
             // The question waiting for the owner, if there is one.
             if (asked > 0)
@@ -302,7 +306,8 @@ namespace RealLifeOverhaul.Ui
                 Escalation e = OwnerEscalationAt(d, place);
                 if (e != null)
                 {
-                    p.WaitingText = asked == 1 ? w.T("reallife_co_one_waiting", "1 question waiting for you") : w.F("reallife_co_n_waiting", "{count} questions waiting for you", "count", asked.ToString());
+                    p.WaitingText = asked == 1 ? w.T("reallife_co_one_waiting", "1 question waiting for you") : w.F("reallife_co_n_waiting", "{count} questions waiting for you", "count",
+                        asked.ToString());
                     p.WaitingLine = CompanyApp.EscalationSays(d, e);
                     p.Waiting = Btn(w.T("reallife_co_answer", "Answer"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.Go, "card", e.Id), UiAction.Alt);
                 }
@@ -414,11 +419,13 @@ namespace RealLifeOverhaul.Ui
             // What can be done with the post.
             var buttons = new List<CompanyButton>(2)
             {
-                Btn(w.T("reallife_co_replace_or_stand", "Replace or stand down"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "mgr:" + place, CompanyView.Managers, CompanyView.SubAppoint), UiAction.Count, UiIcon.People)
+                Btn(w.T("reallife_co_replace_or_stand", "Replace or stand down"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "mgr:" + place, CompanyView.Managers, CompanyView.SubAppoint),
+                    UiAction.Count, UiIcon.People)
             };
             if (d.HierarchyOn && d.HierarchyData.Deep)
             {
-                buttons.Add(Btn(w.T("reallife_hier_open_dashboard", "Open the dashboard"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "mgr:" + place, CompanyView.Managers, CompanyView.SubDashboard), UiAction.Count, UiIcon.ChartPie));
+                buttons.Add(Btn(w.T("reallife_hier_open_dashboard", "Open the dashboard"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "mgr:" + place, CompanyView.Managers,
+                    CompanyView.SubDashboard), UiAction.Count, UiIcon.ChartPie));
             }
             p.Buttons = buttons.ToArray();
             return p;
@@ -473,41 +480,49 @@ namespace RealLifeOverhaul.Ui
         }
 
         // A limit's step, how many there are, its words and its value in words.
-        internal static void LimitState(CompanyDirector d, ManagerFile m, int limit, Words w, out int step, out int count, out string title, out string sub, out string value)
+        private static void LimitState(CompanyDirector d, ManagerFile m, int limit, Words w, out int step, out int count, out string title, out string sub, out string value)
         {
             int index = d.Index;
             switch (limit)
             {
                 case CompanyDirector.LimitWage:
-                    step = m.WageBand; count = ManagerCatalogue.WageBands.Length; title = w.T("reallife_co_lim_raise", "Raise limit"); sub = w.T("reallife_co_lim_raise_sub", "Of the going rate, above the pay now");
+                    step = m.WageBand; count = ManagerCatalogue.WageBands.Length; title = w.T("reallife_co_lim_raise", "Raise limit"); sub = w.T("reallife_co_lim_raise_sub",
+                        "Of the going rate, above the pay now");
                     value = CompanyText.Share(ManagerCatalogue.WageBands[Math.Max(0, Math.Min(count - 1, step))]);
                     return;
                 case CompanyDirector.LimitBudget:
-                    step = m.Budget; count = ManagerCatalogue.Budgets.Length; title = w.T("reallife_co_lim_budget", "Spend limit"); sub = w.T("reallife_co_lim_budget_sub", "A month, for overtime and hires");
+                    step = m.Budget; count = ManagerCatalogue.Budgets.Length; title = w.T("reallife_co_lim_budget", "Spend limit"); sub = w.T("reallife_co_lim_budget_sub",
+                        "A month, for overtime and hires");
                     value = CompanyText.Money(CompanyCatalogue.AtPrices(ManagerCatalogue.Budgets[Math.Max(0, Math.Min(count - 1, step))], index));
                     return;
                 case CompanyDirector.LimitMarketing:
-                    step = m.MarketingStep; count = ManagerCatalogue.MarketingSteps.Length; title = w.T("reallife_co_lim_marketing", "Marketing limit"); sub = w.T("reallife_co_lim_marketing_sub", "A month, for campaigns");
+                    step = m.MarketingStep; count = ManagerCatalogue.MarketingSteps.Length; title = w.T("reallife_co_lim_marketing", "Marketing limit"); sub = w.T("reallife_co_lim_marketing_sub",
+                        "A month, for campaigns");
                     value = CompanyText.Money(CompanyCatalogue.AtPrices(ManagerCatalogue.MarketingSteps[Math.Max(0, Math.Min(count - 1, step))], index));
                     return;
                 case CompanyDirector.LimitLease:
-                    step = m.LeaseStep; count = ManagerCatalogue.LeaseRises.Length; title = w.T("reallife_co_lim_lease", "Lease rise limit"); sub = w.T("reallife_co_lim_lease_sub", "The most a renewal may raise the rent without asking you");
+                    step = m.LeaseStep; count = ManagerCatalogue.LeaseRises.Length; title = w.T("reallife_co_lim_lease", "Lease rise limit"); sub = w.T("reallife_co_lim_lease_sub",
+                        "The most a renewal may raise the rent without asking you");
                     value = CompanyText.Share(ManagerCatalogue.LeaseRises[Math.Max(0, Math.Min(count - 1, step))]);
                     return;
                 case CompanyDirector.LimitKeep:
-                    step = Math.Max(0, m.Keep); count = ManagerCatalogue.KeepMost + 1; title = w.T("reallife_co_lim_keep", "Crew to keep"); sub = w.T("reallife_co_lim_keep_sub", "Hiring keeps the place at this many");
+                    step = Math.Max(0, m.Keep); count = ManagerCatalogue.KeepMost + 1; title = w.T("reallife_co_lim_keep", "Crew to keep"); sub = w.T("reallife_co_lim_keep_sub",
+                        "Hiring keeps the place at this many");
                     value = CompanyText.T("reallife_mgr_limit_keep_value", "count", step.ToString());
                     return;
                 case CompanyDirector.LimitStock:
-                    step = m.StockDays; count = ManagerCatalogue.StockDays.Length; title = w.T("reallife_co_lim_stock", "Stock days"); sub = w.T("reallife_co_lim_stock_sub", "Orders keep this many days of stock");
+                    step = m.StockDays; count = ManagerCatalogue.StockDays.Length; title = w.T("reallife_co_lim_stock", "Stock days"); sub = w.T("reallife_co_lim_stock_sub",
+                        "Orders keep this many days of stock");
                     value = CompanyText.T("reallife_mgr_limit_stock_value", "days", ManagerCatalogue.StockDays[Math.Max(0, Math.Min(count - 1, step))].ToString());
                     return;
                 case CompanyDirector.LimitPriceLow:
-                    step = m.PriceLow; count = ManagerCatalogue.PriceLows.Length; title = w.T("reallife_co_lim_price_low", "Lowest price"); sub = w.T("reallife_co_lim_price_low_sub", "Of the market price");
+                    step = m.PriceLow; count = ManagerCatalogue.PriceLows.Length; title = w.T("reallife_co_lim_price_low", "Lowest price"); sub = w.T("reallife_co_lim_price_low_sub",
+                        "Of the market price");
                     value = CompanyText.Share(ManagerCatalogue.PriceLows[Math.Max(0, Math.Min(count - 1, step))]);
                     return;
                 case CompanyDirector.LimitPriceHigh:
-                    step = m.PriceHigh; count = ManagerCatalogue.PriceHighs.Length; title = w.T("reallife_co_lim_price_high", "Highest price"); sub = w.T("reallife_co_lim_price_high_sub", "Of the market price");
+                    step = m.PriceHigh; count = ManagerCatalogue.PriceHighs.Length; title = w.T("reallife_co_lim_price_high", "Highest price"); sub = w.T("reallife_co_lim_price_high_sub",
+                        "Of the market price");
                     value = CompanyText.Share(ManagerCatalogue.PriceHighs[Math.Max(0, Math.Min(count - 1, step))]);
                     return;
                 default:
@@ -547,14 +562,17 @@ namespace RealLifeOverhaul.Ui
                 more.Add(Sec(w.T("reallife_co_owner_levels", "Levels")));
                 more.Add(new CompanyBlock
                 {
-                    Kind = CompanyBlockKind.Switch, Text = w.T("reallife_co_deep_mode", "Deep Mode"), Sub = w.T("reallife_co_deep_sub", "The executives, regions, the policy centre and every question's inbox"),
+                    Kind = CompanyBlockKind.Switch, Text = w.T("reallife_co_deep_mode", "Deep Mode"), Sub = w.T("reallife_co_deep_sub",
+                        "The executives, regions, the policy centre and every question's inbox"),
                     On = h.Deep, Value = w.T(h.Deep ? "reallife_co_on" : "reallife_co_off", h.Deep ? "On" : "Off"), Act = CompanyAct.Of(CompanyDo.DeepMode, null, h.Deep ? 0 : 1)
                 });
                 if (h.Deep)
                 {
-                    more.Add(Link(w.T("reallife_co_inbox", "Questions inbox"), w.F("reallife_co_inbox_open", "{count} open", "count", OpenCount(h).ToString()), CompanyAct.Of(CompanyDo.Go, null, CompanyView.Managers, CompanyView.SubInbox)));
+                    more.Add(Link(w.T("reallife_co_inbox", "Questions inbox"), w.F("reallife_co_inbox_open", "{count} open", "count", OpenCount(h).ToString()), CompanyAct.Of(CompanyDo.Go, null,
+                        CompanyView.Managers, CompanyView.SubInbox)));
                     more.Add(Link(w.T("reallife_co_policy_centre", "Policy centre"), string.Empty, CompanyAct.Of(CompanyDo.Go, null, CompanyView.Managers, CompanyView.SubPolicy)));
-                    more.Add(Link(w.T("reallife_co_templates", "Templates"), (PolicyCatalogue.TemplateKeys.Length + h.Templates.Count).ToString(), CompanyAct.Of(CompanyDo.Go, null, CompanyView.Managers, CompanyView.SubTemplates)));
+                    more.Add(Link(w.T("reallife_co_templates", "Templates"), (PolicyCatalogue.TemplateKeys.Length + h.Templates.Count).ToString(), CompanyAct.Of(CompanyDo.Go, null,
+                        CompanyView.Managers, CompanyView.SubTemplates)));
                 }
             }
             p.More = more.ToArray();
@@ -578,8 +596,10 @@ namespace RealLifeOverhaul.Ui
             {
                 Id = "exe:" + x.Area, Name = x.Name, Role = CompanyDirector.SeatName(seat), Hue = UiColour.HueOf(x.Name), Ring = x.Seen ? UiRole.Ok : UiRole.Warn,
                 Status = CompanyText.T(x.Seen ? "reallife_mgr_in_post" : "reallife_hier_seat_waits"), StatusTone = x.Seen ? UiRole.Ok : UiRole.Warn,
-                FactLabels = new[] { w.T("reallife_co_f_since", "Since"), w.T("reallife_co_f_allowance", "Allowance"), w.T("reallife_co_f_this_month", "This month"), w.T("reallife_co_f_open_area", "Open in their area") },
-                FactValues = new[] { CompanyText.Day(x.From), CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(CompanyDirector.AllowanceOf(x))), w.F("reallife_co_f_decisions", "{count} decisions", "count", x.Decided.ToString()),
+                FactLabels = new[] { w.T("reallife_co_f_since", "Since"), w.T("reallife_co_f_allowance", "Allowance"), w.T("reallife_co_f_this_month", "This month"), w.T("reallife_co_f_open_area",
+                    "Open in their area") },
+                FactValues = new[] { CompanyText.Day(x.From), CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(CompanyDirector.AllowanceOf(x))), w.F("reallife_co_f_decisions",
+                    "{count} decisions", "count", x.Decided.ToString()),
                     d.OpenOfSeat(seat).ToString() }
             };
             Face(x.Name, x.Id);
@@ -595,7 +615,8 @@ namespace RealLifeOverhaul.Ui
             p.More = more.ToArray();
             p.Buttons = new[]
             {
-                Btn(w.T("reallife_mgr_replace", "Replace"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "exe:" + x.Area, CompanyView.Managers, CompanyView.SubSeat), UiAction.Count, UiIcon.People),
+                Btn(w.T("reallife_mgr_replace", "Replace"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "exe:" + x.Area, CompanyView.Managers, CompanyView.SubSeat), UiAction.Count,
+                    UiIcon.People),
                 Btn(w.T("reallife_mgr_stand_down", "Stand down"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.SeatStandDown, null, x.Area), UiAction.Count, UiIcon.Close, true)
             };
             return p;
@@ -614,7 +635,8 @@ namespace RealLifeOverhaul.Ui
             {
                 Id = "reg:" + area, Name = r.Name, Role = w.F("reallife_co_tree_region", "Regional, {district}", "district", CompanyDirector.AreaName(area)), Hue = UiColour.HueOf(r.Name),
                 Ring = sick ? UiRole.Warn : UiRole.Ok, Status = CompanyText.T(sick ? "reallife_mgr_off_sick" : "reallife_mgr_in_post"), StatusTone = sick ? UiRole.Warn : UiRole.Ok,
-                FactLabels = new[] { w.T("reallife_co_f_since", "Since"), w.T("reallife_co_f_places", "Places"), w.T("reallife_co_f_standing_in", "Standing in"), w.T("reallife_co_f_decisions_n", "Decisions") },
+                FactLabels = new[] { w.T("reallife_co_f_since", "Since"), w.T("reallife_co_f_places", "Places"), w.T("reallife_co_f_standing_in", "Standing in"), w.T("reallife_co_f_decisions_n",
+                    "Decisions") },
                 FactValues = new[] { CompanyText.Day(r.From), places.ToString(), d.StandingIn(area).ToString(), r.Decided.ToString() }
             };
             Face(r.Name, r.Id);
@@ -634,11 +656,13 @@ namespace RealLifeOverhaul.Ui
             p.More = more.ToArray();
             var buttons = new List<CompanyButton>(4)
             {
-                Btn(w.T("reallife_co_replace_or_stand", "Replace or stand down"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "reg:" + area, CompanyView.Managers, CompanyView.SubAppoint), UiAction.Count, UiIcon.People)
+                Btn(w.T("reallife_co_replace_or_stand", "Replace or stand down"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "reg:" + area, CompanyView.Managers, CompanyView.SubAppoint),
+                    UiAction.Count, UiIcon.People)
             };
             if (d.HierarchyOn)
             {
-                buttons.Add(Btn(w.T("reallife_hier_open_dashboard", "Open the dashboard"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "reg:" + area, CompanyView.Managers, CompanyView.SubRegion), UiAction.Count, UiIcon.ChartPie));
+                buttons.Add(Btn(w.T("reallife_hier_open_dashboard", "Open the dashboard"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "reg:" + area, CompanyView.Managers,
+                    CompanyView.SubRegion), UiAction.Count, UiIcon.ChartPie));
             }
             p.Buttons = buttons.ToArray();
             return p;
@@ -648,7 +672,8 @@ namespace RealLifeOverhaul.Ui
         {
             var p = new CompanyProfile
             {
-                Id = "crew:" + c.Id, Name = c.Name, Role = CompanyGame.SkillName(c.Id) + ", " + d.ShopName(c.Place), Hue = UiColour.HueOf(c.Name), Ring = StaffRules.StandsLow(c) ? UiRole.Danger : UiRole.Ok,
+                Id = "crew:" + c.Id, Name = c.Name, Role = CompanyGame.SkillName(c.Id) + ", " + d.ShopName(c.Place), Hue = UiColour.HueOf(c.Name), Ring = StaffRules.StandsLow(c) ? UiRole.Danger
+                    : UiRole.Ok,
                 FactLabels = new[] { w.T("reallife_co_f_paid", "Paid"), w.T("reallife_co_f_standing", "Standing"), w.T("reallife_co_f_mood", "Mood") },
                 FactValues = new[] { CompanyText.Wage(c.Paid), c.Standing.ToString(), c.Mood.ToString() }
             };
@@ -661,13 +686,15 @@ namespace RealLifeOverhaul.Ui
         {
             var p = new CompanyProfile
             {
-                Id = "post:" + mp.Place.Place, Name = w.F("reallife_co_tree_post", "Manager of {place}", "place", mp.Place.Name), Role = CompanyApp.PlaceKindName(mp.Kind) + ", " + CompanyText.District(mp.District),
+                Id = "post:" + mp.Place.Place, Name = w.F("reallife_co_tree_post", "Manager of {place}", "place", mp.Place.Name), Role = CompanyApp.PlaceKindName(mp.Kind) + ", "
+                    + CompanyText.District(mp.District),
                 Hue = UiColour.HueOf(mp.Place.Name), Ring = UiRole.None, Status = CompanyText.T("reallife_mgr_empty_post"), StatusTone = UiRole.Muted
             };
             p.More = new[]
             {
                 Note(CompanyText.T("reallife_mgr_place_none")),
-                Buttons(Btn(w.T("reallife_mgr_appoint", "Appoint"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.Go, "post:" + mp.Place.Place, CompanyView.Managers, CompanyView.SubAppoint), UiAction.Alt, UiIcon.People))
+                Buttons(Btn(w.T("reallife_mgr_appoint", "Appoint"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.Go, "post:" + mp.Place.Place, CompanyView.Managers, CompanyView.SubAppoint),
+                    UiAction.Alt, UiIcon.People))
             };
             return p;
         }
@@ -683,7 +710,8 @@ namespace RealLifeOverhaul.Ui
             p.More = new[]
             {
                 Note(CompanyText.T(PolicyCatalogue.Mod + "_hier_seat_what_" + seat.ToString().ToLowerInvariant())),
-                Buttons(Btn(w.T("reallife_mgr_appoint", "Appoint"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.Go, "seat:" + (int)seat, CompanyView.Managers, CompanyView.SubSeat), UiAction.Alt, UiIcon.People))
+                Buttons(Btn(w.T("reallife_mgr_appoint", "Appoint"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.Go, "seat:" + (int)seat, CompanyView.Managers, CompanyView.SubSeat), UiAction.Alt,
+                    UiIcon.People))
             };
             return p;
         }

@@ -155,7 +155,8 @@ namespace RealLifeOverhaul.Ui
             string skill = CompanyGame.SkillName(p.Id);
             var c = new CompanyCard
             {
-                Kicker = w.T("reallife_co_tab_staff", "Staff"), Title = p.Name, Sub = CompanyText.T("reallife_co_emp_works", "business", d.ShopName(p.Place), "skill", skill), Face = true, Hue = UiColour.HueOf(p.Name),
+                Kicker = w.T("reallife_co_tab_staff", "Staff"), Title = p.Name, Sub = CompanyText.T("reallife_co_emp_works", "business", d.ShopName(p.Place), "skill",
+                    skill), Face = true, Hue = UiColour.HueOf(p.Name),
                 Ring = p.AskDay > 0 || p.PoachDay > 0 || p.LeaveDay > 0 ? UiRole.Warn : UiRole.Ok,
                 FactLabels = new[] { w.T("reallife_co_f_paid", "Paid"), w.T("reallife_co_f_going", "Going rate"), w.T("reallife_co_f_standing", "Standing"), w.T("reallife_co_f_mood", "Mood") },
                 FactValues = new[] { CompanyText.Wage(p.Paid), CompanyText.Wage(p.Going), p.Standing.ToString(), p.Mood.ToString() },
@@ -189,17 +190,20 @@ namespace RealLifeOverhaul.Ui
             {
                 blocks.Add(Sec(CompanyText.T("reallife_co_emp_asks")));
                 blocks.Add(Note(CompanyText.T("reallife_co_emp_ask", "wage", CompanyText.Wage(p.AskTo), "day", (p.AskDay + CompanyCatalogue.RaiseAnswerDays).ToString())));
-                blocks.Add(Note(CompanyText.T("reallife_co_emp_ask_choices", "all", CompanyText.Wage(StaffRules.RaiseFor(p, RaiseAnswer.Agree)), "less", CompanyText.Wage(StaffRules.RaiseFor(p, RaiseAnswer.Less)))));
+                blocks.Add(Note(CompanyText.T("reallife_co_emp_ask_choices", "all", CompanyText.Wage(StaffRules.RaiseFor(p, RaiseAnswer.Agree)), "less", CompanyText.Wage(StaffRules.RaiseFor(p,
+                    RaiseAnswer.Less)))));
                 blocks.Add(Buttons(
                     Btn(CompanyText.T("reallife_co_emp_agree"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.RaiseAnswer, p.Id, (int)RaiseAnswer.Agree), UiAction.Alt, UiIcon.Check),
                     Btn(CompanyText.T("reallife_co_emp_less"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.RaiseAnswer, p.Id, (int)RaiseAnswer.Less), UiAction.Option),
-                    Btn(w.F("reallife_co_emp_bonus", "Bonus {amount}", "amount", w.Money(d.BonusOf(p.Place))), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.RaiseAnswer, p.Id, (int)RaiseAnswer.Bonus)),
+                    Btn(w.F("reallife_co_emp_bonus", "Bonus {amount}", "amount", w.Money(d.BonusOf(p.Place))), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.RaiseAnswer, p.Id,
+                        (int)RaiseAnswer.Bonus)),
                     Btn(CompanyText.T("reallife_co_emp_refuse"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.RaiseAnswer, p.Id, (int)RaiseAnswer.Refuse), UiAction.Count, UiIcon.Close, true)));
             }
             else if (p.PoachDay > 0)
             {
                 blocks.Add(Sec(CompanyText.T("reallife_co_emp_offer")));
-                blocks.Add(Note(CompanyText.T("reallife_co_emp_offer_what", "rival", p.Rival, "wage", CompanyText.Wage(p.PoachOffer), "day", (p.PoachDay + CompanyCatalogue.PoachAnswerDays).ToString())));
+                blocks.Add(Note(CompanyText.T("reallife_co_emp_offer_what", "rival", p.Rival, "wage", CompanyText.Wage(p.PoachOffer), "day", (p.PoachDay
+                    + CompanyCatalogue.PoachAnswerDays).ToString())));
                 blocks.Add(Note(CompanyText.T("reallife_co_emp_offer_choices", "raise", CompanyText.Wage(Math.Max(0, p.PoachOffer - p.Paid)), "days", CompanyCatalogue.PoachNoticeDays.ToString())));
                 blocks.Add(Buttons(
                     Btn(CompanyText.T("reallife_co_emp_match"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.OfferAnswer, p.Id, 1), UiAction.Alt, UiIcon.Check),
@@ -231,8 +235,10 @@ namespace RealLifeOverhaul.Ui
             blocks.Add(Row(w.T("reallife_co_f_paid", "Paid"), CompanyText.Wage(p.Paid)));
             blocks.Add(Row(w.T("reallife_co_f_going", "Going rate"), CompanyText.Wage(p.Going), p.Going > p.Paid ? UiRole.WarnText : UiRole.None));
             blocks.Add(Sec(CompanyText.T("reallife_ibox_sec_feeling")));
-            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Meter, Text = w.T("reallife_co_f_standing", "Standing"), Value = p.Standing.ToString(), Number = p.Standing, Tone = StaffRules.StandsLow(p) ? UiRole.Danger : p.Standing < 60 ? UiRole.Warn : UiRole.Ok });
-            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Meter, Text = w.T("reallife_co_f_mood", "Mood"), Value = p.Mood.ToString(), Number = p.Mood, Tone = p.Mood < 30 ? UiRole.Danger : p.Mood < 60 ? UiRole.Warn : UiRole.Ok });
+            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Meter, Text = w.T("reallife_co_f_standing", "Standing"), Value = p.Standing.ToString(), Number = p.Standing,
+                Tone = StaffRules.StandsLow(p) ? UiRole.Danger : p.Standing < 60 ? UiRole.Warn : UiRole.Ok });
+            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Meter, Text = w.T("reallife_co_f_mood", "Mood"), Value = p.Mood.ToString(), Number = p.Mood, Tone = p.Mood < 30 ? UiRole.Danger
+                : p.Mood < 60 ? UiRole.Warn : UiRole.Ok });
             if (p.LateDays > 0)
             {
                 blocks.Add(Row(w.T("reallife_co_emp_late", "Short days running"), p.LateDays.ToString(), UiRole.WarnText));
@@ -253,7 +259,8 @@ namespace RealLifeOverhaul.Ui
             };
             c.Blocks = new[]
             {
-                Note(CompanyText.T(file.Striking(day) ? "reallife_co_strike_on" : "reallife_co_strike_called", "from", file.StrikeFrom.ToString(), "end", file.StrikeEnd.ToString()), UiRole.DangerText),
+                Note(CompanyText.T(file.Striking(day) ? "reallife_co_strike_on" : "reallife_co_strike_called", "from", file.StrikeFrom.ToString(), "end", file.StrikeEnd.ToString()),
+                    UiRole.DangerText),
                 Note(CompanyText.T("reallife_co_strike_effect", "percent", (-CompanyCatalogue.StrikeFootfall).ToString(), "hours", CompanyCatalogue.StrikeClosedHours.ToString())),
                 Note(CompanyText.T("reallife_co_strike_why", "low", shop.Low.ToString(), "count", shop.Staff.ToString())),
                 Sec(CompanyText.T("reallife_co_strike_ways")),

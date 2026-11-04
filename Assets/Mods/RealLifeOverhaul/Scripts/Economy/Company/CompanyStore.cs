@@ -41,7 +41,8 @@ namespace RealLifeOverhaul.Economy
             TaxFile x = s.Tax;
             t.Append("^t:");
             Join(t, x.QuarterFrom, x.Quarter, x.Costs[0], x.Costs[1], x.Costs[2], x.Costs[3], x.Costs[4], x.ReturnDue, x.ReturnQuarter, x.ReturnTakings, x.ReturnCosts,
-                x.ReturnPenalties, x.LateRun, x.Accountant, x.AccountantNext, x.Risk, x.Saved, x.Owed, x.LastAudit, x.CaseNumber, x.QuietUntil, x.Costs[5],   // the rent's rise after the rest: a newer figure goes at the end
+                // the rent's rise after the rest: a newer figure goes at the end
+                x.ReturnPenalties, x.LateRun, x.Accountant, x.AccountantNext, x.Risk, x.Saved, x.Owed, x.LastAudit, x.CaseNumber, x.QuietUntil, x.Costs[5],
                 x.Reserve, x.ReserveAuto ? 1 : 0, x.YearTax, x.YearFrom, x.ReturnTax);   // then the tax reserve and the year's account
             for (int i = 0; i < TaxRules.SettledKept; i++)   // then the past returns, the oldest first, four places always
             {

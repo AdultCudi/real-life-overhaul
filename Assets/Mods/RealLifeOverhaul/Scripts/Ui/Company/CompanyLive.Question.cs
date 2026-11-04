@@ -62,7 +62,8 @@ namespace RealLifeOverhaul.Ui
                 case EscalationKind.Proposal: Proposal(q, e, w); break;
                 default: Plain(q, e, w, null, 0, null, false); break;
             }
-            q.Body = w.T(e.Kind == (int)EscalationKind.Exception || e.Kind == (int)EscalationKind.Lease ? "reallife_hier_what_yours" : "reallife_hier_what_yours", "Yours to decide: nobody under you may settle it.");
+            q.Body = w.T(e.Kind == (int)EscalationKind.Exception || e.Kind == (int)EscalationKind.Lease ? "reallife_hier_what_yours" : "reallife_hier_what_yours",
+                "Yours to decide: nobody under you may settle it.");
             if (q.Deep)
             {
                 q.Body = w.T("reallife_hier_what_others", "Someone under you holds this one.");
@@ -91,7 +92,8 @@ namespace RealLifeOverhaul.Ui
             }
             q.Title = w.T(offer ? "reallife_co_q_offer_title" : "reallife_co_q_raise_title", offer ? "A rival's offer above my limit" : "A raise above my limit");
             int now = f != null ? f.Paid : 0;
-            q.FactLabels = new[] { w.T("reallife_co_q_now", "Now"), w.T(offer ? "reallife_co_q_rival_pays" : "reallife_co_q_asks_for", offer ? "Rival pays" : "Asks for"), w.T("reallife_co_q_limit", "Limit"),
+            q.FactLabels = new[] { w.T("reallife_co_q_now", "Now"), w.T(offer ? "reallife_co_q_rival_pays" : "reallife_co_q_asks_for", offer ? "Rival pays" : "Asks for"), w.T("reallife_co_q_limit",
+                "Limit"),
                 w.T("reallife_co_q_standing", "Standing") };
             q.FactValues = new[] { w.PerHour(now), w.PerHour(e.A), w.PerHour(e.B),
                 f != null ? f.Standing.ToString() : "-" };
@@ -102,7 +104,8 @@ namespace RealLifeOverhaul.Ui
             var choices = new List<CompanyChoice>(4);
             choices.Add(new CompanyChoice
             {
-                Name = offer ? w.F("reallife_co_q_c_match", "Match {rival}'s {pay} an hour", "rival", f != null ? f.Rival : string.Empty, "pay", pay) : raiseName, Button = offer ? w.T("reallife_co_q_match_do", "Match the offer") : raiseButton,
+                Name = offer ? w.F("reallife_co_q_c_match", "Match {rival}'s {pay} an hour", "rival", f != null ? f.Rival : string.Empty, "pay", pay) : raiseName, Button = offer
+                    ? w.T("reallife_co_q_match_do", "Match the offer") : raiseButton,
                 Note = w.T("reallife_co_q_now_note", "now"), Act = CompanyAct.Of(CompanyDo.Settle, null, e.Id, CompanyDirector.AnswerAgree),
                 Lines = new[]
                 {
@@ -118,12 +121,15 @@ namespace RealLifeOverhaul.Ui
                 string limit = CompanyText.Wage(can ? Math.Max(limitPay, e.A) : e.A);
                 choices.Add(new CompanyChoice
                 {
-                    Name = w.F("reallife_co_q_c_limit", "Raise {manager}'s limit to {limit}, and let them decide", "manager", mp != null && mp.Own != null ? FirstName(mp.Own.Name) : string.Empty, "limit", limit),
-                    Button = w.T("reallife_co_q_limit_do", "Raise the limit"), Note = w.T("reallife_co_q_standing_note", "standing"), Act = CompanyAct.Of(CompanyDo.Settle, null, e.Id, CompanyDirector.AnswerLimit),
+                    Name = w.F("reallife_co_q_c_limit", "Raise {manager}'s limit to {limit}, and let them decide", "manager", mp != null && mp.Own != null ? FirstName(mp.Own.Name) : string.Empty,
+                        "limit", limit),
+                    Button = w.T("reallife_co_q_limit_do", "Raise the limit"), Note = w.T("reallife_co_q_standing_note", "standing"), Act = CompanyAct.Of(CompanyDo.Settle, null, e.Id,
+                        CompanyDirector.AnswerLimit),
                     Disabled = !can, Why = can ? null : w.T("reallife_hier_note_limit_short", "Even the widest limit would not reach it."),
                     Lines = new[]
                     {
-                        new CompanyConsequence { Text = w.F("reallife_co_q_limit_line", "{manager} approves raises up to {limit} without asking you", "manager", mp != null && mp.Own != null ? FirstName(mp.Own.Name) : string.Empty, "limit", limit), Tone = -1, Change = 1 },
+                        new CompanyConsequence { Text = w.F("reallife_co_q_limit_line", "{manager} approves raises up to {limit} without asking you", "manager", mp != null && mp.Own != null
+                            ? FirstName(mp.Own.Name) : string.Empty, "limit", limit), Tone = -1, Change = 1 },
                         new CompanyConsequence { Text = w.T("reallife_co_q_fewer", "Fewer questions at your desk"), Tone = 1, Change = -1 }
                     }
                 });
@@ -132,7 +138,8 @@ namespace RealLifeOverhaul.Ui
                     int amount = d.BonusOf(e.Place);
                     choices.Add(new CompanyChoice
                     {
-                        Name = w.F("reallife_co_q_c_bonus", "Give {name} a {amount} bonus instead", "name", FirstName(name), "amount", w.Money(amount)), Button = w.T("reallife_co_q_bonus_do", "Give the bonus"),
+                        Name = w.F("reallife_co_q_c_bonus", "Give {name} a {amount} bonus instead", "name", FirstName(name), "amount", w.Money(amount)), Button = w.T("reallife_co_q_bonus_do",
+                            "Give the bonus"),
                         Note = w.T("reallife_co_q_once_note", "once"), Act = CompanyAct.Of(CompanyDo.Settle, null, e.Id, CompanyDirector.AnswerBonus),
                         Lines = new[]
                         {
@@ -145,8 +152,10 @@ namespace RealLifeOverhaul.Ui
             int hire = f != null ? ManagerRules.HireCost(Math.Max(1, f.Going)) : 0;
             choices.Add(new CompanyChoice
             {
-                Name = w.T("reallife_co_q_c_no", "Say no"), Button = w.T("reallife_co_q_no_do", "Say no"), Note = w.T("reallife_co_q_nocost_note", "no cost"), Act = CompanyAct.Of(CompanyDo.Settle, null, e.Id, CompanyDirector.AnswerRefuse),
-                Lines = new[] { new CompanyConsequence { Text = w.F("reallife_co_q_may_leave", "{name} may leave; hiring costs about {amount}", "name", FirstName(name), "amount", w.Money(hire)), Tone = -1, Change = -1 } }
+                Name = w.T("reallife_co_q_c_no", "Say no"), Button = w.T("reallife_co_q_no_do", "Say no"), Note = w.T("reallife_co_q_nocost_note", "no cost"), Act = CompanyAct.Of(CompanyDo.Settle,
+                    null, e.Id, CompanyDirector.AnswerRefuse),
+                Lines = new[] { new CompanyConsequence { Text = w.F("reallife_co_q_may_leave", "{name} may leave; hiring costs about {amount}", "name", FirstName(name), "amount", w.Money(hire)),
+                    Tone = -1, Change = -1 } }
             });
             q.Choices = choices.ToArray();
         }
@@ -171,8 +180,10 @@ namespace RealLifeOverhaul.Ui
             string business = e.Detail;
             q.Title = w.T("reallife_co_q_lease_title", "A lease is up for renewal");
             int rise = e.A > 0 ? (int)((e.B - e.A) * 1000L / e.A) : 0;
-            q.FactLabels = new[] { w.T("reallife_co_q_rent_now", "Rent now"), w.T("reallife_co_q_rent_offer", "Offered"), w.T("reallife_co_q_term", "New term"), w.T("reallife_co_q_rise_limit", "Rise") };
-            q.FactValues = new[] { w.Money(d.Monthly(rent)), w.Money(d.Monthly(offered)), l != null ? w.F("reallife_co_q_months", "{count} months", "count", Math.Max(1, l.Term / Math.Max(1, CompanyGame.MonthDays)).ToString()) : "-", CompanyText.Share(rise) };
+            q.FactLabels = new[] { w.T("reallife_co_q_rent_now", "Rent now"), w.T("reallife_co_q_rent_offer", "Offered"), w.T("reallife_co_q_term", "New term"), w.T("reallife_co_q_rise_limit",
+                "Rise") };
+            q.FactValues = new[] { w.Money(d.Monthly(rent)), w.Money(d.Monthly(offered)), l != null ? w.F("reallife_co_q_months", "{count} months", "count", Math.Max(1, l.Term / Math.Max(1,
+                CompanyGame.MonthDays)).ToString()) : "-", CompanyText.Share(rise) };
             int yearMore = Math.Max(0, (offered - rent)) * CompanyGame.DaysPerYear;
             var choices = new List<CompanyChoice>(3)
             {
@@ -180,12 +191,14 @@ namespace RealLifeOverhaul.Ui
                 {
                     Name = w.T("reallife_co_q_c_renew", "Renew at the offered rent"), Button = w.T("reallife_co_q_renew_do", "Renew the lease"), Note = w.T("reallife_co_q_standing_note", "standing"),
                     Act = CompanyAct.Of(CompanyDo.Settle, null, e.Id, CompanyDirector.AnswerAgree),
-                    Lines = new[] { new CompanyConsequence { Text = w.F("reallife_co_q_rent_year", "About {amount} a year more in rent", "amount", w.Money(yearMore)), Tone = UiConsequence.Loss, Change = 1 } }
+                    Lines = new[] { new CompanyConsequence { Text = w.F("reallife_co_q_rent_year", "About {amount} a year more in rent", "amount", w.Money(yearMore)), Tone = UiConsequence.Loss,
+                        Change = 1 } }
                 },
                 new CompanyChoice
                 {
                     Name = w.T("reallife_co_q_c_haggle", "Haggle for a smaller rise"), Button = w.T("reallife_co_q_haggle_do", "Haggle"), Note = w.T("reallife_co_q_once_note", "once"),
-                    Act = CompanyAct.Of(CompanyDo.Settle, null, e.Id, CompanyDirector.AnswerHaggle), Disabled = l != null && l.Haggled, Why = l != null && l.Haggled ? w.T("reallife_co_q_haggled", "The landlord was asked once already.") : null,
+                    Act = CompanyAct.Of(CompanyDo.Settle, null, e.Id, CompanyDirector.AnswerHaggle), Disabled = l != null && l.Haggled, Why = l != null && l.Haggled ? w.T("reallife_co_q_haggled",
+                        "The landlord was asked once already.") : null,
                     Lines = new[] { new CompanyConsequence { Text = w.T("reallife_co_q_haggle_line", "The landlord may meet you half way, or hold firm"), Tone = 0, Change = 0 } }
                 },
                 new CompanyChoice
@@ -196,7 +209,8 @@ namespace RealLifeOverhaul.Ui
                 }
             };
             q.Choices = choices.ToArray();
-            q.Headline = w.F("reallife_co_q_lease_head", "The lease at {place} renews in {days} days: {rent} a month, up {rise}.", "place", business, "days", days.ToString(), "rent", w.Money(d.Monthly(offered)), "rise", CompanyText.Share(rise));
+            q.Headline = w.F("reallife_co_q_lease_head", "The lease at {place} renews in {days} days: {rent} a month, up {rise}.", "place", business, "days", days.ToString(), "rent",
+                w.Money(d.Monthly(offered)), "rise", CompanyText.Share(rise));
         }
 
         // A manager's budget nearly spent: top it up for the month, or leave it.
@@ -209,8 +223,10 @@ namespace RealLifeOverhaul.Ui
             {
                 new CompanyChoice
                 {
-                    Name = w.F("reallife_co_q_c_topup", "Top the budget up by {amount}", "amount", w.Money(amount)), Button = w.T("reallife_hier_do_budget", "Top up the budget"), Note = w.T("reallife_co_q_now_note", "now"),
-                    Act = CompanyAct.Of(CompanyDo.Settle, null, e.Id, 0), Lines = new[] { new CompanyConsequence { Text = w.F("reallife_co_q_budget_line", "{amount} more for the manager this month", "amount", w.Money(amount)), Tone = UiConsequence.Loss, Change = 1 } }
+                    Name = w.F("reallife_co_q_c_topup", "Top the budget up by {amount}", "amount", w.Money(amount)), Button = w.T("reallife_hier_do_budget",
+                        "Top up the budget"), Note = w.T("reallife_co_q_now_note", "now"),
+                    Act = CompanyAct.Of(CompanyDo.Settle, null, e.Id, 0), Lines = new[] { new CompanyConsequence { Text = w.F("reallife_co_q_budget_line", "{amount} more for the manager this month",
+                        "amount", w.Money(amount)), Tone = UiConsequence.Loss, Change = 1 } }
                 },
                 DismissChoice(e, w)
             };
@@ -223,12 +239,14 @@ namespace RealLifeOverhaul.Ui
             {
                 new CompanyChoice
                 {
-                    Name = w.T("reallife_hier_do_approve", "Approve"), Button = w.T("reallife_hier_do_approve", "Approve"), Note = w.T("reallife_co_q_standing_note", "standing"), Act = CompanyAct.Of(CompanyDo.Settle, null, e.Id, 0),
+                    Name = w.T("reallife_hier_do_approve", "Approve"), Button = w.T("reallife_hier_do_approve", "Approve"), Note = w.T("reallife_co_q_standing_note",
+                        "standing"), Act = CompanyAct.Of(CompanyDo.Settle, null, e.Id, 0),
                     Lines = new[] { new CompanyConsequence { Text = w.T("reallife_co_q_proposal_line", "The company's rule changes at once, every manager's with it"), Tone = 0, Change = 0 } }
                 },
                 new CompanyChoice
                 {
-                    Name = w.T("reallife_hier_do_reject", "Reject"), Button = w.T("reallife_hier_do_reject", "Reject"), Note = w.T("reallife_co_q_nocost_note", "no cost"), Act = CompanyAct.Of(CompanyDo.Settle, null, e.Id, 1),
+                    Name = w.T("reallife_hier_do_reject", "Reject"), Button = w.T("reallife_hier_do_reject", "Reject"), Note = w.T("reallife_co_q_nocost_note",
+                        "no cost"), Act = CompanyAct.Of(CompanyDo.Settle, null, e.Id, 1),
                     Lines = new[] { new CompanyConsequence { Text = w.T("reallife_co_q_reject_line", "The rule stays as it is"), Tone = 0, Change = 0 } }
                 }
             };
@@ -254,7 +272,8 @@ namespace RealLifeOverhaul.Ui
         {
             return new CompanyChoice
             {
-                Name = w.T("reallife_hier_do_dismiss", "Dismiss"), Button = w.T("reallife_hier_do_dismiss", "Dismiss"), Note = w.T("reallife_co_q_nocost_note", "no cost"), Act = CompanyAct.Of(CompanyDo.Dismiss, null, e.Id),
+                Name = w.T("reallife_hier_do_dismiss", "Dismiss"), Button = w.T("reallife_hier_do_dismiss", "Dismiss"), Note = w.T("reallife_co_q_nocost_note",
+                    "no cost"), Act = CompanyAct.Of(CompanyDo.Dismiss, null, e.Id),
                 Lines = new[] { new CompanyConsequence { Text = w.T("reallife_co_q_dismiss_line", "It comes back if it stays true"), Tone = 0, Change = 0 } }
             };
         }

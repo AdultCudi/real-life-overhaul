@@ -29,7 +29,8 @@ namespace RealLifeOverhaul.Ui
             UiDraw.JoinColumns(s, x, x + lw, x + cw, -1);
             if (p == null)
             {
-                UiDraw.EmptyState(s, at, mx, y, mw, bottom - y, UiIcon.Calendar, w.T("reallife_rota_pick_title", "No place picked"), w.T("reallife_rota_pick_body", "Pick a place at the left to plan its week."), null, -1, keys);
+                UiDraw.EmptyState(s, at, mx, y, mw, bottom - y, UiIcon.Calendar, w.T("reallife_rota_pick_title", "No place picked"), w.T("reallife_rota_pick_body",
+                    "Pick a place at the left to plan its week."), null, -1, keys);
                 return;
             }
             int sub = v.Sub[CompanyView.Rota];
@@ -105,7 +106,8 @@ namespace RealLifeOverhaul.Ui
                     rw += UiDraw.ButtonWidth(UiButtonKind.Chip, p.RepeatOptions[i], UiIcon.None, UiAction.Count, null) + (i > 0 ? UiTokens.S2 : 0f);
                 }
                 string repeats = w.T("reallife_rota_repeats", "Repeats");
-                UiDraw.TextMiddle(s, at, fx, cy, UiTokens.PairRow, Math.Max(rw, UiDraw.Snap(UiTextRules.Width(repeats, UiStyle.SectionHeader) * 1.2f)), UiStyle.SectionHeader, UiRole.Muted, repeats, UiFlags.Label | UiFlags.Truncate);
+                UiDraw.TextMiddle(s, at, fx, cy, UiTokens.PairRow, Math.Max(rw, UiDraw.Snap(UiTextRules.Width(repeats, UiStyle.SectionHeader) * 1.2f)), UiStyle.SectionHeader, UiRole.Muted, repeats,
+                    UiFlags.Label | UiFlags.Truncate);
                 float ox = fx;
                 for (int i = 0; i < p.RepeatOptions.Length; i++)
                 {
@@ -126,7 +128,8 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Stepper(s, at, fx, cy + UiTokens.PairRow, sw, p.HoursValue, p.HoursLess, p.HoursMore, StepLess, StepType, StepMore, first, false);
                 fx += sw + UiTokens.S5;
                 string overtime = w.T("reallife_rota_overtime", "Overtime");
-                float ow = Math.Max(UiDraw.Snap(UiTextRules.Width(overtime, UiStyle.SectionHeader) * 1.2f + UiTokens.S1), SwitchWidth(p.Overtime ? w.T("reallife_co_on", "On") : w.T("reallife_co_off", "Off")));
+                float ow = Math.Max(UiDraw.Snap(UiTextRules.Width(overtime, UiStyle.SectionHeader) * 1.2f + UiTokens.S1), SwitchWidth(p.Overtime ? w.T("reallife_co_on", "On")
+                    : w.T("reallife_co_off", "Off")));
                 UiDraw.TextMiddle(s, at, fx, cy, UiTokens.PairRow, ow, UiStyle.SectionHeader, UiRole.Muted, overtime, UiFlags.Label | UiFlags.Truncate);
                 int oi = lay.Add(new CompanyButton { Label = overtime, Act = p.OvertimeAct });
                 UiDraw.Switch(s, at, fx, cy + UiTokens.PairRow, ow, p.Overtime, p.Overtime ? w.T("reallife_co_on", "On") : w.T("reallife_co_off", "Off"), Act, oi, false);
@@ -173,11 +176,14 @@ namespace RealLifeOverhaul.Ui
             {
                 string name = d < p.DayNames.Length ? p.DayNames[d] : string.Empty;
                 float dx = x + personW + d * dayW;
-                int face = UiDraw.Box(s, at, dx + UiTokens.S1, cy, dayW - UiTokens.S2, UiTokens.Chip, d == p.Day ? UiRole.Accent : UiRole.None, UiRole.None, UiTokens.RadiusLarge, d == p.Day ? UiFlags.Selected : UiFlags.None);
-                UiDraw.TextMiddle(s, at.In(face), dx + UiTokens.S1, cy, UiTokens.Chip, dayW - UiTokens.S2, UiStyle.SectionHeader, d == p.Day ? UiRole.OnAccent : UiRole.Muted, name, UiFlags.Centre | UiFlags.Label | UiFlags.Truncate);
+                int face = UiDraw.Box(s, at, dx + UiTokens.S1, cy, dayW - UiTokens.S2, UiTokens.Chip, d == p.Day ? UiRole.Accent : UiRole.None, UiRole.None, UiTokens.RadiusLarge, d == p.Day
+                    ? UiFlags.Selected : UiFlags.None);
+                UiDraw.TextMiddle(s, at.In(face), dx + UiTokens.S1, cy, UiTokens.Chip, dayW - UiTokens.S2, UiStyle.SectionHeader, d == p.Day ? UiRole.OnAccent : UiRole.Muted, name,
+                    UiFlags.Centre | UiFlags.Label | UiFlags.Truncate);
                 UiDraw.Node(s, at, dx + UiTokens.S1, cy, dayW - UiTokens.S2, UiTokens.Chip, DayHead, d, face);
             }
-            UiDraw.TextMiddle(s, at, x + personW + dayW * 7f, cy, UiTokens.Chip, hoursW, UiStyle.SectionHeader, UiRole.Muted, w.T("reallife_rota_hours", "Hours"), UiFlags.Label | UiFlags.Right | UiFlags.Truncate);
+            UiDraw.TextMiddle(s, at, x + personW + dayW * 7f, cy, UiTokens.Chip, hoursW, UiStyle.SectionHeader, UiRole.Muted, w.T("reallife_rota_hours", "Hours"),
+                UiFlags.Label | UiFlags.Right | UiFlags.Truncate);
             cy += UiTokens.Chip + UiTokens.S2;
             float footer = UiTokens.PairRow + UiTokens.S2 + UiTokens.Control * 2f + UiTokens.S4;
             int fit = (int)Math.Max(1f, Math.Floor((bottom - cy - footer) / GridRow));
@@ -205,12 +211,14 @@ namespace RealLifeOverhaul.Ui
                     int face = UiDraw.Box(s, at, dx, dy, dw, dh, warn ? UiRole.WarnSoft : d == p.Day ? UiRole.RowSel : UiRole.Row, UiRole.None, UiTokens.RadiusLarge, UiFlags.None);
                     UiDraw.TextMiddle(s, at.In(face), dx, dy, dh, dw, UiStyle.SmallStrong, warn ? UiRole.WarnText : UiRole.Text, shift, UiFlags.Centre | UiFlags.Truncate);
                 }
-                UiDraw.TextMiddle(s, at, x + personW + dayW * 7f, cy, GridRow, hoursW, UiStyle.BodyStrong, pr.HoursTone == UiRole.None ? UiRole.Text : pr.HoursTone, pr.Hours ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
+                UiDraw.TextMiddle(s, at, x + personW + dayW * 7f, cy, GridRow, hoursW, UiStyle.BodyStrong, pr.HoursTone == UiRole.None ? UiRole.Text : pr.HoursTone, pr.Hours ?? string.Empty,
+                    UiFlags.Right | UiFlags.Truncate);
                 cy += GridRow;
             }
             if (shown < p.People.Length)
             {
-                UiDraw.TextMiddle(s, at, x, cy, UiTokens.PairRow, width, UiStyle.Small, UiRole.Muted, w.F("reallife_co_and_more", "and {count} more", "count", (p.People.Length - shown).ToString()), UiFlags.Truncate);
+                UiDraw.TextMiddle(s, at, x, cy, UiTokens.PairRow, width, UiStyle.Small, UiRole.Muted, w.F("reallife_co_and_more", "and {count} more", "count", (p.People.Length - shown).ToString()),
+                    UiFlags.Truncate);
                 cy += UiTokens.PairRow;
             }
             // The day's hours, and the total.
@@ -230,7 +238,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     UiDraw.Text(s, at, x + i * slot, cy, slot - UiTokens.S3, UiStyle.Small, UiRole.Text2, p.SummaryLabels[i], UiFlags.Label | UiFlags.Truncate);
                     UiRole tone = i < p.SummaryTones.Length && p.SummaryTones[i] != UiRole.None ? p.SummaryTones[i] : UiRole.Text;
-                    UiDraw.Text(s, at, x + i * slot, cy + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S1, slot - UiTokens.S3, UiStyle.Title, tone, p.SummaryValues[i], UiFlags.Truncate);
+                    UiDraw.Text(s, at, x + i * slot, cy + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S1, slot - UiTokens.S3, UiStyle.Title, tone, p.SummaryValues[i],
+                        UiFlags.Truncate);
                 }
                 cy += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)) + UiTokens.S3;
             }
@@ -284,7 +293,8 @@ namespace RealLifeOverhaul.Ui
                     float tx = trackX + trackW * p.Needed[i] / most;
                     UiDraw.Box(s, at, tx - 1f, by - UiTokens.S1, 2f, bh + UiTokens.S2, UiRole.Text, UiRole.None, 0f, UiFlags.Decor | UiFlags.Share);
                 }
-                UiDraw.TextMiddle(s, at, x + width - figW, cy, HourRow, figW, UiStyle.SmallStrong, shortHere ? UiRole.DangerText : UiRole.Text, p.OnShift[i] + "/" + p.Needed[i], UiFlags.Right | UiFlags.Truncate);
+                UiDraw.TextMiddle(s, at, x + width - figW, cy, HourRow, figW, UiStyle.SmallStrong, shortHere ? UiRole.DangerText : UiRole.Text, p.OnShift[i] + "/" + p.Needed[i],
+                    UiFlags.Right | UiFlags.Truncate);
                 cy += HourRow;
             }
             if (p.Legend.Length > 0)
@@ -305,8 +315,10 @@ namespace RealLifeOverhaul.Ui
                         break;
                     }
                     UiRole dot = i == 0 ? UiRole.Accent : i == 1 ? UiRole.Danger : UiRole.Text;
-                    UiDraw.Box(s, at, lx, cy + (UiTokens.PairRow - UiTokens.StatusDot) / 2f, i == 2 ? 2f : UiTokens.StatusDot, UiTokens.StatusDot, dot, UiRole.None, UiTokens.RadiusSmall, UiFlags.Decor);
-                    UiDraw.TextMiddle(s, at, lx + UiTokens.StatusDot + UiTokens.S2, cy, UiTokens.PairRow, Math.Min(lw, x + width - (lx + UiTokens.StatusDot + UiTokens.S2)), UiStyle.Small, UiRole.Text2, p.Legend[i], UiFlags.Truncate);
+                    UiDraw.Box(s, at, lx, cy + (UiTokens.PairRow - UiTokens.StatusDot) / 2f, i == 2 ? 2f : UiTokens.StatusDot, UiTokens.StatusDot, dot, UiRole.None, UiTokens.RadiusSmall,
+                        UiFlags.Decor);
+                    UiDraw.TextMiddle(s, at, lx + UiTokens.StatusDot + UiTokens.S2, cy, UiTokens.PairRow, Math.Min(lw, x + width - (lx + UiTokens.StatusDot + UiTokens.S2)), UiStyle.Small,
+                        UiRole.Text2, p.Legend[i], UiFlags.Truncate);
                     lx += need + UiTokens.S3;
                 }
             }
@@ -352,8 +364,10 @@ namespace RealLifeOverhaul.Ui
                     UiDraw.TextMiddle(s, inside, x + UiTokens.S4, top + th + sh, sh, tw, UiStyle.Small, UiRole.OkText, r.Gain, UiFlags.Truncate);
                 }
                 float fx = x + width - UiTokens.S4 - bw - UiTokens.S3 - UiDraw.Snap(UiTextRules.Width(r.Hours ?? string.Empty, UiStyle.BodyStrong) + UiTokens.S4);
-                UiDraw.TextMiddle(s, inside, fx, top, th, UiDraw.Snap(UiTextRules.Width(r.Hours ?? string.Empty, UiStyle.BodyStrong) + UiTokens.S4), UiStyle.BodyStrong, UiRole.Text, r.Hours ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
-                UiDraw.TextMiddle(s, inside, fx, top + th, sh, UiDraw.Snap(UiTextRules.Width(r.Hours ?? string.Empty, UiStyle.BodyStrong) + UiTokens.S4), UiStyle.Small, UiRole.Muted, r.Net ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
+                UiDraw.TextMiddle(s, inside, fx, top, th, UiDraw.Snap(UiTextRules.Width(r.Hours ?? string.Empty, UiStyle.BodyStrong) + UiTokens.S4), UiStyle.BodyStrong, UiRole.Text, r.Hours
+                    ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
+                UiDraw.TextMiddle(s, inside, fx, top + th, sh, UiDraw.Snap(UiTextRules.Width(r.Hours ?? string.Empty, UiStyle.BodyStrong) + UiTokens.S4), UiStyle.Small, UiRole.Muted, r.Net
+                    ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
                 if (bw > 0f)
                 {
                     Button(s, inside, lay, v, ref use, x + width - UiTokens.S4 - bw, cy + (rowH - UiTokens.Control) / 2f, bw, keys);

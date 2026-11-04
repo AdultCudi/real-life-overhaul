@@ -101,7 +101,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>The row the k-th stop is (the stops are what the keys walk); -1 past the last.</summary>
-        public static int RowOfStop(UiOrgTreeModel m, int stop)
+        private static int RowOfStop(UiOrgTreeModel m, int stop)
         {
             int k = 0;
             for (int i = 0; i < m.Nodes.Length; i++)
@@ -115,7 +115,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>The stop a row is, or -1 for a row that is none.</summary>
-        public static int StopOfRow(UiOrgTreeModel m, int row)
+        private static int StopOfRow(UiOrgTreeModel m, int row)
         {
             int k = 0;
             for (int i = 0; i < m.Nodes.Length && i <= row; i++)

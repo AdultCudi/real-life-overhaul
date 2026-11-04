@@ -101,8 +101,10 @@ namespace RealLifeOverhaul.Ui
                 UiAt band = Band(s, at, x, cy, lw, h);
                 UiDraw.Icon(s, band, x + UiTokens.S5, cy + UiTokens.S5, UiTokens.IconTile, UiIcon.Check, UiRole.None, UiFlags.Middle, true);
                 float tx = x + UiTokens.S5 + UiTokens.IconTile + UiTokens.S4, tw = lw - UiTokens.S5 * 2f - UiTokens.IconTile - UiTokens.S4;
-                UiDraw.TextMiddle(s, band, tx, cy + UiTokens.S5, UiTokens.IconTile, tw, UiStyle.Title, UiRole.Text, w.T("reallife_co_quiet_title", "Nothing is waiting for you"), UiFlags.Label | UiFlags.Truncate);
-                Sentence(s, band, w.T("reallife_co_quiet_body", "A manager's question, a licence about to run out, a gap in the rota or a claim to put in comes here first."), tx, cy + UiTokens.S5 + UiTokens.IconTile + UiTokens.S1, tw, UiRole.Text2, 4);
+                UiDraw.TextMiddle(s, band, tx, cy + UiTokens.S5, UiTokens.IconTile, tw, UiStyle.Title, UiRole.Text, w.T("reallife_co_quiet_title", "Nothing is waiting for you"),
+                    UiFlags.Label | UiFlags.Truncate);
+                Sentence(s, band, w.T("reallife_co_quiet_body", "A manager's question, a licence about to run out, a gap in the rota or a claim to put in comes here first."), tx, cy + UiTokens.S5
+                    + UiTokens.IconTile + UiTokens.S1, tw, UiRole.Text2, 4);
                 cy += h + UiTokens.S5;
             }
             int doneWant = o.Done.Length;
@@ -170,7 +172,8 @@ namespace RealLifeOverhaul.Ui
             string open = UiTextRules.Cut(row.OpenLabel ?? string.Empty, UiStyle.BodyStrong, openW - UiTokens.IconSmall - UiTokens.S1);
             float ow = UiTextRules.Width(open, UiStyle.BodyStrong);
             UiDraw.TextMiddle(s, inside, x + w - UiTokens.IconSmall - UiTokens.S1 - ow, y, WaitingRow, ow + UiTokens.S1, UiStyle.BodyStrong, UiRole.AccentText, open, UiFlags.Right);
-            UiDraw.Icon(s, inside, x + w - UiTokens.IconSmall, y + (WaitingRow - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Next, UiRole.AccentText, UiFlags.Middle | UiFlags.Share | UiFlags.Decor);
+            UiDraw.Icon(s, inside, x + w - UiTokens.IconSmall, y + (WaitingRow - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Next, UiRole.AccentText,
+                UiFlags.Middle | UiFlags.Share | UiFlags.Decor);
             UiDraw.Node(s, at, x - UiTokens.S2, y, w + UiTokens.S4, WaitingRow, Act, index, face);
             return WaitingRow;
         }
@@ -207,10 +210,12 @@ namespace RealLifeOverhaul.Ui
             float money = 0f;
             for (int i = 0; i < o.Businesses.Length; i++)
             {
-                money = Math.Max(money, Math.Max(UiTextRules.Width(o.Businesses[i].Takings ?? string.Empty, UiStyle.Body), Math.Max(UiTextRules.Width(o.Businesses[i].Costs ?? string.Empty, UiStyle.Body),
+                money = Math.Max(money, Math.Max(UiTextRules.Width(o.Businesses[i].Takings ?? string.Empty, UiStyle.Body), Math.Max(UiTextRules.Width(o.Businesses[i].Costs ?? string.Empty,
+                    UiStyle.Body),
                     UiTextRules.Width(o.Businesses[i].Result ?? string.Empty, UiStyle.BodyStrong))));
             }
-            money = Math.Max(money, Math.Max(UiTextRules.Width(o.TotalTakings ?? string.Empty, UiStyle.BodyStrong), Math.Max(UiTextRules.Width(o.TotalCosts ?? string.Empty, UiStyle.BodyStrong), UiTextRules.Width(o.TotalResult ?? string.Empty, UiStyle.BodyStrong))));
+            money = Math.Max(money, Math.Max(UiTextRules.Width(o.TotalTakings ?? string.Empty, UiStyle.BodyStrong), Math.Max(UiTextRules.Width(o.TotalCosts ?? string.Empty, UiStyle.BodyStrong),
+                UiTextRules.Width(o.TotalResult ?? string.Empty, UiStyle.BodyStrong))));
             string c1 = w.T("reallife_co_col_takings", "Takings"), c2 = w.T("reallife_co_col_costs", "Costs"), c3 = w.T("reallife_co_col_result", "Result");
             float heads = Math.Max(UiTextRules.Width(c1, UiStyle.SectionHeader), Math.Max(UiTextRules.Width(c2, UiStyle.SectionHeader), UiTextRules.Width(c3, UiStyle.SectionHeader))) * 1.2f;
             float colW = UiDraw.Snap(Math.Max(money, heads) + UiTokens.S3);
@@ -225,7 +230,8 @@ namespace RealLifeOverhaul.Ui
             UiDraw.TextMiddle(s, at, x + nameW + UiTokens.S3 + colW, cy, UiTokens.PairRow, colW, UiStyle.SectionHeader, UiRole.Muted, c2, UiFlags.Label | UiFlags.Right | UiFlags.Truncate);
             UiDraw.TextMiddle(s, at, x + nameW + UiTokens.S3 + colW * 2f, cy, UiTokens.PairRow, colW, UiStyle.SectionHeader, UiRole.Muted, c3, UiFlags.Label | UiFlags.Right | UiFlags.Truncate);
             cy += UiTokens.PairRow + UiTokens.S1;
-            float below = UiTokens.PairRow * 3f + UiTokens.S6 * 2f + (o.CostLabels.Length + 1) * UiTokens.PairRow + (o.Managers.Length > 0 ? PersonRow * Math.Min(3, o.Managers.Length) : UiTokens.Control);
+            float below = UiTokens.PairRow * 3f + UiTokens.S6 * 2f + (o.CostLabels.Length + 1) * UiTokens.PairRow + (o.Managers.Length > 0 ? PersonRow * Math.Min(3, o.Managers.Length)
+                : UiTokens.Control);
             int fit = (int)Math.Max(1f, Math.Floor((bottom - cy - TableRow - below) / TableRow));
             int shown = Math.Min(o.Businesses.Length, fit);
             for (int i = 0; i < shown; i++)
@@ -240,7 +246,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     UiDraw.TextMiddle(s, inside, x + nameW + UiTokens.S3, cy, TableRow, colW, UiStyle.Body, UiRole.Text, b.Takings ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
                     UiDraw.TextMiddle(s, inside, x + nameW + UiTokens.S3 + colW, cy, TableRow, colW, UiStyle.Body, UiRole.Text, b.Costs ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
-                    UiDraw.TextMiddle(s, inside, x + nameW + UiTokens.S3 + colW * 2f, cy, TableRow, colW, UiStyle.BodyStrong, ToneInk(b.ResultTone), b.Result ?? string.Empty, UiFlags.Right | UiFlags.Truncate);
+                    UiDraw.TextMiddle(s, inside, x + nameW + UiTokens.S3 + colW * 2f, cy, TableRow, colW, UiStyle.BodyStrong, ToneInk(b.ResultTone), b.Result ?? string.Empty,
+                        UiFlags.Right | UiFlags.Truncate);
                 }
                 else
                 {
@@ -251,7 +258,8 @@ namespace RealLifeOverhaul.Ui
             }
             if (shown < o.Businesses.Length)
             {
-                UiDraw.TextMiddle(s, at, x + BadgeMark + UiTokens.S3, cy, UiTokens.PairRow, rw, UiStyle.Small, UiRole.Muted, w.F("reallife_co_and_more", "and {count} more", "count", (o.Businesses.Length - shown).ToString()), UiFlags.Truncate);
+                UiDraw.TextMiddle(s, at, x + BadgeMark + UiTokens.S3, cy, UiTokens.PairRow, rw, UiStyle.Small, UiRole.Muted, w.F("reallife_co_and_more", "and {count} more", "count",
+                    (o.Businesses.Length - shown).ToString()), UiFlags.Truncate);
                 cy += UiTokens.PairRow;
             }
             if (!string.IsNullOrEmpty(o.TotalResult))
@@ -281,7 +289,8 @@ namespace RealLifeOverhaul.Ui
             // The managers today.
             if (bottom - cy >= UiTokens.PairRow + PersonRow)
             {
-                CompanyButton all = new CompanyButton { Label = w.F("reallife_co_all_count", "All {count}", "count", o.Managers.Length.ToString()), Act = CompanyAct.Of(CompanyDo.Go, null, CompanyView.Managers) };
+                CompanyButton all = new CompanyButton { Label = w.F("reallife_co_all_count", "All {count}", "count", o.Managers.Length.ToString()), Act = CompanyAct.Of(CompanyDo.Go, null,
+                    CompanyView.Managers) };
                 cy = Section(s, at, lay, x, cy, rw, w.T("reallife_co_managers_today", "Managers today"), null, o.Managers.Length > 0 ? all : (CompanyButton?)null);
                 if (o.Managers.Length == 0)
                 {

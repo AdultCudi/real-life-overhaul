@@ -23,7 +23,8 @@ namespace RealLifeOverhaul.Economy
             long stamp = (long)Today * 1000003L + TaxRules.CostsSum(t) * 31L + t.Reserve * 7L + t.YearTax + (long)t.Quarter * 13L;
             if (stamp != _quarterStamp)
             {
-                int to = Today - 1, takings = Today > t.QuarterFrom ? CompanyGame.Sales(t.QuarterFrom, to) + (CompanyBridges.OtherIncome != null ? CompanyBridges.OtherIncome(t.QuarterFrom, to) : 0) : 0;
+                int to = Today - 1, takings = Today > t.QuarterFrom ? CompanyGame.Sales(t.QuarterFrom, to) + (CompanyBridges.OtherIncome != null ? CompanyBridges.OtherIncome(t.QuarterFrom, to) : 0)
+                    : 0;
                 _quarterFigures = TaxRules.Quarter(t, takings, CompanyGame.TaxPercent);
                 _quarterStamp = stamp;
             }

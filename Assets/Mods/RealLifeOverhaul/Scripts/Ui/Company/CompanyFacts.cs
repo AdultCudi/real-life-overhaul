@@ -312,4 +312,13 @@ namespace RealLifeOverhaul.Ui
         public CompanyCard Top;                 // a summary card over the list's page when nothing is picked (counts, the sick pay choice, the market note)
         public string Lead, LeadTitle;          // the page's own lead line (what needs the owner here)
     }
+
+    /// <summary>Everything the Company app can show, as plain data: the header here (whether it runs, the company's name and mark, the sidebar's counts); the pages in CompanyFacts.Pages.cs.</summary>
+    public sealed partial class CompanyFacts
+    {
+        public bool Ready;                      // the feature runs and a save is loaded
+        public string OffTitle, OffBody;
+        public string Name, Mark;               // the company's name, its initials on the mark
+        public string[] Counts = new string[CompanyView.Tabs];   // the sidebar's counts, null for none
+    }
 }

@@ -2,7 +2,8 @@ using System;
 
 namespace RealLifeOverhaul.Ui
 {
-    /// <summary>The words the Company app writes with: a key's text in the game's language (the English given is what the offline checks and the previews read while a key is new), names filled in, and money in the game's form.</summary>
+    /// <summary>The words the Company app writes with: a key's text in the game's language (the English given is what the offline checks and the previews read while a key is new), names filled in,
+    /// and money in the game's form.</summary>
     public sealed class CompanyWords
     {
         private readonly UiWords _words;

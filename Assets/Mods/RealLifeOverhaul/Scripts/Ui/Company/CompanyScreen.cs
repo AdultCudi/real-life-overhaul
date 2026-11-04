@@ -2,13 +2,15 @@ using System;
 
 namespace RealLifeOverhaul.Ui
 {
-    /// <summary>The Company app's source: it reads the director into the facts for the view's choices, and does what an action stands for. Implemented by the live source (CompanyLive) and by the checks' fakes.</summary>
+    /// <summary>The Company app's source: it reads the director into the facts for the view's choices, and does what an action stands for. Implemented by the live source (CompanyLive) and by the
+    /// checks' fakes.</summary>
     public interface ICompanySource
     {
         /// <summary>A number that changes when the company's state does, so the screen reads again only then.</summary>
         int Generation { get; }
 
-        /// <summary>A place in the app another part of the game asked for (a notification's press): the tab, what is picked on it, its sub page, what is picked in that and a question to open as a card (0 for none), taken once; false for none.</summary>
+        /// <summary>A place in the app another part of the game asked for (a notification's press): the tab, what is picked on it, its sub page, what is picked in that and a question to open as a
+        /// card (0 for none), taken once; false for none.</summary>
         bool TakeWanted(out int tab, out string pick, out int sub, out string subPick, out int question);
 
         /// <summary>The app has been opened since the last read: its sub pages and open question start from the tab as left.</summary>

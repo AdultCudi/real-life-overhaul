@@ -212,12 +212,8 @@ namespace RealLifeOverhaul.Ui
     }
 
     /// <summary>Everything the Company app can show, as plain data. Only the tab in view is filled; the rest stay as reset.</summary>
-    public sealed class CompanyFacts
+    public sealed partial class CompanyFacts
     {
-        public bool Ready;                      // the feature runs and a save is loaded
-        public string OffTitle, OffBody;
-        public string Name, Mark;               // the company's name, its initials on the mark
-        public string[] Counts = new string[CompanyView.Tabs];   // the sidebar's counts, null for none
         public CompanyOverviewFacts Overview = new CompanyOverviewFacts();
         public CompanyPage Staff = new CompanyPage();
         public CompanyManagersFacts Managers = new CompanyManagersFacts();

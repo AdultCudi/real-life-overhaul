@@ -43,7 +43,8 @@ namespace RealLifeOverhaul.Ui
             if (m.Profile == null)
             {
                 UiDraw.EmptyState(s, at, px, y, pw, bottom - y, UiIcon.IdBadge, w.T("reallife_co_mgr_none_title", "Nobody picked"),
-                    string.IsNullOrEmpty(m.Empty) ? w.T("reallife_co_mgr_none_body", "Pick a person in the tree to see what they decide, what they may spend and how they are doing.") : m.Empty, null, -1, keys);
+                    string.IsNullOrEmpty(m.Empty) ? w.T("reallife_co_mgr_none_body", "Pick a person in the tree to see what they decide, what they may spend and how they are doing.")
+                        : m.Empty, null, -1, keys);
                 return;
             }
             ProfilePage(s, at.InRegion(RegionMain), m.Profile, v, w, lay, px, y, pw, bottom, keys);
@@ -124,7 +125,8 @@ namespace RealLifeOverhaul.Ui
                     CompanyLimit l = p.Limits[i];
                     var b = new CompanyBlock
                     {
-                        Kind = CompanyBlockKind.Stepper, Text = l.Title, Sub = l.Sub, Value = l.Value, CanLess = l.CanLess, CanMore = l.CanMore, Disabled = l.Disabled, Why = l.Why, Act = l.Less, Act2 = l.More,
+                        Kind = CompanyBlockKind.Stepper, Text = l.Title, Sub = l.Sub, Value = l.Value, CanLess = l.CanLess, CanMore = l.CanMore, Disabled = l.Disabled, Why = l.Why, Act = l.Less,
+                            Act2 = l.More,
                         Act3 = l.Typed
                     };
                     ly = Block(s, at, lay, v, w, b, x, ly, c1w, bottom, keys);
@@ -176,7 +178,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     ref CompanyItem it = ref p.Crew[i];
                     int face = UiDraw.Box(s, at, c2x, ry, c2w, ListRow, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
-                    RowFace(s, at.In(face), c2x, ry, c2w, ListRow, it.Title, it.Sub, it.Figure, it.Note, it.Chip, it.ChipTone, it.FigureTone, it.Icon, it.Tint, true, it.Hue, it.Ring, it.Grade, false, false);
+                    RowFace(s, at.In(face), c2x, ry, c2w, ListRow, it.Title, it.Sub, it.Figure, it.Note, it.Chip, it.ChipTone, it.FigureTone, it.Icon, it.Tint, true, it.Hue, it.Ring, it.Grade,
+                        false, false);
                     if (it.Press && it.Act.Do != CompanyDo.None)
                     {
                         int index = lay.Add(new CompanyButton { Label = it.Title, Act = it.Act });

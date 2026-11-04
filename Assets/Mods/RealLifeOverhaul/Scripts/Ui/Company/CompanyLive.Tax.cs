@@ -51,9 +51,11 @@ namespace RealLifeOverhaul.Ui
                     ManagedPlace mp = d.ManagersOn ? d.ManagedAt(shops[i].File.Place) : null;
                     var row = new CompanyLicence
                     {
-                        Id = "lic:" + shops[i].File.Place + ":" + k, Icon = LicenceIcons[Math.Min(k, LicenceIcons.Length - 1)], Name = CompanyText.Capital(CompanyText.Licence(k)), Place = shops[i].Name,
+                        Id = "lic:" + shops[i].File.Place + ":" + k, Icon = LicenceIcons[Math.Min(k,
+                            LicenceIcons.Length - 1)], Name = CompanyText.Capital(CompanyText.Licence(k)), Place = shops[i].Name,
                         Manager = mp != null && mp.Own != null ? mp.Own.Name : null, ManagerHue = mp != null && mp.Own != null ? UiColour.HueOf(mp.Own.Name) : 0f,
-                        State = CompanyText.T(pending ? "reallife_co_row_lic_pending" : !valid ? "reallife_co_row_lic_missing" : l.Auto ? "reallife_co_row_lic_auto" : soon ? "reallife_co_row_lic_soon" : "reallife_co_row_lic_valid"),
+                        State = CompanyText.T(pending ? "reallife_co_row_lic_pending" : !valid ? "reallife_co_row_lic_missing" : l.Auto ? "reallife_co_row_lic_auto" : soon
+                            ? "reallife_co_row_lic_soon" : "reallife_co_row_lic_valid"),
                         StateTone = pending ? UiRole.Warn : !valid ? UiRole.Danger : soon && !l.Auto ? UiRole.Warn : UiRole.Ok,
                         Day = valid ? CompanyText.Day(l.Until) : pending ? CompanyText.Day(l.Decide) : null,
                         Open = CompanyAct.Of(CompanyDo.Go, "lic:" + shops[i].File.Place + ":" + k, CompanyView.Tax, CompanyView.SubLicence)
@@ -61,14 +63,16 @@ namespace RealLifeOverhaul.Ui
                     if (!pending && (!valid || (soon && !l.Auto)))
                     {
                         row.HasAction = true;
-                        row.Action = Btn(CompanyText.T(valid ? "reallife_co_lic_renew" : "reallife_co_lic_buy"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.LicenceBuy, shops[i].File.Place, k), UiAction.Count, UiIcon.Check);
+                        row.Action = Btn(CompanyText.T(valid ? "reallife_co_lic_renew" : "reallife_co_lic_buy"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.LicenceBuy, shops[i].File.Place, k),
+                            UiAction.Count, UiIcon.Check);
                     }
                     lic.Add(row);
                     if (valid && l.Until - day <= 14)
                     {
                         coming.Add(new KeyValuePair<int, CompanyDone>(l.Until, new CompanyDone
                         {
-                            When = CompanyText.Day(l.Until), Text = CompanyText.T("reallife_co_coming_licence", "licence", CompanyText.Licence(k), "business", shops[i].Name), Money = l.Auto ? CompanyText.Money(LicenceRules.Fee(k, d.Index)) : null,
+                            When = CompanyText.Day(l.Until), Text = CompanyText.T("reallife_co_coming_licence", "licence", CompanyText.Licence(k), "business", shops[i].Name), Money = l.Auto
+                                ? CompanyText.Money(LicenceRules.Fee(k, d.Index)) : null,
                             Tone = l.Auto ? -1 : 0, Open = CompanyAct.Of(CompanyDo.Go, "lic:" + shops[i].File.Place + ":" + k, CompanyView.Tax, CompanyView.SubLicence)
                         }));
                     }
@@ -90,16 +94,20 @@ namespace RealLifeOverhaul.Ui
             // The quarter so far, the reserve and the returns.
             TaxRules.QuarterFigures q = d.QuarterNow();
             t.QuarterTitle = w.T("reallife_co_quarter_so_far", "This quarter so far");
-            t.QuarterRange = w.F("reallife_co_quarter_range", "Q{quarter}, day {from} to {to}", "quarter", tf.Quarter.ToString(), "from", tf.QuarterFrom.ToString(), "to", (tf.QuarterFrom + d.QuarterDays - 1).ToString());
+            t.QuarterRange = w.F("reallife_co_quarter_range", "Q{quarter}, day {from} to {to}", "quarter", tf.Quarter.ToString(), "from", tf.QuarterFrom.ToString(), "to", (tf.QuarterFrom
+                + d.QuarterDays - 1).ToString());
             bool noTakings = day <= tf.QuarterFrom;
             var lines = new List<CompanyStatementLine>(8)
             {
                 new CompanyStatementLine { Label = w.T("reallife_co_q_takings", "Takings"), Value = noTakings ? w.T("reallife_co_q_not_yet", "Not yet") : CompanyText.Money(q.Takings) },
                 new CompanyStatementLine { Label = w.T("reallife_co_q_costs", "Costs that count"), Value = CompanyText.Money(q.Costs) },
-                new CompanyStatementLine { Label = w.T("reallife_co_q_taxable", "Taxable profit"), Value = noTakings ? w.T("reallife_co_q_not_yet", "Not yet") : CompanyText.Money(q.Taxable), Strong = true },
-                new CompanyStatementLine { Label = w.F("reallife_co_q_tax", "Business tax at {percent}%", "percent", q.Percent.ToString()), Value = noTakings ? w.T("reallife_co_q_not_yet", "Not yet") : CompanyText.Money(q.Tax) },
+                new CompanyStatementLine { Label = w.T("reallife_co_q_taxable", "Taxable profit"), Value = noTakings ? w.T("reallife_co_q_not_yet", "Not yet") : CompanyText.Money(q.Taxable),
+                    Strong = true },
+                new CompanyStatementLine { Label = w.F("reallife_co_q_tax", "Business tax at {percent}%", "percent", q.Percent.ToString()), Value = noTakings ? w.T("reallife_co_q_not_yet",
+                    "Not yet") : CompanyText.Money(q.Tax) },
                 new CompanyStatementLine { Label = w.T("reallife_co_q_set_aside", "Set aside"), Value = CompanyText.Money(q.Reserve) },
-                new CompanyStatementLine { Label = w.T("reallife_co_q_still", "Still to set aside"), Value = CompanyText.Money(q.Still), Strong = true, Tone = q.Still > 0 ? UiRole.WarnText : UiRole.OkText }
+                new CompanyStatementLine { Label = w.T("reallife_co_q_still", "Still to set aside"), Value = CompanyText.Money(q.Still), Strong = true, Tone = q.Still > 0 ? UiRole.WarnText
+                    : UiRole.OkText }
             };
             t.Quarter = lines.ToArray();
             ReserveFacts(t, d, v, w, q, tf);
@@ -118,7 +126,8 @@ namespace RealLifeOverhaul.Ui
             {
                 coming.Add(new KeyValuePair<int, CompanyDone>(tf.QuarterFrom + d.QuarterDays, new CompanyDone
                 {
-                    When = CompanyText.Day(tf.QuarterFrom + d.QuarterDays), Text = CompanyText.T("reallife_co_coming_quarter", "quarter", tf.Quarter.ToString()), Open = CompanyAct.Of(CompanyDo.Go, "ret", CompanyView.Tax, CompanyView.SubReturn)
+                    When = CompanyText.Day(tf.QuarterFrom + d.QuarterDays), Text = CompanyText.T("reallife_co_coming_quarter", "quarter", tf.Quarter.ToString()), Open = CompanyAct.Of(CompanyDo.Go,
+                        "ret", CompanyView.Tax, CompanyView.SubReturn)
                 }));
             }
             if (d.ReserveChief != null && tf.ReserveAuto && q.Still > 0)
@@ -160,7 +169,8 @@ namespace RealLifeOverhaul.Ui
                 new CompanyItem
                 {
                     Title = CompanyText.T("reallife_co_row_return"), Sub = CompanyText.T("reallife_co_row_quarter", "quarter", (tf.ReturnWaiting ? tf.ReturnQuarter : tf.Quarter).ToString()),
-                    Chip = CompanyText.T(late ? "reallife_co_row_return_late" : tf.ReturnWaiting ? "reallife_co_row_return_due" : "reallife_co_row_return_running"), ChipTone = late ? UiRole.Danger : tf.ReturnWaiting ? UiRole.Warn : UiRole.Muted,
+                    Chip = CompanyText.T(late ? "reallife_co_row_return_late" : tf.ReturnWaiting ? "reallife_co_row_return_due" : "reallife_co_row_return_running"), ChipTone = late ? UiRole.Danger
+                        : tf.ReturnWaiting ? UiRole.Warn : UiRole.Muted,
                     Press = true, Act = CompanyAct.Of(CompanyDo.Go, "ret", CompanyView.Tax, CompanyView.SubReturn)
                 },
                 new CompanyItem
@@ -220,13 +230,16 @@ namespace RealLifeOverhaul.Ui
             {
                 new CompanyBlock
                 {
-                    Kind = CompanyBlockKind.Stepper, Text = w.T("reallife_co_reserve_amount", "Set aside"), Sub = w.F("reallife_co_reserve_cash", "{amount} in the cash", "amount", CompanyText.Money(cash)),
+                    Kind = CompanyBlockKind.Stepper, Text = w.T("reallife_co_reserve_amount", "Set aside"), Sub = w.F("reallife_co_reserve_cash", "{amount} in the cash", "amount",
+                        CompanyText.Money(cash)),
                     Value = CompanyText.Money(shown), CanLess = shown > 0, CanMore = true,
                     Act = CompanyAct.Of(CompanyDo.Go, "amount", -100, shown), Act2 = CompanyAct.Of(CompanyDo.Go, "amount", 100, shown), Act3 = CompanyAct.Of(CompanyDo.Go, "amount", 0, shown)
                 },
                 Buttons(
-                    Btn(w.F("reallife_co_reserve_do", "Set aside {amount}", "amount", CompanyText.Money(shown)), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.ReserveSet, null, shown), UiAction.Count, UiIcon.Check, false,
-                        shown <= 0 || cash < shown, shown <= 0 ? w.T("reallife_co_reserve_none", "Nothing to set aside") : cash < shown ? w.T("reallife_co_reserve_short", "Not enough in the cash") : null),
+                    Btn(w.F("reallife_co_reserve_do", "Set aside {amount}", "amount", CompanyText.Money(shown)), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.ReserveSet, null, shown),
+                        UiAction.Count, UiIcon.Check, false,
+                        shown <= 0 || cash < shown, shown <= 0 ? w.T("reallife_co_reserve_none", "Nothing to set aside") : cash < shown ? w.T("reallife_co_reserve_short", "Not enough in the cash")
+                            : null),
                     Btn(w.T("reallife_co_reserve_release", "Release"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.ReserveRelease), UiAction.Count, UiIcon.Back, true, tf.Reserve <= 0,
                         tf.Reserve <= 0 ? w.T("reallife_co_reserve_empty", "Nothing is set aside") : null))
             };
@@ -234,7 +247,8 @@ namespace RealLifeOverhaul.Ui
             blocks.Add(new CompanyBlock
             {
                 Kind = CompanyBlockKind.Switch, Text = w.T("reallife_co_reserve_auto", "Finance chief tops it up"),
-                Sub = chief != null ? w.F("reallife_co_reserve_auto_on", "{name} does it when a quarter closes", "name", chief.Name) : w.T("reallife_co_reserve_no_chief", "Needs a finance chief in post"),
+                Sub = chief != null ? w.F("reallife_co_reserve_auto_on", "{name} does it when a quarter closes", "name", chief.Name) : w.T("reallife_co_reserve_no_chief",
+                    "Needs a finance chief in post"),
                 On = tf.ReserveAuto, Disabled = chief == null, Why = chief == null ? w.T("reallife_co_reserve_no_chief", "Needs a finance chief in post") : null,
                 Value = tf.ReserveAuto ? w.T("reallife_co_on", "On") : w.T("reallife_co_off", "Off"), Act = CompanyAct.Of(CompanyDo.ReserveAuto, null, tf.ReserveAuto ? 0 : 1)
             });
@@ -251,16 +265,20 @@ namespace RealLifeOverhaul.Ui
                 bool late = day > tf.ReturnDue;
                 t.HasLead = true;
                 t.LeadKicker = w.T("reallife_co_tab_tax", "Tax and licences");
-                t.LeadTitle = CompanyText.T(late ? "reallife_co_return_late" : "reallife_co_return_due", "day", tf.ReturnDue.ToString(), "amount", CompanyText.Money(TaxRules.Penalty(tf.ReturnTakings)), "count", tf.ReturnPenalties.ToString());
-                t.LeadBody = CompanyText.T("reallife_co_lead_return", "quarter", tf.ReturnQuarter.ToString(), "takings", CompanyText.Money(tf.ReturnTakings), "costs", CompanyText.Money(tf.ReturnCosts));
+                t.LeadTitle = CompanyText.T(late ? "reallife_co_return_late" : "reallife_co_return_due", "day", tf.ReturnDue.ToString(), "amount",
+                    CompanyText.Money(TaxRules.Penalty(tf.ReturnTakings)), "count", tf.ReturnPenalties.ToString());
+                t.LeadBody = CompanyText.T("reallife_co_lead_return", "quarter", tf.ReturnQuarter.ToString(), "takings", CompanyText.Money(tf.ReturnTakings), "costs",
+                    CompanyText.Money(tf.ReturnCosts));
                 t.LeadAsker = owner;
                 t.LeadHue = UiColour.HueOf(owner);
                 FaceSources.Player(owner);
                 bool order = CompanyGame.BooksInOrder();
                 t.LeadButtons = new[]
                 {
-                    Btn(CompanyText.T("reallife_co_return_file"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.ReturnFile), UiAction.Alt, UiIcon.Check, false, !order, !order ? CompanyText.T("reallife_co_return_books") : null),
-                    Btn(w.T("reallife_co_open_return", "Open the return"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "ret", CompanyView.Tax, CompanyView.SubReturn), UiAction.Option, UiIcon.Next)
+                    Btn(CompanyText.T("reallife_co_return_file"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.ReturnFile), UiAction.Alt, UiIcon.Check, false, !order, !order
+                        ? CompanyText.T("reallife_co_return_books") : null),
+                    Btn(w.T("reallife_co_open_return", "Open the return"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "ret", CompanyView.Tax, CompanyView.SubReturn), UiAction.Option,
+                        UiIcon.Next)
                 };
                 return;
             }
@@ -269,7 +287,8 @@ namespace RealLifeOverhaul.Ui
                 t.HasLead = true;
                 t.LeadKicker = chief != null ? w.F("reallife_co_lead_chief", "Finance chief, {name}", "name", chief.Name) : w.T("reallife_co_tab_tax", "Tax and licences");
                 t.LeadTitle = w.F("reallife_co_lead_reserve", "The year's tax so far is {tax}. {set} is set aside.", "tax", CompanyText.Money(q.Year + q.Tax), "set", CompanyText.Money(q.Reserve));
-                t.LeadBody = w.F("reallife_co_lead_reserve_body", "Setting aside {amount} puts it out of reach of the cash until the bill comes, so that the bill can be paid from it.", "amount", CompanyText.Money(q.Still));
+                t.LeadBody = w.F("reallife_co_lead_reserve_body", "Setting aside {amount} puts it out of reach of the cash until the bill comes, so that the bill can be paid from it.", "amount",
+                    CompanyText.Money(q.Still));
                 string asker = chief != null ? chief.Name : owner;
                 t.LeadAsker = asker;
                 t.LeadHue = UiColour.HueOf(asker);
@@ -284,12 +303,14 @@ namespace RealLifeOverhaul.Ui
                 int cash = CompanyGame.Cash;
                 var buttons = new List<CompanyButton>(2)
                 {
-                    Btn(w.F("reallife_co_reserve_do", "Set aside {amount}", "amount", CompanyText.Money(q.Still)), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.ReserveSet, null, q.Still), UiAction.Alt, UiIcon.Check,
+                    Btn(w.F("reallife_co_reserve_do", "Set aside {amount}", "amount", CompanyText.Money(q.Still)), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.ReserveSet, null, q.Still),
+                        UiAction.Alt, UiIcon.Check,
                         false, cash < q.Still, cash < q.Still ? w.T("reallife_co_reserve_short", "Not enough in the cash") : null)
                 };
                 if (chief != null)
                 {
-                    buttons.Add(Btn(w.F("reallife_co_reserve_let", "Let {name} do it", "name", FirstName(chief.Name)), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.ReserveAuto, null, 1), UiAction.Option, UiIcon.Handshake));
+                    buttons.Add(Btn(w.F("reallife_co_reserve_let", "Let {name} do it", "name", FirstName(chief.Name)), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.ReserveAuto, null, 1),
+                        UiAction.Option, UiIcon.Handshake));
                 }
                 t.LeadButtons = buttons.ToArray();
             }
@@ -314,7 +335,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     int last = pick.LastIndexOf(':');
                     int kind;
-                    CompanyShop shop = pick.StartsWith("lic:", StringComparison.Ordinal) && last > 4 && int.TryParse(pick.Substring(last + 1), out kind) && kind >= 0 && kind < CompanyCatalogue.LicenceKinds
+                    CompanyShop shop = pick.StartsWith("lic:", StringComparison.Ordinal) && last > 4 && int.TryParse(pick.Substring(last + 1), out kind) && kind >= 0
+                        && kind < CompanyCatalogue.LicenceKinds
                         ? d.ShopAt(pick.Substring(4, last - 4)) : null;
                     return shop != null && d.On(CompanyPart.Licences) ? LicenceCard(d, w, shop, int.Parse(pick.Substring(last + 1)), day, back) : null;
                 }
@@ -350,7 +372,8 @@ namespace RealLifeOverhaul.Ui
             bool helped = TaxRules.Files(t.Accountant, d.Hidden() > 0);
             if (helped)
             {
-                blocks.Add(Note(CompanyText.T("reallife_co_return_rebate", "name", CompanyText.Accountant(t.Accountant), "amount", CompanyText.Money(TaxRules.Rebate(t.Accountant, t.ReturnCosts))), UiRole.OkText));
+                blocks.Add(Note(CompanyText.T("reallife_co_return_rebate", "name", CompanyText.Accountant(t.Accountant), "amount", CompanyText.Money(TaxRules.Rebate(t.Accountant, t.ReturnCosts))),
+                    UiRole.OkText));
             }
             else if (t.Accountant >= 0)
             {
@@ -361,7 +384,8 @@ namespace RealLifeOverhaul.Ui
             {
                 blocks.Add(Note(CompanyText.T("reallife_co_return_books"), UiRole.DangerText));
             }
-            blocks.Add(Buttons(Btn(CompanyText.T("reallife_co_return_file"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.ReturnFile), UiAction.Alt, UiIcon.Check, false, !order, !order ? CompanyText.T("reallife_co_return_books") : null)));
+            blocks.Add(Buttons(Btn(CompanyText.T("reallife_co_return_file"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.ReturnFile), UiAction.Alt, UiIcon.Check, false, !order, !order
+                ? CompanyText.T("reallife_co_return_books") : null)));
             card.Blocks = blocks.ToArray();
             return card;
         }
@@ -390,7 +414,8 @@ namespace RealLifeOverhaul.Ui
             };
             if (tier == 0)
             {
-                blocks.Add(Note(CompanyText.T("reallife_co_acc_careless", "chance", CompanyText.Share(CompanyCatalogue.AccountantErrorChance), "more", CompanyText.Share(CompanyCatalogue.AccountantHidingFee - 1000))));
+                blocks.Add(Note(CompanyText.T("reallife_co_acc_careless", "chance", CompanyText.Share(CompanyCatalogue.AccountantErrorChance), "more",
+                    CompanyText.Share(CompanyCatalogue.AccountantHidingFee - 1000))));
             }
             else
             {
@@ -399,7 +424,8 @@ namespace RealLifeOverhaul.Ui
             bool resigns = TaxRules.Resigns(tier, hiding);
             var buttons = new List<CompanyButton>(2)
             {
-                Btn(CompanyText.T("reallife_co_acc_hire"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.AccountantHire, null, tier), UiAction.Alt, UiIcon.Check, false, t.Accountant == tier || resigns,
+                Btn(CompanyText.T("reallife_co_acc_hire"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.AccountantHire, null, tier), UiAction.Alt, UiIcon.Check, false, t.Accountant == tier
+                    || resigns,
                     t.Accountant == tier ? CompanyText.T("reallife_mgr_in_post") : resigns ? CompanyText.T("reallife_co_acc_honest_resigns") : null)
             };
             if (t.Accountant >= 0)
@@ -461,7 +487,8 @@ namespace RealLifeOverhaul.Ui
             };
             var blocks = new List<CompanyBlock>(8)
             {
-                Note(valid ? CompanyText.T("reallife_co_lic_valid", "day", l.Until.ToString()) : l.Pending ? CompanyText.T("reallife_co_lic_pending", "day", l.Decide.ToString()) : CompanyText.T("reallife_co_lic_missing"),
+                Note(valid ? CompanyText.T("reallife_co_lic_valid", "day", l.Until.ToString()) : l.Pending ? CompanyText.T("reallife_co_lic_pending", "day", l.Decide.ToString())
+                    : CompanyText.T("reallife_co_lic_missing"),
                     valid ? UiRole.None : l.Pending ? UiRole.WarnText : UiRole.DangerText),
                 Note(CompanyText.T(LicenceRules.Shuts(kind) ? "reallife_co_lic_fine_shut" : "reallife_co_lic_fine", "amount", CompanyText.Money(LicenceRules.Fine(kind, d.Index)),
                     "hours", CompanyCatalogue.LicenceClosedHours.ToString()), UiRole.WarnText),
@@ -470,7 +497,8 @@ namespace RealLifeOverhaul.Ui
                     Kind = CompanyBlockKind.Switch, Text = CompanyText.T("reallife_co_lic_auto"), On = l.Auto, Value = l.Auto ? w.T("reallife_co_on", "On") : w.T("reallife_co_off", "Off"),
                     Act = CompanyAct.Of(CompanyDo.LicenceAuto, place, kind, l.Auto ? 0 : 1)
                 },
-                Buttons(Btn(CompanyText.T(valid ? "reallife_co_lic_renew" : "reallife_co_lic_buy"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.LicenceBuy, place, kind), UiAction.Alt, UiIcon.Check, false, l.Pending,
+                Buttons(Btn(CompanyText.T(valid ? "reallife_co_lic_renew" : "reallife_co_lic_buy"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.LicenceBuy, place, kind), UiAction.Alt,
+                    UiIcon.Check, false, l.Pending,
                     l.Pending ? CompanyText.T("reallife_co_lic_pending", "day", l.Decide.ToString()) : null)),
                 Note(CompanyText.T(LicenceWhyKeys[kind], "hour", CompanyCatalogue.LateHour.ToString(), "early", CompanyCatalogue.EarlyHour.ToString()))
             };

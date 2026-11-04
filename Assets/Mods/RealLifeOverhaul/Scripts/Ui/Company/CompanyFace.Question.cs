@@ -23,7 +23,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>The buttons of a question: where it opens, put it off, and the answer chosen. The main one last, carrying F; the second P.</summary>
-        internal static CompanyButton[] QuestionButtons(CompanyQuestion q, CompanyView v, CompanyWords w)
+        private static CompanyButton[] QuestionButtons(CompanyQuestion q, CompanyView v, CompanyWords w)
         {
             var buttons = new System.Collections.Generic.List<CompanyButton>(3);
             if (!string.IsNullOrEmpty(q.OpenLabel) && q.Open.Do != CompanyDo.None)
@@ -218,7 +218,8 @@ namespace RealLifeOverhaul.Ui
             }
             var m = new UiDecisionModel
             {
-                Kicker = q.Kicker, Title = q.Title, Body = q.Body, BodyLines = 5, Faces = faces.ToArray(), FaceRoles = roles.ToArray(), FaceRings = rings.ToArray(), Speaking = faces.Count > 0 ? 0 : -1,
+                Kicker = q.Kicker, Title = q.Title, Body = q.Body, BodyLines = 5, Faces = faces.ToArray(), FaceRoles = roles.ToArray(), FaceRings = rings.ToArray(), Speaking = faces.Count > 0 ? 0
+                    : -1,
                 FactLabels = q.FactLabels, FactValues = q.FactValues, Choices = ChoicesOf(q), Selected = Math.Max(0, Math.Min(q.Choices.Length - 1, v.Choice)), Buttons = actions,
                 ChoiceCmd = Choice, ButtonCmd = Act,
                 Prompts = new[]

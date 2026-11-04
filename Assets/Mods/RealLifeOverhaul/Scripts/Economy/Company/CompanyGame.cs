@@ -218,7 +218,8 @@ namespace RealLifeOverhaul.Economy
         private static readonly string[] FoodTypes = { "fastfoodrestaurant", "coffeeshop", "supermarket", "fruitandvegetablestore", "icecreamparlour", "teabar" };   // the last two: Scripts/Shops
         private static readonly string[] AlcoholTypes = { "liquorstore", "nightclub" };
         private static readonly string[] CrowdTypes = { "nightclub", "cinema", "theater", "casino" };                                  // many people in one room: a fire safety certificate
-        private static readonly string[] SeatingTypes = { "coffeeshop", "fastfoodrestaurant", "teabar", "icecreamparlour" };           // tables: an outdoor seating permit and a fire safety certificate; the last two: Scripts/Shops
+        // tables: an outdoor seating permit and a fire safety certificate; the last two: Scripts/Shops
+        private static readonly string[] SeatingTypes = { "coffeeshop", "fastfoodrestaurant", "teabar", "icecreamparlour" };
         private static readonly string[] CellarTypes = { "liquorstore", "wholesalestore", "importexport" };                            // goods held in bulk: bonded storage
         private static readonly string[] WellOffTypes = { "jewelrystore", "electronicsstore", "cardealership", "furniturestore", "clothingstore", "nightclub" };
         private static readonly string[] PriceTypes = { "supermarket", "fastfoodrestaurant", "fruitandvegetablestore", "liquorstore", "gasstation", "giftshop", "tobacconist" };

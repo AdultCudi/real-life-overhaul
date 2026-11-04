@@ -31,7 +31,8 @@ namespace RealLifeOverhaul.Economy
                     bool valid = LicenceRules.Valid(l, day), soon = valid && l.Until - day < CompanyCatalogue.LicenceRemindDays, pending = !valid && l.Pending;
                     Pick("lic:" + shops[i].File.Place + ":" + k, shops[i].Name, CompanyText.T("reallife_co_row_licence", "licence", CompanyText.Licence(k)),
                         valid ? CompanyText.Day(l.Until) : pending ? CompanyText.Day(l.Decide) : string.Empty,
-                        CompanyText.T(pending ? "reallife_co_row_lic_pending" : !valid ? "reallife_co_row_lic_missing" : l.Auto ? "reallife_co_row_lic_auto" : soon ? "reallife_co_row_lic_soon" : "reallife_co_row_lic_valid"),
+                        CompanyText.T(pending ? "reallife_co_row_lic_pending" : !valid ? "reallife_co_row_lic_missing" : l.Auto ? "reallife_co_row_lic_auto" : soon ? "reallife_co_row_lic_soon"
+                            : "reallife_co_row_lic_valid"),
                         pending ? 1 : !valid ? 2 : soon && !l.Auto ? 1 : 0, ref selected);
                     Last.Kind = CompanyTables.AboutLicence;
                     Last.Kind2 = pending ? CompanyTables.LicenceSoon : !valid ? CompanyTables.LicenceMissing : soon ? CompanyTables.LicenceSoon : CompanyTables.LicenceValid;
@@ -64,7 +65,8 @@ namespace RealLifeOverhaul.Economy
             box.Chip(CompanyText.T(valid ? "reallife_ibox_chip_valid" : l.Pending ? "reallife_co_row_lic_pending" : "reallife_ibox_chip_missing"),
                 valid ? CellTone.Green : l.Pending ? CellTone.Yellow : CellTone.Red);
             box.Line(valid ? CompanyText.T("reallife_co_lic_valid", "day", l.Until.ToString())
-                : l.Pending ? CompanyText.T("reallife_co_lic_pending", "day", l.Decide.ToString()) : CompanyText.T("reallife_co_lic_missing"), valid ? CellTone.Plain : l.Pending ? CellTone.Yellow : CellTone.Red);
+                : l.Pending ? CompanyText.T("reallife_co_lic_pending", "day", l.Decide.ToString()) : CompanyText.T("reallife_co_lic_missing"), valid ? CellTone.Plain : l.Pending ? CellTone.Yellow
+                    : CellTone.Red);
             box.Section("reallife_ibox_sec_terms");
             box.Row("reallife_co_lic_fee", CompanyText.Money(LicenceRules.Fee(kind, _director.Index)));
             box.Row("reallife_co_lic_term", CompanyText.T("reallife_co_lic_term_value", "days", CompanyCatalogue.LicenceTerm[kind].ToString()));

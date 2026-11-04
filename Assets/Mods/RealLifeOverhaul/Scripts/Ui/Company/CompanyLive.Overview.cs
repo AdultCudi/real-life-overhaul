@@ -27,7 +27,8 @@ namespace RealLifeOverhaul.Ui
             int managers = d.ManagersOn && d.ManagerData != null ? d.ManagerData.Managers.Count : 0;
             string where = CompanyGame.HeadAddress();
             o.Line = string.IsNullOrEmpty(where)
-                ? w.F("reallife_co_head_line_none", "{staff} staff, {managers} managers, run since Day {day}", "staff", s.Staff.Count.ToString(), "managers", managers.ToString(), "day", Math.Max(1, s.FirstDay).ToString())
+                ? w.F("reallife_co_head_line_none", "{staff} staff, {managers} managers, run since Day {day}", "staff", s.Staff.Count.ToString(), "managers", managers.ToString(), "day", Math.Max(1,
+                    s.FirstDay).ToString())
                 : w.F("reallife_co_head_line", "Head office {place}, {staff} staff, {managers} managers, run since Day {day}", "place", where, "staff", s.Staff.Count.ToString(),
                     "managers", managers.ToString(), "day", Math.Max(1, s.FirstDay).ToString());
             ReadBusinesses(o, d, w);
@@ -336,7 +337,8 @@ namespace RealLifeOverhaul.Ui
             var tools = new List<CompanyButton>(3);
             if (CompanyGame.CanClean)
             {
-                tools.Add(new CompanyButton { Label = w.T("reallife_co_open_cleaning", "Open cleaning"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Package, Act = CompanyAct.Of(CompanyDo.OpenCleaning) });
+                tools.Add(new CompanyButton { Label = w.T("reallife_co_open_cleaning", "Open cleaning"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Package,
+                    Act = CompanyAct.Of(CompanyDo.OpenCleaning) });
             }
             if (CompanyGame.CanOpenBank)
             {
@@ -346,7 +348,8 @@ namespace RealLifeOverhaul.Ui
             if (!string.IsNullOrEmpty(line))
             {
                 o.Note = line;
-                tools.Add(new CompanyButton { Label = w.T("reallife_co_open_stocks", "Open in Stocks"), Kind = UiButtonKind.Secondary, Icon = UiIcon.ChartLineUp, Act = CompanyAct.Of(CompanyDo.OpenStocks) });
+                tools.Add(new CompanyButton { Label = w.T("reallife_co_open_stocks", "Open in Stocks"), Kind = UiButtonKind.Secondary, Icon = UiIcon.ChartLineUp,
+                    Act = CompanyAct.Of(CompanyDo.OpenStocks) });
             }
             o.Tools = tools.ToArray();
         }
@@ -370,7 +373,8 @@ namespace RealLifeOverhaul.Ui
                 Kicker = w.T("reallife_co_business", "Business"), Title = shop.Name, Sub = CompanyText.District(shop.District), Icon = UiIcon.Store,
                 Chips = new[] { waiting > 0 ? CompanyText.T("reallife_co_state_waiting", "count", waiting.ToString()) : CompanyText.T("reallife_co_state_in_order") },
                 ChipTones = new[] { waiting > 0 ? UiRole.Warn : UiRole.Ok },
-                Back = new[] { new CompanyButton { Label = w.T("reallife_co_back", "Back"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Back, Act = CompanyAct.Of(CompanyDo.Go, "", CompanyView.Overview) } }
+                Back = new[] { new CompanyButton { Label = w.T("reallife_co_back", "Back"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Back, Act = CompanyAct.Of(CompanyDo.Go, "",
+                    CompanyView.Overview) } }
             };
             var facts = new List<string>(4);
             var values = new List<string>(4);
@@ -394,7 +398,8 @@ namespace RealLifeOverhaul.Ui
             blocks.Add(Sec(w.T("reallife_co_sec_state", "How it stands")));
             if (d.On(CompanyPart.Staff) && file.StrikeFrom > 0)
             {
-                blocks.Add(Note(CompanyText.T(file.Striking(day) ? "reallife_co_shop_strike_on" : "reallife_co_shop_strike_called", "day", StaffRules.StrikeShown(file, day).ToString()), UiRole.DangerText));
+                blocks.Add(Note(CompanyText.T(file.Striking(day) ? "reallife_co_shop_strike_on" : "reallife_co_shop_strike_called", "day", StaffRules.StrikeShown(file, day).ToString()),
+                    UiRole.DangerText));
             }
             ManagedPlace mp = d.ManagedAt(file.Place);
             if (mp != null && mp.Own != null)
@@ -413,18 +418,21 @@ namespace RealLifeOverhaul.Ui
                 {
                     cover += file.Cover[k].Active ? (cover.Length > 0 ? ", " : string.Empty) + CompanyText.Cover(k) : string.Empty;
                 }
-                blocks.Add(Link(w.T("reallife_co_r_cover", "Cover held"), cover.Length > 0 ? cover : CompanyText.T("reallife_co_none"), CompanyAct.Of(CompanyDo.Go, "pol:" + file.Place + ":0", CompanyView.Cover)));
+                blocks.Add(Link(w.T("reallife_co_r_cover", "Cover held"), cover.Length > 0 ? cover : CompanyText.T("reallife_co_none"), CompanyAct.Of(CompanyDo.Go, "pol:" + file.Place + ":0",
+                    CompanyView.Cover)));
             }
             if (d.On(CompanyPart.Marketing))
             {
                 blocks.Add(Link(w.T("reallife_co_r_campaign", "Campaign"), file.Push >= 0
                     ? CompanyText.T(file.Pushing(day) ? "reallife_co_shop_campaign_on" : "reallife_co_shop_campaign_booked", "campaign", CompanyText.Campaign(file.Push), "day",
-                        (file.Pushing(day) ? file.PushEnd - 1 : file.PushFrom).ToString()) : CompanyText.T("reallife_co_none"), CompanyAct.Of(CompanyDo.Go, "biz:" + file.Place, CompanyView.Marketing)));
+                        (file.Pushing(day) ? file.PushEnd - 1 : file.PushFrom).ToString()) : CompanyText.T("reallife_co_none"), CompanyAct.Of(CompanyDo.Go, "biz:"
+                            + file.Place, CompanyView.Marketing)));
             }
             if (d.On(CompanyPart.Licences))
             {
                 int missing = LicenceRules.Missing(file, shop.Needs, day);
-                blocks.Add(Link(w.T("reallife_co_r_licences", "Licences"), missing != 0 ? CompanyText.T("reallife_co_shop_licences_missing", "list", CompanyText.Licences(missing)) : CompanyText.T("reallife_co_shop_licences_held"),
+                blocks.Add(Link(w.T("reallife_co_r_licences", "Licences"), missing != 0 ? CompanyText.T("reallife_co_shop_licences_missing", "list", CompanyText.Licences(missing))
+                    : CompanyText.T("reallife_co_shop_licences_held"),
                     CompanyAct.Of(CompanyDo.Go, null, CompanyView.Tax), missing != 0 ? UiRole.WarnText : UiRole.None));
             }
             if (file.Hide > 0 && Settings.EconomyCompanyHide)
@@ -438,7 +446,8 @@ namespace RealLifeOverhaul.Ui
             };
             if (CompanyGame.CanSell(file.Place))
             {
-                buttons.Add(new CompanyButton { Label = w.T("reallife_co_sell", "Sell this business"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Handshake, Act = CompanyAct.Of(CompanyDo.SellBusiness, file.Place) });
+                buttons.Add(new CompanyButton { Label = w.T("reallife_co_sell", "Sell this business"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Handshake,
+                    Act = CompanyAct.Of(CompanyDo.SellBusiness, file.Place) });
             }
             blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Buttons, Buttons = buttons.ToArray() });
             c.Blocks = blocks.ToArray();
@@ -451,13 +460,15 @@ namespace RealLifeOverhaul.Ui
 
         internal static CompanyBlock Row(string label, string value, UiRole tone = UiRole.None) => new CompanyBlock { Kind = CompanyBlockKind.Row, Text = label, Value = value, Tone = tone };
 
-        internal static CompanyBlock Link(string label, string value, CompanyAct act, UiRole tone = UiRole.None) => new CompanyBlock { Kind = CompanyBlockKind.Link, Text = label, Value = value, Act = act, Tone = tone };
+        internal static CompanyBlock Link(string label, string value, CompanyAct act, UiRole tone = UiRole.None) => new CompanyBlock { Kind = CompanyBlockKind.Link, Text = label, Value = value,
+            Act = act, Tone = tone };
 
         internal static CompanyBlock Note(string text, UiRole tone = UiRole.None) => new CompanyBlock { Kind = CompanyBlockKind.Note, Text = text, Tone = tone };
 
         internal static CompanyBlock Buttons(params CompanyButton[] buttons) => new CompanyBlock { Kind = CompanyBlockKind.Buttons, Buttons = buttons };
 
-        internal static CompanyButton Btn(string label, UiButtonKind kind, CompanyAct act, UiAction key = UiAction.Count, UiIcon icon = UiIcon.None, bool arms = false, bool disabled = false, string why = null) =>
+        internal static CompanyButton Btn(string label, UiButtonKind kind, CompanyAct act, UiAction key = UiAction.Count, UiIcon icon = UiIcon.None, bool arms = false, bool disabled = false,
+            string why = null) =>
             new CompanyButton { Label = label, Kind = kind, Act = act, Key = key, Icon = icon, Arms = arms, Disabled = disabled, Why = why };
     }
 }

@@ -96,14 +96,16 @@ namespace RealLifeOverhaul.Ui
                 {
                     Id = "mc:" + h.Id, Title = h.Name, Sub = region ? h.PlaceName : CompanyGame.SkillName(h.Id), Face = true, Hue = UiColour.HueOf(h.Name), Ring = UiRole.None,
                     Figure = CompanyText.Wage(h.Wage), Note = w.F("reallife_co_skill_n", "skill {n}", "n", h.Skill.ToString()),
-                    Chip = now != null && now.Id == h.Id ? CompanyText.T("reallife_mgr_in_post") : holds != null ? CompanyText.T("reallife_mgr_row_region", "district", CompanyDirector.AreaName(holds)) : null,
+                    Chip = now != null && now.Id == h.Id ? CompanyText.T("reallife_mgr_in_post") : holds != null ? CompanyText.T("reallife_mgr_row_region", "district",
+                        CompanyDirector.AreaName(holds)) : null,
                     ChipTone = UiRole.Ok
                 };
             }
             string title = region ? CompanyText.T("reallife_mgr_row_region", "district", CompanyDirector.AreaName(key)) : mp.Place.Name;
             page.List = new CompanyList
             {
-                Title = w.T("reallife_co_candidates", "Who could do it"), Count = rows.Length.ToString(), Rows = rows, Empty = CompanyText.T(region ? "reallife_mgr_row_no_office" : "reallife_mgr_row_no_staff")
+                Title = w.T("reallife_co_candidates", "Who could do it"), Count = rows.Length.ToString(), Rows = rows, Empty = CompanyText.T(region ? "reallife_mgr_row_no_office"
+                    : "reallife_mgr_row_no_staff")
             };
             string chosen = v.SubPick[CompanyView.Managers] ?? string.Empty;
             page.List.Chosen = ChosenRow(rows, chosen);
@@ -151,7 +153,8 @@ namespace RealLifeOverhaul.Ui
                 ManagerHand h = hand.Value;
                 card = new CompanyCard
                 {
-                    Kicker = title, Title = h.Name, Sub = CompanyText.T("reallife_co_emp_works", "business", h.PlaceName, "skill", CompanyGame.SkillName(h.Id)), Face = true, Hue = UiColour.HueOf(h.Name),
+                    Kicker = title, Title = h.Name, Sub = CompanyText.T("reallife_co_emp_works", "business", h.PlaceName, "skill",
+                        CompanyGame.SkillName(h.Id)), Face = true, Hue = UiColour.HueOf(h.Name),
                     Ring = UiRole.None, Back = BackTo(w, back)
                 };
                 int review = !region && mp.Region != null && !CompanyDirector.Sick(mp.Region) ? mp.Region.Skill : 0;
@@ -173,7 +176,8 @@ namespace RealLifeOverhaul.Ui
                 }
                 var buttons = new List<CompanyButton>(3)
                 {
-                    Btn(CompanyText.T("reallife_mgr_appoint"), UiButtonKind.Primary, CompanyAct.Of(region ? CompanyDo.RegionAppoint : CompanyDo.Appoint, region ? key : h.Id, 0, 0, 0, region ? h.Id : key),
+                    Btn(CompanyText.T("reallife_mgr_appoint"), UiButtonKind.Primary, CompanyAct.Of(region ? CompanyDo.RegionAppoint : CompanyDo.Appoint, region ? key : h.Id, 0, 0, 0, region ? h.Id
+                        : key),
                         UiAction.Alt, UiIcon.Check, false, now != null && now.Id == h.Id, CompanyText.T("reallife_mgr_in_post"))
                 };
                 buttons.AddRange(post);
@@ -213,7 +217,8 @@ namespace RealLifeOverhaul.Ui
             }
             page.List = new CompanyList
             {
-                Title = w.F("reallife_co_decisions_of", "{name}'s decisions", "name", FirstName(mp.Own.Name)), Count = rows.Count.ToString(), Rows = rows.ToArray(), Empty = CompanyText.T("reallife_mgr_row_no_decisions")
+                Title = w.F("reallife_co_decisions_of", "{name}'s decisions", "name",
+                    FirstName(mp.Own.Name)), Count = rows.Count.ToString(), Rows = rows.ToArray(), Empty = CompanyText.T("reallife_mgr_row_no_decisions")
             };
             string chosen = v.SubPick[CompanyView.Managers] ?? string.Empty;
             page.List.Chosen = ChosenRow(page.List.Rows, chosen);
@@ -263,7 +268,8 @@ namespace RealLifeOverhaul.Ui
                 bool money = dec.Task == (int)ManagerTask.Prices;
                 for (int i = 0; i < items.Count && i < 6; i++)
                 {
-                    blocks.Add(Row(CompanyApp.ProductWords(items[i].Item), CompanyText.T("reallife_mgr_dec_from_to", "before", money ? CompanyText.Money(items[i].Before / 100f) : items[i].Before.ToString(),
+                    blocks.Add(Row(CompanyApp.ProductWords(items[i].Item), CompanyText.T("reallife_mgr_dec_from_to", "before", money ? CompanyText.Money(items[i].Before / 100f)
+                        : items[i].Before.ToString(),
                         "after", money ? CompanyText.Money(items[i].After / 100f) : items[i].After.ToString())));
                 }
                 if (items.Count > 6)
@@ -436,12 +442,15 @@ namespace RealLifeOverhaul.Ui
                 {
                     rows.Add(new CompanyRow
                     {
-                        Id = "he:" + e.Id, Title = CompanyApp.KindWords(e.Kind), Sub = CompanyApp.PlaceWords(e), Icon = UiIcon.Envelope, Figure = CompanyText.T("reallife_mgr_row_day", "day", e.Day.ToString()),
-                        Note = CompanyApp.HolderWords(e), Chip = CompanyApp.EscalationStateName(e.State), ChipTone = e.Open && e.Level >= EscalationRules.LevelOwner ? UiRole.Warn : e.Open ? UiRole.None : UiRole.Muted
+                        Id = "he:" + e.Id, Title = CompanyApp.KindWords(e.Kind), Sub = CompanyApp.PlaceWords(e), Icon = UiIcon.Envelope, Figure = CompanyText.T("reallife_mgr_row_day", "day",
+                            e.Day.ToString()),
+                        Note = CompanyApp.HolderWords(e), Chip = CompanyApp.EscalationStateName(e.State), ChipTone = e.Open && e.Level >= EscalationRules.LevelOwner ? UiRole.Warn : e.Open
+                            ? UiRole.None : UiRole.Muted
                     });
                 }
             }
-            page.List = new CompanyList { Title = w.T("reallife_hier_dir_inbox", "Questions inbox"), Count = rows.Count.ToString(), Rows = rows.ToArray(), Empty = CompanyText.T("reallife_hier_inbox_none") };
+            page.List = new CompanyList { Title = w.T("reallife_hier_dir_inbox", "Questions inbox"), Count = rows.Count.ToString(), Rows = rows.ToArray(),
+                Empty = CompanyText.T("reallife_hier_inbox_none") };
             string chosen = v.SubPick[CompanyView.Managers] ?? string.Empty;
             page.List.Chosen = ChosenRow(page.List.Rows, chosen);
             Escalation picked = null;
@@ -451,7 +460,8 @@ namespace RealLifeOverhaul.Ui
             }
             if (picked == null)
             {
-                var top = new CompanyCard { Kicker = w.T("reallife_co_tab_managers", "Managers"), Title = w.T("reallife_hier_dir_inbox", "Questions inbox"), Icon = UiIcon.Envelope, Back = BackTo(w, null) };
+                var top = new CompanyCard { Kicker = w.T("reallife_co_tab_managers", "Managers"), Title = w.T("reallife_hier_dir_inbox", "Questions inbox"), Icon = UiIcon.Envelope, Back = BackTo(w,
+                    null) };
                 top.Chips = new[] { CompanyText.T("reallife_hier_chip_yours", "count", yours.ToString()) };
                 top.ChipTones = new[] { yours > 0 ? UiRole.Warn : UiRole.Ok };
                 var blocks = new List<CompanyBlock>(8)
@@ -514,10 +524,13 @@ namespace RealLifeOverhaul.Ui
                 var links = new List<CompanyButton>(3);
                 if (e.Kind == (int)EscalationKind.Demand || e.Kind == (int)EscalationKind.Mood || e.Kind == (int)EscalationKind.Wave || e.Kind == (int)EscalationKind.Exception)
                 {
-                    links.Add(Btn(CompanyText.T("reallife_hier_open_staff"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, e.Kind == (int)EscalationKind.Exception ? "emp:" + e.Subject : "", CompanyView.Staff), UiAction.Count, UiIcon.People));
+                    links.Add(Btn(CompanyText.T("reallife_hier_open_staff"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, e.Kind == (int)EscalationKind.Exception ? "emp:" + e.Subject : "",
+                        CompanyView.Staff), UiAction.Count, UiIcon.People));
                 }
-                links.Add(Btn(CompanyText.T("reallife_hier_open_dashboard"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "mgr:" + e.Place, CompanyView.Managers, CompanyView.SubDashboard), UiAction.Count, UiIcon.ChartPie));
-                links.Add(Btn(CompanyText.T("reallife_hier_open_policy"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "mgr:" + e.Place, CompanyView.Managers, CompanyView.SubPolicy), UiAction.Count, UiIcon.Sliders));
+                links.Add(Btn(CompanyText.T("reallife_hier_open_dashboard"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "mgr:" + e.Place, CompanyView.Managers, CompanyView.SubDashboard),
+                    UiAction.Count, UiIcon.ChartPie));
+                links.Add(Btn(CompanyText.T("reallife_hier_open_policy"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "mgr:" + e.Place, CompanyView.Managers, CompanyView.SubPolicy),
+                    UiAction.Count, UiIcon.Sliders));
                 blocks.Add(Buttons(links.ToArray()));
             }
             blocks.Add(Sec(w.T("reallife_hier_sec_story", "The story")));
@@ -533,7 +546,8 @@ namespace RealLifeOverhaul.Ui
                 HierarchyEntry en = h.Entries[i];
                 if ((en.Kind == (int)HierarchyLog.Raised || en.Kind == (int)HierarchyLog.Passed || en.Kind == (int)HierarchyLog.Settled) && en.A == e.Id)
                 {
-                    lines.Add(new CompanyDone { When = CompanyText.T("reallife_mgr_row_day", "day", en.Day.ToString()), Text = CompanyApp.EntryWhat(en) + ": " + CompanyApp.EntryDetail(en), Money = en.Who });
+                    lines.Add(new CompanyDone { When = CompanyText.T("reallife_mgr_row_day", "day", en.Day.ToString()), Text = CompanyApp.EntryWhat(en) + ": " + CompanyApp.EntryDetail(en),
+                        Money = en.Who });
                 }
             }
             if (lines.Count > 0)
@@ -607,7 +621,8 @@ namespace RealLifeOverhaul.Ui
                     rows.Add(new CompanyRow
                     {
                         Id = "pf:" + f, Title = CompanyApp.RuleName(def.Field), Icon = UiIcon.Sliders,
-                        Sub = kind == CompanyDirector.ScopeCompany ? null : sets ? CompanyText.T("reallife_pol_set_here_row") : def.Way == PolicyWay.CompanyOnly ? CompanyText.T("reallife_pol_company_only") : CompanyText.T("reallife_pol_as_above"),
+                        Sub = kind == CompanyDirector.ScopeCompany ? null : sets ? CompanyText.T("reallife_pol_set_here_row") : def.Way == PolicyWay.CompanyOnly
+                            ? CompanyText.T("reallife_pol_company_only") : CompanyText.T("reallife_pol_as_above"),
                         Figure = CompanyApp.PolicyStepName(def.Field, d.ScopeRule(kind, scope, def.Field)), Chip = held ? CompanyText.T("reallife_co_held") : null, ChipTone = UiRole.Warn
                     });
                 }
@@ -647,7 +662,8 @@ namespace RealLifeOverhaul.Ui
                 Note(CompanyText.T("reallife_pol_what")),
                 Note(CompanyText.T("reallife_pol_held_what")),
                 Buttons(
-                    Btn(CompanyText.T("reallife_pol_templates"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, back, CompanyView.Managers, CompanyView.SubTemplates), UiAction.Count, UiIcon.ClipboardText),
+                    Btn(CompanyText.T("reallife_pol_templates"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, back, CompanyView.Managers, CompanyView.SubTemplates), UiAction.Count,
+                        UiIcon.ClipboardText),
                     Btn(CompanyText.T("reallife_pol_save_template"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.TemplateSave, scope, 0, 0, kind), UiAction.Count, UiIcon.FloppyDisk))
             };
             if (mine != null && mine.Count > 0)
@@ -695,7 +711,8 @@ namespace RealLifeOverhaul.Ui
             int current = own != null && own.Sets(field) ? own.Of(field) + offset : 0;
             int count = def.Steps.Length + offset;
             Func<int, string> words = i => !company && i == 0 ? CompanyText.T("reallife_pol_follow_one", "value", CompanyApp.PolicyStepName(field, above))
-                : !company && PolicyRules.Past(def.Way, above, i - offset) ? CompanyText.T("reallife_pol_held_mark", "value", CompanyApp.PolicyStepName(field, i - offset)) : CompanyApp.PolicyStepName(field, i - offset);
+                : !company && PolicyRules.Past(def.Way, above, i - offset) ? CompanyText.T("reallife_pol_held_mark", "value", CompanyApp.PolicyStepName(field, i - offset))
+                    : CompanyApp.PolicyStepName(field, i - offset);
             blocks.Add(Sec(w.T("reallife_pol_set_here", "Set here")));
             if (count <= StepsAsChoice)
             {
@@ -754,7 +771,8 @@ namespace RealLifeOverhaul.Ui
             page.List = new CompanyList { Title = w.T("reallife_pol_templates", "Templates"), Count = rows.Count.ToString(), Rows = rows.ToArray() };
             string chosen = v.SubPick[CompanyView.Managers] ?? string.Empty;
             page.List.Chosen = ChosenRow(page.List.Rows, chosen);
-            var card = new CompanyCard { Kicker = ScopeName(d, kind, scope), Title = w.T("reallife_pol_templates", "Templates"), Icon = UiIcon.ClipboardText, Back = BackTo(w, back, CompanyView.SubPolicy) };
+            var card = new CompanyCard { Kicker = ScopeName(d, kind, scope), Title = w.T("reallife_pol_templates", "Templates"), Icon = UiIcon.ClipboardText, Back = BackTo(w, back,
+                CompanyView.SubPolicy) };
             bool own = chosen.StartsWith("pk:o", StringComparison.Ordinal);
             int number = -1;
             if ((own || chosen.StartsWith("pk:b", StringComparison.Ordinal)) && int.TryParse(chosen.Substring(4), out number))
@@ -785,7 +803,8 @@ namespace RealLifeOverhaul.Ui
                     blocks.Add(Note(CompanyText.T("reallife_pol_tpl_onto", "scope", ScopeName(d, kind, scope))));
                     var buttons = new List<CompanyButton>(2)
                     {
-                        Btn(CompanyText.T("reallife_pol_tpl_apply"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.TemplateApply, scope, own ? 0 : number, own ? number : 0, kind), UiAction.Alt, UiIcon.Check)
+                        Btn(CompanyText.T("reallife_pol_tpl_apply"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.TemplateApply, scope, own ? 0 : number, own ? number : 0, kind), UiAction.Alt,
+                            UiIcon.Check)
                     };
                     if (own)
                     {
@@ -829,12 +848,14 @@ namespace RealLifeOverhaul.Ui
                     open += e.Open ? 1 : 0;
                     rows.Add(new CompanyRow
                     {
-                        Id = "he:" + e.Id, Title = CompanyApp.KindWords(e.Kind), Sub = CompanyApp.HolderWords(e), Icon = UiIcon.Envelope, Figure = CompanyText.T("reallife_mgr_row_day", "day", e.Day.ToString()),
+                        Id = "he:" + e.Id, Title = CompanyApp.KindWords(e.Kind), Sub = CompanyApp.HolderWords(e), Icon = UiIcon.Envelope, Figure = CompanyText.T("reallife_mgr_row_day", "day",
+                            e.Day.ToString()),
                         Chip = CompanyApp.EscalationStateName(e.State), ChipTone = e.Open ? UiRole.Warn : UiRole.Muted
                     });
                 }
             }
-            page.List = new CompanyList { Title = w.T("reallife_hier_dash_pending", "Questions here"), Count = rows.Count.ToString(), Rows = rows.ToArray(), Empty = CompanyText.T("reallife_hier_dash_none") };
+            page.List = new CompanyList { Title = w.T("reallife_hier_dash_pending", "Questions here"), Count = rows.Count.ToString(), Rows = rows.ToArray(),
+                Empty = CompanyText.T("reallife_hier_dash_none") };
             string chosen = v.SubPick[CompanyView.Managers] ?? string.Empty;
             page.List.Chosen = ChosenRow(page.List.Rows, chosen);
             int count, standing = d.StandingAt(place, out count), budget = d.BudgetOf(m);
@@ -851,7 +872,8 @@ namespace RealLifeOverhaul.Ui
             {
                 Sec(w.T("reallife_hier_sec_figures", "Figures")),
                 Row(CompanyText.T("reallife_hier_fig_budget"), CompanyText.T("reallife_mgr_spent_value", "spent", CompanyText.Money(m.Spent), "budget", CompanyText.Money(budget))),
-                new CompanyBlock { Kind = CompanyBlockKind.Meter, Text = CompanyText.T("reallife_hier_fig_budget_used"), Value = CompanyText.Share((int)(used * 1000f)), Number = (int)(used * 100f), Tone = used >= 0.8f ? UiRole.Warn : UiRole.Ok }
+                new CompanyBlock { Kind = CompanyBlockKind.Meter, Text = CompanyText.T("reallife_hier_fig_budget_used"), Value = CompanyText.Share((int)(used * 1000f)), Number = (int)(used * 100f),
+                    Tone = used >= 0.8f ? UiRole.Warn : UiRole.Ok }
             };
             if (mp.Shop != null && mp.Shop.HasBooks)
             {
@@ -861,7 +883,8 @@ namespace RealLifeOverhaul.Ui
             blocks.Add(Buttons(
                 Btn(CompanyText.T("reallife_hier_quick_fill"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.StoreFill, place), UiAction.Alt, UiIcon.People),
                 Btn(CompanyText.T("reallife_hier_quick_raise"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.StoreRaise, place), UiAction.Option, UiIcon.Coin),
-                Btn(CompanyText.T("reallife_hier_open_policy"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "mgr:" + place, CompanyView.Managers, CompanyView.SubPolicy), UiAction.Count, UiIcon.Sliders)));
+                Btn(CompanyText.T("reallife_hier_open_policy"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "mgr:" + place, CompanyView.Managers, CompanyView.SubPolicy), UiAction.Count,
+                    UiIcon.Sliders)));
             // The store's region: its district's, or one the player makes (A to H).
             int now = HierarchyRules.CustomNumber(mp.Area);
             var options = new string[HierarchyRules.CustomMost + 1];
@@ -901,12 +924,14 @@ namespace RealLifeOverhaul.Ui
                     }
                     rows.Add(new CompanyRow
                     {
-                        Id = "he:" + e.Id, Title = CompanyApp.KindWords(e.Kind), Sub = CompanyApp.PlaceWords(e), Icon = UiIcon.Envelope, Figure = CompanyText.T("reallife_mgr_row_day", "day", e.Day.ToString()),
+                        Id = "he:" + e.Id, Title = CompanyApp.KindWords(e.Kind), Sub = CompanyApp.PlaceWords(e), Icon = UiIcon.Envelope, Figure = CompanyText.T("reallife_mgr_row_day", "day",
+                            e.Day.ToString()),
                         Chip = CompanyApp.EscalationStateName(e.State), ChipTone = e.Open ? UiRole.Warn : UiRole.Muted
                     });
                 }
             }
-            page.List = new CompanyList { Title = w.T("reallife_hier_dash_pending", "Questions here"), Count = rows.Count.ToString(), Rows = rows.ToArray(), Empty = CompanyText.T("reallife_hier_dash_none") };
+            page.List = new CompanyList { Title = w.T("reallife_hier_dash_pending", "Questions here"), Count = rows.Count.ToString(), Rows = rows.ToArray(),
+                Empty = CompanyText.T("reallife_hier_dash_none") };
             page.List.Chosen = ChosenRow(page.List.Rows, v.SubPick[CompanyView.Managers] ?? string.Empty);
             int places, managed, gaps, standing, profit, score, pending;
             d.RegionFigures(area, out places, out managed, out gaps, out standing, out profit, out score, out pending);
@@ -914,8 +939,10 @@ namespace RealLifeOverhaul.Ui
             int target = PolicyCatalogue.Value(PolicyField.ProfitTarget, ruleStep);
             var card = new CompanyCard
             {
-                Kicker = CompanyText.T("reallife_mgr_row_region", "district", CompanyDirector.AreaName(area)) + (r != null ? ", " + r.Name : string.Empty), Title = CompanyText.T("reallife_hier_dash_title"),
-                Icon = UiIcon.ChartPie, Back = BackTo(w, "reg:" + area), Chips = new[] { CompanyText.T("reallife_hier_level_chip", "level", ExecutiveHiring.Code(Rung.Regional)) }, ChipTones = new[] { UiRole.None },
+                Kicker = CompanyText.T("reallife_mgr_row_region", "district", CompanyDirector.AreaName(area)) + (r != null ? ", " + r.Name
+                    : string.Empty), Title = CompanyText.T("reallife_hier_dash_title"),
+                Icon = UiIcon.ChartPie, Back = BackTo(w, "reg:" + area), Chips = new[] { CompanyText.T("reallife_hier_level_chip", "level",
+                    ExecutiveHiring.Code(Rung.Regional)) }, ChipTones = new[] { UiRole.None },
                 FactLabels = new[] { w.T("reallife_co_f_places", "Places"), w.T("reallife_co_f_gaps", "Gaps"), w.T("reallife_co_f_standing", "Standing"), w.T("reallife_co_f_pending", "Pending") },
                 FactValues = new[] { managed + "/" + places, gaps.ToString(), standing.ToString(), pending.ToString() }
             };
@@ -923,7 +950,8 @@ namespace RealLifeOverhaul.Ui
             {
                 Sec(w.T("reallife_hier_sec_figures", "Figures")),
                 Row(CompanyText.T("reallife_hier_fig_score"), score.ToString()),
-                Row(CompanyText.T("reallife_hier_fig_profit"), CompanyText.Money(profit), target != PolicyCatalogue.ProfitNone && managed > 0 && profit < CompanyCatalogue.AtPrices(target, d.Index) * managed ? UiRole.WarnText : UiRole.None),
+                Row(CompanyText.T("reallife_hier_fig_profit"), CompanyText.Money(profit), target != PolicyCatalogue.ProfitNone && managed > 0 && profit < CompanyCatalogue.AtPrices(target,
+                    d.Index) * managed ? UiRole.WarnText : UiRole.None),
                 Row(CompanyText.T("reallife_pol_field_profit_target"), CompanyApp.PolicyStepName(PolicyField.ProfitTarget, ruleStep)),
                 Sec(w.T("reallife_hier_sec_quick", "Do now")),
                 Buttons(
@@ -932,7 +960,8 @@ namespace RealLifeOverhaul.Ui
                 Buttons(
                     Btn(CompanyText.T("reallife_hier_quick_move"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.RegionMove, area), UiAction.Count, UiIcon.Next),
                     Btn(CompanyText.T("reallife_hier_quick_appoint"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.RegionAppoint, area), UiAction.Count, UiIcon.People),
-                    Btn(CompanyText.T("reallife_hier_open_policy"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "reg:" + area, CompanyView.Managers, CompanyView.SubPolicy), UiAction.Count, UiIcon.Sliders)),
+                    Btn(CompanyText.T("reallife_hier_open_policy"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "reg:" + area, CompanyView.Managers, CompanyView.SubPolicy), UiAction.Count,
+                        UiIcon.Sliders)),
                 Note(CompanyText.T("reallife_hier_region_dash_what"))
             };
             card.Blocks = blocks.ToArray();
@@ -969,7 +998,8 @@ namespace RealLifeOverhaul.Ui
                     Figure = CompanyText.Wage(p.Going), Note = p.PlaceName, Chip = x != null && x.Id == p.Id ? CompanyText.T("reallife_mgr_in_post") : null, ChipTone = UiRole.Ok
                 });
             }
-            page.List = new CompanyList { Title = w.T("reallife_co_candidates", "Who could do it"), Count = rows.Count.ToString(), Rows = rows.ToArray(), Empty = CompanyText.T("reallife_hier_exec_nobody") };
+            page.List = new CompanyList { Title = w.T("reallife_co_candidates", "Who could do it"), Count = rows.Count.ToString(), Rows = rows.ToArray(),
+                Empty = CompanyText.T("reallife_hier_exec_nobody") };
             string chosen = v.SubPick[CompanyView.Managers] ?? string.Empty;
             page.List.Chosen = ChosenRow(page.List.Rows, chosen);
             string back = x != null ? "exe:" + seatNo : "seat:" + seatNo;
@@ -995,7 +1025,8 @@ namespace RealLifeOverhaul.Ui
                     blocks.Add(Note(CompanyText.T("reallife_mgr_appoint_replaces", "name", x.Name)));
                 }
                 blocks.Add(Note(CompanyText.T(PolicyCatalogue.Mod + "_hier_seat_what_" + seat.ToString().ToLowerInvariant())));
-                blocks.Add(Buttons(Btn(CompanyText.T("reallife_mgr_appoint"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.SeatAppoint, p.Id, seatNo), UiAction.Alt, UiIcon.Check, false, x != null && x.Id == p.Id,
+                blocks.Add(Buttons(Btn(CompanyText.T("reallife_mgr_appoint"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.SeatAppoint, p.Id, seatNo), UiAction.Alt, UiIcon.Check, false, x != null
+                    && x.Id == p.Id,
                     CompanyText.T("reallife_mgr_in_post"))));
                 card.Blocks = blocks.ToArray();
             }
@@ -1032,7 +1063,8 @@ namespace RealLifeOverhaul.Ui
                     {
                         blocks.Add(Note(CompanyText.T("reallife_hier_seat_waits_line"), UiRole.WarnText));
                     }
-                    blocks.Add(Buttons(Btn(CompanyText.T("reallife_mgr_stand_down"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.SeatStandDown, null, seatNo), UiAction.Count, UiIcon.Close, true)));
+                    blocks.Add(Buttons(Btn(CompanyText.T("reallife_mgr_stand_down"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.SeatStandDown, null, seatNo), UiAction.Count, UiIcon.Close,
+                        true)));
                     var lines = new List<CompanyDone>(5);
                     for (int i = hs.Entries.Count - 1; i >= 0 && lines.Count < LogShown; i--)
                     {

@@ -24,13 +24,15 @@ namespace RealLifeOverhaul.Ui
             {
                 int t = UiDraw.Tile(s, inside, tx, ty, size, dim ? UiRole.Muted : tint, false);
                 float g = UiTokens.S6;
-                UiDraw.Icon(s, inside.In(t), tx + (size - g) / 2f, ty + (size - g) / 2f, g, icon == UiIcon.None ? UiIcon.Store : icon, dim ? UiRole.Muted : tint, UiFlags.Middle | UiFlags.Centre, true);
+                UiDraw.Icon(s, inside.In(t), tx + (size - g) / 2f, ty + (size - g) / 2f, g, icon == UiIcon.None ? UiIcon.Store : icon, dim ? UiRole.Muted : tint, UiFlags.Middle | UiFlags.Centre,
+                    true);
             }
             float right = x + w - UiTokens.S3;
             float fw = 0f;
             if (!string.IsNullOrEmpty(figure) || !string.IsNullOrEmpty(note))
             {
-                fw = Math.Min(UiDraw.SnapDown(w * 0.36f), UiDraw.Snap(Math.Max(UiTextRules.Width(figure ?? string.Empty, UiStyle.BodyStrong), UiTextRules.Width(note ?? string.Empty, UiStyle.Small)) + UiTokens.S1));
+                fw = Math.Min(UiDraw.SnapDown(w * 0.36f), UiDraw.Snap(Math.Max(UiTextRules.Width(figure ?? string.Empty, UiStyle.BodyStrong), UiTextRules.Width(note ?? string.Empty, UiStyle.Small))
+                    + UiTokens.S1));
             }
             float lx = tx + size + UiTokens.S3, lw = Math.Max(0f, right - fw - (fw > 0f ? UiTokens.S3 : 0f) - lx);
             float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
@@ -77,7 +79,8 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- the list of a page
 
-        /// <summary>A left-hand list: its title and count, tools, filters, the rows in a scrolling list and a link at its foot. The row chosen is in the cyan at a fifth. Returns the list's index in the scene.</summary>
+        /// <summary>A left-hand list: its title and count, tools, filters, the rows in a scrolling list and a link at its foot. The row chosen is in the cyan at a fifth. Returns the list's index in
+        /// the scene.</summary>
         internal static short ListPane(UiScene s, UiAt at, CompanyList list, CompanyView v, CompanyWords w, CompanyLayout lay, float x, float y, float width, float bottom, IUiKeys keys)
         {
             float cy = y;
@@ -160,7 +163,8 @@ namespace RealLifeOverhaul.Ui
                     }
                     bool chosen = r == list.Chosen;
                     int face = UiDraw.Box(s, rowAt, 0f, ry, rw, ListRow, chosen ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusLarge, chosen ? UiFlags.Selected : UiFlags.None);
-                    RowFace(s, rowAt.In(face), 0f, ry, rw, ListRow, row.Title, row.Sub, row.Figure, row.Note, row.Chip, row.ChipTone, row.FigureTone, row.Icon, row.Tint, row.Face, row.Hue, row.Ring, -1, chosen, row.Dim);
+                    RowFace(s, rowAt.In(face), 0f, ry, rw, ListRow, row.Title, row.Sub, row.Figure, row.Note, row.Chip, row.ChipTone, row.FigureTone, row.Icon, row.Tint, row.Face, row.Hue, row.Ring,
+                        -1, chosen, row.Dim);
                     UiDraw.Node(s, rowAt, 0f, ry, rw, ListRow, Row, r, face, false, lst, r);
                     lay.RowIds[r] = row.Id;
                 }
@@ -197,7 +201,8 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
-                UiDraw.EmptyState(s, at.InRegion(RegionMain), cx, y, ccw, bottom - y, UiIcon.Info, w.T("reallife_co_pick_title", "Nothing picked"), string.IsNullOrEmpty(page.Lead) ? w.T("reallife_co_pick_body", "Pick a row at the left to see it here.") : page.Lead, null, -1, keys);
+                UiDraw.EmptyState(s, at.InRegion(RegionMain), cx, y, ccw, bottom - y, UiIcon.Info, w.T("reallife_co_pick_title", "Nothing picked"), string.IsNullOrEmpty(page.Lead)
+                    ? w.T("reallife_co_pick_body", "Pick a row at the left to see it here.") : page.Lead, null, -1, keys);
             }
             if (list >= 0)
             {

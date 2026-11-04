@@ -38,9 +38,11 @@ namespace RealLifeOverhaul.Ui
                 bool on = file.Push >= 0, running = on && file.Pushing(day);
                 rows.Add(new CompanyRow
                 {
-                    Id = "push:" + file.Place, Title = shops[i].Name, Sub = on ? CompanyText.Campaign(file.Push) + ", " + (running ? CompanyText.Day(file.PushEnd - 1) : CompanyText.T("reallife_co_row_from", "day", file.PushFrom.ToString()))
+                    Id = "push:" + file.Place, Title = shops[i].Name, Sub = on ? CompanyText.Campaign(file.Push) + ", " + (running ? CompanyText.Day(file.PushEnd - 1)
+                        : CompanyText.T("reallife_co_row_from", "day", file.PushFrom.ToString()))
                         : CompanyText.T("reallife_co_none"), Icon = UiIcon.Megaphone, Figure = on ? CompanyText.Percent(file.PushPercent) : null, FigureTone = UiRole.OkText,
-                    Note = on ? CompanyText.Money(file.PushCost) : null, Chip = on ? CompanyText.T(running ? "reallife_ibox_chip_running" : "reallife_ibox_chip_booked") : null, ChipTone = running ? UiRole.Ok : UiRole.Muted
+                    Note = on ? CompanyText.Money(file.PushCost) : null, Chip = on ? CompanyText.T(running ? "reallife_ibox_chip_running" : "reallife_ibox_chip_booked") : null, ChipTone = running
+                        ? UiRole.Ok : UiRole.Muted
                 });
             }
             if (s.Reports.Count > 0)
@@ -52,11 +54,13 @@ namespace RealLifeOverhaul.Ui
                 CampaignReport r = s.Reports[i];
                 rows.Add(new CompanyRow
                 {
-                    Id = "rep:" + i, Title = CompanyText.Campaign(r.Kind), Sub = r.Name + ", " + CompanyText.Day(r.From + r.Days - 1), Icon = UiIcon.ClipboardText, Figure = CompanyText.Percent(r.Footfall),
+                    Id = "rep:" + i, Title = CompanyText.Campaign(r.Kind), Sub = r.Name + ", " + CompanyText.Day(r.From
+                        + r.Days - 1), Icon = UiIcon.ClipboardText, Figure = CompanyText.Percent(r.Footfall),
                     FigureTone = r.Footfall > 0 ? UiRole.OkText : UiRole.None, Note = CompanyText.T("reallife_co_row_extra", "amount", CompanyText.Money(r.Extra))
                 });
             }
-            page.List = new CompanyList { Title = w.T("reallife_co_tab_marketing", "Marketing"), Count = shops.Count.ToString(), Rows = rows.ToArray(), Empty = CompanyText.T("reallife_co_row_no_business") };
+            page.List = new CompanyList { Title = w.T("reallife_co_tab_marketing", "Marketing"), Count = shops.Count.ToString(), Rows = rows.ToArray(),
+                Empty = CompanyText.T("reallife_co_row_no_business") };
             string pick = v.Pick[CompanyView.Marketing] ?? string.Empty;
             page.List.Chosen = ChosenRow(page.List.Rows, pick);
             CompanyShop shop = pick.StartsWith("push:", StringComparison.Ordinal) ? d.ShopAt(pick.Substring(5)) : null;
@@ -136,7 +140,8 @@ namespace RealLifeOverhaul.Ui
             blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Choice, Text = w.T("reallife_co_push_kind", "Kind"), Options = options, Chosen = at, Acts = acts });
             blocks.Add(Note(CompanyText.T(CampaignAboutKeys[kind], "share", CompanyText.Share(CompanyCatalogue.DiscountShare))));
             blocks.Add(Row(w.T("reallife_co_f_cost", "Cost"), CompanyText.Money(cost)));
-            blocks.Add(Row(CompanyText.Label("reallife_co_push_length"), CompanyText.T("reallife_co_push_length_value", "days", CompanyCatalogue.CampaignDays[kind].ToString(), "from", (day + 1).ToString())));
+            blocks.Add(Row(CompanyText.Label("reallife_co_push_length"), CompanyText.T("reallife_co_push_length_value", "days", CompanyCatalogue.CampaignDays[kind].ToString(), "from", (day
+                + 1).ToString())));
             blocks.Add(Row(w.T("reallife_co_f_effect", "Effect on customers"), CompanyText.Percent(percent), UiRole.OkText));
             string economy = CompanyText.Share(CompanyCatalogue.CampaignCycle[CompanyCatalogue.Clamp((int)d.Cycle, 0, 3)]);
             blocks.Add(Note(CompanyText.T("reallife_co_push_parts", "own", CompanyText.Percent(CompanyCatalogue.CampaignFootfall[kind]), "district", CompanyText.Share(suit), "economy", economy)
@@ -208,7 +213,8 @@ namespace RealLifeOverhaul.Ui
                 int until = c.Stage == ClaimStage.Open ? c.Day + CompanyCatalogue.ClaimWindowDays : c.PayDay;
                 rows.Add(new CompanyRow
                 {
-                    Id = "claim:" + c.Id, Title = c.Name, Sub = CompanyText.T("reallife_co_row_claim", "cover", CompanyText.Cover(c.Kind)) + ", " + CompanyText.Insurer(c.Insurer), Icon = UiIcon.ShieldCheck,
+                    Id = "claim:" + c.Id, Title = c.Name, Sub = CompanyText.T("reallife_co_row_claim", "cover", CompanyText.Cover(c.Kind)) + ", "
+                        + CompanyText.Insurer(c.Insurer), Icon = UiIcon.ShieldCheck,
                     Figure = c.Stage == ClaimStage.Open ? CompanyText.T("reallife_co_row_claim_by", "day", until.ToString()) : CompanyText.T("reallife_co_row_claim_paid", "day", until.ToString()),
                     Chip = CompanyText.T(c.Stage == ClaimStage.Open ? "reallife_ibox_chip_open" : "reallife_ibox_chip_filed"), ChipTone = c.Stage == ClaimStage.Open ? UiRole.Warn : UiRole.Muted
                 });
@@ -222,7 +228,8 @@ namespace RealLifeOverhaul.Ui
                     premiums += p.Active ? p.Premium : 0;
                     rows.Add(new CompanyRow
                     {
-                        Id = "pol:" + shops[i].File.Place + ":" + k, Title = shops[i].Name, Sub = CompanyText.Cover(k) + ", " + (p.Active ? CompanyText.Insurer(p.Insurer) : CompanyText.T("reallife_co_none")),
+                        Id = "pol:" + shops[i].File.Place + ":" + k, Title = shops[i].Name, Sub = CompanyText.Cover(k) + ", " + (p.Active ? CompanyText.Insurer(p.Insurer)
+                            : CompanyText.T("reallife_co_none")),
                         Icon = k == (int)CoverKind.Fire ? UiIcon.Fire : k == (int)CoverKind.Theft ? UiIcon.Lock : UiIcon.ShieldCheck,
                         Figure = p.Active ? CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(p.Premium)) : null,
                         Chip = p.Active ? null : CompanyText.T("reallife_co_row_uninsured"), ChipTone = UiRole.Warn
@@ -278,7 +285,8 @@ namespace RealLifeOverhaul.Ui
             var card = new CompanyCard
             {
                 Kicker = w.T("reallife_co_tab_cover", "Cover"), Title = CompanyText.T("reallife_co_claim_title", "cover", CompanyText.Cover(c.Kind), "business", c.Name), Icon = UiIcon.ShieldCheck,
-                Chips = new[] { CompanyText.T(c.Stage == ClaimStage.Open ? "reallife_ibox_chip_open" : c.Stage == ClaimStage.Filed ? "reallife_ibox_chip_filed" : c.Stage == ClaimStage.Paid ? "reallife_ibox_chip_paid" : "reallife_ibox_chip_lapsed") },
+                Chips = new[] { CompanyText.T(c.Stage == ClaimStage.Open ? "reallife_ibox_chip_open" : c.Stage == ClaimStage.Filed ? "reallife_ibox_chip_filed" : c.Stage == ClaimStage.Paid
+                    ? "reallife_ibox_chip_paid" : "reallife_ibox_chip_lapsed") },
                 ChipTones = new[] { c.Stage == ClaimStage.Open ? UiRole.Warn : c.Stage == ClaimStage.Paid ? UiRole.Ok : c.Stage == ClaimStage.Filed ? UiRole.Muted : UiRole.Danger },
                 FactLabels = new[] { w.T("reallife_co_f_excess", "Excess"), w.T("reallife_co_f_pays", "Pays") }, FactValues = new[] { CompanyText.Money(c.Excess), CompanyText.Money(c.Payout) }
             };
@@ -286,7 +294,8 @@ namespace RealLifeOverhaul.Ui
             switch (c.Stage)
             {
                 case ClaimStage.Open:
-                    blocks.Add(Note(CompanyText.T("reallife_co_claim_open", "day", (c.Day + CompanyCatalogue.ClaimWindowDays).ToString(), "days", CompanyCatalogue.InsurerPayDays[c.Insurer].ToString()), UiRole.WarnText));
+                    blocks.Add(Note(CompanyText.T("reallife_co_claim_open", "day", (c.Day + CompanyCatalogue.ClaimWindowDays).ToString(), "days",
+                        CompanyCatalogue.InsurerPayDays[c.Insurer].ToString()), UiRole.WarnText));
                     break;
                 case ClaimStage.Filed:
                     blocks.Add(Note(CompanyText.T("reallife_co_claim_filed", "day", c.PayDay.ToString())));
@@ -298,7 +307,8 @@ namespace RealLifeOverhaul.Ui
                     blocks.Add(Note(CompanyText.T("reallife_co_claim_lapsed"), UiRole.DangerText));
                     break;
             }
-            blocks.Add(Note(CompanyText.T(c.Kind == (int)CoverKind.Fire ? "reallife_co_claim_what_fire" : c.Kind == (int)CoverKind.Theft ? "reallife_co_claim_what_theft" : "reallife_co_claim_what_liability",
+            blocks.Add(Note(CompanyText.T(c.Kind == (int)CoverKind.Fire ? "reallife_co_claim_what_fire" : c.Kind == (int)CoverKind.Theft ? "reallife_co_claim_what_theft"
+                : "reallife_co_claim_what_liability",
                 "day", c.Day.ToString(), "amount", CompanyText.Money(c.Loss))));
             blocks.Add(Sec(w.T("reallife_ibox_sec_money", "The money")));
             blocks.Add(Row(CompanyText.Label("reallife_co_claim_insurer"), CompanyText.Insurer(c.Insurer)));
@@ -307,7 +317,8 @@ namespace RealLifeOverhaul.Ui
             blocks.Add(Row(w.T("reallife_co_f_pays", "Pays"), CompanyText.Money(c.Payout), UiRole.OkText));
             if (c.Stage == ClaimStage.Open)
             {
-                blocks.Add(Note(CompanyText.T("reallife_co_claim_counts", "most", (CompanyCatalogue.InsurerClaimsMost[c.Insurer] - 1).ToString(), "loading", CompanyText.Share(CompanyCatalogue.ClaimLoading))));
+                blocks.Add(Note(CompanyText.T("reallife_co_claim_counts", "most", (CompanyCatalogue.InsurerClaimsMost[c.Insurer] - 1).ToString(), "loading",
+                    CompanyText.Share(CompanyCatalogue.ClaimLoading))));
                 blocks.Add(Buttons(Btn(CompanyText.T("reallife_co_claim_do"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.ClaimFile, null, c.Id), UiAction.Alt, UiIcon.Check)));
             }
             card.Blocks = blocks.ToArray();
@@ -345,9 +356,11 @@ namespace RealLifeOverhaul.Ui
             {
                 blocks.Add(Row(CompanyText.Label("reallife_co_claim_insurer"), CompanyText.Insurer(insurer)));
             }
-            blocks.Add(Note(CompanyText.T("reallife_co_policy_excess", "share", CompanyText.Share(CompanyCatalogue.InsurerExcessShare[insurer]), "least", CompanyText.Money(CompanyCatalogue.InsurerExcessLeast[insurer]))));
+            blocks.Add(Note(CompanyText.T("reallife_co_policy_excess", "share", CompanyText.Share(CompanyCatalogue.InsurerExcessShare[insurer]), "least",
+                CompanyText.Money(CompanyCatalogue.InsurerExcessLeast[insurer]))));
             blocks.Add(Note(CompanyText.T("reallife_co_policy_most", "most", CompanyText.Money(CompanyCatalogue.CoverMost[kind]), "days", CompanyCatalogue.InsurerPayDays[insurer].ToString())));
-            blocks.Add(Note(CompanyText.T("reallife_co_policy_claims", "most", (CompanyCatalogue.InsurerClaimsMost[insurer] - 1).ToString(), "loading", CompanyText.Share(CompanyCatalogue.ClaimLoading))));
+            blocks.Add(Note(CompanyText.T("reallife_co_policy_claims", "most", (CompanyCatalogue.InsurerClaimsMost[insurer] - 1).ToString(), "loading",
+                CompanyText.Share(CompanyCatalogue.ClaimLoading))));
             bool writes = CoverRules.WillWrite(p, insurer);
             int carried = CoverRules.Carried(p);
             if (p.Active)
@@ -372,7 +385,8 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
-                blocks.Add(Buttons(Btn(CompanyText.T("reallife_co_policy_buy"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.CoverBuy, place, kind, insurer), UiAction.Alt, UiIcon.Check, false, !writes,
+                blocks.Add(Buttons(Btn(CompanyText.T("reallife_co_policy_buy"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.CoverBuy, place, kind, insurer), UiAction.Alt, UiIcon.Check, false,
+                    !writes,
                     !writes ? CompanyText.T("reallife_co_policy_refused", "insurer", CompanyText.Insurer(insurer), "claims", carried.ToString()) : null)));
             }
             card.Blocks = blocks.ToArray();

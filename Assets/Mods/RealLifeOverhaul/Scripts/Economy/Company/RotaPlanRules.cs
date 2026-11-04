@@ -299,7 +299,8 @@ namespace RealLifeOverhaul.Economy
             p.Version++;
         }
 
-        /// <summary>The shifts a plan in use takes off the plan that would be in use otherwise, for "4 fewer shifts" on the page: the difference in the hours asked for by the floors in a week.</summary>
+        /// <summary>The shifts a plan in use takes off the plan that would be in use otherwise, for "4 fewer shifts" on the page: the difference in the hours asked for by the floors in a
+        /// week.</summary>
         public static int FloorHours(RotaPlanFile p)
         {
             int hours = 0;

@@ -538,7 +538,8 @@ namespace RealLifeOverhaul.Economy
                     return d.A == -1 ? CompanyText.T("reallife_mgr_did_rota_missed") : d.A == -2 ? CompanyText.T("reallife_mgr_did_rota_unwritten")
                         : d.A == -3 ? CompanyText.T("reallife_mgr_did_rota_kept_out", "count", d.B.ToString())
                         : d.A == -4 ? CompanyText.T("reallife_mgr_did_rota_kept_less", "after", d.B.ToString(), "wanted", d.C.ToString(), "now", d.D.ToString())
-                        : RotaMoved(d) is string[] moved ? CompanyText.Fill("reallife_mgr_did_rota_moved", "shifts", d.A.ToString(), "covered", d.B.ToString(), "wanted", d.C.ToString(), "person", moved[0], "from", moved[1], "to", moved[2])
+                        : RotaMoved(d) is string[] moved ? CompanyText.Fill("reallife_mgr_did_rota_moved", "shifts", d.A.ToString(), "covered", d.B.ToString(), "wanted", d.C.ToString(), "person",
+                            moved[0], "from", moved[1], "to", moved[2])
                         : CompanyText.T("reallife_mgr_did_rota", "shifts", d.A.ToString(), "covered", d.B.ToString(), "wanted", d.C.ToString());
                 case ManagerTask.Marketing:
                     return CompanyText.Fill("reallife_mgr_did_marketing", "campaign", CompanyText.Campaign(d.A), "amount", CompanyText.Money(d.B), "percent", d.C.ToString(), "days", d.D.ToString());
