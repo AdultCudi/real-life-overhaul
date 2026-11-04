@@ -93,6 +93,55 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>
+        /// How many people a car seats, the driver included: the real model's own count (the game keeps no seat count for its cars), and
+        /// by kind for a type the table does not know. At least 1; a car the mod leaves alone seats the one who rides it.
+        /// </summary>
+        public static int Seats(string typeName, CarKind kind)
+        {
+            string name = typeName ?? string.Empty;
+            if (name.StartsWith(Prefix, System.StringComparison.Ordinal))
+            {
+                name = name.Substring(Prefix.Length);
+            }
+            if (SeatsOf(name) > 0)
+            {
+                return SeatsOf(name);
+            }
+            switch (kind)
+            {
+                case CarKind.Economy:
+                case CarKind.Saloon:
+                case CarKind.Luxury:
+                case CarKind.Utility: return 5;
+                case CarKind.Sports: return 2;
+                case CarKind.Van: return 3;
+                case CarKind.Truck: return 2;
+                default: return 1;
+            }
+        }
+
+        /// <summary>True for a car the table names (its seats are known); a type placed by kind only has a guess, which the purchase screen leaves out.</summary>
+        public static bool SeatsKnown(string typeName)
+        {
+            string name = typeName ?? string.Empty;
+            return SeatsOf(name.StartsWith(Prefix, System.StringComparison.Ordinal) ? name.Substring(Prefix.Length) : name) > 0;
+        }
+
+        private static int SeatsOf(string name)
+        {
+            switch (name)
+            {
+                case "limo": return 8;
+                case "vordpony": case "empiremustanggt:vehicletype_mustanggt": case "empirebmwg82:vehicletype_empirebmwg82": return 4;
+                case "umcdesert": case "umcdesertdeliveryjob": case "mersaididash": case "deliverytruck": return 3;
+                case "honzamimic": case "vordtiaravic": case "bima320": case "mersaidis500": case "missamvillian": case "petrollsfanton": case "vordv150": return 5;
+                case "umcnunavut": return 7;
+                case "ferdinand112": case "mersaidimgagt": case "anselmoaf90": case "freighttruckt1": return 2;
+                default: return 0;
+            }
+        }
+
         /// <summary>A type the table does not know: placed by the tier the game itself gave it, its cargo room and its luxury flag.</summary>
         public static CarSpec Guess(in CarTraits t)
         {

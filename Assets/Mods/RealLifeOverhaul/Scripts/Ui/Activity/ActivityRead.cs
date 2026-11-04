@@ -28,6 +28,9 @@ namespace RealLifeOverhaul.Ui
             return l.localize ? LocalizorManager.GetLocalization(l.key, l.arguments) : l.key;
         }
 
+        /// <summary>A skill of the game's by its name: the game's own words for its key, else the key as it stands.</summary>
+        public static string SkillName(string skill) => string.IsNullOrEmpty(skill) ? string.Empty : LocalizorManager.IsLocalizedKey(skill) ? skill.GetLocalization() : skill;
+
         /// <summary>A key and its arguments in words, as the panel's slider and bar write theirs.</summary>
         public static string Words(string key, object arguments) => string.IsNullOrEmpty(key) ? string.Empty : LocalizorManager.GetLocalization(key, arguments);
 

@@ -19,6 +19,8 @@ namespace RealLifeOverhaul.Ui
         public string Value;
         public string Hint;
         public bool CanLess, CanMore;
+        public int TypeCommand;     // 0 for a figure that is only stepped; else the command of the field the player types the figure into (a bank page's amounts)
+        public int TypeArg;
     }
 
     /// <summary>A panel of facts and what to do about them: the chosen account, the chosen plan, the company's settings.</summary>

@@ -30,7 +30,6 @@ namespace RealLifeOverhaul.Economy
         public static BanksDirector Instance { get; private set; }
 
         /// <summary>The kit's apply at the bank showing.</summary>
-        internal void KitApply(int amount) => _view?.KitApply(amount);
 
         private PhoneApp _app;
         private BankApp _view;
@@ -183,7 +182,7 @@ namespace RealLifeOverhaul.Economy
                     view.Closed();
                     Badges();
                 },
-                Kit = () => new RealLifeOverhaul.Ui.BanksScreen(RealLifeOverhaul.Ui.MoneyLive.BanksLive),
+                Kit = () => new RealLifeOverhaul.Ui.BanksScreen(RealLifeOverhaul.Ui.BanksLive.Instance),
                 KitScreen = RealLifeOverhaul.Ui.BanksScreen.ScreenId,
                 KitIcon = RealLifeOverhaul.Ui.UiIcon.Bank
             };

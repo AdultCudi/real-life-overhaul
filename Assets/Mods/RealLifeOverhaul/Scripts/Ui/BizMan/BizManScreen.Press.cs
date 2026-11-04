@@ -16,6 +16,10 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public sealed partial class BizManScreen
     {
+        // The values BizManInsight.FilterChanged answers to: "1" is yesterday by the hour, "7" the last week by the day
+        // (decompiled BizManInsight.cs:206-249; RefreshData starts the chart on "7"); the kit's two tabs, in its order.
+        private static readonly string[] PeriodValues = { "1", "7" };
+
         private bool PressPage(int command, int arg)
         {
             BizManBusiness b = _app.business;
@@ -78,11 +82,11 @@ namespace RealLifeOverhaul.Ui
                 case BizManPages.Period:
                 {
                     Extensions.ChartController chart = Get<Extensions.ChartController>(GameContract.SeeChart, b.bizManInsight);
-                    if (chart == null || chart.filterOptions == null || arg < 0 || arg >= chart.filterOptions.Count)
+                    if (chart == null || arg < 0 || arg >= PeriodValues.Length)
                     {
                         return false;
                     }
-                    chart.SetFilter(chart.filterOptions[arg].value);   // what the game's own period button calls
+                    chart.SetFilter(PeriodValues[arg]);   // by value, what the game's own period button calls, not by place in its list
                     return true;
                 }
                 case BizManPages.Goods + UiDataTable.Head:

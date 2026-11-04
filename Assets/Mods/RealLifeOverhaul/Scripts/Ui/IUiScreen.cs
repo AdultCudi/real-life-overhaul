@@ -65,6 +65,9 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Every key the kit reads taken from the game this frame (a screen over a panel of the game's that answers the same keys).</summary>
         void TakeAll();
 
+        /// <summary>Only Interact taken from the game this frame (a card that answers it and no other key of the game's).</summary>
+        void TakeInteract();
+
         /// <summary>The keys bound now, as the prompt bar names them.</summary>
         IUiKeys Keys { get; }
     }

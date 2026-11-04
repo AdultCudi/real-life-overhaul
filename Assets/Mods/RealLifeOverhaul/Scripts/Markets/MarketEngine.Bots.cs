@@ -723,7 +723,7 @@ namespace RealLifeOverhaul.Markets
                 }
                 b.Cash += money;
                 long gain = money - h.Cost;
-                b.Realised += gain;
+                MarketBots.BookGain(b, gain, State.Day);
                 h.Gain += gain;
                 b.Closed++;
                 b.Wins += h.Gain > 0 ? 1 : 0;

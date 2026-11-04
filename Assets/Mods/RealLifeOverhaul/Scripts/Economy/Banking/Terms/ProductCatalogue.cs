@@ -40,7 +40,8 @@ namespace RealLifeOverhaul.Economy
         NoSecurity = 9,     // no business with takings on record to lend against
         NoCash = 10,        // the deposit or the payment is not in hand
         NothingOwed = 11,
-        Busy = 12           // something of the same kind is already under way
+        Busy = 12,          // something of the same kind is already under way
+        NoCover = 13        // a business with the days on record whose takings do not cover the payment of the least loan 20 times
     }
 
     /// <summary>
@@ -96,7 +97,9 @@ namespace RealLifeOverhaul.Economy
         public static int CardMinimumLeast => Prices.At(25);
 
         // the business loan: one of the game's loans with a business as security
-        public const int BusinessDaysOnRecord = 7;           // days of takings needed on record, and the days its profit is averaged over
+        public const int BusinessDaysOnRecord = 30;          // days of takings needed on record before a bank lends against a business
+        public const int BusinessAverageDays = 7;            // the days its profit is averaged over
+        public const int BusinessCoverTimes = 20;            // the takings on record must cover the loan's daily payment this many times
         public const int BusinessProfitMultiple = 30;        // the most it lends, in days of that average profit
         public const int BusinessRatePoints = -1;
 

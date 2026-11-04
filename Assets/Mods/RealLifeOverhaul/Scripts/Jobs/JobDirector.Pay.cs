@@ -30,8 +30,7 @@ namespace RealLifeOverhaul
             int total = slip.Total;
             job.Shift.Add(slip);
             // A lead shift trains the employer's own skill; a test button's work is paid but earns no experience.
-            PayOut(def, slip, def.Id == JobCatalogue.Lead && _context.Shift != null && _context.Shift.Employer.LeadSkill != null ? _context.Shift.Employer.LeadSkill : def.Skill,
-                !_context.Test);
+            PayOut(def, slip, ShiftFactsRules.SkillKey(def, _context.Shift != null ? _context.Shift.Employer : null), !_context.Test);
             // One notification for the whole shift, when it ends (SlipNote).
             Logger?.Info("Jobs: '" + def.Id + "' paid " + total + " for " + JobText.T(titleKey) + " (base " + slip.Base + ", distance " + slip.Distance + ", tips " + slip.Tips
                          + ", bonus " + slip.Bonus + ", penalties " + slip.Penalty + ") for " + slip.Units + " unit(s).");
@@ -182,7 +181,7 @@ namespace RealLifeOverhaul
                 ShiftSettlement sum = JobSave.Settle(saved);
                 Employer employer = saved.Rota ? CareerCatalogue.Find(saved.Employer) : null;
                 // What was done and not paid, as any slip.
-                PayOut(def, saved.Owed, def.Id == JobCatalogue.Lead && employer != null && employer.LeadSkill != null ? employer.LeadSkill : def.Skill, true);
+                PayOut(def, saved.Owed, ShiftFactsRules.SkillKey(def, employer), true);
                 if (saved.Rota)
                 {
                     _career.SettleSaved(def, saved, sum);   // the basic wage for the hours clocked, and the shift on the rota's count

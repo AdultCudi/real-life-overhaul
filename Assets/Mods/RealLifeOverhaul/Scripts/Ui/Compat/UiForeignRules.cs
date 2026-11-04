@@ -160,6 +160,12 @@ namespace RealLifeOverhaul.Ui
         public static bool KitHasKeys(bool foreignWindow, bool gameBox, bool kitOver) => !foreignWindow && !gameBox && !kitOver;
 
         /// <summary>
+        /// An overlay of the kit that answers keys (Fred's card) has them only while no menu of the game's (pause, options, blueprints),
+        /// no full menu, no box and no other mod's window is up.
+        /// </summary>
+        public static bool KitHasOverlayKeys(bool pauseOrOptions, bool fullMenu, bool box, bool foreignWindow) => !pauseOrOptions && !fullMenu && !box && !foreignWindow;
+
+        /// <summary>
         /// A canvas opened while a kit screen is up is a foreign window when it was not among those standing at the open,
         /// is not the kit's, and is not under the game's own interface.
         /// </summary>

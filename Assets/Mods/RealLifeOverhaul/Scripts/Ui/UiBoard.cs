@@ -11,6 +11,9 @@ namespace RealLifeOverhaul.Ui
         public float Hue;        // a person's face's hue
         public UiRole Tint;      // the lane's colour: its icon and the dot before its shifts' names
         public string Warning;   // a lane that needs the player ("No one on Saturday"), said with the warning's glyph; null for none
+        public bool Cleaning;    // a cleaning station: it takes a shift at any hour, so its closed hours are not shaded as shut
+        public int Free;         // the hours (bit h for hour h, 0 to 23) a new shift may start at now: open, or any for a cleaning station, and not taken
+        public string Blocked;   // why the person chosen beside the board cannot take this lane ("No matching skill"), said where its warning goes; null for none
     }
 
     /// <summary>A shift on the board: its lane, its start and end in minutes since midnight, who works it and its state.</summary>
@@ -62,9 +65,13 @@ namespace RealLifeOverhaul.Ui
         public bool[] OpenHours;                       // the opening hours by the hour of the day (0 to 23), for a day of several openings; null: OpenFrom to OpenTo
         public bool Faces;                             // a bar leads with the person's face where it has the room
         public string CoverTitle, CoverLine;           // the coverage strip under the lanes ("Staff / needed", "Bars: customers"); null: no strip
-        public string[] Cover;                         // each hour of the day's figure, 0 to 23 ("5/6"), or null where nothing is needed or placed
+        public string[] Cover;                         // each hour of the day's staff placed, 0 to 23 ("5"), or null where nothing is needed or placed
+        public string[] Needed;                        // each hour's staff needed, 0 to 23 ("6"), under the placed figure in its cell; null for none
         public bool[] Short;                           // fewer placed than needed at that hour: its figure in the danger's colour
         public float[] Bars;                           // the customers each hour against the day's busiest, 0 to 1; null for no bars
+        public string Placing;                         // the person chosen beside the board to be put on an hour: every lane that can take them shows a + on its free hours; null for none
+        public int HoverLane = -1, HoverHour = -1;     // the free hour the mouse rests on: it shows a + too (an hour the lane cannot take shows none)
+        public string LegendOpen, LegendClosed, LegendCleaning, LegendAdd, LegendBlocked;   // the shades' meanings under the board; null leaves one out
 
         // Written by Lay: where the lanes stand, so a pointer's place reads as a lane and a time.
         public float RulerX, RulerW, LanesTop, LanesHeight, LaneHeight;
@@ -120,7 +127,7 @@ namespace RealLifeOverhaul.Ui
             float perHour = m.RulerW / hours;
             Ruler(s, at, m, top, perHour);
             float lanesTop = top + UiTokens.PairRow + UiTokens.S1;
-            float strip = m.CoverTitle != null ? UiTokens.S2 + CoverBars + UiTokens.S1 + UiTokens.PairRow : 0f;
+            float strip = (m.CoverTitle != null ? CoverHeight(m) : 0f) + LegendHeight(m);
             float vh = Math.Max(1, (int)((y + h - lanesTop - strip) / LaneHeight)) * LaneHeight;   // whole lanes: a lane cut through its face reads as a fault
             m.LanesTop = lanesTop;
             m.LanesHeight = vh;
@@ -131,14 +138,41 @@ namespace RealLifeOverhaul.Ui
                 float nx = m.RulerX + (m.Now - m.FirstHour * 60) * perHour / 60f;
                 UiDraw.Box(s, at, nx - UiTokens.Hairline, lanesTop, UiTokens.Hairline * 2f, vh, UiRole.Accent, UiRole.None, 0f, UiFlags.Decor | UiFlags.Share);
             }
-            if (strip > 0f)
+            if (m.CoverTitle != null)
             {
                 Cover(s, at, m, x, lanesTop + vh + UiTokens.S2, perHour);
             }
+            if (LegendHeight(m) > 0f)
+            {
+                Legend(s, at, m, x, lanesTop + vh + (m.CoverTitle != null ? CoverHeight(m) : 0f));
+            }
+        }
+
+        /// <summary>px: the strip's height under the lanes: a gap, the customers' bars where there are any, and the cells of staff (or the head's own lines if they are taller).</summary>
+        public static float CoverHeight(UiBoardModel m)
+        {
+            float cells = CoverCellHeight();
+            float head = UiTokens.PairRow * (string.IsNullOrEmpty(m.CoverLine) ? 1 : 2);
+            return UiTokens.S2 + (m.Bars != null ? CoverBars + UiTokens.S1 : 0f) + Math.Max(cells, head);
+        }
+
+        // A cell's height: the placed figure's line over the needed figure's, a step above and below, each on the grid.
+        private static float CoverCellHeight() => UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SmallStrong)) + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S1 * 2f;
+
+        /// <summary>
+        /// The cell of an hour of the staff strip, in px from the ruler's left: its x and its width. It stands in its hour's column on the
+        /// ruler, a hair in from either line, so two cells never meet (a figure of its own a column, never one string for all).
+        /// </summary>
+        public static void CoverCell(float rulerX, float perHour, int index, out float x, out float w)
+        {
+            float inset = UiTokens.S1 / 2f;
+            x = rulerX + index * perHour + inset;
+            w = Math.Max(UiTokens.S4, perHour - inset * 2f);
         }
 
         // Under the lanes, at each hour's place on the ruler: a bar of the hour's customers against the day's busiest, and the
-        // staff placed over the staff needed, a short hour in the danger's colour. Its head in the lanes' column says what it is.
+        // staff placed over the staff needed in a cell of the hour's column, a short hour's cell outlined and its figures in the danger's colour.
+        // Its head in the lanes' column says what it is.
         private static void Cover(UiScene s, UiAt at, UiBoardModel m, float x, float y, float perHour)
         {
             UiDraw.Text(s, at, x, y, LaneHead - UiTokens.S4, UiStyle.SmallStrong, UiRole.Text2, m.CoverTitle, UiFlags.Truncate);
@@ -148,6 +182,9 @@ namespace RealLifeOverhaul.Ui
             }
             int hours = Math.Max(1, m.LastHour - m.FirstHour);
             float bw = Math.Max(UiTokens.S1, perHour - UiTokens.S2 * 2f);
+            float cy = y + (m.Bars != null ? CoverBars + UiTokens.S1 : 0f);
+            float lineA = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SmallStrong));
+            float cellH = CoverCellHeight();
             for (int i = 0; i < hours; i++)
             {
                 int hour = m.FirstHour + i;
@@ -162,8 +199,17 @@ namespace RealLifeOverhaul.Ui
                 if (!string.IsNullOrEmpty(figure))
                 {
                     bool shortHour = m.Short != null && hour < m.Short.Length && m.Short[hour];
-                    UiDraw.Text(s, at, hx, y + CoverBars + UiTokens.S1, perHour, UiStyle.Small, shortHour ? UiRole.DangerText : UiRole.Text2, figure,
+                    string needed = m.Needed != null && hour >= 0 && hour < m.Needed.Length ? m.Needed[hour] : null;
+                    CoverCell(m.RulerX, perHour, i, out float cx, out float cw);
+                    int cell = UiDraw.Box(s, at, cx, cy, cw, cellH, UiRole.Band, shortHour ? UiRole.Danger : UiRole.None, UiTokens.RadiusSmall, UiFlags.Decor | UiFlags.Share);
+                    UiAt inCell = at.In(cell);
+                    UiDraw.Text(s, inCell, cx, cy + UiTokens.S1, cw, UiStyle.SmallStrong, shortHour ? UiRole.DangerText : UiRole.Text, figure,
                         UiFlags.Truncate | UiFlags.Centre | UiFlags.Share);
+                    if (!string.IsNullOrEmpty(needed))
+                    {
+                        UiDraw.Text(s, inCell, cx, cy + UiTokens.S1 + lineA, cw, UiStyle.Small, shortHour ? UiRole.DangerText : UiRole.Text2, needed,
+                            UiFlags.Truncate | UiFlags.Centre | UiFlags.Share);
+                    }
                 }
             }
         }
@@ -260,8 +306,8 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Portrait(s, inside, 0f, y + (LaneHeight - face) / 2f, face, l.Name, l.Hue, UiRole.None);
             }
             float tx = (l.Icon != UiIcon.None ? UiTokens.S1 : 0f) + face + UiTokens.S3, tw = rx - UiTokens.S3 - tx;
-            bool warns = !string.IsNullOrEmpty(l.Warning);
-            string sub = warns ? l.Warning : l.Sub;
+            bool warns = !string.IsNullOrEmpty(l.Blocked) || !string.IsNullOrEmpty(l.Warning);
+            string sub = !string.IsNullOrEmpty(l.Blocked) ? l.Blocked : warns ? l.Warning : l.Sub;
             float nameH = UiTextRules.LineHeight(UiStyle.Title), subH = string.IsNullOrEmpty(sub) ? 0f : UiTextRules.LineHeight(UiStyle.Small);
             bool twoLines = !warns && !string.IsNullOrEmpty(l.Name) && UiTextRules.Width(l.Name, UiStyle.Title) + UiTokens.S1 > tw;
             if (twoLines)
@@ -284,7 +330,11 @@ namespace RealLifeOverhaul.Ui
                 }
                 UiDraw.Text(s, inside, sx, top + nameH + UiTokens.S1, tx + tw - sx, UiStyle.Small, warns ? UiRole.WarnText : UiRole.Text2, sub, UiFlags.Truncate | UiFlags.Middle);
             }
-            if (m.OpenHours != null)
+            if (l.Cleaning)
+            {
+                // A cleaning station takes a shift at any hour: its closed hours are not shaded as if they were shut.
+            }
+            else if (m.OpenHours != null)
             {
                 // Each run of closed hours darker, as the game's schedule shades the hours a shop is shut.
                 for (int h = m.FirstHour; h < m.LastHour; h++)
@@ -306,6 +356,7 @@ namespace RealLifeOverhaul.Ui
                 Closed(s, inside, m, y, rx, m.FirstHour * 60, m.OpenFrom, perHour);
                 Closed(s, inside, m, y, rx, m.OpenTo, m.LastHour * 60, perHour);
             }
+            Plusses(s, inside, m, lane, y, rx, perHour);
             int laneNode = UiDraw.Node(s, at, 0f, y, w, LaneHeight, LaneCommand, lane, row, false, list, lane);
             s.Nodes[laneNode].Left = _section;
             int before = -1;
@@ -365,6 +416,97 @@ namespace RealLifeOverhaul.Ui
             string initials = space > 0 && last + 1 < name.Length ? name.Substring(0, 1) + name.Substring(last + 1, 1) : name.Substring(0, 1);
             initials = initials.ToUpperInvariant();
             return UiTextRules.Width(initials, UiStyle.SmallStrong) + UiTokens.S1 <= room ? initials : null;
+        }
+
+        /// <summary>True when hour <paramref name="hour"/> of a lane takes a new shift now (its <see cref="UiBoardLane.Free"/> bit).</summary>
+        public static bool IsFree(UiBoardLane lane, int hour) => hour >= 0 && hour < 31 && (lane.Free & (1 << hour)) != 0;
+
+        /// <summary>
+        /// The hours of a lane that show a +, which a press there would fill: every free hour while a person is chosen to place (a lane
+        /// that cannot take them shows none, dimmed with its reason in its head), else only the free hour the mouse rests on.
+        /// </summary>
+        public static bool ShowsPlus(UiBoardModel m, int lane, int hour)
+        {
+            if (lane < 0 || lane >= m.Lanes.Length || !IsFree(m.Lanes[lane], hour) || !string.IsNullOrEmpty(m.Lanes[lane].Blocked))
+            {
+                return false;
+            }
+            return m.Placing != null || (lane == m.HoverLane && hour == m.HoverHour);
+        }
+
+        // A blocked lane's timeline dimmed, then the + of each hour that takes a shift.
+        private static void Plusses(UiScene s, UiAt at, UiBoardModel m, int lane, float y, float rx, float perHour)
+        {
+            if (!string.IsNullOrEmpty(m.Lanes[lane].Blocked))
+            {
+                int dim = UiDraw.Box(s, at, rx, y + UiTokens.S1, perHour * Math.Max(1, m.LastHour - m.FirstHour), LaneHeight - UiTokens.S2, UiRole.Scrim, UiRole.None, 0f,
+                    UiFlags.Share | UiFlags.Decor);
+                s.Items[dim].Alpha = 0.5f;
+                return;
+            }
+            for (int h = m.FirstHour; h < m.LastHour; h++)
+            {
+                if (!ShowsPlus(m, lane, h))
+                {
+                    continue;
+                }
+                bool aimed = lane == m.HoverLane && h == m.HoverHour;
+                float cx = rx + (h - m.FirstHour) * perHour;
+                if (aimed)
+                {
+                    UiDraw.Box(s, at, cx + UiTokens.S1 / 2f, y + UiTokens.S1, perHour - UiTokens.S1, LaneHeight - UiTokens.S2, UiRole.AccentSoft, UiRole.None, UiTokens.RadiusSmall,
+                        UiFlags.Share | UiFlags.Decor);
+                }
+                float g = UiTokens.IconSmall;
+                UiDraw.Icon(s, at, cx + (perHour - g) / 2f, y + (LaneHeight - g) / 2f, g, UiIcon.Plus, aimed ? UiRole.AccentText : UiRole.Text2, UiFlags.Share | UiFlags.Middle | UiFlags.Decor);
+            }
+        }
+
+        /// <summary>px: the legend's height under the board; 0 where the board gives it no words.</summary>
+        public static float LegendHeight(UiBoardModel m) =>
+            string.IsNullOrEmpty(m.LegendOpen) && string.IsNullOrEmpty(m.LegendClosed) && string.IsNullOrEmpty(m.LegendAdd) ? 0f : UiTokens.S2 + UiTokens.PairRow;
+
+        // What each shade on the lanes means, in one quiet line: open hours, closed hours (darker), the + that places a shift, the cleaning
+        // stations that keep every hour, and the lane that cannot take the person chosen (dimmed).
+        private static void Legend(UiScene s, UiAt at, UiBoardModel m, float x, float y)
+        {
+            y += UiTokens.S2;
+            float sw = UiTokens.S4, cx = m.RulerX, h = UiTokens.PairRow;
+            float sy = y + (h - sw) / 2f;
+            if (!string.IsNullOrEmpty(m.LegendOpen))
+            {
+                UiDraw.Box(s, at, cx, sy, sw, sw, UiRole.None, UiRole.Line, UiTokens.RadiusSmall, UiFlags.Decor);
+                cx = LegendWords(s, at, cx + sw + UiTokens.S2, y, h, m.LegendOpen);
+            }
+            if (!string.IsNullOrEmpty(m.LegendClosed))
+            {
+                UiDraw.Box(s, at, cx, sy, sw, sw, UiRole.Field, UiRole.Line, UiTokens.RadiusSmall, UiFlags.Decor);
+                cx = LegendWords(s, at, cx + sw + UiTokens.S2, y, h, m.LegendClosed);
+            }
+            if (!string.IsNullOrEmpty(m.LegendAdd))
+            {
+                UiDraw.Icon(s, at, cx, y + (h - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Plus, UiRole.Text2, UiFlags.Middle | UiFlags.Decor);
+                cx = LegendWords(s, at, cx + UiTokens.IconSmall + UiTokens.S2, y, h, m.LegendAdd);
+            }
+            if (!string.IsNullOrEmpty(m.LegendCleaning))
+            {
+                UiDraw.Icon(s, at, cx, y + (h - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Spark, UiRole.Text2, UiFlags.Middle | UiFlags.Decor);
+                cx = LegendWords(s, at, cx + UiTokens.IconSmall + UiTokens.S2, y, h, m.LegendCleaning);
+            }
+            if (!string.IsNullOrEmpty(m.LegendBlocked))
+            {
+                int dim = UiDraw.Box(s, at, cx, sy, sw, sw, UiRole.Scrim, UiRole.Line, UiTokens.RadiusSmall, UiFlags.Decor);
+                s.Items[dim].Alpha = 0.5f;
+                LegendWords(s, at, cx + sw + UiTokens.S2, y, h, m.LegendBlocked);
+            }
+        }
+
+        // One legend entry's words; returns where the next entry starts.
+        private static float LegendWords(UiScene s, UiAt at, float x, float y, float h, string words)
+        {
+            float w = UiDraw.Snap(UiTextRules.Width(words, UiStyle.Small) + UiTokens.S1);
+            UiDraw.TextMiddle(s, at, x, y, h, w, UiStyle.Small, UiRole.Text2, words, UiFlags.Truncate);
+            return x + w + UiTokens.S6;
         }
 
         // Hours outside the opening hours, darker, as a closed shop's hours are on the game's schedule.

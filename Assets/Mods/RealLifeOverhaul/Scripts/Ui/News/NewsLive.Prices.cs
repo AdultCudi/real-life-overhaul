@@ -121,7 +121,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < names.Count; i++)
             {
                 string key = names[i];
-                if (key != null && key.Length > DaySeriesCatalogue.CityPrefix.Length && key.StartsWith(DaySeriesCatalogue.CityPrefix, StringComparison.Ordinal))
+                if (DaySeriesCatalogue.IsCityGood(key))
                 {
                     goods.Add(key.Substring(DaySeriesCatalogue.CityPrefix.Length));
                 }
@@ -209,8 +209,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < names.Count; i++)
             {
                 string key = names[i];
-                if (key == null || key.Length <= DaySeriesCatalogue.CityPrefix.Length || !key.StartsWith(DaySeriesCatalogue.CityPrefix, StringComparison.Ordinal)
-                    || series.Window(key, end, span, GoodRaw) <= 0)
+                if (!DaySeriesCatalogue.IsCityGood(key) || series.Window(key, end, span, GoodRaw) <= 0)
                 {
                     continue;
                 }
@@ -268,7 +267,8 @@ namespace RealLifeOverhaul.Ui
             };
         }
 
-        // Rivals who raised prices this week, from their moves, and City Hall only while a price policy that exists stands off the city's own.
+        // Rivals who raised prices this week, from their moves; and City Hall,
+        // only while a price policy that exists stands off the city's own.
         private NewsMove[] MovedThisWeek(int day)
         {
             var moves = new List<NewsMove>(MovesMost);

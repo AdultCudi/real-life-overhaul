@@ -400,8 +400,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return null;
             }
-            float perHour = body.powertrain.engine.maxPower / 10f * Mathf.Clamp01(1f - fuel.efficiency);
-            float perKm = perHour * fuel.idleConsumption * BuyKits.SkipFuelFactor * fuel.consumptionMultiplier / car.vehicleType.maxSpeed;
+            float perKm = FuelUseRules.PerKm(body.powertrain.engine.maxPower, fuel.efficiency, fuel.idleConsumption, fuel.consumptionMultiplier, car.vehicleType.maxSpeed);
             if (!(perKm > 0f) || !(fuel.amount >= 0f))
             {
                 return null;
@@ -460,10 +459,13 @@ namespace RealLifeOverhaul.Ui
             _m.Glyph = _m.Icon;
             _m.Name = BuyKits.Words(_ui.itemNameLabel);
             _m.Status = car != null ? Status() : null;
+            bool mine = car == null || GoingPublic.MineVehicle(car);   // a vehicle of another player's (a Going Public session) is not the player's to sell: the game hides its sell too
+            _m.Owner = car != null ? UiText.T(mine ? "reallife_ui_buy_yours" : "reallife_ui_buy_not_yours") : null;
+            _m.OwnerTone = mine ? UiRole.Ok : UiRole.Warn;
             string type = car != null && car.vehicleType != null ? car.vehicleType.vehicleTypeName : item != null ? item.itemName : null;
             _m.Picture = game ? null : BuyPictures.Item(type);
             _m.Aspect = 1f;
-            _sb.Append(_m.Title).Append('|').Append(_m.Name).Append('|').Append(_m.Status).Append('|').Append(_m.Picture).Append('|');
+            _sb.Append(_m.Title).Append('|').Append(_m.Name).Append('|').Append(_m.Status).Append('|').Append(_m.Picture).Append('|').Append(_m.Owner).Append('|');
             _car = car;
             ReadVehicle(car);
             ReadMeta();

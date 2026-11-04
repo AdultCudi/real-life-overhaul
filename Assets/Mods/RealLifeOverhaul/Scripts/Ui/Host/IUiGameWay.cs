@@ -20,4 +20,16 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The kit holds every click it does not take itself off the world under it, as the game's panel does.</summary>
         bool Blocks { get; }
     }
+
+    /// <summary>A screen that takes Cancel only while it can answer it: false leaves the key to the game, so Escape is never eaten for nothing.</summary>
+    public interface IUiGameBack
+    {
+        /// <summary>True while the screen can answer Cancel now.</summary>
+        bool TakesBack { get; }
+    }
+
+    /// <summary>The game's screen over which an overlay of the kit answers keys; only Interact is taken (see <see cref="IUiGameBack"/> for Cancel).</summary>
+    public interface IUiGameInteract
+    {
+    }
 }

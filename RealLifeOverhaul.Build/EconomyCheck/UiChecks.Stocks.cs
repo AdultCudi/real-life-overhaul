@@ -39,7 +39,7 @@ internal static partial class Program
         UiStatement.First + UiStatement.Group, UiStatement.First + UiStatement.Line, UiTrack.First + UiTrack.Step, UiDecision.ChoiceCommand,
         UiDecision.ButtonCommand, UiChartDesk.Rail, StocksCompanyLay.Range, StocksCompanyLay.Type, StocksCompanyLay.Chip, StocksCompanyLay.AddIndicator, StocksCompanyLay.Pick,
         StocksCompanyLay.Big, StocksCompanyLay.Side, StocksCompanyLay.Kind, StocksCompanyLay.Life, StocksCompanyLay.AlertAdd, StocksCompanyLay.PutBack,
-        StocksLay.Less, StocksLay.More, StocksLay.Place,
+        StocksLay.Less, StocksLay.More, StocksLay.Place, StocksLay.View, StocksLay.OrderRow, StocksCompanyLay.AlertLine,
         StocksLay.Alert, StocksLay.Empty, StocksLay.Shares, StocksLay.Act, StocksLay.PriceLess, StocksLay.PriceMore, StocksLay.PricePlain, StocksLay.Watch,
         StocksLay.Second + UiDataTable.Head, StocksLay.Second + UiDataTable.Filter, StocksLay.Second + UiDataTable.Search, StocksLay.Second + UiDataTable.Row,
         StocksLay.Second + UiDataTable.Clear, UiDataTable.First + UiDataTable.Clear, StocksSheetLay.Pick, StocksSheetLay.Switch, StocksSheetLay.Less, StocksSheetLay.More,
@@ -122,5 +122,6 @@ internal static partial class Program
         Check(filled <= file.NewShares, "stocks: the book does not hand out more shares than were offered");
         StocksActionChecks();
         StocksChartChecks();
+        StocksAuditChecks();   // the logic audit's fixes (StocksAuditChecks.cs)
     }
 }

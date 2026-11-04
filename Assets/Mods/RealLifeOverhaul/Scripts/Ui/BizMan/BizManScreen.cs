@@ -16,7 +16,7 @@ namespace RealLifeOverhaul.Ui
     /// patches all run; nothing of the game's is worked out here. A page only the game's own view shows hands over to it.
     /// Cost: a look at a few counts and flags four times a second while it shows; a layout only when they change.
     /// </summary>
-    public sealed partial class BizManScreen : IUiScreen, IUiTyping, IUiStepping, IUiPointing
+    public sealed partial class BizManScreen : IUiScreen, IUiTyping, IUiStepping, IUiPointing, IUiTracking
     {
         private const float Every = 0.25f;   // seconds between looks at the game's BizMan
 
@@ -147,6 +147,11 @@ namespace RealLifeOverhaul.Ui
         public void Pointed(int command, int arg)
         {
             Aim(command, arg);
+            if (command != UiBoard.LaneCommand && _hoverLane >= 0)
+            {
+                _hoverLane = _hoverHour = -1;   // the mouse left the lanes: no + is aimed
+                _dirty = true;
+            }
             if (command == UiChart.First + UiChart.Point && _m.Chart != null && _m.Chart.Focus != arg)
             {
                 _m.Chart.Focus = arg;   // the mouse resting on a point reads it in its card

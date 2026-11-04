@@ -11,6 +11,7 @@ namespace RealLifeOverhaul.Ui
         public string Title;     // "Rent to Hudson Realty"
         public string Value;     // at its right in the chosen day's rows: "$1,240", "09:00"; null for none
         public string Action;    // the link under it that deals with it ("Open the bank"); null when nothing does
+        public string Date;      // in the days ahead: its date and weekday as written ("3 Tue"); null for the day of the month and the grid's weekday
     }
 
     /// <summary>
@@ -32,6 +33,7 @@ namespace RealLifeOverhaul.Ui
         public UiPairModel[] ChosenFigures = new UiPairModel[0];   // the day's money in and out, as the calendar tallies it
         public string ChosenEmpty;                     // a useful sentence for a day with nothing on it
         public string AheadTitle;                      // "Coming up": the next days' things under the chosen day's
+        public UiDiaryEntry[] Ahead;                   // what the title stands over, when it is not the later days of Entries (tomorrow's, from the next month too); null: those
         public bool CanBack = true, CanOn = true;      // a month before and after can be turned to (MonthViewRules.Step)
     }
 
@@ -186,11 +188,11 @@ namespace RealLifeOverhaul.Ui
                 }
                 cy += bh + UiTokens.S4;
             }
-            int count = 0, ahead = 0;
+            int count = 0, ahead = m.Ahead != null ? m.Ahead.Length : 0;
             for (int i = 0; i < m.Entries.Length; i++)
             {
                 count += m.Entries[i].Day == m.Chosen ? 1 : 0;
-                ahead += m.Entries[i].Day > m.Chosen ? 1 : 0;
+                ahead += m.Ahead == null && m.Entries[i].Day > m.Chosen ? 1 : 0;
             }
             if (count == 0 && ahead == 0)
             {
@@ -217,11 +219,12 @@ namespace RealLifeOverhaul.Ui
             cy += UiTokens.S5;
             UiDraw.Text(s, at, x, cy, w, UiStyle.SectionHeader, UiRole.Text, m.AheadTitle, UiFlags.Label | UiFlags.Truncate);
             cy += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2;
-            for (int i = 0; i < m.Entries.Length && cy + AheadRow <= foot; i++)
+            UiDiaryEntry[] later = m.Ahead ?? m.Entries;
+            for (int i = 0; i < later.Length && cy + AheadRow <= foot; i++)
             {
-                if (m.Entries[i].Day > m.Chosen)
+                if (m.Ahead != null || later[i].Day > m.Chosen)
                 {
-                    Ahead(s, at, m, ref m.Entries[i], x, cy, w);
+                    Ahead(s, at, m, ref later[i], x, cy, w);
                     cy += AheadRow;
                 }
             }
@@ -235,7 +238,7 @@ namespace RealLifeOverhaul.Ui
             int face = UiDraw.Box(s, at, x - UiTokens.S2, y, w + UiTokens.S4, AheadRow, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
             UiAt inside = at.In(face);
             string weekday = m.Weekdays.Length == 7 ? m.Weekdays[(m.Lead + entry.Day - 1) % 7] : string.Empty;
-            string date = entry.Day.ToString(System.Globalization.CultureInfo.InvariantCulture) + " " + weekday;
+            string date = entry.Date ?? entry.Day.ToString(System.Globalization.CultureInfo.InvariantCulture) + " " + weekday;
             float dw = UiDraw.Snap(UiTextRules.Width("30 Wed", UiStyle.SmallStrong) + UiTokens.S2);
             UiDraw.TextMiddle(s, inside, x, y, AheadRow, dw, UiStyle.SmallStrong, UiRole.Text2, date, UiFlags.Truncate);
             float gx = x + dw;

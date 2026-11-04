@@ -1,7 +1,9 @@
 using System;
+using System.Collections.Generic;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Ledger;
 using RealLifeOverhaul.Outlook;
+using UI.Notification;
 
 namespace RealLifeOverhaul.Ui
 {
@@ -11,6 +13,22 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public sealed partial class NewsLive
     {
+        private readonly NewsReadingPage _reading = new NewsReadingPage();
+        private INewsReadDesk _desk;
+
+        // A press on the reading page: the paper or the day picked, the printed page, the way to the Titles tab.
+        private bool PressRead(NewsModel model, int command, int arg)
+        {
+            LedgerDirector director = LedgerDirector.Instance;
+            _desk = _desk ?? new ReadDesk(this);
+            if (director == null || director.Online == null || !_reading.Press(model, command, arg, director.Online, _desk))
+            {
+                return false;
+            }
+            _local++;
+            return true;
+        }
+
         private void FillStand(NewsModel model)
         {
             model.Icon = UiIcon.Newspaper;
@@ -40,8 +58,8 @@ namespace RealLifeOverhaul.Ui
             }
             if (model.Tab == 1)
             {
-                model.Shape = NewsShape.Reading;
-                model.Reader = ReaderOf(director.Latest);
+                _desk = _desk ?? new ReadDesk(this);
+                _reading.Fill(model, director.Online, _desk);   // only what you hold, the paper and the day you picked; a paper you do not hold shows how to take it out
                 return;
             }
             model.Shape = NewsShape.Stand;
@@ -188,6 +206,42 @@ namespace RealLifeOverhaul.Ui
             }
             _local++;
             return true;
+        }
+
+        // The game's side of the reading page: the editions the phone keeps, what the Ledger prints for a title, the printed page, the words.
+        private sealed class ReadDesk : INewsReadDesk
+        {
+            private readonly NewsLive _owner;
+
+            public ReadDesk(NewsLive owner) { _owner = owner; }
+
+            private static LedgerDirector Director => LedgerDirector.Instance;
+
+            public int Today => Director != null ? Director.Today : 0;
+
+            public int Stamp => _owner.Generation;
+
+            public LedgerEdition Edition(int day) => Director != null ? Director.OnlineEdition(day) : null;
+
+            public UiReaderModel Reader(LedgerEdition edition, int title) => ReaderOf(edition, title);
+
+            public bool ReadPrinted(LedgerEdition edition) => Director != null && Director.ReadPrinted(edition);
+
+            public void Tell(string key) => Notifications.Show(NotificationType.Info, key, (Dictionary<string, string>)null, 6f);
+
+            public string Fill(string key, params string[] pairs) => pairs.Length == 0 ? LedgerText.T(key) : LedgerText.Fill(key, pairs);
+
+            public string TitleName(int title) => LedgerText.T(NewsstandCatalogue.NameKeys[title]);
+
+            public string DayWords(int day)
+            {
+                return day == Today ? LedgerText.Fill("reallife_ledger_online_day_today", "day", day.ToString(Inv))
+                    : LedgerText.Fill("reallife_ledger_online_day", "weekday", LedgerPage.Weekday(day), "day", day.ToString(Inv));
+            }
+
+            public string WeekPrice(int title) => LedgerText.Money(Director != null ? Director.OnlinePrice(title) : 0);
+
+            public string DeliveryHour() => LedgerText.Hour(LedgerCatalogue.DeliveryHour);
         }
     }
 }

@@ -41,6 +41,7 @@ internal static partial class Program
         Check(host.Contains("GetComponentsInParent<Canvas>(true)") && host.Contains("UiBindRules.Stops(") && host.Contains("UiBindRules.Wait(") && host.Contains("menu.alpha")
               && host.Contains("_back()") && host.Contains("Guard.Fail(FrameGuard, e, null)") && host.Contains("UiHostRules.Above("),
             "ui host: the host binds over switched off screens, looks again, follows the menu's fade, hands a call back, falls back on a fault and stands just above the screen");
+        ShellBoxChecks(folder);
         string kit = File.ReadAllText(System.IO.Path.Combine(folder, "Contacts", "ContactsKit.cs"));
         Check(kit.Contains("new UiGameHost(new ContactsGameScreen())") && kit.Contains("StepAside(") && kit.Contains("\"Layout 30-70\""),
             "ui host: Contacts runs on the host, its layout the one leaf it hides, its call handed back by the host");
@@ -178,5 +179,88 @@ internal static partial class Program
             same &= UiShellApps.FolderKey(f) == RealLifeOverhaul.GameUi.PhoneLayoutRules.FolderKeys[f];
         }
         Check(same, "ui frame: All apps' folders are the phone's own, in their order and by their names");
+    }
+}
+
+internal static partial class Program
+{
+    /// <summary>A recording stand-in for the game's interface: it says which boxes are built now and writes down every walk made for one.</summary>
+    private sealed class RecordingBoxScene : IShellBoxScene
+    {
+        public readonly List<ShellBox> Walks = new List<ShellBox>();
+        public readonly HashSet<ShellBox> Built_ = new HashSet<ShellBox>();
+        public bool Ready = true;
+
+        public bool Built => Ready;
+
+        public bool Holds(ShellBox box)
+        {
+            Walks.Add(box);
+            return Built_.Contains(box);
+        }
+    }
+
+    // How the kit looks for the game's question boxes and its acknowledgement (ShellBoxes, ShellBoxLook): the first look found
+    // the acknowledgement missing and the kit gave it up for the city. Now a box not there at the first look is looked for
+    // again while one of its kind is up, and found when built. (The full menu's box, found at the first look, was refused
+    // for a panel its scene never gives it: ShellBoxes.Check no longer asks for one.)
+    private static void ShellBoxChecks(string folder)
+    {
+        // The full menu's box built after the first look: not found without a box up, found at the look made as it opens.
+        var scene = new RecordingBoxScene();
+        scene.Built_.Add(ShellBox.HudAsk);
+        var look = new ShellBoxLook();
+        bool hud = look.Seek(ShellBox.HudAsk, false, scene);
+        bool menu1 = look.Seek(ShellBox.MenuAsk, false, scene);
+        Check(hud && !menu1 && look.Looks(ShellBox.MenuAsk) == 1 && look.FirstMiss(ShellBox.MenuAsk) && !look.FirstMiss(ShellBox.MenuAsk),
+            "ui boxes: the first look finds the HUD's box and misses the full menu's, the miss told once");
+        for (int i = 0; i < 500; i++)
+        {
+            look.Seek(ShellBox.MenuAsk, false, scene);
+            look.Seek(ShellBox.Acknowledge, false, scene);
+        }
+        Check(scene.Walks.Count == 3 && scene.Walks[0] == ShellBox.HudAsk && scene.Walks[1] == ShellBox.MenuAsk && scene.Walks[2] == ShellBox.Acknowledge,
+            "ui boxes: nothing is walked while no box is up, after the first look (" + scene.Walks.Count + " walks: the three first looks, then none in 1000 asks)");
+        scene.Built_.Add(ShellBox.MenuAsk);   // the game builds the full menu's box late
+        bool stillOff = look.Seek(ShellBox.MenuAsk, false, scene);
+        bool late = look.Seek(ShellBox.MenuAsk, true, scene);
+        Check(!stillOff && late && look.Looks(ShellBox.MenuAsk) == 2 && look.FoundLate(ShellBox.MenuAsk) && !look.FoundLate(ShellBox.MenuAsk) && scene.Walks.Count == 4,
+            "ui boxes: the full menu's box built after the first look is found at the look made when a question is up, and said once");
+        int walks = scene.Walks.Count;
+        look.Seek(ShellBox.MenuAsk, true, scene);
+        Check(scene.Walks.Count == walks && look.Found(ShellBox.MenuAsk), "ui boxes: a box found stays found, with no more walks");
+        // The acknowledgement built after the first look.
+        var ack = new ShellBoxLook();
+        var ackScene = new RecordingBoxScene();
+        bool first = ack.Seek(ShellBox.Acknowledge, true, ackScene);
+        ackScene.Built_.Add(ShellBox.Acknowledge);
+        bool second = ack.Seek(ShellBox.Acknowledge, true, ackScene);
+        Check(!first && second && ack.Looks(ShellBox.Acknowledge) == 2 && ack.FoundLate(ShellBox.Acknowledge) && ackScene.Walks.TrueForAll(w => w == ShellBox.Acknowledge),
+            "ui boxes: the acknowledgement built after the first look is found at the second");
+        // A second look after a miss happens only while a box is up, and only a few times a city.
+        var never = new ShellBoxLook();
+        var empty = new RecordingBoxScene();
+        for (int i = 0; i < 40; i++)
+        {
+            never.Seek(ShellBox.MenuAsk, true, empty);
+        }
+        Check(empty.Walks.Count == ShellBoxLook.MostLooks && empty.Walks.TrueForAll(w => w == ShellBox.MenuAsk) && !never.Found(ShellBox.MenuAsk),
+            "ui boxes: a box never built is looked for " + ShellBoxLook.MostLooks + " times a city at most, with a box up (" + empty.Walks.Count + ")");
+        // Before the game's interface is there a look is not counted; a new city looks again.
+        var early = new RecordingBoxScene { Ready = false };
+        var pending = new ShellBoxLook();
+        pending.Seek(ShellBox.MenuAsk, true, early);
+        bool notCounted = pending.Looks(ShellBox.MenuAsk) == 0 && early.Walks.Count == 0;
+        early.Ready = true;
+        early.Built_.Add(ShellBox.MenuAsk);
+        bool then = pending.Seek(ShellBox.MenuAsk, false, early);
+        pending.Rearm();
+        Check(notCounted && then && early.Walks.Count == 1 && pending.Looks(ShellBox.MenuAsk) == 0 && !pending.Found(ShellBox.MenuAsk) && !pending.FoundLate(ShellBox.MenuAsk),
+            "ui boxes: a look before the interface is built is not counted, and a new city looks again");
+        // The shell looks through the rule, and the full menu's box is no longer held to a panel it was never given.
+        string boxes = File.ReadAllText(System.IO.Path.Combine(folder, "Shell", "ShellBoxes.cs"));
+        Check(boxes.Contains("Seen.Seek(box, open, Walker)") && !boxes.Contains("_looked") && !boxes.Contains("AskPanel") && boxes.Contains("AskOf(_menu)")
+              && boxes.Contains("AcknowledgeWarning.isOpen") && boxes.Contains("GameConfirm.IsOpen"),
+            "ui boxes: the shell looks through the rule (a miss is looked at again while a box is up), no once-a-city flag and no panel required");
     }
 }

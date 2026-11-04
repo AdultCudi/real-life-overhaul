@@ -178,7 +178,7 @@ namespace RealLifeOverhaul.Economy
             }
             _multiplier = now;
             bool holds = !_deskBroken && _desk.Running;   // a desk that is off has written every loan's own figures back
-            int kept = 0;
+            int kept = 0, extra = 0;
             for (int i = 0; i < file.Loans.Count; i++)
             {
                 LoanMark m = file.Loans[i];
@@ -192,13 +192,41 @@ namespace RealLifeOverhaul.Economy
                 int interest = loan.dailyInterest, payment = loan.dailyPayment;
                 LoanHolds.Repriced(m, ref interest, ref payment, was, now, years, AccountRules.DaysPerYear, holds);
                 kept += interest != loan.dailyInterest || payment != loan.dailyPayment ? 1 : 0;
+                extra += interest - loan.dailyInterest;
                 loan.dailyInterest = interest;
                 loan.dailyPayment = payment;
+            }
+            if (now > was)
+            {
+                NoteRise(extra);   // what the Finance Overview says the last rise cost
             }
             CreditLedger.Touch();
             Logger?.Info("Economy: the game's interest multiplier went from " + was.ToString("0.##", CultureInfo.InvariantCulture) + " to " + now.ToString("0.##", CultureInfo.InvariantCulture)
                          + " and the game priced its loans again at today's rates: " + kept + " of " + file.Loans.Count
                          + " loan(s) given back the rate each was made at, at the new multiplier, and its payment.");
+        }
+
+        /// <summary>
+        /// The rate has risen: what it adds a day to the interest of the player's variable debts is kept for the Overview's "costs more after the
+        /// last rise". Two causes in one day (the game's multiplier and the central bank's rate) add up.
+        /// </summary>
+        internal void NoteRise(int extraPerDay)
+        {
+            CreditFile file = CreditLedger.File;
+            if (file != null && Save != null)
+            {
+                file.NoteRise(Save.Day, extraPerDay);
+            }
+        }
+
+        /// <summary>The central bank's rate has risen by <paramref name="bp"/>: the overdraft and the card, which follow it, cost this much more a day on what they hold now.</summary>
+        internal void RateRose(int bp)
+        {
+            CreditFile file = CreditLedger.File;
+            if (file != null && bp > 0 && _running && !_broken)
+            {
+                NoteRise(AccountRules.RiseCost(file.Accounts, bp, AccountRules.DaysPerYear));
+            }
         }
 
         // A loan paid off in EconoView is read at once, so a debt arrangement it clears ends the moment it is paid. A money change that leaves the cash

@@ -178,7 +178,7 @@ namespace RealLifeOverhaul.Population
                     Room = Mathf.Max(1, reg.customerCapacity > 0 ? reg.customerCapacity : Room(b)),
                     Hours = HoursOpen(reg), Price = content != null ? 1000 + (50 - Mathf.Clamp(content.pricing, 0, 100)) * 6 : 1000, Quality = content != null ? content.facility : 50,
                     Content = content != null ? content.overall : 50, Staff = owner == Owner.Player ? (staffAt != null && staffAt.TryGetValue(key, out int n) ? n : 0) : -1,
-                    Promotion = CustomerRules.PromotionMultiplier(baseMultiplier, promotion)
+                    Promotion = CustomerRules.PromotionMultiplier(baseMultiplier, promotion), Name = reg.BusinessName
                 });
             }
         }

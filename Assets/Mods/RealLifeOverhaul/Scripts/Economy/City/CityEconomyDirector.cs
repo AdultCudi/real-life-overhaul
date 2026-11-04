@@ -31,6 +31,7 @@ namespace RealLifeOverhaul.Economy
         private bool _holding;         // the footfall figures are the game's own for a save, until the next game hour
         private int _level;
         private int _monthDays = MacroCatalogue.MonthDaysLeast;
+        private bool _rateKept;           // the credit side has been given a rate once since the director began: a first reading is not a rise
         private Action _second, _onSave, _onHour, _onDay;
         private int _followedDay;      // a guest: the last day its own part of the day was done
         private bool _heardHost;       // a guest: the host's state has been applied since it began to follow
@@ -605,15 +606,22 @@ namespace RealLifeOverhaul.Economy
             float points = CityModel.BasePoints(_state);
             float multiplier = GameLoans.Multiplier;
             int bp = ProductTerms.BaseBp(points, multiplier);
+            bool seen = _rateKept;
+            _rateKept = true;
             if (LendingTerms.BasePoints == points && AccountRules.BaseBp == bp && AccountRules.BaseMultiplier == multiplier)
             {
                 return false;
             }
+            int before = AccountRules.BaseBp;
             LendingTerms.BasePoints = points;
             AccountRules.BaseBp = bp;
             AccountRules.BaseMultiplier = multiplier;
             if (EconomyDirector.Instance != null)
             {
+                if (bp > before && seen)
+                {
+                    EconomyDirector.Instance.RateRose(bp - before);   // the Finance Overview says what the last rise cost
+                }
                 EconomyDirector.Instance.TermsChanged("the bank rate");   // the banks' settings carry it from now on
             }
             return true;

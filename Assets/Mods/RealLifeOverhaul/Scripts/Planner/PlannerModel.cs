@@ -163,6 +163,9 @@ namespace RealLifeOverhaul.Planner
 
         public bool AllDay => Start < 0 && !(Deadline && End >= 0);
 
+        /// <summary>A copy that stays what it was when the list is begun again and its objects are reused; the clash points at the copy of what it clashes with.</summary>
+        internal PlannerEntry Clone() => (PlannerEntry)MemberwiseClone();
+
         internal void Reset()
         {
             Id = default(EntryId);
@@ -225,6 +228,28 @@ namespace RealLifeOverhaul.Planner
             entry.Day = day;
             Items.Add(entry);
             return entry;
+        }
+
+        /// <summary>
+        /// Copies entries a screen will hold across the director's next look, which reuses the objects of this list (a reminder falling due
+        /// with the app open looks again): the copies keep their clash links among themselves.
+        /// </summary>
+        public static void Copy(List<PlannerEntry> from, List<PlannerEntry> into)
+        {
+            int first = into.Count;
+            for (int i = 0; i < from.Count; i++)
+            {
+                into.Add(from[i].Clone());
+            }
+            for (int i = 0; i < from.Count; i++)
+            {
+                PlannerEntry with = from[i].ClashWith;
+                if (with != null)
+                {
+                    int at = from.IndexOf(with);
+                    into[first + i].ClashWith = at >= 0 ? into[first + at] : null;
+                }
+            }
         }
 
         public PlannerEntry Find(EntryId id)

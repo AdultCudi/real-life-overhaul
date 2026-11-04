@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.Economy
     /// an hour a pass over the save's buildings and staff and a few dozen sums a branch; once a second inside a branch a
     /// look at its tills.
     /// </summary>
-    public sealed partial class OwnBankDirector : ISkippableShift
+    public sealed partial class OwnBankDirector : ISlidingShift
     {
         public const int TabBranches = 4;
         private const int CatchUpHours = 3;      // hours missed that are still worked through one by one
@@ -34,6 +34,7 @@ namespace RealLifeOverhaul.Economy
         private string _counterPlace;            // the branch whose counter the player works, while the clock runs
         private string _counterName;
         private int _counterServed, _counterHours;
+        private int _counterChosen;   // the hours the slider keeps before a stint; 0: the four
         private int _toldLostDay = -1;
 
         /// <summary>The reach of the bank's branches today, thousandths (BranchRules.Reach); 0 with the option off or no bank running.</summary>
@@ -321,7 +322,19 @@ namespace RealLifeOverhaul.Economy
 
         string ISkippableShift.SkipTitle => OwnBankText.Fill("reallife_branch_counter_title", "branch", _counterName ?? string.Empty);
 
-        int ISkippableShift.SkipMinutes => CounterMinutes;
+        int ISkippableShift.SkipMinutes => ShiftFactsRules.Minutes(_counterChosen, CounterMinutes);
+
+        // The stint's length is the player's to pick: from one hour to the four. It can stop part way, since each hour of it is
+        // worked through the branch's own hourly rule as it passes (_counterHours), and what has been seen to by then stands.
+        int ISlidingShift.SlideLeast => 1;
+
+        int ISlidingShift.SlideMost => ShiftFactsRules.MostHours(CounterMinutes);
+
+        int ISlidingShift.SlideNow => _counterChosen > 0 ? _counterChosen : ((ISlidingShift)this).SlideMost;
+
+        void ISlidingShift.Slide(int value) => _counterChosen = ShiftFactsRules.Chosen(value, ((ISlidingShift)this).SlideMost);
+
+        (string key, object arguments) ISlidingShift.SlideInfo() => ("common_hours", new { hours = ((ISlidingShift)this).SlideNow });
 
         LabelInfo[] ISkippableShift.SkipLabels()
         {

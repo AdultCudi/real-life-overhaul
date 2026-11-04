@@ -758,8 +758,12 @@ namespace RealLifeOverhaul.Ui
                 week += t.dayOfDelivery >= today - 7 ? pieces : 0;
             }
             _right = true;   // under the warehouse, so the form stays two rows deep and the stop's goods keep their room
-            InfoLine(UiText.T("reallife_ui_bizops_last_run"), last < 0 ? UiText.T("reallife_ui_bizops_runs_none") : last >= today ? UiText.T("reallife_ui_bizops_run_today")
-                : last == today - 1 ? UiText.T("reallife_ui_bizops_run_yesterday") : UiText.Fill("reallife_ui_bizops_run_days_ago", "count", UiText.Whole(today - last)));
+            // The record has the day only. Today's run was the game's nightly one at its fixed hour when Send now was not used on this route
+            // today (SendNowLimit knows only today's sends); for an earlier day it cannot be told, so the day stands alone.
+            string when = last < 0 ? null : last >= today ? UiText.T("reallife_ui_bizops_run_today")
+                : last == today - 1 ? UiText.T("reallife_ui_bizops_run_yesterday") : UiText.Fill("reallife_ui_bizops_run_days_ago", "count", UiText.Whole(today - last));
+            InfoLine(UiText.T("reallife_ui_bizops_last_run"), when == null ? UiText.T("reallife_ui_bizops_runs_none")
+                : BizOpsRules.RunHourKnown(last, today, SentToday(route)) ? UiText.Fill("reallife_ui_bizops_run_at", "when", when, "time", RunHour.GetFormattedTime(0f)) : when);
             InfoLine(UiText.T("reallife_ui_bizops_out_day"), BizOpsRules.PerDay(week));
             _right = false;
             NoteLine(UiText.Fill("reallife_ui_bizops_runs_at", "hour", RunHour.GetFormattedTime(0f)));
@@ -934,7 +938,8 @@ namespace RealLifeOverhaul.Ui
                 o.Stops[i] = new BizOpsStop
                 {
                     Name = pick >= 0 && pick < options.Length ? options[pick] : UiText.T("common_unassigned"),
-                    Line = (Loc(Get<TextLocalizationComponent>(GameContract.StopName, d)) ?? string.Empty) + ", " + UiText.Fill("reallife_ui_bizops_goods_count", "count", UiText.Whole(goods))
+                    Line = (Loc(Get<TextLocalizationComponent>(GameContract.StopName, d)) ?? string.Empty) + ", "
+                        + (goods == 1 ? UiText.T("reallife_ui_bizops_goods_one") : UiText.Fill("reallife_ui_bizops_goods_count", "count", UiText.Whole(goods)))
                         + (open != null ? ", " + open : string.Empty),
                     Open = i == _stop, Warn = faded != null && faded.alpha < 0.99f, Removable = remove != null && remove.gameObject.activeInHierarchy,
                     Open2 = open, OpenTone = OpenTone(to != null && !to.IsUndefined() ? BuildingHelper.GetBuildingRegistration(to) : null)

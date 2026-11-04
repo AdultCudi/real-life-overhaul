@@ -41,6 +41,10 @@ internal static partial class Program
             {
                 continue;   // the pause menu's recent saves: it starts a load as the funeral does and reads nothing of one (checked below)
             }
+            if (source.Key == "Ui/Activity/FuneralScreen.cs" || source.Key == "Core/GameContract.Activity.cs")
+            {
+                continue;   // the funeral card reads the day and time of the backup the game found (its record), and starts no load of its own beyond the game's three keys
+            }
             foreach (string mark in PathMarks)
             {
                 if (told == null && source.Value.Contains(mark))

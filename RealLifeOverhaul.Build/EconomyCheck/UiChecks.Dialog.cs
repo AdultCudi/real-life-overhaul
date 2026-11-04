@@ -804,8 +804,8 @@ internal static partial class Program
         string spokenKit = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "UiMonologue.cs")), choices = File.ReadAllText(System.IO.Path.Combine(dialog, "DialogChoices.cs"));
         string loanForm = File.ReadAllText(System.IO.Path.Combine(dialog, "DialogForm.Loan.cs")), hearing = File.ReadAllText(System.IO.Path.Combine(scripts, "Justice", "CourtHearing.cs"));
         string court = File.ReadAllText(System.IO.Path.Combine(scripts, "Justice", "JusticeDirector.Court.cs")), tax = File.ReadAllText(System.IO.Path.Combine(scripts, "Economy", "Company", "CompanyDirector.Tax.cs"));
-        Check(spoken.Contains("_skipLeft = Waiting();") && spoken.Contains("CloseLine();") && !spoken.Contains("InstantClose") && spokenKit.Contains("UiAction.Count, null, SkipCommand, 0"),
-            "monologue: Skip closes this line and each one waiting by the game's own close as it comes, so every line's ending runs; neither button takes a key");
+        Check(spoken.Contains("_skipLeft = Waiting();") && spoken.Contains("CloseLine();") && !spoken.Contains("InstantClose") && spokenKit.Contains("skipKey, keys, SkipCommand, 0"),
+            "monologue: Skip closes this line and each one waiting by the game's own close as it comes, so every line's ending runs; Next is on Interact and Skip on Cancel");
         Check(choices.Contains("talk.ShowEntry(Guard.Entry(next));") && loanForm.Contains("LoanConfirm.Wrap(entry, this);") && loanForm.Contains("_loanForm.dailyInterest = f.Interest;")
               && loanForm.Contains("return _own();"),
             "dialog: an answer of the dialog's own leads on through the game's ShowEntry, guarded as every page is, and the term and a point agreed go into the game's form as its own confirm makes the loan");

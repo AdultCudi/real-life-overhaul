@@ -9,6 +9,7 @@ namespace RealLifeOverhaul.Ui
         public string Title;
         public string Meta;
         public bool Locate;
+        public bool Done;        // a note ticked off: its words quiet
     }
 
     /// <summary>
@@ -31,6 +32,18 @@ namespace RealLifeOverhaul.Ui
         public string LocateWord;
         public string Move, Select, Back, Tabs;
         public float Offset;
+        public int Page;                    // UiPlanPageKind: the list or board, a day, an entry, a form
+        public UiPlanDayModel Side;         // the day's box, beside the board on Today and beside a day's rows
+        public UiPlanEntryModel Entry;      // an entry's page
+        public UiPlanFormModel Form;        // a note's form, or the settings
+        public string DayTitle;             // a day's page: "Monday (Day 3)"
+        public bool CanSettings = true;
+    }
+
+    /// <summary>Which page of the Planner is shown.</summary>
+    public static class UiPlanPageKind
+    {
+        public const int List = 0, Day = 1, Entry = 2, Form = 3;
     }
 
     /// <summary>The Calendar's page: the diary, today's weather, and the two actions.</summary>
@@ -39,7 +52,8 @@ namespace RealLifeOverhaul.Ui
         public string Title;
         public UiDiaryModel Diary;
         public string Weather;
-        public string Add, Open;
+        public bool AddOff;                 // a day gone by takes no new entry, as the Planner's form takes none
+        public string Add, Open, Today;      // Today: back to this month and day; null while the chosen day is today
         public string Move, Select, Back;
     }
 
@@ -48,7 +62,7 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static partial class LifePages
     {
-        public const int Chip = 40, Row = 41, Add = 42, Second = 43, Locate = 44;
+        public const int Chip = 40, Row = 41, Add = 42, Second = 43, Locate = 44, Today = 45;
         public const int VMode = 50, VFilter = 51, VFrame = 52, VShutter = 53, VClose = 54, VGrid = 55, VOpen = 56;
         private const float PlanRow = 48f;
 
@@ -57,33 +71,71 @@ namespace RealLifeOverhaul.Ui
         {
             s.Begin("planner", frame.Width, frame.Height, dark);
             UiAt at = UiAppWindow.Shell(s, frame, m.Title, UiIcon.Clock, m.Nav, m.Tab, true, keys, out float x, out float y, out float w, out float bottom);
-            float weekW = WeekWidth(m.Week);
-            if (weekW > 0f)
+            if (m.Page == UiPlanPageKind.Entry && m.Entry != null)
             {
-                UiDraw.Chip(s, at, x + w - weekW, y + UiTokens.S1, m.Week, UiRole.AccentText, weekW);
+                UiPlanEntry.Lay(s, at, m.Entry, x, y, w, bottom - y, keys);
+                Bar(s, frame, keys, m.Move, m.Select, m.Back, m.Tabs);
+                return;
             }
-            float chipsW = w - (weekW > 0f ? weekW + UiTokens.S4 : 0f);
-            float chips = Chips(s, at, m.Chips, m.Chip, x, y, chipsW);
-            y += chips + UiTokens.S3;
-            float h = bottom - y;
-            if (m.Board != null && (m.Tab == 0 || m.Tab == 2))
+            if (m.Page == UiPlanPageKind.Form && m.Form != null)
             {
-                UiBoard.Lay(s, at, m.Board, x, y, w, h, keys);
+                UiPlanForm.Lay(s, at, m.Form, x, y, w, bottom - y, keys);
+                Bar(s, frame, keys, m.Move, m.Select, m.Back, m.Tabs);
+                return;
+            }
+            bool dayPage = m.Page == UiPlanPageKind.Day;
+            if (dayPage)
+            {
+                y = UiPlanPage.Head(s, at, m.DayTitle, UiIcon.None, UiRole.None, null, UiRole.None, x, y, w);
+            }
+            else
+            {
+                float weekW = WeekWidth(m.Week);
+                float gear = m.CanSettings ? UiTokens.ControlSmall : 0f;
+                float right = x + w;
+                if (gear > 0f)
+                {
+                    right -= gear;
+                    UiDraw.IconButton(s, at, right, y, gear, UiIcon.Gear, UiRole.Text, UiPlanPage.SettingsCommand, 0);
+                    right -= UiTokens.S3;
+                }
+                if (weekW > 0f)
+                {
+                    UiDraw.Chip(s, at, right - weekW, y + UiTokens.S1, m.Week, UiRole.AccentText, weekW);
+                }
+                float chipsW = right - x - (weekW > 0f ? weekW + UiTokens.S4 : 0f);
+                float chips = Chips(s, at, m.Chips, m.Chip, x, y, chipsW);
+                y += Math.Max(chips, gear) + UiTokens.S3;
+            }
+            float h = bottom - y;
+            bool side = m.Side != null && w >= SideMin;
+            float main = side ? w - UiPlanDay.Width - UiTokens.S6 : w;
+            if (side)
+            {
+                float sx = x + w - UiPlanDay.Width;
+                UiDraw.Box(s, at, sx - UiTokens.S3, y, UiTokens.Hairline, h, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
+                UiPlanDay.Lay(s, at, m.Side, sx, y, UiPlanDay.Width, h);
+            }
+            if (!dayPage && m.Board != null && (m.Tab == 0 || m.Tab == 2))
+            {
+                UiBoard.Lay(s, at, m.Board, x, y, main, h, keys);
             }
             else if (m.RowCount <= 0)
             {
                 float foot = string.IsNullOrEmpty(m.Add) ? 0f : UiTokens.Control + UiTokens.S4;
-                UiDraw.EmptyState(s, at, x, y, w, Math.Max(UiTokens.S16, h - foot), UiIcon.Info, m.EmptyTitle, m.EmptyBody);
-                Buttons(s, at, m.Add, m.Second, x, y + h - UiTokens.Control, w, keys);
+                UiDraw.EmptyState(s, at, x, y, main, Math.Max(UiTokens.S16, h - foot), UiIcon.Info, m.EmptyTitle, m.EmptyBody);
+                Buttons(s, at, m.Add, m.Second, x, y + h - UiTokens.Control, main, keys);
             }
             else
             {
                 float foot = string.IsNullOrEmpty(m.Add) ? 0f : UiTokens.Control + UiTokens.S4;
-                Rows(s, at, m, x, y, w, h - foot);
-                Buttons(s, at, m.Add, m.Second, x, y + h - UiTokens.Control, w, keys);
+                Rows(s, at, m, x, y, main, h - foot);
+                Buttons(s, at, m.Add, m.Second, x, y + h - UiTokens.Control, main, keys);
             }
             Bar(s, frame, keys, m.Move, m.Select, m.Back, m.Tabs);
         }
+
+        private const float SideMin = 900f;   // px: the page's width that has room for the day's box beside the board
 
         /// <summary>The Calendar.</summary>
         public static void Calendar(UiScene s, UiCalModel m, UiFrame frame, bool dark, IUiKeys keys)
@@ -101,7 +153,7 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDiary.Lay(s, at, m.Diary, x, y, w, Math.Max(UiTokens.S16 * 4f, h), keys);
             }
-            Buttons(s, at, m.Add, m.Open, x, bottom - UiTokens.Control, w, keys);
+            Buttons(s, at, m.Add, m.Open, x, bottom - UiTokens.Control, w, keys, m.Today, m.AddOff);
             Bar(s, frame, keys, m.Move, m.Select, m.Back, null);
         }
 
@@ -216,7 +268,7 @@ namespace RealLifeOverhaul.Ui
             float meta = string.IsNullOrEmpty(row.Meta) ? 0f : UiDraw.Snap(Math.Min(w * 0.35f, UiTextRules.Width(row.Meta, UiStyle.Small) + UiTokens.S2));
             float tx = x + UiTokens.S2 + g + UiTokens.S3;
             float tw = w - (tx - x) - meta - locate - UiTokens.S3;
-            UiDraw.TextMiddle(s, inside, tx, y, PlanRow - UiTokens.S1, Math.Max(UiTokens.S16, tw), UiStyle.Body, UiRole.Text, row.Title, UiFlags.Truncate);
+            UiDraw.TextMiddle(s, inside, tx, y, PlanRow - UiTokens.S1, Math.Max(UiTokens.S16, tw), UiStyle.Body, row.Done ? UiRole.Muted : UiRole.Text, row.Title, UiFlags.Truncate);
             if (meta > 0f)
             {
                 UiDraw.TextMiddle(s, inside, x + w - locate - meta - UiTokens.S2, y, PlanRow - UiTokens.S1, meta, UiStyle.Small, UiRole.Muted, row.Meta, UiFlags.Right | UiFlags.Truncate);
@@ -229,9 +281,9 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Node(s, at, x, y, w - locate, PlanRow - UiTokens.S1, Row, index, face);
         }
 
-        private static void Buttons(UiScene s, UiAt at, string add, string second, float x, float y, float w, IUiKeys keys)
+        private static void Buttons(UiScene s, UiAt at, string add, string second, float x, float y, float w, IUiKeys keys, string third = null, bool addOff = false)
         {
-            if (string.IsNullOrEmpty(add) && string.IsNullOrEmpty(second))
+            if (string.IsNullOrEmpty(add) && string.IsNullOrEmpty(second) && string.IsNullOrEmpty(third))
             {
                 return;
             }
@@ -239,13 +291,19 @@ namespace RealLifeOverhaul.Ui
             if (!string.IsNullOrEmpty(add))
             {
                 float bw = UiDraw.ButtonWidth(UiButtonKind.Primary, add, UiIcon.None, UiAction.Alt, keys);
-                UiDraw.Button(s, at, cx, y, bw, UiTokens.Control, UiButtonKind.Primary, add, UiIcon.None, UiAction.Alt, keys, Add, 0);
+                UiDraw.Button(s, at, cx, y, bw, UiTokens.Control, UiButtonKind.Primary, add, UiIcon.None, UiAction.Alt, keys, Add, 0, addOff);
                 cx += bw + UiTokens.S3;
             }
             if (!string.IsNullOrEmpty(second) && cx < x + w - UiTokens.S16)
             {
                 float bw = Math.Min(UiDraw.ButtonWidth(UiButtonKind.Secondary, second, UiIcon.None, UiAction.Option, keys), x + w - cx);
                 UiDraw.Button(s, at, cx, y, bw, UiTokens.Control, UiButtonKind.Secondary, second, UiIcon.None, UiAction.Option, keys, Second, 0);
+                cx += bw + UiTokens.S3;
+            }
+            if (!string.IsNullOrEmpty(third) && cx < x + w - UiTokens.S16)
+            {
+                float bw = Math.Min(UiDraw.ButtonWidth(UiButtonKind.Secondary, third, UiIcon.None, UiAction.Count, keys), x + w - cx);
+                UiDraw.Button(s, at, cx, y, bw, UiTokens.Control, UiButtonKind.Secondary, third, UiIcon.None, UiAction.Count, keys, Today, 0);
             }
         }
 

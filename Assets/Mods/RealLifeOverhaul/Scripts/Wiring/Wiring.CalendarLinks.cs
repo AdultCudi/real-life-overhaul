@@ -74,6 +74,7 @@ namespace RealLifeOverhaul
                         }
                         e.Start = p.Start >= 0 ? p.Start : p.Deadline && p.End >= 0 ? p.End : -1;
                         e.Title = p.Title;
+                        e.Done = p.Done;
                         if (p.Owes > 0f)
                         {
                             e.Sign = -1;

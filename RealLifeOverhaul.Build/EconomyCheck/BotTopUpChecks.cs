@@ -246,7 +246,7 @@ internal static partial class Program
         // The bot's record ends with the two new fields; a record without them (an older save) loads as before.
         string part = Part(line, 'b');
         string[] records = part.Split(';');
-        Check(records.All(r => r.Split('|').Length == 44), "top-up save: the new fields are the last two of the bot's record");
+        Check(records.All(r => r.Split('|').Length == 47), "top-up save: the top-up's two fields come before the gain figures, which end the bot's record (StocksAuditChecks.cs)");
         string older = line.Replace(part, string.Join(";", records.Select(r => string.Join("|", r.Split('|').Take(42)))));
         MarketState old = MarketStore.Read(older, out _);
         Bot o = old != null ? MarketBots.Hired(old, 1) : null;

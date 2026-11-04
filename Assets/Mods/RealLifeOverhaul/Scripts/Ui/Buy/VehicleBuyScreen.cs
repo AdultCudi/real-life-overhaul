@@ -33,7 +33,7 @@ namespace RealLifeOverhaul.Ui
             "reallife_ui_buy_carkind_6", "reallife_ui_buy_carkind_7"
         };
         private IPurchasableAsset _of;            // the vehicle the mod's figures and the lot were read for
-        private string _kind, _top, _to100, _insurance, _topWords, _lotWords;
+        private string _kind, _top, _to100, _insurance, _fuel, _seats, _topWords, _lotWords;
         private int _lotAt = -1;
         private readonly StringBuilder _sb = new StringBuilder(256);
         private string _seen;
@@ -171,6 +171,14 @@ namespace RealLifeOverhaul.Ui
                     _rows.Add(new UiInfoRow { Label = UiText.T("reallife_tuning_fig_to100"), Value = _to100 });
                 }
             }
+            if (_fuel != null && _specs.Count > 0)
+            {
+                _rows.Add(new UiInfoRow { Label = UiText.T("reallife_ui_buy_fuel_use"), Value = _fuel });
+            }
+            if (_seats != null && _specs.Count > 0)
+            {
+                _rows.Add(new UiInfoRow { Label = UiText.T("reallife_ui_buy_seats"), Value = _seats });
+            }
             if (_insurance != null && _specs.Count > 0)
             {
                 _rows.Add(new UiInfoRow { Label = UiText.T("reallife_ui_buy_insurance"), Value = _insurance });
@@ -228,7 +236,7 @@ namespace RealLifeOverhaul.Ui
         // a boat or what the mod leaves as the game made it; each with its option off.
         private void Figures(ShowcaseVehicleController car)
         {
-            _kind = _top = _to100 = _insurance = null;
+            _kind = _top = _to100 = _insurance = _fuel = _seats = null;
             VehicleType t = car != null && !string.IsNullOrEmpty(car.vehicleName) ? VehicleTypeHelper.GetVehicleType(car.vehicleName) : null;
             if (t == null)
             {
@@ -245,6 +253,14 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             _kind = UiText.T(KindKeys[kind - 1]);
+            _seats = CarCatalogue.SeatsKnown(t.vehicleTypeName) ? UiText.Whole(CarCatalogue.Seats(t.vehicleTypeName, spec.Kind)) : null;   // a guess by kind is not shown
+            float per100 = t.IsMotorVehicle ? FuelUseRules.Per100(t.enginePower, t.maxSpeed) : 0f;   // the game's own reckoning, as the item panel's range
+            if (per100 > 0f)
+            {
+                bool us = PlayerPrefSettings.useImperial;
+                _fuel = UiText.T(us ? "reallife_ui_buy_mpg" : "reallife_ui_buy_l100").Replace("{value}", (us ? FuelUseRules.MilesAGallon(per100) :
+                    per100).ToString(us ? "0" : "0.0", CultureInfo.InvariantCulture));
+            }
             if (!Settings.CarTuning)
             {
                 return;

@@ -53,6 +53,26 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
+    /// What a shift can tell the work panel beyond its own words, so the card says what the shift pays, trains and costs before it
+    /// starts and the strip what it has earned while it runs. Optional: a shift without it shows only the lines it writes itself.
+    /// The sums are the ones the shift settles with (<see cref="ShiftFactsRules"/>), so the card and the pay agree to the unit.
+    /// </summary>
+    public interface IShiftFacts
+    {
+        /// <summary>The whole money the first <paramref name="minutes"/> of the run settle to, before tax; the pay of the units done by then.</summary>
+        int PayFor(int minutes);
+
+        /// <summary>The game's skill the shift trains, or null for none.</summary>
+        string SkillKey { get; }
+
+        /// <summary>The skill points the first <paramref name="minutes"/> of the run train.</summary>
+        float SkillFor(int minutes);
+
+        /// <summary>The stress the shift adds a game hour; 0 when the hourly upkeep adds none for it.</summary>
+        float StressRate { get; }
+    }
+
+    /// <summary>
     /// The rest of a shift left to the clock as the game's own employer job does it (<c>PlayerActivity.WorkActivity</c>): one of
     /// its activities on its panel, with Start, the skip-time button, a progress bar and Stop. No walk order is given (the panel
     /// would call it off); it is seen on its way for one frame, the step in which the panel lets the clock run.
@@ -86,6 +106,14 @@ namespace RealLifeOverhaul
 
         /// <summary>The minutes the shift would run as the slider stands (the whole shift's, once begun); 0 when it has let go.</summary>
         public int ChosenMinutes => _shift != null ? Mathf.Max(0, _shift.SkipMinutes) : 0;
+
+        /// <summary>What the shift says of its pay, skill and stress, or null when it says none (or has let go).</summary>
+        public IShiftFacts Facts => _shift as IShiftFacts;
+
+        /// <summary>The game minutes of the run passed so far, and its length: what the strip's hour and sum are read from.</summary>
+        public int DoneMinutes => _begun ? _done : 0;
+
+        public int TotalMinutes => _total;
 
         /// <summary>True from the offer until it is over, whichever way.</summary>
         public bool Open => _state != PlayerActivityState.Finished;
@@ -421,6 +449,7 @@ namespace RealLifeOverhaul
                 {
                     _slide.Slide(value);
                     _total = Mathf.Max(1, _shift.SkipMinutes);
+                    _labels = _shift.SkipLabels();   // its pay and time lines follow the part the slider keeps
                 }
             }
             catch (Exception fault)

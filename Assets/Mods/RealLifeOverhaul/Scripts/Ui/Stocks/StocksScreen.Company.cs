@@ -199,7 +199,12 @@ namespace RealLifeOverhaul.Ui
             }
             if (command == StocksCompanyLay.AlertAdd)
             {
-                done = AddAlert(arg);
+                done = OpenAlertSheet();
+                return true;
+            }
+            if (command == StocksCompanyLay.AlertLine)
+            {
+                done = AlertOnLine();
                 return true;
             }
             if (co == null || state == null)
@@ -445,8 +450,20 @@ namespace RealLifeOverhaul.Ui
             return best;
         }
 
-        // An alert at a twentieth above or under the last price.
-        private bool AddAlert(int direction)
+        // The alert sheet: the level is the player's to set, above the price or below it.
+        private bool OpenAlertSheet()
+        {
+            MarketState state = _market != null ? _market.State : null;
+            if (state == null || state.Stock(_stock) == null)
+            {
+                return false;
+            }
+            OpenSheet(StocksSheets.Alert, _stock);
+            return true;
+        }
+
+        // An alert for when the price falls to the selected level line: the support alert, which follows the line.
+        private bool AlertOnLine()
         {
             MarketState state = _market != null ? _market.State : null;
             Stock stock = state != null ? state.Stock(_stock) : null;
@@ -455,8 +472,13 @@ namespace RealLifeOverhaul.Ui
                 return false;
             }
             _dirty = true;
-            int cents = direction == 0 ? stock.Last * 105 / 100 : Math.Max(1, stock.Last * 95 / 100);
-            return state.Charts.AddAlert(new PriceAlert { StockId = stock.Id, Kind = direction == 0 ? AlertKind.Above : AlertKind.Below, Cents = cents, Drawing = -1 });
+            AlertWhy why = state.Charts.SetLineAlert(stock.Id, ChartView.Selected, stock.Last);
+            if (why != AlertWhy.None)
+            {
+                Refused(StocksBuild.AlertWhyWords(why, Words));
+                return false;
+            }
+            return true;
         }
 
         // The alert of this company on the row pressed.

@@ -2,6 +2,7 @@ using System;
 using Dialogs;
 using Entities;
 using Localizor;
+using RealLifeOverhaul.GameUi;
 
 namespace RealLifeOverhaul.Careers
 {
@@ -62,7 +63,8 @@ namespace RealLifeOverhaul.Careers
                 ConfirmTextOverride = "reallife_agency_desk_hire".Localize(),
                 OnConfirm = Hire,
                 OnCancel = DialogController.current.CancelDialog
-            };
+            }.Says(DialogButton.Confirm, "reallife_agency_cost_hire")
+             .Says(DialogButton.Second, "reallife_agency_cost_board", "days", ProRules.AgencyDays.ToString(), "more", ProRules.OpeningsAgency.ToString());
         }
 
         // Recruitment: the game's own dialogue, which shows its Basic HR page itself when the course is not complete.
@@ -96,7 +98,7 @@ namespace RealLifeOverhaul.Careers
                     ConfirmTextOverride = "reallife_agency_desk_renew".Localize(),
                     OnConfirm = Register,
                     OnCancel = DialogController.current.CancelDialog
-                });
+                }.Says(DialogButton.Confirm, "reallife_agency_cost_board", "days", ProRules.AgencyDays.ToString(), "more", ProRules.OpeningsAgency.ToString()));
             }
             return Register();
         }
