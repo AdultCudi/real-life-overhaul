@@ -447,6 +447,7 @@ namespace RealLifeOverhaul.Flare
             {
                 int b = _advertisers[i];
                 FlareAd ad = FlareCityRules.CityAd(s, b, Day, c.Seed);
+                ad.Rival = FlareCityRules.Competes(s, b);
                 FlareCityRules.Deliver(c, s, ad, b, s.Businesses.Kind[b], BusinessAccount[b], Day, AccountBiz, Scratch, null);
                 FlareCityRules.NoteCityAd(c, ad, s.Businesses.Key[b]);
                 Advertised++;

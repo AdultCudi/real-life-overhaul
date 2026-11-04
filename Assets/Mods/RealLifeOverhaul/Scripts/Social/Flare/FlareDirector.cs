@@ -26,8 +26,7 @@ namespace RealLifeOverhaul.Flare
 
         private readonly List<FlarePerson> _people = new List<FlarePerson>(12);
         private readonly FlareHourSteps _hourSteps = new FlareHourSteps();
-        private int _dayStep = -1;        // the next of the day's steps (DayStep), or -1 when none is owed
-        private int _dayFor;               // the day they are for
+        private readonly FlareDayRound _round = new FlareDayRound();   // the day's steps still owed (DayStep)
         private FlareDayReport _dayReport; // what the first step worked out, for the last
         private bool _dayStepping;         // the day's steps' coroutine is running
         private bool _stepping;   // the hour's steps' coroutine is running
@@ -187,6 +186,7 @@ namespace RealLifeOverhaul.Flare
             }
             ShareStart();
             PhotosStart();
+            ToLetQueue();   // the city's premises to let are walked once from now, sliced: the city page has its figures before the first midnight
             Logger?.Info("Flare: " + (fresh ? "an account is opened for this save on day " + day + " with " + file.Followers + " followers (" + _people.Count + " people met, seed "
                                             + file.Seed + ")"
                                             : "the account is read: " + file.Followers + " followers, reputation " + file.Reputation + ", " + file.Posts.Count + " post(s), "
@@ -204,7 +204,8 @@ namespace RealLifeOverhaul.Flare
                 FlareStore.Save(Save.modData, _file);
             }
             CityStop(keep, "Flare stands down");
-            _dayStep = -1;
+            _round.End();
+            _toLet.Forget();
             _hourSteps.Clear();
             ShareStop();
             PhotosStop();
@@ -468,8 +469,7 @@ namespace RealLifeOverhaul.Flare
                 int day = Save.Day;
                 if (day != _file.SettledDay)
                 {
-                    _dayFor = day;
-                    _dayStep = 0;
+                    _round.Begin(day);
                     if (!_dayStepping)
                     {
                         _dayStepping = true;
@@ -488,12 +488,12 @@ namespace RealLifeOverhaul.Flare
         // The day's round a step a frame, once the hour's steps are done (the day follows the hour's, as it did).
         private IEnumerator DaySteps()
         {
-            while (_dayStep >= 0)
+            while (_round.Owed)
             {
                 yield return null;
                 if (!Running || Save == null || _file == null)
                 {
-                    _dayStep = -1;
+                    _round.End();
                     break;
                 }
                 if (_hourSteps.Busy)
@@ -503,7 +503,7 @@ namespace RealLifeOverhaul.Flare
                 using var hotSpot = HotSpots.Time(HotDayStep);
                 try
                 {
-                    if (_dayStep >= 0)
+                    if (_round.Owed)
                     {
                         using var piece = SessionWatch.Piece("flare: a step of the day's round");
                         DayStep();
@@ -511,27 +511,25 @@ namespace RealLifeOverhaul.Flare
                 }
                 catch (Exception e)
                 {
-                    _dayStep = -1;
+                    _round.End();
                     Fault("the day", e);
                 }
             }
             _dayStepping = false;
         }
 
-        // What is left of the day's steps, at once: the save, the next day and standing down need the day played first.
+        // What is left of the day's steps, at once: the save, the next day and standing down need the day played first. The walk over the city's
+        // premises to let is not one of them (its step only queues it), so a save just after midnight or a day of a time skip never pays for it.
         private void FinishDay()
         {
-            while (_file != null && _dayStep >= 0)
-            {
-                DayStep();
-            }
+            _round.Finish(DayStep);
         }
 
         // One step of the day's round, in the order it ran in one frame.
         private void DayStep()
         {
-            int day = _dayFor;
-            int step = _dayStep++;
+            int day = _round.Day;
+            int step = _round.Take();
             switch (step)
             {
                 case 0:
@@ -553,7 +551,7 @@ namespace RealLifeOverhaul.Flare
                 case 4:
                     if (LiveBefore(day))
                     {
-                        _dayStep = 4;   // another day before it, the next frame (a day a step: a new city's first morning, a save from before growing)
+                        _round.Back(4);   // another day before it, the next frame (a day a step: a new city's first morning, a save from before growing)
                     }
                     break;
                 case 5:
@@ -572,13 +570,10 @@ namespace RealLifeOverhaul.Flare
                     }
                     break;
                 case 7:
-                    if (!ToLetStep())
-                    {
-                        _dayStep = 7;   // the walk over the city's premises to let wants another slice, the next frame
-                    }
+                    ToLetQueue();   // a new pass over the city's premises to let, walked a slice a frame once the round is over
                     break;
                 default:
-                    _dayStep = -1;
+                    _round.End();
                     FlareDayReport r = _dayReport;
                     if (r.FollowersAfter != r.FollowersBefore || r.ReputationAfter != r.ReputationBefore)
                     {
@@ -595,8 +590,7 @@ namespace RealLifeOverhaul.Flare
         // The whole day's round at once: a test button, and nothing else.
         private void PlayDay(int day)
         {
-            _dayFor = day;
-            _dayStep = 0;
+            _round.Begin(day);
             FinishDay();
         }
 

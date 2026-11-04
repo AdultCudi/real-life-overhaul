@@ -22,6 +22,7 @@ internal static partial class Program
         FlareAuditProfile();
         FlareAuditPresses();
         FlareAuditWiring();
+        FlareRoundChecks();
     }
 
     // A host that records which call came; every call has its own count, so a press that arrives as another kind shows.
@@ -428,7 +429,7 @@ internal static partial class Program
             "flare audit: the compose sheet writes a moment, a report, a review and an announcement with its tone and mention, and the hire sheet its audience");
         Check(director.Contains("FlareNoticeRules.TierUp(") && director.Contains("TierDay(day);") && director.IndexOf("_file.TierSeen = tier;", StringComparison.Ordinal) < 0
               && PlayFile("Social", "Flare", "FlareDirector.Creator.cs").Contains("_city.CreatorTotal += cents;")
-              && PlayFile("Social", "Flare", "FlareDirector.Kit.cs").Contains("CityAdsNamed()") && director.Contains("ToLetStep()") && PlayFile("Wiring", "Wiring.FlareCityLinks.cs").Contains("_toLetScan = new Districts.ToLetScan()"),
+              && PlayFile("Social", "Flare", "FlareDirector.Kit.cs").Contains("CityAdsNamed()") && director.Contains("ToLetQueue()") && PlayFile("Wiring", "Wiring.FlareCityLinks.cs").Contains("_toLetScan = new Districts.ToLetScan()"),
             "flare audit: the tier is checked on the day's round (not only in a post), the creator income paid is kept, and the notifications read the city's ads");
         // The new texts: every key the new code asks for is in the three locales.
         string en = PlayFile("..", "Locales", "en.json");

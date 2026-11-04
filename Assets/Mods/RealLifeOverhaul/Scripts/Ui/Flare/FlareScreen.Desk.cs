@@ -580,7 +580,7 @@ namespace RealLifeOverhaul.Ui
                 for (int i = 0; i < trends.Rows.Count && _m.List.Count < CardsMost; i++)
                 {
                     FlareViewRow t = trends.Rows[i];
-                    ref FlareRow r = ref Add(_m.List, mine ? RowAct.Trend : RowAct.None, null, mine ? TagOf(FlareText.T(t.What)) : null, mine ? ShopIn(myShops, t.Where) : 0);
+                    ref FlareRow r = ref Add(_m.List, mine ? RowAct.Trend : RowAct.None, null, mine ? FlareCityViews.TrendTag(t.What) : null, mine ? ShopIn(myShops, t.Where) : 0);
                     r.Kind = FlareRowKind.Card;
                     r.Icon = UiIcon.ChartLineUp;
                     r.Tint = UiRole.OkText;
@@ -767,20 +767,6 @@ namespace RealLifeOverhaul.Ui
                     : FlareText.Fill(mv.Count == 1 ? "reallife_flare_kit_move_to_let_one" : "reallife_flare_kit_move_to_let_line", "count", FlareText.N(mv.Count));
                 r.Time = outlet && mv.Day >= 0 ? Ago(FlareLiveRules.Now(mv.Day, 8, 0), now) : null;
             }
-        }
-
-        // A trend's subject as a tag: its words in lower case letters and digits only ("Eating out" is "eatingout").
-        private static string TagOf(string words)
-        {
-            var b = new System.Text.StringBuilder(words != null ? words.Length : 0);
-            for (int i = 0; words != null && i < words.Length; i++)
-            {
-                if (char.IsLetterOrDigit(words[i]))
-                {
-                    b.Append(char.ToLowerInvariant(words[i]));
-                }
-            }
-            return b.Length > 1 ? b.ToString() : null;
         }
 
         // Which of the player's businesses a trend in a district is about: the one in that district, else the first (the index the trend card's Promote opens with).

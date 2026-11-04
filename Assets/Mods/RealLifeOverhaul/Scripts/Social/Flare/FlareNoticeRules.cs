@@ -27,7 +27,7 @@ namespace RealLifeOverhaul.Flare
         public const int GainedDays = 3;         // ...for this many days after it went up
         public const int TrendingMost = 3;       // tags of the day's trending that are looked for among the player's posts
         public const int RivalDays = 1;          // a promoted post of a rival's is news the day it starts and the day after
-        public const int RivalMost = 4;
+        public const int RivalMost = 3;
 
         /// <summary>The tab a kind of notice belongs to besides All; All itself for the kinds that are only there.</summary>
         public static FlareNoticeTab TabOf(FlareNoticeKind kind)
@@ -109,7 +109,7 @@ namespace RealLifeOverhaul.Flare
 
         /// <summary>
         /// The notices the account's own records tell: a tier passed, the followers a post brought, a tag trending that a post of the player's
-        /// is part of, and the promoted posts of the city's businesses and rivals. Added to <paramref name="into"/>, none ahead of now.
+        /// is part of, and the promoted posts of the city's businesses that compete with one of the player's shops (the same kind of thing sold, or the same district). Added to <paramref name="into"/>, none ahead of now.
         /// </summary>
         public static void AddDerived(FlareFile f, long now, IReadOnlyList<FlareAd> ads, List<FlareNotice> into, List<string> tags, List<int> counts)
         {
@@ -151,7 +151,7 @@ namespace RealLifeOverhaul.Flare
             {
                 FlareAd ad = ads[i];
                 long at = FlareLiveRules.Now(ad.From, 8, 0);
-                if (ad.Mine || today - ad.From > RivalDays || at > now)
+                if (ad.Mine || !ad.Rival || today - ad.From > RivalDays || at > now)
                 {
                     continue;
                 }

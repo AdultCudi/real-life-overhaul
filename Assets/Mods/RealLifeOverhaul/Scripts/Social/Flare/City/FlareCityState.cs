@@ -46,6 +46,7 @@ namespace RealLifeOverhaul.Flare
         public int From;             // its first day
         public long Cost;            // cents paid
         public bool Mine = true;     // the player's (false: a city business's, for parity)
+        public bool Rival;           // a city business's that competes with one of the player's (FlareCityRules.Competes), when it was made; never saved
     }
 
     /// <summary>One review of a business by a resident who shopped there: who, how many stars and when.</summary>

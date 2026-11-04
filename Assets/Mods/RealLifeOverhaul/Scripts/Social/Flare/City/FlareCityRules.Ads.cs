@@ -195,6 +195,27 @@ namespace RealLifeOverhaul.Flare
             c.CityAds.Add(ad);
         }
 
+        /// <summary>
+        /// Whether business <paramref name="b"/> competes with one of the player's: it sells the same kind of thing as a business of theirs, or it
+        /// trades in the same district as one. Never the player's own or a session guest's. A walk over the table, once for each of the day's few city ads.
+        /// </summary>
+        public static bool Competes(PopulationState s, int b)
+        {
+            BusinessTable bt = s.Businesses;
+            if (b < 0 || b >= bt.Count || bt.Owner[b] == (byte)Population.Owner.Player || bt.Owner[b] == (byte)Population.Owner.Guest)
+            {
+                return false;
+            }
+            for (int i = 0; i < bt.Count; i++)
+            {
+                if (bt.Owner[i] == (byte)Population.Owner.Player && bt.Seen[i] && (bt.Kind[i] == bt.Kind[b] || bt.District[i] == bt.District[b]))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         /// <summary>A city business's ad of the day: its own district's residents who care for its kind, <see cref="FlareCityCatalogue.CityAdReach"/> of them.</summary>
         public static FlareAd CityAd(PopulationState s, int b, int day, int seed)
         {

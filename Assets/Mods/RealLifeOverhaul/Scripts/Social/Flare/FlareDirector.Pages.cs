@@ -1,7 +1,9 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using RealLifeOverhaul.Population;
+using UI.Load;
 using UI.Notification;
 
 namespace RealLifeOverhaul.Flare
@@ -49,32 +51,53 @@ namespace RealLifeOverhaul.Flare
         private int _districtTotal;
         private int[] _districtOrder = new int[FlareDeskRules.DistrictsShown];
         private readonly List<FlareCityMove> _moves = new List<FlareCityMove>(8);
-        private readonly Dictionary<string, int> _toLetMap = new Dictionary<string, int>(16, StringComparer.Ordinal);
+        private readonly FlareToLetWalk _toLet = new FlareToLetWalk();
+        private bool _toLetStepping;   // the walk's coroutine is running
         private readonly List<KeyValuePair<string, int>> _toLetOrder = new List<KeyValuePair<string, int>>(16);
-        private bool _toLetFresh = true;
-        private const int ToLetStepSize = 300, ToLetShown = 3;
+        private const int ToLetShown = 3;
         private static readonly Comparison<KeyValuePair<string, int>> ByLets = (a, b) => b.Value != a.Value ? b.Value.CompareTo(a.Value) : string.CompareOrdinal(a.Key, b.Key);
 
-        // One slice of the day's walk over the city's premises to let (a day step): true when the pass is finished, false when it wants another step.
-        private bool ToLetStep()
+        private static readonly int HotToLetStep = HotSpots.Slot("Social: FlareDirector.ToLetSteps");
+
+        // A pass over the city's premises to let is wanted (start-up, and each day's round): costs nothing now, the slices begin it a frame at a time.
+        private void ToLetQueue()
         {
-            if (FlareBridges.ToLetSlice == null)
+            _toLet.Queue();
+            if (!_toLetStepping)
             {
-                return true;
+                _toLetStepping = true;
+                StartCoroutine(Guard.Routine(ToLetSteps()));
             }
-            Dictionary<string, int> done = FlareBridges.ToLetSlice(_toLetFresh, ToLetStepSize);
-            _toLetFresh = false;
-            if (done == null)
+        }
+
+        // One slice a frame, never while the loading screen is up and never in a frame the hour's or the day's steps use.
+        private IEnumerator ToLetSteps()
+        {
+            while (_toLet.Wanted)
             {
-                return false;
+                yield return null;
+                if (!Running || Save == null || _file == null)
+                {
+                    _toLet.Drop();
+                    break;
+                }
+                if (LoadScene.isLoading || _round.Owed || _hourSteps.Busy)
+                {
+                    continue;
+                }
+                using var hotSpot = HotSpots.Time(HotToLetStep);
+                try
+                {
+                    using var piece = SessionWatch.Piece("flare: a slice of the city's premises to let");
+                    _toLet.Step(FlareBridges.ToLetSlice);
+                }
+                catch (Exception e)
+                {
+                    _toLet.Drop();
+                    Fault("the premises to let", e);
+                }
             }
-            _toLetMap.Clear();
-            foreach (KeyValuePair<string, int> kv in done)
-            {
-                _toLetMap[kv.Key] = kv.Value;
-            }
-            _toLetFresh = true;
-            return true;
+            _toLetStepping = false;
         }
 
         /// <summary>The player writes their profile: the words about them and the picture across its head (null for the newest picture). Kept as the rules clean them.</summary>
@@ -215,7 +238,7 @@ namespace RealLifeOverhaul.Flare
                 Logger?.Error(e);
             }
             _toLetOrder.Clear();
-            foreach (KeyValuePair<string, int> kv in _toLetMap)
+            foreach (KeyValuePair<string, int> kv in _toLet.Map)
             {
                 _toLetOrder.Add(kv);
             }
