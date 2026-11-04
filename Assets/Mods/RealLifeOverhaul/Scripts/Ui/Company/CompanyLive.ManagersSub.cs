@@ -151,6 +151,7 @@ namespace RealLifeOverhaul.Ui
             else
             {
                 ManagerHand h = hand.Value;
+                var wouldOwn = new List<CompanyBlock>(2);
                 card = new CompanyCard
                 {
                     Kicker = title, Title = h.Name, Sub = CompanyText.T("reallife_co_emp_works", "business", h.PlaceName, "skill",
@@ -177,8 +178,8 @@ namespace RealLifeOverhaul.Ui
                     }
                     if (would.Count > 0)
                     {
-                        blocks.Add(Sec(w.T("reallife_mgr_sec_would_own", "What this person would own"), would.Count.ToString()));
-                        blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = would.ToArray() });
+                        wouldOwn.Add(Sec(w.T("reallife_mgr_sec_would_own", "What this person would own"), would.Count.ToString()));
+                        wouldOwn.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = would.ToArray() });   // under the buttons, so that the frame never cuts them off
                     }
                 }
                 string holds = region ? d.RegionHeldBy(h.Id) : null;
@@ -198,6 +199,7 @@ namespace RealLifeOverhaul.Ui
                 };
                 buttons.AddRange(post);
                 blocks.Add(Buttons(buttons.ToArray()));
+                blocks.AddRange(wouldOwn);
             }
             card.Blocks = blocks.ToArray();
             page.Card = card;

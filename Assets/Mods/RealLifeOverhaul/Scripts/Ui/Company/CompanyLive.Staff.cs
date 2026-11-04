@@ -272,7 +272,7 @@ namespace RealLifeOverhaul.Ui
             return c;
         }
 
-        // Up to four people, the ones paid furthest under the going rate or standing lowest, as rows with what is wrong: the summary names whom it counts.
+        // Up to three people, the ones paid furthest under the going rate or standing lowest, as rows with what is wrong: the summary names whom it counts.
         private static void AddPeopleWho(List<CompanyBlock> blocks, CompanyDirector d, CompanyState s, Words w, bool underpaid, string title)
         {
             var who = new List<StaffFile>(s.Staff.Count);
@@ -289,8 +289,8 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
-            var items = new List<CompanyItem>(4);
-            for (int i = 0; i < who.Count && i < 4; i++)
+            var items = new List<CompanyItem>(3);
+            for (int i = 0; i < who.Count && i < 3; i++)
             {
                 StaffFile p = who[i];
                 Face(p.Name, p.Id);

@@ -141,13 +141,13 @@ internal static partial class UiSamples
             blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = new[]
             {
                 WhoRow("Sana Malik", "Pioneer Game Studio", 0.25f, -1, "-$2.00", "sana", UiRole.Warn), WhoRow("Dev Kapoor", "Speedy Bites", 0.35f, -1, "-$2.00", "dev", UiRole.Warn),
-                WhoRow("Maya Okafor", "Bloom & Co", 0.6f, -1, "-$1.50", "maya", UiRole.Warn), WhoRow("Rui Tanaka", "Speedy Bites", 0.5f, -1, "-$0.90", "rui", UiRole.Warn)
+                WhoRow("Maya Okafor", "Bloom & Co", 0.6f, -1, "-$1.50", "maya", UiRole.Warn)
             } });
             blocks.Add(CSec(w.T("reallife_co_strike_low_sec", "Who stands low"), "5"));
             blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = new[]
             {
                 WhoRow("Rui Tanaka", "Speedy Bites", 0.5f, 28, "28", "rui", UiRole.Danger), WhoRow("Sana Malik", "Pioneer Game Studio", 0.25f, 31, "31", "sana", UiRole.Danger),
-                WhoRow("Ines Duarte", "Speedy Bites", 0.15f, 33, "33", "ines", UiRole.Danger), WhoRow("Hana Sato", "Speedy Bites", 0.8f, 35, "35", "hana", UiRole.Danger)
+                WhoRow("Ines Duarte", "Speedy Bites", 0.15f, 33, "33", "ines", UiRole.Danger)
             } });
         }
         blocks.Add(new CompanyBlock
@@ -735,12 +735,12 @@ internal static partial class UiSamples
                 c.Blocks = new[]
                 {
                     new CompanyBlock { Kind = CompanyBlockKind.Meter, Text = w.T("reallife_mgr_mistake_chance", "Chance of a mistake"), Value = "7.2%", Number = 14, Tone = UiRole.Warn },
-                    CSec(w.T("reallife_mgr_sec_would_own", "What this person would own"), "10"),
-                    new CompanyBlock { Kind = CompanyBlockKind.Items, Items = HandOverRows(w) },
                     CNote(w.F("reallife_mgr_appoint_replaces", "This replaces {name}.", "name", "Ray Walsh")),
                     CBtns(CB(w.T("reallife_mgr_appoint", "Appoint"), UiButtonKind.Primary, UiAction.Alt, CA(CompanyDo.Appoint, "lena", 0, 0, 0, place), UiIcon.Check),
                         CB(w.T("reallife_mgr_stand_down", "Stand down"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.StandDown, place, 0), UiIcon.Close, false, null, true),
-                        CB(w.T("reallife_mgr_hand_back", "Hand back"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.HandBack, place), UiIcon.Back))
+                        CB(w.T("reallife_mgr_hand_back", "Hand back"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.HandBack, place), UiIcon.Back)),
+                    CSec(w.T("reallife_mgr_sec_would_own", "What this person would own"), "10"),
+                    new CompanyBlock { Kind = CompanyBlockKind.Items, Items = HandOverRows(w) }
                 };
                 page.Card = c;
                 break;
