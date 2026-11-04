@@ -12,6 +12,7 @@ namespace RealLifeOverhaul.Careers
     public sealed partial class CareersDirector
     {
         private StandingFile _standing;
+        private long _waitSince;   // when the colleagues first found the people pool not up yet
         private RosterFile _roster;
         private bool _standingRead, _rosterRead;
 
@@ -76,7 +77,11 @@ namespace RealLifeOverhaul.Careers
                     var f = new StandingFile { Seed = StudySeed, Hired = j.Hired, Street = j.Post.Street, Number = j.Post.Number, Employer = j.Post.Employer };
                     f.Others.AddRange(_standing.Others);
                     _standing = f;
-                    SeedColleagues(f, j, Save != null ? Save.Day : 0);
+                }
+                if (_standing.Peers.Count == 0 && !PeoplePool.WaitingFor(ref _waitSince, 90))
+                {
+                    // the colleagues are people of the city's pool, named for good: a job found before the population is up waits for it (seconds after the load)
+                    SeedColleagues(_standing, j, Save != null ? Save.Day : 0);
                 }
                 return _standing;
             }
@@ -154,6 +159,7 @@ namespace RealLifeOverhaul.Careers
             Standing now = StandingNow();
             if (now.Measured && now.Teamwork < PostFilterRules.PromotionTeamwork)
             {
+                TeamworkBlocks(j.Post.Employer, now.Teamwork, PostFilterRules.PromotionTeamwork);
                 return false;   // an employer does not promote someone the shift does not get on with, whoever else is up for the post
             }
             bool mine = StandingRules.Contest(f, j.Post.Rank, Math.Max(0, j.Def.Ranks.Length - 1), day, StudySeed + day, Names, out Peer rival);
@@ -183,6 +189,7 @@ namespace RealLifeOverhaul.Careers
             if (StandingRules.OthersOf(_standing, o.Id, into) == 0)
             {
                 StandingRules.OthersDerive(StudySeed, o, Math.Max(40, Math.Min(85, ProRules.OfferPass)), into);
+                StandingRules.Keep(_standing, into);   // kept at once: the pool moves, and the people the player was shown must not
             }
             for (int i = 0; i < into.Count; i++)
             {

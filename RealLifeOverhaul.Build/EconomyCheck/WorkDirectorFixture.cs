@@ -20,7 +20,32 @@ namespace RealLifeOverhaul.Careers
         private int Points(int skill) => StudyRules.Points(_study, skill);
         private int _nameCount;
         private Func<string> _names;
-        private Func<string> Names => _names ?? (_names = () => "Colleague " + _nameCount++);
+        private Func<string> Names => _names ?? (_names = RollName);
+
+        private bool HasPeer(string name) => _standing != null && _standing.Peers.Exists(x => x.Name == name);
+
+        // A person of the pool a run installs (one the shift does not have yet), the id kept to be tagged as the game's roll does; "Colleague N" without a pool.
+        private string RollName()
+        {
+            if (PeoplePool.Pick == null)
+            {
+                return "Colleague " + _nameCount++;
+            }
+            PoolPerson who = default(PoolPerson);
+            for (int tries = 0; tries < 8; tries++)
+            {
+                who = PeoplePool.For(_nameCount++ * 6007L);
+                if (!HasPeer(who.Name))
+                {
+                    break;
+                }
+            }
+            if (who.Id > 0)
+            {
+                _pickedIds[who.Name] = who.Id;
+            }
+            return who.Name;
+        }
         public readonly List<string> StaffNames = new List<string>();
         private IList<string> EmployeeNames() => StaffNames;
         private void PeopleForgotten() { }
@@ -28,6 +53,9 @@ namespace RealLifeOverhaul.Careers
         public string LastPassed, LastFollower;
         private void PassedOver(string rival, string employer) { PassedCount++; LastPassed = rival; }
         private void EmployeeFollowed(string who, int course) { FollowedCount++; LastFollower = who; }
+        public int BlockedCount;
+        public string LastBlocked;
+        private void TeamworkBlocks(string employer, int teamwork, int bar) { BlockedCount++; LastBlocked = employer + " " + teamwork + "/" + bar; }
 
         public CareersDirector(StudyFile study)
         {
@@ -59,7 +87,11 @@ namespace RealLifeOverhaul.Hustles
         private readonly List<string> _colours = new List<string>();
         private readonly List<RivalDealer> _dealers = new List<RivalDealer>();
         public readonly List<RivalDealer> RivalShops = new List<RivalDealer>();
-        private PoolPerson SellerPerson(int k) => new PoolPerson { Name = "Seller " + k };
+        private PoolPerson SellerPerson(int k)
+        {
+            PoolPerson p = PeoplePool.Pick != null ? PeoplePool.Pick(k * 7919L) : default(PoolPerson);   // a run that installs a pool gets its people
+            return p.Id != 0 ? p : new PoolPerson { Name = "Seller " + k };
+        }
         private void ReadDealers() { _dealers.Clear(); _dealers.AddRange(RivalShops); }
         private static int ShopLevel => 1000;
         private static int MarketPeople => 1000;

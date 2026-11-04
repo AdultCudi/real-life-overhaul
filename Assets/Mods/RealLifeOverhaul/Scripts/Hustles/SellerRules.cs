@@ -95,9 +95,33 @@ namespace RealLifeOverhaul.Hustles
                 int tag = roll < DiscountShare ? (int)SellerTag.Discount
                     : roll < DiscountShare + PremiumShare ? (int)SellerTag.Premium
                     : roll < DiscountShare + PremiumShare + TradeShare ? (int)SellerTag.Trade : (int)SellerTag.None;
-                RealLifeOverhaul.Careers.PoolPerson person = who(k);
+                RealLifeOverhaul.Careers.PoolPerson person = Fresh(f, who, k);
                 f.Sellers.Add(new Seller { Id = f.NextId++, Name = person.Name, PersonId = person.Id, Rating = Rating(seed, k, tag), Tag = tag });
             }
+        }
+
+        // A person no seller of the book is already: the pool's pick for the place, else the next place's, up to a few tries (two sellers are never the same person).
+        private static RealLifeOverhaul.Careers.PoolPerson Fresh(SellerFile f, Func<int, RealLifeOverhaul.Careers.PoolPerson> who, int k)
+        {
+            RealLifeOverhaul.Careers.PoolPerson person = who(k);
+            for (int again = 1; again <= 6 && Taken(f, person); again++)
+            {
+                person = who(k + PoolSize * again);
+            }
+            return person;
+        }
+
+        private static bool Taken(SellerFile f, RealLifeOverhaul.Careers.PoolPerson person)
+        {
+            for (int i = 0; i < f.Sellers.Count; i++)
+            {
+                Seller s = f.Sellers[i];
+                if (person.Id > 0 ? s.PersonId == person.Id : s.Name == person.Name)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private static int Rating(int seed, int k, int tag)

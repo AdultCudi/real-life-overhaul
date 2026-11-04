@@ -22,9 +22,6 @@ namespace RealLifeOverhaul.Hustles
     {
         private static readonly List<RealLifeOverhaul.Rivals.RivalShop> Shops = new List<RealLifeOverhaul.Rivals.RivalShop>(64);
 
-        /// <summary>A name of a seller of the pool: the city's customers' own, drawn from the save's seed and the seller's place.</summary>
-        public static string SellerName(int seed, int index) => Seller(seed, index).Name;
-
         /// <summary>A seller of the pool as a person of the city's one people pool (a name of the customers' catalogue while the population is off).</summary>
         public static RealLifeOverhaul.Careers.PoolPerson Seller(int seed, int index)
         {

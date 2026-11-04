@@ -22,6 +22,7 @@ internal static partial class Program
         WkSellers();
         WkFilters();
         WkPool();
+        WkBestPaid();
         WkTeamworkAndChart();
         WkSaves();
         WkRuns();
@@ -495,6 +496,20 @@ internal static partial class Program
             "work filters: Near you is within the distance from home, or work from home, and a place unknown is not near");
         Check(PostFilterRules.Open(false, false) && !PostFilterRules.Open(false, true) && PostFilterRules.Open(true, true),
             "work filters: Open now is a workplace the game's schedule has open, or work from home");
+    }
+
+    // A player with no job is shown the best-paid posts they qualify for first: by the post's pay, not by the text of a cell ("$9.50" is under "$12.00").
+    private static void WkBestPaid()
+    {
+        var rows = new List<RealLifeOverhaul.Ui.WorkRow>();
+        int[] pays = { 950, 1200, 1075, 20000, 800 };
+        for (int i = 0; i < pays.Length; i++)
+        {
+            rows.Add(new RealLifeOverhaul.Ui.WorkRow { Id = i + 1, Order = pays[i], Mask = i == 3 ? 4 : 2, Cells = new[] { null, "Pine", "09:00", "$" + pays[i] / 100.0, "-", "You qualify" } });
+        }
+        RealLifeOverhaul.Ui.WorkBuilder.BestPaid(rows, 2);
+        Check(rows.Count == 4 && rows[0].Order == 1200 && rows[1].Order == 1075 && rows[2].Order == 950 && rows[3].Order == 800,
+            "work best paid: the posts a player with no job qualifies for come best pay first by the pay itself ($9.50 is under $12.00), those they do not qualify for left out");
     }
 
     // The work apps' people are people of the city's one people pool: picked by hash, the same every time, their id saved beside the name, an older save loads.

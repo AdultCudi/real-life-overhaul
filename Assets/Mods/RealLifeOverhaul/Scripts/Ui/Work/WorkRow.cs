@@ -89,6 +89,7 @@ namespace RealLifeOverhaul.Ui
     public sealed class WorkRow
     {
         public int Id;
+        public int Order;                      // the figure a list is sorted by when it is not one of its cells (a post's pay, in cents)
         // the face of the row
         public UiIcon Icon = UiIcon.Briefcase;
         public string Picture;                 // the game's own picture of the thing, by its UiPictures key; null for the glyph

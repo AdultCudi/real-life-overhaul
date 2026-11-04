@@ -17,9 +17,11 @@ namespace RealLifeOverhaul.Careers
         {
             PeoplePool.Pick = Pick;
             PeoplePool.Find = Find;
+            PeoplePool.Wanted = () => Settings.LivingPopulation && !CityPopulation.Following;
+            PeoplePool.Ready = () => Live != null && Live.People.Count > 0;
         }
 
-        private static PopulationState Live => Settings.LivingPopulation ? CityPopulation.Live : null;
+        private static PopulationState Live => Settings.LivingPopulation && !CityPopulation.Following ? CityPopulation.Live : null;   // a guest following the host has the host's copy, not people of its own
 
         private static PoolPerson Pick(long hash)
         {
@@ -81,8 +83,7 @@ namespace RealLifeOverhaul.Careers
 
         private static PoolPerson Make(PopulationState s, int slot)
         {
-            bool female = s.People.Female[slot] == 1;
-            return new PoolPerson { Id = s.People.Id[slot], Female = female, Name = PopulationGame.NameOf(PopulationViews.NameSeed(s, slot), female) };
+            return new PoolPerson { Id = s.People.Id[slot], Name = PopulationGame.NameOf(PopulationViews.NameSeed(s, slot), s.People.Female[slot] == 1) };
         }
 
         /// <summary>The names of the player's hired staff, at most a number of them (the employees who may follow a course).</summary>

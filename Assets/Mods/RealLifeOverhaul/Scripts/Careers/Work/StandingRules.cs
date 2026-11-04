@@ -22,7 +22,7 @@ namespace RealLifeOverhaul.Careers
     /// </summary>
     public static class StandingRules
     {
-        public const int PeersMost = 4, OthersMost = 12;
+        public const int PeersMost = 4, OthersMost = 80;   // others kept: the board holds forty posts, a post one or two others on average
         public const int ShiftsMost = 7;               // worked shifts kept for the recent shifts
         public const int OthersPerPostMost = 3;        // other applicants for one post at most
         public const int WeeksToContest = 4;           // weeks of record before two records can be weighed
@@ -182,7 +182,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>
         /// The others who applied for a post, made from the post alone (its id, the day it opened, the save's seed): the same people with the same
         /// records and days every time they are asked for, for every post the board shows, so the one who is weighed against the player at the end of
-        /// an interview is one the player could see. Nothing is kept: a post asked for twice, or a page read a hundred times, gives the same list.
+        /// an interview is one the player could see. The director keeps what it makes (<see cref="Keep"/>), so a post asked for twice, or a page read a hundred times, gives the same list even when the pool has moved.
         /// Each is a person of the city's people pool by the post and the place in the list (RosterRules.PersonOf), a name of the catalogue while the population is off.
         /// </summary>
         public static int OthersDerive(int seed, Opening o, int bar, List<Peer> into)
@@ -192,9 +192,55 @@ namespace RealLifeOverhaul.Careers
             for (int i = 0; i < n; i++)
             {
                 PoolPerson who = RosterRules.PersonOf(seed, 9500 + o.Id, o.From, i);
+                for (int again = 1; again <= 6 && Applying(into, who); again++)
+                {
+                    who = RosterRules.PersonOf(seed, 9500 + o.Id, o.From, i + OthersPerPostMost * again);   // never the same person twice for one post
+                }
                 into.Add(Applicant(who.Name, o, bar, o.From + 4, seed, i, who.Id));
             }
             return into.Count;
+        }
+
+        /// <summary>
+        /// Keeps the others just made for a post, so the people the player was shown stay the same people whatever the pool does later (a birth, a death,
+        /// a child turning eighteen). The oldest post's others go when the list is full.
+        /// </summary>
+        public static void Keep(StandingFile f, IList<Peer> made)
+        {
+            for (int i = 0; i < made.Count; i++)
+            {
+                f.Others.Add(made[i]);
+            }
+            int keep = made.Count > 0 ? made[0].Post : -1;
+            while (f.Others.Count > OthersMost)
+            {
+                int oldest = -1;
+                for (int i = 0; i < f.Others.Count; i++)
+                {
+                    if (f.Others[i].Post != keep && (oldest < 0 || f.Others[i].Day < f.Others[oldest].Day))
+                    {
+                        oldest = i;
+                    }
+                }
+                if (oldest < 0)
+                {
+                    break;
+                }
+                int post = f.Others[oldest].Post;
+                f.Others.RemoveAll(o => o.Post == post);
+            }
+        }
+
+        private static bool Applying(List<Peer> made, PoolPerson who)
+        {
+            for (int i = 0; i < made.Count; i++)
+            {
+                if (who.Id > 0 ? made[i].PersonId == who.Id : made[i].Name == who.Name)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>The others who applied for a post, in the order they came.</summary>

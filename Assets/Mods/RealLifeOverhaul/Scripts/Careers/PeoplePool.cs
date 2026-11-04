@@ -4,12 +4,11 @@ using RealLifeOverhaul.Tech;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>A person of the city's one people pool: their id there, their name, and whether the game's name maker gave them a woman's.</summary>
+    /// <summary>A person of the city's one people pool: their id there and their name.</summary>
     public struct PoolPerson
     {
         public int Id;           // 0: none, the name came from the mod's own catalogue (the living population is off)
         public string Name;
-        public bool Female;
     }
 
     /// <summary>
@@ -28,6 +27,35 @@ namespace RealLifeOverhaul.Careers
         /// <summary>A person of the pool by their id; false when they are gone or there is no pool.</summary>
         public static Func<int, PoolPerson> Find;
 
+        /// <summary>True when the living population is meant to run (the setting is on, and this is not a guest following the host's city).</summary>
+        public static Func<bool> Wanted;
+
+        /// <summary>True when the pool has people to pick from now.</summary>
+        public static Func<bool> Ready;
+
+        /// <summary>
+        /// True while the population is meant to run but has not come up yet (it loads on a cycle of its own, seconds after the save): a person made now
+        /// would get a name of the catalogue and no id for good, so whoever names people checks this and fills them in later (<see cref="Ready"/>).
+        /// </summary>
+        public static bool Waiting => Wanted != null && Wanted() && (Ready == null || !Ready());
+
+        /// <summary>
+        /// <see cref="Waiting"/>, for at most the given seconds from the first time it is asked (the clock is kept in <paramref name="since"/>, which starts at 0):
+        /// a population that never comes up must not hold the work apps back for good.
+        /// </summary>
+        public static bool WaitingFor(ref long since, int seconds)
+        {
+            if (!Waiting)
+            {
+                return false;
+            }
+            if (since == 0)
+            {
+                since = System.Diagnostics.Stopwatch.GetTimestamp();
+            }
+            return System.Diagnostics.Stopwatch.GetTimestamp() - since < seconds * System.Diagnostics.Stopwatch.Frequency;
+        }
+
         /// <summary>A person for a purpose: the pool's pick, else a name from the catalogue by the same hash.</summary>
         public static PoolPerson For(long hash)
         {
@@ -39,20 +67,6 @@ namespace RealLifeOverhaul.Careers
                 p = new PoolPerson { Id = 0, Name = DealerCatalogue.FirstNames[at % firsts] + " " + DealerCatalogue.LastNames[at / firsts % lasts] };
             }
             return p;
-        }
-
-        /// <summary>A person's name by id, or the name given when they are not in the pool.</summary>
-        public static string NameOf(int id, string saved)
-        {
-            if (id > 0 && Find != null)
-            {
-                PoolPerson p = Find(id);
-                if (p.Id == id && !string.IsNullOrEmpty(p.Name))
-                {
-                    return p.Name;
-                }
-            }
-            return saved;
         }
     }
 }

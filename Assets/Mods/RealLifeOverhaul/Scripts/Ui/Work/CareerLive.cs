@@ -296,7 +296,7 @@ namespace RealLifeOverhaul.Ui
                 string employer = CareersText.Employer(o.Employer), where = WorkGame.Address(o.Street, o.Number), title = CareersText.Title(o.Prof, o.Rank);
                 var r = new WorkRow
                 {
-                    Id = o.Id, Icon = WorkGlyphs.Profession(o.Prof), Name = title, Sub = employer, HeadSub = where, Chip = employer, ChipTone = UiRole.Accent, Status = status, Tone = tone,
+                    Id = o.Id, Order = pay, Icon = WorkGlyphs.Profession(o.Prof), Name = title, Sub = employer, HeadSub = where, Chip = employer, ChipTone = UiRole.Accent, Status = status, Tone = tone,
                     Cells = new[] { null, where, CareersText.Hours(p), CareersText.Rate(pay), mine > 0 ? WorkBuilder.Percent(against) : "-", status },
                     Values = new[] { 0, 0, 0, 0, against < 0 ? -1 : against > 0 ? 1 : 0, 0 },
                     Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, tone },
@@ -383,8 +383,7 @@ namespace RealLifeOverhaul.Ui
         private void BestFor(UtilitiesWords words)
         {
             var rows = new List<WorkRow>(_facts.Jobs.Rows);
-            rows.RemoveAll(r => (r.Mask & 2) == 0);
-            rows.Sort((a, b) => string.CompareOrdinal(b.Cells[4], a.Cells[4]));
+            WorkBuilder.BestPaid(rows, 2);   // the ones they qualify for, best pay first by the opening's own figure
             for (int i = 0; i < rows.Count && i < 5; i++)
             {
                 WorkRow r = rows[i];

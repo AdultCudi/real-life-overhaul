@@ -17,6 +17,7 @@ internal static partial class Program
         WkRunRoster();
         WkRunHiring();
         WkRunMarket();
+        WkRunPoolMoves();
     }
 
     // ------------------------------------------------------------------------------------------------- standing at work
@@ -537,6 +538,93 @@ internal static partial class Program
                 HustleRules.Buy(S, pick, pick.Asking, false, 0, day);
                 Bought++;
             }
+        }
+    }
+
+    // The city's pool moves under the work apps (births, deaths, a population that comes up seconds after the load): the people the player was shown stay the same,
+    // and nobody made before the pool is up is left without their id.
+    private static void WkRunPoolMoves()
+    {
+        int size = 300;
+        bool ready = true;
+        PeoplePool.Pick = h => new PoolPerson { Id = (int)(h % size) + 1, Name = "Pool " + ((int)(h % size) + 1) };
+        PeoplePool.Find = id => id >= 1 && id <= size ? new PoolPerson { Id = id, Name = "Pool " + id } : default(PoolPerson);
+        PeoplePool.Wanted = () => true;
+        PeoplePool.Ready = () => ready;
+        try
+        {
+            // the others who applied: read, the pool grows and shrinks, read again
+            var ap = new StandingRun(7);
+            SaveGameManager.Current = new GameInstance { Day = 120 };
+            var before = new List<string>();
+            var after = new List<string>();
+            var ids = new HashSet<string>();
+            int dup = 0, withOthers = 0;
+            for (int id = 1; id <= 30; id++)
+            {
+                var o = new Opening { Id = id, Prof = ap.J.Post.Prof, Rank = 1, From = 100 + id % 9, To = 140 };
+                var first = new List<Peer>();
+                ap.D.AlsoApplied(o, first);
+                var seen = new HashSet<string>();
+                foreach (Peer p in first)
+                {
+                    before.Add(id + ":" + p.Name);
+                    dup += seen.Add(p.Name) ? 0 : 1;
+                }
+                withOthers += first.Count > 0 ? 1 : 0;
+            }
+            size = 337;   // births
+            for (int id = 1; id <= 30; id++)
+            {
+                var second = new List<Peer>();
+                ap.D.AlsoApplied(new Opening { Id = id, Prof = ap.J.Post.Prof, Rank = 1, From = 100 + id % 9, To = 140 }, second);
+                foreach (Peer p in second)
+                {
+                    after.Add(id + ":" + p.Name);
+                }
+            }
+            Check(withOthers >= 10 && before.Count == after.Count && string.Join("|", before) == string.Join("|", after) && dup == 0,
+                "work pool run: thirty posts' other applicants are the same people after the pool grew (kept at the first read), and none is twice in one post (" + before.Count + " people)");
+
+            // a job found before the population is up: no colleague is named from the catalogue for good
+            ready = false;
+            var cold = new StandingRun(31);
+            StandingFile early = cold.D.Standing;
+            Check(early != null && early.Peers.Count == 0, "work pool run: while the population is not up yet a new job's colleagues wait (none made with a catalogue name)");
+            ready = true;
+            StandingFile later = cold.D.Standing;
+            bool tagged = later.Peers.Count == 3;
+            var named = new HashSet<int>();
+            foreach (Peer p in later.Peers)
+            {
+                tagged &= p.PersonId > 0 && named.Add(p.PersonId);
+            }
+            Check(tagged, "work pool run: once the population is up the colleagues are made, each a different person of the pool with an id");
+
+            // the Marketplace's first morning before the population is up waits; the sellers it makes after have their ids and are all different
+            ready = false;
+            var cold2 = new MarketRun();
+            cold2.D.RunMorning(1);
+            Check(cold2.Book.Sellers.Count == 0 && cold2.S.Listings.Count == 0, "work pool run: the Marketplace's morning waits for the population instead of naming its sellers from the catalogue");
+            ready = true;
+            cold2.D.RunMorning(1);
+            var sellerIds = new HashSet<int>();
+            bool allIds = cold2.Book.Sellers.Count >= SellerRules.PoolSize;
+            foreach (Seller s in cold2.Book.Sellers)
+            {
+                if (string.IsNullOrEmpty(s.Rival))
+                {
+                    allIds &= s.PersonId > 0 && sellerIds.Add(s.PersonId);
+                }
+            }
+            Check(allIds, "work pool run: the sellers made once the population is up each have their pool id, and no two are the same person");
+        }
+        finally
+        {
+            PeoplePool.Pick = null;
+            PeoplePool.Find = null;
+            PeoplePool.Wanted = null;
+            PeoplePool.Ready = null;
         }
     }
 

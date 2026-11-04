@@ -74,6 +74,13 @@ namespace RealLifeOverhaul.Ui
         public static WorkDo Do(int kind, int arg = 0, string why = null, bool opens = false) => new WorkDo { Kind = kind, Arg = arg, Why = why,
             Opens = opens };
 
+        /// <summary>The rows a player with no job could take, best pay first: by each row's own figure (<see cref="WorkRow.Order"/>), never by the text of a cell.</summary>
+        public static void BestPaid(List<WorkRow> rows, int mask)
+        {
+            rows.RemoveAll(r => (r.Mask & mask) == 0);
+            rows.Sort((a, b) => b.Order.CompareTo(a.Order));
+        }
+
         public static string Percent(int value) => (value >= 0 ? "+" : string.Empty) + value.ToString(System.Globalization.CultureInfo.InvariantCulture) + "%";
 
         public static string Number(int n) => n.ToString("N0", System.Globalization.CultureInfo.InvariantCulture);
