@@ -144,9 +144,9 @@ namespace RealLifeOverhaul.Ui
                 _local++;
                 return true;
             }
-            if (command == UiDecision.ChoiceCommand)
+            if (_app == NewsApp.Ending && command == UiDecision.ChoiceCommand)
             {
-                return EndChoice(arg);
+                return EndChoice(arg);   // the death card's own choice only: its number is the tabs' too (UiAppWindow.NavCommand), and a tab press must never load the saves or quit the game
             }
             if (_app == NewsApp.Stand && command == NewsCommands.Title)
             {
