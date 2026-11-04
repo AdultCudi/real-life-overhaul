@@ -13,7 +13,7 @@ internal static partial class UiSamples
         "managers_big", "managers_owner", "managers_region", "managers_post", "managers_none", "managers_flat", "managers_off",
         "managers_sub_appoint", "managers_sub_decisions", "managers_sub_task", "managers_sub_inbox", "managers_sub_policy", "managers_sub_rule", "managers_sub_templates",
         "managers_sub_dashboard", "managers_sub_regiondash", "managers_sub_seat", "managers_sub_tpl_own", "managers_sub_seat_pick", "managers_sub_seat_filled",
-        "rota_big", "rota_day", "rota_advice", "rota_edit", "rota_edit_other", "rota_one", "rota_refused", "rota_off",
+        "rota_big", "rota_day", "rota_advice", "rota_look", "rota_look_hire", "rota_edit", "rota_edit_other", "rota_one", "rota_refused", "rota_off",
         "marketing_big", "marketing_running", "marketing_report", "marketing_summary", "marketing_one", "marketing_off",
         "cover_big", "cover_claim", "cover_covered", "cover_summary",
         "tax_big", "tax_return", "tax_accountant", "tax_hide", "licence_card", "tax_one", "tax_off"
@@ -57,8 +57,10 @@ internal static partial class UiSamples
         }
         if (tab == "rota")
         {
-            v.Pick[CompanyView.Rota] = state == "rota_one" ? "p:Corner Cafe~12" : state == "rota_refused" ? "p:Hudson Warehouse~4" : "p:Speedy Bites~7";
-            v.Sub[CompanyView.Rota] = state == "rota_day" ? CompanyView.SubDay : state == "rota_advice" ? CompanyView.SubAdvice : state == "rota_edit" || state == "rota_edit_other" ? CompanyView.SubEdit : CompanyView.SubMain;
+            v.Pick[CompanyView.Rota] = RotaPickOf(state);
+            v.Sub[CompanyView.Rota] = state == "rota_day" ? CompanyView.SubDay : state == "rota_advice" || state.StartsWith("rota_look", System.StringComparison.Ordinal) ? CompanyView.SubAdvice
+                : state == "rota_edit" || state == "rota_edit_other" ? CompanyView.SubEdit : CompanyView.SubMain;
+            v.SubArg[CompanyView.Rota] = state == "rota_look" ? 2 : state == "rota_look_hire" ? 3 : 0;   // the rung read, counted from one
             v.Day = 1;
         }
         if (tab == "tax" || tab == "licence")

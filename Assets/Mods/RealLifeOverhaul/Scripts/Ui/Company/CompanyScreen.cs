@@ -582,6 +582,13 @@ namespace RealLifeOverhaul.Ui
                 _dirty = true;
                 return true;
             }
+            if (_view.Tab == CompanyView.Rota && _view.Sub[CompanyView.Rota] == CompanyView.SubAdvice && _view.SubArg[CompanyView.Rota] > 0)
+            {
+                _view.SubArg[CompanyView.Rota] = 0;   // a rung's week read: back to the ladder, not out of the advice
+                _stale = true;
+                _dirty = true;
+                return true;
+            }
             if (_view.Sub[_view.Tab] != CompanyView.SubMain)
             {
                 _view.Sub[_view.Tab] = CompanyView.SubMain;
