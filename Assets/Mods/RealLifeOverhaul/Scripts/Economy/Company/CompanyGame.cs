@@ -173,6 +173,7 @@ namespace RealLifeOverhaul.Economy
         public string District;
         public int Income = CompanyCatalogue.IncomeMiddle;
         public int Needs;               // the licences it needs, a bit each
+        public int Drivers;             // delivery drivers on its staff, as last read: a delivery vehicle permit
         public int Taste;               // +1 sells to the well-off, -1 sells on price, 0 neither
         public int Average;             // an average day's takings over the statements of the last seven days
         public int Statements;          // of those days, the statements the game has
@@ -191,6 +192,8 @@ namespace RealLifeOverhaul.Economy
     internal static partial class CompanyGame
     {
         public const string RaiseKey = "reallife_transaction_co_raise";
+        public const string ReserveKey = "reallife_transaction_co_reserve";       // money set aside for the year's tax bill: out of the cash, no cost, no deduction
+        public const string ReserveBackKey = "reallife_transaction_co_reserve_back";   // the reserve back in the cash
         public const string LeaseKey = "reallife_transaction_co_lease";   // the rise a lease's renewal added to the game's rent: a business cost, deductible
         public const string BonusKey = "reallife_transaction_co_bonus";   // a one-off bonus in place of a raise: a wage cost, deductible
         public const string SickKey = "reallife_transaction_co_sick";
@@ -214,6 +217,9 @@ namespace RealLifeOverhaul.Economy
         // The game's business types by what they sell, as the end of their names ("ba:businesstype_...").
         private static readonly string[] FoodTypes = { "fastfoodrestaurant", "coffeeshop", "supermarket", "fruitandvegetablestore", "icecreamparlour", "teabar" };   // the last two: Scripts/Shops
         private static readonly string[] AlcoholTypes = { "liquorstore", "nightclub" };
+        private static readonly string[] CrowdTypes = { "nightclub", "cinema", "theater", "casino" };                                  // many people in one room: a fire safety certificate
+        private static readonly string[] SeatingTypes = { "coffeeshop", "fastfoodrestaurant", "teabar", "icecreamparlour" };           // tables: an outdoor seating permit and a fire safety certificate; the last two: Scripts/Shops
+        private static readonly string[] CellarTypes = { "liquorstore", "wholesalestore", "importexport" };                            // goods held in bulk: bonded storage
         private static readonly string[] WellOffTypes = { "jewelrystore", "electronicsstore", "cardealership", "furniturestore", "clothingstore", "nightclub" };
         private static readonly string[] PriceTypes = { "supermarket", "fastfoodrestaurant", "fruitandvegetablestore", "liquorstore", "gasstation", "giftshop", "tobacconist" };
         private const string DeliveryDriver = "ba:skill_deliverydriver";
@@ -297,7 +303,12 @@ namespace RealLifeOverhaul.Economy
                 shop.District = GameRegistrations.District(reg);
                 shop.Rent = reg.BuildingOwnedByPlayer ? 0 : Mathf.Max(0, Mathf.RoundToInt(reg.RentPerDay));
                 shop.Income = Mathf.RoundToInt(CityEconomy.DistrictIncome(shop.District));
-                shop.Needs = LicenceRules.Needs(Is(type, FoodTypes), Is(type, AlcoholTypes), OpensLate(reg));
+                shop.Drivers = 0;   // counted again when the staff are read, which follows
+                shop.Needs = LicenceRules.Needs(new LicenceSite
+                {
+                    Food = Is(type, FoodTypes), Alcohol = Is(type, AlcoholTypes), Late = OpensLate(reg), Crowd = Is(type, CrowdTypes), Seating = Is(type, SeatingTypes),
+                    Cellar = Is(type, CellarTypes)
+                });
                 shop.Taste = Is(type, WellOffTypes) ? 1 : Is(type, PriceTypes) ? -1 : 0;
                 shop.Staff = shop.Low = shop.Standing = shop.Sick = 0;
                 shop.Asked = 0;
@@ -528,6 +539,11 @@ namespace RealLifeOverhaul.Economy
             List<EmployeeInstance> all = Save != null ? Save.EmployeeInstances : null;
             EmployeeInstance self = Self();
             IndexShops(shops);
+            for (int i = 0; i < shops.Count; i++)
+            {
+                shops[i].Drivers = 0;
+                shops[i].Needs &= ~(1 << (int)LicenceKind.DeliveryVehicle);   // asked of a business with a delivery driver on its staff, read again here
+            }
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 EmployeeInstance e = all[i];
@@ -539,6 +555,10 @@ namespace RealLifeOverhaul.Economy
                 if (shop == null)
                 {
                     continue;   // a headquarters or a warehouse takes no money: outside the wage market
+                }
+                if (e.HasSkill(DeliveryDriver))
+                {
+                    shop.Drivers++;
                 }
                 StaffFile f;
                 if (!ById.TryGetValue(e.id, out f))
@@ -575,7 +595,79 @@ namespace RealLifeOverhaul.Economy
                     dropped++;
                 }
             }
+            for (int i = 0; i < shops.Count; i++)
+            {
+                if (shops[i].Drivers > 0 && shops[i].File != null)
+                {
+                    shops[i].Needs |= 1 << (int)LicenceKind.DeliveryVehicle;
+                    LicenceRules.Newly(shops[i].File, shops[i].Needs, Save != null ? Save.Day : 0);   // a first term free where it is new to the business
+                }
+            }
             ById.Clear();
+        }
+
+        /// <summary>The game's yearly tax bill has come and waits to be paid.</summary>
+        public static bool BillWaiting()
+        {
+            try
+            {
+                return Save != null && Save.currentUnpaidTaxes != null;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>The bill waiting, whole money; 0 with none.</summary>
+        public static int BillAmount()
+        {
+            try
+            {
+                return Save != null && Save.currentUnpaidTaxes != null ? Mathf.RoundToInt(Mathf.Min(Save.currentUnpaidTaxes.totalToPay, int.MaxValue / 4)) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
+        /// <summary>One building the player owns, with the property tax the game charges on it (TaxHelper's sum): so far this tax year, and for the whole year.</summary>
+        public struct PropertyTaxLine
+        {
+            public string Name;
+            public int ToDate, Year;
+        }
+
+        /// <summary>
+        /// The property tax of each building the player owns, from the game's own sum (TaxCalculationHelper.GetRealEstateTaxes for the tax year to yesterday, and
+        /// each building's yearly figure). A rented building has none: the tax is inside its rent. Read when the day turns and when the app opens, never per frame.
+        /// </summary>
+        public static void PropertyTaxes(int today, List<PropertyTaxLine> into)
+        {
+            into.Clear();
+            try
+            {
+                GameInstance save = Save;
+                if (save == null || save.realEstate == null)
+                {
+                    return;
+                }
+                int days = DaysPerYear, from = TaxRules.YearStart(today, days);
+                List<(string, float)> sofar = TaxCalculationHelper.GetRealEstateTaxes(from, Mathf.Max(from, today - 1), days);
+                for (int i = 0; i < sofar.Count && i < save.realEstate.Count && into.Count < CompanyCatalogue.PropertyLinesMost; i++)
+                {
+                    into.Add(new PropertyTaxLine
+                    {
+                        Name = sofar[i].Item1 ?? string.Empty, ToDate = Mathf.RoundToInt(Mathf.Min(sofar[i].Item2, int.MaxValue / 4)),
+                        Year = Mathf.RoundToInt(Mathf.Min(save.realEstate[i].TaxesAmount, int.MaxValue / 4))
+                    });
+                }
+            }
+            catch (Exception)
+            {
+                into.Clear();
+            }
         }
 
         /// <summary>

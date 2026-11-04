@@ -17,7 +17,11 @@ namespace RealLifeOverhaul.Economy
             "reallife_co_campaign_sponsored", "reallife_co_campaign_inf_post", "reallife_co_campaign_inf_series", "reallife_co_campaign_inf_ambassador",
             "reallife_co_campaign_inf_plan", "reallife_co_campaign_inf_launch", "reallife_co_campaign_inf_giveaway"
         };
-        private static readonly string[] LicenceKeys = { "reallife_co_licence_hygiene", "reallife_co_licence_alcohol", "reallife_co_licence_late", "reallife_co_licence_signage" };
+        private static readonly string[] LicenceKeys =
+        {
+            "reallife_co_licence_hygiene", "reallife_co_licence_alcohol", "reallife_co_licence_late", "reallife_co_licence_signage",
+            "reallife_co_licence_fire", "reallife_co_licence_seating", "reallife_co_licence_delivery", "reallife_co_licence_bonded"
+        };
         private static readonly string[] AccountantKeys = { "reallife_co_accountant_0", "reallife_co_accountant_1", "reallife_co_accountant_2" };
         public static readonly string[] SickKeys = { "reallife_co_sick_none", "reallife_co_sick_statutory", "reallife_co_sick_generous" };
 

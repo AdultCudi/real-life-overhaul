@@ -41,7 +41,14 @@ namespace RealLifeOverhaul.Economy
             TaxFile x = s.Tax;
             t.Append("^t:");
             Join(t, x.QuarterFrom, x.Quarter, x.Costs[0], x.Costs[1], x.Costs[2], x.Costs[3], x.Costs[4], x.ReturnDue, x.ReturnQuarter, x.ReturnTakings, x.ReturnCosts,
-                x.ReturnPenalties, x.LateRun, x.Accountant, x.AccountantNext, x.Risk, x.Saved, x.Owed, x.LastAudit, x.CaseNumber, x.QuietUntil, x.Costs[5]);   // the rent's rise after the rest: a newer figure goes at the end
+                x.ReturnPenalties, x.LateRun, x.Accountant, x.AccountantNext, x.Risk, x.Saved, x.Owed, x.LastAudit, x.CaseNumber, x.QuietUntil, x.Costs[5],   // the rent's rise after the rest: a newer figure goes at the end
+                x.Reserve, x.ReserveAuto ? 1 : 0, x.YearTax, x.YearFrom, x.ReturnTax);   // then the tax reserve and the year's account
+            for (int i = 0; i < TaxRules.SettledKept; i++)   // then the past returns, the oldest first, four places always
+            {
+                SettledReturn r = i < x.Settled.Count ? x.Settled[i] : null;
+                t.Append('|');
+                Join(t, r != null ? r.Quarter : 0, r != null ? r.Day : 0, r != null ? r.Takings : 0, r != null ? r.Costs : 0, r != null ? r.Tax : 0, r != null ? r.State : 0);
+            }
             t.Append("^s:");
             for (int i = 0; i < s.Shops.Count && i < CompanyCatalogue.ShopsMost; i++)
             {
@@ -56,7 +63,7 @@ namespace RealLifeOverhaul.Economy
                     t.Append('|');
                     Join(t, p.Insurer, p.Premium, p.From, p.Until, p.Claims, p.Missed, p.Declined);
                 }
-                for (int k = 0; k < shop.Permits.Length; k++)
+                for (int k = 0; k < CompanyCatalogue.LicenceOwnKinds; k++)
                 {
                     Licence l = shop.Permits[k];
                     t.Append('|');
@@ -67,6 +74,12 @@ namespace RealLifeOverhaul.Economy
                     t.Append('|').Append(shop.PushEnded[k].ToString(Inv));   // after all an older version reads, so it leaves them alone
                 }
                 t.Append('|').Append(shop.PushGiven.ToString(Inv));   // after those: a kind added later goes after this
+                for (int k = CompanyCatalogue.LicenceOwnKinds; k < shop.Permits.Length; k++)
+                {
+                    Licence l = shop.Permits[k];
+                    t.Append('|');
+                    Join(t, l.Until, l.Auto ? 1 : 0, l.Reminded ? 1 : 0, l.Decide);   // the licences added later, after the rest of the record
+                }
             }
             t.Append("^e:");
             for (int i = 0; i < s.Staff.Count && i < CompanyCatalogue.StaffMost; i++)
@@ -235,6 +248,24 @@ namespace RealLifeOverhaul.Economy
             x.CaseNumber = Math.Max(0, I(c, 19));
             x.QuietUntil = Math.Max(0, I(c, 20));   // absent from older saves: no quiet time
             x.Costs[(int)CostKind.Rent] = Math.Max(0, I(c, 21));   // absent from older saves: no rent rise paid
+            x.Reserve = CompanyCatalogue.Clamp(I(c, 22), 0, CompanyCatalogue.ReserveHeld);   // absent from older saves: nothing set aside
+            x.ReserveAuto = I(c, 23) != 0;
+            x.YearTax = Math.Max(0, I(c, 24));
+            x.YearFrom = Math.Max(0, I(c, 25));
+            x.ReturnTax = Math.Max(0, I(c, 26));
+            x.Settled.Clear();
+            for (int i = 0; i < TaxRules.SettledKept; i++)
+            {
+                int at = 27 + i * 6, quarter = I(c, at);
+                if (quarter > 0)
+                {
+                    x.Settled.Add(new SettledReturn
+                    {
+                        Quarter = quarter, Day = Math.Max(0, I(c, at + 1)), Takings = Math.Max(0, I(c, at + 2)), Costs = Math.Max(0, I(c, at + 3)), Tax = Math.Max(0, I(c, at + 4)),
+                        State = CompanyCatalogue.Clamp(I(c, at + 5), TaxRules.StateOnTime, TaxRules.StateMissed)
+                    });
+                }
+            }
         }
 
         private static ShopFile Shop(string[] c)
@@ -251,7 +282,7 @@ namespace RealLifeOverhaul.Economy
                 shop.PushCost = Math.Max(0, I(c, 6));
                 shop.PushPercent = CompanyCatalogue.Clamp(I(c, 7), 0, CompanyCatalogue.CampaignMost);
             }
-            int later = ShopFields + shop.Cover.Length * PolicyFields + shop.Permits.Length * LicenceFields;   // the first field past the licences
+            int later = ShopFields + shop.Cover.Length * PolicyFields + CompanyCatalogue.LicenceOwnKinds * LicenceFields;   // the first field past the licences the first version kept
             for (int k = 0; k < shop.PushEnded.Length; k++)
             {
                 shop.PushEnded[k] = Math.Max(0, I(c, k < CompanyCatalogue.CampaignOwnKinds ? 8 + k : later + k - CompanyCatalogue.CampaignOwnKinds));
@@ -283,12 +314,21 @@ namespace RealLifeOverhaul.Economy
                     p.Missed = CompanyCatalogue.Clamp(I(c, at + 5), 0, CompanyCatalogue.PremiumMissedMost);
                 }
             }
-            for (int k = 0; k < shop.Permits.Length; k++)
+            for (int k = 0; k < CompanyCatalogue.LicenceOwnKinds; k++)
             {
                 int at = ShopFields + shop.Cover.Length * PolicyFields + k * LicenceFields;
                 shop.Permits[k].Until = Math.Max(0, I(c, at));
                 shop.Permits[k].Auto = I(c, at + 1) != 0;
                 shop.Permits[k].Reminded = I(c, at + 2) != 0;
+            }
+            int more = later + shop.PushEnded.Length - CompanyCatalogue.CampaignOwnKinds + 1;   // the licences added later: after the campaigns' figures, four fields each
+            for (int k = CompanyCatalogue.LicenceOwnKinds; k < shop.Permits.Length; k++)
+            {
+                int at = more + (k - CompanyCatalogue.LicenceOwnKinds) * 4;
+                shop.Permits[k].Until = Math.Max(0, I(c, at));
+                shop.Permits[k].Auto = I(c, at + 1) != 0;
+                shop.Permits[k].Reminded = I(c, at + 2) != 0;
+                shop.Permits[k].Decide = Math.Max(0, I(c, at + 3));   // absent from older saves: nothing applied for
             }
             return shop;
         }

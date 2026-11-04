@@ -43,7 +43,11 @@ namespace RealLifeOverhaul.Economy
         Hygiene = 0,
         Alcohol = 1,
         Late = 2,
-        Signage = 3
+        Signage = 3,
+        FireSafety = 4,         // food and crowds; a valid one takes a share off the fire premium, and an expired one halves a fire claim
+        OutdoorSeating = 5,     // tables for food and drink
+        DeliveryVehicle = 6,    // a business with a delivery driver on its staff
+        BondedStorage = 7       // spirits and goods held in bulk
     }
 
     /// <summary>A business cost of the mod's own that the return counts and the game's tax deducts. Saved as a number.</summary>
@@ -211,9 +215,16 @@ namespace RealLifeOverhaul.Economy
         public static readonly int[] FineShare = { 250, 500, 750, 1000 };       // thousandths of the back-tax
         public static int CourtSum => Prices.At(5000);           // back-tax from which it goes to court, never on Relaxed
 
-        public const int LicenceKinds = 4;          // the arrays that follow are by LicenceKind
-        public static readonly int[] LicenceFee = { 400, 900, 300, 150 };
-        public static readonly int[] LicenceTerm = { 30, 30, 20, 40 };          // days
+        public const int LicenceKinds = 8;          // the arrays that follow are by LicenceKind
+        public const int LicenceOwnKinds = 4;       // the four the first version kept: saved in their own place in a business's record; a later kind goes at its end
+        public static readonly int[] LicenceFee = { 400, 900, 300, 150, 350, 250, 200, 600 };
+        public static readonly int[] LicenceTerm = { 30, 30, 20, 40, 60, 30, 30, 60 };          // days
+        public static readonly int[] LicenceDecide = { 0, 0, 0, 0, 3, 2, 2, 5 };                // days the city takes over an application for one not held; 0: granted at once
+        public const int FireCoverCut = 150;        // thousandths off a business's fire premium while it holds a fire safety certificate
+        public const int FireClaimShare = 500;      // thousandths of a fire claim an insurer pays where the certificate the business needs has run out
+        public const int ReserveCashShare = 500;    // thousandths of the cash the finance chief may move into the tax reserve in one go
+        public const int ReserveHeld = 1000000;     // the most the reserve holds, whole money
+        public const int PropertyLinesMost = 24;    // owned buildings listed with their property tax
         public const int LicenceRemindDays = 3;
         public const int LicenceGraceDays = 5;      // days a new business may trade before it needs them
         public const int LicenceFineMultiple = 2;   // the fine for trading without one, in fees

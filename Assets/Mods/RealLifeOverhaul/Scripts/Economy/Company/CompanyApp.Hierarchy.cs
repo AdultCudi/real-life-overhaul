@@ -350,7 +350,7 @@ namespace RealLifeOverhaul.Economy
 
         private string EntryWhat(HierarchyEntry entry)
         {
-            return CompanyText.T(PolicyCatalogue.Mod + "_hier_log_" + ((HierarchyLog)CompanyCatalogue.Clamp(entry.Kind, 0, (int)HierarchyLog.HandedDown)).ToString().ToLowerInvariant());
+            return CompanyText.T(PolicyCatalogue.Mod + "_hier_log_" + ((HierarchyLog)CompanyCatalogue.Clamp(entry.Kind, 0, (int)HierarchyLog.Reserve)).ToString().ToLowerInvariant());
         }
 
         // A log entry's detail in words, by kind (HierarchyLog says what each figure is).
@@ -399,6 +399,8 @@ namespace RealLifeOverhaul.Economy
                     return CompanyText.T("reallife_hier_logd_limit", "name", entry.Detail, "share", CompanyText.Share(ManagerCatalogue.Step(ManagerCatalogue.WageBands, entry.A)));
                 case HierarchyLog.HandedDown:
                     return CompanyText.T("reallife_hier_logd_handed", "what", KindWords(entry.C), "to", LevelWords(entry.B));
+                case HierarchyLog.Reserve:
+                    return CompanyText.T("reallife_hier_logd_reserve", "amount", CompanyText.Money(entry.A), "reserve", CompanyText.Money(entry.B), "year", CompanyText.Money(entry.C));
                 default:
                     return entry.Detail;
             }

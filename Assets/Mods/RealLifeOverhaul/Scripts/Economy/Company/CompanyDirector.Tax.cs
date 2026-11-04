@@ -31,6 +31,7 @@ namespace RealLifeOverhaul.Economy
             TaxFile t = _state.Tax;
             int yesterday = day - 1, hidden = Hidden();
             bool hiding = hidden > 0;
+            ReserveYear(day);   // the game's tax year turning over or its bill coming: what was set aside goes back to the cash
 
             if (t.Accountant >= 0 && TaxRules.Resigns(t.Accountant, hiding))
             {
@@ -107,13 +108,14 @@ namespace RealLifeOverhaul.Economy
                 // The gain on a business sold in the quarter is in no business's statement: counted here once.
                 int from = t.QuarterFrom;
                 int takings = CompanyGame.Sales(from, yesterday) + (CompanyBridges.OtherIncome != null ? CompanyBridges.OtherIncome(from, yesterday) : 0);
-                TaxRules.Close(t, takings, day);
+                TaxRules.Close(t, takings, day, CompanyGame.TaxPercent);
                 if (Verbose)
                 {
                     Logger?.Info("Company check (tax, quarter " + t.ReturnQuarter + " closed): days " + from + " to " + yesterday + " (" + QuarterDays
                                  + " days, three months of " + MonthDays + "), takings " + takings + " by the game's own sum, the mod's deductible costs "
                                  + t.ReturnCosts + "; the return is due by day " + t.ReturnDue + ": PASS");
                 }
+                ReserveClose(day);   // the finance chief tops the reserve up to the year's tax so far, if asked to
                 if (TaxRules.Files(t.Accountant, hiding))
                 {
                     FileReturn(true);

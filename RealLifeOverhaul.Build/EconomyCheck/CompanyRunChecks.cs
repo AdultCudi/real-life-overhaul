@@ -8,5 +8,7 @@ internal static partial class Program
         CompanyLate();      // late days and the manager who lets go (CompanyLateChecks.cs)
         CompanyLeases();    // leases, the manager's marketing and lease answers (CompanyLeaseChecks.cs)
         CompanyPlans();     // rota plans: in use, the cap, the floor, copies and the save (CompanyPlanChecks.cs)
+        CompanyLicenceKinds();  // the four licence kinds added, applications and the fire certificate's link to the cover (CompanyLicenceChecks.cs)
+        CompanyTaxReserve();    // the quarter's tax, the reserve, the past returns and the save (CompanyTaxChecks.cs)
     }
 }

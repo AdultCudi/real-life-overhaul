@@ -95,7 +95,8 @@ namespace RealLifeOverhaul.Economy
         Policy = 13,        // a rule changed by the owner's approval: A the rule, B the step
         Bonus = 14,         // a one-off bonus given in place of a raise by the owner: A the amount, detail the name
         Limit = 15,         // a manager's raise limit raised by the owner: A the pay band step, B the largest raise's step, detail the name
-        HandedDown = 16     // an escalation the owner left a day passed down to the area's executive: A its id, B the level, C its kind
+        HandedDown = 16,    // an escalation the owner left a day passed down to the area's executive: A its id, B the level, C its kind
+        Reserve = 17        // the finance chief put money into the tax reserve when a quarter closed: A the amount, B what the reserve holds now, C the year's tax so far
     }
 
     /// <summary>One executive: their area, who they are (a professional of the player's), and their month.</summary>

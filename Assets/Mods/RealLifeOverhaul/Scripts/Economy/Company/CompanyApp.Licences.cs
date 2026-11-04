@@ -6,7 +6,11 @@ namespace RealLifeOverhaul.Economy
     /// <summary>The licences half of the Tax and licences tab: every licence each business needs.</summary>
     public sealed partial class CompanyApp
     {
-        private static readonly string[] LicenceWhy = { "reallife_co_lic_why_hygiene", "reallife_co_lic_why_alcohol", "reallife_co_lic_why_late", "reallife_co_lic_why_signage" };
+        private static readonly string[] LicenceWhy =
+        {
+            "reallife_co_lic_why_hygiene", "reallife_co_lic_why_alcohol", "reallife_co_lic_why_late", "reallife_co_lic_why_signage",
+            "reallife_co_lic_why_fire", "reallife_co_lic_why_seating", "reallife_co_lic_why_delivery", "reallife_co_lic_why_bonded"
+        };
 
         partial void WriteLicences(InfoBox box, CompanyState state, int day, ref string selected)
         {
@@ -24,13 +28,13 @@ namespace RealLifeOverhaul.Economy
                         continue;
                     }
                     Licence l = shops[i].File.Permits[k];
-                    bool valid = LicenceRules.Valid(l, day), soon = valid && l.Until - day < CompanyCatalogue.LicenceRemindDays;
+                    bool valid = LicenceRules.Valid(l, day), soon = valid && l.Until - day < CompanyCatalogue.LicenceRemindDays, pending = !valid && l.Pending;
                     Pick("lic:" + shops[i].File.Place + ":" + k, shops[i].Name, CompanyText.T("reallife_co_row_licence", "licence", CompanyText.Licence(k)),
-                        valid ? CompanyText.Day(l.Until) : string.Empty,
-                        CompanyText.T(!valid ? "reallife_co_row_lic_missing" : l.Auto ? "reallife_co_row_lic_auto" : soon ? "reallife_co_row_lic_soon" : "reallife_co_row_lic_valid"),
-                        !valid ? 2 : soon && !l.Auto ? 1 : 0, ref selected);
+                        valid ? CompanyText.Day(l.Until) : pending ? CompanyText.Day(l.Decide) : string.Empty,
+                        CompanyText.T(pending ? "reallife_co_row_lic_pending" : !valid ? "reallife_co_row_lic_missing" : l.Auto ? "reallife_co_row_lic_auto" : soon ? "reallife_co_row_lic_soon" : "reallife_co_row_lic_valid"),
+                        pending ? 1 : !valid ? 2 : soon && !l.Auto ? 1 : 0, ref selected);
                     Last.Kind = CompanyTables.AboutLicence;
-                    Last.Kind2 = !valid ? CompanyTables.LicenceMissing : soon ? CompanyTables.LicenceSoon : CompanyTables.LicenceValid;
+                    Last.Kind2 = pending ? CompanyTables.LicenceSoon : !valid ? CompanyTables.LicenceMissing : soon ? CompanyTables.LicenceSoon : CompanyTables.LicenceValid;
                     Last.Key[2] = valid ? l.Until : double.NaN;
                 }
             }
@@ -57,8 +61,10 @@ namespace RealLifeOverhaul.Economy
             bool valid = LicenceRules.Valid(l, day);
             box.Title(CompanyText.Capital(CompanyText.Licence(kind)));
             box.Subtitle(shop.Name);
-            box.Chip(CompanyText.T(valid ? "reallife_ibox_chip_valid" : "reallife_ibox_chip_missing"), valid ? CellTone.Green : CellTone.Red);
-            box.Line(valid ? CompanyText.T("reallife_co_lic_valid", "day", l.Until.ToString()) : CompanyText.T("reallife_co_lic_missing"), valid ? CellTone.Plain : CellTone.Red);
+            box.Chip(CompanyText.T(valid ? "reallife_ibox_chip_valid" : l.Pending ? "reallife_co_row_lic_pending" : "reallife_ibox_chip_missing"),
+                valid ? CellTone.Green : l.Pending ? CellTone.Yellow : CellTone.Red);
+            box.Line(valid ? CompanyText.T("reallife_co_lic_valid", "day", l.Until.ToString())
+                : l.Pending ? CompanyText.T("reallife_co_lic_pending", "day", l.Decide.ToString()) : CompanyText.T("reallife_co_lic_missing"), valid ? CellTone.Plain : l.Pending ? CellTone.Yellow : CellTone.Red);
             box.Section("reallife_ibox_sec_terms");
             box.Row("reallife_co_lic_fee", CompanyText.Money(LicenceRules.Fee(kind, _director.Index)));
             box.Row("reallife_co_lic_term", CompanyText.T("reallife_co_lic_term_value", "days", CompanyCatalogue.LicenceTerm[kind].ToString()));
