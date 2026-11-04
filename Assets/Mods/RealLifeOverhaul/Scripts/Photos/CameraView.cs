@@ -10,7 +10,10 @@ namespace RealLifeOverhaul.Photos
     /// <summary>
     /// The viewfinder over the whole screen: a phone camera's own look, an exception to the native rule shared with Flare
     /// (the game's font, FlareKit's shapes). Bars, filter and frame chips, the shutter, a toast and the flash, on a canvas
-    /// of the game's 3840 by 2160. Built once, about sixty objects; while up, a frame sets only what changed.
+    /// of the game's 3840 by 2160. Built once, about seventy objects; while up, a frame sets only what changed. With the kit's
+    /// chrome it also draws, inside the part of the screen the photo keeps (the aspect), the guide (thirds or squares), the level
+    /// line and a preview of the frame, and dims what the photo leaves out; none of it is in the photo (the shot is read with it
+    /// put away, and the frame is burned in on the worker).
     /// </summary>
     internal sealed class CameraView
     {
@@ -25,11 +28,22 @@ namespace RealLifeOverhaul.Photos
         private static readonly Color Lit = new Color(1f, 0.82f, 0.2f, 1f);
         private static readonly Color Line = new Color(1f, 1f, 1f, 0.45f);
         private static readonly Color Paper = new Color(0.97f, 0.96f, 0.93f, 1f);
+        private static readonly Color Dim = new Color(0f, 0f, 0f, 0.55f);
+        private static readonly Color LevelOff = new Color(1f, 1f, 1f, 0.7f);
 
         private readonly GameObject _root;
         private readonly RectTransform _canvas;
-        private readonly RectTransform _grid, _frame, _controls;
-        private readonly Image[] _gridLines = new Image[4];
+        private readonly RectTransform _grid, _frame, _controls, _extras;
+        private readonly Image[] _verticals = new Image[6], _horizontals = new Image[2];
+        private readonly Image[] _masks = new Image[4];
+        private readonly Image _levelLine;
+        private readonly float[] _guideX = new float[CameraRules.GuideLinesMost], _guideY = new float[CameraRules.GuideLinesMost];
+        private CameraAspect _shape = CameraAspect.Unknown;
+        private CameraFrame _frameNow;
+        private CameraGuide _guideNow;
+        private float _cropX, _cropY, _cropW, _cropH;
+        private float _levelAt = -1f;
+        private bool _levelShown, _levelFlat;
         private readonly Image[] _border = new Image[4];
         private readonly Image[] _film = new Image[2];
         private readonly Image _top, _bottom, _close, _gridButton, _poseButton, _ring, _disc, _flip, _thumbBack, _toastBack, _flash;
@@ -37,7 +51,7 @@ namespace RealLifeOverhaul.Photos
         private readonly RawImage _thumb;
         private readonly Image[] _filterChips;
         private readonly TextMeshProUGUI[] _filterLabels;
-        private readonly Image[] _frameChips = new Image[3];
+        private readonly Image[] _frameChips = new Image[3];   // the old chrome's three frames; the kit's strip offers every one
         private readonly TextMeshProUGUI[] _frameLabels = new TextMeshProUGUI[3];
         private float _laidWidth = -1f;
 
@@ -67,10 +81,21 @@ namespace RealLifeOverhaul.Photos
 
             _grid = FlareKit.Rect(_canvas, "Grid");
             FlareKit.Stretch(_grid, 0f, 0f, 0f, 0f);
-            for (int i = 0; i < _gridLines.Length; i++)
+            for (int i = 0; i < _verticals.Length; i++)
             {
-                _gridLines[i] = FlareKit.Box(_grid, "Line" + i, Line);
+                _verticals[i] = FlareKit.Box(_grid, "Vertical" + i, Line);
             }
+            for (int i = 0; i < _horizontals.Length; i++)
+            {
+                _horizontals[i] = FlareKit.Box(_grid, "Horizontal" + i, Line);
+            }
+            _extras = FlareKit.Rect(_canvas, "Extras");
+            FlareKit.Stretch(_extras, 0f, 0f, 0f, 0f);
+            for (int i = 0; i < _masks.Length; i++)
+            {
+                _masks[i] = FlareKit.Box(_extras, "Outside" + i, Dim);
+            }
+            _levelLine = FlareKit.Box(_extras, "Level", LevelOff);
 
             _frame = FlareKit.Rect(_canvas, "Frame");
             FlareKit.Stretch(_frame, 0f, 0f, 0f, 0f);
@@ -115,8 +140,8 @@ namespace RealLifeOverhaul.Photos
             _flipLabel = FlareKit.Text(_flip.transform, "Label", 30f, Color.white, FontStyles.Bold, TextAlignmentOptions.Center);   // the camera it turns to
             FlareKit.Stretch(_flipLabel.rectTransform, 10f, 0f, 10f, 0f);
 
-            _filterChips = new Image[CameraRules.Filters.Length];
-            _filterLabels = new TextMeshProUGUI[CameraRules.Filters.Length];
+            _filterChips = new Image[CameraRules.ClassicFilters];
+            _filterLabels = new TextMeshProUGUI[CameraRules.ClassicFilters];
             for (int i = 0; i < _filterChips.Length; i++)
             {
                 int n = i;
@@ -189,19 +214,7 @@ namespace RealLifeOverhaul.Photos
             float h = Height;
             float mid = w / 2f;
 
-            FlareKit.Place(_gridLines[0].rectTransform, w * CameraRules.GridLines[0] - 1.5f, 0f, 3f, h);
-            FlareKit.Place(_gridLines[1].rectTransform, w * CameraRules.GridLines[1] - 1.5f, 0f, 3f, h);
-            FlareKit.Place(_gridLines[2].rectTransform, 0f, h * CameraRules.GridLines[0] - 1.5f, w, 3f);
-            FlareKit.Place(_gridLines[3].rectTransform, 0f, h * CameraRules.GridLines[1] - 1.5f, w, 3f);
-
-            float side = h * CameraRules.BorderSide, foot = h * CameraRules.BorderFoot;
-            FlareKit.Place(_border[0].rectTransform, 0f, 0f, w, side);
-            FlareKit.Place(_border[1].rectTransform, 0f, 0f, side, h);
-            FlareKit.Place(_border[2].rectTransform, w - side, 0f, side, h);
-            FlareKit.Place(_border[3].rectTransform, 0f, h - foot, w, foot);
-            float bar = h * CameraRules.FilmBar(w / h);
-            FlareKit.Place(_film[0].rectTransform, 0f, 0f, w, bar);
-            FlareKit.Place(_film[1].rectTransform, 0f, h - bar, w, bar);
+            LayShape(w, h);
             Frame(frame);
 
             FlareKit.Place(_top.rectTransform, 0f, 0f, w, TopBar);
@@ -233,12 +246,107 @@ namespace RealLifeOverhaul.Photos
             FlareKit.Place(_toastBack.rectTransform, mid - 700f, h / 2f - 60f, 1400f, 120f);
         }
 
+        // The part of the screen the photo keeps: its masks, its guide, its frame and its level line, laid in canvas units.
+        private void LayShape(float w, float h)
+        {
+            if (_shape == CameraAspect.Unknown)
+            {
+                _cropX = _cropY = 0f;
+                _cropW = w;
+                _cropH = h;
+            }
+            else
+            {
+                CameraRules.CropRect(Mathf.RoundToInt(w), Mathf.RoundToInt(h), _shape, out int cx, out int cy, out int cw, out int ch);
+                _cropX = cx;
+                _cropY = cy;
+                _cropW = cw;
+                _cropH = ch;
+            }
+            FlareKit.Place(_masks[0].rectTransform, 0f, 0f, w, _cropY);
+            FlareKit.Place(_masks[1].rectTransform, 0f, _cropY + _cropH, w, Mathf.Max(0f, h - _cropY - _cropH));
+            FlareKit.Place(_masks[2].rectTransform, 0f, _cropY, _cropX, _cropH);
+            FlareKit.Place(_masks[3].rectTransform, _cropX + _cropW, _cropY, Mathf.Max(0f, w - _cropX - _cropW), _cropH);
+            for (int i = 0; i < _masks.Length; i++)
+            {
+                FlareKit.Show(_masks[i], _shape != CameraAspect.Unknown && _masks[i].rectTransform.sizeDelta.x > 0.5f && _masks[i].rectTransform.sizeDelta.y > 0.5f);
+            }
+            CameraRules.GuideLines(_guideNow, _cropW, _cropH, _guideX, _guideY, out int verticals, out int horizontals);
+            for (int i = 0; i < _verticals.Length; i++)
+            {
+                bool on = i < verticals;
+                FlareKit.Show(_verticals[i], on);
+                if (on)
+                {
+                    FlareKit.Place(_verticals[i].rectTransform, _cropX + _guideX[i] - 1.5f, _cropY, 3f, _cropH);
+                }
+            }
+            for (int i = 0; i < _horizontals.Length; i++)
+            {
+                bool on = i < horizontals;
+                FlareKit.Show(_horizontals[i], on);
+                if (on)
+                {
+                    FlareKit.Place(_horizontals[i].rectTransform, _cropX, _cropY + _guideY[i] - 1.5f, _cropW, 3f);
+                }
+            }
+            bool thin = _frameNow == CameraFrame.Border;
+            float side = thin ? Mathf.Min(_cropW, _cropH) * CameraRules.EdgeSide : _cropH * CameraRules.BorderSide, foot = thin ? side : _cropH * CameraRules.BorderFoot;
+            FlareKit.Place(_border[0].rectTransform, _cropX, _cropY, _cropW, side);
+            FlareKit.Place(_border[1].rectTransform, _cropX, _cropY, side, _cropH);
+            FlareKit.Place(_border[2].rectTransform, _cropX + _cropW - side, _cropY, side, _cropH);
+            FlareKit.Place(_border[3].rectTransform, _cropX, _cropY + _cropH - foot, _cropW, foot);
+            float bar = _cropH * CameraRules.FilmBar(_cropW / Mathf.Max(1f, _cropH));
+            FlareKit.Place(_film[0].rectTransform, _cropX, _cropY, _cropW, bar);
+            FlareKit.Place(_film[1].rectTransform, _cropX, _cropY + _cropH - bar, _cropW, bar);
+            PlaceLevel();
+        }
+
+        private void PlaceLevel()
+        {
+            float lineW = _cropW * (_levelFlat ? 0.5f : 0.3f);
+            float y = _cropY + _levelAt * _cropH;
+            bool on = _levelShown && _levelAt > 0.02f && _levelAt < 0.98f;
+            FlareKit.Show(_levelLine, on);
+            if (on)
+            {
+                _levelLine.color = _levelFlat ? Lit : LevelOff;
+                FlareKit.Place(_levelLine.rectTransform, _cropX + (_cropW - lineW) / 2f, y - 2f, lineW, 4f);
+            }
+        }
+
+        /// <summary>
+        /// The shape the photo will have, the guide over it, the frame's preview and the level line (<paramref name="horizon"/> the
+        /// horizon's place in the view, 0 top to 1 foot; <paramref name="flat"/> when the camera is level). A shape not known is the old
+        /// chrome's: the whole screen, nothing dimmed. Sets only what changed.
+        /// </summary>
+        public void Shape(CameraAspect aspect, CameraGuide guide, bool showLevel, float horizon, bool flat)
+        {
+            bool relay = aspect != _shape || guide != _guideNow;
+            _shape = aspect;
+            _guideNow = guide;
+            if (relay && _laidWidth > 0f)
+            {
+                LayShape(_canvas.rect.width, Height);
+            }
+            if (showLevel != _levelShown || flat != _levelFlat || Mathf.Abs(horizon - _levelAt) > 0.0005f)
+            {
+                _levelShown = showLevel;
+                _levelFlat = flat;
+                _levelAt = horizon;
+                if (_laidWidth > 0f)
+                {
+                    PlaceLevel();
+                }
+            }
+        }
+
         public void Write(bool selfie, float zoom, bool grid, string poseKey, int filter, CameraFrame frame)
         {
             FlareKit.Set(_mode, PhotosText.T(selfie ? "reallife_phonecam_mode_selfie" : "reallife_phonecam_mode_rear"));
             FlareKit.Show(_zoom, !selfie);
             FlareKit.Set(_zoom, CameraRules.ZoomWords(zoom));
-            FlareKit.Show(_grid, grid);
+            FlareKit.Show(_grid, grid);   // the old chrome's grid is the thirds; the kit's guide is set by Shape
             _gridButton.color = grid ? Lit : Pill;
             _gridLabel.color = grid ? Color.black : Color.white;
             FlareKit.Show(_poseButton, selfie && poseKey != null);
@@ -265,9 +373,15 @@ namespace RealLifeOverhaul.Photos
 
         private void Frame(CameraFrame frame)
         {
+            bool relay = (frame == CameraFrame.Border) != (_frameNow == CameraFrame.Border);
+            _frameNow = frame;
+            if (relay && _laidWidth > 0f)
+            {
+                LayShape(_canvas.rect.width, Height);
+            }
             for (int i = 0; i < _border.Length; i++)
             {
-                FlareKit.Show(_border[i], frame == CameraFrame.Border);
+                FlareKit.Show(_border[i], frame == CameraFrame.Polaroid || frame == CameraFrame.Border);   // a preview: the frame itself is burned in on the worker
             }
             for (int i = 0; i < _film.Length; i++)
             {
@@ -293,6 +407,8 @@ namespace RealLifeOverhaul.Photos
         {
             FlareKit.Show(_controls, !shot && !KitChrome);
             FlareKit.Show(_grid, !shot && grid);
+            FlareKit.Show(_extras, !shot);
+            FlareKit.Show(_frame, !shot);   // the frame's preview is not in the screen that is read; the worker burns the real one into the photo
         }
 
         public void Flash(float strength)

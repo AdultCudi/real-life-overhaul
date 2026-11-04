@@ -52,6 +52,7 @@ namespace RealLifeOverhaul.Ui
             _flare = flare;
             PicturesOn();
             TakeKitPage();
+            TakeWantedPhoto();
         }
 
         public string Id => "flare";
@@ -66,7 +67,7 @@ namespace RealLifeOverhaul.Ui
                     Shown();   // asked again after a gap: the screen was closed and is shown again
                 }
                 _askedFrame = frame;
-                return _dirty || _moved || (_flare != null && _flare.Revision != _revision) || PicturesCame || Stale;   // Stale: the times shown moved on (ClockStep)
+                return _dirty || _moved || (_flare != null && _flare.Revision != _revision) || PicturesCame || PickerCame || Stale;   // Stale: the times shown moved on (ClockStep)
             }
         }
 
@@ -74,6 +75,7 @@ namespace RealLifeOverhaul.Ui
         private void Shown()
         {
             TakeKitPage();
+            TakeWantedPhoto();
             if (_page == FlareFace.Notices)
             {
                 OpenNotices();
@@ -129,6 +131,7 @@ namespace RealLifeOverhaul.Ui
                 case FlareFace.InboxField: return _inbox;
                 case FlareFace.ThreadField: return _message;
                 case FlareFace.ReplyField: return _reply;
+                case FlareFace.PickerField: return _pickQuery.Search;
                 default: return null;
             }
         }
@@ -143,6 +146,7 @@ namespace RealLifeOverhaul.Ui
                 case FlareFace.InboxField: _inbox = text; break;
                 case FlareFace.ThreadField: _message = text; break;
                 case FlareFace.ReplyField: _reply = text; break;
+                case FlareFace.PickerField: _pickQuery.Search = text.Length == 0 ? null : text; _pickBuilt = false; _m.Picker.Photos.Offset = 0f; break;
                 default: return;
             }
             _dirty = true;
@@ -173,6 +177,10 @@ namespace RealLifeOverhaul.Ui
                 Fill();
             }
             FlareFace.Lay(s, frame, dark, keys, UiText.Words, _m);
+            if (_sheet == FlareFace.PhotosSheet)
+            {
+                PickerLaid();
+            }
             _dirty = _moved = false;
         }
 
@@ -235,6 +243,8 @@ namespace RealLifeOverhaul.Ui
                 case FlareFace.SheetChipCommand: return SheetChip(arg / FlareFace.GroupStride, arg % FlareFace.GroupStride);
                 case FlareFace.SheetConfirmCommand: return SheetConfirm();
                 case FlareFace.SheetCancelCommand: return CloseSheet();
+                case FlareFace.PickerPhotoCommand: return PickPhoto(arg);
+                case FlareFace.PickerAlbumCommand: return PickAlbum(arg);
                 default: return false;
             }
         }

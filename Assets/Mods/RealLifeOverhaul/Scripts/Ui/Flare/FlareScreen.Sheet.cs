@@ -47,6 +47,7 @@ namespace RealLifeOverhaul.Ui
             }
             _compose.Reset();
             _photo = _place = -1;
+            _chosenPhoto = null;
             _promote = _promoteDays = 0;
             _poll = false;
             _composeTag = tag;
@@ -123,6 +124,12 @@ namespace RealLifeOverhaul.Ui
 
         private bool CloseSheet()
         {
+            if (_sheet == FlareFace.PhotosSheet)
+            {
+                _sheet = FlareFace.ComposeSheet;   // the picker's cancel goes back to the post being written
+                _dirty = true;
+                return true;
+            }
             if (_sheet == FlareFace.NoSheet)
             {
                 return false;
@@ -154,6 +161,7 @@ namespace RealLifeOverhaul.Ui
                 case FlareFace.ComposeSheet: ComposeSheet(k); break;
                 case FlareFace.HireSheet: HireSheet(file, now, k); break;
                 case FlareFace.ReplySheet: ReplySheet(file, k); break;
+                case FlareFace.PhotosSheet: FillPicker(); break;
             }
         }
 
@@ -178,14 +186,15 @@ namespace RealLifeOverhaul.Ui
             var groups = new List<string>(5);
             var chips = new List<string[]>(5);
             var chosen = new List<int>(5);
-            string[] photos = new string[_photos.Count + 1];
+            string[] photos = new string[_photos.Count + 2];
             photos[0] = FlareText.T("reallife_flare_kit_no_photo");
             for (int i = 0; i < _photos.Count; i++)
             {
                 photos[i + 1] = FlareText.Fill(_photos[i].IndexOf(System.IO.Path.DirectorySeparatorChar) < 0 && _photos[i].IndexOf('/') < 0 ? "reallife_flare_kit_photo_mine"
                     : "reallife_flare_kit_photo_n", "n", (i + 1).ToString(CultureInfo.InvariantCulture));
             }
-            Group(groups, chips, chosen, GroupPhoto, FlareText.T("reallife_flare_kit_chip_photo"), photos, _photo + 1);
+            photos[_photos.Count + 1] = FlareText.T("reallife_flare_kit_photo_gallery");   // the whole Gallery, in the picker
+            Group(groups, chips, chosen, GroupPhoto, FlareText.T("reallife_flare_kit_chip_photo"), photos, _photo == GalleryPhoto ? _photos.Count + 1 : _photo + 1);
             if (shops.Count > 0)
             {
                 string[] places = new string[Math.Min(shops.Count, ShopsMost) + 1];
@@ -260,7 +269,7 @@ namespace RealLifeOverhaul.Ui
         private void Apply(List<FlareShop> shops)
         {
             _compose.Kind = FlareSource.Life;
-            _compose.Pic = _photo >= 0 && _photo < _photos.Count ? _photos[_photo] : null;
+            _compose.Pic = _photo == GalleryPhoto ? _chosenPhoto : _photo >= 0 && _photo < _photos.Count ? _photos[_photo] : null;
             if (_place >= 0 && _place < shops.Count)
             {
                 _compose.Place = shops[_place].Place;
@@ -449,6 +458,10 @@ namespace RealLifeOverhaul.Ui
             switch (_groups[group])
             {
                 case GroupPhoto:
+                    if (chip == _photos.Count + 1)
+                    {
+                        return OpenPicker();
+                    }
                     _photo = chip - 1;
                     break;
                 case GroupPlace:

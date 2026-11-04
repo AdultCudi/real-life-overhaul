@@ -9,7 +9,7 @@ internal static partial class UiSamples
     {
         "home", "home_following", "home_businesses", "explore", "explore_search", "explore_tag", "notices", "notices_empty", "messages", "messages_offer",
         "messages_none", "profile", "profile_other", "thread", "business", "business_turning", "business_none", "studio", "hire", "city", "city_empty",
-        "compose", "compose_promote", "hire_sheet", "reply_sheet"
+        "compose", "compose_promote", "hire_sheet", "reply_sheet", "photo_picker"
     };
 
     public static void Flare(UiScene s, UiFrame frame, bool dark, IUiKeys keys, UiWords t, string state)
@@ -58,6 +58,7 @@ internal static partial class UiSamples
             case "compose_promote": FlareHome(m, t, 0); FlareCompose(m, t, true); break;
             case "hire_sheet": FlareHire(m, t); FlareHireSheet(m, t); break;
             case "reply_sheet": FlareBusiness(m, t, 1); FlareReplySheet(m, t); break;
+            case "photo_picker": FlareHome(m, t, 0); FlareCompose(m, t, false); FlarePhotoPicker(m, t); break;
         }
         // The badges of the pages not open: what is new in the notifications and the unread messages.
         m.Badges = new int[FlareFace.Pages];
@@ -764,6 +765,27 @@ internal static partial class UiSamples
         k.Note = t("reallife_flare_kit_forecast", "Runs for {hours} hours. {flop} in 100 posts like this fall flat, {viral} in 100 go viral.").Replace("{hours}", "72").Replace("{flop}", "18")
             .Replace("{viral}", "3");
         k.Confirm = t("reallife_flare_kit_post_pay", "Post and pay {money}").Replace("{money}", "$360");
+    }
+
+    // The picker over the compose sheet: the whole Gallery of 500 photos as the Gallery's own code fills it, the albums with their counts, a search.
+    private static void FlarePhotoPicker(FlareFaceModel m, UiWords t)
+    {
+        m.Sheet = FlareFace.PhotosSheet;
+        FlarePickerModel k = m.Picker;
+        k.Title = t("reallife_flare_kit_picker_title", "Choose a photo");
+        k.SearchHint = t("reallife_flare_kit_picker_search", "Search your photos");
+        k.Cancel = t("reallife_flare_kit_cancel", "Cancel");
+        UiAlbumModel album = Album(t, 500, "grid", out int[] counts);
+        k.Photos.Photos = album.Photos;
+        k.Photos.Count = album.Count;
+        k.Photos.EmptyTitle = album.EmptyTitle;
+        k.Photos.EmptyBody = album.EmptyBody;
+        k.Albums = new string[6];
+        for (int i = 0; i < 6; i++)
+        {
+            k.Albums[i] = t(RealLifeOverhaul.Photos.GalleryFind.KitKeys[i], RealLifeOverhaul.Photos.GalleryFind.KitKeys[i]) + " " + counts[i];
+        }
+        k.Album = 0;
     }
 
     private static void FlareHireSheet(FlareFaceModel m, UiWords t)

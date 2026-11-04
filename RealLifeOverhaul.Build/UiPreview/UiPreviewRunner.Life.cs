@@ -1,12 +1,16 @@
+using System;
 using System.Collections.Generic;
 using System.IO;
 using RealLifeOverhaul.Ui;
+using UnityEngine;
 
 public static partial class UiPreviewRunner
 {
     // The Planner, the Calendar, the camera when it cannot open, the Gallery and the viewfinder, over the streets they stand on.
     static partial void AddLife(List<Screen> screens)
     {
+        Func<string, Sprite> before = UiPictures.Find;
+        UiPictures.Find = key => key != null && (key.StartsWith("photo:", StringComparison.Ordinal) || key == "viewfinder:latest" || key == "photoedit:preview") ? LifePicture(key) : before?.Invoke(key);
         screens.Add(new Screen { Name = "planner_today", AppName = "Planner", Icon = UiIcon.Clock, Backdrop = "13.jpg",
             Lay = (s, f, d, k) => UiSamples.PlannerToday(s, f, d, k, English, false), HoverCommand = UiBoard.ShiftCommand, HoverArg = 1, Walk = Moves("DRR") });
         screens.Add(new Screen { Name = "planner_today_empty", AppName = "Planner", Icon = UiIcon.Clock, Backdrop = "02.jpg",
@@ -26,21 +30,93 @@ public static partial class UiPreviewRunner
         screens.Add(new Screen { Name = "camera_refused", AppName = "Camera", Icon = UiIcon.Camera, Backdrop = "13.jpg",
             Lay = (s, f, d, k) => UiSamples.CameraRefused(s, f, d, k, English), HoverCommand = UiDecision.ButtonCommand, HoverArg = 0, Walk = Moves("R") });
         screens.Add(new Screen { Name = "gallery_few", AppName = "Gallery", Icon = UiIcon.Image, Backdrop = "13.jpg",
-            Lay = (s, f, d, k) => UiSamples.GalleryGrid(s, f, d, k, English, 3, false), HoverCommand = UiAlbum.Photo, HoverArg = 0, Walk = Moves("R") });
+            Lay = (s, f, d, k) => UiSamples.GalleryGrid(s, f, d, k, English, 3, "grid"), HoverCommand = UiAlbum.Photo, HoverArg = 0, Walk = Moves("R") });
         screens.Add(new Screen { Name = "gallery_full", AppName = "Gallery", Icon = UiIcon.Image, Backdrop = "02.jpg",
-            Lay = (s, f, d, k) => UiSamples.GalleryGrid(s, f, d, k, English, 300, false), HoverCommand = UiAlbum.Photo, HoverArg = 0, Walk = Moves("R") });
+            Lay = (s, f, d, k) => UiSamples.GalleryGrid(s, f, d, k, English, 300, "grid"), HoverCommand = UiAlbum.Photo, HoverArg = 0, Walk = Moves("R") });
+        screens.Add(new Screen { Name = "gallery_500", AppName = "Gallery", Icon = UiIcon.Image, Backdrop = "13.jpg",
+            Lay = (s, f, d, k) => UiSamples.GalleryGrid(s, f, d, k, English, 500, "grid"), HoverCommand = UiAlbum.Photo, HoverArg = 0, Walk = Moves("R") });
         screens.Add(new Screen { Name = "gallery_empty", AppName = "Gallery", Icon = UiIcon.Image, Backdrop = "13.jpg",
-            Lay = (s, f, d, k) => UiSamples.GalleryGrid(s, f, d, k, English, 0, false), HoverCommand = UiAlbum.Sort, HoverArg = 0, Walk = Moves("R") });
+            Lay = (s, f, d, k) => UiSamples.GalleryGrid(s, f, d, k, English, 0, "grid"), HoverCommand = UiAlbum.Sort, HoverArg = 0, Walk = Moves("R") });
         screens.Add(new Screen { Name = "gallery_select", AppName = "Gallery", Icon = UiIcon.Image, Backdrop = "02.jpg",
-            Lay = (s, f, d, k) => UiSamples.GalleryGrid(s, f, d, k, English, 12, true), HoverCommand = UiAlbum.Delete, HoverArg = 3, Walk = Moves("R") });
+            Lay = (s, f, d, k) => UiSamples.GalleryGrid(s, f, d, k, English, 40, "select"), HoverCommand = UiAlbum.Delete, HoverArg = 0, Walk = Moves("R") });
+        screens.Add(new Screen { Name = "gallery_search", AppName = "Gallery", Icon = UiIcon.Image, Backdrop = "13.jpg",
+            Lay = (s, f, d, k) => UiSamples.GalleryGrid(s, f, d, k, English, 120, "search"), HoverCommand = UiAlbum.Photo, HoverArg = 0, Walk = Moves("R") });
+        screens.Add(new Screen { Name = "gallery_flare", AppName = "Gallery", Icon = UiIcon.Image, Backdrop = "02.jpg",
+            Lay = (s, f, d, k) => UiSamples.GalleryGrid(s, f, d, k, English, 120, "flare"), HoverCommand = UiAlbum.Photo, HoverArg = 0, Walk = Moves("R") });
         screens.Add(new Screen { Name = "gallery_viewer", AppName = "Gallery", Icon = UiIcon.Image, Backdrop = "13.jpg",
-            Lay = (s, f, d, k) => UiSamples.GalleryViewer(s, f, d, k, English), HoverCommand = UiPhotoViewer.Action, HoverArg = 0, Walk = Moves("R") });
+            Lay = (s, f, d, k) => UiSamples.GalleryViewer(s, f, d, k, English, false), HoverCommand = UiPhotoViewer.Action, HoverArg = 1, Walk = Moves("R") });
+        screens.Add(new Screen { Name = "gallery_viewer_old", AppName = "Gallery", Icon = UiIcon.Image, Backdrop = "02.jpg",
+            Lay = (s, f, d, k) => UiSamples.GalleryViewer(s, f, d, k, English, true), HoverCommand = UiPhotoViewer.Action, HoverArg = 0, Walk = Moves("R") });
+        screens.Add(new Screen { Name = "gallery_edit", AppName = "Gallery", Icon = UiIcon.Image, Backdrop = "13.jpg",
+            Lay = (s, f, d, k) => UiSamples.GalleryEdit(s, f, d, k, English), HoverCommand = UiPhotoEdit.Save, HoverArg = 0, Walk = Moves("R") });
         screens.Add(new Screen { Name = "viewfinder", AppName = "Camera", Icon = UiIcon.Camera, Backdrop = "12.jpg",
-            Lay = (s, f, d, k) => UiSamples.Viewfinder(s, f, d, k, English, false), HoverCommand = LifePages.VShutter, HoverArg = 0, Walk = Moves("R") });
+            Lay = (s, f, d, k) => UiSamples.Viewfinder(s, f, d, k, English, "photo"), HoverCommand = LifePages.VShutter, HoverArg = 0, Walk = Moves("R") });
         screens.Add(new Screen { Name = "viewfinder_saved", AppName = "Camera", Icon = UiIcon.Camera, Backdrop = "08.jpg",
-            Lay = (s, f, d, k) => UiSamples.Viewfinder(s, f, d, k, English, true), HoverCommand = LifePages.VOpen, HoverArg = 0, Walk = Moves("R") });
+            Lay = (s, f, d, k) => UiSamples.Viewfinder(s, f, d, k, English, "saved"), HoverCommand = LifePages.VOpen, HoverArg = 0, Walk = Moves("R") });
+        screens.Add(new Screen { Name = "viewfinder_selfie", AppName = "Camera", Icon = UiIcon.Camera, Backdrop = "13.jpg",
+            Lay = (s, f, d, k) => UiSamples.Viewfinder(s, f, d, k, English, "selfie"), HoverCommand = LifePages.VTool, HoverArg = 0, Walk = Moves("R") });
+        screens.Add(new Screen { Name = "viewfinder_portrait", AppName = "Camera", Icon = UiIcon.Camera, Backdrop = "12.jpg",
+            Lay = (s, f, d, k) => UiSamples.Viewfinder(s, f, d, k, English, "portrait"), HoverCommand = LifePages.VLens, HoverArg = 0, Walk = Moves("R") });
+        screens.Add(new Screen { Name = "viewfinder_wide", AppName = "Camera", Icon = UiIcon.Camera, Backdrop = "08.jpg",
+            Lay = (s, f, d, k) => UiSamples.Viewfinder(s, f, d, k, English, "wide"), HoverCommand = LifePages.VZoomIn, HoverArg = 0, Walk = Moves("R") });
+        screens.Add(new Screen { Name = "viewfinder_timer", AppName = "Camera", Icon = UiIcon.Camera, Backdrop = "12.jpg",
+            Lay = (s, f, d, k) => UiSamples.Viewfinder(s, f, d, k, English, "timer"), HoverCommand = LifePages.VShutter, HoverArg = 0, Walk = Moves("R") });
+        screens.Add(new Screen { Name = "viewfinder_zoom", AppName = "Camera", Icon = UiIcon.Camera, Backdrop = "02.jpg",
+            Lay = (s, f, d, k) => UiSamples.Viewfinder(s, f, d, k, English, "zoom"), HoverCommand = LifePages.VExposureUp, HoverArg = 0, Walk = Moves("R") });
+        screens.Add(new Screen { Name = "viewfinder_night", AppName = "Camera", Icon = UiIcon.Camera, Backdrop = "08.jpg",
+            Lay = (s, f, d, k) => UiSamples.Viewfinder(s, f, d, k, English, "night"), HoverCommand = LifePages.VTool, HoverArg = 0, Walk = Moves("R") });
+        screens.Add(new Screen { Name = "viewfinder_clean", AppName = "Camera", Icon = UiIcon.Camera, Backdrop = "12.jpg",
+            Lay = (s, f, d, k) => UiSamples.Viewfinder(s, f, d, k, English, "clean"), HoverCommand = LifePages.VClean, HoverArg = 0, Walk = Moves("R") });
         screens.Add(new Screen { Name = "planner_longest", AppName = "Planner", Icon = UiIcon.Clock, Backdrop = "13.jpg",
             Lay = (s, f, d, k) => UiSamples.PlannerToday(s, f, d, k, LifePortuguese, false), HoverCommand = UiBoard.ShiftCommand, HoverArg = 1, Walk = Moves("DR") });
+    }
+
+    private static readonly Dictionary<string, Sprite> LifePictures = new Dictionary<string, Sprite>();
+    private static string _lifeThumbs;
+
+    // A photo of the Gallery by its key: one of the ten of the mockup's street pictures, by the key's own hash; once each.
+    private static Sprite LifePicture(string key)
+    {
+        if (LifePictures.TryGetValue(key, out Sprite known))
+        {
+            return known;
+        }
+        Sprite sprite = null;
+        int hash = 0;
+        for (int i = 0; i < key.Length; i++)
+        {
+            hash = hash * 31 + key[i];
+        }
+        string folder = LifeThumbs();
+        string path = Path.Combine(folder, "g" + (Math.Abs(hash) % 10).ToString("00") + ".jpg");
+        if (folder.Length > 0 && File.Exists(path))
+        {
+            var tex = new Texture2D(2, 2, TextureFormat.RGB24, false);
+            tex.LoadImage(File.ReadAllBytes(path));
+            sprite = Sprite.Create(tex, new Rect(0f, 0f, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+        }
+        LifePictures[key] = sprite;
+        return sprite;
+    }
+
+    // The mockups' thumbnails: not-in-repo beside the repository (or above a worktree of it), never committed.
+    private static string LifeThumbs()
+    {
+        if (_lifeThumbs != null)
+        {
+            return _lifeThumbs;
+        }
+        _lifeThumbs = string.Empty;
+        for (var dir = new DirectoryInfo(Application.dataPath); dir != null; dir = dir.Parent)
+        {
+            string thumbs = Path.Combine(dir.FullName, "not-in-repo", "previews", "ui", "mockups", "life", "thumbs");
+            if (Directory.Exists(thumbs))
+            {
+                _lifeThumbs = thumbs;
+                break;
+            }
+        }
+        return _lifeThumbs;
     }
 
     private static Dictionary<string, string> _lifePortuguese;

@@ -45,6 +45,20 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_life_fact_frame", "reallife_ui_life_fact_size", "reallife_ui_life_camera_rear",
                     "reallife_phonecam_filter_warm", "reallife_phonecam_frame_none", "reallife_ui_life_tags", "reallife_ui_life_tag_night",
                     "reallife_ui_life_where", "reallife_ui_life_flare_line", "reallife_ui_life_share", "reallife_ui_life_wallpaper",
+                    "reallife_gallery_search", "reallife_gallery_select_done", "reallife_ui_life_favourite_picked", "reallife_phonecam_app", "reallife_gallery_count_many",
+                    "reallife_gallery_day_today", "reallife_gallery_pick_none", "reallife_gallery_filter_place", "reallife_gallery_filter_business", "reallife_gallery_filter_day",
+                    "reallife_gallery_album_favourites", "reallife_gallery_album_businesses", "reallife_gallery_album_places", "reallife_gallery_album_flare",
+                    "reallife_gallery_day_yesterday", "reallife_gallery_day", "reallife_gallery_picked", "reallife_gallery_none_match_title", "reallife_gallery_none_match_body",
+                    "reallife_gallery_count_one", "reallife_gallery_filter_clear", "reallife_gallery_hour_only", "reallife_ui_life_of_day", "reallife_gallery_post_flare",
+                    "reallife_gallery_edit", "reallife_gallery_flare_posted", "reallife_gallery_taken", "reallife_gallery_fact_district", "reallife_gallery_fact_weather",
+                    "reallife_ui_hud_weather_sunny", "reallife_gallery_fact_people", "reallife_gallery_people_none", "reallife_phonecam_filter_none", "reallife_gallery_fact_shape",
+                    "reallife_phonecam_aspect_169", "reallife_gallery_fact_flare", "reallife_gallery_fact_business", "reallife_ui_hud_weather_rain", "reallife_gallery_people_many",
+                    "reallife_gallery_flare_not_posted", "reallife_gallery_tag_business", "reallife_gallery_tag_people", "reallife_phonecam_filter_title", "reallife_phonecam_frame_title",
+                    "reallife_gallery_edit_note", "reallife_gallery_edit_turn", "reallife_gallery_edit_save", "common_cancel", "reallife_gallery_edit_reset",
+                    "reallife_phonecam_filter_cool", "reallife_phonecam_filter_mono", "reallife_phonecam_filter_vivid", "reallife_phonecam_filter_fade", "reallife_phonecam_filter_sepia",
+                    "reallife_phonecam_filter_golden", "reallife_phonecam_filter_matte", "reallife_phonecam_filter_chrome", "reallife_phonecam_filter_dream",
+                    "reallife_phonecam_frame_polaroid", "reallife_phonecam_frame_film", "reallife_phonecam_frame_border", "reallife_gallery_shape_original", "reallife_phonecam_aspect_43",
+                    "reallife_phonecam_aspect_11", "reallife_phonecam_aspect_916",
                 }).Switch(UiScreenSwitches.Life),
                 new UiScreenDef("viewfinder", UiTemplate.Hud, "ViewfinderScreen", new[]
                 {
@@ -54,6 +68,12 @@ namespace RealLifeOverhaul.Ui
                     "reallife_phonecam_filter_vivid", "reallife_phonecam_filter_fade",
                     "reallife_phonecam_frame_none", "reallife_phonecam_frame_border", "reallife_phonecam_frame_film",
                     "reallife_ui_life_saved", "reallife_ui_life_open",
+                    "reallife_phonecam_filter_sepia", "reallife_phonecam_filter_golden", "reallife_phonecam_filter_matte", "reallife_phonecam_filter_chrome",
+                    "reallife_phonecam_filter_dream", "reallife_phonecam_tool_timer", "reallife_phonecam_guide_thirds", "reallife_phonecam_tool_level", "reallife_phonecam_aspect_169",
+                    "reallife_phonecam_tool_body", "reallife_phonecam_tool_clean", "reallife_phonecam_app", "reallife_ui_life_mode_portrait", "reallife_ui_life_mode_wide",
+                    "reallife_phonecam_frame_polaroid", "reallife_phonecam_filter_title", "reallife_phonecam_frame_title", "reallife_ui_life_newest_photo", "reallife_ui_life_open_gallery",
+                    "reallife_ui_life_take", "reallife_phonecam_clean_back", "reallife_phonecam_pose", "reallife_selfie_pose_wave", "reallife_phonecam_aspect_43",
+                    "reallife_phonecam_timer_s", "reallife_phonecam_tool_boost", "reallife_ui_hud_weather_clear",
                 }).Switch(UiScreenSwitches.Life),
             });
         }

@@ -252,105 +252,237 @@ internal static partial class UiSamples
         LifePages.Refused(s, m, f, dark, k);
     }
 
-    private static UiNavEntry[] GalleryNav(UiWords t, int all, int selfies) => new[]
-    {
-        new UiNavEntry { Icon = UiIcon.Image, Label = t("reallife_gallery_tab_all", "All photos"), Count = all.ToString() },
-        new UiNavEntry { Icon = UiIcon.Camera, Label = t("reallife_gallery_tab_selfies", "Selfies"), Count = selfies.ToString() },
-    };
+    private static readonly string[] PhotoSamplePlaces = { "Broadway", "7th Avenue", "Fulton Street", "Pier 17", "Hudson Yards" };
+    private static readonly string[] PhotoSampleDistricts = { "Midtown", "Midtown", "Financial District", "Chelsea", "Hell's Kitchen" };
+    private static readonly string[] PhotoSampleBusinesses = { null, "Bloom Cafe", null, "Speedy Bites", null, "Thrifty Threads" };
 
-    private static UiAlbumModel Album(UiWords t, int count, bool oldest, bool fav, bool selecting)
+    /// <summary>A save's photos as the Gallery lists them: eight a day, newest first, each with what the camera knew of it.</summary>
+    public static System.Collections.Generic.List<RealLifeOverhaul.Photos.PhotoEntry> SamplePhotos(int count, int today)
     {
-        var photos = new UiAlbumPhoto[count];
-        int per = count >= 8 ? 8 : Math.Max(1, count);
+        var list = new System.Collections.Generic.List<RealLifeOverhaul.Photos.PhotoEntry>(count);
         for (int i = 0; i < count; i++)
         {
-            int day = 40 - i / per;
-            int onDay = Math.Min(per, count - (i / per) * per);
-            photos[i] = new UiAlbumPhoto
+            int day = Math.Max(1, today - i / 8);
+            int hour = (23 - (i % 8) * 3 + 24) % 24;
+            var photo = new RealLifeOverhaul.Photos.PhotoEntry
             {
-                Day = day,
-                DayLabel = t("reallife_ui_life_day_band", "Day {day}").Replace("{day}", day.ToString()),
-                DayMeta = t("reallife_ui_life_photos_day", "{count} photos").Replace("{count}", onDay.ToString()),
-                Favourite = i % 7 == 0,
-                Picked = selecting && i < 3,
+                Name = "Photo_20261104_12" + (i / 60).ToString("00") + (i % 60).ToString("00") + "_D" + day + "_" + hour.ToString("00") + ".jpg", Stamp = 20261104120000L + (i / 60) * 100 + i % 60, Number = 1,
+                Day = day, Hour = hour, Selfie = i % 9 == 4,
             };
+            var side = new RealLifeOverhaul.Photos.PhotoSidecar
+            {
+                Place = PhotoSamplePlaces[i % PhotoSamplePlaces.Length], District = PhotoSampleDistricts[i % PhotoSampleDistricts.Length], Hour = hour, Day = day,
+                Weather = i % 5 == 3 ? "rain" : "sunny", Filter = i % 7 == 1 ? 1 : 0, Aspect = 2, Kind = i % 9 == 4 ? 1 : i % 11 == 2 ? 2 : 0,
+                Business = PhotoSampleBusinesses[i % PhotoSampleBusinesses.Length],
+                HasPeople = true, People = i % 7,
+            };
+            if (i % 4 != 3)
+            {
+                side.HasMinute = true;
+                side.Minute = (i * 7) % 60;
+            }
+            side.Tags = RealLifeOverhaul.Photos.PhotoSeenRules.Tokens(side, photo.Selfie);
+            photo.Take(side);
+            list.Add(photo);
         }
-        return new UiAlbumModel
-        {
-            Photos = photos, Count = count,
-            SortLabel = t(oldest ? "reallife_ui_life_sort_old" : "reallife_ui_life_sort_new", oldest ? "Oldest first" : "Newest first"),
-            FavLabel = t("reallife_ui_life_favourites", "Favourites"), FavOn = fav,
-            SelectLabel = t("reallife_ui_life_select", "Select"), Selecting = selecting,
-            DeleteLabel = t("reallife_ui_life_delete_selected", "Delete selected"), DeleteCount = selecting ? 3 : 0,
-            CountLabel = t("reallife_ui_life_album_count", "{count} photos").Replace("{count}", count.ToString()),
-            EmptyTitle = t("reallife_ui_life_empty_gallery_title", "No photos yet"),
-            EmptyBody = t("reallife_ui_life_empty_gallery_body", "Open the camera and take one. It shows here, newest first."),
-        };
+        return list;
     }
 
-    /// <summary>The album: a few photos, a full gallery, an empty one, or select mode.</summary>
-    public static void GalleryGrid(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, int count, bool selecting)
+    /// <summary>The Gallery's words from the sample's own source, and a computer's time that is not the game's.</summary>
+    public static RealLifeOverhaul.Ui.GalleryTexts SampleTexts(UiWords t)
     {
-        int selfies = count == 0 ? 0 : Math.Max(1, count / 8);
-        LifePages.Gallery(s, f, dark, k, t("reallife_gallery_app", "Gallery"), GalleryNav(t, count, selfies), 0, false,
-            Album(t, count, false, false, selecting), null,
+        return new RealLifeOverhaul.Ui.GalleryTexts { T = key => t(key, key), Real = p => "2026-11-04 12:" + (p.Number + 10), Size = p => "412 KB" };
+    }
+
+    private static UiNavEntry[] GalleryNav(UiWords t, int[] counts)
+    {
+        UiIcon[] icons = { UiIcon.Image, UiIcon.Heart, UiIcon.SmileyHappy, UiIcon.Store, UiIcon.MapPin, UiIcon.Megaphone };
+        var nav = new UiNavEntry[6];
+        for (int i = 0; i < nav.Length; i++)
+        {
+            nav[i] = new UiNavEntry { Icon = icons[i], Label = t(RealLifeOverhaul.Photos.GalleryFind.KitKeys[i], RealLifeOverhaul.Photos.GalleryFind.KitKeys[i]), Count = counts[i].ToString() };
+        }
+        return nav;
+    }
+
+    /// <summary>The album as the Gallery's own code fills it: <paramref name="state"/> is "grid", "select", "search", "flare" or "none".</summary>
+    private static UiAlbumModel Album(UiWords t, int count, string state, out int[] counts)
+    {
+        var photos = SamplePhotos(count, 40);
+        var query = new RealLifeOverhaul.Photos.GalleryQuery();
+        var favourites = new System.Collections.Generic.HashSet<string>();
+        var posted = new System.Collections.Generic.HashSet<string>();
+        for (int i = 0; i < photos.Count; i++)
+        {
+            if (i % 7 == 0)
+            {
+                favourites.Add(photos[i].Name);
+            }
+            if (i % 11 == 0)
+            {
+                posted.Add(photos[i].Name);
+            }
+        }
+        if (state == "search")
+        {
+            query.Search = "broad";
+            query.Business = "Bloom Cafe";
+        }
+        if (state == "flare")
+        {
+            query.Kit = RealLifeOverhaul.Photos.GalleryKit.Flare;
+        }
+        var shown = new System.Collections.Generic.List<RealLifeOverhaul.Photos.PhotoEntry>();
+        RealLifeOverhaul.Photos.GalleryFind.Select(photos, query, favourites, posted, shown);
+        counts = new int[(int)RealLifeOverhaul.Photos.GalleryKit.Count];
+        RealLifeOverhaul.Photos.GalleryFind.Counts(photos, favourites, posted, counts);
+        var places = new System.Collections.Generic.List<string>();
+        var businesses = new System.Collections.Generic.List<string>();
+        var days = new System.Collections.Generic.List<string>();
+        RealLifeOverhaul.Photos.GalleryFind.Values(photos, query.Kit, favourites, posted, 0, places);
+        RealLifeOverhaul.Photos.GalleryFind.Values(photos, query.Kit, favourites, posted, 1, businesses);
+        RealLifeOverhaul.Photos.GalleryFind.Values(photos, query.Kit, favourites, posted, 2, days);
+        var picked = new System.Collections.Generic.HashSet<string>();
+        if (state == "select")
+        {
+            for (int i = 0; i < Math.Min(3, shown.Count); i++)
+            {
+                picked.Add(shown[i].Name);
+            }
+        }
+        var model = new UiAlbumModel { Selecting = state == "select" };
+        RealLifeOverhaul.Ui.GalleryAlbumFill.Fill(model, shown, query, favourites, posted, picked, 40, places.Count, businesses.Count, days.Count, "photo:", SampleTexts(t), true);
+        model.Selecting = state == "select";
+        return model;
+    }
+
+    /// <summary>The album: a few photos, a full gallery, an empty one, select mode, a search with a filter, or the Flare album.</summary>
+    public static void GalleryGrid(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, int count, string state)
+    {
+        UiAlbumModel album = Album(t, count, state, out int[] counts);
+        LifePages.Gallery(s, f, dark, k, t("reallife_gallery_app", "Gallery"), GalleryNav(t, counts), state == "flare" ? 5 : 0, false, album, null,
             t("reallife_ui_prompt_move", "Move"), t("reallife_ui_prompt_select", "Select"), t("reallife_ui_prompt_back", "Back"));
     }
 
-    /// <summary>One photo open, with its facts, its tags and its neighbours.</summary>
-    public static void GalleryViewer(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t)
+    /// <summary>One photo open, with its facts built by the Gallery's own code, its tags and its neighbours; <paramref name="old"/> is a photo with no minute.</summary>
+    public static void GalleryViewer(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool old)
     {
-        var photo = new UiPhotoModel
+        var photos = SamplePhotos(9, 40);
+        RealLifeOverhaul.Photos.PhotoEntry photo = photos[old ? 3 : 0];
+        var texts = SampleTexts(t);
+        var model = new UiPhotoModel
         {
-            Title = t("reallife_ui_life_at_night", "{place} at night").Replace("{place}", "Broadway"),
-            Caption = "Mon, day 2, 21:00",
-            Position = t("reallife_ui_life_of_today", "{at} of {count} today").Replace("{at}", "4").Replace("{count}", "9"),
-            FactsTitle = t("reallife_ui_life_facts", "Photo"),
-            Facts = new[]
-            {
-                new UiPhotoFact { Label = t("reallife_ui_life_fact_taken", "Taken"), Value = "Mon, day 2, 21:00" },
-                new UiPhotoFact { Label = t("reallife_ui_life_fact_place", "Place"), Value = "Broadway, Midtown", Link = true },
-                new UiPhotoFact { Label = t("reallife_ui_life_fact_camera", "Camera"), Value = t("reallife_ui_life_camera_rear", "Rear camera") },
-                new UiPhotoFact { Label = t("reallife_ui_life_fact_filter", "Filter"), Value = t("reallife_phonecam_filter_warm", "Warm") },
-                new UiPhotoFact { Label = t("reallife_ui_life_fact_frame", "Frame"), Value = t("reallife_phonecam_frame_none", "No frame") },
-                new UiPhotoFact { Label = t("reallife_ui_life_fact_size", "Size"), Value = "1.2 MB" },
-            },
-            TagsTitle = t("reallife_ui_life_tags", "Tags"),
-            Tags = new[] { "Broadway", "Midtown", t("reallife_ui_life_tag_night", "Night lights") },
-            WhereTitle = t("reallife_ui_life_where", "Where it went"),
-            Where = t("reallife_ui_life_flare_line", "Posted on Flare by {name}: {likes} likes, {visits} visits, {money}.")
-                .Replace("{name}", "Speedy Bites").Replace("{likes}", "1.2K").Replace("{visits}", "46").Replace("{money}", "+$1,180"),
-            Neighbours = new[] { "a", "b", "c", "d", "e", "f", "g" }, NeighbourAt = 3,
+            Picture = "photo:" + photo.Name,
+            Title = photo.Side.Business ?? photo.Side.Place,
+            Caption = RealLifeOverhaul.Photos.PhotoTimeRules.Clock(photo.Hour, photo.Minute, false, t("reallife_gallery_hour_only", "{hour}h")),
+            Position = t("reallife_ui_life_of_day", "{at} of {count}, {day}").Replace("{at}", "4").Replace("{count}", "9").Replace("{day}", "Today"),
+            FactsTitle = t("reallife_ui_life_facts", "Photo"), TagsTitle = t("reallife_ui_life_tags", "Tags"), WhereTitle = t("reallife_ui_life_where", "Where it went"),
+            Neighbours = new[] { "photo:a", "photo:b", "photo:c", "photo:d", "photo:e", "photo:f", "photo:g" }, NeighbourAt = 3,
             Actions = new[]
             {
-                new UiActionModel { Label = t("reallife_ui_life_share", "Share"), Kind = UiButtonKind.Primary, Key = UiAction.Alt, Icon = UiIcon.Send },
-                new UiActionModel { Label = t("reallife_ui_life_wallpaper", "Set as wallpaper"), Kind = UiButtonKind.Secondary, Key = UiAction.Option },
-                new UiActionModel { Icon = UiIcon.Heart, Kind = UiButtonKind.Secondary },
-                new UiActionModel { Icon = UiIcon.Trash, Kind = UiButtonKind.Destructive },
+                new UiActionModel { Label = t("reallife_gallery_post_flare", "Post to Flare"), Kind = UiButtonKind.Primary, Key = UiAction.Alt, Icon = UiIcon.Send },
+                new UiActionModel { Label = t("reallife_gallery_edit", "Edit"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Pencil, Key = UiAction.Count },
+                new UiActionModel { Label = t("reallife_ui_life_wallpaper", "Set as wallpaper"), Kind = UiButtonKind.Secondary, Key = UiAction.Option, Icon = UiIcon.Monitor },
+                new UiActionModel { Icon = UiIcon.Heart, Kind = UiButtonKind.Primary, Key = UiAction.Count },
+                new UiActionModel { Icon = UiIcon.Trash, Kind = UiButtonKind.Destructive, Key = UiAction.Count },
             },
         };
-        LifePages.Gallery(s, f, dark, k, t("reallife_gallery_app", "Gallery"), GalleryNav(t, 9, 2), 0, true, null, photo,
+        string story = t("reallife_ui_life_flare_line", "Posted on Flare by {name}: {likes} likes, {visits} visits, {money}.")
+            .Replace("{name}", "Speedy Bites").Replace("{likes}", "1.2K").Replace("{visits}", "46").Replace("{money}", "+$1,180");
+        RealLifeOverhaul.Ui.GalleryAlbumFill.Facts(model, photo, true, false, old ? null : story, old ? null : t("reallife_gallery_flare_posted", "Posted, {likes} likes").Replace("{likes}", "1.2K"), texts);
+        LifePages.Gallery(s, f, dark, k, t("reallife_gallery_app", "Gallery"), GalleryNav(t, new[] { 9, 2, 1, 4, 9, 1 }), 0, true, null, model,
             t("reallife_ui_prompt_move", "Move"), t("reallife_ui_prompt_select", "Select"), t("reallife_ui_prompt_back", "Back"));
     }
 
-    /// <summary>The viewfinder over a street, with a saved toast.</summary>
-    public static void Viewfinder(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, bool toast)
+    /// <summary>The editor over a photo: its filters, frames and shapes, the turn, Save as a new photo.</summary>
+    public static void GalleryEdit(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t)
     {
+        var m = new UiPhotoEditModel
+        {
+            Picture = "photoedit:preview",
+            FilterTitle = t("reallife_phonecam_filter_title", "Filter"), FrameTitle = t("reallife_phonecam_frame_title", "Frame"), ShapeTitle = t("reallife_gallery_fact_shape", "Shape"),
+            Caption = t("reallife_gallery_edit_note", "The original stays. The edit is saved as a new photo."),
+            TurnLabel = t("reallife_gallery_edit_turn", "Turn"), SaveLabel = t("reallife_gallery_edit_save", "Save as new photo"),
+            CancelLabel = t("common_cancel", "Cancel"), ResetLabel = t("reallife_gallery_edit_reset", "Reset"),
+            Filter = 1, Frame = 1, Shape = 2,
+        };
+        m.Filters = new string[RealLifeOverhaul.Photos.CameraRules.Filters.Length];
+        for (int i = 0; i < m.Filters.Length; i++)
+        {
+            m.Filters[i] = t(RealLifeOverhaul.Photos.CameraRules.Filters[i].NameKey, "Filter");
+        }
+        m.Frames = new string[RealLifeOverhaul.Photos.CameraRules.FrameKeys.Length];
+        for (int i = 0; i < m.Frames.Length; i++)
+        {
+            m.Frames[i] = t(RealLifeOverhaul.Photos.CameraRules.FrameKeys[i], "Frame");
+        }
+        m.Shapes = new[]
+        {
+            t("reallife_gallery_shape_original", "As taken"), t("reallife_phonecam_aspect_43", "4:3"), t("reallife_phonecam_aspect_169", "16:9"), t("reallife_phonecam_aspect_11", "1:1"),
+            t("reallife_phonecam_aspect_916", "9:16"),
+        };
+        LifePages.Gallery(s, f, dark, k, t("reallife_gallery_app", "Gallery"), GalleryNav(t, new[] { 9, 2, 1, 4, 9, 1 }), 0, true, null, new UiPhotoModel(),
+            t("reallife_ui_prompt_move", "Move"), t("reallife_ui_prompt_select", "Select"), t("reallife_ui_prompt_back", "Back"), m);
+    }
+
+    /// <summary>The viewfinder over a street: a state is photo, saved, selfie, portrait, wide, timer, zoom, night or clean.</summary>
+    public static void Viewfinder(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, string state)
+    {
+        bool selfie = state == "selfie", portrait = state == "portrait", wide = state == "wide", night = state == "night";
+        bool zoomed = state == "zoom";
+        string[] filters =
+        {
+            t("reallife_phonecam_filter_none", "Natural"), t("reallife_phonecam_filter_warm", "Warm"), t("reallife_phonecam_filter_cool", "Cool"),
+            t("reallife_phonecam_filter_mono", "Black and white"), t("reallife_phonecam_filter_vivid", "Vivid"), t("reallife_phonecam_filter_fade", "Fade"),
+            t("reallife_phonecam_filter_sepia", "Sepia"), t("reallife_phonecam_filter_golden", "Golden"), t("reallife_phonecam_filter_matte", "Matte"),
+            t("reallife_phonecam_filter_chrome", "Chrome"), t("reallife_phonecam_filter_dream", "Dream"),
+        };
+        var tools = new System.Collections.Generic.List<UiFinderTool>
+        {
+            new UiFinderTool { Id = 0, Icon = UiIcon.Timer, On = state == "timer", Label = state == "timer" ? t("reallife_phonecam_timer_s", "{seconds} s").Replace("{seconds}", "3") : t("reallife_phonecam_tool_timer", "Timer") },
+            new UiFinderTool { Id = 1, Icon = UiIcon.Grid, On = true, Label = t("reallife_phonecam_guide_thirds", "Thirds") },
+        };
+        if (!selfie)
+        {
+            tools.Add(new UiFinderTool { Id = 2, Icon = UiIcon.Level, On = state == "photo" || zoomed, Label = t("reallife_phonecam_tool_level", "Level") });
+        }
+        tools.Add(new UiFinderTool { Id = 3, Icon = UiIcon.Crop, On = state == "wide", Label = t(state == "wide" ? "reallife_phonecam_aspect_43" : "reallife_phonecam_aspect_169", state == "wide" ? "4:3" : "16:9") });
+        if (night)
+        {
+            tools.Add(new UiFinderTool { Id = 4, Icon = UiIcon.Moon, On = true, Label = t("reallife_phonecam_tool_boost", "Night boost") });
+        }
+        if (!selfie)
+        {
+            tools.Add(new UiFinderTool { Id = 5, Icon = UiIcon.EyeSlash, On = false, Label = t("reallife_phonecam_tool_body", "Hide me") });
+        }
+        else
+        {
+            tools.Add(new UiFinderTool { Id = 7, Icon = UiIcon.Person, On = false, Label = t("reallife_phonecam_pose", "Pose: {pose}").Replace("{pose}", "Wave") });
+        }
+        tools.Add(new UiFinderTool { Id = 6, Icon = UiIcon.FrameCorners, On = false, Label = t("reallife_phonecam_tool_clean", "Clean view") });
+        string[] lenses = wide ? new[] { "0.4x", "0.6x", "1.0x" } : portrait ? new[] { "1.0x", "1.5x", "2.5x" } : new[] { "1.0x", "2.0x", "5.0x" };
         var m = new UiFinderModel
         {
-            Modes = new[] { t("reallife_ui_life_mode_photo", "Photo"), t("reallife_ui_life_mode_selfie", "Selfie") }, Mode = 0,
-            Place = "7th Avenue, Midtown", When = "08:45, " + t("reallife_ui_hud_weather_sunny", "Sunny"),
+            Title = t("reallife_phonecam_app", "Camera"),
+            Modes = new[] { t("reallife_ui_life_mode_photo", "Photo"), t("reallife_ui_life_mode_selfie", "Selfie"), t("reallife_ui_life_mode_portrait", "Portrait"), t("reallife_ui_life_mode_wide", "Wide") },
+            Mode = selfie ? 1 : portrait ? 2 : wide ? 3 : 0,
+            Place = "7th Avenue, Midtown", When = (night ? "21:12, " + t("reallife_ui_hud_weather_clear", "Clear") : "08:45, " + t("reallife_ui_hud_weather_sunny", "Sunny")),
             Count = t("reallife_ui_life_photos_today", "{count} photos today").Replace("{count}", "9"),
-            Filters = new[]
-            {
-                t("reallife_phonecam_filter_none", "Natural"), t("reallife_phonecam_filter_warm", "Warm"), t("reallife_phonecam_filter_cool", "Cool"),
-                t("reallife_phonecam_filter_mono", "Black and white"), t("reallife_phonecam_filter_vivid", "Vivid"), t("reallife_phonecam_filter_fade", "Fade"),
-            },
-            Filter = 0,
-            Frames = new[] { t("reallife_phonecam_frame_none", "No frame"), t("reallife_phonecam_frame_border", "Border"), t("reallife_phonecam_frame_film", "Film") },
-            Frame = 0, Grid = true,
-            Toast = toast ? t("reallife_ui_life_saved", "Saved to the gallery") : null,
-            Open = toast ? t("reallife_ui_life_open", "Open") : null,
+            Filters = filters, Filter = zoomed ? 1 : 0,
+            Frames = new[] { t("reallife_phonecam_frame_none", "No frame"), t("reallife_phonecam_frame_polaroid", "Polaroid"), t("reallife_phonecam_frame_film", "Film"), t("reallife_phonecam_frame_border", "Border") },
+            Frame = 0,
+            FilterTitle = t("reallife_phonecam_filter_title", "Filter"), FrameTitle = t("reallife_phonecam_frame_title", "Frame"),
+            Toast = state == "saved" ? t("reallife_ui_life_saved", "Saved to the gallery") : null,
+            Open = state == "saved" ? t("reallife_ui_life_open", "Open") : null,
+            Latest = "viewfinder:latest",
+            Newest = t("reallife_ui_life_newest_photo", "Newest photo"), OpenGallery = t("reallife_ui_life_open_gallery", "Open Gallery"), Shoot = t("reallife_ui_life_take", "Take a photo"),
+            Zoom = selfie ? null : zoomed ? "2.4x" : wide ? "0.4x" : "1.0x",
+            Lenses = selfie ? new string[0] : lenses, Lens = selfie ? -1 : zoomed ? -1 : 0,
+            ZoomOut = !(wide || state == "photo"), ZoomIn = true,
+            Exposure = night ? "+0.5" : "0.0", ExposureDown = true, ExposureUp = true,
+            Tools = tools.ToArray(),
+            Countdown = state == "timer" ? "3" : null,
+            Clean = state == "clean", CleanBack = t("reallife_phonecam_clean_back", "Show controls"),
             Move = t("reallife_ui_prompt_move", "Move"), Select = t("reallife_ui_prompt_select", "Select"), Back = t("reallife_ui_prompt_back", "Back"),
         };
         LifePages.Finder(s, m, f, dark, k);

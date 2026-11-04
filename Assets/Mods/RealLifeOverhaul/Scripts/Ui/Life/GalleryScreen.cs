@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using RealLifeOverhaul.Photos;
 using UI.Notification;
 using UnityEngine;
@@ -7,140 +8,192 @@ using UnityEngine;
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
-    /// The Gallery on the kit: an album under a heading a day, and one photo with its sidecar. Thumbnails stay on the
-    /// worker the album already uses. A picture made for the viewer is destroyed when the viewer closes. Cost: a layout
-    /// when the album, the scroll or a thumbnail changes.
+    /// The Gallery on the kit: the albums as the window's sections (all, favourites, selfies, businesses, places, posted on Flare), an
+    /// album under a heading a day with a search, a sort and filters by place, business and day, select mode (favourite, share, delete),
+    /// one photo with its facts, its tags and what Flare did with it, and the editor. The thumbnails are the director's small copies of
+    /// the photos in view only (at most 120), the whole photo is made for the viewer and destroyed when the viewer closes. Keys: the
+    /// arrows, Q and E step the photos; F posts to Flare, P sets the wallpaper; Esc steps back, from the editor to the photo to the
+    /// album, then closes. Cost: a layout when the album, the scroll, a thumbnail or the photo changes; the album is selected and
+    /// sorted once a change, not once a layout.
     /// </summary>
-    sealed class GalleryScreen : IUiScreen
+    sealed partial class GalleryScreen : IUiScreen, IUiStepping, IUiTyping
     {
-        private const string PicturePrefix = "photo:";
-
-        private static Func<string, Sprite> _next;
-        private static readonly Dictionary<string, Sprite> Sprites = new Dictionary<string, Sprite>(64);
-        private static Texture2D _whole;
-        private static Sprite _wholeSprite;
-        private static string _viewingName;
-
         private readonly GalleryApp _app;
-        private readonly List<PhotoEntry> _shown = new List<PhotoEntry>(PhotoStoreRules.Cap);
+        private readonly GalleryQuery _query = new GalleryQuery();
+        private readonly List<PhotoEntry> _shown = new List<PhotoEntry>(PhotoStoreRules.Cap + 16);
         private readonly List<string> _picked = new List<string>(8);
+        private readonly List<string> _places = new List<string>(16), _businesses = new List<string>(16), _days = new List<string>(16);
+        private readonly int[] _counts = new int[(int)GalleryKit.Count];
         private readonly UiAlbumModel _album = new UiAlbumModel();
         private readonly UiPhotoModel _photo = new UiPhotoModel();
-        private readonly string[] _tags = new string[4];
-        private GalleryAlbum _tab = GalleryAlbum.All;
-        private bool _oldest, _fav, _select, _viewing;
+        private readonly GalleryTexts _texts = new GalleryTexts();
+        private readonly List<string> _links = new List<string>(8);   // what each fact of the open photo links to: "p:" a place, "b:" a business, or null
+        private bool _select, _viewing, _force = true, _rebuild = true, _needPosted = true;
         private int _index = -1;
-        private int _thumbs = -1;
-        private bool _force = true;
-        private int _asked = -1;
+        private int _dirVersion = -1, _thumbVersion = -1;
         private int _window;
 
         public GalleryScreen(GalleryApp app)
         {
             _app = app;
+            _texts.T = UiText.T;
+            _texts.Real = PhotosText.Real;
+            _texts.Size = SizeOf;
         }
 
         public string Id => "photo_gallery";
 
-        public bool Dirty => _force || (_app != null && _app.ThumbsReady != _thumbs);
+        private PhotosDirector Director => PhotosDirector.Instance;
 
-        /// <summary>Lets go of pictures this screen made. The album's own thumbnails stay the gallery's to destroy.</summary>
+        public bool Dirty => _force || (Director != null && (Director.Version != _dirVersion || Director.Thumbs.Version != _thumbVersion));
+
+        /// <summary>The Gallery app closed: the whole photo, the preview and every small copy are let go.</summary>
         public static void Release()
         {
-            foreach (KeyValuePair<string, Sprite> pair in Sprites)
-            {
-                if (pair.Value != null)
-                {
-                    UnityEngine.Object.Destroy(pair.Value);
-                }
-            }
-            Sprites.Clear();
-            _viewingName = null;
-            DropWhole();
-            if (UiPictures.Find == Find)
-            {
-                UiPictures.Find = _next;
-            }
+            GalleryPictures.DropWhole();
+            GalleryPictures.DropPreview();
+            PhotosDirector director = PhotosDirector.Instance;
+            director?.Thumbs.Clear();
+            _dropEdit?.Invoke();
         }
+
+        private static Action _dropEdit;
 
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
-            Install();
+            GalleryPictures.Install();
+            _dropEdit = DropEdit;
+            PhotosDirector d = Director;
+            if (d != null && _needPosted)
+            {
+                _needPosted = false;
+                _texts.TwelveHour = PhotosGame.TwelveHour;
+                d.RefreshPosted();
+            }
             Build();
-            _thumbs = _app != null ? _app.ThumbsReady : 0;
             _force = false;
+            _dirVersion = d != null ? d.Version : 0;
             string move = UiText.T("reallife_ui_prompt_move");
             string select = UiText.T("reallife_ui_prompt_select");
             string back = UiText.T("reallife_ui_prompt_back");
-            LifePages.Gallery(s, frame, dark, keys, UiText.T("reallife_gallery_app"), Nav(), (int)_tab, _viewing, _viewing ? null : _album, _viewing ? _photo : null, move, select, back);
+            LifePages.Gallery(s, frame, dark, keys, UiText.T("reallife_gallery_app"), Nav(), (int)_query.Kit, _viewing, _viewing ? null : _album, _viewing ? _photo : null, move, select, back,
+                _editing ? _editModel : null);
+            AskThumbs(d);
+            _thumbVersion = d != null ? d.Thumbs.Version : 0;
+        }
+
+        // The photos in view (a row either side), or the open photo's neighbours: only those small copies are asked for.
+        private void AskThumbs(PhotosDirector d)
+        {
+            if (d == null || d.Folder == null || _editing)
+            {
+                return;
+            }
+            if (_viewing && _index >= 0)
+            {
+                d.Thumbs.Want(d, d.Folder, _shown, _window, _window + _photo.Neighbours.Length - 1);
+            }
+            else if (_album.ViewFirst >= 0)
+            {
+                d.Thumbs.Want(d, d.Folder, _shown, _album.ViewFirst, _album.ViewLast);
+            }
         }
 
         public bool Press(int command, int arg)
         {
-            if (command == UiAppWindow.NavCommand && arg >= 0 && arg < 2)
+            if (_editing && EditPress(command, arg))
             {
-                _tab = (GalleryAlbum)arg;
+                return true;
+            }
+            if (command == UiAppWindow.NavCommand && arg >= 0 && arg < (int)GalleryKit.Count)
+            {
+                _query.Kit = GalleryFind.KitAt(arg);
+                _query.Place = _query.Business = null;
+                _query.Day = 0;
                 _viewing = false;
+                _select = false;
+                _picked.Clear();
                 _album.Offset = 0f;
-                _force = true;
-                return true;
-            }
-            if (command == UiAlbum.Sort)
-            {
-                _oldest = !_oldest;
-                _force = true;
-                return true;
-            }
-            if (command == UiAlbum.Fav)
-            {
-                _fav = !_fav;
-                _viewing = false;
-                _force = true;
-                return true;
-            }
-            if (command == UiAlbum.Select)
-            {
-                _select = !_select;
-                if (!_select)
+                if (_query.Kit == GalleryKit.Flare)
                 {
+                    _needPosted = true;
+                }
+                Changed();
+                return true;
+            }
+            switch (command)
+            {
+                case UiAlbum.Sort:
+                    _query.Sort = GalleryFind.NextSort(_query.Sort);
+                    _album.Offset = 0f;
+                    Changed();
+                    return true;
+                case UiAlbum.Select:
+                    _select = !_select;
                     _picked.Clear();
-                }
-                _force = true;
-                return true;
-            }
-            if (command == UiAlbum.Delete)
-            {
-                ConfirmDelete();
-                return _picked.Count > 0;
-            }
-            if (command == UiAlbum.Photo && arg >= 0 && arg < _shown.Count)
-            {
-                if (_select)
-                {
-                    TogglePick(_shown[arg].Name);
-                }
-                else
-                {
-                    _viewing = true;
-                    _index = arg;
-                }
-                _force = true;
-                return true;
-            }
-            if (command == UiPhotoViewer.Step)
-            {
-                return Step(arg < 0 ? -1 : 1);
-            }
-            if (command == UiPhotoViewer.Neighbour && _window + arg >= 0 && _window + arg < _shown.Count)
-            {
-                _index = _window + arg;
-                _asked = -1;
-                _force = true;
-                return true;
-            }
-            if (command == UiPhotoViewer.Action)
-            {
-                return ActOn(arg);
+                    Changed();
+                    return true;
+                case UiAlbum.Fav:
+                    return FavouritePicked();
+                case UiAlbum.Delete:
+                    ConfirmDelete();
+                    return _picked.Count > 0;
+                case UiAlbum.Share:
+                    return SharePicked();
+                case UiAlbum.Camera:
+                    Director?.OpenCamera(false, false);
+                    return true;
+                case UiAlbum.FilterPlace:
+                    _query.Place = GalleryFind.Next(_places, _query.Place);
+                    Narrowed();
+                    return true;
+                case UiAlbum.FilterBusiness:
+                    _query.Business = GalleryFind.Next(_businesses, _query.Business);
+                    Narrowed();
+                    return true;
+                case UiAlbum.FilterDay:
+                    {
+                        string next = GalleryFind.Next(_days, _query.Day > 0 ? _query.Day.ToString(CultureInfo.InvariantCulture) : null);
+                        _query.Day = next != null && int.TryParse(next, NumberStyles.None, CultureInfo.InvariantCulture, out int day) ? day : 0;
+                        Narrowed();
+                        return true;
+                    }
+                case UiAlbum.FilterClear:
+                    _query.Narrow();
+                    Narrowed();
+                    return true;
+                case UiAlbum.Photo:
+                    if (arg >= 0 && arg < _shown.Count)
+                    {
+                        if (_select)
+                        {
+                            TogglePick(_shown[arg].Name);
+                            Changed();
+                        }
+                        else
+                        {
+                            _viewing = true;
+                            _index = arg;
+                            _force = true;
+                        }
+                        return true;
+                    }
+                    return false;
+                case UiPhotoViewer.Step:
+                    return Step(arg < 0 ? -1 : 1);
+                case UiPhotoViewer.Neighbour:
+                    if (_window + arg >= 0 && _window + arg < _shown.Count)
+                    {
+                        _index = _window + arg;
+                        _asked = -1;
+                        _force = true;
+                        return true;
+                    }
+                    return false;
+                case UiPhotoViewer.Action:
+                    return ActOn(arg);
+                case UiPhotoViewer.Fact:
+                    return Link(arg);
             }
             return false;
         }
@@ -151,10 +204,16 @@ namespace RealLifeOverhaul.Ui
 
         public bool Back()
         {
+            if (_editing)
+            {
+                LeaveEdit();
+                return true;
+            }
             if (_viewing)
             {
                 _viewing = false;
-                DropWhole();
+                GalleryPictures.DropWhole();
+                _asked = -1;
                 _force = true;
                 return true;
             }
@@ -162,7 +221,7 @@ namespace RealLifeOverhaul.Ui
             {
                 _select = false;
                 _picked.Clear();
-                _force = true;
+                Changed();
                 return true;
             }
             return false;
@@ -170,16 +229,41 @@ namespace RealLifeOverhaul.Ui
 
         public void Tab(int step)
         {
-            int next = (int)_tab + (step < 0 ? -1 : 1);
-            if (next >= 0 && next <= 1)
+            if (_viewing && !_editing)
             {
-                _tab = (GalleryAlbum)next;
-                _viewing = false;
-                _force = true;
+                Step(step < 0 ? -1 : 1);
+                return;
+            }
+            if (_viewing || _editing)
+            {
+                return;
+            }
+            int next = (int)_query.Kit + (step < 0 ? -1 : 1);
+            if (next >= 0 && next < (int)GalleryKit.Count)
+            {
+                Press(UiAppWindow.NavCommand, next);
             }
         }
 
-        public bool Act(UiAction action) => false;
+        public bool Act(UiAction action)
+        {
+            if (_editing && action == UiAction.Alt)
+            {
+                return EditPress(UiPhotoEdit.Save, 0);
+            }
+            if (_viewing && !_editing && _index >= 0 && _index < _shown.Count)
+            {
+                if (action == UiAction.Alt)
+                {
+                    return ActOn(0);
+                }
+                if (action == UiAction.Option)
+                {
+                    return ActOn(2);
+                }
+            }
+            return false;
+        }
 
         public void Reveal(int list, int index)
         {
@@ -193,20 +277,78 @@ namespace RealLifeOverhaul.Ui
             _force = true;
         }
 
+        // Left and Right step the photos while one is open, whatever has the focus.
+        public bool Steps(int command) => _viewing && !_editing;
+
+        public void Step(int command, int arg, int step)
+        {
+            Step(step < 0 ? -1 : 1);
+        }
+
+        // The search box: its words are the album's search; the keys go to it while it is chosen.
+        public int TypingCommand => UiAlbum.Search;
+
+        public string TypingText => _query.Search ?? string.Empty;
+
+        public void Typed(string text)
+        {
+            _query.Search = string.IsNullOrEmpty(text) ? null : text;
+            _album.Offset = 0f;
+            Changed();
+        }
+
+        // The album is selected again on the next layout.
+        private void Changed()
+        {
+            _rebuild = true;
+            _force = true;
+        }
+
+        private void Narrowed()
+        {
+            _album.Offset = 0f;
+            Changed();
+        }
+
         private void Build()
         {
             PhotosDirector director = Director;
-            _shown.Clear();
-            if (director != null)
+            if (director == null)
             {
-                GalleryAlbum album = _fav ? GalleryAlbum.Favourites : _tab;
-                GalleryRules.Album(director.Photos, album, director.Favourites, _shown, _oldest);
+                _shown.Clear();
+                FillAlbum(null);
+                return;
+            }
+            _texts.TwelveHour = PhotosGame.TwelveHour;
+            if (_rebuild || director.Version != _dirVersion)
+            {
+                _rebuild = false;
+                GalleryFind.Select(director.Photos, _query, director.Favourites, director.Posted, _shown);
+                GalleryFind.Counts(director.Photos, director.Favourites, director.Posted, _counts);
+                GalleryFind.Values(director.Photos, _query.Kit, director.Favourites, director.Posted, 0, _places);
+                GalleryFind.Values(director.Photos, _query.Kit, director.Favourites, director.Posted, 1, _businesses);
+                GalleryFind.Values(director.Photos, _query.Kit, director.Favourites, director.Posted, 2, _days);
+                for (int i = _picked.Count - 1; i >= 0; i--)
+                {
+                    if (GalleryRules.IndexOf(director.Photos, _picked[i]) < 0)
+                    {
+                        _picked.RemoveAt(i);   // deleted
+                    }
+                }
             }
             if (_index >= _shown.Count)
             {
                 _index = _shown.Count - 1;
             }
-            if (_viewing && _index >= 0)
+            if (_viewing && _index < 0)
+            {
+                _viewing = false;
+            }
+            if (_editing)
+            {
+                FillEdit();
+            }
+            else if (_viewing)
             {
                 FillPhoto(director);
             }
@@ -218,83 +360,28 @@ namespace RealLifeOverhaul.Ui
 
         private void FillAlbum(PhotosDirector director)
         {
-            int n = _shown.Count;
-            if (_album.Photos == null || _album.Photos.Length < n)
-            {
-                _album.Photos = new UiAlbumPhoto[Math.Max(8, n)];
-            }
-            _album.Count = n;
-            _album.SortLabel = UiText.T(_oldest ? "reallife_ui_life_sort_old" : "reallife_ui_life_sort_new");
-            _album.FavLabel = UiText.T("reallife_ui_life_favourites");
-            _album.FavOn = _fav;
-            _album.SelectLabel = UiText.T("reallife_ui_life_select");
             _album.Selecting = _select;
-            _album.DeleteLabel = UiText.T("reallife_ui_life_delete_selected");
-            _album.DeleteCount = _picked.Count;
-            _album.CountLabel = UiText.Fill("reallife_ui_life_album_count", "count", n.ToString());
-            _album.EmptyTitle = UiText.T("reallife_ui_life_empty_gallery_title");
-            _album.EmptyBody = UiText.T("reallife_ui_life_empty_gallery_body");
-            int i = 0;
-            while (i < n)
-            {
-                int day = _shown[i].Day;
-                int count = 0;
-                while (i + count < n && _shown[i + count].Day == day)
-                {
-                    count++;
-                }
-                string label = UiText.Fill("reallife_ui_life_day_band", "day", day > 0 ? day.ToString() : "0");
-                string meta = UiText.Fill("reallife_ui_life_photos_day", "count", count.ToString());
-                for (int k = 0; k < count; k++)
-                {
-                    PhotoEntry photo = _shown[i + k];
-                    _album.Photos[i + k] = new UiAlbumPhoto
-                    {
-                        Picture = PicturePrefix + photo.Name, Day = day, DayLabel = label, DayMeta = meta,
-                        Favourite = director != null && director.IsFavourite(photo.Name), Picked = Picked(photo.Name),
-                    };
-                    int slot = i + k;
-                    int focus = (int)(_album.Offset / 160f);
-                    if (_app != null && slot >= focus && slot < focus + 24)
-                    {
-                        _app.WantShown(photo.Name);
-                        Texture2D thumb = _app.Thumb(photo.Name);
-                        Sprite held;
-                        if (thumb != null && (!Sprites.TryGetValue(photo.Name, out held) || held == null))
-                        {
-                            Sprite made = Sprite.Create(thumb, new Rect(0f, 0f, thumb.width, thumb.height), new Vector2(0.5f, 0.5f), 100f);
-                            made.name = "RealLifeOverhaul Thumb";
-                            Sprites[photo.Name] = made;
-                        }
-                    }
-                }
-                i += count;
-            }
+            GalleryAlbumFill.Fill(_album, _shown, _query, director?.Favourites, director?.Posted, _picked, PhotosGame.Day, _places.Count, _businesses.Count, _days.Count, PhotoThumbCache.Prefix,
+                _texts, true);
+            _album.Selecting = _select;
         }
 
         private void FillPhoto(PhotosDirector director)
         {
             PhotoEntry photo = _shown[_index];
             EnsureWhole(director, photo);
-            PhotoSidecar side = default;
-            if (director != null)
+            string title = string.IsNullOrEmpty(photo.Side.Place) ? UiText.T("reallife_ui_life_no_place") : photo.Side.Place;
+            if (photo.HasSide && PhotoSidecarRules.Night(photo.Side.Hour) && !string.IsNullOrEmpty(photo.Side.Place))
             {
-                PhotoSidecarFile.Read(System.IO.Path.Combine(director.Folder, photo.Name), out side);
+                title = UiText.Fill("reallife_ui_life_at_night", "place", photo.Side.Place);
             }
-            string place = string.IsNullOrEmpty(side.Place) ? UiText.T("reallife_ui_life_no_place") : side.Place;
-            string night = UiText.Fill("reallife_ui_life_at_night", "place", place);
-            _viewingName = photo.Name;
-            _photo.Picture = PicturePrefix + photo.Name;
-            _photo.Title = PhotoSidecarRules.Title(side, UiText.T("reallife_ui_life_at_night"), place);
-            if (string.IsNullOrEmpty(side.Place))
+            if (!string.IsNullOrEmpty(photo.Side.Business))
             {
-                _photo.Title = place;
+                title = photo.Side.Business;
             }
-            else if (PhotoSidecarRules.Night(side.Hour))
-            {
-                _photo.Title = night;
-            }
-            _photo.Caption = PhotosText.Taken(photo);
+            _photo.Picture = PhotoThumbCache.Prefix + photo.Name;
+            _photo.Title = title;
+            _photo.Caption = PhotoTimeRules.Clock(photo.Hour, photo.Minute, _texts.TwelveHour, UiText.T("reallife_gallery_hour_only"));
             int onDay = 0, at = 0;
             for (int i = 0; i < _shown.Count; i++)
             {
@@ -307,41 +394,54 @@ namespace RealLifeOverhaul.Ui
                     }
                 }
             }
-            _photo.Position = UiText.Fill("reallife_ui_life_of_today", "at", at.ToString(), "count", onDay.ToString());
+            _photo.Position = UiText.Fill("reallife_ui_life_of_day", "at", at.ToString(CultureInfo.InvariantCulture), "count", onDay.ToString(CultureInfo.InvariantCulture),
+                "day", GalleryAlbumFill.DayWords(photo.Day, PhotosGame.Day, _texts));
             _photo.FactsTitle = UiText.T("reallife_ui_life_facts");
-            _photo.Facts = new[]
-            {
-                new UiPhotoFact { Label = UiText.T("reallife_ui_life_fact_taken"), Value = PhotosText.TakenOn(photo) },
-                new UiPhotoFact { Label = UiText.T("reallife_ui_life_fact_place"), Value = place, Link = !string.IsNullOrEmpty(side.Place) },
-                new UiPhotoFact { Label = UiText.T("reallife_ui_life_fact_camera"), Value = UiText.T(photo.Selfie ? "reallife_ui_life_camera_selfie" : "reallife_ui_life_camera_rear") },
-                new UiPhotoFact { Label = UiText.T("reallife_ui_life_fact_filter"), Value = FilterName(side.Filter) },
-                new UiPhotoFact { Label = UiText.T("reallife_ui_life_fact_frame"), Value = FrameName(side.Frame) },
-                new UiPhotoFact { Label = UiText.T("reallife_ui_life_fact_size"), Value = SizeOf(director, photo) },
-            };
-            PhotoSidecarRules.Tags(side, UiText.T("reallife_ui_life_tag_night"), WeatherName(side.Weather), _tags);
             _photo.TagsTitle = UiText.T("reallife_ui_life_tags");
-            _photo.Tags = _tags;
             _photo.WhereTitle = UiText.T("reallife_ui_life_where");
-            _photo.Where = Story(director, photo);
+            string story = null, posted = null;
+            Flare.FlareDirector flare = Flare.FlareDirector.Instance;
+            if (flare != null && flare.PictureStory(System.IO.Path.Combine(director.Folder, photo.Name), out string business, out int likes, out int came, out long cents))
+            {
+                string money = (cents >= 0 ? "+" : string.Empty) + (cents / 100).ToString(CultureInfo.InvariantCulture);
+                story = UiText.Fill("reallife_ui_life_flare_line", "name", string.IsNullOrEmpty(business) ? UiText.T("reallife_ui_life_a_business") : business,
+                    "likes", likes.ToString(CultureInfo.InvariantCulture), "visits", came.ToString(CultureInfo.InvariantCulture), "money", money);
+                posted = UiText.Fill("reallife_gallery_flare_posted", "likes", likes.ToString(CultureInfo.InvariantCulture));
+            }
+            GalleryAlbumFill.Facts(_photo, photo, director.IsFavourite(photo.Name), photo.Name == director.WallpaperName, story, posted, _texts);
+            _links.Clear();
+            for (int i = 0; i < _photo.Facts.Length; i++)
+            {
+                _links.Add(_photo.Facts[i].Link ? (_photo.Facts[i].Value == photo.Side.Place ? "p:" + photo.Side.Place : "b:" + photo.Side.Business) : null);
+            }
             _photo.CanBack = _index > 0;
             _photo.CanOn = _index + 1 < _shown.Count;
             int neighbours = Math.Min(_shown.Count, 9);
             int first = Math.Max(0, Math.Min(_shown.Count - neighbours, _index - 4));
             _window = first;
-            _photo.Neighbours = new string[neighbours];
+            if (_photo.Neighbours == null || _photo.Neighbours.Length != neighbours)
+            {
+                _photo.Neighbours = new string[neighbours];
+            }
             for (int i = 0; i < neighbours; i++)
             {
-                _photo.Neighbours[i] = PicturePrefix + _shown[first + i].Name;
+                _photo.Neighbours[i] = PhotoThumbCache.Prefix + _shown[first + i].Name;
             }
             _photo.NeighbourAt = _index - first;
+            bool fav = director.IsFavourite(photo.Name);
+            bool wall = PhotosDirector.CanSetWallpaper;
             _photo.Actions = new[]
             {
-                new UiActionModel { Label = UiText.T("reallife_ui_life_share"), Kind = UiButtonKind.Primary, Key = UiAction.Alt, Icon = UiIcon.Send },
-                new UiActionModel { Label = UiText.T("reallife_ui_life_wallpaper"), Kind = UiButtonKind.Secondary, Key = UiAction.Option },
-                new UiActionModel { Icon = UiIcon.Heart, Kind = UiButtonKind.Secondary },
-                new UiActionModel { Icon = UiIcon.Trash, Kind = UiButtonKind.Destructive },
+                new UiActionModel { Label = UiText.T("reallife_gallery_post_flare"), Kind = UiButtonKind.Primary, Key = UiAction.Alt, Icon = UiIcon.Send },
+                new UiActionModel { Label = UiText.T("reallife_gallery_edit"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Pencil, Key = UiAction.Count },
+                new UiActionModel { Label = UiText.T(photo.Name == director.WallpaperName ? "reallife_gallery_wallpaper_off" : "reallife_ui_life_wallpaper"), Kind = UiButtonKind.Secondary,
+                    Key = UiAction.Option, Icon = UiIcon.Monitor, Disabled = !wall },
+                new UiActionModel { Icon = UiIcon.Heart, Kind = fav ? UiButtonKind.Primary : UiButtonKind.Secondary, Key = UiAction.Count },
+                new UiActionModel { Icon = UiIcon.Trash, Kind = UiButtonKind.Destructive, Key = UiAction.Count },
             };
         }
+
+        private int _asked = -1;
 
         private void EnsureWhole(PhotosDirector director, PhotoEntry photo)
         {
@@ -350,12 +450,13 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             _asked = _index;
-            DropWhole();
+            GalleryPictures.DropWhole();
             string path = System.IO.Path.Combine(director.Folder, photo.Name);
             int index = _index;
+            string name = photo.Name;
             director.StartCoroutine(Guard.Routine(PhotosGame.Load(path, made =>
             {
-                if (made == null || !_viewing || _index != index)
+                if (made == null || !_viewing || _index != index || _editing)
                 {
                     if (made != null)
                     {
@@ -363,26 +464,9 @@ namespace RealLifeOverhaul.Ui
                     }
                     return;
                 }
-                DropWhole();
-                _whole = made;
-                _wholeSprite = Sprite.Create(made, new Rect(0f, 0f, made.width, made.height), new Vector2(0.5f, 0.5f), 100f);
-                _wholeSprite.name = "RealLifeOverhaul Photo";
+                GalleryPictures.SetWhole(name, made);
                 _force = true;
-            }, () => _viewing && _index == index)));
-        }
-
-        private static void DropWhole()
-        {
-            if (_wholeSprite != null)
-            {
-                UnityEngine.Object.Destroy(_wholeSprite);
-                _wholeSprite = null;
-            }
-            if (_whole != null)
-            {
-                UnityEngine.Object.Destroy(_whole);
-                _whole = null;
-            }
+            }, () => _viewing && _index == index && !_editing)));
         }
 
         private bool Step(int delta)
@@ -398,6 +482,32 @@ namespace RealLifeOverhaul.Ui
             return true;
         }
 
+        // A place or a business of the facts: the album of that place or that business.
+        private bool Link(int fact)
+        {
+            if (fact < 0 || fact >= _links.Count || _links[fact] == null)
+            {
+                return false;
+            }
+            string link = _links[fact];
+            _query.Narrow();
+            if (link.StartsWith("p:", StringComparison.Ordinal))
+            {
+                _query.Place = link.Substring(2);
+            }
+            else
+            {
+                _query.Business = link.Substring(2);
+            }
+            _query.Kit = GalleryKit.All;
+            _viewing = false;
+            GalleryPictures.DropWhole();
+            _asked = -1;
+            _album.Offset = 0f;
+            Changed();
+            return true;
+        }
+
         private bool ActOn(int arg)
         {
             if (_index < 0 || _index >= _shown.Count)
@@ -410,39 +520,93 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
-            if (arg == 0)
+            string path = System.IO.Path.Combine(director.Folder, photo.Name);
+            switch (arg)
             {
-                string path = System.IO.Path.Combine(director.Folder, photo.Name);
-                if (PhotosBridges.ShareToFlare == null || !PhotosBridges.ShareToFlare(path, PhotoThumbs.FileOf(path)))
-                {
-                    PhotosGame.Tell(NotificationType.Warning, "reallife_gallery_note_flare_off");
-                }
-                return true;
-            }
-            if (arg == 1)
-            {
-                director.SetWallpaper(photo.Name == director.WallpaperName ? null : photo.Name);
-                _force = true;
-                return true;
-            }
-            if (arg == 2)
-            {
-                director.ToggleFavourite(photo.Name);
-                _force = true;
-                return true;
-            }
-            if (arg == 3)
-            {
-                string name = photo.Name;
-                GameConfirm.Show("reallife_gallery_delete_title", "reallife_gallery_delete_body", () =>
-                {
-                    director.StartCoroutine(Guard.Routine(director.Delete(new List<string> { name }, 0)));
-                    _viewing = false;
+                case 0:
+                    FlareScreen.WantPhoto(path);
+                    if (PhotosBridges.ShareToFlare == null || !PhotosBridges.ShareToFlare(path, PhotoThumbs.FileOf(path)))
+                    {
+                        PhotosGame.Tell(NotificationType.Warning, "reallife_gallery_note_flare_off");
+                    }
+                    else
+                    {
+                        director.RefreshPosted();
+                    }
+                    return true;
+                case 1:
+                    BeginEdit(director, photo);
+                    return true;
+                case 2:
+                    if (!PhotosDirector.CanSetWallpaper)
+                    {
+                        PhotosGame.Tell(NotificationType.Warning, "reallife_gallery_note_wallpaper_off");
+                        return false;
+                    }
+                    director.SetWallpaper(photo.Name == director.WallpaperName ? null : photo.Name);
                     _force = true;
-                }, null, "reallife_gallery_delete_yes", "common_cancel", true, true);
-                return true;
+                    return true;
+                case 3:
+                    director.ToggleFavourite(photo.Name);
+                    _force = true;
+                    return true;
+                case 4:
+                    {
+                        string name = photo.Name;
+                        GameConfirm.Show("reallife_gallery_delete_title", "reallife_gallery_delete_body", () =>
+                        {
+                            director.StartCoroutine(Guard.Routine(director.Delete(new List<string> { name }, 0)));
+                            _viewing = false;
+                            GalleryPictures.DropWhole();
+                            _asked = -1;
+                            _force = true;
+                        }, null, "reallife_gallery_delete_yes", "common_cancel", true, true);
+                        return true;
+                    }
             }
             return false;
+        }
+
+        private bool FavouritePicked()
+        {
+            PhotosDirector director = Director;
+            if (director == null || _picked.Count == 0)
+            {
+                return false;
+            }
+            director.SetFavourites(_picked, !_album.FavAll);
+            Changed();
+            return true;
+        }
+
+        // Every picked photo is shared, the first picked last so that Flare's sheet opens with it; one post carries one photo.
+        private bool SharePicked()
+        {
+            PhotosDirector director = Director;
+            if (director == null || _picked.Count == 0)
+            {
+                return false;
+            }
+            bool any = false;
+            for (int i = _picked.Count - 1; i >= 0; i--)
+            {
+                string path = System.IO.Path.Combine(director.Folder, _picked[i]);
+                if (i == 0)
+                {
+                    FlareScreen.WantPhoto(path);
+                }
+                any |= PhotosBridges.ShareToFlare != null && PhotosBridges.ShareToFlare(path, PhotoThumbs.FileOf(path));
+            }
+            if (!any)
+            {
+                PhotosGame.Tell(NotificationType.Warning, "reallife_gallery_note_flare_off");
+                return false;
+            }
+            _select = false;
+            _picked.Clear();
+            director.RefreshPosted();
+            Changed();
+            return true;
         }
 
         private void ConfirmDelete()
@@ -458,85 +622,54 @@ namespace RealLifeOverhaul.Ui
                 director.StartCoroutine(Guard.Routine(director.Delete(names, 0)));
                 _picked.Clear();
                 _select = false;
-                _force = true;
+                Changed();
             }, null, "reallife_gallery_delete_yes", "common_cancel", true, true);
         }
 
         private void TogglePick(string name)
         {
-            for (int i = 0; i < _picked.Count; i++)
+            int at = _picked.IndexOf(name);
+            if (at >= 0)
             {
-                if (_picked[i] == name)
-                {
-                    _picked.RemoveAt(i);
-                    return;
-                }
+                _picked.RemoveAt(at);
             }
-            _picked.Add(name);
-        }
-
-        private bool Picked(string name)
-        {
-            for (int i = 0; i < _picked.Count; i++)
+            else
             {
-                if (_picked[i] == name)
-                {
-                    return true;
-                }
+                _picked.Add(name);
             }
-            return false;
         }
-
-        private PhotosDirector Director => PhotosDirector.Instance;
 
         private UiNavEntry[] Nav()
         {
-            int all = Director != null ? Director.Count : 0;
-            int selfies = 0;
-            if (Director != null)
+            var nav = new UiNavEntry[(int)GalleryKit.Count];
+            UiIcon[] icons = { UiIcon.Image, UiIcon.Heart, UiIcon.SmileyHappy, UiIcon.Store, UiIcon.MapPin, UiIcon.Megaphone };
+            for (int i = 0; i < nav.Length; i++)
             {
-                for (int i = 0; i < Director.Photos.Count; i++)
-                {
-                    selfies += Director.Photos[i].Selfie ? 1 : 0;
-                }
+                nav[i] = new UiNavEntry { Icon = icons[i], Label = UiText.T(GalleryFind.KitKeys[i]), Count = _counts[i].ToString(CultureInfo.InvariantCulture) };
             }
-            return new[]
+            return nav;
+        }
+
+        private static string _sizeOf, _sizeText;
+
+        // The size of a photo's file, read once a photo opened (not on each layout of it).
+        private static string SizeOf(PhotoEntry photo)
+        {
+            if (photo.Name == _sizeOf)
             {
-                new UiNavEntry { Icon = UiIcon.Image, Label = UiText.T("reallife_gallery_tab_all"), Count = all.ToString() },
-                new UiNavEntry { Icon = UiIcon.Camera, Label = UiText.T("reallife_gallery_tab_selfies"), Count = selfies.ToString() },
-            };
-        }
-
-        private static string FilterName(int filter)
-        {
-            filter = CameraRules.ClampFilter(filter);
-            return UiText.T(CameraRules.Filters[filter].NameKey);
-        }
-
-        private static string FrameName(int frame)
-        {
-            frame = (int)CameraRules.ClampFrame(frame);
-            return frame >= 0 && frame < CameraRules.FrameKeys.Length ? UiText.T(CameraRules.FrameKeys[frame]) : UiText.T(CameraRules.FrameKeys[0]);
-        }
-
-        private static string WeatherName(string token)
-        {
-            switch (token)
-            {
-                case "rain": return UiText.T("reallife_ui_hud_weather_rain");
-                case "mist": return UiText.T("reallife_ui_hud_weather_mist");
-                case "storm": return UiText.T("reallife_ui_hud_weather_storm");
-                case "snow": return UiText.T("reallife_ui_hud_weather_snow");
-                case "clear": return UiText.T("reallife_ui_hud_weather_clear");
-                default: return UiText.T("reallife_ui_hud_weather_sunny");
+                return _sizeText;
             }
+            _sizeOf = photo.Name;
+            _sizeText = SizeRead(photo);
+            return _sizeText;
         }
 
-        private static string SizeOf(PhotosDirector director, PhotoEntry photo)
+        private static string SizeRead(PhotoEntry photo)
         {
+            PhotosDirector director = PhotosDirector.Instance;
             if (director == null || string.IsNullOrEmpty(photo.Name))
             {
-                return "";
+                return string.Empty;
             }
             string path = System.IO.Path.Combine(director.Folder, photo.Name);
             long bytes = 0;
@@ -551,50 +684,7 @@ namespace RealLifeOverhaul.Ui
             {
                 bytes = 0;
             }
-            if (bytes <= 0)
-            {
-                return "";
-            }
-            return (bytes / 1024).ToString() + " KB";
-        }
-
-        private static string Story(PhotosDirector director, PhotoEntry photo)
-        {
-            Flare.FlareDirector flare = Flare.FlareDirector.Instance;
-            if (flare == null || !flare.PictureStory(photo.Name, out string business, out int likes, out int came, out long cents))
-            {
-                return null;
-            }
-            string money = (cents >= 0 ? "+" : "") + (cents / 100).ToString();
-            return UiText.Fill("reallife_ui_life_flare_line", "name", string.IsNullOrEmpty(business) ? UiText.T("reallife_ui_life_a_business") : business,
-                "likes", likes.ToString(), "visits", came.ToString(), "money", money);
-        }
-
-        private void Install()
-        {
-            if (UiPictures.Find != Find)
-            {
-                _next = UiPictures.Find;
-                UiPictures.Find = Find;
-            }
-        }
-
-        private static Sprite Find(string key)
-        {
-            if (key != null && key.StartsWith(PicturePrefix, StringComparison.Ordinal))
-            {
-                string name = key.Substring(PicturePrefix.Length);
-                if (_wholeSprite != null && _viewingName != null && name == _viewingName)
-                {
-                    return _wholeSprite;
-                }
-                Sprite cached;
-                if (Sprites.TryGetValue(name, out cached) && cached != null)
-                {
-                    return cached;
-                }
-            }
-            return _next != null ? _next(key) : null;
+            return bytes <= 0 ? string.Empty : (bytes / 1024).ToString(CultureInfo.InvariantCulture) + " KB";
         }
     }
 }

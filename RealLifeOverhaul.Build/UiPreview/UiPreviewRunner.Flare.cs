@@ -38,6 +38,7 @@ public static partial class UiPreviewRunner
         Add("compose_promote", "02.jpg", FlareFace.SheetConfirmCommand, 0, "D");
         Add("hire_sheet", "13.jpg", FlareFace.SheetConfirmCommand, 0, "D");
         Add("reply_sheet", "02.jpg", FlareFace.OptionCommand, 1, "D");
+        Typed(Add("photo_picker", "13.jpg", FlareFace.PickerPhotoCommand, 2, "D"), FlareFace.PickerField);
 
         Screen Add(string state, string backdrop, int hover, int arg, string walk)
         {

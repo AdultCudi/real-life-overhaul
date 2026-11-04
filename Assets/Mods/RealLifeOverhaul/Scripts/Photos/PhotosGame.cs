@@ -46,6 +46,12 @@ namespace RealLifeOverhaul.Photos
 
         public static int Hour => SaveGameManager.Current != null ? SaveGameManager.Current.Hour : 0;
 
+        /// <summary>The game's minute of the hour, 0 to 59.</summary>
+        public static int Minute => SaveGameManager.Current != null ? Mathf.Clamp(Mathf.FloorToInt(SaveGameManager.Current.Minute), 0, 59) : 0;
+
+        /// <summary>Whether the game shows its clock on 12 hours.</summary>
+        public static bool TwelveHour => TimeHelper.use12h;
+
         /// <summary>persistentDataPath/RealLifeOverhaul/Photos; main thread only, as the engine answers it nowhere else.</summary>
         public static string Root => Path.Combine(Application.persistentDataPath, "RealLifeOverhaul", PhotoStoreRules.RootFolder);
 
@@ -302,13 +308,14 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        /// <summary>A volume of the camera's own for its filter, over the mod's own grading.</summary>
-        public static GameObject MakeGrade(Transform parent, out ColorAdjustments color)
+        /// <summary>A volume of the camera's own for its filter and its portrait blur, over the mod's own grading. One post effect each, on while the camera is open.</summary>
+        public static GameObject MakeGrade(Transform parent, out ColorAdjustments color, out DepthOfField blur)
         {
             var made = new GameObject("RealLifeOverhaul Camera Grade");
             made.transform.SetParent(parent, false);
             VolumeProfile profile = ScriptableObject.CreateInstance<VolumeProfile>();
             color = profile.Add<ColorAdjustments>();
+            blur = profile.Add<DepthOfField>();
             var volume = made.AddComponent<Volume>();
             volume.isGlobal = true;
             volume.priority = 1100f;   // over the mod's own grading (1000), as photo mode's
@@ -317,7 +324,8 @@ namespace RealLifeOverhaul.Photos
             return made;
         }
 
-        public static void Grade(ColorAdjustments color, int filter)
+        /// <summary>The filter's grade, with the exposure the player set (tenths of a stop) and the night boost added to the filter's own.</summary>
+        public static void Grade(ColorAdjustments color, int filter, int exposure = 0, bool boost = false)
         {
             if (color == null)
             {
@@ -325,14 +333,79 @@ namespace RealLifeOverhaul.Photos
             }
             CameraFilter f = CameraRules.Filters[CameraRules.ClampFilter(filter)];
             bool graded = CameraRules.Graded(filter);
+            float stops = (graded ? f.Exposure : 0f) + exposure / 10f + (boost ? CameraRules.BoostStops : 0f);
             color.colorFilter.overrideState = graded;
             color.colorFilter.value = new Color(f.R, f.G, f.B, 1f);
             color.saturation.overrideState = graded;
             color.saturation.value = f.Saturation;
             color.contrast.overrideState = graded;
             color.contrast.value = f.Contrast;
-            color.postExposure.overrideState = graded && f.Exposure != 0f;
-            color.postExposure.value = f.Exposure;
+            color.postExposure.overrideState = stops != 0f;
+            color.postExposure.value = stops;
+        }
+
+        /// <summary>
+        /// The portrait's blur: the far background out of focus, the subject's metres and the near never blurred; off with
+        /// <paramref name="on"/> false, when nothing of it is drawn.
+        /// </summary>
+        public static void Blur(DepthOfField blur, bool on, float subject)
+        {
+            if (blur == null)
+            {
+                return;
+            }
+            CameraRules.Blur(subject, out float farStart, out float farEnd);
+            blur.focusMode.overrideState = on;
+            blur.focusMode.value = DepthOfFieldMode.Manual;
+            blur.nearFocusStart.overrideState = on;
+            blur.nearFocusStart.value = 0f;
+            blur.nearFocusEnd.overrideState = on;
+            blur.nearFocusEnd.value = 0f;
+            blur.farFocusStart.overrideState = on;
+            blur.farFocusStart.value = farStart;
+            blur.farFocusEnd.overrideState = on;
+            blur.farFocusEnd.value = farEnd;
+        }
+
+        /// <summary>The metres to what the lens points at, by one ray from the lens, or <see cref="CameraRules.FocusFar"/> for nothing in range. At most five a second.</summary>
+        public static float SubjectAt(Camera camera)
+        {
+            if (camera == null)
+            {
+                return CameraRules.FocusFar;
+            }
+            Transform t = camera.transform;
+            return Physics.Raycast(t.position, t.forward, out RaycastHit hit, CameraRules.FocusFar, ~0, QueryTriggerInteraction.Ignore) ? hit.distance : CameraRules.FocusFar;
+        }
+
+        private static readonly List<Renderer> HiddenBody = new List<Renderer>(24);
+
+        /// <summary>The player's body drawn or not: its renderers switched off while the camera hides it, and exactly those switched on again.</summary>
+        public static void HideBody(bool hide)
+        {
+            if (hide)
+            {
+                PlayerController player = PlayerHelper.PlayerController;
+                ThirdPersonCharacter body = player != null ? player.Character : null;
+                if (body == null || HiddenBody.Count > 0)
+                {
+                    return;
+                }
+                body.GetComponentsInChildren(false, HiddenBody);
+                for (int i = 0; i < HiddenBody.Count; i++)
+                {
+                    HiddenBody[i].enabled = false;
+                }
+                return;
+            }
+            for (int i = 0; i < HiddenBody.Count; i++)
+            {
+                if (HiddenBody[i] != null)
+                {
+                    HiddenBody[i].enabled = true;
+                }
+            }
+            HiddenBody.Clear();
         }
 
         public static void DropGrade(GameObject grade)
@@ -356,6 +429,9 @@ namespace RealLifeOverhaul.Photos
             public int Width, Height, Bytes;
             public bool Bgr;
             public double ReadMs;   // the main thread's share
+            public int CropX, CropY, CropWidth, CropHeight;   // the part of the screen the photo keeps; none set (CropWidth 0) is the whole screen
+            public CameraAspect Aspect = CameraAspect.SixteenNine;
+            public CameraFrame Frame;                         // burned into the photo on the worker
         }
 
         private static readonly int HotRead = HotSpots.Slot("Photos: PhotosGame.Read");
@@ -442,20 +518,41 @@ namespace RealLifeOverhaul.Photos
         {
             var watch = Stopwatch.StartNew();
             NativeArray<byte> photo = default;
-            NativeArray<byte> jpg = default;
             try
             {
-                PhotoPixels.Fit(shot.Width, shot.Height, PhotoPixels.PhotoWidth, PhotoPixels.PhotoHeight, out int w, out int h);
+                bool cut = shot.CropWidth > 0 && shot.CropHeight > 0;
+                int cx = cut ? shot.CropX : 0, cy = cut ? shot.CropY : 0, cw = cut ? shot.CropWidth : shot.Width, ch = cut ? shot.CropHeight : shot.Height;
+                PhotoPixels.Box(cut ? shot.Aspect : CameraAspect.SixteenNine, out int boxW, out int boxH);
+                PhotoPixels.Fit(cw, ch, boxW, boxH, out int w, out int h);
                 if (w <= 0 || h <= 0)
                 {
                     return null;
                 }
                 photo = new NativeArray<byte>(w * h * 3, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
-                if (!PhotoPixels.Shrink(shot.Pixels.AsReadOnlySpan(), shot.Width, shot.Height, shot.Bytes, shot.Bgr, photo.AsSpan(), w, h))
+                if (!PhotoPixels.Shrink(shot.Pixels.AsReadOnlySpan(), shot.Width, shot.Height, shot.Bytes, shot.Bgr, photo.AsSpan(), w, h, cx, cy, cw, ch))
                 {
                     return null;
                 }
                 Drop(shot);   // its megabytes go before the encoder's
+                PhotoPixels.Frame(photo.AsSpan(), w, h, shot.Frame);   // the frame is the photo's, burned in here and not read off the screen
+                return Encode(photo, w, h, path, watch);
+            }
+            finally
+            {
+                if (photo.IsCreated)
+                {
+                    photo.Dispose();
+                }
+                Drop(shot);
+            }
+        }
+
+        // The photo as a JPG at the path, and its small copy beside it. On a worker.
+        private static Developed Encode(NativeArray<byte> photo, int w, int h, string path, Stopwatch watch)
+        {
+            NativeArray<byte> jpg = default;
+            try
+            {
                 jpg = ImageConversion.EncodeNativeArrayToJPG(photo, GraphicsFormat.R8G8B8_SRGB, (uint)w, (uint)h, 0u, JpgQuality);
                 if (!jpg.IsCreated || jpg.Length == 0)
                 {
@@ -478,11 +575,138 @@ namespace RealLifeOverhaul.Photos
                 {
                     jpg.Dispose();
                 }
+            }
+        }
+
+        /// <summary>
+        /// What an edit of a photo asks: a filter, a frame, quarters turned to the right and a shape to cut to (Unknown keeps the
+        /// shape). The pixels are the photo's, copied out of a readable texture on the main thread; the work is a worker's.
+        /// </summary>
+        public sealed class Edit
+        {
+            public NativeArray<byte> Pixels;
+            public int Width, Height;
+            public int Filter;
+            public CameraFrame Frame;
+            public int Quarters;
+            public CameraAspect Crop = CameraAspect.Unknown;
+        }
+
+        /// <summary>The photo's pixels copied from a readable texture for an edit (about 6 MB at 1080p, outside the managed heap); null if it is not a plain RGB texture.</summary>
+        public static Edit TakeEdit(Texture2D readable)
+        {
+            if (readable == null || readable.format != TextureFormat.RGB24 || readable.width < 16 || readable.height < 16)
+            {
+                return null;
+            }
+            return new Edit { Pixels = new NativeArray<byte>(readable.GetRawTextureData<byte>(), Allocator.Persistent), Width = readable.width, Height = readable.height };
+        }
+
+        /// <summary>Lets an edit's pixels go; a second call does nothing.</summary>
+        public static void Drop(Edit edit)
+        {
+            if (edit != null && edit.Pixels.IsCreated)
+            {
+                edit.Pixels.Dispose();
+            }
+        }
+
+        // The edit's steps on a copy at most longMost pixels on a side: turned, cut, graded, framed. The caller disposes the result.
+        private static NativeArray<byte> Render(Edit edit, int longMost, out int w, out int h)
+        {
+            PhotoPixels.Turned(edit.Width, edit.Height, edit.Quarters, out int tw, out int th);
+            NativeArray<byte> turned = default;
+            NativeArray<byte> photo = default;
+            w = h = 0;
+            try
+            {
+                ReadOnlySpan<byte> from = edit.Pixels.AsReadOnlySpan();
+                if (edit.Quarters % 4 != 0)
+                {
+                    turned = new NativeArray<byte>(tw * th * 3, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                    if (!PhotoPixels.Turn(from, edit.Width, edit.Height, edit.Quarters, turned.AsSpan()))
+                    {
+                        return default;
+                    }
+                    from = turned.AsReadOnlySpan();
+                }
+                CameraAspect shape = edit.Crop;
+                int cx = 0, cy = 0, cw = tw, ch = th;
+                if (shape != CameraAspect.Unknown)
+                {
+                    CameraRules.CropRect(tw, th, shape, out cx, out cy, out cw, out ch);
+                }
+                else
+                {
+                    shape = tw >= th ? CameraAspect.SixteenNine : CameraAspect.Story;
+                }
+                PhotoPixels.Box(shape, out int boxW, out int boxH);
+                float shrink = Mathf.Min(1f, (float)longMost / Mathf.Max(boxW, boxH));
+                PhotoPixels.Fit(cw, ch, Mathf.Max(1, Mathf.RoundToInt(boxW * shrink)), Mathf.Max(1, Mathf.RoundToInt(boxH * shrink)), out w, out h);
+                if (w <= 0 || h <= 0)
+                {
+                    return default;
+                }
+                photo = new NativeArray<byte>(w * h * 3, Allocator.Persistent, NativeArrayOptions.UninitializedMemory);
+                if (!PhotoPixels.Shrink(from, tw, th, 3, false, photo.AsSpan(), w, h, cx, cy, cw, ch))
+                {
+                    photo.Dispose();
+                    return default;
+                }
+                PhotoPixels.Grade(photo.AsSpan(), w, h, CameraRules.Filters[CameraRules.ClampFilter(edit.Filter)], 0f);
+                PhotoPixels.Frame(photo.AsSpan(), w, h, edit.Frame);
+                NativeArray<byte> done = photo;
+                photo = default;
+                return done;
+            }
+            finally
+            {
+                if (turned.IsCreated)
+                {
+                    turned.Dispose();
+                }
                 if (photo.IsCreated)
                 {
                     photo.Dispose();
                 }
-                Drop(shot);
+            }
+        }
+
+        /// <summary>On a worker: the edit's preview as RGB24 rows (bottom up) at most <paramref name="longMost"/> pixels on a side; null if it could not be made.</summary>
+        public static byte[] Preview(Edit edit, int longMost, out int w, out int h)
+        {
+            NativeArray<byte> made = Render(edit, longMost, out w, out h);
+            if (!made.IsCreated)
+            {
+                return null;
+            }
+            try
+            {
+                return made.ToArray();
+            }
+            finally
+            {
+                made.Dispose();
+            }
+        }
+
+        /// <summary>On a worker: the edit's photo at full size written as a JPG at the path with its small copy; null if it was not written. Lets its pixels go.</summary>
+        public static Developed Finish(Edit edit, string path)
+        {
+            var watch = Stopwatch.StartNew();
+            NativeArray<byte> made = default;
+            try
+            {
+                made = Render(edit, PhotoPixels.PhotoLong, out int w, out int h);
+                return made.IsCreated ? Encode(made, w, h, path, watch) : null;
+            }
+            finally
+            {
+                if (made.IsCreated)
+                {
+                    made.Dispose();
+                }
+                Drop(edit);
             }
         }
 
@@ -514,7 +738,7 @@ namespace RealLifeOverhaul.Photos
         /// break), then decoded on the main thread, about 10 to 20 ms. <paramref name="done"/> gets null if it could not be
         /// read, or if <paramref name="wanted"/>, asked after the read, says it is no longer wanted.
         /// </summary>
-        public static IEnumerator Load(string path, Action<Texture2D> done, Func<bool> wanted = null)
+        public static IEnumerator Load(string path, Action<Texture2D> done, Func<bool> wanted = null, bool readable = false)
         {
             Texture2D texture = null;
             Task<byte[]> work = Task.Run(() => PhotoStore.ReadPhoto(path));
@@ -536,7 +760,7 @@ namespace RealLifeOverhaul.Photos
             {
                 using var hotSpot = HotSpots.Time(HotLoaded);
                 var watch = Stopwatch.StartNew();
-                texture = Decode(bytes);
+                texture = Decode(bytes, readable);
                 if (texture == null)
                 {
                     Logger?.Warn("Gallery: " + Path.GetFileName(path) + " is no picture the engine can read.");
@@ -552,12 +776,12 @@ namespace RealLifeOverhaul.Photos
         }
 
         // The copy in memory is let go: the texture is only drawn.
-        private static Texture2D Decode(byte[] bytes)
+        private static Texture2D Decode(byte[] bytes, bool readable)
         {
             var texture = new Texture2D(2, 2, TextureFormat.RGB24, false) { name = "RealLifeOverhaul Photo", wrapMode = TextureWrapMode.Clamp };
             try
             {
-                if (texture.LoadImage(bytes, true) && texture.width > 2)
+                if (texture.LoadImage(bytes, !readable) && texture.width > 2)
                 {
                     return texture;
                 }

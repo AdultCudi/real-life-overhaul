@@ -162,6 +162,16 @@ namespace RealLifeOverhaul.Ui
         Upload,        // up to the Workshop
         Books,         // a library
         Download,      // into the library
+        Timer,         // the camera's timer
+        Crop,          // a photo's shape, cut
+        Rotate,        // a photo turned a quarter to the right
+        Exposure,      // a photo's light, more or less
+        Level,         // the camera's horizon line
+        FlipCamera,    // the rear camera and the selfie
+        EyeSlash,      // hide a thing from the picture
+        FrameCorners,  // the picture alone, no controls
+        Funnel,        // a filter of a list
+        PortraitFocus, // a portrait, the person sharp
         Count
     }
 
