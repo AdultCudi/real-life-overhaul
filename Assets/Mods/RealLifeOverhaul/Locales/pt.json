@@ -31121,5 +31121,9 @@
   "reallife_flare_dm_hello_2": "Olá, você é novo por aqui? Acho que moramos perto.",
   "reallife_flare_dm_hello_3": "Oi. Seu nome não para de aparecer pela cidade. Como vai?",
   "reallife_news_not_yet": "Ainda não: a partir do dia {day}",
-  "reallife_news_where": "Onde as pessoas moram"
+  "reallife_news_where": "Onde as pessoas moram",
+  "reallife_ui_bizman_sum_alert_one": "1 alerta",
+  "reallife_ui_bizops_goods_one": "1 produto",
+  "reallife_ui_bizops_output_one": "Produção de 1 peça por hora",
+  "reallife_ui_rivals_week_from": "A partir do dia {day}"
 }

@@ -238,7 +238,71 @@ internal static partial class Program
             "rivals: a business's row offers its locate link, Open in BizMan and Set destination on F, its type on a tile");
         UiRivalsModel empty = UiSamples.Rivals(en, "league_empty");
         Check(empty.Table.RowCount == 0 && empty.ProfileActions.Length == 0 && empty.Profile.Rating == -1, "rivals: an empty league asks nothing of a rival and rates no one");
+        RivalsDayChecks(en);
     }
+
+    // The chart of the chosen rival's development and the league's week column on the early days of a save (the owner's day 5): days in
+    // order and none before day 1, the count as the table's, an axis that fits the data, and a week that waits for day 8.
+    private static void RivalsDayChecks(UiWords en)
+    {
+        RivalsViews.Tidy(new[] { -1, 1, 0, 2, 3, 4, 5 }, new float[] { 10, 11, 12, 13, 14, 15, 16 }, 5, out int[] days, out float[] values);
+        Check(days.Length == 5 && days[0] == 1 && days[1] == 2 && days[4] == 5 && values[0] == 11f && values[1] == 13f && values[4] == 16f,
+            "rivals: the game's chart window (day -1, 1, 0, 2 to 5 as the owner saw it) is cut to the days that exist and put in order");
+        RivalsViews.Tidy(new[] { 9, 7, 8, 8, 12 }, new float[] { 1, 2, 3, 4, 5 }, 10, out days, out values);
+        Check(days.Length == 3 && days[0] == 7 && days[1] == 8 && days[2] == 9 && values[1] == 4f, "rivals: a day twice is one point (its last value) and no day after today is charted");
+        UiRivalsModel count = UiSamples.Rivals(en, "league_early");
+        UiRivalsModel income = UiSamples.Rivals(en, "league_early_income");
+        bool ordered = true, plain = true;
+        foreach (UiRivalsModel m in new[] { count, income })
+        {
+            int last = 0;
+            for (int i = 0; i < m.Chart.Points.Length; i++)
+            {
+                int day = int.Parse(m.Chart.Points[i].Replace("Day ", ""));
+                ordered &= day > last && day >= RivalsViews.FirstDay;
+                last = day;
+                plain &= !m.Chart.Points[i].Contains("-") && m.Chart.Points[i] != "Day 0";
+            }
+        }
+        Check(ordered && plain && count.Chart.Points.Length == 5 && income.Chart.Points.Length == 5 && count.Chart.Points[0] == "Day 1" && count.Chart.Points[4] == "Day 5",
+            "rivals: on day 5 the chart reads Day 1 to Day 5 in order, with no Day 0 and no negative day");
+        float[] line = count.Chart.Series[0].Values;
+        int tableCount = int.Parse(count.Table.Rows[count.Table.Selected].Cells[3]);
+        Check(line.Length == 5 && line[line.Length - 1] == tableCount && tableCount == 11 && Array.TrueForAll(line, v => v == tableCount),
+            "rivals: the count chart ends on the same number of businesses as the table says (" + line[line.Length - 1] + " and " + tableCount + ")");
+        UiChart.Scale(count.Chart, out float lo, out float hi, out float step);
+        Check(count.Chart.Whole && lo < line[0] && hi > line[0] && hi - lo >= 2f && UiChart.OnStep(lo, step) && UiChart.OnStep(hi, step) && step == (float)Math.Round(step)
+              && line[0] - lo > 0f && hi - line[0] > 0f && Math.Abs((line[0] - lo) - (hi - line[0])) <= step,
+            "rivals: a count that has not moved stands as a flat line in the middle of a real range of whole steps (" + lo + " to " + hi + " by " + step + "), not on the foot of 30 to 31");
+        var flat = new UiChartModel { Kind = UiChartKind.Line, Whole = true, Series = new[] { new UiSeries { Values = new[] { 29f, 29f, 29f } } } };
+        UiChart.Scale(flat, out float flo, out float fhi, out float fstep);
+        var rising = new UiChartModel { Kind = UiChartKind.Line, Whole = true, Series = new[] { new UiSeries { Values = new[] { 28f, 29f, 30f } } } };
+        UiChart.Scale(rising, out float rlo, out float rhi, out float rstep);
+        Check(flo < 29f && fhi > 29f && fstep >= 1f && rlo == 28f && rhi == 30f && rstep == 1f && UiChart.WholeStep(2.5f) == 5f && UiChart.WholeStep(0.4f) == 1f && UiChart.WholeStep(30f) == 50f,
+            "rivals: counts step by 1, 2, 5 of a power of ten, so no two ticks of a count read alike");
+        float[] money = income.Chart.Series[0].Values;
+        UiChart.Scale(income.Chart, out float mlo, out float mhi, out float mstep);
+        Check(!income.Chart.Whole && mlo <= money[0] && mhi >= money[4] && mhi - mlo <= (money[4] - money[0]) * 6f && mlo > 0f,
+            "rivals: the weekly income chart's axis is fitted to its days' own values, not run from nothing");
+        bool waits = count.Table.Columns[RivalsViews.ColumnChange].Title == "From day 8", empty = true;
+        foreach (UiDataRow r in count.Table.Rows)
+        {
+            empty &= string.IsNullOrEmpty(r.Cells[RivalsViews.ColumnChange]);
+        }
+        UiRivalsModel later = UiSamples.Rivals(en, "league");
+        bool shown = later.Table.Columns[RivalsViews.ColumnChange].Title == "7 days";
+        int figures = 0;
+        foreach (UiDataRow r in later.Table.Rows)
+        {
+            figures += string.IsNullOrEmpty(r.Cells[RivalsViews.ColumnChange]) ? 0 : 1;
+        }
+        Check(waits && empty && shown && figures > 10 && !RivalsViews.WeekShown(5) && !RivalsViews.WeekShown(7) && RivalsViews.WeekShown(8),
+            "rivals: before day 8 the week column says From day 8 and shows no figure; from day 8 it says 7 days and compares");
+        string ui = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui"));
+        string screen = File.ReadAllText(System.IO.Path.Combine(ui, "Rivals", "RivalsScreen.cs"));
+        Check(screen.Contains("_v.Today = SaveGameManager.Current != null ? SaveGameManager.Current.Day : 0;"), "rivals: the screen tells the view the game's day, which the chart and the week column keep to");
+    }
+
 
     // Market Insider's rules: the import price graded, every district its colour with the mod's own apart, and the glyphs.
     private static void MarketChecks()

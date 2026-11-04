@@ -62,7 +62,8 @@ namespace RealLifeOverhaul.Ui
         public bool[] OpenHours;                       // the opening hours by the hour of the day (0 to 23), for a day of several openings; null: OpenFrom to OpenTo
         public bool Faces;                             // a bar leads with the person's face where it has the room
         public string CoverTitle, CoverLine;           // the coverage strip under the lanes ("Staff / needed", "Bars: customers"); null: no strip
-        public string[] Cover;                         // each hour of the day's figure, 0 to 23 ("5/6"), or null where nothing is needed or placed
+        public string[] Cover;                         // each hour of the day's staff placed, 0 to 23 ("5"), or null where nothing is needed or placed
+        public string[] Needed;                        // each hour's staff needed, 0 to 23 ("6"), under the placed figure in its cell; null for none
         public bool[] Short;                           // fewer placed than needed at that hour: its figure in the danger's colour
         public float[] Bars;                           // the customers each hour against the day's busiest, 0 to 1; null for no bars
 
@@ -120,7 +121,7 @@ namespace RealLifeOverhaul.Ui
             float perHour = m.RulerW / hours;
             Ruler(s, at, m, top, perHour);
             float lanesTop = top + UiTokens.PairRow + UiTokens.S1;
-            float strip = m.CoverTitle != null ? UiTokens.S2 + CoverBars + UiTokens.S1 + UiTokens.PairRow : 0f;
+            float strip = m.CoverTitle != null ? CoverHeight(m) : 0f;
             float vh = Math.Max(1, (int)((y + h - lanesTop - strip) / LaneHeight)) * LaneHeight;   // whole lanes: a lane cut through its face reads as a fault
             m.LanesTop = lanesTop;
             m.LanesHeight = vh;
@@ -137,8 +138,31 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        /// <summary>px: the strip's height under the lanes: a gap, the customers' bars where there are any, and the cells of staff (or the head's own lines if they are taller).</summary>
+        public static float CoverHeight(UiBoardModel m)
+        {
+            float cells = CoverCellHeight();
+            float head = UiTokens.PairRow * (string.IsNullOrEmpty(m.CoverLine) ? 1 : 2);
+            return UiTokens.S2 + (m.Bars != null ? CoverBars + UiTokens.S1 : 0f) + Math.Max(cells, head);
+        }
+
+        // A cell's height: the placed figure's line over the needed figure's, a step above and below, each on the grid.
+        private static float CoverCellHeight() => UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SmallStrong)) + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S1 * 2f;
+
+        /// <summary>
+        /// The cell of an hour of the staff strip, in px from the ruler's left: its x and its width. It stands in its hour's column on the
+        /// ruler, a hair in from either line, so two cells never meet (a figure of its own a column, never one string for all).
+        /// </summary>
+        public static void CoverCell(float rulerX, float perHour, int index, out float x, out float w)
+        {
+            float inset = UiTokens.S1 / 2f;
+            x = rulerX + index * perHour + inset;
+            w = Math.Max(UiTokens.S4, perHour - inset * 2f);
+        }
+
         // Under the lanes, at each hour's place on the ruler: a bar of the hour's customers against the day's busiest, and the
-        // staff placed over the staff needed, a short hour in the danger's colour. Its head in the lanes' column says what it is.
+        // staff placed over the staff needed in a cell of the hour's column, a short hour's cell outlined and its figures in the danger's colour.
+        // Its head in the lanes' column says what it is.
         private static void Cover(UiScene s, UiAt at, UiBoardModel m, float x, float y, float perHour)
         {
             UiDraw.Text(s, at, x, y, LaneHead - UiTokens.S4, UiStyle.SmallStrong, UiRole.Text2, m.CoverTitle, UiFlags.Truncate);
@@ -148,6 +172,9 @@ namespace RealLifeOverhaul.Ui
             }
             int hours = Math.Max(1, m.LastHour - m.FirstHour);
             float bw = Math.Max(UiTokens.S1, perHour - UiTokens.S2 * 2f);
+            float cy = y + (m.Bars != null ? CoverBars + UiTokens.S1 : 0f);
+            float lineA = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SmallStrong));
+            float cellH = CoverCellHeight();
             for (int i = 0; i < hours; i++)
             {
                 int hour = m.FirstHour + i;
@@ -162,8 +189,17 @@ namespace RealLifeOverhaul.Ui
                 if (!string.IsNullOrEmpty(figure))
                 {
                     bool shortHour = m.Short != null && hour < m.Short.Length && m.Short[hour];
-                    UiDraw.Text(s, at, hx, y + CoverBars + UiTokens.S1, perHour, UiStyle.Small, shortHour ? UiRole.DangerText : UiRole.Text2, figure,
+                    string needed = m.Needed != null && hour >= 0 && hour < m.Needed.Length ? m.Needed[hour] : null;
+                    CoverCell(m.RulerX, perHour, i, out float cx, out float cw);
+                    int cell = UiDraw.Box(s, at, cx, cy, cw, cellH, UiRole.Band, shortHour ? UiRole.Danger : UiRole.None, UiTokens.RadiusSmall, UiFlags.Decor | UiFlags.Share);
+                    UiAt inCell = at.In(cell);
+                    UiDraw.Text(s, inCell, cx, cy + UiTokens.S1, cw, UiStyle.SmallStrong, shortHour ? UiRole.DangerText : UiRole.Text, figure,
                         UiFlags.Truncate | UiFlags.Centre | UiFlags.Share);
+                    if (!string.IsNullOrEmpty(needed))
+                    {
+                        UiDraw.Text(s, inCell, cx, cy + UiTokens.S1 + lineA, cw, UiStyle.Small, shortHour ? UiRole.DangerText : UiRole.Text2, needed,
+                            UiFlags.Truncate | UiFlags.Centre | UiFlags.Share);
+                    }
                 }
             }
         }

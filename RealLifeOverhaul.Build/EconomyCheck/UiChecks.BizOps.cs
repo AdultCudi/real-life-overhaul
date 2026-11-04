@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.IO;
 using RealLifeOverhaul.Ui;
 
 internal static partial class Program
@@ -157,6 +158,59 @@ internal static partial class Program
             "bizops: the full day shows its facts and both its problems over the board, each hour's staff against the planner's need under it, and Fill the gaps");
         Check(s.FindNode(BizManPages.OpsSearch, 0) < 0 && full.Ops.FactActions.Length == 1 && Array.FindIndex(full.Actions, a => a.Label == full.Ops.FactActions[0].Label) < 0,
             "bizops: a place of five stations shows no lanes' search, and Fill the gaps stands with the day's facts, not among the game's own day buttons");
+        // The staff placed over needed: one cell for each hour that wants staff, standing in its hour's column on the ruler, apart from the
+        // next, the placed figure over the needed one (no string of figures run together), short hours in the danger's colours.
+        foreach (string state in new[] { "schedule_full", "schedule_tens" })
+        {
+            var cs = new UiScene();
+            BizManModel cm = UiSamples.BizOps(t, state);
+            BizManPages.Lay(cs, cm, frame, true, UiDefaultKeys.Keyboard);
+            UiBoardModel bd = cm.Ops.Board;
+            float perHour = bd.RulerW / Math.Max(1, bd.LastHour - bd.FirstHour);
+            int cells = 0, drawn = 0, outside = 0, touching = 0, tooWide = 0, wrongTone = 0, unsaid = 0;
+            float prevRight = float.MinValue;
+            for (int h = bd.FirstHour; h < bd.LastHour; h++)
+            {
+                if (string.IsNullOrEmpty(bd.Cover[h]))
+                {
+                    continue;
+                }
+                cells++;
+                int i = h - bd.FirstHour;
+                UiBoard.CoverCell(bd.RulerX, perHour, i, out float cx, out float cw);
+                outside += cx < bd.RulerX + i * perHour - 0.01f || cx + cw > bd.RulerX + (i + 1) * perHour + 0.01f ? 1 : 0;
+                touching += cx < prevRight + 0.01f ? 1 : 0;
+                prevRight = cx + cw;
+                tooWide += UiTextRules.Width(bd.Cover[h], UiStyle.SmallStrong) > cw || UiTextRules.Width(bd.Needed[h], UiStyle.Small) > cw ? 1 : 0;
+                UiRole wantEdge = bd.Short[h] ? UiRole.Danger : UiRole.None;
+                bool box = false, placed = false, needed = false;
+                for (int k = 0; k < cs.ItemCount; k++)
+                {
+                    UiItem it = cs.Items[k];
+                    bool here = Math.Abs(it.X - cx) < 0.01f && Math.Abs(it.W - cw) < 0.01f;
+                    box |= here && it.Kind == UiKind.Box && it.Fill == UiRole.Band && it.Edge == wantEdge;
+                    placed |= here && it.Kind == UiKind.Text && it.Text == bd.Cover[h] && it.Style == UiStyle.SmallStrong;
+                    needed |= here && it.Kind == UiKind.Text && it.Text == bd.Needed[h] && it.Style == UiStyle.Small;
+                }
+                drawn += box ? 1 : 0;
+                wrongTone += box ? 0 : 1;
+                unsaid += placed && needed ? 0 : 1;
+            }
+            Check(cells >= 8 && drawn == cells && outside == 0 && touching == 0 && tooWide == 0 && unsaid == 0 && wrongTone == 0,
+                "bizops: the staff row (" + state + ") has a cell for each of its " + cells + " hours in that hour's column, none touching the next, the placed figure over the needed one inside it and"
+                + " short hours in the danger's colours (" + outside + " outside, " + touching + " touching, " + tooWide + " too wide, " + unsaid + " unsaid, " + wrongTone + " wrong)");
+        }
+        string pageSource = File.ReadAllText(System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizMan\BizManScreen.Page.cs")));
+        string en1 = File.ReadAllText(System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Locales\en.json")));
+        Check(pageSource.Contains("alerts.Count == 1 ? UiText.T(\"reallife_ui_bizman_sum_alert_one\")") && en1.Contains("\"reallife_ui_bizman_sum_alert_one\": \"1 alert\""),
+            "bizman: one alert reads \"1 alert\", not \"1 alerts\"; the singular key is used where the count is one");
+        foreach (string lang in new[] { "en", "pt", "zh-cn" })
+        {
+            UiWords w = UiWords(lang);
+            string one = w("reallife_ui_bizman_sum_alert_one", "MISSING"), many = w("reallife_ui_bizman_sum_alerts", "MISSING"), goods = w("reallife_ui_bizops_goods_one", "MISSING"), piece = w("reallife_ui_bizops_output_one", "MISSING");
+            Check(one != "MISSING" && one.Contains("1") && !one.Contains("{count}") && many.Contains("{count}") && goods != "MISSING" && goods.Contains("1") && piece != "MISSING" && piece.Contains("1"),
+                "bizman: the singular count labels (one alert, one good, one piece an hour) exist in " + lang);
+        }
         s = new UiScene();
         BizManModel empty = UiSamples.BizOps(t, "schedule_empty");
         BizManPages.Lay(s, empty, UiFrame.FullMenu(21f / 9f, "BizMan"), true, UiDefaultKeys.Keyboard);   // at 16:9 the game's five day buttons leave it no room

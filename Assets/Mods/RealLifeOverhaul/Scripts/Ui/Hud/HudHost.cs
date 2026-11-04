@@ -284,6 +284,7 @@ namespace RealLifeOverhaul.Ui
                 _appsDue = Time.unscaledTime + AppsEvery;
                 _screen.Dirty |= UiShellApps.Refresh();
             }
+            HudFps.Tick(Time.unscaledTime);
             int signature = HudStatusGame.Signature();
             if (signature != _signature || _screen.Dirty)
             {

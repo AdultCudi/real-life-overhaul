@@ -18,6 +18,7 @@ internal static partial class Program
         HudScaleChecks();
         HudPromptChecks();
         HudPillChecks();
+        HudFpsChecks();
         HudActivityChecks();
         HudMoneyChecks();
         HudSourceChecks();
@@ -87,6 +88,75 @@ internal static partial class Program
 
     // The strip's widths: 1080 (and 1440, which lays out the same), the game's UI zoom at 80% and 120%, an ultrawide, and the
     // narrowest the HUD lays out (a zoom of 150% and over).
+    // The frames a second in the status bar: only while the game's show-FPS option is on (the model's Fps above 0), a pill of its own
+    // before the needs that never meets its neighbours, the first of the right pills to give way, a reading worked out from frames over
+    // time, and no cost while the option is off (the option read once a second, nothing counted).
+    private static void HudFpsChecks()
+    {
+        UiStatusModel off = UiSamples.HudBar(UiWords("en"), false, false, false);
+        UiStatusModel on = UiSamples.HudBar(UiWords("en"), false, false, false);
+        on.Fps = 144;
+        string fault = null;
+        foreach (float width in BarWidths)
+        {
+            UiPillPlan a = UiDraw.PlanPills(off, width), b = UiDraw.PlanPills(on, width);
+            float needsX = b.MoneyX - (b.Alerts > 0f ? b.Alerts + UiTokens.S2 : 0f) - (b.Needs > 0f ? b.Needs + UiTokens.S2 : 0f);
+            float fpsX = needsX - (b.Fps > 0f ? b.Fps + UiTokens.S2 : 0f);
+            string at = " at " + width.ToString("0");
+            if (width == 1920f && b.Fps == 0f && fault == null)
+            {
+                fault = "the figure is missing from a full strip" + at;
+            }
+            if (a.Fps != 0f && fault == null)
+            {
+                fault = "the figure is drawn with the option off" + at;
+            }
+            if (b.Fps > 0f && b.RowX + b.RowW + UiTokens.S6 > fpsX + 0.01f && fault == null)
+            {
+                fault = "the figure meets the app row" + at;
+            }
+            if (b.Fps > 0f && (b.Money == 0f || b.Settings == 0f || b.Time == 0f) && fault == null)
+            {
+                fault = "the figure displaced the money, the gear or the time" + at;
+            }
+            if (b.Fps == 0f && b.Needs > 0f && b.Alerts > 0f && b.Money > 0f && a.Needs > 0f && b.Needs != a.Needs && fault == null)
+            {
+                fault = "the figure took the needs' room while it was dropped" + at;
+            }
+        }
+        Check(fault == null, "hud: the frames a second stands before the needs only while the game's show-FPS option is on, clear of the app row, and gives way first when the right pills do not fit, and never displaces the time, the money or the gear" + (fault == null ? "" : " (" + fault + ")"));
+        UiPillPlan narrow = UiDraw.PlanPills(on, UiHudRules.LeastWidth), narrowOff = UiDraw.PlanPills(off, UiHudRules.LeastWidth);
+        Check(narrow.Money > 0f && narrow.Needs >= narrowOff.Needs, "hud: on the narrowest strip the figure gives way before the needs, the bell or the money do");
+        var s = new UiScene();
+        Func<UiStatusModel> was = UiChrome.Bar;
+        bool saysOn, saysOff;
+        try
+        {
+            UiChrome.Bar = () => on;
+            UiDraw.StatusBar(s, UiFrame.FullMenu(16f / 9f), UiDefaultKeys.Keyboard);
+            saysOn = OpsSays(s, "144") && OpsSays(s, "FPS");
+            s = new UiScene();
+            UiChrome.Bar = () => off;
+            UiDraw.StatusBar(s, UiFrame.FullMenu(16f / 9f), UiDefaultKeys.Keyboard);
+            saysOff = OpsSays(s, "FPS");
+        }
+        finally
+        {
+            UiChrome.Bar = was;
+        }
+        Check(saysOn && !saysOff, "hud: the bar writes the figure over its FPS label while the option is on, and nothing of it while it is off");
+        Check(UiHudRules.Fps(30, 0.5f) == 60 && UiHudRules.Fps(72, 0.5f) == 144 && UiHudRules.Fps(1, 0.5f) == 2 && UiHudRules.Fps(0, 0.5f) == 0 && UiHudRules.Fps(10, 0f) == 0 && UiHudRules.Fps(9000, 0.5f) == 999,
+            "hud: the frames a second is frames over the seconds they took, a whole number from 1 to 999, none before a frame is counted");
+        string dir = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Hud"));
+        string fps = File.ReadAllText(System.IO.Path.Combine(dir, "HudFps.cs")), host = File.ReadAllText(System.IO.Path.Combine(dir, "HudHost.cs")), game = File.ReadAllText(System.IO.Path.Combine(dir, "HudStatusGame.cs"));
+        int tick = fps.IndexOf("public static void Tick", StringComparison.Ordinal);
+        int guard = fps.IndexOf("if (now >= _optionAt)", StringComparison.Ordinal), option = fps.IndexOf("= PlayerPrefSettings.showFps", StringComparison.Ordinal), idle = fps.IndexOf("if (!_on)", StringComparison.Ordinal);
+        string body = tick > 0 ? fps.Substring(tick) : string.Empty;
+        Check(tick > 0 && guard > tick && option > guard && idle > option && !body.Contains("new ") && !body.Contains("Find") && !body.Contains("GetComponent")
+              && host.Contains("HudFps.Tick(Time.unscaledTime)") && game.Contains("m.Fps = HudFps.Value") && game.Contains("h * 31 + HudFps.Value"),
+            "hud: the figure's counter reads the option once a second behind one comparison, returns before counting while it is off, allocates and searches nothing, runs on the unscaled clock, and feeds the bar's model and its layout signature");
+    }
+
     private static readonly float[] BarWidths = { 1920f, 1920f / 0.8f, 1920f / 1.2f, 2520f, UiHudRules.LeastWidth };
 
     // Every pill that stays is whole and none reaches the app row, in every language, paused or not, by day and at night, at

@@ -17,7 +17,7 @@ internal static partial class UiSamples
 {
     public static readonly string[] BizOpsStates =
     {
-        "schedule_empty", "schedule_full", "schedule_drag", "schedule_picker", "schedule_hours", "schedule_none", "schedule_closed", "schedule_long", "pricing", "pricing_none",
+        "schedule_empty", "schedule_full", "schedule_tens", "schedule_drag", "schedule_picker", "schedule_hours", "schedule_none", "schedule_closed", "schedule_long", "pricing", "pricing_none",
         "pricing_unassigned", "logistics", "logistics_sent", "purchasing", "hr", "hr_assign", "headhunters", "headhunters_replace", "factory", "factory_missing",
         "factory_none", "warehouse_drivers", "warehouse_stock", "warehouse_empty", "schedule_auto_fill_confirm", "no_manager_popup", "pricing_plan"
     };
@@ -167,7 +167,7 @@ internal static partial class UiSamples
     private static BizManModel OpsSchedule(UiWords t, string state)
     {
         bool longNames = state == "schedule_long", none = state == "schedule_none", closed = state == "schedule_closed";
-        bool full = state == "schedule_full" || state == "schedule_drag" || state == "schedule_picker" || state == "schedule_hours" || state == "schedule_auto_fill_confirm"
+        bool full = state == "schedule_full" || state == "schedule_tens" || state == "schedule_drag" || state == "schedule_picker" || state == "schedule_hours" || state == "schedule_auto_fill_confirm"
                     || longNames;
         BizManModel m = OpsStore(t, longNames);
         BizOpsModel o = m.Ops;
@@ -240,7 +240,7 @@ internal static partial class UiSamples
             new UiActionModel { Label = t("bizman_schedule_auto_fill", "Auto-fill all"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Spark, Key = UiAction.Count },
             new UiActionModel { Label = t("reallife_ui_bizops_clear_week", "Clear the week"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Trash, Key = UiAction.Count, Disabled = !full }
         };
-        OpsDayFacts(t, o, board, full, closed, none);
+        OpsDayFacts(t, o, board, full, closed, none, state == "schedule_tens");
         // The day's name is the game's own (common_wednesday), as the screen asks the game's localisation for it.
         string dayName = closed ? t("common_sunday", "Sunday") : t("common_wednesday", "Wednesday");
         o.DayOpenWords = t("reallife_ui_bizops_open_on", "Open on {day}").Replace("{day}", dayName);
@@ -322,8 +322,13 @@ internal static partial class UiSamples
     // day shown is today on the full board) or that day, its wages, the open hours somebody works and the week against the
     // planner's; each hour's staff placed against those it needs, the customers it expects as bars; and the day's problems.
     // No stations: the planner keeps no rota, so no strip and no week. A closed day: nothing needed, so no strip.
-    private static void OpsDayFacts(UiWords t, BizOpsModel o, UiBoardModel board, bool full, bool closed, bool none)
+    private static void OpsDayFacts(UiWords t, BizOpsModel o, UiBoardModel board, bool full, bool closed, bool none, bool tens = false)
     {
+        int[] wanted = (int[])OpsNeeded.Clone();   // "schedule_tens": the owner's game studio, ten computers wanted at every hour that wants any
+        for (int h = 0; tens && h < wanted.Length; h++)
+        {
+            wanted[h] = wanted[h] > 0 ? 10 : 0;
+        }
         var placed = new int[BizOpsRules.Hours];
         int cents = 0, onNow = 0;
         var on = new bool[OpsStaff.Length];
@@ -377,13 +382,14 @@ internal static partial class UiSamples
         board.CoverTitle = t("reallife_ui_bizops_cover_title", "Staff placed / needed");
         board.CoverLine = t("reallife_ui_bizops_cover_line", "Bars: customers expected");
         board.Cover = new string[BizOpsRules.Hours];
+        board.Needed = new string[BizOpsRules.Hours];
         board.Short = new bool[BizOpsRules.Hours];
         board.Bars = new float[BizOpsRules.Hours];
         for (int h = 0; h < BizOpsRules.Hours; h++)
         {
-            board.Cover[h] = OpsNeeded[h] > 0 || placed[h] > 0
-                ? t("reallife_ui_bizops_cover_figure", "{placed}/{needed}").Replace("{placed}", OpsWhole(placed[h])).Replace("{needed}", OpsWhole(OpsNeeded[h])) : null;
-            board.Short[h] = placed[h] < OpsNeeded[h];
+            board.Cover[h] = wanted[h] > 0 || placed[h] > 0 ? OpsWhole(placed[h]) : null;
+            board.Needed[h] = wanted[h] > 0 || placed[h] > 0 ? OpsWhole(wanted[h]) : null;
+            board.Short[h] = placed[h] < wanted[h];
             board.Bars[h] = OpsCustomers[h] / 28f;
         }
         // The runs short of the staff wanted, as the screen words them: the full day's evening and its last hour; the empty day whole.
@@ -395,7 +401,7 @@ internal static partial class UiSamples
             int need = 0, least = int.MaxValue, customers = 0;
             for (int h = from2[r]; h < to2[r]; h++)
             {
-                need = System.Math.Max(need, OpsNeeded[h]);
+                need = System.Math.Max(need, wanted[h]);
                 least = System.Math.Min(least, placed[h]);
                 customers = System.Math.Max(customers, OpsCustomers[h]);
             }

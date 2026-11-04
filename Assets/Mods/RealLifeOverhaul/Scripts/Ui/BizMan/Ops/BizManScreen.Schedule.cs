@@ -801,6 +801,7 @@ namespace RealLifeOverhaul.Ui
             int busiest = 0;
             bool any = false;
             var cover = new string[BizOpsRules.Hours];
+            var needed = new string[BizOpsRules.Hours];
             var shortHour = new bool[BizOpsRules.Hours];
             var bars = new float[BizOpsRules.Hours];
             for (int h = 0; h < BizOpsRules.Hours; h++)
@@ -811,7 +812,8 @@ namespace RealLifeOverhaul.Ui
             {
                 if (_neededAt[h] > 0 || _placedAt[h] > 0)
                 {
-                    cover[h] = UiText.Fill("reallife_ui_bizops_cover_figure", "placed", UiText.Whole(_placedAt[h]), "needed", UiText.Whole(_neededAt[h]));
+                    cover[h] = UiText.Whole(_placedAt[h]);    // a figure for each hour's column: the staff placed, the staff needed under it
+                    needed[h] = UiText.Whole(_neededAt[h]);
                     any = true;
                 }
                 shortHour[h] = _placedAt[h] < _neededAt[h];
@@ -824,6 +826,7 @@ namespace RealLifeOverhaul.Ui
             board.CoverTitle = UiText.T("reallife_ui_bizops_cover_title");
             board.CoverLine = busiest > 0 ? UiText.T("reallife_ui_bizops_cover_line") : null;
             board.Cover = cover;
+            board.Needed = needed;
             board.Short = shortHour;
             board.Bars = busiest > 0 ? bars : null;
         }

@@ -31121,5 +31121,9 @@
   "reallife_flare_dm_hello_2": "你好，你是新搬来的吗？我想我们住得不远。",
   "reallife_flare_dm_hello_3": "嗨。你的名字总在城里出现。最近怎么样？",
   "reallife_news_not_yet": "暂无：从第 {day} 天起",
-  "reallife_news_where": "居民的居住地"
+  "reallife_news_where": "居民的居住地",
+  "reallife_ui_bizman_sum_alert_one": "1 条提醒",
+  "reallife_ui_bizops_goods_one": "1 种商品",
+  "reallife_ui_bizops_output_one": "每小时产出 1 件",
+  "reallife_ui_rivals_week_from": "从第 {day} 天起"
 }

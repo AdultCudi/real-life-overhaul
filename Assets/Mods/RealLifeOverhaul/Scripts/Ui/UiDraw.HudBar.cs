@@ -10,6 +10,7 @@ namespace RealLifeOverhaul.Ui
     public struct UiPillPlan
     {
         public float Time, Weather, Place, Needs, Alerts, Money, Settings;   // px each pill takes; 0 for one left out
+        public float Fps;                             // px: the frames-a-second pill before the needs; 0 for none (the game's show-FPS option is off)
         public bool Day, Words, District, MoneyDay;   // the second lines kept: the day, the weather's words, the district, the money's day
         public float Meter;                           // px: each need's cell, its glyph over a meter as wide
         public float MoneyX;                          // px: the money pill's left edge, before the settings at the strip's corner
@@ -104,6 +105,7 @@ namespace RealLifeOverhaul.Ui
             // meets the screen's edge; a bar given nothing has none.
             p.Settings = m.PillsPress || !string.IsNullOrEmpty(m.Money) ? SquarePill : 0f;
             p.Tools = ToolsWidth(m);
+            p.Fps = FpsWidth(m);
             // The row keeps every app it is given until the time with its day, or the right pills at their tightest (or the
             // prompts while the keys lead), would not stand whole beside it; then apps wait under All apps, down to four.
             float least = Math.Max(p.Time + (p.Tools > 0f ? PillGap + p.Tools : 0f), Math.Max(prompts, Pills(NeedsWidth(m, NeedTight), p.Alerts, p.Money, p.Settings)));
@@ -121,7 +123,7 @@ namespace RealLifeOverhaul.Ui
             p.MoneyX = w - BarEdge - p.Settings - (p.Settings > 0f ? PillGap : 0f) - p.Money;
             float left = Pills(p.Time, p.Weather, p.Place, 0f);
             p.ToolsX = BarEdge + left + (left > 0f ? PillGap : 0f);
-            float pills = Pills(p.Needs, p.Alerts, p.Money, p.Settings);
+            float pills = Pills(p.Fps, p.Needs, p.Alerts, p.Money, p.Settings);
             p.PromptX = w - BarEdge - pills - (pills > 0f && prompts > 0f ? BarGap : 0f) - prompts;
             return p;
         }
@@ -182,6 +184,10 @@ namespace RealLifeOverhaul.Ui
         // then the needs (the bell back if it then fits alone), then the money's day under it; the gear keeps the corner.
         private static void FitRight(UiStatusModel m, ref UiPillPlan p, float room)
         {
+            if (Right(ref p) > room)
+            {
+                p.Fps = 0f;   // the figure is the first of the right pills to give way: the needs, the bell and the money are the bar's own
+            }
             if (Right(ref p) > room && p.Needs > 0f)
             {
                 p.Meter = NeedTight;
@@ -214,7 +220,7 @@ namespace RealLifeOverhaul.Ui
 
         private static float Right(ref UiPillPlan p)
         {
-            float pills = Pills(p.Needs, p.Alerts, p.Money, p.Settings);
+            float pills = Pills(p.Fps, p.Needs, p.Alerts, p.Money, p.Settings);
             return p.Prompts + (p.Prompts > 0f && pills > 0f ? BarGap : 0f) + pills;
         }
 
@@ -224,6 +230,9 @@ namespace RealLifeOverhaul.Ui
             int n = (a > 0f ? 1 : 0) + (b > 0f ? 1 : 0) + (c > 0f ? 1 : 0) + (d > 0f ? 1 : 0);
             return a + b + c + d + Math.Max(0, n - 1) * PillGap;
         }
+
+        // The same with the frames-a-second pill first.
+        private static float Pills(float fps, float a, float b, float c, float d) => Pills(a, b, c, d) + (fps > 0f ? fps + (Pills(a, b, c, d) > 0f ? PillGap : 0f) : 0f);
 
         // A line of words' room in a style, a hair over its width; 0 for none.
         private static float Words(string text, UiStyle style) => string.IsNullOrEmpty(text) ? 0f : Snap(UiTextRules.Width(text, style) + UiTokens.S1);
@@ -259,6 +268,16 @@ namespace RealLifeOverhaul.Ui
 
         private static float PlaceWidth(UiStatusModel m, bool district) => string.IsNullOrEmpty(m.Place) ? 0f
             : Round(PinGlyph, Math.Min(PlaceMost, Math.Max(Words(m.Place, UiStyle.BodyStrong), district ? Words(m.District, UiStyle.Small) : 0f)));
+
+        // The frames a second, when the game's show-FPS option is on (m.Fps above 0): the figure over "FPS", as wide as the widest
+        // reading, so it never moves the pills beside it. Not a target.
+        private static float FpsWidth(UiStatusModel m) => m.Fps > 0 ? Round(0f, Math.Max(Words("999", UiStyle.Number), Words("FPS", UiStyle.Small))) : 0f;
+
+        private static void FpsPill(UiScene s, UiAt at, float x, float y, float w, UiStatusModel m)
+        {
+            int face = PillFace(s, at, x, y, w);
+            Column(s, at.In(face), x + PillPad, y, w - PillPad * 2f, m.Fps.ToString(CultureInfo.InvariantCulture), UiStyle.Number, "FPS");
+        }
 
         // The needs' pill: each need a cell, a gap between (half as much on a narrow strip), padded as a pill.
         private static float NeedsWidth(UiStatusModel m, float cell)
@@ -337,7 +356,12 @@ namespace RealLifeOverhaul.Ui
             {
                 ToolsPill(s, row, px, py, p.Tools, m);
             }
-            float rx = w - BarEdge - Pills(p.Needs, p.Alerts, p.Money, p.Settings);
+            float rx = w - BarEdge - Pills(p.Fps, p.Needs, p.Alerts, p.Money, p.Settings);
+            if (p.Fps > 0f)
+            {
+                FpsPill(s, row, rx, py, p.Fps, m);
+                rx += p.Fps + PillGap;
+            }
             if (p.Needs > 0f)
             {
                 NeedsPill(s, row, rx, py, p.Needs, p.Meter, m);
