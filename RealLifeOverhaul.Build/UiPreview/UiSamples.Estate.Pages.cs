@@ -664,13 +664,13 @@ internal static partial class UiSamples
                         Lines = new[]
                         {
                             UiFactLine.Row(W(t, "reallife_ui_estate_service_keeps", "A visit keeps a fault down for"), Fx(W(t, "reallife_ui_estate_n_days", "{days} days"), "days", "90")),
-                            EstateLink(runs, Fx(W(t, "reallife_ui_estate_service_line", "Cancel the {fault} service on day {day}, {who}, {amount}"), "fault", Capital(W(t, "reallife_estate_fault_1", "the heating")), "day", "417", "who", "Okonkwo Heating", "amount", "$340"))
+                            EstateLink(runs, Fx(W(t, "reallife_ui_estate_service_line", "Cancel the {fault} service on day {day}, {who}, {amount}"), "fault", W(t, "reallife_estate_fault_1", "the heating"), "day", "417", "who", "Okonkwo Heating", "amount", "$340"))
                         }
                     }
                 };
                 m.GridTitle = W(t, "reallife_ui_estate_book_a_visit", "Book a visit");
                 var book = new List<UiActionModel>();
-                string[] faults = { Capital(W(t, "reallife_estate_fault_1", "the heating")), Capital(W(t, "reallife_estate_fault_2", "a leak")), Capital(W(t, "reallife_estate_fault_3", "the electrics")), Capital(W(t, "reallife_estate_fault_4", "a lock")), Capital(W(t, "reallife_estate_fault_5", "damp")), Capital(W(t, "reallife_estate_fault_6", "the fittings")) };
+                string[] faults = { W(t, "reallife_estate_fault_1", "the heating"), W(t, "reallife_estate_fault_2", "a leak"), W(t, "reallife_estate_fault_3", "the electrics"), W(t, "reallife_estate_fault_4", "a lock"), W(t, "reallife_estate_fault_5", "damp"), W(t, "reallife_estate_fault_6", "the fittings") };
                 for (int i = 0; i < faults.Length; i++)
                 {
                     book.Add(EstateButton(runs, Fx(W(t, "reallife_ui_estate_book_kind", "Book {fault}, {amount}"), "fault", faults[i], "amount", "$" + (180 + i * 40)), UiButtonKind.Secondary, UiIcon.Calendar, UiAction.Count, i == 0));

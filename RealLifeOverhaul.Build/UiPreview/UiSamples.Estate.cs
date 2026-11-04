@@ -404,7 +404,6 @@ internal static partial class UiSamples
         }
         p.Record = rec.ToArray();
         p.WorksTitle = W(t, "reallife_ui_estate_works_here", "Works on this unit");
-        p.WorksCount = p.Works.Length.ToString();
         runs.Add(Yes);
         runs.Add(Yes);
         p.Works = new[]
@@ -412,6 +411,7 @@ internal static partial class UiSamples
             new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_ui_estate_service_name", "{fault} service").Replace("{fault}", Capital(W(t, "reallife_estate_fault_1", "the heating"))), Sub = W(t, "reallife_ui_estate_booked_with", "Booked with {who}").Replace("{who}", "Okonkwo Heating"), Chip = W(t, "reallife_ui_estate_day", "Day {day}").Replace("{day}", "417"), ChipTone = UiRole.Notice, Amount = "$340", Run = -1 },
             new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_estate_improve_boiler", "a new boiler"), Sub = W(t, "reallife_ui_estate_asked_by_tenant", "Asked for by the tenant, you can say no"), Chip = W(t, "reallife_ui_estate_waiting_you", "Waiting for you"), ChipTone = UiRole.Warn, Amount = "$2,900", Run = -1 }
         };
+        p.WorksCount = p.Works.Length.ToString();
         if (state == "unit_request")
         {
             p.NeedKicker = W(t, "reallife_ui_estate_needs_you", "Needs you, {what}").Replace("{what}", W(t, "reallife_ui_estate_need_request", "a request"));
