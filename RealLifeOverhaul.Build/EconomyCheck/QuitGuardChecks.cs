@@ -10,15 +10,15 @@ internal static partial class Program
 {
     private static void QuitGuards()
     {
-        string root = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
-        string news = File.ReadAllText(Path.Combine(root, @"Ui\News\NewsLive.cs"));
+        string root = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
+        string news = File.ReadAllText(System.IO.Path.Combine(root, @"Ui\News\NewsLive.cs"));
         int choices = Regex.Matches(news, @"command == UiDecision\.ChoiceCommand").Count;
         Check(choices == 1 && news.Contains("_app == NewsApp.Ending && command == UiDecision.ChoiceCommand"),
             "quit guard: the News pages take the decision choice only on the death card, so a tab (the same number) never loads the saves or quits");
         var callers = Directory.GetFiles(root, "*.cs", SearchOption.AllDirectories)
-            .Where(f => !f.Replace('/', '\').Contains(@"\Permadeath\"))
+            .Where(f => System.IO.Path.GetFileName(System.IO.Path.GetDirectoryName(f)) != "Permadeath")
             .Where(f => Regex.IsMatch(File.ReadAllText(f), @"PermadeathGame\.(QuitDesktop|LoadSaves)\("))
-            .Select(Path.GetFileName).ToArray();
+            .Select(System.IO.Path.GetFileName).ToArray();
         Check(callers.Length == 1 && callers[0] == "NewsLive.cs" && Regex.Matches(news, @"PermadeathGame\.(QuitDesktop|LoadSaves)\(").Count == 2
               && Regex.Matches(news, @"\bEndChoice\(").Count == 2,
             "quit guard: leaving the game and the save list are called from the death card's choice alone (found in: " + string.Join(", ", callers) + ")");
