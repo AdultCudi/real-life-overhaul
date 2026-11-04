@@ -174,6 +174,25 @@ namespace RealLifeOverhaul.Ui
     {
         public string Title, Note;
         public readonly List<WorkMark> Marks = new List<WorkMark>(6);
+
+        /// <summary>The credits of the term's lines added up: the one figure the note says, so it can never differ from the rows under it.</summary>
+        public int Credits()
+        {
+            int credits = 0;
+            for (int i = 0; i < Marks.Count; i++)
+            {
+                int.TryParse(Marks[i].Credits, out int c);
+                credits += c;
+            }
+            return credits;
+        }
+
+        /// <summary>Writes the note from the lines: how many courses and how many credits they carry.</summary>
+        public void Say(UtilitiesWords w)
+        {
+            Note = w.F("reallife_work_term_note", "{n} courses, {credits} credits", "n", Marks.Count.ToString(System.Globalization.CultureInfo.InvariantCulture), "credits",
+                Credits().ToString(System.Globalization.CultureInfo.InvariantCulture));
+        }
     }
 
     /// <summary>A student's transcript page: the head with the average, the terms, the average by quarter, what is coming up and the class.</summary>

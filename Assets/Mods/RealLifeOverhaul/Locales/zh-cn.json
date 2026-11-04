@@ -32228,5 +32228,17 @@
   "reallife_work_counters_so_far": "至今还价次数",
   "reallife_work_your_record_at": "你的记录",
   "reallife_work_done_before": "此前做过",
-  "reallife_work_stars_average": "平均星级"
+  "reallife_work_stars_average": "平均星级",
+  "reallife_work_day_card_0": "周一",
+  "reallife_work_day_card_1": "周二",
+  "reallife_work_day_card_2": "周三",
+  "reallife_work_day_card_3": "周四",
+  "reallife_work_day_card_4": "周五",
+  "reallife_work_day_card_5": "周六",
+  "reallife_work_day_card_6": "周日",
+  "reallife_work_where_leads": "发展路线",
+  "reallife_work_offer_stands": "你的报价情况",
+  "reallife_work_below_theirs": "低于对方要价",
+  "reallife_work_against_market": "对比市场价",
+  "reallife_work_cash_after": "购买后余额"
 }

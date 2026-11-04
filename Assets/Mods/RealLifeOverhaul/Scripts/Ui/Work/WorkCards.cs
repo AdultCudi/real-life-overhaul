@@ -159,6 +159,10 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Chip(s, at, x + w - pad - cw, y + pad + (tile - UiTokens.Badge - UiTokens.S1) / 2f, r.Status, r.Tone, cw);
             }
             float cy = y + pad + tile + UiTokens.S3;
+            if (y + h - pad > _vis)
+            {
+                return;   // a card the grid's foot cuts shows its tile and tag only: a line of words is never cut through its middle, as a listing's are not
+            }
             UiDraw.Text(s, at, x + pad, cy, iw, UiStyle.Title, UiRole.Text, r.Name, UiFlags.Truncate);
             cy += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)) + UiTokens.S1;
             UiDraw.Text(s, at, x + pad, cy, iw, UiStyle.Small, quiet, r.Sub, UiFlags.Truncate);
@@ -218,6 +222,10 @@ namespace RealLifeOverhaul.Ui
             return best.TrimEnd('.', ',', ';', ':') + "...";
         }
 
+        // The colour of a thing's glyph where the kit's own is the industry grey that a card of goods would share between a van and a machine: a van is a vehicle, as the car beside
+        // it is, and a machine has its own, so no two kinds of listing read the same on the grid.
+        private static UiRole ThingTint(UiIcon icon) => icon == UiIcon.Package ? UiRole.Chart5 : icon == UiIcon.Factory ? UiRole.Chart4 : UiRole.None;
+
         // A listing: the picture or glyph of the thing on a tile over the card's width, name, price and how far it stands from its worth, the seller.
         private static void ListingCard(UiScene s, UiAt at, WorkRow r, float x, float y, float w, float h, bool chosen)
         {
@@ -235,7 +243,8 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
-                UiDraw.Icon(s, at.In(t), x + pad + (iw - UiTokens.S12) / 2f, y + pad + (Tile - UiTokens.S12) / 2f, UiTokens.S12, r.Icon, r.Tint, UiFlags.Middle | UiFlags.Centre, true);
+                UiRole glyph = r.Tint != UiRole.None ? r.Tint : ThingTint(r.Icon);
+                UiDraw.Icon(s, at.In(t), x + pad + (iw - UiTokens.S12) / 2f, y + pad + (Tile - UiTokens.S12) / 2f, UiTokens.S12, r.Icon, glyph, UiFlags.Middle | UiFlags.Centre, true);
             }
             if (!string.IsNullOrEmpty(r.Status))
             {

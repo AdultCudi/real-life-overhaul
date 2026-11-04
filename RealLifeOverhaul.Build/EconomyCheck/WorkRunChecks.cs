@@ -635,8 +635,32 @@ internal static partial class Program
             string start = System.IO.File.ReadAllText(System.IO.Path.Combine(FindRoot(), "Assets/Mods/RealLifeOverhaul/Scripts/Core/RealLifeOverhaulMod.cs"));
             string people = System.IO.File.ReadAllText(System.IO.Path.Combine(FindRoot(), "Assets/Mods/RealLifeOverhaul/Scripts/Careers/CareersDirector.People.cs"));
             int waits = System.Text.RegularExpressions.Regex.Matches(people, @"PeoplePool\.WaitingFor\(ref _waitSince").Count;
-            Check(start.Contains("PeoplePoolGame.Install") && waits >= 4 && people.Contains("_waitSince = 0;"),
-                "work pool run: the wait is installed when the mod starts, and colleagues, cohorts, tutors and applicants all wait on a clock a load resets (" + waits + " waits)");
+            // the installer itself is the game side's (it reads the setting and the live population), so what is held to is its text: it sets the pick and calls the wait's install
+            string game = System.IO.File.ReadAllText(System.IO.Path.Combine(FindRoot(), "Assets/Mods/RealLifeOverhaul/Scripts/Careers/PeoplePoolGame.cs"));
+            Check(start.Contains("PeoplePoolGame.Install") && game.Contains("PeoplePool.InstallWait(") && game.Contains("PeoplePool.Pick = Pick") && waits >= 4 && people.Contains("_waitSince = 0;"),
+                "work pool run: the wait is installed when the mod starts (PeoplePoolGame.Install sets the pick and calls InstallWait), and colleagues, cohorts, tutors and applicants all wait on a clock a load resets (" + waits + " waits)");
+
+            // a tutor and a cohort already kept are used at once while the population is not up (an exam's grade must not depend on how many seconds the session has run);
+            // only a new pick waits
+            PopCity.Live = pop;
+            var kept = new StandingRun(9);
+            SaveGameManager.Current = new GameInstance { Day = 120 };
+            CourseDef course = null, other = null;
+            foreach (CourseDef def in StudyCatalogue.All)
+            {
+                if (def.Timetabled)
+                {
+                    course = course ?? def;
+                    other = def != course && other == null ? def : other;
+                }
+            }
+            Tutor tutor = kept.D.TutorOf(course);
+            Intake cohort = kept.D.IntakeOf(course);
+            PopCity.Live = null;   // the session is young: the population is not up
+            Check(tutor != null && cohort != null && ReferenceEquals(kept.D.TutorOf(course), tutor) && ReferenceEquals(kept.D.IntakeOf(course), cohort)
+                    && kept.D.TutorOf(other) == null && kept.D.IntakeOf(other) == null,
+                "work pool run: while the population is not up a saved tutor and cohort are used at once (the exam's edge and the seat), and only a new pick waits");
+            PopCity.Live = pop;
         }
         finally
         {

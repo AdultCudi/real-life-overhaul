@@ -523,11 +523,10 @@ namespace RealLifeOverhaul.Ui
                 values.Add(Math.Min(100, StudyRules.Points(study, order[i])));
             }
             int jobs = (w.Job != null ? 1 : 0) + w.History.Count;
-            long earned = w.Job != null ? w.Job.Earned : 0;
+            long earned = w.Earned;   // the one figure: Own work's "earned in every job" reads it too, so the two tabs never give two lives
             int days = w.Job != null ? Math.Max(0, SaveGameManager.Current.Day - w.Job.Hired) : 0;
             for (int i = 0; i < w.History.Count; i++)
             {
-                earned += w.History[i].Earned;
                 days += Math.Max(0, w.History[i].To - w.History[i].From);
             }
             var studyIcons = new List<UiIcon>(3);

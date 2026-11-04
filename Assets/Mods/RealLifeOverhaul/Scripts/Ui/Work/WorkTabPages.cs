@@ -323,6 +323,7 @@ namespace RealLifeOverhaul.Ui
         {
             WorkStatement m = t.Statement;
             WorkPage page = b.Done();
+            page.Statement = m;
             page.Body = (s, ats, x, y, cw, bottom, keys) => WorkStudy.Statement(s, ats, m, x, y, cw, bottom, keys);
             return page;
         }

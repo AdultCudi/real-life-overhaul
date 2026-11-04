@@ -107,6 +107,7 @@ namespace RealLifeOverhaul.Ui
         public WorkCardsModel Cards;                // the catalogue page's
         public UiDiaryModel Diary;                  // the diary page's
         public UiReaderModel Reader;                // the reader page's
+        public WorkStatement Statement;             // the transcript page's, for the checks that its terms say what their lines add up to
         public int Chosen = -1;                     // the row the detail shows
         public bool Back;                           // a sub page: Back steps out of it
         public bool Typing;                         // the page has a search field

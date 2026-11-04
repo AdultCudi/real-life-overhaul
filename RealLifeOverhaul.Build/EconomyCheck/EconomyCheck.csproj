@@ -141,6 +141,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work\CareerMyJob.cs" Link="Mod\Work\CareerMyJob.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work\WorkPage.cs" Link="Mod\Work\WorkPage.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work\WorkScreen.cs" Link="Mod\Work\WorkScreen.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work\WorkWalk.cs" Link="Mod\Work\WorkWalk.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work\WorkBuilder.cs" Link="Mod\Work\WorkBuilder.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work\CareerPages.cs" Link="Mod\Work\CareerPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work\CareerPages.Bands.cs" Link="Mod\Work\CareerPages.Bands.cs" />

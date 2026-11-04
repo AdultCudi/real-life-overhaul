@@ -39,6 +39,7 @@ internal static partial class UiSamples
     }
 
     private static string SDays(UtilitiesWords w, int a, int b) => a == b ? SWd(w, a) : SWd(w, a) + ", " + SWd(w, b);
+    private static string SDaysCard(UtilitiesWords w, int a, int b) => a == b ? SWdCard(w, a) : SWdCard(w, a) + ", " + SWdCard(w, b);
 
     // The real courses of the catalogue, with their own figures: key, glyph, subject chip, kind (0 short, 1 diploma), weeks, fee, the two class days and the hour, seats left of 24,
     // the two skills (key, gain) and the teacher (name, years, rating in tenths).
@@ -83,7 +84,7 @@ internal static partial class UiSamples
             string timetable = Sf(w, "reallife_study_timetable", "days", SDays(w, c.D1, c.D2), "hour", c.Hour.ToString("00") + ":00");
             string tag = Sx(w, c.Kind == 0 ? "reallife_study_kind_short" : "reallife_study_kind_vocational");
             var r = new WorkRow { Id = i + 1, Icon = c.Icon, Name = SCourse(w, c.Key), Sub = Sx(w, "reallife_study_campus_school"), Line = Sx(w, "reallife_study_about_" + c.Key), Status = seats == 0 ? w.T("reallife_work_full", "Full") : tag,
-                Tone = seats == 0 ? UiRole.Warn : c.Kind == 0 ? UiRole.Muted : UiRole.Accent, Group = c.Group, NextLabel = w.T("reallife_work_next_class", "Next class"), NextValue = Sf(w, "reallife_work_timetable_short", "days", SDays(w, c.D1, c.D2), "hour", c.Hour.ToString("00") + ":00"), FootLeft = weeks, FootRight = fee };
+                Tone = seats == 0 ? UiRole.Warn : c.Kind == 0 ? UiRole.Muted : UiRole.Accent, Group = c.Group, NextLabel = w.T("reallife_work_next_class", "Next class"), NextValue = Sf(w, "reallife_work_timetable_short", "days", SDaysCard(w, c.D1, c.D2), "hour", c.Hour.ToString("00") + ":00"), FootLeft = weeks, FootRight = fee };
             r.Title = r.Name;
             r.HeadSub = r.Sub;
             r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_length", "Length"), weeks));
@@ -208,18 +209,20 @@ internal static partial class UiSamples
         s.TotalLabel = w.T("reallife_work_total_label", "Credits earned, grade point average");
         s.TotalCredits = w.F("reallife_work_n_credits", "{n} credits", "n", "6");
         s.TotalGpa = "2.7";
-        var q4 = new WorkTerm { Title = w.F("reallife_work_term_title", "Quarter {n}, day {from} to {to}", "n", "4", "from", "270", "to", "359"), Note = w.F("reallife_work_term_note", "{n} courses, {credits} credits", "n", "3", "credits", "9") };
+        var q4 = new WorkTerm { Title = w.F("reallife_work_term_title", "Quarter {n}, day {from} to {to}", "n", "4", "from", "270", "to", "359") };
         q4.Marks.Add(WkMark(w, "forklift", UiIcon.Wrench, 3, 100, 74, w.T("reallife_work_licence_won", "Licence won"), UiRole.Ok));
         q4.Marks.Add(WkMark(w, "first_aid", UiIcon.Heartbeat, 3, 96, 88, w.T("reallife_work_passed", "Passed"), UiRole.Ok));
         q4.Marks.Add(WkMark(w, "security_licence", UiIcon.ShieldCheck, 3, 72, 52, w.T("reallife_work_repeat", "Repeat"), UiRole.Warn));
+        q4.Say(w);
         s.Terms.Add(q4);
-        var q5 = new WorkTerm { Title = w.F("reallife_work_term_title", "Quarter {n}, day {from} to {to}", "n", "5", "from", "360", "to", "449"), Note = w.F("reallife_work_term_note", "{n} courses, {credits} credits", "n", "3", "credits", "8") };
+        var q5 = new WorkTerm { Title = w.F("reallife_work_term_title", "Quarter {n}, day {from} to {to}", "n", "5", "from", "360", "to", "449") };
         q5.Marks.Add(new WorkMark { Icon = UiIcon.Coffee, Course = SCourse(w, "barista"), Place = Sx(w, "reallife_study_campus_school"), Credits = "2", Attendance = "100%", AttendanceGrade = 100,
             Exam = WorkBuilder.NotYet(w), Percent = WorkBuilder.NotYet(w), Status = w.T("reallife_work_under_way", "Under way"), Tone = UiRole.Accent });
         q5.Marks.Add(new WorkMark { Icon = UiIcon.Heart, Course = SCourse(w, "care_worker"), Place = Sx(w, "reallife_study_campus_school"), Credits = "6", Attendance = "91%", AttendanceGrade = 91,
             Exam = WorkBuilder.NotYet(w), Percent = WorkBuilder.NotYet(w), Status = w.T("reallife_work_under_way", "Under way"), Tone = UiRole.Accent });
         q5.Marks.Add(new WorkMark { Icon = UiIcon.ForkKnife, Course = SCourse(w, "chef"), Place = Sx(w, "reallife_study_campus_school"), Credits = "6", Attendance = w.T("reallife_work_not_started", "Not started"),
             Exam = WorkBuilder.NotYet(w), Percent = WorkBuilder.NotYet(w), Status = w.F("reallife_work_starts_day", "Starts day {n}", "n", "440"), Tone = UiRole.Muted });
+        q5.Say(w);
         s.Terms.Add(q5);
         s.Chart = new UiChartModel { Kind = UiChartKind.Line, Title = w.T("reallife_work_gpa_by_term", "Grade point average by quarter"),
             Points = new[] { w.F("reallife_work_quarter_n", "Quarter {n}", "n", "3"), w.F("reallife_work_quarter_n", "Quarter {n}", "n", "4"), w.F("reallife_work_quarter_n", "Quarter {n}", "n", "5") },

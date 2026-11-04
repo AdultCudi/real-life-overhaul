@@ -32228,5 +32228,17 @@
   "reallife_work_counters_so_far": "Counters so far",
   "reallife_work_your_record_at": "Your record at it",
   "reallife_work_done_before": "Done before",
-  "reallife_work_stars_average": "Stars on average"
+  "reallife_work_stars_average": "Stars on average",
+  "reallife_work_day_card_0": "Mon",
+  "reallife_work_day_card_1": "Tue",
+  "reallife_work_day_card_2": "Wed",
+  "reallife_work_day_card_3": "Thu",
+  "reallife_work_day_card_4": "Fri",
+  "reallife_work_day_card_5": "Sat",
+  "reallife_work_day_card_6": "Sun",
+  "reallife_work_where_leads": "Where it leads",
+  "reallife_work_offer_stands": "Where your offer stands",
+  "reallife_work_below_theirs": "Below their price",
+  "reallife_work_against_market": "Against the market price",
+  "reallife_work_cash_after": "Your money after"
 }

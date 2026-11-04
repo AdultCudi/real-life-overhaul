@@ -108,7 +108,9 @@ namespace RealLifeOverhaul.Ui
             _dirty = false;
         }
 
-        // The keys and the pad start on the page, not on the section already chosen: the chosen row or card, else the page's first target.
+        // The keys and the pad start on the page, not on the section already chosen: the chosen row, card or day; a page that chooses nothing starts on its
+        // main action (a reflexive press does what the page is for, and never steps an amount or gives something up), else on its first target in reading
+        // order that is not a button that ends something. A page with no target of its own leaves the focus on its section.
         private void FocusFirst(UiScene s, int before)
         {
             int focus = -1;
@@ -124,17 +126,80 @@ namespace RealLifeOverhaul.Ui
             {
                 focus = s.FindNode(UiDiary.DayCommand, _page.Diary.Chosen);   // the term's diary starts on its chosen day, never on a button that withdraws
             }
-            for (int i = before; focus < 0 && i < s.NodeCount; i++)
+            if (focus < 0)
             {
-                if (!s.Nodes[i].Disabled && s.Nodes[i].Layer == 0)
+                focus = MainNode(s);
+            }
+            if (focus < 0)
+            {
+                var order = new System.Collections.Generic.List<int>(s.NodeCount);
+                WorkWalk.Reading(s, UiFocusRules.TopLayer(s), order);
+                for (int i = 0; focus < 0 && i < order.Count; i++)
                 {
-                    focus = i;
+                    focus = Danger(s.Nodes[order[i]]) || s.Nodes[order[i]].Command == WorkCmd.Less || s.Nodes[order[i]].Command == WorkCmd.Type ? -1 : order[i];
                 }
             }
             if (focus >= 0)
             {
                 s.FocusFirst = focus;
             }
+        }
+
+        /// <summary>The page's main action: the button F runs, else the first enabled primary one (a decision's numbered choices carry no F), or -1.</summary>
+        public int MainIndex()
+        {
+            if (_page == null)
+            {
+                return -1;
+            }
+            UiActionModel[] a = _page.Model.Actions;
+            int at = Index(UiAction.Alt);
+            if (at >= 0 && !a[at].Disabled)
+            {
+                return at;
+            }
+            for (int i = 0; i < a.Length; i++)
+            {
+                if (a[i].Kind == UiButtonKind.Primary && !a[i].Disabled)
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        // The node of the page's main action, when it is on the page.
+        private int MainNode(UiScene s)
+        {
+            int at = MainIndex();
+            if (at < 0)
+            {
+                return -1;
+            }
+            UiActionModel main = _page.Model.Actions[at];
+            int node = s.FindNode(main.Command, main.Arg);
+            return node >= 0 && !s.Nodes[node].Disabled && s.Nodes[node].Layer == UiFocusRules.TopLayer(s) ? node : -1;
+        }
+
+        // A button that ends something or gives it up: it asks a second press, and the pad's walk never starts or ends on one.
+        private bool Danger(UiNode n)
+        {
+            if (_page == null || n.Command != UiAppWindow.ActionCommand || n.Arg < 0 || n.Arg >= _page.Model.Actions.Length)
+            {
+                return false;
+            }
+            UiButtonKind k = _page.Model.Actions[n.Arg].Kind;
+            return k == UiButtonKind.Destructive || k == UiButtonKind.Armed;
+        }
+
+        /// <summary>
+        /// The pad's walk of the page just laid in <paramref name="s"/>: from where the keys start, every target in reading order through the real focus links.
+        /// The checks and the previews both read it.
+        /// </summary>
+        public WorkWalk.Walked WalkOf(UiScene s)
+        {
+            int start = UiFocusRules.First(s);
+            return start < 0 ? null : WorkWalk.Walk(s, start, n => Danger(s.Nodes[n]), MainNode(s));
         }
 
         private void AddPrompt(UiAppModel m, UiAction action, string key, string english)

@@ -17,8 +17,8 @@ namespace RealLifeOverhaul.Careers
     /// seed), the same one the property business takes its tenants from. A student, a tutor, a colleague, a rival applicant and a seller are each a
     /// person of the pool, picked by a hash of the save's seed and what they are for, so the same one is picked every time; the id is saved beside
     /// the name, and a page can open that person. While the living population is off (or in the offline checks) the pick is empty and the mod's own
-    /// catalogue of names stands in, as it always has. Game-free: the game side installs <see cref="Pick"/> and <see cref="Find"/>
-    /// (Careers/PeoplePoolGame.cs). Cost: a few array reads a call; nothing per frame.
+    /// catalogue of names stands in, as it always has. Game-free: the game side installs <see cref="Pick"/> and the wait
+    /// (<see cref="InstallWait"/>, Careers/PeoplePoolGame.cs). Cost: a few array reads a call; nothing per frame.
     /// </summary>
     public static class PeoplePool
     {

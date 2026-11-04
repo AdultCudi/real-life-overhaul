@@ -328,6 +328,17 @@ namespace RealLifeOverhaul.Ui
                     against2.Pairs.Add(new KeyValuePair<string, string>(words.T("reallife_work_difference", "The difference"), WorkBuilder.Percent(against)));
                     r.Sections.Add(against2);
                 }
+                // where the post leads: the next rungs of its profession and what they pay (the ranks' own rates at today's prices)
+                var leads = new WorkSection { Part = WorkPart.Pairs, Title = words.T("reallife_work_where_leads", "Where it leads") };
+                for (int rank = o.Rank + 1; rank < p.Ranks.Length && rank <= o.Rank + 2; rank++)
+                {
+                    string rate = words.F("reallife_career_row_rate", "{rate} an hour", "rate", CareersText.Rate(Prices.At(p.Ranks[rank].Pay)));
+                    leads.Pairs.Add(new KeyValuePair<string, string>(CareersText.Title(o.Prof, rank), rate));
+                }
+                if (leads.Pairs.Count > 0)
+                {
+                    r.Sections.Add(leads);
+                }
                 d.AlsoApplied(o, others);
                 if (others.Count > 0)
                 {
@@ -419,7 +430,7 @@ namespace RealLifeOverhaul.Ui
             CareerPages.NewPlayerBands(words, _facts, Math.Min(100, best), held, study.Courses.Count, _facts.ApplicationsWaiting, courses.ToArray(), opens.ToArray());
             WorkFile wf = study.Work;
             int today = SaveGameManager.Current.Day;
-            bool paid = wf.BenefitUntil > today && wf.BenefitWeek > 0;
+            bool paid = wf.BenefitUntil >= today && wf.BenefitWeek > 0;   // the day it runs to is still paid (CareersDirector.Life pays while BenefitUntil >= day), as the old page says
             var icons = new List<UiIcon>(2);
             var titles = new List<string>(2);
             var hints = new List<string>(2);

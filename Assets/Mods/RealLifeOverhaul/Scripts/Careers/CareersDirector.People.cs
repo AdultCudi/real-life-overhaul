@@ -224,11 +224,18 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>The cohort a course has today, made when first asked for and the same every time (a course with no classes has none).</summary>
+        /// <summary>
+        /// The cohort a course has today, made when first asked for and the same every time (a course with no classes has none). While the people pool is not up
+        /// only a cohort already kept is used (at once, as it was saved); a new one waits, so its students are never named from the catalogue for good.
+        /// </summary>
         public Intake IntakeOf(CourseDef c)
         {
             RosterFile r = Roster;
-            return r == null || c == null || !c.Timetabled || Save == null || PeoplePool.WaitingFor(ref _waitSince, PoolWaitSeconds) ? null : RosterRules.Ensure(r, c.Id, Save.Day);
+            if (r == null || c == null || !c.Timetabled || Save == null)
+            {
+                return null;
+            }
+            return PeoplePool.WaitingFor(ref _waitSince, PoolWaitSeconds) ? r.Find(c.Id, RosterRules.StartOf(Save.Day)) : RosterRules.Ensure(r, c.Id, Save.Day);
         }
 
         /// <summary>The cohort the player's enrolment sat in, if it is still kept.</summary>
@@ -238,11 +245,18 @@ namespace RealLifeOverhaul.Careers
             return r == null || e == null ? null : r.Find(e.Course, RosterRules.StartOf(e.Start));
         }
 
-        /// <summary>The tutor of a course, made when first asked for.</summary>
+        /// <summary>
+        /// The tutor of a course, made when first asked for. A tutor already saved is used at once, so an exam's grade never depends on how many seconds the session
+        /// has run; only a new pick waits for the people pool.
+        /// </summary>
         public Tutor TutorOf(CourseDef c)
         {
             RosterFile r = Roster;
-            return r == null || c == null || PeoplePool.WaitingFor(ref _waitSince, PoolWaitSeconds) ? null : RosterRules.TutorFor(r, c.Id);
+            if (r == null || c == null)
+            {
+                return null;
+            }
+            return PeoplePool.WaitingFor(ref _waitSince, PoolWaitSeconds) ? r.TutorOf(c.Id) : RosterRules.TutorFor(r, c.Id);
         }
 
         /// <summary>Why a course cannot be enrolled in for the campus's own reasons (a skill floor, no seat), a reason key, or null.</summary>

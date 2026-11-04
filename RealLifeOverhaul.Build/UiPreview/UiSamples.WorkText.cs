@@ -25,6 +25,9 @@ internal static partial class UiSamples
     /// <summary>"Mon".</summary>
     private static string SWd(UtilitiesWords w, int i) => w.T("reallife_study_day_" + i, WkWeekdays[i]);
 
+    // The short day names of a card's narrow line (the live source names them through the same keys).
+    private static string SWdCard(UtilitiesWords w, int i) => w.T("reallife_work_day_card_" + i, WkWeekdays[i]);
+
     /// <summary>"09:00 to 17:00" in the player's words.</summary>
     private static string SHours(UtilitiesWords w, int from, int to) => Sf(w, "reallife_career_row_hours", "from", (from % 24).ToString("00") + ":00", "to", (to % 24).ToString("00") + ":00");
 

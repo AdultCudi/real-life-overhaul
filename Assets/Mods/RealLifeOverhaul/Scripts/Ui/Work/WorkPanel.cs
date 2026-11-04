@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Lays the panel into its box; the buttons come from the page's actions that are not chips.</summary>
         public static void Lay(UiScene s, UiAt at, WorkRow r, UiActionModel[] actions, float x, float y, float w, float h, IUiKeys keys, WorkAmount[] amounts, string why = null)
         {
-            UiDraw.Box(s, at, x, y, w, h, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
+            int box = UiDraw.Box(s, at, x, y, w, h, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
             float ix = x + UiTokens.S4, iw = w - UiTokens.S4 * 2f, iy = y + UiTokens.S4;
             float footer = y + h - UiTokens.S4;
             bool buttons = false;
@@ -55,13 +55,19 @@ namespace RealLifeOverhaul.Ui
             if (!string.IsNullOrEmpty(r.Hint) && iy + NoteHeight(r.HintLead, r.Hint, iw) <= footer)
             {
                 Note(s, at, r.HintIcon, r.HintLead, r.Hint, ix, iy, iw);
+                iy += NoteHeight(r.HintLead, r.Hint, iw) + UiTokens.S3;
             }
+            // The panel ends under its last line, with its buttons straight beneath: a panel as high as the window held a run of nothing between the two
+            // whenever the thing had little to say, and the column beside it ran on while this one stopped.
+            float used = Math.Min(y + h, UiDraw.Snap(iy - UiTokens.S3 + UiTokens.S4 + (buttons ? UiTokens.S3 + whyH + buttonsH : 0f)));
+            float bottom = used;
+            s.Items[box].H = bottom - y;
             if (buttons)
             {
-                float by = y + h - UiTokens.S4 - UiTokens.Control, right = ix + iw;
+                float by = bottom - UiTokens.S4 - UiTokens.Control, right = ix + iw;
                 if (whyH > 0f)
                 {
-                    UiDraw.Text(s, at, ix, y + h - UiTokens.S4 - buttonsH - whyH, iw, UiStyle.Small, UiRole.WarnText, why, UiFlags.Wrap | UiFlags.Truncate, 2);
+                    UiDraw.Text(s, at, ix, bottom - UiTokens.S4 - buttonsH - whyH, iw, UiStyle.Small, UiRole.WarnText, why, UiFlags.Wrap | UiFlags.Truncate, 2);
                 }
                 for (int k = 0; k < actions.Length; k++)
                 {

@@ -33,6 +33,7 @@ public static partial class UiPreviewRunner
         public int FocusCommand = -1, FocusArg;
         public int HoverCommand = -1, HoverArg;   // the target the mouse rests on in the hover shot, or the second target
         public Vector2Int[] Walk;
+        public Func<UiScene, int[]> Reading;   // the pad's walk as the targets it stops on, in order, when the screen reads it from its own focus links (the work apps): the path shot draws that and nothing hand written
         public string Backdrop;   // the game's world behind it, a picture's file in the backdrops folder, or null for black
         public int App = -1;      // the app the status bar marks as open
         public bool Extra;        // also a hover shot and a keys shot (the prototype's two that show input)
@@ -339,7 +340,7 @@ public static partial class UiPreviewRunner
             }
             if (shot.Path && focus >= 0 && !shot.Screen.NoKeys)
             {
-                FocusPath(host, scene, focus, shot.Screen.Walk);
+                FocusPath(host, scene, focus, shot.Screen.Walk, shot.Screen.Reading != null ? shot.Screen.Reading(scene) : null);
             }
             Canvas.ForceUpdateCanvases();
             foreach (TMP_Text t in root.GetComponentsInChildren<TMP_Text>(true))
@@ -391,12 +392,21 @@ public static partial class UiPreviewRunner
 
     // The pad's path from the first target, a screen's own walk of the d-pad: each stop numbered and joined by a line, as
     // the d-pad moves the one focus (UiFocusRules); a press that leads nowhere is left out.
-    private static void FocusPath(RectTransform parent, UiScene scene, int start, Vector2Int[] moves)
+    private static void FocusPath(RectTransform parent, UiScene scene, int start, Vector2Int[] moves, int[] reading = null)
     {
         var stops = new List<Vector2> { Centre(scene, start) };
         var small = new List<bool> { IsSmall(scene, start) };
         int at = start;
-        foreach (Vector2Int m in moves)
+        for (int k = 0; reading != null && k < reading.Length; k++)
+        {
+            if (reading[k] == start)
+            {
+                continue;
+            }
+            stops.Add(Centre(scene, reading[k]));
+            small.Add(IsSmall(scene, reading[k]));
+        }
+        foreach (Vector2Int m in reading != null ? new Vector2Int[0] : moves)
         {
             int next = UiFocusRules.Next(scene, at, m.x, m.y);
             if (next < 0)
@@ -458,23 +468,20 @@ public static partial class UiPreviewRunner
 
     private const float FootY = 950f;   // px: under the window of an app, the key lane and the tray
 
-    // Where a stop's number is drawn: on a control's middle, but beside a row (in the gutter at its left) and on the corner of a card, so no figure or word is covered.
+    // Where a stop's number is drawn: at the corner of a control, beside a row (in the gutter at its left) and on the corner of a card or a day, so no figure or word is covered.
     private static Vector2 Centre(UiScene scene, int node)
     {
         scene.NodeBox(node, out float x, out float y, out float w, out float h);
-        float cx = x + w / 2f, cy = y + h / 2f;
+        float cx = x - 2f, cy = y - 2f;   // a button, chip or field: on its top left corner, over the padding and not its glyph or its key cap
         if (w >= 240f && h < 100f)
         {
             cx = x - 10f;
+            cy = y + h / 2f;
         }
-        else if (w >= 120f && h >= 100f)
+        else if (w >= 120f && h >= 64f)
         {
             cx = x + w - 12f;
             cy = y + 12f;
-        }
-        else if (w < 300f && h < 80f)
-        {
-            cx = x;   // a button or a field: on its left edge, so its label stays whole
         }
         return new Vector2(cx * UiTokens.CanvasPerPx, cy * UiTokens.CanvasPerPx);
     }

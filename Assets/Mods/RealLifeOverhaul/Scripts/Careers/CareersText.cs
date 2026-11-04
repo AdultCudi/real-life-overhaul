@@ -71,7 +71,7 @@ namespace RealLifeOverhaul.Careers
         /// <summary>A timetable for a card's narrow line: "Mon, Wed 10:00" (no word between the days and the hour).</summary>
         public static string TimetableShort(int days, int hour)
         {
-            return days == 0 ? T("reallife_study_timetable_none") : T("reallife_work_timetable_short", "days", DayList(days), "hour", Hour(hour));
+            return days == 0 ? T("reallife_study_timetable_none") : T("reallife_work_timetable_short", "days", DayList(days, "_work_day_card_"), "hour", Hour(hour));
         }
 
         /// <summary>A timetable: its days, short ("Mon, Wed, Fri"), and the hour: "Mon, Wed, Fri at 10:00".</summary>
@@ -84,7 +84,8 @@ namespace RealLifeOverhaul.Careers
             return T("reallife_study_timetable", "days", DayList(days), "hour", Hour(hour));
         }
 
-        public static string DayList(int days)
+        /// <summary>The days named by the key stem given: the study names ("Mon", "星期一") by default, the card's own short names (two characters in Chinese) for a narrow line.</summary>
+        public static string DayList(int days, string stem = "_study_day_")
         {
             B.Length = 0;
             for (int i = 0; i < 7; i++)
@@ -95,7 +96,7 @@ namespace RealLifeOverhaul.Careers
                     {
                         B.Append(", ");
                     }
-                    B.Append(T(Mod + "_study_day_" + i.ToString(Inv)));
+                    B.Append(T(Mod + stem + i.ToString(Inv)));
                 }
             }
             return B.ToString();

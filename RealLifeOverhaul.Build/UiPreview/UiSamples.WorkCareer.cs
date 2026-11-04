@@ -78,6 +78,27 @@ internal static partial class UiSamples
         against2.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_your_pay_now", "Your pay now"), SPerHour(w, "$21.50")));
         against2.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_difference", "The difference"), WorkBuilder.Percent(p.Against)));
         r.Sections.Add(against2);
+        // where the post leads: the next rungs of its profession with what they pay, as the live source reads them from the profession's ranks
+        var leads = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_where_leads", "Where it leads") };
+        for (int step = 1; step <= 2 && WkEn.ContainsKey("reallife_pro_rank_" + p.Prof + "_" + (p.Rank + step)); step++)
+        {
+            leads.Pairs.Add(new KeyValuePair<string, string>(SRank(w, p.Prof, p.Rank + step), SPerHour(w, WkRate(p.Pay * (10 + 3 * step) / 10))));
+        }
+        if (leads.Pairs.Count > 0)
+        {
+            r.Sections.Add(leads);
+        }
+        // the others who applied for the same post, as the live source lists them (the employer weighs every record)
+        if (id != 1)
+        {
+            string[] names = { "Nia Brooks", "Leo Park", "Hana Okada", "Tomas Reyes" };
+            var also = new WorkSection { Part = WorkPart.People, Title = w.T("reallife_work_also_applied", "Also applied"), Note = w.F("reallife_work_n_people", "{n} people", "n", "2") };
+            also.People.Add(new WorkPerson { Name = names[id % 4], Role = WkApplicantRole(w, p.Prof, p.Rank, 71 + id % 9), Right = SDay(w, 408 + id % 4), Ring = UiRole.Ok });
+            also.People.Add(new WorkPerson { Name = names[(id + 1) % 4], Role = WkApplicantRole(w, p.Prof, p.Rank, 66 + id % 7), Right = SDay(w, 410 + id % 3), Ring = UiRole.Ok });
+            r.Sections.Add(also);
+            r.HintLead = w.T("reallife_work_still_apply", "You can still apply.");
+            r.Hint = Sf(w, "reallife_work_weighs_all", "name", names[id % 4]);
+        }
         return r;
     }
 
@@ -421,7 +442,7 @@ internal static partial class UiSamples
             new CareerSpell { Title = SCourse(w, "forklift"), Employer = SDay(w, 150), Dates = Sx(w, "reallife_study_grade_3"), Icon = UiIcon.Cap, Tone = UiRole.Ok },
             new CareerSpell { Title = SCourse(w, "customer_service"), Employer = SDay(w, 205), Dates = Sx(w, "reallife_study_grade_2"), Icon = UiIcon.Cap, Tone = UiRole.Ok }
         };
-        CareerPages.CvPage(w, cv, "Jordan Hayes", SRank(w, "warehouse", 1), "Harbourside Freight HSF", spells, quals, 3, 13, "$38,420", 2, "$4,120", 40, 55,
+        CareerPages.CvPage(w, cv, "Jordan Hayes", SRank(w, "warehouse", 1), "Harbourside Freight HSF", spells, quals, 3, 13, "$28,400", 2, "$4,120", 40, 55,
             new[] { SSkill(w, "handling"), SSkill(w, "first_aid"), SSkill(w, "driving") }, new[] { 74, 55, 66 }, w.T("reallife_work_why_retire", "You can retire from age 55."), false, f.Job,
             new[] { UiIcon.Coffee, UiIcon.Heart, UiIcon.ForkKnife }, new[] { SCourse(w, "barista"), SCourse(w, "care_worker"), SCourse(w, "chef") },
             new[] { w.T("reallife_work_under_way", "Under way"), w.T("reallife_work_under_way", "Under way"), w.T("reallife_work_not_started", "Not started") },

@@ -287,7 +287,7 @@ namespace RealLifeOverhaul.Ui
                 known.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_listed_now", "Listed now"), listed.ToString(Inv)));
                 r.Sections.Add(known);
             }
-            HaggleBands(d, s, l, seller, r, level, worth);
+            HaggleBands(d, s, l, seller, r, level, worth, offer);
             r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_their_price", "Their price"), HustleText.Money(l.Asking)));
             r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_market_price", "Market price"), worth > 0 ? HustleText.Money(worth) : WorkBuilder.Unknown(w)));
             r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_offers_left", "Offers left"), w.F("reallife_work_n_of_m", "{n} of {m}",
@@ -311,7 +311,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         // What fills the haggle's page under its card: the thing's facts, the seller's other things and what buying it asks of the player.
-        private void HaggleBands(HustleDirector d, HustleState s, Listing l, Seller seller, WorkRow r, int level, int worth)
+        private void HaggleBands(HustleDirector d, HustleState s, Listing l, Seller seller, WorkRow r, int level, int worth, int offer)
         {
             UtilitiesWords w = W;
             var labels = new List<string>(6);
@@ -336,6 +336,12 @@ namespace RealLifeOverhaul.Ui
                 values.Add(HustleText.Place(l.Street, l.Number));
             }
             r.Bands.Add(WorkBands.Pairs(l.Car ? w.T("reallife_work_the_vehicle", "The vehicle") : w.T("reallife_work_the_thing", "The thing"), labels.ToArray(), values.ToArray()));
+            // where the offer stands: against their price, against the market's and what is left of the player's money
+            int against = worth > 0 ? (int)Math.Round((offer - worth) * 100.0 / worth) : 0;
+            r.Bands.Add(WorkBands.Pairs(w.T("reallife_work_offer_stands", "Where your offer stands"),
+                new[] { w.T("reallife_work_your_offer", "Your offer"), w.T("reallife_work_below_theirs", "Below their price"), w.T("reallife_work_against_market", "Against the market price"),
+                    w.T("reallife_work_cash_after", "Your money after") },
+                new[] { HustleText.Money(offer), HustleText.Money(Math.Max(0, l.Asking - offer)), WorkBuilder.Percent(against), HustleText.Money((int)Math.Max(0, HustleGame.Cash - offer)) }));
             var more = new List<Listing>(6);
             if (seller != null && SellerRules.MoreFrom(s.Listings, seller.Id, l.Id, more) > 0)
             {

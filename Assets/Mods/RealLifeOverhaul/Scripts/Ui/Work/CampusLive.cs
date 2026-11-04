@@ -547,13 +547,7 @@ namespace RealLifeOverhaul.Ui
                 terms[term] = t;
             }
             t.Marks.Add(mark);
-            int credits = 0;
-            for (int i = 0; i < t.Marks.Count; i++)
-            {
-                int.TryParse(t.Marks[i].Credits, out int c);
-                credits += c;
-            }
-            t.Note = w.F("reallife_work_term_note", "{n} courses, {credits} credits", "n", t.Marks.Count.ToString(Inv), "credits", credits.ToString(Inv));
+            t.Say(w);
         }
 
         // ------------------------------------------------------------------------------------------------- Skills, Family, Schools

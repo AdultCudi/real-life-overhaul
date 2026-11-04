@@ -166,6 +166,10 @@ internal static partial class Program
         Check(!one.Press(UiAppWindow.NavCommand, 99), "work screens: a press on a section that is not there is refused, not acted on");
         WorkSubAndSteps();
         WorkSearchAndOrder();
+        WorkWalkChecks();
+        WorkTermSums();
+        WorkVehicleNames();
+        WorkOneLife();
     }
 
     // Rows that open a page, links at a row's right, aside rows and an empty page's button: each acts.
@@ -371,5 +375,100 @@ internal static partial class Program
             sb.Append(p.Model.Actions[i].Label).Append(';');
         }
         return sb.ToString();
+    }
+
+    // A transcript's term says how many courses it holds and how many credits they carry: the two figures added from the lines under it, in every state and
+    // every language (the sample once wrote "8 credits" over lines of 2, 6 and 6, and the live source read the lines, so only a check of the page could tell).
+    private static void WorkTermSums()
+    {
+        var wrong = new StringBuilder();
+        int terms = 0;
+        foreach (string lang in new[] { "en", "pt", "zh-cn" })
+        {
+            UiWords words = lang == "en" ? WorkEnglish : UiWords(lang);
+            foreach (string st in WorkStatesOf("campus"))
+            {
+                WorkScreen screen = WorkScreenOf("campus", words, st);
+                screen.Lay(new UiScene(), UiFrame.FullMenu(1.78f, "Work"), true, UiDefaultKeys.Keyboard);
+                WorkStatement m = screen.Page != null ? screen.Page.Statement : null;
+                for (int i = 0; m != null && i < m.Terms.Count; i++)
+                {
+                    WorkTerm t = m.Terms[i];
+                    int sum = 0;
+                    foreach (WorkMark mark in t.Marks)
+                    {
+                        int.TryParse(mark.Credits, out int c);
+                        sum += c;
+                    }
+                    var said = new List<int>(3);
+                    foreach (System.Text.RegularExpressions.Match n in System.Text.RegularExpressions.Regex.Matches(t.Note ?? string.Empty, "[0-9]+"))
+                    {
+                        said.Add(int.Parse(n.Value));
+                    }
+                    terms++;
+                    if (said.Count != 2 || said[0] != t.Marks.Count || said[1] != sum)
+                    {
+                        wrong.Append(" [" + lang + " " + st + " '" + t.Title + "': '" + t.Note + "' over " + t.Marks.Count + " lines of " + sum + " credits]");
+                    }
+                }
+            }
+        }
+        Check(terms >= 6 && wrong.Length == 0, "work screens: every transcript term's note says the courses and credits its own lines add up to, in en, pt and zh-cn (" + terms + " terms)" + wrong);
+    }
+
+    // A listing's vehicle is named as the live source names it, by the game's own key for its type: where the game has a word of its own for it in a language,
+    // that word stands on the page, never the English one (the sample once passed plain English names, so pt and zh read "Red delivery van").
+    private static void WorkVehicleNames()
+    {
+        var wrong = new StringBuilder();
+        int said = 0;
+        foreach (string lang in new[] { "pt", "zh-cn" })
+        {
+            UiWords words = UiWords(lang);
+            var texts = new HashSet<string>(StringComparer.Ordinal);
+            foreach (string st in WorkStatesOf("marketplace"))
+            {
+                var scene = new UiScene();
+                WorkScreenOf("marketplace", words, st).Lay(scene, UiFrame.FullMenu(1.78f, "Work"), true, UiDefaultKeys.Keyboard);
+                for (int i = 0; i < scene.ItemCount; i++)
+                {
+                    texts.Add(scene.Items[i].Text ?? string.Empty);
+                }
+            }
+            foreach (KeyValuePair<string, string> v in UiSamples.MarketVehicles)
+            {
+                string local = words(v.Key, v.Value);
+                if (local != v.Value)
+                {
+                    said++;
+                    if (texts.Contains(v.Value) || !texts.Contains(local))
+                    {
+                        wrong.Append(" [" + lang + " " + v.Key + ": '" + local + "' is not what the page says]");
+                    }
+                }
+            }
+        }
+        Check(said >= 2 && wrong.Length == 0, "work screens: a vehicle of a listing is named by the game's own key, so pt and zh say the game's word and not the English one (" + said + " names translated)" + wrong);
+    }
+
+    // The CV and Own work say what the player earned in every job: one figure, read from the one place (WorkFile.Earned, which the shift's pay adds to), so the two
+    // tabs of an app never give two lives. The sample shows the same figure on both pages; the live source reads the same field for both.
+    private static void WorkOneLife()
+    {
+        string live = System.IO.File.ReadAllText(System.IO.Path.Combine(FindRoot(), "Assets/Mods/RealLifeOverhaul/Scripts/Ui/Work/CareerLive.Manage.cs"));
+        bool oneField = live.Contains("long earned = w.Earned;") && live.Contains("CareersText.Cents(w.Earned)") && !live.Contains("w.History[i].Earned");
+        var cv = new HashSet<string>(StringComparer.Ordinal);
+        var own = new HashSet<string>(StringComparer.Ordinal);
+        foreach (KeyValuePair<string, HashSet<string>> pair in new[] { new KeyValuePair<string, HashSet<string>>("cv", cv), new KeyValuePair<string, HashSet<string>>("own", own) })
+        {
+            var scene = new UiScene();
+            WorkScreenOf("career", WorkEnglish, pair.Key).Lay(scene, UiFrame.FullMenu(1.78f, "Work"), true, UiDefaultKeys.Keyboard);
+            for (int i = 0; i < scene.ItemCount; i++)
+            {
+                pair.Value.Add(scene.Items[i].Text ?? string.Empty);
+            }
+        }
+        Check(oneField && cv.Contains("$28,400") && own.Contains("$28,400") && !cv.Contains("$38,420"),
+            "work screens: the CV and Own work give one figure for what the player earned in every job (the live source reads WorkFile.Earned for both)");
     }
 }

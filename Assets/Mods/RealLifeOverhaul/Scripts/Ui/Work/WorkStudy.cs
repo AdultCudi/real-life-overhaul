@@ -200,6 +200,16 @@ namespace RealLifeOverhaul.Ui
         private static float Transcript(UiScene s, UiAt at, WorkStatement m, float x, float y, float w, float bottom)
         {
             float credits = 72f, attend = 104f, exam = 72f, grade = 120f, state = 132f, gap = UiTokens.S4;
+            for (int ti = 0; ti < m.Terms.Count; ti++)
+            {
+                for (int mi = 0; mi < m.Terms[ti].Marks.Count; mi++)
+                {
+                    string said = m.Terms[ti].Marks[mi].Status ?? string.Empty;
+                    // the state's chip holds its whole word in every language
+                    state = Math.Max(state, UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(said, UiStyle.SmallStrong) + UiTokens.S1));
+                }
+            }
+            state = Math.Min(state, UiDraw.SnapDown(w * 0.3f));
             float courseW = w - credits - attend - exam - grade - state - gap * 5f - UiTokens.S4;
             float cx = x + UiTokens.S2;
             float c1 = cx + courseW + gap, c2 = c1 + credits + gap, c3 = c2 + attend + gap, c4 = c3 + exam + gap, c5 = c4 + grade + gap;
@@ -208,7 +218,8 @@ namespace RealLifeOverhaul.Ui
             float[] xs = { cx, c1, c2, c3, c4, c5 }, ws = { courseW, credits, attend, exam, grade, state };
             for (int i = 0; i < 6; i++)
             {
-                UiDraw.TextMiddle(s, at, xs[i], y, HeadRow, ws[i], UiStyle.SectionHeader, UiRole.Muted, heads[i], UiFlags.Label | UiFlags.Truncate | (i == 0 || i == 5 ? UiFlags.None : UiFlags.Right));
+                UiFlags side = i == 0 || i == 5 ? UiFlags.None : UiFlags.Right;
+                UiDraw.TextMiddle(s, at, xs[i], y, HeadRow, ws[i], UiStyle.SectionHeader, UiRole.Muted, heads[i], UiFlags.Label | UiFlags.Truncate | side);
             }
             y += HeadRow;
             UiDraw.Box(s, at, x, y, w, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
@@ -311,7 +322,7 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             y += WorkPanel.SectionHead(s, at, x, y, w, t.Title, t.Lead) + UiTokens.S1;
-            float colW = UiDraw.SnapDown((w - UiTokens.S8) / 2f), rowH = 56f;
+            float firstW = UiDraw.SnapDown((w - UiTokens.S8) / 2f), rowH = 56f;
             int perColumn = Math.Max(1, (int)((bottom - y) / rowH));
             if (t.Skills.Count <= perColumn * 2)
             {
@@ -320,7 +331,8 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < t.Skills.Count && i < perColumn * 2; i++)
             {
                 int col = i / perColumn, row = i % perColumn;
-                float rx = x + col * (colW + UiTokens.S8), ry = y + row * rowH;
+                float colW = col == 0 ? firstW : w - firstW - UiTokens.S8;   // the second column takes what is left, so its edge is the page's and the bands under it end where it does
+                float rx = x + col * (firstW + UiTokens.S8), ry = y + row * rowH;
                 WorkBar b = t.Skills[i];
                 UiDraw.Box(s, at, rx, ry, colW, rowH - UiTokens.S1, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
                 float lw = UiDraw.SnapDown(colW * 0.42f), pad = UiTokens.S4;

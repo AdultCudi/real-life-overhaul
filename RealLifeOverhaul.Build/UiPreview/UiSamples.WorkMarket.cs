@@ -50,8 +50,8 @@ internal static partial class UiSamples
         // name, kind glyph, price, against worth, seller, group, tag
         object[][] list =
         {
-            new object[] { "Blue sport coupe", UiIcon.Car, "$38,500", -4, "Marco Bellini", 0, null }, new object[] { "Red delivery van", UiIcon.Package, "$14,200", -12, "Huang Guo", 0, "Rival" },
-            new object[] { "Box truck", UiIcon.Truck, "$27,900", -6, "Harbourside Freight HSF", 0, null }, new object[] { "Tan minibus", UiIcon.Train, "$19,400", 3, "Amara Nwosu", 0, null },
+            new object[] { "v:ba:vehicletype_mersaidimgagt", UiIcon.Car, "$38,500", -4, "Marco Bellini", 0, null }, new object[] { "v:ba:vehicletype_umcdesertdeliveryjob", UiIcon.Package, "$14,200", -12, "Huang Guo", 0, "Rival" },
+            new object[] { "v:ba:vehicletype_deliverytruck", UiIcon.Truck, "$27,900", -6, "Harbourside Freight HSF", 0, null }, new object[] { "v:ba:vehicletype_vordv150", UiIcon.Train, "$19,400", 3, "Amara Nwosu", 0, null },
             new object[] { "k:espresso_machine", UiIcon.Coffee, "$1,950", -9, "Sofia Marin", 1, null }, new object[] { "k:commercial_grill", UiIcon.Fire, "$2,300", -3, "Hana Okada", 1, null },
             new object[] { "k:display_fridge", UiIcon.Thermometer, "$1,150", -15, "Leo Park", 1, "Discount" }, new object[] { "k:dough_mixer", UiIcon.Factory, "$4,600", 5, "Colm Doyle", 1, null },
             new object[] { "k:chest_freezer", UiIcon.CloudSnow, "$1,380", -5, "Ada Voss", 1, null }, new object[] { "k:armchair", UiIcon.Home, "$320", -8, "Nia Brooks", 2, null },
@@ -62,7 +62,7 @@ internal static partial class UiSamples
         for (int i = 0; i < list.Length; i++)
         {
             object[] p = list[i];
-            string seller = (string)p[4], itemName = ((string)p[0]).StartsWith("k:") ? Sx(w, "reallife_hustle_thing_" + ((string)p[0]).Substring(2)) : (string)p[0];
+            string seller = (string)p[4], itemName = MName(w, (string)p[0]);
             var r = new WorkRow { Id = i + 1, Icon = (UiIcon)p[1], Name = itemName, Price = (string)p[2], Under = WorkBuilder.Percent((int)p[3]), UnderValue = (int)p[3], Seller = seller, Group = (int)p[5],
                 Status = (string)p[6] == null ? null : (string)p[6] == "Rival" ? w.T("reallife_work_tag_rival", "Rival") : w.T("reallife_work_tag_discount_short", "Discount"), Tone = UiRole.Muted };
             bool car = (int)p[5] == 0;
@@ -116,8 +116,9 @@ internal static partial class UiSamples
         var t = new WorkTab { Shape = WorkShape.Haggle, Sub = true };
         int offer = v.Get(0, 12800);
         t.Amounts.Add(new WorkAmount { Id = 0, Value = offer, Min = 5000, Max = 14200, Step = 100, Figure = "$" + offer.ToString("N0", System.Globalization.CultureInfo.InvariantCulture) });
-        var r = new WorkRow { Id = 2, Name = "Red delivery van", Kicker = w.T("reallife_work_haggle_kicker", "Haggle with the seller"), Seller = "Huang Guo", Line = "Guo Logistics, " + w.F("reallife_work_rated", "rated {rating}", "rating", "4.3"), Status = w.T("reallife_work_tag_discount", "Sells at a discount"), Tone = UiRole.Muted,
-            Sentence = w.F("reallife_work_haggle_line", "{seller} asks {asking} for the {thing}, {versus} against its market price. You may make up to {n} offers, and each one they turn down makes the next harder.", "seller", "Huang Guo", "asking", "$14,200", "thing", "Red delivery van", "versus", "-12%", "n", "3"), Hint = w.T("reallife_work_your_offer", "Your offer") };
+        string van = MName(w, "v:ba:vehicletype_umcdesertdeliveryjob");
+        var r = new WorkRow { Id = 2, Name = van, Kicker = w.T("reallife_work_haggle_kicker", "Haggle with the seller"), Seller = "Huang Guo", Line = "Guo Logistics, " + w.F("reallife_work_rated", "rated {rating}", "rating", "4.3"), Status = w.T("reallife_work_tag_discount", "Sells at a discount"), Tone = UiRole.Muted,
+            Sentence = w.F("reallife_work_haggle_line", "{seller} asks {asking} for the {thing}, {versus} against its market price. You may make up to {n} offers, and each one they turn down makes the next harder.", "seller", "Huang Guo", "asking", "$14,200", "thing", van, "versus", "-12%", "n", "3"), Hint = w.T("reallife_work_your_offer", "Your offer") };
         r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_their_price", "Their price"), "$14,200"));
         r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_market_price", "Market price"), Mny(16136)));
         r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_offers_left", "Offers left"), w.F("reallife_work_n_of_m", "{n} of {m}", "n", "3", "m", "3")));
@@ -125,7 +126,7 @@ internal static partial class UiSamples
             Note = w.T("reallife_work_offer_note", "They may accept, counter or turn it down."), Choice = true });
         r.Acts.Add(new WorkAct { Kind = 100, Arg = 2, Label = w.T("reallife_work_pay_asking", "Pay the asking price"), Style = UiButtonKind.Secondary, Icon = UiIcon.Coin, Note = w.F("reallife_work_pay_asking_note", "Buy now at {price}, no more haggling.", "price", "$14,200"), Choice = true });
         r.Acts.Add(new WorkAct { Kind = WorkKinds.Back, Arg = 2, Label = w.T("reallife_work_walk_away_haggle", "Walk away"), Style = UiButtonKind.Destructive, Icon = UiIcon.Back, Opens = true,
-            Note = w.F("reallife_work_walk_note", "Back to the listings. The {thing} stays for sale today.", "thing", "Red delivery van"), Choice = true });
+            Note = w.F("reallife_work_walk_note", "Back to the listings. The {thing} stays for sale today.", "thing", van), Choice = true });
         var known = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_the_seller", "The seller") };
         known.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_rating", "Rating"), w.F("reallife_work_rating_of", "{n} of 5", "n", "4.3")));
         known.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_sold_word", "Sold"), "5"));
@@ -137,6 +138,11 @@ internal static partial class UiSamples
         facts.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_cargo", "Cargo"), Value = "14" });
         facts.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_fuel_tank", "Fuel tank"), Value = "90 l" });
         r.Bands.Add(facts);
+        r.Bands.Add(WorkBands.Pairs(w.T("reallife_work_offer_stands", "Where your offer stands"),
+            new[] { w.T("reallife_work_your_offer", "Your offer"), w.T("reallife_work_below_theirs", "Below their price"), w.T("reallife_work_against_market", "Against the market price"),
+                w.T("reallife_work_cash_after", "Your money after") },
+            new[] { "$" + offer.ToString("N0", System.Globalization.CultureInfo.InvariantCulture), "$" + (14200 - offer).ToString("N0", System.Globalization.CultureInfo.InvariantCulture),
+                WorkBuilder.Percent((int)System.Math.Round((offer - 16136) * 100.0 / 16136)), "$" + (48210 - offer).ToString("N0", System.Globalization.CultureInfo.InvariantCulture) }));
         r.Bands.Add(WorkBands.Tiles(w.T("reallife_work_more_from", "More from this seller"), new[] { UiIcon.ShoppingBag }, new[] { Sx(w, "reallife_hustle_thing_flour_pallet") },
             new[] { w.T("reallife_work_kind_stock", "Stock lot") }, new[] { "$1,140" }));
         var before = new WorkFormBand { Title = w.T("reallife_work_before_buy", "Before you buy") };
@@ -155,7 +161,7 @@ internal static partial class UiSamples
     private static readonly object[][] MarketOwned =
     {
         new object[] { "k:sofa", UiIcon.Sofa, "kept", 890, 0, 960, 0, 405, "Tomas Reyes", 80 }, new object[] { "k:dough_mixer", UiIcon.Factory, "listed", 3900, 150, 4600, 4600, 398, "Colm Doyle", 78 },
-        new object[] { "Old cargo van", UiIcon.Package, "waiting", 6200, 0, 6900, 0, 411, "Harbourside Freight HSF", 61 }, new object[] { "k:display_fridge", UiIcon.Thermometer, "listed", 980, 40, 1140, 1150, 401, "Leo Park", 84 },
+        new object[] { "v:ba:vehicletype_freighttruckt1", UiIcon.Package, "waiting", 6200, 0, 6900, 0, 411, "Harbourside Freight HSF", 61 }, new object[] { "k:display_fridge", UiIcon.Thermometer, "listed", 980, 40, 1140, 1150, 401, "Leo Park", 84 },
         new object[] { "k:armchair", UiIcon.Home, "delivering", 300, 25, 320, 0, 412, "Nia Brooks", 90 }, new object[] { "k:espresso_machine", UiIcon.Coffee, "fix", 1700, 0, 1950, 0, 395, "Sofia Marin", 48 }
     };
 
@@ -171,7 +177,15 @@ internal static partial class UiSamples
         t.Below.Add(MarketBands.Trade(w, "$2,140", 34, 12));
     }
 
-    private static string MName(UtilitiesWords w, string name) => name.StartsWith("k:") ? Sx(w, "reallife_hustle_thing_" + name.Substring(2)) : name;
+    // The game's own names of the vehicles a listing can carry (the type's key, which the game localises: a brand and model in most languages, a word where it has one).
+    public static readonly Dictionary<string, string> MarketVehicles = new Dictionary<string, string>
+    {
+        { "ba:vehicletype_mersaidimgagt", "Mersaidi MGA GT" }, { "ba:vehicletype_umcdesertdeliveryjob", "Delivery Van" }, { "ba:vehicletype_deliverytruck", "Vord Courier D500" },
+        { "ba:vehicletype_vordv150", "Vord V150" }, { "ba:vehicletype_freighttruckt1", "Freight Truck T1" }
+    };
+
+    private static string MName(UtilitiesWords w, string name) => name.StartsWith("k:") ? Sx(w, "reallife_hustle_thing_" + name.Substring(2))
+        : name.StartsWith("v:") ? w.T(name.Substring(2), MarketVehicles[name.Substring(2)]) : name;
 
     private static WorkTab MarketYours(UtilitiesWords w, WorkView v)
     {

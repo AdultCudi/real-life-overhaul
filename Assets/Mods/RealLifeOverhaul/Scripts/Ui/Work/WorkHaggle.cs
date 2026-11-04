@@ -10,13 +10,14 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class WorkHaggle
     {
-        private const float Side = 320f, Choice = 48f;
+        private const float Side = 320f, Choice = 48f, WordsWide = 760f;
 
         public static void Lay(UiScene s, UiAt at, WorkRow r, List<WorkAct> acts, UiActionModel[] choices, WorkAmount[] amounts, string why, float x, float y, float w, float bottom, IUiKeys keys)
         {
             // the card is as high as what it says: the seller at the left, the offer at the right, the choices at the foot; the seller's other things stand under it
             float cw = w, cx = x, cy = y;
-            float inner = cw - Side - UiTokens.S8 * 2f;
+            float full = cw - Side - UiTokens.S8 * 2f;
+            float inner = Math.Min(full, WordsWide), aside = full - inner - UiTokens.S8;   // the card's words keep a line a reader can follow; the width left beside them carries the thing's facts
             float ch = Math.Min(bottom - y, Need(r, choices.Length, amounts.Length > 0, why, inner));
             int card = UiDraw.Box(s, at, cx, cy, cw, ch, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Decor);
             UiAt on = at.In(card);
@@ -87,8 +88,9 @@ namespace RealLifeOverhaul.Ui
                 string note = i < acts.Count ? acts[i].Note : null;
                 if (!string.IsNullOrEmpty(note))
                 {
-                    float nx = tx + bw + UiTokens.S4;
-                    UiDraw.TextMiddle(s, on, nx, ty, UiTokens.Control, tx + inner - nx, UiStyle.Small, UiRole.Text2, note, UiFlags.Truncate);
+                    float nx = tx + bw + UiTokens.S4, nw = tx + inner - nx;
+                    float nh = UiTextRules.WrappedHeight(note, UiStyle.Small, nw, 2);
+                    UiDraw.Text(s, on, nx, ty + UiDraw.SnapDown((UiTokens.Control - nh) / 2f), nw, UiStyle.Small, UiRole.Text2, note, UiFlags.Wrap | UiFlags.Truncate, 2);
                 }
                 ty += Choice + UiTokens.S2;
             }
@@ -96,7 +98,9 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDraw.Text(s, on, tx, ty, inner, UiStyle.Small, UiRole.WarnText, why, UiFlags.Truncate);
             }
-            WorkForm.Strip(s, at, r.Bands, x, cy + ch + UiTokens.S4, w, bottom, keys);
+            // the facts of the thing stand beside the words, as many bands as the card holds; the rest stand in a strip under it
+            int beside = aside >= UiTokens.S16 * 6f ? WorkForm.Stack(s, on, r.Bands, tx + inner + UiTokens.S8, cy + UiTokens.S8, aside, cy + ch - UiTokens.S8, keys) : 0;
+            WorkForm.Strip(s, at, r.Bands.GetRange(beside, r.Bands.Count - beside), x, cy + ch + UiTokens.S4, w, bottom, keys);
         }
 
         // The card's height: the same steps the layout takes, down to the last choice and a line for what stops one.

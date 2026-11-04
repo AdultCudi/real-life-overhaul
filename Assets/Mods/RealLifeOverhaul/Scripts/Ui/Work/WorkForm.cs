@@ -67,6 +67,26 @@ namespace RealLifeOverhaul.Ui
             return end;
         }
 
+        /// <summary>Bands one under another in a column down to the bottom, each as high as its rows; returns how many stood (a band that does not fit, and those after it, are left out).</summary>
+        public static int Stack(UiScene s, UiAt at, List<WorkFormBand> bands, float x, float y, float w, float bottom, IUiKeys keys)
+        {
+            var none = new UiActionModel[0];
+            var noAmounts = new WorkAmount[0];
+            int stood = 0;
+            for (int i = 0; bands != null && i < bands.Count; i++)
+            {
+                float h = Height(bands[i], w);
+                if (y + h > bottom + 0.5f)
+                {
+                    break;
+                }
+                Band(s, at, bands[i], none, noAmounts, x, y, w, h, keys);
+                y += h + UiTokens.S3;
+                stood++;
+            }
+            return stood;
+        }
+
         // The y offset of band i's row from the strip's top: the tallest band of the rows above it, and a gap.
         private static float RowEnd(List<WorkFormBand> bands, int cols, int i, float cw)
         {

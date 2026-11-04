@@ -5,7 +5,7 @@ namespace RealLifeOverhaul.Careers
 {
     /// <summary>
     /// The game side of <see cref="PeoplePool"/>: the city's people (Population's person table) read for their id and the name the game's own name
-    /// maker gives from their seed. Installed once from the directors that name people; answers empty while the living population does not run.
+    /// maker gives from their seed. Installed once when the mod starts (RealLifeOverhaulMod), before any director names a person; answers empty while the living population does not run.
     /// Cost: a walk of at most a few dozen slots for a pick; the name maker once per pick.
     /// </summary>
     internal static class PeoplePoolGame
