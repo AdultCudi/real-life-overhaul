@@ -316,20 +316,25 @@ namespace RealLifeOverhaul.Ui
                 d.AlsoApplied(o, others);
                 if (others.Count > 0)
                 {
-                    var also = new WorkSection { Part = WorkPart.People, Title = words.T("reallife_work_also_applied", "Also applied"), Note = words.F("reallife_work_n_people", "{n} people", "n", others.Count.ToString(Inv)) };
+                    var also = new WorkSection { Part = WorkPart.People, Title = words.T("reallife_work_also_applied", "Also applied"),
+                        Note = words.F("reallife_work_n_people", "{n} people", "n", others.Count.ToString(Inv)) };
                     for (int k = 0; k < others.Count; k++)
                     {
-                        also.People.Add(new WorkPerson { Name = others[k].Name, Role = CareersText.Title(o.Prof, others[k].Rank) + ", " + words.F("reallife_work_performance_n", "performance {n}", "n", others[k].Score.ToString(Inv)),
+                        also.People.Add(new WorkPerson { Name = others[k].Name, Role = CareersText.Title(o.Prof,
+                            others[k].Rank) + ", " + words.F("reallife_work_performance_n", "performance {n}", "n", others[k].Score.ToString(Inv)),
                             Right = CareersText.Day(others[k].Day), Ring = UiRole.Ok });
                     }
                     r.Sections.Add(also);
                     r.HintLead = words.T("reallife_work_still_apply", "You can still apply.");
-                    r.Hint = words.F("reallife_work_weighs_all", "The employer weighs your record, and {name} has applied too. When you get the job, start each shift at your desk.", "name", others[0].Name);
+                    r.Hint = words.F("reallife_work_weighs_all",
+                        "The employer weighs your record, and {name} has applied too. When you get the job, start each shift at your desk.", "name", others[0].Name);
                 }
                 string why = applied ? words.T("reallife_work_why_applied", "You have applied for that already.") : !qualified ? words.T("reallife_work_why_unqualified",
                     "You do not hold what that post needs.") : !eligible ? words.T("reallife_work_why_skills", "Your skills are too far below what that post asks.") : null;
-                r.Acts.Add(new WorkAct { Kind = (int)CareerAct.Apply, Arg = o.Id, Label = words.T("reallife_career_button_apply", "Apply"), Style = UiButtonKind.Primary, Icon = UiIcon.Check, Why = why });
-                r.Acts.Add(new WorkAct { Kind = (int)CareerAct.ShowPost, Arg = o.Id, Label = words.T("reallife_career_button_map", "Show on map"), Style = UiButtonKind.Secondary, Icon = UiIcon.Locate, Opens = true });
+                r.Acts.Add(new WorkAct { Kind = (int)CareerAct.Apply, Arg = o.Id, Label = words.T("reallife_career_button_apply", "Apply"),
+                    Style = UiButtonKind.Primary, Icon = UiIcon.Check, Why = why });
+                r.Acts.Add(new WorkAct { Kind = (int)CareerAct.ShowPost, Arg = o.Id, Label = words.T("reallife_career_button_map", "Show on map"),
+                    Style = UiButtonKind.Secondary, Icon = UiIcon.Locate, Opens = true });
                 tab.Rows.Add(r);
             }
         }
@@ -369,7 +374,8 @@ namespace RealLifeOverhaul.Ui
                 sec.Checks.Add(new WorkNeed { Words = words.F("reallife_work_need_performance", "Performance {n}", "n", bar.ToString(Inv)), Met = s.Performance >= bar,
                     Have = s.Performance >= bar ? null : words.F("reallife_work_you_have", "you have {n}", "n", s.Performance.ToString(Inv)) });
                 sec.Checks.Add(new WorkNeed { Words = words.F("reallife_work_need_teamwork", "Teamwork {n}", "n", PostFilterRules.PromotionTeamwork.ToString(Inv)),
-                    Met = s.Teamwork >= PostFilterRules.PromotionTeamwork, Have = s.Teamwork >= PostFilterRules.PromotionTeamwork ? null : words.F("reallife_work_you_have", "you have {n}", "n", s.Teamwork.ToString(Inv)) });
+                    Met = s.Teamwork >= PostFilterRules.PromotionTeamwork,
+                        Have = s.Teamwork >= PostFilterRules.PromotionTeamwork ? null : words.F("reallife_work_you_have", "you have {n}", "n", s.Teamwork.ToString(Inv)) });
             }
             int met = 0;
             for (int i = 0; i < sec.Checks.Count; i++)
@@ -461,7 +467,8 @@ namespace RealLifeOverhaul.Ui
                 bool ready = ProRules.Qualified(study, p, 0);
                 string status = ready ? words.T("reallife_work_open_to_you", "Open to you") : words.T("reallife_work_needs_course", "Needs a course");
                 int pay = Prices.At(p.Ranks[0].Pay);
-                var r = new WorkRow { Id = p.Id, Icon = WorkGlyphs.Profession(p.Id), Name = CareersText.ProName(p.Id), Sub = words.F("reallife_work_first_post", "First post: {post}", "post", CareersText.Title(p.Id, 0)),
+                var r = new WorkRow { Id = p.Id, Icon = WorkGlyphs.Profession(p.Id), Name = CareersText.ProName(p.Id),
+                    Sub = words.F("reallife_work_first_post", "First post: {post}", "post", CareersText.Title(p.Id, 0)),
                     Cells = new[] { null, CareersText.Hours(p), CareersText.Rate(pay), open.ToString(Inv), status }, Values = new[] { 0, 0, 0, Math.Min(100, open * 14), 0 },
                     Status = status, Tone = ready ? UiRole.Ok : UiRole.Warn, Chip = status, ChipTone = ready ? UiRole.Ok : UiRole.Warn };
                 var ladder = new WorkSection { Part = WorkPart.Pairs, Title = words.T("reallife_work_the_ladder", "The ladder") };
@@ -488,7 +495,8 @@ namespace RealLifeOverhaul.Ui
                     needs.Checks.Add(new WorkNeed { Words = CareersText.Course(first.Quals[0]), Met = held });
                 }
                 r.Sections.Add(needs);
-                r.Acts.Add(new WorkAct { Kind = WorkKinds.GoTab, Arg = CareerPages.Jobs, Label = words.T("reallife_career_button_vacancies", "Vacancies"), Style = UiButtonKind.Primary, Icon = UiIcon.Search, Opens = true });
+                r.Acts.Add(new WorkAct { Kind = WorkKinds.GoTab, Arg = CareerPages.Jobs, Label = words.T("reallife_career_button_vacancies",
+                    "Vacancies"), Style = UiButtonKind.Primary, Icon = UiIcon.Search, Opens = true });
                 r.Acts.Add(Act(CareerAct.OpenCampus, p.Id, words.T("reallife_career_button_see_courses", "See the courses"), UiButtonKind.Secondary, UiIcon.Books, true));
                 tab.Rows.Add(r);
             }

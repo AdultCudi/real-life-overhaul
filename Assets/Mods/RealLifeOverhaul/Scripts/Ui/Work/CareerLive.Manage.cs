@@ -42,7 +42,8 @@ namespace RealLifeOverhaul.Ui
             }
             if (f.Tasks.Count == 0)
             {
-                decide.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = words.T("reallife_work_nothing_to_decide", "Nothing waits for your decision. Tasks come from the stores as their staff ask.") });
+                decide.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = words.T("reallife_work_nothing_to_decide",
+                    "Nothing waits for your decision. Tasks come from the stores as their staff ask.") });
             }
             form.Left.Add(decide);
             // where you stand
@@ -65,7 +66,8 @@ namespace RealLifeOverhaul.Ui
                 var rota = new WorkFormBand { Title = words.T("reallife_ladder_sec_rota", "The store's schedule") };
                 for (int level = 0; level < 3; level++)
                 {
-                    rota.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = string.Empty, Act = Act(level == 0 ? CareerAct.RotaLean : level == 1 ? CareerAct.RotaStandard : CareerAct.RotaFull, 0,
+                    rota.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = string.Empty,
+                        Act = Act(level == 0 ? CareerAct.RotaLean : level == 1 ? CareerAct.RotaStandard : CareerAct.RotaFull, 0,
                         CareersText.T(RotaKeys[level]), UiButtonKind.Secondary, UiIcon.Clock, false, c.Stores[0].Rota == level ? words.T("reallife_work_already_set", "It is set so.") : null) });
                 }
                 form.Right.Add(rota);
@@ -98,7 +100,8 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < c.Stores.Count && i < 4; i++)
             {
                 Outlet st = c.Stores[i];
-                shops.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Label = st.Name, Hint = CareersText.T(RotaKeys[TalentCatalogue.Clamp(st.Rota, 0, 2)]) + ", " + CareerLadderRules.StaffAt(c, i).ToString(Inv)
+                shops.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Label = st.Name, Hint = CareersText.T(RotaKeys[TalentCatalogue.Clamp(st.Rota,
+                    0, 2)]) + ", " + CareerLadderRules.StaffAt(c, i).ToString(Inv)
                     + " / " + st.Needed.ToString(Inv), Value = words.F("reallife_work_results_n", "Results {n}", "n", st.Results.ToString(Inv)), Icon = UiIcon.Store });
             }
             if (c.Stores.Count > 0)
@@ -206,14 +209,18 @@ namespace RealLifeOverhaul.Ui
             ExecSeat seat = d.LadderSeatAimed(f);
             var band = new WorkFormBand { Title = CareersText.T("reallife_ladder_sec_next_to", "title", CareersText.T(LadderRanks.TitleKey(f.Rung + 1, seat))) };
             int need = d.LadderDaysNeeded(f), had = day - f.RungDay;
-            band.Rows.Add(new WorkFormRow { Field = WorkField.Check, Label = CareersText.T("reallife_ladder_need_days", "have", Math.Max(0, had).ToString(), "need", need.ToString()), On = had >= need });
-            band.Rows.Add(new WorkFormRow { Field = WorkField.Check, Label = CareersText.T("reallife_ladder_need_score", "have", CareerLadderRules.ScoreOf(f).ToString(), "need", next.Score.ToString()),
+            band.Rows.Add(new WorkFormRow { Field = WorkField.Check, Label = CareersText.T("reallife_ladder_need_days", "have", Math.Max(0,
+                had).ToString(), "need", need.ToString()), On = had >= need });
+            band.Rows.Add(new WorkFormRow { Field = WorkField.Check, Label = CareersText.T("reallife_ladder_need_score", "have",
+                CareerLadderRules.ScoreOf(f).ToString(), "need", next.Score.ToString()),
                 On = CareerLadderRules.ScoreOf(f) >= next.Score });
             d.LadderSkills(f, out int have, out int skills);
             LadderRanks.SkillsOf(f.Rung + 1, seat, out int a, out int b);
-            band.Rows.Add(new WorkFormRow { Field = WorkField.Check, Label = CareersText.Fill("reallife_ladder_need_skills", "a", CareersText.Skill(a), "b", CareersText.Skill(b), "have", have.ToString(),
+            band.Rows.Add(new WorkFormRow { Field = WorkField.Check, Label = CareersText.Fill("reallife_ladder_need_skills", "a",
+                CareersText.Skill(a), "b", CareersText.Skill(b), "have", have.ToString(),
                 "need", skills.ToString()), On = have >= skills });
-            band.Rows.Add(new WorkFormRow { Field = WorkField.Check, Label = CareersText.T(next.Recommend ? "reallife_ladder_need_recommend" : "reallife_ladder_need_recommend_optional", "boss", d.LadderBoss(f)),
+            band.Rows.Add(new WorkFormRow { Field = WorkField.Check,
+                Label = CareersText.T(next.Recommend ? "reallife_ladder_need_recommend" : "reallife_ladder_need_recommend_optional", "boss", d.LadderBoss(f)),
                 On = f.Recommended || !next.Recommend });
             band.Rows.Add(new WorkFormRow { Field = WorkField.Check, Label = CareersText.T("reallife_ladder_need_stores", "have", f.Company.Stores.Count.ToString(), "need", next.Stores.ToString()),
                 On = f.Company.Stores.Count >= next.Stores });
@@ -237,7 +244,8 @@ namespace RealLifeOverhaul.Ui
             string granted = words.T("reallife_work_granted", "Already granted.");
             var shift = new WorkFormRow { Field = WorkField.Button, Label = words.T("reallife_work_ask_shift", "Your shift"), Act = Act(CareerAct.AskShiftEarlier, 0,
                 words.T("reallife_work_ask_shift_earlier", "Ask for it earlier"), UiButtonKind.Secondary, UiIcon.Back, false, f.Prefer <= -2 ? granted : waiting) };
-            shift.More.Add(Act(CareerAct.AskShiftLater, 0, words.T("reallife_work_ask_shift_later", "Ask for it later"), UiButtonKind.Secondary, UiIcon.Next, false, f.Prefer >= 2 ? granted : waiting));
+            shift.More.Add(Act(CareerAct.AskShiftLater, 0, words.T("reallife_work_ask_shift_later", "Ask for it later"), UiButtonKind.Secondary,
+                UiIcon.Next, false, f.Prefer >= 2 ? granted : waiting));
             band.Rows.Add(shift);
             band.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = words.T("reallife_work_ask_equipment_label", "Equipment"), Act = Act(CareerAct.AskEquipment, 0,
                 words.T("reallife_work_ask_equipment", "Ask for equipment"), UiButtonKind.Secondary, UiIcon.Wrench, false, f.Equipped ? granted : waiting) });
@@ -262,8 +270,10 @@ namespace RealLifeOverhaul.Ui
                     continue;
                 }
                 band.Rows.Add(new WorkFormRow { Field = WorkField.Nudge, Label = name, Value = PolicyValue(field, value),
-                    Act = Act(CareerAct.PolicyLess, i, words.T("reallife_ladder_button_less", "Lower"), UiButtonKind.Secondary, UiIcon.Minus, false, value > least ? null : words.T("reallife_work_at_least", "It is at its least.")),
-                    Act2 = Act(CareerAct.PolicyMore, i, words.T("reallife_ladder_button_more", "Raise"), UiButtonKind.Secondary, UiIcon.Plus, false, value < most ? null : words.T("reallife_work_at_most", "It is at its most.")) });
+                    Act = Act(CareerAct.PolicyLess, i, words.T("reallife_ladder_button_less", "Lower"), UiButtonKind.Secondary, UiIcon.Minus, false,
+                        value > least ? null : words.T("reallife_work_at_least", "It is at its least.")),
+                    Act2 = Act(CareerAct.PolicyMore, i, words.T("reallife_ladder_button_more", "Raise"), UiButtonKind.Secondary, UiIcon.Plus, false,
+                        value < most ? null : words.T("reallife_work_at_most", "It is at its most.")) });
             }
             return band;
         }
@@ -314,7 +324,8 @@ namespace RealLifeOverhaul.Ui
             {
                 practice.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = words.T("reallife_career_col_profession", "Profession"), Value = CareersText.ProName(w.Practice.Prof) });
                 practice.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = words.T("reallife_ibox_since", "Since"), Value = CareersText.Day(w.Practice.Opened) });
-                practice.Rows.Add(new WorkFormRow { Field = WorkField.Bar, Bar = new WorkBar { Label = words.T("reallife_ibox_name", "Name"), Value = Math.Max(0, Math.Min(100, w.Practice.Reputation)) } });
+                practice.Rows.Add(new WorkFormRow { Field = WorkField.Bar, Bar = new WorkBar { Label = words.T("reallife_ibox_name", "Name"),
+                    Value = Math.Max(0, Math.Min(100, w.Practice.Reputation)) } });
                 practice.Foot = Act(CareerAct.PracticeClose, 0, words.T("reallife_own_button_close_practice", "Close the practice"), UiButtonKind.Destructive, UiIcon.Close);
             }
             else
@@ -350,12 +361,14 @@ namespace RealLifeOverhaul.Ui
             var leave = new WorkFormBand { Title = words.T("reallife_own_found_title", "Found a company") };
             if (w.FounderDay > 0)
             {
-                leave.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = CareersText.Fill("reallife_own_founder_line", "employer", CareersText.Employer(w.FounderFrom), "day", CareersText.Day(w.FounderDay),
+                leave.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = CareersText.Fill("reallife_own_founder_line", "employer",
+                    CareersText.Employer(w.FounderFrom), "day", CareersText.Day(w.FounderDay),
                     "bonus", (d.FounderBonus() / 10).ToString() + "%") });
             }
             if (w.ColleaguesCount > 0 && w.ColleaguesUntil >= day)
             {
-                leave.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = CareersText.T("reallife_own_colleagues_line", "count", w.ColleaguesCount.ToString(), "day", CareersText.Day(w.ColleaguesUntil)) });
+                leave.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = CareersText.T("reallife_own_colleagues_line", "count",
+                    w.ColleaguesCount.ToString(), "day", CareersText.Day(w.ColleaguesUntil)) });
                 leave.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = words.T("reallife_own_colleagues_label", "Colleagues waiting"), Act = Act(CareerAct.BringColleagues, 0,
                     words.T("reallife_own_button_colleagues", "Bring your former colleagues"), UiButtonKind.Secondary, UiIcon.People, false,
                     d.ColleaguesFirm() != null ? null : CareersText.T("reallife_own_colleagues_no_firm")) });
@@ -368,7 +381,8 @@ namespace RealLifeOverhaul.Ui
             if (j != null && j.NoticeEnd <= 0)
             {
                 string why = d.CanFoundLeave(j);
-                leave.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = words.T("reallife_own_alone_label", "On your own"), Act = Act(CareerAct.Found, 0, words.T("reallife_own_button_found", "Leave to found a company"),
+                leave.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = words.T("reallife_own_alone_label", "On your own"),
+                    Act = Act(CareerAct.Found, 0, words.T("reallife_own_button_found", "Leave to found a company"),
                     UiButtonKind.Secondary, UiIcon.Building, false, why == null ? null : words.T(why, "You cannot found a company from this job.")) });
                 leave.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = words.T("reallife_own_with_label", "With colleagues"), Act = Act(CareerAct.FoundWith, 0,
                     words.T("reallife_own_button_found_colleagues", "Leave to found one, taking colleagues"), UiButtonKind.Secondary, UiIcon.People,
@@ -384,7 +398,8 @@ namespace RealLifeOverhaul.Ui
             for (int i = w.Contracts.Count - 1; i >= 0 && contracts.Rows.Count < 8; i--)
             {
                 RealLifeOverhaul.Careers.Contract c = w.Contracts[i];
-                contracts.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Label = c.Client, Hint = CareersText.ProName(c.Prof) + ", " + CareersText.ContractState(c.At), Value = CareersText.Money(Prices.At((int)c.Fee)),
+                contracts.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Label = c.Client,
+                    Hint = CareersText.ProName(c.Prof) + ", " + CareersText.ContractState(c.At), Value = CareersText.Money(Prices.At((int)c.Fee)),
                     Icon = UiIcon.Wrench });
                 if (c.Stage == (int)ContractStep.Offered)
                 {
@@ -401,7 +416,8 @@ namespace RealLifeOverhaul.Ui
             }
             if (w.Contracts.Count == 0)
             {
-                contracts.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = words.T("reallife_work_no_contracts", "No contract is on offer. Clients ask once you have a profession to offer.") });
+                contracts.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = words.T("reallife_work_no_contracts",
+                    "No contract is on offer. Clients ask once you have a profession to offer.") });
             }
             form.Right.Add(contracts);
             return t;
@@ -424,7 +440,8 @@ namespace RealLifeOverhaul.Ui
             {
                 Spell s = w.History[i];
                 blocks.Add(new UiReaderBlock { Kind = UiReaderKind.Paragraph, Text = CareersText.Title(s.Prof, s.Top) + ", " + CareersText.Employer(s.Employer) + ". " + CareersText.Day(s.From) + " "
-                    + words.T("reallife_work_cv_to", "to") + " " + CareersText.Day(s.To) + ". " + CareersText.Fill("reallife_career_row_spell", "leaving", CareersText.Leaving(s.Leaving), "reference", CareersText.Reference(s.Reference)) });
+                    + words.T("reallife_work_cv_to", "to") + " " + CareersText.Day(s.To) + ". " + CareersText.Fill("reallife_career_row_spell",
+                        "leaving", CareersText.Leaving(s.Leaving), "reference", CareersText.Reference(s.Reference)) });
             }
             if (w.Job == null && w.History.Count == 0)
             {
@@ -455,13 +472,15 @@ namespace RealLifeOverhaul.Ui
             }
             t.Reader = new UiReaderModel { Title = _facts.Player, Picture = UiIcon.Person, PictureCaption = words.T("reallife_work_cv_caption", "Your working life, as an employer reads it"),
                 FactsTitle = words.T("reallife_work_cv_in_short", "In short"), Blocks = blocks.ToArray(),
-                Facts = new[] { new UiPairModel { Key = words.T("reallife_work_cv_jobs_held", "Jobs held"), Value = jobs.ToString(Inv) }, new UiPairModel { Key = words.T("reallife_work_cv_earned", "Earned"),
+                Facts = new[] { new UiPairModel { Key = words.T("reallife_work_cv_jobs_held", "Jobs held"), Value = jobs.ToString(Inv) },
+                    new UiPairModel { Key = words.T("reallife_work_cv_earned", "Earned"),
                     Value = CareersText.Cents(earned) }, new UiPairModel { Key = words.T("reallife_life_sum_pension", "Pension pot"), Value = CareersText.Cents(w.Pension) } } };
             string why = d.CanRetire();
             _facts.CanRetire = why == null;
             if (w.Retired <= 0)
             {
-                t.Acts.Add(Act(CareerAct.Retire, 0, words.T("reallife_life_button_retire", "Retire"), UiButtonKind.Destructive, UiIcon.SignOut, false, why == null ? null : words.T(why, "You cannot retire yet.")));
+                t.Acts.Add(Act(CareerAct.Retire, 0, words.T("reallife_life_button_retire", "Retire"), UiButtonKind.Destructive, UiIcon.SignOut, false,
+                    why == null ? null : words.T(why, "You cannot retire yet.")));
             }
             return t;
         }

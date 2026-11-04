@@ -206,11 +206,13 @@ namespace RealLifeOverhaul.Ui
                         float bw = w - label - value - UiTokens.S2;
                         UiRole grade = UiTokens.Grade(b.Value);
                         UiDraw.Meter(s, at, x + label, y + (UiTokens.PairRow - UiTokens.S1) / 2f, bw, UiTokens.S1, b.Value, UiRole.Accent);
-                        UiDraw.TextMiddle(s, at, x + w - value, y, UiTokens.PairRow, UiTextRules.Width("100", UiStyle.BodyStrong), UiStyle.BodyStrong, grade, b.Value.ToString(System.Globalization.CultureInfo.InvariantCulture),
+                        UiDraw.TextMiddle(s, at, x + w - value, y, UiTokens.PairRow, UiTextRules.Width("100", UiStyle.BodyStrong), UiStyle.BodyStrong,
+                            grade, b.Value.ToString(System.Globalization.CultureInfo.InvariantCulture),
                             UiFlags.Right);
                         if (!string.IsNullOrEmpty(b.Note))
                         {
-                            UiDraw.TextMiddle(s, at, x + w - UiTextRules.Width("+00", UiStyle.Small) - UiTokens.S1, y, UiTokens.PairRow, UiTextRules.Width("+00", UiStyle.Small) + UiTokens.S1, UiStyle.Small,
+                            UiDraw.TextMiddle(s, at, x + w - UiTextRules.Width("+00", UiStyle.Small) - UiTokens.S1, y, UiTokens.PairRow,
+                                UiTextRules.Width("+00", UiStyle.Small) + UiTokens.S1, UiStyle.Small,
                                 UiRole.OkText, b.Note, UiFlags.Right);
                         }
                         y += UiTokens.PairRow + UiTokens.S1;
@@ -310,9 +312,11 @@ namespace RealLifeOverhaul.Ui
         }
     }
 
-    /// <summary>The command numbers of the work apps' own parts (a block nobody else uses: 1200 to 1219; the kit's are not unique across parts, so every handler tests the page it belongs to first).</summary>
+    /// <summary>The command numbers of the work apps' own parts (a block nobody else uses: 1200 to 1219; the kit's are not unique across parts, so
+    /// every handler tests the page it belongs to first).</summary>
     public static class WorkCmd
     {
-        public const int Less = 1201, Type = 1202, More = 1203, Field = 1204, Search = 1205, Card = 1206, PageTab = 1207, Aside = 1208, Sort = 1209, Close = 1210, Locate = 1211, Pick = 1212, Diary = 1213, Day = 1214, NudgeLess = 1215, NudgeMore = 1216, Read = 1217;
+        public const int Less = 1201, Type = 1202, More = 1203, Field = 1204, Search = 1205, Card = 1206, PageTab = 1207, Aside = 1208, Sort = 1209,
+            Close = 1210, Locate = 1211, Pick = 1212, Diary = 1213, Day = 1214, NudgeLess = 1215, NudgeMore = 1216, Read = 1217;
     }
 }

@@ -205,6 +205,7 @@ namespace RealLifeOverhaul.Ui
         Label, Stepper, Switch, Choice, Button, Person, Bar, Text, Tile, Check, Input, Nudge
     }
 
+    /// <summary>One row of a form band: a label with its control, a figure, a person or a button.</summary>
     public sealed class WorkFormRow
     {
         public WorkField Field;

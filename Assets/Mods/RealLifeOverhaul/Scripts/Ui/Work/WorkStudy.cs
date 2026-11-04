@@ -260,7 +260,8 @@ namespace RealLifeOverhaul.Ui
             UiDraw.TextMiddle(s, at, x, y, h, UiTokens.S6, UiStyle.Small, UiRole.Text2, place.ToString(Inv), UiFlags.Right);
             UiDraw.Portrait(s, at, x + UiTokens.S6 + UiTokens.S2, y + (h - face) / 2f, face, p.Name, UiColour.HueOf(p.Name), UiRole.None);
             float vw = UiTextRules.Width(p.Right ?? string.Empty, UiStyle.BodyStrong) + UiTokens.S1;
-            UiDraw.TextMiddle(s, at, x + UiTokens.S6 + UiTokens.S2 + face + UiTokens.S3, y, h, w - UiTokens.S6 - UiTokens.S2 - face - UiTokens.S3 - vw - UiTokens.S2, UiStyle.Body, UiRole.Text, p.Name, UiFlags.Truncate);
+            UiDraw.TextMiddle(s, at, x + UiTokens.S6 + UiTokens.S2 + face + UiTokens.S3, y, h,
+                w - UiTokens.S6 - UiTokens.S2 - face - UiTokens.S3 - vw - UiTokens.S2, UiStyle.Body, UiRole.Text, p.Name, UiFlags.Truncate);
             UiDraw.TextMiddle(s, at, x + w - vw, y, h, vw, UiStyle.BodyStrong, UiRole.Text, p.Right, UiFlags.Right);
             return h + UiTokens.S1;
         }
@@ -299,7 +300,8 @@ namespace RealLifeOverhaul.Ui
             float label = Math.Min(UiDraw.SnapDown(w * 0.34f), 150f), value = UiTextRules.Width("100", UiStyle.BodyStrong) + UiTextRules.Width("+00", UiStyle.Small) + UiTokens.S3;
             UiDraw.TextMiddle(s, at, x, y, UiTokens.PairRow, label, UiStyle.Body, UiRole.Text, b.Label, UiFlags.Truncate);
             UiDraw.Meter(s, at, x + label, y + (UiTokens.PairRow - UiTokens.S1) / 2f, w - label - value - UiTokens.S2, UiTokens.S1, b.Value, UiTokens.Grade(b.Value));
-            UiDraw.TextMiddle(s, at, x + w - value, y, UiTokens.PairRow, UiTextRules.Width("100", UiStyle.BodyStrong), UiStyle.BodyStrong, UiTokens.Grade(b.Value), b.Value.ToString(Inv), UiFlags.Right);
+            UiDraw.TextMiddle(s, at, x + w - value, y, UiTokens.PairRow, UiTextRules.Width("100", UiStyle.BodyStrong), UiStyle.BodyStrong,
+                UiTokens.Grade(b.Value), b.Value.ToString(Inv), UiFlags.Right);
             if (!string.IsNullOrEmpty(b.Note))
             {
                 float nw = UiTextRules.Width("+00", UiStyle.Small) + UiTokens.S1;
@@ -317,7 +319,8 @@ namespace RealLifeOverhaul.Ui
             {
                 WorkKid k = t.Kids[i];
                 float kx = x + (i % 2) * (colW + UiTokens.S6), ky = y + (i / 2) * 260f;
-                var profile = new UiProfileModel { Name = k.Name, Hue = UiColour.HueOf(k.Name), Ring = k.Ring, Role = k.Role, RoleIcon = UiIcon.Cap, FactLabels = k.FactLabels, FactValues = k.FactValues };
+                var profile = new UiProfileModel { Name = k.Name, Hue = UiColour.HueOf(k.Name), Ring = k.Ring, Role = k.Role, RoleIcon = UiIcon.Cap,
+                    FactLabels = k.FactLabels, FactValues = k.FactValues };
                 var buttons = new List<UiActionModel>(2);
                 for (int a = 0; a < k.Acts.Count; a++)
                 {

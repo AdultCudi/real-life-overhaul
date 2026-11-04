@@ -119,7 +119,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\FinanceRules.cs" Link="Mod\Money\FinanceRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\FinanceKitTables.cs" Link="Mod\Money\FinanceKitTables.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\FinanceFace.cs" Link="Mod\Money\FinanceFace.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work\WorkModel.cs" Link="Mod\Work\WorkModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work\WorkRow.cs" Link="Mod\Work\WorkRow.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work\WorkPanel.cs" Link="Mod\Work\WorkPanel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work\WorkTable.cs" Link="Mod\Work\WorkTable.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work\WorkCards.cs" Link="Mod\Work\WorkCards.cs" />
@@ -132,7 +132,6 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work\WorkBuilder.cs" Link="Mod\Work\WorkBuilder.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work\CareerPages.cs" Link="Mod\Work\CareerPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work\WorkTabPages.cs" Link="Mod\Work\WorkTabPages.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work\WorkGlyphs.cs" Link="Mod\Work\WorkGlyphs.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\FinanceFace.Overview.cs" Link="Mod\Money\FinanceFace.Overview.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\FinanceFace.Borrow.cs" Link="Mod\Money\FinanceFace.Borrow.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\FinanceFace.Lists.cs" Link="Mod\Money\FinanceFace.Lists.cs" />

@@ -133,7 +133,8 @@ namespace RealLifeOverhaul.Ui
             {
                 WorkRow r = a.Rows[i];
                 bool on = i == m.AsideChosen;
-                int face = UiDraw.Box(s, at, x + UiTokens.S2, iy, w - UiTokens.S2 * 2f, rowH, on ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusLarge, on ? UiFlags.Selected : UiFlags.None);
+                int face = UiDraw.Box(s, at, x + UiTokens.S2, iy, w - UiTokens.S2 * 2f, rowH, on ? UiRole.RowSel : UiRole.None, UiRole.None,
+                    UiTokens.RadiusLarge, on ? UiFlags.Selected : UiFlags.None);
                 UiAt inside = at.In(face);
                 float tile = UiTokens.ControlSmall, tx = x + UiTokens.S3, ty = iy + (rowH - tile) / 2f;
                 int t = UiDraw.Tile(s, inside, tx, ty, tile, UiRole.None, false);

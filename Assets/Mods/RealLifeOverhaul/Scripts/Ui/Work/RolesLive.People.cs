@@ -50,7 +50,8 @@ namespace RealLifeOverhaul.Ui
             UtilitiesWords w = W;
             var t = new WorkTab { Shape = WorkShape.Table, Search = w.T("reallife_work_search_people", "Search people") };
             // the roles asked for, as a list at the left; the applicants shown are the chosen role's
-            var aside = new WorkAside { Title = w.T("reallife_work_open_roles", "Open roles"), Foot = w.T("reallife_work_applicants_foot", "Applicants arrive over a few days and take other offers if you wait.") };
+            var aside = new WorkAside { Title = w.T("reallife_work_open_roles", "Open roles"), Foot = w.T("reallife_work_applicants_foot",
+                "Applicants arrive over a few days and take other offers if you wait.") };
             var roleAds = new List<JobAd>(8);
             for (int i = 0; i < h.Ads.Count; i++)
             {
@@ -84,7 +85,8 @@ namespace RealLifeOverhaul.Ui
             t.Aside = aside;
             int roleIndex = Math.Max(0, Math.Min(Math.Max(0, roleAds.Count - 1), view.Aside));
             RoleDef shown = roleAds.Count > 0 ? TalentCatalogue.Role(roleAds[roleIndex].Role) : null;
-            t.Columns = new[] { WorkBuilder.Col(w.T("reallife_work_col_applicant", "Applicant"), UiCellKind.Person), WorkBuilder.Col(w.T("reallife_work_skill_claimed", "Craft on the CV"), UiCellKind.Meter, 128),
+            t.Columns = new[] { WorkBuilder.Col(w.T("reallife_work_col_applicant", "Applicant"), UiCellKind.Person),
+                WorkBuilder.Col(w.T("reallife_work_skill_claimed", "Craft on the CV"), UiCellKind.Meter, 128),
                 WorkBuilder.Col(w.T("reallife_work_skill_found", "Found at interview"), UiCellKind.Meter, 128), WorkBuilder.Col(w.T("reallife_work_col_asks", "Asks"), UiCellKind.Money, 72),
                 WorkBuilder.Col(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 152) };
             t.EmptyTitle = w.T("reallife_work_no_applicants_title", "No applicants yet");
@@ -106,7 +108,8 @@ namespace RealLifeOverhaul.Ui
                 string state = competing ? w.T("reallife_work_competing_offer", "Competing offer") : StageName(a);
                 var r = new WorkRow { Id = a.Id, Person = s.P.Name, Name = s.P.Name, Ring = UiRole.Ok, Group = ad.Id, Status = state, Tone = tone,
                     Sub = string.IsNullOrEmpty(s.Employer) ? w.T("reallife_work_self_taught", "Self taught") : w.F("reallife_work_from_firm", "From {firm}", "firm", s.Employer),
-                    Cells = new[] { null, s.CvMain.ToString(Inv), found ? (s.P.Main / 1000).ToString(Inv) : "?", TechText.Rate(s.Ask), state }, Values = new[] { 0, s.CvMain, found ? s.P.Main / 1000 : 0, 0, 0 },
+                    Cells = new[] { null, s.CvMain.ToString(Inv), found ? (s.P.Main / 1000).ToString(Inv) : "?", TechText.Rate(s.Ask), state },
+                        Values = new[] { 0, s.CvMain, found ? s.P.Main / 1000 : 0, 0, 0 },
                     Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, tone }, Open = Act(OpenApplicant, a.Id, string.Empty, UiButtonKind.Secondary, UiIcon.Person, true) };
                 r.Title = s.P.Name;
                 r.Sentence = TechText.Role(s.P.Role) + ", " + TechText.Level(s.P.Level) + ", " + w.F("reallife_career_row_rate", "{rate} an hour", "rate", TechText.Rate(s.Ask));
@@ -135,7 +138,8 @@ namespace RealLifeOverhaul.Ui
                 if (competing)
                 {
                     r.Sections.Add(new WorkSection { Part = WorkPart.Note, Lead = w.T("reallife_work_competing_offer_lead", "Competing offer"), NoteIcon = UiIcon.Flag,
-                        Text = w.F("reallife_work_rival_offer_line", "{rival} offered {pay} an hour. They answer by {day}. Offer at least as much to hire them.", "rival", a.RivalBy, "pay", TechText.Rate(a.RivalBid),
+                        Text = w.F("reallife_work_rival_offer_line",
+                            "{rival} offered {pay} an hour. They answer by {day}. Offer at least as much to hire them.", "rival", a.RivalBy, "pay", TechText.Rate(a.RivalBid),
                             "day", TechText.Day(a.RivalLapse)) });
                 }
                 int start = competing ? Math.Max(a.RivalBid, s.Ask) : s.Ask;
@@ -147,7 +151,8 @@ namespace RealLifeOverhaul.Ui
                 r.Sections.Add(new WorkSection { Part = WorkPart.Amount, Title = w.T("reallife_work_your_offer", "Your offer"), Stepper = 0 });
                 bool done = a.Stage >= (int)ApplyStage.Accepted;
                 r.Acts.Add(Act(Offer, a.Id, w.F("reallife_work_hire_at", "Hire at {pay} an hour", "pay", "$" + dollars.ToString(Inv)), UiButtonKind.Primary, UiIcon.Check, false,
-                    done ? w.T("reallife_work_already_hired", "They have already accepted.") : !HireOffers.Beats(a, dollars * 100) ? w.F("reallife_work_must_beat", "Offer at least {pay} to beat the rival.", "pay", TechText.Rate(a.RivalBid)) : null));
+                    done ? w.T("reallife_work_already_hired", "They have already accepted.") : !HireOffers.Beats(a,
+                        dollars * 100) ? w.F("reallife_work_must_beat", "Offer at least {pay} to beat the rival.", "pay", TechText.Rate(a.RivalBid)) : null));
                 r.Acts.Add(a.Stage == (int)ApplyStage.Countered ? Act(Counter, a.Id, w.T("reallife_work_take_counter", "Take their counter"), UiButtonKind.Secondary, UiIcon.Check)
                     : Act(Shortlist, a.Id, w.T("reallife_hire_button_shortlist", "Shortlist"), UiButtonKind.Secondary, UiIcon.Star, false,
                         a.Stage == (int)ApplyStage.Shortlisted ? w.T("reallife_work_already_shortlisted", "Already on your shortlist.") : null));
@@ -193,9 +198,12 @@ namespace RealLifeOverhaul.Ui
                 return t;
             }
             bool competing = HireOffers.Competing(a, day);
-            var form = new WorkFormModel { Head = new UiProfileModel { Name = s.P.Name, Hue = UiColour.HueOf(s.P.Name), Ring = UiRole.Ok, Role = TechText.Role(s.P.Role) + ", " + TechText.Level(s.P.Level),
-                RoleIcon = RoleGlyph(s.P.Role), Employer = string.IsNullOrEmpty(s.Employer) ? null : s.Employer, EmployerIcon = UiIcon.Store, Status = competing ? w.T("reallife_work_competing_offer", "Competing offer") : StageName(a),
-                StatusTone = competing ? UiRole.Warn : UiRole.Ok, FactLabels = new[] { w.T("reallife_work_col_asks", "Asks"), w.T("reallife_work_notice", "Notice"), w.T("reallife_work_your_top_pay", "Your top pay") },
+            var form = new WorkFormModel { Head = new UiProfileModel { Name = s.P.Name, Hue = UiColour.HueOf(s.P.Name), Ring = UiRole.Ok,
+                Role = TechText.Role(s.P.Role) + ", " + TechText.Level(s.P.Level),
+                RoleIcon = RoleGlyph(s.P.Role), Employer = string.IsNullOrEmpty(s.Employer) ? null : s.Employer, EmployerIcon = UiIcon.Store,
+                    Status = competing ? w.T("reallife_work_competing_offer", "Competing offer") : StageName(a),
+                StatusTone = competing ? UiRole.Warn : UiRole.Ok, FactLabels = new[] { w.T("reallife_work_col_asks", "Asks"),
+                    w.T("reallife_work_notice", "Notice"), w.T("reallife_work_your_top_pay", "Your top pay") },
                 FactValues = new[] { TechText.Rate(s.Ask), w.F("reallife_work_n_days", "{n} days", "n", s.Notice.ToString(Inv)), TechText.Rate(ad.PayMost) } } };
             t.Form = form;
             if (view.PageTab == 0)
@@ -204,7 +212,8 @@ namespace RealLifeOverhaul.Ui
                 attrs.Rows.Add(new WorkFormRow { Field = WorkField.Bar, Bar = new WorkBar { Label = w.T("reallife_work_skill_claimed", "Craft on the CV"), Value = s.CvMain } });
                 if ((a.Revealed & HiringRules.RevealSkill) != 0)
                 {
-                    attrs.Rows.Add(new WorkFormRow { Field = WorkField.Bar, Bar = new WorkBar { Label = w.T("reallife_work_skill_found", "Found at interview"), Value = Math.Min(100, s.P.Main / 1000) } });
+                    attrs.Rows.Add(new WorkFormRow { Field = WorkField.Bar, Bar = new WorkBar { Label = w.T("reallife_work_skill_found",
+                        "Found at interview"), Value = Math.Min(100, s.P.Main / 1000) } });
                 }
                 if ((a.Revealed & HiringRules.RevealFit) != 0)
                 {
@@ -266,22 +275,27 @@ namespace RealLifeOverhaul.Ui
                 }
                 bool done = a.Stage >= (int)ApplyStage.Accepted;
                 contract.Foot = Act(Offer, a.Id, w.F("reallife_work_hire_at", "Hire at {pay} an hour", "pay", "$" + dollars.ToString(Inv)), UiButtonKind.Primary, UiIcon.Check, false,
-                    done ? w.T("reallife_work_already_hired", "They have already accepted.") : !HireOffers.Beats(a, dollars * 100) ? w.F("reallife_work_must_beat", "Offer at least {pay} to beat the rival.", "pay", TechText.Rate(a.RivalBid)) : null);
+                    done ? w.T("reallife_work_already_hired", "They have already accepted.") : !HireOffers.Beats(a,
+                        dollars * 100) ? w.F("reallife_work_must_beat", "Offer at least {pay} to beat the rival.", "pay", TechText.Rate(a.RivalBid)) : null);
                 form.Left.Add(contract);
                 var answer = new WorkFormBand { Title = w.T("reallife_work_their_answer", "Their answer") };
                 if (a.Stage == (int)ApplyStage.Countered)
                 {
                     answer.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_they_came_back", "They came back with"), Value = TechText.Rate(a.Counter) });
-                    answer.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = string.Empty, Act = Act(Counter, a.Id, w.T("reallife_work_take_counter", "Take their counter"), UiButtonKind.Primary, UiIcon.Check) });
+                    answer.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = string.Empty, Act = Act(Counter, a.Id,
+                        w.T("reallife_work_take_counter", "Take their counter"), UiButtonKind.Primary, UiIcon.Check) });
                 }
-                answer.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_shortlist_label", "Shortlist"), Act = Act(Shortlist, a.Id, w.T("reallife_hire_button_shortlist", "Shortlist"),
+                answer.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_shortlist_label", "Shortlist"),
+                    Act = Act(Shortlist, a.Id, w.T("reallife_hire_button_shortlist", "Shortlist"),
                     UiButtonKind.Secondary, UiIcon.Star, false, a.Stage == (int)ApplyStage.Shortlisted ? w.T("reallife_work_already_shortlisted", "Already on your shortlist.") : null) });
-                answer.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_reject_label", "Turn them down"), Act = Act(Walk, a.Id, w.T("reallife_work_walk_away", "Let them go"),
+                answer.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_reject_label", "Turn them down"),
+                    Act = Act(Walk, a.Id, w.T("reallife_work_walk_away", "Let them go"),
                     UiButtonKind.Destructive, UiIcon.Close) });
                 if (a.At == ApplyStage.Accepted)
                 {
                     string buyout = d.BuyoutRefusal(a, s);
-                    answer.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_buyout_label", "Buy out their notice"), Act = Act(Buyout, a.Id, w.T("reallife_hire_button_buyout", "Buy out their notice"),
+                    answer.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_buyout_label", "Buy out their notice"),
+                        Act = Act(Buyout, a.Id, w.T("reallife_hire_button_buyout", "Buy out their notice"),
                         UiButtonKind.Secondary, UiIcon.Coin, false, buyout == null ? null : TechText.T(buyout, "name", s.P.Name)) });
                 }
                 form.Right.Add(answer);
@@ -327,8 +341,10 @@ namespace RealLifeOverhaul.Ui
                 int going = first >= 0 ? d.GoingFor(first, TalentCatalogue.Mid) : 0;
                 int shortage = d.ShortageOf((TFamily)fam);
                 int seniors = levels[2] + levels[3] + levels[4];
-                var r = new WorkRow { Id = fam, Icon = FamilyGlyph((TFamily)fam), Name = TechText.FamilyName((TFamily)fam), Sub = w.F("reallife_work_your_ads_n", "{n} of your ads open", "n", yours.ToString(Inv)),
-                    Cells = new[] { null, seekers.ToString(Inv), levels[0].ToString(Inv), levels[1].ToString(Inv), seniors.ToString(Inv), openings.ToString(Inv), going > 0 ? TechText.Rate(going) : "-" },
+                var r = new WorkRow { Id = fam, Icon = FamilyGlyph((TFamily)fam), Name = TechText.FamilyName((TFamily)fam),
+                    Sub = w.F("reallife_work_your_ads_n", "{n} of your ads open", "n", yours.ToString(Inv)),
+                    Cells = new[] { null, seekers.ToString(Inv), levels[0].ToString(Inv), levels[1].ToString(Inv), seniors.ToString(Inv),
+                        openings.ToString(Inv), going > 0 ? TechText.Rate(going) : "-" },
                     Values = new[] { 0, Math.Min(100, seekers * 6), 0, 0, 0, 0, 0 } };
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_looking", "Looking"), seekers.ToString(Inv)));
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_going_rate", "Going rate"), going > 0 ? TechText.Rate(going) : "-"));
@@ -369,7 +385,8 @@ namespace RealLifeOverhaul.Ui
         {
             UtilitiesWords w = W;
             var t = new WorkTab { Shape = WorkShape.Form };
-            var form = new WorkFormModel { Lead = w.T("reallife_work_search_lead", "A search firm finds senior people, and a crew search finds technicians for a data centre. Its fee is a share of a year's pay.") };
+            var form = new WorkFormModel { Lead = w.T("reallife_work_search_lead",
+                "A search firm finds senior people, and a crew search finds technicians for a data centre. Its fee is a share of a year's pay.") };
             t.Form = form;
             TalentGame.Businesses(_places);
             if (_places.Count == 0)
@@ -411,7 +428,8 @@ namespace RealLifeOverhaul.Ui
             brief.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_ad_place", "At"), Stepper = 2 });
             brief.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_col_role", "Role"), Stepper = 0 });
             brief.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_col_level", "Level"), Stepper = 1 });
-            brief.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_col_fee", "Fee"), Value = TechText.Cents(fee) + ", " + w.F("reallife_work_up_front", "{n} up front", "n", TechText.Cents(retainer)) });
+            brief.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_col_fee", "Fee"),
+                Value = TechText.Cents(fee) + ", " + w.F("reallife_work_up_front", "{n} up front", "n", TechText.Cents(retainer)) });
             bool seats = HiringRules.Seats(TalentGame.Shifts(_places[place]), r);
             brief.Foot = Act(Brief, 0, w.T("reallife_hire_button_brief", "Brief the firm"), UiButtonKind.Primary, UiIcon.Search, false,
                 !seats ? TechText.T(TechDirector.SeatRefusal) : r.MostLevel < HiringCatalogue.SearchLeastLevel ? w.T("reallife_work_search_level", "A search finds senior people only.") : null);
@@ -423,8 +441,10 @@ namespace RealLifeOverhaul.Ui
             d.CrewQuote(TalentCatalogue.Technician, TalentCatalogue.Mid, crew, out int crewFee, out int crewRetainer, out int each);
             var crewBand = new WorkFormBand { Title = w.T("reallife_work_crew_title", "Data centre crew") };
             crewBand.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_crew_technicians", "Technicians"), Stepper = t.Amounts.Count - 1 });
-            crewBand.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_col_fee", "Fee"), Value = TechText.Cents(crewFee) + ", " + w.F("reallife_work_each_n", "{n} each", "n", TechText.Cents(each)) });
-            crewBand.Foot = Act(BriefCrew, 0, w.T("reallife_hire_button_brief_crew", "Brief a crew search"), UiButtonKind.Secondary, UiIcon.HardDrives, false, crewWhy == null ? null : w.T(crewWhy, "A crew search needs a data centre and headquarters."));
+            crewBand.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_col_fee", "Fee"),
+                Value = TechText.Cents(crewFee) + ", " + w.F("reallife_work_each_n", "{n} each", "n", TechText.Cents(each)) });
+            crewBand.Foot = Act(BriefCrew, 0, w.T("reallife_hire_button_brief_crew", "Brief a crew search"), UiButtonKind.Secondary,
+                UiIcon.HardDrives, false, crewWhy == null ? null : w.T(crewWhy, "A crew search needs a data centre and headquarters."));
             form.Left.Add(crewBand);
             var running = new WorkFormBand { Title = w.T("reallife_work_running_searches", "Searches running") };
             for (int i = 0; i < h.Ads.Count; i++)
@@ -432,7 +452,8 @@ namespace RealLifeOverhaul.Ui
                 JobAd ad = h.Ads[i];
                 if (ad.Search)
                 {
-                    running.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Label = TechText.Role(ad.Role) + (ad.CrewSearch ? " x" + ad.Crew.ToString(Inv) : string.Empty) + ", " + TechText.Level(ad.Level),
+                    running.Rows.Add(new WorkFormRow { Field = WorkField.Tile,
+                        Label = TechText.Role(ad.Role) + (ad.CrewSearch ? " x" + ad.Crew.ToString(Inv) : string.Empty) + ", " + TechText.Level(ad.Level),
                         Hint = w.F("reallife_work_fee_n", "Fee {n}", "n", TechText.Money(ad.Fee / 100)), Value = TechText.Day(ad.Due), Icon = UiIcon.Search });
                 }
             }
@@ -446,7 +467,8 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < h.Campaigns.Count; i++)
             {
                 OfficeCampaign c = h.Campaigns[i];
-                office.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Label = c.Skill, Hint = c.Agency + ", " + c.Delivered.ToString(Inv) + " / " + c.Planned.ToString(Inv), Value = TechText.Day(c.To), Icon = UiIcon.Megaphone });
+                office.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Label = c.Skill,
+                    Hint = c.Agency + ", " + c.Delivered.ToString(Inv) + " / " + c.Planned.ToString(Inv), Value = TechText.Day(c.To), Icon = UiIcon.Megaphone });
             }
             if (office.Rows.Count > 0)
             {
@@ -478,7 +500,8 @@ namespace RealLifeOverhaul.Ui
                     : f.RaiseAsk > 0 ? TechText.T("reallife_roles_state_asks", "percent", TechText.Bp(f.RaiseAsk)) : null;
                 var r = new WorkRow { Id = i, Person = p.Name, Name = p.Name, Sub = p.Business, Ring = state != null ? UiRole.Warn : UiRole.Ok,
                     Cells = new[] { null, TechText.Role(f.Role) + ", " + TechText.Level(f.Level), Math.Min(100, p.MainPoints).ToString(Inv), TechText.Rate(paid), (f.Morale / 10).ToString(Inv) },
-                    Values = new[] { 0, 0, Math.Min(100, p.MainPoints), 0, Math.Max(0, Math.Min(100, f.Morale / 10)) }, Open = Act(OpenPerson, i, string.Empty, UiButtonKind.Secondary, UiIcon.Person, true) };
+                    Values = new[] { 0, 0, Math.Min(100, p.MainPoints), 0, Math.Max(0, Math.Min(100, f.Morale / 10)) }, Open = Act(OpenPerson, i,
+                        string.Empty, UiButtonKind.Secondary, UiIcon.Person, true) };
                 r.Title = p.Name;
                 r.Sentence = state ?? TechText.Role(f.Role) + ", " + p.Business;
                 var attrs = new WorkSection { Part = WorkPart.Bars, Title = w.T("reallife_work_attributes", "Attributes") };
@@ -510,10 +533,14 @@ namespace RealLifeOverhaul.Ui
             int year = GameCalendar.DaysPerYear;
             int paid = person.Game != null ? TalentGame.PaidCents(person.Game) : p.GameWage;
             bool offer = TalentRules.OfferOpen(p, day);
-            var form = new WorkFormModel { Head = new UiProfileModel { Name = person.Name, Hue = UiColour.HueOf(person.Name), Ring = p.Morale < 400 ? UiRole.Warn : UiRole.Ok, Role = TechText.Role(p.Role) + ", " + TechText.Level(p.Level),
+            var form = new WorkFormModel { Head = new UiProfileModel { Name = person.Name, Hue = UiColour.HueOf(person.Name),
+                Ring = p.Morale < 400 ? UiRole.Warn : UiRole.Ok, Role = TechText.Role(p.Role) + ", " + TechText.Level(p.Level),
                 RoleIcon = RoleGlyph(p.Role), Employer = person.Business, EmployerIcon = UiIcon.Store,
-                Status = p.NoticeEnd > 0 ? TechText.T("reallife_roles_state_leaving", "day", p.NoticeEnd.ToString()) : offer ? TechText.T("reallife_roles_state_offer") : p.RaiseAsk > 0 ? TechText.T("reallife_roles_state_asks", "percent", TechText.Bp(p.RaiseAsk)) : TechText.T("reallife_roles_state_fine"),
-                StatusTone = p.NoticeEnd > 0 || offer || p.RaiseAsk > 0 ? UiRole.Warn : UiRole.Ok, FactLabels = new[] { w.T("reallife_work_col_pay", "Pay"), w.T("reallife_work_hired_on", "Joined"), w.T("reallife_work_col_morale", "Morale") },
+                Status = p.NoticeEnd > 0 ? TechText.T("reallife_roles_state_leaving", "day",
+                    p.NoticeEnd.ToString()) : offer ? TechText.T("reallife_roles_state_offer") : p.RaiseAsk > 0 ? TechText.T("reallife_roles_state_asks",
+                    "percent", TechText.Bp(p.RaiseAsk)) : TechText.T("reallife_roles_state_fine"),
+                StatusTone = p.NoticeEnd > 0 || offer || p.RaiseAsk > 0 ? UiRole.Warn : UiRole.Ok, FactLabels = new[] { w.T("reallife_work_col_pay",
+                    "Pay"), w.T("reallife_work_hired_on", "Joined"), w.T("reallife_work_col_morale", "Morale") },
                 FactValues = new[] { TechText.Rate(paid), TechText.Day(p.Joined), TechText.Mille(p.Morale) } } };
             t.Form = form;
             string key = p.Id;
@@ -529,20 +556,24 @@ namespace RealLifeOverhaul.Ui
                 var now = new WorkFormBand { Title = w.T("reallife_work_now", "Now") };
                 if (offer)
                 {
-                    now.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = TechText.Fill("reallife_roles_file_offer", "rival", p.PoachBy, "percent", TechText.Bp(p.PoachBp), "day", p.PoachDay.ToString()) });
-                    var answer = new WorkFormRow { Field = WorkField.Button, Label = string.Empty, Act = Act(Match, 0, w.T("reallife_roles_button_match", "Match it"), UiButtonKind.Primary, UiIcon.Check) };
+                    now.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = TechText.Fill("reallife_roles_file_offer", "rival", p.PoachBy,
+                        "percent", TechText.Bp(p.PoachBp), "day", p.PoachDay.ToString()) });
+                    var answer = new WorkFormRow { Field = WorkField.Button, Label = string.Empty, Act = Act(Match, 0,
+                        w.T("reallife_roles_button_match", "Match it"), UiButtonKind.Primary, UiIcon.Check) };
                     answer.More.Add(Act(LetThem, 0, w.T("reallife_roles_button_let_them", "Let them go"), UiButtonKind.Destructive, UiIcon.Close));
                     now.Rows.Add(answer);
                 }
                 else if (p.RaiseAsk > 0)
                 {
                     now.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = TechText.Fill("reallife_roles_file_asks", "percent", TechText.Bp(p.RaiseAsk), "day", p.AskEnd.ToString()) });
-                    var answer = new WorkFormRow { Field = WorkField.Button, Label = string.Empty, Act = Act(GiveRise, p.RaiseAsk, w.T("reallife_roles_button_give", "Give the rise"), UiButtonKind.Primary, UiIcon.Check) };
+                    var answer = new WorkFormRow { Field = WorkField.Button, Label = string.Empty, Act = Act(GiveRise, p.RaiseAsk,
+                        w.T("reallife_roles_button_give", "Give the rise"), UiButtonKind.Primary, UiIcon.Check) };
                     answer.More.Add(Act(RefuseRise, 0, w.T("reallife_roles_button_refuse", "Refuse"), UiButtonKind.Secondary, UiIcon.Close));
                     now.Rows.Add(answer);
                 }
                 now.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_going_pay", "Going pay"), Value = TechText.Rate(p.Going) });
-                now.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_last_review", "Last review"), Value = p.Rating > 0 ? p.Rating.ToString(Inv) + " / 5, " + TechText.Day(p.ReviewDay) : "-" });
+                now.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_last_review", "Last review"),
+                    Value = p.Rating > 0 ? p.Rating.ToString(Inv) + " / 5, " + TechText.Day(p.ReviewDay) : "-" });
                 form.Right.Add(now);
             }
             else if (view.PageTab == 1)
@@ -550,15 +581,18 @@ namespace RealLifeOverhaul.Ui
                 bool promote = TalentRules.CanPromote(p, day, year, person.MainPoints);
                 var career = new WorkFormBand { Title = w.T("reallife_work_person_career", "Career") };
                 career.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_col_role", "Role"), Value = TechText.Role(p.Role) + ", " + TechText.Level(p.Level) });
-                career.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_experience", "Experience"), Value = TechText.Years(p.YearsDays + (day - p.Joined) * 365 / Math.Max(60, year)) });
+                career.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_experience", "Experience"),
+                    Value = TechText.Years(p.YearsDays + (day - p.Joined) * 365 / Math.Max(60, year)) });
                 career.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_school", "Schooling"), Value = TechText.School(p.School) });
                 career.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_certificates", "Certificates"), Value = TechText.Certs(p) });
-                career.Rows.Add(new WorkFormRow { Field = WorkField.Check, Label = promote ? TechText.Fill("reallife_roles_career_promote", "level", TechText.Level(p.Level + 1), "percent", TechText.Bp(TalentCatalogue.PromotePayBp))
+                career.Rows.Add(new WorkFormRow { Field = WorkField.Check, Label = promote ? TechText.Fill("reallife_roles_career_promote", "level",
+                    TechText.Level(p.Level + 1), "percent", TechText.Bp(TalentCatalogue.PromotePayBp))
                     : TechText.Fill("reallife_roles_career_no_promote", "rating", TalentCatalogue.PromoteRating.ToString(), "least",
                         TechText.Percent(p.Level + 1 < TalentCatalogue.Levels ? TalentCatalogue.LevelSkillLeast[p.Level + 1] - 5 : 100)), On = promote });
                 bool canRise = TalentRules.CanRise(p, day);
                 string resting = canRise ? null : TechText.T("reallife_wage_rested_line", "day", WageRules.NextDay(p.RecognisedDay).ToString());
-                var rises = new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_rises_label", "Pay"), Act = Act(Promote, 0, w.T("reallife_roles_button_promote", "Promote"), UiButtonKind.Primary, UiIcon.TrendUp, false,
+                var rises = new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_rises_label", "Pay"), Act = Act(Promote, 0,
+                    w.T("reallife_roles_button_promote", "Promote"), UiButtonKind.Primary, UiIcon.TrendUp, false,
                     !canRise ? resting : promote ? null : w.T("reallife_work_not_ready_promote", "They are not ready for a step up.")) };
                 rises.More.Add(Act(GiveRise, 300, w.T("reallife_roles_button_rise_3", "Rise of 3%"), UiButtonKind.Secondary, UiIcon.Plus, false, resting));
                 rises.More.Add(Act(GiveRise, 800, w.T("reallife_roles_button_rise_8", "Rise of 8%"), UiButtonKind.Secondary, UiIcon.Plus, false, resting));
@@ -567,18 +601,22 @@ namespace RealLifeOverhaul.Ui
                 var learn = new WorkFormBand { Title = w.T("reallife_work_learning", "Learning") };
                 if (p.OnCourse(day))
                 {
-                    learn.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = TechText.T(p.CourseSkill == 2 ? "reallife_roles_career_on_degree" : p.Exam >= 0 ? "reallife_roles_career_on_exam" : "reallife_roles_career_on_course", "day", p.CourseEnd.ToString()) });
+                    learn.Rows.Add(new WorkFormRow { Field = WorkField.Text,
+                        Value = TechText.T(p.CourseSkill == 2 ? "reallife_roles_career_on_degree" : p.Exam >= 0 ? "reallife_roles_career_on_exam" : "reallife_roles_career_on_course",
+                        "day", p.CourseEnd.ToString()) });
                 }
                 else
                 {
                     int share = TechBridges.CourseShare();
                     int feeA = (int)((long)Prices.At(TalentRules.CourseFee(p.A / 1000)) * share / 10000), feeB = (int)((long)Prices.At(TalentRules.CourseFee(p.B / 1000)) * share / 10000);
-                    var courses = new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_courses_label", "A course"), Act = Act(CourseA, 0, TechText.Skill(r.SkillA) + ", " + TechText.Money(feeA), UiButtonKind.Secondary, UiIcon.Books) };
+                    var courses = new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_courses_label", "A course"),
+                        Act = Act(CourseA, 0, TechText.Skill(r.SkillA) + ", " + TechText.Money(feeA), UiButtonKind.Secondary, UiIcon.Books) };
                     courses.More.Add(Act(CourseB, 0, TechText.Skill(r.SkillB) + ", " + TechText.Money(feeB), UiButtonKind.Secondary, UiIcon.Books));
                     learn.Rows.Add(courses);
                     if (TechBridges.DegreeFee != null && TechBridges.DegreeFee() > 0)
                     {
-                        learn.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_degree_label", "A degree"), Act = Act(Degree, 0, w.F("reallife_work_degree_fee", "Sponsor a degree, {fee}", "fee", TechText.Money(TechBridges.DegreeFee())),
+                        learn.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_degree_label", "A degree"),
+                            Act = Act(Degree, 0, w.F("reallife_work_degree_fee", "Sponsor a degree, {fee}", "fee", TechText.Money(TechBridges.DegreeFee())),
                             UiButtonKind.Secondary, UiIcon.Cap) });
                     }
                     var certs = new List<int>(4);
@@ -601,8 +639,10 @@ namespace RealLifeOverhaul.Ui
                         int chance = TalentRules.ExamChance(p, certs[at]);
                         learn.Rows.Add(new WorkFormRow { Field = WorkField.Stepper, Label = w.T("reallife_work_exam_label", "A certificate"), Stepper = 0 });
                         learn.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = chance > 0 ? w.F("reallife_work_exam_chance", "{chance} chance, {fee}", "chance", TechText.Percent(chance),
-                            "fee", TechText.Money(Prices.At(TalentCatalogue.Certs[certs[at]].Fee))) : w.F("reallife_work_exam_needs", "Needs {n} in the skill", "n", TechText.Percent(TalentCatalogue.Certs[certs[at]].Needs)),
-                            Act = Act(Exam, certs[at], w.T("reallife_roles_button_exam", "Sit the exam"), UiButtonKind.Secondary, UiIcon.Scales, false, chance > 0 ? null : w.T("reallife_work_exam_short", "Not skilled enough yet.")) });
+                            "fee", TechText.Money(Prices.At(TalentCatalogue.Certs[certs[at]].Fee))) : w.F("reallife_work_exam_needs",
+                                "Needs {n} in the skill", "n", TechText.Percent(TalentCatalogue.Certs[certs[at]].Needs)),
+                            Act = Act(Exam, certs[at], w.T("reallife_roles_button_exam", "Sit the exam"), UiButtonKind.Secondary, UiIcon.Scales,
+                                false, chance > 0 ? null : w.T("reallife_work_exam_short", "Not skilled enough yet.")) });
                     }
                 }
                 form.Right.Add(learn);
@@ -622,18 +662,25 @@ namespace RealLifeOverhaul.Ui
                 contract.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_they_want", "They want"), Value = TechText.Work((int)TalentRules.Wants(p, d.TalentSeed)) });
                 bool probation = TalentRules.OnProbation(p, day, year);
                 long severance = TalentRules.Severance(p, day, year, p.GameWage * TalentCatalogue.WeekHours, LeaveKind.LaidOff);
-                contract.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_notice", "Notice"), Value = w.F("reallife_work_n_days", "{n} days", "n", TalentRules.NoticeDays(p, day, year).ToString(Inv)) + (probation ? ", " + w.T("reallife_work_probation", "on probation") : string.Empty) });
+                contract.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_notice", "Notice"),
+                    Value = w.F("reallife_work_n_days", "{n} days", "n", TalentRules.NoticeDays(p, day,
+                    year).ToString(Inv)) + (probation ? ", " + w.T("reallife_work_probation", "on probation") : string.Empty) });
                 contract.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_severance", "Severance"), Value = TechText.Cents(severance) });
-                contract.Foot = Act(SetWork, 0, w.T("reallife_work_set_arrangement", "Set this arrangement"), UiButtonKind.Primary, UiIcon.Check, false, work == p.Work ? w.T("reallife_work_already_set", "It is set so.") : null);
+                contract.Foot = Act(SetWork, 0, w.T("reallife_work_set_arrangement", "Set this arrangement"), UiButtonKind.Primary, UiIcon.Check,
+                    false, work == p.Work ? w.T("reallife_work_already_set", "It is set so.") : null);
                 form.Left.Add(contract);
                 var terms = new WorkFormBand { Title = w.T("reallife_work_terms_title", "Terms and leaving") };
-                terms.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = p.NonCompete ? TechText.T("reallife_roles_contract_clause_on") : TechText.T("reallife_roles_contract_clause_off", "percent", TechText.Bp(TalentCatalogue.NonCompeteBp)),
-                    Act = Act(Clause, 0, w.T("reallife_roles_button_clause", "Add a restraint clause"), UiButtonKind.Secondary, UiIcon.Lock, false, p.NonCompete ? w.T("reallife_work_clause_on", "The clause is in their contract.") : null) });
-                terms.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_lay_off_label", "Lay them off"), Act = Act(LayOff, 0, w.T("reallife_roles_button_lay_off", "Lay off"), UiButtonKind.Destructive, UiIcon.SignOut, false,
+                terms.Rows.Add(new WorkFormRow { Field = WorkField.Button,
+                    Label = p.NonCompete ? TechText.T("reallife_roles_contract_clause_on") : TechText.T("reallife_roles_contract_clause_off", "percent", TechText.Bp(TalentCatalogue.NonCompeteBp)),
+                    Act = Act(Clause, 0, w.T("reallife_roles_button_clause", "Add a restraint clause"), UiButtonKind.Secondary, UiIcon.Lock, false,
+                        p.NonCompete ? w.T("reallife_work_clause_on", "The clause is in their contract.") : null) });
+                terms.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_lay_off_label", "Lay them off"),
+                    Act = Act(LayOff, 0, w.T("reallife_roles_button_lay_off", "Lay off"), UiButtonKind.Destructive, UiIcon.SignOut, false,
                     p.NoticeEnd == 0 ? null : w.T("reallife_work_already_leaving", "They are already leaving.")) });
                 if (TalentRules.FairDismissal(p, day, year))
                 {
-                    terms.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_dismiss_label", "Dismiss them"), Act = Act(Dismiss, 0, w.T("reallife_roles_button_dismiss", "Dismiss now"), UiButtonKind.Destructive, UiIcon.SignOut,
+                    terms.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = w.T("reallife_work_dismiss_label", "Dismiss them"),
+                        Act = Act(Dismiss, 0, w.T("reallife_roles_button_dismiss", "Dismiss now"), UiButtonKind.Destructive, UiIcon.SignOut,
                         false, p.NoticeEnd == 0 ? null : w.T("reallife_work_already_leaving", "They are already leaving.")) });
                 }
                 form.Right.Add(terms);
@@ -717,7 +764,8 @@ namespace RealLifeOverhaul.Ui
                     bool dismiss = act.Kind == Dismiss;
                     long severance = TalentRules.Severance(p, day, year, p.GameWage * TalentCatalogue.WeekHours, LeaveKind.LaidOff);
                     GameConfirm.Show((dismiss ? "reallife_roles_confirm_dismiss_title" : "reallife_roles_confirm_lay_off_title").Localize(new { name }),
-                        dismiss ? "reallife_roles_confirm_dismiss_body".Localize() : "reallife_roles_confirm_lay_off_body".Localize(new { notice = TalentRules.NoticeDays(p, day, year).ToString(), severance = TechText.Cents(severance) }),
+                        dismiss ? "reallife_roles_confirm_dismiss_body".Localize() : "reallife_roles_confirm_lay_off_body".Localize(new { notice = TalentRules.NoticeDays(p,
+                            day, year).ToString(), severance = TechText.Cents(severance) }),
                         () =>
                         {
                             d.LetGo(key, dismiss);
@@ -778,7 +826,8 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
-            return d.StartCrewSearch(TalentGame.Place(_places[Math.Max(0, Math.Min(_places.Count - 1, v.Get(2, 0)))]), TalentCatalogue.Technician, TalentCatalogue.Mid, Math.Max(1, Math.Min(HiringCatalogue.CrewMost, v.Get(3, 4))));
+            return d.StartCrewSearch(TalentGame.Place(_places[Math.Max(0, Math.Min(_places.Count - 1, v.Get(2, 0)))]), TalentCatalogue.Technician,
+                TalentCatalogue.Mid, Math.Max(1, Math.Min(HiringCatalogue.CrewMost, v.Get(3, 4))));
         }
     }
 }

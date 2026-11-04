@@ -179,8 +179,10 @@ namespace RealLifeOverhaul.Ui
                 string state = open ? (ad.To - day <= 3 ? w.F("reallife_work_ad_closes_in", "Closes in {n} days", "n", Math.Max(0, ad.To - day).ToString(Inv)) : w.T("reallife_work_ad_open", "Open"))
                     : w.T("reallife_work_ad_closed", "Closed");
                 UiRole tone = open && ad.To - day > 3 ? UiRole.Ok : UiRole.Warn;
-                var r = new WorkRow { Id = ad.Id, Icon = RoleGlyph(ad.Role), Name = TechText.Role(ad.Role) + ", " + TechText.Level(ad.Level), Sub = TalentGame.NameOf(TalentGame.Find(ad.Place)), Group = ad.Id,
-                    Cells = new[] { null, left.ToString(Inv) + " / " + posts.ToString(Inv), came.ToString(Inv), TechText.Rate(ad.PayMost), state }, Values = new[] { 0, 0, Math.Min(100, came * 8), 0, 0 },
+                var r = new WorkRow { Id = ad.Id, Icon = RoleGlyph(ad.Role), Name = TechText.Role(ad.Role) + ", " + TechText.Level(ad.Level),
+                    Sub = TalentGame.NameOf(TalentGame.Find(ad.Place)), Group = ad.Id,
+                    Cells = new[] { null, left.ToString(Inv) + " / " + posts.ToString(Inv), came.ToString(Inv), TechText.Rate(ad.PayMost), state },
+                        Values = new[] { 0, 0, Math.Min(100, came * 8), 0, 0 },
                     Status = state, Tone = tone, Chip = state, ChipTone = tone, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, tone } };
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_pay_up_to", "Pay up to"), w.F("reallife_career_row_rate", "{rate} an hour", "rate", TechText.Rate(ad.PayMost))));
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_posts", "Posts to fill"), left.ToString(Inv) + " / " + posts.ToString(Inv)));
@@ -205,7 +207,8 @@ namespace RealLifeOverhaul.Ui
                     hiredHere.Note = hiredHere.People.Count.ToString(Inv);
                     r.Sections.Add(hiredHere);
                 }
-                r.Acts.Add(new WorkAct { Kind = WorkKinds.GoTab, Arg = 1, Label = w.T("reallife_hire_button_applicants", "Applicants"), Style = UiButtonKind.Primary, Icon = UiIcon.People, Opens = true });
+                r.Acts.Add(new WorkAct { Kind = WorkKinds.GoTab, Arg = 1, Label = w.T("reallife_hire_button_applicants", "Applicants"),
+                    Style = UiButtonKind.Primary, Icon = UiIcon.People, Opens = true });
                 r.Acts.Add(new WorkAct { Kind = Close, Arg = ad.Id, Label = w.T("reallife_work_close_ad", "Close the ad"), Style = UiButtonKind.Destructive, Icon = UiIcon.Close });
                 t.Rows.Add(r);
             }
@@ -218,7 +221,8 @@ namespace RealLifeOverhaul.Ui
                 }
                 int family = ra.Family;
                 int first = HiringRules.RoleOf((TFamily)family, 0);
-                var r = new WorkRow { Id = 900 + i, Icon = UiIcon.Flag, Name = TechText.FamilyName((TFamily)family) + ", " + TechText.Level(ra.Level), Sub = ra.Rival, Status = w.T("reallife_work_rival_ad", "Rival ad"),
+                var r = new WorkRow { Id = 900 + i, Icon = UiIcon.Flag, Name = TechText.FamilyName((TFamily)family) + ", " + TechText.Level(ra.Level),
+                    Sub = ra.Rival, Status = w.T("reallife_work_rival_ad", "Rival ad"),
                     Tone = UiRole.Muted, Chip = w.T("reallife_work_rival_ad", "Rival ad"), ChipTone = UiRole.Muted, Group = 900 + i,
                     Cells = new[] { null, "-", "-", first >= 0 ? TechText.Rate(d.GoingFor(first, ra.Level) * (10000 + ra.PayBp) / 10000) : "-", w.T("reallife_work_rival_ad", "Rival ad") },
                     Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.Muted },
@@ -326,7 +330,8 @@ namespace RealLifeOverhaul.Ui
             return t;
         }
 
-        private static WorkAmount Choice(int id, int value, string[] words) => new WorkAmount { Id = id, Value = Math.Max(0, Math.Min(words.Length - 1, value)), Min = 0, Max = words.Length - 1, Words = words,
+        private static WorkAmount Choice(int id, int value, string[] words) => new WorkAmount { Id = id, Value = Math.Max(0,
+            Math.Min(words.Length - 1, value)), Min = 0, Max = words.Length - 1, Words = words,
             Figure = words[Math.Max(0, Math.Min(words.Length - 1, value))] };
 
         // ------------------------------------------------------------------------------------------------- doing

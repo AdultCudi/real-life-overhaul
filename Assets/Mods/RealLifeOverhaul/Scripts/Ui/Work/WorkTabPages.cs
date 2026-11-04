@@ -463,7 +463,8 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < r.Acts.Count; i++)
             {
                 WorkAct a = r.Acts[i];
-                int at = b.Button(a.Label, a.Style, a.Icon, a.Choice ? (UiAction)((int)UiAction.Pick1 + Math.Min(8, choices.Count)) : UiAction.Count, WorkBuilder.Do(a.Kind, a.Arg != 0 ? a.Arg : r.Id, a.Why, a.Opens));
+                int at = b.Button(a.Label, a.Style, a.Icon, a.Choice ? (UiAction)((int)UiAction.Pick1 + Math.Min(8, choices.Count)) : UiAction.Count,
+                    WorkBuilder.Do(a.Kind, a.Arg != 0 ? a.Arg : r.Id, a.Why, a.Opens));
                 choices.Add(b.ModelAt(at));
             }
             WorkAmount[] amounts = t.Amounts.ToArray();

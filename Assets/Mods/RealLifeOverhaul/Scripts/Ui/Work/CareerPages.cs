@@ -143,7 +143,8 @@ namespace RealLifeOverhaul.Ui
                 EmptyBody = w.T("reallife_work_empty_applications", "Apply from Jobs and the employer answers within a day or two. Offers and interviews show here."),
                 EmptyActLabel = w.T("reallife_career_button_see_jobs", "See all the jobs"), EmptyAct = new WorkAct { Kind = WorkKinds.GoTab, Arg = Jobs, Opens = true },
                 NoteLead = w.T("reallife_work_apps_how_lead", "How it goes."),
-                NoteText = w.T("reallife_work_apps_how", "An employer answers a day or two after you apply. An interview or an offer shows here, and an offer can be accepted, asked up or declined.") };
+                NoteText = w.T("reallife_work_apps_how",
+                    "An employer answers a day or two after you apply. An interview or an offer shows here, and an offer can be accepted, asked up or declined.") };
             t.Columns = new[] { Col(w.T("reallife_work_col_job", "Job"), UiCellKind.Tile), Col(w.T("reallife_work_col_sent", "Sent"), UiCellKind.Text, 96),
                 Col(w.T("reallife_work_col_answer", "Answer by"), UiCellKind.Text, 104), Col(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 128) };
             return t;
@@ -208,7 +209,8 @@ namespace RealLifeOverhaul.Ui
             }
             // F is the desk's locate link (a shift starts at the desk, never here), P the rise; the answers to a matter and a conflict come after, and leaving last.
             int head = b.Button(w.T("reallife_work_show_desk", "Show the desk"), UiButtonKind.Primary, UiIcon.Locate, UiAction.Alt, WorkBuilder.Do((int)CareerAct.ShowDesk, 0, null, true));
-            int rise = b.Button(w.T("reallife_life_button_rise", "Ask for a rise"), UiButtonKind.Secondary, UiIcon.TrendUp, UiAction.Option, WorkBuilder.Do((int)CareerAct.AskRise, 0, j.CanAsk ? null : j.AskWhy));
+            int rise = b.Button(w.T("reallife_life_button_rise", "Ask for a rise"), UiButtonKind.Secondary, UiIcon.TrendUp, UiAction.Option,
+                WorkBuilder.Do((int)CareerAct.AskRise, 0, j.CanAsk ? null : j.AskWhy));
             int a = -1, c2 = -1, d = -1;
             if (j.MatterText != null)
             {
@@ -219,7 +221,8 @@ namespace RealLifeOverhaul.Ui
             {
                 d = b.Button(w.T("reallife_life_button_declare", "Declare the conflict"), UiButtonKind.Secondary, UiIcon.Warning, UiAction.Count, WorkBuilder.Do((int)CareerAct.Declare));
             }
-            int resign = j.Leaving ? -1 : b.Button(w.T("reallife_career_button_resign", "Hand in notice"), UiButtonKind.Destructive, UiIcon.SignOut, UiAction.Count, WorkBuilder.Do((int)CareerAct.Resign));
+            int resign = j.Leaving ? -1 : b.Button(w.T("reallife_career_button_resign", "Hand in notice"), UiButtonKind.Destructive, UiIcon.SignOut,
+                UiAction.Count, WorkBuilder.Do((int)CareerAct.Resign));
             int walk = b.Button(w.T("reallife_career_button_walk_out", "Walk out"), UiButtonKind.Destructive, UiIcon.SignOut, UiAction.Count, WorkBuilder.Do((int)CareerAct.WalkOut));
             var heads = new List<UiActionModel> { b.ModelAt(head), b.ModelAt(rise) };
             var more = new List<UiActionModel>(4);
@@ -247,7 +250,8 @@ namespace RealLifeOverhaul.Ui
             var b = new WorkBuilder(w);
             b.Button(w.T("reallife_career_button_see_jobs", "See all the jobs"), UiButtonKind.Primary, UiIcon.Search, UiAction.Alt, WorkBuilder.Do(WorkKinds.GoTab, Jobs, null, true));
             b.Button(w.T("reallife_career_button_see_courses", "See the courses"), UiButtonKind.Secondary, UiIcon.Books, UiAction.Option, WorkBuilder.Do((int)CareerAct.OpenCampus, 0, null, true));
-            b.Button(w.T("reallife_career_button_professions", "See the professions"), UiButtonKind.Secondary, UiIcon.ListChecks, UiAction.Count, WorkBuilder.Do(WorkKinds.GoTab, Professions, null, true));
+            b.Button(w.T("reallife_career_button_professions", "See the professions"), UiButtonKind.Secondary, UiIcon.ListChecks, UiAction.Count,
+                WorkBuilder.Do(WorkKinds.GoTab, Professions, null, true));
             WorkPage page = b.Done();
             UiActionModel[] actions = page.Model.Actions;
             var best = f.Best.ToArray();
@@ -302,9 +306,11 @@ namespace RealLifeOverhaul.Ui
                 float ry = cy + WorkPanel.SectionHead(s, at, x + lw + gap, cy, rw, stepsTitle, null);
                 for (int i = 0; i < steps.Length; i++)
                 {
-                    int disc = UiDraw.Circle(s, at, x + lw + gap, ry + (UiTokens.Control - UiTokens.Icon - UiTokens.S2) / 2f, UiTokens.Icon + UiTokens.S2, UiTokens.Icon + UiTokens.S2, UiRole.Tile, UiFlags.Middle);
+                    int disc = UiDraw.Circle(s, at, x + lw + gap, ry + (UiTokens.Control - UiTokens.Icon - UiTokens.S2) / 2f,
+                        UiTokens.Icon + UiTokens.S2, UiTokens.Icon + UiTokens.S2, UiRole.Tile, UiFlags.Middle);
                     UiDraw.TextMiddle(s, at.In(disc), x + lw + gap, ry, UiTokens.Control, UiTokens.Icon + UiTokens.S2, UiStyle.SmallStrong, UiRole.AccentText, (i + 1).ToString(), UiFlags.Centre);
-                    UiDraw.TextMiddle(s, at, x + lw + gap + UiTokens.Icon + UiTokens.S2 + UiTokens.S3, ry, UiTokens.Control, rw - UiTokens.Icon - UiTokens.S2 - UiTokens.S3, UiStyle.Body, UiRole.Text, steps[i],
+                    UiDraw.TextMiddle(s, at, x + lw + gap + UiTokens.Icon + UiTokens.S2 + UiTokens.S3, ry, UiTokens.Control,
+                        rw - UiTokens.Icon - UiTokens.S2 - UiTokens.S3, UiStyle.Body, UiRole.Text, steps[i],
                         UiFlags.Truncate);
                     ry += UiTokens.Control + UiTokens.S1;
                 }

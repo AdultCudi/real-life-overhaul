@@ -188,7 +188,8 @@ namespace RealLifeOverhaul.Ui
                     if (r.ActAt >= 0 && r.ActAt + 1 < actions.Length)
                     {
                         UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, w - ControlWidth - UiTokens.S3, UiStyle.Body, UiRole.Text, r.Label, UiFlags.Label | UiFlags.Truncate);
-                        UiDraw.Stepper(s, at, x + w - ControlWidth, y, ControlWidth, r.Value, !actions[r.ActAt].Disabled, !actions[r.ActAt + 1].Disabled, WorkCmd.NudgeLess, WorkCmd.Read, WorkCmd.NudgeMore, r.ActAt, false);
+                        UiDraw.Stepper(s, at, x + w - ControlWidth, y, ControlWidth, r.Value, !actions[r.ActAt].Disabled,
+                            !actions[r.ActAt + 1].Disabled, WorkCmd.NudgeLess, WorkCmd.Read, WorkCmd.NudgeMore, r.ActAt, false);
                     }
                     break;
                 case WorkField.Check:
@@ -202,7 +203,8 @@ namespace RealLifeOverhaul.Ui
                     UiDraw.TextMiddle(s, at, x, y, UiTokens.PairRow, UiDraw.SnapDown(w * 0.34f), UiStyle.Body, UiRole.Text, r.Bar.Label, UiFlags.Truncate);
                     float label = UiDraw.SnapDown(w * 0.34f), value = UiTextRules.Width("100", UiStyle.BodyStrong) + UiTokens.S1;
                     UiDraw.Meter(s, at, x + label, y + (UiTokens.PairRow - UiTokens.S1) / 2f, w - label - value - UiTokens.S2, UiTokens.S1, r.Bar.Value, UiTokens.Grade(r.Bar.Value));
-                    UiDraw.TextMiddle(s, at, x + w - value, y, UiTokens.PairRow, value, UiStyle.BodyStrong, UiTokens.Grade(r.Bar.Value), r.Bar.Value.ToString(System.Globalization.CultureInfo.InvariantCulture), UiFlags.Right);
+                    UiDraw.TextMiddle(s, at, x + w - value, y, UiTokens.PairRow, value, UiStyle.BodyStrong, UiTokens.Grade(r.Bar.Value),
+                        r.Bar.Value.ToString(System.Globalization.CultureInfo.InvariantCulture), UiFlags.Right);
                     break;
                 case WorkField.Tile:
                     float tile = UiTokens.ControlSmall, ty = y + (h - tile) / 2f;

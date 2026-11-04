@@ -6,7 +6,7 @@ namespace RealLifeOverhaul.Ui
     /// The glyph each profession, subject and kind of thing has on the work apps, so no two kinds of thing share one picture where the kit has a
     /// glyph for each. A glyph names a kind and nothing else (RLO-UI-017). Game-free.
     /// </summary>
-    public static class WorkGlyphs
+    public static partial class WorkGlyphs
     {
         public static UiIcon Profession(int id)
         {

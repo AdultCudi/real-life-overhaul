@@ -31,7 +31,8 @@ namespace RealLifeOverhaul.Careers
             return null;
         }
 
-        /// <summary>Show on map for a course's school: the university's permanent building or the game's school; a course taught online or on a ward has no place. Null if done, else a reason key.</summary>
+        /// <summary>Show on map for a course's school: the university's permanent building or the game's school; a course taught online or on a ward
+        /// has no place. Null if done, else a reason key.</summary>
         internal string ShowCampus(Campus campus)
         {
             string street;
