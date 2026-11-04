@@ -43,7 +43,8 @@ namespace RealLifeOverhaul.Flare
     {
         public const char Part = 'F';
         public const string Version = "FN1";
-        public const int LinesMost = 16;          // lines of one guest's request the host reads
+        public const int PostsWhole = 260;        // shared posts a whole part carries at most: the newest (a city's day is about a hundred)
+        public const int LinesMost = 16;         // lines of one guest's request the host reads
         public const int AskChars = 1600;         // the longest line of a request a host reads; a picture's piece has its own bound
         public const int NameMost = 32;           // characters of a player's name
         public const int PicturesWhole = 6;       // the newest pictures in the whole part
@@ -85,7 +86,13 @@ namespace RealLifeOverhaul.Flare
             b.Append(Version).Append('|').Append(day.ToString(Inv)).Append('|').Append(f.Net.CitySeed.ToString(Inv));
             Texts(b, hostId);
             Ints(b, session);
-            for (int i = 0; i < f.Posts.Count; i++)
+            int first = f.Posts.Count;
+            for (int left = PostsWhole; first > 0 && left > 0;)
+            {
+                first--;
+                left -= IsShared(f, f.Posts[first], hostShares) ? 1 : 0;   // the newest PostsWhole shared ones: a big city's three days need not all travel
+            }
+            for (int i = first; i < f.Posts.Count; i++)
             {
                 if (IsShared(f, f.Posts[i], hostShares))
                 {

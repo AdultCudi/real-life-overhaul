@@ -51,15 +51,16 @@ namespace RealLifeOverhaul.Flare
     public static class FlareCast
     {
         public const int FirstDealKind = 5;        // the company's campaign kind of FlareDeal.Post; the other deals follow in order
-        public const int Start = 16;               // influencers on the first day, a little under the level
-        public const int CitizensEach = 22;        // the city's people for each active influencer the city settles around
-        public const int Level = FlareLiveRules.Citizens / CitizensEach;   // 18 for four hundred: newcomers and fades pull the cast towards it
+        public const int Start = 28;               // influencers on the first day, the level (a city this size has dozens, not a handful: it was 16)
+        public const int CitizensEach = 14;        // the city's people for each active influencer the city settles around
+        public const int Level = FlareLiveRules.Citizens / CitizensEach;   // 28 for four hundred: newcomers and fades pull the cast towards it
+        public const int TopUpPerDay = 4;          // influencers a day a cast under the start gets, until it has them (a save from before, which began with 16: a week)
         public const int ArrivalTries = 3;         // the city's own newcomers a month, at most
         public const int ArrivalBase = 60;         // per mille each, at the level...
         public const int ArrivalPull = 600;        // ...and so many more for a cast with none, in proportion
         public const int CrowdBp = 150;            // basis points of growth a month each active one loses for every one over the level
         public const int PostsLevel = 12;          // active influencers whose posts fill the feed; more share it, so the feed's volume stays
-        public const int ActiveSoft = 60;          // a safety bound, never reached in play: no newcomer at this many active
+        public const int ActiveSoft = 90;          // a safety bound, never reached in play: no newcomer at this many active
         public const int KeptMost = 240;           // records kept, active or not: one who stopped and is named by nothing goes first
         public const int MonthDays = 30;
         public const int PastHiresMost = 32;   // the campaign posts kept: the newest, for the studio and the notifications
@@ -130,6 +131,23 @@ namespace RealLifeOverhaul.Flare
                 }
             }
             return false;
+        }
+
+        /// <summary>
+        /// A cast under <see cref="Start"/> active grows to it, <see cref="TopUpPerDay"/> a day: a save from before a city this size had its cast.
+        /// Their followers are as the first day's cast's. How many came.
+        /// </summary>
+        public static int TopUp(FlareFile f, int day, IReadOnlyList<string> districts)
+        {
+            int made = 0;
+            for (int active = f.ActiveInfluencers; active < Start && made < TopUpPerDay && f.Influencers.Count > 0; active++)
+            {
+                int i = f.Influencers.Count + made;
+                int roll = FlareRules.Roll(f.CastSeed, i, 1);
+                New(f, (FlareNiche)(i % 6), District(districts, f.CastSeed, i), day, 2000 + (int)(58000.0 * roll / 1000.0 * roll / 1000.0), -1, false);
+                made++;
+            }
+            return made;
         }
 
         /// <summary>The first day's cast, one in each niche but business, if there is none yet. The same seed gives the same cast.</summary>

@@ -12,8 +12,8 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public sealed partial class FlareScreen : IUiScreen, IUiTypingSubmit, IUiTypingQuiet
     {
-        public const int FeedMost = 60, NoticesMost = FlareDirector.KitNoticesMost, ThreadsMost = 40, BubblesMost = 80, ResultsMost = 30, ReviewsMost = 40,
-            InfluencersMost = 30, CardsMost = 24, StoriesMost = FlareFace.MostStories, WhoMost = 2, TrendsMost = 3, HistoryMost = 8;
+        public const int FeedMost = 100, NoticesMost = FlareDirector.KitNoticesMost, ThreadsMost = 40, BubblesMost = 80, ResultsMost = 30, ReviewsMost = 40,
+            InfluencersMost = 30, CardsMost = 24, StoriesMost = FlareFace.MostStories, WhoMost = 5, ExploreWhoMost = 12, TrendsMost = 5, HistoryMost = 8;   // the side drops the rows that do not fit
 
         private readonly FlareDirector _flare;
         private readonly FlareFaceModel _m = new FlareFaceModel();

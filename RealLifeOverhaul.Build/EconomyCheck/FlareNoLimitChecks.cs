@@ -296,7 +296,8 @@ internal static partial class Program
               && !FlareLiveRules.FirstToday(back, back.MovedDay, many.Net.Moved[5]),
             "Flare no limit: what moved today reads back from the save, so a reload does not move a business twice");
         string older = net.Substring(0, net.IndexOf('\n') < 0 ? net.Length : net.IndexOf('\n'));
-        older = older.Substring(0, older.LastIndexOf('|'));
+        older = older.Substring(0, older.LastIndexOf('|'));   // the people's day, the newest field
+        older = older.Substring(0, older.LastIndexOf('|'));   // the moved day
         var old = new FlareNet();
         FlareLiveStore.Read(old, older);
         Check(old.MovedDay == -1 && old.Moved.Count == 0 && old.NextCase == many.Net.NextCase, "Flare no limit: a save from before (no moved day) still loads");

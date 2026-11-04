@@ -12,7 +12,7 @@ namespace RealLifeOverhaul.Flare
         public const int PileOnFrom = 150;             // a post that went badly and was seen by this many: a pile-on
         public const int PileOnLeast = 4, PileOnMost = 10;   // replies
 
-        public const int DmGapDays = 2;
+        public const int DmGapDays = 1;
         public const int DmChance = 450;               // per mille a day after the gap
         public const int ChatPostMinutes = 3 * 24 * 60;   // game minutes: a post of the player's this recent is what "saw your post earlier" means
 
@@ -402,7 +402,7 @@ namespace RealLifeOverhaul.Flare
             else
             {
                 with = "c" + who;
-                what = PostedBefore(f, at) ? "chat" : null;
+                what = PostedBefore(f, at) ? "chat" : roll % 3 == 0 ? "hello" : roll % 3 == 1 ? "hello_2" : "hello_3";   // a neighbour who has seen the player around, before any post
             }
             if (with == null || what == null)
             {
