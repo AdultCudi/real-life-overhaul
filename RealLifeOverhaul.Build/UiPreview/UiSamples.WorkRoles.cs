@@ -22,8 +22,8 @@ internal static partial class UiSamples
     }
 
     private static UiNavEntry[] RolesNav(UtilitiesWords w) => new[] { WkNav(UiIcon.ClipboardText, w.T("reallife_roles_tab_jobs", "Jobs"), "5"),
-        WkNav(UiIcon.People, w.T("reallife_roles_tab_applicants", "Applicants"), "10"), WkNav(UiIcon.Globe, w.T("reallife_roles_tab_market", "Market")),
-        WkNav(UiIcon.Search, w.T("reallife_roles_tab_search", "Search")), WkNav(UiIcon.Person, w.T("reallife_roles_tab_team", "Team"), "4") };
+        WkNav(UiIcon.People, w.T("reallife_roles_tab_applicants", "Applicants"), "30"), WkNav(UiIcon.Globe, w.T("reallife_roles_tab_market", "Market")),
+        WkNav(UiIcon.Search, w.T("reallife_roles_tab_search", "Search")), WkNav(UiIcon.Person, w.T("reallife_roles_tab_team", "Team"), "8") };
 
     private static WorkApp RolesAppOf(UtilitiesWords w, string state, WorkView v)
     {
@@ -55,9 +55,12 @@ internal static partial class UiSamples
         t.EmptyTitle = w.T("reallife_work_no_ads_title", "No role is open");
         t.EmptyBody = w.T("reallife_work_no_ads", "Post an ad and applicants arrive over a few days.");
         t.Acts.Add(WkAct(105, w.T("reallife_work_new_ad", "New ad"), UiButtonKind.Primary, UiIcon.Plus, null, true));
+        t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_open_posts", "Open posts"), "8"));
+        t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_waiting", "Applicants waiting"), "30"));
+        t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_ads_cost", "Ads this month"), "$1,480"));
         string[][] ads =
         {
-            new[] { "Game designer", "Pioneer Game Studio", "2 of 2", "7", "$42", "Open", "p" }, new[] { "Support agent", "Pioneer Game Studio", "1 of 1", "12", "$24", "Open", "m" },
+            new[] { "Game designer", "Pioneer Game Studio", "2 of 2", "10", "$42", "Open", "p" }, new[] { "Support agent", "Pioneer Game Studio", "1 of 1", "8", "$24", "Open", "m" },
             new[] { "Data centre technician", "Hudson Data Hall", "3 of 4", "4", "$31", "Open", "d" }, new[] { "Network engineer", "Midtown Fibre Co", "1 of 1", "5", "$44", "Closes in 3 days", "n" },
             new[] { "Tester", "Pioneer Game Studio", "1 of 1", "3", "$26", "Open", "s" }
         };
@@ -69,11 +72,17 @@ internal static partial class UiSamples
             r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_pay_up_to", "Pay up to"), ads[i][4] + "/h"));
             r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_posts", "Posts to fill"), ads[i][2]));
             var facts = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_the_ad", "The ad") };
-            facts.Pairs.Add(new KeyValuePair<string, string>("Minimum skill", "60"));
-            facts.Pairs.Add(new KeyValuePair<string, string>("Arrangement", "On site"));
-            facts.Pairs.Add(new KeyValuePair<string, string>("Closes", i == 3 ? "Day 408" : "Day 416"));
-            facts.Pairs.Add(new KeyValuePair<string, string>("Boosted", i == 0 ? "Yes" : "No"));
+            facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_ad_skill", "Minimum skill"), "60"));
+            facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_ad_arrangement", "Arrangement"), w.T("reallife_work_arr_onsite", "On site")));
+            facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_ad_closes", "Closes"), i == 3 ? "day 408" : "day 416"));
+            facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_ad_boosted", "Boosted"), i == 0 ? w.T("reallife_work_yes", "Yes") : w.T("reallife_work_no", "No")));
             r.Sections.Add(facts);
+            var came = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_how_it_goes", "How it is going") };
+            int[] cameBy = { 10, 8, 4, 5, 3 };
+            came.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_applicants", "Applicants"), cameBy[i].ToString()));
+            came.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_shortlisted_n", "On your shortlist"), (cameBy[i] / 3).ToString()));
+            came.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_offers_out", "Offers out"), (cameBy[i] / 5).ToString()));
+            r.Sections.Add(came);
             if (i == 0)
             {
                 var hired = new WorkSection { Part = WorkPart.People, Title = w.T("reallife_work_hired_month", "Hired this month"), Note = "2" };
@@ -145,12 +154,12 @@ internal static partial class UiSamples
         t.EmptyIcon = UiIcon.People;
         var aside = new WorkAside { Title = w.T("reallife_work_open_roles", "Open roles"), Count = "5", ListTitle = w.T("reallife_work_hired_month", "Hired this month"), ListCount = "3",
             Foot = w.T("reallife_work_applicants_foot", "Applicants arrive over a few days and take other offers if you wait.") };
-        string[][] roles = { new[] { "Game designer", "Pioneer Game Studio", "7" }, new[] { "Support agent", "Pioneer Game Studio", "12" }, new[] { "Data centre technician", "Hudson Data Hall", "4" },
+        string[][] roles = { new[] { "Game designer", "Pioneer Game Studio", "10" }, new[] { "Support agent", "Pioneer Game Studio", "8" }, new[] { "Data centre technician", "Hudson Data Hall", "4" },
             new[] { "Network engineer", "Midtown Fibre Co", "5" }, new[] { "Tester", "Pioneer Game Studio", "3" } };
         UiIcon[] icons = { UiIcon.PaintBrush, UiIcon.Headset, UiIcon.HardDrives, UiIcon.Globe, UiIcon.Bug };
         for (int i = 0; i < roles.Length; i++)
         {
-            aside.Rows.Add(new WorkRow { Id = i + 1, Icon = icons[i], Name = roles[i][0], Sub = roles[i][1], Status = roles[i][2] });
+            aside.Rows.Add(new WorkRow { Id = i + 1, Icon = icons[i], Name = roles[i][0], Sub = roles[i][1], Status = state == "applicants_none" ? "0" : roles[i][2] });
         }
         aside.List.Add(new WorkPerson { Name = "Kenji Mori", Role = "Producer, day 389", Ring = UiRole.Ok });
         aside.List.Add(new WorkPerson { Name = "Jonah Reyes", Role = "QA lead, day 394", Ring = UiRole.Ok });
@@ -173,40 +182,40 @@ internal static partial class UiSamples
             string[] p = people[i];
             bool competing = i == 0;
             UiRole tone = competing ? UiRole.Warn : p[6].StartsWith("Notice") ? UiRole.Muted : UiRole.Ok;
-            var r = new WorkRow { Id = i + 1, Person = p[0], Name = p[0], Sub = "From " + p[1], Ring = UiRole.Ok, Group = 1, Cells = new[] { null, p[2], p[3], p[4], p[5], p[6] },
-                Values = new[] { 0, int.Parse(p[2]), int.Parse(p[3]), int.Parse(p[4]), 0, 0 }, Status = p[6], Tone = tone, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, tone } };
+            var r = new WorkRow { Id = i + 1, Person = p[0], Name = p[0], Sub = "From " + p[1], Ring = UiRole.Ok, Group = 1, Cells = new[] { null, p[2], p[3], p[4], p[5], StateWord(w, p[6]) },
+                Values = new[] { 0, int.Parse(p[2]), int.Parse(p[3]), int.Parse(p[4]), 0, 0 }, Status = StateWord(w, p[6]), Tone = tone, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, tone } };
             r.Open = WkAct(110, string.Empty, UiButtonKind.Secondary, UiIcon.Person, null, true, r.Id);
             r.Sub = "29, game designer at " + p[1] + " for 4 years";
             r.Sub = "From " + p[1];
             r.Title = p[0];
             r.Sentence = "29, game designer at " + p[1] + " for 4 years";
             var attrs = new WorkSection { Part = WorkPart.Bars, Title = w.T("reallife_work_attributes", "Attributes") };
-            attrs.Bars.Add(new WorkBar { Label = "Craft", Value = int.Parse(p[2]) });
-            attrs.Bars.Add(new WorkBar { Label = "Creativity", Value = int.Parse(p[3]) });
-            attrs.Bars.Add(new WorkBar { Label = "Teamwork", Value = int.Parse(p[4]) });
-            attrs.Bars.Add(new WorkBar { Label = "Reliability", Value = 76 });
+            attrs.Bars.Add(new WorkBar { Label = w.T("reallife_work_skill_craft", "Craft"), Value = int.Parse(p[2]) });
+            attrs.Bars.Add(new WorkBar { Label = w.T("reallife_work_skill_ideas", "Ideas"), Value = int.Parse(p[3]) });
+            attrs.Bars.Add(new WorkBar { Label = w.T("reallife_work_skill_team", "Team"), Value = int.Parse(p[4]) });
+            attrs.Bars.Add(new WorkBar { Label = w.T("reallife_work_skill_reliability", "Reliability"), Value = 76 });
             r.Sections.Add(attrs);
             if (i == 0)
             {
                 var work = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_so_far_title", "Work so far") };
-                work.Pairs.Add(new KeyValuePair<string, string>("Game designer, Tidewater Interactive", "4 years, now"));
-                work.Pairs.Add(new KeyValuePair<string, string>("Junior designer, Pixel Harbour Games", "2 years"));
+                work.Pairs.Add(new KeyValuePair<string, string>(w.F("reallife_work_job_line", "{role}, {firm}", "role", w.T("reallife_work_role_designer", "Game designer"), "firm", "Tidewater Interactive"), w.F("reallife_work_years_now", "{n} years, now", "n", "4")));
+                work.Pairs.Add(new KeyValuePair<string, string>(w.F("reallife_work_job_line", "{role}, {firm}", "role", w.T("reallife_work_role_junior_designer", "Junior designer"), "firm", "Pixel Harbour Games"), w.F("reallife_work_n_years", "{n} years", "n", "2")));
                 r.Sections.Add(work);
             }
             var fit = new WorkSection { Part = WorkPart.Checks, Title = w.T("reallife_work_fit_for_role", "Fit for the role") };
-            fit.Checks.Add(new WorkNeed { Words = "Craft above your team's average of 71", Met = int.Parse(p[2]) > 71 });
-            fit.Checks.Add(new WorkNeed { Words = "Asks less than the $42 you set", Met = true });
+            fit.Checks.Add(new WorkNeed { Words = w.F("reallife_work_fit_craft", "Craft above your team's average of {n}", "n", "71"), Met = int.Parse(p[2]) > 71 });
+            fit.Checks.Add(new WorkNeed { Words = w.F("reallife_work_fit_pay", "Asks less than the {pay} you set", "pay", "$42"), Met = true });
             r.Sections.Add(fit);
             if (competing)
             {
-                var offer = new WorkSection { Part = WorkPart.Note, Lead = w.T("reallife_work_competing_offer_lead", "Competing offer"), Text = "Guo Interactive offered her $44 an hour yesterday. She answers by day 405.", NoteIcon = UiIcon.Flag };
+                var offer = new WorkSection { Part = WorkPart.Note, Lead = w.T("reallife_work_competing_offer_lead", "Competing offer"), Text = w.F("reallife_work_rival_offer_line", "{rival} offered {pay} an hour. They answer by {day}. Offer at least as much to hire them.", "rival", "Guo Interactive", "pay", "$44", "day", "day 405"), NoteIcon = UiIcon.Flag };
                 r.Sections.Add(offer);
             }
             int ask = int.Parse(p[5].Substring(1));
             int offerValue = v.Get(0, competing ? 44 : ask);
             if (t.Amounts.Count == 0)
             {
-                t.Amounts.Add(new WorkAmount { Id = 0, Value = offerValue, Min = 10, Max = 120, Figure = "$" + offerValue + " an hour" });
+                t.Amounts.Add(new WorkAmount { Id = 0, Value = offerValue, Min = 10, Max = 120, Figure = w.F("reallife_work_offer_figure", "{pay} an hour", "pay", "$" + offerValue) });
             }
             r.Sections.Add(new WorkSection { Part = WorkPart.Amount, Title = w.T("reallife_work_your_offer", "Your offer"), Stepper = 0 });
             r.Acts.Add(WkAct(101, w.F("reallife_work_hire_at", "Hire at {pay} an hour", "pay", "$" + offerValue), UiButtonKind.Primary, UiIcon.Check, null, false, r.Id));
@@ -214,6 +223,24 @@ internal static partial class UiSamples
             t.Rows.Add(r);
         }
         return t;
+    }
+
+    private static string StateWord(UtilitiesWords w, string state)
+    {
+        if (state == "Competing offer")
+        {
+            return w.T("reallife_work_competing_offer", "Competing offer");
+        }
+        if (state == "Available now")
+        {
+            return w.T("reallife_work_available_now", "Available now");
+        }
+        if (state.StartsWith("Notice, "))
+        {
+            string n = state.Substring(8);
+            return w.F("reallife_work_notice_of", "Notice, {n}", "n", n.Replace("weeks", w.T("reallife_work_weeks_word", "weeks")).Replace("week", w.T("reallife_work_week_word", "week")).Replace("days", w.T("reallife_work_days_word", "days")));
+        }
+        return state;
     }
 
     private static WorkTab RolesMarket(UtilitiesWords w)
@@ -230,6 +257,9 @@ internal static partial class UiSamples
             new[] { "Mei Tanaka", "Support", "Junior", "55", "$21", "Looking", "2" }, new[] { "Owen Fraser", "Data centre", "Mid", "69", "$30", "Looking", "1" }, new[] { "Sade Bello", "Network", "Senior", "81", "$46", "In work, 4 weeks", "1" },
             new[] { "Luca Ferri", "Game design", "Junior", "48", "$22", "Looking", "0" }, new[] { "Hanna Voss", "Support", "Mid", "66", "$26", "Looking", "2" }, new[] { "Idris Cole", "Testing", "Mid", "63", "$27", "Looking", "2" }
         };
+        t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_looking", "Looking"), seekers.Length.ToString()));
+        t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_rival_ads", "Rival ads"), "9"));
+        t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_unemployment", "Unemployment"), "6.2%"));
         for (int i = 0; i < seekers.Length; i++)
         {
             string[] s = seekers[i];
@@ -237,9 +267,15 @@ internal static partial class UiSamples
                 Status = s[5], Tone = s[5].StartsWith("In work") ? UiRole.Muted : UiRole.Ok };
             r.Sentence = s[1] + ", " + s[2].ToLowerInvariant() + ". Asks " + s[4] + " an hour.";
             var attrs = new WorkSection { Part = WorkPart.Bars, Title = w.T("reallife_work_attributes", "Attributes") };
-            attrs.Bars.Add(new WorkBar { Label = "Craft", Value = int.Parse(s[3]) });
-            attrs.Bars.Add(new WorkBar { Label = "Creativity", Value = 60 + i * 3 });
+            attrs.Bars.Add(new WorkBar { Label = w.T("reallife_work_skill_craft", "Craft"), Value = int.Parse(s[3]) });
+            attrs.Bars.Add(new WorkBar { Label = w.T("reallife_work_skill_ideas", "Ideas"), Value = 60 + i * 3 });
+            var facts = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_the_seeker", "The seeker") };
+            facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_asks", "Asks"), s[4] + "/h"));
+            facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_going_rate", "Going rate"), "$" + (int.Parse(s[4].Substring(1)) - 2) + "/h"));
+            facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_notice", "Notice"), s[5].StartsWith("In work") ? w.F("reallife_work_n_days", "{n} days", "n", (14 + i).ToString()) : w.T("reallife_work_none_word", "None")));
+            facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_rival_ads", "Rival ads"), (i % 3 + 1).ToString()));
             r.Sections.Add(attrs);
+            r.Sections.Add(facts);
             r.Acts.Add(WkAct(WorkKinds.GoTab, w.T("reallife_work_approach", "Approach"), UiButtonKind.Primary, UiIcon.Handshake, null, true, 0));
             t.Rows.Add(r);
         }
@@ -288,17 +324,30 @@ internal static partial class UiSamples
         string[][] team =
         {
             new[] { "Kenji Mori", "Producer, senior", "84", "$38", "82", "Pioneer Game Studio" }, new[] { "Jonah Reyes", "QA lead, mid", "77", "$32", "71", "Pioneer Game Studio" },
-            new[] { "Aiko Kato", "Cooling technician, mid", "70", "$29", "88", "Hudson Data Hall" }, new[] { "Rhys Evans", "Network engineer, mid", "74", "$34", "64", "Midtown Fibre Co" }
+            new[] { "Aiko Kato", "Cooling technician, mid", "70", "$29", "88", "Hudson Data Hall" }, new[] { "Rhys Evans", "Network engineer, mid", "74", "$34", "64", "Midtown Fibre Co" },
+            new[] { "Mira Solberg", "Game designer, mid", "72", "$31", "79", "Pioneer Game Studio" }, new[] { "Tomas Ruiz", "Support agent, junior", "58", "$22", "85", "Pioneer Game Studio" },
+            new[] { "Priya Nair", "Tester, mid", "66", "$27", "73", "Pioneer Game Studio" }, new[] { "Gabe Osei", "Data centre technician, junior", "55", "$24", "90", "Hudson Data Hall" }
         };
+        int[] hiredOn = { 389, 394, 398, 392, 385, 396, 400, 391 };
+        t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_payroll", "Payroll an hour"), "$236"));
+        t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_morale", "Average morale"), "79"));
+        t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_leaving", "Leaving"), "0"));
         for (int i = 0; i < team.Length; i++)
         {
             string[] p = team[i];
             var r = new WorkRow { Id = i + 1, Person = p[0], Name = p[0], Sub = p[5], Ring = UiRole.Ok, Cells = new[] { null, p[1], p[2], p[3], p[4] }, Values = new[] { 0, 0, int.Parse(p[2]), 0, int.Parse(p[4]) } };
             r.Open = WkAct(111, string.Empty, UiButtonKind.Secondary, UiIcon.Person, null, true, r.Id);
-            r.Sentence = p[1] + " at " + p[5] + ", hired day " + (380 + i * 4) + ".";
+            r.Sentence = p[1] + ", " + p[5];
+            var file = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_person_file", "File") };
+            file.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_hired_on", "Joined"), "day " + hiredOn[i]));
+            file.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_pay", "Pay"), p[3] + "/h"));
+            file.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_going_pay", "Going pay"), "$" + (int.Parse(p[3].Substring(1)) + 2) + "/h"));
+            file.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_last_review", "Last review"), "4 / 5, day " + (hiredOn[i] + 21)));
+            r.Sections.Add(file);
             var attrs = new WorkSection { Part = WorkPart.Bars, Title = w.T("reallife_work_attributes", "Attributes") };
-            attrs.Bars.Add(new WorkBar { Label = "Craft", Value = int.Parse(p[2]) });
-            attrs.Bars.Add(new WorkBar { Label = "Morale", Value = int.Parse(p[4]) });
+            attrs.Bars.Add(new WorkBar { Label = w.T("reallife_work_skill_craft", "Craft"), Value = int.Parse(p[2]) });
+            attrs.Bars.Add(new WorkBar { Label = w.T("reallife_work_col_morale", "Morale"), Value = int.Parse(p[4]) });
+            attrs.Bars.Add(new WorkBar { Label = w.T("reallife_work_burnout", "Burnout"), Value = 100 - int.Parse(p[4]) });
             r.Sections.Add(attrs);
             r.Acts.Add(WkAct(111, w.T("reallife_work_open_page", "Open their page"), UiButtonKind.Primary, UiIcon.Person, null, true, r.Id));
             t.Rows.Add(r);

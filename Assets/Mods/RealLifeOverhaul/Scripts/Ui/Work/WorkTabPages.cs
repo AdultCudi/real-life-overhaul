@@ -47,7 +47,7 @@ namespace RealLifeOverhaul.Ui
             List<WorkRow> shown = Shown(t, v, out int asideRole);
             int at = v.Row >= 0 && v.Row < shown.Count ? v.Row : shown.Count > 0 ? 0 : -1;
             WorkRow chosen = at >= 0 ? shown[at] : null;
-            var m = new WorkTableModel { SearchHint = t.Search, Query = v.Query, Aside = t.Aside, AsideChosen = t.Aside != null ? asideRole : -1, UnderLead = t.NoteLead,
+            var m = new WorkTableModel { Stats = t.Stats.Count > 0 ? t.Stats : null, SearchHint = t.Search, Query = v.Query, Aside = t.Aside, AsideChosen = t.Aside != null ? asideRole : -1, UnderLead = t.NoteLead,
                 UnderText = t.NoteText };
             m.Chips = Chips(b, t, v, w, out m.ChosenChip);
             UiDataTableModel tm = m.Table;
@@ -429,12 +429,12 @@ namespace RealLifeOverhaul.Ui
             string why = page.Why;
             page.Body = (s, ats, x, y, cw, bottom, keys) =>
             {
-                float top = y;
+                float top = y, afterTabs = y;
                 if (t.PersonTabs.Length > 0)
                 {
-                    top = PageTabs(s, ats, t.PersonTabs, v.PageTab, x, top);
+                    afterTabs = PageTabs(s, ats, t.PersonTabs, v.PageTab, x, top);   // the tabs and the page's buttons stand in one row
                 }
-                float cy = Buttons(s, ats, pageActs, x, top, cw, keys);
+                float cy = Math.Max(afterTabs, Buttons(s, ats, pageActs, x, top, cw, keys));
                 WorkForm.Lay(s, ats, form, actions, amounts, x, cy, cw, bottom - (why != null ? UiTokens.Control : 0f), keys);
                 if (why != null)
                 {

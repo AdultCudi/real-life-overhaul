@@ -36,6 +36,10 @@ public static partial class UiPreviewRunner
         command = UiAppWindow.NavCommand;
         arg = 1;
         walk = "DDR";
+        if (app == "career" && st == "jobs_empty")
+        {
+            arg = 2;   // nothing to rest on in the list: the mouse rests on the Applications tab, so the shot differs from the base
+        }
         bool table = app == "career" ? st.StartsWith("professions") || st.StartsWith("jobs") || st.StartsWith("applications")
             : app == "roles" ? st.StartsWith("jobs") || st.StartsWith("applicants") || st.StartsWith("market") || st.StartsWith("team")
             : app == "hustle" ? st.StartsWith("yours") || st.StartsWith("offers") || st.StartsWith("freelance") : st.StartsWith("schools");
@@ -48,7 +52,7 @@ public static partial class UiPreviewRunner
         else if ((app == "campus" && st.StartsWith("courses")) || (app == "hustle" && st.StartsWith("listings") && st != "listings_none"))
         {
             command = WorkCmd.Card;
-            arg = 2;
+            arg = st == "courses_full" ? 3 : 2;   // not the chosen card: a hover on it would not show
             walk = "RRDR";
         }
         else if (app == "campus" && st.StartsWith("studying") && st != "studying_none")

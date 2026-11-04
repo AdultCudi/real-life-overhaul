@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Ui
         public static readonly CampusLive Instance = new CampusLive();
 
         // the actions of this app, from 100 (the screen's own are 1 to 3)
-        private const int Enrol = 100, Pay = 101, Withdraw = 102, Graduate = 103, PayChild = 104, DeclineChild = 105, Tutor = 106, ShowSchool = 107, ShowMain = 108;
+        private const int Enrol = 100, Pay = 101, Withdraw = 102, Graduate = 103, PayChild = 104, DeclineChild = 105, Tutor = 106, ShowSchool = 107, ShowMain = 108, OpenTeacher = 109;
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         private static readonly StudyMode[] Modes = { StudyMode.FullTime, StudyMode.PartTime, StudyMode.Distance };
         private int _local, _wanted = -1, _readGeneration = -1;
@@ -217,6 +217,11 @@ namespace RealLifeOverhaul.Ui
                         "{years} years teaching, rated {rating} by students", "years", tutor.Years.ToString(Inv),
                         "rating", (tutor.Rating / 10f).ToString("0.0", Inv)) });
                     r.Sections.Add(teacher);
+                    if (tutor.PersonId > 0)
+                    {
+                        r.Acts.Add(new WorkAct { Kind = OpenTeacher, Arg = tutor.PersonId, Label = w.T("reallife_work_open_teacher", "Teacher's page"), Style = UiButtonKind.Secondary,
+                            Icon = UiIcon.Person, Opens = true });
+                    }
                 }
                 r.HintLead = w.T("reallife_work_classes_desk_lead", "Classes start at your desk.");
                 r.Hint = w.T("reallife_work_classes_desk_line", "Click it in the classroom when the bell rings, in the game's own work panel.");
@@ -555,6 +560,7 @@ namespace RealLifeOverhaul.Ui
                     CourseDef c = StudyCatalogue.All[i];
                     place = CareersDirector.Offered(c) && (c.SkillA == s || (c.SkillB == s && c.GainB > 0)) ? CareersText.Course(c.Id) : null;
                 }
+                t.SkillIcons.Add(place != null ? UiIcon.Cap : UiIcon.Briefcase);
                 t.SkillPlaces.Add(place != null ? w.F("reallife_work_taught_in", "Taught in {course}", "course", place) : w.T("reallife_work_taught_at_work", "Learned at work"));
             }
             return t;
@@ -620,8 +626,14 @@ namespace RealLifeOverhaul.Ui
                 row.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_results", "Results"), f.Results >= 0 ? f.Results.ToString(Inv) + "%" : "-"));
                 var facts = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_the_school", "The school") };
                 facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_owner", "Owner"), RealLifeOverhaul.Schools.SchoolsText.Owner(f.Owner)));
-                facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_inspection", "Inspection"), grade));
+                facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_teachers", "Teachers"), f.Teachers.ToString(Inv)));
+                facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_waiting", "Families waiting"), f.Waiting.ToString(Inv)));
                 row.Sections.Add(facts);
+                var marks = new WorkSection { Part = WorkPart.Bars, Title = w.T("reallife_work_how_it_does", "How it does") };
+                marks.Bars.Add(new WorkBar { Label = w.T("reallife_work_col_results", "Results"), Value = Math.Max(0, Math.Min(100, f.Results)) });
+                marks.Bars.Add(new WorkBar { Label = w.T("reallife_work_teachers_skill", "Teachers' skill"), Value = Math.Max(0, Math.Min(100, f.Skill)) });
+                marks.Bars.Add(new WorkBar { Label = w.T("reallife_work_places_filled", "Places filled"), Value = f.Places > 0 ? Math.Min(100, f.Pupils * 100 / f.Places) : 0 });
+                row.Sections.Add(marks);
                 if (f.Id == RealLifeOverhaul.Schools.SchoolRules.CampusId)
                 {
                     row.Locate = new WorkAct { Kind = ShowMain, Arg = f.Id, Label = w.T("reallife_work_show_school", "Show school"), Opens = true };
@@ -666,6 +678,7 @@ namespace RealLifeOverhaul.Ui
                     case PayChild: why = d.PayChild(ChildName(d, act.Arg)); break;
                     case DeclineChild: why = d.DeclineChild(ChildName(d, act.Arg)); break;
                     case ShowSchool: why = d.ShowCampus((Campus)act.Arg); break;
+                    case OpenTeacher: why = RealLifeOverhaul.Careers.PeoplePoolGame.Open(act.Arg) ? null : "reallife_career_why_route"; break;
                     case ShowMain: why = RealLifeOverhaul.Schools.SchoolsGame.Guide() ? null : "reallife_career_why_route"; break;
                     default: return false;
                 }

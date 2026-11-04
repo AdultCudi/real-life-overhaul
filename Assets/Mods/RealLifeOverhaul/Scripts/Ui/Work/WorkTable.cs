@@ -16,6 +16,7 @@ namespace RealLifeOverhaul.Ui
         public WorkAside Aside;
         public int AsideChosen = -1;
         public string UnderLead, UnderText;                     // a quiet band under a short table
+        public List<KeyValuePair<string, string>> Stats;        // figures that sum the list, in a strip under a short table
         public UiActionModel[] PageActs = new UiActionModel[0]; // buttons of the page itself, in the tool row's right
         public string Why;                                      // why a disabled button of the detail is disabled
     }
@@ -28,6 +29,24 @@ namespace RealLifeOverhaul.Ui
     public static class WorkTable
     {
         private const float AsideWidth = 248f;
+
+        private static float StatsHeight() => UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader) + UiTextRules.LineHeight(UiStyle.Number) + UiTokens.S1 + UiTokens.S4 * 2f);
+
+        // Figures that sum a short list: a small capital label over the value, each in its own cell of a darker field.
+        private static float StatStrip(UiScene s, UiAt at, List<KeyValuePair<string, string>> stats, float x, float y, float w)
+        {
+            float h = StatsHeight();
+            UiDraw.Box(s, at, x, y, w, h, UiRole.Field, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
+            int n = Math.Min(4, stats.Count);
+            float cell = UiDraw.SnapDown((w - UiTokens.S4 * 2f) / n), lh = UiTextRules.LineHeight(UiStyle.SectionHeader);
+            for (int i = 0; i < n; i++)
+            {
+                float cx = x + UiTokens.S4 + i * cell;
+                UiDraw.Text(s, at, cx, y + UiTokens.S4, cell - UiTokens.S2, UiStyle.SectionHeader, UiRole.Text2, stats[i].Key, UiFlags.Label | UiFlags.Truncate);
+                UiDraw.Text(s, at, cx, y + UiTokens.S4 + lh + UiTokens.S1, cell - UiTokens.S2, UiStyle.Number, UiRole.Text, stats[i].Value, UiFlags.Truncate);
+            }
+            return h;
+        }
 
         public static void Lay(UiScene s, UiAt at, WorkTableModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
@@ -42,15 +61,24 @@ namespace RealLifeOverhaul.Ui
             }
             float ty = Tools(s, at, m, tx, y, tw, keys);
             float room = bottom - ty;
-            if (m.UnderText != null && m.Table.RowCount > 0)
+            bool strip = m.Stats != null && m.Stats.Count > 0;
+            if ((m.UnderText != null || strip) && m.Table.RowCount > 0)
             {
-                float under = WorkPanel.NoteHeight(m.UnderLead, m.UnderText, tw) + UiTokens.S3;
+                float stats = strip ? StatsHeight() + UiTokens.S3 : 0f;
+                float under = (m.UnderText != null ? WorkPanel.NoteHeight(m.UnderLead, m.UnderText, tw) + UiTokens.S3 : 0f) + stats;
                 float rows = UiDataTable.RowHeight(m.Table) * m.Table.RowCount + UiDataTable.Chrome(m.Table) - (UiDataTable.HasTools(m.Table) ? UiTokens.Control + UiTokens.S3 : 0f);
                 if (rows + under <= room)
                 {
                     float end = ty + rows;
                     UiDataTable.Lay(s, at, m.Table, tx, ty, tw, rows, keys);
-                    WorkPanel.Note(s, at, UiIcon.Info, m.UnderLead, m.UnderText, tx, end + UiTokens.S3, tw);
+                    if (strip)
+                    {
+                        end += UiTokens.S3 + StatStrip(s, at, m.Stats, tx, end + UiTokens.S3, tw);
+                    }
+                    if (m.UnderText != null)
+                    {
+                        WorkPanel.Note(s, at, UiIcon.Info, m.UnderLead, m.UnderText, tx, end + UiTokens.S3, tw);
+                    }
                     Detail(s, at, m, x + w - panel, y, panel, bottom - y, keys);
                     return;
                 }

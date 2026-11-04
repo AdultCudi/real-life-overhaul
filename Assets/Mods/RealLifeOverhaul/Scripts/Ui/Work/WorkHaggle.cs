@@ -10,16 +10,16 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class WorkHaggle
     {
-        private const float Width = 920f, Side = 248f, Choice = 56f;
+        private const float Side = 320f, Choice = 48f;
 
         public static void Lay(UiScene s, UiAt at, WorkRow r, List<WorkAct> acts, UiActionModel[] choices, WorkAmount[] amounts, string why, float x, float y, float w, float bottom, IUiKeys keys)
         {
-            float inner = Width - Side - UiTokens.S8 * 2f;
-            float h = Height(r, acts, inner, why);
-            float cw = Math.Min(Width, w), cx = x + UiDraw.SnapDown((w - cw) / 2f), cy = y + Math.Max(0f, UiDraw.SnapDown((bottom - y - h) / 2f));
-            int card = UiDraw.Box(s, at, cx, cy, cw, Math.Min(h, bottom - y), UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Decor);
+            // the card is the page: the seller at the left, the offer at the right, the choices at the foot
+            float cw = w, cx = x, cy = y, ch = bottom - y;
+            float inner = cw - Side - UiTokens.S8 * 2f;
+            int card = UiDraw.Box(s, at, cx, cy, cw, ch, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Decor);
             UiAt on = at.In(card);
-            UiDraw.Box(s, on, cx, cy, Side, Math.Min(h, bottom - y), UiRole.Band, UiRole.None, -UiTokens.RadiusPanel, UiFlags.Decor);
+            UiDraw.Box(s, on, cx, cy, Side, ch, UiRole.Band, UiRole.None, -UiTokens.RadiusPanel, UiFlags.Decor);
             // the seller at the left
             float face = UiTokens.AvatarHero;
             string seller = r.Seller ?? r.Person ?? string.Empty;
@@ -65,18 +65,24 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Stepper(s, on, tx, ty, Math.Min(inner, 320f), a.Figure, a.CanLess, a.CanMore, WorkCmd.Less, WorkCmd.Type, WorkCmd.More, 0, false);
                 ty += UiTokens.Control + UiTokens.S5;
             }
+            // the choices stand at the card's foot: a button and what choosing it does, in a column of one width
+            float foot = choices.Length * (Choice + UiTokens.S2) + (string.IsNullOrEmpty(why) ? 0f : UiTextRules.LineHeight(UiStyle.Small) + UiTokens.S2);
+            ty = Math.Max(ty, cy + ch - UiTokens.S8 - foot);
+            float bw = 0f;
+            for (int i = 0; i < choices.Length; i++)
+            {
+                bw = Math.Max(bw, UiDraw.ButtonWidth(choices[i].Kind, choices[i].Label, choices[i].Icon, choices[i].Key, keys));
+            }
+            bw = Math.Min(inner * 0.5f, bw);
             for (int i = 0; i < choices.Length; i++)
             {
                 UiActionModel c = choices[i];
-                int face2 = UiDraw.Box(s, on, tx, ty, inner, Choice, UiRole.Field, UiRole.None, UiTokens.RadiusLarge);
-                UiAt inside = on.In(face2);
-                float bw = Math.Min(inner * 0.55f, UiDraw.ButtonWidth(c.Kind, c.Label, c.Icon, c.Key, keys));
-                UiDraw.Button(s, inside, tx + UiTokens.S3, ty + UiTokens.S2, bw, UiTokens.Control, c.Kind, c.Label, c.Icon, c.Key, keys, c.Command, c.Arg, c.Disabled);
+                UiDraw.Button(s, on, tx, ty, bw, UiTokens.Control, c.Kind, c.Label, c.Icon, c.Key, keys, c.Command, c.Arg, c.Disabled);
                 string note = i < acts.Count ? acts[i].Note : null;
                 if (!string.IsNullOrEmpty(note))
                 {
-                    float nx = tx + UiTokens.S3 + bw + UiTokens.S3;
-                    UiDraw.TextMiddle(s, inside, nx, ty, Choice, tx + inner - UiTokens.S3 - nx, UiStyle.Small, UiRole.Text2, note, UiFlags.Truncate);
+                    float nx = tx + bw + UiTokens.S4;
+                    UiDraw.TextMiddle(s, on, nx, ty, UiTokens.Control, tx + inner - nx, UiStyle.Small, UiRole.Text2, note, UiFlags.Truncate);
                 }
                 ty += Choice + UiTokens.S2;
             }
@@ -84,22 +90,6 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDraw.Text(s, on, tx, ty, inner, UiStyle.Small, UiRole.WarnText, why, UiFlags.Truncate);
             }
-        }
-
-        private static float Height(WorkRow r, List<WorkAct> acts, float inner, string why)
-        {
-            float h = UiTokens.S8 + UiTextRules.LineHeight(UiStyle.SectionHeader) + UiTokens.S2 + UiTextRules.LineHeight(UiStyle.AppTitle) + UiTokens.S4;
-            if (!string.IsNullOrEmpty(r.Sentence))
-            {
-                h += UiTextRules.WrappedHeight(r.Sentence, UiStyle.Body, inner, 3) + UiTokens.S4;
-            }
-            if (r.Figures.Count > 0)
-            {
-                h += UiTextRules.LineHeight(UiStyle.SectionHeader) + UiTokens.S1 + UiTextRules.LineHeight(UiStyle.Number) + UiTokens.S5;
-            }
-            h += UiTextRules.LineHeight(UiStyle.SectionHeader) + UiTokens.S2 + UiTokens.Control + UiTokens.S5;
-            h += acts.Count * (Choice + UiTokens.S2) + (string.IsNullOrEmpty(why) ? 0f : UiTextRules.LineHeight(UiStyle.Small) + UiTokens.S2) + UiTokens.S6;
-            return UiDraw.Snap(Math.Max(h, UiTokens.AvatarHero + UiTokens.S12 * 4f));
         }
     }
 }

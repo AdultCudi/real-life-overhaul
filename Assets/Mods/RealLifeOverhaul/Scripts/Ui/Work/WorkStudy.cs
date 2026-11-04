@@ -35,7 +35,7 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        public const float CardHeight = 148f;
+        public const float CardHeight = 192f;
 
         private static void CourseCard(UiScene s, UiAt at, WorkRow r, UiActionModel[] actions, int[] cardActs, int index, float x, float y, float w, float h, IUiKeys keys)
         {
@@ -278,6 +278,10 @@ namespace RealLifeOverhaul.Ui
             y += WorkPanel.SectionHead(s, at, x, y, w, t.Title, t.Lead) + UiTokens.S1;
             float colW = UiDraw.SnapDown((w - UiTokens.S8) / 2f), rowH = 56f;
             int perColumn = Math.Max(1, (int)((bottom - y) / rowH));
+            if (t.Skills.Count <= perColumn * 2)
+            {
+                perColumn = Math.Max(1, (t.Skills.Count + 1) / 2);   // two balanced columns, not one full and one empty
+            }
             for (int i = 0; i < t.Skills.Count && i < perColumn * 2; i++)
             {
                 int col = i / perColumn, row = i % perColumn;
@@ -285,12 +289,18 @@ namespace RealLifeOverhaul.Ui
                 WorkBar b = t.Skills[i];
                 UiDraw.Box(s, at, rx, ry, colW, rowH - UiTokens.S1, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
                 float lw = UiDraw.SnapDown(colW * 0.42f), pad = UiTokens.S4;
-                UiDraw.Text(s, at, rx + pad, ry + UiTokens.S2, lw - pad, UiStyle.Title, UiRole.Text, b.Label, UiFlags.Truncate);
+                float face = UiTokens.AvatarRow, fx = rx + pad;
+                int tile = UiDraw.Tile(s, at, fx, ry + (rowH - UiTokens.S1 - face) / 2f, face, UiRole.None, false);
+                UiDraw.Icon(s, at.In(tile), fx + (face - UiTokens.Icon) / 2f, ry + (rowH - UiTokens.S1 - UiTokens.Icon) / 2f, UiTokens.Icon, i < t.SkillIcons.Count ? t.SkillIcons[i] : UiIcon.Star, UiRole.None,
+                    UiFlags.Middle | UiFlags.Centre, true);
+                float lw0 = lw, tx = rx + face + UiTokens.S2;
+                lw -= face + UiTokens.S2;
+                UiDraw.Text(s, at, tx + pad, ry + UiTokens.S2, lw - pad, UiStyle.Title, UiRole.Text, b.Label, UiFlags.Truncate);
                 string place = i < t.SkillPlaces.Count ? t.SkillPlaces[i] : null;
-                UiDraw.Text(s, at, rx + pad, ry + UiTokens.S2 + UiTextRules.LineHeight(UiStyle.Title) + UiTokens.S1, lw - pad, UiStyle.Small, UiRole.Text2, place, UiFlags.Truncate);
+                UiDraw.Text(s, at, tx + pad, ry + UiTokens.S2 + UiTextRules.LineHeight(UiStyle.Title) + UiTokens.S1, lw - pad, UiStyle.Small, UiRole.Text2, place, UiFlags.Truncate);
                 float vw = UiTextRules.Width("100", UiStyle.BodyStrong) + UiTokens.S1;
-                float bw = colW - lw - vw - pad - UiTokens.S3;
-                UiDraw.Meter(s, at, rx + lw, ry + (rowH - UiTokens.Hairline - UiTokens.S1) / 2f, bw, UiTokens.S1, b.Value, UiRole.Accent);
+                float bw = colW - lw0 - vw - pad - UiTokens.S3;
+                UiDraw.Meter(s, at, rx + lw0, ry + (rowH - UiTokens.Hairline - UiTokens.S1) / 2f, bw, UiTokens.S1, b.Value, UiRole.Accent);
                 UiDraw.TextMiddle(s, at, rx + colW - pad - vw, ry, rowH - UiTokens.Hairline, vw, UiStyle.BodyStrong, UiTokens.Grade(b.Value), b.Value.ToString(Inv), UiFlags.Right);
             }
         }

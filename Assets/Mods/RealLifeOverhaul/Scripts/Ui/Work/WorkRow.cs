@@ -266,6 +266,7 @@ namespace RealLifeOverhaul.Ui
         public WorkStatement Statement;
         public readonly List<WorkBar> Skills = new List<WorkBar>(12);
         public readonly List<string> SkillPlaces = new List<string>(12);
+        public readonly List<UiIcon> SkillIcons = new List<UiIcon>(12);   // by skill: a cap where it was taught at a school, a briefcase where work taught it
         public readonly List<WorkKid> Kids = new List<WorkKid>(3);
         public WorkFormModel Form;
         public UiReaderModel Reader;
@@ -274,6 +275,7 @@ namespace RealLifeOverhaul.Ui
         public bool Sub;                               // a sub page (a person, a haggle): Back steps out of it
         public WorkRow Haggle;                         // a haggle's card, when one is open
         public string NoteLead, NoteText;
+        public readonly List<KeyValuePair<string, string>> Stats = new List<KeyValuePair<string, string>>(4);   // figures that sum a short list, drawn in a strip under it
     }
 
     /// <summary>An app of the work apps in facts: its sections and a tab for each. Game-free.</summary>

@@ -21,7 +21,7 @@ namespace RealLifeOverhaul.Ui
 
         // the actions of this app, from 100 (the screen's own are 1 to 3)
         private const int Buy = 100, Haggle = 101, Accept = 102, Counter = 103, Decline = 104, Unlist = 105, Book = 106, Cancel = 107, Send = 108,
-            List = 109, FixHome = 110, CleanHome = 111, ToShop = 112, CancelPlan = 113, WayItem = 114, BuyDeliver = 120, WayListing = 121, MakeOffer = 122, Reprice = 123, SendHelper = 124;
+            List = 109, FixHome = 110, CleanHome = 111, ToShop = 112, CancelPlan = 113, WayItem = 114, BuyDeliver = 120, WayListing = 121, MakeOffer = 122, Reprice = 123, SendHelper = 124, OpenSeller = 125;
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         private int _local, _wanted = -1, _readGeneration = -1;
         private WorkApp _app = new WorkApp();
@@ -126,7 +126,7 @@ namespace RealLifeOverhaul.Ui
             int n = 0;
             for (int i = 0; i < s.Gigs.Count; i++)
             {
-                n += s.Gigs[i].Stage == GigStage.Offered ? 1 : 0;
+                n += s.Gigs[i].Stage == GigStage.Offered || s.Gigs[i].Stage == GigStage.Booked || s.Gigs[i].Stage == GigStage.Helper || s.Gigs[i].Stage == GigStage.Loaded ? 1 : 0;
             }
             return n;
         }
@@ -183,7 +183,7 @@ namespace RealLifeOverhaul.Ui
                     r.Sections.Add(who);
                 }
                 var facts = new WorkSection { Part = WorkPart.Pairs, Title = l.Car ? w.T("reallife_work_the_vehicle", "The vehicle") : w.T("reallife_work_the_thing", "The thing") };
-                facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_condition", "Condition said"), HustleText.Condition(l.Shown)));
+                facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_condition", "Condition as listed"), HustleText.Condition(l.Shown)));
                 if (l.Car)
                 {
                     facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_colour", "Colour"), l.Colour ?? "-"));
@@ -239,6 +239,10 @@ namespace RealLifeOverhaul.Ui
                             "You do not have the money.") : !room ? w.T("reallife_work_too_many", "You hold as many things as you can.") : null));
                 }
                 r.Acts.Add(Act(WayListing, l.Id, w.T("reallife_hustle_button_way", "Show the way"), UiButtonKind.Secondary, UiIcon.Locate, true));
+                if (seller != null && seller.PersonId > 0)
+                {
+                    r.Acts.Add(Act(OpenSeller, seller.PersonId, w.T("reallife_work_open_seller", "Seller's page"), UiButtonKind.Secondary, UiIcon.Person, true));
+                }
                 t.Rows.Add(r);
             }
             return t;
@@ -368,6 +372,19 @@ namespace RealLifeOverhaul.Ui
                 }
                 t.Rows.Add(r);
             }
+            int paidAll = 0, worthAll = 0;
+            for (int i = 0; i < s.Items.Count; i++)
+            {
+                paidAll += s.Items[i].Paid + s.Items[i].Spent;
+                worthAll += d.WorthOf(s.Items[i]);
+            }
+            if (s.Items.Count > 0)
+            {
+                t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_things", "Things"), s.Items.Count.ToString(Inv)));
+                t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_in_all", "Paid and spent"), HustleText.Money(paidAll)));
+                t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_worth_all", "Worth now"), HustleText.Money(worthAll)));
+                t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_profit", "Profit at worth"), HustleText.Money(worthAll - paidAll)));
+            }
             WorkRow chosen = WorkTabPages.ChosenRow(t, view);
             Owned mine = chosen != null ? s.Item(chosen.Id) : null;
             if (mine != null && (mine.State == OwnedState.Kept || mine.State == OwnedState.Listed))
@@ -409,7 +426,7 @@ namespace RealLifeOverhaul.Ui
                 var r = new WorkRow { Id = o.Id, Icon = item != null ? WorkGlyphs.Thing(item.Thing, item.Car) : UiIcon.Package, Name = name,
                     Sub = w.F("reallife_work_listed_at_line", "Listed at {price}", "price", HustleText.Money(asking)),
                     Cells = new[] { null, o.Buyer, HustleText.Money(asking), HustleText.Money(o.Offer), WorkBuilder.Percent(pct) }, Values = new[] { 0, 0, 0, 0, pct < 0 ? -1 : pct > 0 ? 1 : 0 },
-                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, pct < 0 ? UiRole.Danger : UiRole.Ok } };
+                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None } };
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_offer", "Offer"), HustleText.Money(o.Offer)));
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_asking", "Asking"), HustleText.Money(asking)));
                 var who = new WorkSection { Part = WorkPart.People, Title = w.T("reallife_work_the_buyer", "The buyer") };
@@ -420,6 +437,16 @@ namespace RealLifeOverhaul.Ui
                     item == null || item.Asking <= o.Offer ? w.T("reallife_work_offer_is_asking", "Their offer is already your asking price.") : null));
                 r.Acts.Add(Act(Decline, o.Id, w.T("reallife_hustle_button_decline", "Turn it down"), UiButtonKind.Destructive, UiIcon.Close));
                 t.Rows.Add(r);
+            }
+            if (s.Offers.Count > 0)
+            {
+                int best = 0;
+                for (int i = 0; i < s.Offers.Count; i++)
+                {
+                    best = Math.Max(best, s.Offers[i].Offer);
+                }
+                t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_offers_open", "Offers open"), s.Offers.Count.ToString(Inv)));
+                t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_best_offer", "Best offer"), HustleText.Money(best)));
             }
             return t;
         }
@@ -551,6 +578,7 @@ namespace RealLifeOverhaul.Ui
                     }
                     return true;
                 }
+                case OpenSeller: return RealLifeOverhaul.Careers.PeoplePoolGame.Open(act.Arg);
                 case WayListing:
                     if (l == null)
                     {

@@ -37,12 +37,17 @@ internal static partial class UiSamples
         r.Acts.Add(new WorkAct { Kind = 100, Arg = id, Label = w.T("reallife_career_button_apply", "Apply"), Style = UiButtonKind.Primary, Icon = UiIcon.Check,
             Why = needs == 3 ? w.T("reallife_work_why_unqualified", "You do not hold what that post needs.") : null });
         r.Acts.Add(new WorkAct { Kind = 101, Arg = id, Label = w.T("reallife_career_button_map", "Show on map"), Style = UiButtonKind.Secondary, Icon = UiIcon.Locate, Opens = true });
-        var checks = new WorkSection { Part = WorkPart.Checks, Title = w.T("reallife_work_what_it_needs", "What it needs"), Note = w.F("reallife_work_needs_met", "{met} of {all} met", "met",
-            (needs == 0 ? 4 : needs == 1 ? 3 : 2).ToString(), "all", "4") };
-        checks.Checks.Add(new WorkNeed { Words = "12 months as a senior picker", Met = true });
-        checks.Checks.Add(new WorkNeed { Words = "Forklift licence", Met = needs != 3 });
-        checks.Checks.Add(new WorkNeed { Words = "Performance 85", Met = needs == 0, Have = needs == 0 ? null : "you have 82" });
-        checks.Checks.Add(new WorkNeed { Words = "Teamwork 75", Met = needs <= 1, Have = needs <= 1 ? null : "you have 71" });
+        var checks = new WorkSection { Part = WorkPart.Checks, Title = w.T("reallife_work_what_it_needs", "What it needs") };
+        checks.Checks.Add(new WorkNeed { Words = w.F("reallife_work_need_skill_points", "Skills at {n} points", "n", "60"), Met = true });
+        checks.Checks.Add(new WorkNeed { Words = w.T("reallife_work_need_takes_you", "The employer takes people like you"), Met = needs != 3 });
+        checks.Checks.Add(new WorkNeed { Words = w.F("reallife_work_need_performance", "Performance {n}", "n", "85"), Met = needs == 0, Have = needs == 0 ? null : w.F("reallife_work_you_have", "you have {n}", "n", "82") });
+        checks.Checks.Add(new WorkNeed { Words = w.F("reallife_work_need_teamwork", "Teamwork {n}", "n", "50"), Met = true });
+        int metCount = 0;
+        foreach (WorkNeed need in checks.Checks)
+        {
+            metCount += need.Met ? 1 : 0;
+        }
+        checks.Note = w.F("reallife_work_needs_met", "{met} of {all} met", "met", metCount.ToString(), "all", checks.Checks.Count.ToString());
         r.Sections.Add(checks);
         var against2 = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_pay_against", "Against your pay") };
         against2.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_your_pay_now", "Your pay now"), "$21.50/h"));
@@ -181,6 +186,12 @@ internal static partial class UiSamples
             steps.Checks.Add(new WorkNeed { Words = "Offer", Met = st == "Offered" || st == "Accepted", Have = st == "Offered" ? "$22.00 an hour" : null });
             steps.Checks.Add(new WorkNeed { Words = "Start at your desk", Met = st == "Accepted" });
             r.Sections.Add(steps);
+            var terms = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_the_post", "The post") };
+            terms.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_pay", "Pay"), "$" + (18 + i * 2) + ".00"));
+            terms.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_hours", "Hours"), i % 2 == 0 ? "09:00 to 17:00" : "06:00 to 14:00"));
+            terms.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_applied", "Applied"), sent[i][2].ToLowerInvariant()));
+            terms.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_answer_by", "Answer by"), sent[i][3].ToLowerInvariant()));
+            r.Sections.Add(terms);
             if (st == "Interview")
             {
                 r.Acts.Add(WkAct(102, w.T("reallife_career_button_interview", "Attend the interview"), UiButtonKind.Primary, UiIcon.Check, null, false, r.Id));
@@ -200,6 +211,11 @@ internal static partial class UiSamples
             }
             apps.Rows.Add(r);
         }
+        apps.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_waiting_answer", "Waiting for an answer"), "2"));
+        apps.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_interviews", "Interviews"), "1"));
+        apps.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_offers", "Offers"), "1"));
+        apps.NoteLead = w.T("reallife_work_apps_note_lead", "An answer takes a day or two.");
+        apps.NoteText = w.T("reallife_work_apps_note", "An employer weighs your record against anyone else who applied. Ask for a little more only when your record is strong.");
         f.ApplicationsWaiting = apps.Rows.Count;
     }
 
@@ -232,10 +248,20 @@ internal static partial class UiSamples
             var needs = new WorkSection { Part = WorkPart.Checks, Title = w.T("reallife_work_to_start", "To start") };
             needs.Checks.Add(new WorkNeed { Words = open ? "No qualification is asked" : "A course in the trade", Met = open });
             r.Sections.Add(needs);
+            var hiring = new WorkSection { Part = WorkPart.People, Title = w.T("reallife_work_hiring_now", "Hiring now"), Note = ((int)p[5]).ToString() };
+            string[] firms = { "Harbourside Freight HSF", "Brewed Beans, 5th Avenue", "Uptown Savings" };
+            for (int k = 0; k < System.Math.Min(3, (int)p[5]); k++)
+            {
+                hiring.People.Add(new WorkPerson { Name = firms[(i + k) % 3], Role = (string)p[2], Right = pay, Icon = UiIcon.Store });
+            }
+            r.Sections.Add(hiring);
             r.Acts.Add(WkAct(WorkKinds.GoTab, w.T("reallife_career_button_vacancies", "Vacancies"), UiButtonKind.Primary, UiIcon.Search, null, true, CareerPages.Jobs));
             r.Acts.Add(WkAct(112, w.T("reallife_career_button_see_courses", "See the courses"), UiButtonKind.Secondary, UiIcon.Books, null, true, r.Id));
             pro.Rows.Add(r);
         }
+        pro.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_open_posts", "Open posts"), "24"));
+        pro.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_open_to_you", "Open to you"), "5"));
+        pro.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_pay_range", "Starting pay"), "$16.50 to $25.50"));
     }
 
     private static void ManagementTab(UtilitiesWords w, CareerFacts f)

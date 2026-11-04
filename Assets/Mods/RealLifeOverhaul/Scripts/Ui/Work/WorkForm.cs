@@ -90,6 +90,16 @@ namespace RealLifeOverhaul.Ui
             {
                 iy += WorkPanel.SectionHead(s, at, ix, iy, iw, b.Title, b.Count) + UiTokens.S1;
             }
+            _buttonWidth = 0f;   // the single buttons of a band stand in one width, so their left edges agree
+            for (int i = 0; i < b.Rows.Count; i++)
+            {
+                WorkFormRow br = b.Rows[i];
+                if (br.Field == WorkField.Button && br.More.Count == 0 && br.ActAt >= 0 && br.ActAt < actions.Length)
+                {
+                    UiActionModel ba = actions[br.ActAt];
+                    _buttonWidth = Math.Max(_buttonWidth, Math.Min(iw * 0.5f, UiDraw.ButtonWidth(ba.Kind, ba.Label, ba.Icon, UiAction.Count, keys)));
+                }
+            }
             for (int i = 0; i < b.Rows.Count; i++)
             {
                 float rh = RowHeight(b.Rows[i], iw);
@@ -109,9 +119,11 @@ namespace RealLifeOverhaul.Ui
             {
                 UiActionModel a = actions[b.FootAt];
                 float bw = Math.Min(iw, UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, UiAction.Count, keys));
-                UiDraw.Button(s, at, ix + iw - bw, y + h - UiTokens.S2 - UiTokens.Control, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, UiAction.Count, keys, a.Command, a.Arg, a.Disabled);
+                UiDraw.Button(s, at, ix + iw - bw - UiTokens.S3, y + h - UiTokens.S2 - UiTokens.Control, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, UiAction.Count, keys, a.Command, a.Arg, a.Disabled);
             }
         }
+
+        private static float _buttonWidth;
 
         private static void Row(UiScene s, UiAt at, WorkFormRow r, UiActionModel[] actions, WorkAmount[] amounts, float x, float y, float w, float h, IUiKeys keys)
         {
@@ -128,7 +140,7 @@ namespace RealLifeOverhaul.Ui
                     {
                         WorkAmount a = amounts[r.Stepper];
                         float sel = Math.Min(SelectorWidth, UiDraw.SnapDown(w * 0.7f));
-                        float lw = w - (a.Words != null ? sel : ControlWidth) - UiTokens.S3;
+                        float lw = w - (a.Words != null ? sel : ControlWidth + UiTokens.S3) - UiTokens.S3;
                         UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, lw, UiStyle.Body, UiRole.Text, r.Label, UiFlags.Label | UiFlags.Truncate);
                         if (a.Words != null)
                         {
@@ -136,7 +148,7 @@ namespace RealLifeOverhaul.Ui
                         }
                         else
                         {
-                            UiDraw.Stepper(s, at, x + w - ControlWidth, y, ControlWidth, a.Figure, a.CanLess, a.CanMore, WorkCmd.Less, WorkCmd.Type, WorkCmd.More, r.Stepper, false);
+                            UiDraw.Stepper(s, at, x + w - ControlWidth - UiTokens.S3, y, ControlWidth, a.Figure, a.CanLess, a.CanMore, WorkCmd.Less, WorkCmd.Type, WorkCmd.More, r.Stepper, false);
                         }
                     }
                     break;
@@ -145,7 +157,7 @@ namespace RealLifeOverhaul.Ui
                     if (r.ActAt >= 0 && r.ActAt < actions.Length)
                     {
                         UiActionModel a = actions[r.ActAt];
-                        UiDraw.Switch(s, at, x + w - UiTokens.S16, y, UiTokens.S16, r.On, null, a.Command, a.Arg, a.Disabled);
+                        UiDraw.Switch(s, at, x + w - UiTokens.S16 - UiTokens.S3, y, UiTokens.S16, r.On, null, a.Command, a.Arg, a.Disabled);
                     }
                     break;
                 case WorkField.Button:
@@ -163,11 +175,11 @@ namespace RealLifeOverhaul.Ui
                         {
                             UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, lw, UiStyle.Body, UiRole.Text, r.Label, UiFlags.Label | UiFlags.Truncate);
                         }
-                        float right = x + w;
+                        float right = x + w - UiTokens.S3;   // the buttons end where a choice field's chooser does
                         for (int k = r.More.Count; k >= 0; k--)
                         {
                             UiActionModel b = k == 0 ? a : r.ActAt + k < actions.Length ? actions[r.ActAt + k] : a;
-                            float bw = Math.Min(right - x, UiDraw.ButtonWidth(b.Kind, b.Label, b.Icon, UiAction.Count, keys));
+                            float bw = Math.Min(right - x, r.More.Count == 0 ? Math.Max(_buttonWidth, UiDraw.ButtonWidth(b.Kind, b.Label, b.Icon, UiAction.Count, keys)) : UiDraw.ButtonWidth(b.Kind, b.Label, b.Icon, UiAction.Count, keys));
                             right -= bw;
                             UiDraw.Button(s, at, right, y, bw, UiTokens.Control, b.Kind, b.Label, b.Icon, UiAction.Count, keys, b.Command, b.Arg, b.Disabled);
                             right -= UiTokens.S2;

@@ -132,7 +132,7 @@ namespace RealLifeOverhaul.Ui
                 EmptyActLabel = w.T("reallife_career_button_professions", "See the professions"), EmptyAct = new WorkAct { Kind = WorkKinds.GoTab, Arg = Professions, Opens = true } };
             t.Columns = new[] { Col(w.T("reallife_work_col_job", "Job"), UiCellKind.Tile), Col(w.T("reallife_work_col_where", "Where"), UiCellKind.Text, 128), Col(string.Empty, UiCellKind.Action, 32),
                 Col(w.T("reallife_work_col_hours", "Hours"), UiCellKind.Text, 128), Col(w.T("reallife_work_col_pay_hour", "Pay an hour"), UiCellKind.Money, 96),
-                Col(w.T("reallife_work_col_against", "Against yours"), UiCellKind.Trend, 104), Col(w.T("reallife_work_col_you", "You"), UiCellKind.Chip, 136) };
+                Col(w.T("reallife_work_col_against", "Against yours"), UiCellKind.Trend, 104), Col(w.T("reallife_work_col_you", "You"), UiCellKind.Chip, 172) };
             return t;
         }
 
@@ -146,7 +146,7 @@ namespace RealLifeOverhaul.Ui
                 NoteText = w.T("reallife_work_apps_how",
                     "An employer answers a day or two after you apply. An interview or an offer shows here, and an offer can be accepted, asked up or declined.") };
             t.Columns = new[] { Col(w.T("reallife_work_col_job", "Job"), UiCellKind.Tile), Col(w.T("reallife_work_col_sent", "Sent"), UiCellKind.Text, 96),
-                Col(w.T("reallife_work_col_answer", "Answer by"), UiCellKind.Text, 104), Col(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 128) };
+                Col(w.T("reallife_work_col_answer", "Answer by"), UiCellKind.Text, 104), Col(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 156) };
             return t;
         }
 
@@ -157,7 +157,7 @@ namespace RealLifeOverhaul.Ui
                 EmptyBody = w.T("reallife_work_empty_professions", "Courses open the professions that ask for a qualification.") };
             t.Columns = new[] { Col(w.T("reallife_work_col_trade", "Profession"), UiCellKind.Tile), Col(w.T("reallife_work_col_hours", "Hours"), UiCellKind.Text, 176),
                 Col(w.T("reallife_work_col_pay_hour", "Pay an hour"), UiCellKind.Money, 104), Col(w.T("reallife_work_col_posts_open", "Posts open"), UiCellKind.Figure, 88, true),
-                Col(w.T("reallife_work_col_for_you", "For you"), UiCellKind.Chip, 136) };
+                Col(w.T("reallife_work_col_for_you", "For you"), UiCellKind.Chip, 172) };
             return t;
         }
 
