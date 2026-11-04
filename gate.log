@@ -1,0 +1,13 @@
+COMPILE ERRORS:
+D:\BigAmbitionsMod\wt-fixw1paths\RealLifeOverhaul.Build\EconomyCheck\UiChecks.Wiring.cs(12,21): error CS0119: 'Program.Path(List<LadderStep>)' is a method, which is not valid in the given context [D:\
+D:\BigAmbitionsMod\wt-fixw1paths\RealLifeOverhaul.Build\EconomyCheck\UiChecks.Wiring.cs(12,38): error CS0119: 'Program.Path(List<LadderStep>)' is a method, which is not valid in the given context [D:\
+D:\BigAmbitionsMod\wt-fixw1paths\RealLifeOverhaul.Build\EconomyCheck\UiChecks.Wiring.cs(13,42): error CS0119: 'Program.Path(List<LadderStep>)' is a method, which is not valid in the given context [D:\
+CatalogueCheck: ALL CHECKS PASSED
+NavCheck: ALL CHECKS PASSED (18126)
+EconomyCheck: could not be run (blocked three times)
+PlannerCheck: ALL CHECKS PASSED (225)
+ContractCheck: ALL CHECKS PASSED (5439)
+StandardCheck: ALL CHECKS PASSED (161378)
+check.pl non-zero counts: 0
+locales: LOCALES OK
+STOP: NOT EVERY CHECK PASSED

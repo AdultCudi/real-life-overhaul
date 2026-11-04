@@ -9,12 +9,12 @@ internal static partial class Program
     // MISSING) and a press that finds nothing gives the game's own view, never a silent no-op.
     private static void WiringChecks()
     {
-        string ui = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui"));
-        string market = File.ReadAllText(Path.Combine(ui, "Market", "MarketScreen.cs")), marketKit = File.ReadAllText(Path.Combine(ui, "Market", "MarketKit.cs"));
-        string rivals = File.ReadAllText(Path.Combine(ui, "Rivals", "RivalsScreen.cs")), rivalsKit = File.ReadAllText(Path.Combine(ui, "Rivals", "RivalsKit.cs"));
-        string persona = File.ReadAllText(Path.Combine(ui, "Persona", "PersonaScreen.cs")), personaKit = File.ReadAllText(Path.Combine(ui, "Persona", "PersonaKit.cs"));
-        string press = File.ReadAllText(Path.Combine(ui, "BizMan", "BizManScreen.Press.cs"));
-        string probe = File.ReadAllText(Path.Combine(ui, "Host", "UiProbe.cs"));
+        string ui = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui"));
+        string market = File.ReadAllText(System.IO.Path.Combine(ui, "Market", "MarketScreen.cs")), marketKit = File.ReadAllText(System.IO.Path.Combine(ui, "Market", "MarketKit.cs"));
+        string rivals = File.ReadAllText(System.IO.Path.Combine(ui, "Rivals", "RivalsScreen.cs")), rivalsKit = File.ReadAllText(System.IO.Path.Combine(ui, "Rivals", "RivalsKit.cs"));
+        string persona = File.ReadAllText(System.IO.Path.Combine(ui, "Persona", "PersonaScreen.cs")), personaKit = File.ReadAllText(System.IO.Path.Combine(ui, "Persona", "PersonaKit.cs"));
+        string press = File.ReadAllText(System.IO.Path.Combine(ui, "BizMan", "BizManScreen.Press.cs"));
+        string probe = File.ReadAllText(System.IO.Path.Combine(ui, "Host", "UiProbe.cs"));
 
         // No Find<T>("path") press remains in these three screens, and no path of the old ones is left anywhere.
         Check(!Regex.IsMatch(market + rivals + persona, @"Find<\w+>\(") && !market.Contains("ViewOnMapButton") && !market.Contains("TableTabs") && !rivals.Contains("SelectedRival/TabMenu")
@@ -37,7 +37,7 @@ internal static partial class Program
               && rivalsKit.Contains("UiProbe.Need(\"Rivals\"") && personaKit.Contains("UiProbe.Need(\"Persona\""),
             "ui wiring: Market Insider, Rivals and Persona check at load what their presses need and write found or MISSING per object");
         // The dead pieces stay removed.
-        string pages = File.ReadAllText(Path.Combine(ui, "BizManPages.cs")), model = File.ReadAllText(Path.Combine(ui, "BizManModel.cs")), staff = File.ReadAllText(Path.Combine(ui, "Employees", "EmployeesKit.cs"));
+        string pages = File.ReadAllText(System.IO.Path.Combine(ui, "BizManPages.cs")), model = File.ReadAllText(System.IO.Path.Combine(ui, "BizManModel.cs")), staff = File.ReadAllText(System.IO.Path.Combine(ui, "Employees", "EmployeesKit.cs"));
         Check(!pages.Contains("DoSetUp") && !pages.Contains("NoteAction") && !model.Contains("NoteActions") && !staff.Contains("Classic()"),
             "ui wiring: the unused BizMan DoSetUp, the portfolio note and its action, and EmployeesKit.Classic are gone");
     }
