@@ -15,11 +15,42 @@ namespace RealLifeOverhaul.Ui
             UiAt head = at.InRegion(RegionHead);
             y = TopBar(s, head, m.Back, new UiActionModel[0], x, y, w, keys);
             float lw = UiDraw.SnapDown(w * 0.44f), rx = x + lw + UiTokens.S6, rw = x + w - rx;
+            // A flat's page is short, and the floor under it is the window's: each column spreads what it has over its own height by widening the gaps between
+            // its sections (by at most 40 px each), so neither stands with a hole under it. The first pass measures into a scene of its own.
+            var trial = new UiScene();
+            float leftMore = 0f, rightMore = 0f;
+            _breathe = 0f;
+            _breaks = 0;
+            float leftEnd = Left(trial, UiAt.Screen, UiAt.Screen, UiAt.Screen, u, x, y, lw, bottom, keys);
+            int leftBreaks = _breaks;
+            _breaks = 0;
+            float rightEnd = Right(trial, UiAt.Screen, UiAt.Screen, u, rx, y, rw, bottom, keys);
+            int rightBreaks = _breaks;
+            if (leftBreaks > 0)
+            {
+                leftMore = Math.Max(0f, Math.Min(UiTokens.S10, UiDraw.SnapDown((bottom - UiTokens.S2 - leftEnd) / leftBreaks)));
+            }
+            if (rightBreaks > 0)
+            {
+                rightMore = Math.Max(0f, Math.Min(UiTokens.S10, UiDraw.SnapDown((bottom - UiTokens.S2 - rightEnd) / rightBreaks)));
+            }
+            _breathe = leftMore;
             Left(s, at.InRegion(RegionLeft), at.InRegion(RegionTenant), at.InRegion(RegionChart), u, x, y, lw, bottom, keys);
+            _breathe = rightMore;
             Right(s, at.InRegion(RegionNeed), at.InRegion(RegionRight), u, rx, y, rw, bottom, keys);
+            _breathe = 0f;
         }
 
-        private static void Left(UiScene s, UiAt at, UiAt tenant, UiAt chart, EstateUnitPage u, float x, float y, float w, float bottom, IUiKeys keys)
+        [ThreadStatic] private static float _breathe;   // the extra a gap between a column's sections takes, set by UnitPage for the pass being drawn
+        [ThreadStatic] private static int _breaks;      // how many such gaps the pass met
+
+        private static float Gap(float basic)
+        {
+            _breaks++;
+            return basic + _breathe;
+        }
+
+        private static float Left(UiScene s, UiAt at, UiAt tenant, UiAt chart, EstateUnitPage u, float x, float y, float w, float bottom, IUiKeys keys)
         {
             // The unit's head: its use's tile, its address and what it rents for, the district and the way to find it. No empty banner: the game has no photo here.
             int head = UiDraw.Tile(s, at, x, y, TileBig, UiRole.None, false);
@@ -66,7 +97,7 @@ namespace RealLifeOverhaul.Ui
                     float fx = x + bandPad + (i % 2) * (half + UiTokens.S6), fy = y + bandPad + (i / 2) * UiTokens.PairRow;
                     UiDraw.InfoRow(s, at.In(band), fx, fy, half, u.FactLabels[i], u.FactValues[i]);
                 }
-                y += bandH + UiTokens.S3;
+                y += bandH + Gap(UiTokens.S3);
             }
             if (u.Strip.Length > 0)
             {
@@ -90,7 +121,7 @@ namespace RealLifeOverhaul.Ui
                         Row(s, at, u.Works[i], x, y, w);
                         y += RowHeight;
                     }
-                    y += UiTokens.S3;
+                    y += Gap(UiTokens.S3);
                 }
                 if (u.Others.Length > 0 && y + RowHeight * 2f < bottom)
                 {
@@ -100,6 +131,7 @@ namespace RealLifeOverhaul.Ui
                         Row(s, at, u.Others[i], x, y, w);
                         y += RowHeight;
                     }
+                    y += Gap(UiTokens.S3);
                 }
             }
             if (u.YearLabels.Length > 0 && y + UiTokens.PairRow * (u.YearLabels.Length + 2) <= bottom)
@@ -116,6 +148,7 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.TextMiddle(s, at, x + w * 0.5f, y, UiTokens.PairRow, w * 0.5f, UiStyle.BodyStrong, UiRole.OkText, u.YearKept, UiFlags.Right | UiFlags.Truncate);
                 y += UiTokens.PairRow + UiTokens.S3;
             }
+            return y;
         }
 
         private static float Tenant(UiScene s, UiAt at, EstateUnitPage u, float x, float y, float w, float bottom)
@@ -148,18 +181,18 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.GradeBar(s, at, x, y, w, u.MeterLabels[i], u.MeterValues[i], lw2, "%");
                 y += UiTokens.PairRow;
             }
-            return y + UiTokens.S3;
+            return y + Gap(UiTokens.S3);
         }
 
-        private static void Right(UiScene s, UiAt need, UiAt at, EstateUnitPage u, float x, float y, float w, float bottom, IUiKeys keys)
+        private static float Right(UiScene s, UiAt need, UiAt at, EstateUnitPage u, float x, float y, float w, float bottom, IUiKeys keys)
         {
             if (u.Empty != null)
             {
-                y += UiFactCard.Lay(s, at, u.Empty, x, y, w, bottom - y, keys, true) + UiTokens.S3;
+                y += UiFactCard.Lay(s, at, u.Empty, x, y, w, bottom - y, keys, true) + Gap(UiTokens.S3);
             }
             else if (!string.IsNullOrEmpty(u.NeedHead))
             {
-                y = Need(s, need, u, x, y, w, keys) + UiTokens.S4;
+                y = Need(s, need, u, x, y, w, keys) + Gap(UiTokens.S4);
             }
             if (u.Applicants.Length > 0 && y + RowHeight * 2f < bottom)
             {
@@ -169,7 +202,7 @@ namespace RealLifeOverhaul.Ui
                     Row(s, at, u.Applicants[i], x, y, w);
                     y += RowHeight;
                 }
-                y += UiTokens.S3;
+                y += Gap(UiTokens.S3);
             }
             if (u.Record.Length > 0 && y + UiTokens.PairRow * 3 < bottom)
             {
@@ -178,7 +211,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     y = RecordLine(s, at, u.Record[i], x, y, w);
                 }
-                y += UiTokens.S3;
+                y += Gap(UiTokens.S3);
             }
             if (u.Empty == null && u.Works.Length > 0 && y + RowHeight * 2f < bottom)
             {
@@ -188,12 +221,14 @@ namespace RealLifeOverhaul.Ui
                     Row(s, at, u.Works[i], x, y, w);
                     y += RowHeight;
                 }
-                y += UiTokens.S2;
+                y += Gap(UiTokens.S2);
             }
             if (!string.IsNullOrEmpty(u.BuildingLink) && y + UiTokens.Control <= bottom)
             {
                 UiDraw.LinkRow(s, at, x, y, w, UiTokens.Control, u.BuildingLink, ActionCommand, u.BuildingRun);
+                y += UiTokens.Control;
             }
+            return y;
         }
 
         // What needs the landlord: a kicker in capitals, the headline, what to know, the buttons and a quiet link at the right.

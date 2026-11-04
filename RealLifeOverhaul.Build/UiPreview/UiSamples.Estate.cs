@@ -356,7 +356,7 @@ internal static partial class UiSamples
             runs.Add(Yes);
             p.Works = new[]
             {
-                new EstateRow { Icon = UiIcon.Wrench, Title = Fx(W(t, "reallife_ui_estate_service_name", "{fault} service"), "fault", Capital(W(t, "reallife_estate_fault_6", "the fittings"))), Sub = Fx(W(t, "reallife_ui_estate_booked_with", "Booked with {who}"), "who", "Fenwick Fittings"), Chip = Fx(W(t, "reallife_ui_estate_day", "Day {day}"), "day", "431"), ChipTone = UiRole.Notice, Amount = "$220", Run = runs.Count - 2 },
+                new EstateRow { Icon = UiIcon.Wrench, Title = ServiceTitle(t, 6, "the fittings"), Sub = Fx(W(t, "reallife_ui_estate_booked_with", "Booked with {who}"), "who", "Fenwick Fittings"), Chip = Fx(W(t, "reallife_ui_estate_day", "Day {day}"), "day", "431"), ChipTone = UiRole.Notice, Amount = "$220", Run = runs.Count - 2 },
                 new EstateRow { Icon = UiIcon.Eye, Title = W(t, "reallife_ui_estate_next_inspection", "Next inspection"), Sub = W(t, "reallife_ui_estate_last_passed", "The last one passed"), Chip = Fx(W(t, "reallife_ui_estate_in_days", "in {days} days"), "days", "9"), ChipTone = UiRole.Notice, Run = runs.Count - 1 }
             };
             var lines = new List<UiFactLine>
@@ -417,7 +417,7 @@ internal static partial class UiSamples
         runs.Add(Yes);
         p.Works = new[]
         {
-            new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_ui_estate_service_name", "{fault} service").Replace("{fault}", Capital(W(t, "reallife_estate_fault_1", "the heating"))), Sub = W(t, "reallife_ui_estate_booked_with", "Booked with {who}").Replace("{who}", "Okonkwo Heating"), Chip = W(t, "reallife_ui_estate_day", "Day {day}").Replace("{day}", "417"), ChipTone = UiRole.Notice, Amount = "$340", Run = -1 },
+            new EstateRow { Icon = UiIcon.Wrench, Title = ServiceTitle(t, 1, "the heating"), Sub = W(t, "reallife_ui_estate_booked_with", "Booked with {who}").Replace("{who}", "Okonkwo Heating"), Chip = W(t, "reallife_ui_estate_day", "Day {day}").Replace("{day}", "417"), ChipTone = UiRole.Notice, Amount = "$340", Run = -1 },
             new EstateRow { Icon = UiIcon.Wrench, Title = W(t, "reallife_estate_improve_boiler", "a new boiler"), Sub = W(t, "reallife_ui_estate_asked_by_tenant", "Asked for by the tenant, you can say no"), Chip = W(t, "reallife_ui_estate_waiting_you", "Waiting for you"), ChipTone = UiRole.Warn, Amount = "$2,900", Run = -1 }
         };
         p.WorksCount = p.Works.Length.ToString();

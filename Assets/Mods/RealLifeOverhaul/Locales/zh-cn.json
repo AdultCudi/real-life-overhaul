@@ -31640,7 +31640,7 @@
   "reallife_ui_estate_nav_hotel": "酒店",
   "reallife_ui_estate_nav_hire": "租车",
   "reallife_ui_dealer_hour_ago": "1小时前",
-  "reallife_ui_dealer_report_sub": "{place}：最近{days}天每天一个点，并附最近{average}天的平均值。指向某一天即可查看。",
+  "reallife_ui_dealer_report_sub": "{place}。最近{days}天每天一个点，并附最近{average}天的平均值。指向某一天即可查看。",
   "reallife_ui_dealer_report_average": "{days}天平均值",
   "reallife_ui_dealer_filter_all": "全部 {count}",
   "reallife_ui_dealer_filter_new": "新车 {count}",
@@ -31883,5 +31883,10 @@
   "reallife_ui_estate_job_import": "一家进口公司",
   "reallife_ui_estate_job_florist": "一家花店",
   "reallife_ui_estate_job_pharmacy": "一家药店",
-  "reallife_ui_estate_dec_next_morning": "第二天早上修好"
+  "reallife_ui_estate_dec_next_morning": "第二天早上修好",
+  "reallife_ui_estate_hire_best": "最赚钱的车",
+  "reallife_ui_estate_hire_kept_year": "今年留存",
+  "reallife_ui_estate_hire_most": "租出最多",
+  "reallife_ui_estate_hire_sec_cover": "保险",
+  "reallife_ui_estate_hire_sec_lot": "车场"
 }

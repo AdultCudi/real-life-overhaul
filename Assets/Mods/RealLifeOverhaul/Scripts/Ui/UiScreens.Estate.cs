@@ -254,7 +254,13 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_estate_job_florist",
                 "reallife_ui_estate_job_pharmacy",
                 "reallife_ui_estate_dec_next_morning",
-                "reallife_ui_estate_job_nurse"
+                "reallife_ui_estate_fig_year_takings",
+                "reallife_ui_estate_fig_year_costs",
+                "reallife_ui_estate_hire_best",
+                "reallife_ui_estate_hire_kept_year",
+                "reallife_ui_estate_hire_most",
+                "reallife_ui_estate_hire_sec_cover",
+                "reallife_ui_estate_hire_sec_lot"
             };
         }
 

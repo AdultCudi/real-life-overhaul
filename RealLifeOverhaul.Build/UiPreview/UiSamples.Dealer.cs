@@ -520,6 +520,7 @@ internal static partial class UiSamples
             UiDataRow copy = from;
             copy.Cells = (string[])from.Cells.Clone();
             copy.Values = (int[])from.Values.Clone();
+            copy.Tones = (UiRole[])from.Tones.Clone();   // a padded row has tones of its own: the class colour set on one must not repaint the rows it was copied from
             copy.Cells[0] = names[i % names.Length];
             copy.Hue = UiColourHue(copy.Cells[0]);
             copy.Cells[1] = cars[i % cars.Length];
@@ -618,6 +619,7 @@ internal static partial class UiSamples
         m.FigLabels = new[] { W(t, "reallife_ui_dealer_fig_owed", "Owed to you"), W(t, "reallife_ui_dealer_fig_a_week", "Paid in a week"), W(t, "reallife_ui_dealer_fig_behind", "Plans behind"), W(t, "reallife_ui_dealer_fig_paid_out", "Warranties paid out") };
         m.FigValues = new[] { "$25,500", "$1,320", "1", "$1,240" };
         m.FigInks = new[] { UiRole.None, UiRole.None, UiRole.DangerText, UiRole.None };
+        m.SharePlain = true;   // the live page: a mix of buyers is no grade
         m.ShareTitle = W(t, "reallife_ui_dealer_sh_grades", "How your buyers are rated");
         m.ShareLabels = new[] { Fx(W(t, "reallife_ui_dealer_grade_n", "Rated {grade}"), "grade", "A"), Fx(W(t, "reallife_ui_dealer_grade_n", "Rated {grade}"), "grade", "B"), Fx(W(t, "reallife_ui_dealer_grade_n", "Rated {grade}"), "grade", "C") };
         m.ShareValues = new[] { 33, 50, 17 };

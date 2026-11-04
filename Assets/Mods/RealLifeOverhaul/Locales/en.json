@@ -31506,7 +31506,7 @@
   "reallife_ui_estate_service_line": "Cancel the {fault} service on day {day}, {who}, {amount}",
   "reallife_ui_estate_service_name": "{fault} service",
   "reallife_ui_estate_service_title": "{fault}, {building}",
-  "reallife_ui_estate_service_what": "A booked visit keeps a kind of fault down for a season of {days} day(s): about {share} of its calls are not made. It is paid on its day.",
+  "reallife_ui_estate_service_what": "A booked visit keeps a kind of fault down for a season of {days} day(s). About {share} of its calls are not made. It is paid on its day.",
   "reallife_ui_estate_servicing": "Booked servicing",
   "reallife_ui_estate_sound": "Sound",
   "reallife_ui_estate_sqm": "{area} m2",
@@ -31640,7 +31640,7 @@
   "reallife_ui_estate_nav_hotel": "Hotel",
   "reallife_ui_estate_nav_hire": "Car hire",
   "reallife_ui_dealer_hour_ago": "an hour ago",
-  "reallife_ui_dealer_report_sub": "{place}: a point a day for the last {days} day(s), with the average of the last {average} day(s). Point at a day to read it.",
+  "reallife_ui_dealer_report_sub": "{place}. A point a day for the last {days} day(s), with the average of the last {average} day(s). Point at a day to read it.",
   "reallife_ui_dealer_report_average": "Average of {days} day(s)",
   "reallife_ui_dealer_filter_all": "All {count}",
   "reallife_ui_dealer_filter_new": "New {count}",
@@ -31883,5 +31883,10 @@
   "reallife_ui_estate_job_import": "An import firm",
   "reallife_ui_estate_job_florist": "A florist",
   "reallife_ui_estate_job_pharmacy": "A pharmacy",
-  "reallife_ui_estate_dec_next_morning": "Put right the next morning"
+  "reallife_ui_estate_dec_next_morning": "Put right the next morning",
+  "reallife_ui_estate_hire_best": "Best earner",
+  "reallife_ui_estate_hire_kept_year": "Kept this year",
+  "reallife_ui_estate_hire_most": "Most hired",
+  "reallife_ui_estate_hire_sec_cover": "Cover",
+  "reallife_ui_estate_hire_sec_lot": "The lot"
 }

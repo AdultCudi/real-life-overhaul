@@ -312,6 +312,20 @@ namespace RealLifeOverhaul.Ui
                 {
                     lines.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_fig_year_takings"), Money(hire.TakingsYear)));
                     lines.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_fig_year_costs"), Money(hire.CostsYear)));
+                    lines.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_hire_kept_year"), Money(hire.TakingsYear - hire.CostsYear),
+                        hire.TakingsYear >= hire.CostsYear ? UiRole.OkText : UiRole.DangerText));
+                    HireCar best = null, most = null;
+                    for (int i = 0; i < hire.Cars.Count; i++)
+                    {
+                        best = best == null || hire.Cars[i].Takings > best.Takings ? hire.Cars[i] : best;
+                        most = most == null || hire.Cars[i].Hires > most.Hires ? hire.Cars[i] : most;
+                    }
+                    if (best != null && best.Takings > 0)
+                    {
+                        lines.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_hire_best"), EstateGame.CarName(best.Type) + ", " + Money(best.Takings)));
+                        lines.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_hire_most"), EstateGame.CarName(most.Type) + ", " + most.Hires.ToString(Inv)));
+                    }
+                    lines.Add(UiFactLine.Section(EstateText.T("reallife_ui_estate_hire_sec_cover")));
                     int premium = 0;
                     for (int i = 0; i < hire.Cars.Count; i++)
                     {
@@ -322,6 +336,7 @@ namespace RealLifeOverhaul.Ui
                     lines.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_fig_cover_cost"), EstateText.T("reallife_ui_estate_amount_a_day", "amount", Money(premium))));
                     lines.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_cover_pays"), EstateText.Share(EstateCatalogue.HireCoverPays)));
                     lines.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_cover_excess"), Money(EstateCatalogue.HireCoverExcess)));
+                    lines.Add(UiFactLine.Section(EstateText.T("reallife_ui_estate_hire_sec_lot")));
                     // The lot's own meters stand in the cover's card: the spaces its cars take and the cars out on hire.
                     lines.Add(UiFactLine.Bar(EstateText.T("reallife_ibox_spaces"), hire.Spaces > 0 ? hire.Cars.Count * 100 / hire.Spaces : 0));
                     lines.Add(UiFactLine.Bar(EstateText.T("reallife_ui_estate_sh_in_hire"), hire.Cars.Count > 0 ? hire.Count(HireState.Out) * 100 / hire.Cars.Count : 0));

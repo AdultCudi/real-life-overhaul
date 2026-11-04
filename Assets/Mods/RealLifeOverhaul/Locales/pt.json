@@ -31506,7 +31506,7 @@
   "reallife_ui_estate_service_line": "Cancelar o serviço de {fault} no dia {day}, {who}, {amount}",
   "reallife_ui_estate_service_name": "Serviço para {fault}",
   "reallife_ui_estate_service_title": "{fault}, {building}",
-  "reallife_ui_estate_service_what": "Uma visita agendada mantém um tipo de defeito sob controle por {days} dia(s): cerca de {share} dos chamados deixam de acontecer. Ela é paga no próprio dia.",
+  "reallife_ui_estate_service_what": "Uma visita agendada mantém um tipo de defeito sob controle por {days} dia(s). Cerca de {share} dos chamados deixam de acontecer. Ela é paga no próprio dia.",
   "reallife_ui_estate_servicing": "Manutenção agendada",
   "reallife_ui_estate_sound": "Acústica",
   "reallife_ui_estate_sqm": "{area} m2",
@@ -31640,7 +31640,7 @@
   "reallife_ui_estate_nav_hotel": "Hotel",
   "reallife_ui_estate_nav_hire": "Locação",
   "reallife_ui_dealer_hour_ago": "há uma hora",
-  "reallife_ui_dealer_report_sub": "{place}: um ponto por dia nos últimos {days} dia(s), com a média dos últimos {average} dia(s). Aponte para um dia para ler.",
+  "reallife_ui_dealer_report_sub": "{place}. Um ponto por dia nos últimos {days} dia(s), com a média dos últimos {average} dia(s). Aponte para um dia para ler.",
   "reallife_ui_dealer_report_average": "Média de {days} dia(s)",
   "reallife_ui_dealer_filter_all": "Todos {count}",
   "reallife_ui_dealer_filter_new": "Novos {count}",
@@ -31883,5 +31883,10 @@
   "reallife_ui_estate_job_import": "Uma empresa de importação",
   "reallife_ui_estate_job_florist": "Uma floricultura",
   "reallife_ui_estate_job_pharmacy": "Uma farmácia",
-  "reallife_ui_estate_dec_next_morning": "Resolvido na manhã seguinte"
+  "reallife_ui_estate_dec_next_morning": "Resolvido na manhã seguinte",
+  "reallife_ui_estate_hire_best": "Melhor carro",
+  "reallife_ui_estate_hire_kept_year": "Mantido este ano",
+  "reallife_ui_estate_hire_most": "Mais alugado",
+  "reallife_ui_estate_hire_sec_cover": "Seguro",
+  "reallife_ui_estate_hire_sec_lot": "O parque"
 }

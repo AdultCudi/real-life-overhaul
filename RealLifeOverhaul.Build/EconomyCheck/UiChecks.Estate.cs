@@ -392,7 +392,7 @@ internal static partial class Program
 
         // No English in the pt and zh shots: the words that stood as English literals in the samples (a colour, a fault, a kind of building, a job, "Day 211") come from the locale.
         string[] leaks = { "White", "Black", "Heating service", "the heating", "boiler", "Nurse", "Cook", "Teacher", "Accountant", "Courier, ", "Designer", "bakery", "tailor", "import firm", "Homes", "Shops", "Offices",
-            "Day ", "Quote asked", "Looking for" };
+            "Day ", "Quote asked", "Looking for", "para O ", "de O " };
         string englishLeak = "none";
         foreach (string lang in new[] { "pt", "zh-cn" })
         {

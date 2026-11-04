@@ -504,10 +504,17 @@ internal static partial class UiSamples
         };
         var lines = new List<UiFactLine>
         {
+            UiFactLine.Row(W(t, "reallife_ui_estate_fig_year_takings", "Takings this year"), "$12,660"),
+            UiFactLine.Row(W(t, "reallife_ui_estate_fig_year_costs", "Costs this year"), "$3,480"),
+            UiFactLine.Row(W(t, "reallife_ui_estate_hire_kept_year", "Kept this year"), "$9,180", UiRole.OkText),
+            UiFactLine.Row(W(t, "reallife_ui_estate_hire_best", "Best earner"), "Brisa roadster, $2,940"),
+            UiFactLine.Row(W(t, "reallife_ui_estate_hire_most", "Most hired"), "Sora hatchback, 31"),
+            UiFactLine.Section(W(t, "reallife_ui_estate_hire_sec_cover", "Cover")),
             EstateSwitch(runs, W(t, "reallife_estate_hire_cover", "Fleet cover"), true),
             UiFactLine.Row(W(t, "reallife_ui_estate_fig_cover_cost", "Cover costs"), Fx(W(t, "reallife_ui_estate_amount_a_day", "{amount} a day"), "amount", "$38")),
             UiFactLine.Row(W(t, "reallife_ui_estate_cover_pays", "Pays of a claim"), "80%"),
             UiFactLine.Row(W(t, "reallife_ui_estate_cover_excess", "Excess"), "$100"),
+            UiFactLine.Section(W(t, "reallife_ui_estate_hire_sec_lot", "The lot")),
             UiFactLine.Bar(W(t, "reallife_ibox_spaces", "Spaces taken"), 50), UiFactLine.Bar(W(t, "reallife_ui_estate_sh_in_hire", "Cars in hire"), 50)
         };
         var side = new UiFactCardModel { Title = W(t, "reallife_estate_tab_hire", "Car hire"), Heading = true, Lines = lines.ToArray() };
@@ -516,8 +523,8 @@ internal static partial class UiSamples
         m.HeadSub = W(t, "reallife_ui_estate_fleet_rating", "The fleet's rating, from the customers' opinion");
         m.Strip = new[]
         {
-            Fig(W(t, "reallife_ui_estate_fig_cars_out", "Cars out"), "3"), Fig(W(t, "reallife_ui_estate_col_hires", "Hires"), "105"),
-            Fig(W(t, "reallife_ui_estate_col_takings", "Takings"), "$10,612"), Fig(W(t, "reallife_ui_estate_fig_mean_rate", "Mean rate a day"), "$108")
+            Fig(W(t, "reallife_ui_estate_fig_cars_out", "Cars out"), "4"), Fig(W(t, "reallife_ui_estate_col_hires", "Hires"), "125"),
+            Fig(W(t, "reallife_ui_estate_col_takings", "Takings"), "$12,660"), Fig(W(t, "reallife_ui_estate_fig_mean_rate", "Mean rate a day"), "$106")
         };
         // The cars of yours that stand within reach of the lot and could join the fleet, with the going rate each would hire at.
         string[] adds = { "Courier van", "Dune camper van", "Ranger pickup", "Boxer box truck" };
