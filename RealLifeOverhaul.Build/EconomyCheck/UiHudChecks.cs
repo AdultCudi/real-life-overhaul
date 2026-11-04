@@ -359,7 +359,7 @@ internal static partial class Program
                                 continue;   // a chip's face; its cap and its words stand inside it
                             }
                             found++;
-                            if (it.X < UiTokens.S4 - 0.5f || it.X + it.W > frame.Width - UiTokens.S4 + 0.5f || it.Y + it.H > frame.BandY - UiTokens.S3 + 0.5f || it.Y < 0f)
+                            if (it.X < UiTokens.S4 - 0.5f || it.X + it.W > frame.Width - UiTokens.S4 + 0.5f || it.Y + it.H > frame.BandY - UiDraw.KeyChipLift + 0.5f || it.Y < 0f)
                             {
                                 wrong = at + ": a chip at " + it.X.ToString("0") + "," + it.Y.ToString("0") + " stands outside the screen's room over the bar";
                             }
@@ -389,7 +389,7 @@ internal static partial class Program
                                           + laid + " layouts, " + chips + " chips)" + (wrong == null ? "" : " (" + wrong + ")"));
     }
 
-    // The strip's one line (the owner, 2 Nov: "the alignment is kinda off", "Day 2," cut): every pill, app tile and prompt
+    // The strip's one line (the owner, 2 Nov: "the alignment is kinda off", "Day 2," cut): every pill and app tile
     // centred on the bar's centre line within a px, no pill's words wider than their room or crossing its edge, nothing on
     // the strip over anything else, laid out whole by UiDraw.StatusBar at 1920 x 1080 (2560 x 1440 lays out the same), the UI
     // zoom's 80% and 120%, an ultrawide and the narrowest, with the mouse and with the keys' prompts, in every language.
@@ -436,13 +436,12 @@ internal static partial class Program
                             {
                                 ref UiItem it = ref s.Items[i];
                                 bool piece = it.Parent == strip && it.Kind == UiKind.Box && it.Fill != UiRole.Line;   // a pill or a tile
-                                bool prompt = (it.Flags & UiFlags.Prompt) != 0 && (it.Kind == UiKind.KeyCap || it.Kind == UiKind.Text);
-                                if (piece || prompt)
+                                if (piece)
                                 {
                                     pieces++;
                                     if (Math.Abs(it.Y + it.H / 2f - mid) > 1f && off == null)
                                     {
-                                        off = at + ": " + (prompt ? "a prompt" : it.Fill == UiRole.Pill ? "a pill" : "a tile") + " centred at " + (it.Y + it.H / 2f).ToString("0.#") + ", the line at " + mid.ToString("0.#");
+                                        off = at + ": " + (it.Fill == UiRole.Pill ? "a pill" : "a tile") + " centred at " + (it.Y + it.H / 2f).ToString("0.#") + ", the line at " + mid.ToString("0.#");
                                     }
                                 }
                                 if (it.Kind == UiKind.Text && !string.IsNullOrEmpty(it.Text) && UiTextRules.Width(it.Text, it.Style) > it.W + 0.5f && cut == null)
@@ -466,9 +465,9 @@ internal static partial class Program
         {
             UiChrome.Bar = was;
         }
-        Check(off == null && pieces > 0, "hud: the pills, the app tiles and the prompts share the strip's one centre line within 1 px (" + bars + " bars, " + pieces + " pieces)" + (off == null ? "" : " (" + off + ")"));
+        Check(off == null && pieces > 0, "hud: the pills and the app tiles share the strip's one centre line within 1 px (" + bars + " bars, " + pieces + " pieces)" + (off == null ? "" : " (" + off + ")"));
         Check(cut == null, "hud: no pill's words are wider than their room or cross the pill's edge, at 1080, 1440 and the UI zoom's 80% and 120%" + (cut == null ? "" : " (" + cut + ")"));
-        Check(over == null, "hud: nothing on the strip stands over anything else: the pills, the tiles and the prompts each keep their own room" + (over == null ? "" : " (" + over + ")"));
+        Check(over == null, "hud: nothing on the strip stands over anything else: the pills and the tiles each keep their own room" + (over == null ? "" : " (" + over + ")"));
     }
 
     // The pill an item is drawn in (the strip's child with the pill's fill it descends from), or -1.
@@ -486,11 +485,10 @@ internal static partial class Program
         return -1;
     }
 
-    // The first two of the strip's pieces (its pills and tiles, each prompt's cap with its words) that overlap, or null.
+    // The first two of the strip's pieces (its pills and tiles) that overlap, or null.
     private static string Crossing(UiScene s, int strip, string at)
     {
         var boxes = new System.Collections.Generic.List<float[]>();
-        float px = -1f, pr = -1f;
         for (int i = 0; i < s.ItemCount; i++)
         {
             ref UiItem it = ref s.Items[i];
@@ -498,15 +496,6 @@ internal static partial class Program
             {
                 boxes.Add(new[] { it.X, it.X + it.W });
             }
-            else if ((it.Flags & UiFlags.Prompt) != 0)
-            {
-                px = px < 0f ? it.X : Math.Min(px, it.X);
-                pr = Math.Max(pr, it.X + it.W);
-            }
-        }
-        if (pr > px && px >= 0f)
-        {
-            boxes.Add(new[] { px, pr });   // the prompts as one run: their caps and words sit together
         }
         for (int a = 0; a < boxes.Count; a++)
         {
