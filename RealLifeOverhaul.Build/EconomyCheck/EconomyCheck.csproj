@@ -105,6 +105,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsPages.cs" Link="Mod\News\NewsPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsPages.Parts.cs" Link="Mod\News\NewsPages.Parts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsPages.Economy.cs" Link="Mod\News\NewsPages.Economy.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsPages.People.cs" Link="Mod\News\NewsPages.People.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsPath.cs" Link="Mod\News\NewsPath.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsHost.cs" Link="Mod\News\NewsHost.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsPeopleRules.cs" Link="Mod\News\NewsPeopleRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsPages.Stand.cs" Link="Mod\News\NewsPages.Stand.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\News\NewsText.cs" Link="Mod\News\NewsText.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\MoneyModel.cs" Link="Mod\Money\MoneyModel.cs" />
@@ -1023,6 +1027,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationShare.cs" Link="Mod\Population\PopulationShare.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\CustomerRules.cs" Link="Mod\Population\CustomerRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationViews.cs" Link="Mod\Population\PopulationViews.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PeopleTally.cs" Link="Mod\Population\PeopleTally.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationLinks.cs" Link="Mod\Population\PopulationLinks.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\CityPopulation.cs" Link="Mod\Population\CityPopulation.cs" />
     <!-- What the people bring the mod's own businesses (PopDemandChecks.cs): the day's measure, the anchor, the factors, the leans, the save's line, the shared part and the screens. -->

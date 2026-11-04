@@ -10,24 +10,18 @@ namespace RealLifeOverhaul.Ui
     {
         public static void Lay(UiScene s, NewsModel m, UiFrame frame, bool dark, IUiKeys keys)
         {
-            if (m.Shape == NewsShape.People)
-            {
-                People(s, m, frame, dark, keys);
-                return;
-            }
             if (m.Shape == NewsShape.Ending)
             {
                 UiDecision.Lay(s, m.Decision, frame, dark, keys);
                 return;
             }
-            if (m.Shape == NewsShape.Household)
-            {
-                UiInfoPanel.Lay(s, m.Household, frame, dark, keys);
-                return;
-            }
             s.Begin(m.Title ?? "news", frame.Width, frame.Height, dark);
             UiAt at = UiAppWindow.Shell(s, frame, m.Title, m.Icon, m.Nav, m.Tab, m.Across, keys, out float x, out float y, out float w, out float bottom);
             StripNote(s, at, frame, m.StripNote);
+            if (!string.IsNullOrEmpty(m.BackLabel))
+            {
+                y += BackRow(s, at, m, x, y, w, keys) + UiTokens.S3;
+            }
             switch (m.Shape)
             {
                 case NewsShape.Overview: Overview(s, at, m, x, y, w, bottom, keys); break;
@@ -43,6 +37,8 @@ namespace RealLifeOverhaul.Ui
                 case NewsShape.PaperMarkets: Paper(s, at, m, x, y, w, bottom, keys); break;
                 case NewsShape.PaperPrices: Shares(s, at, m, x, y, w, bottom, keys); break;
                 case NewsShape.Renters: OneTable(s, at, m, x, y, w, bottom, keys); break;
+                case NewsShape.People: People(s, at, m, x, y, w, bottom, keys); break;
+                case NewsShape.Household: Household(s, at, m, x, y, w, bottom); break;
                 default: Notice(s, at, m, x, y, w, bottom - y); break;
             }
             for (int i = 0; i < m.Prompts.Length; i++)
@@ -98,33 +94,6 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             Notice(s, at, m, x, y, w, bottom - y);
-        }
-
-        private static void People(UiScene s, NewsModel m, UiFrame frame, bool dark, IUiKeys keys)
-        {
-            if (m.People == null)
-            {
-                s.Begin("people", frame.Width, frame.Height, dark);
-                Notice(s, UiAt.Screen, m, UiTokens.S6, UiTokens.S6, frame.Width - UiTokens.S6 * 2f, frame.Height * 0.4f);
-                return;
-            }
-            UiInfoView.Lay(s, m.People, frame, dark, keys);
-            if (m.Actions == null || m.Actions.Length == 0)
-            {
-                return;
-            }
-            float x = UiTokens.S2 + 104f + UiTokens.S4;
-            float y = UiTokens.S4 + UiInfoView.Height(m.People) + UiTokens.S4;
-            int shown = m.Actions.Length < 2 ? m.Actions.Length : 2;
-            float bh = UiTokens.S2 + shown * (UiTokens.S8 + UiTokens.S2);
-            int box = UiDraw.Box(s, UiAt.Screen, x, y, 360f, bh, UiRole.Panel, UiRole.None, UiTokens.RadiusLarge, UiFlags.Panel);
-            UiAt inside = UiAt.Screen.In(box);
-            float ly = y + UiTokens.S2;
-            for (int i = 0; i < shown; i++)
-            {
-                UiDraw.LinkRow(s, inside, x + UiTokens.S3, ly, 360f - UiTokens.S3 * 2f, UiTokens.S8, m.Actions[i].Label, m.Actions[i].Command, 0, false);
-                ly += UiTokens.S8 + UiTokens.S2;
-            }
         }
 
         private static void Rest(UiScene s, UiAt at, NewsModel m, float x, float y, float w, float bottom, IUiKeys keys, int command = UiDataTable.First)

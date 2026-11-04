@@ -36,7 +36,7 @@ $gameFiles = @('UiGame*.cs', 'UiDirector*.cs', 'UiText.cs', 'UiGuide.cs')
     $_.Name -notlike '*Screen.cs' -and $_.Name -notlike '*Screen.*.cs' -and $_.Name -notlike '*Build.cs' -and $_.Name -notlike '*Build.*.cs'   # a screen's parts (FlareScreen.Fill.cs) meet the game too
 } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money') -Filter *.cs -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike '*Live.cs' -and $_.Name -notlike '*Live.*.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
-Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\News') -Filter *.cs -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike 'NewsLive*.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
+Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\News') -Filter *.cs -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike 'NewsLive*.cs' -and $_.Name -ne 'NewsPeopleRules.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui') -Filter *.cs | Where-Object {
     $name = $_.Name
     -not ($gameFiles | Where-Object { $name -like $_ })

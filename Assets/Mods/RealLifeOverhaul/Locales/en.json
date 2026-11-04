@@ -30242,7 +30242,7 @@
   "reallife_news_open_finance": "Open Finance",
   "reallife_news_open_staff": "Staff",
   "reallife_news_open_stocks": "Stocks",
-  "reallife_news_open_map": "Map",
+  "reallife_news_open_map": "Districts",
   "reallife_news_empty_city": "The city has not reported",
   "reallife_news_empty_city_body": "Figures appear after the first morning the economy runs.",
   "reallife_news_col_good": "Good",
@@ -31032,5 +31032,7 @@
   "reallife_flare_biz_offer_10": "New faces on the team at {name}. Come and say hello.",
   "reallife_flare_biz_offer_11": "Rainy day deal at {name}. Come in out of the wet.",
   "reallife_flare_dm_hello_2": "Hello, are you new around here? I think we live close by.",
-  "reallife_flare_dm_hello_3": "Hey. Your name keeps coming up around the city. How are you getting on?"
+  "reallife_flare_dm_hello_3": "Hey. Your name keeps coming up around the city. How are you getting on?",
+  "reallife_news_not_yet": "Not yet: from day {day}",
+  "reallife_news_where": "Where people live"
 }
