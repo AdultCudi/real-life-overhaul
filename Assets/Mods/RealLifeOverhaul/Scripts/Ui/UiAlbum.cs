@@ -267,7 +267,7 @@ namespace RealLifeOverhaul.Ui
             {
                 var item = new UiItem
                 {
-                    Kind = UiKind.Picture, Flags = UiFlags.Middle | UiFlags.Centre, X = x, Y = y, W = size, H = size, Text = photo.Picture, Value = 1f,
+                    Kind = UiKind.Picture, Flags = UiFlags.Middle | UiFlags.Centre | UiFlags.Cover, X = x, Y = y, W = size, H = size, Text = photo.Picture, Value = 1f,
                     Clip = inside.Clip, Node = -1, Layer = inside.Layer, Order = inside.Order, Parent = face, Alpha = 1f
                 };
                 s.Add(ref item);

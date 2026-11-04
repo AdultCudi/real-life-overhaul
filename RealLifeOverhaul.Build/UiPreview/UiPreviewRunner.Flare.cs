@@ -51,7 +51,7 @@ public static partial class UiPreviewRunner
                 HoverCommand = hover,
                 HoverArg = arg,
                 Walk = Moves(walk),
-                Lay = (s, f, d, k) => UiSamples.Flare(s, f, d, k, English, state)
+                Lay = (s, f, d, k) => UiSamples.Flare(s, f, d, k, ModEnglish, state)
             };
             screens.Add(screen);
             return screen;

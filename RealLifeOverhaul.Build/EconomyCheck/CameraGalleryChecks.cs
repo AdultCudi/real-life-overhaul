@@ -413,6 +413,32 @@ internal static partial class Program
         UiAlbum.Lay(scene, UiAt.Screen, model, 100f, 100f, 1200f, 700f, UiDefaultKeys.Keyboard);
         int cellsInView = model.ViewLast - model.ViewFirst + 1;
         Check(model.Count == 500 && model.ViewFirst == 0 && cellsInView > 5 && cellsInView <= 60, "gallery: of 500 photos only the rows in view and one either side are laid out and their thumbnails asked for (" + cellsInView + ")");
+        // Photos fill their tiles: every cell asks for cover, and the crop is the box's shape, centred, for any photo's shape.
+        int covered = 0, pictures = 0;
+        for (int i = 0; i < scene.ItemCount; i++)
+        {
+            if (scene.Items[i].Kind == UiKind.Picture)
+            {
+                pictures++;
+                covered += (scene.Items[i].Flags & UiFlags.Cover) != 0 ? 1 : 0;
+            }
+        }
+        Check(pictures > 5 && covered == pictures, "gallery: every photo tile (" + pictures + ") asks for cover, so the picture fills it");
+        bool shapes = true;
+        foreach (float[] photo in new[] { new[] { 1920f, 1080f }, new[] { 1600f, 1200f }, new[] { 1000f, 1000f }, new[] { 1080f, 1920f } })
+        {
+            UiCover.Cut(photo[0], photo[1], 200f, 200f, out float cx, out float cy, out float cw, out float ch);
+            bool square = Math.Abs(cw - ch) < 0.01f && cw <= photo[0] + 0.01f && ch <= photo[1] + 0.01f;
+            bool centred = Math.Abs(cx - (photo[0] - cw) / 2f) < 0.01f && Math.Abs(cy - (photo[1] - ch) / 2f) < 0.01f;
+            bool largest = Math.Abs(cw - photo[0]) < 0.01f || Math.Abs(ch - photo[1]) < 0.01f;   // as much of the photo as the shape allows
+            shapes &= square && centred && largest;
+        }
+        UiCover.Cut(1920f, 1080f, 200f, 200f, out float sx, out _, out float sw, out float sh);
+        UiCover.Cut(1080f, 1920f, 200f, 200f, out _, out float ty, out float tw, out float th);
+        UiCover.Cut(1920f, 1080f, 320f, 180f, out float wx, out _, out float ww, out float wh);
+        Check(shapes && Math.Abs(sw - 1080f) < 0.01f && Math.Abs(sx - 420f) < 0.01f && sh == 1080f && Math.Abs(tw - 1080f) < 0.01f && Math.Abs(th - 1080f) < 0.01f
+              && Math.Abs(ty - 420f) < 0.01f && wx == 0f && ww == 1920f && wh == 1080f,
+            "gallery: a 16:9, 4:3, 1:1 or 9:16 photo cut for a square tile is its centred square, and for its own shape it is left whole");
         model.Offset = 1e9f;
         UiAlbum.Lay(scene, UiAt.Screen, model, 100f, 100f, 1200f, 700f, UiDefaultKeys.Keyboard);
         Check(model.ViewLast == 499 && model.ViewFirst > 400, "gallery: scrolled to the end, it is the last photos in view");

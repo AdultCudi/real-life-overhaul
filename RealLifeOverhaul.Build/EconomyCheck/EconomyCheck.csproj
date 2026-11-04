@@ -823,6 +823,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Stocks\StocksSheets.cs" Link="Mod\StocksSheets.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCatalogue.cs" Link="Mod\UiCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiAlbum.cs" Link="Mod\UiAlbum.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCover.cs" Link="Mod\UiCover.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPhotoViewer.cs" Link="Mod\UiPhotoViewer.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPhotoEdit.cs" Link="Mod\UiPhotoEdit.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\GalleryAlbumFill.cs" Link="Mod\GalleryAlbumFill.cs" />

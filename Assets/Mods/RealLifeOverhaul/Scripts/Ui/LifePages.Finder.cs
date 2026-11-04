@@ -195,7 +195,7 @@ namespace RealLifeOverhaul.Ui
                 int tile = UiDraw.Box(s, low, left, ty, FinderThumb, FinderThumb, UiRole.Tile, UiRole.None, UiTokens.RadiusMedium);
                 var item = new UiItem
                 {
-                    Kind = UiKind.Picture, Flags = UiFlags.Middle | UiFlags.Centre, X = left, Y = ty, W = FinderThumb, H = FinderThumb, Text = m.Latest, Value = 1f,
+                    Kind = UiKind.Picture, Flags = UiFlags.Middle | UiFlags.Centre | UiFlags.Cover, X = left, Y = ty, W = FinderThumb, H = FinderThumb, Text = m.Latest, Value = 1f,
                     Clip = low.Clip, Node = -1, Layer = low.Layer, Order = low.Order, Parent = tile, Alpha = 1f
                 };
                 s.Add(ref item);
