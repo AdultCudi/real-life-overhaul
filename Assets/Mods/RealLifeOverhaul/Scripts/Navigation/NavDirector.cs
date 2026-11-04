@@ -272,6 +272,7 @@ namespace RealLifeOverhaul.Nav
             Clock();
             if (_hud != null && !_hud.Alive)
             {
+                _hud.Destroy();   // the copy went with the game's HUD; the 2.5D picture's texture is the mod's and goes now
                 _hud = null;   // the game rebuilt its HUD: the copy went with it
                 _pictureGiven = false;
                 _baseGiven = false;

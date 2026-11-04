@@ -102,6 +102,7 @@ namespace RealLifeOverhaul.Nav
 
         public void Destroy()
         {
+            ReleaseScene();   // the 2.5D picture's texture is the mod's own: it goes with the panel
             if (_live == this)
             {
                 _live = null;
