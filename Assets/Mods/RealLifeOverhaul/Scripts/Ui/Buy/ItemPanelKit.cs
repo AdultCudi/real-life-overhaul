@@ -255,9 +255,6 @@ namespace RealLifeOverhaul.Ui
         private string _sellFor;                                         // "Sell for $2,407", made again only when the price changes
         private float _sellPrice = -1f;
         private float _frameW, _frameH;                                  // the layout's size, last laid: the minimap's card is read into it
-        private static readonly Vector3[] Corners = new Vector3[4];
-        private RectTransform _cardOf;   // the minimap card last read, and the canvas it stands on
-        private Canvas _cardCanvas;
         private readonly List<UiItemAction> _actions = new List<UiItemAction>(10);
         private readonly List<UiReading> _readings = new List<UiReading>(6);
         private readonly List<UiInfoRow> _facts = new List<UiInfoRow>(4);
@@ -688,31 +685,11 @@ namespace RealLifeOverhaul.Ui
         // is and whichever HUD shows; nothing while it is hidden. Read with the panel, four times a second; whole px.
         private void Minimap()
         {
-            RectTransform card = RealLifeOverhaul.Nav.NavHud.Card;
-            _m.AvoidX = _m.AvoidY = _m.AvoidW = _m.AvoidH = 0f;
-            if (card == null || _frameW <= 0f || Screen.width <= 0)
+            UiMinimapBox.Read(_frameW, _frameH, out _m.AvoidX, out _m.AvoidY, out _m.AvoidW, out _m.AvoidH);
+            if (_m.AvoidW > 0f)
             {
-                return;
+                _sb.Append(_m.AvoidX).Append(',').Append(_m.AvoidY).Append(',').Append(_m.AvoidW).Append(',').Append(_m.AvoidH).Append('|');
             }
-            if (!ReferenceEquals(card, _cardOf))
-            {
-                _cardOf = card;
-                _cardCanvas = card.GetComponentInParent<Canvas>(true);   // the game's HUD canvas it stands on, as WorldBuilding reads the door box's
-            }
-            Camera camera = _cardCanvas != null && _cardCanvas.renderMode != RenderMode.ScreenSpaceOverlay ? _cardCanvas.worldCamera : null;
-            card.GetWorldCorners(Corners);   // bottom left, top left, top right, bottom right
-            Vector2 low = RectTransformUtility.WorldToScreenPoint(camera, Corners[0]), high = RectTransformUtility.WorldToScreenPoint(camera, Corners[2]);
-            UiHudRules.ToLayout(low.x, high.y, Screen.width, Screen.height, _frameW, _frameH, out float x, out float y);
-            UiHudRules.ToLayout(high.x, low.y, Screen.width, Screen.height, _frameW, _frameH, out float right, out float bottom);
-            if (right <= x || bottom <= y)
-            {
-                return;
-            }
-            _m.AvoidX = Mathf.Floor(x);
-            _m.AvoidY = Mathf.Floor(y);
-            _m.AvoidW = Mathf.Ceil(right - x);
-            _m.AvoidH = Mathf.Ceil(bottom - y);
-            _sb.Append(_m.AvoidX).Append(',').Append(_m.AvoidY).Append(',').Append(_m.AvoidW).Append(',').Append(_m.AvoidH).Append('|');
         }
 
         // A thing in hand's price as the game's own Sell confirm offers it (ItemPanelUI.GetTotalSellingPrice): its own, and

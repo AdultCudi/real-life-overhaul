@@ -55,8 +55,12 @@ namespace RealLifeOverhaul.Ui
         private float _scale = UiTokens.CanvasPerPx;
         private int _signature;
         private GameObject _modalRoot;
+        private Canvas _modalCanvas;
         private UiHost _modal;
         private float _leftX, _leftY, _leftW, _leftH;   // the left column, which a world prompt keeps off: worked out at each layout
+        private bool _hasColumn;
+        private float _columnRight, _columnBottom;         // the left column alone, in canvas units from the screen's foot: what the minimap is placed under
+        private float _chipsLeft, _chipsTop = -1f;         // the key chips over the bar's right end, in the same units: what the minimap is placed over
         private AllAppsScreen _allApps;
         private float _appsDue;                         // when the app row's list is read again from the game while walking
 
@@ -143,6 +147,17 @@ namespace RealLifeOverhaul.Ui
             {
                 _canvas.sortingOrder = want;
             }
+            SortModal();
+        }
+
+        // The modal piece is a window: its canvas stands over the minimap's card, which is over the rest of the HUD (UiHostRules.ModalOrder).
+        private void SortModal()
+        {
+            int want = UiHostRules.ModalOrder(CanvasOrder);
+            if (_modalCanvas != null && _modalCanvas.sortingOrder != want)
+            {
+                _modalCanvas.sortingOrder = want;
+            }
         }
 
         /// <summary>The HUD shows: laid out fresh, then kept current while it shows.</summary>
@@ -199,7 +214,11 @@ namespace RealLifeOverhaul.Ui
                 r.anchorMax = Vector2.one;
                 r.offsetMin = r.offsetMax = Vector2.zero;
                 _modal = _modalRoot.AddComponent<UiHost>();
+                _modalCanvas = _modalRoot.AddComponent<Canvas>();
+                _modalCanvas.overrideSorting = true;
+                _modalRoot.AddComponent<GraphicRaycaster>();   // a canvas of its own takes the pointer through a raycaster of its own
             }
+            SortModal();
             _modal.Bind(screen, UiGame.Instance, UiGame.Instance, UiDirector.Dark, UiDirector.Motion, UiFrame.MastheadHeight, UiFrame.BandHeight, title, icon);
             _modal.View.Scale = _scale;
             _modalRoot.SetActive(true);
@@ -338,6 +357,33 @@ namespace RealLifeOverhaul.Ui
             }
             _view.Write(_scene, false);
             UiHud.LeftColumn(_screen.Model, out _leftX, out _leftY, out _leftW, out _leftH);
+            UiHud.LeftColumn(_screen.Model, false, out float cx, out float cy, out float cw, out float ch);
+            _columnRight = cw > 0f ? (cx + cw) * _scale : 0f;
+            _hasColumn = cw > 0f;
+            _columnBottom = _laidSize.y - (cy + ch) * _scale;
+            bool chips = UiHud.Chips(_scene, _screen.Model, Frame(), HudHints.Wrap(UiGame.Instance.Keys), out float kx, out float ky, out float kw, out float kh);
+            _chipsLeft = chips ? kx * _scale : 0f;
+            _chipsTop = chips ? _laidSize.y - ky * _scale : -1f;
+        }
+
+        /// <summary>The HUD's order, which the minimap's canvas is set over (HudHost.KeepOver may lift it over the phone).</summary>
+        public int CanvasOrder => _canvas != null ? _canvas.sortingOrder : _order;
+
+        /// <summary>
+        /// Where the HUD stands for the minimap, in canvas units from the screen's foot (the game's HUD is laid out for 3840 x
+        /// 2160 and so is this canvas): the bottom bar's top as the layout puts it, and the left column's right and lower
+        /// edges (which may lie under the bar when the column is long), and the key chips' left and upper edges (the upper below 0 for none). False
+        /// while the HUD is not on screen. Read on the minimap's slow tick.
+        /// </summary>
+        public bool Space(out float barTop, out bool hasColumn, out float columnRight, out float columnBottom, out float chipsLeft, out float chipsTop)
+        {
+            barTop = Frame().Band * _scale;
+            hasColumn = _hasColumn;
+            columnRight = _columnRight;
+            columnBottom = _columnBottom;
+            chipsLeft = _chipsLeft;
+            chipsTop = _chipsTop;
+            return isActiveAndEnabled && HudStatusGame.Shows && _laidSize.x > 0f;
         }
 
         // The money's change: fed the money each frame, one change at a time rising from its pill and fading.
@@ -407,6 +453,8 @@ namespace RealLifeOverhaul.Ui
             UiFrame frame = Frame();
             UiHudRules.ToLayout(screen.x, screen.y, UnityEngine.Screen.width, UnityEngine.Screen.height, frame.Width, frame.Height, out float px, out float py);
             UiHudRules.Beside(px, py, screen.z > 0f, UiWorldPrompt.Width, h, frame.Width, frame.BandY, _leftX, _leftY, _leftW, _leftH, out float x, out float y);
+            UiHudModel hud = _screen.Model;
+            UiHudRules.Clear(ref x, ref y, UiWorldPrompt.Width, h, frame.Width, hud.AvoidX, hud.AvoidY, hud.AvoidW, hud.AvoidH);   // and off the minimap's card
             var at = new Vector2(x * _scale, -y * _scale);
             if (at != f.At)
             {

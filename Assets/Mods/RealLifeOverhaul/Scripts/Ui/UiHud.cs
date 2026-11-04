@@ -31,6 +31,10 @@ namespace RealLifeOverhaul.Ui
         // Appended with the phone's place (3 Nov 2026): the kit's phone, a view of its own at the bar's right end, as px of
         // the layout (its part on the screen); the key chips keep clear of it. 0 wide while it does not show.
         public float PhoneX, PhoneY, PhoneW, PhoneH;
+
+        // Appended with the minimap's place (4 Nov 2026): px of the layout, the mod's minimap card, which every piece standing
+        // near the bottom left or the top centre keeps clear of; 0 wide while the card is hidden.
+        public float AvoidX, AvoidY, AvoidW, AvoidH;
     }
 
     /// <summary>
@@ -116,7 +120,7 @@ namespace RealLifeOverhaul.Ui
             UiActivityModel strip = m == null ? null : m.Activity ?? m.ActivityClear;
             if (strip != null && UiActivity.Strip(strip.State))
             {
-                UiActivity.StripPlace(frame, strip, out float ax, out float ay);
+                UiActivity.StripPlace(frame, strip, m.AvoidX, m.AvoidY, m.AvoidW, m.AvoidH, out float ax, out float ay);
                 if (UiHudRules.Overlaps(x, y, w, h, ax, ay, strip.StripW, UiActivity.Height(strip)))
                 {
                     y = ay - UiTokens.S2 - h;
@@ -149,13 +153,14 @@ namespace RealLifeOverhaul.Ui
         public static void Draw(UiScene s, UiHudModel m, UiFrame frame, IUiKeys keys, bool prompt, UiStatusModel bar)
         {
             float top = UiTokens.S4;
+            LeftColumn(m, out float column, out _, out _, out _);
             if (m.Info != null)
             {
-                top = UiInfoPanel.Draw(s, m.Info, Left, top) + UiTokens.S2;
+                top = UiInfoPanel.Draw(s, m.Info, column, top) + UiTokens.S2;
             }
             if (m.Objectives != null)
             {
-                UiObjectives.Lay(s, UiAt.Screen, m.Objectives, Left, top);
+                UiObjectives.Lay(s, UiAt.Screen, m.Objectives, column, top);
             }
             if (m.Side != null && m.Side.Length > 0)
             {
@@ -164,12 +169,12 @@ namespace RealLifeOverhaul.Ui
             }
             if (m.Activity != null && UiActivity.Strip(m.Activity.State))
             {
-                UiActivity.StripPlace(frame, m.Activity, out float ax, out float ay);
+                UiActivity.StripPlace(frame, m.Activity, m.AvoidX, m.AvoidY, m.AvoidW, m.AvoidH, out float ax, out float ay);
                 UiActivity.DrawStrip(s, UiAt.Screen, m.Activity, ax, ay);
             }
             if (m.NoticeCount > 0)
             {
-                UiHudNotice.LayStack(s, UiAt.Screen, m.Notices, m.NoticeCount, frame.Width, UiTokens.S4);
+                UiHudNotice.LayStack(s, UiAt.Screen, m.Notices, m.NoticeCount, frame.Width, UiTokens.S4, m.AvoidX, m.AvoidY, m.AvoidW, m.AvoidH);
             }
             if (m.PopupCount > 0)
             {
@@ -211,8 +216,14 @@ namespace RealLifeOverhaul.Ui
             bottom = frame.BandY - UiTokens.S2;
         }
 
-        /// <summary>The left column's box (an info panel and the objectives under it), which a world prompt keeps off; 0 wide when empty.</summary>
-        public static void LeftColumn(UiHudModel m, out float x, out float y, out float w, out float h)
+        /// <summary>
+        /// The left column's box (an info panel and the objectives under it); 0 wide when empty. It stands at the screen's edge,
+        /// or, where the minimap's card has grown up into it, to the card's right.
+        /// </summary>
+        public static void LeftColumn(UiHudModel m, out float x, out float y, out float w, out float h) => LeftColumn(m, true, out x, out y, out w, out h);
+
+        /// <summary>The left column's box; <paramref name="clear"/> false gives it where it stands with no card in the way, which is what the minimap is placed under.</summary>
+        public static void LeftColumn(UiHudModel m, bool clear, out float x, out float y, out float w, out float h)
         {
             x = Left;
             y = UiTokens.S4;
@@ -230,6 +241,10 @@ namespace RealLifeOverhaul.Ui
                 bottom += UiObjectives.Height(m.Objectives);
             }
             h = w > 0f ? bottom - y : 0f;
+            if (clear && w > 0f && m.AvoidW > 0f && UiHudRules.Overlaps(x, y, w, h, m.AvoidX, m.AvoidY, m.AvoidW, m.AvoidH))
+            {
+                x = (float)Math.Ceiling(m.AvoidX + m.AvoidW + UiTokens.S2);
+            }
         }
 
         /// <summary>Where the world prompt stands this frame: beside its point, inside the screen above the bar, off the left column.</summary>
@@ -239,7 +254,9 @@ namespace RealLifeOverhaul.Ui
         public static void PromptPlace(UiHudModel m, UiFrame frame, float floor, out float x, out float y)
         {
             LeftColumn(m, out float lx, out float ly, out float lw, out float lh);
-            UiHudRules.Beside(m.PointX, m.PointY, m.PointAhead, UiWorldPrompt.Width, UiWorldPrompt.Height(m.Prompt), frame.Width, floor, lx, ly, lw, lh, out x, out y);
+            float h = UiWorldPrompt.Height(m.Prompt);
+            UiHudRules.Beside(m.PointX, m.PointY, m.PointAhead, UiWorldPrompt.Width, h, frame.Width, floor, lx, ly, lw, lh, out x, out y);
+            UiHudRules.Clear(ref x, ref y, UiWorldPrompt.Width, h, frame.Width, m.AvoidX, m.AvoidY, m.AvoidW, m.AvoidH);   // and off the minimap's card, which the column's side rule knows nothing of
             x = UiDraw.SnapDown(x);   // a still scene keeps the grid; the game's follower moves the box by the pixel
             y = UiDraw.SnapDown(y);
         }

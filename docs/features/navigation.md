@@ -101,6 +101,8 @@ Read in the decompiled game and in its scene data (`evidence/uitools`, and a stu
   First choice: the game's left column, between the control hints and the task panel, the map as high as the room between them (it is square when there is room).
   Each of the game's panels is measured where it is on the screen, so the interface zoom and the screen's shape need no table.
 
+  While the interface kit's HUD is up, the panel also stands above its bottom bar (as the bar is laid out, whatever its height), under its left column and clear of its key chips, and is drawn over the kit's HUD (its own canvas, one order over it) and under every window; the kit's notice cards, objectives, world prompt and activity strip keep clear of it.
+
   When a long task list leaves less than 240 units for the map there, the panel stands at the bottom beside the column instead, lifted over the address labels or the item panel if it would reach them (a 4:3 screen).
   With no room in either place it is hidden and one line says so.
 
