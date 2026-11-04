@@ -110,9 +110,14 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>Lays the cards down from the top centre of a frame (px of the layout); returns the y under the last.</summary>
-        public static float LayStack(UiScene s, UiAt at, UiHudNoticeModel[] cards, int count, float frameWidth, float top)
+        public static float LayStack(UiScene s, UiAt at, UiHudNoticeModel[] cards, int count, float frameWidth, float top) =>
+            LayStack(s, at, cards, count, frameWidth, top, 0f, 0f, 0f, 0f);
+
+        /// <summary>The stack off a card of the game's (the minimap) where it would stand over it: beside it, or where it was if neither side has room.</summary>
+        public static float LayStack(UiScene s, UiAt at, UiHudNoticeModel[] cards, int count, float frameWidth, float top, float cardX, float cardY, float cardW, float cardH)
         {
             float x = UiDraw.SnapDown((frameWidth - Width) / 2f), y = top;
+            UiHudRules.Clear(ref x, ref y, Width, StackHeight(cards, count), frameWidth, cardX, cardY, cardW, cardH);
             for (int i = 0; i < count && i < cards.Length; i++)
             {
                 int first = s.ItemCount;

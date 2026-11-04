@@ -206,6 +206,7 @@ namespace RealLifeOverhaul.Ui
             private long _seen;
             private float _next;
             private bool _dirty = true;
+            private float _frameW, _frameH;   // the layout's size, last laid: the minimap's card is read into it
 
             public NoticeCardsScreen(Transform stack, UiConceal hold)
             {
@@ -233,6 +234,8 @@ namespace RealLifeOverhaul.Ui
 
             public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
             {
+                _frameW = frame.Width;
+                _frameH = frame.Height;
                 Look(frame);
                 UiNotices.LayCards(s, _m, frame, dark, keys);
                 _dirty = false;
@@ -311,6 +314,7 @@ namespace RealLifeOverhaul.Ui
                     };
                 }
                 _m.CardCount = _entries.Count;
+                UiMinimapBox.Read(frame.Width, frame.Height, out _m.AvoidX, out _m.AvoidY, out _m.AvoidW, out _m.AvoidH);
                 var rect = _stack as RectTransform;
                 if (rect != null)
                 {
@@ -384,7 +388,8 @@ namespace RealLifeOverhaul.Ui
 
             private long Signature()
             {
-                long sig = _stack.childCount;
+                UiMinimapBox.Read(_frameW, _frameH, out float cx, out float cy, out float cw, out float ch);   // the card moved: the cards are laid again beside it
+                long sig = _stack.childCount * 31 + UiMinimapBox.Stamp(cx, cy, cw, ch);
                 for (int i = 0; i < _stack.childCount; i++)
                 {
                     Transform t = _stack.GetChild(i);

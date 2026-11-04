@@ -482,13 +482,22 @@ child of the viewport (the copy brings the live task entries with it), takes the
 takes clicks would take them from the world under it), and adds a `Canvas` to the copy so that it is batched by
 itself. The two text lines are copies of the task entry's `Label` with its `TextLocalizationComponent` taken off
 (the words are final when written). The copy is switched off before it leaves the sleeping holder, so nothing wakes
-until it is first shown. It is made a child of `PlayerHUD`, first in order (the game's dialogs draw over it), and so
-goes with the game's own "hide the interface" (`ScreenshotController.ToggleUIVisibility` sets the alpha of the group
-above it).
+until it is first shown. It is made a child of `PlayerHUD`, and so goes with the game's own "hide the interface"
+(`ScreenshotController.ToggleUIVisibility` sets the alpha of the group above it). While the kit's HUD is up (`HudHost`,
+its canvas one over `PlayerHUD`'s order of 2, so 3, or 4 over the kit's phone) the copy's own `Canvas` overrides sorting at
+one over the kit HUD's order (`UiHostRules.MinimapOrder`), with a `GraphicRaycaster` and its backdrop a raycast target, so
+it is drawn over the kit's bottom bar and pieces and the pointer over it hits it; the game's dialogs and boxes (orders 19
+to 21), the kit's question cards (23) and the HUD host's own modal piece (a picker, All apps while walking: a canvas of its
+own one over the card's) stay over it, and the full menu, the pause menu and the apps hide the HUD and it
+with them. Without the kit's HUD it is sorted with the game's HUD as before (`NavHud.Sort`, on the slow tick).
 
 **Placing it.** No corner is always free, so the panel is placed by measuring: `RectTransform.GetWorldCorners` of the
 control hints' `Panel`, the task `Panel`, the address label and the item `Panel`, brought into the HUD canvas's own
-units. That needs no table of resolutions and follows the interface zoom. See `NavHud.Place`.
+units, and, while the kit's HUD is up, the kit's bottom bar's top as `HudHost` lays it out (never a fixed height), the kit's
+left column (an info panel and the objectives) and its key chips (`NavBridges.KitHud`, the sums in `NavPlaceRules`). That
+needs no table of resolutions and follows the interface zoom. See `NavHud.Place`. The kit's pieces keep clear of the card
+in turn (`UiMinimapBox` gives them its rectangle; `UiHudRules.Clear`): the notice cards, the objectives, the world prompt and
+the activity's strip, as the kit's item panel always did.
 
 **The map's markers** (`PointOfInterest`, made by `CityMap.AddPoi` from `poiTemplate`; its parent is the object
 `Pois`, an overlay layer in which a marker's world position is its place on the screen). A marker's round base and

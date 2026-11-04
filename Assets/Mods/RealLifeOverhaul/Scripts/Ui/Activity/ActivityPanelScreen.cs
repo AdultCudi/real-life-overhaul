@@ -31,6 +31,7 @@ namespace RealLifeOverhaul.Ui
         private float _next;
         private int _seen;
         private bool _shown;                 // the last layout drew the panel (not an empty scene)
+        private float _frameW, _frameH;      // the layout's size, last laid: the minimap's card is read into it
 
         public ActivityPanelScreen(PlayerActivityUI ui)
         {
@@ -77,6 +78,9 @@ namespace RealLifeOverhaul.Ui
             s.Begin("activity", frame.Width, frame.Height, dark);
             s.Pointer = frame.Pointer;
             s.Floats = true;
+            _frameW = frame.Width;
+            _frameH = frame.Height;
+            UiMinimapBox.Read(_frameW, _frameH, out _m.AvoidX, out _m.AvoidY, out _m.AvoidW, out _m.AvoidH);   // the strip keeps off the minimap's card
             UiActivity.StripPlace(frame, _m, out float x, out float y);
             UiActivity.DrawStrip(s, UiAt.Screen, _m, x, y);
         }
@@ -136,6 +140,11 @@ namespace RealLifeOverhaul.Ui
                 sig = sig * 31 + (int)TimeHelper.NowInMinutes();
                 GameSpeedController speed = InstanceBehavior<UIs>.Instance != null ? InstanceBehavior<UIs>.Instance.gameSpeed : null;
                 sig = sig * 31 + (speed != null && speed.isFastForwarding ? 1 : 0) + (BuildingManager.IsInsideBuilding ? 2 : 0);
+                if (_shown && UiActivity.Strip(_m.State))
+                {
+                    UiMinimapBox.Read(_frameW, _frameH, out float cx, out float cy, out float cw, out float ch);   // the card moved: the strip is laid again beside it
+                    sig = sig * 31 + UiMinimapBox.Stamp(cx, cy, cw, ch);
+                }
                 return sig;
             }
         }
