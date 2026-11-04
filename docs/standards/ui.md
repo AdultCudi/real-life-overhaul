@@ -110,9 +110,12 @@ keys must still reach everything. Checked by: EconomyCheck (`the d-pad reaches e
 **MUST.** While the keys or a pad lead, show the keys bound now on the status bar (key caps, or the pad's glyphs while
 a pad is used), and give the way back among them. While the mouse leads, show no prompts: the close button on the
 window's title strip is the way back (the host takes it as Back), and on a decision card the button that answers Back.
+The prompts stand as chips in the lane over the status bar (`UiFrame.PromptLane`), never on its strip: the app row and the
+pills do not move or give way to them, and a window ends above the lane.
 
 Why: the player never has to guess a key, and a mouse player is not asked for keys they do not use. Checked by:
-EconomyCheck (`a prompt bar that says how to go back`, `with the mouse leading, the status bar shows no prompts`).
+EconomyCheck (`a prompt bar that says how to go back`, `with the mouse leading, the status bar shows no prompts`, and the
+`kit prompts` checks: no chip over the bar, a window or another chip, and no piece of the bar moved by the prompts).
 
 ### RLO-UI-009: One key does one thing
 

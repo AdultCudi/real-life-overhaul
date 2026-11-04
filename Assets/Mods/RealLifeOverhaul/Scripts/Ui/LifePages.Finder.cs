@@ -136,7 +136,7 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.TextMiddle(s, on, midL, y0, FinderBar, midW, UiStyle.Body, UiRole.Text, line, UiFlags.Centre | UiFlags.Truncate);
             }
 
-            float fy = frame.BandY - FinderFoot - UiTokens.S4;
+            float fy = frame.BandY - FinderFoot - UiFrame.PromptLane;   // the keys' prompts stand in the lane between its foot and the bar
             Foot(s, m, frame, keys, fy);
             float stripTop = Strip(s, m, frame, keys, fy);
 

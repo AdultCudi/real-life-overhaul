@@ -31,6 +31,7 @@ internal static partial class Program
         UiFocusChecks();
         UiInputModeChecks();
         UiScreenChecks();
+        KitPromptChecks();   // the keys' prompts as chips over the bar: the tray and the pills never move, nothing meets a chip (KitPromptChecks.cs)
         UiPageChecks();
         UiRulesFailOnce();
         UiSourceChecks();
