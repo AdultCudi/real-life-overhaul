@@ -12,9 +12,10 @@ namespace RealLifeOverhaul.Economy
             {
                 return false;
             }
-            int[] ring = s.RentRing;
+            int[] ring = s.RentRing, months = s.RentRingMonths;
             if (s.RentRingCount < ring.Length)
             {
+                months[s.RentRingCount] = month;
                 ring[s.RentRingCount++] = meanFlatRent;
             }
             else
@@ -22,8 +23,10 @@ namespace RealLifeOverhaul.Economy
                 for (int i = 1; i < ring.Length; i++)
                 {
                     ring[i - 1] = ring[i];
+                    months[i - 1] = months[i];
                 }
                 ring[ring.Length - 1] = meanFlatRent;
+                months[months.Length - 1] = month;
             }
             s.RentRingMonth = month;
             return true;

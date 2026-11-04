@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using RealLifeOverhaul.Economy;
+using RealLifeOverhaul.Ui;
 
 // Wave 4 of the property business (Scripts/Economy/Estate/TenantRules.cs, ServiceRules.cs, ImproveRules.cs, EstateExtraStore.cs, RentMapData.cs): a unit let to a named person of the
 // people pool, rent trouble following their job and wage, a unit's rent record of six months, booked servicing that holds a kind of fault down for a
@@ -462,6 +463,17 @@ internal static partial class Program
         Check(same, "every unit's person, record and request are the same through the save and back");
         Check(hb.LastInspectDay == 90 && hb.LastInspectScore == 640 && hb.LastInspect == (int)InspectResult.Passed && hb.ServiceUntil[2] == 150 && hb.Services.Count == 2
             && hb.Services[0].Day == 33 && hb.Services[1].Contractor == "Broad.way|12, x" && hb.Services[1].Fee == 120, "the last inspection and the booked services are the same, a contractor's name with its punctuation too");
+        Check(back.RentRingMonths[0] == 3 && back.RentRingMonths[1] == 4, "each entry of the ring keeps its own month through the save");
+        var gap = new EstateState();
+        RentRingRules.Month(gap, 3, 2700);
+        RentRingRules.Month(gap, 4, 2760);
+        RentRingRules.Month(gap, 9, 2800);   // months 5 to 8 were not read: the entry says month 9, and the one before it month 4
+        Check(gap.RentRingMonths[2] == 9 && gap.RentRingMonths[1] == 4, "a month the read missed shows as itself in the ring, not as the next one");
+        var older = new EstateState();
+        EstateExtraStore.ReadRing(older, "v=1|8|3|2700,2760,2800|");
+        Check(older.RentRingCount == 3 && older.RentRingMonths[0] == 6 && older.RentRingMonths[2] == 8, "a ring saved without months takes one for each month up to the last");
+        var plural = new[] { UiPlural.Fix("1 day(s) left"), UiPlural.Fix("3 box(es), 2 warranty(ies)"), UiPlural.Fix("Day(s) and (s) and $5 more") };
+        Check(plural[0] == "1 day left" && plural[1] == "3 boxes, 2 warranties" && plural[2] == "Day(s) and (s) and $5 more", "a counted noun takes its number's ending, a bracket with no count is left: " + string.Join(" / ", plural));
         Check(back.RentRingCount == 2 && back.RentRing[1] == 2760 && back.RentRingMonth == 4 && back.Marks.Count == 1 && back.Marks[0].Id == "a.b|c;d" && back.Marks[0].Prev == 2500, "the city's rent ring and the landlords' marks come back");
 
         // An old save: the two keys are not there.

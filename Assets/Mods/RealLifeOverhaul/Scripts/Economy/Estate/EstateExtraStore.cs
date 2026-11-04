@@ -215,6 +215,12 @@ namespace RealLifeOverhaul.Economy
                 t.Append(i > 0 ? "," : string.Empty).Append(Uri.EscapeDataString(s.Marks[i].Id).Replace(".",
                     "%2E")).Append('.').Append(s.Marks[i].Rent.ToString(Inv)).Append('.').Append(s.Marks[i].Prev.ToString(Inv));
             }
+            // At the end of the line, so an older save still reads: the month of each entry of the ring.
+            t.Append('|');
+            for (int i = 0; i < s.RentRingCount && i < s.RentRingMonths.Length; i++)
+            {
+                t.Append(i > 0 ? "," : string.Empty).Append(s.RentRingMonths[i].ToString(Inv));
+            }
             return t.ToString();
         }
 
@@ -238,6 +244,12 @@ namespace RealLifeOverhaul.Economy
                 for (int i = 0; i < values.Length && s.RentRingCount < count; i++)
                 {
                     s.RentRing[s.RentRingCount++] = Math.Max(0, Int(values[i]));
+                }
+                // The months of the entries come last; a save without them took one entry for each month up to the last.
+                string[] months = f.Length > 5 && f[5].Length > 0 ? f[5].Split(',') : new string[0];
+                for (int i = 0; i < s.RentRingCount; i++)
+                {
+                    s.RentRingMonths[i] = months.Length == s.RentRingCount ? Math.Max(0, Int(months[i])) : Math.Max(0, s.RentRingMonth - s.RentRingCount + 1 + i);
                 }
                 s.Marks.Clear();
                 string[] marks = f.Length > 4 && f[4].Length > 0 ? f[4].Split(',') : new string[0];
