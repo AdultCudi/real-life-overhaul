@@ -518,18 +518,6 @@ namespace RealLifeOverhaul.Ui
                 return new UiFactCardModel { Title = EstateText.T("reallife_ui_estate_servicing"), Heading = true, Lines = lines.ToArray(), Actions = actions.ToArray() };
             }
 
-            // What a booked visit costs for each kind of fault, side by side: the prices on the booking buttons, as bars.
-            private UiChartModel ServiceChart(EstateHolding h)
-            {
-                var names = new string[EstateCatalogue.CallKinds];
-                var fees = new float[EstateCatalogue.CallKinds];
-                for (int kind = 1; kind <= EstateCatalogue.CallKinds; kind++)
-                {
-                    names[kind - 1] = EstateText.Fault(kind);
-                    fees[kind - 1] = ServiceRules.Fee(h, kind, _c.Index);
-                }
-                return EstateCharts.Few(EstateText.T("reallife_ui_estate_ch_service_fees"), names, fees);
-            }
         }
     }
 }

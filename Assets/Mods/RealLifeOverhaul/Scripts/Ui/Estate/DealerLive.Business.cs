@@ -583,7 +583,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_dealer_report_conversion", "reallife_dealer_report_arrears"
             };
 
-            private readonly DealerBook _rWeek = new DealerBook(), _rAll = new DealerBook(), _rNow = new DealerBook(), _rDay = new DealerBook(), _rScratch = new DealerBook();
+            private readonly DealerBook _rWeek = new DealerBook(), _rNow = new DealerBook(), _rDay = new DealerBook(), _rScratch = new DealerBook();
 
             // The showrooms' takings, day by day over the days kept: the chart that fills the foot of a short page (Still: read by its axes alone).
             private UiChartModel Trend(RealLifeOverhaul.Economy.Dealership.ReportKind kind, string place, string titleKey)
@@ -689,7 +689,6 @@ namespace RealLifeOverhaul.Ui
                 _m.ChartPlaces = places;
                 _m.ChartPlace = placeAt;
                 int week = DealerReport.Sum(_s, place, _day - DealerCatalogue.WeekBooks + 1, _day, _day, _rWeek, _rDay);
-                int kept = DealerReport.Sum(_s, place, _day - DealerCatalogue.ReportDays + 1, _day, _day, _rAll, _rDay);
                 DealerReport.Day(_s, place, _day, _day, _rNow);
                 var sums = new List<UiFactLine>(16);
                 sums.AddRange(SumRows(_rWeek));
@@ -725,13 +724,6 @@ namespace RealLifeOverhaul.Ui
                 };
             }
 
-            private string Sums(string key, DealerBook b, int days)
-            {
-                long conversion = DealerReport.Value(b, RealLifeOverhaul.Economy.Dealership.ReportKind.Conversion);
-                return DealerText.Fill(key, "days", days.ToString(Inv), "sold", b.Sold.ToString(Inv), "revenue", Money(b.Revenue), "margin",
-                    Money(b.Margin), "extras", Money(b.Extras), "spent", Money(b.Spent),
-                    "visitors", b.Visitors.ToString(Inv), "conversion", (conversion / 10.0).ToString("0.#", Inv) + "%");
-            }
         }
     }
 }
