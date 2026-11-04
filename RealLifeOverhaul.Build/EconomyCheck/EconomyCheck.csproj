@@ -114,6 +114,15 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\MoneyModel.cs" Link="Mod\Money\MoneyModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\MoneyPages.cs" Link="Mod\Money\MoneyPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\MoneyHost.cs" Link="Mod\Money\MoneyHost.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\MoneyPages.Counter.cs" Link="Mod\Money\MoneyPages.Counter.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\BankFacts.cs" Link="Mod\Money\BankFacts.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\BankParts.cs" Link="Mod\Money\BankParts.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\BanksBuild.cs" Link="Mod\Money\BanksBuild.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\BanksBuild.Apply.cs" Link="Mod\Money\BanksBuild.Apply.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\OwnBankFacts.cs" Link="Mod\Money\OwnBankFacts.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\OwnBankBuild.cs" Link="Mod\Money\OwnBankBuild.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\OwnBankBuild.Tabs.cs" Link="Mod\Money\OwnBankBuild.Tabs.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\OwnBankLive.Reader.cs" Link="Mod\Money\OwnBankLive.Reader.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\FinanceScreen.cs" Link="Mod\Money\FinanceScreen.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\FinanceFacts.cs" Link="Mod\Money\FinanceFacts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\FinanceRules.cs" Link="Mod\Money\FinanceRules.cs" />
