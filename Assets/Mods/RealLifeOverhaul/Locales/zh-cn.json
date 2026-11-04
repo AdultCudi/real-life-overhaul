@@ -31640,5 +31640,7 @@
   "reallife_co_staff_answer_by": "请在第 {day} 天前答复",
   "reallife_co_strike_low_sec": "满意度低的员工",
   "reallife_co_staff_sick_flat": "请病假：获得一天工资的{share}。其声望不变。",
-  "reallife_co_row_less": "少 {amount}"
+  "reallife_co_row_less": "少 {amount}",
+  "reallife_co_policy_quotes": "各保险公司的报价",
+  "reallife_co_policy_pick": "尚未投保。请选择条款合适的保险公司。"
 }

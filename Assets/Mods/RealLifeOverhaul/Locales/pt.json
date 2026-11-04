@@ -31640,5 +31640,7 @@
   "reallife_co_staff_answer_by": "responda até o dia {day}",
   "reallife_co_strike_low_sec": "Quem está com a moral baixa",
   "reallife_co_staff_sick_flat": "Afastado por doença: recebe {share} do pagamento de um dia. O prestígio dele não muda.",
-  "reallife_co_row_less": "{amount} a menos"
+  "reallife_co_row_less": "{amount} a menos",
+  "reallife_co_policy_quotes": "O que cada seguradora pede",
+  "reallife_co_policy_pick": "Ainda sem cobertura. Escolha a seguradora cujos termos lhe servem."
 }

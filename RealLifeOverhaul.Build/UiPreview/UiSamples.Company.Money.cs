@@ -98,7 +98,12 @@ internal static partial class UiSamples
             c.Blocks = new[]
             {
                 CSec(w.T("reallife_ibox_sec_campaign", "The campaign")),
-                new CompanyBlock { Kind = CompanyBlockKind.Choice, Text = w.T("reallife_co_push_kind", "Kind"), Options = new[] { "Flyers", "Radio", "Discount week" }, Chosen = 0, Acts = new[] { CA(CompanyDo.Go, "kind", 0), CA(CompanyDo.Go, "kind", 1), CA(CompanyDo.Go, "kind", 2) } },
+                new CompanyBlock { Kind = CompanyBlockKind.Items, Items = new[]
+                {
+                    new CompanyItem { Title = "Flyers", Icon = UiIcon.Megaphone, Tint = UiRole.None, Press = true, Grade = -1, Sub = w.F("reallife_co_lic_term_value", "{days} days", "days", "4"), Figure = "+12%", FigureTone = UiRole.OkText, Note = CM(180), Chip = w.T("reallife_ui_bizops_pick", "Picked"), ChipTone = UiRole.Ok, Act = CA(CompanyDo.Go, "kind", 0) },
+                    new CompanyItem { Title = "Radio", Icon = UiIcon.Megaphone, Tint = UiRole.None, Press = true, Grade = -1, Sub = w.F("reallife_co_lic_term_value", "{days} days", "days", "4"), Figure = "+9%", FigureTone = UiRole.OkText, Note = CM(620), Act = CA(CompanyDo.Go, "kind", 1) },
+                    new CompanyItem { Title = "Discount week", Icon = UiIcon.Megaphone, Tint = UiRole.None, Press = true, Grade = -1, Sub = w.F("reallife_co_lic_term_value", "{days} days", "days", "7"), Figure = "+6%", FigureTone = UiRole.OkText, Note = CM(40), Act = CA(CompanyDo.Go, "kind", 2) }
+                } },
                 CNote(w.T("reallife_co_push_about_flyers", "Flyers through every door nearby.")),
                 CRow(w.T("reallife_co_f_cost", "Cost"), CM(180)), CRow(w.L("reallife_co_push_length", "Length"), w.F("reallife_co_push_length_value", "{days} days from day {from}", "days", "4", "from", "215")),
                 CRow(w.T("reallife_co_f_effect", "Effect on customers"), "+12%", UiRole.OkText),
@@ -174,8 +179,17 @@ internal static partial class UiSamples
             }
             else
             {
-                b.Add(CNote(w.T("reallife_co_policy_none", "Speedy Bites has no cover against this. Choose an insurer.")));
-                b.Add(new CompanyBlock { Kind = CompanyBlockKind.Choice, Text = w.L("reallife_co_claim_insurer", "Insurer"), Options = new[] { "Budget Mutual", "Safeguard", "Prime Assurance" }, Chosen = 1, Acts = new[] { CA(CompanyDo.Go, "insurer", 0), CA(CompanyDo.Go, "insurer", 1), CA(CompanyDo.Go, "insurer", 2) } });
+                b.Add(CNote(w.T("reallife_co_policy_pick", "No cover yet. Pick the insurer whose terms suit you.")));
+                b.Add(CSec(w.T("reallife_co_policy_quotes", "What each insurer asks")));
+                string[] insurers = { "Budget Mutual", "Safeguard", "Prime Assurance" }, shares = { "15%", "10%", "5%" }, least = { "$300", "$200", "$100" }, quotes = { "$9", "$11", "$14" };
+                var asks = new CompanyItem[3];
+                for (int i = 0; i < asks.Length; i++)
+                {
+                    asks[i] = new CompanyItem { Title = insurers[i], Icon = UiIcon.Bank, Tint = UiRole.None, Press = true, Grade = -1,
+                        Sub = w.F("reallife_co_policy_excess", "Excess: {share} of the loss, {least} at least.", "share", shares[i], "least", least[i]), Figure = w.F("reallife_co_row_a_day", "{amount} a day", "amount", quotes[i]),
+                        Chip = i == 1 ? w.T("reallife_ui_bizops_pick", "Picked") : null, ChipTone = UiRole.Ok, Act = CA(CompanyDo.Go, "insurer", i) };
+                }
+                b.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = asks });
             }
             b.Add(CNote(w.F("reallife_co_policy_excess", "The excess is {share} of a loss, at least {least}.", "share", "10%", "least", CM(200))));
             b.Add(CNote(w.F("reallife_co_policy_most", "It pays up to {most}, within {days} days.", "most", CM(covered ? 10000 : 5000), "days", "5")));

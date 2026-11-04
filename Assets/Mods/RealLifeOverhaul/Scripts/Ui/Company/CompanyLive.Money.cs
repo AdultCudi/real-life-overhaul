@@ -132,19 +132,25 @@ namespace RealLifeOverhaul.Ui
             int offered = d.OfferedKinds(shop, _kinds);
             int at = CompanyCatalogue.Clamp(v.Kind, 0, Math.Max(0, offered - 1));
             int kind = _kinds[at];
-            var options = new string[offered];
-            var acts = new CompanyAct[offered];
+            var kinds = new CompanyItem[offered];
             for (int i = 0; i < offered; i++)
             {
-                options[i] = CompanyText.Campaign(_kinds[i]);
-                acts[i] = CompanyAct.Of(CompanyDo.Go, "kind", i, CompanyView.SubMain, 0, null);
+                int c1, p1, s1, r1;
+                d.CampaignQuote(shop, _kinds[i], out c1, out p1, out s1, out r1);
+                kinds[i] = new CompanyItem
+                {
+                    Title = CompanyText.Campaign(_kinds[i]), Icon = UiIcon.Megaphone, Tint = UiRole.None, Press = true, Grade = -1,
+                    Sub = CompanyText.T("reallife_co_lic_term_value", "days", CompanyCatalogue.CampaignDays[_kinds[i]].ToString()), Figure = CompanyText.Percent(p1), FigureTone = UiRole.OkText,
+                    Note = CompanyText.Money(c1), Chip = i == at ? CompanyText.T("reallife_ui_bizops_pick") : null, ChipTone = UiRole.Ok, Act = CompanyAct.Of(CompanyDo.Go, "kind", i,
+                        CompanyView.SubMain, 0, null)
+                };
             }
             int cost, percent, suit, repeat;
             d.CampaignQuote(shop, kind, out cost, out percent, out suit, out repeat);
             card.FactLabels = new[] { w.T("reallife_co_f_cost", "Cost"), w.T("reallife_co_f_effect", "Effect on customers") };
             card.FactValues = new[] { CompanyText.Money(cost), CompanyText.Percent(percent) };
             blocks.Add(Sec(w.T("reallife_ibox_sec_campaign", "The campaign")));
-            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Choice, Text = w.T("reallife_co_push_kind", "Kind"), Options = options, Chosen = at, Acts = acts });
+            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = kinds });
             blocks.Add(Note(CompanyText.T(CampaignAboutKeys[kind], "share", CompanyText.Share(CompanyCatalogue.DiscountShare))));
             blocks.Add(Row(w.T("reallife_co_f_cost", "Cost"), CompanyText.Money(cost)));
             blocks.Add(Row(CompanyText.Label("reallife_co_push_length"), CompanyText.T("reallife_co_push_length_value", "days", CompanyCatalogue.CampaignDays[kind].ToString(), "from", (day
@@ -390,15 +396,21 @@ namespace RealLifeOverhaul.Ui
             var blocks = new List<CompanyBlock>(12) { Sec(w.T("reallife_ibox_sec_terms", "Terms")) };
             if (!p.Active)
             {
-                blocks.Add(Note(CompanyText.T("reallife_co_policy_none")));
-                var options = new string[CompanyCatalogue.Insurers];
-                var acts = new CompanyAct[options.Length];
-                for (int i = 0; i < options.Length; i++)
+                blocks.Add(Note(w.T("reallife_co_policy_pick", "No cover yet. Pick the insurer whose terms suit you.")));
+                var quotes = new CompanyItem[CompanyCatalogue.Insurers];
+                for (int i = 0; i < quotes.Length; i++)
                 {
-                    options[i] = CompanyText.Insurer(i);
-                    acts[i] = CompanyAct.Of(CompanyDo.Go, "insurer", i);
+                    quotes[i] = new CompanyItem
+                    {
+                        Title = CompanyText.Insurer(i), Icon = UiIcon.Bank, Tint = UiRole.None, Press = true, Grade = -1,
+                        Sub = CompanyText.T("reallife_co_policy_excess", "share", CompanyText.Share(CompanyCatalogue.InsurerExcessShare[i]), "least",
+                            CompanyText.Money(CompanyCatalogue.InsurerExcessLeast[i])),
+                        Figure = CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(d.Quote(shop, kind, i))),
+                        Chip = i == insurer ? CompanyText.T("reallife_ui_bizops_pick") : null, ChipTone = UiRole.Ok, Act = CompanyAct.Of(CompanyDo.Go, "insurer", i)
+                    };
                 }
-                blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Choice, Text = w.L("reallife_co_claim_insurer", "Insurer"), Options = options, Chosen = insurer, Acts = acts });
+                blocks.Add(Sec(w.T("reallife_co_policy_quotes", "What each insurer asks")));
+                blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = quotes });
             }
             else
             {
