@@ -12,8 +12,7 @@ namespace RealLifeOverhaul.DaySeries
     {
         public const int CutPercent = 5;
         public const int CutDays = 14;
-        public const int HistoryDays = 30;     // days of takings a business loan asks for
-        public const int CoverTimes = 20;      // takings must cover the daily payment this many times
+        public const int CutCustomers = 3;     // customers a day a price cut is taken to bring, a small steady figure, the same everywhere
         public const int LoansADay = 2;
         public const int ScoreWindow = 30;
         public const int WorthWindow = 30;
@@ -78,20 +77,20 @@ namespace RealLifeOverhaul.DaySeries
         public static bool CutOn(DaySeriesBook book, int day) => book != null && book.CutFrom > 0 && day >= book.CutFrom && day < book.CutUntil;
 
         /// <summary>Customers a price cut of 5 per cent is taken to bring, a small steady figure, the same everywhere.</summary>
-        public static int CutFootfall(DaySeriesBook book, int day) => CutOn(book, day) ? 3 : 0;
+        public static int CutFootfall(DaySeriesBook book, int day) => CutOn(book, day) ? CutCustomers : 0;
 
         /// <summary>
-        /// A campaign's forecast from reach already saved, or from customers when reach is not there yet. It saves nothing:
-        /// about a twentieth of the reach, a few at least.
+        /// What a campaign is forecast to add to the takings of the business it runs at: its extra customers (<paramref name="percent"/> of the
+        /// customers there are) on each of its <paramref name="days"/>, at what the business takes a day now. Nothing is saved or spent.
+        /// The same sum for the player's campaign on Flare and for a rival's answer.
         /// </summary>
-        public static int CampaignForecast(int reach, int customers)
+        public static long CampaignForecast(long dailyTakings, int percent, int days)
         {
-            int baseOn = reach > 0 ? reach / 20 : customers / 80;
-            if (baseOn < 4)
+            if (dailyTakings <= 0 || percent <= 0 || days <= 0)
             {
-                return reach <= 0 && customers <= 0 ? 0 : 4;
+                return 0;
             }
-            return baseOn > 400 ? 400 : baseOn;
+            return dailyTakings * percent / 100 * days;
         }
 
         /// <summary>Headroom over the lending threshold, 0 to 100. It is how far the rating sits over what the bank needs, not a chance.</summary>
@@ -103,69 +102,6 @@ namespace RealLifeOverhaul.DaySeries
             }
             int room = (score - threshold) * 100 / (top - threshold);
             return room > 100 ? 100 : room;
-        }
-
-        /// <summary>True when the business has traded long enough.</summary>
-        public static bool HistoryOk(int daysOfTakings) => daysOfTakings >= HistoryDays;
-
-        /// <summary>True when takings cover the daily payment the number of times the rule asks.</summary>
-        public static bool CoverOk(long takings, int dailyPayment)
-        {
-            if (dailyPayment <= 0)
-            {
-                return takings > 0;
-            }
-            return takings >= (long)dailyPayment * CoverTimes;
-        }
-
-        /// <summary>The daily payment of a loan, whole dollars, from its amount, its yearly rate in hundredths of a per cent, and its term in days.</summary>
-        public static int DailyPayment(int amount, int rateBp, int days)
-        {
-            if (amount <= 0 || days <= 0)
-            {
-                return 0;
-            }
-            if (rateBp <= 0)
-            {
-                return Math.Max(1, amount / days);
-            }
-            double daily = rateBp / 10000.0 / 365.0;
-            double factor = daily / (1.0 - Math.Pow(1.0 + daily, -days));
-            int pay = (int)Math.Ceiling(amount * factor - 1e-6);
-            return pay < 1 ? 1 : pay;
-        }
-
-        /// <summary>Interest over the whole term: every daily payment, less the amount borrowed.</summary>
-        public static int Interest(int amount, int daily, int days)
-        {
-            long all = (long)daily * days;
-            long over = all - amount;
-            if (over <= 0)
-            {
-                return 0;
-            }
-            return over > int.MaxValue ? int.MaxValue : (int)over;
-        }
-
-        /// <summary>What is still owed after <paramref name="paid"/> days, never under nothing.</summary>
-        public static int StillOwed(int amount, int rateBp, int daily, int paid)
-        {
-            if (amount <= 0 || paid <= 0)
-            {
-                return Math.Max(0, amount);
-            }
-            double bal = amount;
-            double rate = rateBp <= 0 ? 0.0 : rateBp / 10000.0 / 365.0;
-            for (int i = 0; i < paid && bal > 0; i++)
-            {
-                double interest = bal * rate;
-                bal = bal + interest - daily;
-            }
-            if (bal <= 0)
-            {
-                return 0;
-            }
-            return bal > int.MaxValue ? int.MaxValue : (int)Math.Ceiling(bal - 1e-6);
         }
 
         /// <summary>

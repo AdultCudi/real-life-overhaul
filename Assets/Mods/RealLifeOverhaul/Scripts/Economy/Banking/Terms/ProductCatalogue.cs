@@ -96,7 +96,9 @@ namespace RealLifeOverhaul.Economy
         public static int CardMinimumLeast => Prices.At(25);
 
         // the business loan: one of the game's loans with a business as security
-        public const int BusinessDaysOnRecord = 7;           // days of takings needed on record, and the days its profit is averaged over
+        public const int BusinessDaysOnRecord = 30;          // days of takings needed on record before a bank lends against a business
+        public const int BusinessAverageDays = 7;            // the days its profit is averaged over
+        public const int BusinessCoverTimes = 20;            // the takings on record must cover the loan's daily payment this many times
         public const int BusinessProfitMultiple = 30;        // the most it lends, in days of that average profit
         public const int BusinessRatePoints = -1;
 

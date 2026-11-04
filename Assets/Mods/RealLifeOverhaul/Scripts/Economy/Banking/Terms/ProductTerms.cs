@@ -114,6 +114,29 @@ namespace RealLifeOverhaul.Economy
             return (int)Math.Floor(averageDailyProfit * (double)ProductCatalogue.BusinessProfitMultiple);
         }
 
+        /// <summary>True when the business has traded long enough for a bank to lend against it: <see cref="ProductCatalogue.BusinessDaysOnRecord"/> days of takings on record.</summary>
+        public static bool HistoryOk(int daysOnRecord) => daysOnRecord >= ProductCatalogue.BusinessDaysOnRecord;
+
+        /// <summary>True when the takings on record cover a loan's daily payment <see cref="ProductCatalogue.BusinessCoverTimes"/> times.</summary>
+        public static bool CoverOk(long takings, int dailyPayment)
+        {
+            return dailyPayment <= 0 ? takings > 0 : takings >= (long)dailyPayment * ProductCatalogue.BusinessCoverTimes;
+        }
+
+        /// <summary>The most a business loan can be so its payment stays covered: <paramref name="most"/> when the takings already cover its payment, else in proportion.</summary>
+        public static int CoverMost(int most, long takings, int paymentAtMost)
+        {
+            if (most <= 0 || CoverOk(takings, paymentAtMost))
+            {
+                return Math.Max(0, most);
+            }
+            if (takings <= 0 || paymentAtMost <= 0)
+            {
+                return 0;
+            }
+            return (int)Math.Floor((double)most * takings / ((double)paymentAtMost * ProductCatalogue.BusinessCoverTimes));
+        }
+
         /// <summary>The most a lender puts into a vehicle (what it would lend unsecured at the rating) or a building (a multiple of that).</summary>
         public static int FinanceMost(ProductKind kind, int score, float ownCap)
         {

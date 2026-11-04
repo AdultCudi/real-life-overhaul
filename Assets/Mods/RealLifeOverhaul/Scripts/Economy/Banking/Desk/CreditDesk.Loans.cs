@@ -49,11 +49,19 @@ namespace RealLifeOverhaul.Economy
                     return offer;
                 }
             }
-            profit = Books.AverageProfit(shop.Address, ProductCatalogue.BusinessDaysOnRecord, out days);
+            // The record is the last 30 days of takings (a bank wants a month), and the profit is the last week's average. The loan is
+            // never so large that its payment is not covered by the takings on record 20 times over (the same rule a city firm borrows by).
+            long takings = (long)Books.TakingsOnRecord(shop.Address, ProductCatalogue.BusinessDaysOnRecord, out days);
+            profit = Books.AverageProfit(shop.Address, ProductCatalogue.BusinessAverageDays, out int recent);
             int score = CreditLedger.Value;
             offer.Most = BankRules.Most(ProductTerms.BusinessMost(score, profit), offer.Bank.Rank);
             offer.RateBp = Mathf.RoundToInt(BusinessRate(score, offer.Bank) * Multiplier * 100f);
-            if (days < ProductCatalogue.BusinessDaysOnRecord || offer.Most < CreditCatalogue.LoanLeast)
+            if (offer.Most >= CreditCatalogue.LoanLeast)
+            {
+                LoanQuote atMost = BusinessQuote(offer.Bank, offer.Most);
+                offer.Most = ProductTerms.CoverMost(offer.Most, takings, atMost.DailyPayment + atMost.DailyInterest);
+            }
+            if (!ProductTerms.HistoryOk(days) || recent <= 0 || offer.Most < CreditCatalogue.LoanLeast)
             {
                 offer.Answer = ProductAnswer.NoSecurity;
             }
