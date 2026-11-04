@@ -536,7 +536,8 @@ namespace RealLifeOverhaul.Ui
                     if (UiTextRules.Width(m.Points[i] ?? string.Empty, UiStyle.Small) <= bw)
                     {
                         // A name that fits one line is a single centred line (a wrapped one sits a little high in a script with taller lines).
-                        UiDraw.TextMiddle(s, at, px + slot * i + UiTokens.S1 / 2f, y, UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S1, bw, UiStyle.Small, UiRole.Muted, m.Points[i], UiFlags.Centre | UiFlags.Label);
+                        UiDraw.TextMiddle(s, at, px + slot * i + UiTokens.S1 / 2f, y,
+                            UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S1, bw, UiStyle.Small, UiRole.Muted, m.Points[i], UiFlags.Centre | UiFlags.Label);
                         continue;
                     }
                     UiDraw.Text(s, at, px + slot * i + UiTokens.S1 / 2f, y, bw, UiStyle.Small, UiRole.Muted, m.Points[i], UiFlags.Centre | UiFlags.Wrap | UiFlags.Middle | UiFlags.Label, 2);

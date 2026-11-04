@@ -168,7 +168,8 @@ namespace RealLifeOverhaul.Ui
                     cx = x;
                     cy += UiTokens.Control + UiTokens.S1;
                 }
-                UiDraw.Button(s, at, cx, cy, bw, UiTokens.Control, i == chosen ? UiButtonKind.Chosen : UiButtonKind.Secondary, a.Label, UiIcon.None, UiAction.Count, keys, a.Command, a.Arg, a.Disabled);
+                UiDraw.Button(s, at, cx, cy, bw, UiTokens.Control, i == chosen ? UiButtonKind.Chosen : UiButtonKind.Secondary, a.Label, UiIcon.None,
+                    UiAction.Count, keys, a.Command, a.Arg, a.Disabled);
                 cx += bw + UiTokens.S2;
             }
             return cy + UiTokens.Control + UiTokens.S2;

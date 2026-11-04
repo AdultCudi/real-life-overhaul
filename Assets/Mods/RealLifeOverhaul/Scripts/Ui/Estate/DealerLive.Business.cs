@@ -118,14 +118,16 @@ namespace RealLifeOverhaul.Ui
                         {
                             Icon = rn.Contains("truck") || rn.Contains("pickup") || rn.Contains("van") ? UiIcon.Truck : UiIcon.Car, Title = DealerGame.CarName(rc.Type),
                             Sub = rivalAt >= 0 ? DealerCatalogue.RivalNames[rivalAt % DealerCatalogue.RivalNames.Length] : string.Empty, Amount = Money(cheapest),
-                            Chip = DealerText.T(gap >= 0 ? "reallife_ui_dealer_over_you" : "reallife_ui_dealer_under_you", "amount", Money(Math.Abs(gap))), ChipTone = gap >= 0 ? UiRole.Ok : UiRole.Warn, Run = -1
+                            Chip = DealerText.T(gap >= 0 ? "reallife_ui_dealer_over_you" : "reallife_ui_dealer_under_you", "amount",
+                                Money(Math.Abs(gap))), ChipTone = gap >= 0 ? UiRole.Ok : UiRole.Warn, Run = -1
                         });
                     }
                 }
                 _m.RelatedTitle = DealerText.T("reallife_ui_dealer_rivals_ask");
                 _m.RelatedCount = rivals.Count > 0 ? rivals.Count.ToString(Inv) : null;
                 _m.Related = rivals.ToArray();
-                _m.FigLabels = new[] { DealerText.T("reallife_dealer_sum_waiting"), DealerText.T("reallife_ui_dealer_fig_best_offer"), DealerText.T("reallife_ui_dealer_fig_sold_today"), DealerText.T("reallife_ui_dealer_fig_margin_today") };
+                _m.FigLabels = new[] { DealerText.T("reallife_dealer_sum_waiting"), DealerText.T("reallife_ui_dealer_fig_best_offer"),
+                    DealerText.T("reallife_ui_dealer_fig_sold_today"), DealerText.T("reallife_ui_dealer_fig_margin_today") };
                 _m.FigValues = new[] { waiting.ToString(Inv), best > 0 ? Money(best) : string.Empty, sold.ToString(Inv), Money(margin) };
                 _m.FigInks = new[] { waiting > 0 ? UiRole.WarnText : UiRole.None, UiRole.None, UiRole.None, margin > 0 ? UiRole.OkText : UiRole.None };
             }
@@ -381,12 +383,14 @@ namespace RealLifeOverhaul.Ui
                 for (int i = 0; i < _s.Covers.Count && ending.Count < 3; i++)
                 {
                     DealerCover cv = _s.Covers[i];
-                    ending.Add(new EstateRow { Icon = UiIcon.ShieldCheck, Title = DealerGame.CarName(cv.Type), Sub = cv.Customer, Chip = FinanceText.Day(cv.Until), ChipTone = UiRole.Notice, Amount = Money(cv.Paid), Run = -1 });
+                    ending.Add(new EstateRow { Icon = UiIcon.ShieldCheck, Title = DealerGame.CarName(cv.Type), Sub = cv.Customer,
+                        Chip = FinanceText.Day(cv.Until), ChipTone = UiRole.Notice, Amount = Money(cv.Paid), Run = -1 });
                 }
                 _m.RelatedTitle = DealerText.T("reallife_ui_dealer_warranties_end");
                 _m.RelatedCount = ending.Count > 0 ? ending.Count.ToString(Inv) : null;
                 _m.Related = ending.ToArray();
-                _m.FigLabels = new[] { DealerText.T("reallife_ui_dealer_fig_owed"), DealerText.T("reallife_ui_dealer_fig_a_week"), DealerText.T("reallife_ui_dealer_fig_behind"), DealerText.T("reallife_ui_dealer_fig_paid_out") };
+                _m.FigLabels = new[] { DealerText.T("reallife_ui_dealer_fig_owed"), DealerText.T("reallife_ui_dealer_fig_a_week"),
+                    DealerText.T("reallife_ui_dealer_fig_behind"), DealerText.T("reallife_ui_dealer_fig_paid_out") };
                 _m.FigValues = new[] { Money(owed), Money(weekly), missed.ToString(Inv), Money(paidOut) };
                 _m.FigInks = new[] { UiRole.None, UiRole.None, missed > 0 ? UiRole.DangerText : UiRole.None, UiRole.None };
             }

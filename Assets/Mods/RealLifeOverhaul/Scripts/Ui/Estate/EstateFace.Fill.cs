@@ -20,7 +20,8 @@ namespace RealLifeOverhaul.Ui
         }
 
         private static float StripHeight(UiFigureModel[] figures) => figures == null || figures.Length == 0 ? 0f
-            : UiDraw.Snap(UiTokens.S3 * 2f + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display))) + UiTokens.S5 - UiTokens.S3;
+            : UiDraw.Snap(UiTokens.S3 * 2f + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1
+                + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display))) + UiTokens.S5 - UiTokens.S3;
 
         // The shares as meters in one column, or two where the width allows; each is its label, its bar and its percent. Returns the height.
         private static float SharesHeight(string[] labels, int[] values, string title, float w)
@@ -91,7 +92,8 @@ namespace RealLifeOverhaul.Ui
                 return 0f;
             }
             int rows = (n + GridColumns(w, n) - 1) / GridColumns(w, n);
-            return UiDraw.Snap((string.IsNullOrEmpty(m.GridTitle) ? 0f : UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2) + rows * UiTokens.Control + (rows - 1) * UiTokens.S2 + UiTokens.S3);
+            return UiDraw.Snap((string.IsNullOrEmpty(m.GridTitle) ? 0f : UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2)
+                + rows * UiTokens.Control + (rows - 1) * UiTokens.S2 + UiTokens.S3);
         }
 
         private static float Grid(UiScene s, UiAt at, EstateModel m, float x, float y, float w, IUiKeys keys)
@@ -112,7 +114,8 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < n; i++)
             {
                 ref UiActionModel a = ref m.Grid[i];
-                UiDraw.Button(s, on, x + (i % columns) * (bw + UiTokens.S2), y + (i / columns) * (UiTokens.Control + UiTokens.S2), bw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, a.Command, a.Arg, a.Disabled);
+                UiDraw.Button(s, on, x + (i % columns) * (bw + UiTokens.S2), y + (i / columns) * (UiTokens.Control + UiTokens.S2), bw,
+                    UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, a.Command, a.Arg, a.Disabled);
             }
             return y + ((n + columns - 1) / columns) * (UiTokens.Control + UiTokens.S2) + UiTokens.S1;
         }
@@ -180,7 +183,8 @@ namespace RealLifeOverhaul.Ui
             {
                 return 0f;
             }
-            return UiDraw.Snap(UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3 + UiTokens.AvatarHero + UiTokens.S3 + Math.Min(p.MeterLabels.Length, p.MeterValues.Length) * UiTokens.PairRow + UiTokens.S3);
+            return UiDraw.Snap(UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3 + UiTokens.AvatarHero + UiTokens.S3
+                + Math.Min(p.MeterLabels.Length, p.MeterValues.Length) * UiTokens.PairRow + UiTokens.S3);
         }
 
         private static float Related2Height(EstateModel m) => m.Related2 == null || m.Related2.Length == 0 ? 0f

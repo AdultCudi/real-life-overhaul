@@ -31,7 +31,8 @@ namespace RealLifeOverhaul.Ui
             if (rentW > 0f)
             {
                 UiDraw.Text(s, at, x + w - rentW, y, rentW, UiStyle.Number, UiRole.Text, u.Rent, UiFlags.Right | UiFlags.Middle);
-                UiDraw.Text(s, at, x + w - rentW, y + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Number)), rentW, UiStyle.Small, UiRole.Text2, u.RentPer, UiFlags.Right | UiFlags.Truncate | UiFlags.Middle);
+                UiDraw.Text(s, at, x + w - rentW, y + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Number)), rentW, UiStyle.Small, UiRole.Text2,
+                    u.RentPer, UiFlags.Right | UiFlags.Truncate | UiFlags.Middle);
             }
             y += UiTokens.S1 + nh + UiTokens.S3;
             float locW = string.IsNullOrEmpty(u.Locate) ? 0f : Math.Min(UiDraw.SnapDown(tw * 0.5f), UiDraw.Snap(UiTextRules.Width(u.Locate, UiStyle.Body) + UiTokens.Icon + UiTokens.S4));
@@ -226,7 +227,8 @@ namespace RealLifeOverhaul.Ui
                 if (linkW > 0f)
                 {
                     // The one thing here that cannot be taken back is a button of its own look, never a word among the others.
-                    UiDraw.Button(s, on, x + w - pad - linkW + UiTokens.S3, cy, linkW - UiTokens.S3, UiTokens.Control, UiButtonKind.Destructive, u.NeedLink, UiIcon.None, UiAction.Count, keys, ActionCommand, u.NeedLinkRun, false);
+                    UiDraw.Button(s, on, x + w - pad - linkW + UiTokens.S3, cy, linkW - UiTokens.S3, UiTokens.Control, UiButtonKind.Destructive,
+                        u.NeedLink, UiIcon.None, UiAction.Count, keys, ActionCommand, u.NeedLinkRun, false);
                 }
             }
             return y + h;

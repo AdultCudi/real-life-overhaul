@@ -88,7 +88,8 @@ namespace RealLifeOverhaul.Ui
                     {
                         works.Add(new EstateRow
                         {
-                            Icon = UiIcon.Eye, Title = EstateText.T("reallife_ui_estate_next_inspection"), Sub = EstateText.T(h.LastInspect == (int)InspectResult.Failed ? "reallife_ui_estate_last_failed" : "reallife_ui_estate_last_passed"),
+                            Icon = UiIcon.Eye, Title = EstateText.T("reallife_ui_estate_next_inspection"),
+                                Sub = EstateText.T(h.LastInspect == (int)InspectResult.Failed ? "reallife_ui_estate_last_failed" : "reallife_ui_estate_last_passed"),
                             Chip = EstateText.T("reallife_ui_estate_in_days", "days", Math.Max(0, h.InspectDay - _day).ToString(Inv)), ChipTone = UiRole.Notice, Run = -1
                         });
                     }

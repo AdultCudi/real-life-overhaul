@@ -333,7 +333,8 @@ namespace RealLifeOverhaul.Ui
                     int slot = i + first, row = slot / 2, col = slot % 2;
                     bool alone = first == 1 && i == 0;
                     float gy = by - ((n + first) / 2 - 1 - row) * step;
-                    UiDraw.Button(s, at, alone ? x : x + col * (cw + UiTokens.S3), gy, alone ? w : cw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, command + Action, i, a.Disabled || c.Disabled);
+                    UiDraw.Button(s, at, alone ? x : x + col * (cw + UiTokens.S3), gy, alone ? w : cw, UiTokens.Control, a.Kind,
+                        a.Label, a.Icon, a.Key, keys, command + Action, i, a.Disabled || c.Disabled);
                 }
                 return;
             }

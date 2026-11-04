@@ -129,7 +129,8 @@ namespace RealLifeOverhaul.Ui
                 }
                 TableShape(UiIcon.People, EstateText.T("reallife_estate_tab_tenants"),
                     EstateText.T("reallife_ui_estate_tenants_sub", "let", let.ToString(Inv), "empty", empty.ToString(Inv)),
-                    new[] { EstateText.T("reallife_estate_tenants_let"), EstateText.T("reallife_estate_tenants_empty"), EstateText.T("reallife_estate_tenants_owed"), EstateText.T("reallife_ui_estate_fig_mean_happy") },
+                    new[] { EstateText.T("reallife_estate_tenants_let"), EstateText.T("reallife_estate_tenants_empty"),
+                        EstateText.T("reallife_estate_tenants_owed"), EstateText.T("reallife_ui_estate_fig_mean_happy") },
                     new[] { let.ToString(Inv), empty.ToString(Inv), Money(owed), happyCount > 0 ? EstateText.Share(happySum / happyCount * 10) : string.Empty }, cols, rows, keys, null,
                     EstateText.T(_s.Holdings.Count == 0 ? "reallife_estate_row_nothing_owned" : "reallife_estate_row_none_managed"), EstateText.T("reallife_ui_estate_empty_tenants_body"));
                 _m.FigInks = new[] { UiRole.None, empty > 0 ? UiRole.WarnText : UiRole.None, owed > 0 ? UiRole.DangerText : UiRole.None, UiRole.None };
@@ -196,7 +197,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     new EstateRow
                     {
-                        Icon = UseIcon(h.Use), Title = EstateText.UnitName(h, unit), Sub = EstateText.District(h.District), Chip = EstateText.T("reallife_estate_state_empty", "days", h.Units[unit].VoidDays.ToString(Inv)),
+                        Icon = UseIcon(h.Use), Title = EstateText.UnitName(h, unit), Sub = EstateText.District(h.District),
+                            Chip = EstateText.T("reallife_estate_state_empty", "days", h.Units[unit].VoidDays.ToString(Inv)),
                         ChipTone = UiRole.Warn, Amount = Money(market), Run = _runs.Do(() => Open(EstateDirector.UnitPick(h, at), null))
                     }
                 };
@@ -292,7 +294,8 @@ namespace RealLifeOverhaul.Ui
                 }
                 TableShape(UiIcon.Wrench, EstateText.T("reallife_estate_tab_works"),
                     EstateText.T("reallife_ui_estate_works_sub", "count", rows.Count.ToString(Inv)),
-                    new[] { EstateText.T("reallife_ui_estate_fig_open_calls"), EstateText.T("reallife_ui_estate_fig_booked"), EstateText.T("reallife_ui_estate_fig_unfit"), EstateText.T("reallife_ui_estate_fig_calls_cost") },
+                    new[] { EstateText.T("reallife_ui_estate_fig_open_calls"), EstateText.T("reallife_ui_estate_fig_booked"),
+                        EstateText.T("reallife_ui_estate_fig_unfit"), EstateText.T("reallife_ui_estate_fig_calls_cost") },
                     new[] { open.ToString(Inv), bookedCalls.ToString(Inv), unfit.ToString(Inv), Money(callsCost) }, cols, rows, keys, null,
                     EstateText.T("reallife_estate_row_nothing_owned"), EstateText.T("reallife_ui_estate_empty_works_body"));
             }
@@ -330,7 +333,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     new UiFigureModel { Label = EstateText.T("reallife_ui_estate_ch_contractor"), Value = Money(u.CallCost) },
                     new UiFigureModel { Label = EstateText.T("reallife_ui_estate_ch_yourself"), Value = Money(materials) },
-                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_reported"), Value = EstateText.T("reallife_ui_estate_days_ago", "days", Math.Max(0, _day - u.CallDay).ToString(Inv)) },
+                    new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_reported"), Value = EstateText.T("reallife_ui_estate_days_ago",
+                        "days", Math.Max(0, _day - u.CallDay).ToString(Inv)) },
                     new UiFigureModel { Label = EstateText.T("reallife_ui_estate_fig_grace"), Value = EstateText.T("reallife_ui_estate_n_days", "days", EstateCatalogue.CallGraceDays.ToString(Inv)) }
                 };
                 var lines = new List<UiFactLine>();
@@ -404,7 +408,8 @@ namespace RealLifeOverhaul.Ui
                     if (repair > 0)
                     {
                         cond.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_works_repair_costs"), Money(repair)));
-                        cond.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_works_repair_takes"), EstateText.T("reallife_ui_estate_n_days", "days", EstateRules.RepairDays(h.Cond, _c.PermitLever).ToString(Inv))));
+                        cond.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_works_repair_takes"), EstateText.T("reallife_ui_estate_n_days",
+                            "days", EstateRules.RepairDays(h.Cond, _c.PermitLever).ToString(Inv))));
                         actions.Add(_runs.Button(EstateText.T("reallife_estate_btn_repair"), UiButtonKind.Primary, UiIcon.Wrench, UiAction.Alt,
                             () => Show(() => _d.StartWork(place, EstateWork.Repair, -1))));
                     }

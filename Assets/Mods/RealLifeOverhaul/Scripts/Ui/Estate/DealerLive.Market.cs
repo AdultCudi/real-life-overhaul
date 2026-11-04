@@ -93,7 +93,8 @@ namespace RealLifeOverhaul.Ui
                     : DealerText.Fill("reallife_ui_dealer_market_sub", "new", news.ToString(Inv), "used", used.ToString(Inv), "lots", lots.ToString(Inv));
                 TableShape(UiIcon.Tag, DealerText.T("reallife_dealer_market_title"), sub, cols, rows, keys, null,
                     DealerText.T("reallife_ui_dealer_empty_market"), DealerText.T("reallife_dealer_market_about"));
-                _m.FigLabels = new[] { DealerText.T("reallife_dealer_cash"), DealerText.T("reallife_ui_dealer_fig_new"), DealerText.T("reallife_ui_dealer_fig_used"), DealerText.T("reallife_ui_dealer_fig_lots") };
+                _m.FigLabels = new[] { DealerText.T("reallife_dealer_cash"), DealerText.T("reallife_ui_dealer_fig_new"),
+                    DealerText.T("reallife_ui_dealer_fig_used"), DealerText.T("reallife_ui_dealer_fig_lots") };
                 _m.FigValues = new[] { Money(DealerGame.Cash), news.ToString(Inv), used.ToString(Inv), lots.ToString(Inv) };
             }
 
@@ -263,7 +264,8 @@ namespace RealLifeOverhaul.Ui
                 var a = new EstateAuction
                 {
                     Kicker = DealerText.T("reallife_ui_dealer_auction_kicker"), Title = DealerGame.CarName(l.Type), Picture = picture, Aspect = aspect, Back = DealerText.T("reallife_ui_dealer_back"),
-                    Icon = DealerGame.CarName(l.Type).ToLowerInvariant().Contains("truck") || DealerGame.CarName(l.Type).ToLowerInvariant().Contains("van") || DealerGame.CarName(l.Type).ToLowerInvariant().Contains("pickup") ? UiIcon.Truck : UiIcon.Car
+                    Icon = DealerGame.CarName(l.Type).ToLowerInvariant().Contains("truck")
+                        || DealerGame.CarName(l.Type).ToLowerInvariant().Contains("van") || DealerGame.CarName(l.Type).ToLowerInvariant().Contains("pickup") ? UiIcon.Truck : UiIcon.Car
                 };
                 var facts = new List<UiFactLine>(10)
                 {

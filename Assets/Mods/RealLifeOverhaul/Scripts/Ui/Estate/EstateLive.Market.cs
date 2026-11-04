@@ -56,7 +56,8 @@ namespace RealLifeOverhaul.Ui
                     locate.Add(_runs.Do(() => EstateGame.Locate(where)));
                     rows.Add(new UiDataRow
                     {
-                        Cells = new[] { f.address.ToFormattedString(), Money((int)Math.Min(int.MaxValue / 2, f.buildingPrice)), (cond / 10).ToString(Inv), rent > 0 ? Month(rent) : string.Empty, yield, string.Empty },
+                        Cells = new[] { f.address.ToFormattedString(), Money((int)Math.Min(int.MaxValue / 2, f.buildingPrice)),
+                            (cond / 10).ToString(Inv), rent > 0 ? Month(rent) : string.Empty, yield, string.Empty },
                         Values = new[] { (int)UseIcon(use), 0, cond / 10, 0, 0, (int)UiIcon.Locate }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None },
                         Subs = new[] { EstateText.Use(use) + ", " + EstateText.District(b.District), null, null, null, null, null }
                     });
