@@ -75,7 +75,13 @@ internal static partial class Program
             _moneyChecked = true;
             MoneyRuleChecks();
         }
-        if (!_utilitiesFaceChecked && def.Id == "utilities")
+        if (!_bankFaceChecked && def.Id == "own_bank")
+        {
+            _bankFaceChecked = true;
+            BankFaceChecks();
+        }
+        if (!_utilitiesFaceChecked
+            && def.Id == "utilities")
         {
             _utilitiesFaceChecked = true;
             UtilitiesFaceChecks();
@@ -91,8 +97,19 @@ internal static partial class Program
             UiAppWindow.NavCommand, UiAppWindow.ActionCommand, UiAppWindow.RowCommand, UiAppWindow.MoreCommand, UiAppWindow.NoteCommand,
             MoneyCommands.StepLess, MoneyCommands.StepType, MoneyCommands.StepMore, MoneyCommands.Choice, MoneyCommands.Follow, MoneyCommands.Export, MoneyCommands.Link,
             UiChart.First + UiChart.Point, UiStatement.First + UiStatement.Period, UiStatement.First + UiStatement.Group, UiStatement.First + UiStatement.Line,
-            UiCatalogue.First + UiCatalogue.Card, UiCatalogue.First + UiCatalogue.Action
+            UiCatalogue.First + UiCatalogue.Card, UiCatalogue.First + UiCatalogue.Action,
+            MoneyCommands.PickBank, MoneyCommands.CardAct, MoneyCommands.Go, MoneyCommands.BackOut, MoneyCommands.TypeField
         };
+        for (int k = 0; k < MoneyCommands.CardsMost; k++)
+        {
+            list.Add(MoneyCommands.CardLess + k);
+            list.Add(MoneyCommands.CardMore + k);
+            list.Add(MoneyCommands.CardSwitch + k);
+        }
+        for (int i = 0; i <= UiDataTable.MassAnswer; i++)
+        {
+            list.Add(MoneyPages.Table2Base + i);
+        }
         for (int i = 0; i <= UiDataTable.MassAnswer; i++)
         {
             list.Add(UiDataTable.First + i);

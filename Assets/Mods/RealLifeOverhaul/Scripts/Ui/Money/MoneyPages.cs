@@ -7,7 +7,7 @@ namespace RealLifeOverhaul.Ui
     /// under them is a statement, an offer, a league, a form or a catalogue, never the same row of cards. Game-free. Cost:
     /// a layout when the model changes.
     /// </summary>
-    public static class MoneyPages
+    public static partial class MoneyPages
     {
         public static void Lay(UiScene s, MoneyModel m, UiFrame frame, bool dark, IUiKeys keys)
         {
@@ -24,6 +24,7 @@ namespace RealLifeOverhaul.Ui
                 case MoneyShape.Home: Home(s, at, m, x, y, w, bottom, keys); break;
                 case MoneyShape.Table: Table(s, at, m, x, y, w, bottom - y, keys); break;
                 case MoneyShape.Fund: Fund(s, at, m, x, y, w, bottom, keys); break;
+                case MoneyShape.Counter: Counter(s, at, m, x, y, w, bottom, keys); break;
                 default: Overview(s, at, m, x, y, w, bottom, keys); break;
             }
             for (int i = 0; i < m.Prompts.Length; i++)
