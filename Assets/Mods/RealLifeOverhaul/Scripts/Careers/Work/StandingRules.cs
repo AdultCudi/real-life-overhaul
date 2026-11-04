@@ -182,7 +182,8 @@ namespace RealLifeOverhaul.Careers
         /// <summary>
         /// The others who applied for a post, made from the post alone (its id, the day it opened, the save's seed): the same people with the same
         /// records and days every time they are asked for, for every post the board shows, so the one who is weighed against the player at the end of
-        /// an interview is one the player could see. The director keeps what it makes (<see cref="Keep"/>), so a post asked for twice, or a page read a hundred times, gives the same list even when the pool has moved.
+        /// an interview is one the player could see. The director keeps what it makes (<see cref="Keep"/>), so a post asked for twice, or a page read a hundred times,
+        /// gives the same list even when the pool has moved.
         /// Each is a person of the city's people pool by the post and the place in the list (RosterRules.PersonOf), a name of the catalogue while the population is off.
         /// </summary>
         public static int OthersDerive(int seed, Opening o, int bar, List<Peer> into)

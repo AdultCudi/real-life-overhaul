@@ -159,7 +159,8 @@ namespace RealLifeOverhaul.Ui
             {
                 ref UiDiaryEntry entry = ref m.Entries[first + i];
                 UiDraw.Icon(s, inside, lx, ly + (EntryLine - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, entry.Icon, entry.Tint, UiFlags.Middle, true);
-                UiDraw.TextMiddle(s, inside, lx + UiTokens.IconSmall + UiTokens.S1, ly, EntryLine, lw - UiTokens.IconSmall - UiTokens.S1, UiStyle.Small, UiRole.Text, string.IsNullOrEmpty(entry.Short) ? entry.Title : entry.Short,
+                UiDraw.TextMiddle(s, inside, lx + UiTokens.IconSmall + UiTokens.S1, ly, EntryLine, lw - UiTokens.IconSmall - UiTokens.S1, UiStyle.Small, UiRole.Text,
+                    string.IsNullOrEmpty(entry.Short) ? entry.Title : entry.Short,
                     UiFlags.Truncate);
                 ly += EntryLine;
             }

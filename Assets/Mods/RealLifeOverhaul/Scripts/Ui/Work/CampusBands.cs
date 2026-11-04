@@ -81,7 +81,8 @@ namespace RealLifeOverhaul.Ui
             for (int k = 0; k < byFree.Count && k < 3; k++)
             {
                 WorkRow r = t.Rows[byFree[k]];
-                freeBand.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Icon = UiIcon.Building, Label = r.Name, Hint = r.Cells[1], Value = w.F("reallife_work_n_free", "{n} free", "n", free[byFree[k]].ToString()) });
+                freeBand.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Icon = UiIcon.Building, Label = r.Name, Hint = r.Cells[1],
+                    Value = w.F("reallife_work_n_free", "{n} free", "n", free[byFree[k]].ToString()) });
             }
             t.Below.Add(freeBand);
         }

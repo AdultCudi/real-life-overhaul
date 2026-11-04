@@ -21,7 +21,8 @@ namespace RealLifeOverhaul.Careers
             PeoplePool.Ready = () => Live != null && Live.People.Count > 0;
         }
 
-        private static PopulationState Live => Settings.LivingPopulation && !CityPopulation.Following ? CityPopulation.Live : null;   // a guest following the host has the host's copy, not people of its own
+        // A guest following the host has the host's copy, not people of its own.
+        private static PopulationState Live => Settings.LivingPopulation && !CityPopulation.Following ? CityPopulation.Live : null;
 
         private static PoolPerson Pick(long hash)
         {

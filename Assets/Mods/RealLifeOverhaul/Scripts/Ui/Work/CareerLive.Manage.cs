@@ -465,7 +465,8 @@ namespace RealLifeOverhaul.Ui
             if (w.Job != null)
             {
                 spells.Add(new CareerSpell { Title = CareersText.Title(w.Job.Post.Prof, w.Job.Post.Rank), Employer = CareersText.Employer(w.Job.Post.Employer),
-                    Dates = CareersText.Day(w.Job.RankDay > 0 ? w.Job.RankDay : w.Job.Hired) + " " + words.T("reallife_work_cv_to_now", "to now"), Icon = WorkGlyphs.Profession(w.Job.Post.Prof), Current = true });
+                    Dates = CareersText.Day(w.Job.RankDay > 0 ? w.Job.RankDay : w.Job.Hired) + " " + words.T("reallife_work_cv_to_now", "to now"),
+                    Icon = WorkGlyphs.Profession(w.Job.Post.Prof), Current = true });
             }
             int good = 0;
             for (int i = w.History.Count - 1; i >= 0 && spells.Count < 6; i--)
@@ -483,7 +484,8 @@ namespace RealLifeOverhaul.Ui
                 Enrolment e = study.Results[i];
                 if (e.Def != null && e.Stage == (int)EnrolStage.Passed)
                 {
-                    quals.Add(new CareerSpell { Title = CareersText.Course(e.Course), Employer = CareersText.Day(e.Ended), Dates = CareersText.Grade(e.Def, e.Grade), Icon = WorkGlyphs.Course(e.Def) });
+                    quals.Add(new CareerSpell { Title = CareersText.Course(e.Course), Employer = CareersText.Day(e.Ended), Dates = CareersText.Grade(e.Def, e.Grade),
+                        Icon = WorkGlyphs.Course(e.Def) });
                 }
             }
             var skills = new List<string>(4);

@@ -140,7 +140,8 @@ namespace RealLifeOverhaul.Ui
             form.Head = new UiProfileModel
             {
                 Name = name, Hue = UiColour.HueOf(name), Role = title ?? w.T("reallife_work_cv_no_job", "Not in work"), RoleIcon = UiIcon.Briefcase, Employer = employer, EmployerIcon = UiIcon.Store,
-                FactLabels = new[] { w.T("reallife_work_cv_jobs_held", "Jobs held"), w.T("reallife_work_cv_months", "Months worked"), w.T("reallife_work_cv_earned", "Earned"), w.T("reallife_work_cv_references", "References") },
+                FactLabels = new[] { w.T("reallife_work_cv_jobs_held", "Jobs held"), w.T("reallife_work_cv_months", "Months worked"), w.T("reallife_work_cv_earned", "Earned"),
+                    w.T("reallife_work_cv_references", "References") },
                 FactValues = new[] { jobsHeld.ToString(), monthsWorked.ToString(), earned, w.F("reallife_work_cv_refs_good", "{n} good", "n", goodRefs.ToString()) }
             };
             var life = new WorkFormBand { Title = w.T("reallife_work_cv_working_life", "Working life"), Count = spells.Count.ToString() };
@@ -178,7 +179,8 @@ namespace RealLifeOverhaul.Ui
             pension.Rows.Add(Pair(w.T("reallife_work_cv_retire_from", "You can retire from"), retireAge.ToString()));
             if (!retired)
             {
-                pension.Foot = new WorkAct { Kind = (int)CareerAct.Retire, Label = w.T("reallife_life_button_retire", "Retire"), Style = UiButtonKind.Destructive, Icon = UiIcon.SignOut, Why = whyNot };
+                pension.Foot = new WorkAct { Kind = (int)CareerAct.Retire, Label = w.T("reallife_life_button_retire", "Retire"), Style = UiButtonKind.Destructive, Icon = UiIcon.SignOut,
+                    Why = whyNot };
             }
             form.Right.Add(pension);
             cv.Form = form;

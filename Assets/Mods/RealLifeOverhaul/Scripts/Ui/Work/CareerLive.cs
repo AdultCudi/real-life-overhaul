@@ -184,7 +184,8 @@ namespace RealLifeOverhaul.Ui
                     Peer c = f.Peers[i];
                     cj.Peers.Add(new CareerPeer { Name = c.Name, Role = CareersText.Title(p.Id, Math.Min(p.Ranks.Length - 1, c.Rank)),
                         Score = c.Score, Team = c.Teamwork, Hue = UiColour.HueOf(c.Name),
-                        Tag = c.Role == (int)PeerRole.UpForPost ? W.T("reallife_work_rival_for_post", "Rival for the post") : c.Role == (int)PeerRole.Lead ? W.T("reallife_work_your_lead_chip", "Your lead") : null,
+                        Tag = c.Role == (int)PeerRole.UpForPost ? W.T("reallife_work_rival_for_post", "Rival for the post")
+                            : c.Role == (int)PeerRole.Lead ? W.T("reallife_work_your_lead_chip", "Your lead") : null,
                         Tone = c.Role == (int)PeerRole.UpForPost ? UiRole.Warn : UiRole.Accent });
                     if (c.Role == (int)PeerRole.UpForPost)
                     {
@@ -298,12 +299,14 @@ namespace RealLifeOverhaul.Ui
                     openNeeds += needs.Checks[n].Met ? 0 : 1;
                 }
                 string status = applied ? words.T("reallife_career_kind_applied", "Applied") : eligible ? words.T("reallife_work_you_qualify", "You qualify") : qualified
-                    ? words.F("reallife_work_needs_n_more", "Needs {n} more", "n", Math.Max(1, openNeeds).ToString(Inv)) : words.T("reallife_work_needs_licence", "Needs a licence");   // the chip counts the open lines of the detail
+                    ? words.F("reallife_work_needs_n_more", "Needs {n} more", "n", Math.Max(1, openNeeds).ToString(Inv)) : words.T("reallife_work_needs_licence", "Needs a licence");
+                // (the chip counts the open lines of the detail)
                 UiRole tone = applied || eligible ? UiRole.Ok : UiRole.Warn;
                 string employer = CareersText.Employer(o.Employer), where = WorkGame.Address(o.Street, o.Number), title = CareersText.Title(o.Prof, o.Rank);
                 var r = new WorkRow
                 {
-                    Id = o.Id, Order = pay, Icon = WorkGlyphs.Profession(o.Prof), Name = title, Sub = employer, HeadSub = where, Chip = employer, ChipTone = UiRole.Accent, Status = status, Tone = tone,
+                    Id = o.Id, Order = pay, Icon = WorkGlyphs.Profession(o.Prof), Name = title, Sub = employer, HeadSub = where, Chip = employer, ChipTone = UiRole.Accent, Status = status,
+                    Tone = tone,
                     Cells = new[] { null, where, CareersText.HourSpan(p), CareersText.Rate(pay), mine > 0 ? WorkBuilder.Percent(against) : string.Empty, status },
                     Values = new[] { 0, 0, 0, 0, against < 0 ? -1 : against > 0 ? 1 : 0, 0 },
                     Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, tone },
@@ -434,7 +437,8 @@ namespace RealLifeOverhaul.Ui
                 string title = CareersText.Title(a.Post.Prof, a.Post.Rank), employer = CareersText.Employer(a.Post.Employer), step = CareersText.Step(a.At);
                 UiRole tone = a.Stage == (int)ApplyStep.Offered || a.Stage == (int)ApplyStep.Interview ? UiRole.Ok : a.Live ? UiRole.Accent : UiRole.Warn;
                 var r = new WorkRow { Id = a.Post.Id, Icon = WorkGlyphs.Profession(a.Post.Prof), Name = title, Sub = employer, Chip = step, ChipTone = tone, Status = step, Tone = tone,
-                    Cells = new[] { null, CareersText.Day(a.Day), a.Live ? CareersText.Day(a.Answer) : W.T("reallife_work_answer_closed", "Closed"), step }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, tone } };
+                    Cells = new[] { null, CareersText.Day(a.Day), a.Live ? CareersText.Day(a.Answer) : W.T("reallife_work_answer_closed", "Closed"), step },
+                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, tone } };
                 var steps = new WorkSection { Part = WorkPart.Checks, Title = words.T("reallife_work_where_it_stands", "Where it stands") };
                 steps.Checks.Add(new WorkNeed { Words = words.F("reallife_work_sent_on", "Sent on {day}", "day", CareersText.Day(a.Day)), Met = true });
                 bool interviewed = a.Stage >= (int)ApplyStep.Interview && a.Stage != (int)ApplyStep.Sent;
