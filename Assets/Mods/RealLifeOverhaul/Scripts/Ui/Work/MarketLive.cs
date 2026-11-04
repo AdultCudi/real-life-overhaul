@@ -398,10 +398,17 @@ namespace RealLifeOverhaul.Ui
                     Cells = new[] { null, state, HustleText.Money(o.Paid), HustleText.Money(worth) }, Status = state, Tone = tone, Chip = state, ChipTone = tone };
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_paid", "Paid"), HustleText.Money(o.Paid)));
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_worth", "Worth now"), HustleText.Money(worth)));
-                if (o.Spent > 0)
+                if (!string.IsNullOrEmpty(o.Seller))
                 {
-                    r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_spent_on", "Spent on it"), HustleText.Money(o.Spent)));
+                    var from = new WorkSection { Part = WorkPart.People, Title = w.T("reallife_work_bought_from", "Bought from") };
+                    from.People.Add(new WorkPerson { Name = o.Seller, Ring = UiRole.Ok });
+                    r.Sections.Add(from);
                 }
+                var facts = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_the_thing", "The thing") };
+                facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_condition_now", "Condition now"), o.Condition.ToString(Inv) + "%"));
+                facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_spent_on", "Spent on it"), HustleText.Money(o.Spent)));
+                facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_profit_at_worth", "Profit at its worth"), HustleText.Money(worth - o.Paid - o.Spent)));
+                r.Sections.Add(facts);
                 if (o.State == OwnedState.Listed)
                 {
                     r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_listed_at", "Listed at"), HustleText.Money(o.Asking)));
@@ -449,6 +456,7 @@ namespace RealLifeOverhaul.Ui
                 t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_worth_all", "Worth now"), HustleText.Money(worthAll)));
                 t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_profit", "Profit at worth"), HustleText.Money(worthAll - paidAll)));
             }
+            SalesFoot(t, s);
             WorkRow chosen = WorkTabPages.ChosenRow(t, view);
             Owned mine = chosen != null ? s.Item(chosen.Id) : null;
             if (mine != null && (mine.State == OwnedState.Kept || mine.State == OwnedState.Listed))
@@ -457,6 +465,58 @@ namespace RealLifeOverhaul.Ui
                 t.Amounts.Add(new WorkAmount { Id = 0, Value = step, Min = 0, Max = HustleRules.AskSteps - 1, Figure = HustleText.Money(HustleRules.AskAt(worth, step)) });
             }
             return t;
+        }
+
+        // The visits done lately with the stars the clients gave, and the standing they add up to: the foot of Freelance.
+        private void DoneFoot(WorkTab t, HustleState s)
+        {
+            UtilitiesWords w = W;
+            var clients = new List<string>(3);
+            var hints = new List<string>(3);
+            var pays = new List<string>(3);
+            var halves = new List<int>(3);
+            int late = 0;
+            for (int i = s.Gigs.Count - 1; i >= 0; i--)
+            {
+                Gig g = s.Gigs[i];
+                late += g.Stage == GigStage.Done && g.Late ? 1 : 0;
+                if (g.Stage == GigStage.Done && clients.Count < 3)
+                {
+                    clients.Add(g.Client);
+                    hints.Add(HustleText.Gig(g.Kind) + ", " + FinanceText.Day(g.From / 24));
+                    pays.Add(HustleText.Money(g.Pay));
+                    halves.Add(Math.Max(0, Math.Min(10, g.Rating * 2)));
+                }
+            }
+            WorkBands.AddIfAny(t.Below, MarketBands.Done(w, clients.ToArray(), hints.ToArray(), pays.ToArray(), halves.ToArray()));
+            if (s.JobsDone > 0 || s.Ratings.Count > 0)
+            {
+                t.Below.Add(MarketBands.Standing(w, (s.Rating / 1000f).ToString("0.0", Inv), s.JobsDone, late));
+            }
+        }
+
+        // What was sold lately, with its profit, and the trade's record: the foot of Yours and of Offers.
+        private void SalesFoot(WorkTab t, HustleState s)
+        {
+            UtilitiesWords w = W;
+            int n = Math.Min(3, s.Sales.Count);
+            var icons = new UiIcon[n];
+            var things = new string[n];
+            var hints = new string[n];
+            var values = new string[n];
+            for (int i = 0; i < n; i++)
+            {
+                Sale sale = s.Sales[s.Sales.Count - 1 - i];   // the newest last in the record: the newest first here
+                icons[i] = WorkGlyphs.Thing(sale.Thing, sale.Car);
+                things[i] = HustleText.Thing(sale.Thing, sale.Car);
+                hints[i] = w.F("reallife_work_sold_to", "To {buyer}, {day}", "buyer", sale.Buyer, "day", FinanceText.Day(sale.Day));
+                values[i] = HustleText.Money(sale.Price) + " (" + (sale.Price - sale.Cost >= 0 ? "+" : string.Empty) + HustleText.Money(sale.Price - sale.Cost) + ")";
+            }
+            WorkBands.AddIfAny(t.Below, MarketBands.Sold(w, icons, things, hints, values));
+            if (s.Sales.Count > 0 || s.Profit != 0 || s.RepairXp > 0)
+            {
+                t.Below.Add(MarketBands.Trade(w, HustleText.Money(s.Profit), s.RepairXp, s.Sales.Count));
+            }
         }
 
         private static int DefaultAskStep(Owned o, int worth) => o.State == OwnedState.Listed ? HustleRules.AskStepOf(worth, o.Asking) : HustleRules.AskStepAtWorth;
@@ -474,7 +534,7 @@ namespace RealLifeOverhaul.Ui
         {
             UtilitiesWords w = W;
             var t = new WorkTab { Shape = WorkShape.Table };
-            t.Columns = new[] { WorkBuilder.Col(w.T("reallife_work_col_thing", "Thing"), UiCellKind.Tile), WorkBuilder.Col(w.T("reallife_work_col_buyer", "Buyer"), UiCellKind.Person, 152),
+            t.Columns = new[] { WorkBuilder.Col(w.T("reallife_work_col_thing", "Thing"), UiCellKind.Tile), WorkBuilder.Col(w.T("reallife_work_col_buyer", "Buyer"), UiCellKind.Text, 152),
                 WorkBuilder.Col(w.T("reallife_work_col_asking", "Asking"), UiCellKind.Money, 88), WorkBuilder.Col(w.T("reallife_work_col_offer", "Offer"), UiCellKind.Money, 88),
                 WorkBuilder.Col(w.T("reallife_work_col_against_ask", "Against asking"), UiCellKind.Trend, 104) };
             t.EmptyTitle = w.T("reallife_work_no_offers_title", "No offers");
@@ -495,6 +555,7 @@ namespace RealLifeOverhaul.Ui
                 r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_asking", "Asking"), HustleText.Money(asking)));
                 var who = new WorkSection { Part = WorkPart.People, Title = w.T("reallife_work_the_buyer", "The buyer") };
                 who.People.Add(new WorkPerson { Name = o.Buyer, Role = w.F("reallife_work_buyer_counters", "{n} counters so far", "n", o.Counters.ToString(Inv)) });
+                who.People[0].Role = w.F("reallife_work_offer_lapses", "Lapses {day}, {time}", "day", FinanceText.Day(o.Expires / 24), "time", HustleText.Clock(o.Expires));
                 r.Sections.Add(who);
                 if (item != null)
                 {
@@ -512,6 +573,27 @@ namespace RealLifeOverhaul.Ui
                 r.Acts.Add(Act(Decline, o.Id, w.T("reallife_hustle_button_decline", "Turn it down"), UiButtonKind.Destructive, UiIcon.Close));
                 t.Rows.Add(r);
             }
+            SalesFoot(t, s);
+            var kept = new List<Owned>(3);
+            for (int i = 0; i < s.Items.Count && kept.Count < 3; i++)
+            {
+                if (s.Items[i].State == OwnedState.Kept)
+                {
+                    kept.Add(s.Items[i]);
+                }
+            }
+            var keptIcons = new UiIcon[kept.Count];
+            var keptNames = new string[kept.Count];
+            var keptHints = new string[kept.Count];
+            var keptWorth = new string[kept.Count];
+            for (int i = 0; i < kept.Count; i++)
+            {
+                keptIcons[i] = WorkGlyphs.Thing(kept[i].Thing, kept[i].Car);
+                keptNames[i] = HustleText.Thing(kept[i].Thing, kept[i].Car);
+                keptHints[i] = w.T("reallife_work_not_listed", "Not for sale yet");
+                keptWorth[i] = HustleText.Money(d.WorthOf(kept[i]));
+            }
+            WorkBands.AddIfAny(t.Below, WorkBands.Tiles(w.T("reallife_work_band_kept", "Yours, not yet listed"), keptIcons, keptNames, keptHints, keptWorth));
             if (s.Offers.Count > 0)
             {
                 int best = 0;
@@ -578,6 +660,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 t.Rows.Add(r);
             }
+            DoneFoot(t, s);
             if (open > 0)
             {
                 t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_visits_open", "Visits open"), open.ToString(Inv)));

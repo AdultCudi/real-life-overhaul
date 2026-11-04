@@ -296,6 +296,49 @@ namespace RealLifeOverhaul.Ui
             return t;
         }
 
+        // The three applicants for an ad with the most craft on the CV, with where each stands: what the Applicants tab sorts by.
+        private static void BestApplicants(HiringFile h, JobAd ad, WorkRow into, UtilitiesWords w)
+        {
+            var best = new List<Applicant>(8);
+            for (int i = 0; i < h.Applicants.Count; i++)
+            {
+                if (h.Applicants[i].Ad == ad.Id && h.Applicants[i].Live && h.SeekerOf(h.Applicants[i].Seeker) != null)
+                {
+                    best.Add(h.Applicants[i]);
+                }
+            }
+            best.Sort((a, b) => h.SeekerOf(b.Seeker).CvMain.CompareTo(h.SeekerOf(a.Seeker).CvMain));
+            var sec = new WorkSection { Part = WorkPart.People, Title = w.T("reallife_work_best_applicants", "Strongest applicants") };
+            for (int i = 0; i < best.Count && i < 3; i++)
+            {
+                Seeker s = h.SeekerOf(best[i].Seeker);
+                sec.People.Add(new WorkPerson { Name = s.P.Name, Role = StageName(best[i]) + ", " + w.F("reallife_work_craft_n", "craft {n}", "n", s.CvMain.ToString(Inv)), Right = TechText.Rate(s.Ask), Ring = UiRole.Ok });
+            }
+            if (sec.People.Count > 0)
+            {
+                into.Sections.Add(sec);
+            }
+        }
+
+        // The rival firms with an ad open in a line, and what each pays over the going rate: what an applicant weighs the player's offer against.
+        private static void RivalsInLine(TechDirector d, HiringFile h, int family, int day, WorkRow into, UtilitiesWords w)
+        {
+            var sec = new WorkSection { Part = WorkPart.People, Title = w.T("reallife_work_rivals_hiring", "Rivals hiring in this line") };
+            for (int i = 0; i < h.RivalAds.Count && sec.People.Count < 3; i++)
+            {
+                RivalAd ra = h.RivalAds[i];
+                if (ra.Family == family && ra.To > day)
+                {
+                    sec.People.Add(new WorkPerson { Name = ra.Rival, Role = TechText.Level(ra.Level) + ", " + w.F("reallife_work_closes_on", "Closes {day}", "day", TechText.Day(ra.To)), Right = TechText.Bp(ra.PayBp),
+                        Ring = UiRole.Warn });
+                }
+            }
+            if (sec.People.Count > 0)
+            {
+                into.Sections.Add(sec);
+            }
+        }
+
         // ------------------------------------------------------------------------------------------------- Market
 
         private WorkTab Market(TechDirector d, HiringFile h, int day)
@@ -347,6 +390,26 @@ namespace RealLifeOverhaul.Ui
                 facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_col_rival_ads", "Rival ads"), openings.ToString(Inv)));
                 facts.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_your_ads", "Your open ads"), yours.ToString(Inv)));
                 r.Sections.Add(facts);
+                var looking = new WorkSection { Part = WorkPart.People, Title = w.T("reallife_work_looking_here", "Looking in this line") };
+                var top = new List<Seeker>(8);
+                for (int i = 0; i < h.Seekers.Count; i++)
+                {
+                    Seeker s = h.Seekers[i];
+                    if (!s.Taken && !s.Passive && (int)s.P.Def.Family == fam)
+                    {
+                        top.Add(s);
+                    }
+                }
+                top.Sort((a, b) => b.CvMain.CompareTo(a.CvMain));
+                for (int i = 0; i < top.Count && i < 3; i++)
+                {
+                    looking.People.Add(new WorkPerson { Name = top[i].P.Name, Role = TechText.Role(top[i].P.Role) + ", " + TechText.Level(top[i].P.Level), Right = TechText.Rate(top[i].Ask), Ring = UiRole.Ok });
+                }
+                if (looking.People.Count > 0)
+                {
+                    r.Sections.Add(looking);
+                }
+                RivalsInLine(d, h, fam, day, r, w);
                 r.Sections.Add(new WorkSection { Part = WorkPart.Note, Lead = w.T("reallife_work_market_how_lead", "How to hire from here."), NoteIcon = UiIcon.Info,
                     Text = w.T("reallife_work_market_how", "Post an ad for a role in this line and the seekers who fit apply over a few days. A shortage makes them ask more.") });
                 r.Acts.Add(Act(NewAd, 0, w.T("reallife_work_new_ad", "New ad"), UiButtonKind.Primary, UiIcon.Plus, true));
@@ -488,6 +551,17 @@ namespace RealLifeOverhaul.Ui
                 running.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = w.T("reallife_work_no_searches", "No search is running. A brief brings three candidates in a few days.") });
             }
             form.Right.Add(running);
+            int goingRole = d.GoingFor(roleAt, level);
+            var line = new WorkFormBand { Title = w.T("reallife_work_band_the_line_briefed", "The line you brief") };
+            line.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_ad_going", "Going rate"), Value = goingRole > 0 ? TechText.Rate(goingRole) : WorkBuilder.None(w) });
+            line.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_shortage", "Shortage"), Value = TechText.Mille(d.ShortageOf(r.Family)) });
+            int looking = 0;
+            for (int i = 0; i < h.Seekers.Count; i++)
+            {
+                looking += !h.Seekers[i].Taken && !h.Seekers[i].Passive && h.Seekers[i].P.Def.Family == r.Family && h.Seekers[i].P.Level >= least ? 1 : 0;
+            }
+            line.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_col_looking", "Looking"), Value = looking.ToString(Inv) });
+            form.Right.Add(line);
             var seekNames = new List<string>(3);
             var seekRoles = new List<string>(3);
             var seekAsks = new List<string>(3);
@@ -579,6 +653,11 @@ namespace RealLifeOverhaul.Ui
                 worn.Bars.Add(new WorkBar { Label = TechText.Skill(f.Def.SkillB), Value = Math.Min(100, f.B / 1000) });
                 worn.Bars.Add(new WorkBar { Label = w.T("reallife_work_burnout", "Burnout"), Value = Math.Max(0, Math.Min(100, f.Burnout / 10)) });
                 r.Sections.Add(worn);
+                var career = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_person_career", "Career") };
+                career.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_experience", "Experience"), TechText.Years(f.YearsDays + (day - f.Joined) * 365 / Math.Max(60, year))));
+                career.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_school", "Schooling"), TechText.School(f.School)));
+                career.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_certificates", "Certificates"), TechText.Certs(f)));
+                r.Sections.Add(career);
                 r.Acts.Add(Act(OpenPerson, i, w.T("reallife_work_open_page", "Open their page"), UiButtonKind.Primary, UiIcon.Person, true));
                 t.Rows.Add(r);
             }

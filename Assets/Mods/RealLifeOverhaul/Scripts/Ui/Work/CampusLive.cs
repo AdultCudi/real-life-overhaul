@@ -609,11 +609,43 @@ namespace RealLifeOverhaul.Ui
                     bests[i] = w.F("reallife_work_once_reached", "Once reached {n}", "n", Math.Min(100, f.Best[rusty[i]] / 1000).ToString(Inv));
                     drops[i] = "-" + (f.Best[rusty[i]] / 1000 - StudyRules.Points(f, rusty[i])).ToString(Inv);
                 }
+                var askIcons = new List<UiIcon>(3);
+                var askTitles = new List<string>(3);
+                var askHints = new List<string>(3);
+                var askGaps = new List<string>(3);
+                SkillAsks(d, f, w, askIcons, askTitles, askHints, askGaps);
+                WorkBands.AddIfAny(t.Below, WorkBands.Tiles(w.T("reallife_work_band_posts_ask", "Posts that ask more of you"), askIcons.ToArray(), askTitles.ToArray(), askHints.ToArray(), askGaps.ToArray()));
                 CampusBands.SkillsBands(w, t, CareersText.Skill(strongest) + " " + Math.Min(100, StudyRules.Points(f, strongest)),
                     CareersText.Skill(weakest) + " " + Math.Min(100, StudyRules.Points(f, weakest)), sum / t.Skills.Count, CourseNames(help), CourseAdds(w, help, weakest), CourseFees(d, help),
                     icons, names, bests, drops);
             }
             return t;
+        }
+
+        // The open posts whose skill ask is above the player's, the nearest first: what each asks, what the player has, and the gap.
+        private static void SkillAsks(CareersDirector d, StudyFile f, UtilitiesWords w, List<UiIcon> icons, List<string> titles, List<string> hints, List<string> gaps)
+        {
+            WorkFile wf = d.Work;
+            var posts = new List<Opening>(8);
+            int day = SaveGameManager.Current.Day;
+            for (int i = 0; wf != null && i < wf.Openings.Count; i++)
+            {
+                Opening o = wf.Openings[i];
+                if (o.Def != null && o.Open(day) && ProRules.Need(f, o.Def, o.Rank) > ProRules.Points(f, o.Def, o.Rank))
+                {
+                    posts.Add(o);
+                }
+            }
+            posts.Sort((a, b) => (ProRules.Need(f, a.Def, a.Rank) - ProRules.Points(f, a.Def, a.Rank)).CompareTo(ProRules.Need(f, b.Def, b.Rank) - ProRules.Points(f, b.Def, b.Rank)));
+            for (int i = 0; i < posts.Count && i < 3; i++)
+            {
+                Opening o = posts[i];
+                int asks = ProRules.Need(f, o.Def, o.Rank), have = ProRules.Points(f, o.Def, o.Rank);
+                icons.Add(WorkGlyphs.Profession(o.Prof));
+                titles.Add(CareersText.Title(o.Prof, o.Rank) + ", " + CareersText.Employer(o.Employer));
+                hints.Add(w.F("reallife_work_asks_have", "Asks {asks}, you have {have}", "asks", asks.ToString(Inv), "have", have.ToString(Inv)));
+                gaps.Add("-" + (asks - have).ToString(Inv));
+            }
         }
 
         private const int RustyDrop = 3;   // points under the best a skill once stood at before it counts as rusty
@@ -725,6 +757,25 @@ namespace RealLifeOverhaul.Ui
             form.Left.Insert(0, tutor);
             WorkBands.AddIfAny(form.Left, WorkBands.Tiles(w.T("reallife_work_band_degrees_offered", "Degrees on offer"), offerIcons.ToArray(), offerNames.ToArray(),
                 offerHints.ToArray(), offerFees.ToArray()));
+            var uniIcons = new List<UiIcon>(3);
+            var uniNames = new List<string>(3);
+            var uniHints = new List<string>(3);
+            var uniPaid = new List<string>(3);
+            StudyFile sf = d.Study;
+            for (int i = 0; sf != null && i < sf.Children.Count && uniNames.Count < 3; i++)
+            {
+                ChildStudy c = sf.Children[i];
+                if (c.Course >= 0 && (c.At == ChildStep.Studying || c.At == ChildStep.Graduated))
+                {
+                    uniIcons.Add(UiIcon.Cap);
+                    uniNames.Add(CareersText.Course(c.Course));
+                    uniHints.Add(c.Name + ", " + (c.At == ChildStep.Graduated ? w.T("reallife_campus_child_graduated", "Graduated") : w.F("reallife_work_until_day", "until {day}", "day", CareersText.Day(c.End))));
+                    uniPaid.Add(CareersText.Money(c.Paid));
+                }
+            }
+            CampusBands.FamilyRecord(w, form, uniIcons.ToArray(), uniNames.ToArray(), uniHints.ToArray(), uniPaid.ToArray(),
+                sf != null && sf.Taught > 0 ? w.F("reallife_work_n_hours", "{n} hours", "n", (sf.Taught / 60).ToString(Inv)) : null,
+                sf != null ? CareersText.Cents(sf.LoanCents) : null, sf != null && sf.LoanTaken > 0 ? CareersText.Cents(sf.LoanTaken) : null, sf != null ? CareersText.Cents(sf.LoanRepaid) : null);
             t.Form = form;
             return t;
         }

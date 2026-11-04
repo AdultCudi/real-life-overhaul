@@ -414,6 +414,23 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             CareerPages.NewPlayerBands(words, _facts, Math.Min(100, best), held, study.Courses.Count, _facts.ApplicationsWaiting, courses.ToArray(), opens.ToArray());
+            WorkFile wf = study.Work;
+            int today = SaveGameManager.Current.Day;
+            bool paid = wf.BenefitUntil > today && wf.BenefitWeek > 0;
+            var icons = new List<UiIcon>(2);
+            var titles = new List<string>(2);
+            var hints = new List<string>(2);
+            var notes = new List<string>(2);
+            for (int i = wf.History.Count - 1; i >= 0 && titles.Count < 2; i--)
+            {
+                Spell s = wf.History[i];
+                icons.Add(WorkGlyphs.Profession(s.Prof));
+                titles.Add(CareersText.Title(s.Prof, s.Top) + ", " + CareersText.Employer(s.Employer));
+                hints.Add(CareersText.Day(s.From) + " " + words.T("reallife_work_cv_to", "to") + " " + CareersText.Day(s.To));
+                notes.Add(CareersText.Fill("reallife_career_row_spell", "leaving", CareersText.Leaving(s.Leaving), "reference", CareersText.Reference(s.Reference)));
+            }
+            CareerPages.NewPlayerSupport(words, _facts, paid ? CareersText.Money(Prices.At(wf.BenefitWeek)) : null, paid ? CareersText.Day(wf.BenefitUntil) : null,
+                wf.AgencyUntil > today ? CareersText.Day(wf.AgencyUntil) : null, icons.ToArray(), titles.ToArray(), hints.ToArray(), notes.ToArray());
         }
 
         // The vacancies a player with no job could go for first: the ones they qualify for, best pay first.

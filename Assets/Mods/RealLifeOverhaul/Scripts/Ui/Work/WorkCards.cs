@@ -172,7 +172,12 @@ namespace RealLifeOverhaul.Ui
             if (!string.IsNullOrEmpty(r.NextLabel))
             {
                 UiDraw.Text(s, at, x + pad, next, iw * 0.5f, UiStyle.Body, quiet, r.NextLabel, UiFlags.Truncate);
-                UiDraw.Text(s, at, x + w - pad - iw * 0.5f, next, iw * 0.5f, UiStyle.BodyStrong, UiRole.Text, r.NextValue, UiFlags.Right | UiFlags.Truncate);
+                string when = r.NextValue ?? string.Empty;
+                if (UiTextRules.Width(when, UiStyle.BodyStrong) > iw - UiTextRules.Width(r.NextLabel, UiStyle.Body) - UiTokens.S3 && when.LastIndexOf(' ') > 0)
+                {
+                    when = when.Substring(when.LastIndexOf(' ') + 1);   // the days do not fit beside the label: the hour alone is kept, never cut
+                }
+                UiDraw.Text(s, at, x + w - pad - iw * 0.5f, next, iw * 0.5f, UiStyle.BodyStrong, UiRole.Text, when, UiFlags.Right | UiFlags.Truncate);
             }
             UiDraw.Box(s, at, x + pad, foot - UiTokens.S3, iw, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
             UiDraw.Text(s, at, x + pad, foot, iw * 0.5f, UiStyle.Body, quiet, r.FootLeft, UiFlags.Truncate);
@@ -190,6 +195,15 @@ namespace RealLifeOverhaul.Ui
             if (UiTextRules.WrappedHeight(text, style, width, lines + 1) <= limit)
             {
                 return text;
+            }
+            if (text.IndexOf(' ') < 0)
+            {
+                int keep = text.Length;   // a text with no spaces (Chinese, Japanese) is cut at a character
+                while (keep > 1 && UiTextRules.WrappedHeight(text.Substring(0, keep) + "...", style, width, lines + 1) > limit)
+                {
+                    keep--;
+                }
+                return text.Substring(0, keep).TrimEnd() + "...";
             }
             string[] words = text.Split(' ');
             string best = words[0];

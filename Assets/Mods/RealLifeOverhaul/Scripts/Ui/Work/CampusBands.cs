@@ -107,6 +107,29 @@ namespace RealLifeOverhaul.Ui
             form.Right.Add(band);
         }
 
+        /// <summary>
+        /// The family page's record: the children at university (their degree, its days and what the player paid), the tutoring given and the student loan.
+        /// A band is left out when there is nothing to say in it.
+        /// </summary>
+        public static void FamilyRecord(UtilitiesWords w, WorkFormModel form, UiIcon[] icons, string[] degrees, string[] hints, string[] paid, string taught, string owed, string borrowed, string repaid)
+        {
+            WorkBands.AddIfAny(form.Left, WorkBands.Tiles(w.T("reallife_work_band_at_university", "At university"), icons, degrees, hints, paid));
+            if (!string.IsNullOrEmpty(taught))
+            {
+                var tutoring = new WorkFormBand { Title = w.T("reallife_work_band_tutoring", "Tutoring given") };
+                tutoring.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_taught_time", "Time with pupils"), Value = taught });
+                form.Left.Add(tutoring);
+            }
+            if (!string.IsNullOrEmpty(borrowed))
+            {
+                var loan = new WorkFormBand { Title = w.T("reallife_work_band_loan", "Student loan") };
+                loan.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_loan_owed", "Still owed"), Value = owed });
+                loan.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_loan_borrowed", "Borrowed in all"), Value = borrowed });
+                loan.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_loan_repaid", "Repaid"), Value = repaid });
+                form.Right.Add(loan);
+            }
+        }
+
         /// <summary>The schools page's foot, made from its rows: the schools with the best results, and the ones with the most places free.</summary>
         public static void SchoolsBands(UtilitiesWords w, WorkTab t)
         {

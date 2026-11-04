@@ -242,6 +242,8 @@ namespace RealLifeOverhaul.Ui
                     hiredHere.Note = hiredHere.People.Count.ToString(Inv);
                     r.Sections.Add(hiredHere);
                 }
+                BestApplicants(h, ad, r, w);
+                RivalsInLine(d, h, (int)TalentCatalogue.Role(ad.Role).Family, day, r, w);
                 r.Acts.Add(new WorkAct { Kind = WorkKinds.GoTab, Arg = 1, Label = w.T("reallife_hire_button_applicants", "Applicants"),
                     Style = UiButtonKind.Secondary, Icon = UiIcon.People, Opens = true });
                 r.Acts.Add(new WorkAct { Kind = Close, Arg = ad.Id, Label = w.T("reallife_work_close_ad", "Close the ad"), Style = UiButtonKind.Destructive, Icon = UiIcon.Close });

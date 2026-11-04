@@ -113,7 +113,7 @@ internal static partial class UiSamples
             j.Needs.Add(new CareerNeed { Words = Sf(w, "reallife_work_need_skill_points", "n", "72"), Met = false, Have = SHave(w, 66) });
             j.Needs.Add(new CareerNeed { Words = SCourse(w, "forklift"), Met = true });
             j.Needs.Add(new CareerNeed { Words = Sf(w, "reallife_work_need_rating", "n", "4"), Met = false, Have = SHave(w, 3) });
-            int[] pay = { 172, 172, 86, 172 }, score = { 84, 81, 79, 83 };
+            int[] pay = { 172, 86, 172, 172 }, score = { 84, 81, 79, 83 };
             for (int i = 3; i >= 0; i--)
             {
                 j.Shifts.Add(new CareerShift { Day = SDay(w, Today - 1 - i), Hours = i == 1 ? "4h" : "8h", Score = score[i], Pay = "$" + pay[i] });
@@ -141,6 +141,11 @@ internal static partial class UiSamples
             }
             CareerPages.NewPlayerBands(w, f, 62, 2, 1, 0, new[] { SCourse(w, "forklift"), SCourse(w, "customer_service"), SCourse(w, "business") },
                 new[] { SRank(w, "warehouse", 0), SRank(w, "bar", 0), SRank(w, "accountancy", 0) });
+            CareerPages.NewPlayerSupport(w, f, "$310", SDay(w, 440), SDay(w, 431), new[] { UiIcon.Package, UiIcon.Coffee },
+                new[] { SRank(w, "warehouse", 1) + ", Harbourside Freight HSF", SRank(w, "bar", 0) + ", The Anchor" },
+                new[] { SDay(w, 301) + " " + Sx(w, "reallife_work_cv_to") + " " + SDay(w, 388), SDay(w, 188) + " " + Sx(w, "reallife_work_cv_to") + " " + SDay(w, 290) },
+                new[] { Sf(w, "reallife_career_row_spell", "leaving", Sx(w, "reallife_work_leaving_redundant"), "reference", Sx(w, "reallife_work_reference_3")),
+                    Sf(w, "reallife_career_row_spell", "leaving", Sx(w, "reallife_work_leaving_resigned"), "reference", Sx(w, "reallife_work_reference_2")) });
         }
         return f;
     }
@@ -392,6 +397,9 @@ internal static partial class UiSamples
         form.Right.Add(contracts);
         CareerPages.OwnBands(w, form, 5, 1280, new[] { "Rose Wilder", "Hollis and Sons", "Aldous Burke" }, new[] { "$180", "$640", "$420" },
             new[] { SDay(w, 380), SDay(w, 392), SDay(w, 404) });
+        CareerPages.OwnLifeBands(w, form, "$28,400", 188, 3, new[] { UiIcon.Package, UiIcon.Coffee },
+            new[] { SRank(w, "warehouse", 1) + ", Harbourside Freight HSF", SRank(w, "bar", 0) + ", The Anchor" },
+            new[] { SDay(w, 301) + " " + Sx(w, "reallife_work_cv_to") + " " + SDay(w, 388), SDay(w, 188) + " " + Sx(w, "reallife_work_cv_to") + " " + SDay(w, 290) }, new[] { "$16,200", "$9,100" });
         own.Form = form;
     }
 

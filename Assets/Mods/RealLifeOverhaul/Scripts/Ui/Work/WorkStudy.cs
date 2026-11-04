@@ -377,13 +377,23 @@ namespace RealLifeOverhaul.Ui
                         buttons.Add(actions[at2]);
                     }
                 }
-                float yy = UiAppWindow.Profile(s, at, profile, buttons.ToArray(), kx, ky, colW, keys);
+                float yy = UiAppWindow.Profile(s, at, profile, null, kx, ky, colW, keys);
                 if (k.Fund >= 0)
                 {
                     yy += WorkPanel.SectionHead(s, at, kx, yy, colW, k.FundLabel, k.FundNote);
                     UiDraw.Meter(s, at, kx, yy + UiTokens.S1, colW, UiTokens.S2, k.Fund, UiRole.Accent);
                     yy += UiTokens.S4;
                 }
+                // the buttons stand in their own row under the fund, the same row in every column (a child with none leaves it empty), the main one first at the left
+                float bx = kx;
+                for (int a = 0; a < buttons.Count; a++)
+                {
+                    UiActionModel b = buttons[a];
+                    float bw = UiDraw.Snap(Math.Min(colW - (bx - kx), UiDraw.ButtonWidth(b.Kind, b.Label, b.Icon, b.Key, keys)));
+                    UiDraw.Button(s, at, bx, yy, bw, UiTokens.Control, b.Kind, b.Label, b.Icon, b.Key, keys, b.Command, b.Arg, b.Disabled);
+                    bx += bw + UiTokens.S2;
+                }
+                yy += UiTokens.Control + UiTokens.S2;
                 end = Math.Max(end, yy);
             }
             return end;

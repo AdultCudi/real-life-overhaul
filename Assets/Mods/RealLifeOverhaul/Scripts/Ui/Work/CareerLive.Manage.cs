@@ -454,6 +454,23 @@ namespace RealLifeOverhaul.Ui
             {
                 CareerPages.OwnBands(Words(), form, finished, (int)Math.Min(int.MaxValue, earned), clients.ToArray(), fees.ToArray(), days.ToArray());
             }
+            if (w.DaysWorked > 0)
+            {
+                var icons = new List<UiIcon>(3);
+                var titles = new List<string>(3);
+                var hints = new List<string>(3);
+                var notes = new List<string>(3);
+                for (int i = w.History.Count - 1; i >= 0 && titles.Count < 3; i--)
+                {
+                    Spell s = w.History[i];
+                    icons.Add(WorkGlyphs.Profession(s.Prof));
+                    titles.Add(CareersText.Title(s.Prof, s.Top) + ", " + CareersText.Employer(s.Employer));
+                    hints.Add(CareersText.Day(s.From) + " " + Words().T("reallife_work_cv_to", "to") + " " + CareersText.Day(s.To));
+                    notes.Add(CareersText.Cents(s.Earned));
+                }
+                CareerPages.OwnLifeBands(Words(), form, CareersText.Cents(w.Earned), w.DaysWorked, w.History.Count + (w.Job != null ? 1 : 0),
+                    icons.ToArray(), titles.ToArray(), hints.ToArray(), notes.ToArray());
+            }
         }
 
         // ------------------------------------------------------------------------------------------------- the CV

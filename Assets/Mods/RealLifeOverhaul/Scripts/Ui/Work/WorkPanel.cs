@@ -165,8 +165,8 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < n; i++)
             {
                 float cx = x + UiTokens.S4 + (i % 2) * half, cy = y + UiTokens.S3 + (i / 2) * (cell + UiTokens.S1);
-                UiDraw.Text(s, at, cx, cy, half - UiTokens.S2, UiStyle.SectionHeader, UiRole.Text2, r.Figures[i].Key, UiFlags.Label | UiFlags.Truncate);
-                UiDraw.Text(s, at, cx, cy + lh + UiTokens.S1, half - UiTokens.S2, UiStyle.Number, UiRole.Text, r.Figures[i].Value, UiFlags.Truncate);
+                UiDraw.TextMiddle(s, at, cx, cy, lh, half - UiTokens.S2, UiStyle.SectionHeader, UiRole.Text2, r.Figures[i].Key, UiFlags.Label | UiFlags.Truncate);   // centred in its line: a script with a taller line sits where the Latin one does
+                UiDraw.TextMiddle(s, at, cx, cy + lh + UiTokens.S1, vh, half - UiTokens.S2, UiStyle.Number, UiRole.Text, r.Figures[i].Value, UiFlags.Truncate);
             }
             return y + total;
         }

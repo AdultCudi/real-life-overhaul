@@ -88,7 +88,7 @@ namespace RealLifeOverhaul.Ui
                 for (int i = 0; i < rows.Length; i++)
                 {
                     CareerShift c = j.Shifts[j.Shifts.Count - 1 - i];
-                    rows[i] = WorkBuilder.RowOf(UiIcon.Clock, UiRole.None, new[] { c.Day + " " + c.Hours, c.Score.ToString(), c.Pay }, null, UiRole.Ok, c.Score);
+                    rows[i] = WorkBuilder.RowOf(UiIcon.Clock, UiRole.None, new[] { c.Day + ", " + c.Hours, c.Score.ToString(), c.Pay }, null, UiRole.Ok, c.Score);
                 }
                 ry = UiAppWindow.Table(s, at, w.T("reallife_work_recent_shifts", "Recent shifts"), new[] { Col(w.T("reallife_work_col_shift", "Shift"), 0f, false, true),
                     Col(w.T("reallife_work_col_score", "Score"), 96f, true, false), Col(w.T("reallife_work_col_pay", "Pay"), 96f, true, false) }, 1, rows, UiAppWindow.MoreCommand,

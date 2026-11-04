@@ -83,6 +83,14 @@ namespace RealLifeOverhaul.Ui
             UiFace primary = UiFontMetrics.Face(t.Family, t.Weight);
             UiFace backup = null;
             int lines = 0, i = 0, n = text.Length;
+            for (int k = 0; k < n; k++)
+            {
+                if (text[k] >= '⺀')
+                {
+                    width -= t.Size;   // TextMeshPro breaks Chinese, Japanese and Korean a character early where punctuation may not start a line: a line of them keeps an em in hand, so no text is laid in fewer lines than it is drawn in
+                    break;
+                }
+            }
             while (i < n && (most <= 0 || lines < most))
             {
                 while (i < n && text[i] == ' ')

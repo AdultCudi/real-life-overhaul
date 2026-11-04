@@ -241,7 +241,12 @@ namespace RealLifeOverhaul.Ui
             UiAt inside = at.In(face);
             string weekday = m.Weekdays.Length == 7 ? m.Weekdays[(m.Lead + entry.Day - 1) % 7] : string.Empty;
             string date = entry.Date ?? entry.Day.ToString(System.Globalization.CultureInfo.InvariantCulture) + " " + weekday;
-            float dw = UiDraw.Snap(UiTextRules.Width("30 Wed", UiStyle.SmallStrong) + UiTokens.S2);
+            float dw = UiTextRules.Width("30 Wed", UiStyle.SmallStrong);
+            for (int d = 0; d < m.Weekdays.Length; d++)
+            {
+                dw = Math.Max(dw, UiTextRules.Width("30 " + m.Weekdays[d], UiStyle.SmallStrong));   // the longest weekday of the language, so none is cut
+            }
+            dw = UiDraw.Snap(Math.Min(dw, UiTokens.S16 * 2f) + UiTokens.S2);
             UiDraw.TextMiddle(s, inside, x, y, AheadRow, dw, UiStyle.SmallStrong, UiRole.Text2, date, UiFlags.Truncate);
             float gx = x + dw;
             UiDraw.Icon(s, inside, gx, y + (AheadRow - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, entry.Icon, entry.Tint, UiFlags.Middle, true);

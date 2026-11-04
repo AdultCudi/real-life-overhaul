@@ -44,6 +44,37 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        /// <summary>
+        /// A new player's support: the benefit paid and the recruitment office's registration while they last, and the last jobs held with how each ended. A band is left
+        /// out when there is nothing to say in it.
+        /// </summary>
+        public static void NewPlayerSupport(UtilitiesWords w, CareerFacts f, string benefit, string benefitUntil, string agencyUntil, UiIcon[] icons, string[] titles, string[] hints, string[] notes)
+        {
+            var help = new WorkFormBand { Title = w.T("reallife_work_band_support", "While you look") };
+            if (!string.IsNullOrEmpty(benefit))
+            {
+                help.Rows.Add(Pair(w.T("reallife_work_benefit_week", "Unemployment benefit"), w.F("reallife_work_benefit_a_week", "{pay} a week", "pay", benefit)));
+                help.Rows.Add(Pair(w.T("reallife_work_benefit_until", "Paid until"), benefitUntil));
+            }
+            if (!string.IsNullOrEmpty(agencyUntil))
+            {
+                help.Rows.Add(Pair(w.T("reallife_work_agency_until", "Registered at the recruitment office until"), agencyUntil));
+            }
+            if (help.Rows.Count > 0)
+            {
+                f.NewBelow.Add(help);
+            }
+            var last = new WorkFormBand { Title = w.T("reallife_work_band_last_jobs", "Your last jobs") };
+            for (int i = 0; i < titles.Length && i < 2; i++)
+            {
+                last.Rows.Add(Tile(icons[i], titles[i], hints[i], notes[i]));
+            }
+            if (last.Rows.Count > 0)
+            {
+                f.NewBelow.Add(last);
+            }
+        }
+
         /// <summary>The foot of the Applications list: what is due and when, and the record the employers weigh (who else applied for a post is in its detail).</summary>
         public static void ApplicationsBands(UtilitiesWords w, WorkTab apps, int[] days, string[] whens, int[] kinds, string[] posts, int[] record)
         {
@@ -115,6 +146,25 @@ namespace RealLifeOverhaul.Ui
             if (lately.Rows.Count > 0)
             {
                 form.Left.Add(lately);
+            }
+        }
+
+        /// <summary>Own work's other record, the whole working life: what every job paid, the days worked, and the last jobs held with how each ended.</summary>
+        public static void OwnLifeBands(UtilitiesWords w, WorkFormModel form, string earned, int days, int jobs, UiIcon[] icons, string[] titles, string[] hints, string[] notes)
+        {
+            var life = new WorkFormBand { Title = w.T("reallife_work_band_own_life", "Your working life") };
+            life.Rows.Add(Pair(w.T("reallife_work_life_earned", "Earned in every job"), earned));
+            life.Rows.Add(Pair(w.T("reallife_work_life_days", "Days worked"), days.ToString()));
+            life.Rows.Add(Pair(w.T("reallife_work_life_jobs", "Jobs held"), jobs.ToString()));
+            form.Right.Add(life);
+            var held = new WorkFormBand { Title = w.T("reallife_work_band_own_held", "Jobs you have held") };
+            for (int i = 0; i < titles.Length && i < 3; i++)
+            {
+                held.Rows.Add(Tile(icons[i], titles[i], hints[i], notes[i]));
+            }
+            if (held.Rows.Count > 0)
+            {
+                form.Left.Add(held);
             }
         }
 
