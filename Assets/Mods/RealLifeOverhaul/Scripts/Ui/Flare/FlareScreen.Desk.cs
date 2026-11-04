@@ -418,6 +418,15 @@ namespace RealLifeOverhaul.Ui
                         "visitors", FlareText.N(b.Visitors))
                     : FlareText.Fill("reallife_flare_kit_result_done", "time", Ago(p.At, now));
             }
+            _flare.AdFunnels(_adFunnels, AdsMost);
+            for (int i = 0; i < _adFunnels.Count && _m.List.Count < ResultsMost; i++)
+            {
+                if (i == 0)
+                {
+                    Section(FlareText.T("reallife_flare_kit_results_ads"));
+                }
+                FunnelRow(_adFunnels[i], _flare.BusinessNameAt(_adFunnels[i].Place) ?? "?");
+            }
             bool campaigns = false;
             for (int i = file.Hires.Count - 1; i >= 0 && _m.List.Count < ResultsMost; i--)
             {
@@ -589,17 +598,17 @@ namespace RealLifeOverhaul.Ui
         {
             FlareHireModel d = _m.Hire;
             string key = "i:" + inf.Id.ToString(CultureInfo.InvariantCulture);
-            Account(key, out string name, out string handle, out _, out bool verified);
+            Account(key, out string name, out _, out _, out bool verified);
             d.Shown = true;
             d.Name = name;
-            d.Handle = FlareText.Fill("reallife_flare_kit_influencer_line", "handle", handle, "niche", FlareText.Niche(inf.Niche), "district", FlareText.District(inf.District));
             d.Hue = UiColour.HueOf(key);
             d.Ring = UiTokens.Grade(inf.Reliability);
             d.Verified = verified;
             d.Row = row;
             FlareExpect ex = _flare.HireExpect(inf, place);
-            d.ForecastLabels = new[] { FlareText.T("reallife_flare_kit_fig_likely"), FlareText.T("reallife_flare_kit_fig_takings"), FlareText.T("reallife_flare_kit_fig_price") };
-            d.ForecastFigures = new[] { FlareText.N(ex.Visitors), Signed(ex.Cents), FlareText.Money(Prices.At(FlareCast.Price(inf))) };
+            // Only what the table above does not say: its row already has the followers, the price of a post and the likely visits.
+            d.ForecastLabels = new[] { FlareText.T("reallife_flare_kit_fig_takings") };
+            d.ForecastFigures = new[] { Signed(ex.Cents) };
             bool booked = inf.BookedUntil >= today && !string.IsNullOrEmpty(inf.BookedBy);
             d.Hire = place == null || booked ? null : FlareText.Fill("reallife_flare_kit_hire_pay", "money", FlareText.Money(Prices.At(FlareCast.Price(inf))));
             d.HireOff = false;

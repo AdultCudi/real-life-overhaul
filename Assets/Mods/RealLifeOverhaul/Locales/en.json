@@ -30350,7 +30350,6 @@
   "reallife_flare_kit_search_hint": "Search accounts and tags",
   "reallife_flare_kit_empty_search": "Nothing matches",
   "reallife_flare_kit_empty_search_body": "Try a name, a handle or a tag.",
-  "reallife_flare_kit_section_accounts": "Accounts to follow",
   "reallife_flare_kit_section_tags": "Tags",
   "reallife_flare_kit_empty_explore": "Nothing trending yet",
   "reallife_flare_kit_new": "{count} new",
@@ -31431,5 +31430,11 @@
   "reallife_flare_kit_banner_newest": "Newest picture",
   "reallife_flare_kit_save": "Save",
   "reallife_flare_kit_edit_failed": "That could not be saved.",
-  "reallife_flare_kit_audience_title": "Audience by district"
+  "reallife_flare_kit_audience_title": "Audience by district",
+  "reallife_flare_kit_funnel_title": "What it did",
+  "reallife_flare_kit_funnel_good": "Seen by {seen} and {came} came",
+  "reallife_flare_kit_funnel_bad": "Seen by {seen} and it put {kept} off",
+  "reallife_flare_kit_funnel_more": "{interested} were interested and {followed} followed you",
+  "reallife_flare_kit_results_ads": "Your ads",
+  "reallife_flare_kit_result_ad": "Your ad for {business}"
 }

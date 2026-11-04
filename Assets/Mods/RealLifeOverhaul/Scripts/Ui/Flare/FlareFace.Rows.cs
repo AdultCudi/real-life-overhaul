@@ -585,15 +585,31 @@ namespace RealLifeOverhaul.Ui
         }
 
         // A trending tag: where and what, the tag, its posts.
+        private const float TagWide = 480f;   // px: a tag row this wide stands in a page, not in the side column
+
         private static void TagRow(UiScene s, UiAt at, ref FlareRow r, int index, short list, float y, float w, bool targets)
         {
             float h = r.Height;
             int row = UiDraw.Box(s, at, 0f, y, w, h, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
             UiAt inRow = at.In(row);
             float tx = UiTokens.S4, tw = w - UiTokens.S8;
-            Line(s, inRow, tx, y + UiTokens.S1, tw, UiStyle.Small, UiRole.Text2, r.Handle, UiFlags.Truncate);
-            Line(s, inRow, tx, y + UiTokens.S6, tw, UiStyle.Title, UiRole.Text, r.Name, UiFlags.Truncate);
-            Line(s, inRow, tx, y + UiTokens.S10 + UiTokens.S1, tw, UiStyle.Small, UiRole.Text2, r.Value, UiFlags.Truncate);
+            if (w >= TagWide)
+            {
+                // A page's own row has the room: where and the tag on the left and how many posts at the right, as a result row has its figure.
+                float vw = string.IsNullOrEmpty(r.Value) ? 0f : UiDraw.Snap(UiTextRules.Width(r.Value, UiStyle.BodyStrong) + UiTokens.S1);
+                Line(s, inRow, tx, y + UiTokens.S3, tw - vw - UiTokens.S3, UiStyle.Small, UiRole.Text2, r.Handle, UiFlags.Truncate);
+                Line(s, inRow, tx, y + UiTokens.S3 + UiTokens.S5, tw - vw - UiTokens.S3, UiStyle.Title, UiRole.Text, r.Name, UiFlags.Truncate);
+                if (vw > 0f)
+                {
+                    UiDraw.TextMiddle(s, inRow, w - UiTokens.S4 - vw, y, h, vw, UiStyle.BodyStrong, UiRole.Text, r.Value, UiFlags.Right);
+                }
+            }
+            else
+            {
+                Line(s, inRow, tx, y + UiTokens.S1, tw, UiStyle.Small, UiRole.Text2, r.Handle, UiFlags.Truncate);
+                Line(s, inRow, tx, y + UiTokens.S6, tw, UiStyle.Title, UiRole.Text, r.Name, UiFlags.Truncate);
+                Line(s, inRow, tx, y + UiTokens.S10 + UiTokens.S1, tw, UiStyle.Small, UiRole.Text2, r.Value, UiFlags.Truncate);
+            }
             if (targets)
             {
                 UiDraw.Node(s, at, 0f, y, w, h, RowCommand, index, row, false, list, index);

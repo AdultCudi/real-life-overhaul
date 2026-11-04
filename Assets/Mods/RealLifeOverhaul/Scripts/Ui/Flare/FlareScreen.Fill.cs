@@ -26,6 +26,10 @@ namespace RealLifeOverhaul.Ui
         private readonly List<string> _quick = new List<string>(4);
         private readonly List<FlareReviewNote> _notes = new List<FlareReviewNote>(ReviewsMost);
         private readonly HashSet<string> _seenKeys = new HashSet<string>();
+        private readonly HashSet<string> _bodyTags = new HashSet<string>();       // the tags the page itself shows, so the side does not list them again
+        private readonly HashSet<string> _bodyAccounts = new HashSet<string>();   // the accounts the page itself shows, likewise
+        private readonly List<FlareNotice> _notified = new List<FlareNotice>(FlareDirector.KitNoticesMost);
+        private readonly List<FlareFunnel> _adFunnels = new List<FlareFunnel>(AdsMost);
         private readonly List<FlarePost> _synthetic = new List<FlarePost>(16);
         private readonly List<FlareComment> _comments = new List<FlareComment>(FlareCommentRules.WrittenMost);
         private readonly List<FlareReaction> _reactions = new List<FlareReaction>(16);
@@ -42,6 +46,8 @@ namespace RealLifeOverhaul.Ui
             _m.Detail.Clear();
             _m.Trends.Clear();
             _m.Who.Clear();
+            _bodyTags.Clear();
+            _bodyAccounts.Clear();
             _m.Head = _m.HeadLine = null;
             _m.Tabs = None;
             _m.Field = _m.FieldHint = null;
@@ -64,10 +70,6 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             CountReplies(file, now);
-            if (FlareFace.HasSide(_page))
-            {
-                Side(file, now);
-            }
             switch (_page)
             {
                 case FlareFace.Home: Home(file, now); break;
@@ -80,6 +82,10 @@ namespace RealLifeOverhaul.Ui
                 case FlareFace.Hire: Hire(file, now); break;
                 case FlareFace.City: City(file, now); break;
                 case FlareFace.Thread: Thread(file, now); break;
+            }
+            if (FlareFace.HasSide(_page))
+            {
+                Side(file, now);   // after the page: what the page already shows is not said again beside it
             }
             if (_sheet != FlareFace.NoSheet)
             {
@@ -126,7 +132,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
-            List<FlareNotice> notices = _flare.KitNotices();
+            List<FlareNotice> notices = Notified(file, now);
             _unseen = FlareLiveRules.UnseenNotices(notices, _page == FlareFace.Notices ? _seenBefore : _flare.NoticesSeenAt);
             _badges[FlareFace.Notices] = _page == FlareFace.Notices ? 0 : _unseen;
             _badges[FlareFace.Messages] = _flare.UnreadMessages;
@@ -143,9 +149,23 @@ namespace RealLifeOverhaul.Ui
             _m.WhoTitle = FlareText.T("reallife_flare_kit_who");
             _m.FollowWord = FlareText.T("reallife_flare_follow");
             _m.FollowingWord = FlareText.T("reallife_flare_follow_on");
-            Week(file, now, out _m.WeekLabels, out _m.WeekFigures, out _m.WeekDeltas, out _m.WeekTones);
-            _m.Line = FlareFeedRules.Line(file.History, file.Followers);
-            FlareLiveRules.Trending(file.Posts, now, TrendsMost, _trendTags, _trendCounts);
+            bool own = _page == FlareFace.Profile && (_profile == "me" || _profile == _flare.MeKey);
+            Week(file, now, own, out _m.WeekLabels, out _m.WeekFigures, out _m.WeekDeltas, out _m.WeekTones);
+            _m.Line = own ? null : FlareFeedRules.Line(file.History, file.Followers);   // the followers' line and figure are the profile's own head on one's own profile
+            // What trends and who to follow, less what the page itself shows: a tag or an account is told once on a screen.
+            FlareLiveRules.Trending(file.Posts, now, TrendsMost + ExploreTrendsMost, _trendTags, _trendCounts);
+            int kept = 0;
+            for (int i = 0; i < _trendTags.Count && kept < TrendsMost; i++)
+            {
+                if (_bodyTags.Contains(_trendTags[i]))
+                {
+                    continue;
+                }
+                _trendTags[kept] = _trendTags[i];
+                _trendCounts[kept++] = _trendCounts[i];
+            }
+            _trendTags.RemoveRange(kept, _trendTags.Count - kept);
+            _trendCounts.RemoveRange(kept, _trendCounts.Count - kept);
             for (int i = 0; i < _trendTags.Count; i++)
             {
                 ref FlareRow r = ref _m.Trends.Add();
@@ -154,8 +174,16 @@ namespace RealLifeOverhaul.Ui
                 r.Handle = TrendWhere(file, _trendTags[i], now);
                 r.Value = PostsCount(_trendCounts[i]);
             }
-            _whoKeys.Clear();
-            WhoToFollow(file, _whoKeys, WhoMost);
+            WhoToFollow(file, _whoKeys, WhoMost + ExploreWhoMost);
+            kept = 0;
+            for (int i = 0; i < _whoKeys.Count && kept < WhoMost; i++)
+            {
+                if (!_bodyAccounts.Contains(_whoKeys[i]))
+                {
+                    _whoKeys[kept++] = _whoKeys[i];
+                }
+            }
+            _whoKeys.RemoveRange(kept, _whoKeys.Count - kept);
             for (int i = 0; i < _whoKeys.Count; i++)
             {
                 Account(_whoKeys[i], out string name, out string handle, out string about, out bool verified);
@@ -169,8 +197,9 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // Your week: followers won, the people reached against the week before, the rating of the player's businesses.
-        private void Week(FlareFile file, long now, out string[] labels, out string[] figures, out string[] deltas, out int[] tones)
+        // Your week: followers won, the people reached against the week before, the rating of the player's businesses. On the player's own profile, whose head says the followers
+        // already, the followers are left out.
+        private void Week(FlareFile file, long now, bool own, out string[] labels, out string[] figures, out string[] deltas, out int[] tones)
         {
             int today = (int)(now / 1440);
             int gain = FlareFeedRules.WeekGain(file.History, file.Followers);
@@ -190,6 +219,13 @@ namespace RealLifeOverhaul.Ui
                 reviews > 0 ? ReviewsCount(reviews) : FlareText.T("reallife_flare_kit_week_no_reviews")
             };
             tones = new[] { Math.Sign(gain), Math.Sign(change), 0 };
+            if (own)
+            {
+                labels = new[] { labels[1], labels[2] };
+                figures = new[] { figures[1], figures[2] };
+                deltas = new[] { deltas[1], deltas[2] };
+                tones = new[] { tones[1], tones[2] };
+            }
         }
 
         // The rating of the player's businesses together, thousandths of a star, and the reviews it stands on.
@@ -402,6 +438,7 @@ namespace RealLifeOverhaul.Ui
                         PostRow(file, p, now);
                     }
                 }
+                _bodyTags.Add(_tag);
                 _m.Head = "#" + _tag;
                 _m.HeadLine = PostsCount(count);
                 _m.List.EmptyIcon = UiIcon.Search;
@@ -414,8 +451,8 @@ namespace RealLifeOverhaul.Ui
                 Search(file, now, _search.Trim());
                 return;
             }
-            // Nothing asked: what trends, then accounts to follow.
-            FlareLiveRules.Trending(file.Posts, now, 8, _trendTags, _trendCounts);
+            // Nothing asked: what trends. The accounts to follow are the side's, so no account is listed twice on the page.
+            FlareLiveRules.Trending(file.Posts, now, ExploreTrendsMost, _trendTags, _trendCounts);
             if (_trendTags.Count > 0)
             {
                 Section(FlareText.T("reallife_flare_city_trend_tags"));
@@ -424,16 +461,6 @@ namespace RealLifeOverhaul.Ui
             {
                 TagRow(file, _trendTags[i], _trendCounts[i], now);
             }
-            var keys = new List<string>(ExploreWhoMost);
-            WhoToFollow(file, keys, ExploreWhoMost);
-            if (keys.Count > 0)
-            {
-                Section(FlareText.T("reallife_flare_kit_section_accounts"));
-            }
-            for (int i = 0; i < keys.Count; i++)
-            {
-                AccountRow(keys[i]);
-            }
             _m.List.EmptyIcon = UiIcon.Search;
             _m.List.EmptyTitle = FlareText.T("reallife_flare_kit_empty_explore");
             _m.List.EmptyBody = FlareText.T("reallife_flare_kit_empty_search_body");
@@ -441,6 +468,7 @@ namespace RealLifeOverhaul.Ui
 
         private void TagRow(FlareFile file, string tag, int count, long now)
         {
+            _bodyTags.Add(tag);
             ref FlareRow r = ref Add(_m.List, RowAct.Tag, null, tag);
             r.Kind = FlareRowKind.Tag;
             r.Name = "#" + tag;
@@ -452,6 +480,7 @@ namespace RealLifeOverhaul.Ui
         {
             Account(key, out string name, out string handle, out _, out bool verified);
             bool following = Following(key);
+            _bodyAccounts.Add(key);
             ref FlareRow r = ref Add(_m.List, RowAct.Profile, null, key);
             r.Kind = FlareRowKind.Account;
             r.Name = name;
@@ -556,7 +585,7 @@ namespace RealLifeOverhaul.Ui
         {
             _m.Head = FlareText.T("reallife_flare_nav_notices");
             _m.HeadLine = _unseen > 0 ? FlareText.Fill("reallife_flare_kit_new", "count", FlareText.N(_unseen)) : FlareText.T("reallife_flare_kit_all_seen");
-            List<FlareNotice> notices = _flare.KitNotices();
+            List<FlareNotice> notices = Notified(file, now);
             _m.Tabs = new string[NoticeTabKeys.Length];
             for (int i = 0; i < NoticeTabKeys.Length; i++)
             {
@@ -579,6 +608,41 @@ namespace RealLifeOverhaul.Ui
             _m.List.EmptyIcon = UiIcon.Bell;
             _m.List.EmptyTitle = FlareText.T(_kit.NoticeTab == 0 ? "reallife_flare_empty_notices" : "reallife_flare_kit_empty_tab");
             _m.List.EmptyBody = FlareText.T(_kit.NoticeTab == 0 ? "reallife_flare_kit_empty_notices_body" : "reallife_flare_kit_empty_tab_body");
+        }
+
+        // The notifications as the badge and the page count them: what the page already holds as a card that waits for the player's answer (an offer still open, a review of
+        // their business not yet answered) is that card, and no line of the list says it a second time.
+        private List<FlareNotice> Notified(FlareFile file, long now)
+        {
+            List<FlareNotice> all = _flare.KitNotices();
+            _notified.Clear();
+            int today = (int)(now / 1440);
+            List<string> mine = _flare.MyPlaces();
+            for (int i = 0; i < all.Count; i++)
+            {
+                FlareNotice n = all[i];
+                if (n.Kind == FlareNoticeKind.Offer)
+                {
+                    FlareOffer o = _flare.OfferOf(FlareLiveRules.OfferOf(n.Who));
+                    if (o != null && o.Open(today))
+                    {
+                        continue;
+                    }
+                }
+                else if (n.Kind == FlareNoticeKind.Review && n.Post >= 0 && AwaitsAnswer(file, file.Post(n.Post), mine, now))
+                {
+                    continue;
+                }
+                _notified.Add(n);
+            }
+            return _notified;
+        }
+
+        // A review of one of the player's businesses that they have not answered.
+        private bool AwaitsAnswer(FlareFile file, FlarePost p, List<string> mine, long now)
+        {
+            return p != null && p.Source == FlareSource.Review && p.Author != FlareAuthor.Player && p.Place != null && mine.Contains(p.Place) && p.At <= now && !Hidden(file, p)
+                && MyAnswer(file, p.Id) == null;
         }
 
         // What waits for the player's answer: the reviews of their businesses nobody has answered, and the offers of paid posts still open, at the page's top.
@@ -615,7 +679,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = file.Posts.Count - 1; reviews && i >= 0 && added < NeedsMost; i--)
             {
                 FlarePost p = file.Posts[i];
-                if (p.Source != FlareSource.Review || p.Author == FlareAuthor.Player || p.Place == null || !mine.Contains(p.Place) || p.At > now || Hidden(file, p) || MyAnswer(file, p.Id) != null)
+                if (!AwaitsAnswer(file, p, mine, now))
                 {
                     continue;
                 }
@@ -917,6 +981,7 @@ namespace RealLifeOverhaul.Ui
         {
             string key = _profile ?? "me";
             bool me = key == "me" || key == _flare.MeKey;
+            _bodyAccounts.Add(key);
             FlareProfileModel h = _m.Profile;
             Account(key, out h.Name, out h.Handle, out h.Bio, out h.Verified);
             h.Hue = UiColour.HueOf(me ? "me" : key);
@@ -996,6 +1061,14 @@ namespace RealLifeOverhaul.Ui
                 PostRow(file, parent, now);
             }
             PostRow(file, p, now);
+            Author(p, out _, out _, out string author, out _);
+            _bodyAccounts.Add(author ?? string.Empty);
+            FlareFunnel did = p.Author == FlareAuthor.Player ? _flare.FunnelOfPost(p.Id) : null;
+            if (did != null && did.Seen > 0)
+            {
+                Section(FlareText.T("reallife_flare_kit_funnel_title"));
+                FunnelRow(did, null);
+            }
             Section(FlareText.T("reallife_flare_replies_title"));
             int before = _m.List.Count;
             _synthetic.Clear();
@@ -1045,6 +1118,24 @@ namespace RealLifeOverhaul.Ui
             _m.FieldHint = FlareText.T("reallife_flare_reply_placeholder");
             _m.FieldArg = FlareFace.ReplyField;
             _m.Send = FlareText.T("reallife_flare_reply_button");
+        }
+
+        // What a post or an ad of the player's did in the city, read from the director's record of it (the one the retired Flare in the city page listed): who saw it, how many
+        // came and what they spent, or how many it put off and what that cost. A post says it under itself, an ad in the studio's list under the business it was for.
+        private void FunnelRow(FlareFunnel f, string business)
+        {
+            bool off = f.Came < 0 || f.Spent < 0;
+            ref FlareRow r = ref Add(_m.List, RowAct.None);
+            r.Kind = FlareRowKind.Result;
+            r.Icon = business != null ? UiIcon.Megaphone : UiIcon.ChartLineUp;
+            r.Tint = off ? UiRole.DangerText : UiRole.OkText;
+            string said = off
+                ? FlareText.Fill("reallife_flare_kit_funnel_bad", "seen", FlareFeedRules.Count(f.Seen), "kept", FlareText.N(Math.Max(0, -f.Came)))
+                : FlareText.Fill("reallife_flare_kit_funnel_good", "seen", FlareFeedRules.Count(f.Seen), "came", FlareText.N(f.Came));
+            r.Text = business != null ? FlareText.Fill("reallife_flare_kit_result_ad", "business", business) : said;
+            r.Line = business != null ? said : FlareText.Fill("reallife_flare_kit_funnel_more", "interested", FlareFeedRules.Count(f.Interested), "followed", FlareFeedRules.Count(f.Followed));
+            r.Value = Signed(f.Spent);
+            r.Flags |= off ? FlareRowFlags.Bad : f.Spent > 0 ? FlareRowFlags.Good : FlareRowFlags.None;
         }
 
         // The worded comments under another's post, as replies for display; how many of the count are not written.

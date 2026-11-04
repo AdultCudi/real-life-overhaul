@@ -91,12 +91,12 @@ namespace RealLifeOverhaul.Ui
             Face(s, inCard, x1, cy, UiTokens.AvatarRow, d.Name, d.Hue, true, d.Ring, false);
             float tx = x1 + UiTokens.AvatarRow + UiTokens.S3, tw = x1 + w1 - tx;
             float nameW = Math.Min(UiDraw.Snap(UiTextRules.Width(d.Name, UiStyle.Number) + UiTokens.S1), tw - (d.Verified ? UiTokens.S5 : 0f));
-            Line(s, inCard, tx, cy, nameW, UiStyle.Number, UiRole.Text, d.Name, UiFlags.Truncate);
+            float ny = cy + UiDraw.SnapDown((UiTokens.AvatarRow - L(UiStyle.Number)) / 2f);   // the row above has the handle: the card says the name once, beside the face
+            Line(s, inCard, tx, ny, nameW, UiStyle.Number, UiRole.Text, d.Name, UiFlags.Truncate);
             if (d.Verified)
             {
-                Verified(s, inCard, tx + nameW + UiTokens.S1, cy + UiTokens.S1);
+                Verified(s, inCard, tx + nameW + UiTokens.S1, ny + UiTokens.S1);
             }
-            Line(s, inCard, tx, cy + L(UiStyle.Number), tw, UiStyle.Small, UiRole.Text2, d.Handle, UiFlags.Truncate);
             cy += UiTokens.AvatarRow + UiTokens.S3;
             int figures = Math.Min(d.ForecastLabels.Length, d.ForecastFigures.Length);
             for (int i = 0; i < figures; i++)

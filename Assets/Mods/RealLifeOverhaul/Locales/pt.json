@@ -30350,7 +30350,6 @@
   "reallife_flare_kit_search_hint": "Buscar contas e tags",
   "reallife_flare_kit_empty_search": "Nada encontrado",
   "reallife_flare_kit_empty_search_body": "Tente um nome, um perfil ou uma tag.",
-  "reallife_flare_kit_section_accounts": "Contas para seguir",
   "reallife_flare_kit_section_tags": "Tags",
   "reallife_flare_kit_empty_explore": "Nada em alta ainda",
   "reallife_flare_kit_new": "{count} novos",
@@ -31431,5 +31430,11 @@
   "reallife_flare_kit_banner_newest": "Imagem mais nova",
   "reallife_flare_kit_save": "Salvar",
   "reallife_flare_kit_edit_failed": "Não foi possível salvar.",
-  "reallife_flare_kit_audience_title": "Público por bairro"
+  "reallife_flare_kit_audience_title": "Público por bairro",
+  "reallife_flare_kit_funnel_title": "O que o post fez",
+  "reallife_flare_kit_funnel_good": "{seen} viram e {came} vieram",
+  "reallife_flare_kit_funnel_bad": "{seen} viram e {kept} foram afastados",
+  "reallife_flare_kit_funnel_more": "{interested} se interessaram e {followed} seguiram você",
+  "reallife_flare_kit_results_ads": "Seus anúncios",
+  "reallife_flare_kit_result_ad": "Seu anúncio para {business}"
 }

@@ -33,7 +33,7 @@ public static partial class UiPreviewRunner
         public int FocusCommand = -1, FocusArg;
         public int HoverCommand = -1, HoverArg;   // the target the mouse rests on in the hover shot, or the second target
         public Vector2Int[] Walk;
-        public bool Tour;         // the pad path is right alone from the first target until the run ends (UiPreviewRunner.TourOf), the walk Flare's reading links give
+        public bool Tour;         // the pad path is every target the d-pad reaches from the first, right then down then left and up (UiPreviewRunner.TourOf)
         public string Backdrop;   // the game's world behind it, a picture's file in the backdrops folder, or null for black
         public int App = -1;      // the app the status bar marks as open
         public bool Extra;        // also a hover shot and a keys shot (the prototype's two that show input)
@@ -327,7 +327,14 @@ public static partial class UiPreviewRunner
             }
             if (shot.Path && focus >= 0 && !shot.Screen.NoKeys)
             {
-                FocusPath(host, scene, focus, shot.Screen.Tour ? TourOf(scene, focus) : shot.Screen.Walk);
+                if (shot.Screen.Tour)
+                {
+                    TourOf(host, scene, focus);
+                }
+                else
+                {
+                    FocusPath(host, scene, focus, shot.Screen.Walk);
+                }
             }
             Canvas.ForceUpdateCanvases();
             foreach (TMP_Text t in root.GetComponentsInChildren<TMP_Text>(true))
@@ -382,6 +389,7 @@ public static partial class UiPreviewRunner
     private static void FocusPath(RectTransform parent, UiScene scene, int start, Vector2Int[] moves)
     {
         var stops = new List<Vector2> { Centre(scene, start) };
+        var came = new List<int> { -1 };
         int at = start;
         foreach (Vector2Int m in moves)
         {
@@ -391,14 +399,21 @@ public static partial class UiPreviewRunner
                 continue;
             }
             at = next;
+            came.Add(stops.Count - 1);
             stops.Add(Centre(scene, at));
         }
+        DrawStops(parent, stops, came);
+    }
+
+    // The same drawing for a tour: stop i is joined to the stop it was pressed from.
+    private static void DrawStops(RectTransform parent, List<Vector2> stops, List<int> came)
+    {
         RectTransform layer = UiView.NewRect(parent, "FocusPath");
         UiView.Stretch(layer);
         var ink = new Color(1f, 0.85f, 0.2f, 1f);
         for (int i = 1; i < stops.Count; i++)
         {
-            Vector2 a = stops[i - 1], b = stops[i];
+            Vector2 a = stops[came[i]], b = stops[i];
             RectTransform seg = UiView.NewRect(layer, "Step" + i);
             seg.pivot = new Vector2(0f, 0.5f);
             seg.anchoredPosition = new Vector2(a.x, -a.y);
@@ -427,19 +442,29 @@ public static partial class UiPreviewRunner
         }
     }
 
-    // The pad's walk of a Flare screen drawn as the game takes it: right alone from the first target, through the links FlareFace.ReadingLinks and the nav set, until the run ends. A
-    // target the run does not reach is not drawn, so the shot never shows a path the pad cannot take; the log says how long the run is and whether it came back to a target.
-    private static Vector2Int[] TourOf(UiScene scene, int start)
+    // The pad's walk of a Flare screen drawn as a player takes it: from the first target, right first, then down, then left and up, on to the first target not been to, every stop joined to the
+    // one it was pressed from by one real press of the game's own links (FlareFace.Reach). The log says how many of the screen's targets the walk met.
+    private static void TourOf(RectTransform parent, UiScene scene, int start)
     {
-        var walk = new int[scene.NodeCount + 1];
-        int stops = FlareFace.WalkRight(scene, start, walk, out bool revisit);
-        var moves = new Vector2Int[Math.Max(0, stops - 1)];
-        for (int i = 0; i < moves.Length; i++)
+        var order = new int[scene.NodeCount + 1];
+        var from = new int[scene.NodeCount + 1];
+        int met = FlareFace.Reach(scene, start, order, from);
+        var stops = new List<Vector2>(met);
+        var came = new List<int>(met);
+        var place = new int[scene.NodeCount];
+        for (int i = 0; i < met; i++)
         {
-            moves[i] = Right;
+            place[order[i]] = i;
+            stops.Add(Centre(scene, order[i]));
+            came.Add(from[i] < 0 ? -1 : place[from[i]]);
         }
-        Debug.Log(Tag + "pad tour: " + stops + " stops by right alone" + (revisit ? ", then back to a target it had been to" : string.Empty) + ", of " + scene.NodeCount + " targets");
-        return moves;
+        DrawStops(parent, stops, came);
+        int top = 0;
+        for (int i = 0; i < scene.NodeCount; i++)
+        {
+            top += scene.Nodes[i].Layer == scene.Nodes[start].Layer && !scene.Nodes[i].Disabled ? 1 : 0;
+        }
+        Debug.Log(Tag + "pad tour: " + met + " stops by right, down, left and up from the first target, of " + top + " targets");
     }
 
     private static Vector2 Centre(UiScene scene, int node)

@@ -9,7 +9,7 @@ internal static partial class UiSamples
     public static readonly string[] FlareStates =
     {
         "home", "home_following", "home_businesses", "explore", "explore_search", "explore_tag", "notices", "notices_empty", "messages", "messages_offer",
-        "messages_none", "profile", "profile_other", "thread", "business", "business_turning", "business_none", "studio", "hire", "city", "city_empty",
+        "messages_none", "profile", "profile_other", "thread", "thread_mine", "business", "business_turning", "business_none", "studio", "hire", "city", "city_empty",
         "compose", "compose_promote", "hire_sheet", "reply_sheet", "photo_picker", "notices_sales", "city_new", "compose_report", "compose_moment", "ad_sheet", "edit_sheet"
     };
 
@@ -17,6 +17,10 @@ internal static partial class UiSamples
     {
         FlareFace.Lay(s, frame, dark, keys, t, FlareSample(t, state));
     }
+
+    // One world for the badges and the pages they open: what is new in the notifications and unread in the messages. The nav's badge and the page's own head say the same figure
+    // (FlareNewNotices is the unread lines of the Notifications sample, FlareUnreadMessages the unread messages over its conversations); a check holds them together.
+    internal const int FlareNewNotices = 6, FlareUnreadMessages = 3;
 
     private const string FlareMe = "Walter Mack", FlareMyHandle = "@waltermack", FlareShop = "Bloom Cafe", FlareShop2 = "Bloom Bakery";
 
@@ -59,6 +63,7 @@ internal static partial class UiSamples
             case "profile": FlareProfile(m, t, true); break;
             case "profile_other": FlareProfile(m, t, false); break;
             case "thread": FlareThread(m, t); break;
+            case "thread_mine": FlareThreadMine(m, t); break;
             case "business": FlareBusiness(m, t, 1); break;
             case "business_turning": FlareBusiness(m, t, 2); break;
             case "business_none": FlareBusiness(m, t, 0); break;
@@ -78,10 +83,7 @@ internal static partial class UiSamples
             case "ad_sheet": FlareBusiness(m, t, 1); FlareAdSheet(m, t); break;
             case "edit_sheet": FlareProfile(m, t, true); FlareEditSheet(m, t); break;
         }
-        // The badges of the pages not open: what is new in the notifications and the unread messages.
-        m.Badges = new int[FlareFace.Pages];
-        m.Badges[FlareFace.Notices] = m.Page == FlareFace.Notices ? 0 : 12;
-        m.Badges[FlareFace.Messages] = m.Page == FlareFace.Messages ? 2 : 3;
+        m.Badges[FlareFace.Notices] = m.Page == FlareFace.Notices ? 0 : FlareNewNotices;   // the page that is open has read them: its own head says how many were new
         return m;
     }
 
@@ -89,6 +91,9 @@ internal static partial class UiSamples
 
     private static void FlareShell(FlareFaceModel m, UiWords t)
     {
+        // The badges of the pages: what is new in the notifications and unread in the messages (FlareMessages takes off the conversation it opens, which is read by then).
+        m.Badges = new int[FlareFace.Pages];
+        m.Badges[FlareFace.Messages] = FlareUnreadMessages;
         m.Nav = new string[FlareNavKeys.Length];
         for (int i = 0; i < m.Nav.Length; i++)
         {
@@ -128,6 +133,37 @@ internal static partial class UiSamples
         ref FlareRow b = ref FlareRowOf(m.Who, FlareRowKind.Account, "Jade Rivers", "i:3");
         b.Handle = FlareAccountLine(t, "@jaderivers", t("reallife_flare_kit_followers_n", "{count} followers").Replace("{count}", "96K"));
         b.Flags |= FlareRowFlags.Verified;
+        ref FlareRow c = ref FlareRowOf(m.Who, FlareRowKind.Account, "Marco Bell", "i:5");
+        c.Handle = FlareAccountLine(t, "@marcobell", t("reallife_flare_kit_followers_n", "{count} followers").Replace("{count}", "18.2K"));
+        ref FlareRow d = ref FlareRowOf(m.Who, FlareRowKind.Account, "Midtown Diner", "k:Midtown Diner");
+        d.Handle = FlareAccountLine(t, "@midtowndiner", t("reallife_flare_kit_kind_business", "Business"));
+        ref FlareRow e = ref FlareRowOf(m.Who, FlareRowKind.Account, "Pioneer Game studio", "k:Pioneer Game studio");
+        e.Handle = FlareAccountLine(t, "@pioneergames", t("reallife_flare_kit_kind_business", "Business"));
+        ref FlareRow f = ref FlareRowOf(m.Who, FlareRowKind.Account, "Burger Barn", "k:Burger Barn");
+        f.Handle = FlareAccountLine(t, "@burgerbarn", t("reallife_flare_kit_kind_business", "Business"));
+        ref FlareRow g = ref FlareRowOf(m.Who, FlareRowKind.Account, "Speedy Bites", "k:Speedy Bites");
+        g.Handle = FlareAccountLine(t, "@speedybites", t("reallife_flare_kit_kind_business", "Business"));
+        g.Flags |= FlareRowFlags.Verified;
+    }
+
+    // What the page itself shows is not said again in the side column (FlareScreen.Side leaves it out): a tag or an account is told once on a screen.
+    private static void FlareSideWithout(FlareFaceModel m, string tag, string account)
+    {
+        FlareDrop(m.Trends, tag != null ? "#" + tag : null);
+        FlareDrop(m.Who, account);
+    }
+
+    private static void FlareDrop(FlareList list, string name)
+    {
+        int to = 0;
+        for (int i = 0; i < list.Count; i++)
+        {
+            if (name == null || list.Rows[i].Name != name)
+            {
+                list.Rows[to++] = list.Rows[i];
+            }
+        }
+        list.Count = to;
     }
 
     private static void FlareTrend(FlareList list, UiWords t, string tag, string district, int posts)
@@ -246,7 +282,7 @@ internal static partial class UiSamples
             return;
         }
         ref FlareRow p = ref FlarePost(m.List, "Speedy Bites", "@speedybites", "k:Speedy Bites", FlareAge(2, 'h'),
-            t("reallife_flare_biz_post_0", "Two for one at {name} today only.").Replace("{name}", "Speedy Bites"), "1.2K", "84", "31", "11.9K");
+            t("reallife_flare_biz_post_0", "Two for one at {name} today only.").Replace("{name}", "Speedy Bites"), "1.2K", "84", "31", "10.8K");
         p.Flags |= FlareRowFlags.Verified | FlareRowFlags.Liked;
         p.Line = t("reallife_flare_kit_promoted", "Promoted in {district}").Replace("{district}", "Midtown");
         p.Icon = UiIcon.Megaphone;
@@ -295,11 +331,12 @@ internal static partial class UiSamples
         m.List.EmptyBody = t("reallife_flare_kit_empty_search_body", "Try a name, a handle or a tag.");
         if (tag != null)
         {
+            FlareSideWithout(m, tag, null);   // the head says its count
             m.Head = "#" + tag;
             m.HeadLine = t("reallife_flare_kit_posts_count", "{count} posts").Replace("{count}", "3,104");
             m.List.EmptyTitle = t("reallife_flare_empty_tag", "No posts with this tag in the last few days.");
             ref FlareRow p = ref FlarePost(m.List, "Speedy Bites", "@speedybites", "k:Speedy Bites", FlareAge(2, 'h'),
-                t("reallife_flare_biz_post_0", "Two for one at {name} today only.").Replace("{name}", "Speedy Bites"), "1.2K", "84", "31", "11.9K");
+                t("reallife_flare_biz_post_0", "Two for one at {name} today only.").Replace("{name}", "Speedy Bites"), "1.2K", "84", "31", "10.8K");
             p.Flags |= FlareRowFlags.Verified;
             p.Tags = new[] { "#BroadwayNights", "#MidtownEats" };
             p.Picture = "sample:p1";
@@ -311,6 +348,7 @@ internal static partial class UiSamples
         if (search != null)
         {
             m.List.EmptyTitle = t("reallife_flare_kit_empty_search", "Nothing matches");
+            FlareSideWithout(m, "BurgerWeek", "Speedy Bites");
             FlareSection(m.List, t("reallife_flare_tab_accounts", "Accounts"));
             FlareAccount(m.List, t, "Speedy Bites", "@speedybites", "k:Speedy Bites", t("reallife_flare_kit_kind_business", "Business"), true, true);
             FlareSection(m.List, t("reallife_flare_kit_section_tags", "Tags"));
@@ -326,6 +364,10 @@ internal static partial class UiSamples
             return;
         }
         m.List.EmptyTitle = t("reallife_flare_kit_empty_explore", "Nothing trending yet");
+        // Nothing asked: what trends, all of it, so the side lists none of the tags and keeps the room for who to follow.
+        FlareTrend(m.Trends, t, "CoffeeCrawl", "Midtown", 512);
+        FlareTrend(m.Trends, t, "GarmentSale", "Garment District", 430);
+        FlareTrend(m.Trends, t, "HarbourLights", null, 388);
         FlareSection(m.List, t("reallife_flare_city_trend_tags", "Trending tags"));
         for (int i = 0; i < m.Trends.Count; i++)
         {
@@ -333,10 +375,7 @@ internal static partial class UiSamples
             r = m.Trends.Rows[i];
             r.Height = 0f;
         }
-        FlareSection(m.List, t("reallife_flare_kit_section_accounts", "Accounts to follow"));
-        FlareAccount(m.List, t, "Jade Rivers", "@jaderivers", "i:3", t("reallife_flare_kit_followers_n", "{count} followers").Replace("{count}", "96K"), true, false);
-        FlareAccount(m.List, t, "Thrifty Threads", "@thriftythreads", "k:Thrifty Threads", t("reallife_flare_kit_kind_business", "Business"), false, false);
-        FlareAccount(m.List, t, "Marco Bell", "@marcobell", "i:5", t("reallife_flare_kit_followers_n", "{count} followers").Replace("{count}", "18.2K"), false, true);
+        m.Trends.Clear();
     }
 
     private static void FlareAccount(FlareList list, UiWords t, string name, string handle, string key, string about, bool verified, bool following)
@@ -361,7 +400,7 @@ internal static partial class UiSamples
             m.HeadLine = t("reallife_flare_kit_all_seen", "All caught up");
             return;
         }
-        m.HeadLine = t("reallife_flare_kit_new", "{count} new").Replace("{count}", "4");
+        m.HeadLine = t("reallife_flare_kit_new", "{count} new").Replace("{count}", FlareNewNotices.ToString(System.Globalization.CultureInfo.InvariantCulture));
         m.Tabs = new[]
         {
             t("reallife_flare_kit_notice_tab_0", "All"), t("reallife_flare_kit_notice_tab_1", "Sales"), t("reallife_flare_kit_notice_tab_2", "Reviews"), t("reallife_flare_kit_notice_tab_3", "Mentions"),
@@ -381,8 +420,6 @@ internal static partial class UiSamples
         FlareNotice(m.List, UiIcon.Megaphone, UiRole.Text2, true, FlareAge(55, 'm'), t("reallife_flare_kit_notice_rival", "{business} is running a promoted post in {district}, {count} people reached")
             .Replace("{business}", "Burger Barn").Replace("{district}", "Midtown").Replace("{count}", "9,000"), null);
         string thanks = t("reallife_flare_biz_post_2", "Thank you to everyone who came to {name} this week.").Replace("{name}", FlareShop);
-        FlareNotice(m.List, UiIcon.Coin, UiRole.Gold, true, FlareAge(12, 'm'),
-            t("reallife_flare_kit_notice_offer", "{name} offers {money} a post for {posts} posts").Replace("{name}", "Glow Cosmetics").Replace("{money}", "$450").Replace("{posts}", "3"), null);
         FlareNotice(m.List, UiIcon.Megaphone, UiRole.Chart2, true, FlareAge(40, 'm'),
             t("reallife_flare_kit_notice_campaign", "{name} posted for {business}: {visitors} visitors, {money}").Replace("{name}", "Jade Rivers").Replace("{business}", FlareShop)
                 .Replace("{visitors}", "38").Replace("{money}", "$912"), null);
@@ -395,7 +432,6 @@ internal static partial class UiSamples
         FlareNotice(m.List, UiIcon.People, UiRole.AccentText, true, FlareAge(2, 'h'), t("reallife_flare_kit_notice_follow", "{count} new followers").Replace("{count}", "23"), null);
         FlareNotice(m.List, UiIcon.Message, UiRole.AccentText, false, FlareAge(3, 'h'), t("reallife_flare_notice_reply", "{name} replied to your post").Replace("{name}", "Mom"),
             t("reallife_flare_cit_reply_kind_1", "Hope you are doing all right."));
-        FlareNotice(m.List, UiIcon.Star, UiRole.Gold, false, FlareAge(5, 'h'), t("reallife_flare_notice_review", "{name} reviewed your business").Replace("{name}", "Ana Ruiz"), null);
         FlareNotice(m.List, UiIcon.ChartLineUp, UiRole.OkText, false, FlareAge(1, 'd'),
             t("reallife_flare_kit_notice_promo", "Your post about {business} brought {visitors} visitors, {money}").Replace("{business}", FlareShop).Replace("{visitors}", "46")
                 .Replace("{money}", "$1,180"), null);
@@ -430,7 +466,10 @@ internal static partial class UiSamples
     {
         m.Page = FlareFace.Messages;
         m.Head = t("reallife_flare_nav_messages", "Messages");
-        m.HeadLine = t("reallife_flare_kit_unread", "{count} unread").Replace("{count}", "2");
+        int unread = FlareUnreadMessages - (open == null ? 0 : 1);   // the conversation open is read: the badge and the head count the others
+        m.Badges[FlareFace.Messages] = unread;
+        m.HeadLine = unread > 0 ? t("reallife_flare_kit_unread", "{count} unread").Replace("{count}", unread.ToString(System.Globalization.CultureInfo.InvariantCulture))
+            : t("reallife_flare_kit_all_read", "All read");
         m.Search = string.Empty;
         m.InboxHint = t("reallife_flare_kit_inbox_hint", "Search messages");
         m.List.EmptyIcon = UiIcon.Message;
@@ -446,7 +485,7 @@ internal static partial class UiSamples
         FlareThreadRow(m.List, "Glow Cosmetics", "d:7", FlareAge(1, 'h'), offer, 1, open == "offer");
         FlareThreadRow(m.List, "Jade Rivers", "i:3", FlareAge(3, 'h'),
             t("reallife_flare_dm_campaign_post", "My post for {business} is up. It brought {visitors} people in, about {money} spent.").Replace("{business}", FlareShop)
-                .Replace("{visitors}", "38").Replace("{money}", "$912"), 0, false);
+                .Replace("{visitors}", "38").Replace("{money}", "$912"), 1, false);
         FlareThreadRow(m.List, "Speedy Bites", "k:Speedy Bites", FlareAge(1, 'd'), you + t("reallife_flare_kit_rival_calm",
             "We wish every business on the street well. Come in and judge us for yourself, the door is open."), 0, false);
         FlareThreadRow(m.List, "Alex", "f1", FlareAge(2, 'd'), t("reallife_flare_dm_fan", "Your post was everywhere today. I had to say hello."), 0, false);
@@ -471,7 +510,7 @@ internal static partial class UiSamples
         m.DetailLine = t("reallife_flare_kit_kind_resident", "Resident");
         m.DetailLink = t("reallife_flare_kit_view_profile", "Profile");
         FlareBubble(m.Detail, t("reallife_flare_dm_praise", "Just wanted to say {business} was lovely. I will be back soon.").Replace("{business}", FlareShop), FlareAge(6, 'd'), false);
-        FlareBubble(m.Detail, t("reallife_flare_kit_quick_res_0", "Thank you, that means a lot."), FlareAge(6, 'd'), true);
+        FlareBubble(m.Detail, t("reallife_flare_kit_quick_chat_1", "Good to hear from you."), FlareAge(6, 'd'), true);
         FlareBubble(m.Detail, complaint, FlareAge(18, 'm'), false);
         m.Quick = new[]
         {
@@ -507,6 +546,16 @@ internal static partial class UiSamples
     {
         m.Page = FlareFace.Profile;
         FlareProfileModel h = m.Profile;
+        FlareSideWithout(m, null, me ? null : "Jade Rivers");
+        if (me)
+        {
+            // the profile's own head says the followers: the week beside it leaves them out, with their line
+            m.WeekLabels = new[] { m.WeekLabels[1], m.WeekLabels[2] };
+            m.WeekFigures = new[] { m.WeekFigures[1], m.WeekFigures[2] };
+            m.WeekDeltas = new[] { m.WeekDeltas[1], m.WeekDeltas[2] };
+            m.WeekTones = new[] { m.WeekTones[1], m.WeekTones[2] };
+            m.Line = null;
+        }
         m.Tabs = new[] { t("reallife_flare_tab_posts", "Posts"), t("reallife_flare_tab_replies", "Replies"), t("reallife_flare_kit_tab_media", "Media") };
         m.List.EmptyIcon = UiIcon.Message;
         m.List.EmptyTitle = t("reallife_flare_empty_profile", "No posts yet.");
@@ -561,7 +610,7 @@ internal static partial class UiSamples
         m.Head = t("reallife_flare_kit_post_title", "Post");
         m.HeadLine = t("reallife_flare_kit_replies_count", "{count} replies").Replace("{count}", "84");
         ref FlareRow p = ref FlarePost(m.List, "Speedy Bites", "@speedybites", "k:Speedy Bites", FlareAge(2, 'h'),
-            t("reallife_flare_biz_post_0", "Two for one at {name} today only.").Replace("{name}", "Speedy Bites"), "1.2K", "84", "31", "11.9K");
+            t("reallife_flare_biz_post_0", "Two for one at {name} today only.").Replace("{name}", "Speedy Bites"), "1.2K", "84", "31", "10.8K");
         p.Flags |= FlareRowFlags.Verified | FlareRowFlags.Liked;
         p.Tags = new[] { "#BroadwayNights", "#MidtownEats" };
         p.Picture = "sample:p1";
@@ -571,6 +620,31 @@ internal static partial class UiSamples
         ref FlareRow b = ref FlarePost(m.List, "Tom Hart", "@tomhart", "c40", FlareAge(50, 'm'), t("reallife_flare_cit_reply_kind_1", "Hope you are doing all right."), "3", null, null, null);
         b.Flags |= FlareRowFlags.Comment | FlareRowFlags.Liked;
         FlareSection(m.List, t("reallife_flare_comments_more", "And {count} more replies.").Replace("{count}", "82"));
+        m.Field = string.Empty;
+        m.FieldHint = t("reallife_flare_reply_placeholder", "Post your reply");
+        m.FieldArg = FlareFace.ReplyField;
+        m.Send = t("reallife_flare_reply_button", "Reply");
+    }
+
+    // The player's own post: what it did in the city under it (FlareScreen.FunnelRow), then the replies.
+    private static void FlareThreadMine(FlareFaceModel m, UiWords t)
+    {
+        m.Page = FlareFace.Thread;
+        m.Head = t("reallife_flare_kit_post_title", "Post");
+        m.HeadLine = t("reallife_flare_kit_replies_count", "{count} replies").Replace("{count}", "2");
+        ref FlareRow p = ref FlarePost(m.List, FlareMe, FlareMyHandle, "me", FlareAge(1, 'd'),
+            t("reallife_flare_biz_post_2", "Thank you to everyone who came to {name} this week.").Replace("{name}", FlareShop), "212", "18", "9", "3.1K");
+        p.Flags |= FlareRowFlags.Mine | FlareRowFlags.Good;
+        p.Picture = "sample:p3";
+        FlareSection(m.List, t("reallife_flare_kit_funnel_title", "What it did"));
+        FlareResult(m.List, UiIcon.ChartLineUp, UiRole.OkText,
+            t("reallife_flare_kit_funnel_good", "Seen by {seen} and {came} came").Replace("{seen}", "9.4K").Replace("{came}", "46"),
+            t("reallife_flare_kit_funnel_more", "{interested} were interested and {followed} followed you").Replace("{interested}", "812").Replace("{followed}", "34"), "+$1,180", 1);
+        FlareSection(m.List, t("reallife_flare_replies_title", "Replies"));
+        ref FlareRow a = ref FlarePost(m.List, "Ana Ruiz", "@anaruiz", "c12", FlareAge(20, 'h'), t("reallife_flare_cit_reply_agree_0", "Same here. Somebody has to say it."), "12", null, null, null);
+        a.Flags |= FlareRowFlags.Comment;
+        ref FlareRow b = ref FlarePost(m.List, "Tom Hart", "@tomhart", "c40", FlareAge(9, 'h'), t("reallife_flare_cit_reply_kind_1", "Hope you are doing all right."), "3", null, null, null);
+        b.Flags |= FlareRowFlags.Comment | FlareRowFlags.Liked;
         m.Field = string.Empty;
         m.FieldHint = t("reallife_flare_reply_placeholder", "Post your reply");
         m.FieldArg = FlareFace.ReplyField;
@@ -705,6 +779,11 @@ internal static partial class UiSamples
         FlareSection(m.List, t("reallife_flare_kit_results_posts", "Your posts"));
         FlareResult(m.List, UiIcon.Megaphone, UiRole.Chart2, t("reallife_flare_kit_result_viral", "Your post about {business} went viral: {visitors} visitors").Replace("{business}", FlareShop)
             .Replace("{visitors}", "46"), t("reallife_flare_kit_result_done", "Done, {time}").Replace("{time}", FlareAge(1, 'd')), "+$1,180", 1);
+        FlareSection(m.List, t("reallife_flare_kit_results_ads", "Your ads"));
+        FlareResult(m.List, UiIcon.Megaphone, UiRole.OkText, t("reallife_flare_kit_result_ad", "Your ad for {business}").Replace("{business}", FlareShop),
+            t("reallife_flare_kit_funnel_good", "Seen by {seen} and {came} came").Replace("{seen}", "5.2K").Replace("{came}", "38"), "+$912", 1);
+        FlareResult(m.List, UiIcon.Megaphone, UiRole.DangerText, t("reallife_flare_kit_result_ad", "Your ad for {business}").Replace("{business}", FlareShop2),
+            t("reallife_flare_kit_funnel_bad", "Seen by {seen} and it put {kept} off").Replace("{seen}", "3.8K").Replace("{kept}", "12"), "-$140", -1);
         FlareSection(m.List, t("reallife_flare_kit_results_campaigns", "Campaigns"));
         FlareResult(m.List, UiIcon.Megaphone, UiRole.Chart2, t("reallife_flare_kit_campaign_running", "{handle} for {business}").Replace("{handle}", "@jaderivers").Replace("{business}", FlareShop),
             t("reallife_flare_kit_campaign_day", "Day {day} of {days}").Replace("{day}", "3").Replace("{days}", "7") + " \u00b7 " + t("reallife_flare_kit_campaign_so_far", "{visitors} visits, {money} so far").Replace("{visitors}", "31").Replace("{money}", "+$760"),
@@ -757,13 +836,12 @@ internal static partial class UiSamples
         FlareHireModel d = m.Hire;
         d.Shown = true;
         d.Name = "Jade Rivers";
-        d.Handle = t("reallife_flare_kit_influencer_line", "{handle}, {niche}, {district}").Replace("{handle}", "@jaderivers").Replace("{niche}", t("reallife_flare_niche_0", "Food")).Replace("{district}", "Murray Hill");
         d.Hue = UiColour.HueOf("i:3");
         d.Ring = UiTokens.Grade(92);
         d.Verified = true;
         d.Row = 0;
-        d.ForecastLabels = new[] { t("reallife_flare_kit_fig_likely", "Likely visitors"), t("reallife_flare_kit_fig_takings", "Likely takings"), t("reallife_flare_kit_fig_price", "A post") };
-        d.ForecastFigures = new[] { "38", "+$2,150", "$2,400" };
+        d.ForecastLabels = new[] { t("reallife_flare_kit_fig_takings", "Likely takings") };
+        d.ForecastFigures = new[] { "+$2,150" };
         d.Hire = t("reallife_flare_kit_hire_pay", "Hire for {money}").Replace("{money}", "$2,400");
         d.Note = t("reallife_flare_kit_hire_card_fits", "Their followers live near your business. {flop} in 100 posts like this fall flat, {viral} in 100 go viral.").Replace("{flop}", "12")
             .Replace("{viral}", "9");

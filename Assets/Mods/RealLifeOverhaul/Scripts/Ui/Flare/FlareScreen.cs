@@ -13,8 +13,8 @@ namespace RealLifeOverhaul.Ui
     public sealed partial class FlareScreen : IUiScreen, IUiTypingSubmit, IUiTypingQuiet, IFlareKitHost
     {
         public const int FeedMost = 100, NoticesMost = FlareDirector.KitNoticesMost, ThreadsMost = 40, BubblesMost = 80, ResultsMost = 30, ReviewsMost = 40,
-            InfluencersMost = 30, CardsMost = 24, StoriesMost = FlareFace.MostStories, WhoMost = 5, ExploreWhoMost = 12, TrendsMost = 5, HistoryMost = 8,
-            NeedsMost = 4;   // the side drops the rows that do not fit
+            InfluencersMost = 30, CardsMost = 24, StoriesMost = FlareFace.MostStories, WhoMost = 8, ExploreWhoMost = 12, TrendsMost = 5, ExploreTrendsMost = 8, HistoryMost = 8,
+            NeedsMost = 4, AdsMost = 4;   // the side drops the rows that do not fit
 
         private readonly FlareDirector _flare;
         private readonly FlareFaceModel _m = new FlareFaceModel();
@@ -117,6 +117,7 @@ namespace RealLifeOverhaul.Ui
                 if (_field == FlareFace.SearchField && _page != FlareFace.Explore)
                 {
                     Show(FlareFace.Explore);   // the side's search: its words show in Explore's field as they are typed
+                    _m.NewPage = false;        // and the field stays the focus, the player is typing in it
                 }
                 return Typing(_field) ?? string.Empty;
             }
@@ -221,7 +222,7 @@ namespace RealLifeOverhaul.Ui
         {
             switch (command)
             {
-                case FlareFace.NavCommand: return arg >= 0 && arg < FlareFace.Pages && Nav(arg);
+                case FlareFace.NavCommand: return arg >= 0 && arg < FlareFace.Pages && NavPressed(arg);
                 case FlareFace.PostCommand:
                 case FlareFace.ComposerCommand: return OpenCompose(-1);
                 case FlareFace.ChipCommand: return OpenCompose(arg);
@@ -363,6 +364,14 @@ namespace RealLifeOverhaul.Ui
             return true;
         }
 
+        // A press on a nav entry: the page opens and focus stays on the entry, as in every sidebar of the kit, so right goes into the page.
+        private bool NavPressed(int page)
+        {
+            Nav(page);
+            _m.FromNav = true;
+            return true;
+        }
+
         // Where the player is now, kept for Back before they go further.
         private void Push()
         {
@@ -376,6 +385,8 @@ namespace RealLifeOverhaul.Ui
         private void Show(int page)
         {
             _page = page;
+            _m.NewPage = true;   // focus starts again on the new page (FlareFace.Lay); a press on the nav says so with FromNav and keeps it on its entry
+            _m.FromNav = false;
             _kit.EndArmed = -1;
             _sheet = FlareFace.NoSheet;
             _m.List.Offset = 0f;

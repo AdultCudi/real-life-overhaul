@@ -133,48 +133,92 @@ internal static partial class Program
         }
         Check(bad == "none" && sheets == "none" && walked > 100, "flare order: from the first target, right alone walks every screen and sheet left to right and top to bottom, never back up a row on a sheet ("
             + walked + " steps; " + bad + "); a sheet's chips, Cancel and then its commit button come last (" + sheets + ")");
-        Check(pages == "none" && pagesWalked > 40, "flare order: on every page right alone walks its column, its side, the nav and then the window's close, never to a target it has been to and never back to an earlier group ("
+        Check(pages == "none" && pagesWalked > 40, "flare order: on every page right on a nav entry goes into the page, right alone walks its column and its side without a target twice, back to an earlier group or into the nav, and the pad reaches every target from the nav ("
             + pagesWalked + " steps over " + pageStates + " pages; " + pages + ")");
-        // A group of chips never leaves one chip alone in its last row (two columns cannot spare one and take one column), and when the last two rows share, the row before keeps two.
+        // A group of chips never leaves one chip alone in its last row. Laid as the sheet draws it, with two to twelve chips of three lengths, the chip targets' own rows are
+        // counted: no row holds one chip while another holds more (a column of options, every row one chip, is the answer when two columns cannot spare one).
         string orphan = "none";
         int grids = 0;
-        for (int n = 2; n <= 12; n++)
+        foreach (string[] names in new[] { new[] { "Midtown", "Garment District", "Murray Hill" }, new[] { "Garment District" }, new[] { "Now", "A moment", "Report" }, new[] { "Power or water", "Street light out" } })
         {
-            foreach (float room in new[] { 260f, 340f, 420f, 552f })
+            for (int n = 2; n <= 12; n++)
             {
+                FlareFaceModel sheet = UiSamples.FlareSample(en, "compose_report");
                 var chips = new string[n];
                 for (int i = 0; i < n; i++)
                 {
-                    chips[i] = i % 3 == 0 ? "Midtown" : i % 3 == 1 ? "Garment District" : "Murray Hill";
+                    chips[i] = names[i % names.Length];
                 }
-                FlareFace.ChipGrid(chips, room, out float chip, out int columns, out bool lone);
-                if (chip <= 0f || columns < 2)
+                sheet.Sheet0.Groups = new[] { "About" };
+                sheet.Sheet0.Chips = new[] { chips };
+                sheet.Sheet0.Chosen = new[] { 0 };
+                FlareFace.Lay(scene, UiFrame.FullMenu(16f / 9f, "Flare"), true, UiDefaultKeys.Keyboard, en, sheet);
+                var rowsAt = new List<float>();
+                var inRow = new List<int>();
+                for (int k = 0; k < scene.NodeCount; k++)
                 {
-                    continue;   // one row of their own widths, or a column of options
+                    if (scene.Nodes[k].Command != FlareFace.SheetChipCommand || scene.Nodes[k].Arg / FlareFace.GroupStride != 0)
+                    {
+                        continue;
+                    }
+                    scene.NodeBox(k, out _, out float cy, out _, out _);
+                    int at = rowsAt.FindIndex(y => Math.Abs(y - cy) < 4f);
+                    if (at < 0)
+                    {
+                        rowsAt.Add(cy);
+                        inRow.Add(1);
+                    }
+                    else
+                    {
+                        inRow[at]++;
+                    }
                 }
                 grids++;
-                int grid = (n + columns - 1) / columns, last = lone ? 2 : n - (grid - 1) * columns, before = lone ? columns - 1 : columns;
-                if (grid > 1 && (last == 1 || before < 2))
+                if (inRow.Count > 1 && inRow.Contains(1) && inRow.Exists(c => c > 1))
                 {
-                    orphan = n + " chips in " + room + " px: " + columns + " columns, last row " + last + ", the row before " + before;
+                    orphan = n + " chips of " + names[0] + " and more drawn in rows of " + string.Join(", ", inRow);
                 }
             }
         }
-        Check(orphan == "none" && grids > 10, "flare order: a group of chips never leaves one chip alone in its last row (" + grids + " grids tried; " + orphan + ")");
+        Check(orphan == "none" && grids > 40, "flare order: a group of chips never leaves one chip alone in its last row, counted from the chips as drawn (" + grids + " sheets laid; " + orphan + ")");
         Check(hire == "none", "flare order: on the hire page the filter chips come before the Hire buttons, which go down the rows (" + hire + ")");
         Check(rail == "none" && rows >= 2, "flare order: the rail's Who to follow holds the same " + rows + " rows in en, pt and zh-cn (" + rail + ")");
     }
 
-    // A page's walk by right alone: it never visits a target twice, never goes back to a group read before (the column, the detail beside it, the side, the nav, the window's close,
-    // in that order; inside a group down the rows) and ends on the window's close. On a page with no side and a single column it reaches every target of the column that is read
-    // after its start. A page with a side hands its rows on to the side at their ends (that is where right goes), so the rows below the first are reached by down.
+    // A page as a player walks it. Right on a nav entry goes into the page, to its first target at the top left, and only the account's right goes to the window's close, so the door
+    // opens both ways. From that first target right alone reads the column, the detail beside it and the side, each group after the one before and each inside down the rows, never
+    // to a target it has been to and never into the nav. And the pad reaches every target of the page from the nav entry the page stands on, by right, down, left and up. On a page
+    // with no side and a single column right alone reaches every target of the column that is read after its start; a page with a side hands its rows on to the side at their ends
+    // (that is where right goes), so the rows below the first are reached by down.
     private static int FlareOrderPage(UiScene scene, int start, int[] walk, string state, ref string bad)
     {
-        int n = FlareFace.WalkRight(scene, start, walk, out bool revisit);
+        int first = -1;
+        for (int i = 0; i < scene.NodeCount; i++)
+        {
+            ref UiNode node = ref scene.Nodes[i];
+            if (node.Layer != 0 || node.Disabled || UiDraw.IsChrome(node.Command) || node.Region == 11 || node.Command == UiDraw.CloseCommand)
+            {
+                continue;
+            }
+            if (first < 0 || FlareOrderRank(scene, i) < FlareOrderRank(scene, first)
+                || (FlareOrderRank(scene, i) == FlareOrderRank(scene, first) && FlareReadsBefore(scene, i, first)))
+            {
+                first = i;
+            }
+        }
+        start = scene.Nodes[start].Region == 11 && first >= 0 ? first : start;   // a page with nothing to press starts on its place in the nav: its reading starts where the nav's right goes
+        bool nothing = first < 0 && scene.Nodes[start].Region == 11;   // a page with nothing to press: there is no reading to walk, only the nav's door to check
+        bool revisit = false;
+        int n = nothing ? 0 : FlareFace.WalkRight(scene, start, walk, out revisit);
         string path = string.Empty;
         if (revisit)
         {
-            path = state + " visits " + walk[n - 1] + " twice";
+            var steps = new List<string>();
+            for (int i = 0; i < n; i++)
+            {
+                steps.Add(scene.Nodes[walk[i]].Command + "/" + scene.Nodes[walk[i]].Arg);
+            }
+            path = state + " visits " + walk[n - 1] + " twice (" + string.Join(" ", steps) + " then " + (n > 0 ? scene.Nodes[UiFocusRules.Next(scene, walk[n - 1], 1, 0)].Command.ToString() : string.Empty) + ")";
         }
         for (int i = 1; i < n && path.Length == 0; i++)
         {
@@ -186,9 +230,62 @@ internal static partial class Program
                 path = state + " goes back at step " + (i + 1) + " (" + scene.Nodes[walk[i - 1]].Command + "/" + scene.Nodes[walk[i - 1]].Arg + " to " + scene.Nodes[walk[i]].Command + "/" + scene.Nodes[walk[i]].Arg + ")";
             }
         }
-        if (path.Length == 0 && (n == 0 || scene.Nodes[walk[n - 1]].Command != UiDraw.CloseCommand))
+        for (int i = 0; i < n && path.Length == 0; i++)
         {
-            path = state + " ends at step " + n + " and not on the close";
+            if (scene.Nodes[walk[i]].Region == 11)
+            {
+                path = state + " walks into the nav at step " + (i + 1) + " (" + scene.Nodes[walk[i]].Command + "/" + scene.Nodes[walk[i]].Arg + ")";
+            }
+        }
+        // the nav's way in: right on every entry lands on the page's first target, the account's on the close
+        int door = -1, close = scene.FindNode(UiDraw.CloseCommand, 0);
+        for (int i = 0; i < scene.NodeCount && path.Length == 0; i++)
+        {
+            ref UiNode node = ref scene.Nodes[i];
+            if (node.Layer != 0 || node.Disabled || node.Region != 11 || UiDraw.IsChrome(node.Command))
+            {
+                continue;
+            }
+            int to = UiFocusRules.Next(scene, i, 1, 0);
+            int want = node.Command == FlareFace.AccountCommand ? close : first;
+            if (want >= 0 && to != want)
+            {
+                path = state + " right on the nav's " + node.Command + "/" + node.Arg + " goes to " + (to >= 0 && to < scene.NodeCount ? scene.Nodes[to].Command + "/" + scene.Nodes[to].Arg : "nothing")
+                    + " and not " + (node.Command == FlareFace.AccountCommand ? "to the close" : "into the page");
+            }
+            if (node.Command == FlareFace.NavCommand && node.Face >= 0 && (scene.Items[node.Face].Flags & UiFlags.Selected) != 0)
+            {
+                door = i;   // the entry the page stands on; Thread, which has none, is entered by the Post button
+            }
+        }
+        door = door >= 0 ? door : scene.FindNode(FlareFace.PostCommand, 0);
+        if (path.Length == 0 && door >= 0)
+        {
+            var order = new int[scene.NodeCount + 1];
+            var from = new int[scene.NodeCount + 1];
+            int met = FlareFace.Reach(scene, door, order, from);
+            var seen = new bool[scene.NodeCount];
+            for (int i = 0; i < met; i++)
+            {
+                seen[order[i]] = true;
+                for (int k = 0; scene.Nodes[order[i]].List >= 0 && k < scene.NodeCount; k++)
+                {
+                    seen[k] |= scene.Nodes[k].List == scene.Nodes[order[i]].List;   // a list's rows are walked down it
+                }
+            }
+            int missed = 0, firstMissed = -1;
+            for (int i = 0; i < scene.NodeCount; i++)
+            {
+                if (!seen[i] && scene.Nodes[i].Layer == 0 && !scene.Nodes[i].Disabled && !UiDraw.IsChrome(scene.Nodes[i].Command))
+                {
+                    missed++;
+                    firstMissed = firstMissed < 0 ? i : firstMissed;
+                }
+            }
+            if (missed > 0)
+            {
+                path = state + " leaves " + missed + " targets out of the walk from the nav (first " + scene.Nodes[firstMissed].Command + "/" + scene.Nodes[firstMissed].Arg + ")";
+            }
         }
         bool side = false, detail = false;
         int column = 0, reached = 0;
@@ -221,6 +318,15 @@ internal static partial class Program
             bad = bad == "none" ? path : bad + "; " + path;
         }
         return n;
+    }
+
+    // Whether a target is read before another: on an earlier row, or on the same row further left.
+    private static bool FlareReadsBefore(UiScene scene, int p, int q)
+    {
+        scene.NodeBox(p, out float px, out float py, out _, out float ph);
+        scene.NodeBox(q, out float qx, out float qy, out _, out float qh);
+        float dy = py + ph / 2f - (qy + qh / 2f);
+        return Math.Abs(dy) > 14f ? dy < 0f : px < qx;
     }
 
     // Where a node stands in a page's reading: the column, the detail beside it, the side, the nav, then the window's close.

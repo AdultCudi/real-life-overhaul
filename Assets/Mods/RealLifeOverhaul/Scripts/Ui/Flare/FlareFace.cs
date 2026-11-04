@@ -115,7 +115,7 @@ namespace RealLifeOverhaul.Ui
     public sealed class FlareHireModel
     {
         public bool Shown;
-        public string Name, Handle;
+        public string Name;
         public float Hue;
         public UiRole Ring;                              // how reliably they deliver (their record), as the ring round their face
         public bool Verified;
@@ -229,6 +229,8 @@ namespace RealLifeOverhaul.Ui
         public string Move = "Move", Select = "Select", Back = "Back";
         public string MarkAll;                           // Notifications: the button that marks them all read; null hides it
         public bool MarkAllOff;
+        public bool NewPage;                             // the page just changed: focus starts again (the next layout takes this)
+        public bool FromNav;                             // ...from a press on the nav, which keeps focus on its entry as every sidebar of the kit does
         public readonly FlareCityModel City = new FlareCityModel();
         public readonly FlareHireModel Hire = new FlareHireModel();
 
@@ -381,23 +383,37 @@ namespace RealLifeOverhaul.Ui
             }
             int firstOfPage = s.NodeCount;
             Page(s, at.InRegion(RegionMain), m, mx, top, mw, h, keys);
-            int lastOfPage = ReadingLinks(s, firstOfPage, s.NodeCount, 0, !side);
-            // Right alone walks the whole screen once, in the order a page is read: its column, then the side, then the nav from its top to the account, and the window's close
-            // last. What the walk has read is never read again, so the way on from each end goes to the next group and not back across the window to a target it has been to.
-            int lastOfSide = side ? ReadingLinks(s, firstOfSide, firstOfPage, 0, false) : -1;
-            int navFirst = NavLinks(s, firstOfNav, firstOfSide, s.FindNode(UiDraw.CloseCommand, 0));
-            int before = lastOfSide >= 0 ? lastOfSide : lastOfPage;
-            if (navFirst >= 0 && before >= 0)
+            int lastOfPage = ReadingLinks(s, firstOfPage, s.NodeCount, 0, !side, out int firstOfPageRead);
+            // The page is read as its column and then its side, each handing on to the next, and the nav is the door in: right on any entry goes to the first target of the page at
+            // its top left, left from that target to the entry the page stands on, and only the account's right goes to the window's close. The nav is never part of the walk
+            // across the page, so a player who pressed a nav entry can always press right to enter the page it opened.
+            int firstOfSideRead = -1, lastOfSide = -1;
+            if (side)
             {
-                s.Nodes[before].Right = navFirst;
-                s.Nodes[navFirst].Left = before;
+                lastOfSide = ReadingLinks(s, firstOfSide, firstOfPage, 0, false, out firstOfSideRead);
+            }
+            int close = s.FindNode(UiDraw.CloseCommand, 0);
+            NavLinks(s, firstOfNav, firstOfSide, close, firstOfPageRead >= 0 ? firstOfPageRead : firstOfSideRead, m.Page, out int chosenEntry);
+            int lastRead = lastOfSide >= 0 ? lastOfSide : lastOfPage;
+            if (close >= 0 && lastRead >= 0)
+            {
+                // The reading ends on the close and not by turning back to the first target, which is what the d-pad's own search finds from the last one.
+                s.Nodes[lastRead].Right = close;
+                s.Nodes[close].Left = lastRead;
             }
             s.FocusFirst = PageStart(s, firstOfPage, m);
+            if (m.NewPage)
+            {
+                // A page of its own opens with focus where a player starts reading it (its chosen tab, else its first target), and a nav press keeps it on its entry, so right goes in.
+                s.FocusReset = true;
+                s.FocusFirst = m.FromNav && chosenEntry >= 0 ? chosenEntry : s.FocusFirst;
+                m.NewPage = m.FromNav = false;
+            }
             if (m.Sheet != NoSheet)
             {
                 int firstOfSheet = s.NodeCount;
                 Sheet(s, m, wx, wy, ww, wh, keys);
-                ReadingLinks(s, firstOfSheet, s.NodeCount, 1, true);
+                ReadingLinks(s, firstOfSheet, s.NodeCount, 1, true, out _);
                 s.FocusFirst = SheetStart(s, m.Sheet);
             }
             s.AddPrompt(UiAction.Move, m.Move);
@@ -416,9 +432,10 @@ namespace RealLifeOverhaul.Ui
         /// Right at the end of a row goes on to the first target of the next row, and left at the start of one back to the last of the one before, so the page or the sheet
         /// is walked left to right and top to bottom, group after group, with one run of presses, the commit button last and a sheet's close after it. On a page with a side
         /// column only where the d-pad would find nothing that way (what lies to the right is still what right reaches); on a sheet or a page without one always.
-        /// A list keeps its own up and down. Only the nodes from <paramref name="from"/> up to <paramref name="to"/> are read; the last one read is returned.
+        /// A list keeps its own up and down. Only the nodes from <paramref name="from"/> up to <paramref name="to"/> are read; the last one read is returned and the
+        /// first one through <paramref name="firstRead"/>.
         /// </summary>
-        public static int ReadingLinks(UiScene s, int from, int to, byte layer, bool always)
+        public static int ReadingLinks(UiScene s, int from, int to, byte layer, bool always, out int firstRead)
         {
             int n = 0, close = -1;
             for (int i = from; i < to; i++)
@@ -447,6 +464,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 _read[b + 1] = key;
             }
+            firstRead = n > 0 ? _read[0] : -1;
             for (int k = 0; k + 1 < n; k++)
             {
                 int a = _read[k], b = _read[k + 1];
@@ -476,34 +494,34 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>
-        /// The nav read as one run: right goes from each entry to the next, down the column through Post to the account, and from the account to the window's close, which the
-        /// kit's own links never reach sideways. Without this the account's right found the nearest card of the page, and the walk went back across the window to targets it had read.
-        /// The price is that right on an entry goes on along the nav and no longer jumps into the page; left from the first entry goes back to the last target of the page or side
-        /// (down and up still move one entry). Returns the nav's first entry, or -1 when it has none.
+        /// The nav as the door into the page. Right on every entry (the pages and Post) goes to <paramref name="entry"/>, the first target of the page at its top left, which is
+        /// what the kit's own sidebars do, and left from that target goes back to the entry the page stands on (<paramref name="chosen"/> gets it, or -1). Only the account's
+        /// right goes to the window's close, which the kit's own links never reach sideways. Up and down are the kit's own: one entry along the column.
         /// </summary>
-        private static int NavLinks(UiScene s, int from, int to, int close)
+        private static void NavLinks(UiScene s, int from, int to, int close, int entry, int page, out int chosen)
         {
-            int first = -1, last = -1;
+            chosen = -1;
             for (int i = from; i < to; i++)
             {
-                if (s.Nodes[i].Disabled || UiDraw.IsChrome(s.Nodes[i].Command))
+                ref UiNode n = ref s.Nodes[i];
+                if (n.Disabled || UiDraw.IsChrome(n.Command))
                 {
                     continue;
                 }
-                if (last >= 0)
+                if (n.Command == AccountCommand)
                 {
-                    s.Nodes[last].Right = i;
-                    s.Nodes[i].Left = last;
+                    n.Right = close >= 0 ? close : n.Right;
                 }
-                first = first < 0 ? i : first;
-                last = i;
+                else if (entry >= 0)
+                {
+                    n.Right = entry;
+                }
+                chosen = n.Command == NavCommand && n.Arg == page ? i : chosen;
             }
-            if (last >= 0 && close >= 0)
+            if (entry >= 0 && chosen >= 0)
             {
-                s.Nodes[last].Right = close;
-                s.Nodes[close].Left = last;
+                s.Nodes[entry].Left = chosen;
             }
-            return first;
         }
 
         /// <summary>
@@ -526,6 +544,48 @@ namespace RealLifeOverhaul.Ui
                 }
                 into[n++] = at;
                 at = UiFocusRules.Next(s, at, 1, 0);
+            }
+            return n;
+        }
+
+        /// <summary>
+        /// Every target the d-pad reaches from <paramref name="start"/>, as a player would walk it: right first, then down, then left, then up, going on from each target
+        /// to the first one it has not been to. <paramref name="order"/> gets the targets in the order they are met and <paramref name="from"/> the target each was
+        /// pressed from (the start has -1), so the preview draws every step as one real press and the checks count what a page leaves out. Returns how many were met.
+        /// </summary>
+        public static int Reach(UiScene s, int start, int[] order, int[] from)
+        {
+            if (start < 0 || start >= s.NodeCount)
+            {
+                return 0;
+            }
+            var met = new bool[s.NodeCount];
+            var stack = new int[s.NodeCount * 4 + 4];
+            var parent = new int[s.NodeCount * 4 + 4];
+            int top = 0, n = 0;
+            stack[top] = start;
+            parent[top++] = -1;
+            while (top > 0 && n < order.Length)
+            {
+                top--;
+                int at = stack[top], came = parent[top];
+                if (met[at])
+                {
+                    continue;
+                }
+                met[at] = true;
+                order[n] = at;
+                from[n++] = came;
+                // pushed last-first so that right is tried first, then down, left and up
+                for (int d = 3; d >= 0; d--)
+                {
+                    int to = UiFocusRules.Next(s, at, d == 0 ? 1 : d == 2 ? -1 : 0, d == 1 ? 1 : d == 3 ? -1 : 0);
+                    if (to >= 0 && to < s.NodeCount && !met[to] && top < stack.Length)
+                    {
+                        stack[top] = to;
+                        parent[top++] = at;
+                    }
+                }
             }
             return n;
         }

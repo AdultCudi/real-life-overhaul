@@ -30350,7 +30350,6 @@
   "reallife_flare_kit_search_hint": "搜索账号和标签",
   "reallife_flare_kit_empty_search": "没有匹配结果",
   "reallife_flare_kit_empty_search_body": "试试名字、用户名或标签。",
-  "reallife_flare_kit_section_accounts": "推荐关注的账号",
   "reallife_flare_kit_section_tags": "标签",
   "reallife_flare_kit_empty_explore": "暂无热门内容",
   "reallife_flare_kit_new": "{count}条新内容",
@@ -31431,5 +31430,11 @@
   "reallife_flare_kit_banner_newest": "最新图片",
   "reallife_flare_kit_save": "保存",
   "reallife_flare_kit_edit_failed": "无法保存。",
-  "reallife_flare_kit_audience_title": "各街区的受众"
+  "reallife_flare_kit_audience_title": "各街区的受众",
+  "reallife_flare_kit_funnel_title": "帖子效果",
+  "reallife_flare_kit_funnel_good": "{seen}人看到，{came}人到店",
+  "reallife_flare_kit_funnel_bad": "{seen}人看到，劝退{kept}人",
+  "reallife_flare_kit_funnel_more": "{interested}人感兴趣，{followed}人关注了你",
+  "reallife_flare_kit_results_ads": "你的广告",
+  "reallife_flare_kit_result_ad": "你为{business}投放的广告"
 }
