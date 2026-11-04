@@ -55,7 +55,7 @@ namespace RealLifeOverhaul.Ui
             {
                 m.Cards[k].Title = Plain(m.Cards[k].Title);
                 m.Cards[k].Heading = true;   // a card's title is a section's label: a page holds a profile's name,
-                    a figure and small type, no more
+                // a figure and small type, no more
                 for (int i = 0; i < m.Cards[k].Steps.Length; i++)
                 {
                     m.Cards[k].Steps[i].Label = Plain(m.Cards[k].Steps[i].Label);
