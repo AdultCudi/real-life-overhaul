@@ -177,7 +177,8 @@ namespace RealLifeOverhaul.Ui
                     if (it.H + Tolerance < need)
                     {
                         found++;
-                        say?.Invoke(s.Name + ": \"" + Cut(it.Text) + "\" wraps to " + (int)(need / UiTextRules.LineHeight(it.Style) + 0.5f) + " lines in a box of " + (int)it.H + " px (" + it.Style + ", " + (int)it.W + " px wide)");
+                        say?.Invoke(s.Name + ": \"" + Cut(it.Text) + "\" wraps to " + (int)(need / UiTextRules.LineHeight(it.Style) + 0.5f) + " lines in a box of " + (int)it.H
+                            + " px (" + it.Style + ", " + (int)it.W + " px wide)");
                     }
                 }
             }

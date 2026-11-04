@@ -312,7 +312,8 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < best.Count && i < 3; i++)
             {
                 Seeker s = h.SeekerOf(best[i].Seeker);
-                sec.People.Add(new WorkPerson { Name = s.P.Name, Role = StageName(best[i]) + ", " + w.F("reallife_work_craft_n", "craft {n}", "n", s.CvMain.ToString(Inv)), Right = TechText.Rate(s.Ask), Ring = UiRole.Ok });
+                sec.People.Add(new WorkPerson { Name = s.P.Name, Role = StageName(best[i]) + ", " + w.F("reallife_work_craft_n", "craft {n}", "n",
+                    s.CvMain.ToString(Inv)), Right = TechText.Rate(s.Ask), Ring = UiRole.Ok });
             }
             if (sec.People.Count > 0)
             {
@@ -329,7 +330,8 @@ namespace RealLifeOverhaul.Ui
                 RivalAd ra = h.RivalAds[i];
                 if (ra.Family == family && ra.To > day)
                 {
-                    sec.People.Add(new WorkPerson { Name = ra.Rival, Role = TechText.Level(ra.Level) + ", " + w.F("reallife_work_closes_on", "Closes {day}", "day", TechText.Day(ra.To)), Right = TechText.Bp(ra.PayBp),
+                    sec.People.Add(new WorkPerson { Name = ra.Rival, Role = TechText.Level(ra.Level) + ", " + w.F("reallife_work_closes_on", "Closes {day}", "day",
+                        TechText.Day(ra.To)), Right = TechText.Bp(ra.PayBp),
                         Ring = UiRole.Warn });
                 }
             }
@@ -403,7 +405,8 @@ namespace RealLifeOverhaul.Ui
                 top.Sort((a, b) => b.CvMain.CompareTo(a.CvMain));
                 for (int i = 0; i < top.Count && i < 3; i++)
                 {
-                    looking.People.Add(new WorkPerson { Name = top[i].P.Name, Role = TechText.Role(top[i].P.Role) + ", " + TechText.Level(top[i].P.Level), Right = TechText.Rate(top[i].Ask), Ring = UiRole.Ok });
+                    looking.People.Add(new WorkPerson { Name = top[i].P.Name, Role = TechText.Role(top[i].P.Role) + ", " + TechText.Level(top[i].P.Level),
+                        Right = TechText.Rate(top[i].Ask), Ring = UiRole.Ok });
                 }
                 if (looking.People.Count > 0)
                 {

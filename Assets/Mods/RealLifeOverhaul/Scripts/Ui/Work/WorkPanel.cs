@@ -165,7 +165,8 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < n; i++)
             {
                 float cx = x + UiTokens.S4 + (i % 2) * half, cy = y + UiTokens.S3 + (i / 2) * (cell + UiTokens.S1);
-                UiDraw.TextMiddle(s, at, cx, cy, lh, half - UiTokens.S2, UiStyle.SectionHeader, UiRole.Text2, r.Figures[i].Key, UiFlags.Label | UiFlags.Truncate);   // centred in its line: a script with a taller line sits where the Latin one does
+                UiDraw.TextMiddle(s, at, cx, cy, lh, half - UiTokens.S2, UiStyle.SectionHeader, UiRole.Text2, r.Figures[i].Key,
+                    UiFlags.Label | UiFlags.Truncate);   // centred in its line: a script with a taller line sits where the Latin one does
                 UiDraw.TextMiddle(s, at, cx, cy + lh + UiTokens.S1, vh, half - UiTokens.S2, UiStyle.Number, UiRole.Text, r.Figures[i].Value, UiFlags.Truncate);
             }
             return y + total;
@@ -353,8 +354,10 @@ namespace RealLifeOverhaul.Ui
         }
     }
 
-    /// <summary>The command numbers of the work apps' own parts (a block free of the Planner's 1200 to 1213 and every other part's, found by a grep of the command numbers: 1400 to 1419; the kit's are not unique across parts, so
-    /// every handler tests the page it belongs to first).</summary>
+    /// <summary>
+    /// The command numbers of the work apps' own parts (a block free of the Planner's 1200 to 1213 and every other part's, found by a grep of the
+    /// command numbers: 1400 to 1419; the kit's are not unique across parts, so every handler tests the page it belongs to first).
+    /// </summary>
     public static class WorkCmd
     {
         public const int Less = 1401, Type = 1402, More = 1403, Search = 1405, Card = 1406, PageTab = 1407, Aside = 1408, Sort = 1409,

@@ -111,7 +111,8 @@ namespace RealLifeOverhaul.Ui
         /// The family page's record: the children at university (their degree, its days and what the player paid), the tutoring given and the student loan.
         /// A band is left out when there is nothing to say in it.
         /// </summary>
-        public static void FamilyRecord(UtilitiesWords w, WorkFormModel form, UiIcon[] icons, string[] degrees, string[] hints, string[] paid, string taught, string owed, string borrowed, string repaid)
+        public static void FamilyRecord(UtilitiesWords w, WorkFormModel form, UiIcon[] icons, string[] degrees, string[] hints, string[] paid, string taught,
+            string owed, string borrowed, string repaid)
         {
             WorkBands.AddIfAny(form.Left, WorkBands.Tiles(w.T("reallife_work_band_at_university", "At university"), icons, degrees, hints, paid));
             if (!string.IsNullOrEmpty(taught))

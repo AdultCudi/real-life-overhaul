@@ -141,7 +141,8 @@ namespace RealLifeOverhaul.Ui
                 Title = d.JobTitle(j), Employer = CareersText.Employer(j.Post.Employer), Pay = W.F("reallife_career_row_rate", "{rate} an hour",
                     "rate", CareersText.Rate(Prices.At(j.Pay))),
                 Hours = CareersText.Week(p), Months = Math.Max(0, (day - j.Hired) / 30).ToString(Inv) + " " + W.T("reallife_work_months", "months"),
-                NextTitle = W.T("reallife_work_next_shift", "Next shift"), NextLine = CareersText.Week(p), Desk = d.DeskToday(j) ?? W.F("reallife_work_desk_short", "Your desk is at {employer}.", "employer", CareersText.Employer(j.Post.Employer)),
+                NextTitle = W.T("reallife_work_next_shift", "Next shift"), NextLine = CareersText.Week(p), Desk = d.DeskToday(j) ?? W.F("reallife_work_desk_short",
+                    "Your desk is at {employer}.", "employer", CareersText.Employer(j.Post.Employer)),
                 Leaving = j.NoticeEnd > 0,
                 ShiftTicks = new[] { (p.Hour % 24).ToString("00", Inv) + ":00", ((p.Hour + p.Hours / 2) % 24).ToString("00", Inv) + ":00", ((p.Hour + p.Hours) % 24).ToString("00", Inv) + ":00" },
                 Progress = j.Due > 0 ? Math.Min(100, j.Worked * 100 / Math.Max(1, j.Due)) : -1
@@ -467,7 +468,8 @@ namespace RealLifeOverhaul.Ui
                 steps.Checks.Add(new WorkNeed { Words = words.T("reallife_work_step_interview", "Interview"), Met = interviewed, Pending = true,
                     Have = a.At == ApplyStep.Interview ? CareersText.Day(a.InterviewDay) : null });
                 bool offered = a.Stage >= (int)ApplyStep.Offered;
-                steps.Checks.Add(new WorkNeed { Words = words.T("reallife_work_step_offer", "Offer"), Met = offered, Pending = true, Have = a.At == ApplyStep.Offered ? CareersText.Rate(Prices.At(a.Offer)) : null });
+                steps.Checks.Add(new WorkNeed { Words = words.T("reallife_work_step_offer", "Offer"), Met = offered, Pending = true,
+                    Have = a.At == ApplyStep.Offered ? CareersText.Rate(Prices.At(a.Offer)) : null });
                 steps.Checks.Add(new WorkNeed { Words = words.T("reallife_work_step_start_desk", "Start at your desk"), Met = a.At == ApplyStep.Accepted, Pending = true });
                 r.Sections.Add(steps);
                 switch (a.At)

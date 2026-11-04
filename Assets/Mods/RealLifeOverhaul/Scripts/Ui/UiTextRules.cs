@@ -93,7 +93,9 @@ namespace RealLifeOverhaul.Ui
             {
                 if ((text[k] >= '⺀' && text[k] <= '鿿') || (text[k] >= '＀' && text[k] <= '￯'))
                 {
-                    width -= t.Size;   // TextMeshPro breaks Chinese and Japanese (not Korean, which has spaces) a character early where punctuation may not start a line: a line of them keeps an em in hand, so no text is laid in fewer lines than it is drawn in
+                    // TextMeshPro breaks Chinese and Japanese (not Korean, which has spaces) a character early where punctuation may not start a line:
+                    // a line of them keeps an em in hand, so no text is laid in fewer lines than it is drawn in
+                    width -= t.Size;
                     break;
                 }
             }
