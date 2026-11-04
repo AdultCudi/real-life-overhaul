@@ -31206,5 +31206,6 @@
   "reallife_ui_ob_pay_note": "您的薪酬来自银行的资本，且只有在银行有余力时才会发放。",
   "reallife_ui_ob_div_note": "分红从银行最低要求之上的资本中支付给您，且只有在银行有余力时才会发放。",
   "reallife_ui_ob_costs_day": "每日成本",
-  "reallife_ui_ob_f_week": "本周接待"
+  "reallife_ui_ob_f_week": "本周接待",
+  "reallife_ui_bank_col_score": "评分"
 }

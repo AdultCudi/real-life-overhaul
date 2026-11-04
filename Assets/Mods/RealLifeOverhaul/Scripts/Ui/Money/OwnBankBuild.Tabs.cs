@@ -234,12 +234,12 @@ namespace RealLifeOverhaul.Ui
                 OwnBranchFact b = f.Branches[i];
                 ids[i] = "r|" + b.Id;
                 selected = m.View.Row == ids[i] ? i : selected;
-                rows.Add(BankParts.Row(new[] { b.Name, Whole(b.Visitors), Whole(b.Served), Whole(b.Lost), C(w, b.CostDay) },
-                    BankParts.Tones(5, 3, b.Lost * 2 > b.Visitors && b.Lost > 0 ? UiRole.WarnText : UiRole.None)));
+                rows.Add(BankParts.Row(new[] { b.Name, Whole(b.Visitors), Whole(b.Served), C(w, b.CostDay) },
+                    BankParts.Tones(4, 2, b.Lost * 2 > b.Visitors && b.Lost > 0 ? UiRole.WarnText : UiRole.None)));
             }
             m.Table = BankParts.Table(new[] { w.T("reallife_branch_col_branch", "Branch"), w.T("reallife_branch_col_visitors", "Customers"), w.T("reallife_branch_col_served", "Seen to"),
-                w.T("reallife_branch_col_lost", "Left unseen"), w.T("reallife_ui_ob_costs_day", "Costs a day") },
-                new[] { UiCellKind.Text, UiCellKind.Figure, UiCellKind.Figure, UiCellKind.Figure, UiCellKind.Figure },
+                w.T("reallife_ui_ob_costs_day", "Costs a day") },
+                new[] { UiCellKind.Text, UiCellKind.Figure, UiCellKind.Figure, UiCellKind.Figure },
                 rows, selected, w.T("reallife_branch_empty", "No branches yet."), w.T("reallife_branch_box_none", "Open a branch: rent a shop unit, start a business there and pick Bank Branch. Hire tellers with customer service as their main skill and give each a till."), UiIcon.Building);
             m.RowIds = ids;
             m.Figures = new[]

@@ -31206,5 +31206,6 @@
   "reallife_ui_ob_pay_note": "Seu pagamento sai do capital do banco, e só enquanto o banco puder dispensar o valor.",
   "reallife_ui_ob_div_note": "Um dividendo é pago a você com o capital que o banco mantém acima do mínimo, e só enquanto puder dispensá-lo.",
   "reallife_ui_ob_costs_day": "Custos por dia",
-  "reallife_ui_ob_f_week": "Atendidos na semana"
+  "reallife_ui_ob_f_week": "Atendidos na semana",
+  "reallife_ui_bank_col_score": "Pontos"
 }

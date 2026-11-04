@@ -324,7 +324,7 @@ internal static partial class Program
         BanksBuild.Fill(mr, refused, BankWords());
         var mg = new MoneyModel { App = MoneyApp.Banks, Tab = BanksBuild.Apply };
         BanksBuild.Fill(mg, UiSamples.BanksFactsOf("apply"), BankWords());
-        Check(mg.Table2.Rows[0].Cells[3] == "Yes" && mr.Table2.Rows[0].Cells[3] == "No" && mr.Table.Rows[0].Cells[5] == "Not offered", "banks face: the answer column and the products follow the rating (a rating under the line is No at every bank)");
+        Check(mg.LineBody[0].EndsWith("Yes") && mr.LineBody[0].EndsWith("No") && mg.LineOn[0] && !mr.LineOn[0] && mr.Table.Rows[0].Cells[5] == "Not offered", "banks face: the answer column and the products follow the rating (a rating under the line is No at every bank)");
 
         // Every control pressed through the host's handler, and what it does read back.
         int pressed = 0, dead = 0, unreasoned = 0;
@@ -477,7 +477,7 @@ internal static partial class Program
     // ------------------------------------------------------------------------------------------------- the real bank, day by day
 
     // The port the checks put where the director is: the same fields the director's methods write, so a press changes the real OwnBank and the page is read again from it.
-    private static bool OwnPort(OwnBank b, MoneyAct act, MoneyView view, int id, int value)
+    private static bool OwnPort(OwnBank b, int level, MoneyAct act, MoneyView view, int id, int value)
     {
         switch (act)
         {
@@ -491,8 +491,8 @@ internal static partial class Program
             case MoneyAct.PayFixed: b.PayFixed = (long)view.F[MoneyView.FPay] * 100L; return true;
             case MoneyAct.DividendEvery: OwnBankRules.SetDividends(b, value, b.DivShare, 100); return true;
             case MoneyAct.DividendShare: OwnBankRules.SetDividends(b, b.DivEvery, value, 100); return true;
-            case MoneyAct.PutIn: { long put = (long)(view.F[MoneyView.FPut] > 0 ? view.F[MoneyView.FPut] : 1000000) * 100L; b.Capital += put; b.Reserves += put; return true; }
-            case MoneyAct.TakeOut: { long taken = (long)(view.F[MoneyView.FPut] > 0 ? view.F[MoneyView.FPut] : 1000000) * 100L; b.Capital -= taken; b.Reserves -= taken; return true; }
+            case MoneyAct.PutIn: OwnBankRules.PutIn(b, (long)(view.F[MoneyView.FPut] > 0 ? view.F[MoneyView.FPut] : 1000000) * 100L); return true;
+            case MoneyAct.TakeOut: return OwnBankRules.TakeOut(b, (long)(view.F[MoneyView.FPut] > 0 ? view.F[MoneyView.FPut] : 1000000) * 100L, level);
             default: return true;
         }
     }
@@ -519,10 +519,6 @@ internal static partial class Program
             OwnBankBuild.Fill(m, f, BankWords());
             pages[dayAt] = TextsOf(LayBankModel(m));
             figures.Add(m.Figures[0].Value + "|" + m.Figures[1].Value + "|" + m.Figures[2].Value);
-            if (m.Figures.Length == 0 || m.Figures[0].Value != UiSamples.UtilitiesMoney(b.Savings / 100f))
-            {
-                Console.WriteLine("        own bank run: figure " + (m.Figures.Length > 0 ? m.Figures[0].Value : "none") + " for savings " + b.Savings + ", ready " + f.Ready + ", state " + f.State + ", lent " + f.Lent + "/" + b.Lent);
-            }
             Check(f.Ready && f.State == 1 && f.Deposits == b.Savings && f.Lent == b.Lent && f.Capital == OwnBankRules.CapitalNow(b) && m.Figures[0].Value == UiSamples.UtilitiesMoney(b.Savings / 100f),
                 "own bank run: day " + dayAt + " the page's deposits, loans and capital are the bank's own books");
         }
@@ -559,7 +555,7 @@ internal static partial class Program
             var fresh = new OwnBankFacts();
             OwnBankReader.Read(fresh, b, c, world, say);
             OwnBankBuild.Fill(m, fresh, BankWords());
-        }, (act, view, id, value) => OwnPort(b, act, view, id, value));
+        }, (act, view, id, value) => OwnPort(b, c.Level, act, view, id, value));
         host = new MoneyHost("own_bank", MoneyApp.OwnBank, UiIcon.PiggyBank, stub);
         host.Model.Tab = OwnBankBuild.SaversTab;
         host.Model.View.Row = "s|0";
@@ -598,6 +594,7 @@ internal static partial class Program
         Check(every && b.DivEvery == BankDividends.Weekly, "own bank run: dividends set to weekly reach the real bank");
         host.Model.View.Row = null;
         long capital = OwnBankRules.CapitalNow(b);
+        LayBank(host);
         host.Focused(MoneyCommands.TypeField, 0);
         host.Submitted("200000");
         LayBank(host);
@@ -621,7 +618,6 @@ internal static partial class Program
         bool played = back != null && RunBank(back, c, dayAt, 30, null, day);
         var fc = new OwnBankFacts();
         OwnBankReader.Read(fc, back, c, world, say);
-        Console.WriteLine("        own bank run: read back " + (back != null) + ", played " + played + ", ready " + fc.Ready + ", running " + (back != null && back.Running));
         Check(played && fc.Ready && fc.Deposits == back.Savings, "own bank run: the bank read back plays on for 30 more days and the page follows it");
     }
 }

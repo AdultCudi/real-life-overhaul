@@ -29,7 +29,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_bank_chk_apps", "reallife_ui_bank_chk_limit", "reallife_ui_bank_chk_overdue", "reallife_ui_bank_chk_rating", "reallife_ui_bank_col_band",
                 "reallife_ui_bank_col_car", "reallife_ui_bank_col_card", "reallife_ui_bank_col_daily", "reallife_ui_bank_col_debt", "reallife_ui_bank_col_drawn",
                 "reallife_ui_bank_col_ends", "reallife_ui_bank_col_fee", "reallife_ui_bank_col_loan", "reallife_ui_bank_col_most", "reallife_ui_bank_col_next",
-                "reallife_ui_bank_col_overdraft", "reallife_ui_bank_col_paid_in", "reallife_ui_bank_col_product", "reallife_ui_bank_col_rating", "reallife_ui_bank_col_what",
+                "reallife_ui_bank_col_overdraft", "reallife_ui_bank_col_paid_in", "reallife_ui_bank_col_product", "reallife_ui_bank_col_score", "reallife_ui_bank_col_what",
                 "reallife_ui_bank_customer", "reallife_ui_bank_debts", "reallife_ui_bank_elsewhere", "reallife_ui_bank_f_most", "reallife_ui_bank_f_owed",
                 "reallife_ui_bank_f_rate", "reallife_ui_bank_f_rating", "reallife_ui_bank_f_since", "reallife_ui_bank_free", "reallife_ui_bank_house",
                 "reallife_ui_bank_loans_at", "reallife_ui_bank_loans_empty_body", "reallife_ui_bank_moves_body", "reallife_ui_bank_moves_group", "reallife_ui_bank_new",

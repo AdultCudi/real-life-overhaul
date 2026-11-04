@@ -31206,5 +31206,6 @@
   "reallife_ui_ob_pay_note": "Your pay comes out of the bank's capital, and only while the bank can spare it.",
   "reallife_ui_ob_div_note": "A dividend is paid to you out of the capital the bank keeps over its least, and only while it can spare it.",
   "reallife_ui_ob_costs_day": "Costs a day",
-  "reallife_ui_ob_f_week": "Seen this week"
+  "reallife_ui_ob_f_week": "Seen this week",
+  "reallife_ui_bank_col_score": "Score"
 }

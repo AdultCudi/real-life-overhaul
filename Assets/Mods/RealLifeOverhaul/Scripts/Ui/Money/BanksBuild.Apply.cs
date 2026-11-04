@@ -97,23 +97,19 @@ namespace RealLifeOverhaul.Ui
                 w.F("reallife_bank_row_refused_all", "Nothing on offer. {bank} lends from a rating of {threshold}.", "bank", bank.Name, "threshold", f.Threshold.ToString(System.Globalization.CultureInfo.InvariantCulture)),
                 w.T("reallife_ui_bank_apply_empty", "Nothing is on offer."), UiIcon.Plus);
             m.RowIds = ids.ToArray();
-            // The same application at each bank: the rate and the answer.
-            var other = new List<UiDataRow>(4);
-            var otherIds = new string[f.Banks.Length];
+            // The same application at each bank: the rate and the answer, as lines over the table (not a second table: its rows would be a second list for the keys to reach).
+            m.Note = w.T("reallife_money_other_banks", "The same application at the other banks.");
+            m.Lines = new string[f.Banks.Length];
+            m.LineBody = new string[f.Banks.Length];
+            m.LineOn = new bool[f.Banks.Length];
             for (int i = 0; i < f.Banks.Length; i++)
             {
                 BankFact b = f.Banks[i];
-                otherIds[i] = "bank:" + i.ToString(System.Globalization.CultureInfo.InvariantCulture);
-                other.Add(BankParts.Row(new[]
-                {
-                    b.Name, b.Lends ? w.F("reallife_fin_rate_year", "{rate}% a year", "rate", b.Rate.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)) : string.Empty,
-                    b.Lends ? w.Money(b.Most) : string.Empty, b.Answer ? w.T("reallife_ui_bank_yes", "Yes") : w.T("reallife_ui_bank_no", "No")
-                }, BankParts.Tones(4, 3, b.Answer ? UiRole.Ok : UiRole.Danger)));
+                m.Lines[i] = b.Name;
+                m.LineOn[i] = b.Answer;
+                m.LineBody[i] = (b.Lends ? w.F("reallife_fin_rate_year", "{rate}% a year", "rate", b.Rate.ToString("0.#", System.Globalization.CultureInfo.InvariantCulture)) + ", " + w.Money(b.Most) + ": " : string.Empty)
+                    + (b.Answer ? w.T("reallife_ui_bank_yes", "Yes") : w.T("reallife_ui_bank_no", "No"));
             }
-            m.Table2 = BankParts.Table(new[] { w.T("reallife_money_other_banks", "The same application at the other banks."), w.T("reallife_fin_col_rate", "Rate"), w.T("reallife_ui_bank_col_most", "Most"),
-                w.T("reallife_ui_bank_answer", "The bank's answer") }, new[] { UiCellKind.Text, UiCellKind.Figure, UiCellKind.Figure, UiCellKind.Chip }, other,
-                f.Bank, w.T("reallife_ui_bank_none_title", "No banks in the city"), string.Empty, UiIcon.Bank);
-            m.RowIds2 = otherIds;
             if (selected < 0)
             {
                 m.View.Row = null;
@@ -284,7 +280,7 @@ namespace RealLifeOverhaul.Ui
                     : new[] { b.Score, b.Kind, b.Loan, b.Rate, b.Card, b.Overdraft, b.Car }, BankParts.Tones(7, 2, b.Refused ? UiRole.DangerText : b.Yours ? UiRole.OkText : UiRole.None)));
             }
             m.Table2Title = w.F("reallife_ui_bank_bands", "What {bank} gives at each rating", "bank", bank.Name);
-            m.Table2 = BankParts.Table(new[] { w.T("reallife_ui_bank_col_rating", "Rating"), w.T("reallife_ui_bank_col_band", "Band"), w.T("reallife_ui_bank_col_loan", "Loan up to"),
+            m.Table2 = BankParts.Table(new[] { w.T("reallife_ui_bank_col_score", "Score"), w.T("reallife_ui_bank_col_band", "Band"), w.T("reallife_ui_bank_col_loan", "Loan up to"),
                 w.T("reallife_fin_col_rate", "Rate"), w.T("reallife_ui_bank_col_card", "Card"), w.T("reallife_ui_bank_col_overdraft", "Overdraft"), w.T("reallife_ui_bank_col_car", "Car finance") },
                 null, rows, -1, w.T("reallife_ui_bank_none_title", "No banks in the city"), string.Empty, UiIcon.Star);
             m.RowIds2 = new string[rows.Count];

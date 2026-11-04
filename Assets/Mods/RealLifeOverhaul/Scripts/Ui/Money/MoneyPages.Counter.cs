@@ -117,18 +117,18 @@ namespace RealLifeOverhaul.Ui
             {
                 // The second table takes what its rows need (a few), the first the rest, so neither hides a row the keys must reach.
                 float need2 = m.Table2.Rows.Length * UiTokens.TableRow + UiTokens.S16 * 3f + (string.IsNullOrEmpty(m.Table2Title) ? 0f : UiTokens.Control) + UiTokens.S3;
-                float h1 = UiDraw.SnapDown(Math.Max(UiTokens.S16 * 4f, Math.Min(h * 0.6f, h - need2)));
+                float h1 = UiDraw.SnapDown(Math.Max(UiTokens.S16 * 4f, Math.Min(m.Table.Rows.Length * UiTokens.TableRow + UiTokens.S16 * 2f, h - need2)));
                 m.TableList = UiDataTable.Lay(s, at.InRegion(1), m.Table, x, y, w, h1, keys);
                 m.TableClip = ClipOf(s, m.TableList);
                 float y2 = y + h1 + UiTokens.S3;
                 if (!string.IsNullOrEmpty(m.Table2Title))
                 {
-                    UiDraw.TextMiddle(s, at, x, y2, UiTokens.Control, w, UiStyle.SectionHeader, UiRole.Text, m.Table2Title, UiFlags.Label | UiFlags.Truncate);
+                    UiDraw.TextMiddle(s, at, x, y2, UiTokens.Control, w, UiStyle.BodyStrong, UiRole.Text2, m.Table2Title, UiFlags.Truncate);
                     y2 += UiTokens.Control;
                 }
                 if (bottom - y2 > UiTokens.S16)
                 {
-                    m.Table2List = UiDataTable.Lay(s, at.InRegion(3), m.Table2, x, y2, w, bottom - y2, keys, Table2Base);
+                    m.Table2List = UiDataTable.Lay(s, at.InRegion(1), m.Table2, x, y2, w, bottom - y2, keys, Table2Base);
                     m.Table2Clip = ClipOf(s, m.Table2List);
                 }
                 return;
@@ -143,11 +143,11 @@ namespace RealLifeOverhaul.Ui
             {
                 if (!string.IsNullOrEmpty(m.Table2Title))
                 {
-                    UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, w, UiStyle.SectionHeader, UiRole.Text, m.Table2Title, UiFlags.Label | UiFlags.Truncate);
+                    UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, w, UiStyle.BodyStrong, UiRole.Text2, m.Table2Title, UiFlags.Truncate);
                     y += UiTokens.Control;
                     h -= UiTokens.Control;
                 }
-                m.Table2List = UiDataTable.Lay(s, at.InRegion(3), m.Table2, x, y, w, h, keys, Table2Base);
+                m.Table2List = UiDataTable.Lay(s, at.InRegion(1), m.Table2, x, y, w, h, keys, Table2Base);
                 m.Table2Clip = ClipOf(s, m.Table2List);
             }
         }
