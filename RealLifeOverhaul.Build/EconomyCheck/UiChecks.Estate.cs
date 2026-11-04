@@ -63,6 +63,8 @@ internal static partial class Program
         private static readonly string[] EstateTabs = { "roll", "tenants", "works", "market", "agency", "hotel", "hire" };
         private static readonly string[] DealerTabs = { "lots", "stock", "market", "offers", "finance", "growth", "reports" };
         public int Calls;
+        public int Fired = -1, FiredCount;   // the run that last fired (its index) and how many fired: a recording source
+        public EstateModel Last;
 
         public EstateStub(bool dealer, string state)
         {
@@ -91,6 +93,20 @@ internal static partial class Program
             {
                 m.Tab = v.Tab;
             }
+            // Every run records which one it is: a press that reaches another run than the one the target was drawn for is seen.
+            var recording = new Func<bool>[m.Runs != null ? m.Runs.Length : 0];
+            for (int i = 0; i < recording.Length; i++)
+            {
+                int k = i;
+                recording[i] = () =>
+                {
+                    Fired = k;
+                    FiredCount++;
+                    return true;
+                };
+            }
+            m.Runs = recording;
+            Last = m;
         }
 
         private static string Words(string key, string english) => english;
@@ -163,8 +179,8 @@ internal static partial class Program
         }
 
         // Every action of every state does something: a target the screen draws enabled is answered, and one it cannot answer is drawn disabled.
-        int pressed = 0, silent = 0;
-        string quiet = "none";
+        int pressed = 0, silent = 0, wrong = 0;
+        string quiet = "none", crossed = "none";
         var known = new List<int>(EstateCommandsAll);
         foreach (bool dealer in new[] { false, true })
         {
@@ -183,7 +199,7 @@ internal static partial class Program
                 }
                 foreach (int[] target in targets)
                 {
-                    EstateScreen screen = NewEstate(dealer, state, out _);
+                    EstateScreen screen = NewEstate(dealer, state, out EstateStub recorder);
                     LayEstate(screen);
                     bool did = screen.Press(target[0], target[1]);
                     pressed++;
@@ -192,10 +208,56 @@ internal static partial class Program
                         silent++;
                         quiet = (dealer ? "dealer " : "estate ") + state + " " + target[0] + "/" + target[1];
                     }
+                    // The run reached is the run drawn for: a button, a link, a switch or a step's minus runs its own index, a plus the next one,
+                    // the catalogue's detail action the run its list names, and a row, a card or a back press runs none.
+                    int want = -1;
+                    bool runs = true;
+                    if (target[0] == EstateFace.ActionCommand || target[0] == EstateFace.StepLess)
+                    {
+                        want = target[1];
+                    }
+                    else if (target[0] == EstateFace.StepMore)
+                    {
+                        want = target[1] + 1;
+                    }
+                    else if (target[0] == UiCatalogue.First + UiCatalogue.Action && recorder.Last != null && target[1] >= 0 && target[1] < recorder.Last.CatalogueRuns.Length)
+                    {
+                        want = recorder.Last.CatalogueRuns[target[1]];
+                    }
+                    else
+                    {
+                        runs = false;
+                    }
+                    bool right = runs ? recorder.Fired == want && recorder.FiredCount == 1 : recorder.FiredCount == 0;
+                    if (!right)
+                    {
+                        wrong++;
+                        crossed = (dealer ? "dealer " : "estate ") + state + " " + target[0] + "/" + target[1] + " fired " + recorder.Fired + " x" + recorder.FiredCount + " not " + want;
+                    }
                 }
             }
         }
         Check(pressed > 150 && silent == 0, "estate: every action of every state of both apps does something (" + pressed + " pressed, " + silent + " silent: " + quiet + ")");
+        Check(wrong == 0, "estate: every target reaches the run it was drawn for, and a row, card or back press runs none (" + wrong + " crossed: " + crossed + ")");
+
+        // The numbers: the screen's own block holds each kind apart, the kit's pieces keep theirs, and the info view's button number is the window's section number.
+        var own = new[] { EstateFace.ActionCommand, EstateFace.StepLess, EstateFace.StepMore, EstateFace.BackCommand, EstateFace.SearchCommand };
+        bool distinct = new HashSet<int>(own).Count == own.Length;
+        foreach (int c in own)
+        {
+            distinct &= c >= 3000 && c <= 3019 && (c < UiDataTable.First || c > UiDataTable.First + UiDataTable.MassAnswer) && c != UiCatalogue.First && c != UiCatalogue.First + UiCatalogue.Action && c != UiAppWindow.NavCommand;
+        }
+        Check(distinct, "estate: each kind of the screen's own action has its own number in 3000 to 3019, none the kit's or the window's");
+        var rents = NewEstate(false, "rents", out EstateStub rentsStub);
+        UiScene rentScene = LayEstate(rents);
+        int sectionNodes = 0, viewNodes = 0;
+        for (int i = 0; i < rentScene.NodeCount; i++)
+        {
+            sectionNodes += rentScene.Nodes[i].Command == UiAppWindow.NavCommand && rentScene.Nodes[i].Layer == 0 ? 1 : 0;
+            viewNodes += rentScene.Nodes[i].Command == UiInfoView.ViewCommand ? 1 : 0;
+        }
+        rents.Press(UiInfoView.ViewCommand, 1);
+        Check(rents.Press(UiAppWindow.NavCommand, 1) == false && rentsStub.FiredCount == 0, "estate: on the rents view the number 1 is the view's own and never a change of the window's section (" + viewNodes + " view buttons)");
 
         // Esc and the close button: a sub page steps back to its tab, a tab's own page lets the window close.
         int stuck = 0;

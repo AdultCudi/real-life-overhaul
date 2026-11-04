@@ -96,7 +96,9 @@ namespace RealLifeOverhaul.Ui
         {
             if (command == UiAppWindow.NavCommand)
             {
-                if (arg < 0 || arg >= _m.Nav.Length)
+                // The info view's own buttons share the number 1 with the window's sections, and the rents view stands without the window:
+                // a press there is the view's, never a change of section.
+                if (_m.Shape == EstateShape.Rents || arg < 0 || arg >= _m.Nav.Length)
                 {
                     return false;
                 }
