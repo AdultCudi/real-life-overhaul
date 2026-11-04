@@ -245,7 +245,7 @@ The option "Buildings and water on the minimap" (on by default; off, the minimap
 
 ## The city map and the minimap in 2.5D (`Scripts/Ui/Map`, `NavScene`, `NavMap25`, `NavHud.Scene`)
 
-The owner's call (3 Nov 2026): the maps look flat seen from straight above, and chunky buildings rise when the view is tilted or turned. Two options, both on by default: "City map shows buildings as 2.5D blocks" (`nav_map25`) and "Minimap shows buildings as 2.5D blocks" (`nav_minimap25`). Off, the game's own city map and the flat minimap are as they were. Display only: nothing is saved or sent.
+The owner's call (3 Nov 2026): the maps look flat seen from straight above, and chunky buildings rise when the view is tilted or turned. Two options, both on by default: "City map shows buildings as 2.5D blocks" (`nav_map25`) and "Minimap shows buildings as 2.5D blocks" (`nav_minimap25`). Off, the game's own city map and the flat minimap are as they were. Display only: nothing is saved or sent. On the options page `nav_minimap25` is a row of "Minimap and GPS" and `nav_map25` heads a new section "City map", where the map's place filters (`map_places_shown`) and the special names (`special_names`) moved to, because "Minimap and GPS" had come to the ten rows a section may have.
 
 ```
 Ui/Map/  (game-free except Map25Scene, which uses only the engine, so the preview draws with it too)

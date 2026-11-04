@@ -31371,5 +31371,8 @@
   "reallife_ui_bizops_legend_cleaning": "Estações de limpeza aceitam qualquer hora",
   "reallife_ui_bizops_legend_blocked": "Não pode receber a pessoa escolhida",
   "reallife_nav_minimap25": "Minimapa mostra prédios como blocos 2.5D",
-  "reallife_nav_map25": "Mapa da cidade mostra prédios como blocos 2.5D"
+  "reallife_nav_map25": "Mapa da cidade mostra prédios como blocos 2.5D",
+  "reallife_opt_sec_citymap": "Mapa da cidade",
+  "reallife_opt_tip_nav_minimap25": "O minimapa mostra os prédios como pequenos blocos, vistos em ângulo. Desligado, o minimapa plano.",
+  "reallife_opt_tip_nav_map25": "O mapa da cidade mostra os prédios como blocos, plano de longe e inclinado ao aproximar. Desligado, o mapa original do jogo."
 }

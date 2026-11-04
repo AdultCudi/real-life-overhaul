@@ -31371,5 +31371,8 @@
   "reallife_ui_bizops_legend_cleaning": "清洁工位任何时间都可排班",
   "reallife_ui_bizops_legend_blocked": "无法安排所选人员",
   "reallife_nav_minimap25": "小地图将建筑物显示为 2.5D 方块",
-  "reallife_nav_map25": "城市地图将建筑物显示为 2.5D 方块"
+  "reallife_nav_map25": "城市地图将建筑物显示为 2.5D 方块",
+  "reallife_opt_sec_citymap": "城市地图",
+  "reallife_opt_tip_nav_minimap25": "小地图将建筑物显示为斜视角下的小方块。关闭时为平面小地图。",
+  "reallife_opt_tip_nav_map25": "城市地图将建筑物显示为方块，拉远时为平面，拉近时倾斜。关闭时使用游戏自带的地图。"
 }
