@@ -184,14 +184,13 @@ namespace RealLifeOverhaul.Ui
                 case "RealLifeSettings": return UiIcon.Gear;
                 case "RealLifeStaff": return UiIcon.People;
                 case ShellPeople: return UiIcon.People;
-                case ShellFlare: return UiIcon.Megaphone;
                 case ShellFirm: return UiIcon.GameController;
                 default: return UiIcon.Store;
             }
         }
 
         /// <summary>The overhaul's pages the frame opens from All apps (Shell/ShellPages): no phone button, a panel among the apps.</summary>
-        public const string ShellPeople = "RealLifePagePeople", ShellFlare = "RealLifePageFlare", ShellFirm = "RealLifePageFirm";
+        public const string ShellPeople = "RealLifePagePeople", ShellFirm = "RealLifePageFirm";
 
         /// <summary>
         /// The tab an app stands in: the folder the player keeps it in; else its kind's (the game's eight by what they are,
@@ -213,7 +212,7 @@ namespace RealLifeOverhaul.Ui
                 case "EconoView": return Money;
                 case "MyEmployees": case "BizMan": case "MarketInsider": case "Rivals": return Business;
                 case "RealLifePlanner": return Work;
-                case "RealLifeFlare": case ShellPeople: case ShellFlare: return Life;
+                case "RealLifeFlare": case ShellPeople: return Life;
                 case ShellFirm: return Business;
             }
             return kindFolder >= Money && kindFolder <= Setup ? kindFolder : Life;

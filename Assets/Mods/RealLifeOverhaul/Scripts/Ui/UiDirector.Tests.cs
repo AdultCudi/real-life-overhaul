@@ -8,9 +8,9 @@ namespace RealLifeOverhaul.Ui
 {
     /// <summary>
     /// The RLO interface's tests (Options, Tests): the gallery of every component in both looks, the phone's Contacts on
-    /// the kit, the city's people, Flare in the city and a firm's page, each drawn over whatever shows (Back closes it).
+    /// the kit, the city's people and a firm's page, each drawn over whatever shows (Back closes it).
     /// Each says in its notice exactly why it cannot run when it cannot (the switch off, the fonts still loading, the
-    /// city's people still settling, Flare not started, the phone not built yet), never a bare "not ready". The firm's
+    /// city's people still settling, the phone not built yet), never a bare "not ready". The firm's
     /// test opens a sample studio, named as one, on a save that owns no tech firm, so the page can be seen on day one.
     /// </summary>
     public sealed partial class UiDirector
@@ -95,30 +95,6 @@ namespace RealLifeOverhaul.Ui
             closing(host);
             host.Show();
             return host;
-        }
-
-        /// <summary>Options, Tests: Flare in the city (the account, the trends, the offers, a business's page) over the screen.</summary>
-        public void TestFlareCity()
-        {
-            try
-            {
-                if (!On)
-                {
-                    Notifications.Show(NotificationType.Warning, "reallife_ui_test_off", null, 8f);
-                    return;
-                }
-                if (!UiFonts.Ready || Flare.FlareDirector.Instance == null || !Flare.FlareDirector.Instance.CityOn)
-                {
-                    Notifications.Show(NotificationType.Warning, !UiFonts.Ready ? "reallife_ui_test_fonts" : "reallife_ui_test_flare_city", null, 8f);
-                    return;
-                }
-                var screen = new FlareCityScreen();
-                Overlay(screen, UiText.T("reallife_ui_page_flare"), host => screen.Close = () => Destroy(host.gameObject), UiIcon.Fire);
-            }
-            catch (Exception e)
-            {
-                Guard.Fail(FrameGuard, e, this);
-            }
         }
 
         /// <summary>

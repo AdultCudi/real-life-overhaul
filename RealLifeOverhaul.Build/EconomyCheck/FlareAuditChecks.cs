@@ -141,10 +141,10 @@ internal static partial class Program
         f.TierDays[1] = 19;
         var ads = new List<FlareAd>
         {
-            new FlareAd { Id = 1, Place = "z~9", Name = "Burger Barn", District = 3, Reach = 9000, Days = 2, From = 20, Mine = false },
+            new FlareAd { Id = 1, Place = "z~9", Name = "Burger Barn", District = 3, Reach = 9000, Days = 2, From = 20, Mine = false, Rival = true },
             new FlareAd { Id = 2, Place = "a~1", Name = "Bloom Cafe", District = 3, Reach = 2000, Days = 1, From = 20, Mine = true },
-            new FlareAd { Id = 3, Place = "q~2", Name = "Old News", District = 1, Reach = 100, Days = 1, From = 5, Mine = false },
-            new FlareAd { Id = 4, Place = "r~4", Name = "Tomorrow", District = 1, Reach = 100, Days = 1, From = 21, Mine = false }
+            new FlareAd { Id = 3, Place = "q~2", Name = "Old News", District = 1, Reach = 100, Days = 1, From = 5, Mine = false, Rival = true },
+            new FlareAd { Id = 4, Place = "r~4", Name = "Tomorrow", District = 1, Reach = 100, Days = 1, From = 21, Mine = false, Rival = true }
         };
         var into = new List<FlareNotice>();
         FlareLiveRules.AllNotices(f, now, "me", new List<string> { "a~1" }, null, new List<FlareReaction>(), into, 60, ads);
@@ -254,7 +254,8 @@ internal static partial class Program
 
     private static void FlareAuditCity()
     {
-        FlareResidentRig rig = FlareResidentCity(42, 5000, (int)FlareTier.Known);
+        // A shop of the player's before the first pass: the city's ads that compete with it are the rivals the notifications tell of.
+        FlareResidentRig rig = FlareResidentCity(42, 5000, (int)FlareTier.Known, (int)Spend.EatingOut);
         var counts = new int[rig.S.Districts.Count];
         int counted = FlareCityRules.FollowersByDistrict(rig.C, rig.S, FlareCityState.PlayerAccount, counts);
         int sum = 0;
@@ -324,16 +325,21 @@ internal static partial class Program
         var told = new List<FlareNotice>();
         var dayFile = FlareRules.Open(2, rig.S.Day, 30, 50);
         FlareNoticeRules.AddDerived(dayFile, FlareLiveRules.Now(rig.S.Day, 12, 0), rig.C.CityAds, told, new List<string>(), new List<int>());
-        int rivalNotices = 0;
+        int rivalNotices = 0, rivalAds = 0;
         foreach (FlareNotice n in told)
         {
             rivalNotices += n.Kind == FlareNoticeKind.Rival && n.Figure == FlareCityCatalogue.CityAdReach ? 1 : 0;
         }
+        foreach (FlareAd ad in rig.C.CityAds)
+        {
+            rivalAds += ad.Rival ? 1 : 0;   // the ones that compete with the player's shop: a neighbour's ad is not news
+        }
         FlareAd firstAd = dayAds > 0 ? rig.C.CityAds[0] : null;
         bool shares = firstAd != null && FlareDeskRules.SharedWith(rig.C.CityAds, firstAd.District, rig.S.Day, "not~theirs") != null
                       && FlareDeskRules.SharedWith(rig.C.CityAds, firstAd.District, rig.S.Day + 5, "not~theirs") == null;
-        Check(real && rivalNotices == Math.Min(FlareNoticeRules.RivalMost, dayAds) && shares,
-            "flare audit: the city's and the rivals' ads of the day pass reach the notifications as rival notices and the shared-reach line (" + dayAds + " ads kept, " + rivalNotices + " notices)");
+        Check(real && rivalAds > 0 && rivalNotices == Math.Min(FlareNoticeRules.RivalMost, rivalAds) && shares,
+            "flare audit: the city's and the rivals' ads of the day pass reach the notifications as rival notices (the rivals' only) and the shared-reach line (" + dayAds + " ads kept, " + rivalAds
+            + " of them rivals, " + rivalNotices + " notices)");
         // The ad that shares the reach.
         var ads = new List<FlareAd>
         {
@@ -435,7 +441,7 @@ internal static partial class Program
         Check(screen.Contains("case FlareFace.MarkAllCommand:") && screen.Contains("return KitPress(command, arg);") && screen.Contains("case FlareFace.PromoteCommand: return OpenAd(arg);")
               && screen.Contains("case FlareFace.EditCommand: return OpenEdit();") && screen.Contains("return _kit.SetNoticeTab(tab);"),
             "flare audit: the face's new commands are answered by the screen: Mark all, order, niche, Promote, Edit profile and the notifications' tabs");
-        Check(rows.Contains("case RowAct.Campaign: return _kit.End(r.Id);") && rows.Contains("case RowAct.Trend: return PromoteTrend(r.Id);") && rows.IndexOf("OpenCompose(-1, r.Key)", StringComparison.Ordinal) < 0
+        Check(rows.Contains("case RowAct.Campaign: return _kit.End(r.Id);") && rows.Contains("case RowAct.Trend: return PromoteTrend(r.Id, r.Key);") && rows.IndexOf("OpenCompose(-1, r.Key)", StringComparison.Ordinal) < 0
               && audit.Contains("OpenCompose(2)") && audit.Contains("_place = shop;"),
             "flare audit: End on a running campaign and Promote on a trend card act on that campaign and that business, not a blank page");
         Check(fill.Contains("FlareNoticeRules.InTab(_kit.NoticeTab") && fill.Contains("NeedsAnswer(file, now)") && fill.Contains("FlareNoticeRules.Brought(") && fill.Contains("_flare.CompetitorOf(")

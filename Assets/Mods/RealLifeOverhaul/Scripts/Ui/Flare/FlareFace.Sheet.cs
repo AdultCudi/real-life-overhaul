@@ -33,8 +33,9 @@ namespace RealLifeOverhaul.Ui
 
         // The chips of a group stand in a grid of equal chips, as many to a row as the room takes and the rows of the same count, so the rows end together and the d-pad's
         // down stays in its column (a plain wrap of chips of their own widths ended each row somewhere else).
-        private static void ChipGrid(string[] chips, float room, out float chip, out int columns)
+        private static void ChipGrid(string[] chips, float room, out float chip, out int columns, out bool lone)
         {
+            lone = false;
             int n = Math.Min(chips.Length, GroupStride);
             float widest = 0f, all = 0f;
             for (int i = 0; i < n; i++)
@@ -54,8 +55,19 @@ namespace RealLifeOverhaul.Ui
             columns = (n + rows - 1) / rows;   // the rows as even as they can be
             if (columns > 1 && n > columns && n % columns == 1)
             {
-                // a lone chip in the last row is an orphan: one more to a row if the room takes it, else one column
-                columns = (columns + 1) * chip + columns * UiTokens.S2 <= room ? columns + 1 : 1;
+                // a lone chip in the last row is an orphan: one more to a row if the room takes it, else the last two rows share it (the row before gives up its last chip), else one column
+                if ((columns + 1) * chip + columns * UiTokens.S2 <= room)
+                {
+                    columns++;
+                }
+                else if (columns >= 3)
+                {
+                    lone = true;   // two columns cannot spare one: the row before would be left with a chip of its own
+                }
+                else
+                {
+                    columns = 1;
+                }
             }
             if (columns == 1)
             {
@@ -190,14 +202,20 @@ namespace RealLifeOverhaul.Ui
                     UiDraw.TextMiddle(s, at, x, cy, UiTokens.ControlSmall, labelW - UiTokens.S2, UiStyle.SectionHeader, UiRole.Text2, k.Groups[g], UiFlags.Label | UiFlags.Truncate);
                 }
                 int chosen = g < k.Chosen.Length ? k.Chosen[g] : -1;
-                ChipGrid(chips, x + w - chipsX, out float pw, out int columns);
+                ChipGrid(chips, x + w - chipsX, out float pw, out int columns, out bool lone);
                 int count = Math.Min(chips.Length, GroupStride);
                 float natural = chipsX;
                 for (int i = 0; i < count; i++)
                 {
                     if (draw && pw > 0f)
                     {
-                        Pill(s, at, chipsX + (i % columns) * (pw + UiTokens.S2), cy + (i / columns) * (UiTokens.ControlSmall + UiTokens.S2), pw, chips[i],
+                        int row = i / columns, column = i % columns;
+                        if (lone && i >= count - 2)
+                        {
+                            row = (count + columns - 1) / columns - 1;
+                            column = i - (count - 2);
+                        }
+                        Pill(s, at, chipsX + column * (pw + UiTokens.S2), cy + row * (UiTokens.ControlSmall + UiTokens.S2), pw, chips[i],
                             i == chosen ? PillKind.Chosen : PillKind.Line, SheetChipCommand, g * GroupStride + i);
                     }
                     else if (draw)

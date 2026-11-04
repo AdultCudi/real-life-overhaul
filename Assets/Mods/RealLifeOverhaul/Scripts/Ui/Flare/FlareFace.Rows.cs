@@ -576,7 +576,7 @@ namespace RealLifeOverhaul.Ui
             Line(s, inRow, tx, y + UiTokens.S3 + UiTokens.S6, tw, UiStyle.Small, UiRole.Text2, r.Handle, UiFlags.Truncate);
             if (pw > 0f)
             {
-                Pill(s, inRow, w - UiTokens.S4 - pw, y + (h - UiTokens.ControlSmall) / 2f, pw, r.Button, following ? PillKind.Quiet : PillKind.Light, targets ? FollowCommand : -1, index);
+                Pill(s, inRow, w - UiTokens.S4 - pw, y + (h - UiTokens.ControlSmall) / 2f, pw, r.Button, following ? PillKind.Quiet : PillKind.Cyan, targets ? FollowCommand : -1, index);
             }
             if (targets)
             {

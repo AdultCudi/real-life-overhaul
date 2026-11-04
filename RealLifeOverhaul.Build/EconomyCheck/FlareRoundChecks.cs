@@ -22,8 +22,7 @@ internal static partial class Program
     // and the code ask for has a value in pt and zh-cn that differs from the English, unless the English is a name, a number or a word the two share (a text of one word or none).
     private static void FlareRoundWords()
     {
-        string entry = PlayFile("Ui", "UiScreens.Flare.cs"), samples = System.IO.File.ReadAllText(System.IO.Path.GetFullPath(System.IO.Path.Combine(System.AppContext.BaseDirectory,
-            @"..\..\..\..\UiPreview\UiSamples.Flare.cs")));
+        string entry = PlayFile("Ui", "UiScreens.Flare.cs"), samples = System.IO.File.ReadAllText(System.IO.Path.Combine(RepoRoot(), "RealLifeOverhaul.Build", "UiPreview", "UiSamples.Flare.cs"));
         var keys = new SortedSet<string>(StringComparer.Ordinal);
         foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(entry + samples, "\"(reallife_flare_[a-z0-9_]+)\""))
         {
@@ -63,13 +62,49 @@ internal static partial class Program
                 }
             }
         }
-        bool raw = System.Text.RegularExpressions.Regex.IsMatch(samples, "\"[0-9]+[mhd]\"");
+        // An age is never typed into a sample: not as a whole text ("40m") and not inside a line ("Burger Barn, 1w"), whatever the unit's letter. The pattern is held to catch both.
+        const string rawAge = "(?<![A-Za-z0-9{])[0-9]+[mhdw](?![A-Za-z])";
+        bool catches = System.Text.RegularExpressions.Regex.IsMatch("\"40m\"", rawAge) && System.Text.RegularExpressions.Regex.IsMatch("\"Burger Barn, 1w\"", rawAge)
+                       && !System.Text.RegularExpressions.Regex.IsMatch("\"Day 12\"", rawAge);
+        bool raw = false;
+        foreach (System.Text.RegularExpressions.Match lit in System.Text.RegularExpressions.Regex.Matches(samples, "\"[^\"\\r\\n]*\""))
+        {
+            raw |= System.Text.RegularExpressions.Regex.IsMatch(lit.Value, rawAge);
+        }
+        // ...and nothing drawn in zh-cn has a Latin age letter after a number, in any state.
+        string latin = "none";
+        var drawn = new UiScene();
+        UiWords zhWords = UiWords("zh-cn");
+        foreach (string state in UiSamples.FlareStates)
+        {
+            UiSamples.Flare(drawn, UiFrame.FullMenu(16f / 9f, "Flare"), true, UiDefaultKeys.Keyboard, zhWords, state);
+            for (int i = 0; i < drawn.ItemCount; i++)
+            {
+                string text = drawn.Items[i].Text;
+                if (text != null && System.Text.RegularExpressions.Regex.IsMatch(text, rawAge))
+                {
+                    latin = state + ": " + text;
+                }
+            }
+        }
         bool chinese = true;
         foreach (string age in new[] { "reallife_flare_ago_min", "reallife_flare_ago_hour", "reallife_flare_kit_ago_day" })
         {
             chinese &= words["zh-cn"].TryGetValue(age, out string zh) && zh.Replace("{n}", string.Empty).Length > 0 && zh.Replace("{n}", string.Empty)[0] > 127;
         }
-        Check(!raw && chinese, "flare round: a short age is written from its keyed template in every language (zh-cn 分钟, 小时, 天), never as letters of the sample's");
+        Check(catches && !raw && latin == "none" && chinese,
+            "flare round: a short age is written from its keyed template in every language (zh-cn 分钟, 小时, 天), never as letters of the sample's, whole or inside a line (" + latin + ")");
+        // Wording a critic asked for and a merge once took back: the profile's third tab reads Pictures (the brief and the mockup have it so), not the Media of the other branch.
+        var keep = new[] { ("en", "reallife_flare_kit_tab_media", "Pictures"), ("pt", "reallife_flare_kit_tab_media", "Imagens"), ("zh-cn", "reallife_flare_kit_tab_media", "图片") };
+        string lost = "none";
+        foreach ((string lang, string key, string value) in keep)
+        {
+            if (!words[lang].TryGetValue(key, out string now) || now != value)
+            {
+                lost = key + " in " + lang + " reads \"" + now + "\"";
+            }
+        }
+        Check(lost == "none", "flare round: the wording kept from the critics stands in en, pt and zh-cn (the profile's Pictures tab; " + lost + ")");
         Check(missing == "none" && english == "none" && keys.Count > 300,
             "flare round: every key of the Flare screens is in pt and zh-cn and is not the English left in its place (" + keys.Count + " keys; missing " + missing + "; English " + english + ")");
     }
@@ -282,8 +317,8 @@ internal static partial class Program
     private static void FlareRoundRing()
     {
         // Twenty days through the real day pass: the ring holds at its cap, and the shared-reach line finds only today's ads.
-        FlareResidentRig rig = FlareResidentCity(42, 2000, (int)FlareTier.Local);
-        int mine = FlareRoundOwn(rig, (int)Spend.EatingOut);
+        FlareResidentRig rig = FlareResidentCity(42, 2000, (int)FlareTier.Local, (int)Spend.EatingOut);
+        int mine = rig.Own;
         PopulationState s = rig.S;
         FlareCityState c = rig.C;
         bool cap = true, todays = true, shape = true, capped = false;
@@ -363,8 +398,7 @@ internal static partial class Program
 
     private static string FlareRoundAdsLine()
     {
-        FlareResidentRig twin = FlareResidentCity(42, 2000, (int)FlareTier.Local);
-        FlareRoundOwn(twin, (int)Spend.EatingOut);
+        FlareResidentRig twin = FlareResidentCity(42, 2000, (int)FlareTier.Local, (int)Spend.EatingOut);
         var line = new System.Text.StringBuilder();
         for (int d = 0; d < 5; d++)
         {

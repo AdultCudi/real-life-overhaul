@@ -47,7 +47,6 @@ internal static partial class UiSamples
         var into = new List<UiShellApp>(64);
         UiShellApps.FromPhone(PhoneApps(t, others), into, PagerRules.PhoneTiles);   // the apps' titles are their buttons' words: data, as on the phone
         Page(into, UiShellApps.ShellPeople, t("reallife_ui_page_population", "The city's people"));
-        Page(into, UiShellApps.ShellFlare, t("reallife_ui_page_flare", "Flare in the city"));
         Page(into, UiShellApps.ShellFirm, t("reallife_ui_page_studio", "Your firm"));
         return into;
     }

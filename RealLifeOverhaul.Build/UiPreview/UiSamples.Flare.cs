@@ -772,7 +772,8 @@ internal static partial class UiSamples
         d.AudienceFigures = new[] { "34%", "31%", "14%", "9%" };
         d.AudienceShares = new[] { 1f, 0.91f, 0.41f, 0.26f };
         d.LastTitle = t("reallife_flare_kit_hire_last", "Last campaigns");
-        d.LastLines = new[] { "Burger Barn, 1w", "Harbourside Cafe, 2w", "Moonlight Bar, 3w" };
+        // the ages as FlareScreen.Ago writes them: a short one from the keyed template, one past a week as its day
+        d.LastLines = new[] { "Burger Barn, " + FlareAge(2, 'd'), "Harbourside Cafe, " + FlareAge(5, 'd'), "Moonlight Bar, " + t("reallife_flare_day", "Day {day}").Replace("{day}", "12") };
         d.LastFigures = new[] { t("reallife_flare_kit_visitors_n", "{count} visitors").Replace("{count}", "131"), t("reallife_flare_kit_visitors_n", "{count} visitors").Replace("{count}", "74"),
             t("reallife_flare_kit_result_flop", "Fell flat") };
         d.LastTones = new[] { 1, 1, -1 };
@@ -1062,7 +1063,7 @@ internal static partial class UiSamples
         k.Title = t("reallife_flare_kit_compose_title", "Create a post");
         k.Line = t("reallife_flare_kit_compose_as", "Posting as {name}, {handle}").Replace("{name}", FlareMe).Replace("{handle}", FlareMyHandle);
         k.Field = true;
-        k.FieldText = kind == 2 ? "Third time this month. Somebody has to fix it." : string.Empty;
+        k.FieldText = kind == 2 ? t("reallife_flare_report_post_0", "Broken road in {district}. Somebody is going to get hurt.").Replace("{district}", "Murray Hill") : string.Empty;
         k.FieldHint = t("reallife_flare_kit_composer", "What's happening, {name}?").Replace("{name}", "Walter");
         k.FieldCount = t("reallife_flare_kit_count", "{count} of {most}").Replace("{count}", k.FieldText.Length.ToString(System.Globalization.CultureInfo.InvariantCulture)).Replace("{most}", "200");
         var groups = new System.Collections.Generic.List<string> { t("reallife_flare_kit_group_about", "About") };
@@ -1085,7 +1086,13 @@ internal static partial class UiSamples
         else
         {
             groups.Add(t("reallife_flare_kit_group_moment", "Moment"));
-            chips.Add(new[] { "Lunch with Alex", "A walk in Murray Hill", "Coffee with Mom" });
+            // the moments the phone's life drafts, in the words the screen gives them (FlareText.Draft)
+            chips.Add(new[]
+            {
+                t("reallife_flare_draft_selfie_with", "A selfie with {friend}").Replace("{friend}", "Alex"),
+                t("reallife_flare_draft_outing", "Out for {kind} with {friend}").Replace("{kind}", t("reallife_flare_outing_4", "a walk")).Replace("{friend}", "Mom"),
+                t("reallife_flare_draft_photo_with", "A picture with {friend}").Replace("{friend}", "Mom")
+            });
             chosen.Add(0);
             groups.Add(t("reallife_flare_kit_group_friend", "Friend"));
             chips.Add(new[] { t("reallife_flare_kit_no_tag", "Do not tag"), t("reallife_flare_tag_yes", "Tag {friend}").Replace("{friend}", "Alex") });

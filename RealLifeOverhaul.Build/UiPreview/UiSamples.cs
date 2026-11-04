@@ -29,9 +29,6 @@ internal static partial class UiSamples
             new Sample { Name = "population_household", App = "The city's people", Lay = (s, f, d, k) => UiDashboard.Lay(s, PopulationHousehold(t), f, d, k), Walk = "RDDUL" },
             new Sample { Name = "population_person", App = "The city's people", Lay = (s, f, d, k) => UiDashboard.Lay(s, PopulationPerson(t), f, d, k), Walk = "DU" },
             new Sample { Name = "population_gone", App = "The city's people", Lay = (s, f, d, k) => UiDashboard.Lay(s, PopulationGone(t), f, d, k), Walk = "D" },
-            new Sample { Name = "flare_city", App = "Flare in the city", Lay = (s, f, d, k) => UiDashboard.Lay(s, FlareCity(t), f, d, k) },
-            new Sample { Name = "flare_trends", App = "Flare in the city", Lay = (s, f, d, k) => UiDashboard.Lay(s, FlareTrends(t), f, d, k), Walk = "RRL" },
-            new Sample { Name = "flare_business", App = "Flare in the city", Lay = (s, f, d, k) => UiDashboard.Lay(s, FlareBusiness(t), f, d, k), Walk = "DDU" },
             new Sample { Name = "studio", App = "Your firm", Lay = (s, f, d, k) => UiDashboard.Lay(s, StudioFirm(t), f, d, k), Walk = "LDDDDRDDLU" },
             new Sample { Name = "studio_empty", App = "Your firm", Lay = (s, f, d, k) => UiDashboard.Lay(s, StudioEmpty(t), f, d, k), Walk = "DLR" },
             new Sample { Name = "tech_firm", App = "Your firm", Lay = (s, f, d, k) => UiDashboard.Lay(s, TechFirm(t), f, d, k), Walk = "DDDDRDDLU" },
@@ -39,118 +36,8 @@ internal static partial class UiSamples
         };
     }
 
-    /// <summary>Flare's account in the city as FlareCityPages makes it: the tabs, the followers' figures, the posts that carried, the details.</summary>
-    public static UiDashboardModel FlareCity(UiWords t)
-    {
-        // As FlareCityPages makes the account's tab: a feed of what the posts did, the followers at the side, the tabs heading it.
-        var m = FlareFeed(t, 0, "What your posts did", new[]
-        {
-            new[] { "Bloom Café", Did(t, "A post", "1,240", "38", "$412"), Ago(t, 0) },
-            new[] { "Bloom Café", Did(t, "An ad", "6,800", "112", "$1,630"), Ago(t, 1) },
-            new[] { "Copperline Books", Did(t, "A post", "410", "9", "$96"), Ago(t, 1) },
-            new[] { "Night Owl Bar", Did(t, "A post", "880", "21", "$240"), Ago(t, 3) },
-            new[] { "Pine Street Florist", Did(t, "A post", "190", "4", "$52"), Ago(t, 5) },
-        }, "Nothing measured yet. Post about one of your businesses and look again tomorrow.");
-        m.EntryLeads = new[] { true, true, true, true, true };
-        return m;
-    }
-
-    // What a post did, as FlareCityPages writes it.
-    private static string Did(UiWords t, string what, string seen, string came, string spent) =>
-        t("reallife_ui_flare_did", "{what} · seen by {seen} · {came} came · {spent} spent").Replace("{what}", what).Replace("{seen}", seen).Replace("{came}", came)
-            .Replace("{spent}", spent);
-
-    // How long ago a post went up, as FlareCityPages.Ago writes it (the preview has the kit alone, not the pages).
-    private static string Ago(UiWords t, int days) => days == 0 ? t("reallife_ui_when_today", "Today") : days == 1 ? t("reallife_ui_when_yesterday", "Yesterday")
-        : t("reallife_ui_when_days", "{days} days ago").Replace("{days}", days.ToString(System.Globalization.CultureInfo.InvariantCulture));
-
     // How long a game or a product has been out, as the firms' pages write it.
     private static string Out(UiWords t, int days) => t("reallife_studio_page_age_days", "Out {days} days").Replace("{days}", days.ToString(System.Globalization.CultureInfo.InvariantCulture));
-
-    /// <summary>Flare's trends tab with nothing trending yet: its long empty words wrapped in the feed, the account's followers at the side.</summary>
-    public static UiDashboardModel FlareTrends(UiWords t)
-    {
-        return FlareFeed(t, 1, null, new string[0][], "Nothing is trending among the residents yet. A viral post can start a trend, and so can the city's own talk.");
-    }
-
-    /// <summary>A business's page on Flare as the residents see it: its name after the app's in the masthead, its reviews down the feed, its figures at the side.</summary>
-    public static UiDashboardModel FlareBusiness(UiWords t)
-    {
-        var m = new UiDashboardModel
-        {
-            Shape = UiPageShape.Feed,
-            Title = "Bloom Café",
-            Subtitle = "Your business, as the residents see it",
-            SideTitle = t("reallife_ui_page_details", "Details"),
-            EntriesTitle = "Reviews by its customers",
-            Figures = new[]
-            {
-                new UiFigureModel { Label = "Followers", Value = "2,418" },
-                new UiFigureModel { Label = "Rating", Value = "4.3 / 5" },
-                new UiFigureModel { Label = "Pull", Value = "+6.2%" },
-            },
-            Side = new[]
-            {
-                new UiPairModel { Key = "Heard of it", Value = "3,900" },
-                new UiPairModel { Key = "Came from Flare", Value = "+41" },
-                new UiPairModel { Key = "Spent from Flare", Value = "$612" },
-            },
-            Entries = new[]
-            {
-                new UiRowModel { Name = "Priya Raman", Preview = "Five stars. The new grinder shows.", Time = "5.0", Hue = 200f },
-                new UiRowModel { Name = "Marcus Hale", Preview = "Busy at nine, worth the wait.", Time = "4.0", Hue = 40f },
-                new UiRowModel { Name = "Elena Sokolova", Preview = "Oat milk is free now, nice touch.", Time = "4.5", Hue = 300f },
-            },
-            Table = new UiTableModel { EmptyTitle = "No reviews yet." },
-        };
-        m.FigureCount = m.Figures.Length;
-        m.SideCount = m.Side.Length;
-        m.EntryCount = m.Entries.Length;
-        m.EntryLeads = new[] { false, false, false };
-        m.Prompts = new[]
-        {
-            new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
-            new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
-        };
-        m.PromptCount = m.Prompts.Length;
-        return m;
-    }
-
-    // A Flare tab as a feed: the tabs heading it, its entries with their faces, the account's two figures at the side.
-    private static UiDashboardModel FlareFeed(UiWords t, int tab, string title, string[][] rows, string empty)
-    {
-        var m = new UiDashboardModel
-        {
-            Shape = UiPageShape.Feed,
-            Tabs = new[] { t("reallife_ui_flare_tab_account", "Account"), t("reallife_ui_flare_tab_trends", "Trends"), t("reallife_ui_flare_tab_offers", "Offers") },
-            Tab = tab,
-            SideTitle = t("reallife_ui_page_details", "Details"),
-            EntriesTitle = title,
-            Figures = new[]
-            {
-                new UiFigureModel { Label = "Followers in the city", Value = "34" },
-                new UiFigureModel { Label = "Followers beyond the city", Value = "4" },
-            },
-            Table = new UiTableModel { EmptyTitle = empty },
-        };
-        m.FigureCount = m.Figures.Length;
-        m.Entries = new UiRowModel[rows.Length];
-        for (int i = 0; i < rows.Length; i++)
-        {
-            m.Entries[i] = new UiRowModel { Name = rows[i][0], Preview = rows[i][1], Time = rows[i][2], Hue = UiColour.HueOf(rows[i][0]) };
-        }
-        m.EntryCount = rows.Length;
-        var prompts = new System.Collections.Generic.List<UiPrompt> { new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") } };
-        if (rows.Length > 0)
-        {
-            prompts.Add(new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_select", "Select") });
-        }
-        prompts.Add(new UiPrompt { Action = UiAction.TabPrev, Label = t("reallife_ui_prompt_page", "Page") });
-        prompts.Add(new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") });
-        m.Prompts = prompts.ToArray();
-        m.PromptCount = m.Prompts.Length;
-        return m;
-    }
 
     /// <summary>Who contributes as PopulationPages makes it: places by their addresses and names, never a record's key, the player's three shares in the strip.</summary>
     public static UiDashboardModel PopulationContributors(UiWords t)

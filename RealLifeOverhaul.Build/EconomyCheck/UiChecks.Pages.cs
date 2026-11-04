@@ -15,14 +15,6 @@ internal static partial class Program
             cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (empty, new)", Title = "Your firm", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.StudioEmpty(t), f, dark, k) });
             return;
         }
-        if (def.Id == "flare_city")
-        {
-            // The feed's three faces: the account's posts, a tab with nothing yet (its long words wrapped in its panel), a business's page.
-            cases.Add(new UiScreenCase { Def = def, Name = def.Id, Title = "Flare in the city", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.FlareCity(t), f, dark, k) });
-            cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (trends, none yet)", Title = "Flare in the city", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.FlareTrends(t), f, dark, k) });
-            cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (a business)", Title = "Flare in the city", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.FlareBusiness(t), f, dark, k) });
-            return;
-        }
         if (def.Id == "session_panel")
         {
             cases.Add(new UiScreenCase { Def = def, Name = def.Id, Title = "Desk", Lay = (s, f, dark, k, t) => UiSessionSteps.Lay(s, UiSamples.DeskPanel(t), f, dark, k) });

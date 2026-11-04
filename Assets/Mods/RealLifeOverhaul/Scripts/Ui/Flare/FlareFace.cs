@@ -365,6 +365,7 @@ namespace RealLifeOverhaul.Ui
             float top = wy + UiFrame.Strip, h = UiDraw.SnapDown(wh - UiFrame.Strip);
             UiAt at = UiAt.Screen.In(panel);
             UiDraw.Icon(s, at, wx + UiTokens.S3, wy + (UiFrame.Strip - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Fire, UiRole.Chart2, UiFlags.Middle | UiFlags.Chrome, true);
+            int firstOfNav = s.NodeCount;
             Nav(s, at.InRegion(RegionNav), m, frame.Title, wx, top, NavWidth, h);
             float mx = wx + NavWidth, rest = ww - NavWidth;
             UiDraw.Box(s, at, mx, top, UiTokens.Hairline, h, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
@@ -380,28 +381,23 @@ namespace RealLifeOverhaul.Ui
             }
             int firstOfPage = s.NodeCount;
             Page(s, at.InRegion(RegionMain), m, mx, top, mw, h, keys);
-            int lastOfPage = ReadingLinks(s, firstOfPage, 0, !side);
-            // The way on from the page's last target: into the side if it lies to the right, else into the nav at its first entry (the nav then goes down in one run).
-            int navFirst = -1;
-            for (int i = 0; i < firstOfSide && navFirst < 0; i++)
+            int lastOfPage = ReadingLinks(s, firstOfPage, s.NodeCount, 0, !side);
+            // Right alone walks the whole screen once, in the order a page is read: its column, then the side, then the nav from its top to the account, and the window's close
+            // last. What the walk has read is never read again, so the way on from each end goes to the next group and not back across the window to a target it has been to.
+            int lastOfSide = side ? ReadingLinks(s, firstOfSide, firstOfPage, 0, false) : -1;
+            int navFirst = NavLinks(s, firstOfNav, firstOfSide, s.FindNode(UiDraw.CloseCommand, 0));
+            int before = lastOfSide >= 0 ? lastOfSide : lastOfPage;
+            if (navFirst >= 0 && before >= 0)
             {
-                navFirst = !UiDraw.IsChrome(s.Nodes[i].Command) && s.Nodes[i].Command == NavCommand ? i : -1;
-            }
-            if (lastOfPage >= 0 && navFirst >= 0 && !side)
-            {
-                s.Nodes[lastOfPage].Right = navFirst;
-            }
-            int lastOfSide = side && firstOfPage > firstOfSide ? firstOfPage - 1 : -1;
-            if (lastOfSide >= 0 && navFirst >= 0 && s.Nodes[lastOfSide].Right < 0)
-            {
-                s.Nodes[lastOfSide].Right = navFirst;   // after the side, the nav from its top
+                s.Nodes[before].Right = navFirst;
+                s.Nodes[navFirst].Left = before;
             }
             s.FocusFirst = PageStart(s, firstOfPage, m);
             if (m.Sheet != NoSheet)
             {
                 int firstOfSheet = s.NodeCount;
                 Sheet(s, m, wx, wy, ww, wh, keys);
-                ReadingLinks(s, firstOfSheet, 1, true);
+                ReadingLinks(s, firstOfSheet, s.NodeCount, 1, true);
                 s.FocusFirst = SheetStart(s, m.Sheet);
             }
             s.AddPrompt(UiAction.Move, m.Move);
@@ -420,12 +416,12 @@ namespace RealLifeOverhaul.Ui
         /// Right at the end of a row goes on to the first target of the next row, and left at the start of one back to the last of the one before, so the page or the sheet
         /// is walked left to right and top to bottom, group after group, with one run of presses, the commit button last and a sheet's close after it. On a page with a side
         /// column only where the d-pad would find nothing that way (what lies to the right is still what right reaches); on a sheet or a page without one always.
-        /// A list keeps its own up and down.
+        /// A list keeps its own up and down. Only the nodes from <paramref name="from"/> up to <paramref name="to"/> are read; the last one read is returned.
         /// </summary>
-        public static int ReadingLinks(UiScene s, int from, byte layer, bool always)
+        public static int ReadingLinks(UiScene s, int from, int to, byte layer, bool always)
         {
             int n = 0, close = -1;
-            for (int i = from; i < s.NodeCount; i++)
+            for (int i = from; i < to; i++)
             {
                 if (layer == 1 && s.Nodes[i].Command == SheetCancelCommand && s.Nodes[i].Arg == 0)
                 {
@@ -454,15 +450,19 @@ namespace RealLifeOverhaul.Ui
             for (int k = 0; k + 1 < n; k++)
             {
                 int a = _read[k], b = _read[k + 1];
-                if (Math.Abs(Mid(s, b) - Mid(s, a)) <= ReadRow)
+                if (s.Nodes[a].Region == s.Nodes[b].Region && Math.Abs(Mid(s, b) - Mid(s, a)) <= ReadRow)
                 {
-                    continue;   // the same row: right and left already find each other
+                    // The same row: each to the next along it. The d-pad's own nearest-target search can tie between a neighbour and a target of the row above (left of the
+                    // composer's Post found the tab, not the chip beside it), and a chip then had no way in once the nav no longer led into the page.
+                    s.Nodes[a].Right = b;
+                    s.Nodes[b].Left = a;
+                    continue;
                 }
-                if (always || UiFocusRules.Next(s, a, 1, 0) == -1)
+                if (always || !Finds(s, a, 1))
                 {
                     s.Nodes[a].Right = b;
                 }
-                if (always || UiFocusRules.Next(s, b, -1, 0) == -1)
+                if (always || !Finds(s, b, -1))
                 {
                     s.Nodes[b].Left = a;
                 }
@@ -473,6 +473,69 @@ namespace RealLifeOverhaul.Ui
                 s.Nodes[close].Left = _read[n - 1];
             }
             return n > 0 ? _read[n - 1] : -1;
+        }
+
+        /// <summary>
+        /// The nav read as one run: right goes from each entry to the next, down the column through Post to the account, and from the account to the window's close, which the
+        /// kit's own links never reach sideways. Without this the account's right found the nearest card of the page, and the walk went back across the window to targets it had read.
+        /// The price is that right on an entry goes on along the nav and no longer jumps into the page; left from the first entry goes back to the last target of the page or side
+        /// (down and up still move one entry). Returns the nav's first entry, or -1 when it has none.
+        /// </summary>
+        private static int NavLinks(UiScene s, int from, int to, int close)
+        {
+            int first = -1, last = -1;
+            for (int i = from; i < to; i++)
+            {
+                if (s.Nodes[i].Disabled || UiDraw.IsChrome(s.Nodes[i].Command))
+                {
+                    continue;
+                }
+                if (last >= 0)
+                {
+                    s.Nodes[last].Right = i;
+                    s.Nodes[i].Left = last;
+                }
+                first = first < 0 ? i : first;
+                last = i;
+            }
+            if (last >= 0 && close >= 0)
+            {
+                s.Nodes[last].Right = close;
+                s.Nodes[close].Left = last;
+            }
+            return first;
+        }
+
+        /// <summary>
+        /// The targets that right alone reaches from <paramref name="start"/>, in the order it reaches them, written into <paramref name="into"/>; it stops at the end of the
+        /// run or at a target it has been to (the run then ends there, a fault the checks look for). The preview draws this walk and the checks assert it, so both are the game's own.
+        /// </summary>
+        public static int WalkRight(UiScene s, int start, int[] into, out bool revisit)
+        {
+            revisit = false;
+            int n = 0, at = start;
+            while (at >= 0 && at < s.NodeCount && n < into.Length)
+            {
+                for (int i = 0; i < n; i++)
+                {
+                    if (into[i] == at)
+                    {
+                        revisit = true;
+                        return n;
+                    }
+                }
+                into[n++] = at;
+                at = UiFocusRules.Next(s, at, 1, 0);
+            }
+            return n;
+        }
+
+        // Whether the d-pad finds a target of the page that way. The window's close stands at the top right and is the nearest "right" of anything near it, but it is the end of the
+        // walk and not a place a row goes on to, so it counts as nothing.
+        private static bool Finds(UiScene s, int node, int dx)
+        {
+            int to = UiFocusRules.Next(s, node, dx, 0);
+            return to >= 0 && to < s.NodeCount && s.Nodes[to].Command != UiDraw.CloseCommand;
         }
 
         private const float ReadRow = 14f;
@@ -492,6 +555,10 @@ namespace RealLifeOverhaul.Ui
         // Whether a target is read before another: on an earlier row, or on the same row further left.
         private static bool ReadsBefore(UiScene s, int p, int q)
         {
+            if (s.Nodes[p].Region != s.Nodes[q].Region)
+            {
+                return s.Nodes[p].Region < s.Nodes[q].Region;   // a conversation list before the conversation it opens
+            }
             float dy = Mid(s, p) - Mid(s, q);
             return Math.Abs(dy) > ReadRow ? dy < 0f : Left(s, p) < Left(s, q);
         }
@@ -766,7 +833,7 @@ namespace RealLifeOverhaul.Ui
                 Line(s, inRow, tx, cy + UiTokens.S2, tw, UiStyle.Title, UiRole.Text, r.Name, UiFlags.Truncate);
                 Line(s, inRow, tx, cy + UiTokens.S2 + UiTokens.S6, tw, UiStyle.Small, UiRole.Text2, r.Handle, UiFlags.Truncate);
                 UiDraw.Node(s, inCard, ix, cy, bx - UiTokens.S2 - ix, row, WhoCommand, i, face);
-                Pill(s, inCard, bx, cy + (row - UiTokens.ControlSmall) / 2f, bw, word, following ? PillKind.Quiet : PillKind.Light, WhoFollowCommand, i);
+                Pill(s, inCard, bx, cy + (row - UiTokens.ControlSmall) / 2f, bw, word, following ? PillKind.Quiet : PillKind.Cyan, WhoFollowCommand, i);
                 cy += row;
             }
         }
@@ -864,7 +931,7 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Node(s, at, x, y, tw, UiTokens.Control, command, arg, face);
         }
 
-        public enum PillKind : byte { Line, Light, Orange, Quiet, Chosen }
+        public enum PillKind : byte { Line, Cyan, Orange, Quiet, Chosen }
 
         /// <summary>A pill's width for its words.</summary>
         public static float PillWidth(string words) => UiDraw.Snap(UiTextRules.Width(words, UiStyle.SmallStrong) + UiTokens.S4 * 2f);
@@ -873,8 +940,9 @@ namespace RealLifeOverhaul.Ui
         public static float IconPillWidth(string words) => UiDraw.Snap(UiTokens.S3 + UiTokens.IconSmall + UiTokens.S1 + UiTextRules.Width(words, UiStyle.SmallStrong) + UiTokens.S4);
 
         /// <summary>
-        /// A pill: outlined (Line), white with dark words (Light, Follow), Flare's orange (Orange, Post), quiet (Quiet, Following)
-        /// or chosen in the accent (Chosen). Returns its target, or -1 for a pill that only shows.
+        /// A pill: outlined (Line), the field's slate face with the accent's ink (Cyan: the kit's secondary tone, a Follow or an Accept), Flare's orange (Orange, Post), quiet (Quiet,
+        /// Following) or chosen in the accent (Chosen). Nothing is filled in the text's own near white, which outshone the primaries; the accent's soft fill is too faint a ground
+        /// for the accent's small words (4.1 to 1 where the kit wants 4.5). Returns its target, or -1 for a pill that only shows.
         /// </summary>
         public static int Pill(UiScene s, UiAt at, float x, float y, float w, string words, PillKind kind, int command, int arg, UiIcon icon = UiIcon.None,
             bool off = false)
@@ -883,7 +951,7 @@ namespace RealLifeOverhaul.Ui
             UiRole fill, edge, ink;
             switch (kind)
             {
-                case PillKind.Light: fill = UiRole.Text; edge = UiRole.None; ink = UiRole.Panel; break;
+                case PillKind.Cyan: fill = UiRole.Field; edge = UiRole.None; ink = UiRole.AccentText; break;
                 case PillKind.Orange: fill = UiRole.Chart2; edge = UiRole.None; ink = UiRole.OnAccent; break;
                 case PillKind.Quiet: fill = UiRole.Field; edge = UiRole.None; ink = UiRole.Text2; break;
                 case PillKind.Chosen: fill = UiRole.Accent; edge = UiRole.None; ink = UiRole.OnAccent; break;

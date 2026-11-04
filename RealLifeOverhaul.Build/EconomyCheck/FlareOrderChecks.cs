@@ -9,8 +9,9 @@ internal static partial class Program
 {
     private static void FlareOrderChecks()
     {
-        string bad = "none", sheets = "none", hire = "none", rail = "none";
-        int walked = 0;
+        string bad = "none", sheets = "none", hire = "none", rail = "none", pages = "none";
+        int walked = 0, pagesWalked = 0, pageStates = 0;
+        var walk = new int[256];
         var scene = new UiScene();
         UiWords en = UiWords("en");
         foreach (string state in UiSamples.FlareStates)
@@ -22,6 +23,11 @@ internal static partial class Program
                 continue;
             }
             byte layer = scene.Nodes[start].Layer;
+            if (layer == 0)
+            {
+                pageStates++;
+                pagesWalked += FlareOrderPage(scene, start, walk, state, ref pages);
+            }
             var chain = new List<int> { start };
             for (int at = start; ; )
             {
@@ -127,7 +133,83 @@ internal static partial class Program
         }
         Check(bad == "none" && sheets == "none" && walked > 100, "flare order: from the first target, right alone walks every screen and sheet left to right and top to bottom, never back up a row on a sheet ("
             + walked + " steps; " + bad + "); a sheet's chips, Cancel and then its commit button come last (" + sheets + ")");
+        Check(pages == "none" && pagesWalked > 40, "flare order: on every page right alone walks its column, its side, the nav and then the window's close, never to a target it has been to and never back to an earlier group ("
+            + pagesWalked + " steps over " + pageStates + " pages; " + pages + ")");
         Check(hire == "none", "flare order: on the hire page the filter chips come before the Hire buttons, which go down the rows (" + hire + ")");
         Check(rail == "none" && rows >= 2, "flare order: the rail's Who to follow holds the same " + rows + " rows in en, pt and zh-cn (" + rail + ")");
+    }
+
+    // A page's walk by right alone: it never visits a target twice, never goes back to a group read before (the column, the detail beside it, the side, the nav, the window's close,
+    // in that order; inside a group down the rows) and ends on the window's close. On a page with no side and a single column it reaches every target of the column that is read
+    // after its start. A page with a side hands its rows on to the side at their ends (that is where right goes), so the rows below the first are reached by down.
+    private static int FlareOrderPage(UiScene scene, int start, int[] walk, string state, ref string bad)
+    {
+        int n = FlareFace.WalkRight(scene, start, walk, out bool revisit);
+        string path = string.Empty;
+        if (revisit)
+        {
+            path = state + " visits " + walk[n - 1] + " twice";
+        }
+        for (int i = 1; i < n && path.Length == 0; i++)
+        {
+            int rankBefore = FlareOrderRank(scene, walk[i - 1]), rank = FlareOrderRank(scene, walk[i]);
+            scene.NodeBox(walk[i - 1], out _, out float y0, out _, out float h0);
+            scene.NodeBox(walk[i], out _, out float y1, out _, out float h1);
+            if (rank < rankBefore || (rank == rankBefore && y1 + h1 / 2f < y0 + h0 / 2f - 14f))
+            {
+                path = state + " goes back at step " + (i + 1) + " (" + scene.Nodes[walk[i - 1]].Command + "/" + scene.Nodes[walk[i - 1]].Arg + " to " + scene.Nodes[walk[i]].Command + "/" + scene.Nodes[walk[i]].Arg + ")";
+            }
+        }
+        if (path.Length == 0 && (n == 0 || scene.Nodes[walk[n - 1]].Command != UiDraw.CloseCommand))
+        {
+            path = state + " ends at step " + n + " and not on the close";
+        }
+        bool side = false, detail = false;
+        int column = 0, reached = 0;
+        scene.NodeBox(start, out float sx, out float sy, out float sw, out float sh);
+        for (int i = 0; i < scene.NodeCount; i++)
+        {
+            ref UiNode node = ref scene.Nodes[i];
+            side |= node.Region == 13;
+            detail |= node.Region == 14;   // a list with the conversation it opens beside it: right alone reads one of the two, left and down the other
+            scene.NodeBox(i, out float nx, out float ny, out _, out float nh);
+            bool after = ny + nh / 2f > sy + sh / 2f + 14f || (Math.Abs(ny + nh / 2f - (sy + sh / 2f)) <= 14f && nx >= sx);   // read after the start: below it, or beside it to the right
+            if (node.Region == 12 && !node.Disabled && node.Layer == 0 && after)
+            {
+                column++;
+            }
+        }
+        for (int i = 0; i < n; i++)
+        {
+            ref UiNode node = ref scene.Nodes[walk[i]];
+            scene.NodeBox(walk[i], out float nx, out float ny, out _, out float nh);
+            bool after = ny + nh / 2f > sy + sh / 2f + 14f || (Math.Abs(ny + nh / 2f - (sy + sh / 2f)) <= 14f && nx >= sx);
+            reached += node.Region == 12 && after ? 1 : 0;
+        }
+        if (path.Length == 0 && !side && !detail && scene.Nodes[start].Region == 12 && reached < column)
+        {
+            path = state + " reaches " + reached + " of " + column + " targets of its column that come after its start";
+        }
+        if (path.Length > 0)
+        {
+            bad = bad == "none" ? path : bad + "; " + path;
+        }
+        return n;
+    }
+
+    // Where a node stands in a page's reading: the column, the detail beside it, the side, the nav, then the window's close.
+    private static int FlareOrderRank(UiScene scene, int node)
+    {
+        if (scene.Nodes[node].Command == UiDraw.CloseCommand)
+        {
+            return 4;
+        }
+        switch (scene.Nodes[node].Region)
+        {
+            case 12: return 0;
+            case 14: return 1;
+            case 13: return 2;
+            default: return 3;
+        }
     }
 }

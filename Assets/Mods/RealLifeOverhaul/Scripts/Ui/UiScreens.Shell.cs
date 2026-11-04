@@ -16,7 +16,7 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_shell_another_app", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back",
                     "reallife_phone_folder_money",
                     "reallife_phone_folder_work", "reallife_phone_folder_life", "reallife_phone_folder_business", "reallife_phone_folder_setup",
-                    "reallife_ui_page_population", "reallife_ui_page_flare", "reallife_ui_page_studio", "reallife_planner_app", "reallife_calendar_app",
+                    "reallife_ui_page_population", "reallife_ui_page_studio", "reallife_planner_app", "reallife_calendar_app",
                     "reallife_ui_shell_status_unread", "reallife_econ_app", "reallife_banks_app", "reallife_mkt_app", "reallife_econapp_app",
                     "reallife_career_app",
                     "reallife_campus_app", "reallife_roles_app", "reallife_flare_app", "reallife_co_app", "smartphone_persona", "smartphone_contacts",

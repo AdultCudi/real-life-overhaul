@@ -103,9 +103,23 @@ internal static partial class Program
         Check(attention.Contains("StarPull("), "Flare play: attention reads the saved stars");
     }
 
+    // The repository's root, found by walking up from where the checker runs to the folder that holds RealLifeOverhaul.Build, so a build output that moves (another
+    // configuration, another target) still finds the sources the checks read.
+    private static string RepoRoot()
+    {
+        for (var dir = new System.IO.DirectoryInfo(System.AppContext.BaseDirectory); dir != null; dir = dir.Parent)
+        {
+            if (System.IO.Directory.Exists(System.IO.Path.Combine(dir.FullName, "RealLifeOverhaul.Build")) && System.IO.Directory.Exists(System.IO.Path.Combine(dir.FullName, "Assets")))
+            {
+                return dir.FullName;
+            }
+        }
+        return System.IO.Path.GetFullPath(System.IO.Path.Combine(System.AppContext.BaseDirectory, @"..\..\..\..\.."));
+    }
+
     private static string PlayFile(params string[] parts)
     {
-        string root = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
+        string root = System.IO.Path.Combine(RepoRoot(), "Assets", "Mods", "RealLifeOverhaul", "Scripts");
         string path = root;
         for (int i = 0; i < parts.Length; i++)
         {

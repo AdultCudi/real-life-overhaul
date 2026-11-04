@@ -232,7 +232,7 @@ namespace RealLifeOverhaul.Ui
                     {
                         break;
                     }
-                    Pill(s, at, qx, fy, qw, m.Quick[i], i == 0 && !field ? PillKind.Light : PillKind.Line, QuickCommand, i);
+                    Pill(s, at, qx, fy, qw, m.Quick[i], i == 0 && !field ? PillKind.Cyan : PillKind.Line, QuickCommand, i);
                     qx += qw + UiTokens.S2;
                 }
             }
@@ -267,7 +267,7 @@ namespace RealLifeOverhaul.Ui
             if (!string.IsNullOrEmpty(p.Follow))
             {
                 float fw = PillWidth(p.Follow);
-                Pill(s, at, x + w - UiTokens.S4 - fw, cy, fw, p.Follow, p.Following ? PillKind.Quiet : PillKind.Light, ProfileFollowCommand, 0);
+                Pill(s, at, x + w - UiTokens.S4 - fw, cy, fw, p.Follow, p.Following ? PillKind.Quiet : PillKind.Cyan, ProfileFollowCommand, 0);
             }
             else if (!string.IsNullOrEmpty(p.Edit))
             {
