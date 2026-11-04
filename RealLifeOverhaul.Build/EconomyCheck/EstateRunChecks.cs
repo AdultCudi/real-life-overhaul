@@ -21,7 +21,7 @@ internal static partial class Program
         public int Inspected, Passed, Asked, Accepted, Refused, Lapsed, Done, Skipped, Missed, Quit, Relet, CallsOfKind1, Named;
     }
 
-    private static EstateRunState RunEstateNew(int seed, int units, EstateClimate c)
+    private static EstateRunState RunEstateNew(int seed, int units, EstateClimate c, int factor = 13)
     {
         var r = new EstateRunState { Pool = TenantPoolStub.Of(600, 120), S = new EstateState { Seed = seed } };
         for (int b = 0; b < 2; b++)
@@ -30,7 +30,7 @@ internal static partial class Program
             h.Place = "Run%20Street~" + b;
             h.Name = "Run Street " + b;
             r.S.Holdings.Add(h);
-            int rent = Math.Max(40, EstateRules.UnitRent(h, c) * 13 / 10);   // a rent over the market's: the tenants are not easily content
+            int rent = Math.Max(40, EstateRules.UnitRent(h, c) * factor / 10);   // a rent over the market's: the tenants are not easily content
             for (int u = 0; u < h.Units.Count; u++)
             {
                 LetUnit(h, u, rent, 80, 1, 400);
@@ -40,7 +40,7 @@ internal static partial class Program
     }
 
     // One morning of the property business, as EstateDirector.HoldingDay runs it for a managed building (the game's money is the cash a run keeps).
-    private static void RunEstateDay(EstateRunState r, int day, EstateClimate c, bool servicing, bool answer)
+    private static void RunEstateDay(EstateRunState r, int day, EstateClimate c, bool servicing, bool answer, int policy = 0)
     {
         r.S.LastDay = day;
         for (int i = 0; i < r.S.Holdings.Count; i++)
@@ -84,26 +84,24 @@ internal static partial class Program
                     r.Cash += unit.Rent;
                 }
                 // The player answers a request three days after it is made: the first kind yes, the second no, the rest left to lapse.
-                if (answer && unit.Improve > 0 && day - unit.ImproveDay >= 3 && unit.Improve <= 2)
+                if (answer && unit.Improve > 0 && day - unit.ImproveDay >= 3 && (policy != 0 || unit.Improve <= 2))
                 {
-                    if (unit.Improve == 1)
+                    bool yes = policy == 2 || (policy == 0 && unit.Improve == 1);
+                    EstateDay.AnswerResult answered = EstateDay.Answer(h, unit, yes, true, cost =>
                     {
-                        r.Cash -= unit.ImproveCost;
-                        ImproveRules.Accept(h, unit);
-                        r.Accepted++;
-                    }
-                    else
-                    {
-                        ImproveRules.Refuse(unit);
-                        r.Refused++;
-                    }
+                        r.Cash -= cost;
+                        return true;
+                    });
+                    r.Accepted += answered == EstateDay.AnswerResult.Done && yes ? 1 : 0;
+                    r.Refused += answered == EstateDay.AnswerResult.Done && !yes ? 1 : 0;
                 }
                 // The other side of a lease: a unit that stood empty for a week is let again to someone of the pool.
                 if (!unit.Let && day % 7 == 0)
                 {
-                    LetUnit(h, u, 110, 70, day, 400);
+                    LetUnit(h, u, Math.Max(40, EstateRules.UnitRent(h, c)), 70, day, 400);
                     EstateDay.Lease(r.S, h, u, day, r.Pool);
                     r.Relet++;
+                    r.Named += h.Units[u].PersonId > 0 ? 1 : 0;
                 }
             }
             Inspection insp = EstateDay.Inspect(r.S, h, day, c, false);
@@ -183,6 +181,7 @@ internal static partial class Program
         public readonly EstateState S;
         public readonly EstateClimate C;
         public int Cash, Day = 40, Generation_;
+        public EstateDay.AnswerResult Answer = EstateDay.AnswerResult.Nothing;
 
         public EstateActionSource(EstateState s, EstateClimate c)
         {
@@ -213,26 +212,33 @@ internal static partial class Program
             {
                 buttons.Add(runs.Button("Pay for it", UiButtonKind.Primary, UiIcon.Check, UiAction.Alt, () =>
                 {
-                    Cash -= u.ImproveCost;
-                    ImproveRules.Accept(h, u);
+                    Answer = EstateDay.Answer(h, u, true, true, cost =>
+                    {
+                        if (Cash < cost)
+                        {
+                            return false;
+                        }
+                        Cash -= cost;
+                        return true;
+                    });
                     Generation_++;
                 }));
                 buttons.Add(runs.Button("Say no", UiButtonKind.Secondary, UiIcon.None, UiAction.Count, () =>
                 {
-                    ImproveRules.Refuse(u);
+                    Answer = EstateDay.Answer(h, u, false, true, cost => true);
                     Generation_++;
                 }));
             }
             buttons.Add(runs.Button("Book a service", UiButtonKind.Secondary, UiIcon.Wrench, UiAction.Count, () =>
             {
-                ServiceRules.Book(h, 2, Day, ServiceRules.Earliest(Day), "Run Trades|1", ServiceRules.Fee(h, 2, C.Index));
+                EstateDay.BookService(h, 2, Day, S.Seed, new[] { "Run Trades|1" }, C.Index, true);
                 Generation_++;
             }, h.Services.Count > 0));
             if (h.Services.Count > 0)
             {
                 buttons.Add(runs.Button("Cancel it", UiButtonKind.Secondary, UiIcon.None, UiAction.Count, () =>
                 {
-                    ServiceRules.Cancel(h, 0);
+                    EstateDay.CancelService(h, 2);
                     Generation_++;
                 }));
             }
@@ -285,8 +291,11 @@ internal static partial class Program
         u.ImproveCost = ImproveRules.Quote(h, 1, c.Index);
         u.Happy = 300;
         var screen = new EstateScreen(src, "estate");
+        bool short_ = EstatePress(screen, "PAY FOR IT") || EstatePress(screen, "Pay for it");
+        Check(short_ && src.Answer == EstateDay.AnswerResult.Short && u.Improve == 1 && u.Happy == 300, "with too little money the answer is Short: the request stands and the page can tell why");
+        src.Cash = 1000000;
         bool a = EstatePress(screen, "PAY FOR IT") || EstatePress(screen, "Pay for it");
-        Check(a && u.Improve == 0 && u.Happy > 300 && src.Cash < 0, "pressing a request's button pays for the improvement through the screen: the request is gone, the tenant gladder (" + u.Happy + "), the money spent (" + src.Cash + ")");
+        Check(a && src.Answer == EstateDay.AnswerResult.Done && u.Improve == 0 && u.Happy > 300 && src.Cash < 1000000, "pressing a request's button pays for the improvement through the screen: the request is gone, the tenant gladder (" + u.Happy + "), the money spent (" + src.Cash + ")");
         u.Improve = 2;
         u.ImproveDay = 38;
         u.ImproveCost = 900;
@@ -301,11 +310,12 @@ internal static partial class Program
     }
 
 
-    // ------------------------------------------------------------------------------------------------- every action of the live sources has a handler
+    // ------------------------------------------------------------------------------------------------- every action of the live sources has a real target
 
     // The game side of both screens reads the directors and carries every button to them. Each registration of a button, a link, a switch or a step in
-    // the Live files must carry a handler (a director's method, a change of the view, a confirmation, a jump into the game): none is empty, none is a
-    // bare "return true". The count is printed so a page that lost its actions is seen.
+    // the Live files must name its real target: a method of the estate's or the dealership's director that exists, a change of what the page shows
+    // (the view's own fields, a page opened), or a jump into the game (the guide, the people page, the showroom floor). A "Show(" or a "Pay" alone is
+    // no target. The counts by kind are printed so a page that lost its actions is seen.
     private static void EstateHandlers()
     {
         string root = EstateSourceRoot();
@@ -314,10 +324,24 @@ internal static partial class Program
             Check(false, "the Live files of the two apps were found for the handler scan");
             return;
         }
-        var kinds = new[] { "_runs.Button(", "_runs.Link(", "_runs.Switch(", "_runs.Step(", "Act(runs," };
-        var handlers = new[] { "_d.", "Show(", "Open(", "Confirm(", "EstateGame.", "DealerGame.", "GameUi", "PopulationScreen", "Locate(", "ShowroomView", "_v.", "Pay", "Want(" };
-        int found = 0, bare = 0, files = 0;
-        string bareAt = "none";
+        var methods = new HashSet<string>();
+        string economy = System.IO.Path.GetFullPath(System.IO.Path.Combine(root, "..", "..", "Economy"));
+        foreach (string folder in new[] { "Estate", "Dealer" })
+        {
+            foreach (string file in Directory.GetFiles(System.IO.Path.Combine(economy, folder), "*Director*.cs"))
+            {
+                foreach (System.Text.RegularExpressions.Match m in System.Text.RegularExpressions.Regex.Matches(File.ReadAllText(file), @"(?:public|internal)\s+[\w<>\[\],\.? ]+?\s+(\w+)\s*\("))
+                {
+                    methods.Add(m.Groups[1].Value);
+                }
+            }
+        }
+        var view = new System.Text.RegularExpressions.Regex(@"_v\.\w+\s*=|_eventYard\s*=|_eventFeature\s*=|_yardChoice\s*=|SetChoice\(|\bOpen\(|OpenWorks\(");
+        var game = new System.Text.RegularExpressions.Regex(@"EstateGame\.Locate\(|ShowroomView\.Instance\?\.(Look|Place)\(|EstateLive\.OpenPerson\(");
+        var director = new System.Text.RegularExpressions.Regex(@"_d\.(\w+)\(");
+        var kinds = new[] { "_runs.Button(", "_runs.Link(", "_runs.Switch(", "_runs.Step(", "_runs.Do(", "_runs.Add(", "Act(runs," };
+        int found = 0, toDirector = 0, toView = 0, toGame = 0, bare = 0, unknown = 0, files = 0;
+        string bareAt = "none", unknownAt = "none";
         foreach (string file in Directory.GetFiles(root, "*Live*.cs"))
         {
             files++;
@@ -348,23 +372,131 @@ internal static partial class Program
                         }
                     }
                     string call = text.Substring(at, Math.Min(text.Length - at, end - at + 1));
-                    found++;
-                    bool any = false;
-                    foreach (string h in handlers)
+                    at += kind.Length;
+                    if (call.StartsWith("_runs.Do(run)", StringComparison.Ordinal))
                     {
-                        any |= call.Contains(h);
+                        continue;   // the Act helper's own: its callers are scanned
                     }
-                    if (!any || call.Contains("=> { }") || call.Contains("() => true)"))
+                    found++;
+                    var d = director.Matches(call);
+                    if (d.Count > 0)
+                    {
+                        bool all = true;
+                        foreach (System.Text.RegularExpressions.Match m in d)
+                        {
+                            all &= methods.Contains(m.Groups[1].Value);
+                            if (!methods.Contains(m.Groups[1].Value))
+                            {
+                                unknownAt = System.IO.Path.GetFileName(file) + ": _d." + m.Groups[1].Value;
+                            }
+                        }
+                        unknown += all ? 0 : 1;
+                        toDirector++;
+                    }
+                    else if (game.IsMatch(call))
+                    {
+                        toGame++;
+                    }
+                    else if (view.IsMatch(call))
+                    {
+                        toView++;
+                    }
+                    else
                     {
                         bare++;
                         bareAt = System.IO.Path.GetFileName(file) + ": " + call.Substring(0, Math.Min(90, call.Length));
                     }
-                    at = at + kind.Length;
                 }
             }
         }
-        Console.WriteLine("  live actions: " + found + " registered in " + files + " files");
-        Check(found >= 80 && bare == 0, "every button, link, switch and step of the live sources carries a handler (" + found + " registered, " + bare + " bare: " + bareAt + ")");
+        Console.WriteLine("  live actions: " + found + " registered in " + files + " files: " + toDirector + " to a director, " + toView + " to the page's own view, " + toGame + " into the game");
+        Check(found >= 80 && bare == 0, "every button, link, switch and step of the live sources names its real target (" + found + " registered, " + bare + " without one: " + bareAt + ")");
+        Check(unknown == 0, "every director method a live action calls exists in the director (" + unknown + " not found: " + unknownAt + ")");
+    }
+
+
+    // ------------------------------------------------------------------------------------------------- a vacancy, a re-let, and a refusal that ends in leaving
+
+    private static void EstateVacancies()
+    {
+        EstateClimate c = Climate();
+        c.DaysPerYear = 360;
+        // Rents well over the market's, nothing answered: the tenants give notice and go, and each empty unit is let again to someone of the pool.
+        int quits = 0, relets = 0, named = 0;
+        bool distinct = true, fresh = true;
+        for (int seed = 1; seed <= 6; seed++)
+        {
+            EstateRunState r = RunEstateNew(seed, 5, c, 20);
+            var first = new Dictionary<string, int>();
+            for (int day = 2; day <= 120; day++)
+            {
+                RunEstateDay(r, day, c, false, false);
+                if (day == 2)
+                {
+                    for (int h = 0; h < r.S.Holdings.Count; h++)
+                    {
+                        for (int u = 0; u < r.S.Holdings[h].Units.Count; u++)
+                        {
+                            first[h + ":" + u] = r.S.Holdings[h].Units[u].PersonId;
+                        }
+                    }
+                }
+            }
+            quits += r.Quit;
+            relets += r.Relet;
+            named += r.Named;
+            var seen = new HashSet<int>();
+            for (int h = 0; h < r.S.Holdings.Count; h++)
+            {
+                for (int u = 0; u < r.S.Holdings[h].Units.Count; u++)
+                {
+                    EstateUnit x = r.S.Holdings[h].Units[u];
+                    if (x.Let)
+                    {
+                        distinct &= x.PersonId > 0 && seen.Add(x.PersonId);
+                        fresh &= x.PersonSince <= 120;
+                    }
+                }
+            }
+        }
+        Console.WriteLine("  estate vacancies: " + quits + " quits, " + relets + " re-lets, " + named + " named");
+        Check(quits >= 3, "tenants who are not content give notice and go: " + quits + " left over six cities of a hundred and twenty days");
+        Check(relets >= 3 && named == relets, "each empty unit is let again and the new tenant is named at once: " + relets + " re-lets, " + named + " named");
+        Check(distinct && fresh, "after the leaving and the letting every let unit has its own person of the pool");
+
+        // The refusal's path: the same cities, every request refused against every request paid for. The refused leave more.
+        int refusedQuits = 0, paidQuits = 0, refusals = 0;
+        for (int seed = 1; seed <= 30; seed++)
+        {
+            EstateRunState no = RunEstateNew(seed, 5, c, 14), yes = RunEstateNew(seed, 5, c, 14);
+            for (int day = 2; day <= 120; day++)
+            {
+                RunEstateDay(no, day, c, false, true, 1);
+                RunEstateDay(yes, day, c, false, true, 2);
+            }
+            refusedQuits += no.Quit;
+            paidQuits += yes.Quit;
+            refusals += no.Refused;
+        }
+        Check(refusals > 0 && refusedQuits > paidQuits, "a landlord who refuses every request loses more tenants than one who pays for them (" + refusedQuits + " quits against " + paidQuits + ", " + refusals + " refusals)");
+    }
+
+    // The city's rents of one save never show in the next: the slot is reset when a city goes.
+    private static void EstateRentSlot()
+    {
+        var slot = new RentSlot();
+        RentMapData into = slot.Begin(100);
+        into.Clear(100, 30);
+        into.Add("Midtown", (int)EstateUse.Homes, 3000, 4000, 40, 1);
+        slot.Finish(into);
+        Check(slot.Now.DistrictCount == 1 && !slot.Due(100) && slot.Due(101), "the day's read is kept once and is due again tomorrow");
+        slot.Reset();
+        Check(slot.Now.DistrictCount == 0 && slot.Now.Day == -1 && slot.Due(100), "a city that goes, or another save, empties the rents and makes the same day due again: the second save does not show the first's rents");
+        RentMapData again = slot.Begin(100);
+        again.Clear(100, 30);
+        again.Add("Uptown", (int)EstateUse.Homes, 900, 2000, 10, 0);
+        slot.Finish(again);
+        Check(slot.Now.DistrictCount == 1 && slot.Now.Districts[0] == "Uptown", "the second city's read stands alone");
     }
 
     private static void EstateRun()
@@ -374,6 +506,8 @@ internal static partial class Program
         int monthDays = MacroCatalogue.MonthDays(c.DaysPerYear);
 
         EstatePressed();
+        EstateVacancies();
+        EstateRentSlot();
         EstateHandlers();
 
         // ---- one city, a hundred and twenty days, a save on day 30 and an old save at the same place

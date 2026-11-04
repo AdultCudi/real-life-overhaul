@@ -31197,7 +31197,7 @@
   "reallife_ui_estate_improve_head": "{name} pede {what}, {amount}.",
   "reallife_ui_estate_in_days": "em {days} dias",
   "reallife_ui_estate_kept": "Mantido",
-  "reallife_ui_estate_landlord_line": "{name}, {units} unidades, apartamentos em média {rent}",
+  "reallife_ui_estate_landlord_line": "{name}, {units} unidades, apartamentos ao aluguel de mercado de {rent}",
   "reallife_ui_estate_last_inspected": "Última vistoria",
   "reallife_ui_estate_last_months": "últimos {count} meses",
   "reallife_ui_estate_late_days": "Atrasado {days} dias",
@@ -31412,5 +31412,7 @@
   "reallife_ui_dealer_kicker_bay": "{name}, vaga {bay}, {state}",
   "reallife_ui_dealer_search": "Buscar um modelo",
   "reallife_ui_dealer_the_car": "O carro",
-  "reallife_ui_dealer_l_margin_offer": "Margem na oferta"
+  "reallife_ui_dealer_l_margin_offer": "Margem na oferta",
+  "reallife_ui_estate_your_employee": "trabalha para você",
+  "reallife_estate_note_improve_broke": "{building}: a melhoria de {amount} não pôde ser paga, então o pedido continua."
 }

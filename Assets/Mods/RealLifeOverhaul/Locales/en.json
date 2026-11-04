@@ -31197,7 +31197,7 @@
   "reallife_ui_estate_improve_head": "{name} asks for {what}, {amount}.",
   "reallife_ui_estate_in_days": "in {days} days",
   "reallife_ui_estate_kept": "Kept",
-  "reallife_ui_estate_landlord_line": "{name}, {units} units, flats average {rent}",
+  "reallife_ui_estate_landlord_line": "{name}, {units} units, flats at the market rent of {rent}",
   "reallife_ui_estate_last_inspected": "Last inspected",
   "reallife_ui_estate_last_months": "last {count} months",
   "reallife_ui_estate_late_days": "Late {days} days",
@@ -31412,5 +31412,7 @@
   "reallife_ui_dealer_kicker_bay": "{name}, bay {bay}, {state}",
   "reallife_ui_dealer_search": "Search a model",
   "reallife_ui_dealer_the_car": "The car",
-  "reallife_ui_dealer_l_margin_offer": "Margin at the offer"
+  "reallife_ui_dealer_l_margin_offer": "Margin at the offer",
+  "reallife_ui_estate_your_employee": "works for you",
+  "reallife_estate_note_improve_broke": "{building}: the improvement of {amount} could not be paid, so the request stands."
 }

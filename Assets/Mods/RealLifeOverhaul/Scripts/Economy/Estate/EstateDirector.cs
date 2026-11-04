@@ -368,6 +368,7 @@ namespace RealLifeOverhaul.Economy
             }
             _running = false;
             _holding = false;
+            ResetRents();
             _alerts.Clear();
             CloseVisit();
             if (!unloading)

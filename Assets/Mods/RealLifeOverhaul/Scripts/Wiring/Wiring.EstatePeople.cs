@@ -119,7 +119,6 @@ namespace RealLifeOverhaul
                     {
                         Id = p.Id[slot],
                         Age = _s.Age(slot, _s.Day),
-                        Female = p.Female[slot] == 1,
                         Working = working,
                         PayADay = working ? LabourRules.DailyPay(_s, slot) / 100 : 0,
                         Employee = (p.Flags[slot] & PersonFlags.Linked) != 0 && EmployeeLink(p.Id[slot])

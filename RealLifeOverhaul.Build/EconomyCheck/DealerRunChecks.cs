@@ -255,6 +255,44 @@ internal static partial class Program
             withRivals += a.Offers;
             withoutRivals += b.Offers;
         }
+        // The other dealers' cars are sold one at a time, never a dealer's whole lot of a morning together.
+        {
+            IList<MarketModel> m1 = W4Models();
+            DealerState st = new DealerState { Seed = 31, FirstDay = 1 };
+            RivalRules.Morning(st, 2, m1, 1000);
+            int together = 0, single = 0, mornings = 0;
+            for (int day = 3; day <= 60; day++)
+            {
+                var before = new Dictionary<int, int>();
+                for (int i = 0; i < st.Rivals.Count; i++)
+                {
+                    int d = st.Rivals[i].Rival;
+                    before[d] = (before.ContainsKey(d) ? before[d] : 0) + (st.Rivals[i].Day == st.Rivals[i].Day ? 1 : 0);
+                }
+                var oldDays = new List<RivalCar>(st.Rivals);
+                RivalRules.Morning(st, day, m1, 1000);
+                var after = new Dictionary<int, int>();
+                foreach (RivalCar car in oldDays)
+                {
+                    bool kept = false;
+                    foreach (RivalCar now in st.Rivals)
+                    {
+                        kept |= now.Rival == car.Rival && now.Type == car.Type && now.Ask == car.Ask && now.Day == car.Day;
+                    }
+                    if (!kept)
+                    {
+                        after[car.Rival] = (after.ContainsKey(car.Rival) ? after[car.Rival] : 0) + 1;
+                    }
+                }
+                foreach (KeyValuePair<int, int> sold in after)
+                {
+                    mornings++;
+                    together += sold.Value == before[sold.Key] && before[sold.Key] > 1 ? 1 : 0;
+                    single += sold.Value == 1 && before[sold.Key] > 1 ? 1 : 0;
+                }
+            }
+            Check(mornings > 10 && single > together && together * 4 < mornings, "a rival's cars are sold one at a time, not the whole lot at once (" + single + " mornings of one sale, " + together + " of all of them, over " + mornings + " mornings with a sale)");
+        }
         Check(withRivals != withoutRivals, "the other dealers' asks bear on the customers: " + withRivals + " offers with them in the city, " + withoutRivals + " without");
     }
 }

@@ -449,7 +449,7 @@ namespace RealLifeOverhaul.Ui
                 for (int b = 0; b < h.Services.Count; b++)
                 {
                     ServiceBooking v = h.Services[b];
-                    int at = b;
+                    int at = v.Kind;   // the booking by its kind: a morning's re-sorting never cancels another
                     lines.Add(_runs.Link(EstateText.Fill("reallife_ui_estate_service_line", "fault", EstateText.Fault(v.Kind), "day",
                         v.Day.ToString(Inv), "who", ContractorName(v.Contractor), "amount", Money(v.Fee)),
                         () => Show(() => _d.CancelService(place, at))));

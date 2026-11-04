@@ -52,7 +52,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 {
                     known = models[m].Type == c.Type;
                 }
-                var dice = new DealerDice(s.Seed, day, c.Rival * 131 + c.Day, 83);
+                var dice = new DealerDice(s.Seed, day, c.Rival * 131 + c.Day * 7 + (DealerRules.Hash(c.Type) % 9973) + c.Ask, 83);   // each car its own roll
                 if (!known || c.Rival < 0 || c.Rival >= dealers || dice.Chance(SoldChance))
                 {
                     s.Rivals.RemoveAt(i);

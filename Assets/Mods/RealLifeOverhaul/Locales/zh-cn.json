@@ -31197,7 +31197,7 @@
   "reallife_ui_estate_improve_head": "{name}要求{what}，{amount}。",
   "reallife_ui_estate_in_days": "{days}天后",
   "reallife_ui_estate_kept": "已保留",
-  "reallife_ui_estate_landlord_line": "{name}，{units}个单元，公寓平均租金{rent}",
+  "reallife_ui_estate_landlord_line": "{name}，{units}个单元，公寓按市场租金{rent}",
   "reallife_ui_estate_last_inspected": "上次检查",
   "reallife_ui_estate_last_months": "最近{count}个月",
   "reallife_ui_estate_late_days": "逾期{days}天",
@@ -31412,5 +31412,7 @@
   "reallife_ui_dealer_kicker_bay": "{name}，{bay}号车位，{state}",
   "reallife_ui_dealer_search": "搜索车型",
   "reallife_ui_dealer_the_car": "这辆车",
-  "reallife_ui_dealer_l_margin_offer": "按报价的利润"
+  "reallife_ui_dealer_l_margin_offer": "按报价的利润",
+  "reallife_ui_estate_your_employee": "为你工作",
+  "reallife_estate_note_improve_broke": "{building}：{amount}的改善费用付不起，请求仍然有效。"
 }

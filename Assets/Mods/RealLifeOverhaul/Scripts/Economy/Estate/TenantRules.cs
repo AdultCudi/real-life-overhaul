@@ -7,7 +7,6 @@ namespace RealLifeOverhaul.Economy
     {
         public int Id;
         public int Age;
-        public bool Female;
         public bool Working;
         public int PayADay;         // dollars a day in a job; 0 out of one
         public bool Employee;       // one of the player's own staff

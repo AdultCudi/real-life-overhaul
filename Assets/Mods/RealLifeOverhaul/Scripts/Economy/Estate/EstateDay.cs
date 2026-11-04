@@ -106,6 +106,59 @@ namespace RealLifeOverhaul.Economy
             return r;
         }
 
+        /// <summary>What came of answering a tenant's request.</summary>
+        public enum AnswerResult
+        {
+            Done,       // paid for or refused, and the unit's record changed
+            Nothing,    // no request open, no unit, or the landlord's duties are off
+            Short       // the money was not there: the request stands
+        }
+
+        /// <summary>
+        /// A tenant's request for an improvement is met (<paramref name="pay"/> takes the money, true when it was there) or refused. The same
+        /// function the director's answer and the check's pressed button call.
+        /// </summary>
+        public static AnswerResult Answer(EstateHolding h, EstateUnit u, bool accept, bool duties, Func<int, bool> pay)
+        {
+            if (h == null || u == null || !duties || u.Improve <= 0)
+            {
+                return AnswerResult.Nothing;
+            }
+            if (accept)
+            {
+                int cost = u.ImproveCost;
+                if (!pay(cost))
+                {
+                    return AnswerResult.Short;
+                }
+                h.CostYear += cost;
+                h.CallsYear += cost;
+                ImproveRules.Accept(h, u);
+            }
+            else
+            {
+                ImproveRules.Refuse(u);
+            }
+            return AnswerResult.Done;
+        }
+
+        /// <summary>A service is booked for a kind of fault: the earliest day, the city's contractor by a roll, the fee of a visit. False when it cannot be.</summary>
+        public static bool BookService(EstateHolding h, int kind, int day, int seed, string[] firms, int index, bool duties)
+        {
+            if (h == null || !duties)
+            {
+                return false;
+            }
+            string who = ServiceRules.Contractor(firms, seed, EstateRules.Hash(h.Place), day + kind);
+            return ServiceRules.Book(h, kind, day, ServiceRules.Earliest(day), who, ServiceRules.Fee(h, kind, index));
+        }
+
+        /// <summary>The booking for a kind of fault is cancelled (by the kind, so a morning's re-sorting of the list never cancels another).</summary>
+        public static bool CancelService(EstateHolding h, int kind)
+        {
+            return h != null && ServiceRules.CancelKind(h, kind);
+        }
+
         /// <summary>One unit's day: the tenancy's rules (rent, arrears, the tenant's mood, an improvement asked for, quitting), and the payment into its record.</summary>
         public static TenancyDay Unit(EstateState s, EstateHolding h, int unit, int day, EstateClimate c, bool duties)
         {
@@ -124,6 +177,39 @@ namespace RealLifeOverhaul.Economy
                 return true;
             }
             return false;
+        }
+    }
+    /// <summary>
+    /// The city's rents as the day's read holds them: the last read and the one before it (its room), the day of the read in hand. A city
+    /// unloaded or another save loaded resets it, so the first city's rents never show in the second. Game-free.
+    /// </summary>
+    public sealed class RentSlot
+    {
+        public RentMapData Now = new RentMapData(), Next = new RentMapData();
+        public int Day = -1;
+
+        /// <summary>Whether the read of a day has yet to be begun.</summary>
+        public bool Due(int day) => Day != day;
+
+        /// <summary>A read of a day is begun; the data goes into the room the read before it left.</summary>
+        public RentMapData Begin(int day)
+        {
+            Day = day;
+            return Next;
+        }
+
+        /// <summary>A read is done: it becomes the rents, and the ones before it become the next read's room.</summary>
+        public void Finish(RentMapData done)
+        {
+            Next = Now;
+            Now = done;
+        }
+
+        public void Reset()
+        {
+            Now = new RentMapData();
+            Next = new RentMapData();
+            Day = -1;
         }
     }
 }

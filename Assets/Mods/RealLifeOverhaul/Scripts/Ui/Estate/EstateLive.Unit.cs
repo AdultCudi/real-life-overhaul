@@ -119,6 +119,11 @@ namespace RealLifeOverhaul.Ui
                 {
                     line.Add(since);
                 }
+                ITenantPool pool = EstateBridges.Pool != null ? EstateBridges.Pool() : null;
+                if (TenantRules.IsEmployee(pool, u.PersonId))
+                {
+                    line.Add(EstateText.T("reallife_ui_estate_your_employee"));
+                }
                 p.TenantLine = string.Join(" · ", line.ToArray());
                 StateChip(h, u, out string chip, out UiRole tone);
                 p.TenantChip = u.Arrears > 0 || u.NoticeEnd > 0 || u.CourtDay > 0 ? chip : null;
@@ -130,14 +135,13 @@ namespace RealLifeOverhaul.Ui
                     p.TenantOpenRun = _runs.Add(() => EstateLive.OpenPerson(id));
                 }
                 // What stands behind how satisfied they are.
-                int repairs, heating, value, condition;
-                HappyTerms.Of(h, n, _day, _c, out repairs, out heating, out value, out condition);
+                int repairs, value, condition;
+                HappyTerms.Of(h, n, _day, _c, out repairs, out value, out condition);
                 p.MeterLabels = new[]
                 {
-                    EstateText.T("reallife_ui_estate_m_satisfaction"), EstateText.T("reallife_ui_estate_m_repairs"), EstateText.T("reallife_ui_estate_m_heating"),
-                    EstateText.T("reallife_ui_estate_m_value"), EstateText.T("reallife_ui_estate_m_condition")
+                    EstateText.T("reallife_ui_estate_m_satisfaction"), EstateText.T("reallife_ui_estate_m_repairs"), EstateText.T("reallife_ui_estate_m_value"), EstateText.T("reallife_ui_estate_m_condition")
                 };
-                p.MeterValues = new[] { u.Happy < 0 ? 50 : u.Happy / 10, repairs, heating, value, condition };
+                p.MeterValues = new[] { u.Happy < 0 ? 50 : u.Happy / 10, repairs, value, condition };
                 // The year of this flat: its share of the building's year.
                 int units = Math.Max(1, h.Units.Count);
                 long rent = h.RentYear / units, costs = h.CostYear / units;

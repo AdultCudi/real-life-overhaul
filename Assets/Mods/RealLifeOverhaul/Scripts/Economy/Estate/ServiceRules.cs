@@ -56,6 +56,20 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
+        /// <summary>The booking for a kind of fault is taken off the list.</summary>
+        public static bool CancelKind(EstateHolding h, int kind)
+        {
+            for (int i = 0; h != null && i < h.Services.Count; i++)
+            {
+                if (h.Services[i].Kind == kind)
+                {
+                    h.Services.RemoveAt(i);
+                    return true;
+                }
+            }
+            return false;
+        }
+
         public static bool Cancel(EstateHolding h, int index)
         {
             if (h == null || index < 0 || index >= h.Services.Count)

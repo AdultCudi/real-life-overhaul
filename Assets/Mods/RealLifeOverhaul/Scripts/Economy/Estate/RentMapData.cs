@@ -10,7 +10,6 @@ namespace RealLifeOverhaul.Economy
         public int Units;                   // units they hold in the city's buildings
         public int Flats;                   // ...of them flats
         public long FlatRent;               // dollars a day, summed over their flats
-        public int Last;                    // their mean flat rent a month at the last month's turn, dollars; 0 until a month has turned
         public int Mean(int monthDays) => Flats > 0 ? (int)(FlatRent / Flats * monthDays) : 0;
     }
 

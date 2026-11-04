@@ -37,7 +37,7 @@ internal static partial class Program
             var pool = new TenantPoolStub();
             for (int i = 1; i <= count; i++)
             {
-                pool.People.Add(new TenantFact { Id = i, Age = 18 + i % 50, Female = i % 2 == 0, Working = i % 5 != 0, PayADay = i % 5 != 0 ? pay + i % 40 : 0 });
+                pool.People.Add(new TenantFact { Id = i, Age = 18 + i % 50, Working = i % 5 != 0, PayADay = i % 5 != 0 ? pay + i % 40 : 0 });
             }
             return pool;
         }
@@ -318,38 +318,32 @@ internal static partial class Program
     {
         EstateClimate c = Climate();
         EstateHolding h = W4Let(1);
-        int repairs, heating, value, condition;
-        HappyTerms.Of(h, 0, 5, c, out repairs, out heating, out value, out condition);
-        Check(repairs == 100 && heating >= 60 && value >= 0 && value <= 100 && condition > 50 && condition <= 100, "with nothing open the repair term is full and the others are in range (" + repairs + ", " + heating + ", " + value + ", " + condition + ")");
+        int repairs, value, condition;
+        HappyTerms.Of(h, 0, 5, c, out repairs, out value, out condition);
+        Check(repairs == 100 && value >= 0 && value <= 100 && condition > 50 && condition <= 100, "with nothing open the repair term is full and the others are in range (" + repairs + ", " + value + ", " + condition + ")");
         EstateUnit u = h.Units[0];
-        u.Call = HappyTerms.Heating;
+        u.Call = 1;
         u.CallDay = 1;
-        HappyTerms.Of(h, 0, 20, c, out repairs, out heating, out value, out condition);
-        int heatingOpen = heating;
-        Check(repairs < 100 && heating <= 35 && heating <= repairs, "a heating call open lowers repairs and heating most (" + repairs + ", " + heating + ")");
+        HappyTerms.Of(h, 0, 20, c, out repairs, out value, out condition);
+        Check(repairs < 100, "an open call lowers the repair term (" + repairs + ")");
         u.CallClosed();
-        h.ServiceUntil[HappyTerms.Heating] = 100;
-        HappyTerms.Of(h, 0, 20, c, out repairs, out heating, out value, out condition);
-        Check(heating == 100, "a boiler service in force keeps the heating term full");
-        h.ServiceUntil[HappyTerms.Heating] = 0;
         u.Rent = EstateRules.UnitRent(h, c) * 14 / 10;
         int dear;
-        HappyTerms.Of(h, 0, 20, c, out repairs, out heating, out dear, out condition);
+        HappyTerms.Of(h, 0, 20, c, out repairs, out dear, out condition);
         u.Rent = EstateRules.UnitRent(h, c) * 7 / 10;
         int cheap;
-        HappyTerms.Of(h, 0, 20, c, out repairs, out heating, out cheap, out condition);
+        HappyTerms.Of(h, 0, 20, c, out repairs, out cheap, out condition);
         Check(cheap > dear, "a rent under the market's reads as better value than one over it (" + cheap + " against " + dear + ")");
         h.Cond = 200;
         int poorCondition;
-        HappyTerms.Of(h, 0, 20, c, out repairs, out heating, out value, out poorCondition);
+        HappyTerms.Of(h, 0, 20, c, out repairs, out value, out poorCondition);
         h.Cond = 1000;
         int goodCondition;
-        HappyTerms.Of(h, 0, 20, c, out repairs, out heating, out value, out goodCondition);
+        HappyTerms.Of(h, 0, 20, c, out repairs, out value, out goodCondition);
         Check(goodCondition > poorCondition && goodCondition <= 100 && poorCondition >= 0, "the condition term follows the building's");
         h.Units[0].Vacant();
-        HappyTerms.Of(h, 0, 20, c, out repairs, out heating, out value, out condition);
-        Check(repairs == 0 && heating == 0 && value == 0 && condition == 0, "an empty unit has no terms");
-        Check(heatingOpen <= 35, "(a heating call held its term to 35 or under)");
+        HappyTerms.Of(h, 0, 20, c, out repairs, out value, out condition);
+        Check(repairs == 0 && value == 0 && condition == 0, "an empty unit has no terms");
     }
 
     // ------------------------------------------------------------------------------------------------- the city's rents

@@ -16,13 +16,20 @@ namespace RealLifeOverhaul.Economy
 
         private static readonly int HotRents = HotSpots.Slot("Estate: EstateDirector.RentStep");
 
-        private RentMapData _rents = new RentMapData(), _rentsNext = new RentMapData();
+        private readonly RentSlot _slot = new RentSlot();
         private EstateGame.RentRead _rentRead;
         private Func<bool> _rentStep;
-        private int _rentDay = -1;
 
         /// <summary>The city's rents as last read (Day -1 before the first read): shared with build mode's Rents layer.</summary>
-        public RentMapData Rents => _rents;
+        public RentMapData Rents => _slot.Now;
+
+        // The city goes or another save is loaded: the read in hand is dropped from the day-spread and the rents forgotten.
+        private void ResetRents()
+        {
+            DaySpread.Shared.Drop(this);
+            _rentRead = null;
+            _slot.Reset();
+        }
 
         // ------------------------------------------------------------------------------------------------- named tenants
 
@@ -72,8 +79,7 @@ namespace RealLifeOverhaul.Economy
             }
             int day = Save.Day;
             string[] firms = EstateBridges.Contractors != null ? EstateBridges.Contractors() : null;
-            string who = ServiceRules.Contractor(firms, _state.Seed, EstateRules.Hash(place), day + kind);
-            bool booked = ServiceRules.Book(h, kind, day, ServiceRules.Earliest(day), who, ServiceRules.Fee(h, kind, _climate.Index));
+            bool booked = EstateDay.BookService(h, kind, day, _state.Seed, firms, _climate.Index, Duties);
             if (booked)
             {
                 Changed();
@@ -81,11 +87,11 @@ namespace RealLifeOverhaul.Economy
             return booked;
         }
 
-        /// <summary>A booked service is cancelled.</summary>
-        public bool CancelService(string place, int index)
+        /// <summary>The booked service for a kind of fault is cancelled.</summary>
+        public bool CancelService(string place, int kind)
         {
             EstateHolding h = Mine(place);
-            if (h != null && ServiceRules.Cancel(h, index))
+            if (h != null && EstateDay.CancelService(h, kind))
             {
                 Changed();
                 return true;
@@ -100,24 +106,16 @@ namespace RealLifeOverhaul.Economy
         {
             EstateHolding h;
             EstateUnit u = UnitOf(place, unit, out h);
-            if (u == null || !Duties || u.Improve <= 0)
+            EstateDay.AnswerResult result = EstateDay.Answer(h, u, accept, Duties,
+                cost => Cost(cost, EstateGame.WorksKey, EstateText.UnitName(h, unit), h.Place, "an improvement a tenant asked for", false));
+            if (result == EstateDay.AnswerResult.Short)
+            {
+                Tell(NotificationType.Warning, "reallife_estate_note_improve_broke", Data("building", EstateText.UnitName(h, unit), "amount", EstateText.Money(u.ImproveCost)),
+                    TabMine, UnitPick(h, unit));
+            }
+            if (result != EstateDay.AnswerResult.Done)
             {
                 return false;
-            }
-            if (accept)
-            {
-                int cost = u.ImproveCost;
-                if (!Cost(cost, EstateGame.WorksKey, EstateText.UnitName(h, unit), h.Place, "an improvement a tenant asked for", false))
-                {
-                    return false;
-                }
-                h.CostYear += cost;
-                h.CallsYear += cost;
-                ImproveRules.Accept(h, u);
-            }
-            else
-            {
-                ImproveRules.Refuse(u);
             }
             Touched(h);
             return true;
@@ -128,12 +126,11 @@ namespace RealLifeOverhaul.Economy
         // The day's read of the city's rents, queued for the day-spread so no frame carries more than a slice of it.
         private void QueueRents(int day)
         {
-            if (_rentRead != null || _rentDay == day || !_cityRead)
+            if (_rentRead != null || !_slot.Due(day) || !_cityRead)
             {
                 return;
             }
-            _rentDay = day;
-            _rentRead = EstateGame.BeginRentRead(_rentsNext, _state.Seed, _climate, day);
+            _rentRead = EstateGame.BeginRentRead(_slot.Begin(day), _state.Seed, _climate, day);
             _rentStep = _rentStep ?? RentStep;
             DaySpread.Shared.Add(this, "Estate: the city's rents", _rentStep, Time.frameCount, HotRents);
         }
@@ -153,8 +150,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 RentMapData done = _rentRead.Into;
                 _rentRead = null;
-                _rentsNext = _rents;   // the read before it is the next one's room
-                _rents = done;
+                _slot.Finish(done);   // the read before it is the next one's room
                 EstateDay.Ring(_state, done);
                 Changed();
                 return true;
