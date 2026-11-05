@@ -460,6 +460,7 @@ internal static partial class Program
         }
         Check(rowsActing > 5 && rowsLinked == rowsActing, "estate: the pad goes from a table row to its own button and back (" + rowsLinked + " of " + rowsActing + " rows linked)");
         EstateTextChecks();
+        WorldChecksRun();
     }
 
     private static List<string> EstateTextLines(UiScene s)

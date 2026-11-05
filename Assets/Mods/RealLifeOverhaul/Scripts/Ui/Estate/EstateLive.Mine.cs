@@ -134,8 +134,8 @@ namespace RealLifeOverhaul.Ui
             {
                 var rows = new List<UiDataRow>(24);
                 var keys = new List<string>(24);
-                long due = 0, owed = 0, empty = 0;
-                int units = 0, let = 0, buildings = 0, lets = 0;
+                var lines = new List<RollLine>(24);   // the units, for the head's sums (the samples add up the same lines the same way)
+                int units = 0, buildings = 0;
                 for (int i = 0; i < _s.Holdings.Count; i++)
                 {
                     EstateHolding h = _s.Holdings[i];
@@ -151,16 +151,7 @@ namespace RealLifeOverhaul.Ui
                     {
                         EstateUnit u = h.Units[n];
                         units++;
-                        if (u.Let)
-                        {
-                            let++;
-                            due += (long)u.Rent * _monthDays;
-                            owed += u.Arrears;
-                        }
-                        else
-                        {
-                            empty += (long)EstateCatalogue.Share(EstateRules.UnitRent(h, _c), u.Ask) * _monthDays;
-                        }
+                        lines.Add(new RollLine { Let = u.Let, RentDay = u.Rent, Arrears = u.Arrears, AskDay = u.Let ? 0 : EstateCatalogue.Share(EstateRules.UnitRent(h, _c), u.Ask) });
                         rows.Add(UnitRow(h, n));
                         keys.Add(EstateDirector.UnitPick(h, n));
                     }
@@ -179,6 +170,9 @@ namespace RealLifeOverhaul.Ui
                         0, EstateText.T("reallife_estate_kind_lot"), UiRole.None));
                     keys.Add("lot:");
                 }
+                RollTotals roll = EstateFigures.Roll(lines, _monthDays);
+                long due = roll.Due, owed = roll.Owed, empty = roll.EmptyAsking;
+                int let = roll.Let;
                 _m.Shape = EstateShape.Roll;
                 _m.HeadIcon = UiIcon.Home;
                 _m.HeadTitle = EstateText.T("reallife_ui_estate_roll_title");
@@ -186,7 +180,7 @@ namespace RealLifeOverhaul.Ui
                     : EstateText.T("reallife_ui_estate_roll_sub_clear", "units", units.ToString(Inv), "buildings", buildings.ToString(Inv));
                 _m.FigLabels = new[] { EstateText.T("reallife_ui_estate_fig_due"), EstateText.T("reallife_ui_estate_fig_collected"),
                     EstateText.T("reallife_ui_estate_fig_arrears"), EstateText.T("reallife_ui_estate_fig_empty") };
-                _m.FigValues = new[] { Cash(due), Cash(Math.Max(0, due - owed)), Cash(owed), Cash(empty) };
+                _m.FigValues = new[] { Cash(due), Cash(roll.Collected), Cash(owed), Cash(empty) };
                 _m.FigInks = new[] { UiRole.None, UiRole.None, owed > 0 ? UiRole.DangerText : UiRole.None, empty > 0 ? UiRole.WarnText : UiRole.None };
                 var t = new UiDataTableModel { Columns = RollColumns(), Rows = rows.ToArray(), RowCount = rows.Count };
                 for (int i = 0; i < t.Rows.Length; i++)

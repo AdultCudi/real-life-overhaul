@@ -127,11 +127,11 @@ namespace RealLifeOverhaul.Ui
                 var letting = new List<UiFactLine>();
                 if (rent > 0)
                 {
-                    letting.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_listing_a_day"), Money(rent)));
+                    letting.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_col_rent_month"), Month(rent)));   // a month, as the market table says it
                     letting.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_listing_yield"), EstateText.Yield((int)((long)rent * _c.DaysPerYear * 10000 / Math.Max(1, value)))));
                     if (b.Units > 1)
                     {
-                        letting.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_listing_units", "units", b.Units.ToString(Inv)), Money(Math.Max(1, rent / b.Units))));
+                        letting.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_listing_units", "units", b.Units.ToString(Inv)), Month(Math.Max(1, rent / b.Units))));
                     }
                 }
                 else

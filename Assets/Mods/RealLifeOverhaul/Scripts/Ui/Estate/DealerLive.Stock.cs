@@ -40,7 +40,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 var cards = new List<UiCatalogueCard>(16);
                 var keys = new List<string>(16);
-                int chosen = -1, cars = 0, free = 0, bays = 0, worthAll = 0;
+                int chosen = -1, cars = 0, free = 0, bays = 0, worthAll = DealerFigures.StockWorth(_s, sc => DealerDirector.Worth(sc, _level), out int carCount);
                 StockCar picked = null;
                 DealerYard pickedYard = null;
                 // Every car in one list, so the filter chips can say how many each holds and the order can be changed.
@@ -72,7 +72,6 @@ namespace RealLifeOverhaul.Ui
                         shows &= query.Length == 0 || DealerGame.CarName(car.Type).IndexOf(query, StringComparison.CurrentCultureIgnoreCase) >= 0;
                         int worth = DealerDirector.Worth(car, _level), days = _day - car.Bought;
                         cars++;
-                        worthAll += worth;
                         if (car.Id == pickedId && shows)
                         {
                             chosen = cards.Count;
@@ -281,7 +280,7 @@ namespace RealLifeOverhaul.Ui
                         Cells = new[] { yard.Name, yard.Laid
                             ? DealerText.T("reallife_dealer_lot_count", "cars", yard.Cars.Count.ToString(Inv), "places",
                             yard.Spots.Count.ToString(Inv)) : DealerText.T("reallife_dealer_lot_unlaid"),
-                            staff.ToString(Inv), yard.Today.Visitors.ToString(Inv), yard.Today.Sold.ToString(Inv), Money(yard.Today.Takings), yard.Deals.Count.ToString(Inv) },
+                            staff.ToString(Inv), yard.Today.Visitors.ToString(Inv), yard.Today.Sold.ToString(Inv), Money(yard.Today.Revenue), yard.Deals.Count.ToString(Inv) },
                         Values = new[] { (int)UiIcon.Store, 0, 0, 0, 0, 0, 0 },
                             Tones = new[] { UiRole.None, UiRole.None, staff == 0 ? UiRole.DangerText : UiRole.None, UiRole.None, UiRole.None,
                             UiRole.None, yard.Deals.Count > 0 ? UiRole.WarnText : UiRole.None },
@@ -301,19 +300,12 @@ namespace RealLifeOverhaul.Ui
                 };
                 TableShape(UiIcon.Store, DealerText.T("reallife_dealer_tab_lots"), DealerText.T("reallife_ui_dealer_lots_sub", "count", _s.Yards.Count.ToString(Inv)), cols, rows, keys, null,
                     DealerText.T("reallife_dealer_row_no_dealership"), DealerText.T("reallife_dealer_lots_about"));
-                int carsAll = 0, takingsAll = 0, soldAll = 0, dealsAll = 0;
-                for (int y = 0; y < _s.Yards.Count; y++)
-                {
-                    carsAll += _s.Yards[y].Cars.Count;
-                    takingsAll += _s.Yards[y].Today.Takings;
-                    soldAll += _s.Yards[y].Today.Sold;
-                    dealsAll += _s.Yards[y].Deals.Count;
-                }
+                LotTotals lots = DealerFigures.Lots(_s);   // the head, the rows and the chart under them are of the same lots
                 if (_s.Yards.Count > 0)
                 {
                     _m.FigLabels = new[] { DealerText.T("reallife_ui_dealer_fig_cars"), DealerText.T("reallife_ui_dealer_fig_sold_today"),
                         DealerText.T("reallife_ui_dealer_fig_takings_today"), DealerText.T("reallife_ui_dealer_fig_offers") };
-                    _m.FigValues = new[] { carsAll.ToString(Inv), soldAll.ToString(Inv), Money(takingsAll), dealsAll.ToString(Inv) };
+                    _m.FigValues = new[] { lots.Cars.ToString(Inv), lots.Sold.ToString(Inv), Money(lots.Revenue), lots.Deals.ToString(Inv) };
                     _m.Lower = Trend(RealLifeOverhaul.Economy.Dealership.ReportKind.Revenue, null, "reallife_dealer_report_revenue");
                 }
             }
@@ -368,7 +360,7 @@ namespace RealLifeOverhaul.Ui
                     now.Add(UiFactLine.Say(DealerText.Fill("reallife_dealer_yard_event", "event", DealerText.Event(y.Event, y.Feature), "day", FinanceText.Day(y.EventUntil)), UiRole.OkText));
                 }
                 now.Add(UiFactLine.Row(DealerText.T("reallife_ui_dealer_fig_cars_sold"), (w.Sold + y.Today.Sold).ToString(Inv)));
-                now.Add(UiFactLine.Row(DealerText.T("reallife_dealer_report_revenue"), Money(w.Takings + y.Today.Takings)));
+                now.Add(UiFactLine.Row(DealerText.T("reallife_dealer_report_revenue"), Money(w.Revenue + y.Today.Revenue)));   // the cars' prices, as the Reports page sums them
                 now.Add(UiFactLine.Row(DealerText.T("reallife_ui_dealer_fig_bought"), Money(w.Bought + y.Today.Bought)));
                 now.Add(UiFactLine.Row(DealerText.T("reallife_ui_dealer_fig_margin"), Money(w.Margin + y.Today.Margin)));
                 now.Add(UiFactLine.Row(DealerText.T("reallife_ui_dealer_fig_claims"), Money(w.Claims + y.Today.Claims)));

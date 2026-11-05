@@ -37,6 +37,10 @@ $gameFiles = @('UiGame*.cs', 'UiDirector*.cs', 'UiText.cs', 'UiGuide.cs')
 } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money') -Filter *.cs -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike '*Live.cs' -and $_.Name -notlike '*Live.*.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate') -Filter *.cs -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike '*Live.cs' -and $_.Name -notlike '*Live.*.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
+# The showrooms' state and rules (game-free): the samples build the Car Showroom's one world from the real state and read its reports through the real functions.
+@('DealerState.cs', 'DealerReport.cs', 'DealerCatalogue.cs', 'DealerRules.cs', 'DealerRules.Market.cs', 'DealerRules.Customers.cs', 'DealerRules.Credit.cs', 'DealerRules.Business.cs', 'RivalRules.cs', 'ViewRules.cs', 'DealerDay.cs', 'BidEntry.cs') | ForEach-Object {
+    Copy-Item (Join-Path $repo (Join-Path 'Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer' $_)) (Join-Path $preview 'Kit')
+}
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\News') -Filter *.cs -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike 'NewsLive*.cs' -and $_.Name -ne 'NewsPeopleRules.cs' -and $_.Name -ne 'NewsReadingPage.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui') -Filter *.cs | Where-Object {
     $name = $_.Name

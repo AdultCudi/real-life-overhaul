@@ -47,7 +47,7 @@ namespace RealLifeOverhaul.Ui
                     {
                         if (f.Reviews[r] != 0)
                         {
-                            said.Add(new EstateRow { Icon = UiIcon.Star, Title = EstateText.Review(f.Reviews[r]), Sub = f.Name, Run = -1 });
+                            said.Add(new EstateRow { Icon = UiIcon.Message, Title = EstateText.Review(f.Reviews[r]), Sub = f.Name, Stars = EstateFigures.ReviewHalves(f.Reviews[r]), Run = -1 });   // the stars are the guest's own rating
                         }
                     }
                     // The hotel stands in a building of the city's: the game's own guide leads to it, once the city has placed it.

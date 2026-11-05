@@ -35,6 +35,7 @@ namespace RealLifeOverhaul.Ui
         public string Button;   // a button of its own at the row's right (Send a reminder, Add to the fleet), or null; it takes the place of the amount
         public int ButtonRun;   // the run it presses
         public bool ButtonOff;  // drawn disabled: its reason is the row's chip
+        public int Stars;       // a rating in halves of a star (1 to 10) drawn at the row's right in place of the amount, or 0 for none: a guest's review is as good as its stars
     }
 
     /// <summary>

@@ -372,6 +372,12 @@ namespace RealLifeOverhaul.Ui
                     UiAction.Count, null, ActionCommand, r.ButtonRun, r.ButtonOff);
                 right -= bw + UiTokens.S3;
             }
+            if (r.Stars > 0 && button < 0)
+            {
+                float size = UiTokens.IconSmall, starsW = 5f * size + 4f * UiTokens.Hairline * 2f;
+                UiDraw.Stars(s, on, right - starsW, y + UiDraw.SnapDown((RowHeight - size) / 2f), size, Math.Min(10, r.Stars));
+                right -= starsW + UiTokens.S3;
+            }
             float amount = string.IsNullOrEmpty(r.Amount) || button >= 0 ? 0f : UiDraw.Snap(UiTextRules.Width(r.Amount, UiStyle.BodyStrong) + UiTokens.S1);
             if (amount > 0f)
             {

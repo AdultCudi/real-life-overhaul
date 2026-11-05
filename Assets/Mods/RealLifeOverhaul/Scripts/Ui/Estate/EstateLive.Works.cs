@@ -114,24 +114,21 @@ namespace RealLifeOverhaul.Ui
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_state"), Kind = UiCellKind.Chip, Width = 128f },
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_satisfaction"), Kind = UiCellKind.Meter, Width = 128f }
                 };
-                int happySum = 0, happyCount = 0;
+                var happy = new List<int>(24);   // the tenants' satisfaction as the rows show it, for the head's mean
                 for (int i = 0; i < _s.Holdings.Count; i++)
                 {
                     for (int n = 0; _s.Holdings[i].Managed && n < _s.Holdings[i].Units.Count; n++)
                     {
                         EstateUnit hu = _s.Holdings[i].Units[n];
-                        if (hu.Let && hu.Happy >= 0)
-                        {
-                            happySum += hu.Happy / 10;
-                            happyCount++;
-                        }
+                        happy.Add(hu.Let ? hu.Happy : -1);
                     }
                 }
+                int meanHappy = EstateFigures.MeanHappy(happy);
                 TableShape(UiIcon.People, EstateText.T("reallife_estate_tab_tenants"),
                     EstateText.T("reallife_ui_estate_tenants_sub", "let", let.ToString(Inv), "empty", empty.ToString(Inv)),
                     new[] { EstateText.T("reallife_ui_estate_fig_let"), EstateText.T("reallife_ui_estate_fig_empty_units"),
                         EstateText.T("reallife_ui_estate_fig_rent_owed"), EstateText.T("reallife_ui_estate_fig_mean_happy") },
-                    new[] { let.ToString(Inv), empty.ToString(Inv), Money(owed), happyCount > 0 ? EstateText.Share(happySum / happyCount * 10) : string.Empty }, cols, rows, keys, null,
+                    new[] { let.ToString(Inv), empty.ToString(Inv), Money(owed), meanHappy >= 0 ? EstateText.Share(meanHappy) : string.Empty }, cols, rows, keys, null,
                     EstateText.T(_s.Holdings.Count == 0 ? "reallife_estate_row_nothing_owned" : "reallife_estate_row_none_managed"), EstateText.T("reallife_ui_estate_empty_tenants_body"));
                 _m.FigInks = new[] { UiRole.None, empty > 0 ? UiRole.WarnText : UiRole.None, owed > 0 ? UiRole.DangerText : UiRole.None, UiRole.None };
                 NeedsYou();

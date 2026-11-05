@@ -81,21 +81,8 @@ namespace RealLifeOverhaul.Ui
                     new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_left"), Kind = UiCellKind.Text, Width = 80f },
                     new UiDataColumn { Title = DealerText.T("reallife_ui_dealer_col_state"), Kind = UiCellKind.Chip, Width = 200f }
                 };
-                int sold = 0, margin = 0;
-                for (int y = 0; y < _s.Yards.Count; y++)
-                {
-                    sold += _s.Yards[y].Today.Sold;
-                    margin += _s.Yards[y].Today.Margin;
-                }
-                int best = 0;
-                for (int y = 0; y < _s.Yards.Count; y++)
-                {
-                    for (int d = 0; d < _s.Yards[y].Deals.Count; d++)
-                    {
-                        StockCar bc = _s.Yards[y].Car(_s.Yards[y].Deals[d].Car);
-                        best = bc != null ? Math.Max(best, DealerRules.Price(_s.Yards[y], _s.Yards[y].Deals[d], bc)) : best;
-                    }
-                }
+                OfferTotals totals = DealerFigures.Offers(_s);   // the head and the rows come from the same lots, and the samples read the same sums
+                int sold = totals.Sold, margin = totals.Margin, best = totals.Best;
                 TableShape(UiIcon.Handshake, DealerText.T("reallife_dealer_offers_title"),
                     DealerText.T("reallife_ui_dealer_offers_sub", "waiting", waiting.ToString(Inv), "sold", (rows.Count - waiting).ToString(Inv)), cols, rows, keys, null,
                     DealerText.T("reallife_ui_dealer_empty_offers"), DealerText.T("reallife_dealer_offers_about"));
@@ -128,8 +115,8 @@ namespace RealLifeOverhaul.Ui
                 _m.RelatedRows = 6;
                 _m.FigLabels = new[] { DealerText.T("reallife_dealer_sum_waiting"), DealerText.T("reallife_ui_dealer_fig_best_offer"),
                     DealerText.T("reallife_ui_dealer_fig_sold_today"), DealerText.T("reallife_ui_dealer_fig_margin_today") };
-                _m.FigValues = new[] { waiting.ToString(Inv), best > 0 ? Money(best) : string.Empty, sold.ToString(Inv), Money(margin) };
-                _m.FigInks = new[] { waiting > 0 ? UiRole.WarnText : UiRole.None, UiRole.None, UiRole.None, margin > 0 ? UiRole.OkText : UiRole.None };
+                _m.FigValues = new[] { totals.Waiting.ToString(Inv), best > 0 ? Money(best) : string.Empty, sold.ToString(Inv), Money(margin) };
+                _m.FigInks = new[] { totals.Waiting > 0 ? UiRole.WarnText : UiRole.None, UiRole.None, UiRole.None, margin > 0 ? UiRole.OkText : UiRole.None };
             }
 
             private string Extras(DealerOffer d)
@@ -303,7 +290,6 @@ namespace RealLifeOverhaul.Ui
             {
                 var rows = new List<UiDataRow>(16);
                 var keys = new List<string>(16);
-                int owed = 0, weekly = 0, missed = 0, paidOut = 0;
                 for (int i = 0; i < _s.Plans.Count; i++)
                 {
                     DealerPlan p = _s.Plans[i];
@@ -318,9 +304,6 @@ namespace RealLifeOverhaul.Ui
                         Subs = new[] { yard != null ? yard.Name : string.Empty, string.Empty, null, null, null, null }, Hue = UiColour.HueOf(p.Customer)
                     });
                     keys.Add(null);
-                    owed += p.Owed;
-                    weekly += p.Weekly;
-                    missed += p.Missed > 0 ? 1 : 0;
                 }
                 for (int i = 0; i < _s.Covers.Count; i++)
                 {
@@ -335,8 +318,8 @@ namespace RealLifeOverhaul.Ui
                             DealerText.T("reallife_ui_dealer_claims", "count", c.Claims.ToString(Inv)), null, null, null, null }, Hue = UiColour.HueOf(c.Customer)
                     });
                     keys.Add(null);
-                    paidOut += c.Paid;
                 }
+                FinanceTotals fin = DealerFigures.Finance(_s, score => (int)CreditCatalogue.GradeOf(score));   // the head and the rows are of the same plans and warranties
                 _v.Pick = null;
                 var cols = new[]
                 {
@@ -350,11 +333,7 @@ namespace RealLifeOverhaul.Ui
                 TableShape(UiIcon.Receipt, DealerText.T("reallife_dealer_finance_title"),
                     DealerText.T("reallife_ui_dealer_finance_sub", "plans", _s.Plans.Count.ToString(Inv), "covers", _s.Covers.Count.ToString(Inv)), cols, rows, keys, null,
                     DealerText.T("reallife_ui_dealer_empty_finance"), DealerText.T("reallife_dealer_finance_about"));
-                int[] grades = new int[5];
-                for (int i = 0; i < _s.Plans.Count; i++)
-                {
-                    grades[Math.Max(0, Math.Min(4, (int)CreditCatalogue.GradeOf(_s.Plans[i].Score)))]++;
-                }
+                int[] grades = fin.Grades;
                 var gradeNames = new List<string>(5);
                 var gradeShares = new List<int>(5);
                 for (int g = 4; g >= 0 && _s.Plans.Count > 0; g--)
@@ -370,9 +349,11 @@ namespace RealLifeOverhaul.Ui
                 _m.ShareLabels = gradeNames.ToArray();
                 _m.ShareValues = gradeShares.ToArray();
                 var ending = new List<EstateRow>(3);
-                for (int i = 0; i < _s.Covers.Count && ending.Count < 3; i++)
+                var soonest = new List<DealerCover>(_s.Covers);
+                soonest.Sort((a, b) => a.Until.CompareTo(b.Until));   // the list is called what it is: the warranties that end first, not the first warranties
+                for (int i = 0; i < soonest.Count && ending.Count < 3; i++)
                 {
-                    DealerCover cv = _s.Covers[i];
+                    DealerCover cv = soonest[i];
                     ending.Add(new EstateRow { Icon = UiIcon.ShieldCheck, Title = DealerGame.CarName(cv.Type), Sub = cv.Customer,
                         Chip = FinanceText.Day(cv.Until), ChipTone = UiRole.Notice, Amount = Money(cv.Paid), Run = -1 });
                 }
@@ -381,8 +362,8 @@ namespace RealLifeOverhaul.Ui
                 _m.Related = ending.ToArray();
                 _m.FigLabels = new[] { DealerText.T("reallife_ui_dealer_fig_owed"), DealerText.T("reallife_ui_dealer_fig_a_week"),
                     DealerText.T("reallife_ui_dealer_fig_behind"), DealerText.T("reallife_ui_dealer_fig_paid_out") };
-                _m.FigValues = new[] { Money(owed), Money(weekly), missed.ToString(Inv), Money(paidOut) };
-                _m.FigInks = new[] { UiRole.None, UiRole.None, missed > 0 ? UiRole.DangerText : UiRole.None, UiRole.None };
+                _m.FigValues = new[] { Money(fin.Owed), Money(fin.Weekly), fin.Behind.ToString(Inv), Money(fin.PaidOut) };
+                _m.FigInks = new[] { UiRole.None, UiRole.None, fin.Behind > 0 ? UiRole.DangerText : UiRole.None, UiRole.None };
             }
 
             // ------------------------------------------------------------------------------------------------- growth
@@ -410,11 +391,10 @@ namespace RealLifeOverhaul.Ui
                 }
                 var rows = new List<UiDataRow>(16);
                 var keys = new List<string>(16);
-                int eventsOn = 0, missionsDone = 0, missionsAll = 0;
+                
                 for (int k = 0; k < DealerCatalogue.EventKinds; k++)
                 {
                     DealerYard running = Running(k);
-                    eventsOn += running != null ? 1 : 0;
                     rows.Add(new UiDataRow
                     {
                         Cells = new[] { DealerText.Event(k, 0), running != null ? running.Name : string.Empty, string.Empty, DealerText.EventShort(k),
@@ -432,8 +412,6 @@ namespace RealLifeOverhaul.Ui
                     {
                         bool done = DealerRules.MissionDone(yard, m);
                         int progress = DealerRules.Progress(yard, m);
-                        missionsAll++;
-                        missionsDone += done ? 1 : 0;
                         rows.Add(new UiDataRow
                         {
                             Cells = new[] { DealerText.Mission(m), yard.Name, Math.Min(100, progress * 100 / Math.Max(1, DealerCatalogue.MissionTarget[m])).ToString(Inv),
@@ -472,12 +450,8 @@ namespace RealLifeOverhaul.Ui
                 if (_s.Yards.Count > 0)
                 {
                     _m.FigLabels = new[] { DealerText.T("reallife_ui_dealer_fig_events_on"), DealerText.T("reallife_ui_dealer_fig_missions_done"), DealerText.T("reallife_ui_dealer_fig_sold_today") };
-                    int soldToday = 0;
-                    for (int y = 0; y < _s.Yards.Count; y++)
-                    {
-                        soldToday += _s.Yards[y].Today.Sold;
-                    }
-                    _m.FigValues = new[] { eventsOn.ToString(Inv), missionsDone.ToString(Inv) + " / " + missionsAll.ToString(Inv), soldToday.ToString(Inv) };
+                    GrowthTotals g = DealerFigures.Growth(_s, _day);
+                    _m.FigValues = new[] { g.EventsOn.ToString(Inv), g.MissionsDone.ToString(Inv) + " / " + g.MissionsAll.ToString(Inv), g.SoldToday.ToString(Inv) };
                     _m.Lower = Trend(RealLifeOverhaul.Economy.Dealership.ReportKind.Sold, null, "reallife_dealer_report_sold");
                 }
             }
@@ -585,11 +559,11 @@ namespace RealLifeOverhaul.Ui
                 int days = DealerCatalogue.ReportDays;
                 var values = new long[days];
                 var have = new bool[days];
-                int first = DealerReport.Series(_s, place, kind, _day, days, values, have, _rScratch);
+                DealerReport.Series(_s, place, kind, _day, days, values, have, _rScratch);   // its return is the first DAY, not a place in the list: a day without figures says so itself
                 bool money = DealerReport.Money(kind);
                 var pts = new List<string>(days);
                 var line = new List<float>(days);
-                for (int i = Math.Max(0, Math.Min(days, first)); i < days; i++)
+                for (int i = 0; i < days; i++)
                 {
                     if (have[i])
                     {
@@ -623,11 +597,11 @@ namespace RealLifeOverhaul.Ui
                 var values = new long[days];
                 var have = new bool[days];
                 var average = new long[days];
-                int first = DealerReport.Series(_s, place, kind, _day, days, values, have, _rScratch);
+                DealerReport.Series(_s, place, kind, _day, days, values, have, _rScratch);
                 DealerReport.Average(values, have, days, average);
                 bool money = DealerReport.Money(kind);
-                // Only the days that exist are plotted: the days before the first kept have no point, and nothing is drawn as zero.
-                int from = Math.Max(0, Math.Min(days, first));
+                // Only the days that exist are plotted: a day with no figures has no point (have), and nothing is drawn as zero. The series' return is a day, never a start in the list.
+                int from = 0;
                 var pts = new List<string>(days);
                 var line = new List<float>(days);
                 var avg = new List<float>(days);

@@ -50,7 +50,7 @@ namespace RealLifeOverhaul.Ui
                 _v.Pick = null;
                 var rows = new List<UiDataRow>(16);
                 var keys = new List<string>(16);
-                int news = 0, used = 0, lots = 0;
+                DealerFigures.Market(_s, out int news, out int used, out int lots);   // the head counts the listings the rows show
                 for (int i = 0; i < _s.Market.Count; i++)
                 {
                     DealerListing l = _s.Market[i];
@@ -75,9 +75,6 @@ namespace RealLifeOverhaul.Ui
                         Pictures = new[] { DealerLive.PictureOf(l.Type, out float _), null, null, null, null, null, null }
                     });
                     keys.Add("list:" + l.Id);
-                    news += l.Kind == ListingKind.Wholesale ? 1 : 0;
-                    used += l.Kind == ListingKind.Used ? 1 : 0;
-                    lots += auction ? 1 : 0;
                 }
                 var cols = new[]
                 {
