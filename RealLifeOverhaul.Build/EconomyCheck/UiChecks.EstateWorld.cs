@@ -603,7 +603,8 @@ internal static partial class Program
 
     // A window page leaves no more than this bare between its last line and the window's floor, in the left half of its page or in the right (the hotel's 35 px and the fleet's 19 are the
     // measure): a table or a list takes the room a short column would leave, or a chart does.
-    private const float FloorMost = 64f;
+    // 72, not 64: a meter list (40 px rows) beside a list of 48 px rows with as many entries ends up to one row short of it (the agency's reputation beside its chances).
+    private const float FloorMost = 72f;
 
     private static void DeadFloorChecks()
     {

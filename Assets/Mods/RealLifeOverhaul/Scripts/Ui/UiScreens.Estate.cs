@@ -32,7 +32,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_estate_hotel_night_what", "reallife_estate_hotel_what", "reallife_estate_improve_boiler", "reallife_estate_listing_base",
                 "reallife_estate_listing_market", "reallife_estate_listing_price", "reallife_estate_listing_rent", "reallife_estate_manager_self",
                 "reallife_estate_market_heading", "reallife_estate_market_level", "reallife_estate_market_prices", "reallife_estate_market_what",
-                "reallife_estate_off_body", "reallife_estate_off_title", "reallife_estate_own_cover", "reallife_estate_own_cover_what",
+                "reallife_estate_off_body", "reallife_estate_off_title", "reallife_ui_estate_close", "reallife_estate_own_cover", "reallife_estate_own_cover_what",
                 "reallife_estate_own_list_what", "reallife_estate_own_selling", "reallife_estate_own_worth", "reallife_estate_record_fair",
                 "reallife_estate_record_good", "reallife_estate_row_a_day", "reallife_estate_row_going_concern", "reallife_estate_row_hotel",
                 "reallife_estate_row_letting", "reallife_estate_row_no_agency", "reallife_estate_row_no_cars", "reallife_estate_row_no_hotel",
