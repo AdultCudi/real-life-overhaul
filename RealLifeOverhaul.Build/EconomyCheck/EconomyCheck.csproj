@@ -801,6 +801,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiTextRules.cs" Link="Mod\UiTextRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiScene.cs" Link="Mod\UiScene.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPress.cs" Link="Mod\UiPress.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiWindowDrag.cs" Link="Mod\UiWindowDrag.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPlural.cs" Link="Mod\UiPlural.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiAction.cs" Link="Mod\UiAction.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiIcon.cs" Link="Mod\UiIcon.cs" />

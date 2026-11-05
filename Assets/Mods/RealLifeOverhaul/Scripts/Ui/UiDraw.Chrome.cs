@@ -14,6 +14,9 @@ namespace RealLifeOverhaul.Ui
         /// <summary>A window's close button: the host takes it as Back.</summary>
         public const int CloseCommand = 9000;
 
+        /// <summary>A draggable window's title strip, the mouse's grip (UiWindowDrag); never pressed.</summary>
+        public const int DragCommand = 9001;
+
         private const float PillH = 32f;     // px: a status pill (Pill)
         private const float TileGap = 8f;    // px: between the status bar's app tiles
 
@@ -47,6 +50,14 @@ namespace RealLifeOverhaul.Ui
         {
             const float h = UiFrame.Strip;
             int strip = Box(s, at, x, y, w, h, UiRole.Header, UiRole.None, -UiTokens.RadiusPanel, UiFlags.Decor | UiFlags.Chrome);   // its top corners the panel's, its foot square
+            if (s.Draggable && s.HandleNode < 0)
+            {
+                // The window's grip is its first strip, laid before the strip's own buttons so a button over it is hit first. It takes no focus.
+                int grip = Node(s, at, x, y, w, h, DragCommand, 0, strip, true);
+                s.Nodes[grip].Handle = true;
+                s.HandleNode = grip;
+                s.HandlePanel = at.Parent;
+            }
             UiAt on = at.In(strip);
             float side = UiTokens.S3 + UiTokens.Icon + UiTokens.S3;   // the title keeps clear of the icon and the close button alike
             if (icon != UiIcon.None)

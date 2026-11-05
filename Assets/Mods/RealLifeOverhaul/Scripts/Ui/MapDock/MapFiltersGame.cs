@@ -11,7 +11,7 @@ namespace RealLifeOverhaul.Ui
     /// widgets. The panels are pointer driven, as the game's are: the stick and the movement keys pan and turn the map, so the kit takes no key from it, and Esc is the
     /// game's own close.
     /// </summary>
-    internal sealed class MapFiltersGame : IUiGameScreen, IUiGameWay
+    internal sealed class MapFiltersGame : IUiGameScreen, IUiGameWay, IUiGameDraggable
     {
         private readonly bool _subway;
 
@@ -21,6 +21,9 @@ namespace RealLifeOverhaul.Ui
         }
 
         public string Id => _subway ? MapKits.SubwayId : MapKits.FiltersId;
+
+        // CityMapFilters is the game's draggable window; its stations' list is not one.
+        public string WindowId => _subway ? null : "CityMapFilters";
 
         public string Name => _subway ? "the city map's subway list" : "the city map's filters";
 

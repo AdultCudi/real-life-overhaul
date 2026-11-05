@@ -10,9 +10,11 @@ namespace RealLifeOverhaul.Ui
     /// as the kit's small panel where the game's window stands while it is open: over the world, taking no key of its own,
     /// so the game's Cancel still closes it. Game side.
     /// </summary>
-    public sealed class SignAppearanceKit : IUiGameScreen
+    public sealed class SignAppearanceKit : IUiGameScreen, IUiGameDraggable
     {
         public string Id => UiWorld.SignId;
+
+        public string WindowId => "SignAppearance";   // the id of the game's DraggableWindow, so its place is the one this window is given
 
         public string Name => "a sign's look";
 

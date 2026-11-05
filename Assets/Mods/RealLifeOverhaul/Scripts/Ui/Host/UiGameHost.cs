@@ -238,6 +238,13 @@ namespace RealLifeOverhaul.Ui
             _host.View.Scale = UiTokens.CanvasPerPx;
             _host.Failed = Fallback;
             _host.ScreenId = _screen.Id;
+            if (_screen is IUiGameDraggable draggable && draggable.WindowId != null)
+            {
+                // The game keeps a window it names; one it does not name stays where it was put for the session.
+                _host.WindowId = string.IsNullOrEmpty(draggable.WindowId) ? _screen.Id : draggable.WindowId;
+                _host.WindowSaved = !string.IsNullOrEmpty(draggable.WindowId);
+                _host.WindowHeld = HoldGameWindow;
+            }
             _host.Measure(_screen.Name, _screen.Kind == UiGameKind.Overlay);   // the notices over the world are the HUD's
             if (_screen.Kind == UiGameKind.App)
             {
@@ -353,6 +360,17 @@ namespace RealLifeOverhaul.Ui
             if (_host != null && _root != null && _root.activeSelf)
             {
                 _host.Hold(hold);
+            }
+        }
+
+        // The game's map camera and mouse look hold still while one of its windows is dragged (DraggableWindows.isCurrentlyDragging, which its own
+        // LateUpdate clears each frame), so the kit's window held by its strip says the same each frame it is held.
+        private static void HoldGameWindow()
+        {
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            if (uis != null && uis.draggableWindows != null)
+            {
+                uis.draggableWindows.isCurrentlyDragging = true;
             }
         }
 
