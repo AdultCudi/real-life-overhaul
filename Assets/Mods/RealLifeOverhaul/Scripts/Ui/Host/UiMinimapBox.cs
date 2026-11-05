@@ -15,10 +15,21 @@ namespace RealLifeOverhaul.Ui
         private static RectTransform _of;   // the card last read, and the canvas it stands on
         private static Canvas _canvas;
 
-        /// <summary>The card's box in the layout's px, or all zero while the card is hidden, gone or the layout not measured.</summary>
+        /// <summary>
+        /// True while the city map's dock stands where the HUD's left pieces do. The minimap is hidden then, so its box is the dock's and
+        /// every piece that keeps clear of the card keeps clear of the dock by the same rule.
+        /// </summary>
+        public static bool Dock => MapKits.DockShowing;
+
+        /// <summary>The card's box in the layout's px (the city map's dock while that is up), or all zero while neither shows or the layout is not measured.</summary>
         public static void Read(float layoutW, float layoutH, out float x, out float y, out float w, out float h)
         {
             x = y = w = h = 0f;
+            if (layoutW > 0f && layoutH > 0f && Dock)
+            {
+                UiMapFilters.DockBox(layoutH, out x, out y, out w, out h);
+                return;
+            }
             RectTransform card = RealLifeOverhaul.Nav.NavHud.Card;
             if (card == null || layoutW <= 0f || layoutH <= 0f || Screen.width <= 0 || Screen.height <= 0)
             {

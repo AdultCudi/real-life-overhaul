@@ -140,6 +140,16 @@ namespace RealLifeOverhaul.Ui
         public const float Menu = 104f;                  // px: the rail, two icons across as an info view's menu
         public const float DockRight = Menu + UiTokens.S2 + Width + UiTokens.S4;   // px: past the dock with its rail, which the names over the map keep off
         public const float Cell = 44f;                   // px: a rail icon
+
+        /// <summary>The dock with its rail as a box of the layout's px, from the top to its foot over the status bar (PanelHeight): what the HUD's pieces keep clear of while it is up.</summary>
+        public static void DockBox(float layoutHeight, out float x, out float y, out float w, out float h)
+        {
+            x = 0f;
+            y = 0f;
+            w = DockRight;
+            h = layoutHeight - UiFrame.BandHeight - UiTokens.S4;
+        }
+
         public const float RowHeight = UiTokens.Control; // px: a group, a line
         public const float TwoLineRow = 48f;             // px: a station or a choice with its quiet line
         private const float SwitchBox = 52f;

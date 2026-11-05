@@ -86,6 +86,9 @@ namespace RealLifeOverhaul.Ui
         /// <summary>True while the kit draws the map's filters, for the tests.</summary>
         internal static bool FiltersShowing => Filters.Showing;
 
+        /// <summary>True while a docked panel of the map (filters, subway list, a choice of a place) stands on the screen: the HUD's pieces keep clear of it.</summary>
+        internal static bool DockShowing => CityMap.IsOpen && (Filters.Showing || Subway.Showing || _pickerShown != null);
+
         /// <summary>True while the kit draws the map's subway list, for the tests.</summary>
         internal static bool SubwayShowing => Subway.Showing;
 

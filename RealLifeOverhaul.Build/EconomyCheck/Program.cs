@@ -162,6 +162,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--objectives-map")
+        {
+            ObjectivesMapChecks();   // the HUD clear of the city map's dock alone (ObjectivesMapChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--kit-prompt")
         {
             KitPromptChecks();   // (the keys' prompts and the app tray alone, while working on them: KitPromptChecks.cs)
@@ -702,6 +708,7 @@ internal static partial class Program
         Bounds();
         Map25Checks();
         Map5Checks();
+        ObjectivesMapChecks();
         Gate();
         Terms();
         Fee();
