@@ -229,10 +229,7 @@ namespace RealLifeOverhaul.Uptown
             {
                 StandCheck(made, f, listed, ms);
             }
-            if (!CompleteOne(made, f, "its stand"))
-            {
-                StandIncomplete();   // a building handed over now that is not yet whole: the notice only when more are than the save last told; Player.log names the items
-            }
+            CompleteOne(made, f, "its stand");   // Player.log names any item missing
             return true;
         }
 
