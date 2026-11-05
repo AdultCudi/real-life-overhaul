@@ -44,14 +44,24 @@ internal static partial class Program
         Check(NavDestRules.TiltedFrom(1) && !NavDestRules.TiltedFrom(0) && NavDestRules.TiltedFrom(-1) && NavDestRules.TiltedFrom(7),
             "minimap: the saved tilt is flat only for 0; a missing or odd value is the default, tilted");
 
-        // The city map's tilt button: a ring of three, each with its own pitch.
-        Check(NavMapTilt.Next(NavMapTilt.Auto) == NavMapTilt.Flat && NavMapTilt.Next(NavMapTilt.Flat) == NavMapTilt.Tilted && NavMapTilt.Next(NavMapTilt.Tilted) == NavMapTilt.Auto
-              && NavMapTilt.Next(9) == NavMapTilt.Flat, "city map: the tilt button goes by the camera's distance, then flat, then tilted, then by distance again");
+        // The city map's 2D and 3D button: two states, the default is tilted.
+        Check(NavMapTilt.Next(NavMapTilt.Auto) == NavMapTilt.Flat && NavMapTilt.Next(NavMapTilt.Flat) == NavMapTilt.Tilted && NavMapTilt.Next(NavMapTilt.Tilted) == NavMapTilt.Flat
+              && NavMapTilt.Next(9) == NavMapTilt.Flat, "city map: the 2D and 3D button goes flat from the default or tilted, and tilted from flat");
         Check(NavMapTilt.Pitch(NavMapTilt.Flat, 120f) == RealLifeOverhaul.Map25.Map25View.FlatPitch && NavMapTilt.Pitch(NavMapTilt.Tilted, 340f) == RealLifeOverhaul.Map25.Map25View.TiltPitch
-              && NavMapTilt.Pitch(NavMapTilt.Auto, 340f) == RealLifeOverhaul.Map25.Map25View.PitchFor(340f) && NavMapTilt.Pitch(NavMapTilt.Auto, 100f) == RealLifeOverhaul.Map25.Map25View.PitchFor(100f),
-            "city map: flat and tilted ignore the distance, by distance is the pitch the map had before the button");
-        Check(NavMapTilt.Words(NavMapTilt.Flat, 100f) == "2D" && NavMapTilt.Words(NavMapTilt.Tilted, 340f) == "3D" && NavMapTilt.Words(NavMapTilt.Auto, 340f) == "2D"
-              && NavMapTilt.Words(NavMapTilt.Auto, 100f) == "3D", "city map: the tile says 2D while the picture stands flat, 3D while it stands tilted, whichever way it got there");
+              && NavMapTilt.Pitch(NavMapTilt.Auto, 340f) == RealLifeOverhaul.Map25.Map25View.TiltPitch && NavMapTilt.Pitch(NavMapTilt.Auto, 100f) == RealLifeOverhaul.Map25.Map25View.TiltPitch,
+            "city map: flat and tilted ignore the distance, and the default is tilted at every distance");
+        Check(NavMapTilt.Words(NavMapTilt.Flat, 100f) == "2D" && NavMapTilt.Words(NavMapTilt.Tilted, 340f) == "3D" && NavMapTilt.Words(NavMapTilt.Auto, 340f) == "3D"
+              && NavMapTilt.Words(NavMapTilt.Auto, 100f) == "3D", "city map: the tile says 2D while the picture stands flat, 3D while it stands tilted");
+        string names = Map5Source("Navigation/NavMapNames.cs"), full = Map5Source("Navigation/NavMap25.cs");
+        Check(names.Contains("GameFont.Asset") && names.IndexOf("if (font == null || _broken)") < names.IndexOf("new GameObject(\"Street\"") && names.Contains("fontSharedMaterial == null")
+              && names.IndexOf("text.font = font") < names.IndexOf("text.outlineWidth") && names.IndexOf("made.SetActive(false)") > names.IndexOf("AddComponent<TextMeshProUGUI>"),
+            "city map: a street label is made only with the game's font and a material, active so TextMeshPro has set itself up, and never before the font is set (the NullReference of 5 Nov)");
+        Check(full.Contains("_streets.Place(_rect") && full.IndexOf("catch (Exception e)", full.IndexOf("_streets.Place(_rect")) < full.IndexOf("PlacePlayer();", full.IndexOf("_streets.Place(_rect")),
+            "city map: a fault in the street names turns the names off and never the map");
+        string release = full.Substring(full.IndexOf("private void Release()"), 400), hide = full.Substring(full.IndexOf("private void Hide(CityMap map)"), 300);
+        Check(release.Contains("HidePieces();") && hide.Contains("HidePieces();") && hide.IndexOf("HidePieces();") < hide.IndexOf("return;"),
+            "city map: the player's marker and the street names go whenever the picture is not showing, after a fault too");
+        Check(full.Contains("the game's own map is showing: the 2D and 3D button still turns its camera"), "city map: the 2D and 3D button turns the game's own map too when the picture stands down");
 
         // Sources: the destination block and the button are made once with the panel, write only a changed text, and the button is the one part of the view that takes the pointer.
         string dest = Map5Source("Navigation/NavHud.Destination.cs");

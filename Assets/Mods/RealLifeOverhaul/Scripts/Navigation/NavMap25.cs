@@ -18,8 +18,9 @@ namespace RealLifeOverhaul.Nav
     /// and the game gives it its own mask back when the map shuts). The game picks, hovers and tints buildings through its real ones, so the
     /// picture reads each building's layer and tint colour and writes them into the blocks, but only after something that changes them
     /// (<see cref="NavMapLights"/>: the map opening, the pointer on another building, a card, the filters' work), and the game's neighbourhood zones, which are planes over
-    /// the city it no longer draws, are drawn into the picture in their colours. The camera's pitch follows its distance: flat from afar, the game's own tilt
-    /// close, and every way of standing down (the option off, another mod's route, a fault, a black picture, the map shut) gives it the game's own tilt back.
+    /// the city it no longer draws, are drawn into the picture in their colours. The camera has the game's own tilt at
+    /// every distance (the map's 2D button turns it flat), and every way of standing down (the option off, another mod's
+    /// route, a fault, a black picture, the map shut) gives it the game's own tilt back.
     /// Cost: nothing while the map is shut (the object is inactive, the texture released); open and still, three comparisons and the camera's
     /// matrices a frame; open and moving, one draw of the chunks in view into the texture.
     /// </summary>
@@ -186,7 +187,7 @@ namespace RealLifeOverhaul.Nav
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
             CityMap map = city != null ? city.cityMap : null;
-            if (_failed || NavMapLatch.Drew(NavMapLatch.Full) || map == null || !CityMap.IsOpen || !_scene.Ready)
+            if (map == null || !CityMap.IsOpen)
             {
                 Hide(map);
                 return;
@@ -199,6 +200,23 @@ namespace RealLifeOverhaul.Nav
             }
             if (_camera == null || _virtual == null || map.cityMapCam == null)
             {
+                Hide(map);
+                return;
+            }
+            if (_failed || NavMapLatch.Drew(NavMapLatch.Full) || !_scene.Ready)
+            {
+                // the game's own map is showing: the 2D and 3D button still turns its camera, so the button works on both maps
+                if (!map.isSubwayMode && !map.IsTaxiMode)
+                {
+                    try
+                    {
+                        Tilt(map, NavMapTilt.Pitch(NavTilt.Map, map.cityMapCam.distance), true);
+                    }
+                    catch (Exception)
+                    {
+                        _pitched = false;
+                    }
+                }
                 Hide(map);
                 return;
             }
@@ -365,7 +383,17 @@ namespace RealLifeOverhaul.Nav
                 }
             }
             float scale = _rect.lossyScale.x > 0.0001f ? _rect.lossyScale.x : 1f;
-            _streets.Place(_rect, _view, width, height, 1f / scale, 0.3f);
+            try
+            {
+                _streets.Place(_rect, _view, width, height, 1f / scale, 0.3f);
+            }
+            catch (Exception e)
+            {
+                // the names are optional and the blocks are not: a fault in them takes the names away, never the map
+                _streets.Set(null);
+                _streets.Hide();
+                Logger?.Warn("Navigation: the street names on the 2.5D city map are off for this session: " + e.GetType().Name + " " + e.Message);
+            }
             PlacePlayer();
         }
 
@@ -379,7 +407,7 @@ namespace RealLifeOverhaul.Nav
             _target = new RenderTexture(w, h, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB)
             {
                 name = "RealLife Map 2.5D",
-                antiAliasing = w * h <= 2300000 ? 2 : 1,
+                antiAliasing = w * h <= 2300000 ? 4 : 2,
                 filterMode = FilterMode.Bilinear,
                 useMipMap = false,
                 hideFlags = HideFlags.HideAndDontSave
@@ -637,6 +665,7 @@ namespace RealLifeOverhaul.Nav
         private void Hide(CityMap map)
         {
             PictureStands = false;
+            HidePieces();
             if (!Standing && !_image.enabled)
             {
                 return;
@@ -644,12 +673,17 @@ namespace RealLifeOverhaul.Nav
             Standing = false;
             _alpha = 0f;
             _image.enabled = false;
+            GiveCameraBack(map);
+        }
+
+        // Our own labels and marker go whenever the picture is not showing, on every path (a fault left the marker on the game's map once).
+        private void HidePieces()
+        {
             _streets.Hide();
             if (_player != null && _player.gameObject.activeSelf)
             {
                 _player.gameObject.SetActive(false);
             }
-            GiveCameraBack(map);
         }
 
         // The game's own culling mask given back while the map is still open (subway or taxi mode, or the picture standing down): its own map.
@@ -666,6 +700,7 @@ namespace RealLifeOverhaul.Nav
         private void Release()
         {
             PictureStands = false;
+            HidePieces();
             if (_image != null)
             {
                 _image.enabled = false;

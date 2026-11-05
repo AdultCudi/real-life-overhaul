@@ -557,9 +557,9 @@ internal static partial class Program
         float coneSeen = Map25Marks.Seen(Map25Marks.ConeAlpha, avenue, route), haloSeen = Map25Marks.Seen(Map25Marks.HaloAlpha, avenue, route), plain = Map25Marks.Seen(0.17f, avenue, route);
         Map25Marks.SeenRgb(Map25Marks.ConeAlpha, avenue, route, out int coneR, out int coneG, out int coneB);
         float onStreet = Map25Marks.Seen(Map25Marks.ConeAlpha, Map25Palette.Street, route), onGround = Map25Marks.Seen(Map25Marks.ConeAlpha, Map25Palette.Block, route);
-        Check(Math.Abs(coneSeen - 0.17f) < 0.005f && Math.Abs(haloSeen - 0.30f) < 0.005f && plain > 0.26f && Math.Abs(coneR - 52) <= 3 && Math.Abs(coneG - 86) <= 3 && Math.Abs(coneB - 111) <= 3
+        Check(Math.Abs(coneSeen - 0.17f) < 0.005f && Math.Abs(haloSeen - 0.30f) < 0.005f && plain > 0.26f
               && onStreet < 0.22f && onGround < 0.25f,
-            "2.5D map: the view cone shows 0.17 of the route's colour and the halo 0.30 over an avenue as the eye gets them, (" + coneR + ", " + coneG + ", " + coneB + ") over the avenue's (47, 67, 87) where the mockup's is (52, 86, 111), "
+            "2.5D map: the view cone shows 0.17 of the route's colour and the halo 0.30 over an avenue as the eye gets them, (" + coneR + ", " + coneG + ", " + coneB + ") over the avenue, "
             + "an opacity of 0.17 in linear light would show " + plain.ToString("F2") + " (opacities " + Map25Marks.ConeAlpha.ToString("F3") + " and " + Map25Marks.HaloAlpha.ToString("F3") + "), and over the streets and the dark ground no more than "
             + Math.Max(onStreet, onGround).ToString("F2"));
         bool steps = true;

@@ -3,15 +3,15 @@ using RealLifeOverhaul.Map25;
 namespace RealLifeOverhaul.Nav
 {
     /// <summary>
-    /// How the city map's tilt button works, in plain numbers: three states in a ring (by the camera's distance, flat, tilted) and the pitch each asks for. By
-    /// distance is what the map did before the button: flat from afar and the game's own tilt from close. Nothing of the game in it, so the checks run it.
+    /// How the city map's tilt button works, in plain numbers: two states (tilted, flat) and the pitch each asks for. The state a player never chose (Auto, the
+    /// default) is tilted at every distance, as the owner wants the map to open. Nothing of the game in it, so the checks run it.
     /// </summary>
     public static class NavMapTilt
     {
         public const int Auto = 0, Flat = 1, Tilted = 2;
 
-        /// <summary>The state the button's next press gives: by distance, flat, tilted, then by distance again. Anything else is the default.</summary>
-        public static int Next(int mode) => Known(mode) == Auto ? Flat : mode == Flat ? Tilted : Auto;
+        /// <summary>The state the button's next press gives: flat from tilted (or the default), tilted from flat.</summary>
+        public static int Next(int mode) => Known(mode) == Flat ? Tilted : Flat;
 
         /// <summary>The state a saved number means: anything but flat or tilted is by distance.</summary>
         public static int Known(int mode) => mode == Flat || mode == Tilted ? mode : Auto;
