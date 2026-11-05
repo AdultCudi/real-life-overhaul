@@ -63,6 +63,7 @@ namespace RealLifeOverhaul.Ui
         public UiView(Transform parent, string name)
         {
             _root = NewRect(parent, name);
+            _root.gameObject.AddComponent<UiPointer>().Bind(this);   // the press and the drag are taken here, where no layout can hand the object to another target
             for (int i = 0; i < Layers; i++)
             {
                 _layers[i] = new Container(NewRect(_root, "Layer" + i));
