@@ -36,6 +36,8 @@ namespace RealLifeOverhaul.Ui
         private readonly UiScene _scene = new UiScene();
         private int _beforeFocus = -2, _beforeLaid = -1;   // the focus and layout count as a press began, for its trace
         private string _beforeNode, _confirmNote;
+        private string _pressNote;
+        private int _focusLaid;
         private int _beforeCommand = -1, _beforeArg;
         private readonly UiFocusMode _mode = new UiFocusMode(UiLead.Pointer);
         private UiView _view;
@@ -547,6 +549,7 @@ namespace RealLifeOverhaul.Ui
         {
             if (node < 0 || node >= _scene.NodeCount)
             {
+                _pressNote = "no target to press";
                 return;
             }
             using var cost = Measured(UiWork.Press);
@@ -554,17 +557,20 @@ namespace RealLifeOverhaul.Ui
             if (n.Disabled)
             {
                 _sound?.Play(UiCue.Error);
+                _pressNote = "target disabled";
                 return;
             }
             _view.Press(now);
             if (_screen is IUiTyping typing && n.Command == typing.TypingCommand)
             {
+                _pressNote = "opened typing";
                 BeginTyping(typing, n.Command, n.Arg);
                 _sound?.Play(UiCue.Confirm);
                 return;
             }
             if (n.Command == UiDraw.CloseCommand)
             {
+                _pressNote = "close";
                 // A window's close button does what Back does, so a screen with pages steps back before it closes; at its
                 // top level the frame closes the full menu, as the game's own close does.
                 bool back = _screen.Back() || (Chrome != null && Chrome(n.Command, n.Arg));
@@ -577,10 +583,12 @@ namespace RealLifeOverhaul.Ui
             }
             if (UiDraw.IsChrome(n.Command))
             {
+                _pressNote = "frame";
                 _sound?.Play(Chrome != null && Chrome(n.Command, n.Arg) ? UiCue.Confirm : UiCue.Error);
                 return;
             }
             bool done = _screen.Press(n.Command, n.Arg);
+            _pressNote = "screen.Press " + (done ? "true" : "false") + ", dirty " + (_screen.Dirty ? "yes" : "no") + ", gone " + (Gone() ? "yes" : "no");
             _sound?.Play(done ? UiCue.Confirm : UiCue.Error);
             if (_screen.Dirty && !Gone())
             {
@@ -790,6 +798,8 @@ namespace RealLifeOverhaul.Ui
                 }
                 laid = _laid;
                 FocusNode(node, Time.unscaledTime, false);
+                _focusLaid = _laid - laid;
+                _pressNote = "not reached";
                 if (_laid != laid)
                 {
                     node = UiPress.Find(_scene, command, arg, layer);
@@ -824,7 +834,7 @@ namespace RealLifeOverhaul.Ui
             if (_state.MoveX != 0 || _state.MoveY != 0) { others.Append(" Move"); }
             UiDirector.Logger?.Info("UI press: " + (_cost != null ? _cost.Name : "screen") + " frame " + Time.frameCount + "; down: ray " + NodeName(r.RayNode) + ", here " + NodeName(r.HereNode)
                 + ", began on " + NodeName(r.DownNode) + "; up: " + pressed + "; Confirm this frame: " + confirm + "; other input this frame:" + (others.Length == 0 ? " none" : others.ToString())
-                + "; drawn after: " + Drawn(_beforeCommand, _beforeArg)
+                + "; steps: focusing laid out " + _focusLaid + ", press " + _pressNote + "; drawn after: " + Drawn(_beforeCommand, _beforeArg)
                 + "; screen dirty after: " + (_screen != null && _screen.Dirty ? "yes" : "no")
                 + "; focus " + NodeName(beforeFocus) + " -> " + NodeName(_view.Focus) + "; layouts " + _laid + " (" + (_laid - laidBefore) + " by the press)");
         }
