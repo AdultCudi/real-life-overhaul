@@ -42,7 +42,11 @@ namespace RealLifeOverhaul.Ui
         public const string Map = "uiscreens_map";        // the city map's panels: its filters, the place card, the district view, the subway list and the picker
 
         /// <summary>Every section, in the page's order; a section with no switch yet is left off the page.</summary>
-        public static readonly string[] Sections = { Apps, Business, Market, Boxes, Hud, Tools, Activity, Buy, Pause, Life, Social, Help, Money, News, Work, Company, Construction, Estate, Tech, Ventures, Map };
+        public static readonly string[] Sections =
+        {
+            Apps, Business, Market, Boxes, Hud, Tools, Activity, Buy, Pause, Life, Social, Help, Money, News, Work, Company, Construction, Estate, Tech,
+            Ventures, Map,
+        };
 
         private static readonly UiScreenDef[] Switched = Gather();
         private static readonly bool[] Values = Fill(Switched.Length);
