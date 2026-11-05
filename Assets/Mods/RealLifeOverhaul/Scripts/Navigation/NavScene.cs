@@ -11,11 +11,11 @@ namespace RealLifeOverhaul.Nav
 {
     /// <summary>
     /// The 2.5D map's city, made once from what the minimap already measured (<see cref="NavBaseData"/>: every building's outline,
-    /// its ground and height, the water grid), the road graph and the game's trees: the blocks in two details (the full map's and the minimap's),
+    /// its ground and height, the water grid), the road graph and the game's trees: the blocks in the minimap's detail,
     /// the land, the green ground of the parks, the roads with their lane marking and the trees, all in chunks. The arithmetic runs on a pool thread
     /// from arrays nothing else writes (about 50 ms outside the game); the meshes are made on the main thread a slice a frame (at most 0.6 ms).
-    /// Nothing is made until the minimap's base is, and nothing at all with both options off. A tint is a write to the few vertices of one
-    /// building in the full map's meshes. Cost a frame once made: none (the picture is drawn by <see cref="NavMap25"/> and the panel, and only when the view moves).
+    /// Nothing is made until the minimap's base is, and nothing at all with the option off. Cost a frame once made: none (the picture is drawn by the minimap's panel,
+    /// and only when the view moves).
     /// </summary>
     public sealed class NavScene
     {
@@ -24,7 +24,6 @@ namespace RealLifeOverhaul.Nav
         private const double SliceMilliseconds = 0.6;   // of a frame, while the meshes are made
         private const float GroundY = -0.3f;            // the contact patches' height under the scene's ground plane's zero
         private const int MostTrees = 14000;            // trees taken from the game: past this, every second one
-        private const float MarksY = 0.08f;             // metres over the ground the rings round tinted buildings lie
 
         public enum Stage { Idle, Building, Uploading, Ready, Failed }
 
@@ -35,7 +34,7 @@ namespace RealLifeOverhaul.Nav
             public float[] TreeX, TreeZ;
             public int Trees;
             public Map25City City;
-            public Map25Set Full, Small;
+            public Map25Set Small;
             public Map25Under Under;
             public float Y0;
             public volatile bool Done;
@@ -48,8 +47,7 @@ namespace RealLifeOverhaul.Nav
                 {
                     Stopwatch watch = Stopwatch.StartNew();
                     City = Map25City.FromOutlines(Data.Hulls, Data.HullStart, Data.HullX, Data.HullZ, Data.HullKey, Data.HullFoot, Data.HullHeight, out Y0);
-                    Full = Map25Set.Build(City, Map25Detail.Full, GroundY);
-                    Small = Map25Set.Build(City, Map25Detail.Small, GroundY);
+                    Small = Map25Set.Build(City, GroundY);
                     RouteSearch roads = Graph.Drive;
                     Under = Map25Under.Make(Data.Cells, Data.Columns, Data.Rows, Data.Cell, Data.OriginX, Data.OriginZ, GroundY * 0.5f,
                                             roads.X, roads.Y, roads.Z, roads.EdgeStart, roads.EdgeTo, roads.EdgeExtra, Graph.Usable, Graph.Speed, roads.Count,
@@ -66,9 +64,6 @@ namespace RealLifeOverhaul.Nav
         }
 
         private Job _job;
-        private readonly Map25Blocks _generator = new Map25Blocks();
-        private readonly Map25Builders _scratch = new Map25Builders(4096);
-        private int[] _marks = new int[0];
         private double _uploadMilliseconds;
         private int _uploadFrames;
 
@@ -155,11 +150,11 @@ namespace RealLifeOverhaul.Nav
                 }
                 City = job.City;
                 Y0 = job.Y0;
-                Scene = new Map25Scene(new[] { job.Full, job.Small }, job.Under, City.MinX, City.MinZ, City.MaxX, City.MaxZ);
+                Scene = new Map25Scene(job.Small, job.Under, City.MinX, City.MinZ, City.MaxX, City.MaxZ);
                 CultureInfo plain = CultureInfo.InvariantCulture;
-                Summary = City.Count + " buildings, " + job.Full.Vertices + " + " + job.Small.Vertices + " block vertices (" + job.Full.Triangles + " + " + job.Small.Triangles + " triangles, "
-                          + job.Full.Layers[(int)Map25Kind.Panes].Vertices + " of them windows), " + job.Under.Land.Length + " land, " + job.Under.Roads.Length + " road and " + job.Under.Trees.Length
-                          + " tree chunks (" + job.Trees + " trees, " + job.Under.Greens.Length + " green), made in " + job.Milliseconds.ToString("F0", plain) + " ms off the main thread";
+                Summary = City.Count + " buildings, " + job.Small.Vertices + " block vertices (" + job.Small.Triangles + " triangles), " + job.Under.Land.Length + " land, "
+                          + job.Under.Roads.Length + " road and " + job.Under.Trees.Length + " tree chunks ("
+                          + job.Trees + " trees, " + job.Under.Greens.Length + " green), made in " + job.Milliseconds.ToString("F0", plain) + " ms off the main thread";
                 _job = null;
                 State = Stage.Uploading;
                 return true;
@@ -173,7 +168,7 @@ namespace RealLifeOverhaul.Nav
                 if (!more)
                 {
                     State = Stage.Ready;
-                    Logger?.Info("Navigation: the 2.5D map is made: " + Summary + ", its meshes sent in " + _uploadFrames + " frames ("
+                    Logger?.Info("Navigation: the minimap's 2.5D picture is made: " + Summary + ", its meshes sent in " + _uploadFrames + " frames ("
                                  + _uploadMilliseconds.ToString("F1", CultureInfo.InvariantCulture) + " ms in all).");
                 }
                 return more;
@@ -181,54 +176,11 @@ namespace RealLifeOverhaul.Nav
             return false;
         }
 
-        /// <summary>
-        /// Gives building <paramref name="hull"/> a tint (the game's highlight colour), or takes it away; the full map's blocks' colours are written at once (the
-        /// minimap's blocks show no highlight). False when it was already so.
-        /// </summary>
-        public bool Tint(int hull, bool on, Color32 colour)
-        {
-            if (!Ready || hull < 0 || hull >= City.Count)
-            {
-                return false;
-            }
-            float share = on ? (colour.r > 235 && colour.g > 235 && colour.b > 235 ? Map25Palette.HoverShare : Map25Palette.TintShare) : 0f;
-            if (City.TintShare[hull] == share && (!on || (City.Tint[hull].R == colour.r / 255f && City.Tint[hull].G == colour.g / 255f && City.Tint[hull].B == colour.b / 255f)))
-            {
-                return false;
-            }
-            City.Tint[hull] = new Map25Colour(colour.r / 255f, colour.g / 255f, colour.b / 255f);
-            City.TintShare[hull] = share;
-            Scene.Retint(City, hull, _generator, _scratch);
-            return true;
-        }
-
-        /// <summary>The rings and roof lines of the tinted buildings (not the hovered one, which is white) written again, after a pass that changed tints.</summary>
-        public void RefreshMarks()
-        {
-            if (!Ready)
-            {
-                return;
-            }
-            if (_marks.Length < City.Count)
-            {
-                _marks = new int[City.Count];
-            }
-            int count = 0;
-            for (int i = 0; i < City.Count; i++)
-            {
-                if (City.TintShare[i] == Map25Palette.TintShare)
-                {
-                    _marks[count++] = i;
-                }
-            }
-            Scene.SetMarks(City, _marks, count, MarksY);
-        }
-
         private void Fail(string why)
         {
             State = Stage.Failed;
             _job = null;
-            Logger?.Warn("Navigation: the 2.5D map is not made, the flat minimap and the game's own city map stay: " + why);
+            Logger?.Warn("Navigation: the minimap's 2.5D picture is not made, the flat minimap stays: " + why);
         }
 
         public void Dispose()

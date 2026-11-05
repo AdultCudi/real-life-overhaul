@@ -42,7 +42,7 @@ namespace RealLifeOverhaul.Nav
         {
             _mapOpen = open;
             RouteLabelKeep();
-            OpenPicture(open && !_voogle && Settings.Map25);
+            OpenCamera(open && !_voogle);
             if (_broken || _voogle || !Settings.Gps || _mapGaveUp)
             {
                 if (_map != null)
@@ -73,7 +73,6 @@ namespace RealLifeOverhaul.Nav
                 _map.Clicks = true;
                 _map.Open(open);
             }
-            ArrangeMap();   // both are there now: the picture first, the route over it
         }
 
         // The label for the line on the map: the middle of the line as drawn, with the minutes and the way to go the minimap's block says. Handed over only when one of them changed
@@ -107,13 +106,12 @@ namespace RealLifeOverhaul.Nav
             return found;
         }
 
-        // The map check after the map shut (Diagnostics/SessionWatch.Map): the route's object off with the map, and the 2.5D picture, its texture, the game's
-        // camera's mask and tilt and the tints given back (what the mod draws for the open map is one part of it).
+        // The map check after the map shut (Diagnostics/SessionWatch.Map): the route's object off with the map and the game's camera's tilt given back.
         private int MapLook(StringBuilder line)
         {
             bool shown = _map != null && _map.gameObject.activeSelf;
             line?.Append("route on the map: ").Append(_mapOpen ? "still as for the open map" : shown ? "its object still shown" : "off with the map").Append("; ");
-            return (_mapOpen || shown ? 1 : 0) + Map25Look(line);
+            return (_mapOpen || shown ? 1 : 0) + CameraLook(line);
         }
 
         // Two clicks on one spot of the open map: that spot is the destination.

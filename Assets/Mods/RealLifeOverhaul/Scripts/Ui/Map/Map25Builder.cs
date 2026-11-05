@@ -15,24 +15,6 @@ namespace RealLifeOverhaul.Map25
         public int Vertices, Indices;
         public float MinX, MinY, MinZ, MaxX, MaxY, MaxZ;
 
-        /// <summary>Counts up whenever colours were written again; the renderer sends the colours again when it has seen a lower one.</summary>
-        public int ColourVersion;
-
-        /// <summary>The first and last vertex whose colour changed since the renderer last sent them; <c>From &gt; To</c> when none.</summary>
-        public int DirtyFrom = int.MaxValue, DirtyTo = -1;
-
-        public void Dirty(int first, int count)
-        {
-            if (first < DirtyFrom)
-            {
-                DirtyFrom = first;
-            }
-            if (first + count - 1 > DirtyTo)
-            {
-                DirtyTo = first + count - 1;
-            }
-            ColourVersion++;
-        }
     }
 
     /// <summary>Writes vertices and triangles into growing arrays, then hands them out as one <see cref="Map25Chunk"/>. Not safe across threads: one a thread.</summary>
@@ -185,12 +167,6 @@ namespace RealLifeOverhaul.Map25
             Array.Copy(_idx, chunk.Idx, _i);
             Clear();
             return chunk;
-        }
-
-        /// <summary>The colours of the vertices written since the last clear, from <paramref name="first"/>, copied into a chunk's array at <paramref name="at"/>.</summary>
-        public void CopyColours(int first, int count, ushort[] into, int at)
-        {
-            Array.Copy(_col, first * 4, into, at * 4, count * 4);
         }
     }
 }

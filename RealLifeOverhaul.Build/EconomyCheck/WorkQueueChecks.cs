@@ -3,8 +3,8 @@ using System.Collections.Generic;
 using RealLifeOverhaul;
 using RealLifeOverhaul.Nav;
 
-// The wraps the mod puts on the game's queue of work on the city map's buildings (Core/WorkQueueStep, used by NavMapFollow and ClaimedMap), run against replicas of the game's
-// queue class: the step it runs for each item in a private field. The game's own step always runs; each wrap does its part once an item, in either order of the two wraps;
+// The wrap the mod puts on the game's queue of work on the city map's buildings (Core/WorkQueueStep, used by ClaimedMap, and by any other mod's wrap), run against replicas of the game's
+// queue class: the step it runs for each item in a private field. The game's own step always runs; each wrap does its part once an item, in either order of two wraps;
 // a queue the contract gives up, one without the field, one without a step and one holding a step of another kind of item are left as they are.
 internal static partial class Program
 {
@@ -40,27 +40,31 @@ internal static partial class Program
             step(item);
             claimed++;
         };
-        int seen = NavMapWork.Items;
+        int counted = 0;
+        Func<Action<int>, Action<int>> count2 = step => item =>
+        {
+            step(item);
+            counted++;
+        };
         var follow = new ReplicaQueue<int>(item => game++);
-        bool a1 = WorkQueueStep.Wrap<int>(follow, false, NavMapWork.Wrap);
+        bool a1 = WorkQueueStep.Wrap<int>(follow, false, count2);
         bool a2 = WorkQueueStep.Wrap<int>(follow, false, claim);
         for (int i = 0; i < 25; i++)
         {
             follow.Work(i);
         }
-        Check(a1 && a2 && game == 25 && claimed == 25 && NavMapWork.Items - seen == 25,
-            "city map queue: the count wrapped first and the mod's rows wrapped over it, the game's own step runs for every item and each wrap does its part once an item (" + game + ", " + claimed + ", " + (NavMapWork.Items - seen) + ")");
-        game = claimed = 0;
-        seen = NavMapWork.Items;
+        Check(a1 && a2 && game == 25 && claimed == 25 && counted == 25,
+            "city map queue: another wrap first and the mod's rows wrapped over it, the game's own step runs for every item and each wrap does its part once an item (" + game + ", " + claimed + ", " + counted + ")");
+        game = claimed = counted = 0;
         var rows = new ReplicaQueue<int>(item => game++);
         bool b1 = WorkQueueStep.Wrap<int>(rows, false, claim);
-        bool b2 = WorkQueueStep.Wrap<int>(rows, false, NavMapWork.Wrap);
+        bool b2 = WorkQueueStep.Wrap<int>(rows, false, count2);
         for (int i = 0; i < 25; i++)
         {
             rows.Work(i);
         }
-        Check(b1 && b2 && game == 25 && claimed == 25 && NavMapWork.Items - seen == 25,
-            "city map queue: the same the other way round (the mod's rows first, the count over them), whichever sets itself up first (" + game + ", " + claimed + ", " + (NavMapWork.Items - seen) + ")");
+        Check(b1 && b2 && game == 25 && claimed == 25 && counted == 25,
+            "city map queue: the same the other way round (the mod's rows first, the other wrap over them), whichever sets itself up first (" + game + ", " + claimed + ", " + counted + ")");
 
         // the wrap is asked for the game's step itself, and not asked at all of a queue it leaves alone
         int asked = 0;

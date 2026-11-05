@@ -49,7 +49,6 @@ namespace RealLifeOverhaul.Map25
         public static readonly Map25Colour Avenue = Map25Colour.Hex(0x1B242B);
         public static readonly Map25Colour Street = Map25Colour.Hex(0x172027);
         public static readonly Map25Colour Window = Map25Colour.Hex(0xA9C0D3);
-        public static readonly Map25Colour Lit = Map25Colour.Hex(0xF6D98A);
         public static readonly Map25Colour Ink = Map25Colour.Hex(0x050B11);
         public static readonly Map25Colour Route = Map25Colour.Hex(0x4FB8EA);
         public static readonly Map25Colour RouteCasing = Map25Colour.Hex(0x0B3C58);
@@ -65,26 +64,6 @@ namespace RealLifeOverhaul.Map25
         {
             Map25Colour.Hex(0x6A7C88), Map25Colour.Hex(0x62747F), Map25Colour.Hex(0x74858F), Map25Colour.Hex(0x5A6B77), Map25Colour.Hex(0x66787E)
         };
-
-        public static readonly Map25Colour[] Awnings =
-        {
-            Map25Colour.Hex(0xC0614F), Map25Colour.Hex(0xD1993F), Map25Colour.Hex(0x3E9C8A), Map25Colour.Hex(0x7A6BC4), Map25Colour.Hex(0x4A86B8), Map25Colour.Hex(0x79A04E)
-        };
-
-        /// <summary>The share of a tint that reaches a building the game has highlighted (mockups: 0.5 to 0.8 by kind; one for every kind the game has).</summary>
-        public const float TintShare = 0.68f;
-
-        /// <summary>The same for the white of the game's hover and picked outline.</summary>
-        public const float HoverShare = 0.28f;
-
-        /// <summary>
-        /// How much of a window pane is the window colour, and how much of the wall under it shows through (the mockup's dashes: 24 per cent
-        /// opacity of a colour 70 per cent window).
-        /// </summary>
-        public const float PaneAlpha = 0.24f, PaneShare = 0.70f, LitAlpha = 0.75f;
-
-        /// <summary>The ground ring round a tinted building: the tint over the ground at this opacity, and its outline at the other.</summary>
-        public const float RingFill = 0.20f, RingLine = 0.62f;
 
         /// <summary>The distance in metres from the ground at which the foot of a wall has lost its darkening (see <see cref="Foot"/>).</summary>
         public const float FootKnee = 12f, FootEnd = 28f;
@@ -121,12 +100,6 @@ namespace RealLifeOverhaul.Map25
         public static Map25Colour Tone(int index)
         {
             return Tones[(index & 0x7FFFFFFF) % Tones.Length];
-        }
-
-        /// <summary>The colour a game tint has on a block (a mix, never the raw colour: nothing glares).</summary>
-        public static Map25Colour Tinted(Map25Colour tone, Map25Colour tint, float share)
-        {
-            return tone.Mix(tint, share);
         }
     }
 }

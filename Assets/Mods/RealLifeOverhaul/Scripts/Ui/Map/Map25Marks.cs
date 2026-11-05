@@ -11,13 +11,10 @@ namespace RealLifeOverhaul.Map25
     /// </summary>
     public static class Map25Marks
     {
-        public const float RouteFull = 7f;                 // pixels of the route's line on a full map 1080 pixels high (the mockup's 7.5)
-        public const float RouteMini = 4.2f;               // on a minimap 300 pixels wide (the mockup's)
+        public const float RouteMini = 4.2f;               // pixels of the route's line on a minimap 300 pixels wide (the mockup's)
         public const float CasingShare = 1.75f;            // the dark casing is this wide, times the line
-        public const float ConeFull = 142f / 1080f;        // the view cone's length, of the full map's height (the mockup's 142 pixels in 1080)
-        public const float ConeMini = 55f / 300f;          // of the minimap's width
-        public const float HaloFull = 30f / 1080f;         // the halo's radius
-        public const float HaloMini = 11.6f / 300f;
+        public const float ConeMini = 55f / 300f;          // the view cone's length, of the minimap's width
+        public const float HaloMini = 11.6f / 300f;        // the halo's radius
         public const float ConeHalfAngle = 30f;
 
         /// <summary>
@@ -75,25 +72,25 @@ namespace RealLifeOverhaul.Map25
         }
 
         /// <summary>
-        /// Half the width in metres of the route's line where a pixel spans <paramref name="metresPerPixel"/> m, on a picture
-        /// <paramref name="pixels"/> high (the full map) or wide (the minimap).
+        /// Half the width in metres of the route's line where a pixel spans <paramref name="metresPerPixel"/> m, on a minimap
+        /// <paramref name="pixels"/> wide.
         /// </summary>
-        public static float RouteHalf(bool minimap, float pixels, float metresPerPixel)
+        public static float RouteHalf(float pixels, float metresPerPixel)
         {
-            float line = minimap ? RouteMini * pixels / 300f : RouteFull * pixels / 1080f;
+            float line = RouteMini * pixels / 300f;
             return Math.Max(0.25f, line * 0.5f) * metresPerPixel;
         }
 
         /// <summary>The view cone's length in metres.</summary>
-        public static float ConeMetres(bool minimap, float pixels, float metresPerPixel)
+        public static float ConeMetres(float pixels, float metresPerPixel)
         {
-            return (minimap ? ConeMini : ConeFull) * pixels * metresPerPixel;
+            return ConeMini * pixels * metresPerPixel;
         }
 
         /// <summary>The halo's radius in metres.</summary>
-        public static float HaloMetres(bool minimap, float pixels, float metresPerPixel)
+        public static float HaloMetres(float pixels, float metresPerPixel)
         {
-            return (minimap ? HaloMini : HaloFull) * pixels * metresPerPixel;
+            return HaloMini * pixels * metresPerPixel;
         }
 
         /// <summary>

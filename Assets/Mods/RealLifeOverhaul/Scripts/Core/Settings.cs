@@ -232,7 +232,6 @@
         public const string MinimapSizeId = "nav_size";
         public const string MinimapZoomId = "nav_zoom";
         public const string MinimapBaseId = "nav_base";
-        public const string Map25Id = "nav_map25";
         public const string Minimap25Id = "nav_minimap25";
         public const string RoadsideChecksId = "roadside_checks";
         public const string HeavyLicenceId = "heavy_licence";
@@ -612,7 +611,6 @@
         public static int MinimapSize = 80;              // per cent of the width of the game's left column
         public static int MinimapZoom = 100;             // per cent: more is closer
         public static bool MinimapBase = true;           // buildings and water on the minimap, under the roads (off: roads only, as before)
-        public static bool Map25 = true;                 // the city map as the mod's 2.5D picture of blocks (off: the game's own city map)
         public static bool Minimap25 = true;             // the minimap as the same blocks, tilted (off: the flat picture of buildings and water)
         public static bool RoadsideChecks = true;        // now and then a patrol car pulls the player over only to see the licence
         public static bool HeavyLicence = true;          // the heaviest trucks need a heavy goods licence, and it opens heavy loads (off: the commercial licence covers them, as before)
@@ -1047,7 +1045,6 @@
             MinimapSize = Int(modId, MinimapSizeId, MinimapSize);
             MinimapZoom = Int(modId, MinimapZoomId, MinimapZoom);
             MinimapBase = Bool(modId, MinimapBaseId, MinimapBase);
-            Map25 = Bool(modId, Map25Id, Map25);
             Minimap25 = Bool(modId, Minimap25Id, Minimap25);
             RoadsideChecks = Bool(modId, RoadsideChecksId, RoadsideChecks);
             HeavyLicence = Bool(modId, HeavyLicenceId, HeavyLicence);

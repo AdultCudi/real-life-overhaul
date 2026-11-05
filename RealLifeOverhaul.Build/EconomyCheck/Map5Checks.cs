@@ -51,17 +51,13 @@ internal static partial class Program
               && NavMapTilt.Pitch(NavMapTilt.Auto, 340f) == RealLifeOverhaul.Map25.Map25View.TiltPitch && NavMapTilt.Pitch(NavMapTilt.Auto, 100f) == RealLifeOverhaul.Map25.Map25View.TiltPitch,
             "city map: flat and tilted ignore the distance, and the default is tilted at every distance");
         Check(NavMapTilt.Words(NavMapTilt.Flat, 100f) == "2D" && NavMapTilt.Words(NavMapTilt.Tilted, 340f) == "3D" && NavMapTilt.Words(NavMapTilt.Auto, 340f) == "3D"
-              && NavMapTilt.Words(NavMapTilt.Auto, 100f) == "3D", "city map: the tile says 2D while the picture stands flat, 3D while it stands tilted");
-        string names = Map5Source("Navigation/NavMapNames.cs"), full = Map5Source("Navigation/NavMap25.cs");
-        Check(names.Contains("GameFont.Asset") && names.IndexOf("if (font == null || _broken)") < names.IndexOf("new GameObject(\"Street\"") && names.Contains("fontSharedMaterial == null")
-              && names.IndexOf("text.font = font") < names.IndexOf("text.outlineWidth") && names.IndexOf("made.SetActive(false)") > names.IndexOf("AddComponent<TextMeshProUGUI>"),
-            "city map: a street label is made only with the game's font and a material, active so TextMeshPro has set itself up, and never before the font is set (the NullReference of 5 Nov)");
-        Check(full.Contains("_streets.Place(_rect") && full.IndexOf("catch (Exception e)", full.IndexOf("_streets.Place(_rect")) < full.IndexOf("PlacePlayer();", full.IndexOf("_streets.Place(_rect")),
-            "city map: a fault in the street names turns the names off and never the map");
-        string release = full.Substring(full.IndexOf("private void Release()"), 400), hide = full.Substring(full.IndexOf("private void Hide(CityMap map)"), 300);
-        Check(release.Contains("HidePieces();") && hide.Contains("HidePieces();") && hide.IndexOf("HidePieces();") < hide.IndexOf("return;"),
-            "city map: the player's marker and the street names go whenever the picture is not showing, after a fault too");
-        Check(full.Contains("the game's own map is showing: the 2D and 3D button still turns its camera"), "city map: the 2D and 3D button turns the game's own map too when the picture stands down");
+              && NavMapTilt.Words(NavMapTilt.Auto, 100f) == "3D", "city map: the tile says 2D while the map stands flat, 3D while it stands tilted");
+        // The button turns the game's own map camera, in every frame the map is open (not only when the camera stands still), and never the game's main camera or its culling mask.
+        string camera = Map5Source("Navigation/NavMapCamera.cs");
+        Check(camera.Contains("NavMapTilt.Pitch(NavTilt.Map, map.cityMapCam.distance)") && !camera.Contains("Resting") && !camera.Contains("IsBlending") && !camera.Contains("cullingMask")
+              && camera.Contains("_virtual.position = pivot - direction * distance;"),
+            "city map: the 2D and 3D button moves the game's own map camera along its arc in every frame the map is open, panning or not, and never touches the culling mask");
+        Check(Map5Source("Navigation/NavDirector.Map.cs").Contains("OpenCamera(open && !_voogle);"), "city map: the button's camera work goes on and off with the map, and is left alone when another mod owns the map");
 
         // Sources: the destination block and the button are made once with the panel, write only a changed text, and the button is the one part of the view that takes the pointer.
         string dest = Map5Source("Navigation/NavHud.Destination.cs");
@@ -72,8 +68,8 @@ internal static partial class Program
         string strip = Map5Source("Navigation/NavHud.Strip.cs"), scene = Map5Source("Navigation/NavHud.Scene.cs");
         Check(takes == 1 && !strip.Contains("raycastTarget = true") && !scene.Contains("raycastTarget = true"),
             "minimap: the 2D and 3D button is the one thing in the view that takes the pointer (" + takes + " in its file, none in the strip or the picture)");
-        Check(Map5Source("Navigation/NavDirector.cs").Contains("NavTilt.Minimap") && Map5Source("Navigation/NavMap25.cs").Contains("NavMapTilt.Pitch(NavTilt.Map"),
-            "minimap and city map: the director and the picture read the player's tilt from NavTilt, and nothing else decides it");
+        Check(Map5Source("Navigation/NavDirector.cs").Contains("NavTilt.Minimap") && Map5Source("Navigation/NavMapCamera.cs").Contains("NavMapTilt.Pitch(NavTilt.Map"),
+            "minimap and city map: the director and the camera read the player's tilt from NavTilt, and nothing else decides it");
     }
 
     private static int Map5Count(string text, string word)
