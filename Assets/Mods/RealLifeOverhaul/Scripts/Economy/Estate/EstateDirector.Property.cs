@@ -111,6 +111,8 @@ namespace RealLifeOverhaul.Economy
                 EstateRules.Lapse(h, day);
                 int lost = EstateRules.Wear(h);
                 bool duties = Duties;
+                PeopleMorning(h, day);
+                ServicesMorning(h, day);
                 int missed = 0, missedRent = 0, firstMissed = -1;
                 for (int u = 0; u < h.Units.Count; u++)
                 {
@@ -238,7 +240,7 @@ namespace RealLifeOverhaul.Economy
             EstateUnit u = h.Units[unit];
             int days = u.ArrearsDays, rent = u.Rent;
             bool onPlan = u.OnPlan;
-            TenancyDay d = EstateRules.Day(h, unit, _state.Seed, day, _climate, Duties);
+            TenancyDay d = EstateDay.Unit(_state, h, unit, day, _climate, Duties);
             string name = EstateText.UnitName(h, unit), pick = UnitPick(h, unit);
             if (d.Lump > 0)
             {
@@ -468,6 +470,7 @@ namespace RealLifeOverhaul.Economy
             }
             EstateUnit u = h.Units[unit];
             AgentFee(h, unit);
+            NameLease(h, unit);
             if (Verbose)
             {
                 Logger?.Info("Estate check (letting, " + EstateText.UnitName(h, unit) + "): a tenant with a record of " + u.Record + " at " + u.Rent + " a day against the unit's market rent of "

@@ -343,6 +343,28 @@ namespace RealLifeOverhaul.Economy
         public const int ManagerOfferLeast = 950;   // of the asking rent, taken at once; less waits for the application's last day
         public const int ManagerRepairDays = 7;     // days before an order's deadline that a manager starts the repair works
 
+        // Wave 4 (TenantRules.cs, ServiceRules.cs, ImproveRules.cs): named tenants, the rent record, booked servicing, improvements the tenants ask for, the city's rents.
+        public const int PaymentsKept = 6;          // a unit's rent record: its last months of rent
+        public const int RentRingKept = 12;         // the city's mean rent, a month at a time
+        public const int LandlordsMost = 12;        // other landlords read from the city's buildings
+        public const int ServicesMost = 4;          // booked services at one building
+        public const int ServiceDaysAhead = 14;     // a service is booked this many days ahead, at least
+        public const int ServiceShare = 350;        // of the quote for a call of that kind: a planned visit is cheaper than a call out
+        public const int ServiceCut = 700;          // thousandths of a call of the kind that is not made while a service holds (a season)
+        public const int ImproveKinds = 4;          // a boiler replaced, new windows, a kitchen refit, redecoration
+        public static readonly int[] ImproveKindCost = { 0, 2400, 1800, 3200, 1200 };   // by kind, of the unit's value share: thousandths of a call's base
+        public const int ImproveBelow = 480;        // a tenant asks when satisfied less than this
+        public const int ImproveChance = 25;        // a day, in thousandths, under that satisfaction with nothing open
+        public const int ImproveDays = 21;          // an unanswered request lapses after this many days
+        public const int ImproveGain = 180;         // satisfaction gained by an improvement made
+        public const int ImproveLapseLoss = 40;     // lost when a request is left to lapse
+        public const int ImproveRefusedLoss = 90;   // lost when a request is refused
+        public const int ImproveRefusedQuit = 25;   // more quit chance a day, in thousandths, for each request refused in the lease
+        public const int TenantAffordMost = 450;    // the share of a tenant's pay that rent may take before it strains them, thousandths
+        public const int TenantStrainJob = 400;     // the miss chance added while the tenant has no job
+        public const int TenantStrainMost = 400;
+        public const int AdultAge = 18, OldAge = 75;
+
         public static int Clamp(int value, int least, int most)
         {
             return value < least ? least : value > most ? most : value;

@@ -18,7 +18,8 @@ namespace RealLifeOverhaul.Ui
         Action,       // a thing to do with the row, as an icon button at its right (Values: the icon, Tones: its tint; Cells: its words, unseen): set the destination
         Trend,        // a figure at the right with its direction's arrow (Values: 1, -1 or 0; Tones: Danger where a rise is bad) (UiDataCells)
         Steps,        // a short ladder as a bar of segments (Values: the steps reached, the column's Steps: how many, the row's Share)
-        Spark         // a sparkline of the row's Line, oldest first
+        Spark,        // a sparkline of the row's Line, oldest first
+        Stars         // a rating as five stars by halves (Values: 0 to 10 halves), as Football Manager rates; Cells: its words, unseen, for the sort and the reader
     }
 
     /// <summary>A column of a big table: what its cells are, how wide it stands and whether its head sorts it.</summary>
@@ -112,6 +113,14 @@ namespace RealLifeOverhaul.Ui
         public const int CanLess = 1, CanMore = 2;   // a stepper cell's Values: which way it may step now
         public const float StepperWidth = 176f;  // px: a stepper cell's widest, room for a price between its buttons
         public const float MarkRoom = 40f;       // px: and the room before it for its warning's glyph, when its column gives it
+        /// <summary>A person cell whose value is this draws its words with no face: the row has nobody in it.</summary>
+        public const int NoFace = -2;
+
+        /// <summary>A person cell whose value is <see cref="GlyphFace"/> of an icon draws that glyph on a tile where the face would stand, and its words after it at the same
+        /// left as a face's words: a row of nobody in particular (the trade, an empty unit) keeps its edge with the rows that have a person.</summary>
+        public const int GlyphFaceBase = -100;
+        public static int GlyphFace(UiIcon icon) => GlyphFaceBase - (int)icon;
+
         private const float PersonRow = 48f;     // px: a row with a face and two lines
         private const float PlainRow = 40f;      // px: a row of one line, as the app window's table
         private const float PickBox = 20f;       // px: a row's pick box while picking
@@ -378,7 +387,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         private static bool RightAligned(UiCellKind kind) => kind == UiCellKind.Figure || kind == UiCellKind.Money || kind == UiCellKind.Date || kind == UiCellKind.Meter
-                                                              || kind == UiCellKind.Chip || kind == UiCellKind.Stepper || kind == UiCellKind.Trend;
+                                                              || kind == UiCellKind.Chip || kind == UiCellKind.Stepper || kind == UiCellKind.Trend || kind == UiCellKind.Stars;
 
         // The head: each title in capitals, a sortable one a target, the sorted one in the words' colour with its order's
         // arrow beside it. Figures' titles stand at the right, over their figures.
@@ -465,9 +474,10 @@ namespace RealLifeOverhaul.Ui
                     int node = Cell(s, inside, m, ref row, c, cx[c] - x, ry, cw[c], rowH, sel, command, r);
                     stop = stop < 0 ? node : stop;
                 }
+                int rowNode = -1;
                 if (!steps)
                 {
-                    UiDraw.Node(s, inClip, 0f, ry, w, rowH, command + Row, r, face, false, list, r);
+                    rowNode = UiDraw.Node(s, inClip, 0f, ry, w, rowH, command + Row, r, face, false, list, r);
                 }
                 else if (stop >= 0)
                 {
@@ -480,7 +490,13 @@ namespace RealLifeOverhaul.Ui
                     if (m.Columns[c].Kind == UiCellKind.Action)
                     {
                         // Laid after the row's own target, so the button over it takes its press.
-                        ActButton(s, inside, ref row, c, cx[c] - x, ry, cw[c], rowH, command, r);
+                        int button = ActButton(s, inside, ref row, c, cx[c] - x, ry, cw[c], rowH, command, r, list);
+                        if (button >= 0 && rowNode >= 0)
+                        {
+                            // The pad goes from the row to its button and back by links of their own: the nearest-target search never leaves a list for its own row's button.
+                            s.Nodes[rowNode].Right = button;
+                            s.Nodes[button].Left = rowNode;
+                        }
                     }
                     else if (sel && m.Columns[c].Kind == UiCellKind.Stepper && m.Columns[c].OnChosen)
                     {
@@ -504,16 +520,23 @@ namespace RealLifeOverhaul.Ui
         }
 
         // A row's action at the right of its cell: its icon on a slate tile in its colour, a target of its own.
-        private static void ActButton(UiScene s, UiAt at, ref UiDataRow row, int c, float cx, float ry, float cw, float rowH, int command, int r)
+        private static int ActButton(UiScene s, UiAt at, ref UiDataRow row, int c, float cx, float ry, float cw, float rowH, int command, int r, short list)
         {
             int value = row.Values != null && c < row.Values.Length ? row.Values[c] : 0;
             if (value <= 0)
             {
-                return;
+                return -1;
             }
             UiRole tint = row.Tones != null && c < row.Tones.Length ? row.Tones[c] : UiRole.None;
             float size = UiTokens.ControlSmall;
-            UiDraw.IconButton(s, at, cx + cw - size, ry + (rowH - size) / 2f, size, (UiIcon)value, tint, command + Act, r);
+            int node = UiDraw.IconButton(s, at, cx + cw - size, ry + (rowH - size) / 2f, size, (UiIcon)value, tint, command + Act, r);
+            if (node >= 0 && node < s.NodeCount && s.Nodes[node].Command == command + Act)
+            {
+                s.Nodes[node].List = list;   // a row's own button is of its list: the pad that reaches the list reaches it
+                s.Nodes[node].Index = r;
+                return node;
+            }
+            return -1;
         }
 
         // A cell by its column's kind, its box from cx to cx + cw in the row. Returns a stepper's typed figure, the target that
@@ -529,8 +552,19 @@ namespace RealLifeOverhaul.Ui
                 case UiCellKind.Person:
                 {
                     float face = UiTokens.AvatarSmall;
-                    UiDraw.Portrait(s, at, cx + UiTokens.S1, ry + (rowH - face) / 2f, face, words, row.Hue, row.Ring);   // its ring's stroke inside the step before it
-                    float tx = cx + UiTokens.S1 + face + UiTokens.S3, tw = cw - (tx - cx);
+                    bool nobody = value == NoFace;   // no one stands in the row: the words alone, with no face drawn for nobody
+                    bool glyph = value <= GlyphFaceBase;
+                    if (glyph)
+                    {
+                        float gy = ry + (rowH - face) / 2f, g = UiTokens.Icon;
+                        int gt = UiDraw.Tile(s, at, cx + UiTokens.S1, gy, face, UiRole.None, false);
+                        UiDraw.Icon(s, at.In(gt), cx + UiTokens.S1 + (face - g) / 2f, gy + (face - g) / 2f, g, (UiIcon)(GlyphFaceBase - value), UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
+                    }
+                    else if (!nobody)
+                    {
+                        UiDraw.Portrait(s, at, cx + UiTokens.S1, ry + (rowH - face) / 2f, face, words, row.Hue, row.Ring);   // its ring's stroke inside the step before it
+                    }
+                    float tx = nobody ? cx + UiTokens.S1 : cx + UiTokens.S1 + face + UiTokens.S3, tw = cw - (tx - cx);
                     float lh = UiTextRules.LineHeight(UiStyle.Title), sh = UiTextRules.LineHeight(UiStyle.Small);
                     float top = ry + (rowH - lh - sh) / 2f;
                     UiDraw.Text(s, at, tx, top, tw, UiStyle.Title, UiRole.Text, words, UiFlags.Truncate | UiFlags.Middle);
@@ -608,8 +642,14 @@ namespace RealLifeOverhaul.Ui
                 }
                 case UiCellKind.Meter:
                 {
+                    if (value < 0 && string.IsNullOrEmpty(words))
+                    {
+                        break;   // a row the figure does not exist for (a repair call has no condition) draws neither a figure nor an empty track
+                    }
                     UiRole grade = UiTokens.Grade(Math.Max(0, value));
-                    float fw = UiTextRules.Width("100", UiStyle.BodyStrong) + UiTokens.S1;
+                    // The figure's room is that of "100" (or "100%" for a per cent) or of its own word when that is wider ("Patchy"), so its bar never ends under it.
+                    float fw = Math.Max(UiTextRules.Width(words != null && words.EndsWith("%", StringComparison.Ordinal) ? "100%" : "100", UiStyle.BodyStrong),
+                        UiTextRules.Width(words ?? string.Empty, UiStyle.BodyStrong)) + UiTokens.S1;
                     // On the chosen row's cyan tone a low grade's red or orange falls under 4.5:1: the figure beside its meter
                     // takes the row's words' colour there, and the meter keeps the grade.
                     UiDraw.TextMiddle(s, at, cx + cw - fw, ry, rowH, fw, UiStyle.BodyStrong, sel ? UiRole.Text : grade, words, UiFlags.Right);
@@ -636,6 +676,15 @@ namespace RealLifeOverhaul.Ui
                 case UiCellKind.Steps:
                     UiDataCells.Steps(s, at, words, value, row.Share, col.Steps, cx, ry, cw, rowH, sel);
                     break;
+                case UiCellKind.Stars:
+                {
+                    float size = UiTokens.IconSmall, starsW = 5f * size + 4f * UiTokens.Hairline * 2f;
+                    if (cw >= starsW)
+                    {
+                        UiDraw.Stars(s, at, cx + cw - starsW, ry + (rowH - size) / 2f, size, Math.Max(0, Math.Min(10, value)));
+                    }
+                    break;
+                }
                 case UiCellKind.Spark:
                     if (row.Line != null && row.Line.Length > 1 && cw >= UiTokens.S8)
                     {

@@ -30,13 +30,14 @@ namespace RealLifeOverhaul.Ui
             public string Name;
         }
 
-        private static ViewTarget _wanted = ViewTarget.None;
-
         /// <summary>A person the next opening of the page is to show (the work apps' "Open their page"); taken once.</summary>
-        internal static void Want(ViewTarget at) => _wanted = at;
+        internal static void Want(ViewTarget at) => Wanted = at;
 
         /// <summary>Back at the city closes the screen.</summary>
         public Action Close;
+
+        /// <summary>A page another screen asked for (a landlord's tenant, a person of the pool): taken at the next layout, once.</summary>
+        public static ViewTarget? Wanted;
 
         public string Id => "population";
 
@@ -44,12 +45,13 @@ namespace RealLifeOverhaul.Ui
 
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
-            if (_wanted.Valid)
+            if (Wanted.HasValue)
             {
                 _way.Clear();
-                _at = _wanted;
-                _wanted = ViewTarget.None;
+                _at = Wanted.Value;
+                _name = null;
                 _fresh = true;
+                Wanted = null;
                 _focusCommand = -1;
             }
             _view = Build(_at) ?? Build(ViewTarget.To(ViewKind.City, 0));

@@ -375,13 +375,18 @@ namespace RealLifeOverhaul.Economy.Dealership
                     break;
                 }
                 StockCar car = y.Cars[c];
+                int looks = ViewRules.Look(car);
                 int lift = IsFeatured(featured, c) ? (int)((long)mood.Convert * DealerCatalogue.FeaturedOffer / 1000) : mood.Convert;
                 lift = (int)Math.Min(int.MaxValue, (long)lift * (h.Buyers > 0 ? h.Buyers : 1000) / 1000);   // beyond the visitors, the city's buyers by income and the age of their cars
-                if (!dice.Chance(FixedChance(OfferChance(car.Asking, worths[c], day - car.Bought, h.Skill, car.Condition, lift), y.Fixed)))
+                int rival;
+                int compare = RivalRules.Compare(car.Asking, RivalRules.Cheapest(s, car.Type, out rival));   // a buyer compares with the other dealers' price for the model
+                int chance = (int)((long)FixedChance(OfferChance(car.Asking, worths[c], day - car.Bought, h.Skill, car.Condition, lift), y.Fixed) * compare / 1000);
+                if (!dice.Chance(chance))
                 {
                     continue;
                 }
                 DealerOffer offer = Offer(s.Next(), car, now, h.Skill, y.Warranty, financeLeastAtPrices, models, colours, level, mood, ref dice);
+                offer.Looks = Math.Max(1, Math.Min(looks, ViewRules.LooksBeforeOffer(car, s.Seed, day, offer.Id)));
                 if (y.Fixed)
                 {
                     AtAsking(offer, car);
@@ -438,6 +443,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             y.Past[0].CopyFrom(y.Today);
             y.Today.Clear(day);
+            ViewRules.NewDay(y);
         }
     }
 }

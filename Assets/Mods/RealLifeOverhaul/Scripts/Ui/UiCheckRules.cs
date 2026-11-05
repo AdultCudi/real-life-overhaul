@@ -1095,6 +1095,8 @@ namespace RealLifeOverhaul.Ui
                 ref UiClip c = ref s.Clips[it.Clip];
                 cx += c.X;
                 cy += c.Y - c.Offset;
+                // A row below the fold has no panel under it as drawn; the panel under the viewport's own edge is the one it will stand on when scrolled in.
+                cy = Math.Max(c.Y, Math.Min(cy, c.Y + c.H - 1f));
             }
             for (int p = item - 1; p >= 0; p--)
             {

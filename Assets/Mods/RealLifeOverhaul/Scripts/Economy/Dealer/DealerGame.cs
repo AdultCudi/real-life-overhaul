@@ -149,6 +149,13 @@ namespace RealLifeOverhaul.Economy.Dealership
             return string.IsNullOrEmpty(type) ? string.Empty : type.GetLocalization();
         }
 
+        /// <summary>The class of a vehicle type as the mod reads it for its gearbox (CarCatalogue): what the showroom's pages colour a car by.</summary>
+        public static CarKind KindOf(string type)
+        {
+            VehicleType t = string.IsNullOrEmpty(type) ? null : VehicleTypeHelper.GetVehicleType(type);
+            return t == null ? CarKind.Untouched : CarCatalogue.For(type, new CarTraits(true, false, t.maxSpeed, t.maxCargoCapacity, t.isLuxuryCar, 1200f)).Kind;
+        }
+
         /// <summary>A colour as the game writes it in a vehicle contract: its name and a mark in its own tint.</summary>
         public static string ColourName(string colour)
         {

@@ -42,7 +42,8 @@ internal static partial class Program
         { "WorkScreen", new[] { WorkCmd.Search, WorkCmd.Type } },
         { "BanksScreen", new[] { MoneyCommands.TypeField } },
         { "OwnBankScreen", new[] { MoneyCommands.TypeField } },
-        { "CompanyScreen", new[] { CompanyFace.StepType } }
+        { "CompanyScreen", new[] { CompanyFace.StepType } },
+        { "EstateScreen", new[] { EstateFace.SearchCommand } }
     };
 
     private static void UiCaretChecks()

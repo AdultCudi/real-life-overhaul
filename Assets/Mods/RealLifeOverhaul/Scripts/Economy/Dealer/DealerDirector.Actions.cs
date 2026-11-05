@@ -192,6 +192,12 @@ namespace RealLifeOverhaul.Economy.Dealership
         /// <summary>The player bids the next step on a lot, if the cash and a place on a lot are there for it.</summary>
         public bool Bid(int listing)
         {
+            return Bid(listing, 0);
+        }
+
+        /// <summary>The player bids an amount on a lot (0: the next step), if the cash and a place on a lot are there for it.</summary>
+        public bool Bid(int listing, int amount)
+        {
             DealerListing l = _state != null ? _state.Listing(listing) : null;
             if (l == null || l.Gone || l.Kind != ListingKind.Auction || Now >= l.Ends)
             {
@@ -209,12 +215,16 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 return Refuse(why);
             }
-            int worth = Worth(l), bid = DealerRules.NextBid(l, worth);
+            int worth = Worth(l), bid = amount > 0 ? amount : DealerRules.NextBid(l, worth);
+            if (bid < DealerRules.NextBid(l, worth) || bid > DealerRules.BidMost(worth))
+            {
+                return Refuse(DealerRefusal.Gone);
+            }
             if (DealerGame.Cash < bid + DealerRules.BuyersFee(bid, Prices.At(DealerCatalogue.BuyersFeeLeast)))
             {
                 return Refuse(DealerRefusal.Cash);
             }
-            DealerRules.Bid(l, worth, Now);
+            DealerRules.BidAt(l, worth, Now, bid);
             Changed();
             return true;
         }

@@ -81,6 +81,7 @@ namespace RealLifeOverhaul.Ui
             float fx = bleed ? x - UiTokens.S2 : x, fw = bleed ? w + UiTokens.S4 : w;
             int row = Box(s, at, fx, y, fw, h, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
             UiAt inside = at.In(row);
+            words = UiPlural.Fix(words);   // the words are measured as they will be drawn: "2 applicants", not "2 applicant(s)"
             float room = w - UiTokens.IconSmall - LinkGap;
             string shown = UiTextRules.Cut(words, UiStyle.BodyStrong, room);
             float drawn = UiTextRules.Width(shown, UiStyle.BodyStrong);

@@ -24,6 +24,14 @@ namespace RealLifeOverhaul.Ui
         public UiChoiceCap Cap;     // the bound key at the right of its name (F, P, the way back); None for its number alone
     }
 
+    /// <summary>An amount the player moves before choosing (a counter-offer): its name, the figure between a minus and a plus, what the figure means under it.</summary>
+    public struct UiDecisionStep
+    {
+        public string Label, Value, Hint;
+        public bool CanLess, CanMore;
+        public int Less, More, Arg;     // the commands of the minus and the plus, and the argument both carry
+    }
+
     /// <summary>What a decision card shows: who or what it is about, its words, its numbered choices and its buttons.</summary>
     public sealed class UiDecisionModel
     {
@@ -41,6 +49,7 @@ namespace RealLifeOverhaul.Ui
         public int BodyLines = 5;                   // the lines the paragraph may take: an obituary takes more than a decision's sentence
         public string[] FactLabels = new string[0]; // a strip of facts under the paragraph, each a label in capitals over its figure
         public string[] FactValues = new string[0];
+        public UiRole[] FactInks;                   // a fact's figure in its own ink (a margin in green); null or None for the main ink
         public string Portrait;                     // one person's portrait large in the side, in place of the emblem and the faces, with their name under it
         public string[] PortraitLines = new string[0];   // under the name, in the quiet grey: "Aged 38", "Founder of Speedy Bites"
         public UiDecisionChoice[] Choices = new UiDecisionChoice[0];
@@ -48,7 +57,15 @@ namespace RealLifeOverhaul.Ui
         public UiActionModel[] Buttons = new UiActionModel[0];
         public UiPrompt[] Prompts = new UiPrompt[0];
         public int PromptCount;
-        public int ChoiceCmd, ButtonCmd;            // the commands a choice and a button run, where a screen numbers its own (0: the card's ChoiceCommand and ButtonCommand)
+
+        // A screen that has its own command numbers (the kit's repeat across parts) gives them here: the choices carry ChoiceCmd with the argument in ChoiceArgs
+        // (their index when null), the buttons carry their own Command and Arg when ButtonsOwn. Defaults are this card's own two numbers.
+        public int ChoiceCmd = UiDecision.ChoiceCommand, ButtonCmd = UiDecision.ButtonCommand;
+        public int[] ChoiceArgs;
+        public bool ButtonsOwn;
+        public int Start = -1, StartButton = -1;    // where focus starts: a choice, or a button: the safe answer, never the way out
+        public UiDecisionStep[] Steps = new UiDecisionStep[0];   // amounts to set before choosing, between the facts and the choices
+        public bool LiftChoices;                    // a choice's row under the pointer lifts as the table rows do: its fill stays as drawn and the hover fill lies over it, plainly seen
     }
 
     /// <summary>
@@ -102,9 +119,14 @@ namespace RealLifeOverhaul.Ui
                 Facts(s, at, m, cx, cy, inner);
                 cy += FactsHeight(m) + UiTokens.S5;
             }
+            for (int i = 0; i < m.Steps.Length; i++)
+            {
+                cy += Step(s, at, ref m.Steps[i], cx, cy, inner) + UiTokens.S3;
+            }
             for (int i = 0; i < m.Choices.Length; i++)
             {
-                cy += Choice(s, at, ref m.Choices[i], i, i == m.Selected, cx, cy, inner, keys, m.ChoiceCmd > 0 ? m.ChoiceCmd : ChoiceCommand) + UiTokens.S2;
+                int arg = m.ChoiceArgs != null && i < m.ChoiceArgs.Length ? m.ChoiceArgs[i] : i;
+                cy += Choice(s, at, ref m.Choices[i], i, i == m.Selected, cx, cy, inner, keys, m.ChoiceCmd, arg, m.LiftChoices) + UiTokens.S2;
             }
             cy += UiTokens.S4;
             float total = 0f;
@@ -117,9 +139,10 @@ namespace RealLifeOverhaul.Ui
             {
                 ref UiActionModel b = ref m.Buttons[i];
                 float bw = UiDraw.ButtonWidth(b.Kind, b.Label, b.Icon, b.Key, keys);
-                UiDraw.Button(s, at, bx, cy, bw, UiTokens.Control, b.Kind, b.Label, b.Icon, b.Key, keys, m.ButtonCmd > 0 ? m.ButtonCmd : ButtonCommand, i, b.Disabled);
+                UiDraw.Button(s, at, bx, cy, bw, UiTokens.Control, b.Kind, b.Label, b.Icon, b.Key, keys, m.ButtonsOwn ? b.Command : m.ButtonCmd, m.ButtonsOwn ? b.Arg : i, b.Disabled);
                 bx += bw + UiTokens.S3;
             }
+            Start(s, m);
             for (int i = 0; i < m.PromptCount; i++)
             {
                 s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
@@ -144,6 +167,10 @@ namespace RealLifeOverhaul.Ui
             {
                 h += FactsHeight(m) + UiTokens.S5;
             }
+            for (int i = 0; i < m.Steps.Length; i++)
+            {
+                h += StepHeight(ref m.Steps[i]) + UiTokens.S3;
+            }
             for (int i = 0; i < m.Choices.Length; i++)
             {
                 h += ChoiceHeight(ref m.Choices[i]) + UiTokens.S2;
@@ -151,6 +178,53 @@ namespace RealLifeOverhaul.Ui
             // The buttons' row at the foot; a card without buttons (a moment the player may not leave) ends a padding under its last choice.
             h += m.Buttons.Length > 0 ? UiTokens.S4 + UiTokens.Control + UiTokens.S8 : UiTokens.S8 - UiTokens.S2;
             return Math.Max(UiDraw.Snap(h), SideHeight(m) + UiTokens.S12 * 2f);
+        }
+
+        // Focus starts where the card says: the safe choice or button. The first target of the card is the choice a reflexive press must not commit.
+        private static void Start(UiScene s, UiDecisionModel m)
+        {
+            int node = -1;
+            if (m.Start >= 0 && m.Start < m.Choices.Length)
+            {
+                node = s.FindNode(m.ChoiceCmd, m.ChoiceArgs != null && m.Start < m.ChoiceArgs.Length ? m.ChoiceArgs[m.Start] : m.Start);
+            }
+            else if (m.StartButton >= 0 && m.StartButton < m.Buttons.Length)
+            {
+                node = s.FindNode(m.ButtonsOwn ? m.Buttons[m.StartButton].Command : m.ButtonCmd, m.ButtonsOwn ? m.Buttons[m.StartButton].Arg : m.StartButton);
+            }
+            if (node >= 0 && !s.Nodes[node].Disabled)
+            {
+                s.FocusFirst = node;
+            }
+        }
+
+        private static float StepHeight(ref UiDecisionStep st) =>
+            UiTokens.Control + (string.IsNullOrEmpty(st.Hint) ? 0f : UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)));
+
+        // An amount to set: its name at the left, the minus, the figure and the plus, what the figure means under them. Returns its height.
+        private static float Step(UiScene s, UiAt at, ref UiDecisionStep st, float x, float y, float w)
+        {
+            float lw = UiDraw.SnapDown(w * 0.4f), b = UiDraw.StepButton, by = y + (UiTokens.Control - b) / 2f, cx = x + lw, cw = w - lw;
+            UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, lw - UiTokens.S2, UiStyle.BodyStrong, UiRole.Text, st.Label, UiFlags.Label | UiFlags.Truncate);
+            StepKey(s, at, cx, by, UiIcon.Minus, st.Less, st.Arg, !st.CanLess);
+            StepKey(s, at, cx + cw - b, by, UiIcon.Plus, st.More, st.Arg, !st.CanMore);
+            float fx = cx + b + UiTokens.S2, fw = cw - (b + UiTokens.S2) * 2f;
+            int field = UiDraw.Box(s, at, fx, y, fw, UiTokens.Control, UiRole.Field, UiRole.None, UiTokens.RadiusLarge);
+            UiDraw.TextMiddle(s, at.In(field), fx + UiTokens.S2, y, UiTokens.Control, fw - UiTokens.S4, UiStyle.BodyStrong, UiRole.Text, st.Value, UiFlags.Centre | UiFlags.Truncate);
+            if (!string.IsNullOrEmpty(st.Hint))
+            {
+                UiDraw.Text(s, at, x, y + UiTokens.Control + UiTokens.S1, w, UiStyle.Small, UiRole.Text2, st.Hint, UiFlags.Label | UiFlags.Truncate);
+            }
+            return StepHeight(ref st);
+        }
+
+        private static void StepKey(UiScene s, UiAt at, float x, float y, UiIcon icon, int command, int arg, bool disabled)
+        {
+            float b = UiDraw.StepButton, g = UiTokens.Icon;
+            int face = UiDraw.Box(s, at, x, y, b, b, UiRole.Tile, UiRole.None, UiTokens.RadiusLarge, UiFlags.Middle | (disabled ? UiFlags.Disabled : UiFlags.None));
+            UiDraw.Icon(s, at.In(face), x + (b - g) / 2f, y + (b - g) / 2f, g, icon, disabled ? UiRole.Muted : UiRole.AccentText,
+                UiFlags.Middle | UiFlags.Centre | (disabled ? UiFlags.Disabled : UiFlags.None));
+            UiDraw.Node(s, at, x, y, b, b, command, arg, face, disabled);
         }
 
         /// <summary>The height a choice takes: its name and one line for each consequence (a page that lays the choices in its own room, as the Lead of an app window).</summary>
@@ -247,12 +321,27 @@ namespace RealLifeOverhaul.Ui
                 wide[i] = UiDraw.Snap(Math.Max(UiTextRules.Width(m.FactLabels[i], UiStyle.SectionHeader) * 1.18f, UiTextRules.Width(m.FactValues[i], UiStyle.Title)) + UiTokens.S1);
                 sum += wide[i];
             }
+            if (n > 1 && sum + (n - 1) * UiTokens.S1 > w)
+            {
+                // More than the strip holds (a longer language): each fact takes its share of the room and cuts its words at an ellipsis, never past the card.
+                float scale = (w - (n - 1) * UiTokens.S1) / sum;
+                for (int i = 0; i < n; i++)
+                {
+                    wide[i] = UiDraw.SnapDown(wide[i] * scale);
+                }
+                sum = 0f;
+                for (int i = 0; i < n; i++)
+                {
+                    sum += wide[i];
+                }
+            }
             float gap = n > 1 ? Math.Max(UiTokens.S1, UiDraw.SnapDown((w - sum) / (n - 1))) : 0f;
             float fx = x;
             for (int i = 0; i < n; i++)
             {
                 UiDraw.Text(s, at, fx, y, wide[i], UiStyle.SectionHeader, UiRole.Text2, m.FactLabels[i], UiFlags.Label | UiFlags.Truncate);
-                UiDraw.Text(s, at, fx, y + labelH + UiTokens.S1, wide[i], UiStyle.Title, UiRole.Text, m.FactValues[i], UiFlags.Truncate);
+                UiRole ink = m.FactInks != null && i < m.FactInks.Length && m.FactInks[i] != UiRole.None ? m.FactInks[i] : UiRole.Text;
+                UiDraw.Text(s, at, fx, y + labelH + UiTokens.S1, wide[i], UiStyle.Title, ink, m.FactValues[i], UiFlags.Truncate);
                 fx += wide[i] + gap;
             }
         }
@@ -302,13 +391,20 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>
         /// A choice: its number in the cyan, its name, its consequences under it each behind its rise or fall in its colour, its note at the right; chosen, the
-        /// cyan at a fifth. Public so that a page can lay choices in its own room (the Company app's Lead); its press runs <paramref name="command"/>, the card's own by default.
-        /// Returns its height.
+        /// cyan at a fifth. Public so that a page can lay choices in its own room (the Company app's Lead); its press runs <paramref name="command"/> with
+        /// <paramref name="arg"/> (its index when -1), the card's own by default. Returns its height.
         /// </summary>
-        public static float Choice(UiScene s, UiAt at, ref UiDecisionChoice c, int index, bool chosen, float x, float y, float w, IUiKeys keys, int command = ChoiceCommand)
+        public static float Choice(UiScene s, UiAt at, ref UiDecisionChoice c, int index, bool chosen, float x, float y, float w, IUiKeys keys, int command = ChoiceCommand, int arg = -1, bool lift = false)
         {
             float h = ChoiceHeight(ref c);
-            int face = UiDraw.Box(s, at, x - UiTokens.S3, y, w + UiTokens.S3 * 2f, h, chosen ? UiRole.RowSel : UiRole.Row, UiRole.None, UiTokens.RadiusLarge,
+            // A row's own fill steps only a few levels towards the words under the pointer, too little to see: with the lift the resting fill is a plain box behind and the
+            // target's face has none, so the hover fill (a table row's) lies over it.
+            bool over = lift && !chosen;
+            if (over)
+            {
+                UiDraw.Box(s, at, x - UiTokens.S3, y, w + UiTokens.S3 * 2f, h, UiRole.Row, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor | (c.Disabled ? UiFlags.Disabled : UiFlags.None));
+            }
+            int face = UiDraw.Box(s, at, x - UiTokens.S3, y, w + UiTokens.S3 * 2f, h, chosen ? UiRole.RowSel : over ? UiRole.None : UiRole.Row, UiRole.None, UiTokens.RadiusLarge,
                 (chosen ? UiFlags.Selected : UiFlags.None) | (c.Disabled ? UiFlags.Disabled : UiFlags.None));
             UiAt inside = at.In(face);
             float nameH = UiTextRules.LineHeight(UiStyle.BodyStrong);
@@ -336,7 +432,7 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.ConsequenceLine(s, inside, tx, ly, tw, ref c.Lines[i], chosen);
                 ly += lh;
             }
-            UiDraw.Node(s, at, x - UiTokens.S3, y, w + UiTokens.S3 * 2f, h, command, index, face, c.Disabled, -1, 0, c.Key);
+            UiDraw.Node(s, at, x - UiTokens.S3, y, w + UiTokens.S3 * 2f, h, command, arg < 0 ? index : arg, face, c.Disabled, -1, 0, c.Key);
             // The cap after the target, so it is not the target's own key (that is its number): the screen takes F and P itself.
             UiDraw.ChoiceCap(s, inside, x + w, ny, nameH, c.Cap, keys);
             return h;

@@ -8,6 +8,7 @@ namespace RealLifeOverhaul.Ui
         public string Picture;       // a picture's key the game resolves (UiPictures), or null for the glyph
         public float Aspect;         // the picture's width over its height, so its tile letterboxes it and never stretches it
         public UiIcon Icon;          // the glyph when there is no picture, in its own colour
+        public UiRole Tint;          // or in this colour (a car's class), None for the glyph's own
         public string Name;
         public string Figure;        // the price as the game writes it, or the figure that matters
         public string State;         // "Owned", "Sold out", "Locked", or null
@@ -29,6 +30,7 @@ namespace RealLifeOverhaul.Ui
         public string DetailKicker;                 // what the chosen thing is ("Equipment")
         public string[] DetailLabels = new string[0];
         public string[] DetailValues = new string[0];
+        public UiRole[] DetailInks;                 // a value in its own ink (a margin in green); null or None for the main ink
         public string DetailNote;                   // a sentence on the chosen thing
         public UiActionModel[] Actions = new UiActionModel[0];   // the detail's actions, the last the main one
         public string EmptyTitle;
@@ -57,6 +59,9 @@ namespace RealLifeOverhaul.Ui
         private const float DetailTile = 160f;   // px: the chosen card's picture in the detail
         private const float Glyph = 48f;         // px: a card's glyph when it has no picture
 
+        /// <summary>The width of the grid in a catalogue of a width, so a screen can put something over it (a row of filters) that the detail does not share.</summary>
+        public static float GridWidth(float w) => w - Math.Max(LeastDetail, Math.Min(MostDetail, UiDraw.SnapDown(w * DetailShare))) - UiTokens.S6;
+
         /// <summary>The columns of the last grid laid out and its first list, so a screen can find the card a list's row stands for.</summary>
         public static int CardOf(int columns, int firstList, int list, int index) => index * Math.Max(1, columns) + (list - firstList);
 
@@ -64,18 +69,17 @@ namespace RealLifeOverhaul.Ui
         /// Lays the catalogue out in a box: the grid at the left, the chosen card's detail at the right. Returns the first
         /// column's list (the next columns' follow it), and writes the columns into <paramref name="columns"/>.
         /// </summary>
-        public static short Lay(UiScene s, UiAt at, UiCatalogueModel m, float x, float y, float w, float h, IUiKeys keys, out int columns, int command = First)
+        public static short Lay(UiScene s, UiAt at, UiCatalogueModel m, float x, float y, float w, float h, IUiKeys keys, out int columns, int command = First, float gridInset = 0f)
         {
-            float dw = Math.Max(LeastDetail, Math.Min(MostDetail, UiDraw.SnapDown(w * DetailShare)));
-            float gw = w - dw - UiTokens.S6;
+            float gw = GridWidth(w), dw = w - gw - UiTokens.S6;
             columns = Math.Max(1, (int)((gw + UiTokens.S3) / (LeastCard + UiTokens.S3)));
             if (m.CardCount == 0)
             {
-                UiDraw.EmptyState(s, at, x, y, w, h, m.EmptyIcon, m.EmptyTitle, m.EmptyBody, null, -1, keys);
+                UiDraw.EmptyState(s, at, x, y + gridInset, w, h - gridInset, m.EmptyIcon, m.EmptyTitle, m.EmptyBody, null, -1, keys);
                 m.Offset = 0f;
                 return -1;
             }
-            short firstList = Grid(s, at, m, x, y, gw, h, columns, command);
+            short firstList = Grid(s, at, m, x, y + gridInset, gw, h - gridInset, columns, command);
             if (m.Chosen >= 0 && m.Chosen < m.CardCount)
             {
                 Detail(s, at, m, x + gw + UiTokens.S6, y, dw, h, keys, command);
@@ -240,7 +244,7 @@ namespace RealLifeOverhaul.Ui
                 };
                 return s.Add(ref item);
             }
-            return UiDraw.Icon(s, at, x + UiDraw.SnapDown((w - glyph) / 2f), y + UiDraw.SnapDown((h - glyph) / 2f), glyph, c.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
+            return UiDraw.Icon(s, at, x + UiDraw.SnapDown((w - glyph) / 2f), y + UiDraw.SnapDown((h - glyph) / 2f), glyph, c.Icon, c.Tint, UiFlags.Middle | UiFlags.Centre, true);
         }
 
         // How many rows above the first the detail's actions need, the main one last in the bottom row, as the foot lays them out.
@@ -264,19 +268,41 @@ namespace RealLifeOverhaul.Ui
         // its facts as compact rows, a sentence on it, and its actions at the foot, the main one last.
         private static void Detail(UiScene s, UiAt at, UiCatalogueModel m, float x, float y, float w, float h, IUiKeys keys, int command)
         {
-            ref UiCatalogueCard c = ref m.Cards[m.Chosen];
-            // Actions that do not all fit one row wrap into rows above the main one; the picture gives up that much height.
+            // Actions that do not all fit one row wrap into rows above the main one, which stays last in the bottom row.
             float step = UiTokens.Control + UiTokens.S1;
-            float rows = ActionRows(m, w, keys), tileH = DetailTile - rows * step;
-            int tile = UiDraw.Box(s, at, x, y, w, tileH, UiRole.Tile, UiRole.None, UiTokens.RadiusLarge);
-            Picture(s, at.In(tile), ref c, x, y, w, tileH, UiTokens.S16);
-            if (!string.IsNullOrEmpty(c.State))
+            float extra = ActionRows(m, w, keys);
+            bool grid = extra > 0f && m.Actions.Length >= 3;   // more than a row of them: two equal columns, so the blocks never read ragged
+            if (grid)
             {
-                int over = s.ItemCount;
-                UiDraw.Chip(s, at.In(tile), x + UiTokens.S3, y + UiTokens.S3, c.State, c.StateTone, w - UiTokens.S6);
-                Over(s, over);
+                extra = (m.Actions.Length + 1) / 2 - 1;
             }
-            float ty = y + tileH + UiTokens.S4;
+            float actionsH = (extra + 1f) * UiTokens.Control + extra * UiTokens.S1;
+            // The picture takes what the facts and the actions leave of the column, at most its own height: a short window gets a shorter picture, never a cut sentence.
+            float restH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1
+                + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display)) + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.BodyStrong))
+                + UiTokens.S3 + Math.Min(m.DetailLabels.Length, m.DetailValues.Length) * UiTokens.PairRow + UiTokens.S4 + UiTokens.S5 + actionsH;
+            if (!string.IsNullOrEmpty(m.DetailNote))
+            {
+                restH += UiTokens.S3 + UiDraw.Snap(UiTextRules.WrappedHeight(m.DetailNote, UiStyle.Body, w, 4));
+            }
+            float tileH = Math.Min(DetailTile, UiDraw.SnapDown(h - restH));
+            ref UiCatalogueCard c = ref m.Cards[m.Chosen];
+            if (tileH < UiTokens.S12)
+            {
+                tileH = 0f;   // too short a window for a picture that would be a sliver: the facts and the actions first
+            }
+            else
+            {
+                int tile = UiDraw.Box(s, at, x, y, w, tileH, UiRole.Tile, UiRole.None, UiTokens.RadiusLarge);
+                Picture(s, at.In(tile), ref c, x, y, w, tileH, UiTokens.S16);
+                if (!string.IsNullOrEmpty(c.State))
+                {
+                    int over = s.ItemCount;
+                    UiDraw.Chip(s, at.In(tile), x + UiTokens.S3, y + UiTokens.S3, c.State, c.StateTone, w - UiTokens.S6);
+                    Over(s, over);
+                }
+            }
+            float ty = y + tileH + (tileH > 0f ? UiTokens.S4 : 0f);
             UiDraw.Text(s, at, x, ty, w, UiStyle.SectionHeader, UiRole.Text2, m.DetailKicker, UiFlags.Label | UiFlags.Truncate);
             ty += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S1;
             UiDraw.Text(s, at, x, ty, w, UiStyle.Display, UiRole.Text, c.Name, UiFlags.Truncate);
@@ -285,19 +311,35 @@ namespace RealLifeOverhaul.Ui
             ty += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.BodyStrong)) + UiTokens.S3;
             for (int i = 0; i < m.DetailLabels.Length && i < m.DetailValues.Length; i++)
             {
-                ty += UiDraw.InfoRow(s, at, x, ty, w, m.DetailLabels[i], m.DetailValues[i]);
+                ty += UiDraw.InfoRow(s, at, x, ty, w, m.DetailLabels[i], m.DetailValues[i], false, -1, 0,
+                    m.DetailInks != null && i < m.DetailInks.Length && m.DetailInks[i] != UiRole.None ? m.DetailInks[i] : UiRole.Text);
             }
             if (!string.IsNullOrEmpty(m.DetailNote))
             {
                 ty += UiTokens.S3;
-                int note = UiDraw.Text(s, at, x, ty, w, UiStyle.Body, UiRole.Text2, m.DetailNote, UiFlags.Wrap | UiFlags.Label, 4);
+                // The sentence takes the lines the actions leave it (at most four) and is cut rather than run under them.
+                int lines = Math.Max(1, Math.Min(4, (int)((y + h - actionsH - UiTokens.S5 - ty) / UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)))));
+                int note = UiDraw.Text(s, at, x, ty, w, UiStyle.Body, UiRole.Text2, m.DetailNote, UiFlags.Wrap | UiFlags.Label, lines);
                 ty += s.Items[note].H;
             }
-            // The actions under what they act on, the main one last at the right, as the hero's actions stand by it.
-            // When they do not all fit one row they wrap: the main one stays last in the bottom row, the others stand in rows above it.
-            float row = rows;
-            float by = Math.Min(UiDraw.Snap(ty + UiTokens.S5 + row * step), y + h - UiTokens.Control);
+            // The actions under what they act on, the main one last at the right in the bottom row, as the hero's actions stand by it.
+            float by = Math.Min(UiDraw.Snap(ty + UiTokens.S5 + extra * step), y + h - UiTokens.Control);
             float right = x + w, rowY = by;
+            if (grid)
+            {
+                float cw = UiDraw.SnapDown((w - UiTokens.S3) / 2f);
+                int n = m.Actions.Length, first = n % 2;   // an odd one out stands alone on the top row, across the width
+                for (int i = 0; i < n; i++)
+                {
+                    ref UiActionModel a = ref m.Actions[i];
+                    int slot = i + first, row = slot / 2, col = slot % 2;
+                    bool alone = first == 1 && i == 0;
+                    float gy = by - ((n + first) / 2 - 1 - row) * step;
+                    UiDraw.Button(s, at, alone ? x : x + col * (cw + UiTokens.S3), gy, alone ? w : cw, UiTokens.Control, a.Kind,
+                        a.Label, a.Icon, a.Key, keys, command + Action, i, a.Disabled || c.Disabled);
+                }
+                return;
+            }
             for (int i = m.Actions.Length - 1; i >= 0; i--)
             {
                 ref UiActionModel a = ref m.Actions[i];

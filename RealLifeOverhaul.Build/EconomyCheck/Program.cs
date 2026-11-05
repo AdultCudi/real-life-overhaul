@@ -222,6 +222,20 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length >= 3 && args[0] == "--estate-debug")
+        {
+            EstateDebug(args[1], float.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture), args.Length > 3 ? args[3] : "en");
+            return 0;
+        }
+        if (args.Length == 1 && args[0] == "--estate-w4")
+        {
+            EstateWave4();
+            DealerWave4();
+            EstateRun();
+            DealerRun();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--client-hours")
         {
             ClientHours();
@@ -704,6 +718,10 @@ internal static partial class Program
         MapTreesFix();   // What's new tells of the city map fix in all eleven languages; the guard and its test are wired (MapTreeChecks.cs)
         MomCall();   // the family dinner call: the ring answered from its notice and the phone, the dinner offered by Mom's call and Family, one table of dates (MomCallChecks.cs)
         Estate();
+        EstateWave4();   // named tenants, the rent record, booked servicing, improvements, the city's rents and their save (EstateWave4Checks.cs)
+        DealerWave4();   // the other dealers' cars and prices, looks, an auction's bids and their save (DealerWave4Checks.cs)
+        EstateRun();   // a hundred and twenty days of the property business through its day entries, a save on day 30 and one from before (EstateRunChecks.cs)
+        DealerRun();   // ninety days of the dealership through its hour, the same (DealerRunChecks.cs)
         Online();
         Logistics();   // delivery trips and food spoilage: departures, timeline, loads, fuel, wages, the rivals' books, batches, shelf life and both saves (LogisticsChecks.cs)
         Services();
