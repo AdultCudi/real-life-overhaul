@@ -314,6 +314,31 @@ internal static partial class Program
             }
         }
         Check(root != null && danger == "none", "construction: no screen of the app quits the game or loads a save (" + danger + ")");
+
+        // Every way into the app lands on the kit's page: the director opens the app through one method that tells the kit's source the tab and the row (and the page for a project's
+        // hedge and quotes), the app is given its kit face, and the kit's source reaches no page of the old frame.
+        string constructionRoot = root != null ? System.IO.Path.GetFullPath(System.IO.Path.Combine(root, "..", "..", "Construction")) : null;
+        string app = constructionRoot != null ? File.ReadAllText(System.IO.Path.Combine(constructionRoot, "ConstructionDirector.App.cs")) : string.Empty;
+        string hedge = constructionRoot != null ? File.ReadAllText(System.IO.Path.Combine(constructionRoot, "ConstructionDirector.Hedge.cs")) : string.Empty;
+        string hire = constructionRoot != null ? File.ReadAllText(System.IO.Path.Combine(constructionRoot, "ConstructionDirector.Hire.cs")) : string.Empty;
+        Check(app.Contains("ConstructionLive.Instance.Want(tab, pick)") && app.Contains("KitScreen = RealLifeOverhaul.Ui.ConstructionScreen.ScreenId") && app.Contains("UiShell.Face(_app, def)")
+            && hedge.Contains("ConstructionLive.Instance.WantPage(project, 2)") && hire.Contains("ConstructionLive.Instance.WantPage(project, 3)"),
+            "construction: every entry (a notice, the objectives, the desk, a project's hedge and quotes) opens the app through the director's one method, which tells the kit's source, and the app has its kit face");
+        int oldFrame = 0;
+        string frameAt = "none";
+        if (constructionRoot != null)
+        {
+            foreach (string file in Directory.GetFiles(System.IO.Path.Combine(constructionRoot, "Live"), "*.cs"))
+            {
+                string text = File.ReadAllText(file);
+                if (text.Contains("AppShell") || text.Contains("InfoBox") || text.Contains("DataTable.On(") || text.Contains("FullMenu"))
+                {
+                    oldFrame++;
+                    frameAt = System.IO.Path.GetFileName(file);
+                }
+            }
+        }
+        Check(constructionRoot != null && oldFrame == 0, "construction: the kit's live source opens no page of the old frame (" + frameAt + ")");
     }
 
     private static string ConstructionSourceRoot()

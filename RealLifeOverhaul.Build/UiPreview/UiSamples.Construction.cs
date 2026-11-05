@@ -164,16 +164,16 @@ internal static partial class UiSamples
         m.RowsLinkRun = runs.Do(() => { });
         m.Projects = new[]
         {
-            Proj(t, runs, "Show flats", "41 E 37th Street, Murray Hill", 2, -1, "$312,000", W(t, "reallife_ui_cons_of", "of {amount}").Replace("{amount}", "$498,000"),
-                W(t, "reallife_bld_next_start", "Start the works"), UiRole.Warn),
-            Proj(t, runs, "Office block, 14 floors", "520 8th Avenue, Midtown", 3, 46, "$790,000", W(t, "reallife_ui_cons_of", "of {amount}").Replace("{amount}", "$1,580,000"),
-                W(t, "reallife_bld_next_working", "Works are going on"), UiRole.Muted),
-            Proj(t, runs, "Car park, 120 bays", "61 W 38th Street, Garment District", 1, -1, "$64,000", W(t, "reallife_ui_cons_of", "of {amount}").Replace("{amount}", "$290,000"),
-                W(t, "reallife_bld_next_wait_decision", "Waits for the council"), UiRole.Muted),
-            Proj(t, runs, "Cafe refit", "88 W 46th Street, Hell's Kitchen", 3, 81, "$96,000", W(t, "reallife_ui_cons_of", "of {amount}").Replace("{amount}", "$110,000"),
-                W(t, "reallife_bld_next_book_short", "Book the inspection"), UiRole.Warn),
-            Proj(t, runs, "Shop front and unit", "1 Dock Street, Uptown", 5, 100, "$340,000", W(t, "reallife_ui_cons_of", "of {amount}").Replace("{amount}", "$340,000"),
-                W(t, "reallife_bld_next_done", "Handed over"), UiRole.Ok)
+            Proj(t, runs, "Show flats", W(t, "reallife_bld_next_start", "Start building"), 2, -1, "$312,000", W(t, "reallife_ui_cons_of", "of {amount}").Replace("{amount}", "$498,000"),
+                W(t, "reallife_ui_cons_st_waits", "Waits on you"), UiRole.Warn),
+            Proj(t, runs, "Office block, 14 floors", W(t, "reallife_bld_next_working", "Crews at work"), 3, 46, "$790,000", W(t, "reallife_ui_cons_of", "of {amount}").Replace("{amount}", "$1,580,000"),
+                W(t, "reallife_ui_cons_st_on_time", "On time, {day}").Replace("{day}", "day 238"), UiRole.Ok),
+            Proj(t, runs, "Car park, 120 bays", W(t, "reallife_bld_next_wait_decision", "Council deciding"), 1, -1, "$64,000", W(t, "reallife_ui_cons_of", "of {amount}").Replace("{amount}", "$290,000"),
+                W(t, "reallife_bld_stage_planning", "Planning"), UiRole.Muted),
+            Proj(t, runs, "Cafe refit", W(t, "reallife_bld_next_book_short", "Book the inspector"), 3, 81, "$96,000", W(t, "reallife_ui_cons_of", "of {amount}").Replace("{amount}", "$110,000"),
+                W(t, "reallife_ui_cons_st_waits", "Waits on you"), UiRole.Warn),
+            Proj(t, runs, "Shop front and unit", W(t, "reallife_bld_next_done", "Done"), 5, 100, "$340,000", W(t, "reallife_ui_cons_of", "of {amount}").Replace("{amount}", "$340,000"),
+                W(t, "reallife_ui_cons_st_handover", "Hand over today"), UiRole.Ok)
         };
         m.Side = ConsSide(t, runs);
         m.WeekTitle = W(t, "reallife_ui_cons_week_title", "On the sites soon");
@@ -333,7 +333,7 @@ internal static partial class UiSamples
         {
             Title = W(t, "reallife_ui_cons_asks_title", "Asking a m2 by district"), Heading = true, Lines = new[]
             {
-                UiFactLine.Bar("Uptown", 100, "$1,520  +3.1%"), UiFactLine.Bar("Cedar Heights", 62, "$940  -0.8%")
+                UiFactLine.Row("Uptown", "$1,520  +3.1%"), UiFactLine.Row("Cedar Heights", "$940  -0.8%")
             }
         };
         m.FilterKinds = 6;

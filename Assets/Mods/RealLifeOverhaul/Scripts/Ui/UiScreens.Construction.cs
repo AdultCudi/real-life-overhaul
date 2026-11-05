@@ -37,8 +37,8 @@ namespace RealLifeOverhaul.Ui
                 "reallife_bld_row_quote_days", "reallife_bld_row_rate", "reallife_bld_row_retention", "reallife_bld_row_size",
                 "reallife_bld_row_skill", "reallife_bld_row_traffic", "reallife_bld_row_until", "reallife_bld_row_usual", "reallife_bld_row_value",
                 "reallife_bld_row_zoned", "reallife_bld_sec_bid", "reallife_bld_sec_materials", "reallife_bld_sec_ready", "reallife_bld_source_city",
-                "reallife_bld_stage_frame", "reallife_bld_stage_ready", "reallife_bld_switch_fast", "reallife_bld_tab_city",
-                "reallife_bld_tab_company", "reallife_bld_tab_crews", "reallife_bld_tab_land", "reallife_bld_tab_overview",
+                "reallife_bld_stage_frame", "reallife_bld_stage_planning", "reallife_bld_stage_ready", "reallife_bld_switch_fast",
+                "reallife_bld_tab_city", "reallife_bld_tab_company", "reallife_bld_tab_crews", "reallife_bld_tab_land", "reallife_bld_tab_overview",
                 "reallife_bld_tab_projects", "reallife_bld_tab_rivals", "reallife_bld_tab_tenders", "reallife_bld_tenders_pick",
                 "reallife_ui_cons_all_projects", "reallife_ui_cons_asks_title", "reallife_ui_cons_budgets", "reallife_ui_cons_cash_held",
                 "reallife_ui_cons_close", "reallife_ui_cons_col_floors", "reallife_ui_cons_col_jobs", "reallife_ui_cons_col_quality",
@@ -53,12 +53,12 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_cons_of", "reallife_ui_cons_open", "reallife_ui_cons_planning_title", "reallife_ui_cons_projects_title",
                 "reallife_ui_cons_rep", "reallife_ui_cons_risk_low", "reallife_ui_cons_risk_medium", "reallife_ui_cons_risk_unlicensed",
                 "reallife_ui_cons_rivals_title", "reallife_ui_cons_sec_means", "reallife_ui_cons_sec_quote", "reallife_ui_cons_spent_far",
-                "reallife_ui_cons_state_done", "reallife_ui_cons_state_later", "reallife_ui_cons_state_next", "reallife_ui_cons_state_now",
-                "reallife_ui_cons_step_building", "reallife_ui_cons_step_design", "reallife_ui_cons_step_done", "reallife_ui_cons_step_planning",
-                "reallife_ui_cons_step_ready", "reallife_ui_cons_still_pay", "reallife_ui_cons_track", "reallife_ui_cons_week_title",
-                "reallife_ui_cons_wk_council", "reallife_ui_cons_wk_delivery", "reallife_ui_cons_wk_inspect", "reallife_ui_cons_wk_opening",
-                "reallife_ui_cons_workers", "reallife_ui_cons_x_of_y", "reallife_ui_prompt_back", "reallife_ui_prompt_move",
-                "reallife_ui_prompt_select"
+                "reallife_ui_cons_st_handover", "reallife_ui_cons_st_on_time", "reallife_ui_cons_st_waits", "reallife_ui_cons_state_done",
+                "reallife_ui_cons_state_later", "reallife_ui_cons_state_next", "reallife_ui_cons_state_now", "reallife_ui_cons_step_building",
+                "reallife_ui_cons_step_design", "reallife_ui_cons_step_done", "reallife_ui_cons_step_planning", "reallife_ui_cons_step_ready",
+                "reallife_ui_cons_still_pay", "reallife_ui_cons_track", "reallife_ui_cons_week_title", "reallife_ui_cons_wk_council",
+                "reallife_ui_cons_wk_delivery", "reallife_ui_cons_wk_inspect", "reallife_ui_cons_wk_opening", "reallife_ui_cons_workers",
+                "reallife_ui_cons_x_of_y", "reallife_ui_prompt_back", "reallife_ui_prompt_move", "reallife_ui_prompt_select"
             };
         }
     }

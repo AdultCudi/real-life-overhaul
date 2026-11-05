@@ -237,15 +237,13 @@ namespace RealLifeOverhaul.Ui
             float tile = UiTokens.IconTile + UiTokens.S4, ty = y + UiDraw.SnapDown((ProjectRow - UiTokens.S2 - tile) / 2f);
             int t = UiDraw.Tile(s, on, x, ty, tile, UiRole.None, false);
             UiDraw.Icon(s, on.In(t), x + (tile - UiTokens.S6) / 2f, ty + (tile - UiTokens.S6) / 2f, UiTokens.S6, p.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
-            float chip = string.IsNullOrEmpty(p.Chip) ? 0f : Math.Min(UiDraw.SnapDown(w * 0.3f), UiFactCard.ChipWidth(p.Chip));
-            float money = UiDraw.Snap(Math.Max(UiTextRules.Width(p.Spent ?? string.Empty, UiStyle.BodyStrong),
-                UiTextRules.Width(p.Of ?? string.Empty, UiStyle.Small)) + UiTokens.S1);
+            float chip = string.IsNullOrEmpty(p.Chip) ? 0f : Math.Min(chipCol, UiFactCard.ChipWidth(p.Chip)), money = moneyCol;
             float right = x + w;
             if (chip > 0f)
             {
                 UiDraw.Chip(s, on, right - chip, y + UiDraw.SnapDown((ProjectRow - UiTokens.S2 - UiTokens.Badge - UiTokens.S1) / 2f), p.Chip, p.ChipTone, chip);
-                right -= chip + UiTokens.S4;
             }
+            right -= chipCol + UiTokens.S4;   // the chip and the money stand in columns as wide as the rows' widest, so the tracks start at one place
             float mh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.BodyStrong)) + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
             float my = y + UiDraw.SnapDown((ProjectRow - UiTokens.S2 - mh) / 2f);
             UiDraw.Text(s, on, right - money, my, money, UiStyle.BodyStrong, UiRole.Text, p.Spent, UiFlags.Right | UiFlags.Truncate | UiFlags.Middle);

@@ -127,17 +127,43 @@ namespace RealLifeOverhaul.Construction
             {
                 labels[i] = ConstructionText.T(StepKeys[i]);
             }
-            bool needs = NeedsYou(p);
-            CellTone tone = NextTone(p);
+            string status = Status(p, out UiRole statusTone);
             return new ConstructionProject
             {
-                Icon = UiIcon.Hammer, Title = Director.ProjectName(p), Sub = ConstructionText.StageWords(p), StepLabels = labels, StepAt = at,
+                Icon = UiIcon.Hammer, Title = Director.ProjectName(p), Sub = NextStep(p), StepLabels = labels, StepAt = at,
                 Progress = p.Stage == ProjectStage.Building ? (int)Math.Round(Progress(p) * 100.0) : -1,
                 Spent = ConstructionText.Money(p.Spent), Of = p.Estimate > 0 ? ConstructionText.T("reallife_ui_cons_of", "amount", ConstructionText.Money(p.Estimate)) : null,
-                Chip = NextStep(p), ChipTone = tone == CellTone.Red ? UiRole.Danger : tone == CellTone.Yellow || needs
-                    ? UiRole.Warn : p.Stage == ProjectStage.Finished ? UiRole.Ok : UiRole.Muted,
+                Chip = status, ChipTone = statusTone,
                 Run = _runs.Do(() => Jump(ConstructionDirector.TabProjects, id))
             };
+        }
+
+        // Where a project stands in one line: it waits on the player, it is over its budget, it is on time or late with its due day, it is handed over today, or done.
+        private string Status(ProjectFile p, out UiRole tone)
+        {
+            int day = ConstructionGame.Day;
+            tone = UiRole.Muted;
+            if (NeedsYou(p) && p.Stage != ProjectStage.Finished)
+            {
+                tone = UiRole.Warn;
+                return ConstructionText.T("reallife_ui_cons_st_waits");
+            }
+            if (p.Live && p.Estimate > 0L && p.Spent * 100L > p.Estimate * 102L)
+            {
+                tone = UiRole.Warn;
+                return ConstructionText.T("reallife_ui_cons_st_over", "percent", ((p.Spent - p.Estimate) * 100L / p.Estimate).ToString());
+            }
+            if (p.Stage == ProjectStage.Building && p.DueDay > 0)
+            {
+                tone = day > p.DueDay ? UiRole.Danger : UiRole.Ok;
+                return ConstructionText.T(day > p.DueDay ? "reallife_ui_cons_st_late" : "reallife_ui_cons_st_on_time", "day", ConstructionText.Day(p.DueDay));
+            }
+            if (p.Stage == ProjectStage.Finished)
+            {
+                tone = UiRole.Ok;
+                return ConstructionText.T(!p.Opened && p.Opening == day ? "reallife_ui_cons_st_handover" : "reallife_ui_cons_st_done");
+            }
+            return ConstructionText.StageWords(p);
         }
 
         // The next decision: the first project that waits on the player, or the firm's own start (found it, the licence) before there are any.

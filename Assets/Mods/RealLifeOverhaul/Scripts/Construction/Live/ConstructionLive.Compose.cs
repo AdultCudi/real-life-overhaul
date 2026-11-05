@@ -234,7 +234,7 @@ namespace RealLifeOverhaul.Construction
                 int change = ring.Change;
                 string figure = ConstructionText.Money(ring.Latest) + (ring.Count < 2 ? "  " + ConstructionText.T("reallife_ui_cons_ask_wait")
                     : "  " + (change > 0 ? "+" : string.Empty) + (change / 10f).ToString("0.0", Inv) + "%");
-                lines.Add(UiFactLine.Bar(ConstructionText.T(ring.District), (int)(ring.Latest * 100L / most), figure));
+                lines.Add(UiFactLine.Row(ConstructionText.T(ring.District), figure));
             }
             return lines.Count == 0 ? null : new UiFactCardModel { Title = ConstructionText.T("reallife_ui_cons_asks_title"), Heading = true, Lines = lines.ToArray() };
         }

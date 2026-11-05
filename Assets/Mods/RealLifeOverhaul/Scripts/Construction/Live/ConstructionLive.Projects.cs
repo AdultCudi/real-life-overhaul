@@ -386,6 +386,7 @@ namespace RealLifeOverhaul.Construction
         {
             box.Section("reallife_bld_sec_ready");
             box.Row("reallife_bld_row_estimate", ConstructionText.Money(p.Estimate));
+            RentLines(box, p);
             if (p.Kind == ProjectKind.Contract)
             {
                 box.Row("reallife_bld_row_contract", ConstructionText.Money(p.ClientValue));
@@ -443,8 +444,60 @@ namespace RealLifeOverhaul.Construction
 
         // ------------------------------------------------------------------ the site
 
+        // What the building would let for when it is done, from the city's rents a square metre for its use, and how many months of it pay the build back.
+        private static void RentLines(KitBox box, ProjectFile p)
+        {
+            long month = RentMonth(p);
+            if (month <= 0L || p.Kind == ProjectKind.Contract || p.Kind == ProjectKind.Parking)
+            {
+                return;
+            }
+            box.Section("reallife_ui_cons_sec_rent");
+            box.Row("reallife_ui_cons_row_rent_month", ConstructionText.Money(month));
+            if (p.Estimate > 0L)
+            {
+                box.Row("reallife_ui_cons_row_payback", ConstructionText.T("reallife_ui_cons_months_n", "count", ((p.Estimate + month - 1L) / month).ToString()));
+            }
+        }
+
+        // What has been done on the site so far, dated: the permission, the works begun, each inspection passed and the handover.
+        private void BuiltSoFar(KitBox box, ProjectFile p)
+        {
+            var days = new System.Collections.Generic.List<KeyValuePair<int, string>>(6);
+            if (p.Planning == PlanningState.Submitted || p.Stage > ProjectStage.Planning)
+            {
+                days.Add(new KeyValuePair<int, string>(p.PlanningDay, ConstructionText.T("reallife_ui_cons_log_applied")));
+            }
+            if (p.StartDay > 0)
+            {
+                days.Add(new KeyValuePair<int, string>(p.StartDay, ConstructionText.T("reallife_ui_cons_log_started")));
+            }
+            for (int i = 0; i < (int)Inspection.Count; i++)
+            {
+                if (p.Insp[i] == InspectionState.Passed && p.InspDay[i] > 0)
+                {
+                    days.Add(new KeyValuePair<int, string>(p.InspDay[i], ConstructionText.T("reallife_ui_cons_log_passed", "what", ConstructionText.T(BuildCatalogue.InspectionKeys[i]))));
+                }
+            }
+            if (p.Handed > 0)
+            {
+                days.Add(new KeyValuePair<int, string>(p.Handed, ConstructionText.T("reallife_ui_cons_log_handed")));
+            }
+            if (days.Count == 0)
+            {
+                return;
+            }
+            days.Sort((a, b) => b.Key.CompareTo(a.Key));
+            box.Section("reallife_ui_cons_sec_log");
+            for (int i = 0; i < days.Count && i < 6; i++)
+            {
+                box.RowWords(ConstructionText.Day(days[i].Key), days[i].Value);
+            }
+        }
+
         private void WriteSite(KitBox box, BuildState state, ProjectFile p)
         {
+            BuiltSoFar(box, p);
             double progress = Progress(p);
             box.Meter("reallife_bld_row_progress", (float)progress, Mathf.RoundToInt((float)progress * 100f) + "%", CellTone.Plain);
             box.RowPair("reallife_bld_row_started", ConstructionText.Day(p.StartDay), "reallife_bld_row_due", ConstructionText.Day(p.DueDay));
@@ -707,6 +760,7 @@ namespace RealLifeOverhaul.Construction
 
         private void WriteFinished(KitBox box, BuildState state, ProjectFile p)
         {
+            BuiltSoFar(box, p);
             box.Section("reallife_bld_sec_finished");
             box.RowPair("reallife_bld_row_handed", ConstructionText.Day(p.Handed), "reallife_bld_row_spent", ConstructionText.Money(p.Spent));
             if (!p.Opened)

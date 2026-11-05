@@ -247,6 +247,9 @@ namespace RealLifeOverhaul.Construction
             int zones = owned != null ? Director.ZonesNow(owned) : Director.ClassZones(lot.Class);
             box.Row("reallife_bld_row_zoned", ConstructionText.ZonesWords(zones));
             box.Row("reallife_bld_row_usual", ConstructionText.T("reallife_bld_value_area", "area", ConstructionText.N(LandRules.UsualArea(lot.Width, lot.Depth, lot.Class))));
+            int rises = Math.Min(PlansRules.HeightLimit(lot.DistrictKey, true, ConstructionDirector.Permits()), Director.FloorsLicensed);
+            box.RowPair("reallife_ui_cons_row_floors", ConstructionText.T("reallife_ui_cons_floors_n", "count", rises.ToString()), "reallife_ui_cons_row_cash",
+                ConstructionText.Money((long)ConstructionGame.Cash));
             if (owned == null)
             {
                 long price = Director.LotPrice(lot);
