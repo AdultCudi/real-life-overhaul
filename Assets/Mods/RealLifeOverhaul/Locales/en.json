@@ -30476,8 +30476,6 @@
   "reallife_flare_kit_city_work": "Offers and work",
   "reallife_flare_kit_offer_card": "Pays {money} a post for {posts} posts",
   "reallife_flare_kit_offer_until": "Open for {days} more days",
-  "reallife_flare_kit_city_empty": "Quiet in the city",
-  "reallife_flare_kit_city_empty_body": "Trends, rival moves, events and offers show here as they happen.",
   "reallife_flare_kit_city_off_body": "The residents of this city are not on Flare in this game. Posts and events still show.",
   "reallife_flare_kit_cancel": "Cancel",
   "reallife_flare_kit_compose_title": "Create a post",
@@ -31434,5 +31432,8 @@
   "reallife_flare_kit_funnel_more": "{interested} were interested and {followed} followed you",
   "reallife_flare_kit_results_ads": "Your ads",
   "reallife_flare_kit_result_ad": "Your ad for {business}",
-  "reallife_flare_kit_section_busy": "Where the city posted today"
+  "reallife_flare_kit_section_busy": "Where the city posted today",
+  "reallife_flare_kit_donut_total": "{count} of your {followers} followers live in the city",
+  "reallife_flare_kit_city_idle": "Nothing here yet",
+  "reallife_flare_kit_city_idle_body": "What residents want, rival moves, events and offers show here as they happen."
 }

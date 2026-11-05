@@ -309,7 +309,7 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------ In the city
 
-        public const float CityBandHeight = 176f, CityBandNew = 112f;
+        public const float CityBandHeight = 176f, CityBandNew = 112f, CityBandTotal = 20f;   // the donut's band, a new account's, and the line that says what the donut adds up to
         private const int EmptyLines = 5;
 
         private static void CityPage(UiScene s, UiAt at, FlareFaceModel m, float x, float y, float w, float h, IUiKeys keys)
@@ -327,7 +327,7 @@ namespace RealLifeOverhaul.Ui
                 bool donut = followers || !string.IsNullOrEmpty(c.DonutEmpty), week = c.WeekLabels.Length > 0;   // a new account has no week of zeros: its sentence stands alone
                 float gap = UiTokens.S4, lw = donut ? (week ? UiDraw.SnapDown((inner - gap) * (followers ? 0.6f : 0.5f)) : inner) : 0f, rw = donut ? (week ? inner - lw - gap : 0f) : inner;
                 int columns = followers ? 2 : 3;
-                float band = followers ? CityBandHeight : CityBandNew;
+                float band = followers ? CityBandHeight + (string.IsNullOrEmpty(c.DonutTotal) ? 0f : CityBandTotal) : CityBandNew;
                 if (week && !followers && FigureLabelLines(c.WeekLabels, UiDraw.SnapDown((rw - UiTokens.S8 - UiTokens.S3 * (columns - 1)) / columns)) > 1)
                 {
                     band += L(UiStyle.Small);   // a label of a longer language takes a second line
@@ -358,7 +358,14 @@ namespace RealLifeOverhaul.Ui
             UiAt inCard = at.In(card);
             float ix = x + UiTokens.S4, iw = w - UiTokens.S8, cy = y + UiTokens.S4;
             Line(s, inCard, ix, cy, iw, UiStyle.SectionHeader, UiRole.Text2, c.DonutTitle, UiFlags.Label | UiFlags.Truncate);
-            cy += L(UiStyle.SectionHeader) + UiTokens.S3;
+            cy += L(UiStyle.SectionHeader);
+            if (!string.IsNullOrEmpty(c.DonutTotal) && c.Names.Length > 0)
+            {
+                // what the donut adds up to, under its title, so it is never read as the account's whole following
+                Line(s, inCard, ix, cy + UiTokens.S1, iw, UiStyle.Small, UiRole.Text2, c.DonutTotal, UiFlags.Truncate);
+                cy += CityBandTotal;
+            }
+            cy += UiTokens.S3;
             int n = Math.Min(c.Names.Length, Math.Min(c.Values.Length, c.Shares.Length));
             if (n == 0)
             {

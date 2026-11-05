@@ -129,8 +129,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     FlareFeedRules.Count(ex.Reach), FlareText.N(ex.Visitors), FlareText.Money(ex.Cents / 100), ex.Cost > 0 ? FlareText.Money(ex.Cost / 100) : FlareText.T("reallife_flare_kit_free")
                 };
-                k.Note = FlareText.Fill("reallife_flare_kit_forecast", "hours", ex.Hours.ToString(CultureInfo.InvariantCulture), "flop", (ex.Flop / 10).ToString(CultureInfo.InvariantCulture),
-                    "viral", (ex.Viral / 10).ToString(CultureInfo.InvariantCulture));
+                k.Note = FlareFigures.Bind(FlareText.Fill("reallife_flare_kit_forecast", "hours", ex.Hours.ToString(CultureInfo.InvariantCulture), "flop", FlareFigures.Odds(ex.Flop),
+                    "viral", FlareFigures.Odds(ex.Viral)));
                 if (_promote > 0 && _flare.SharedAdWith(_compose.Place, out string other))
                 {
                     k.Note += " " + FlareText.Fill("reallife_flare_kit_reach_shared", "business", other);   // the pools are shared: the rival's ad takes part of this reach

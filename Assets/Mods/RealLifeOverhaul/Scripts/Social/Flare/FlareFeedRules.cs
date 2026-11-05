@@ -299,8 +299,11 @@ namespace RealLifeOverhaul.Flare
         /// <summary>A change in whole per cent: from nothing to something is a hundred.</summary>
         public static int Change(long now, long before) => Ui.FlareFigures.Change(now, before);
 
-        /// <summary>The people the player's own posts reached in the last week (ending today) and in the week before.</summary>
-        public static void Reach(List<FlarePost> posts, int today, out long week, out long before)
+        /// <summary>
+        /// The people the player's own posts reached in the last week (ending today) and in the week before. A post reached at least the residents the city counted seeing it
+        /// (<paramref name="seenOf"/>, by post id; the post's card shows no fewer views), so the week's reach is never less than the views its posts show.
+        /// </summary>
+        public static void Reach(List<FlarePost> posts, int today, out long week, out long before, Func<int, int> seenOf = null)
         {
             week = before = 0;
             for (int i = 0; posts != null && i < posts.Count; i++)
@@ -311,13 +314,18 @@ namespace RealLifeOverhaul.Flare
                     continue;
                 }
                 int age = today - p.Day;
+                long reached = Math.Max(0, p.Reach);
+                if (seenOf != null && age >= 0 && age < WeekDays * 2)
+                {
+                    reached = Math.Max(reached, seenOf(p.Id));
+                }
                 if (age >= 0 && age < WeekDays)
                 {
-                    week += Math.Max(0, p.Reach);
+                    week += reached;
                 }
                 else if (age >= WeekDays && age < WeekDays * 2)
                 {
-                    before += Math.Max(0, p.Reach);
+                    before += reached;
                 }
             }
         }

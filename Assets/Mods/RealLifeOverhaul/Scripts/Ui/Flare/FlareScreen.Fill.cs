@@ -176,7 +176,7 @@ namespace RealLifeOverhaul.Ui
                 r.Handle = TrendWhere(file, _trendTags[i], now);
                 r.Value = PostsCount(_trendCounts[i]);
             }
-            WhoToFollow(file, _whoKeys, WhoMost + ExploreWhoMost);
+            WhoToFollow(file, _whoKeys, WhoMost + _bodyAccounts.Count);   // as many as the page can take away and still leave the rail its eight
             kept = 0;
             for (int i = 0; i < _whoKeys.Count && kept < WhoMost; i++)
             {
@@ -202,12 +202,22 @@ namespace RealLifeOverhaul.Ui
         // The account's last week as every page that shows it reads it (the side's week and the studio's tiles are FlareFigures' own words over these facts).
         private FlareWeekFacts WeekFacts(FlareFile file, long now)
         {
-            FlareFeedRules.Reach(file.Posts, (int)(now / 1440), out long week, out long before);
+            _seenOfPost = _seenOfPost ?? SeenOf;
+            FlareFeedRules.Reach(file.Posts, (int)(now / 1440), out long week, out long before, _seenOfPost);
             Rating(out int stars, out int reviews);
             return new FlareWeekFacts
             {
                 Followers = file.Followers, Gain = FlareFeedRules.WeekGain(file.History, file.Followers), Reach = week, ReachBefore = before, StarsMilli = stars, Reviews = reviews
             };
+        }
+
+        private Func<int, int> _seenOfPost;
+
+        // The residents the city counted seeing a post of the player's, none when it measured nothing.
+        private int SeenOf(int post)
+        {
+            FlareFunnel f = _flare.FunnelOfPost(post);
+            return f != null ? f.Seen : 0;
         }
 
         // The game's words for FlareFigures, which writes the same figures in the previews with the previews' own.
@@ -1111,15 +1121,15 @@ namespace RealLifeOverhaul.Ui
             Section(FlareText.T("reallife_flare_replies_title"));
             int before = _m.List.Count;
             _synthetic.Clear();
-            int more = 0;
             if (p.Author == FlareAuthor.Player)
             {
                 FriendReplies(p, now);
             }
             else
             {
-                more = Comments(p, now);
+                Comments(p, now);
             }
+            int answers = 0;
             int next = 0;   // the comments come in order of time: each goes in among the posted replies by its minute
             for (int i = 0; i < file.Posts.Count && _m.List.Count < FeedMost; i++)
             {
@@ -1137,14 +1147,18 @@ namespace RealLifeOverhaul.Ui
                 if (answer != null)
                 {
                     PostRow(file, answer, now, true);
+                    answers++;   // the author's answer is a line under the reply it answers, not a reply of its own
                 }
             }
             for (int i = next; i < _synthetic.Count && _m.List.Count < FeedMost; i++)
             {
                 PostRow(file, _synthetic[i], now, true);
             }
-            // The count on the post's card is the replies listed under it and the ones the list says are more, so the card and its list agree; the head says it only when there is none.
-            int replies = FlareFigures.Replies(_m.List.Count - before, more);
+            // The card counts the post's replies as its feed card does (RepliesOf), whoever wrote the post, and the rows the list did not draw are the "more" line, so the post, its
+            // list and the feed agree; the head says it only when there is none.
+            int listed = _m.List.Count - before - answers;
+            int more = FlareFigures.ReplyMore(RepliesOf(p, now), listed);
+            int replies = FlareFigures.Replies(listed, more);
             _m.List.Rows[postRow].Comments = replies > 0 ? FlareFeedRules.Count(replies) : null;
             _m.HeadLine = replies > 0 ? null : FlareText.T("reallife_flare_no_replies");
             if (more > 0)
@@ -1177,10 +1191,9 @@ namespace RealLifeOverhaul.Ui
             r.Flags |= off ? FlareRowFlags.Bad : f.Spent > 0 ? FlareRowFlags.Good : FlareRowFlags.None;
         }
 
-        // The worded comments under another's post, as replies for display; how many of the count are not written.
-        private int Comments(FlarePost p, long now)
+        // The worded comments under another's post, as replies for display; the replies not written are the "more" line the thread counts from the post's total.
+        private void Comments(FlarePost p, long now)
         {
-            int shown = FlareLiveRules.Shown(p.Replies, p, now), written = 0;
             _flare.CommentsOf(p, _comments);
             int due = FlareCommentRules.Due(_comments, now);
             for (int i = 0; i < due; i++)
@@ -1199,9 +1212,7 @@ namespace RealLifeOverhaul.Ui
                 };
                 FlareLiveRules.SetAt(comment, c.At);
                 _synthetic.Add(comment);
-                written++;
             }
-            return FlareCommentRules.More(shown, written);
         }
 
         // The friends' replies to a post of the player's as they come in over the hours.

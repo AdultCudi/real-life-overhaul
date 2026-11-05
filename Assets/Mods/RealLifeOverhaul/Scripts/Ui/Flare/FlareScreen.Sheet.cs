@@ -232,18 +232,9 @@ namespace RealLifeOverhaul.Ui
             };
             if (_flare.AudienceOf(inf.Id, _bandNames, _bandCounts, out int rest, out int total) && _bandCounts.Count > 0)
             {
-                // Where his followers in the city live: a bar for each district, by its share of the most.
-                int most = Math.Max(1, _bandCounts[0]);
+                // Where their followers in the city live: the bars the hire card draws for the same influencer, from the same function.
                 k.BarsTitle = FlareText.T("reallife_flare_kit_audience_title");
-                k.BarLabels = new string[_bandNames.Count];
-                k.BarFigures = new string[_bandNames.Count];
-                k.BarShares = new float[_bandNames.Count];
-                for (int i = 0; i < _bandNames.Count; i++)
-                {
-                    k.BarLabels[i] = FlareText.District(_bandNames[i]);
-                    k.BarFigures[i] = (_bandCounts[i] * 100 / Math.Max(1, total)).ToString(CultureInfo.InvariantCulture) + "%";
-                    k.BarShares[i] = _bandCounts[i] / (float)most;
-                }
+                FlareFigures.Audience(_bandNames, _bandCounts, total, FlareText.District, out k.BarLabels, out k.BarFigures, out k.BarShares);
             }
             if (!can)
             {
@@ -253,8 +244,8 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
-                k.Note = FlareText.Fill(fits ? "reallife_flare_kit_hire_fits" : "reallife_flare_kit_hire_far", "posts", posts.ToString(CultureInfo.InvariantCulture),
-                    "flop", (ex.Flop / 10).ToString(CultureInfo.InvariantCulture), "viral", (ex.Viral / 10).ToString(CultureInfo.InvariantCulture));
+                k.Note = FlareFigures.Bind(FlareText.Fill(fits ? "reallife_flare_kit_hire_fits" : "reallife_flare_kit_hire_far", "posts", posts.ToString(CultureInfo.InvariantCulture),
+                    "flop", FlareFigures.Odds(ex.Flop), "viral", FlareFigures.Odds(ex.Viral)));
             }
             if (_sheetWhy != null)
             {

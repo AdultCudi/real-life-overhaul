@@ -597,22 +597,13 @@ namespace RealLifeOverhaul.Ui
             d.Hire = place == null || booked ? null : FlareText.Fill("reallife_flare_kit_hire_pay", "money", FlareText.Money(Prices.At(FlareCast.Price(inf))));
             d.HireOff = false;
             bool fits = shop.HasValue && shop.Value.District != null && shop.Value.District == inf.District;
-            d.Note = FlareText.Fill(fits ? "reallife_flare_kit_hire_card_fits" : "reallife_flare_kit_hire_card_far", "flop", (ex.Flop / 10).ToString(CultureInfo.InvariantCulture), "viral",
-                (ex.Viral / 10).ToString(CultureInfo.InvariantCulture));
+            d.Note = FlareFigures.Bind(FlareText.Fill(fits ? "reallife_flare_kit_hire_card_fits" : "reallife_flare_kit_hire_card_far", "flop", FlareFigures.Odds(ex.Flop), "viral",
+                FlareFigures.Odds(ex.Viral)));   // "12 in 100" is not parted from its noun when the note wraps
             d.AudienceTitle = FlareText.T("reallife_flare_kit_audience_title");
             d.AudienceEmpty = FlareText.T("reallife_flare_kit_hire_audience_none");
             if (_flare.AudienceOf(inf.Id, _bandNames, _bandCounts, out int rest, out int total) && _bandCounts.Count > 0)
             {
-                int most = Math.Max(1, _bandCounts[0]), n = Math.Min(4, _bandNames.Count);
-                d.AudienceLabels = new string[n];
-                d.AudienceFigures = new string[n];
-                d.AudienceShares = new float[n];
-                for (int i = 0; i < n; i++)
-                {
-                    d.AudienceLabels[i] = FlareText.District(_bandNames[i]);
-                    d.AudienceFigures[i] = (_bandCounts[i] * 100 / Math.Max(1, total)).ToString(CultureInfo.InvariantCulture) + "%";
-                    d.AudienceShares[i] = _bandCounts[i] / (float)most;
-                }
+                FlareFigures.Audience(_bandNames, _bandCounts, total, FlareText.District, out d.AudienceLabels, out d.AudienceFigures, out d.AudienceShares);   // the sheet reads the same
             }
             else
             {
@@ -778,8 +769,9 @@ namespace RealLifeOverhaul.Ui
                 r.Button = FlareText.T("reallife_flare_kit_view");
             }
             _m.List.EmptyIcon = UiIcon.Building;
-            _m.List.EmptyTitle = FlareText.T("reallife_flare_kit_city_empty");
-            _m.List.EmptyBody = FlareText.T(_flare.CityOn ? "reallife_flare_kit_city_empty_body" : "reallife_flare_kit_city_off_body");
+            // Says only what is missing here (the rail's trending tags are another list, and a page that lists them is not "quiet").
+            _m.List.EmptyTitle = FlareText.T("reallife_flare_kit_city_idle");
+            _m.List.EmptyBody = FlareText.T(_flare.CityOn ? "reallife_flare_kit_city_idle_body" : "reallife_flare_kit_city_off_body");
         }
 
         // The followers by district as a donut with its legend, and the week of what the posts did; none without the residents' side.
@@ -790,7 +782,7 @@ namespace RealLifeOverhaul.Ui
         {
             FlareCityModel c = _m.City;
             c.Shown = _flare.CityOn;
-            c.DonutTitle = c.DonutEmpty = c.DonutRest = c.WeekTitle = null;
+            c.DonutTitle = c.DonutEmpty = c.DonutRest = c.DonutTotal = c.WeekTitle = null;
             c.Names = c.Values = c.WeekLabels = c.WeekFigures = None;
             c.Shares = new float[0];
             c.Rest = 0f;
@@ -815,6 +807,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 c.Rest = rest;
                 c.DonutRest = rest > 0 ? FlareText.Fill("reallife_flare_kit_donut_rest", "count", FlareText.N(rest)) : null;
+                c.DonutTotal = FlareFigures.DonutTotal(total, file.Followers, Words);   // the slices add up to this, and the rail's followers are the whole
             }
             else if (!fresh)
             {

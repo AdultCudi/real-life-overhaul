@@ -30476,8 +30476,6 @@
   "reallife_flare_kit_city_work": "邀约与工作",
   "reallife_flare_kit_offer_card": "每条{money}，共{posts}条帖子",
   "reallife_flare_kit_offer_until": "还可接受{days}天",
-  "reallife_flare_kit_city_empty": "城市很安静",
-  "reallife_flare_kit_city_empty_body": "热门话题、对手动态、活动和邀约会随发生显示在这里。",
   "reallife_flare_kit_city_off_body": "本游戏中这座城市的居民没有使用Flare。帖子和活动仍会显示。",
   "reallife_flare_kit_cancel": "取消",
   "reallife_flare_kit_compose_title": "发布帖子",
@@ -31434,5 +31432,8 @@
   "reallife_flare_kit_funnel_more": "{interested}人感兴趣，{followed}人关注了你",
   "reallife_flare_kit_results_ads": "你的广告",
   "reallife_flare_kit_result_ad": "你为{business}投放的广告",
-  "reallife_flare_kit_section_busy": "今日帖子最多的街区"
+  "reallife_flare_kit_section_busy": "今日帖子最多的街区",
+  "reallife_flare_kit_donut_total": "你的{followers}名粉丝中有{count}名住在城里",
+  "reallife_flare_kit_city_idle": "这里暂时还没有内容",
+  "reallife_flare_kit_city_idle_body": "居民想要的、对手动态、活动和邀约会随发生显示在这里。"
 }

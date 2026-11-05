@@ -16,9 +16,28 @@ internal static partial class UiSamples
     {
         public string Id;
         public int AgeMinutes;
-        public int Views, Likes, Replies, Reposts;     // Replies is every reply there is: the ones under it and the ones the list says are more
+        public int Views, Likes, Replies, Reposts;     // Replies is every reply there is: the ones its thread lists and the ones the list says are more
+        public int Listed;                             // how many of the replies its thread lists, one row each (the rest are "N more replies")
         public int FunnelAt = -1;                      // the funnel the city measured for it, an index into the world's funnels, or -1
         public bool Flop;
+    }
+
+    /// <summary>
+    /// An influencer of the city, once: the hire table's row, the card under it, the hire sheet, the side's offer to follow and their own profile all read this record, so Jade Rivers
+    /// has one audience and one set of odds wherever she is shown.
+    /// </summary>
+    internal sealed class FlareInfluencerWorld
+    {
+        public string Name, Handle, Key, District;
+        public int Niche, Followers;
+        public int Engagement;                         // hundredths of a per cent
+        public int Fit, PriceDollars, Visitors;        // the fit in per cent, a post's price, the visits one post is likely to bring
+        public int Flop, Viral;                        // the odds in tenths of a per cent that a post falls flat or goes viral (Live: FlareExpect)
+        public int TakingsDollars;                     // what the first post is likely to take
+        public bool Verified, Booked;
+        public string[] AudienceDistricts = new string[0];   // where their followers in the city live, most first
+        public int[] AudienceCounts = new int[0];
+        public int AudienceTotal;
     }
 
     internal sealed class FlareShopWorld
@@ -45,9 +64,12 @@ internal static partial class UiSamples
         public FlareFunnelWorld[] Funnels = new FlareFunnelWorld[0];   // posts' and ads' as the city measured them
         public int[] AdFunnel = new int[0];                            // which funnels are ads (the first is the first shop's)
         public int OfferFee, OfferPosts;
+        public FlareInfluencerWorld[] Influencers = new FlareInfluencerWorld[0];
         public string[] Districts = new string[0];     // the districts the followers live in, most first
         public int[] FollowersByDistrict = new int[0];
-        public int FollowersElsewhere;
+        public int FollowersElsewhere;                 // followers in districts the donut does not name
+        /// <summary>The followers the city placed in a district, which is what the city page's donut adds up to (the account's other followers live outside the city).</summary>
+        public int FollowersInCity { get { int n = FollowersElsewhere; for (int i = 0; i < FollowersByDistrict.Length; i++) { n += FollowersByDistrict[i]; } return n; } }
         public string[] PostingDistricts = new string[0];   // where the city posted today, most first
         public int[] PostingCounts = new int[0];
 
@@ -153,7 +175,7 @@ internal static partial class UiSamples
                 Followers = 2418,
                 History = new[] { 2254, 2270, 2268, 2301, 2336, 2352, 2389 },
                 Following = 86,
-                PostsTotal = 57,
+                PostsTotal = 63,
                 VisitorsBefore = 140,
                 DollarsBefore = 4832,
                 OfferFee = 450,
@@ -176,7 +198,8 @@ internal static partial class UiSamples
             w.Mine = new[]
             {
                 new FlareMyPost { Id = "poll", AgeMinutes = 360, Views = 1840, Likes = 57, Replies = 11, Reposts = 3 },
-                new FlareMyPost { Id = "thanks", AgeMinutes = 1440, Views = 9600, Likes = 212, Replies = 2, Reposts = 9, FunnelAt = 0 },
+                // the thread lists two of its fourteen replies, so the feed card and the thread card say 14 and the thread says "12 more"
+                new FlareMyPost { Id = "thanks", AgeMinutes = 1440, Views = 9600, Likes = 212, Replies = 14, Listed = 2, Reposts = 9, FunnelAt = 0 },
                 new FlareMyPost { Id = "late", AgeMinutes = 4 * 1440, Views = 480, Likes = 34, Replies = 2, Reposts = 0, Flop = true },
                 // the week before this one: what it reached is the reach the week is set against
                 new FlareMyPost { Id = "a", AgeMinutes = 8 * 1440, Views = 6200, Likes = 140, Replies = 6, Reposts = 4 },
@@ -184,8 +207,28 @@ internal static partial class UiSamples
                 new FlareMyPost { Id = "c", AgeMinutes = 12 * 1440, Views = 1460, Likes = 38, Replies = 2, Reposts = 0 }
             };
             w.Districts = new[] { "Murray Hill", "Midtown", "Garment District", "Chelsea" };
-            w.FollowersByDistrict = new[] { 412, 301, 188, 96 };
-            w.FollowersElsewhere = 120;
+            // four in five of the 2,418 followers live in the city (FlareCityRules.PlayerCityTarget for a Local account): 1,934, the donut's whole
+            w.FollowersByDistrict = new[] { 790, 560, 300, 130 };
+            w.FollowersElsewhere = 154;
+            w.Influencers = new[]
+            {
+                new FlareInfluencerWorld
+                {
+                    Name = "Jade Rivers", Handle = "@jaderivers", Key = "i:3", District = "Murray Hill", Niche = 0, Followers = 96000, Engagement = 410, Fit = 100, PriceDollars = 2400, Visitors = 38,
+                    Flop = 120, Viral = 90, TakingsDollars = 2150, Verified = true,
+                    AudienceDistricts = new[] { "Murray Hill", "Midtown", "Garment District", "Chelsea", "Chinatown" }, AudienceCounts = new[] { 340, 310, 140, 90, 60 }, AudienceTotal = 1000
+                },
+                new FlareInfluencerWorld { Name = "Marco Bell", Handle = "@marcobell", Key = "i:5", District = "Midtown", Niche = 3, Followers = 18200, Engagement = 630, Fit = 74, PriceDollars = 620, Visitors = 14,
+                    Flop = 160, Viral = 50, TakingsDollars = 520, Booked = true },
+                new FlareInfluencerWorld { Name = "Priya Nair", Handle = "@priyanair", Key = "i:8", District = "Garment District", Niche = 1, Followers = 9400, Engagement = 780, Fit = 58, PriceDollars = 340, Visitors = 6,
+                    Flop = 200, Viral = 40, TakingsDollars = 180 },
+                new FlareInfluencerWorld { Name = "Sam Okafor", Handle = "@samokafor", Key = "i:11", District = "Murray Hill", Niche = 2, Followers = 3100, Engagement = 920, Fit = 58, PriceDollars = 150, Visitors = 5,
+                    Flop = 230, Viral = 30, TakingsDollars = 90 },
+                new FlareInfluencerWorld { Name = "Tess Whitaker", Handle = "@tesswhitaker", Key = "i:14", District = "Midtown", Niche = 0, Followers = 27500, Engagement = 490, Fit = 52, PriceDollars = 540, Visitors = 9,
+                    Flop = 190, Viral = 60, TakingsDollars = 300 },
+                new FlareInfluencerWorld { Name = "Omar Haddad", Handle = "@omarhaddad", Key = "i:17", District = "Murray Hill", Niche = 2, Followers = 19800, Engagement = 520, Fit = 47, PriceDollars = 410, Visitors = 7,
+                    Flop = 210, Viral = 40, TakingsDollars = 220 }
+            };
             w.PostingDistricts = new[] { "Midtown", "Garment District", "Murray Hill" };
             w.PostingCounts = new[] { 3940, 2620, 2610 };
             return w;
@@ -201,11 +244,25 @@ internal static partial class UiSamples
                 History = new[] { 0, 0, 0, 0, 0, 0, 0 },
                 Following = 0,
                 PostsTotal = 0,
+                Influencers = Known.Influencers,   // the city's influencers are the city's, whoever plays
                 OfferFee = 450,
                 OfferPosts = 3,
                 PostingDistricts = new[] { "Midtown", "Garment District", "Murray Hill" },
                 PostingCounts = new[] { 3940, 2620, 2610 }
             };
+        }
+
+        /// <summary>An influencer of the city by their account key.</summary>
+        public FlareInfluencerWorld Influencer(string key)
+        {
+            for (int i = 0; i < Influencers.Length; i++)
+            {
+                if (Influencers[i].Key == key)
+                {
+                    return Influencers[i];
+                }
+            }
+            return null;
         }
 
         public static readonly FlareWorld Known = Established();

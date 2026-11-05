@@ -157,6 +157,129 @@ namespace RealLifeOverhaul.Ui
         public static int Replies(int listed, int more) => Math.Max(0, listed) + Math.Max(0, more);
 
         /// <summary>
+        /// How many replies a post has, for its card in a feed and for its card in its own thread alike: the replies posted under it that the player can read, and the ones its
+        /// model says it drew (those have no row of their own). One rule, so a post is never counted two ways.
+        /// </summary>
+        public static int ReplyTotal(int posted, int drawn) => Math.Max(0, posted) + Math.Max(0, drawn);
+
+        /// <summary>The replies of a post that its thread does not list: the total less the rows listed, the "N more replies" line. Never below nothing.</summary>
+        public static int ReplyMore(int total, int listed) => Math.Max(0, total - Math.Max(0, listed));
+
+        /// <summary>
+        /// Words with a figure kept in one piece: the space between a number and what it counts ("12 in", "100 posts") and the little words between two numbers ("12 in 100", "12 em cada
+        /// 100") becomes a no-break space, so a note that wraps never leaves "12 in" at the end of a line and "100 posts" at the start of the next. Languages that write without spaces
+        /// are kept whole by FlareFace.Balanced instead. Nothing else changes.
+        /// </summary>
+        public static string Bind(string text)
+        {
+            if (string.IsNullOrEmpty(text) || text.IndexOf(' ') < 0)
+            {
+                return text;
+            }
+            string[] tok = text.Split(' ');
+            var bound = new bool[tok.Length];   // bound[i]: the space after tok[i] does not break
+            for (int i = 0; i + 1 < tok.Length; i++)
+            {
+                if (!HasDigit(tok[i]))
+                {
+                    continue;
+                }
+                bound[i] |= char.IsLetter(tok[i + 1].Length > 0 ? tok[i + 1][0] : ' ');
+                for (int gap = 1; gap <= 2 && i + gap + 1 < tok.Length; gap++)
+                {
+                    bool between = true;
+                    for (int g = 1; g <= gap; g++)
+                    {
+                        between &= Connector(tok[i + g]);
+                    }
+                    if (between && HasDigit(tok[i + gap + 1]))
+                    {
+                        for (int g = 0; g <= gap; g++)
+                        {
+                            bound[i + g] = true;
+                        }
+                    }
+                }
+            }
+            var sb = new System.Text.StringBuilder(text.Length);
+            for (int i = 0; i < tok.Length; i++)
+            {
+                sb.Append(tok[i]);
+                if (i + 1 < tok.Length)
+                {
+                    sb.Append(bound[i] ? ' ' : ' ');
+                }
+            }
+            return sb.ToString();
+        }
+
+        private static bool HasDigit(string word)
+        {
+            for (int i = 0; i < word.Length; i++)
+            {
+                if (char.IsDigit(word[i]))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        // A short word of letters only: the "in" of "12 in 100", the "em cada" of "12 em cada 100".
+        private static bool Connector(string word)
+        {
+            if (word.Length == 0 || word.Length > 4)
+            {
+                return false;
+            }
+            for (int i = 0; i < word.Length; i++)
+            {
+                if (!char.IsLetter(word[i]))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// What the city page's donut counts, said in its own words so it cannot be read as the account's whole following: the followers the city has placed in districts, out of
+        /// the account's followers (the rail's figure, written the same way). Followers living outside the city are in the account's count and not in the donut.
+        /// </summary>
+        public static string DonutTotal(long placed, long followers, UiWords t) =>
+            t("reallife_flare_kit_donut_total", "{count} of your {followers} followers live in the city").Replace("{count}", N(placed)).Replace("{followers}", Count(Math.Max(followers, placed)));
+
+        /// <summary>How many districts the hire card and the hire sheet name for an influencer's audience.</summary>
+        public const int AudienceMost = 4;
+
+        /// <summary>A part of a whole as a whole per cent, "34%"; nothing for an empty whole.</summary>
+        public static string Percent(long part, long whole) => (whole > 0 ? part * 100 / whole : 0).ToString(CultureInfo.InvariantCulture) + "%";
+
+        /// <summary>"12" for twelve in a hundred, from a rate in tenths of a per cent: how the hire card and the hire sheet say the odds that a post falls flat or goes viral.</summary>
+        public static string Odds(int tenths) => (tenths / 10).ToString(CultureInfo.InvariantCulture);
+
+        /// <summary>
+        /// Where an influencer's followers in the city live, as the hire card's bars and the hire sheet's bars both show it: the districts that hold most (at most
+        /// <see cref="AudienceMost"/>, largest first), each as its per cent of the whole audience, and its bar as a share of the largest. One function, so the card and the sheet of one
+        /// influencer cannot name different districts or shares.
+        /// </summary>
+        public static void Audience(System.Collections.Generic.IReadOnlyList<string> districts, System.Collections.Generic.IReadOnlyList<int> counts, int total, Func<string, string> name,
+            out string[] labels, out string[] figures, out float[] shares)
+        {
+            int n = Math.Min(AudienceMost, Math.Min(districts.Count, counts.Count));
+            labels = new string[n];
+            figures = new string[n];
+            shares = new float[n];
+            int most = n > 0 ? Math.Max(1, counts[0]) : 1;
+            for (int i = 0; i < n; i++)
+            {
+                labels[i] = name(districts[i]);
+                figures[i] = Percent(counts[i], total);
+                shares[i] = counts[i] / (float)most;
+            }
+        }
+
+        /// <summary>
         /// The views a post of the player's shows: what the post reached, and never fewer than the residents the city counted seeing it (they saw it, so they viewed it).
         /// Null with no views.
         /// </summary>

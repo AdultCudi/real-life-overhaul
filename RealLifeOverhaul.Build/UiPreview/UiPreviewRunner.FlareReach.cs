@@ -9,11 +9,13 @@ using UnityEngine.UI;
 public static partial class UiPreviewRunner
 {
     // The d-pad's reach of a Flare screen as a picture a reviewer can read. Each target the walk meets gets a small numbered marker at its corner or in the gutter beside it, never
-    // over a word, a glyph or a face; the numbers are the order a player presses them in (right first, then down, left and up, backing out of a dead end); a short arrow joins a stop
-    // to the one it was pressed from only where the two stand side by side (a long arrow would only cross the window); nothing is drawn outside the window; and a note in a free
-    // corner of the window says how the walk reads and how many rows wait below the fold (the list scrolls as down reaches them). The walk itself is FlareFace.Reach, the one
-    // the checks hold to every target, so the picture is of the proof and not a second opinion.
-    private const float MarkerSize = 22f, MarkerText = 13f, ArrowMost = 190f;   // px of the 1920 x 1080 screen
+    // over a word, a glyph or a face; the numbers are the order a player presses them in (right first, then down, left and up, backing out of a dead end). One arrow joins every stop
+    // to the next, N to N+1, and no arrow joins any other two, so the arrows read as the numbers do; a step that would cross words bends round them (the route with the fewest words
+    // under it, through the window's gutters), and a step back to an earlier stop before pressing on is drawn dashed. Nothing is drawn outside the window, and a note in a free
+    // corner says how the walk reads and how many rows wait below the fold (the list scrolls as down reaches them). The walk itself is FlareFace.Reach, the one the checks hold to
+    // every target, so the picture is of the proof and not a second opinion; DrawReach throws if an arrow joins two stops that are not consecutive.
+    private const float MarkerSize = 22f, MarkerText = 13f, MarkerGap = 12f;   // px of the 1920 x 1080 screen; the gap keeps two markers far enough apart for an arrow between them
+    private const float CellSize = 4f, RouteStep = 12f;                       // the coarse grid the routes are scored on, and how far apart the bends are tried
 
     private struct Spot
     {
@@ -31,6 +33,7 @@ public static partial class UiPreviewRunner
         var place = new Vector2[met];
         var placed = new bool[met];
         var markers = new List<Rect>(met);
+        var markerStop = new List<int>(met);   // which stop each rectangle of markers belongs to
         int hidden = 0;
         for (int i = 0; i < met; i++)
         {
@@ -43,30 +46,31 @@ public static partial class UiPreviewRunner
             placed[i] = true;
             float r = MarkerSize / 2f;
             markers.Add(new Rect(place[i].x - r, place[i].y - r, MarkerSize, MarkerSize));
+            markerStop.Add(i);
         }
         RectTransform layerRect = UiView.NewRect(parent, "Reach");
         UiView.Stretch(layerRect);
         var ink = new Color(1f, 0.85f, 0.2f, 1f);
         var dark = new Color(0.08f, 0.06f, 0.02f, 1f);
-        var stopOf = new int[scene.NodeCount];
-        for (int i = 0; i < met; i++)
-        {
-            stopOf[order[i]] = i;
-        }
+        var grid = new RouteGrid(window, spots, markers, markerStop);
+        var arrows = new List<int>();               // each arrow as the stop it leaves
+        var routes = new List<List<Vector2>>();     // and the route it was drawn along
+        int across = 0;
         for (int i = 1; i < met; i++)
         {
-            int a = from[i] < 0 ? -1 : stopOf[from[i]];
-            if (a < 0 || !placed[a] || !placed[i])
+            if (!placed[i - 1] || !placed[i])
             {
-                continue;
+                continue;   // a stop below the fold has no marker to leave from or arrive at
             }
-            Vector2 pa = place[a], pb = place[i];
-            if (Vector2.Distance(pa, pb) > ArrowMost || SegmentHits(pa, pb, spots))
-            {
-                continue;   // neighbours only: a press that jumps across the window is told by the numbers, not by a line through the words
-            }
-            Arrow(layerRect, pa, pb, ink);
+            bool back = from[i] != order[i - 1];   // pressed from an earlier stop: the walk went back to it first
+            List<Vector2> path = grid.Route(place[i - 1], place[i], i - 1, i);
+            across += grid.Hits(path, i - 1, i) > 0 ? 1 : 0;
+            Arrow(layerRect, path, ink, back);
+            grid.Mark(path);
+            arrows.Add(i - 1);
+            routes.Add(path);
         }
+        ArrowsJoinNeighbours(arrows, routes, place, placed, met);
         for (int i = 0; i < met; i++)
         {
             if (placed[i])
@@ -80,7 +84,7 @@ public static partial class UiPreviewRunner
         {
             below += Math.Max(0, scene.Lists[l].Count - (scene.Lists[l].First + scene.Lists[l].Shown));
         }
-        string words = "Presses in order, 1 to " + met + ": right first, then down, left and up. Arrows join stops that stand together.";
+        string words = "Presses in order, 1 to " + met + ": right first, then down, left and up. Each arrow goes from one stop to the next; a dashed one goes back to an earlier stop first.";
         if (below > 0 || hidden > 0)
         {
             words += " Below the fold: " + (below + hidden) + " more, which down reaches as the list scrolls.";
@@ -95,7 +99,45 @@ public static partial class UiPreviewRunner
             }
         }
         Note(layerRect, words, window, spots, markers, boxes);
-        Debug.Log(Tag + "pad tour: " + met + " stops by right, down, left and up from the first target, " + hidden + " out of view, " + below + " rows below the fold");
+        Debug.Log(Tag + "pad tour: " + met + " stops by right, down, left and up from the first target, " + hidden + " out of view, " + below + " rows below the fold, " + arrows.Count
+            + " arrows each from a stop to the next, " + across + " of them with no way round the words");
+    }
+
+    // The proof that the picture reads as its numbers: the route of every arrow starts on the marker of stop N and ends on the marker of stop N+1 and on no other marker, none is
+    // drawn twice, and every pair of consecutive stops that both have a marker has one.
+    private static void ArrowsJoinNeighbours(List<int> arrows, List<List<Vector2>> routes, Vector2[] place, bool[] placed, int met)
+    {
+        var seen = new bool[met];
+        for (int k = 0; k < arrows.Count; k++)
+        {
+            int n = arrows[k];
+            if (n < 0 || n + 1 >= met || seen[n] || !placed[n] || !placed[n + 1])
+            {
+                throw new InvalidOperationException("pad arrows: an arrow from stop " + (n + 1) + " joins stops that are not two consecutive placed ones, or is drawn twice");
+            }
+            List<Vector2> route = routes[k];
+            Vector2 start = route[0], end = route[route.Count - 1];
+            for (int s = 0; s < met; s++)
+            {
+                if (!placed[s])
+                {
+                    continue;
+                }
+                bool onStart = Vector2.Distance(start, place[s]) < 0.5f, onEnd = Vector2.Distance(end, place[s]) < 0.5f;
+                if (onStart != (s == n) || onEnd != (s == n + 1))
+                {
+                    throw new InvalidOperationException("pad arrows: the arrow from stop " + (n + 1) + " does not join stop " + (n + 1) + " to stop " + (n + 2) + " (it meets stop " + (s + 1) + ")");
+                }
+            }
+            seen[n] = true;
+        }
+        for (int n = 0; n + 1 < met; n++)
+        {
+            if (placed[n] && placed[n + 1] && !seen[n])
+            {
+                throw new InvalidOperationException("pad arrows: stop " + (n + 1) + " has a marker and so has stop " + (n + 2) + " but no arrow goes from one to the other");
+            }
+        }
     }
 
     // A target's box as the screen shows it: its scroll region's movement applied, cut to that region's view and to the window. False when none of it is in view.
@@ -183,7 +225,7 @@ public static partial class UiPreviewRunner
             }
             for (int k = 0; k < markers.Count; k++)
             {
-                cost += Overlap(m, markers[k].xMin, markers[k].yMin, markers[k].xMax, markers[k].yMax) * 100f;
+                cost += Overlap(m, markers[k].xMin - MarkerGap, markers[k].yMin - MarkerGap, markers[k].xMax + MarkerGap, markers[k].yMax + MarkerGap) * 100f;
             }
             if (cost < bestCost)
             {
@@ -200,37 +242,211 @@ public static partial class UiPreviewRunner
         return w > 0f && h > 0f ? w * h : 0f;
     }
 
-    // Whether the segment between two markers passes through a word or a glyph (sampled every 3 px, past the markers' own discs).
-    private static bool SegmentHits(Vector2 a, Vector2 b, List<Spot> spots)
+    // The coarse picture of the window the routes are scored on: which 4 px cells hold a word, a glyph or a face, which a marker, and which an arrow already runs through. A route is a
+    // polyline of the stop's two ends with at most two bends, tried through every gutter of the window; the cheapest wins (fewest words under it, then fewest markers, then the
+    // shortest, then the fewest bends and the least running along an arrow already drawn), so a step round a block of words bends instead of crossing it.
+    private sealed class RouteGrid
     {
-        float len = Vector2.Distance(a, b), skip = MarkerSize / 2f + 1f;
-        for (float d = skip; d < len - skip; d += 3f)
+        private readonly Rect _window;
+        private readonly int _w, _h;
+        private readonly bool[] _words;
+        private readonly short[] _marker;   // the stop whose marker covers the cell, plus one
+        private readonly byte[] _lines;
+
+        public RouteGrid(Rect window, List<Spot> spots, List<Rect> markers, List<int> markerStop)
         {
-            Vector2 p = Vector2.Lerp(a, b, d / len);
+            _window = window;
+            _w = Mathf.CeilToInt(window.width / CellSize);
+            _h = Mathf.CeilToInt(window.height / CellSize);
+            _words = new bool[_w * _h];
+            _marker = new short[_w * _h];
+            _lines = new byte[_w * _h];
             for (int s = 0; s < spots.Count; s++)
             {
-                if (spots[s].Weight >= 10f && p.x > spots[s].X0 && p.x < spots[s].X1 && p.y > spots[s].Y0 && p.y < spots[s].Y1)
+                if (spots[s].Weight >= 10f)
                 {
-                    return true;
+                    Cover(spots[s].X0 - 1f, spots[s].Y0 - 1f, spots[s].X1 + 1f, spots[s].Y1 + 1f, -1);
+                }
+            }
+            for (int m = 0; m < markers.Count; m++)
+            {
+                Cover(markers[m].xMin, markers[m].yMin, markers[m].xMax, markers[m].yMax, markerStop[m] + 1);
+            }
+        }
+
+        // A box of cells set as words (stop -1) or as a marker's (its stop plus one).
+        private void Cover(float x0, float y0, float x1, float y1, int stop)
+        {
+            int cx0 = Mathf.Max(0, Mathf.FloorToInt((x0 - _window.xMin) / CellSize)), cx1 = Mathf.Min(_w - 1, Mathf.FloorToInt((x1 - _window.xMin) / CellSize));
+            int cy0 = Mathf.Max(0, Mathf.FloorToInt((y0 - _window.yMin) / CellSize)), cy1 = Mathf.Min(_h - 1, Mathf.FloorToInt((y1 - _window.yMin) / CellSize));
+            for (int y = cy0; y <= cy1; y++)
+            {
+                for (int x = cx0; x <= cx1; x++)
+                {
+                    if (stop < 0)
+                    {
+                        _words[y * _w + x] = true;
+                    }
+                    else
+                    {
+                        _marker[y * _w + x] = (short)stop;
+                    }
                 }
             }
         }
-        return false;
+
+        private bool Cell(Vector2 p, out int at)
+        {
+            int x = Mathf.FloorToInt((p.x - _window.xMin) / CellSize), y = Mathf.FloorToInt((p.y - _window.yMin) / CellSize);
+            at = y * _w + x;
+            return x >= 0 && y >= 0 && x < _w && y < _h;
+        }
+
+        /// <summary>The cheapest route from one stop's marker to the next's: straight, an L, or a Z through any gutter of the window.</summary>
+        public List<Vector2> Route(Vector2 a, Vector2 b, int from, int to)
+        {
+            List<Vector2> best = new List<Vector2> { a, b };
+            float bestCost = Cost(best, from, to);
+            float r = MarkerSize / 2f;
+            var tries = new List<Vector2[]> { new[] { a, new Vector2(b.x, a.y), b }, new[] { a, new Vector2(a.x, b.y), b } };
+            for (float x = _window.xMin + r + 2f; x < _window.xMax - r - 2f; x += RouteStep)
+            {
+                tries.Add(new[] { a, new Vector2(x, a.y), new Vector2(x, b.y), b });
+            }
+            for (float y = _window.yMin + r + 2f; y < _window.yMax - r - 2f; y += RouteStep)
+            {
+                tries.Add(new[] { a, new Vector2(a.x, y), new Vector2(b.x, y), b });
+            }
+            for (int t = 0; t < tries.Count; t++)
+            {
+                var path = new List<Vector2>(4);
+                for (int i = 0; i < tries[t].Length; i++)
+                {
+                    if (path.Count == 0 || Vector2.Distance(path[path.Count - 1], tries[t][i]) > 0.5f)
+                    {
+                        path.Add(tries[t][i]);
+                    }
+                }
+                if (path.Count < 2)
+                {
+                    continue;
+                }
+                float cost = Cost(path, from, to);
+                if (cost < bestCost)
+                {
+                    bestCost = cost;
+                    best = path;
+                }
+            }
+            return best;
+        }
+
+        /// <summary>How many samples of a route lie on words (the markers' own ground, the first and last radius, left out).</summary>
+        public int Hits(List<Vector2> path, int from, int to) => Count(path, from, to, true);
+
+        private int Count(List<Vector2> path, int from, int to, bool wordsOnly)
+        {
+            int hits = 0;
+            float skip = MarkerSize / 2f + 2f, length = Length(path), at = 0f;
+            for (int i = 0; i + 1 < path.Count; i++)
+            {
+                float seg = Vector2.Distance(path[i], path[i + 1]);
+                for (float d = 0f; d < seg; d += 3f)
+                {
+                    float along = at + d;
+                    if (along < skip || along > length - skip)
+                    {
+                        continue;
+                    }
+                    if (!Cell(Vector2.Lerp(path[i], path[i + 1], d / seg), out int cell))
+                    {
+                        hits += wordsOnly ? 1 : 100;   // outside the window
+                        continue;
+                    }
+                    hits += _words[cell] ? (wordsOnly ? 1 : 3) : 0;
+                    if (!wordsOnly)
+                    {
+                        int other = _marker[cell] - 1;
+                        hits += other >= 0 && other != from && other != to ? 2 : 0;
+                    }
+                }
+                at += seg;
+            }
+            return hits;
+        }
+
+        private static float Length(List<Vector2> path)
+        {
+            float len = 0f;
+            for (int i = 0; i + 1 < path.Count; i++)
+            {
+                len += Vector2.Distance(path[i], path[i + 1]);
+            }
+            return len;
+        }
+
+        private float Cost(List<Vector2> path, int from, int to)
+        {
+            int alongLine = 0;
+            float skip = MarkerSize / 2f + 2f, length = Length(path), at = 0f;
+            for (int i = 0; i + 1 < path.Count; i++)
+            {
+                float seg = Vector2.Distance(path[i], path[i + 1]);
+                for (float d = 0f; d < seg; d += 3f)
+                {
+                    if (at + d >= skip && at + d <= length - skip && Cell(Vector2.Lerp(path[i], path[i + 1], d / seg), out int cell) && _lines[cell] > 0)
+                    {
+                        alongLine++;
+                    }
+                }
+                at += seg;
+            }
+            return Count(path, from, to, false) * 100f + length * 0.05f + (path.Count - 2) * 8f + alongLine * 0.8f;
+        }
+
+        /// <summary>Remembers where an arrow runs, so the next prefers another way where it can.</summary>
+        public void Mark(List<Vector2> path)
+        {
+            for (int i = 0; i + 1 < path.Count; i++)
+            {
+                float seg = Vector2.Distance(path[i], path[i + 1]);
+                for (float d = 0f; d < seg; d += 3f)
+                {
+                    if (Cell(Vector2.Lerp(path[i], path[i + 1], d / seg), out int cell) && _lines[cell] < 255)
+                    {
+                        _lines[cell]++;
+                    }
+                }
+            }
+        }
     }
 
-    // A thin line from one marker's edge to the next with a head at the pressed-to end.
-    private static void Arrow(RectTransform parent, Vector2 a, Vector2 b, Color ink)
+    // A thin line along the route from one marker's edge to the next's with a head at the pressed-to end; dashed when the step goes back to an earlier stop first.
+    private static void Arrow(RectTransform parent, List<Vector2> path, Color ink, bool dashed)
     {
-        float len = Vector2.Distance(a, b), r = MarkerSize / 2f;
-        if (len <= MarkerSize + 2f)
+        float r = MarkerSize / 2f + 1f;
+        Vector2 first = path[0], last = path[path.Count - 1];
+        Vector2 d0 = (path[1] - first).normalized, dn = (last - path[path.Count - 2]).normalized;
+        var pts = new List<Vector2>(path);
+        pts[0] = first + d0 * r;
+        pts[pts.Count - 1] = last - dn * r;
+        for (int i = 0; i + 1 < pts.Count; i++)
         {
-            return;
+            if (!dashed)
+            {
+                Line(parent, pts[i], pts[i + 1], 2f, ink);
+                continue;
+            }
+            float len = Vector2.Distance(pts[i], pts[i + 1]);
+            Vector2 dir = (pts[i + 1] - pts[i]) / Mathf.Max(len, 0.01f);
+            for (float d = 0f; d < len; d += 12f)
+            {
+                Line(parent, pts[i] + dir * d, pts[i] + dir * Mathf.Min(d + 7f, len), 2f, ink);
+            }
         }
-        Vector2 dir = (b - a) / len, from = a + dir * (r + 1f), to = b - dir * (r + 1f);
-        Line(parent, from, to, 2f, ink);
-        Vector2 side = new Vector2(-dir.y, dir.x);
-        Line(parent, to, to - dir * 8f + side * 4.5f, 2f, ink);
-        Line(parent, to, to - dir * 8f - side * 4.5f, 2f, ink);
+        Vector2 to = pts[pts.Count - 1], side = new Vector2(-dn.y, dn.x);
+        Line(parent, to, to - dn * 8f + side * 4.5f, 2f, ink);
+        Line(parent, to, to - dn * 8f - side * 4.5f, 2f, ink);
     }
 
     private static void Line(RectTransform parent, Vector2 a, Vector2 b, float thickness, Color ink)

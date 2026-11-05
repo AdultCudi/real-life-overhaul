@@ -34,7 +34,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_flare_kit_business_title", "reallife_flare_kit_campaign_brought", "reallife_flare_kit_campaign_day", "reallife_flare_kit_campaign_flopped",
                 "reallife_flare_kit_campaign_none", "reallife_flare_kit_campaign_percent", "reallife_flare_kit_campaign_running", "reallife_flare_kit_campaign_starts",
                 "reallife_flare_kit_cancel", "reallife_flare_kit_chip_photo", "reallife_flare_kit_chip_place", "reallife_flare_kit_chip_poll", "reallife_flare_kit_chip_promote",
-                "reallife_flare_kit_city_demand", "reallife_flare_kit_city_empty", "reallife_flare_kit_city_empty_body", "reallife_flare_kit_city_events",
+                "reallife_flare_kit_city_demand", "reallife_flare_kit_city_idle", "reallife_flare_kit_city_idle_body", "reallife_flare_kit_donut_total", "reallife_flare_kit_city_events",
                 "reallife_flare_kit_city_line", "reallife_flare_kit_city_off_body", "reallife_flare_kit_city_rivals", "reallife_flare_kit_city_work", "reallife_flare_kit_compose_as",
                 "reallife_flare_kit_compose_title", "reallife_flare_kit_composer", "reallife_flare_kit_count", "reallife_flare_kit_day_one", "reallife_flare_kit_days_n",
                 "reallife_flare_kit_decline", "reallife_flare_kit_empty_businesses", "reallife_flare_kit_empty_explore", "reallife_flare_kit_empty_feed_body",

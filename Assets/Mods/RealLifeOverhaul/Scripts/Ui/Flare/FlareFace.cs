@@ -174,6 +174,7 @@ namespace RealLifeOverhaul.Ui
     {
         public bool Shown;
         public string DonutTitle, DonutEmpty, DonutRest;
+        public string DonutTotal;                        // what the donut adds up to, in words: the followers placed in districts out of the account's
         public string[] Names = new string[0], Values = new string[0];
         public float[] Shares = new float[0];
         public float Rest;                               // the share held by the districts not named
@@ -987,7 +988,9 @@ namespace RealLifeOverhaul.Ui
         /// <summary>
         /// The width words wrap in so that their lines are of one length and the last is never a character or a word alone: the narrowest width that keeps the lines the words
         /// take at <paramref name="width"/> (a language that breaks between characters, Chinese, left "红。" on a line of its own), with a character's room to spare so the real
-        /// text engine, which measures a little differently, still wraps to the same lines. The width itself for words that fit one line or would be cut at <paramref name="most"/>.
+        /// text engine, which measures a little differently, still wraps to the same lines. A width at which a line would begin on a measure word, cut from the figure it counts
+        /// ("100" / "条帖子"), is passed over for the next one that keeps the lines (the spaced languages cannot be cut there: <see cref="FlareFigures.Bind"/> joins a figure and its
+        /// noun). The width itself for words that fit one line or would be cut at <paramref name="most"/>.
         /// </summary>
         public static float Balanced(string text, UiStyle style, float width, int most)
         {
@@ -1001,7 +1004,29 @@ namespace RealLifeOverhaul.Ui
             {
                 narrow -= 4f;
             }
+            for (float w = narrow; w <= width; w += 4f)
+            {
+                if (UiTextRules.Lines(text, style, w, 0, out float _) == lines && !CutsFigure(text, style, w, lines)
+                    && UiTextRules.Lines(text, style, Math.Min(width, w + UiTokens.S2), 0, out float _) == lines && !CutsFigure(text, style, Math.Min(width, w + UiTokens.S2), lines))
+                {
+                    return Math.Min(width, w + UiTokens.S2);
+                }
+            }
             return Math.Min(width, narrow + UiTokens.S2);
+        }
+
+        // Whether a line of the words at a width begins on an ideograph straight after a digit or a per cent sign: the measure word parted from the figure it measures.
+        private static bool CutsFigure(string text, UiStyle style, float width, int lines)
+        {
+            for (int k = 1; k < lines; k++)
+            {
+                int at = UiTextRules.LineStart(text, style, width, k);
+                if (at > 0 && at < text.Length && UiTextRules.Wide(text[at]) && (char.IsDigit(text[at - 1]) || text[at - 1] == '%'))
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>A placeholder's words a step dimmer than the words typed over it.</summary>

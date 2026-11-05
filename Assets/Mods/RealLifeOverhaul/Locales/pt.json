@@ -30476,8 +30476,6 @@
   "reallife_flare_kit_city_work": "Propostas e trabalhos",
   "reallife_flare_kit_offer_card": "Paga {money} por post, em {posts} posts",
   "reallife_flare_kit_offer_until": "Aberta por mais {days} dias",
-  "reallife_flare_kit_city_empty": "Cidade tranquila",
-  "reallife_flare_kit_city_empty_body": "Tendências, movimentos dos rivais, eventos e propostas aparecem aqui conforme acontecem.",
   "reallife_flare_kit_city_off_body": "Os moradores desta cidade não estão no Flare neste jogo. Posts e eventos ainda aparecem.",
   "reallife_flare_kit_cancel": "Cancelar",
   "reallife_flare_kit_compose_title": "Criar um post",
@@ -31434,5 +31432,8 @@
   "reallife_flare_kit_funnel_more": "{interested} se interessaram e {followed} seguiram você",
   "reallife_flare_kit_results_ads": "Seus anúncios",
   "reallife_flare_kit_result_ad": "Seu anúncio para {business}",
-  "reallife_flare_kit_section_busy": "Onde a cidade mais postou hoje"
+  "reallife_flare_kit_section_busy": "Onde a cidade mais postou hoje",
+  "reallife_flare_kit_donut_total": "{count} dos seus {followers} seguidores moram na cidade",
+  "reallife_flare_kit_city_idle": "Nada aqui ainda",
+  "reallife_flare_kit_city_idle_body": "O que os moradores querem, movimentos dos rivais, eventos e propostas aparecem aqui conforme acontecem."
 }

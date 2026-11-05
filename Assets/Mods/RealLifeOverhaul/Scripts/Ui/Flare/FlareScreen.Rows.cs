@@ -86,6 +86,16 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        /// <summary>
+        /// A post's reply count, the one rule for its card in a feed and in its own thread (FlareFigures.ReplyTotal): the replies posted under it and the ones its model drew by now.
+        /// Cost: a dictionary read.
+        /// </summary>
+        private int RepliesOf(FlarePost p, long now)
+        {
+            _replyCount.TryGetValue(p.Id, out int posted);
+            return FlareFigures.ReplyTotal(posted, p.Id >= 0 ? FlareLiveRules.Shown(p.Replies, p, now) : 0);
+        }
+
         private static bool Hidden(FlareFile file, FlarePost p) => p.Author == FlareAuthor.Network && file.Net.IsHidden(p.AuthorId);
 
         /// <summary>A post's card: its author, when, its words with its tags under them, its picture, its line and its counts.</summary>
@@ -122,8 +132,7 @@ namespace RealLifeOverhaul.Ui
             r.Line = LineOf(file, p, built, out UiIcon icon);
             r.Icon = icon;
             int likes = FlareLiveRules.Shown(p.Likes, p, now) + p.PlayerLikes + (p.Liked ? 1 : 0);
-            _replyCount.TryGetValue(p.Id, out int replies);
-            replies += p.Id >= 0 ? FlareLiveRules.Shown(p.Replies, p, now) : 0;
+            int replies = RepliesOf(p, now);
             r.Likes = likes > 0 ? FlareFeedRules.Count(likes) : null;
             r.Comments = replies > 0 ? FlareFeedRules.Count(replies) : null;
             int reposts = FlareLiveRules.Shown(p.Reposts, p, now);
