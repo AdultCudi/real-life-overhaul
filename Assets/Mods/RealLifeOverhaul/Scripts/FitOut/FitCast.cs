@@ -23,6 +23,7 @@ namespace RealLifeOverhaul.FitOut
             public Transform At;
             public FitUse Use;
             public Vector3 Stand;
+            public Transform Desk;      // the desk it is drawn up to, whose screens are lit while somebody works there (null for any other seat)
         }
 
         private enum Doing { Away, Coming, Seated, Walking, Pausing, Leaving }
@@ -33,6 +34,7 @@ namespace RealLifeOverhaul.FitOut
             public FitUse Use;          // the seat's use; None for one who walks about
             public bool Presence;       // only to be seen: gives way to a scene
             public int Seat = -1;
+            public bool Lit;            // the screens at the seat's desk are on for this one
             public int Stop = -1;
             public Doing Doing;
             public float Until;
@@ -206,6 +208,10 @@ namespace RealLifeOverhaul.FitOut
                 m.Role.Quiet();
                 m.Role.Stand(seat.At.position + seat.At.forward * 2f);
             }
+            else if (m.Use == FitUse.Desk && !m.Lit)
+            {
+                m.Lit = DeskScreens.OnDesk(seat.Desk, "a member of the cast") > 0;   // the monitors lit while they work, as the game lights them for its employees; Release puts them out
+            }
             m.Doing = Doing.Seated;
             float stay = m.Use == FitUse.Desk ? Random.Range(180f, 420f) : m.Use == FitUse.Meeting ? Random.Range(100f, 240f) : Random.Range(50f, 140f);
             m.Until = now + stay;
@@ -295,7 +301,12 @@ namespace RealLifeOverhaul.FitOut
             if (m.Seat >= 0 && m.Seat < _held.Length)
             {
                 _held[m.Seat] = false;
+                if (m.Lit && m.Seat < _seats.Count)
+                {
+                    DeskScreens.OffDesk(_seats[m.Seat].Desk, "a member of the cast");   // dark when they get up, leave or are taken back
+                }
             }
+            m.Lit = false;
             m.Seat = -1;
         }
 
@@ -327,6 +338,7 @@ namespace RealLifeOverhaul.FitOut
             {
                 try
                 {
+                    Release(_members[i]);   // the screens at its desk dark, its seat free
                     _members[i].Role.Exit();
                 }
                 catch (Exception e)

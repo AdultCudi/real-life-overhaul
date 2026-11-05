@@ -125,6 +125,10 @@ namespace RealLifeOverhaul.Careers
                 if (seated)
                 {
                     _nextType = Time.time + UnityEngine.Random.Range(0f, 6f);
+                    if (_desk != null)
+                    {
+                        DeskScreens.OnDesk(_desk.Desk, "the player at their desk");   // a fitted desk is a copy of the game's furniture: its monitors are lit here (a station's by DeskGame.SitOn)
+                    }
                 }
                 _sitting.SkipStarted();
                 DeskGame.SetOffSeen("the work desk", true, _orderFrame);
@@ -277,6 +281,10 @@ namespace RealLifeOverhaul.Careers
                 else if (begun && _seated)
                 {
                     DeskGame.StandUp(_desk != null ? _desk.Stand : _stood, _station);
+                    if (_desk != null)
+                    {
+                        DeskScreens.OffDesk(_desk.Desk, "the player at their desk");   // dark again, on every way out
+                    }
                 }
                 else if (begun)
                 {
