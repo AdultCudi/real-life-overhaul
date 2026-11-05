@@ -356,8 +356,8 @@ namespace RealLifeOverhaul.Street
             {
                 return null;
             }
-            return StreetRules.Identity(StreetGame.SaveSeed(), day, StreetGame.Key(p), StreetGame.Female(p), StreetGame.Age(p), SocialPlaces.Districts,
-                -1);
+            int save = StreetGame.SaveSeed(), key = StreetGame.Key(p);
+            return StreetRules.Identity(save, day, key, StreetGame.Female(p), StreetGame.Age(p, StreetRules.Seed(save, 0, key)), SocialPlaces.Districts, -1);
         }
 
         private void Load(GameInstance save)

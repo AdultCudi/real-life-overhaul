@@ -42,7 +42,11 @@ namespace RealLifeOverhaul.Street
         public const int CommuterPercent = 45;    // on their way to work at the rush hours
         public const int HumourPercent = 60;
         public const int ChattyPercent = 30;
-        public const int RetiredFrom = 66;        // years
+        public const int RetiredFrom = 62;        // years: nobody is told more than SeenOldest + SeenSpread - 1, so the oldest few are retired
+        public const int SeenYoungest = 18;       // years: the youngest head the game draws, and the age of a figure never given one
+        public const int SeenOldest = 60;         // years: the game's head fades from young to old over 18 to 60 and no further (AppearanceAgeHelper)
+        public const int SeenSpread = 5;          // years: the ones drawn that old are told 60 to 64, as they are drawn alike
+        public const int NoAgeSpread = 12;        // years: a figure with no age set is drawn as the youngest, and told 18 to 29
 
         // Brush-offs, in thousandths before the option's factor.
         public const int HurryOdds = 110;         // anybody, any time: somewhere to be
@@ -99,6 +103,27 @@ namespace RealLifeOverhaul.Street
                 h ^= h >> 16;
                 return (int)(h % (uint)n);
             }
+        }
+
+        /// <summary>
+        /// The age somebody is told, from the age in days the game gave their figure and what the game draws from it. The game rolls a
+        /// pedestrian's age from 18 to 80 years, but its head fades from young to old over 18 to 60 only, so a third of all strangers
+        /// looked no older than sixty and were told up to eighty. A figure drawn as old as the game draws is told 60 to 64, by
+        /// <paramref name="seed"/> (the same for the same person every day); one the game never gave an age is drawn as the youngest and
+        /// told 18 to 29. Nothing is random: the same figure is told the same age on every machine.
+        /// </summary>
+        public static int SeenAge(int ageInDays, int daysPerYear, int seed)
+        {
+            if (ageInDays <= 0)
+            {
+                return SeenYoungest + Roll(seed, 15, NoAgeSpread);
+            }
+            int years = ageInDays / Math.Max(1, daysPerYear);
+            if (years < SeenYoungest)
+            {
+                return SeenYoungest;
+            }
+            return years <= SeenOldest ? years : SeenOldest + Roll(seed, 16, SeenSpread);
         }
 
         /// <summary>The seed of somebody, from the save's own number, the day and the game's figure.</summary>
