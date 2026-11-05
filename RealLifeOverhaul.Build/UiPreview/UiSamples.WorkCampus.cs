@@ -169,15 +169,13 @@ internal static partial class UiSamples
                 {
                     entries.Add(new UiDiaryEntry { Day = day, Icon = UiIcon.Coffee, Title = w.F("reallife_work_diary_class", "Class: {course}", "course", barista), Short = barista, Value = "10:00" });
                 }
-                if (weekday == 1 || weekday == 3)   // the diploma runs for sixteen weeks: its classes go on to the month's end
+                if ((weekday == 1 || weekday == 3) && day <= 23)
                 {
                     entries.Add(new UiDiaryEntry { Day = day, Icon = UiIcon.Heart, Title = w.F("reallife_work_diary_class", "Class: {course}", "course", care), Short = care, Value = "09:00" });
                 }
             }
             entries.Add(new UiDiaryEntry { Day = 9, Icon = UiIcon.ClipboardText, Title = w.F("reallife_work_diary_homework", "Homework due: {course}", "course", care), Short = care });
             entries.Add(new UiDiaryEntry { Day = 17, Icon = UiIcon.ClipboardText, Title = w.F("reallife_work_diary_homework", "Homework due: {course}", "course", care), Short = care });
-            entries.Add(new UiDiaryEntry { Day = 24, Icon = UiIcon.ClipboardText, Title = w.F("reallife_work_diary_homework", "Homework due: {course}", "course", care), Short = care });
-            entries.Add(new UiDiaryEntry { Day = 31, Icon = UiIcon.ClipboardText, Title = w.F("reallife_work_diary_homework", "Homework due: {course}", "course", care), Short = care });
             entries.Add(new UiDiaryEntry { Day = 23, Icon = UiIcon.Scales, Title = w.F("reallife_work_diary_exam", "Exam: {course}", "course", barista), Short = barista, Value = "10:00" });
             entries.Sort((a, b) => a.Day.CompareTo(b.Day));   // in date order, as the live diary sorts it
         }

@@ -17,7 +17,8 @@ internal static partial class Program
     // States bare by what they are: nothing to list, a filter that holds one or two cards (the whole catalogue's bands stand under it when they fit), a typed brief and a person.
     private static bool WorkFloorExempt(string state) => state.Contains("_none") || state.Contains("_empty") || state.EndsWith("_none", StringComparison.Ordinal) || state == "person"
         || state == "person_contract" || state == "new_ad" || state == "search" || state == "results_new" || state == "applicants_none" || state == "listings_none"
-        || state == "courses_cooking" || state == "listings_stock" || state == "listings_machines";
+        || state == "courses_cooking" || state == "listings_stock" || state == "listings_machines"
+        || state == "studying";   // the diary's coming up rows are targets and a screen holds 48 (RLO-UI-012): five fit, and the kit's aside ends there
 
     /// <summary>How far the lowest thing of the page's strips stands over the window's foot, the worst of them and where it is; -1 when no window is found.</summary>
     private static float WorkFloorOf(UiScene s, out string where)
