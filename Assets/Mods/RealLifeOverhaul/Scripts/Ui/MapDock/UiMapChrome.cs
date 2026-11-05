@@ -34,6 +34,7 @@ namespace RealLifeOverhaul.Ui
     public sealed class MapLayersModel
     {
         public string Title, HideAllLabel;
+        public bool HideAllOff;    // no layer is on, so there is nothing to hide
         public MapLayer[] Layers = new MapLayer[0];
     }
 
@@ -57,10 +58,10 @@ namespace RealLifeOverhaul.Ui
         public const int OptionCommand = 5040, GoCommand = 5041, NorthCommand = 5042, CentreCommand = 5043, ZoomInCommand = 5044, ZoomOutCommand = 5045, TiltCommand = 5046,
             LayerCommand = 5047, HideAllCommand = 5048;
         public const float Button = UiTokens.Control;      // px: a map button
-        public const float LayersWidth = 288f;
+        public const float LayersWidth = 320f;
         private const float OptionWidth = 116f;
         private const float StripHeight = 64f;
-        private const float LayerRow = UiTokens.Control;
+        private const float LayerRow = 48f;   // two lines of a longer translation fit a row
         private static readonly byte RightRegion = 3, TopRegion = 4;
 
         // ------------------------------------------------------------------------------------------------- the route strip
@@ -108,11 +109,11 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The buttons' column height.</summary>
         public static float ButtonsHeight => 5f * Button + 4f * UiTokens.S2;
 
-        /// <summary>The map's buttons down the right edge, ending a gap over the status bar: north, centre on me, zoom in, zoom out, tilt.</summary>
+        /// <summary>The map's buttons down the right edge, ending a gap over the lane of the keys' chips: north, centre on me, zoom in, zoom out, tilt.</summary>
         public static void Buttons(UiScene s, UiAt at, MapButtonsModel m, UiFrame frame)
         {
             UiAt right = at.InRegion(RightRegion);
-            float x = frame.Width - UiTokens.S4 - Button, y = frame.BandY - UiTokens.S4 - ButtonsHeight;
+            float x = frame.Width - UiTokens.S4 - Button, y = frame.BandY - UiDraw.KeyChipHeight - UiTokens.S4 - ButtonsHeight;
             TextTile(s, right, x, y, m.North, false, NorthCommand);
             y += Button + UiTokens.S2;
             UiDraw.IconButton(s, right, x, y, Button, UiIcon.Locate, UiRole.None, CentreCommand, 0);
@@ -149,12 +150,13 @@ namespace RealLifeOverhaul.Ui
             UiAt on = right.In(panel);
             float hw = UiDraw.Snap(UiTextRules.Width(m.HideAllLabel, UiStyle.SmallStrong) + UiTokens.S3 * 2f);
             UiDraw.Icon(s, on, x + UiTokens.S4, y + (UiFrame.Strip - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Grid, UiRole.None, UiFlags.Middle);
-            UiDraw.TextMiddle(s, on, x + UiTokens.S4 + UiTokens.Icon + UiTokens.S2, y, UiFrame.Strip, LayersWidth - hw - UiTokens.S4 * 2f - UiTokens.Icon, UiStyle.SectionTitle, UiRole.AccentText, m.Title,
+            UiDraw.TextMiddle(s, on, x + UiTokens.S4 + UiTokens.Icon + UiTokens.S2, y, UiFrame.Strip, LayersWidth - hw - UiTokens.S4 * 2f - UiTokens.Icon,
+                UiStyle.SectionTitle, UiRole.AccentText, m.Title,
                 UiFlags.Label | UiFlags.Truncate);
             int link = UiDraw.Box(s, on, x + LayersWidth - hw - UiTokens.S2, y + (UiFrame.Strip - UiTokens.PairRow) / 2f, hw, UiTokens.PairRow, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
             UiDraw.TextMiddle(s, on.In(link), x + LayersWidth - hw - UiTokens.S2, y + (UiFrame.Strip - UiTokens.PairRow) / 2f, UiTokens.PairRow, hw - UiTokens.S3, UiStyle.SmallStrong,
-                UiRole.AccentText, m.HideAllLabel, UiFlags.Label | UiFlags.Right);
-            UiDraw.Node(s, on, x + LayersWidth - hw - UiTokens.S2, y + (UiFrame.Strip - UiTokens.PairRow) / 2f, hw, UiTokens.PairRow, HideAllCommand, 0, link);
+                m.HideAllOff ? UiRole.Muted : UiRole.AccentText, m.HideAllLabel, UiFlags.Label | UiFlags.Right);
+            UiDraw.Node(s, on, x + LayersWidth - hw - UiTokens.S2, y + (UiFrame.Strip - UiTokens.PairRow) / 2f, hw, UiTokens.PairRow, HideAllCommand, 0, link, m.HideAllOff);
             UiDraw.Box(s, on, x, y + UiFrame.Strip - UiTokens.Hairline, LayersWidth, UiTokens.Hairline, UiRole.Rule, UiRole.None, 0f, UiFlags.Decor | UiFlags.Chrome);
             float cy = y + UiFrame.Strip + UiTokens.S2;
             for (int i = 0; i < m.Layers.Length; i++)
@@ -163,8 +165,11 @@ namespace RealLifeOverhaul.Ui
                 int tile = UiDraw.Tile(s, on, x + UiTokens.S4, cy + (LayerRow - 32f) / 2f, 32f, l.Tint, false);
                 UiDraw.Icon(s, on.In(tile), x + UiTokens.S4 + 6f, cy + (LayerRow - 32f) / 2f + 6f, UiTokens.Icon, l.Icon, l.Tint, UiFlags.Middle | UiFlags.Centre, true);
                 float nx = x + UiTokens.S4 + 32f + UiTokens.S3, sw = 52f;
-                UiDraw.TextMiddle(s, on, nx, cy, LayerRow, x + LayersWidth - UiTokens.S4 - sw - nx - UiTokens.S2, UiStyle.Body, l.On && !l.Off ? UiRole.Text : UiRole.Text2, l.Name, UiFlags.Label | UiFlags.Truncate);
-                UiDraw.Switch(s, on, x + LayersWidth - UiTokens.S4 - sw, cy, sw, l.On, null, LayerCommand, i, l.Off);
+                float nw = x + LayersWidth - UiTokens.S4 - sw - nx - UiTokens.S2;
+                int lines = Math.Max(1, UiTextRules.Lines(l.Name, UiStyle.Body, nw, 2, out float widest));
+                float th = UiTextRules.WrappedHeight(l.Name, UiStyle.Body, nw, lines);
+                UiDraw.Text(s, on, nx, cy + (LayerRow - th) / 2f, nw, UiStyle.Body, l.On && !l.Off ? UiRole.Text : UiRole.Text2, l.Name, UiFlags.Label | UiFlags.Wrap | UiFlags.Middle, lines);
+                UiDraw.Switch(s, on, x + LayersWidth - UiTokens.S4 - sw, cy + (LayerRow - UiTokens.Control) / 2f, sw, l.On, null, LayerCommand, i, l.Off);
                 cy += LayerRow;
             }
         }

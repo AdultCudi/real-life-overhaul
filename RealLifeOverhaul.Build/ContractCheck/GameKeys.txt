@@ -558,7 +558,13 @@ character_customization_legs
 character_customization_shoes
 character_customization_skin_color
 character_customization_torso
+citymap_category_active_businesses
+citymap_category_activities
+citymap_category_jobs
+citymap_category_rentable
 citymap_category_special_buildings
+citymap_filter_hide_closed
+citymap_map_search_placeholder
 click_to_learn
 click_to_talk
 click_to_work
@@ -573,6 +579,7 @@ common_back
 common_balance
 common_blueprints
 common_building_type
+common_buildings_for_sale
 common_business
 common_business_name
 common_business_type
@@ -635,6 +642,7 @@ common_setdestination
 common_show_on_map
 common_show_warehouse
 common_subtotal
+common_subwaystation
 common_sunday
 common_thursday
 common_today

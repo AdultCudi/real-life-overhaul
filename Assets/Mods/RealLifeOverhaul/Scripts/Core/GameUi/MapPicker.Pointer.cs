@@ -142,6 +142,11 @@ namespace RealLifeOverhaul.GameUi
                 {
                     _shown = null;
                 }
+                if (KitOn)
+                {
+                    KitOn = false;
+                    KitHide?.Invoke(this);
+                }
                 MapPlaces.Quiet = false;
             }
             _root = null;

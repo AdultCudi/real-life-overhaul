@@ -34,6 +34,7 @@ namespace RealLifeOverhaul.Ui
                 .Test("reallife_ui_test_checkout", "reallife_ui_test_vehicle_buy", "reallife_ui_test_item_panel", "reallife_ui_test_cargo", "reallife_ui_test_wardrobe",
                     "reallife_ui_test_buy_switch")
                 .Test("reallife_ui_test_pause_menu", "reallife_ui_test_pause_switch")
+                .Test("reallife_ui_test_map_open", "reallife_ui_test_map_switch")
                 .Test("reallife_ui_test_econoview", "reallife_ui_test_econoview_loans", "reallife_ui_test_econoview_switch")
                 .Test("reallife_ui_test_persona", "reallife_ui_test_rivals", "reallife_ui_test_market", "reallife_ui_test_persona_switch", "reallife_ui_test_rivals_switch",
                     "reallife_ui_test_market_switch")
@@ -53,6 +54,8 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_test_ending", "reallife_ui_test_news_switch")
                 .Data(PlayTimeStore.Key)   // the time played in the city, for the pause menu's card (Ui/Pause/PlayTime)
                 .ResetData(PlayTime.Forget)
+                .Data(MapSaved.Key, MapBusy.Key)   // the city map's saved places and what the places looked at usually draw (Ui/MapDock/MapStoreGame)
+                .ResetData(MapStoreGame.Forget)
                 .Cleanup(() => UiDirector.RemoveAll("cleaned up"), 0);
         }
     }

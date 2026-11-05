@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using BAModAPI;
 using Helpers;
 
@@ -13,11 +12,9 @@ namespace RealLifeOverhaul.Nav
     /// </summary>
     internal static class NavMapFollow
     {
-        private const BindingFlags Hidden = BindingFlags.NonPublic | BindingFlags.Instance;
-
         private static bool _tried;
 
-        /// <summary>Wraps the queue's step the first time it is asked in a session; later asks do nothing.</summary>
+        /// <summary>Wraps the game's queue's step the first time it is asked in a session; later asks do nothing.</summary>
         internal static void Install(IModLogger logger)
         {
             if (_tried)
@@ -25,27 +22,33 @@ namespace RealLifeOverhaul.Nav
                 return;
             }
             _tried = true;
+            Install(logger, CityMapFilters.Work);
+        }
+
+        /// <summary>
+        /// Wraps the step of a queue given: the game's (CityMapFilters.Work), or in a check a replica of its class (WorkQueueStep). The contract says whether the queue
+        /// still has its step. True when it is counted from now on.
+        /// </summary>
+        internal static bool Install(IModLogger logger, object work)
+        {
             try
             {
-                DistributedWork<CityBuildingController> work = CityMapFilters.Work;
-                // the contract says whether the queue still has its step; the field is read on the closed type itself
-                FieldInfo field = GameContract.MapWork.Off ? null : typeof(DistributedWork<CityBuildingController>).GetField("_updateAction", Hidden);
-                var step = field != null && work != null ? field.GetValue(work) as Action<CityBuildingController> : null;
-                if (step == null)
+                if (!WorkQueueStep.Wrap<CityBuildingController>(work, GameContract.MapWork.Off, NavMapWork.Wrap))
                 {
                     logger?.Info("Navigation: the city map's look at its buildings is not as expected; the 2.5D city map reads the highlights when the game's queue has work, "
                                  + "when it ends, and at each mouse release.");
-                    return;
+                    return false;
                 }
-                field.SetValue(work, NavMapWork.Wrap(step));
                 NavMapWork.Following = true;
                 logger?.Info("Navigation: the 2.5D city map counts the buildings the game's filters work on, so a toggle whose work ends in one frame is seen too.");
+                return true;
             }
             catch (Exception e)
             {
                 logger?.Error(e);
                 logger?.Info("Navigation: the city map's look at its buildings could not be followed after the error above; the 2.5D city map reads the highlights when the game's "
                              + "queue has work, when it ends, and at each mouse release.");
+                return false;
             }
         }
     }

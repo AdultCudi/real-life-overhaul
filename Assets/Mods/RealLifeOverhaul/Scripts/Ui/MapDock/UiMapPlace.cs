@@ -184,31 +184,61 @@ namespace RealLifeOverhaul.Ui
             string save = m.Saved ? m.SavedLabel : m.SaveLabel;
             UiDraw.Button(s, at, x, y, half, h, m.RouteShown ? UiButtonKind.Chip : UiButtonKind.Secondary, m.DirectionsLabel, UiIcon.Navigation, UiAction.Count, null, DirectionsCommand, 0);
             UiDraw.Button(s, at, x + half + gap, y, w - half - gap, h, m.Saved ? UiButtonKind.Chip : UiButtonKind.Secondary, save, UiIcon.Bookmark, UiAction.Count, null, SaveCommand, 0);
-            UiDraw.Button(s, at, x, y + h + gap, w, h, UiButtonKind.Primary, m.DestinationLabel, UiIcon.None, UiAction.Alt, keys, DestinationCommand, 0, !m.CanDestination);
+            // With the route strip up, its Go is the screen's one main action (and owns the key): Set destination is a quiet button beside it.
+            UiDraw.Button(s, at, x, y + h + gap, w, h, m.RouteShown ? UiButtonKind.Secondary : UiButtonKind.Primary, m.DestinationLabel, UiIcon.None,
+                m.RouteShown ? UiAction.Count : UiAction.Alt, keys, DestinationCommand, 0, !m.CanDestination);
         }
 
-        /// <summary>The height the card needs: its head, the actions and tabs, and the overview whole, so a tab's body never moves the card.</summary>
+        /// <summary>The height the card needs: its head, the actions and tabs, and the body of the tab it shows (the overview whole, the reviews, the business rows).</summary>
         public static float Needed(MapPlaceModel m)
         {
             float iw = Width - UiTokens.S4 * 2f;
-            float need = UiFrame.Strip + UiTokens.S3 + Hero + UiTokens.S3 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Hero)) + UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)) + UiTokens.S2
+            float need = UiFrame.Strip + UiTokens.S3 + Hero + UiTokens.S3 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Hero)) + UiTokens.S1
+                + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)) + UiTokens.S2
                          + (m.Chips.Length > 0 ? UiTokens.Badge + UiTokens.S1 + UiTokens.S3 : 0f) + UiTokens.Control * 2f + UiTokens.S2 + UiTokens.S3
-                         + (m.Tabs.Length > 0 ? UiTokens.Control + UiTokens.S2 : 0f) + RowsHeight(m) + BusyHeight(m);
-            if (m.Reviews.Length > 0)
+                         + (m.Tabs.Length > 0 ? UiTokens.Control + UiTokens.S2 : 0f);
+            if (m.Tab == 1)
             {
-                need += UiTokens.S3 + UiTokens.PairRow + UiTokens.S1;
-                for (int i = 0; i < m.Reviews.Length && i < 2; i++)
+                need += m.Reviews.Length == 0
+                    ? UiTokens.S2 + UiDraw.Snap(UiTextRules.Lines(m.ReviewsEmpty, UiStyle.Body, iw, 3, out float widest) * UiTextRules.LineHeight(UiStyle.Body))
+                    : ReviewsHeight(m, iw);
+            }
+            else if (m.Tab == 2)
+            {
+                need += BusinessHeight(m);
+            }
+            else
+            {
+                need += RowsHeight(m) + BusyHeight(m);
+                if (m.Reviews.Length > 0)
                 {
-                    need += ReviewHeight(m.Reviews[i], iw);
+                    need += UiTokens.S3 + UiTokens.PairRow + UiTokens.S1;
+                    for (int i = 0; i < m.Reviews.Length && i < 2; i++)
+                    {
+                        need += ReviewHeight(m.Reviews[i], iw);
+                    }
                 }
             }
             return UiDraw.Snap(need + UiTokens.S4);
         }
 
+        private static float ReviewsHeight(MapPlaceModel m, float iw)
+        {
+            float content = 0f;
+            for (int i = 0; i < m.Reviews.Length; i++)
+            {
+                content += ReviewHeight(m.Reviews[i], iw - UiTokens.S4);
+            }
+            return content;
+        }
+
+        private static float BusinessHeight(MapPlaceModel m) => (string.IsNullOrEmpty(m.BusinessTitle) ? 0f : UiTokens.PairRow) + m.Business.Length * UiTokens.PairRow;
+
         // ------------------------------------------------------------------------------------------------- the overview
 
         private static float RowsHeight(MapPlaceModel m) => m.Rows.Length * UiTokens.PairRow;
-        private static float BusyHeight(MapPlaceModel m) => m.Busy.Length == 0 ? 0f : UiTokens.S3 + UiTokens.PairRow + UiTokens.S1 + BusyBars + UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
+        private static float BusyHeight(MapPlaceModel m) => m.Busy.Length == 0 ? 0f
+            : UiTokens.S3 + UiTokens.PairRow + UiTokens.S1 + BusyBars + UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
         private static float ReviewHeight(MapReview r, float w) => Math.Max(Avatar, UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body))) + UiTokens.S1
             + UiDraw.Snap(UiTextRules.WrappedHeight(r.Text, UiStyle.Body, w - Avatar - UiTokens.S3, 2)) + UiTokens.S3;
 
@@ -233,10 +263,10 @@ namespace RealLifeOverhaul.Ui
             if (m.Reviews.Length > 0 && used + UiTokens.S3 + UiTokens.PairRow <= bottom)
             {
                 cy += UiTokens.S3;
-                UiDraw.TextMiddle(s, at, ix, cy, UiTokens.PairRow, iw - UiTokens.S12 * 2f, UiStyle.SectionHeader, UiRole.Text, m.PeopleTitle, UiFlags.Label | UiFlags.Truncate);
-                if (!string.IsNullOrEmpty(m.PeopleAll))
+                float aw = string.IsNullOrEmpty(m.PeopleAll) ? 0f : UiDraw.Snap(UiTextRules.Width(m.PeopleAll, UiStyle.SmallStrong) + UiTokens.S3 * 2f);
+                UiDraw.TextMiddle(s, at, ix, cy, UiTokens.PairRow, iw - aw - (aw > 0f ? UiTokens.S2 : 0f), UiStyle.SectionHeader, UiRole.Text, m.PeopleTitle, UiFlags.Label | UiFlags.Truncate);
+                if (aw > 0f)
                 {
-                    float aw = UiDraw.Snap(UiTextRules.Width(m.PeopleAll, UiStyle.SmallStrong) + UiTokens.S3 * 2f);
                     int link = UiDraw.Box(s, at, ix + iw - aw, cy, aw, UiTokens.PairRow, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
                     UiDraw.TextMiddle(s, at.In(link), ix + iw - aw, cy, UiTokens.PairRow, aw - UiTokens.S3, UiStyle.SmallStrong, UiRole.AccentText, m.PeopleAll, UiFlags.Label | UiFlags.Right);
                     UiDraw.Node(s, at, ix + iw - aw, cy, aw, UiTokens.PairRow, AllCommand, 0, link);
@@ -275,7 +305,8 @@ namespace RealLifeOverhaul.Ui
             {
                 int v = Math.Max(0, Math.Min(100, m.Busy[i]));
                 float bh = Math.Max(UiTokens.S1, UiDraw.Snap(BusyBars * v / 100f));
-                UiDraw.Box(s, at, bx + i * (bw + gap), cy + BusyBars - bh, bw, bh, i == m.BusyNow ? UiRole.Accent : UiRole.Track, UiRole.None, UiTokens.RadiusSmall, i == m.BusyNow ? UiFlags.Selected : UiFlags.None);
+                UiDraw.Box(s, at, bx + i * (bw + gap), cy + BusyBars - bh, bw, bh, i == m.BusyNow ? UiRole.Accent : UiRole.Track, UiRole.None, UiTokens.RadiusSmall,
+                    i == m.BusyNow ? UiFlags.Selected : UiFlags.None);
             }
             cy += BusyBars + UiTokens.S1;
             for (int i = 0; i < n; i++)
@@ -284,7 +315,8 @@ namespace RealLifeOverhaul.Ui
                 if (hour % 3 == 0)
                 {
                     string label = hour.ToString("00", System.Globalization.CultureInfo.InvariantCulture);
-                    UiDraw.TextMiddle(s, at, bx + i * (bw + gap) - UiTokens.S2, cy, UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)), bw + UiTokens.S4, UiStyle.Small, UiRole.Muted, label, UiFlags.Centre);
+                    UiDraw.TextMiddle(s, at, bx + i * (bw + gap) - UiTokens.S2, cy, UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)), bw + UiTokens.S4, UiStyle.Small, UiRole.Muted,
+                        label, UiFlags.Centre);
                 }
             }
             return cy + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
@@ -317,7 +349,8 @@ namespace RealLifeOverhaul.Ui
             float ix = px + UiTokens.S4, iw = Width - UiTokens.S4 * 2f;
             if (m.Reviews.Length == 0)
             {
-                UiDraw.Text(s, at, ix, y + UiTokens.S2, iw, UiStyle.Body, UiRole.Text2, m.ReviewsEmpty, UiFlags.Wrap | UiFlags.Label, Math.Max(1, UiTextRules.Lines(m.ReviewsEmpty, UiStyle.Body, iw, 3, out float widest)));
+                UiDraw.Text(s, at, ix, y + UiTokens.S2, iw, UiStyle.Body, UiRole.Text2, m.ReviewsEmpty, UiFlags.Wrap | UiFlags.Label,
+                    Math.Max(1, UiTextRules.Lines(m.ReviewsEmpty, UiStyle.Body, iw, 3, out float widest)));
                 return;
             }
             float content = 0f;
@@ -355,10 +388,26 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.TextMiddle(s, at, ix, cy, UiTokens.PairRow, iw, UiStyle.SectionHeader, UiRole.Text, m.BusinessTitle, UiFlags.Label | UiFlags.Truncate);
                 cy += UiTokens.PairRow;
             }
-            for (int i = 0; i < m.Business.Length && cy + UiTokens.PairRow <= bottom + 0.5f; i++)
+            float content = m.Business.Length * UiTokens.PairRow;
+            if (content <= 0f)
+            {
+                return;
+            }
+            float view = Math.Max(UiTokens.S12, bottom - cy);
+            float offset = Math.Max(0f, Math.Min(m.Offset, Math.Max(0f, content - view)));
+            m.Offset = offset;
+            short clip = s.AddClip(px, cy, Width, Math.Min(view, content), offset);
+            s.Clips[clip].ContentHeight = content;
+            var inClip = new UiAt { Parent = -1, Clip = clip, Layer = at.Layer, Order = -1, Region = at.Region };
+            float ry = 0f;
+            for (int i = 0; i < m.Business.Length; i++)
             {
                 MapPlaceRow r = m.Business[i];
-                cy += UiDraw.InfoRow(s, at, ix, cy, iw, r.Label, r.Value, false, -1, 0, r.Ink == UiRole.None ? UiRole.Text : r.Ink);
+                ry += UiDraw.InfoRow(s, inClip, UiTokens.S4, ry, iw, r.Label, r.Value, false, -1, 0, r.Ink == UiRole.None ? UiRole.Text : r.Ink);
+            }
+            if (content > view + 0.5f)
+            {
+                UiDraw.ScrollThumb(s, at, px + Width - UiTokens.S1, cy, Math.Min(view, content), offset, content);
             }
         }
     }

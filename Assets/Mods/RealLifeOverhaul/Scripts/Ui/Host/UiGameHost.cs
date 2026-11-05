@@ -68,6 +68,9 @@ namespace RealLifeOverhaul.Ui
         /// <summary>True while the kit draws the screen.</summary>
         public bool Showing => _root != null && _root.activeSelf && _found != null && _found.gameObject.activeInHierarchy && !_classic;
 
+        /// <summary>True from the bind until the screen is given back: the kit has the screen, shown or not, and the game's own face is not the one the player gets.</summary>
+        public bool Bound => _root != null && !_classic;
+
         /// <summary>The kit screen it runs, or null before the bind.</summary>
         public IUiScreen Screen => _host != null ? _host.Screen : null;
 

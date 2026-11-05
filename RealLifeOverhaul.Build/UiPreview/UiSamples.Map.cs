@@ -8,14 +8,17 @@ internal static partial class UiSamples
 
     // ------------------------------------------------------------------------------------------------- the filters
 
+    // A name of the sample's own city (a bank, a bakery) is plain English; only the game's and the mod's words are keys.
+    private static string Say(UiWords t, string key, string english) => key.StartsWith("reallife_sample", System.StringComparison.Ordinal) ? english : t(key, english);
+
     private static MapRow Group(UiWords t, string key, string english, UiIcon icon, UiRole tint, int on, int total, bool collapsed, bool foreign = false) => new MapRow
     {
-        Kind = MapRowKind.Group, Name = t(key, english), Icon = icon, Tint = tint, OnCount = on, Total = total, On = on == total && total > 0, Collapsed = collapsed, Foreign = foreign
+        Kind = MapRowKind.Group, Name = Say(t, key, english), Icon = icon, Tint = tint, OnCount = on, Total = total, On = on == total && total > 0, Collapsed = collapsed, Foreign = foreign
     };
 
     private static MapRow Line(UiWords t, string key, string english, UiIcon icon, bool on, int count, bool locate = true, string note = null, bool off = false) => new MapRow
     {
-        Kind = MapRowKind.Line, Name = t(key, english), Icon = icon, On = on, Count = count, Locate = locate, Note = note, Off = off
+        Kind = MapRowKind.Line, Name = Say(t, key, english), Icon = icon, On = on, Count = count, Locate = locate, Note = note, Off = off
     };
 
     /// <summary>The rows of the map's filters as the game lists them: the groups in its order, three open and the rest folded.</summary>
@@ -26,7 +29,7 @@ internal static partial class UiSamples
             Group(t, "bizman_status", "Status", UiIcon.Check, UiRole.Ok, 2, 3, false),
             Line(t, "buildingresume_rented_by_you", "Rented by you", UiIcon.Key, true, 4),
             Line(t, "citymap_filter_hide_closed", "Hide closed businesses", UiIcon.Clock, true, -1, false),
-            Line(t, "citymap_filter_rival_rented", "Rented by Onyx Luxury", UiIcon.Flag, false, 11),
+            Line(t, "reallife_sample_rival_rented", "Rented by Onyx Luxury", UiIcon.Flag, false, 11),
             Group(t, "citymap_category_jobs", "Jobs", UiIcon.Briefcase, UiRole.None, 0, 3, true),
             Group(t, "citymap_category_rentable", "Buildings for rent", UiIcon.Building, UiRole.None, 3, 4, false),
             Line(t, "reallife_sample_retail", "Retail", UiIcon.Store, true, 38),
@@ -49,7 +52,7 @@ internal static partial class UiSamples
         if (foreign)
         {
             rows.Insert(4, Group(t, "reallife_sample_players", "Players", UiIcon.People, UiRole.None, 1, 1, false, true));
-            rows.Insert(5, Line(t, "reallife_sample_players_line", "Players", UiIcon.People, true, 4, true, t("reallife_map_other_mod", "Going Public")));
+            rows.Insert(5, Line(t, "reallife_sample_players_line", "Players", UiIcon.People, true, 4, true, t("reallife_map_other_mod", "Other mod")));
         }
         return rows.ToArray();
     }
@@ -89,9 +92,9 @@ internal static partial class UiSamples
     {
         return new MapPicked
         {
-            Icon = UiIcon.Coffee, Tint = UiRole.CatFood, Name = "Speedy Bites", Address = "214 5th Avenue, Garment District", Distance = t("reallife_map_distance_road", "1.2 km by road"),
+            Icon = UiIcon.Coffee, Tint = UiRole.CatFood, Name = "Speedy Bites", Address = "214 5th Avenue, Garment District", Distance = t("reallife_map_distance_road", "{distance} by road").Replace("{distance}", "1.2 km"),
             Chips = rival
-                ? new[] { new MapStateChip { Label = t("common_open", "Open"), Tone = UiRole.Ok }, new MapStateChip { Label = t("reallife_map_rival_of", "Rival: Onyx Luxury"), Tone = UiRole.Warn } }
+                ? new[] { new MapStateChip { Label = t("common_open", "Open"), Tone = UiRole.Ok }, new MapStateChip { Label = "Rival: Onyx Luxury", Tone = UiRole.Warn } }
                 : new[] { new MapStateChip { Label = t("common_open", "Open"), Tone = UiRole.Ok }, new MapStateChip { Label = t("buildingresume_rented_by_you", "Rented by you"), Tone = UiRole.Accent } },
             BlockLabel = t("reallife_map_picked", "Picked place"), ClearLabel = t("reallife_map_clear", "Clear"), LocateLabel = t("reallife_map_locate", "Locate"),
             DestinationLabel = t("common_setdestination", "Set destination"), CanDestination = true, CanDetails = true,
@@ -105,7 +108,7 @@ internal static partial class UiSamples
         var m = new MapPanelModel
         {
             Page = MapPage.Filters, Title = t("reallife_map_filters_title", "Map filters"), Icon = UiIcon.MapTrifold, SearchPlaceholder = t("citymap_map_search_placeholder", "Find a place..."),
-            Rail = MapRail(t, foreign), RailShown = 2, Chips = MapChips(t), ShowAll = true, ShowAllLabel = t("reallife_map_show_all", "Show all"), ShowAllCount = "11 of 31", ShowAllOn = true,
+            Rail = MapRail(t, foreign), RailShown = 2, Chips = MapChips(t), ShowAll = true, ShowAllLabel = t("reallife_map_show_all", "Show all"), ShowAllCount = t("reallife_map_on_of", "{on} of {total} on").Replace("{on}", "11").Replace("{total}", "31"), ShowAllOn = true,
             Rows = MapFilterRows(t, foreign), Picked = true, Place = MapPickedPlace(t, state == "foreign"),
             Prompts = new[]
             {
@@ -144,7 +147,7 @@ internal static partial class UiSamples
             case "taxi":
                 m.Note = t("reallife_map_taxi_note", "Pick a place to ride to. The taxi shows its price and time.");
                 m.Picked = true;
-                m.Place.DestinationLabel = t("reallife_map_taxi_go", "Taxi, 12 min, $14");
+                m.Place.DestinationLabel = "Taxi, 12 min, $14";   // the game's own words on its button
                 break;
             case "subway":
                 m.Page = MapPage.Subway;
@@ -168,7 +171,7 @@ internal static partial class UiSamples
                 m.Page = MapPage.Picker;
                 m.Title = t("reallife_map_choose_title", "Choose a place");
                 m.Icon = UiIcon.MapPin;
-                m.Note = t("reallife_map_choose_note", "Pick a stop for the bus to leave you at.");
+                m.Note = "Pick a stop for the bus to leave you at.";   // the owner's sentence about its choice
                 m.Rail = new MapRailItem[0];
                 m.Chips = new MapChip[0];
                 m.ShowAll = false;
@@ -178,7 +181,7 @@ internal static partial class UiSamples
                 {
                     Choice(t, lng ? "Broadway and West 42nd Street, Times Square northbound platform" : "Broadway and 42nd", lng ? "Midtown, 4 stops from here" : "Midtown", false),
                     Choice(t, "5th Avenue and 34th", "Garment District", false), Choice(t, "6th Avenue and 23rd", "Lower Manhattan", false),
-                    Choice(t, "Hudson Street", t("reallife_map_choose_far", "Too far from the line"), true), Choice(t, "Canal Street", "Lower Manhattan", false),
+                    Choice(t, "Hudson Street", "Too far from the line", true), Choice(t, "Canal Street", "Lower Manhattan", false),
                     Choice(t, "Madison Avenue and 59th", "Uptown", false), Choice(t, "Lexington and 86th", "Uptown", false), Choice(t, "Tenth Avenue and 30th", "Hell's Kitchen", false),
                 };
                 break;

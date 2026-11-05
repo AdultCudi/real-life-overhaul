@@ -273,7 +273,7 @@ namespace RealLifeOverhaul.Nav
         }
 
         // "4 min", or "5 h 43 min" over a hundred (the game's clock runs a minute a second, so a long way is hours of it).
-        private static string MinutesWords(int minutes)
+        internal static string MinutesWords(int minutes)
         {
             NavDestRules.Split(minutes, out int hours, out int rest);
             var plain = System.Globalization.CultureInfo.InvariantCulture;

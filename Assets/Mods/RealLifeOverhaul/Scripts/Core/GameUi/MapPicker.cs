@@ -40,6 +40,7 @@ namespace RealLifeOverhaul.GameUi
             public TMP_Text Text;
             public string ButtonKey;
             public string Name;       // what the search field looks for
+            public string Detail;     // the smaller line under it, or a note's words
             public int Id;
             public bool Note;
             public bool Enabled;
@@ -79,6 +80,8 @@ namespace RealLifeOverhaul.GameUi
         private int _pickId;            // the entry a click picked, for the owner's pick
         private Action<int> _pickWith;  // ...and the owner's pick as the click found it
         private Action _pickNow;        // made once: the owner's pick of it, through UiClone.Safe
+        private string _titleText, _query = string.Empty;   // the headline and the words typed, for the kit's face of the window
+        private int _fills;             // counts every filling, so a face of the kit can tell the entries changed
 
         public bool IsOpen { get; private set; }
 
@@ -233,8 +236,10 @@ namespace RealLifeOverhaul.GameUi
         {
             _used = 0;
             _marksUsed = 0;
+            _fills++;
             _icon = icon;
             _colour = colour;
+            _titleText = title;
             UiClone.Words(_title, title);
         }
 
@@ -340,6 +345,8 @@ namespace RealLifeOverhaul.GameUi
             row.Note = note;
             row.Enabled = enabled && !note;
             row.Name = name ?? string.Empty;
+            row.Detail = detail ?? string.Empty;
+            _fills++;
             row.HasPlace = hasPlace && !note;
             row.Place = place;
             row.Mark = -1;
@@ -507,14 +514,17 @@ namespace RealLifeOverhaul.GameUi
                     _cancel.Suffix = PlayerAction.Cancel.AsSuffix();   // the player's own binding, as the game's windows write it
                 }
                 _search.SetTextWithoutNotify(string.Empty);
+                _query = string.Empty;
                 _root.SetActive(true);   // its watch runs on it, so the map shut by any means closes it
+                KitOn = !Windowless && KitShow != null && KitShow(this);   // the kit draws the choice: the game's copy of a window stays unseen, as a windowless choice's
                 CanvasGroup group = _root.GetComponent<CanvasGroup>() ?? _root.AddComponent<CanvasGroup>();
-                group.alpha = Windowless ? 0f : 1f;   // windowless: the map and the markers, nothing of the window seen or clicked
-                group.blocksRaycasts = !Windowless;
-                group.interactable = !Windowless;
+                bool hidden = Windowless || KitOn;
+                group.alpha = hidden ? 0f : 1f;   // windowless: the map and the markers, nothing of the window seen or clicked
+                group.blocksRaycasts = !hidden;
+                group.interactable = !hidden;
             }
             Unpoint();
-            Filter(_search.text);
+            Filter(KitOn ? _query : _search.text);
             for (int i = 0; i < _marks.Count; i++)
             {
                 GameObject marker = _marks[i].Poi != null ? _marks[i].Poi.gameObject : null;
@@ -616,6 +626,11 @@ namespace RealLifeOverhaul.GameUi
             {
                 _shown = null;
             }
+            if (KitOn)
+            {
+                KitOn = false;
+                KitHide?.Invoke(this);
+            }
             Unpoint();
             for (int i = 0; i < _marks.Count; i++)
             {
@@ -642,6 +657,7 @@ namespace RealLifeOverhaul.GameUi
         private void Filter(string query)
         {
             string value = (query ?? string.Empty).Trim();
+            _query = value;
             bool all = value.Length == 0;
             for (int i = 0; i < _used; i++)
             {

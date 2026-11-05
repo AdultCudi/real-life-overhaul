@@ -1,5 +1,4 @@
 using System;
-using System.Reflection;
 using Helpers;
 
 namespace RealLifeOverhaul
@@ -14,8 +13,6 @@ namespace RealLifeOverhaul
     /// </summary>
     internal static class ClaimedMap
     {
-        private const BindingFlags Hidden = BindingFlags.NonPublic | BindingFlags.Instance;
-
         private static Action<CityBuildingController> _game;   // the game's own step
         private static bool _tried;
         private static bool _failed;
@@ -28,24 +25,32 @@ namespace RealLifeOverhaul
                 return;
             }
             _tried = true;
+            Keep(CityMapFilters.Work);
+        }
+
+        /// <summary>
+        /// Wraps the step of a queue given: the game's (CityMapFilters.Work), or in a check a replica of its class (WorkQueueStep). The contract says whether the queue still
+        /// has its step. A step that is ours already is left as it is.
+        /// </summary>
+        internal static void Keep(object work)
+        {
             try
             {
-                DistributedWork<CityBuildingController> work = CityMapFilters.Work;
-                // The contract says whether the queue still has its step; the field is read on the generic type itself.
-                FieldInfo field = GameContract.ClaimedRows.Off ? null : typeof(DistributedWork<CityBuildingController>).GetField("_updateAction", Hidden);
-                var step = field != null && work != null ? field.GetValue(work) as Action<CityBuildingController> : null;
-                if (step == null)
+                bool wrapped = WorkQueueStep.Wrap<CityBuildingController>(work, GameContract.ClaimedRows.Off, step =>
+                {
+                    if (step.Method.DeclaringType == typeof(ClaimedMap))
+                    {
+                        return step;   // already wrapped
+                    }
+                    _game = step;
+                    return Step;
+                });
+                if (!wrapped)
                 {
                     SpecialBuildings.Logger?.Info("Special buildings: the city map's look at its buildings is not as expected; "
                                                   + "the mod's buildings are put out of its rows of units to let when each look ends.");
                     return;
                 }
-                if (step.Method.DeclaringType == typeof(ClaimedMap))
-                {
-                    return;   // already wrapped
-                }
-                _game = step;
-                field.SetValue(work, new Action<CityBuildingController>(Step));
                 SpecialBuildings.Logger?.Info("Special buildings: the city map leaves the mod's buildings out of its rows of units to let and for sale, building by building.");
             }
             catch (Exception e)

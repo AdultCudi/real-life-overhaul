@@ -4,6 +4,7 @@ using BigAmbitions.Neighborhoods;
 using RealLifeOverhaul.Districts;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Fame;
+using RealLifeOverhaul.Population;
 using RealLifeOverhaul.Utilities;
 using UnityEngine;
 
@@ -33,6 +34,7 @@ namespace RealLifeOverhaul
                 DistrictBridges.Supply = Supply;
                 DistrictBridges.Internet = Internet;
                 DistrictBridges.Council = Council;
+                DistrictBridges.Residents = district => CityPopulation.District(district)?.People ?? -1;
                 News.ReportedAt -= Heard;
                 News.ReportedAt += Heard;
                 BreakIns.Happened -= BrokenInto;

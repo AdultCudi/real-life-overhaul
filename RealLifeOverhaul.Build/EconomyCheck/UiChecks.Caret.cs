@@ -40,7 +40,8 @@ internal static partial class Program
         { "FlareScreen", new[] { FlareFace.FieldCommand } },
         { "FinanceScreen", new[] { FinanceFace.AmountType } },
         { "BanksScreen", new[] { MoneyCommands.TypeField } },
-        { "OwnBankScreen", new[] { MoneyCommands.TypeField } }
+        { "OwnBankScreen", new[] { MoneyCommands.TypeField } },
+        { "MapLive", new[] { UiMapFilters.SearchCommand } }
     };
 
     private static void UiCaretChecks()

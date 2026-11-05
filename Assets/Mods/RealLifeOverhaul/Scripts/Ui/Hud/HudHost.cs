@@ -266,6 +266,9 @@ namespace RealLifeOverhaul.Ui
 
         private bool ModalUp => _modalRoot != null && _modalRoot.activeSelf;
 
+        /// <summary>The host of the modal piece while one is up, else null: whoever opened a piece asks whether it is still the one on show before it ends it.</summary>
+        public UiHost ModalHost => ModalUp ? _modal : null;
+
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);

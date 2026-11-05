@@ -39,11 +39,22 @@ namespace RealLifeOverhaul.Ui
                 TextMiddle(s, inside, tx - UiTokens.S3 - ww, y, h, ww, UiStyle.Body, disabled ? UiRole.Muted : UiRole.Text2, word,
                     UiFlags.Label | UiFlags.Right | (disabled ? UiFlags.Disabled : UiFlags.None));
             }
+            SwitchLook(s, inside, x + w, y, on, disabled);
+            return Node(s, at, x, y, w, h, command, arg, face, disabled);
+        }
+
+        /// <summary>
+        /// A switch's track and knob alone, the track ending at <paramref name="right"/>: for a row that is the target itself and shows its state this way, so the
+        /// switch makes no target of its own.
+        /// </summary>
+        public static void SwitchLook(UiScene s, UiAt at, float right, float y, bool on, bool disabled)
+        {
+            float h = UiTokens.Control;
+            float tx = right - TrackW;
             UiRole fill = disabled ? UiRole.Track : on ? UiRole.Accent : UiRole.Track;
-            int track = Box(s, inside, tx, y + (h - TrackH) / 2f, TrackW, TrackH, fill, UiRole.None, TrackH / 2f, UiFlags.Circle);
+            int track = Box(s, at, tx, y + (h - TrackH) / 2f, TrackW, TrackH, fill, UiRole.None, TrackH / 2f, UiFlags.Circle);
             float kx = on ? tx + TrackW - UiTokens.S1 - Knob : tx + UiTokens.S1;
             Circle(s, at.In(track), kx, y + (h - Knob) / 2f, Knob, Knob, on && !disabled ? UiRole.OnAccent : UiRole.Text2, UiFlags.Middle);
-            return Node(s, at, x, y, w, h, command, arg, face, disabled);
         }
 
         /// <summary>

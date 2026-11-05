@@ -70,7 +70,7 @@ namespace RealLifeOverhaul.Ui
                 Rail(s, at.InRegion(RailRegion), m, buttons, x, y);
                 px = x + UiMapFilters.Menu + UiTokens.S2;
             }
-            float h = UiMapFilters.PanelHeight(frame);
+            float h = Math.Min(UiMapFilters.PanelHeight(frame), Needed(m));
             UiAt column = at.InRegion(PanelRegion);
             int panel = UiDraw.Box(s, column, px, y, Width, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt on = column.In(panel);
@@ -84,7 +84,7 @@ namespace RealLifeOverhaul.Ui
                 cy += UiTokens.S2 + UiDraw.Snap(lines * UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S1;
             }
             // The sections in the order of the mockup; each is kept only while the table keeps its least rows (three) under them.
-            float least = TableHead(m) + RowHeight * 3f + UiTokens.S2;
+            float least = TableHead(m) + RowHeight * Math.Min(3, m.Rows.Length) + UiTokens.S2;
             cy = Band(s, on, px, cy, m.AverageTitle, m.Average, ix, iw);
             if (m.ChartShares != null && m.ChartShares.Length > 0 && bottom - cy - ChartHeight(m) - LegendHeight(m) - ChosenHeight(m) >= least)
             {
@@ -101,6 +101,26 @@ namespace RealLifeOverhaul.Ui
             Table(s, on, m, px, cy, bottom);
             return px + Width;
         }
+
+        /// <summary>The height the page needs for what it holds: every section whole and the table's every row; more than the screen has, it scrolls the table.</summary>
+        public static float Needed(MapDistrictModel m)
+        {
+            float iw = Width - UiTokens.S4 * 2f;
+            float need = UiFrame.Strip;
+            if (!string.IsNullOrEmpty(m.About))
+            {
+                int lines = UiTextRules.Lines(m.About, UiStyle.Small, iw, 2, out float widest);
+                need += UiTokens.S2 + UiDraw.Snap(lines * UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S1;
+            }
+            need += BandHeight(m.Average);
+            need += m.ChartShares != null && m.ChartShares.Length > 0 ? ChartHeight(m) : 0f;
+            need += LegendHeight(m);
+            need += ChosenHeight(m);
+            need += TableHead(m) + m.Rows.Length * RowHeight + UiTokens.S2;
+            return UiDraw.Snap(need);
+        }
+
+        private static float BandHeight(UiInfoRow[] rows) => rows == null || rows.Length == 0 ? 0f : UiTokens.S2 + UiTokens.PairRow * (1 + rows.Length) + UiTokens.S2 + UiTokens.S1;
 
         // ------------------------------------------------------------------------------------------------- the rail
 
@@ -175,7 +195,8 @@ namespace RealLifeOverhaul.Ui
         }
 
         private static float LegendHeight(MapDistrictModel m) => string.IsNullOrEmpty(m.LegendTitle) ? 0f
-            : UiTokens.S3 + UiTokens.PairRow + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)) + UiTokens.S2 + UiDraw.Snap(UiTokens.S2 + UiTokens.S1 + UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S3 + UiTokens.S1;
+            : UiTokens.S3 + UiTokens.PairRow + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)) + UiTokens.S2
+              + UiDraw.Snap(UiTokens.S2 + UiTokens.S1 + UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S3 + UiTokens.S1;
 
         private static float Legend(UiScene s, UiAt at, MapDistrictModel m, float px, float y, float ix, float iw)
         {
@@ -198,7 +219,7 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Band(s, at, px, y, Width, h);
             float cy = y + UiTokens.S3;
             float nw = UiDraw.Snap(UiTextRules.Width(m.ChosenName, UiStyle.Title) + UiTokens.S1);
-            float lw = string.IsNullOrEmpty(m.ShowLabel) ? 0f : UiDraw.Snap(UiTextRules.Width(m.ShowLabel, UiStyle.SmallStrong) + UiTokens.IconSmall + UiTokens.S3 * 2f);
+            float lw = string.IsNullOrEmpty(m.ShowLabel) ? 0f : UiDraw.Snap(UiTextRules.Width(m.ShowLabel, UiStyle.SmallStrong) + UiTokens.IconSmall + UiTokens.S1 + UiTokens.S3 * 2f);
             float cw = string.IsNullOrEmpty(m.ChosenRank) ? 0f : UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(m.ChosenRank, UiStyle.SmallStrong) + UiTokens.S1);
             nw = Math.Min(nw, iw - lw - cw - UiTokens.S3 * 2f);
             UiDraw.TextMiddle(s, at, ix, cy, UiTokens.PairRow, nw, UiStyle.Title, UiRole.Text, m.ChosenName, UiFlags.Truncate);
@@ -211,7 +232,8 @@ namespace RealLifeOverhaul.Ui
                 int link = UiDraw.Box(s, at, ix + iw - lw, cy, lw, UiTokens.PairRow, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
                 UiAt inside = at.In(link);
                 UiDraw.Icon(s, inside, ix + iw - lw + UiTokens.S3, cy + (UiTokens.PairRow - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Locate, UiRole.AccentText, UiFlags.Middle);
-                UiDraw.TextMiddle(s, inside, ix + iw - lw + UiTokens.S3 + UiTokens.IconSmall + UiTokens.S1, cy, UiTokens.PairRow, lw - UiTokens.S3 * 2f - UiTokens.IconSmall - UiTokens.S1, UiStyle.SmallStrong,
+                UiDraw.TextMiddle(s, inside, ix + iw - lw + UiTokens.S3 + UiTokens.IconSmall + UiTokens.S1, cy, UiTokens.PairRow,
+                    lw - UiTokens.S3 * 2f - UiTokens.IconSmall - UiTokens.S1, UiStyle.SmallStrong,
                     UiRole.AccentText, m.ShowLabel, UiFlags.Label | UiFlags.Right);
                 UiDraw.Node(s, at, ix + iw - lw, cy, lw, UiTokens.PairRow, ShowCommand, 0, link);
             }
@@ -235,18 +257,22 @@ namespace RealLifeOverhaul.Ui
             float cy = y + UiTokens.S3;
             UiDraw.TextMiddle(s, at, ix, cy, UiTokens.PairRow, iw, UiStyle.SectionHeader, UiRole.Text, m.TableTitle, UiFlags.Label | UiFlags.Truncate);
             cy += UiTokens.PairRow + UiTokens.S1;
-            float empty = Math.Min(UiDraw.Snap(UiTextRules.Width(m.ColEmpty, UiStyle.SmallStrong) + UiTokens.S2), 60f);
+            // A layer the share standing empty means nothing for has no such column: its room goes to the figures' columns.
+            float empty = string.IsNullOrEmpty(m.ColEmpty) ? 0f : Math.Min(UiDraw.Snap(UiTextRules.Width(m.ColEmpty, UiStyle.SmallStrong) + UiTokens.S2), 60f);
             float month = 84f, figure = 76f, rank = 24f;
             float emptyX = ix + iw - empty, monthX = emptyX - month, figureX = monthX - figure, nameX = ix + rank + UiTokens.S2 + UiTokens.S3 + UiTokens.S3;
             float hh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
             UiDraw.TextMiddle(s, at, nameX, cy, hh, figureX - nameX, UiStyle.SmallStrong, UiRole.Muted, m.ColDistrict, UiFlags.Label | UiFlags.Truncate);
             UiDraw.TextMiddle(s, at, figureX, cy, hh, figure, UiStyle.SmallStrong, UiRole.Muted, m.ColFigure, UiFlags.Label | UiFlags.Right | UiFlags.Truncate);
             UiDraw.TextMiddle(s, at, monthX, cy, hh, month, UiStyle.SmallStrong, UiRole.Muted, m.ColMonth, UiFlags.Label | UiFlags.Right | UiFlags.Truncate);
-            UiDraw.TextMiddle(s, at, emptyX, cy, hh, empty, UiStyle.SmallStrong, UiRole.Muted, m.ColEmpty, UiFlags.Label | UiFlags.Right | UiFlags.Truncate);
+            if (empty > 0f)
+            {
+                UiDraw.TextMiddle(s, at, emptyX, cy, hh, empty, UiStyle.SmallStrong, UiRole.Muted, m.ColEmpty, UiFlags.Label | UiFlags.Right | UiFlags.Truncate);
+            }
             cy += hh + UiTokens.S2;
             int rows = m.Rows.Length;
             float room = Math.Max(0f, bottom - cy - UiTokens.S2);
-            float viewH = Math.Max(RowHeight, (float)Math.Floor(room / RowHeight) * RowHeight);
+            float viewH = Math.Max(RowHeight, (float)Math.Floor(room / RowHeight + 0.001f) * RowHeight);
             float content = rows * RowHeight;
             float offset = m.Offset;
             if (m.Reveal >= 0 && m.Reveal < rows)
@@ -277,25 +303,28 @@ namespace RealLifeOverhaul.Ui
                 UiAt arriving = inClip.Arriving(r - first);
                 int face = UiDraw.Box(s, arriving, 0f, ry, Width, RowHeight, d.Chosen ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusLarge, d.Chosen ? UiFlags.Selected : UiFlags.None);
                 UiAt inside = arriving.In(face);
-                UiDraw.TextMiddle(s, inside, cix, ry, RowHeight, rank, UiStyle.Small, UiRole.Muted, (r + 1).ToString(System.Globalization.CultureInfo.InvariantCulture), UiFlags.Right);
+                UiDraw.TextMiddle(s, inside, cix, ry, RowHeight, rank, UiStyle.Small, d.Chosen ? UiRole.Text : UiRole.Muted, (r + 1).ToString(System.Globalization.CultureInfo.InvariantCulture),
+                    UiFlags.Right);
                 UiDraw.Box(s, inside, cix + rank + UiTokens.S2, ry + (RowHeight - UiTokens.StatusDot - UiTokens.S1) / 2f, UiTokens.StatusDot + UiTokens.S1, UiTokens.StatusDot + UiTokens.S1,
                     d.Swatch == UiRole.None ? UiRole.Track : d.Swatch, UiRole.None, UiTokens.RadiusSmall, UiFlags.Middle);
                 UiDraw.TextMiddle(s, inside, cNameX, ry, RowHeight, cFigureX - cNameX, UiStyle.Body, UiRole.Text, d.Name, UiFlags.Truncate);
-                UiDraw.TextMiddle(s, inside, cFigureX, ry, RowHeight, figure, UiStyle.Body, d.Swatch == UiRole.None ? UiRole.Muted : UiRole.Text, d.Figure, UiFlags.Right | UiFlags.Truncate);
+                UiDraw.TextMiddle(s, inside, cFigureX, ry, RowHeight, figure, UiStyle.Body, d.Swatch == UiRole.None && !d.Chosen ? UiRole.Muted : UiRole.Text, d.Figure,
+                    UiFlags.Right | UiFlags.Truncate);
                 if (!string.IsNullOrEmpty(d.Month))
                 {
-                    UiRole tone = d.MonthTone == UiRole.Ok ? UiRole.OkText : d.MonthTone == UiRole.Danger ? UiRole.DangerText : UiRole.Text2;
+                    UiRole tone = d.MonthTone == UiRole.Ok ? UiRole.OkText : d.MonthTone == UiRole.Danger ? UiRole.DangerText : d.Chosen ? UiRole.Text : UiRole.Text2;
                     float mw = UiDraw.Snap(UiTextRules.Width(d.Month, UiStyle.Small) + UiTokens.S1);
-                    UiDraw.TextMiddle(s, inside, cMonthX + month - mw, ry, RowHeight, mw, UiStyle.Small, tone, d.Month, UiFlags.Right | UiFlags.Truncate);
                     if (d.MonthSign != 0)
                     {
+                        // The arrow first, so the words beside it are the next thing laid out (the rule that an arrow agrees with its words reads them so).
                         UiDraw.Icon(s, inside, cMonthX + month - mw - UiTokens.IconSmall - UiTokens.S1, ry + (RowHeight - UiTokens.IconSmall) / 2f, UiTokens.IconSmall,
-                            d.MonthSign > 0 ? UiIcon.TrendUp : UiIcon.TrendDown, d.MonthTone == UiRole.None ? UiRole.Muted : d.MonthTone, UiFlags.Middle);
+                            d.MonthSign > 0 ? UiIcon.TrendUp : UiIcon.TrendDown, d.MonthTone == UiRole.None ? (d.Chosen ? UiRole.Text : UiRole.Muted) : d.MonthTone, UiFlags.Middle);
                     }
+                    UiDraw.TextMiddle(s, inside, cMonthX + month - mw, ry, RowHeight, mw, UiStyle.Small, tone, d.Month, UiFlags.Right | UiFlags.Truncate);
                 }
                 if (!string.IsNullOrEmpty(d.Empty))
                 {
-                    UiDraw.TextMiddle(s, inside, cEmptyX, ry, RowHeight, empty, UiStyle.Small, UiRole.Text2, d.Empty, UiFlags.Right | UiFlags.Truncate);
+                    UiDraw.TextMiddle(s, inside, cEmptyX, ry, RowHeight, empty, UiStyle.Small, d.Chosen ? UiRole.Text : UiRole.Text2, d.Empty, UiFlags.Right | UiFlags.Truncate);
                 }
                 UiDraw.Node(s, inClip, 0f, ry, Width, RowHeight, RowCommand, r, face, false, list, r);
             }

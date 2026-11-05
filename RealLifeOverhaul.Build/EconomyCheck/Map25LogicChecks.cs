@@ -300,7 +300,8 @@ internal static partial class Program
         // 6b. the game's look at its buildings is counted, so work done in the frame it began in is seen too
         string follow = ModSource(@"Navigation\NavMapFollow.cs"), contract = ModSource(@"Core\GameContract.cs");
         Check(lightsBody.Contains("NavMapWork.Took(") && lightsBody.Contains("NavMapWork.Following") && lightsBody.Contains("Input.GetMouseButtonUp(0)") && Map25Body(map, "public static NavMap25 Make(").Contains("NavMapFollow.Install(")
-              && follow.Contains("GameContract.MapWork.Off") && follow.Contains("NavMapWork.Wrap(") && follow.Contains("\"_updateAction\"") && follow.Contains("NavMapWork.Following = true;")
+              && follow.Contains("GameContract.MapWork.Off") && follow.Contains("WorkQueueStep.Wrap<") && follow.Contains("NavMapWork.Wrap") && ModSource(@"Core\WorkQueueStep.cs").Contains("\"_updateAction\"")
+              && follow.Contains("NavMapWork.Following = true;")
               && contract.Contains("ContractBook.Part(\"map_work\"") && contract.Contains("On(ClaimedRows, MapWork)"),
             "2.5D city map: the game's look at its buildings is counted by a step wrapped round the game's own (the contract names the piece), so work done in the frame it began in starts a pass too, and a game whose queue is not as expected falls back to a pass at every mouse release");
 

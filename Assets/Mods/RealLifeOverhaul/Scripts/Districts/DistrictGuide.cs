@@ -19,7 +19,7 @@ namespace RealLifeOverhaul.Districts
                 .About("reallife_guide_districtview_about").Help("reallife_guide_districtview")
                 .Fact("dv_layers", () => DistrictRules.Layers.ToString(Inv))
                 .Owns(Settings.DistrictViewId)
-                .Data(DistrictLog.Key)
+                .Data(DistrictLog.Key, DistrictMonths.Key)
                 .Objects(DistrictPanel.ObjectName)
                 .Test("reallife_dv_test_open", "reallife_dv_test_crime")
                 .Fact("dv_crime_days", () => DistrictRules.CrimeDays.ToString(Inv))

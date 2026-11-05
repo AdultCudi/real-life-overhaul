@@ -17,6 +17,8 @@ internal static partial class Program
     private static void Map5Checks()
     {
         Map5MinimapChecks();
+        Map5RuleChecks();
+        WorkQueueChecks();   // the wraps on the game's queue of work on the city map's buildings, against replicas of its class
     }
 
     // ------------------------------------------------------------------------------------------------- the minimap's destination block

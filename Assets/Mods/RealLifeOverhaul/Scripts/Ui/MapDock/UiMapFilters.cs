@@ -147,6 +147,7 @@ namespace RealLifeOverhaul.Ui
         private const float PickedTile = 64f;
         private const byte RailRegion = 1, PanelRegion = 2;
         private const int ResultsMost = 5;
+        private const int MostRows = 12;                   // rows in view at most: a taller screen gets a dock no taller, so the d-pad has few enough targets (UiCheckRules.MostTargets)
 
         /// <summary>The dock as a screen of its own over the map: its panel at the top left, with the status bar and its prompts.</summary>
         public static void Lay(UiScene s, MapPanelModel m, UiFrame frame, bool dark, IUiKeys keys)
@@ -247,7 +248,10 @@ namespace RealLifeOverhaul.Ui
             {
                 need += UiTokens.Control + UiTokens.S1;
             }
-            need += m.Rows.Length > 0 ? m.Rows.Length * RowStep(m) : !string.IsNullOrEmpty(m.Empty) ? UiTokens.S4 + UiDraw.Snap(UiTextRules.Lines(m.Empty, UiStyle.Body, Width - UiTokens.S4 * 2f, 4, out float widest2) * UiTextRules.LineHeight(UiStyle.Body)) + UiTokens.S4 : 0f;
+            need += m.Rows.Length > 0 ? Math.Min(m.Rows.Length, MostRows) * RowStep(m)
+                : !string.IsNullOrEmpty(m.Empty)
+                    ? UiTokens.S4 + UiDraw.Snap(UiTextRules.Lines(m.Empty, UiStyle.Body, Width - UiTokens.S4 * 2f, 4, out float widest2) * UiTextRules.LineHeight(UiStyle.Body)) + UiTokens.S4
+                    : 0f;
             need += UiTokens.S2;
             if (m.Picked)
             {
@@ -275,7 +279,7 @@ namespace RealLifeOverhaul.Ui
                 int node = UiDraw.IconButton(s, on, cx, cy, Cell, m.Rail[i].Icon, m.Rail[i].Tint, RailCommand, i, i == m.RailShown);
                 if (m.Rail[i].Count > 0)
                 {
-                    UiDraw.Badge(s, on, cx + Cell + UiTokens.S1, cy - UiTokens.S1, m.Rail[i].Count, i == m.RailShown);
+                    UiDraw.Badge(s, on, cx + Cell + UiTokens.S1, cy - UiTokens.S1, m.Rail[i].Count, i == m.RailShown, UiFlags.Overflow);
                 }
                 if (i == m.RailShown)
                 {
@@ -344,7 +348,12 @@ namespace RealLifeOverhaul.Ui
                     cx = x;
                     cy += UiTokens.Chip + UiTokens.S2;
                 }
-                UiDraw.Button(s, at, cx, cy, cw, UiTokens.Chip, m.Chips[i].On ? UiButtonKind.Primary : UiButtonKind.Chip, m.Chips[i].Label, m.Chips[i].Icon, UiAction.Count, null, ChipCommand, i);
+                int chip = UiDraw.Button(s, at, cx, cy, cw, UiTokens.Chip, m.Chips[i].On ? UiButtonKind.Primary : UiButtonKind.Chip, m.Chips[i].Label, m.Chips[i].Icon, UiAction.Count, null,
+                    ChipCommand, i);
+                if (m.Chips[i].On)
+                {
+                    s.Items[s.Nodes[chip].Face].Flags |= UiFlags.Selected;   // chosen, not the screen's main action
+                }
                 cx += cw + UiTokens.S2;
             }
             return cy - y + UiTokens.Chip;
@@ -384,7 +393,7 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             float step = RowStep(m);
-            float viewH = Math.Max(step, (float)Math.Floor(room / step) * step);   // whole rows, never a sliver of one
+            float viewH = Math.Max(step, Math.Min((float)Math.Floor(room / step) * step, MostRows * step));   // whole rows, never a sliver of one
             float content = rows * step;
             float offset = m.Offset;
             if (m.Reveal >= 0 && m.Reveal < rows)
@@ -428,10 +437,12 @@ namespace RealLifeOverhaul.Ui
                     float sx = w - pad - SwitchBox;
                     float cw = UiDraw.Snap(UiTextRules.Width(CountOf(r), UiStyle.Small) + UiTokens.S1);
                     float nx = gx + UiTokens.Icon + UiTokens.S2;
-                    UiDraw.TextMiddle(s, inside, nx, y, h, sx - cw - UiTokens.S4 - nx, UiStyle.SectionHeader, UiRole.Text2, r.Name, UiFlags.Label | UiFlags.Truncate);
+                    UiDraw.TextMiddle(s, inside, nx, y, h, sx - cw - UiTokens.S4 - nx, UiStyle.SmallStrong, UiRole.Text2, r.Name.ToUpperInvariant(), UiFlags.Label | UiFlags.Truncate);
                     UiDraw.TextMiddle(s, inside, sx - cw - UiTokens.S2, y, h, cw, UiStyle.Small, UiRole.Muted, CountOf(r), UiFlags.Right | UiFlags.Truncate);
                     int n = UiDraw.Node(s, at, 0f, y, w, h, GroupCommand, index, row, false, list, index);
-                    int all = UiDraw.Switch(s, at, sx, y, SwitchBox, r.On, null, GroupAllCommand, index, r.Off);
+                    int all = UiDraw.Switch(s, inside, sx, y, SwitchBox, r.On, null, GroupAllCommand, index, r.Off);
+                    s.Nodes[all].List = list;
+                    s.Nodes[all].Index = index;
                     s.Nodes[all].Left = n;
                     s.Nodes[n].Right = all;
                     return;
@@ -461,18 +472,15 @@ namespace RealLifeOverhaul.Ui
                     int locate = -1;
                     if (r.Locate)
                     {
-                        locate = UiDraw.IconButton(s, inside, lx, y + (h - UiTokens.MinTarget) / 2f, UiTokens.MinTarget, UiIcon.Locate, UiRole.None, LocateCommand, index, false, UiAction.Count, false, true);
+                        locate = UiDraw.IconButton(s, inside, lx, y + (h - UiTokens.MinTarget) / 2f, UiTokens.MinTarget, UiIcon.Locate, UiRole.None, LocateCommand, index, false,
+                            UiAction.Count, false, true);
                     }
-                    int sw = UiDraw.Switch(s, at, sx, y, SwitchBox, r.On, null, LineCommand, index, r.Off);
-                    s.Nodes[sw].List = list;
-                    s.Nodes[sw].Index = index;
-                    s.Nodes[n].Right = locate >= 0 ? locate : sw;
+                    UiDraw.SwitchLook(s, inside, sx + SwitchBox, y, r.On, r.Off);   // the row is the target: it toggles, the switch shows how it stands
                     if (locate >= 0)
                     {
+                        s.Nodes[n].Right = locate;
                         s.Nodes[locate].Left = n;
-                        s.Nodes[locate].Right = sw;
                     }
-                    s.Nodes[sw].Left = locate >= 0 ? locate : n;
                     return;
                 }
                 case MapRowKind.Station:
@@ -558,7 +566,8 @@ namespace RealLifeOverhaul.Ui
             float clear = UiDraw.Snap(UiTextRules.Width(p.ClearLabel, UiStyle.SmallStrong) + UiTokens.S3 * 2f);
             UiDraw.TextMiddle(s, at, ix, cy, UiTokens.PairRow, iw - clear, UiStyle.SectionHeader, UiRole.Text, p.BlockLabel, UiFlags.Label | UiFlags.Truncate);
             int link = UiDraw.Box(s, at, ix + iw - clear + UiTokens.S3, cy, clear - UiTokens.S3, UiTokens.PairRow, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
-            UiDraw.TextMiddle(s, at.In(link), ix + iw - clear + UiTokens.S3, cy, UiTokens.PairRow, clear - UiTokens.S3, UiStyle.SmallStrong, UiRole.AccentText, p.ClearLabel, UiFlags.Label | UiFlags.Right);
+            UiDraw.TextMiddle(s, at.In(link), ix + iw - clear + UiTokens.S3, cy, UiTokens.PairRow, clear - UiTokens.S3, UiStyle.SmallStrong, UiRole.AccentText, p.ClearLabel,
+                UiFlags.Label | UiFlags.Right);
             UiDraw.Node(s, at, ix + iw - clear, cy, clear, UiTokens.PairRow, PickedClearCommand, 0, link);
             cy += UiTokens.PairRow + UiTokens.S1;
             // The picture's place: the type's glyph on the type's colour until the game or the mod holds a picture of the place.

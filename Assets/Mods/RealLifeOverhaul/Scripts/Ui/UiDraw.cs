@@ -117,13 +117,13 @@ namespace RealLifeOverhaul.Ui
             return s.Add(ref item);
         }
 
-        /// <summary>A count in a badge, at a box's right edge from x; returns its width.</summary>
-        public static float Badge(UiScene s, UiAt at, float right, float y, int count, bool loud)
+        /// <summary>A count in a badge, at a box's right edge from x; returns its width. A badge over the corner of a tile says so with <see cref="UiFlags.Overflow"/>.</summary>
+        public static float Badge(UiScene s, UiAt at, float right, float y, int count, bool loud, UiFlags more = UiFlags.None)
         {
             string words = count > 99 ? "99+" : count.ToString(System.Globalization.CultureInfo.InvariantCulture);
             float w = Math.Max(UiTokens.Badge, Snap(UiTextRules.Width(words, UiStyle.Badge) + UiTokens.S2 * 2f));
             float x = right - w;
-            int b = Box(s, at, x, y, w, UiTokens.Badge, loud ? UiRole.Accent : UiRole.Notice, UiRole.None, UiTokens.Badge / 2f, UiFlags.Circle | UiFlags.Right);
+            int b = Box(s, at, x, y, w, UiTokens.Badge, loud ? UiRole.Accent : UiRole.Notice, UiRole.None, UiTokens.Badge / 2f, UiFlags.Circle | UiFlags.Right | more);
             TextMiddle(s, at.In(b), x, y, UiTokens.Badge, w, UiStyle.Badge, loud ? UiRole.OnAccent : UiRole.NoticeText, words, UiFlags.Centre);
             return w;
         }
