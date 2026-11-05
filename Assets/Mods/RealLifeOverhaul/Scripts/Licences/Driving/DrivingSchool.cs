@@ -70,6 +70,13 @@ namespace RealLifeOverhaul
             return service == SchoolService.TheoryHeavy || service == SchoolService.LessonHeavy || service == SchoolService.TestHeavy;
         }
 
+        /// <summary>True for a lesson or a driven test: the services that take the school's car out on the road.</summary>
+        public static bool Drives(SchoolService service)
+        {
+            return service == SchoolService.LessonCar || service == SchoolService.TestCar || service == SchoolService.LessonVan || service == SchoolService.TestVan
+                   || service == SchoolService.LessonHeavy || service == SchoolService.TestHeavy;
+        }
+
         public static int Fee(SchoolService service)
         {
             switch (service)
@@ -187,6 +194,10 @@ namespace RealLifeOverhaul
                             : null;
                         break;
                 }
+            }
+            if (reasonKey == null && Drives(service))
+            {
+                reasonKey = LessonRules.Refusal(GoingPublic.TrafficMirrored, true);   // a guest's traffic is the host's: said in the list, before the fee is asked for
             }
             if (reasonKey == null && !Licences.Affords(Fee(service)))
             {

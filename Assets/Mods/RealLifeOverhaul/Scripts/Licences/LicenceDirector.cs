@@ -647,8 +647,7 @@ namespace RealLifeOverhaul
 
         private static bool Drives(SchoolService service)
         {
-            return service == SchoolService.LessonCar || service == SchoolService.TestCar || service == SchoolService.LessonVan || service == SchoolService.TestVan
-                   || service == SchoolService.LessonHeavy || service == SchoolService.TestHeavy;
+            return DrivingSchool.Drives(service);
         }
 
         private static LicenceClass DrivenClass(SchoolService service)
@@ -661,7 +660,7 @@ namespace RealLifeOverhaul
         // What Take answers when nothing was paid.
         private static readonly string[] RefusalKeys =
         {
-            "reallife_school_no_money", "reallife_lic_no_busy", "reallife_lic_no_on_foot", "reallife_lic_no_roads",
+            "reallife_school_no_money", "reallife_lic_no_busy", "reallife_lic_no_on_foot", LessonRules.NoRoadsKey, LessonRules.GuestKey,
             TestRouteRules.NoSpotKey, TestRouteRules.NoRouteKey, TestRouteRules.ClosedKey, TestCar.NoTruckKey
         };
 
