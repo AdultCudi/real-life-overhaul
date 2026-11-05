@@ -21,8 +21,9 @@ namespace RealLifeOverhaul.Economy.Brands
             "reallife_brand_answer_yes", "reallife_brand_answer_dear", "reallife_brand_answer_capital", "reallife_brand_answer_territory", "reallife_brand_answer_full"
         };
         public static readonly string[] ChainKeys = { "reallife_brand_chain_0", "reallife_brand_chain_1", "reallife_brand_chain_2" };
-        public static readonly string[] PushKeys = { "reallife_brand_push_local", "reallife_brand_push_city" };
-        public static readonly string[] ScandalKeys = { "reallife_brand_scandal_inspection", "reallife_brand_scandal_strike", "reallife_brand_scandal_fire", "reallife_brand_scandal_influencer" };
+        public static readonly string[] PushKeys = { "reallife_brand_push_local", "reallife_brand_push_city", "reallife_brand_push_creators" };
+        public static readonly string[] ScandalKeys = { "reallife_brand_scandal_inspection", "reallife_brand_scandal_strike", "reallife_brand_scandal_fire",
+            "reallife_brand_scandal_influencer" };
 
         public static string T(string key)
         {

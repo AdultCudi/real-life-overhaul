@@ -231,7 +231,8 @@ namespace RealLifeOverhaul.Economy.Brands
         public const int KeepPerRound = 16;         // kept shops written in one hourly round at most; the rest wait for the next
 
         // Brand campaigns, priced by the company's own campaign list.
-        public const int PushLocal = 0, PushCity = 1;
+        public const int PushLocal = 0, PushCity = 1, PushCreators = 2;   // creators on Flare: local creators post about the brand, in every district it stands in
+        public const int CreatorsDays = 14, CreatorsGainPct = 75;           // days it runs, and its reach as a share of a city-wide campaign's
         public const int PushCityTimes = 2;         // a city-wide brand campaign costs this many radio spots
 
         public static int Clamp(int value, int least, int most)

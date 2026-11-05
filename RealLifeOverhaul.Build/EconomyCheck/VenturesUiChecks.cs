@@ -19,6 +19,8 @@ internal static partial class Program
         VenturesPages();
         VenturesPress();
         VenturesEntryPoints();
+        BrandsExtraChecks();
+        BrandsEntryPoints();
     }
 
     // ------------------------------------------------------------------------------------------------- the rules
@@ -224,14 +226,21 @@ internal static partial class Program
 
     private sealed class VentSampleSource : IVentSource
     {
-        private readonly string _state;
-        public readonly UiSamples.VenStub Stub = new UiSamples.VenStub();
+        private readonly string _app, _state;
+        private readonly UiSamples.VenStub _ven = new UiSamples.VenStub();
+        private readonly UiSamples.BraStub _bra = new UiSamples.BraStub();
         public int Calls;
 
-        public VentSampleSource(string state)
+        public VentSampleSource(string state, string app = "ventures")
         {
+            _app = app;
             _state = state;
         }
+
+        /// <summary>The actions pressed so far, whichever app's stand-in took them.</summary>
+        public int Presses => _app == "brands" ? _bra.Count : _ven.Count;
+
+        public UiSamples.VenStub Stub => _ven;
 
         public int Generation => 0;
 
@@ -244,7 +253,7 @@ internal static partial class Program
         public void Fill(VentModel m, VentView v)
         {
             Calls++;
-            VentModel from = UiSamples.Ventures((key, english) => english, _state, v, Stub);
+            VentModel from = _app == "brands" ? UiSamples.Brands((key, english) => english, _state, v, _bra) : UiSamples.Ventures((key, english) => english, _state, v, _ven);
             foreach (var f in typeof(VentModel).GetFields())
             {
                 f.SetValue(m, f.GetValue(from));
@@ -300,10 +309,11 @@ internal static partial class Program
     {
         int pressed = 0, dead = 0, wrong = 0;
         var deadList = new List<string>();
-        foreach (string state in UiSamples.VenturesStates)
+        foreach (var pair in VentAllStates())
         {
-            var source = new VentSampleSource(state);
-            var screen = new VentScreen(source, "ventures");
+            string state = pair.Item2, app = pair.Item1;
+            var source = new VentSampleSource(state, app);
+            var screen = new VentScreen(source, app);
             var scene = new UiScene();
             screen.Lay(scene, UiFrame.FullMenu(16f / 9f, "Ventures"), true, UiDefaultKeys.Keyboard);
             var targets = new List<(int command, int arg, string what)>();
@@ -363,15 +373,15 @@ internal static partial class Program
             }
             foreach (var t in targets)
             {
-                var src = new VentSampleSource(state);
-                var sc = new VentScreen(src, "ventures");
+                var src = new VentSampleSource(state, app);
+                var sc = new VentScreen(src, app);
                 sc.Lay(new UiScene(), UiFrame.FullMenu(16f / 9f, "Ventures"), true, UiDefaultKeys.Keyboard);
                 string before = Snapshot(sc.View);
-                int count = src.Stub.Count;
+                int count = src.Presses;
                 bool done = sc.Press(t.command, t.arg);
                 pressed++;
                 bool selection = t.what.StartsWith("table row", StringComparison.Ordinal) || t.what.StartsWith("row ", StringComparison.Ordinal);   // choosing what is already chosen is still a press that answered
-                bool changed = src.Stub.Count > count || Snapshot(sc.View) != before || selection;
+                bool changed = src.Presses > count || Snapshot(sc.View) != before || selection;
                 if (!done || !changed)
                 {
                     dead++;
@@ -380,24 +390,25 @@ internal static partial class Program
                 // The same press as another kind of target must not reach the run: a head action's number is not a row's.
                 if (t.command == VentFace.ItemCommand)
                 {
-                    var src2 = new VentSampleSource(state);
-                    var sc2 = new VentScreen(src2, "ventures");
+                    var src2 = new VentSampleSource(state, app);
+                    var sc2 = new VentScreen(src2, app);
                     sc2.Lay(new UiScene(), UiFrame.FullMenu(16f / 9f, "Ventures"), true, UiDefaultKeys.Keyboard);
-                    int c2 = src2.Stub.Count;
+                    int c2 = src2.Presses;
                     sc2.Press(VentFace.BackCommand, t.arg);
-                    wrong += src2.Stub.Count > c2 ? 1 : 0;
+                    wrong += src2.Presses > c2 ? 1 : 0;
                 }
             }
         }
-        Check(pressed > 60 && dead == 0, "ventures press: all " + pressed + " actions of every state reach their run and change something (" + dead + " dead" + (dead > 0 ? ": " + string.Join("; ", deadList.Take(6)) : string.Empty) + ")");
+        Check(pressed > 120 && dead == 0, "ventures press: all " + pressed + " actions of every state reach their run and change something (" + dead + " dead" + (dead > 0 ? ": " + string.Join("; ", deadList.Take(6)) : string.Empty) + ")");
         Check(wrong == 0, "ventures press: a row's number never reaches another kind's handler");
 
         // Escape and close, in each state: Back steps out of a sub page first, then lets the window close.
         bool backOk = true;
-        foreach (string state in UiSamples.VenturesStates)
+        foreach (var pair in VentAllStates())
         {
-            var src = new VentSampleSource(state);
-            var sc = new VentScreen(src, "ventures");
+            string state = pair.Item2, app = pair.Item1;
+            var src = new VentSampleSource(state, app);
+            var sc = new VentScreen(src, app);
             sc.Lay(new UiScene(), UiFrame.FullMenu(16f / 9f, "Ventures"), true, UiDefaultKeys.Keyboard);
             bool sub = sc.View.Page != 0 || sc.View.Pick != null;
             bool stepped = sc.Back();
@@ -416,7 +427,19 @@ internal static partial class Program
         Check(backOk, "ventures press: in every state Back steps out of a sub page and then lets the window close");
     }
 
-    private static string Snapshot(VentView v) => v.Tab + "|" + v.Pick + "|" + v.Page + "|" + v.A + "|" + v.B + "|" + v.S1 + "|" + v.S2;
+    private static IEnumerable<(string, string)> VentAllStates()
+    {
+        foreach (string s in UiSamples.VenturesStates)
+        {
+            yield return ("ventures", s);
+        }
+        foreach (string s in UiSamples.BrandsStates)
+        {
+            yield return ("brands", s);
+        }
+    }
+
+    private static string Snapshot(VentView v) => v.Tab + "|" + v.Pick + "|" + v.Page + "|" + v.A + "|" + v.B + "|" + v.C + "|" + v.S1 + "|" + v.S2;
 
     // ------------------------------------------------------------------------------------------------- entry points
 

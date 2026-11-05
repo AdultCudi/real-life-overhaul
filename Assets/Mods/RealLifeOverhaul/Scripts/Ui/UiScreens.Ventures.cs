@@ -42,6 +42,43 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ven_tab_property"
                 // KEYS END
             }).Switch(UiScreenSwitches.Ventures));
+            screens.Add(new UiScreenDef("brands", UiTemplate.AppWindow, "VentScreen", new[]
+            {
+                // KEYS BEGIN
+                "reallife_brand_app", "reallife_brand_app_refuse", "reallife_brand_back", "reallife_brand_bid_refuse",
+                "reallife_brand_chain_prices", "reallife_brand_deal_no_site", "reallife_brand_deal_sign", "reallife_brand_fr_agree",
+                "reallife_brand_fr_decline", "reallife_brand_fr_give_way", "reallife_brand_fr_inspect_send", "reallife_brand_fr_retrain",
+                "reallife_brand_fr_waive", "reallife_brand_fr_warn", "reallife_brand_plain_make", "reallife_brand_push_book",
+                "reallife_brand_row_no_applicant", "reallife_brand_row_no_brand", "reallife_brand_set_give_up", "reallife_brand_set_hours",
+                "reallife_brand_set_prices", "reallife_brand_set_rename", "reallife_brand_tab_agreements", "reallife_brand_tab_applicants",
+                "reallife_brand_tab_shops", "reallife_ibox_chip_on_offer", "reallife_ibox_leaving_costs", "reallife_ibox_minimum",
+                "reallife_ibox_sec_campaign", "reallife_ibox_sec_chain", "reallife_ibox_sec_franchise", "reallife_ibox_sec_shared",
+                "reallife_ibox_sec_terms", "reallife_ui_bra_agreement_pick", "reallife_ui_bra_agreement_terms", "reallife_ui_bra_agreements_how",
+                "reallife_ui_bra_applicant_pick", "reallife_ui_bra_applicants_how", "reallife_ui_bra_aware_none", "reallife_ui_bra_aware_sec",
+                "reallife_ui_bra_awareness", "reallife_ui_bra_brand", "reallife_ui_bra_brand_value", "reallife_ui_bra_campaign_about",
+                "reallife_ui_bra_campaign_for", "reallife_ui_bra_campaigns", "reallife_ui_bra_chain_keep", "reallife_ui_bra_chain_leave",
+                "reallife_ui_bra_col_applicant", "reallife_ui_bra_col_brand", "reallife_ui_bra_col_capital", "reallife_ui_bra_col_day",
+                "reallife_ui_bra_col_district", "reallife_ui_bra_col_ends", "reallife_ui_bra_col_franchisee", "reallife_ui_bra_col_map",
+                "reallife_ui_bra_col_owner", "reallife_ui_bra_col_paid_all", "reallife_ui_bra_col_rating", "reallife_ui_bra_col_royalty_day",
+                "reallife_ui_bra_col_shop", "reallife_ui_bra_col_status", "reallife_ui_bra_col_temper", "reallife_ui_bra_col_waits",
+                "reallife_ui_bra_col_years", "reallife_ui_bra_cost", "reallife_ui_bra_days", "reallife_ui_bra_days_n",
+                "reallife_ui_bra_district", "reallife_ui_bra_districts", "reallife_ui_bra_earned", "reallife_ui_bra_end",
+                "reallife_ui_bra_exclusive", "reallife_ui_bra_exclusive_area", "reallife_ui_bra_fee", "reallife_ui_bra_fees_month",
+                "reallife_ui_bra_fig_sales", "reallife_ui_bra_fig_shops", "reallife_ui_bra_fig_waiting", "reallife_ui_bra_fund",
+                "reallife_ui_bra_in_days", "reallife_ui_bra_join", "reallife_ui_bra_keep", "reallife_ui_bra_kind",
+                "reallife_ui_bra_leave", "reallife_ui_bra_length", "reallife_ui_bra_levy", "reallife_ui_bra_local",
+                "reallife_ui_bra_minimum", "reallife_ui_bra_minimum_about", "reallife_ui_bra_net", "reallife_ui_bra_new_campaign",
+                "reallife_ui_bra_no_agreements", "reallife_ui_bra_no_campaign", "reallife_ui_bra_no_shops", "reallife_ui_bra_none",
+                "reallife_ui_bra_off_body", "reallife_ui_bra_off_title", "reallife_ui_bra_offer", "reallife_ui_bra_open_agreement",
+                "reallife_ui_bra_quote", "reallife_ui_bra_rating", "reallife_ui_bra_royalties", "reallife_ui_bra_royalties_ring",
+                "reallife_ui_bra_royalty", "reallife_ui_bra_royalty_day", "reallife_ui_bra_sales_all", "reallife_ui_bra_sales_fr",
+                "reallife_ui_bra_sales_month", "reallife_ui_bra_second_shop", "reallife_ui_bra_sell_bid", "reallife_ui_bra_settings",
+                "reallife_ui_bra_shared", "reallife_ui_bra_shops_badge", "reallife_ui_bra_shops_pick", "reallife_ui_bra_shops_run",
+                "reallife_ui_bra_site", "reallife_ui_bra_standards", "reallife_ui_bra_standards_check", "reallife_ui_bra_standards_sec",
+                "reallife_ui_bra_tab_brands", "reallife_ui_bra_target", "reallife_ui_bra_worst", "reallife_ui_bra_yesterday",
+                "reallife_ui_prompt_back", "reallife_ui_prompt_move", "reallife_ui_prompt_select"
+                // KEYS END
+            }).Switch(UiScreenSwitches.Ventures));
         }
     }
 }

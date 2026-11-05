@@ -175,7 +175,8 @@ namespace RealLifeOverhaul.Economy.Brands
                 {
                     Say(NotificationType.Error, "reallife_brand_note_cannot_offer", new Dictionary<string, string>
                     {
-                        { "shops", BrandCatalogue.OfferShops.ToString() }, { "standards", BrandCatalogue.OfferStandards.ToString() }, { "city", BrandsText.Points(BrandCatalogue.OfferCityRec) },
+                        { "shops", BrandCatalogue.OfferShops.ToString() }, { "standards", BrandCatalogue.OfferStandards.ToString() }, { "city",
+                            BrandsText.Points(BrandCatalogue.OfferCityRec) },
                         { "district", BrandsText.Points(BrandCatalogue.OfferDistrictRec) }, { "mean", BrandsText.Points(BrandCatalogue.OfferMeanRec) }
                     });
                     return;
@@ -186,9 +187,12 @@ namespace RealLifeOverhaul.Economy.Brands
             });
         }
 
+        /// <summary>What Flare asks for the creators of a creators campaign; 0 for another kind or when Flare gives no figure.</summary>
+        internal static int CreatorsQuote(int kind) => kind == BrandCatalogue.PushCreators && BrandsBridges.CreatorsCost != null ? BrandsBridges.CreatorsCost(Index) : 0;
+
         public int PushCost(Brand b, int kind, string district)
         {
-            return BrandRules.PushCost(kind, kind == BrandCatalogue.PushCity ? 0 : BrandRules.Shops(_state, b, district), Index);
+            return BrandRules.PushCost(kind, kind == BrandCatalogue.PushLocal ? BrandRules.Shops(_state, b, district) : 0, Index, CreatorsQuote(kind));
         }
 
         public void BookPush(int brandId, int kind, string district)
@@ -196,7 +200,7 @@ namespace RealLifeOverhaul.Economy.Brands
             Act("a brand campaign", () =>
             {
                 Brand b = _state.Brand(brandId);
-                if (b == null || b.Push >= 0 || (kind != BrandCatalogue.PushCity && BrandRules.Shops(_state, b, district) == 0))
+                if (b == null || b.Push >= 0 || (kind == BrandCatalogue.PushLocal && BrandRules.Shops(_state, b, district) == 0))
                 {
                     return;
                 }
