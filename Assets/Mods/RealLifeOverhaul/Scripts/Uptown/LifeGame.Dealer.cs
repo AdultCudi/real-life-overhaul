@@ -11,6 +11,7 @@ using RealLifeOverhaul.NewBuildings;
 using UI;
 using UI.Dialog;
 using UnityEngine;
+using UnityEngine.AI;
 using Vehicles;
 using Vehicles.VehicleTypes;
 
@@ -30,6 +31,8 @@ namespace RealLifeOverhaul.Uptown
 
         private static float _brokenSince = -1f;   // when the dialog panel was first seen up on no dialog (Time.unscaledTime), or -1
         private static int _seatedLooks;           // looks in a row at the player seated with nothing holding them
+        private static bool _wasSeated;            // the player was seated at the last look
+        private static readonly NavMeshPath Way = new NavMeshPath();   // one path, filled again for each stand-up
 
         private static PlayerController Player => InstanceBehavior<GameManager>.IsInitialized ? InstanceBehavior<GameManager>.Instance.playerController : null;
 
@@ -47,6 +50,7 @@ namespace RealLifeOverhaul.Uptown
         {
             _brokenSince = -1f;
             _seatedLooks = 0;
+            _wasSeated = false;
         }
 
         /// <summary>
@@ -71,7 +75,29 @@ namespace RealLifeOverhaul.Uptown
             {
                 _seatedLooks = 0;
                 body.Reset();
+                _wasSeated = true;   // stood up just now: the next look asks where they are
                 return "the player sat with nothing holding them for " + DeskWatchRules.SeatedLooks + " looks: stood up the game's way";
+            }
+            bool was = _wasSeated;
+            _wasSeated = seated;
+            return body != null && !seated && was ? Unbox(body) : null;
+        }
+
+        // One look after a stand-up: a player with no walkable way to the door is put at the game's own spawn point inside it.
+        private static string Unbox(ThirdPersonCharacter body)
+        {
+            NavMeshAgent agent = body.navmeshAgent;
+            BuildingManager manager = InstanceBehavior<BuildingManager>.IsInitialized ? InstanceBehavior<BuildingManager>.Instance : null;
+            if (agent == null || !agent.enabled || manager == null || !Construction.BuilderDeskGame.Door(manager, out Vector3 door))
+            {
+                return null;
+            }
+            bool reaches = agent.isOnNavMesh && NavMesh.CalculatePath(agent.transform.position, door, NavMesh.AllAreas, Way)
+                           && Way.status == NavMeshPathStatus.PathComplete;
+            if (DeskWatchRules.StoodUpBoxed(true, false, reaches))
+            {
+                agent.Warp(door);
+                return "the player stood up from a seat with no way to the door (furniture cut out the walking mesh): put at the game's own entry point inside it";
             }
             return null;
         }
