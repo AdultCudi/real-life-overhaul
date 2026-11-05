@@ -125,6 +125,23 @@ namespace RealLifeOverhaul.Economy.Ventures
             return false;
         }
 
+        /// <summary>A promise of the monthly kinds kept: the investor is pleased.</summary>
+        public static void KeepPromise(Deal deal, List<DealEvent> said)
+        {
+            Mood(deal, VenturesCatalogue.MoodKeptPromise);
+            Say(said, DealNews.PromiseKept, deal, 0);
+        }
+
+        /// <summary>A promise of the monthly kinds broken: it counts as a missed target, with a warning, a demand and in the end a call.</summary>
+        public static void BreakPromise(VenturesFile file, Deal deal, int day, int level, List<DealEvent> said)
+        {
+            Say(said, DealNews.PromiseBroken, deal, 0);
+            if (deal.Stage == DealStage.Running || deal.Stage == DealStage.Demand)
+            {
+                Miss(file, deal, file.Investor(deal.InvestorId), day, VenturesCatalogue.Level(level), said);
+            }
+        }
+
         // A target missed or a promise broken. Gone cold before being paid back, an investor never backs the founder again.
         private static void Miss(VenturesFile file, Deal deal, Investor investor, int day, int level, List<DealEvent> said)
         {

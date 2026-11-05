@@ -30,14 +30,24 @@ namespace RealLifeOverhaul.Economy.Ventures
             }
         }
 
-        public void Open(int tab)
+        public void Open(int tab) => Open(tab, null);
+
+        /// <summary>Opens the app on a tab with something picked on it ("offer:12", "deal:3", "pledge:2"), as a notice that is about one of them does.</summary>
+        public void Open(int tab, string pick)
         {
-            if (_app != null && _view != null && Running)
+            RealLifeOverhaul.Ui.VenturesLive.Want(tab, pick);
+            if (_view != null && Running)
             {
-                _view.Want(tab);
+                _view.Want(tab);   // the old page, the way back, opens on the same tab
+            }
+            if (_app != null && Running)
+            {
                 _app.Open();
             }
         }
+
+        // A notice that opens the app on one offer, deal or promise.
+        private Action OpenOn(string pick) => () => Open(VenturesPhone.Investors, pick);
 
         /// <summary>An offer taken up: the money is paid in now, or promised for a business not yet open.</summary>
         public bool Accept(int offerId)
@@ -59,7 +69,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                         NoRoom(OfferRules.DealRoom(_file));
                         return false;
                     }
-                    Tell(NotificationType.Success, "reallife_ven_note_pledged", _openInvestors, "name", investor.Name, "amount", FinanceText.Money(pledge.Amount),
+                    Tell(NotificationType.Success, "reallife_ven_note_pledged", OpenOn("pledge:" + pledge.Id), "name", investor.Name, "amount", FinanceText.Money(pledge.Amount),
                         "type", VenturesGame.TypeName(pledge.TypeName), "day", pledge.OpenBy.ToString());
                     Detail("the offer " + offerId + " from " + investor.Name + " is accepted: " + pledge.Amount + " promised for a " + pledge.TypeName + " opened by day " + pledge.OpenBy
                            + " (" + pledge.Had + " of that kind run now)");
@@ -81,7 +91,8 @@ namespace RealLifeOverhaul.Economy.Ventures
                 }
                 deal.Business = VenturesGame.Name(r);
                 _wallet.Give(amount, VenturesMoney.Invested, investor.Name);
-                Tell(NotificationType.Success, "reallife_ven_note_accepted", _openInvestors, "name", investor.Name, "business", deal.Business, "amount", FinanceText.Money(amount),
+                NewDeal(deal, investor, offerId, day);
+                Tell(NotificationType.Success, "reallife_ven_note_accepted", OpenOn("deal:" + deal.Id), "name", investor.Name, "business", deal.Business, "amount", FinanceText.Money(amount),
                     "share", VenturesText.Share(share), "target", FinanceText.Money(deal.TargetProfit), "day", deal.TargetDay.ToString());
                 Detail("the offer " + offerId + " from " + investor.Name + " is accepted: " + amount + " paid in for " + share + " bp of " + deal.Business + "; the deal now stands at "
                        + deal.Amount + " for " + deal.ShareBp + " bp, target " + deal.TargetProfit + " a day (from " + deal.BaseProfit + ") by day " + deal.TargetDay);
@@ -131,7 +142,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                 CounterAnswer answer = OfferRules.Counter(_file, offer, investor, b, moreMoney);
                 Tell(answer == CounterAnswer.Refused ? NotificationType.Warning : NotificationType.Success,
                     answer == CounterAnswer.Accepted ? "reallife_ven_note_counter_yes" : answer == CounterAnswer.HalfWay ? "reallife_ven_note_counter_half" : "reallife_ven_note_counter_no",
-                    _openInvestors, "name", investor.Name, "amount", FinanceText.Money(offer.Amount), "share", VenturesText.Share(offer.ShareBp));
+                    OpenOn("offer:" + offerId), "name", investor.Name, "amount", FinanceText.Money(offer.Amount), "share", VenturesText.Share(offer.ShareBp));
                 Detail("the counter to offer " + offerId + " (" + (moreMoney ? "more money" : "a smaller share") + ") to " + investor.Name + " (" + investor.Temper + ", "
                        + b.ProfitableDays + " profitable days): " + answer + "; " + wasAmount + " for " + wasShare + " bp is now " + offer.Amount + " for " + offer.ShareBp + " bp");
             }

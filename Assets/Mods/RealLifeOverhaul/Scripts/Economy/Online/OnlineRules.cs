@@ -236,6 +236,21 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static int Arrive(OnlineState s, WebShop shop, Site site, int hour)
         {
+            // What the extras say about a shop (area, night orders, prices that follow rivals) is asked through these, set by the director; unset, nothing is changed.
+            return Arrive(s, shop, site, hour, Gate, PriceHook);
+        }
+
+        /// <summary>Asked of an order about to be placed: false turns it away (an area not served, a night order the shop does not take).</summary>
+        public static Func<WebShop, int, int, bool> Gate;
+
+        /// <summary>Asked of a product's price in an order: the price the customer sees, given the shop's own.</summary>
+        public static Func<WebShop, int, int, int> PriceHook;
+
+        /// <summary>Told when an order reaches its door: the shop, the order and whether it was late. Returns what the customer paid towards delivery, in cents.</summary>
+        public static Func<WebShop, WebOrder, bool, int> ArrivedHook;
+
+        private static int Arrive(OnlineState s, WebShop shop, Site site, int hour, Func<WebShop, int, int, bool> gate, Func<WebShop, int, int, int> price)
+        {
             if (site.PerDay <= 0 || shop.Offline || site.Down)
             {
                 return 0;
@@ -253,6 +268,15 @@ namespace RealLifeOverhaul.Economy
                 if (o == null)
                 {
                     break;
+                }
+                if (gate != null && !gate(shop, o.District, hour))
+                {
+                    shop.Today.Turned++;
+                    continue;
+                }
+                for (int c = 0; price != null && c < o.Count; c++)
+                {
+                    o.Unit[c] = price(shop, o.Line[c], o.Unit[c]);
                 }
                 shop.Orders.Add(o);
                 shop.Today.Orders++;
