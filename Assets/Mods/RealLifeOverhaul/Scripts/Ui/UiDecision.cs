@@ -394,7 +394,8 @@ namespace RealLifeOverhaul.Ui
         /// cyan at a fifth. Public so that a page can lay choices in its own room (the Company app's Lead); its press runs <paramref name="command"/> with
         /// <paramref name="arg"/> (its index when -1), the card's own by default. Returns its height.
         /// </summary>
-        public static float Choice(UiScene s, UiAt at, ref UiDecisionChoice c, int index, bool chosen, float x, float y, float w, IUiKeys keys, int command = ChoiceCommand, int arg = -1, bool lift = false)
+        public static float Choice(UiScene s, UiAt at, ref UiDecisionChoice c, int index, bool chosen, float x, float y, float w, IUiKeys keys,
+            int command = ChoiceCommand, int arg = -1, bool lift = false)
         {
             float h = ChoiceHeight(ref c);
             // A row's own fill steps only a few levels towards the words under the pointer, too little to see: with the lift the resting fill is a plain box behind and the

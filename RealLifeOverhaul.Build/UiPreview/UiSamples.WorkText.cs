@@ -8,8 +8,7 @@ using RealLifeOverhaul.Ui;
 /// </summary>
 internal static partial class UiSamples
 {
-    /// <summary>The sample's today: the status bar of the previews says Day 412, so every date of the work samples is read against it.</summary>
-    public const int Today = 412;
+    // The sample's today is UiSamples.Today (UiSamples.DealerWorld.cs): day 412, as the previews' status bar says, so every date of the work samples is read against it.
 
     private static readonly string[] WkWeekdays = { "Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun" };
 

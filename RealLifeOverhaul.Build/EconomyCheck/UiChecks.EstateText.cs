@@ -21,7 +21,7 @@ internal static partial class Program
     private static readonly Regex UnjoinedPt = new Regex(@"\b(de|em|por)\s+(o|a|os|as)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
     // English words that stood in the samples as literals (a unit's name, a guest's words, a kind of fault); a proper name of the sample (Park and Lane) is taken out first.
     private static readonly Regex EnglishWord = new Regex(@"\b(flat|floor|unit|house|suite|shop|office|double|single|the|and|with|guest|heating|lock|leak|damp|fittings|electrics|Flat|Floor|Unit|The)\b", RegexOptions.CultureInvariant);
-    private static readonly string[] SampleNames = { "Park and Lane", "Bell and Rowe", "Okafor and Sons", "Pier House Hotel" };
+    private static readonly string[] EstateSampleNames = { "Park and Lane", "Bell and Rowe", "Okafor and Sons", "Pier House Hotel" };
     private static readonly Regex Sentence = new Regex(@"(: |;|：|；)", RegexOptions.CultureInvariant);
 
     private static IEnumerable<KeyValuePair<string, string>> EstateStateLines(string lang)
@@ -123,7 +123,7 @@ internal static partial class Program
                 if (lang != "en")
                 {
                     string plain = said;
-                    foreach (string name in SampleNames)
+                    foreach (string name in EstateSampleNames)
                     {
                         plain = plain.Replace(name, string.Empty);
                     }
