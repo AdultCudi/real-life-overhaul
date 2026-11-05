@@ -108,6 +108,7 @@ namespace RealLifeOverhaul.Map25
     /// </summary>
     public sealed partial class Map25Blocks
     {
+        private const float RoofShade = 0.66f, RimShade = 1.0f;
         private const int Most = 32;                 // corners of an outline we take
         private const float Floor = 3.0f;            // metres of the shop's ground floor band
         private const float WindowShare = 0.16f;     // how far a minimap band goes to the window colour
@@ -179,8 +180,8 @@ namespace RealLifeOverhaul.Map25
             float scale = Math.Max(0.45f, Math.Min(1.1f, width / 24f));
             float rim = Math.Min(0.9f, width * 0.18f);
             float top = y0 + h;
-            Map25Colour roof = tone.Scale(1.14f);
-            Roof(t.Blocks, _x, _z, n, top, roof, tone.Scale(1.32f), roof.Scale(0.92f), rim, width);
+            Map25Colour roof = tone.Scale(RoofShade);   // the approved shots' roofs are the darkest part of a block, with a lit parapet round them
+            Roof(t.Blocks, _x, _z, n, top, roof, tone.Scale(RimShade), roof.Scale(0.92f), rim, width);
             float[] rx = _x, rz = _z;
             if (h >= TierFrom && width >= TierWide)
             {
@@ -201,8 +202,8 @@ namespace RealLifeOverhaul.Map25
                     t.Crowns.Strip(_qx[e], _qz[e], _qx[f], _qz[f], top, top + h2, c.Scale(0.70f), c);
                 }
                 top += h2;
-                Map25Colour roof2 = tier.Scale(1.14f);
-                Roof(t.Crowns, _qx, _qz, n, top, roof2, tier.Scale(1.32f), roof2.Scale(0.92f), Math.Min(0.6f, rim), width * 0.5f);
+                Map25Colour roof2 = tier.Scale(RoofShade);
+                Roof(t.Crowns, _qx, _qz, n, top, roof2, tier.Scale(RimShade), roof2.Scale(0.92f), Math.Min(0.6f, rim), width * 0.5f);
                 rx = _qx;
                 rz = _qz;
                 Extents(rx, rz, n, out ux, out uz, out u0, out u1, out v0, out v1);

@@ -356,6 +356,11 @@ public static class Map25Preview
             looks.Add(new Look { Name = p + "full_flat_bare", Width = 1920, Height = 1080, Pitch = 90f, Across = 800f, Bare = true });
             looks.Add(new Look { Name = p + "mini_flat_bare", Width = 600, Height = 600, Pitch = 90f, Across = 260f, Mini = true, Where = At.Start, Bare = true });
             looks.Add(new Look { Name = p + "full_tilt_aa1", Width = 1920, Height = 1080, Heading = -16f, Pitch = 47f, Across = 760f, Fog = true, Pins = true, Aa = 1 });
+            // the opened map at the game's own pitch at the distances it allows: 1.77 metres across a picture of this shape for each metre of distance (the 28 degree lens)
+            foreach (int d in new[] { 150, 250, 350 })
+            {
+                looks.Add(new Look { Name = p + "r7_d" + d, Width = 1920, Height = 1080, Heading = -16f, Pitch = 47f, Across = d * 1.77f, Fog = true, Aa = 4 });
+            }
             looks.Add(new Look { Name = p + "full_p65", Width = 1920, Height = 1080, Pitch = 65f, Across = 780f });
             looks.Add(new Look { Name = p + "full_p75", Width = 1920, Height = 1080, Pitch = 75f, Across = 780f });
             looks.Add(new Look { Name = p + "full_junction", Width = 1920, Height = 1080, Pitch = 47f, Across = 220f, Where = At.Start, AtJunction = true, Fog = true, Pins = true });

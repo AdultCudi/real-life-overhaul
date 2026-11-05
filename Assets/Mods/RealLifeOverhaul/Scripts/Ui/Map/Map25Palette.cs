@@ -38,16 +38,16 @@ namespace RealLifeOverhaul.Map25
 
     /// <summary>
     /// The map's colours and the shading rules of its blocks, from the approved mockups (mockups/map/make_map25d.py): cool slate
-    /// ground, streets a little lighter, five wall tones, the five tints, the light from the west and a little from the north.
+    /// ground, streets a little lighter, five slate wall tones, the five tints, the light from the west and a little from the north.
     /// Nothing is pure white and no large area is light. Game-free.
     /// </summary>
     public static class Map25Palette
     {
         public static readonly Map25Colour Water = Map25Colour.Hex(0x0F2233);
-        public static readonly Map25Colour Block = Map25Colour.Hex(0x1D2B38);
+        public static readonly Map25Colour Block = Map25Colour.Hex(0x2A363E);
         public static readonly Map25Colour Park = Map25Colour.Hex(0x1D3A35);
-        public static readonly Map25Colour Avenue = Map25Colour.Hex(0x2F4357);
-        public static readonly Map25Colour Street = Map25Colour.Hex(0x2A3D50);
+        public static readonly Map25Colour Avenue = Map25Colour.Hex(0x1B242B);
+        public static readonly Map25Colour Street = Map25Colour.Hex(0x172027);
         public static readonly Map25Colour Window = Map25Colour.Hex(0xA9C0D3);
         public static readonly Map25Colour Lit = Map25Colour.Hex(0xF6D98A);
         public static readonly Map25Colour Ink = Map25Colour.Hex(0x050B11);
@@ -58,12 +58,12 @@ namespace RealLifeOverhaul.Map25
         public static readonly Map25Colour TankTop = Map25Colour.Hex(0x76644F);
         public static readonly Map25Colour TankCone = Map25Colour.Hex(0x675645);
         public static readonly Map25Colour Leg = Map25Colour.Hex(0x2C3238);
-        public static readonly Map25Colour TreeBase = Map25Colour.Hex(0x2F6B55);
-        public static readonly Map25Colour TreeTop = Map25Colour.Hex(0x3B8466);
+        public static readonly Map25Colour TreeBase = Map25Colour.Hex(0x35574D);
+        public static readonly Map25Colour TreeTop = Map25Colour.Hex(0x46705F);
 
         public static readonly Map25Colour[] Tones =
         {
-            Map25Colour.Hex(0x40566A), Map25Colour.Hex(0x4A5C6E), Map25Colour.Hex(0x665F56), Map25Colour.Hex(0x5C4F4B), Map25Colour.Hex(0x4D625B)
+            Map25Colour.Hex(0x6A7C88), Map25Colour.Hex(0x62747F), Map25Colour.Hex(0x74858F), Map25Colour.Hex(0x5A6B77), Map25Colour.Hex(0x66787E)
         };
 
         public static readonly Map25Colour[] Awnings =
@@ -93,7 +93,7 @@ namespace RealLifeOverhaul.Map25
         public static float WallFactor(float nx, float nz)
         {
             float l = nx * -0.70f + nz * 0.55f;
-            return 0.72f + 0.20f * l;
+            return 0.80f + 0.20f * l;
         }
 
         /// <summary>
@@ -117,7 +117,7 @@ namespace RealLifeOverhaul.Map25
             return 0f;
         }
 
-        /// <summary>One of the five wall tones, by a number.</summary>
+        /// <summary>One of the five slate wall tones, by a number.</summary>
         public static Map25Colour Tone(int index)
         {
             return Tones[(index & 0x7FFFFFFF) % Tones.Length];

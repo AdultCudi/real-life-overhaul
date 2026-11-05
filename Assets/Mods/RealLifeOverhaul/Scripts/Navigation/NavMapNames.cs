@@ -25,6 +25,7 @@ namespace RealLifeOverhaul.Nav
         private readonly float[] _score = new float[Pool], _at = new float[Pool * 2];
         private Map25Names _names;
         private int _used;
+        private bool _broken;   // a label could not be made with a material: the names stay off for the session
 
         /// <summary>The names to write (after every road has its name); null takes them all away.</summary>
         public void Set(Map25Names names)
@@ -142,19 +143,28 @@ namespace RealLifeOverhaul.Nav
             {
                 return _label[index];
             }
+            // The game's font is the only one that is known to carry a material here: TextMeshPro makes its material in Awake (which an inactive object
+            // never runs) or when a font is assigned, so with no font yet there is nothing to set an outline on. Names are optional: try again later.
+            TMP_FontAsset font = GameFont.Asset;
+            if (font == null || _broken)
+            {
+                return null;
+            }
             var made = new GameObject("Street", typeof(RectTransform));
-            made.SetActive(false);
             var rect = (RectTransform)made.transform;
             rect.SetParent(parent, false);
             rect.anchorMin = rect.anchorMax = Vector2.zero;
             rect.pivot = new Vector2(0.5f, 0.5f);
             rect.sizeDelta = new Vector2(900f * unitsPerPixel, 60f * unitsPerPixel);
-            var text = made.AddComponent<TextMeshProUGUI>();
-            TMP_FontAsset font = GameFont.Asset;
-            if (font != null)
+            var text = made.AddComponent<TextMeshProUGUI>();   // active, so Awake runs and the label has its material before anything is set
+            text.font = font;
+            if (text.fontSharedMaterial == null)
             {
-                text.font = font;
+                UnityEngine.Object.Destroy(made);
+                _broken = true;
+                return null;
             }
+            made.SetActive(false);
             text.fontSize = Size * Screen.height / 1080f * unitsPerPixel;
             text.alignment = TextAlignmentOptions.Center;
             text.textWrappingMode = TextWrappingModes.NoWrap;

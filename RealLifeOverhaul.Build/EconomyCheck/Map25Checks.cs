@@ -198,11 +198,19 @@ internal static partial class Program
         var away = new Map25Chunk { MinX = 5000, MaxX = 5020, MinY = 0, MaxY = 30, MinZ = 5000, MaxZ = 5020 };
         view.Look(0f, 0f, 0f, 0f, 40f, 260f, 1f);
         Check(view.Sees(chunk, true) && !view.Sees(away, true), "2.5D map: a chunk in view is drawn and one far away is not");
+        var game0 = new Map25View();
+        game0.Look(0f, 0f, 0f, 0f, 47f, 260f, 1f);
         view.Look(0f, 0f, 0f, 0f, 90f, 260f, 1f);
         Check(view.Rise < 0.01f && Map25View.RiseOf(47f) == 1f && Map25View.RiseOf(60f) == 1f && Map25View.RiseOf(70f) > Map25View.RiseOf(75f) && Map25View.RiseOf(85f) < 0.01f,
             "2.5D map: from straight above the blocks have no height (flat), tipped to the game's 47 degrees they stand full, and between they ease");
-        Check(Map25View.PitchFor(350f) == Map25View.FlatPitch && Map25View.PitchFor(200f) == Map25View.TiltPitch && Map25View.PitchFor(100f) == Map25View.TiltPitch
-              && Map25View.PitchFor(250f) < Map25View.PitchFor(290f) && Map25View.PitchFor(250f) > Map25View.TiltPitch, "2.5D map: the full map's camera is flat from afar and tipped to the game's own 47 degrees close, eased between");
+        bool tiltedEverywhere = true;
+        for (float d = 100f; d <= 350f; d += 10f)
+        {
+            var open = new Map25View();
+            open.Set(game0.View, game0.Projection, Map25View.PitchFor(d), 0f);
+            tiltedEverywhere &= Map25View.PitchFor(d) == Map25View.TiltPitch && open.Rise == 1f && RealLifeOverhaul.Nav.NavMapTilt.Pitch(RealLifeOverhaul.Nav.NavMapTilt.Auto, d) == Map25View.TiltPitch;
+        }
+        Check(tiltedEverywhere, "2.5D map: the opened map has the game's 47 degrees and the blocks at full height (rise 1) at every distance the game allows, 100 to 350 m");
         // the game's view matrices put the scene's ground at the median street: a point of the scene is where the world's point lowered by that street is
         var game = new Map25View();
         game.Look(300f, 40f, -80f, 20f, 47f, 400f, 16f / 9f);

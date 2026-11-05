@@ -74,15 +74,12 @@ namespace RealLifeOverhaul.Map25
         }
 
         /// <summary>
-        /// The pitch the full map's camera takes at a distance (metres from the pivot): flat from 300 m up, the game's own 47 degrees from
-        /// 200 m down, eased between, so the map the player opens from afar reads as a flat map and the buildings rise as they come close.
+        /// The pitch the full map's camera takes at a distance: the game's own 47 degrees at every distance it allows, because a map that
+        /// flattens from afar shows pale rectangles and not the blocks the owner approved. The flat view is the 2D button's, not the distance's.
         /// </summary>
         public static float PitchFor(float distance)
         {
-            float t = (300f - distance) / 100f;
-            t = t < 0f ? 0f : t > 1f ? 1f : t;
-            t = t * t * (3f - 2f * t);
-            return FlatPitch + (TiltPitch - FlatPitch) * t;
+            return TiltPitch;
         }
 
         /// <summary>A place's spot on the picture, 0 to 1 either way from its lower left; false behind the camera.</summary>
