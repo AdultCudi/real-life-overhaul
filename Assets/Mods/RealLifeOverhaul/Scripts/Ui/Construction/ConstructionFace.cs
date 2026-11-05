@@ -326,8 +326,9 @@ namespace RealLifeOverhaul.Ui
             {
                 y += LeadBand(s, at.InRegion(RegionLead), m.Lead, x, y, w, keys) + UiTokens.S4;
             }
-            bool side = m.Card != null;
-            float sw = side ? Math.Max(MinSide, Math.Min(TableSideWidth, UiDraw.SnapDown(w * 0.3f))) : 0f;
+            bool stack = m.Side.Length > 0;
+            bool side = m.Card != null || stack;
+            float sw = side ? Math.Max(MinSide, Math.Min(stack ? SideWidth : TableSideWidth, UiDraw.SnapDown(w * (stack ? 0.38f : 0.3f)))) : 0f;
             float tw = w - (sw > 0f ? sw + UiTokens.S4 : 0f), th = bottom - y;
             float footH = m.Foot != null ? UiFactCard.Height(m.Foot, tw, keys, true) : 0f;
             if (footH > 0f)
@@ -357,7 +358,21 @@ namespace RealLifeOverhaul.Ui
             {
                 UiFactCard.Lay(s, at.InRegion(RegionRight), m.Foot, x, y + th + UiTokens.S3, tw, footH, keys, true);
             }
-            if (side)
+            if (stack)
+            {
+                float sy = y;
+                for (int i = 0; i < m.Side.Length; i++)
+                {
+                    float room = y + th - sy;
+                    if (room < UiTokens.S16)
+                    {
+                        m.Dropped += 1;
+                        break;
+                    }
+                    sy += UiFactCard.Lay(s, at.InRegion(RegionRight), m.Side[i], x + tw + UiTokens.S4, sy, sw, room, keys, true) + UiTokens.S3;
+                }
+            }
+            else if (side)
             {
                 UiFactCard.Lay(s, at.InRegion(RegionRight), m.Card, x + tw + UiTokens.S4, y, sw, th, keys, true);   // as tall as its words: an empty band to the floor says nothing
             }
@@ -386,7 +401,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return null;
             }
-            float keep = Math.Max(0.67f, (w - UiTokens.S4 * (t.Columns.Length + 1) - (flex > 0 ? NameLeast : 0f)) / fixedW);
+            float keep = Math.Max(0.5f, (w - UiTokens.S4 * (t.Columns.Length + 1) - (flex > 0 ? NameLeast : 0f)) / fixedW);
             var saved = new float[t.Columns.Length];
             for (int c = 0; c < saved.Length; c++)
             {

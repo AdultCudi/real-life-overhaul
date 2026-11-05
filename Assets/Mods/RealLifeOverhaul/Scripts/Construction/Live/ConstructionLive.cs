@@ -42,7 +42,8 @@ namespace RealLifeOverhaul.Construction
         private int _tab, _wanted = -1, _wantPick, _wantPage, _local;
         private string _pick;      // a row's id: "lot:", "own:", "prj:", "tnd:", "crew:", "offer:", "plant:", "buy:", "staff:", "co:", "rival:"
         private int _page;         // a project's second page (its money) when 1, its materials and hedge when 2
-        private bool _opened;
+        private bool _opened, _previewing;
+        private string _preview, _previewKey;   // the row a table's tab shows beside it, and the one that was written for it
         private UiDataTableModel _detailTable;   // a page that compares things (the builders' quotes) has a table over its cards
         private string[] _detailKeys = new string[0];
 
@@ -114,6 +115,12 @@ namespace RealLifeOverhaul.Construction
                 _local++;
                 return true;
             }
+            if (_pick == null && _tab != ConstructionDirector.TabOverview && key != _previewKey && HasRow(key))
+            {
+                _preview = key;   // a first press on a row shows it beside the table; pressing the one shown opens its page
+                _local++;
+                return true;
+            }
             _pick = key;
             _page = 0;
             _local++;
@@ -145,6 +152,7 @@ namespace RealLifeOverhaul.Construction
             tab = Mathf.Clamp(tab, 0, TabKeys.Length - 1);
             if (tab != _tab || _pick != null || _page != 0)
             {
+                _preview = null;
                 _tab = tab;
                 _pick = null;
                 _page = 0;
@@ -191,6 +199,34 @@ namespace RealLifeOverhaul.Construction
             _tab = Mathf.Clamp(_tab, 0, TabKeys.Length - 1);
             m.Tab = _tab;
             m.Nav = Nav(state);
+            string selected = WriteTab(state);
+            _previewing = false;
+            if (selected == null && _tab != ConstructionDirector.TabOverview)
+            {
+                // A table's tab shows the thing it points at beside it: the one pressed last, or the first row that can be opened.
+                if (_preview != null && !HasRow(_preview))
+                {
+                    _preview = null;
+                }
+                string show = _preview ?? FirstPick();
+                if (show != null)
+                {
+                    string kept = _pick;
+                    _pick = show;
+                    _runs = new ConstructionRuns();
+                    _box = new KitBox(_runs, ConstructionText.T);
+                    selected = WriteTab(state);
+                    _pick = kept;
+                    _previewing = selected != null && _box.HasContent;
+                    _previewKey = selected;
+                }
+            }
+            Compose(m, state, _previewing ? null : selected);
+            m.Runs = _runs.ToArray();
+        }
+
+        private string WriteTab(BuildState state)
+        {
             for (int i = 0; i < _rows.Count; i++)
             {
                 _pool.Add(_rows[i]);
@@ -198,6 +234,7 @@ namespace RealLifeOverhaul.Construction
             _rows.Clear();
             string selected = null;
             _spec = ConstructionTables.For(_tab);
+            _box.Clear();
             switch (_tab)
             {
                 case ConstructionDirector.TabLand: WriteLand(_box, state, ref selected); break;
@@ -209,8 +246,31 @@ namespace RealLifeOverhaul.Construction
                 case ConstructionDirector.TabCity: WriteCity(_box, state, ref selected); break;
                 default: WriteOverview(_box, state, ref selected); break;
             }
-            Compose(m, state, selected);
-            m.Runs = _runs.ToArray();
+            return selected;
+        }
+
+        private string FirstPick()
+        {
+            for (int i = 0; i < _rows.Count; i++)
+            {
+                if (_rows[i].Pick && !_rows[i].Info)
+                {
+                    return _rows[i].Id;
+                }
+            }
+            return null;
+        }
+
+        private bool HasRow(string id)
+        {
+            for (int i = 0; i < _rows.Count; i++)
+            {
+                if (_rows[i].Id == id && _rows[i].Pick)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         private UiNavEntry[] Nav(BuildState state)
