@@ -33887,7 +33887,7 @@
   "reallife_ven_confirm_buy_back": "Buy {name} out of {business} at the deal's own term for {amount}? They stop taking their share.",
   "reallife_ven_note_no_place": "That building cannot be found now.",
   "reallife_ven_note_promises": "{name} asks {count} things of you besides the target. They are checked each month: open the deal in Ventures.",
-  "reallife_opt_sec_uiscreens_ventures": "RLO interface: brands, ventures and web shop",
+  "reallife_opt_sec_uiscreens_ventures": "RLO interface: ventures, brands, shop",
   "reallife_ui_screen_ventures": "Ventures",
   "reallife_opt_tip_ui_screen_ventures": "Ventures in the RLO interface. Off: the Ventures app as it was, while the rest stay on the interface.",
   "reallife_ui_test_ventures": "Open Ventures on the kit",
@@ -34595,5 +34595,7 @@
   "reallife_ui_cons_row_land_cash": "Cash for land",
   "reallife_ui_cons_row_made": "Made on land and works",
   "reallife_ui_cons_row_variances": "Variances allowed",
-  "reallife_ui_cons_variances_of": "{granted} of {asked}"
+  "reallife_ui_cons_variances_of": "{granted} of {asked}",
+  "reallife_ui_build_none": "No buildings to show.",
+  "reallife_transaction_bld_land_auction_label": "Land won at auction"
 }

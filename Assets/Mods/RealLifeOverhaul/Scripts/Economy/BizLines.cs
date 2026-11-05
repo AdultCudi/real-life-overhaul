@@ -76,7 +76,7 @@ namespace RealLifeOverhaul.Economy
             P + "ownbank_investment_kept", P + "ownbank_investment_pay", P + "ownbank_investment_sale",
             P + "bld_builder", P + "bld_builder_back", P + "bld_buyout", P + "bld_cash", P + "bld_conversion", P + "bld_conversion_back",
             P + "bld_demolition", P + "bld_demolition_back", P + "bld_fees_back", P + "bld_insurance", P + "bld_investor_in", P + "bld_investor_out",
-            P + "bld_land", P + "bld_land_back", P + "bld_land_rival", P + "bld_land_rival_sold", P + "bld_land_sold", P + "bld_loan",
+            P + "bld_land", P + "bld_land_auction", P + "bld_land_back", P + "bld_land_rival", P + "bld_land_rival_sold", P + "bld_land_sold", P + "bld_loan",
             P + "bld_materials", P + "bld_plant_buy", P + "bld_plant_sale", P + "bld_refit", P + "bld_refit_back", P + "bld_repay",
             P + "bld_ring_cut", P + "bld_sales", P + "bld_show", P + "bld_show_fit", P + "bld_test_furnish", P + "bld_test_land"
         };

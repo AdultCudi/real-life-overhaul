@@ -33887,7 +33887,7 @@
   "reallife_ven_confirm_buy_back": "Recomprar a parte de {name} no negócio {business}, nos termos do próprio acordo, por {amount}? Eles deixam de ficar com a parte deles.",
   "reallife_ven_note_no_place": "Esse prédio não pode ser encontrado agora.",
   "reallife_ven_note_promises": "{name} pede {count} coisas de você além da meta. Elas são conferidas todo mês: abra o acordo no Ventures.",
-  "reallife_opt_sec_uiscreens_ventures": "Interface RLO: marcas, Ventures e loja virtual",
+  "reallife_opt_sec_uiscreens_ventures": "Interface RLO: Ventures, marcas, loja",
   "reallife_ui_screen_ventures": "Ventures",
   "reallife_opt_tip_ui_screen_ventures": "Ventures na interface RLO. Desligado: o app Ventures como era, enquanto o resto continua na interface.",
   "reallife_ui_test_ventures": "Abrir o Ventures na nova interface",
@@ -34595,5 +34595,7 @@
   "reallife_ui_cons_row_land_cash": "Dinheiro pelo terreno",
   "reallife_ui_cons_row_made": "Lucro com terreno e obras",
   "reallife_ui_cons_row_variances": "Exceções de altura concedidas",
-  "reallife_ui_cons_variances_of": "{granted} de {asked}"
+  "reallife_ui_cons_variances_of": "{granted} de {asked}",
+  "reallife_ui_build_none": "Nenhum edifício para mostrar.",
+  "reallife_transaction_bld_land_auction_label": "Terreno ganho em leilão"
 }

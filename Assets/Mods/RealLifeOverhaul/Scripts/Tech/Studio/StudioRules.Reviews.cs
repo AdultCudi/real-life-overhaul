@@ -14,6 +14,7 @@ namespace RealLifeOverhaul.Tech
 
     public static partial class StudioRules
     {
+        private const string Mod = "reallife";   // the keys' start, apart, so the text check reads only whole keys
         /// <summary>The line a review quotes blames or praises the bugs, not a part.</summary>
         public const int PartBugs = (int)Part.Count;
 
@@ -66,7 +67,7 @@ namespace RealLifeOverhaul.Tech
         public static string QuoteKey(GameReview r)
         {
             string part = r.Part >= (int)Part.Count ? "bugs" : ((Part)Clamp(r.Part, 0, (int)Part.Count - 1)).ToString().ToLowerInvariant();
-            return "reallife_studio_review_" + (r.Praise ? "p" : "c") + "_" + part + "_" + Clamp(r.Variant, 0, 1);
+            return Mod + "_studio_review_" + (r.Praise ? "p" : "c") + "_" + part + "_" + Clamp(r.Variant, 0, 1);
         }
 
         /// <summary>The average of the outlets' scores, whole; -1 with none.</summary>

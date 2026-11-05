@@ -389,7 +389,9 @@ namespace RealLifeOverhaul.Ui
         {
             if (key.StartsWith(UsePicture, StringComparison.Ordinal))
             {
-                return int.TryParse(key.Substring(UsePicture.Length), out int use) ? GameSprites.Get(BuildModeCatalogue.Picture(use)) : null;
+                // A name of the kit's list, so the picture check traces every name asked for to the ones wanted behind the loading screen.
+                int named = int.TryParse(key.Substring(UsePicture.Length), out int use) ? Array.IndexOf(BuildModeKit.Names, BuildModeCatalogue.Picture(use)) : -1;
+                return named >= 0 ? GameSprites.Get(BuildModeKit.Names[named]) : null;
             }
             int rgb = UiDraw.SwatchColour(key);
             if (rgb < 0)

@@ -7,7 +7,7 @@ namespace RealLifeOverhaul.Ui
     /// Keeps the places of the windows the player moved (UiWindowPlaces) with the game's settings on this computer (PlayerPrefs), never
     /// in the save and never sent, and the options page's reset. Game side; costs nothing a frame.
     /// </summary>
-    internal static class UiWindowPrefs
+    internal static class UiGameWindowPrefs
     {
         private const string Pref = "reallife.window.places";   // not a locale key: a dot, not an underscore
         private const float NoticeSeconds = 5f;
