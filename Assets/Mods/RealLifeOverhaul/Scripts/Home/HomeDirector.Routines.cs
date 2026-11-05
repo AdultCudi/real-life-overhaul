@@ -62,7 +62,7 @@ namespace RealLifeOverhaul
             }
             if (!Free(player))
             {
-                Refuse("reallife_home_refused_busy", what);
+                Refuse(BusyKey(), what);
                 return;
             }
             Vector3 at = player.transform.position;
@@ -258,7 +258,7 @@ namespace RealLifeOverhaul
             {
                 if (panelBusy)
                 {
-                    Refuse("reallife_home_refused_busy", activity.GetType().Name, "the game's activity panel was open");
+                    Refuse("reallife_home_refused_busy_activity", activity.GetType().Name, "the game's activity panel was open");
                 }
                 return;   // otherwise the game has said why itself (no energy, in a vehicle)
             }
@@ -328,7 +328,7 @@ namespace RealLifeOverhaul
                 if (now > _planUntil)
                 {
                     _plan = null;
-                    Refuse(_run.Active ? "reallife_home_refused_running" : "reallife_home_refused_busy", what, "waited 20 s");
+                    Refuse(_run.Active ? "reallife_home_refused_running" : BusyKey(), what, "waited 20 s");
                 }
                 return;
             }

@@ -142,12 +142,8 @@ namespace RealLifeOverhaul.Fame
             {
                 return;
             }
-            if (!Free())
-            {
-                TestRefusals.Tell(Logger, "Standing night show", TestRefusal.ScreenBusy);
-                return;
-            }
-            Guarded(() => StartTestScene(FameInviteKind.Show));
+            // The button is in the options menu, behind which the game is paused: the scene starts once that is closed.
+            TestWait.Run(Logger, "Standing night show", Free, () => Guarded(() => StartTestScene(FameInviteKind.Show)));
         }
 
         public void TestRequest()
@@ -178,12 +174,7 @@ namespace RealLifeOverhaul.Fame
             {
                 return;
             }
-            if (!Free())
-            {
-                TestRefusals.Tell(Logger, "Standing evening", TestRefusal.ScreenBusy);
-                return;
-            }
-            Guarded(() => StartTestScene(_testRequest++ % 2 == 0 ? FameInviteKind.Investors : FameInviteKind.CityEvent));
+            TestWait.Run(Logger, "Standing evening", Free, () => Guarded(() => StartTestScene(_testRequest++ % 2 == 0 ? FameInviteKind.Investors : FameInviteKind.CityEvent)));
         }
 
         /// <summary>
