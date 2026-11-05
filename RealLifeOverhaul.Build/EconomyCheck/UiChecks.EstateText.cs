@@ -141,6 +141,37 @@ internal static partial class Program
         Check(doubled == "none", "estate: no word is said twice in a row on any page in en, pt or zh (" + doubled + ")");
         Check(unjoined == "none", "estate: pt never leaves a preposition apart from its article (" + unjoined + ")");
         Check(english == "none", "estate: no English word of the samples (a unit's name, a guest's words, a kind of fault) reaches the pt and zh pages (" + english + ")");
+        // And not in any text the live pages can say, shown on a previewed state or not: every key the pages' sources name, in en, pt and zh-cn.
+        string liveColon = "none";
+        int liveKeys = 0;
+        string uiRoot = EstateSourceRoot();
+        if (uiRoot != null)
+        {
+            var named = new HashSet<string>();
+            foreach (string file in Directory.GetFiles(uiRoot, "*.cs"))
+            {
+                foreach (Match key in Regex.Matches(File.ReadAllText(file), "\"(reallife_[a-z0-9_]+)\""))
+                {
+                    named.Add(key.Groups[1].Value);
+                }
+            }
+            foreach (string lang in new[] { "en", "pt", "zh-cn" })
+            {
+                Dictionary<string, string> d = LocaleFile(lang);
+                foreach (string key in named)
+                {
+                    if (d.TryGetValue(key, out string said))
+                    {
+                        liveKeys++;
+                        if (Sentence.IsMatch(said))
+                        {
+                            liveColon = Collect(liveColon, lang + " " + key + ": " + said, firstSeen);
+                        }
+                    }
+                }
+            }
+        }
+        Check(liveColon == "none" && (uiRoot == null || liveKeys > 600), "estate: no colon or semicolon in any text the live pages name, in en, pt or zh-cn (" + liveColon + "; " + liveKeys + " texts read)");
         Check(colon == "none" && lines > 3000, "estate: no colon or semicolon in any line of any page in en, pt or zh (" + colon + "; " + lines + " lines read)");
 
         // A decision's choices lift under the pointer: the target's face has the hover fill of a table row, the resting fill lying behind it.
@@ -177,31 +208,45 @@ internal static partial class Program
                 EstateFace.Lay(scene, m, UiFrame.FullMenu(16f / 9f, "Property"), true, UiDefaultKeys.XboxPad);
                 int start = UiFocusRules.First(scene);
                 string walk = EstateTour.Walk(scene, start);
-                var seen = new HashSet<int> { start };
-                int at = start;
+                // A list is one target: a row of it counts as the list's first row. The walk stands on each target once and on none a second time.
+                var head = new Dictionary<int, int>();
+                for (int i = 0; i < scene.NodeCount; i++)
+                {
+                    if (scene.Nodes[i].List >= 0 && !head.ContainsKey(scene.Nodes[i].List))
+                    {
+                        head[scene.Nodes[i].List] = i;
+                    }
+                }
+                Func<int, int> rep = n => scene.Nodes[n].List >= 0 ? head[scene.Nodes[n].List] : n;
+                var seen = new HashSet<int> { rep(start) };
+                int at = start, repeats = 0;
                 foreach (char c in walk)
                 {
                     int next = UiFocusRules.Next(scene, at, c == 'R' ? 1 : c == 'L' ? -1 : 0, c == 'D' ? 1 : c == 'U' ? -1 : 0);
                     at = next >= 0 ? next : at;
-                    seen.Add(at);
+                    repeats += seen.Add(rep(at)) ? 0 : 1;
                 }
-                int targets = 0, missed = 0;
+                var wanted = new HashSet<int>();
                 for (int i = 0; i < scene.NodeCount; i++)
                 {
                     if (!scene.Nodes[i].Disabled && scene.Nodes[i].Layer == scene.Nodes[start].Layer)
                     {
-                        targets++;
-                        missed += seen.Contains(i) ? 0 : 1;
+                        wanted.Add(rep(i));
                     }
                 }
-                tours++;
-                if (missed > 0 || walk.Length > targets * 3 + 3)
+                int missed = 0;
+                foreach (int target in wanted)
                 {
-                    lost = (dealerApp ? "dealer " : "estate ") + state + ": " + missed + " of " + targets + " targets missed, " + walk.Length + " presses";
+                    missed += seen.Contains(target) ? 0 : 1;
+                }
+                tours++;
+                if (missed > 0 || repeats > 0)
+                {
+                    lost = (dealerApp ? "dealer " : "estate ") + state + ": " + missed + " of " + wanted.Count + " targets missed, " + repeats + " stood on twice, " + walk.Length + " presses (" + walk + ")";
                 }
             }
         }
-        Check(lost == "none" && tours >= 8, "estate: the pad's walk of every card reaches each of its targets in at most three presses a target (" + tours + " cards; " + lost + ")");
+        Check(lost == "none" && tours >= 8, "estate: the pad's walk of every card stands on each of its targets once and on none twice (" + tours + " cards; " + lost + ")");
     }
 
     // A finding added to the ones before it (the first few, each once), so one run names what to mend.

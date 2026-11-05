@@ -63,7 +63,7 @@ namespace RealLifeOverhaul.Ui
                     rows.Add(new UiDataRow
                     {
                         Cells = new[] { s.Trade ? DealerText.T("reallife_dealer_to_trade") : s.Customer, DealerGame.CarName(s.Type), Money(s.Price),
-                            Money(s.Cost), string.Empty, FinanceText.Day(s.Day),
+                            string.Empty, string.Empty, FinanceText.Day(s.Day),   // what it sold for; the asking price is not kept with a sale, and its cost is not an asking price
                             DealerText.T("reallife_dealer_state_sold", "margin", Money(s.Price - s.Cost)) },
                         Values = new[] { s.Trade ? UiDataTable.GlyphFace(UiIcon.Store) : 0, (int)ClassGlyph(s.Type), 0, 0, -1, 0, 0 },
                             Tones = new[] { UiRole.None, ClassTint(s.Type, s.Price), UiRole.None, UiRole.None, UiRole.None, UiRole.None, s.Price < s.Cost ? UiRole.Danger : UiRole.Ok },
@@ -391,7 +391,6 @@ namespace RealLifeOverhaul.Ui
                 }
                 var rows = new List<UiDataRow>(16);
                 var keys = new List<string>(16);
-                
                 for (int k = 0; k < DealerCatalogue.EventKinds; k++)
                 {
                     DealerYard running = Running(k);

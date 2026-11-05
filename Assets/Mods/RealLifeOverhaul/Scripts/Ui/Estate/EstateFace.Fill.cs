@@ -183,6 +183,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     main = s.Nodes[i].Key == UiAction.Alt && !s.Nodes[i].Disabled ? i : -1;
                 }
+                WrapWayOut(s);
                 s.FocusFirst = main >= 0 ? main : way;
             }
             for (int i = 0; i < m.Prompts.Length; i++)
@@ -225,7 +226,7 @@ namespace RealLifeOverhaul.Ui
             UiFactCardModel[] leftCards = m.Left.Length > 0 ? m.Left : m.Right, rightCards = cards2 ? m.Right : new UiFactCardModel[0];
             float left = Stack(leftCards, cw, keys) + RelatedHeight(m);
             float right = Stack(rightCards, rw, keys) + (person ? PersonHeight(m.Person, rw) : 0f) + GridHeight(m, rw) + SharesHeight(m.ShareLabels, m.ShareValues, m.ShareTitle, both ? rw : cw);
-            return h + Math.Max(left, right) + (related2 ? UiTokens.S3 + Related2Height(m) : 0f);
+            return h + Math.Max(left, right) + (related2 ? UiTokens.S3 + Related2Height(m, w) : 0f);
         }
 
         private static float PersonHeight(EstateUnitPage p, float w)
@@ -238,8 +239,18 @@ namespace RealLifeOverhaul.Ui
                 + Math.Min(p.MeterLabels.Length, p.MeterValues.Length) * UiTokens.PairRow + UiTokens.S3);
         }
 
-        private static float Related2Height(EstateModel m) => m.Related2 == null || m.Related2.Length == 0 ? 0f
-            : UiDraw.Snap(UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2 + Math.Min(m.Related2.Length, Math.Max(1, m.RelatedRows)) * RowHeight);
+        // A list across a wide page runs in two columns, half the rows in each, so a name and its figure stand a row's width apart and no more.
+        private static bool Pairs(float w, int count) => count >= 2 && w >= PairFrom;
+
+        private static float Related2Height(EstateModel m, float w)
+        {
+            if (m.Related2 == null || m.Related2.Length == 0)
+            {
+                return 0f;
+            }
+            int shown = Math.Min(m.Related2.Length, Math.Max(1, m.RelatedRows));
+            return UiDraw.Snap(UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2 + (Pairs(w, shown) ? (shown + 1) / 2 : shown) * RowHeight);
+        }
 
         private static float Related2(UiScene s, UiAt at, EstateModel m, float x, float y, float w, float bottom)
         {
@@ -249,7 +260,22 @@ namespace RealLifeOverhaul.Ui
             }
             UiAt on = at.InRegion(RegionLists);
             y = Section(s, on, m.Related2Title, m.Related2Count, x, y, w);
-            for (int i = 0; i < m.Related2.Length && i < m.RelatedRows && y + RowHeight <= bottom + 0.5f; i++)
+            int shown = Math.Min(m.Related2.Length, Math.Max(1, m.RelatedRows));
+            if (Pairs(w, shown))
+            {
+                int left = (shown + 1) / 2;
+                float half = UiDraw.SnapDown((w - UiTokens.S6) / 2f);
+                for (int i = 0; i < shown; i++)
+                {
+                    float ry = y + (i < left ? i : i - left) * RowHeight;
+                    if (ry + RowHeight <= bottom + 0.5f)
+                    {
+                        Row(s, on, m.Related2[i], i < left ? x : x + half + UiTokens.S6, ry, half);
+                    }
+                }
+                return y + left * RowHeight;
+            }
+            for (int i = 0; i < shown && y + RowHeight <= bottom + 0.5f; i++)
             {
                 Row(s, on, m.Related2[i], x, y, w);
                 y += RowHeight;
@@ -301,7 +327,7 @@ namespace RealLifeOverhaul.Ui
             }
             float each = UiDraw.SnapDown((w - UiTokens.S6 * (n - 1)) / n);
             float h = m.ShareLabels != null && m.ShareLabels.Length > 0 ? SharesHeight(m.ShareLabels, m.ShareValues, m.ShareTitle, each) : 0f;
-            return Math.Max(h, Math.Max(RelatedHeight(m), Related2Height(m)));
+            return Math.Max(h, Math.Max(RelatedHeight(m), Related2Height(m, each)));
         }
 
         private static void Foot(UiScene s, UiAt at, EstateModel m, float x, float y, float w, float bottom)

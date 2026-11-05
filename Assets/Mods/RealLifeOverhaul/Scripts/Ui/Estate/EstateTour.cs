@@ -4,31 +4,45 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
-    /// The d-pad's walk over a card from its first target to every other, in reading order (a row left to right, the rows top to bottom), each leg the shortest run of presses
-    /// that UiFocusRules itself would take. The previews draw it as the pad path, and the checks hold that it reaches every target of the card and stays short, so a stepper or a
-    /// second button that only a long way round reaches is seen. Game-free. Cost: a few searches over a card's targets, offline only.
+    /// The d-pad's walk over a card: from its first target to every other, each target once and none twice, as one run of presses that UiFocusRules itself would take. A card is read in
+    /// reading order (a row left to right, the rows top to bottom, a two-column card down its left column and then its right), and the walk prefers the next target in that order wherever
+    /// the pad can reach it without passing a target it has already stood on. Where no walk can avoid standing twice somewhere, the check names the card. The previews draw the walk as
+    /// the pad path. Game-free. Cost: a search over a card's dozen targets, offline only.
     /// </summary>
     public static class EstateTour
     {
         private const float RowTolerance = 20f;   // px: targets this close in height stand in one row of the reading
         private const float ColumnGap = 160f;     // px: the least gap between the middles of two columns of targets
+        private const int SearchMost = 400000;    // steps of the search before it gives the walk it has
 
-        /// <summary>The presses as letters (U, D, L, R) that visit every enabled target of the top layer, or "" when there is nothing to walk. A list's rows count as one target.</summary>
-        public static string Walk(UiScene s, int start)
+        /// <summary>The presses as letters (U, D, L, R) that visit every enabled target of the top layer once, or "" when there is nothing to walk. A list's rows count as one target.</summary>
+        public static string Walk(UiScene s, int start) => Walk(s, start, out int stands, out int targets);
+
+        /// <summary>The same walk, with how many distinct targets it stands on and how many the card has: all of them, each once, when the two agree and the presses are one fewer.</summary>
+        public static string Walk(UiScene s, int start, out int stands, out int targets)
         {
+            stands = targets = 0;
             if (start < 0 || start >= s.NodeCount)
             {
                 return string.Empty;
             }
             int top = s.Nodes[start].Layer;
             var order = new List<int>(s.NodeCount);
-            var listed = new HashSet<int>();
+            var listed = new Dictionary<int, int>();   // a list's id to the first of its rows: the list is one target
             for (int i = 0; i < s.NodeCount; i++)
             {
                 ref UiNode n = ref s.Nodes[i];
-                if (n.Disabled || n.Layer != top || (n.List >= 0 && !listed.Add(n.List)))
+                if (n.Disabled || n.Layer != top)
                 {
                     continue;
+                }
+                if (n.List >= 0)
+                {
+                    if (listed.ContainsKey(n.List))
+                    {
+                        continue;
+                    }
+                    listed[n.List] = i;
                 }
                 order.Add(i);
             }
@@ -58,33 +72,138 @@ namespace RealLifeOverhaul.Ui
                 float ya = s.Nodes[a].Y, yb = s.Nodes[b].Y;
                 return Math.Abs(ya - yb) > RowTolerance ? ya.CompareTo(yb) : s.Nodes[a].X.CompareTo(s.Nodes[b].X);
             });
-            var seen = new bool[s.NodeCount];
-            seen[start] = true;
-            var walk = new System.Text.StringBuilder(64);
-            int at = start;
+            var rank = new int[s.NodeCount];
+            for (int i = 0; i < rank.Length; i++)
+            {
+                rank[i] = int.MaxValue;
+            }
             for (int i = 0; i < order.Count; i++)
             {
-                int target = order[i];
+                rank[order[i]] = i;
+            }
+            int startRep = Rep(s, start, listed);
+            if (rank[startRep] == int.MaxValue)
+            {
+                order.Insert(0, startRep);
+                rank[startRep] = 0;
+            }
+            targets = order.Count;
+            // What each press leads to, as a target of the walk (a row of a list is its list).
+            var next = new int[s.NodeCount][];
+            var letters = new[] { 'R', 'L', 'D', 'U' };
+            foreach (int i in order)
+            {
+                next[i] = new int[4];
+                for (int d = 0; d < 4; d++)
+                {
+                    int dx = d == 0 ? 1 : d == 1 ? -1 : 0, dy = d == 2 ? 1 : d == 3 ? -1 : 0;
+                    int to = UiFocusRules.Next(s, i, dx, dy);
+                    to = to >= 0 && to < s.NodeCount ? Rep(s, to, listed) : -1;
+                    next[i][d] = to >= 0 && to != i && rank[to] != int.MaxValue ? to : -1;
+                }
+            }
+            var visited = new bool[s.NodeCount];
+            var path = new List<int>(targets) { startRep };
+            var presses = new List<char>(targets);
+            var best = new List<char>();
+            int bestStands = 1, steps = 0;
+            visited[startRep] = true;
+            Search(next, rank, visited, path, presses, letters, targets, best, ref bestStands, ref steps);
+            // Where the pad can stand on every target only by passing one twice, the walk goes on from the longest run it found by the shortest ways to the rest, standing again where it must.
+            if (bestStands < targets)
+            {
+                best = Continue(s, startRep, next, best, rank, letters, order, out bestStands);
+            }
+            stands = bestStands;
+            return new string(best.ToArray());
+        }
+
+        private static int Rep(UiScene s, int node, Dictionary<int, int> listed) => s.Nodes[node].List >= 0 && listed.TryGetValue(s.Nodes[node].List, out int first) ? first : node;
+
+        // A depth first search over the pad's moves for a run through every target once, trying the next in reading order first.
+        private static bool Search(int[][] next, int[] rank, bool[] visited, List<int> path, List<char> presses, char[] letters, int targets, List<char> best, ref int bestStands, ref int steps)
+        {
+            if (path.Count > bestStands)
+            {
+                bestStands = path.Count;
+                best.Clear();
+                best.AddRange(presses);
+            }
+            if (path.Count == targets)
+            {
+                return true;
+            }
+            if (++steps > SearchMost)
+            {
+                return false;
+            }
+            int at = path[path.Count - 1];
+            var tries = new List<int>(4);
+            for (int d = 0; d < 4; d++)
+            {
+                if (next[at][d] >= 0 && !visited[next[at][d]])
+                {
+                    tries.Add(d);
+                }
+            }
+            tries.Sort((a, b) => rank[next[at][a]].CompareTo(rank[next[at][b]]));
+            foreach (int d in tries)
+            {
+                int to = next[at][d];
+                visited[to] = true;
+                path.Add(to);
+                presses.Add(letters[d]);
+                if (Search(next, rank, visited, path, presses, letters, targets, best, ref bestStands, ref steps))
+                {
+                    return true;
+                }
+                presses.RemoveAt(presses.Count - 1);
+                path.RemoveAt(path.Count - 1);
+                visited[to] = false;
+            }
+            return false;
+        }
+
+        // The best run found, continued by the shortest ways to what it left out, in reading order.
+        private static List<char> Continue(UiScene s, int start, int[][] next, List<char> run, int[] rank, char[] letters, List<int> order, out int stands)
+        {
+            var seen = new bool[s.NodeCount];
+            seen[start] = true;
+            int at = start;
+            foreach (char c in run)
+            {
+                at = next[at][Array.IndexOf(letters, c)];
+                seen[at] = true;
+            }
+            var walk = new List<char>(run);
+            foreach (int target in order)
+            {
                 if (seen[target])
                 {
                     continue;
                 }
-                string leg = Path(s, at, target, seen);
+                List<char> leg = Path(next, letters, at, target, seen, s.NodeCount);
                 if (leg == null)
                 {
                     continue;   // not reached by the pad at all: the checks name it
                 }
-                walk.Append(leg);
+                walk.AddRange(leg);
                 at = target;
             }
-            return walk.ToString();
+            int count = 0;
+            for (int i = 0; i < seen.Length; i++)
+            {
+                count += seen[i] ? 1 : 0;
+            }
+            stands = count;
+            return walk;
         }
 
         // The shortest run of presses from a target to another (a search over what each press leads to), marking each target passed on the way as visited.
-        private static string Path(UiScene s, int from, int to, bool[] seen)
+        private static List<char> Path(int[][] next, char[] letters, int from, int to, bool[] seen, int count)
         {
-            var before = new int[s.NodeCount];
-            var press = new char[s.NodeCount];
+            var before = new int[count];
+            var press = new char[count];
             for (int i = 0; i < before.Length; i++)
             {
                 before[i] = -2;
@@ -95,15 +214,18 @@ namespace RealLifeOverhaul.Ui
             while (queue.Count > 0 && before[to] == -2)
             {
                 int at = queue.Dequeue();
+                if (next[at] == null)
+                {
+                    continue;
+                }
                 for (int d = 0; d < 4; d++)
                 {
-                    int dx = d == 0 ? 1 : d == 1 ? -1 : 0, dy = d == 2 ? 1 : d == 3 ? -1 : 0;
-                    int next = UiFocusRules.Next(s, at, dx, dy);
-                    if (next >= 0 && next < s.NodeCount && before[next] == -2)
+                    int n = next[at][d];
+                    if (n >= 0 && before[n] == -2)
                     {
-                        before[next] = at;
-                        press[next] = d == 0 ? 'R' : d == 1 ? 'L' : d == 2 ? 'D' : 'U';
-                        queue.Enqueue(next);
+                        before[n] = at;
+                        press[n] = letters[d];
+                        queue.Enqueue(n);
                     }
                 }
             }
@@ -118,7 +240,7 @@ namespace RealLifeOverhaul.Ui
                 seen[n] = true;
             }
             leg.Reverse();
-            return new string(leg.ToArray());
+            return leg;
         }
     }
 }

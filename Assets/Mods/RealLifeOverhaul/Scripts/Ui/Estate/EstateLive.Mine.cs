@@ -248,7 +248,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     Cells = new[] { h.Name, EstateText.T("reallife_estate_kind_building"), "-", Month(income), chip, string.Empty },
                     Values = new[] { (int)UseIcon(h.Use), 0, 0, 0, 0, -1 },
-                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, h.Busy ? UiRole.Warn : UiRole.None, UiRole.None },
+                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.Muted, h.Busy ? UiRole.Warn : UiRole.None, UiRole.None },
                     Subs = new[] { EstateText.District(h.District), EstateText.Use(h.Use), null, null, null, null }
                 };
             }
@@ -259,7 +259,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     Cells = new[] { name, kind, "-", perDay != 0 ? Month(perDay) : "-", line, string.Empty },
                     Values = new[] { (int)icon, 0, 0, 0, 0, -1 },
-                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, tone, UiRole.None, UiRole.None },
+                    // A hotel's or a lot's night is not rent that is due, so its figure stands in the muted ink unless it is a loss.
+                    Tones = new[] { UiRole.None, UiRole.None, UiRole.None, tone == UiRole.None ? UiRole.Muted : tone, UiRole.None, UiRole.None },
                     Subs = new[] { kind, string.Empty, null, null, null, null }
                 };
             }

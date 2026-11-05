@@ -14,6 +14,9 @@ namespace RealLifeOverhaul.Ui
         public const int ActionCommand = 3000, StepLess = 3001, StepMore = 3002, BackCommand = 3003, SearchCommand = 3010;
         public const int TableBase = UiDataTable.First;
         private const float HeadHeight = 64f, RowHeight = 48f, TileBig = 56f, ListWidthShare = 0.5f, SideWidth = 360f;
+        // A short row keeps its glyph, its name, its chip and its amount within this width: the row's hover and target run the whole width of its column, but the eye never has more than
+        // this to cross from a name to its figure. Two columns of rows stand side by side where the page is wide enough for two rows of this width.
+        private const float RowContentMost = 560f, PairFrom = 1000f;
         private const byte RegionTable = 1, RegionLeft = 2, RegionRight = 3, RegionLists = 4, RegionHead = 5;
 
         /// <summary>Every command the screen answers, for the checks.</summary>
@@ -362,7 +365,7 @@ namespace RealLifeOverhaul.Ui
                 int t = UiDraw.Tile(s, on, x, ty, tile, r.Tint, false);
                 UiDraw.Icon(s, on.In(t), x + (tile - UiTokens.Icon) / 2f, ty + (tile - UiTokens.Icon) / 2f, UiTokens.Icon, r.Icon, r.Tint, UiFlags.Middle | UiFlags.Centre, true);
             }
-            float tx = x + tile + UiTokens.S3, right = x + w;
+            float tx = x + tile + UiTokens.S3, right = x + Math.Min(w, RowContentMost);
             int button = -1;
             if (!string.IsNullOrEmpty(r.Button))
             {
@@ -492,7 +495,7 @@ namespace RealLifeOverhaul.Ui
             UiFactCardModel[] leftCards = m.Left.Length > 0 ? m.Left : m.Right, rightCards = cards2 ? m.Right : new UiFactCardModel[0];
             // The left column holds its cards and then the things related to the page; the right the person, its cards, the equal buttons, the shares and a second list.
             float leftH = Stack(leftCards, cw, keys), rightH = Stack(rightCards, rw, keys);
-            float relatedH = RelatedHeight(m), personH = person ? PersonHeight(m.Person, rw) : 0f, gridH = GridHeight(m, rw), related2H = Related2Height(m);
+            float relatedH = RelatedHeight(m), personH = person ? PersonHeight(m.Person, rw) : 0f, gridH = GridHeight(m, rw), related2H = Related2Height(m, w);
             float sharesH = SharesHeight(m.ShareLabels, m.ShareValues, m.ShareTitle, both ? rw : cw);
             float columnsH = Math.Max(leftH + relatedH, personH + rightH + gridH + sharesH);
             float natural = y + columnsH + (related2 ? UiTokens.S3 + related2H : 0f);   // the second list runs the page's width under both columns

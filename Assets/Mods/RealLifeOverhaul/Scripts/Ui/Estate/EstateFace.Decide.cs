@@ -54,6 +54,35 @@ namespace RealLifeOverhaul.Ui
                 Prompts = m.Prompts, PromptCount = m.Prompts.Length, LiftChoices = true
             };
             UiDecision.Lay(s, card, frame, dark, keys);
+            WrapWayOut(s);
+        }
+
+        // The way out at a card's foot is one press from the top of it and the top one press from the way out, so the pad goes round a card instead of back along it: every target
+        // of a card is then reached once in a single run, whichever answer the keys started on.
+        private static void WrapWayOut(UiScene s)
+        {
+            int way = -1, first = -1;
+            for (int i = 0; i < s.NodeCount; i++)
+            {
+                way = !s.Nodes[i].Disabled && s.Nodes[i].Command == BackCommand ? i : way;
+            }
+            for (int i = 0; way >= 0 && i < s.NodeCount; i++)
+            {
+                ref UiNode n = ref s.Nodes[i];
+                if (i == way || n.Disabled || n.Layer != s.Nodes[way].Layer)
+                {
+                    continue;
+                }
+                if (first < 0 || n.Y < s.Nodes[first].Y - 0.5f || Math.Abs(n.Y - s.Nodes[first].Y) <= 0.5f && n.X < s.Nodes[first].X)
+                {
+                    first = i;
+                }
+            }
+            if (way >= 0 && first >= 0 && s.Nodes[way].Down < 0 && s.Nodes[first].Up < 0)
+            {
+                s.Nodes[first].Up = way;
+                s.Nodes[way].Down = first;
+            }
         }
     }
 }

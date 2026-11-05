@@ -301,7 +301,7 @@ namespace RealLifeOverhaul.Ui
                         locate.Add(_runs.Do(() => EstateGame.Locate(callPlace)));
                         rows.Add(new UiDataRow
                         {
-                            Cells = new[] { EstateText.UnitName(h, n), Capital(EstateText.Fault(u.Call)), string.Empty,
+                            Cells = new[] { EstateText.UnitName(h, n), Capital(EstateText.FaultNoun(u.Call)), string.Empty,   // the bare noun, as the roll and the book buttons say it
                                 EstateText.T(booked ? "reallife_ibox_chip_booked" : u.CallAnswer == (int)CallAnswer.Yourself ? "reallife_ibox_chip_due" : "reallife_ibox_chip_open"),
                                 Money(u.CallCost), EstateText.T("reallife_estate_row_since", "day", u.CallDay.ToString(Inv)), string.Empty },
                             Values = new[] { (int)UiIcon.Wrench, 0, -1, 0, 0, 0, (int)UiIcon.Locate },
@@ -364,6 +364,50 @@ namespace RealLifeOverhaul.Ui
                     new[] { open.ToString(Inv), bookedCalls.ToString(Inv), unfit.ToString(Inv), Money(callsCost) }, cols, rows, keys, null,
                     EstateText.T("reallife_estate_row_nothing_owned"), EstateText.T("reallife_ui_estate_empty_works_body"));
                 _m.RowRuns = locate.ToArray();
+                // The services booked ahead, the soonest first, and the city's inspections, the nearest first: what is coming, under what is waiting.
+                var ahead = new List<KeyValuePair<EstateHolding, ServiceBooking>>(8);
+                var inspections = new List<EstateHolding>(8);
+                for (int i = 0; Duties && i < _s.Holdings.Count; i++)
+                {
+                    for (int b = 0; b < _s.Holdings[i].Services.Count; b++)
+                    {
+                        ahead.Add(new KeyValuePair<EstateHolding, ServiceBooking>(_s.Holdings[i], _s.Holdings[i].Services[b]));
+                    }
+                    if (_s.Holdings[i].InspectDay > 0)
+                    {
+                        inspections.Add(_s.Holdings[i]);
+                    }
+                }
+                ahead.Sort((a, b) => a.Value.Day.CompareTo(b.Value.Day));
+                inspections.Sort((a, b) => a.InspectDay.CompareTo(b.InspectDay));
+                var visits = new List<EstateRow>(3);
+                for (int i = 0; i < ahead.Count && visits.Count < 3; i++)
+                {
+                    ServiceBooking v = ahead[i].Value;
+                    visits.Add(new EstateRow
+                    {
+                        Icon = UiIcon.Calendar, Title = Capital(EstateText.T("reallife_ui_estate_service_name", "fault", EstateText.FaultNoun(v.Kind))),
+                        Sub = ahead[i].Key.Name + ", " + ContractorName(v.Contractor),
+                        Chip = EstateText.T("reallife_ui_estate_day", "day", v.Day.ToString(Inv)), ChipTone = UiRole.Notice, Amount = Money(v.Fee), Run = -1
+                    });
+                }
+                _m.RelatedTitle = EstateText.T("reallife_ui_estate_booked_visits");
+                _m.RelatedCount = visits.Count > 0 ? visits.Count.ToString(Inv) : null;
+                _m.Related = visits.ToArray();
+                var due = new List<EstateRow>(3);
+                for (int i = 0; i < inspections.Count && due.Count < 3; i++)
+                {
+                    EstateHolding h = inspections[i];
+                    bool failed = h.LastInspect == (int)InspectResult.Failed;
+                    due.Add(new EstateRow
+                    {
+                        Icon = UiIcon.Eye, Title = h.Name, Sub = EstateText.T(failed ? "reallife_ui_estate_last_failed" : "reallife_ui_estate_last_passed"),
+                        Chip = EstateText.T("reallife_ui_estate_in_days", "days", Math.Max(0, h.InspectDay - _day).ToString(Inv)), ChipTone = failed ? UiRole.Warn : UiRole.Notice, Run = -1
+                    });
+                }
+                _m.Related2Title = EstateText.T("reallife_ui_estate_inspections");
+                _m.Related2Count = due.Count > 0 ? due.Count.ToString(Inv) : null;
+                _m.Related2 = due.ToArray();
             }
 
             // One call: what it is, how long it has waited, what the tenant thinks, and the two ways to answer it.
