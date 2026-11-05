@@ -180,7 +180,7 @@ namespace RealLifeOverhaul.Ui
                 labels.Add(DealerText.T("reallife_ui_dealer_l_km"));
                 values.Add(DealerText.Km(car.Km));
                 labels.Add(DealerText.T("reallife_ui_dealer_l_source"));
-                values.Add(DealerText.Source(car.Source) + ", " + DealerText.T("reallife_ui_dealer_days_on_lot", "days", days.ToString(Inv)));
+                values.Add(EstateText.Pair(DealerText.Source(car.Source), DealerText.T("reallife_ui_dealer_days_on_lot", "days", days.ToString(Inv))));
                 if (car.Known != 0)
                 {
                     labels.Add(DealerText.T("reallife_dealer_car_faults"));
@@ -191,7 +191,9 @@ namespace RealLifeOverhaul.Ui
                 int rival;
                 int cheapest = RivalRules.Cheapest(_s, car.Type, out rival);
                 labels.Add(DealerText.T("reallife_ui_dealer_l_rival"));
-                values.Add(cheapest > 0 && rival >= 0 ? DealerCatalogue.RivalNames[rival % DealerCatalogue.RivalNames.Length] + ", " + Money(cheapest) : DealerText.T("reallife_ui_dealer_l_no_rival"));
+                values.Add(cheapest > 0 && rival >= 0
+                    ? EstateText.Pair(DealerCatalogue.RivalNames[rival % DealerCatalogue.RivalNames.Length], Money(cheapest))
+                    : DealerText.T("reallife_ui_dealer_l_no_rival"));
                 labels.Add(DealerText.T("reallife_ui_dealer_l_looked_today"));
                 values.Add(car.ViewsToday.ToString(Inv));
                 labels.Add(DealerText.T("reallife_ui_dealer_l_looked_yesterday"));
@@ -201,7 +203,7 @@ namespace RealLifeOverhaul.Ui
                     if (yard.Deals[d].Car == car.Id && yard.Deals[d].Looks > 0)
                     {
                         labels.Add(DealerText.T("reallife_ui_dealer_l_offer_waiting"));
-                        values.Add(yard.Deals[d].Customer + ", " + Money(DealerRules.Price(yard, yard.Deals[d], car)));
+                        values.Add(EstateText.Pair(yard.Deals[d].Customer, Money(DealerRules.Price(yard, yard.Deals[d], car))));
                         break;
                     }
                 }

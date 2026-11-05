@@ -142,7 +142,12 @@ namespace RealLifeOverhaul.Ui
                 {
                     t.Add(DealerText.Extras(d.Extras));
                 }
-                return string.Join(", ", t.ToArray());
+                string line = string.Empty;
+                for (int i = 0; i < t.Count; i++)
+                {
+                    line = i == 0 ? t[i] : EstateText.Pair(line, t[i]);
+                }
+                return line;
             }
 
             private static int ExtrasPrice(int extras, int price, out int cost)
@@ -399,8 +404,12 @@ namespace RealLifeOverhaul.Ui
                         Cells = new[] { DealerText.Event(k, 0), running != null ? running.Name : string.Empty, string.Empty, DealerText.EventShort(k),
                             running != null ? DealerText.T("reallife_dealer_state_event_on", "day", FinanceText.Day(running.EventUntil)) : DealerText.T("reallife_dealer_state_event_ready") },
                         Values = new[] { (int)UiIcon.Megaphone, 0, -1, 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, running != null ? UiRole.Ok : UiRole.Notice },
-                        Subs = new[] { DealerText.T("reallife_ui_dealer_growth_event") + ", " + DealerText.T("reallife_dealer_days", "days", DealerCatalogue.EventDays[k].ToString(Inv)) + ", "
-                            + Money(DealerDirector.EventCost(k)), null, null, null, null }
+                        Subs = new[]
+                        {
+                            EstateText.Pair(EstateText.Pair(DealerText.T("reallife_ui_dealer_growth_event"),
+                                DealerText.T("reallife_dealer_days", "days", DealerCatalogue.EventDays[k].ToString(Inv))), Money(DealerDirector.EventCost(k))),
+                            null, null, null, null
+                        }
                     });
                     keys.Add(DealerDirector.EventRow(k));
                 }
@@ -428,7 +437,7 @@ namespace RealLifeOverhaul.Ui
                     rows.Add(new UiDataRow
                     {
                         Cells = new[] { DealerText.Step(step), yard.Name, (top ? 100 : Math.Min(100, yard.Rep * 100 / Math.Max(1, DealerCatalogue.RepSteps[step + 1]))).ToString(Inv),
-                            DealerText.Perk(step) + (top ? string.Empty : ", " + yard.Rep.ToString(Inv) + " / " + DealerCatalogue.RepSteps[step + 1].ToString(Inv)), string.Empty },
+                            top ? DealerText.Perk(step) : EstateText.Pair(DealerText.Perk(step), yard.Rep.ToString(Inv) + " / " + DealerCatalogue.RepSteps[step + 1].ToString(Inv)), string.Empty },
                         Values = new[] { (int)UiIcon.Star, 0, top ? 100 : Math.Min(100, yard.Rep * 100 / Math.Max(1, DealerCatalogue.RepSteps[step + 1])), 0, 0 },
                         Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None },
                         Subs = new[] { DealerText.T("reallife_ui_dealer_growth_rep"), null, null, null, null }

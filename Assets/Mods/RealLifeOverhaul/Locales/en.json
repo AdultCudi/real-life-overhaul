@@ -31818,7 +31818,7 @@
   "reallife_ui_estate_dec_call_body": "{name} reported it. How do you answer?",
   "reallife_ui_estate_dec_app_kicker": "Applicant, {district}",
   "reallife_ui_estate_dec_app_body": "Their offer stands until day {day}, for a tenancy of {days} days. Do you let the unit to them?",
-  "reallife_ui_estate_dec_app_others": "{count} others asked for it",
+  "reallife_ui_estate_dec_app_others": "{count} other(s) asked for it",
   "reallife_ui_dealer_dec_deal_kicker": "Offer, {showroom}",
   "reallife_ui_dealer_dec_deal_offers": "{name} made an offer for your {car}.",
   "reallife_ui_dealer_dec_leaves": "{name} walks away",
@@ -31895,5 +31895,8 @@
   "reallife_estate_fault_noun_3": "electrics",
   "reallife_estate_fault_noun_4": "lock",
   "reallife_estate_fault_noun_5": "damp",
-  "reallife_estate_fault_noun_6": "fittings"
+  "reallife_estate_fault_noun_6": "fittings",
+  "reallife_ui_estate_last_never": "Never inspected",
+  "reallife_ui_estate_close": "Close",
+  "reallife_ui_estate_pair": "{first}, {second}"
 }

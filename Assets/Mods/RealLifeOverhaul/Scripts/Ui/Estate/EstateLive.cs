@@ -16,6 +16,19 @@ namespace RealLifeOverhaul.Ui
         public static readonly EstateLive Instance = new EstateLive();
 
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+
+        // How the last inspection of a building reads: a building never inspected has no last one to call passed.
+        private static string LastInspection(EstateHolding h)
+        {
+            if (h.LastInspect == (int)InspectResult.None)
+            {
+                return EstateText.T("reallife_ui_estate_last_never");
+            }
+            return EstateText.T(h.LastInspect == (int)InspectResult.Failed ? "reallife_ui_estate_last_failed" : "reallife_ui_estate_last_passed");
+        }
+
+        // A yield with one decimal on every row, so a column of them reads as one column ("5.0%" beside "4.1%").
+        private static string YieldOne(int hundredths) => (hundredths / 100f).ToString("0.0", Inv) + "%";
         private static int _wantTab = -1;
         private static string _wantPick;
         private int _local;
@@ -78,6 +91,7 @@ namespace RealLifeOverhaul.Ui
                 m.Shape = EstateShape.Off;
                 m.OffTitle = EstateText.T("reallife_estate_off_title");
                 m.OffBody = EstateText.T("reallife_estate_off_body");
+                m.OffAction = EstateText.T("reallife_ui_estate_close");
                 m.Runs = runs.ToArray();
                 return;
             }

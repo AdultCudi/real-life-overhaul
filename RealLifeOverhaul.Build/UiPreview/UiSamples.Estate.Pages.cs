@@ -275,7 +275,7 @@ internal static partial class UiSamples
 
     // ------------------------------------------------------------------------------------------------- the market
 
-    private static string YieldWords(long rentDay, long price) => (EstateFigures.YieldHundredths(rentDay, DaysPerYear, price) / 100f).ToString("0.#", InvD) + "%";
+    private static string YieldWords(long rentDay, long price) => (EstateFigures.YieldHundredths(rentDay, DaysPerYear, price) / 100f).ToString("0.0", InvD) + "%";
 
     private static void Market(UiWords t, EstateModel m, List<Func<bool>> runs, EstateWorldData w)
     {
@@ -412,6 +412,7 @@ internal static partial class UiSamples
         {
             // Nothing is run yet: no empty table with its headers, but what the section is and the card that opens it, together.
             m.Shape = EstateShape.Empty;
+            m.Nav[4].Count = null;   // an agency that is not run has no instructions to count
             m.OffIcon = UiIcon.Key;
             m.OffTitle = W(t, "reallife_estate_row_no_agency", "No agency yet");
             m.OffBody = W(t, "reallife_estate_agency_open_what", "Run the agency from an office you hold.");
@@ -509,6 +510,7 @@ internal static partial class UiSamples
         m.Related2Title = W(t, "reallife_ui_estate_new_instruction_chance", "The chance of a new instruction");
         m.Related2Count = chance.Length.ToString();
         m.Related2 = chance;
+        m.RelatedRows = 6;
     }
 
     // ------------------------------------------------------------------------------------------------- the hotels

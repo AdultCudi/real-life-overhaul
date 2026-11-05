@@ -72,7 +72,7 @@ namespace RealLifeOverhaul.Ui
                         int count = HotelRules.Rooms(f.Tier, type), kindSold = f.Sold[type], rate = f.Rate[type];
                         rates.Add(new EstateRow
                         {
-                            Icon = UiIcon.Building, Title = f.Name + ", " + EstateGame.RoomName(f.Tier, type),
+                            Icon = UiIcon.Building, Title = EstateText.Pair(f.Name, EstateGame.RoomName(f.Tier, type)),
                             Sub = EstateText.T("reallife_ui_estate_rate_going", "going", Money(f.Going[type]), "share", EstateText.Share(count > 0 ? kindSold * 1000 / count : 0)),
                             Chip = EstateText.T("reallife_ui_estate_of_going", "share", EstateText.Share(rate)), ChipTone = UiRole.Notice,
                             Amount = Money(HotelRules.Rate(f.Going[type], rate)), Run = _runs.Do(() => Open("hot:" + f.Slot, null))
@@ -325,8 +325,8 @@ namespace RealLifeOverhaul.Ui
                     }
                     if (best != null && best.Takings > 0)
                     {
-                        lines.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_hire_best"), EstateGame.CarName(best.Type) + ", " + Money(best.Takings)));
-                        lines.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_hire_most"), EstateGame.CarName(most.Type) + ", " + most.Hires.ToString(Inv)));
+                        lines.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_hire_best"), EstateText.Pair(EstateGame.CarName(best.Type), Money(best.Takings))));
+                        lines.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_hire_most"), EstateText.Pair(EstateGame.CarName(most.Type), most.Hires.ToString(Inv))));
                     }
                     lines.Add(UiFactLine.Section(EstateText.T("reallife_ui_estate_hire_sec_cover")));
                     int premium = 0;

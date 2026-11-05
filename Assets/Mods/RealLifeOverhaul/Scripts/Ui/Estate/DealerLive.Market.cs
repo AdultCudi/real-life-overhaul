@@ -234,7 +234,7 @@ namespace RealLifeOverhaul.Ui
                     like.Add(new EstateRow
                     {
                         Icon = ClassGlyph(o.Type), Tint = ClassTint(o.Type, o.Asking), Title = DealerGame.CarName(o.Type),
-                        Sub = DealerGame.ColourName(o.Colour) + ", " + DealerText.Km(o.Km), Amount = Money(o.Asking),
+                        Sub = EstateText.Pair(DealerGame.ColourName(o.Colour), DealerText.Km(o.Km)), Amount = Money(o.Asking),
                         Chip = DealerText.T(o.Inspected ? "reallife_dealer_state_inspected" : "reallife_dealer_state_not_inspected"), ChipTone = o.Inspected ? UiRole.Ok : UiRole.Warn,
                         Run = _runs.Do(() => Show(() => _v.Pick = "list:" + oid))
                     });

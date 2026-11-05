@@ -65,7 +65,7 @@ namespace RealLifeOverhaul.Ui
                     : !string.IsNullOrEmpty(s.Employers.Key[e]) ? PopulationGame.BusinessName(s.Employers.Key[e].Replace("|t", string.Empty))
                         : EstateText.T(PopulationViews.EmployerKey((EmployerKind)s.Employers.Kind[e]));
             }
-            p.Job = string.IsNullOrEmpty(where) ? field : field + ", " + where;
+            p.Job = string.IsNullOrEmpty(where) ? field : EstateText.Pair(field, where);
             return p;
         }
 

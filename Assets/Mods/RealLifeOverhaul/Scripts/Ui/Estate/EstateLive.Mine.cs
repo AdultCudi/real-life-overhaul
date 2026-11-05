@@ -83,7 +83,7 @@ namespace RealLifeOverhaul.Ui
                 string role = EstateText.Tenant(h.Use, u.Tenant);
                 if (p.Found)
                 {
-                    return new Who { Name = p.Name, Line = h.Use == (int)EstateUse.Homes ? p.Job : role + ", " + p.Job, Hue = UiColour.HueOf(p.Name), Named = true, Age = p.Age };
+                    return new Who { Name = p.Name, Line = h.Use == (int)EstateUse.Homes ? p.Job : EstateText.Pair(role, p.Job), Hue = UiColour.HueOf(p.Name), Named = true, Age = p.Age };
                 }
                 return new Who { Name = role, Line = string.Empty, Hue = UiColour.HueOf(role) };
             }

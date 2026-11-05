@@ -31818,7 +31818,7 @@
   "reallife_ui_estate_dec_call_body": "{name} avisou sobre isso. Como você responde?",
   "reallife_ui_estate_dec_app_kicker": "Candidato, {district}",
   "reallife_ui_estate_dec_app_body": "A proposta vale até o dia {day}, para um aluguel de {days} dias. Você aluga a unidade para essa pessoa?",
-  "reallife_ui_estate_dec_app_others": "{count} outros também pediram",
+  "reallife_ui_estate_dec_app_others": "{count} outro(s) também pediram",
   "reallife_ui_dealer_dec_deal_kicker": "Oferta, {showroom}",
   "reallife_ui_dealer_dec_deal_offers": "{name} fez uma oferta pelo seu {car}.",
   "reallife_ui_dealer_dec_leaves": "{name} desiste",
@@ -31895,5 +31895,8 @@
   "reallife_estate_fault_noun_3": "parte elétrica",
   "reallife_estate_fault_noun_4": "fechadura",
   "reallife_estate_fault_noun_5": "umidade",
-  "reallife_estate_fault_noun_6": "acessórios"
+  "reallife_estate_fault_noun_6": "acessórios",
+  "reallife_ui_estate_last_never": "Nunca foi inspecionado",
+  "reallife_ui_estate_close": "Fechar",
+  "reallife_ui_estate_pair": "{first}, {second}"
 }

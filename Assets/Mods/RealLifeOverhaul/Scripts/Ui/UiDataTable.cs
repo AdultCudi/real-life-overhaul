@@ -647,7 +647,9 @@ namespace RealLifeOverhaul.Ui
                         break;   // a row the figure does not exist for (a repair call has no condition) draws neither a figure nor an empty track
                     }
                     UiRole grade = UiTokens.Grade(Math.Max(0, value));
-                    float fw = UiTextRules.Width("100", UiStyle.BodyStrong) + UiTokens.S1;
+                    // The figure's room is that of "100" (or "100%" for a per cent) or of its own word when that is wider ("Patchy"), so its bar never ends under it.
+                    float fw = Math.Max(UiTextRules.Width(words != null && words.EndsWith("%", StringComparison.Ordinal) ? "100%" : "100", UiStyle.BodyStrong),
+                        UiTextRules.Width(words ?? string.Empty, UiStyle.BodyStrong)) + UiTokens.S1;
                     // On the chosen row's cyan tone a low grade's red or orange falls under 4.5:1: the figure beside its meter
                     // takes the row's words' colour there, and the meter keeps the grade.
                     UiDraw.TextMiddle(s, at, cx + cw - fw, ry, rowH, fw, UiStyle.BodyStrong, sel ? UiRole.Text : grade, words, UiFlags.Right);

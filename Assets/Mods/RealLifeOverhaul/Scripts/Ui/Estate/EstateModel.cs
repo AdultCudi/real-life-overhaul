@@ -154,7 +154,7 @@ namespace RealLifeOverhaul.Ui
         public UiNavEntry[] Nav = new UiNavEntry[0];
         public int Tab;
         public EstateShape Shape;
-        public string OffTitle, OffBody;
+        public string OffTitle, OffBody, OffAction;   // OffAction: the button that leaves an app that is off, where focus starts
         public UiIcon OffIcon = UiIcon.Home;   // the glyph of the page that says the feature is off: the app's own
         public UiPrompt[] Prompts = new UiPrompt[0];
         public string DayWords;                      // "Mon, Day 214" at the strip's right is the host's; kept for the head's sub line

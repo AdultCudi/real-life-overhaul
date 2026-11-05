@@ -83,7 +83,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 if ((faults & (1 << f)) != 0)
                 {
-                    t.Append(t.Length > 0 ? ", " : string.Empty).Append(T(FaultKeys[f]));
+                    EstateText.Add(t, T(FaultKeys[f]));
                 }
             }
             return t.ToString();
@@ -149,7 +149,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 if ((extras & (1 << e)) != 0)
                 {
-                    t.Append(t.Length > 0 ? ", " : string.Empty).Append(Extra(e));
+                    EstateText.Add(t, Extra(e));
                 }
             }
             return t.ToString();

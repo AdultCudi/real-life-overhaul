@@ -80,7 +80,11 @@ namespace RealLifeOverhaul.Ui
                     EmptyPage(s, at, m, x, y, w, bottom, keys);
                     break;
                 default:
-                    UiDraw.EmptyState(s, at, x, y, w, bottom - y, m.OffIcon, m.OffTitle, m.OffBody, null, -1, keys);
+                    int leave = UiDraw.EmptyState(s, at, x, y, w, bottom - y, m.OffIcon, m.OffTitle, m.OffBody, m.OffAction, UiDraw.CloseCommand, keys);
+                    if (leave >= 0)
+                    {
+                        s.FocusFirst = leave;   // an app that is off has one thing to do, and focus starts on it rather than on the window's close
+                    }
                     break;
             }
             for (int i = 0; i < m.Prompts.Length; i++)

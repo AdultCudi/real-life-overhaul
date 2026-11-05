@@ -327,7 +327,7 @@ namespace RealLifeOverhaul.Ui
                             h.Busy ? EstateText.T("reallife_estate_row_until", "day", h.WorkEnd.ToString(Inv)) : "-", string.Empty },
                         Values = new[] { (int)UseIcon(h.Use), 0, h.Cond / 10, 0, 0, 0, (int)UiIcon.Locate },
                         Tones = new[] { UiRole.None, UiRole.None, UiRole.None, tone, UiRole.None, UiRole.None, UiRole.None },
-                        Subs = new[] { EstateText.Use(h.Use) + ", " + EstateText.District(h.District), null, null, null, null, null, null }
+                        Subs = new[] { EstateText.Pair(EstateText.Use(h.Use), EstateText.District(h.District)), null, null, null, null, null, null }
                     });
                     keys.Add("wrk:" + h.Place);
                 }
@@ -387,7 +387,7 @@ namespace RealLifeOverhaul.Ui
                     visits.Add(new EstateRow
                     {
                         Icon = UiIcon.Calendar, Title = Capital(EstateText.T("reallife_ui_estate_service_name", "fault", EstateText.FaultNoun(v.Kind))),
-                        Sub = ahead[i].Key.Name + ", " + ContractorName(v.Contractor),
+                        Sub = EstateText.Pair(ahead[i].Key.Name, ContractorName(v.Contractor)),
                         Chip = EstateText.T("reallife_ui_estate_day", "day", v.Day.ToString(Inv)), ChipTone = UiRole.Notice, Amount = Money(v.Fee), Run = -1
                     });
                 }
@@ -401,7 +401,7 @@ namespace RealLifeOverhaul.Ui
                     bool failed = h.LastInspect == (int)InspectResult.Failed;
                     due.Add(new EstateRow
                     {
-                        Icon = UiIcon.Eye, Title = h.Name, Sub = EstateText.T(failed ? "reallife_ui_estate_last_failed" : "reallife_ui_estate_last_passed"),
+                        Icon = UiIcon.Eye, Title = h.Name, Sub = LastInspection(h),
                         Chip = EstateText.T("reallife_ui_estate_in_days", "days", Math.Max(0, h.InspectDay - _day).ToString(Inv)), ChipTone = failed ? UiRole.Warn : UiRole.Notice, Run = -1
                     });
                 }

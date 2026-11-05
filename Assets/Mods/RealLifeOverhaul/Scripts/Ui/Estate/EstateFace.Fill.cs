@@ -185,7 +185,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     main = s.Nodes[i].Key == UiAction.Alt && !s.Nodes[i].Disabled ? i : -1;
                 }
-                WrapWayOut(s);
+                WayLast(s, way);
                 s.FocusFirst = main >= 0 ? main : way;
             }
             for (int i = 0; i < m.Prompts.Length; i++)
@@ -193,6 +193,59 @@ namespace RealLifeOverhaul.Ui
                 s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
             }
             UiDraw.PromptBar(s, frame, keys);
+        }
+
+        // The way out is the last stop of a card: no press from another target lands on it but the Down from the lowest one, so the pad walks the card's targets and
+        // ends at "Not now" rather than dropping into it half way and climbing back to the buttons it passed. A press that would have landed on it goes to the next
+        // target that way, or stays where it is.
+        private static void WayLast(UiScene s, int way)
+        {
+            if (way < 0)
+            {
+                return;
+            }
+            for (int i = 0; i < s.NodeCount; i++)
+            {
+                if (i == way || s.Nodes[i].Disabled || s.Nodes[i].Layer != s.Nodes[way].Layer)
+                {
+                    continue;
+                }
+                for (int d = 0; d < 4; d++)
+                {
+                    int dx = d == 0 ? 1 : d == 1 ? -1 : 0, dy = d == 2 ? 1 : d == 3 ? -1 : 0;
+                    int link = d == 0 ? s.Nodes[i].Right : d == 1 ? s.Nodes[i].Left : d == 2 ? s.Nodes[i].Down : s.Nodes[i].Up;
+                    if (link >= 0 || UiFocusRules.Next(s, i, dx, dy) != way)
+                    {
+                        continue;
+                    }
+                    s.Nodes[way].Disabled = true;
+                    int other = UiFocusRules.Next(s, i, dx, dy);
+                    s.Nodes[way].Disabled = false;
+                    other = other >= 0 ? other : i;
+                    if (d == 0) { s.Nodes[i].Right = other; }
+                    else if (d == 1) { s.Nodes[i].Left = other; }
+                    else if (d == 2) { s.Nodes[i].Down = other; }
+                    else { s.Nodes[i].Up = other; }
+                }
+            }
+            int last = -1;
+            for (int i = 0; i < s.NodeCount; i++)
+            {
+                ref UiNode n = ref s.Nodes[i];
+                if (i == way || n.Disabled || n.Layer != s.Nodes[way].Layer || n.Down >= 0 && n.Down != i)
+                {
+                    continue;
+                }
+                if (last < 0 || n.Y > s.Nodes[last].Y + 0.5f || Math.Abs(n.Y - s.Nodes[last].Y) <= 0.5f && n.X > s.Nodes[last].X)
+                {
+                    last = i;
+                }
+            }
+            if (last >= 0 && s.Nodes[way].Up < 0)
+            {
+                s.Nodes[last].Down = way;
+                s.Nodes[way].Up = last;
+            }
         }
 
         // The auction card's body as tall as its parts: the way back and the kicker, then the car and its facts and the other lots, against the bidding.
@@ -285,14 +338,13 @@ namespace RealLifeOverhaul.Ui
             return y;
         }
 
-        // A section with nothing in it: its glyph on a tile, what it is and the card that starts it, as one group in the middle of the page.
+        // A section with nothing in it: its glyph on a tile, what it is and the card that starts it, as one group at the top of the page, where the other pages begin.
         private static void EmptyPage(UiScene s, UiAt at, EstateModel m, float x, float y, float w, float bottom, IUiKeys keys)
         {
             float cw = UiDraw.SnapDown(Math.Min(w, UiTokens.S16 * 30f));
             float cardH = m.Side != null ? UiFactCard.Height(m.Side, cw, keys, true) : 0f;
             float titleH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Display)), bodyH = UiDraw.Snap(UiTextRules.WrappedHeight(m.OffBody ?? string.Empty, UiStyle.Body, cw, 3));
-            float groupH = TileBig + UiTokens.S4 + titleH + UiTokens.S2 + bodyH + (cardH > 0f ? UiTokens.S6 + cardH : 0f);
-            float top = y + UiDraw.SnapDown(Math.Max(0f, bottom - y - groupH) / 2f), cx = x + UiDraw.SnapDown((w - cw) / 2f);
+            float top = y, cx = x + UiDraw.SnapDown((w - cw) / 2f);
             UiAt on = at.InRegion(RegionHead);
             int tile = UiDraw.Tile(s, on, cx + UiDraw.SnapDown((cw - TileBig) / 2f), top, TileBig, UiRole.None, false);
             UiDraw.Icon(s, on.In(tile), cx + UiDraw.SnapDown((cw - UiTokens.S8) / 2f), top + (TileBig - UiTokens.S8) / 2f, UiTokens.S8, m.OffIcon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);

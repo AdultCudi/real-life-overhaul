@@ -51,7 +51,7 @@ namespace RealLifeOverhaul.Ui
                     }
                     int cond = EstateRules.StreetCondition(_s.Seed, b.Key), use = EstateGame.UseOf(b.B.BuildingType);
                     int rent = EstateRules.MarketRent(b.Base, use, Math.Max(0, (int)Math.Round(CityEconomy.DistrictIncome(b.District) * 10f)), cond, 0, _c);
-                    string yield = rent > 0 && f.buildingPrice > 0f ? EstateText.Yield((int)((long)rent * _c.DaysPerYear * 10000 / (long)f.buildingPrice)) : string.Empty;
+                    string yield = rent > 0 && f.buildingPrice > 0f ? YieldOne((int)((long)rent * _c.DaysPerYear * 10000 / (long)f.buildingPrice)) : string.Empty;
                     string where = b.Place;
                     locate.Add(_runs.Do(() => EstateGame.Locate(where)));
                     rows.Add(new UiDataRow
@@ -59,7 +59,7 @@ namespace RealLifeOverhaul.Ui
                         Cells = new[] { f.address.ToFormattedString(), Money((int)Math.Min(int.MaxValue / 2, f.buildingPrice)),
                             (cond / 10).ToString(Inv), rent > 0 ? Month(rent) : string.Empty, yield, string.Empty },
                         Values = new[] { (int)UseIcon(use), 0, cond / 10, 0, 0, (int)UiIcon.Locate }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None },
-                        Subs = new[] { EstateText.Use(use) + ", " + EstateText.District(b.District), null, null, null, null, null }
+                        Subs = new[] { EstateText.Pair(EstateText.Use(use), EstateText.District(b.District)), null, null, null, null, null }
                     });
                     keys.Add("mkt:" + b.Place);
                 }
@@ -76,7 +76,7 @@ namespace RealLifeOverhaul.Ui
                     {
                         Cells = new[] { EstateGame.HotelName(hs), Money(price), string.Empty, string.Empty, EstateText.T("reallife_estate_row_going_concern"), string.Empty },
                         Values = new[] { (int)UiIcon.Building, 0, -1, 0, 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None },
-                        Subs = new[] { EstateText.T("reallife_estate_row_hotel") + ", " + EstateText.District(hs.Neighbourhood), null, null, null, null, null }
+                        Subs = new[] { EstateText.Pair(EstateText.T("reallife_estate_row_hotel"), EstateText.District(hs.Neighbourhood)), null, null, null, null, null }
                     });
                     keys.Add("htl:" + hs.Id);
                 }
@@ -128,7 +128,7 @@ namespace RealLifeOverhaul.Ui
                 if (rent > 0)
                 {
                     letting.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_col_rent_month"), Month(rent)));   // a month, as the market table says it
-                    letting.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_listing_yield"), EstateText.Yield((int)((long)rent * _c.DaysPerYear * 10000 / Math.Max(1, value)))));
+                    letting.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_listing_yield"), YieldOne((int)((long)rent * _c.DaysPerYear * 10000 / Math.Max(1, value)))));
                     if (b.Units > 1)
                     {
                         letting.Add(UiFactLine.Row(EstateText.T("reallife_ui_estate_listing_units", "units", b.Units.ToString(Inv)), Month(Math.Max(1, rent / b.Units))));
@@ -183,7 +183,7 @@ namespace RealLifeOverhaul.Ui
                 _m.Back = EstateText.T("reallife_co_back");
                 _m.DetailIcon = UiIcon.Building;
                 _m.DetailTitle = EstateGame.HotelName(slot);
-                _m.DetailSub = EstateText.T("reallife_estate_row_hotel") + ", " + EstateText.District(slot.Neighbourhood);
+                _m.DetailSub = EstateText.Pair(EstateText.T("reallife_estate_row_hotel"), EstateText.District(slot.Neighbourhood));
                 var money = new List<UiFactLine>
                 {
                     UiFactLine.Row(EstateText.T("reallife_estate_listing_price"), Money(price)),
@@ -297,6 +297,7 @@ namespace RealLifeOverhaul.Ui
                 _m.ShareLabels = names.ToArray();
                 _m.ShareValues = reps.ToArray();
                 var chances = new List<EstateRow>(6);
+                _m.RelatedRows = 6;   // every district the heading counts is a row under it
                 for (int i = 0; i < agency.Districts.Count && chances.Count < 6; i++)
                 {
                     DistrictRep d = agency.Districts[i];

@@ -79,6 +79,7 @@ internal static partial class UiSamples
                 m.OffIcon = UiIcon.Car;
                 m.OffTitle = W(t, "reallife_dealer_off_title", "The Car Showroom is off");
                 m.OffBody = W(t, "reallife_dealer_off_body", "Turn it on in Mod settings, or load a city to run a showroom.");
+                m.OffAction = W(t, "reallife_ui_estate_close", "Close");
                 break;
             case "stock":
             case "stock_empty":

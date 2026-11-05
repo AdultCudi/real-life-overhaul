@@ -200,6 +200,7 @@ internal static partial class UiSamples
                 m.OffIcon = UiIcon.Home;
                 m.OffTitle = W(t, "reallife_estate_off_title", "The Property app is off");
                 m.OffBody = W(t, "reallife_estate_off_body", "Turn it on in Mod settings, or load a city to see your property.");
+                m.OffAction = W(t, "reallife_ui_estate_close", "Close");
                 break;
             case "roll":
             case "roll_twenty":

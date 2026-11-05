@@ -41,6 +41,24 @@ namespace RealLifeOverhaul.Economy
             return FinanceText.T(key);
         }
 
+        /// <summary>Two things in one line as the language writes a list: a comma and a space, or the full-width comma of Chinese.</summary>
+        public static string Pair(string first, string second)
+        {
+            return FinanceText.T("reallife_ui_estate_pair", "first", first, "second", second);
+        }
+
+        /// <summary>The next thing on the end of a line being built: after a separator when there is something before it.</summary>
+        public static void Add(System.Text.StringBuilder line, string next)
+        {
+            if (line.Length == 0)
+            {
+                line.Append(next);
+                return;
+            }
+            string joined = Pair(line.ToString(), next);
+            line.Clear().Append(joined);
+        }
+
         public static string T(string key, string name, string value)
         {
             return FinanceText.T(key, name, value);

@@ -132,6 +132,7 @@ namespace RealLifeOverhaul.Ui
                 m.OffIcon = UiIcon.Car;
                 m.OffTitle = DealerText.T("reallife_dealer_off_title");
                 m.OffBody = DealerText.T("reallife_dealer_off_body");
+                m.OffAction = DealerText.T("reallife_ui_estate_close");
                 m.Runs = runs.ToArray();
                 return;
             }

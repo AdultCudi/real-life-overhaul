@@ -54,8 +54,9 @@ namespace RealLifeOverhaul.Ui
                 }
                 labels.Add(EstateText.T("reallife_ui_estate_last_inspected"));
                 values.Add(h.LastInspectDay > 0
-                    ? EstateText.T("reallife_ui_estate_day", "day", h.LastInspectDay.ToString(Inv))
-                        + (h.LastInspect == (int)InspectResult.Failed ? ", " + EstateText.T("reallife_ui_estate_failed") : string.Empty)
+                    ? (h.LastInspect == (int)InspectResult.Failed
+                        ? EstateText.Pair(EstateText.T("reallife_ui_estate_day", "day", h.LastInspectDay.ToString(Inv)), EstateText.T("reallife_ui_estate_failed"))
+                        : EstateText.T("reallife_ui_estate_day", "day", h.LastInspectDay.ToString(Inv)))
                     : EstateText.T("reallife_ui_estate_not_yet"));
                 p.FactLabels = labels.ToArray();
                 p.FactValues = values.ToArray();
