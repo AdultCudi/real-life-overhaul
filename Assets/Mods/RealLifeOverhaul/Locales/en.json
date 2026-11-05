@@ -31548,5 +31548,6 @@
   "reallife_map_ranked_council": "Ranked by parking price",
   "reallife_map_row_saved": "Saved places",
   "reallife_map_next_label": "For rent next door",
-  "reallife_map_next_figure": "{rent} per {unit} a day"
+  "reallife_map_next_figure": "{rent} per {unit} a day",
+  "reallife_map_row_distance": "Distance"
 }

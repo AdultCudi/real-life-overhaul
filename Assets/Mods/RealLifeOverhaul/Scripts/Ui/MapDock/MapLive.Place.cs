@@ -105,13 +105,15 @@ namespace RealLifeOverhaul.Ui
             return string.IsNullOrWhiteSpace(words) ? null : words.Trim();
         }
 
-        // The address with its district, the hours today, and a vacant unit next door with its market rent.
+        // The address with its district, how far it is, the hours today, and a vacant unit next door with its market rent. The distance is a row of its own because a long
+        // address leaves no room for it on the same line.
         private MapPlaceRow[] OverviewRows(Building building)
         {
             BuildingRegistration reg = _pickedBuilding.buildingRegistration;
-            var rows = new List<MapPlaceRow>(3)
+            var rows = new List<MapPlaceRow>(4)
             {
                 new MapPlaceRow { Label = UiText.T("reallife_map_row_address"), Value = building.Address.ToFormattedString() + ", " + Districts.DistrictGame.Name(building.Neighbourhood) },
+                new MapPlaceRow { Label = UiText.T("reallife_map_row_distance"), Value = DistanceWords(_pickedAt, _pickedRoad) },
                 new MapPlaceRow { Label = UiText.T("reallife_map_row_hours"), Value = HoursOf(Today(reg)) },
             };
             if (_nextDoor != null && _nextDoor.building != null)

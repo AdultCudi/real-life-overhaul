@@ -31548,5 +31548,6 @@
   "reallife_map_ranked_council": "Ordenado pelo preço do estacionamento",
   "reallife_map_row_saved": "Lugares salvos",
   "reallife_map_next_label": "Para alugar ao lado",
-  "reallife_map_next_figure": "{rent} por {unit} ao dia"
+  "reallife_map_next_figure": "{rent} por {unit} ao dia",
+  "reallife_map_row_distance": "Distância"
 }

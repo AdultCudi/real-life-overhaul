@@ -34,6 +34,7 @@ internal static partial class UiSamples
             Rows = new[]
             {
                 new MapPlaceRow { Label = t("reallife_map_row_address", "Address"), Value = "214 5th Avenue, Garment District" },
+                new MapPlaceRow { Label = t("reallife_map_row_distance", "Distance"), Value = t("reallife_map_distance_road", "{distance} by road").Replace("{distance}", "1.2 km") },
                 new MapPlaceRow { Label = t("reallife_map_row_hours", "Hours today"), Value = unrated ? t("common_closed", "Closed") : "07:00 to 23:00", Ink = UiRole.None },
                 new MapPlaceRow { Label = t("reallife_map_row_next", "Next door"), Value = t("reallife_map_row_for_rent", "For rent, {rent} per {unit} a day").Replace("{rent}", "$96").Replace("{unit}", "m2"), Link = true },
             },

@@ -28,7 +28,7 @@ namespace RealLifeOverhaul.Ui
             "reallife_map_ranked_crime", "reallife_map_ranked_rent", "reallife_map_ranked_wealth", "reallife_map_residents", "reallife_map_residents_lower",
             "reallife_map_review_high_clean_1", "reallife_map_review_high_wait_0", "reallife_map_review_low_wait_1", "reallife_map_review_mid_mixed_0",
             "reallife_map_review_mid_price_1", "reallife_map_route_car", "reallife_map_route_subway", "reallife_map_route_taxi", "reallife_map_route_walk",
-            "reallife_map_row_address", "reallife_map_row_for_rent", "reallife_map_row_hours", "reallife_map_row_next", "reallife_map_row_owner",
+            "reallife_map_row_address", "reallife_map_row_distance", "reallife_map_row_for_rent", "reallife_map_row_hours", "reallife_map_row_next", "reallife_map_row_owner",
             "reallife_map_row_type", "reallife_map_save", "reallife_map_saved", "reallife_map_show_all", "reallife_map_show_on_map", "reallife_map_subway_note",
             "reallife_map_tab_business", "reallife_map_tab_overview", "reallife_map_tab_reviews", "reallife_map_taxi_note", "reallife_map_you", "reallife_nav_minutes",
             "reallife_season_name_autumn", "reallife_ui_hud_weather_sunny", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_shell_all_apps"

@@ -31548,5 +31548,6 @@
   "reallife_map_ranked_council": "按停车价格排序",
   "reallife_map_row_saved": "已保存的地点",
   "reallife_map_next_label": "隔壁出租",
-  "reallife_map_next_figure": "每{unit}每天 {rent}"
+  "reallife_map_next_figure": "每{unit}每天 {rent}",
+  "reallife_map_row_distance": "距离"
 }
