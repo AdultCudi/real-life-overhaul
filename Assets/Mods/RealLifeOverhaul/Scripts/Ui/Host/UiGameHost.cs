@@ -246,12 +246,14 @@ namespace RealLifeOverhaul.Ui
                 _host.WindowHeld = HoldGameWindow;
             }
             _host.Measure(_screen.Name, _screen.Kind == UiGameKind.Overlay);   // the notices over the world are the HUD's
+            _host.HeldBy = HeldBy;
             if (_screen.Kind == UiGameKind.App)
             {
                 _host.Chrome = Chrome;
                 _host.Leaving = Closing;   // the menu closing: no layout for a screen on its way out
             }
             _root.SetActive(false);
+            UiForeignWindows.Forget(root);   // the canvas the kit now stands on, if it was taken for another mod's window before
             if (UiDirector.Logger != null && _misses > 0)
             {
                 UiDirector.Logger.Info("UI: " + _screen.Name + " is drawn on the RLO interface now, after " + _misses + " look(s) that found it not ready.");
@@ -349,7 +351,7 @@ namespace RealLifeOverhaul.Ui
             _back = over;
         }
 
-        /// <summary>The keys go to something of the kit's standing over this screen (a box, All apps); the screen stays drawn as it is.</summary>
+        /// <summary>The keys go to what stands over this screen (a box, All apps, another mod's window); the screen stays in front, drawn as it changes.</summary>
         public void Hold(bool hold)
         {
             if (_held == hold)
@@ -357,10 +359,33 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             _held = hold;
-            if (_host != null && _root != null && _root.activeSelf)
+            if (_host != null)
             {
-                _host.Hold(hold);
+                _host.Hold(hold);   // a screen put away keeps it too (nothing is laid out for it then), so it shows again as it should
             }
+        }
+
+        // For the press line of a held screen (Developer diagnostics): the first thing standing that holds kit screens' keys.
+        private static string HeldBy()
+        {
+            if (UiForeignWindows.Up)
+            {
+                return "another mod's window '" + UiForeignWindows.Named + "'";
+            }
+            if (UiBoxes.Up)
+            {
+                return UiBoxes.Drawn ? "a box of the kit's" : "a box of the game's";
+            }
+            if (UiBoxes.Over)
+            {
+                return "All apps";
+            }
+            if (global::UI.Smartphone.FullMenu.IsOpen)
+            {
+                return "the full menu";
+            }
+            return global::UI.MiniMenu.MiniMenu.IsOpen || global::Scenes.MainMenu.Options.IsVisible || global::BlueprintsUI.BlueprintsPanel.IsOpen
+                ? "a menu of the game's" : "what stands over it";
         }
 
         // The game's map camera and mouse look hold still while one of its windows is dragged (DraggableWindows.isCurrentlyDragging, which its own
@@ -478,8 +503,10 @@ namespace RealLifeOverhaul.Ui
                 if (_screen.Kind == UiGameKind.Overlay && _screen is IUiGameWay keyed && keyed.Keys)
                 {
                     // An overlay with keys of its own (Fred's card): the game's pause menu, options, blueprints, All apps, a box or another
-                    // mod's window over the world has the keys first, so Escape there is the game's, never this card's Skip.
-                    Hold(!UiForeignRules.KitHasOverlayKeys(global::UI.MiniMenu.MiniMenu.IsOpen || global::Scenes.MainMenu.Options.IsVisible
+                    // mod's window over the world has the keys first, so Escape there is the game's, never this card's Skip. The pause
+                    // menu's own kit is that menu: its being open held its keys and left its clicks undrawn.
+                    bool pause = global::UI.MiniMenu.MiniMenu.IsOpen && _screen.Id != PauseKits.PauseId;
+                    Hold(!UiForeignRules.KitHasOverlayKeys(pause || global::Scenes.MainMenu.Options.IsVisible
                         || global::BlueprintsUI.BlueprintsPanel.IsOpen, global::UI.Smartphone.FullMenu.IsOpen, UiBoxes.Up || UiBoxes.Over, UiForeignWindows.Up));
                 }
                 if (_screen.Kind == UiGameKind.Box)
