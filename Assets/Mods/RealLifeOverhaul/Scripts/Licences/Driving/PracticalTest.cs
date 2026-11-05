@@ -120,8 +120,7 @@ namespace RealLifeOverhaul
         public bool CanStage(LicenceClass kind, Vector3 desk, out string reasonKey)
         {
             reasonKey = Active ? "reallife_lic_no_busy"
-                : !TrafficTools.Ready || !RoadMap.Ensure() ? "reallife_lic_no_roads"
-                : null;
+                : LessonRules.Refusal(GoingPublic.TrafficMirrored, TrafficTools.Ready && RoadMap.Ensure());
             if (reasonKey == null)
             {
                 NewDraw();
@@ -157,9 +156,9 @@ namespace RealLifeOverhaul
                 reasonKey = "reallife_lic_no_busy";
                 return false;
             }
-            if (!TrafficTools.Ready || !RoadMap.Ensure())
+            reasonKey = LessonRules.Refusal(GoingPublic.TrafficMirrored, TrafficTools.Ready && RoadMap.Ensure());
+            if (reasonKey != null)
             {
-                reasonKey = "reallife_lic_no_roads";
                 return false;
             }
             NewDraw();

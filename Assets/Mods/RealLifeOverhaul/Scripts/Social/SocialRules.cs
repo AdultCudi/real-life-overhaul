@@ -56,6 +56,7 @@ namespace RealLifeOverhaul
         public const int PartnerDays = 14, PartnerDates = 4;
         public const float MoveInTrust = 85f;
         public const int MoveInDays = 21;
+        public const int AskOutGapDays = 5;   // days after being asked out before they hear it again, so a no is not asked round at once
         public const float BreakUpAffection = 35f, BreakUpTrust = 25f;
         public const float Slack = 10f;               // a stage is kept until this far below what earned it
         public const float DriftFamiliarity = 8f;
@@ -154,6 +155,36 @@ namespace RealLifeOverhaul
         {
             return person.Stage == SocialStage.Dating && person.Affection >= PartnerAffection && person.Trust >= PartnerTrust
                    && day - person.StageDay >= PartnerDays && person.Dates >= PartnerDates;
+        }
+
+        /// <summary>
+        /// Days before they will hear being asked out again, 0 when they will. A step is never taken off the menu for it: the player
+        /// is told when to ask again, so a refusal never makes the option vanish without a word.
+        /// </summary>
+        public static int AskOutWait(SocialPerson person, int day)
+        {
+            int latest = int.MinValue;
+            for (int i = 0; i < person.Memories.Count; i++)
+            {
+                if (person.Memories[i].Code == MemoryCode.AskedOut && person.Memories[i].Day > latest)
+                {
+                    latest = person.Memories[i].Day;
+                }
+            }
+            // A memory dated after today (a save set back) still waits the gap at most.
+            return latest == int.MinValue ? 0 : Math.Min(AskOutGapDays, Math.Max(0, AskOutGapDays - (day - latest)));
+        }
+
+        /// <summary>Days of dating still wanted before "official" can be asked, 0 when they have been enough.</summary>
+        public static int CommitWait(SocialPerson person, int day)
+        {
+            return Math.Max(0, PartnerDays - (day - person.StageDay));
+        }
+
+        /// <summary>Days as partners still wanted before moving in can be asked, 0 when they have been enough.</summary>
+        public static int MoveInWait(SocialPerson person, int day)
+        {
+            return Math.Max(0, MoveInDays - (day - person.StageDay));
         }
 
         public static bool WouldMoveIn(SocialPerson person, int day)

@@ -11,7 +11,7 @@ Real Life Overhaul adds everyday life to the city of Big Ambitions: things happe
 [h1]What it adds[/h1]
 [list]
 [*][b]A living street.[/b] People chat, eat, queue and busk. Accidents with ambulances and police, fires, crimes, street events and weather. Police stations with officers.
-[*][b]Getting around.[/b] City buses on many lines: walk on by either door, ride in real time or skip, and change between lines. The subway, taxis, bicycles, scooters, and a minimap with a GPS route.
+[*][b]Getting around.[/b] Buses on many lines: walk on by either door, ride in real time or skip, and change between lines. The subway, taxis, bicycles, scooters, and a minimap with a GPS route.
 [*][b]Driving.[/b] Cars that handle by their kind, chase and third person cameras, a garage for paint, parts and tuning, running costs and a driving school.
 [*][b]Police, courts and the council.[/b] Fines, arrests, bail, hearings and prison. A council and a mayor you vote for, or stand yourself: a campaign, a debate, the count by district and the city's policies if you win.
 [*][b]Street talk.[/b] Talk to anybody on the pavement: ask the way, swap numbers, invite them out or type your words.
@@ -58,7 +58,7 @@ In each save you want to keep, press "Prepare this save for removing the mod" un
 Some journeys, hotels, indoor outings, court and prison pass under a fade or as text, and children are never seen. The Guide's "Known limits" page has the full list.
 
 [h1]Reporting a problem[/h1]
-Switch on "Developer diagnostics" under Troubleshooting, make the problem happen again, and send Player.log from %USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions with a screenshot, the mod version (0.63.9) and your other mods.
+Switch on "Developer diagnostics" under Troubleshooting, make the problem happen again, and send Player.log from %USERPROFILE%\AppData\LocalLow\Hovgaard Games\Big Ambitions with a screenshot, the mod version (0.63.10) and your other mods.
 
 [h1]Source and contributions[/h1]
 The mod is open source under the MIT licence. Report problems and send changes here: https://github.com/AdultCudi/real-life-overhaul

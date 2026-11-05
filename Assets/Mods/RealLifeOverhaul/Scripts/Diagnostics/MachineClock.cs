@@ -51,10 +51,14 @@ namespace RealLifeOverhaul
         private static long _threadAt, _processAt, _idleAt, _totalAt;
         private static uint _faultsAt;
         private static long _threadLast, _processLast, _idleLast, _totalLast, _faultsLast;
+        private static long _threadBefore, _processBefore, _idleBefore, _totalBefore, _faultsBefore;   // the same for the frame before the last one
         private static int _samples;
 
         /// <summary>True from the second reading on: the differences then speak of a whole frame.</summary>
         public static bool Valid => _samples >= 2;
+
+        /// <summary>True from the third reading on: the frame before the last one is whole too.</summary>
+        public static bool ValidBefore => _samples >= 3;
 
         /// <summary>Tries each entry point once (when the timing starts); the frame's first roll-over takes the first reading.</summary>
         public static void Start()
@@ -77,16 +81,20 @@ namespace RealLifeOverhaul
             {
                 if (_thread && ThreadTimes(ThisThread, out _, out _, out long k, out long u) != 0)
                 {
+                    _threadBefore = _threadLast;
                     _threadLast = k + u - _threadAt;
                     _threadAt = k + u;
                 }
                 if (_process && ProcessTimes(ThisProcess, out _, out _, out long pk, out long pu) != 0)
                 {
+                    _processBefore = _processLast;
                     _processLast = pk + pu - _processAt;
                     _processAt = pk + pu;
                 }
                 if (_system && SystemTimes(out long idle, out long sk, out long su) != 0)
                 {
+                    _idleBefore = _idleLast;
+                    _totalBefore = _totalLast;
                     _idleLast = idle - _idleAt;
                     _totalLast = sk + su - _totalAt;   // the system's kernel time includes its idle time
                     _idleAt = idle;
@@ -97,11 +105,12 @@ namespace RealLifeOverhaul
                     var counters = new MemoryCounters { Size = CountersSize };
                     if (MemoryInfo(ThisProcess, ref counters, CountersSize) != 0)
                     {
+                        _faultsBefore = _faultsLast;
                         _faultsLast = unchecked(counters.PageFaultCount - _faultsAt);   // the count wraps at four billion
                         _faultsAt = counters.PageFaultCount;
                     }
                 }
-                if (_samples < 2)
+                if (_samples < 3)
                 {
                     _samples++;
                 }
@@ -127,6 +136,17 @@ namespace RealLifeOverhaul
 
         /// <summary>The game's page faults in the frame before this one, or below zero.</summary>
         public static long Faults => _memory && Valid ? _faultsLast : -1L;
+
+        /// <summary>The same four figures for the frame before the last one, or below zero (they follow the same readings, a frame older).</summary>
+        public static double ThreadMsBefore => _thread && ValidBefore ? _threadBefore / 10000.0 : -1.0;
+
+        public static double ProcessMsBefore => _process && ValidBefore ? _processBefore / 10000.0 : -1.0;
+
+        public static double BusyBefore => _system && ValidBefore && _totalBefore > 0L ? Clamp01(1.0 - (double)_idleBefore / _totalBefore) : -1.0;
+
+        public static double OthersBefore => _system && _process && ValidBefore && _totalBefore > 0L ? Clamp01((double)(_totalBefore - _idleBefore - _processBefore) / _totalBefore) : -1.0;
+
+        public static long FaultsBefore => _memory && ValidBefore ? _faultsBefore : -1L;
 
         /// <summary>For a long frame's line, in place of a figure that is not known: "not available (...)", or "not measured".</summary>
         public static string ThreadWhy => _thread ? "not measured yet" : _threadWhy;

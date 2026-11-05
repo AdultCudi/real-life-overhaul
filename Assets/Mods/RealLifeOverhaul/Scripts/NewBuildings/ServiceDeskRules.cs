@@ -198,5 +198,15 @@ namespace RealLifeOverhaul.NewBuildings
             looks++;
             return looks >= needed;
         }
+
+        /// <summary>
+        /// True when a player who has just stood up from a seat has no way to the door. The game puts them at the seat's own place to
+        /// stand (Character.Reset warps to it), and a hole in its walking mesh round the furniture leaves them there with nowhere to go;
+        /// whatever the floor's rules got wrong about a layout or a car mod's changes to it, the way out is the game's own spawn point.
+        /// </summary>
+        public static bool StoodUpBoxed(bool wasSeated, bool seated, bool reachesDoor)
+        {
+            return wasSeated && !seated && !reachesDoor;
+        }
     }
 }

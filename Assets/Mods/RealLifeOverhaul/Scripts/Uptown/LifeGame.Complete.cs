@@ -6,7 +6,6 @@ using Entities;
 using Helpers;
 using Localizor;
 using RealLifeOverhaul.NewBuildings;
-using UI.Notification;
 using UnityEngine;
 using UnityEngine.AI;
 
@@ -174,12 +173,6 @@ namespace RealLifeOverhaul.Uptown
                     yield return r.buildingOwnerRivalId;
                 }
             }
-        }
-
-        /// <summary>The notice that a building is not whole yet: how many, and that Player.log names the items.</summary>
-        public static void SayIncomplete(int count)
-        {
-            Notifications.Show(NotificationType.Warning, LifeText.Incomplete, new Dictionary<string, string> { { "count", count.ToString(System.Globalization.CultureInfo.InvariantCulture) } }, 10f);
         }
     }
 }

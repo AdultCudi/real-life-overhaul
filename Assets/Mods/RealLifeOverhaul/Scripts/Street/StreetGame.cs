@@ -231,11 +231,11 @@ namespace RealLifeOverhaul.Street
             return p.appearanceSetter != null && p.appearanceSetter.data != null && p.appearanceSetter.data.gender == Gender.Female;
         }
 
-        /// <summary>Their age in years, from their look's age in days (AppearanceAgeHelper).</summary>
-        public static int Age(BaseHuman p)
+        /// <summary>Their age in years as their look shows it: the age in days the game gave the figure, through StreetRules.SeenAge.</summary>
+        public static int Age(BaseHuman p, int seed)
         {
             int days = p.appearanceSetter != null && p.appearanceSetter.data != null ? p.appearanceSetter.data.ageInDays : 0;
-            return days > 0 ? days / Math.Max(1, SocialPlaces.DaysPerYear) : 35;
+            return StreetRules.SeenAge(days, SocialPlaces.DaysPerYear, seed);
         }
 
         /// <summary>Their look as a kept look's text (People/PersonLook); null if it has none.</summary>

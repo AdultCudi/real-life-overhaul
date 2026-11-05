@@ -59,12 +59,6 @@ namespace RealLifeOverhaul.Uptown
         /// <summary>The split's generation this save has been through (DistrictSplit): 0 for a line from before it, whose records the first load after the split moves by position.</summary>
         public int Split;
 
-        /// <summary>
-        /// How many finished buildings the whole-building check last told the player were not whole in this save (LifeDirector.Complete): the notice
-        /// is shown again only when the count grows past it. 0 before any, and for a line from before.
-        /// </summary>
-        public int Told;
-
         /// <summary>The rebalance's generation this save has been decided for (LayoutRules.RebalanceGeneration): 0 before; the lots in <see cref="Pinned"/> are the ones it kept as stores.</summary>
         public int Rebalance;
 
@@ -248,8 +242,7 @@ namespace RealLifeOverhaul.Uptown
                 }
                 if (part.StartsWith("w:", StringComparison.Ordinal))
                 {
-                    state.Told = Whole(part.Substring(2), 0, 0, FinishedMost);
-                    continue;
+                    continue;   // the count of a notice no version shows now (0.63.8, 0.63.9 wrote it): dropped, the next write leaves it out
                 }
                 if (part.StartsWith("r:", StringComparison.Ordinal))
                 {
@@ -448,10 +441,6 @@ namespace RealLifeOverhaul.Uptown
             if (s.Split > 0)
             {
                 t.Append("^s:").Append(s.Split.ToString(Inv));
-            }
-            if (s.Told > 0)
-            {
-                t.Append("^w:").Append(Math.Min(s.Told, FinishedMost).ToString(Inv));
             }
             if (s.Rebalance > 0)
             {

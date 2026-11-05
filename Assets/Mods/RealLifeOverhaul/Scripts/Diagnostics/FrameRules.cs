@@ -1,3 +1,4 @@
+using System;
 using System.Globalization;
 using System.Text;
 
@@ -13,6 +14,17 @@ namespace RealLifeOverhaul
         OtherProgram = 4,  // it did not run, and other programs held the processor
         Outside = 5,       // the time was outside the engine's steps, with the processor free
         Waited = 6,        // the main thread hardly ran inside the engine's steps and nothing else held the processor: blocked, not working
+        TimeJump = 7,      // the engine's frame time was far longer than any stretch of the machine's clock between its marks: the game's time jumped
+    }
+
+    /// <summary>How the engine's time for a frame sits against the mod's own clock (see <see cref="FrameRules.Reading"/>).</summary>
+    public enum FrameTime
+    {
+        Unmeasured = 0,   // the steps are not timed
+        Whole = 1,        // the mod's clock between its marks gives the engine's figure: the steps above are that frame's
+        Later = 2,        // the figure is the stretch between the engine's own reads of the time, a little after the mod's mark
+        Earlier = 3,      // the figure is that of the frame before the one the mod's last mark closes: the engine counts it a frame late
+        Jump = 4,         // no stretch of the mod's clock gives the figure: the engine's time moved more than the machine's clock
     }
 
     /// <summary>What the game showed during a frame, as the session record tells a stutter the player saw from one they did not.</summary>
@@ -38,6 +50,7 @@ namespace RealLifeOverhaul
         public int Processors;
         public double GpuMs;           // the engine's own figures (FrameTimingManager), the worst of the last few frames it has
         public double RenderThreadMs;
+        public bool TimeJumped;        // the engine's frame time is far longer than the machine's clock saw pass (<see cref="FrameTime.Jump"/>)
 
         public double OutsideMs => StepsMs < 0.0 ? -1.0 : SpanMs > StepsMs ? SpanMs - StepsMs : 0.0;   // below zero when the steps were not timed
 
@@ -61,11 +74,17 @@ namespace RealLifeOverhaul
         public const double MostOf = 0.5;          // share of the frame the wait, or the time outside the steps, must be to be the cause
         public const double OthersHeld = 0.6;      // share of the machine's processors other programs must have held to be the cause
         public const double Idle = 0.2;            // share of the frame under which the main thread's own time says it was blocked, not working (its clock ticks every 15.6 ms)
+        public const double AgreeMs = 2.0;         // milliseconds by which two clocks may differ over one frame and still agree
+        public const double AgreeShare = 0.1;      // ...or this share of the longer figure
         public const long Paging = 20000;          // page faults in one frame from which the line says memory was being brought in (some 80 MB of 4 KB pages)
 
         /// <summary>The cause the figures point to. Unknown figures are left out of the reasoning, never guessed.</summary>
         public static FrameCause Cause(in FrameFigures f)
         {
+            if (f.TimeJumped)
+            {
+                return FrameCause.TimeJump;
+            }
             double span = f.SpanMs;
             if (span <= 0.0)
             {
@@ -96,6 +115,73 @@ namespace RealLifeOverhaul
             return FrameCause.Spread;
         }
 
+        /// <summary>
+        /// Which stretch of the mod's own clock the engine's frame time (Time.unscaledDeltaTime) is. The mod marks the clock just after
+        /// the engine's wait for the last frame, the engine may read its time a few steps later, and a stall between the two (or one the engine
+        /// counts a frame late) is then in the engine's figure and in no frame of the mod's clock. Negative figures are not known.
+        /// </summary>
+        public static FrameTime Reading(double tookMs, double spanMs, double readMs, double beforeMs)
+        {
+            if (spanMs < 0.0)
+            {
+                return FrameTime.Unmeasured;
+            }
+            if (Agree(tookMs, spanMs))
+            {
+                return FrameTime.Whole;
+            }
+            if (readMs >= 0.0 && Agree(tookMs, readMs))
+            {
+                return FrameTime.Later;
+            }
+            if (beforeMs >= 0.0 && Agree(tookMs, beforeMs))
+            {
+                return FrameTime.Earlier;
+            }
+            return FrameTime.Jump;
+        }
+
+        /// <summary>Two figures of one frame from two clocks: within 2 ms, or a tenth, of each other.</summary>
+        public static bool Agree(double aMs, double bMs)
+        {
+            return Math.Abs(aMs - bMs) <= Math.Max(AgreeMs, AgreeShare * Math.Max(aMs, bMs));
+        }
+
+        /// <summary>The clause after the steps in a long frame's line that says which stretch the engine's figure is, or nothing when the clocks agree.</summary>
+        public static void Say(StringBuilder line, FrameTime reading, double tookMs, double spanMs, double readMs, double beforeMs)
+        {
+            switch (reading)
+            {
+                case FrameTime.Whole:
+                    if (Math.Abs(spanMs - tookMs) >= AgreeMs)
+                    {
+                        line.Append(" (by the steps' own clock the frame took ").Append(spanMs.ToString("F0")).Append(" ms)");
+                    }
+                    break;
+                case FrameTime.Later:
+                    line.Append(" (the engine reads its time a few steps after the mod's mark, in Initialization.PlayerUpdateTime, and by the clock between its reads the frame took ")
+                        .Append(readMs.ToString("F0")).Append(" ms, against ").Append(spanMs.ToString("F0")).Append(" ms between the marks: ")
+                        .Append("the rest went in the engine's first steps of the frame, between the two)");
+                    break;
+                case FrameTime.Earlier:
+                    line.Append(" (the engine counts this time a frame late: the steps above are those of the frame before, which took ").Append(beforeMs.ToString("F0"))
+                        .Append(" ms by the steps' own clock; the frame after it took ").Append(spanMs.ToString("F0")).Append(" ms)");
+                    break;
+                case FrameTime.Jump:
+                    line.Append(" (the engine's frame time is longer than the machine's clock saw pass: ").Append(spanMs.ToString("F0")).Append(" ms between the mod's marks");
+                    if (readMs >= 0.0)
+                    {
+                        line.Append(", ").Append(readMs.ToString("F0")).Append(" ms between the engine's reads of its time");
+                    }
+                    if (beforeMs >= 0.0)
+                    {
+                        line.Append(", ").Append(beforeMs.ToString("F0")).Append(" ms in the frame before");
+                    }
+                    line.Append(")");
+                    break;
+            }
+        }
+
         /// <summary>The cause in a few words, for the line a minute's counts.</summary>
         public static string Short(FrameCause cause)
         {
@@ -107,6 +193,7 @@ namespace RealLifeOverhaul
                 case FrameCause.OtherProgram: return "other programs holding the processor";
                 case FrameCause.Outside: return "time outside the engine's steps";
                 case FrameCause.Waited: return "the main thread blocked inside the engine's steps";
+                case FrameCause.TimeJump: return "the game's time jumping (more than the machine's clock saw pass)";
                 default: return "spread over the engine's steps";
             }
         }
@@ -182,6 +269,10 @@ namespace RealLifeOverhaul
                     break;
                 case FrameCause.Outside:
                     line.Append("the time was outside the engine's steps with the processor free (the window's messages, the system or the graphics driver held the game)");
+                    break;
+                case FrameCause.TimeJump:
+                    line.Append("the game's frame time jumped: the machine's clock did not see that much time pass, so nothing took that long, "
+                                + "but everything on screen moved on in one big step, which looks like a stutter");
                     break;
                 case FrameCause.Waited:
                     line.Append("the main thread was blocked, not working: it hardly ran inside the steps above and no other program held the processor "

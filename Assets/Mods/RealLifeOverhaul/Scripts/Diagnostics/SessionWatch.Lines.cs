@@ -145,6 +145,8 @@ namespace RealLifeOverhaul
                 _line.Append("; where the frames went: not timed");
                 return;
             }
+            _line.Append("; the engine counted ").Append((_tookSum / 1000.0).ToString("F1", CultureInfo.InvariantCulture)).Append(" s of play and the mod's clock ")
+                .Append((_clockSum / 1000.0).ToString("F1", CultureInfo.InvariantCulture)).Append(" s between its marks (a gap is game time that moved without the machine's clock)");
             _line.Append("; waiting for the last frame to be shown ").Append(_waitSum.ToString("F0")).Append(" ms in the minute, ").Append(_waitWorst.ToString("F0"))
                 .Append(" ms at most in a frame; outside the engine's steps ").Append(_outsideSum.ToString("F0")).Append(" ms, ").Append(_outsideWorst.ToString("F0")).Append(" ms at most");
             _line.Append("; the main thread ran ");

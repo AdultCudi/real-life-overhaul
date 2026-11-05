@@ -49,20 +49,33 @@ namespace RealLifeOverhaul
             }
         }
 
+        // How the last call of Figures read the engine's figure against the mod's clock (FrameRules.Reading), for the line that gives the steps.
+        private FrameTime _reading;
+        private bool _earlier;
+        private double _spanMs, _readMs, _beforeMs;
+
         // The frame before this one as the step timing and the system saw it, the engine's own figures beside them.
         private FrameFigures Figures(float took, bool withTiming)
         {
             FrameFigures figures = FrameFigures.Unknown(took * 1000.0);
+            _reading = FrameTime.Unmeasured;
+            _earlier = false;
             if (FrameSteps.Valid)
             {
-                figures.SpanMs = FrameSteps.LastSpanMs;
-                figures.StepsMs = FrameSteps.LastStepsMs;
-                figures.WaitMs = FrameSteps.LastMs(FrameSteps.Wait);
-                figures.ThreadMs = MachineClock.ThreadMs;
-                figures.ProcessMs = MachineClock.ProcessMs;
-                figures.Busy = MachineClock.Busy;
-                figures.Others = MachineClock.Others;
-                figures.Faults = MachineClock.Faults;
+                _readMs = FrameSteps.ReadSpanMs;
+                _beforeMs = FrameSteps.BeforeSpanMs;
+                _spanMs = FrameSteps.LastSpanMs;
+                _reading = FrameRules.Reading(took * 1000.0, _spanMs, _readMs, _beforeMs);
+                _earlier = _reading == FrameTime.Earlier;   // the engine's figure is the frame before the last mark's: its steps and its processor time are the ones to give
+                figures.SpanMs = _earlier ? _beforeMs : _spanMs;
+                figures.StepsMs = _earlier ? FrameSteps.BeforeStepsMs : FrameSteps.LastStepsMs;
+                figures.WaitMs = _earlier ? FrameSteps.BeforeMs(FrameSteps.Wait) : FrameSteps.LastMs(FrameSteps.Wait);
+                figures.ThreadMs = _earlier ? MachineClock.ThreadMsBefore : MachineClock.ThreadMs;
+                figures.ProcessMs = _earlier ? MachineClock.ProcessMsBefore : MachineClock.ProcessMs;
+                figures.Busy = _earlier ? MachineClock.BusyBefore : MachineClock.Busy;
+                figures.Others = _earlier ? MachineClock.OthersBefore : MachineClock.Others;
+                figures.Faults = _earlier ? MachineClock.FaultsBefore : MachineClock.Faults;
+                figures.TimeJumped = _reading == FrameTime.Jump;
             }
             figures.Processors = SystemInfo.processorCount;
             if (withTiming && _timing)
@@ -100,6 +113,8 @@ namespace RealLifeOverhaul
             FrameFigures f = Figures(took, false);
             _split++;
             _spanSum += f.SpanMs;
+            _tookSum += took * 1000.0;
+            _clockSum += _spanMs;
             _waitSum += f.WaitMs;
             _waitWorst = Math.Max(_waitWorst, f.WaitMs);
             _outsideSum += f.OutsideMs;

@@ -229,7 +229,7 @@ namespace RealLifeOverhaul
         {
             JusticeRefusal why = !JusticeSettings.Community ? JusticeRefusal.PartOff
                 : PoliceAttention.IsBusy ? JusticeRefusal.PoliceBusy
-                : _routine || _hearing != null || JobDirector.OnShift ? JusticeRefusal.Busy
+                : _routine || _hearing != null || JobDirector.OnShift || Wiring.Scenes.AnyLargeSceneActive ? JusticeRefusal.Busy
                 : TimeHelper.CurrentHour >= 21 || TimeHelper.CurrentHour < 6 ? JusticeRefusal.Night
                 : _community.Start(PlayerHelper.PlayerController);
             if (why != JusticeRefusal.None && announceRefusal)

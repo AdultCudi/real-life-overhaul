@@ -78,6 +78,12 @@ namespace RealLifeOverhaul.Economy
                     return true;
                 }
             }
+            // Stock bought for a business never reaches the game's figure on the day it is bought: the statement takes its wholesale cost when it is sold.
+            // The game books an import delivery with no address, and a wholesaler's till with the wholesaler's, never the player's business; both are tax deductible.
+            if (DayRules.StockHeld(CashCategory.For(type) == CashCategory.Stock, Ours(t), t.isTaxDeductible, here && Statements.Contains(t.address)))
+            {
+                return true;
+            }
             if (!here)
             {
                 return false;
@@ -100,7 +106,7 @@ namespace RealLifeOverhaul.Economy
             }
             if (!Ours(t))
             {
-                return CashCategory.For(type) == CashCategory.Stock;   // stock bought for the business: the statement holds its cost as the goods sold
+                return false;
             }
             BizLine kind = BizLines.Of(type);
             if (kind == BizLine.Takings || kind == BizLine.Cost)

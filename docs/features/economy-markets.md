@@ -69,6 +69,10 @@ The first five are game-free and compiled by EconomyCheck (`ListingChecks.cs`), 
   Buy-backs (10% a year), new shares (20% a year at 5% under the bid) and taking private (25% over the price and never under the year's highest close, with half the shares) need the board.
   A business sold while listed puts the other holders' part of its price into the reserve.
 
+  The founder is paid no dividend on their own shares: each day the other holders' part of the profit is taken from the founder's cash into the reserve (`ListingRules.ToReserve`, `Others` = shares less the founder's), so the founder keeps their own stake's part of the profit as cash, at any stake, and dividends go to the other holders (`MarketEngine.Dividends`, paid on a position, never on `OwnListing.Founder`).
+  Under half the shares the founder no longer carries every vote (`ListingVotes.BoardCarries`), under 30% a bid can win; the least the founder may hold is nothing, but a sale is at most 10% of the company a game year after the half-year lock-up. The prospectus offers 10% to 60% of the company (`ListingCatalogue.FloatSteps`).
+  The most of any other company one holder may have is the option "The most of a company you may hold" (`MarketCatalogue.HoldingCapBp`: 10% by default, 25%, 50% or no limit), and of a rival tycoon's holding the 25% that is free float (`HoldingFloatBp`). Nothing happens at 50%: the market has no control rule for the player's shares in another company. A rival is taken over through its business (`MarketDirector.TakeOverHolding`), not by shares.
+
 - **Meetings**: the yearly one after the year's last results (pay, a payout when the reserve is held back, the chair), an investor's after their demand; the founder's shares for the board, the others by their year, with a drawn turnout.
   Half the shares or more carries every vote.
 

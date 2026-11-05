@@ -34,7 +34,6 @@ namespace RealLifeOverhaul
         private const float NewsLasts = 5f;        // seconds a walk into or out of a building, or a scene coming or going, is still mentioned in a long frame's line
         private const string RootPrefix = "RealLifeOverhaul";
         private const float RestNamed = 5f;        // milliseconds of "the rest" above which the engine's step it was mostly in is named
-        private const double SpanDiffers = 2.0;    // milliseconds by which the steps' own clock may differ from the engine's frame time before the line gives both
         private const long Leap = 8L * 1024 * 1024;   // bytes the heap may grow by in one frame before the frame gets a line of its own
         private const int LeapsPerMinute = 6;
 
@@ -96,11 +95,12 @@ namespace RealLifeOverhaul
         // Where the minute's frames went, as the long-frame line splits one (FrameSteps, MachineClock, FrameRules).
         private int _split;                    // frames of play the step timing covered whole
         private double _spanSum, _waitSum, _waitWorst, _outsideSum, _outsideWorst;
+        private double _tookSum, _clockSum;   // the minute's frames by the engine's time and by the mod's clock between its marks: a gap is time that moved without the machine's clock
         private int _threadFrames, _othersFrames;
         private double _threadSum, _threadSpan, _othersSum, _othersWorst;
         private long _faultsSum, _faultsWorst;
         private int _faultFrames;
-        private readonly int[] _causes = new int[7];   // the frames over 33 ms, by FrameCause
+        private readonly int[] _causes = new int[8];   // the frames over 33 ms, by FrameCause
         private bool _timing;                  // the engine offers its own frame timing (FrameTimingManager)
         private readonly FrameTiming[] _timings = new FrameTiming[4];
         private double _gpuWorst;
@@ -308,7 +308,7 @@ namespace RealLifeOverhaul
             _collectorNanos = 0;
             _collectorWorst = 0;
             _split = 0;
-            _spanSum = _waitSum = _waitWorst = _outsideSum = _outsideWorst = 0.0;
+            _spanSum = _waitSum = _waitWorst = _outsideSum = _outsideWorst = _tookSum = _clockSum = 0.0;
             _threadFrames = _othersFrames = _faultFrames = 0;
             _threadSum = _threadSpan = _othersSum = _othersWorst = 0.0;
             _faultsSum = _faultsWorst = 0L;
@@ -508,26 +508,24 @@ namespace RealLifeOverhaul
             if (FrameSteps.Valid)
             {
                 bool any = false;
+                bool earlier = _earlier;   // (Figures: the engine's time is that of the frame before the last mark's)
                 for (int g = 0; g < FrameSteps.Count; g++)
                 {
-                    float ms = FrameSteps.LastMs(g);
+                    float ms = earlier ? FrameSteps.BeforeMs(g) : FrameSteps.LastMs(g);
                     if (ms >= 1f)
                     {
                         _line.Append(any ? ", " : string.Empty).Append(FrameSteps.Names[g]).Append(' ').Append(ms.ToString("F0")).Append(" ms");
                         any = true;
                     }
                 }
-                double rest = FrameSteps.LastRestMs;
+                double rest = earlier ? FrameSteps.BeforeRestMs : FrameSteps.LastRestMs;
                 _line.Append(any ? ", " : string.Empty).Append("the rest ").Append(rest.ToString("F0")).Append(" ms");
-                if (rest >= RestNamed && FrameSteps.LastOther(out string step, out float stepMs) && stepMs >= 1f)
+                if (rest >= RestNamed && (earlier ? FrameSteps.BeforeOther(out string step, out float stepMs) : FrameSteps.LastOther(out step, out stepMs)) && stepMs >= 1f)
                 {
                     _line.Append(" (the most of it in the frame's step ").Append(step).Append(", ").Append(stepMs.ToString("F0")).Append(" ms)");
                 }
                 _line.Append(", outside the engine's steps ").Append(figures.OutsideMs.ToString("F0")).Append(" ms");
-                if (Math.Abs(figures.SpanMs - took * 1000.0) >= SpanDiffers)
-                {
-                    _line.Append(" (by the steps' own clock the frame took ").Append(figures.SpanMs.ToString("F0")).Append(" ms)");
-                }
+                FrameRules.Say(_line, _reading, took * 1000.0, _spanMs, _readMs, _beforeMs);   // which stretch of the mod's clock the engine's figure is, or that it is none
             }
             else
             {

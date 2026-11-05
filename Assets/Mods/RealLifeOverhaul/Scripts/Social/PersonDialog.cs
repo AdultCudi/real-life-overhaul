@@ -19,7 +19,6 @@ namespace RealLifeOverhaul
     public sealed partial class PersonDialog : Dialog
     {
         private static int GiftPrice => Prices.At(60);
-        private const int AskOutGapDays = 5;
 
         /// <summary>
         /// A test's topic for the first chat of the next call with this person (SocialDirector.TestComposer); the next call to
@@ -213,7 +212,7 @@ namespace RealLifeOverhaul
             {
                 _actions.Add("repay");
             }
-            if (_p.Compatible && !_p.Together && _p.Stage >= SocialStage.Friend && SocialState.Partner == null && !AskedLately(day))
+            if (_p.Compatible && !_p.Together && _p.Stage >= SocialStage.Friend && SocialState.Partner == null)
             {
                 _actions.Add("askout");
             }
@@ -301,18 +300,6 @@ namespace RealLifeOverhaul
         private static int Year(int day)
         {
             return (Mathf.Max(1, day) - 1) / SocialPlaces.DaysPerYear;
-        }
-
-        private bool AskedLately(int day)
-        {
-            for (int i = 0; i < _p.Memories.Count; i++)
-            {
-                if (_p.Memories[i].Code == MemoryCode.AskedOut && day - _p.Memories[i].Day < AskOutGapDays)
-                {
-                    return true;
-                }
-            }
-            return false;
         }
 
         // The one they would like first, then the rest in order; only what can be done from here, at an hour they are free
@@ -679,10 +666,22 @@ namespace RealLifeOverhaul
             return Close(SocialLines.Pick(SocialCatalogue.BorrowYes), data);
         }
 
+        // Said as a number of days to wait, one day or more; the key is the "_one" text for a day.
+        private DialogEntry Wait(string key, int days)
+        {
+            return Close(days == 1 ? key + "_one" : key, SocialLife.Data(_p, "days", days.ToString()));
+        }
+
         private DialogEntry AskOut()
         {
-            SocialLife.Remember(_p, MemoryCode.AskedOut);
             SocialLife.Contacted(_p);
+            int wait = SocialRules.AskOutWait(_p, SocialLife.Day);
+            if (wait > 0)
+            {
+                // Asked again too soon: nothing is lost and nothing is remembered, and the answer says when to ask.
+                return Wait("reallife_social_askout_wait", wait);
+            }
+            SocialLife.Remember(_p, MemoryCode.AskedOut);
             if (SocialRules.WouldDate(_p) && SocialState.Partner == null)
             {
                 SocialLife.SetStage(_p, SocialStage.Dating);
@@ -697,7 +696,8 @@ namespace RealLifeOverhaul
             SocialLife.Contacted(_p);
             if (!SocialRules.WouldCommit(_p, SocialLife.Day))
             {
-                return Close("reallife_social_official_no");
+                int wait = SocialRules.CommitWait(_p, SocialLife.Day);
+                return wait > 0 ? Wait("reallife_social_official_wait", wait) : Close("reallife_social_official_no");
             }
             SocialLife.Remember(_p, MemoryCode.Official);
             SocialLife.SetStage(_p, SocialStage.Partner);
@@ -709,7 +709,8 @@ namespace RealLifeOverhaul
             SocialLife.Contacted(_p);
             if (!SocialRules.WouldMoveIn(_p, SocialLife.Day))
             {
-                return Close("reallife_social_movein_no");
+                int wait = SocialRules.MoveInWait(_p, SocialLife.Day);
+                return wait > 0 ? Wait("reallife_social_movein_wait", wait) : Close("reallife_social_movein_no");
             }
             if (SocialPhone.FamilyKeepsMoveIn != null && SocialPhone.FamilyMoveIn != null && SocialPhone.FamilyKeepsMoveIn(_p))
             {
