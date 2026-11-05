@@ -420,8 +420,29 @@ namespace RealLifeOverhaul.Tech
         public static void Roll(DataCentre d, int day, long takings)
         {
             int slot = ((day % FirmsCatalogue.MonthDays) + FirmsCatalogue.MonthDays) % FirmsCatalogue.MonthDays;
+            TechStatusRules.Age(ref d.Prev30, ref d.PrevDays, d.Days[slot]);
             d.Takings30 += takings - d.Days[slot];
             d.Days[slot] = takings;
+        }
+
+        /// <summary>Whether the centre was down on a day is written into its 90 day ring: a bit a day, the day's own place taken over from the day 90 before.</summary>
+        public static void MarkDay(DataCentre d, int day, bool down)
+        {
+            int at = ((day % InfraCatalogue.UptimeDays) + InfraCatalogue.UptimeDays) % InfraCatalogue.UptimeDays;
+            int word = at / 30, bit = 1 << (at % 30);
+            d.Outage90[word] = down ? d.Outage90[word] | bit : d.Outage90[word] & ~bit;
+        }
+
+        /// <summary>The share of the last 90 days a centre was up, in thousandths (99.9 per cent is 999): days since it was fitted out count, the days before it do not.</summary>
+        public static int Uptime(DataCentre d, int day, int fitted)
+        {
+            int days = Math.Max(1, Math.Min(InfraCatalogue.UptimeDays, day - fitted + 1)), down = 0;
+            for (int i = 0; i < days; i++)
+            {
+                int at = (((day - i) % InfraCatalogue.UptimeDays) + InfraCatalogue.UptimeDays) % InfraCatalogue.UptimeDays;
+                down += (d.Outage90[at / 30] >> (at % 30)) & 1;
+            }
+            return (days - down) * 1000 / days;
         }
     }
 }

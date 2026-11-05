@@ -155,6 +155,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--tech-ui")
+        {
+            TechUiChecks();   // the Tech app's pages, presses, entry points and rules alone (UiChecks.Tech.cs, TechUiRuleChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--work-ui")
         {
             WorkUiChecks();   // the work screens' pages and presses alone (UiChecks.Work.cs)

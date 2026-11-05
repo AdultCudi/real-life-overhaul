@@ -35,7 +35,8 @@ namespace RealLifeOverhaul.Tech
                 }
                 w.Record().Place(d.Place).Add(d.District).Add(d.Tier).Add(d.Sqm).Add(d.Racks).Add(d.GpuRacks).Add(d.Book).Add(d.Fitted).Add(d.Colo).Add(d.Outages)
                     .Add(d.DownUntil).Add(d.Takings30).Add(days.ToString())
-                    .Add(d.Dense).Add(d.DenseGpu).Add(d.Crew[InfraCatalogue.Operators]).Add(d.Crew[InfraCatalogue.Engineers]).Add(d.Crew[InfraCatalogue.Security]);
+                    .Add(d.Dense).Add(d.DenseGpu).Add(d.Crew[InfraCatalogue.Operators]).Add(d.Crew[InfraCatalogue.Engineers]).Add(d.Crew[InfraCatalogue.Security])
+                    .Add(d.Prev30).Add(d.PrevDays).Add(d.Outage90[0]).Add(d.Outage90[1]).Add(d.Outage90[2]);
             }
             return w.ToString();
         }
@@ -83,6 +84,13 @@ namespace RealLifeOverhaul.Tech
                 for (int k = 0; k < InfraCatalogue.CrewKinds; k++)
                 {
                     d.Crew[k] = Math.Max(0, x.Int());
+                }
+                // the month before the ring and the 90 day outage ring, appended last: a save from before them has none, and its centres count as always up
+                d.Prev30 = Math.Max(0, x.Long());
+                d.PrevDays = Math.Max(0, Math.Min(TechStatusRules.ChangeFromDays, x.Int()));
+                for (int k = 0; k < d.Outage90.Length; k++)
+                {
+                    d.Outage90[k] = x.Int() & 0x3FFFFFFF;
                 }
                 if (f.Centres.Count < InfraCatalogue.CentresMost)
                 {

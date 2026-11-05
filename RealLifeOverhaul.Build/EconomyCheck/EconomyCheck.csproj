@@ -1062,6 +1062,17 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\RivalsViews.cs" Link="Mod\RivalsViews.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiMarket.cs" Link="Mod\UiMarket.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\MarketViews.cs" Link="Mod\MarketViews.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Tech\TechModel.cs" Link="Mod\Tech\TechModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Tech\TechCard.cs" Link="Mod\Tech\TechCard.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Tech\TechRuns.cs" Link="Mod\Tech\TechRuns.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Tech\TechGlyphs.cs" Link="Mod\Tech\TechGlyphs.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Tech\TechFace.cs" Link="Mod\Tech\TechFace.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Tech\TechScreen.cs" Link="Mod\Tech\TechScreen.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\TechStatusRules.cs" Link="Mod\TechStatusRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Sector\SectorRules.League.cs" Link="Mod\Sector\SectorRules.League.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Studio\StudioRules.Reviews.cs" Link="Mod\StudioRules.Reviews.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Studio\StudioViews.Track.cs" Link="Mod\StudioViews.Track.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\InfraLimits.cs" Link="Mod\InfraLimits.cs" />
     <Compile Include="..\UiPreview\UiSamples*.cs" Link="Shared\%(Filename)%(Extension)" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\BugReportRules.cs" Link="Mod\BugReportRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\ReleaseDates.cs" Link="Mod\ReleaseDates.cs" />

@@ -15,6 +15,7 @@ namespace RealLifeOverhaul.Tech
         public const int WaterPerMwh = 1800;          // thousandths of a cubic metre of cooling water for each megawatt hour
         public const int RacksPerTechnician = 20;     // racks one technician keeps running
         public const int OutageShortExtra = 3000;     // thousandths more outages a day with no technician at all: a short crew adds this in proportion to what it lacks
+        public const int UptimeDays = 90, UptimeWords = 3;   // the outage ring's days, and the 30 bit words that hold them
         public const int CentresMost = 12;            // data centres
         public const int NetNeeded = 1000;            // Mbps of a business connection a data centre needs
 

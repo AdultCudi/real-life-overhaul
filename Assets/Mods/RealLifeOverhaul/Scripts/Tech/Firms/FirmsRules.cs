@@ -675,6 +675,7 @@ namespace RealLifeOverhaul.Tech
         public static void Roll(Firm firm, int day, long takings)
         {
             int slot = ((day % FirmsCatalogue.MonthDays) + FirmsCatalogue.MonthDays) % FirmsCatalogue.MonthDays;
+            TechStatusRules.Age(ref firm.Prev30, ref firm.PrevDays, firm.Days[slot]);
             firm.Revenue30 += takings - firm.Days[slot];
             firm.Days[slot] = takings;
         }

@@ -384,6 +384,10 @@ namespace RealLifeOverhaul.Tech
                 {
                     StudioRelease(firm, g, p, day);
                 }
+                if (g.Launched >= 0 && g.Score >= 0 && g.Reviews.Count == 0)
+                {
+                    StudioRules.WriteReviews(g, _studio.Seed, day);   // a game launched before the outlets existed is reviewed on its next day, by the parts it has now
+                }
                 if (g.OnSale)
                 {
                     GameSales r = StudioRules.SellDay(g, _studio, day, _genreAppeal[g.Genre], _platforms, spend, season);

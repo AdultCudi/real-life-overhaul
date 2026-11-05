@@ -46,7 +46,7 @@ namespace RealLifeOverhaul.Tech
                     .Add(g.Reported).Add(g.Asks).Add(g.Project).Add(g.ProjectArg).Add(g.ProjectDone).Add(g.ProjectWork).Add(g.Updates).Add(g.AddOns).Add(g.AddOnSold)
                     .Add(g.AddOnWindow).Add(g.AddOnStart).Add(g.Localised).Add(g.DrmRemoved).Add(g.Advance).Add(g.Royalties).Add(g.Fans).Add(g.Burnt).Add(g.Award)
                     .Add(g.RoyaltyGross)
-                    .Add(g.Bonus).Add(g.Leads).Add(g.BonusDone).Add(g.LeadsPaid).Add(g.LastLeadsPay);
+                    .Add(g.Bonus).Add(g.Leads).Add(g.BonusDone).Add(g.LeadsPaid).Add(g.LastLeadsPay).Add(g.SalesLast).Add(SalesText(g)).Add(ReviewsText(g));
             }
             w.Part('d');
             foreach (GameDraft d in f.Drafts)
@@ -83,6 +83,71 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; i < f.RivalNext.Length; i++)
             {
                 w.Add(f.RivalNext[i]);
+            }
+        }
+
+        // The 90 day sales ring as its days' copies oldest first, and the reviews as outlet:score:day:part:praise:variant, each by a comma.
+        private static string SalesText(GameDev g)
+        {
+            if (g.SalesLast < 0)
+            {
+                return string.Empty;
+            }
+            var sb = new System.Text.StringBuilder(StudioCatalogue.SalesDays * 4);
+            for (int i = 0; i < StudioCatalogue.SalesDays; i++)
+            {
+                sb.Append(i > 0 ? "," : string.Empty).Append(StudioRules.SalesOn(g, g.SalesLast - StudioCatalogue.SalesDays + 1 + i).ToString(System.Globalization.CultureInfo.InvariantCulture));
+            }
+            return sb.ToString();
+        }
+
+        private static string ReviewsText(GameDev g)
+        {
+            var sb = new System.Text.StringBuilder(g.Reviews.Count * 14);
+            for (int i = 0; i < g.Reviews.Count; i++)
+            {
+                GameReview r = g.Reviews[i];
+                sb.Append(i > 0 ? "," : string.Empty).Append(r.Outlet).Append(':').Append(r.Score).Append(':').Append(r.Day)
+                    .Append(':').Append(r.Part).Append(':').Append(r.Praise ? 1 : 0).Append(':').Append(r.Variant);
+            }
+            return sb.ToString();
+        }
+
+        private static void ReadSales(GameDev g, string text)
+        {
+            string[] days = (text ?? string.Empty).Split(',');
+            for (int i = 0; g.SalesLast >= 0 && i < days.Length && i < StudioCatalogue.SalesDays; i++)
+            {
+                long.TryParse(days[i], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out long units);
+                g.Sales[((g.SalesLast - StudioCatalogue.SalesDays + 1 + i) % StudioCatalogue.SalesDays + StudioCatalogue.SalesDays) % StudioCatalogue.SalesDays] = Math.Max(0L, units);
+            }
+        }
+
+        private static void ReadReviews(GameDev g, string text)
+        {
+            string[] list = (text ?? string.Empty).Split(',');
+            for (int i = 0; i < list.Length && g.Reviews.Count < StudioCatalogue.Outlets.Length; i++)
+            {
+                string[] f = list[i].Split(':');
+                if (f.Length < 6)
+                {
+                    continue;
+                }
+                int[] v = new int[6];
+                bool ok = true;
+                for (int k = 0; k < 6; k++)
+                {
+                    ok &= int.TryParse(f[k], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out v[k]);
+                }
+                if (ok)
+                {
+                    g.Reviews.Add(new GameReview
+                    {
+                        Outlet = StudioRules.Clamp(v[0], 0, StudioCatalogue.Outlets.Length - 1), Score = StudioRules.Clamp(v[1], 0, 100), Day = v[2], Part = StudioRules.Clamp(v[3],
+                            0, StudioRules.PartBugs),
+                        Praise = v[4] != 0, Variant = StudioRules.Clamp(v[5], 0, 1)
+                    });
+                }
             }
         }
 
@@ -213,6 +278,10 @@ namespace RealLifeOverhaul.Tech
                 g.BonusDone = x.Bool();
                 g.LeadsPaid = x.Long();
                 g.LastLeadsPay = x.Int();
+                // the sales ring and the reviews, appended last: a game of a save from before them has none, and its reviews are written on its next day
+                g.SalesLast = x.Int(-1);
+                ReadSales(g, x.Text());
+                ReadReviews(g, x.Text());
                 if (f.Games.Count < StudioCatalogue.GamesStored)
                 {
                     f.Games.Add(g);

@@ -232,6 +232,7 @@ namespace RealLifeOverhaul.Tech
             bool early = g.Early;
             g.Quality = Quality(g);
             g.Score = Review(g, g.Quality, reputation, day, seed, f != null ? f.YearDays : CalendarRules.YearDefault);
+            WriteReviews(g, seed, day);
             g.Phase = (int)GamePhase.Live;
             g.Early = false;
             if (!early)
@@ -325,6 +326,7 @@ namespace RealLifeOverhaul.Tech
             long units = Math.Min(left, micro / 1000000L);
             g.Carry = units < left ? micro % 1000000L : 0;
             g.Sold += units;
+            RecordSales(g, day, units);
             if (g.Converted)
             {
                 g.Left = Math.Max(0L, g.Left - units);
