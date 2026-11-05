@@ -933,6 +933,10 @@ namespace RealLifeOverhaul.Construction
             {
                 return "reallife_bld_answer_no_licence";
             }
+            if (p.Storeys > FloorsLicensed)
+            {
+                return "reallife_ui_cons_answer_floors";   // the licence covers fewer floors: hire a builder licensed for them, or earn the next level
+            }
             if (_state.CrewsOn(p.Id) == 0)
             {
                 return "reallife_bld_answer_no_crew";

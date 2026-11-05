@@ -106,6 +106,19 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length >= 3 && args[0] == "--construction-debug")
+        {
+            ConstructionDebug(args[1], float.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture), args.Length > 3 ? args[3] : "en");
+            return 0;
+        }
+        if (args.Length == 1 && args[0] == "--construction-ui")
+        {
+            ConstructionKitChecks();   // the rules the screen stands on, then the screen
+            Environment.SetEnvironmentVariable("RLO_UI_ONLY", "construction");   // the Construction screen's layouts and its presses alone (UiChecks.Construction.cs)
+            UiScreenChecks();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--other-mods")
         {
             UiForeignChecks();   // another author's mod on the kit's screens (UiForeignChecks.cs) and the host's own rules, alone
@@ -1030,6 +1043,7 @@ internal static partial class Program
         Builders();     // the construction game: the catalogue, the land, the plans and planning, a site, the money, tenders and rivals, the developers, the frame, the store's line, the sources and wiring, the texts (BuildersChecks.cs)
         Hire();         // a builder of the city's hired by the player: the quotes, the contract's money, the penalty, the pace, the line, the sources, the texts (HireChecks.cs)
         BuilderDesk();  // the front desks: what the desk talks about first, the front desk picked, the office's visitors, the one quote and hire, the click, the tests, the texts (BuilderDeskChecks.cs)
+        ConstructionKitChecks();   // the Construction app's licence by floors, the land's monthly asks, the quotes' risk and their save (ConstructionKitChecks.cs)
         BuildModeChecks();   // build mode: the zoning cells on the real plan, sites, prices, rows, the state machine, colours, warnings, demand and the market, whole buildings, the store, the sources, the texts (BuildModeChecks.cs)
         BuildGroundChecks();   // no ground of a block left unexplained: every spot a square, a held ground or the plan's margin, every column a building, for sale or held, each rule made to fail once (BuildGroundChecks.cs)
         GrowChecks();   // buildings that grow: zoning per square and its tools, the council's zoning, the developer's pick, the steady pace on the real plan, the tiers, tenants, condition, the store, the sources, the texts (GrowChecks.cs)

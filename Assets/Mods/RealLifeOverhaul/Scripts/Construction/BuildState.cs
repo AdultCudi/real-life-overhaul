@@ -19,6 +19,7 @@ namespace RealLifeOverhaul.Construction
         public CoverLevel Cover;
         public int Finished, OnTime, Late, Defects, TendersWon, TendersLost;
         public long Earned, Spent;                   // money from and into its works
+        public int Level;                            // the licence by floors the company has earned (LevelRules), never lowered
     }
 
     /// <summary>A lot of the district the player owns.</summary>
@@ -277,6 +278,7 @@ namespace RealLifeOverhaul.Construction
     {
         public int Reputation;
         public int Won, Lost, Built;
+        public int Jobs;                             // the player's own contracts it has been hired for
     }
 
     /// <summary>A development of the city's developers already handed to the district, or one shown going up, by its lot.</summary>

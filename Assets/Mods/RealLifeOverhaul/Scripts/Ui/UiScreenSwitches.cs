@@ -37,10 +37,11 @@ namespace RealLifeOverhaul.Ui
         public const string Company = "uiscreens_company";   // the Company app: its seven tabs
         public const string Estate = "uiscreens_estate";  // Property and the Car Showroom
         public const string Tech = "uiscreens_tech";      // the Tech app: its firms, products, contracts, infra, startups and funding
+        public const string Construction = "uiscreens_construction";   // the Construction app: its eight sections
         public const string Map = "uiscreens_map";        // the city map's panels: its filters, the place card, the district view, the subway list and the picker
 
         /// <summary>Every section, in the page's order; a section with no switch yet is left off the page.</summary>
-        public static readonly string[] Sections = { Apps, Business, Market, Boxes, Hud, Tools, Activity, Buy, Pause, Life, Social, Help, Money, News, Work, Company, Estate, Tech, Map };
+        public static readonly string[] Sections = { Apps, Business, Market, Boxes, Hud, Tools, Activity, Buy, Pause, Life, Social, Help, Money, News, Work, Company, Construction, Estate, Tech, Map };
 
         private static readonly UiScreenDef[] Switched = Gather();
         private static readonly bool[] Values = Fill(Switched.Length);

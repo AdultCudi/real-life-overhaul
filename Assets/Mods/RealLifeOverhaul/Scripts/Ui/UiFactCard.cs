@@ -260,8 +260,12 @@ namespace RealLifeOverhaul.Ui
         // An amount: its name at the left, the minus, the figure and the plus at the right, what the figure means under them.
         private static void Step(UiScene s, UiAt at, UiFactLine l, float x, float y, float w)
         {
-            float lw = UiDraw.SnapDown(w * StepLabel);
-            UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, lw - UiTokens.S2, UiStyle.Body, UiRole.Text, l.Label, UiFlags.Label | UiFlags.Truncate);
+            // A step with no name (a choice among a few designs or builders) spans the card: its words are the choice itself.
+            float lw = string.IsNullOrEmpty(l.Label) ? 0f : UiDraw.SnapDown(w * StepLabel);
+            if (lw > 0f)
+            {
+                UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, lw - UiTokens.S2, UiStyle.Body, UiRole.Text, l.Label, UiFlags.Label | UiFlags.Truncate);
+            }
             float cx = x + lw, cw = w - lw, b = UiDraw.StepButton, by = y + (UiTokens.Control - b) / 2f;
             Square(s, at, cx, by, b, UiIcon.Minus, l.Command, l.Arg, l.Disabled || !l.CanLess);
             Square(s, at, cx + cw - b, by, b, UiIcon.Plus, l.Command2, l.Arg, l.Disabled || !l.CanMore);
