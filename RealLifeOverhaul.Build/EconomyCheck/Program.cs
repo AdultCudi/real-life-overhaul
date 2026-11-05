@@ -235,6 +235,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--ventures-ui")
+        {
+            VenturesUi();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--estate-duties")
         {
             EstateDuties();
@@ -743,6 +749,7 @@ internal static partial class Program
         DealerWave4();   // the other dealers' cars and prices, looks, an auction's bids and their save (DealerWave4Checks.cs)
         EstateRun();   // a hundred and twenty days of the property business through its day entries, a save on day 30 and one from before (EstateRunChecks.cs)
         DealerRun();   // ninety days of the dealership through its hour, the same (DealerRunChecks.cs)
+        VenturesUi();   // investors beyond the first deal, their save and a year of days, and the Ventures pages and their buttons (VenturesUiChecks.cs)
         Online();
         Logistics();   // delivery trips and food spoilage: departures, timeline, loads, fuel, wages, the rivals' books, batches, shelf life and both saves (LogisticsChecks.cs)
         Services();

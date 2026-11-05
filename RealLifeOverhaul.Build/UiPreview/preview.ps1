@@ -39,6 +39,7 @@ $gameFiles = @('UiGame*.cs', 'UiDirector*.cs', 'UiText.cs', 'UiGuide.cs')
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money') -Filter *.cs -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike '*Live.cs' -and $_.Name -notlike '*Live.*.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\Work') -Filter *.cs -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike '*Live.cs' -and $_.Name -notlike '*Live.*.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate') -Filter *.cs -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike '*Live.cs' -and $_.Name -notlike '*Live.*.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
+Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures') -Filter *.cs -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike '*Live.cs' -and $_.Name -notlike '*Live.*.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 # The showrooms' state and rules (game-free): the samples build the Car Showroom's one world from the real state and read its reports through the real functions.
 @('DealerState.cs', 'DealerReport.cs', 'DealerCatalogue.cs', 'DealerRules.cs', 'DealerRules.Market.cs', 'DealerRules.Customers.cs', 'DealerRules.Business.cs', 'RivalRules.cs', 'ViewRules.cs', 'DealerDay.cs', 'BidEntry.cs') | ForEach-Object {
     Copy-Item (Join-Path $repo (Join-Path 'Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer' $_)) (Join-Path $preview 'Kit')
@@ -54,6 +55,9 @@ Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui') -Filte
     -not ($gameFiles | Where-Object { $name -like $_ })
 } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Copy-Item (Join-Path $PSScriptRoot 'PreviewStubs.cs') (Join-Path $preview 'Kit')
+# The view's pointer part reads the Input System, which this project does not carry: a stand-in names what the host reads of it.
+Remove-Item (Join-Path $preview 'Kit/UiView.Pointer.cs') -ErrorAction SilentlyContinue
+Copy-Item (Join-Path $PSScriptRoot 'UiViewPointerStub.cs') (Join-Path $preview 'Kit')
 # The phone's model and screen, and the pages' and folders' rules they stand on: game-free, outside the kit's own folder.
 @('Scripts\Ui\Phone\PhoneItems.cs', 'Scripts\Ui\Phone\PhoneScreen.cs', 'Scripts\Core\GameUi\PagerRules.cs', 'Scripts\Core\GameUi\PhoneLayoutRules.cs', 'Scripts\Ui\Host\UiCost.cs', 'Scripts\Ui\Host\IUiGameWay.cs', 'Scripts\Driving\CarCatalogue.cs', 'Scripts\Navigation\NavPlaceRules.cs', 'Scripts\Photos\GalleryQuery.cs', 'Scripts\Photos\GalleryRules.cs', 'Scripts\Photos\PhotoStoreRules.cs', 'Scripts\Photos\PhotoStore.cs', 'Scripts\Photos\PhotoSidecarFile.cs', 'Scripts\Photos\PhotoSidecarRules.cs', 'Scripts\Photos\PhotoSeenRules.cs', 'Scripts\Photos\CameraRules.cs', 'Scripts\Core\PhotoThumbs.cs', 'Scripts\DaySeries\DaySeriesBook.cs', 'Scripts\DaySeries\DaySeriesCatalogue.cs') | ForEach-Object {
     Copy-Item (Join-Path $repo (Join-Path 'Assets\Mods\RealLifeOverhaul' $_)) (Join-Path $preview 'Kit')

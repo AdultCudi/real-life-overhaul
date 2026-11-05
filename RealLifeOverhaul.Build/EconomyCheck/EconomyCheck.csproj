@@ -254,6 +254,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\Pitch.cs" Link="Mod\Pitch.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\Market.cs" Link="Mod\Market.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\VenturesStore.cs" Link="Mod\VenturesStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\VenturesExtra.cs" Link="Mod\VenturesExtra.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\VenturesExtraRules.cs" Link="Mod\VenturesExtraRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\CompanyCatalogue.cs" Link="Mod\CompanyCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\CompanyState.cs" Link="Mod\CompanyState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\StaffRules.cs" Link="Mod\StaffRules.cs" />
@@ -1026,6 +1028,12 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\EstateFigures.cs" Link="Mod\Estate\EstateFigures.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\DealerFigures.cs" Link="Mod\Estate\DealerFigures.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\EstateScreen.cs" Link="Mod\Estate\EstateScreen.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\VentModel.cs" Link="Mod\Ventures\VentModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\VentFace.cs" Link="Mod\Ventures\VentFace.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\VentScreen.cs" Link="Mod\Ventures\VentScreen.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\VentWords.cs" Link="Mod\Ventures\VentWords.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\VenFacts.cs" Link="Mod\Ventures\VenFacts.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\VenPages.cs" Link="Mod\Ventures\VenPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPickList.cs" Link="Mod\UiPickList.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiEcono.cs" Link="Mod\UiEcono.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\EconoViews.cs" Link="Mod\EconoViews.cs" />

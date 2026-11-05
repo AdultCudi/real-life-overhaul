@@ -1069,6 +1069,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_ui_test_estate_rents", () => Ui.UiDirector.Instance?.TestEstateRents())
                 .AddButton("reallife_ui_test_dealer", () => Ui.UiDirector.Instance?.TestDealer())
                 .AddButton("reallife_ui_test_estate_switch", () => Ui.UiDirector.Instance?.TestEstateSwitch())
+                .AddButton("reallife_ui_test_ventures", () => Ui.UiDirector.Instance?.TestVentures())
+                .AddButton("reallife_ui_test_ventures_switch", () => Ui.UiDirector.Instance?.TestVenturesSwitch())
                 .AddButton("reallife_ui_test_population", () => Ui.UiDirector.Instance?.TestPopulation())
                 .AddButton("reallife_ui_test_hud", () => Ui.UiDirector.Instance?.TestHud())
                 .AddButton("reallife_ui_test_hud_box", () => Ui.UiDirector.Instance?.TestHudPrompt())
