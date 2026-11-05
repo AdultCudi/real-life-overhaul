@@ -10,6 +10,7 @@ namespace RealLifeOverhaul.Ui
     public sealed class UiPress
     {
         private bool _armed;
+        private bool _known;
         private bool _dragged;
         private int _command;
         private int _arg;
@@ -23,6 +24,7 @@ namespace RealLifeOverhaul.Ui
         {
             _dragged = false;
             _armed = scene != null && node >= 0 && node < scene.NodeCount;
+            _known = _armed;
             if (_armed)
             {
                 _command = scene.Nodes[node].Command;
@@ -43,8 +45,11 @@ namespace RealLifeOverhaul.Ui
             _armed = false;
         }
 
-        /// <summary>The number the pressed target has in this scene, or -1 when it is gone.</summary>
-        public int Current(UiScene scene) => _armed && scene != null ? Find(scene, _command, _arg, _layer) : -1;
+        /// <summary>
+        /// The number the pressed target has in this scene, or -1 when it is gone. It is still named after the pointer came up, until the
+        /// next press: the engine tells the up before the end of a drag, and a drag that lost its target then was never let go of.
+        /// </summary>
+        public int Current(UiScene scene) => _known && scene != null ? Find(scene, _command, _arg, _layer) : -1;
 
         /// <summary>
         /// The pointer came up at a place of the layout (px). The node to press, or -1: none when it was not down on a target,
