@@ -29,7 +29,7 @@ namespace RealLifeOverhaul.Ui
             "reallife_bld_use_shops", "reallife_bld_use_warehouses", "reallife_ui_build_dem_high",
             "reallife_ui_build_dem_low", "reallife_ui_build_dem_some", "reallife_ui_build_demand",
             "reallife_ui_build_favourite", "reallife_ui_build_favourites", "reallife_ui_build_leave",
-            "reallife_ui_build_planning", "reallife_ui_build_price", "reallife_ui_build_rent",
+            "reallife_ui_build_none", "reallife_ui_build_planning", "reallife_ui_build_price", "reallife_ui_build_rent",
             "reallife_ui_build_search", "reallife_ui_build_size", "reallife_ui_build_time",
             "reallife_ui_build_wanted", "reallife_ui_build_wants", "reallife_ui_build_weeks",
             "reallife_season_name_autumn", "reallife_ui_hud_weather_sunny", "reallife_ui_prompt_back",

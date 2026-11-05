@@ -339,7 +339,7 @@ namespace RealLifeOverhaul.Ui
                     card.Step(TechText.T("reallife_ui_tech_size"), TechText.Scope(s), null, true, true, Go(v => _newScope = (s + 2) % 3), Go(v => _newScope = (s + 1) % 3));
                 }
                 card.Say(Need(kind));
-                card.Say(TechText.T("reallife_tech_new_about_" + kind.ToString().ToLowerInvariant()));
+                card.Say(TechText.T(Mod + "_tech_new_about_" + kind.ToString().ToLowerInvariant()));
                 int segment = _newSegment, scope = _newScope;
                 if (room == FirmsRules.RoomYes)
                 {

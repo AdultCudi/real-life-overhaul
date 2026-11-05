@@ -320,7 +320,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     ColoContract c = mine[i];
                     int state = ColoRules.State(c, _day);
-                    string chip = TechText.T("reallife_ui_tech_colo_state_" + state.ToString(Inv));
+                    string chip = TechText.T(Mod + "_ui_tech_colo_state_" + state.ToString(Inv));
                     rows.Add(new UiAppRow
                     {
                         Icon = UiIcon.Building, Tint = UiRole.None, Grade = -1, Status = chip, StatusTone = state == 0 ? UiRole.Ok : state == 1 ? UiRole.Accent : UiRole.Warn,

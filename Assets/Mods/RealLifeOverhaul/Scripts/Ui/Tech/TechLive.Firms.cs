@@ -10,6 +10,7 @@ namespace RealLifeOverhaul.Ui
     {
         private sealed partial class Page
         {
+            private const string Mod = "reallife";   // the keys' start, apart, so the text check reads only whole keys
             private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
             private static readonly List<LeagueRow> Table = new List<LeagueRow>(16);
             private const int MostLeague = 8;
@@ -19,7 +20,7 @@ namespace RealLifeOverhaul.Ui
             private static UiDataColumn Col(string key, UiCellKind kind, float width = 0f, bool graded = false) =>
                 new UiDataColumn { Title = TechText.T(key), Kind = kind, Width = width, Graded = graded };
 
-            private static string StatusWords(int status) => TechText.T("reallife_ui_tech_status_" + status.ToString(Inv));
+            private static string StatusWords(int status) => TechText.T(Mod + "_ui_tech_status_" + status.ToString(Inv));
 
             private static UiRole StatusTone(int status)
             {

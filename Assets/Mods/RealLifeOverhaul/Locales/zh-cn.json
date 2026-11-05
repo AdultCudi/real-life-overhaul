@@ -33887,7 +33887,7 @@
   "reallife_ven_confirm_buy_back": "以{amount}回购{name}在{business}中的股份，按交易自身条款执行？之后对方不再分享收益。",
   "reallife_ven_note_no_place": "现在找不到那栋建筑。",
   "reallife_ven_note_promises": "{name}除了目标外，还对你提出了{count}项要求。每月都会核查：请在风投中打开该交易。",
-  "reallife_opt_sec_uiscreens_ventures": "RLO界面：品牌、风投和网上商店",
+  "reallife_opt_sec_uiscreens_ventures": "RLO界面：风投、品牌、商店",
   "reallife_ui_screen_ventures": "风投",
   "reallife_opt_tip_ui_screen_ventures": "RLO界面中的风投。关闭：恢复原来的风投应用，其余部分仍使用界面。",
   "reallife_ui_test_ventures": "在新界面中打开风投",
@@ -34595,5 +34595,7 @@
   "reallife_ui_cons_row_land_cash": "地块变现",
   "reallife_ui_cons_row_made": "地块与工程收益",
   "reallife_ui_cons_row_variances": "已批准的超高许可",
-  "reallife_ui_cons_variances_of": "{granted}，共{asked}"
+  "reallife_ui_cons_variances_of": "{granted}，共{asked}",
+  "reallife_ui_build_none": "没有可显示的建筑。",
+  "reallife_transaction_bld_land_auction_label": "拍卖获得的地块"
 }

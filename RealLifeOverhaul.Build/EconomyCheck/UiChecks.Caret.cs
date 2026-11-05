@@ -44,6 +44,8 @@ internal static partial class Program
         { "OwnBankScreen", new[] { MoneyCommands.TypeField } },
         { "CompanyScreen", new[] { CompanyFace.StepType } },
         { "EstateScreen", new[] { EstateFace.SearchCommand } },
+        { "VentScreen", new[] { VentFace.StepType } },
+        { "BuildFace", new[] { UiBuildPanels.SearchCommand } },
         { "MapLive", new[] { UiMapFilters.SearchCommand } }
     };
 

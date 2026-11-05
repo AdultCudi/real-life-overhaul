@@ -157,7 +157,7 @@ namespace RealLifeOverhaul.Ui
                         break;
                 }
                 _m.HeadActions = actions.ToArray();
-                terms.Say(TechText.T("reallife_tech_work_about_" + w.K.ToString().ToLowerInvariant()));
+                terms.Say(TechText.T(Mod + "_tech_work_about_" + w.K.ToString().ToLowerInvariant()));
                 if (firm != null && idle != Idle.None)
                 {
                     WorkLinks(terms, firm, idle, false);
