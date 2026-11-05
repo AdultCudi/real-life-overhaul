@@ -128,7 +128,7 @@ namespace RealLifeOverhaul
                 }
             }
             bool man = Random.value < 0.8f;
-            appearance.data.ageInDays = 33 * 365;
+            appearance.data.ageInDays = 33 * SocialPlaces.DaysPerYear;   // the game counts age in its own years; 365 a year made a pooled actor about 200 and drew the oldest head
             appearance.RandomizeElements(man ? Gender.Male : Gender.Female, Random.value < 0.5f ? _lightSkin : _darkSkin, CasualWear, man ? ManSeed : WomanSeed);
             appearance.data.strength = Strong;   // fit: the game rolls both of these 0..1
             appearance.data.fatness = Lean;

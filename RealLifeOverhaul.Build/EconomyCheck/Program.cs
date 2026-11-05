@@ -333,6 +333,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--social-fixes")
+        {
+            SocialSteps();   // (the social steps asked too early and the age a stranger is told, alone: SocialStepChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--redevelop")
         {
             Redevelop();   // (redevelopment alone, while working on it: RedevelopChecks.cs)
@@ -687,6 +693,7 @@ internal static partial class Program
         ShortCash();    // the overdraft pays whatever leaves the cash under nothing, the import payment is in the books, the bank's profit a day (OverdraftChecks.cs)
         BankingFixes(); // the player's banking: the student loan kept, an approval's interest once and on what is financed, a card paid early, a quest loan, loans priced again, the lender's fee (BankingFixChecks.cs)
         SocialFixes();  // the social life: a loan's few more days, a report placed indoors, a missed call's favour, one trainer a cast, an outing put forward kept (SocialFixChecks.cs)
+        SocialSteps();  // a step asked too early says how many days to wait and stays; the age a stranger is told matches the face (SocialStepChecks.cs)
         PeopleAge();    // the People page: each person's age, a year more at each birthday, in every language; the Guide names People as a contact (PeopleAgeChecks.cs)
         MorePeople();   // more people to meet: the first eight kept, every place bringing somebody new up to 400, the later people's own record, the circle (MorePeopleChecks.cs)
         LoseTouch();    // losing touch: who can go and why not, the slot given to somebody new, a full cast making room, Flare letting go (LoseTouchChecks.cs)
