@@ -21,6 +21,8 @@ internal static partial class Program
         VenturesEntryPoints();
         BrandsExtraChecks();
         BrandsEntryPoints();
+        ShopExtraChecks();
+        ShopEntryPoints();
     }
 
     // ------------------------------------------------------------------------------------------------- the rules
@@ -229,6 +231,7 @@ internal static partial class Program
         private readonly string _app, _state;
         private readonly UiSamples.VenStub _ven = new UiSamples.VenStub();
         private readonly UiSamples.BraStub _bra = new UiSamples.BraStub();
+        private readonly UiSamples.ShopStub _shop = new UiSamples.ShopStub();
         public int Calls;
 
         public VentSampleSource(string state, string app = "ventures")
@@ -238,7 +241,7 @@ internal static partial class Program
         }
 
         /// <summary>The actions pressed so far, whichever app's stand-in took them.</summary>
-        public int Presses => _app == "brands" ? _bra.Count : _ven.Count;
+        public int Presses => _app == "brands" ? _bra.Count : _app == "webshop" ? _shop.Count : _ven.Count;
 
         public UiSamples.VenStub Stub => _ven;
 
@@ -253,7 +256,8 @@ internal static partial class Program
         public void Fill(VentModel m, VentView v)
         {
             Calls++;
-            VentModel from = _app == "brands" ? UiSamples.Brands((key, english) => english, _state, v, _bra) : UiSamples.Ventures((key, english) => english, _state, v, _ven);
+            VentModel from = _app == "brands" ? UiSamples.Brands((key, english) => english, _state, v, _bra)
+                : _app == "webshop" ? UiSamples.Shop((key, english) => english, _state, v, _shop) : UiSamples.Ventures((key, english) => english, _state, v, _ven);
             foreach (var f in typeof(VentModel).GetFields())
             {
                 f.SetValue(m, f.GetValue(from));
@@ -436,6 +440,10 @@ internal static partial class Program
         foreach (string s in UiSamples.BrandsStates)
         {
             yield return ("brands", s);
+        }
+        foreach (string s in UiSamples.ShopStates)
+        {
+            yield return ("webshop", s);
         }
     }
 

@@ -30,6 +30,18 @@ namespace RealLifeOverhaul.Ui
             return text;
         }
 
+        private Func<long, string> _price;
+
+        /// <summary>A price kept in cents with its cents (4.50); the money words where none is set.</summary>
+        public string Price(long cents) => _price != null ? _price(cents) : _money(cents / 100f);
+
+        /// <summary>Sets how a price in cents is written.</summary>
+        public VentWords WithPrice(Func<long, string> price)
+        {
+            _price = price;
+            return this;
+        }
+
         public string Money(float money) => _money(money);
 
         /// <summary>A sum as a table's column wants it: the game's own short money words (6.25M).</summary>

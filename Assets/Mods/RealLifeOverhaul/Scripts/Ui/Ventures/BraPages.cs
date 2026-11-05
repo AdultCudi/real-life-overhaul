@@ -573,7 +573,7 @@ namespace RealLifeOverhaul.Ui
                 new UiFigureModel { Label = w.T("reallife_ui_bra_sales_month", "Sales a month"), Value = w.Money(a.Takings * 30),
                     Change = a.Target > 0 ? (a.Overs >= 0 ? "+" : string.Empty) + a.Overs + "%" : null, Rising = a.Overs >= 0, Good = a.Overs >= 0 },
                 new UiFigureModel { Label = w.T("reallife_ui_bra_target", "Target"), Value = a.Target > 0 ? w.Money(a.Target) : "-" },
-                new UiFigureModel { Label = w.T("reallife_ui_bra_royalty_day", "Royalty and levy a day"), Value = w.Money(a.Royalty) }));
+                new UiFigureModel { Label = w.T("reallife_ui_bra_royalty_day", "Fees a day"), Value = w.Money(a.Royalty) }));
             r.Add(VentBlock.Section(w.T("reallife_ibox_sec_terms", "Terms")));
             r.Add(VentBlock.Row(w.T("reallife_ui_bra_agreement_terms", "Fee, royalty, levy"), a.Terms));
             r.Add(VentBlock.Row(w.T("reallife_ui_bra_exclusive_area", "Exclusive area"), a.ExclusiveLine));

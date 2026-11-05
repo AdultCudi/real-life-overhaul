@@ -38,6 +38,15 @@ public static partial class UiPreviewRunner
                 Lay = (s, f, d, k) => VentFace.Lay(s, UiSamples.Brands(ModEnglish, st), f, d, k)
             });
         }
+        for (int i = 0; i < UiSamples.ShopStates.Length; i++)
+        {
+            string st = UiSamples.ShopStates[i];
+            screens.Add(new Screen
+            {
+                Name = "webshop_" + st, AppName = "Web shop", Icon = UiIcon.ShoppingCart, Backdrop = i % 2 == 0 ? "13.jpg" : "02.jpg", HoverCommand = UiAppWindow.NavCommand, HoverArg = 1,
+                Walk = Moves("DDR"), Lay = (s, f, d, k) => VentFace.Lay(s, UiSamples.Shop(ModEnglish, st), f, d, k)
+            });
+        }
         foreach (string lang in new[] { "pt", "zh-cn" })
         {
             UiWords words = ModWords(lang);
@@ -49,6 +58,15 @@ public static partial class UiPreviewRunner
                 {
                     Name = "brands_" + name + "_" + suffix, AppName = "Brands", Icon = UiIcon.Tag, Backdrop = "13.jpg", HoverCommand = UiAppWindow.NavCommand, HoverArg = 1,
                     Walk = Moves("DDR"), Lay = (sc, f, d, k) => VentFace.Lay(sc, UiSamples.Brands(words, name), f, d, k)
+                });
+            }
+            foreach (string st in new[] { "hub", "catalogue" })
+            {
+                string name = st;
+                screens.Add(new Screen
+                {
+                    Name = "webshop_" + name + "_" + suffix, AppName = "Web shop", Icon = UiIcon.ShoppingCart, Backdrop = "13.jpg", HoverCommand = UiAppWindow.NavCommand, HoverArg = 1,
+                    Walk = Moves("DDR"), Lay = (sc, f, d, k) => VentFace.Lay(sc, UiSamples.Shop(words, name), f, d, k)
                 });
             }
             foreach (string st in new[] { "investors", "offer", "deal", "raise_who" })

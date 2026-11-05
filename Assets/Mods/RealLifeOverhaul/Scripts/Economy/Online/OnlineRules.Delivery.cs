@@ -249,6 +249,10 @@ namespace RealLifeOverhaul.Economy
                         book.OnTime++;
                     }
                     count.Arrived++;
+                    if (ArrivedHook != null)
+                    {
+                        book.Delivery = Math.Max(0, book.Delivery - ArrivedHook(shop, o, late));   // the customer's delivery fee comes off the courier's
+                    }
                     Rate(shop, late ? OnlineCatalogue.ScoreLate : o.Short ? OnlineCatalogue.ScoreShort : OnlineCatalogue.ScoreGood, o.Tilt);
                     ComesBack(s, shop, site, o, hour / 24, late);
                     Drop(shop, i--);

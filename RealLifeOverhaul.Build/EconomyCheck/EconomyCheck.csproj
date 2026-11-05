@@ -1034,6 +1034,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\VentWords.cs" Link="Mod\Ventures\VentWords.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\VenFacts.cs" Link="Mod\Ventures\VenFacts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\VenPages.cs" Link="Mod\Ventures\VenPages.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Online\OnlineExtra.cs" Link="Mod\OnlineExtra.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\ShopPages.cs" Link="Mod\Ventures\ShopPages.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\ShopFacts.cs" Link="Mod\Ventures\ShopFacts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\BrandsExtra.cs" Link="Mod\BrandsExtra.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\BraPages.cs" Link="Mod\Ventures\BraPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\BraFacts.cs" Link="Mod\Ventures\BraFacts.cs" />

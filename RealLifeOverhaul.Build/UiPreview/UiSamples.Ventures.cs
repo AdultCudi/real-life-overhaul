@@ -37,7 +37,7 @@ internal static partial class UiSamples
         public void OpenBizMan() => Did("bizman");
     }
 
-    public static VentWords VentWordsOf(UiWords t) => new VentWords(t, VentMoney);
+    public static VentWords VentWordsOf(UiWords t) => new VentWords(t, VentMoney).WithPrice(c => "$" + (c / 100m).ToString("0.00", System.Globalization.CultureInfo.InvariantCulture));
 
     // The game's short money words: whole figures to a million, then millions to two places.
     private static string VentMoney(float v) => v >= 1000000f ? "$" + (v / 1000000f).ToString("0.##", CultureInfo.InvariantCulture) + "M" : "$" + ((long)v).ToString("N0", CultureInfo.InvariantCulture);

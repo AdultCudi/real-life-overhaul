@@ -7,6 +7,18 @@ internal static partial class Program
 {
     static partial void UiCasesVentures(UiScreenDef def, List<UiScreenCase> cases)
     {
+        if (def.Id == "webshop")
+        {
+            foreach (string state in UiSamples.ShopStates)
+            {
+                string st = state;
+                cases.Add(new UiScreenCase
+                {
+                    Def = def, Name = "webshop (" + st + ")", Title = "Web shop", Commands = VentFace.Commands,
+                    Lay = (s, f, dark, k, t) => VentFace.Lay(s, UiSamples.Shop(t, st), f, dark, k)
+                });
+            }
+        }
         if (def.Id == "brands")
         {
             foreach (string state in UiSamples.BrandsStates)
