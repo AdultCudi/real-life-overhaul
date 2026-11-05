@@ -56,6 +56,7 @@ internal static partial class Program
         FlareWorldFigures(en);
         FlareCityAndHire(en);
         FlareFiguresKeptWhole();
+        FlareNoLineStartsOnAMark();
         FlareWorldLive();
     }
 
@@ -177,6 +178,34 @@ internal static partial class Program
         Check(FlareFigures.Bind("12 in 100 posts like this fall flat, 9 in 100 go viral.") == "12\u00a0in\u00a0100\u00a0posts like this fall flat, 9\u00a0in\u00a0100\u00a0go viral."
             && FlareFigures.Bind("12 em cada 100 posts assim") == "12\u00a0em\u00a0cada\u00a0100\u00a0posts assim" && FlareFigures.Bind("Nothing here yet") == "Nothing here yet"
             && FlareFigures.Bind(null) == null, "flare world: FlareFigures.Bind joins a figure to its noun and the words between two figures, and nothing else");
+    }
+
+    // A closing or stopping mark never begins a line, also straight after a Latin letter or a digit, where an ideograph may.
+    private static void FlareNoLineStartsOnAMark()
+    {
+        string bad = "none";
+        int widths = 0;
+        foreach (string text in new[] { "打开Flare，然后", "共100，", "打开Flare。然后点100！再试", "第12、Flare：「Post」）" })
+        {
+            for (float width = 64f; width <= 400f && bad == "none"; width += 1f)
+            {
+                int lines = UiTextRules.Lines(text, UiStyle.Body, width, 0, out float _);
+                widths++;
+                for (int k = 1; k < lines && bad == "none"; k++)
+                {
+                    int at = UiTextRules.LineStart(text, UiStyle.Body, width, k);
+                    if (at > 0 && at < text.Length && UiTextRules.Wide(text[at]) && !UiTextRules.MayBeginLine(text[at]) && !UiTextRules.Wide(text[at - 1]))
+                    {
+                        bad = "at " + (int)width + " px \"" + text + "\" starts line " + (k + 1) + " on \"" + text.Substring(at, 1) + "\"";
+                    }
+                }
+            }
+        }
+        Check(bad == "none" && widths > 1000, "flare world: a line never begins on a closing or stopping mark after a Latin letter or a digit, and an ideograph still may (" + widths + " widths; " + bad + ")");
+        Check(UiTextRules.MayBeginLine('条') && UiTextRules.MayBeginLine('カ') && UiTextRules.MayBeginLine('가') && !UiTextRules.MayBeginLine('，') && !UiTextRules.MayBeginLine('。')
+            && !UiTextRules.MayBeginLine('、') && !UiTextRules.MayBeginLine('）') && !UiTextRules.MayBeginLine('」') && !UiTextRules.MayBeginLine('！') && !UiTextRules.MayBeginLine('？')
+            && !UiTextRules.MayBeginLine('：') && !UiTextRules.MayBeginLine('；') && !UiTextRules.MayBeginLine('ー') && !UiTextRules.MayBeginLine('ゃ') && !UiTextRules.MayBeginLine('々')
+            && !UiTextRules.MayBeginLine('a') && !UiTextRules.MayBeginLine('5'), "flare world: UiTextRules.MayBeginLine allows ideographs, kana and Hangul and refuses the marks that may not begin a line");
     }
 
     // The rail of a state is the world's week worded by FlareFigures, and no more than eight accounts.

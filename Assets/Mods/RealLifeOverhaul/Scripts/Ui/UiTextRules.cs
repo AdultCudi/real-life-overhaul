@@ -120,9 +120,9 @@ namespace RealLifeOverhaul.Ui
                         break;
                     }
                     float w = (AdvanceEm(Cased(c, t.Case), primary, backup) + t.Tracking) * t.Size;
-                    if (j > i && Wide(c) && text[j - 1] != ' ' && !Wide(text[j - 1]))
+                    if (j > i && MayBeginLine(c) && text[j - 1] != ' ' && !Wide(text[j - 1]))
                     {
-                        brk = j - 1;   // an ideograph may begin a line after a digit or a Latin letter, as the text engine breaks it
+                        brk = j - 1;   // an ideograph may begin a line after a digit or a Latin letter, a closing or stopping mark may not, as the text engine breaks it
                         atBreak = line;
                     }
                     if (c == ' ')
@@ -269,6 +269,22 @@ namespace RealLifeOverhaul.Ui
             return (c >= 'ᄀ' && c <= 'ᅟ') || (c >= '⺀' && c <= '꓏') || (c >= '가' && c <= '힣')
                    || (c >= '豈' && c <= '﫿') || (c >= '︰' && c <= '﹏') || (c >= '＀' && c <= '｠')
                    || (c >= '￠' && c <= '￦');
+        }
+
+        /// <summary>
+        /// A character that may begin a line after a Latin letter or a digit: an ideograph, a kana or a Hangul syllable that is not
+        /// a mark the text engine keeps off the start of a line (closing brackets, the full-width comma, stop, colon, semicolon,
+        /// question and exclamation mark, the ideographic comma, small kana, the iteration mark and the prolonged sound mark).
+        /// </summary>
+        public static bool MayBeginLine(char c)
+        {
+            if (!Wide(c))
+            {
+                return false;
+            }
+            bool letter = (c >= 'ᄀ' && c <= 'ᇿ') || (c >= 'ぁ' && c <= 'ヿ') || (c >= '㐀' && c <= '䶿')
+                          || (c >= '一' && c <= '鿿') || (c >= '가' && c <= '힣') || (c >= '豈' && c <= '﫿');
+            return letter && "ぁぃぅぇぉっゃゅょゎゕゖ゛゜ゝゞァィゥェォッャュョヮヵヶ・ーヽヾ々".IndexOf(c) < 0;
         }
 
         private static char Cased(char c, UiCase textCase) => textCase == UiCase.Upper ? char.ToUpperInvariant(c) : textCase == UiCase.Lower ? char.ToLowerInvariant(c) : c;
