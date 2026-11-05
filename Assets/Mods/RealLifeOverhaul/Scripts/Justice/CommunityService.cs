@@ -20,7 +20,8 @@ namespace RealLifeOverhaul
         private const float StepSeconds = 2.5f;        // given to the game to walk them that last step
         private const int StepTries = 2;               // steps that never arrived before a shift stops asking for them
         private const float ShiftMostSeconds = 600f;
-        private const float TooFar = 150f;             // metres from the litter that end the shift
+        private const float LayPatience = 8f;          // seconds the next piece is looked for after a pick, before the shift is given up
+        private const float TooFar = 150f;            // metres from the litter that end the shift
         private const NavigationBlocker Blocker = NavigationBlocker.JobOfferPanel;
 
         private static readonly string[] Clips = { PickClip, "kneel_work" };   // the first the bundle has
@@ -31,6 +32,8 @@ namespace RealLifeOverhaul
         private int _picked;
         private float _startedAt, _pickEnds, _goneAt;
         private bool _picking, _inReach;
+        private bool _laying;          // the last piece is in the bag and the next has no place yet
+        private float _layUntil;
         private bool _stepping;        // the game is walking them to where the clip is made for
         private Vector3 _stand;        // ...which is here
         private float _stepUntil;
@@ -84,6 +87,7 @@ namespace RealLifeOverhaul
             _picking = false;
             _inReach = false;
             _stepping = false;
+            _laying = false;
             _stepFailures = 0;
             if (!Lay(player.transform.position))
             {
@@ -114,7 +118,7 @@ namespace RealLifeOverhaul
         // A panel the game refused is tried again on the next tick.
         private void Present(PlayerController player)
         {
-            if (_picking || _stepping)
+            if (_picking || _stepping || _laying)
             {
                 _mark.Hide();
                 _door.Hide("the litter is being picked up");
@@ -157,17 +161,33 @@ namespace RealLifeOverhaul
 
         private void Run(float now, PlayerController player)
         {
-            if (player == null || BuildingManager.IsInsideBuilding || PlayerHelper.IsUsingVehicle || PoliceAttention.IsBusy || JobDirector.OnShift
-                || now - _startedAt > ShiftMostSeconds || TimeHelper.CurrentHour >= 22 || TimeHelper.CurrentHour < 6)
+            string over = player == null ? "no player" : BuildingManager.IsInsideBuilding ? "went indoors" : PlayerHelper.IsUsingVehicle ? "got in a vehicle"
+                : PoliceAttention.IsBusy ? "the police have the player" : JobDirector.OnShift ? "a job shift began"
+                : now - _startedAt > ShiftMostSeconds ? "the shift ran its longest" : TimeHelper.CurrentHour >= 22 || TimeHelper.CurrentHour < 6 ? "night fell" : null;
+            if (over != null)
             {
-                Stop(false);
+                End(over);
                 return;
             }
             Vector3 offset = _at - player.transform.position;
             float flat = offset.x * offset.x + offset.z * offset.z;
             if (flat > TooFar * TooFar)
             {
-                Stop(false);
+                End("the player left the litter far behind");
+                return;
+            }
+            if (_laying)
+            {
+                // A place is not always found at once (a crowd, a closed road); the shift waits for one rather than ending as if it were done.
+                if (Lay(player.transform.position))
+                {
+                    _laying = false;
+                    Status();
+                }
+                else if (now > _layUntil)
+                {
+                    End("no clear pavement was found for the next piece");
+                }
                 return;
             }
             if (_stepping)
@@ -196,10 +216,15 @@ namespace RealLifeOverhaul
             {
                 EnergyHelper.SpentEnergyOnce(1.2f);
             }
-            if (_picked >= JusticeLaw.CommunityShiftPieces || !Lay(player.transform.position))
+            if (_picked >= JusticeLaw.CommunityShiftPieces)
             {
                 Stop(true);
                 return;
+            }
+            if (!Lay(player.transform.position))
+            {
+                _laying = true;
+                _layUntil = now + LayPatience;
             }
             Status();
         }
@@ -350,6 +375,13 @@ namespace RealLifeOverhaul
             }
         }
 
+        // A shift ended by something outside the player's hands says why in the log, so a report can be told apart from a fault.
+        private void End(string why)
+        {
+            _logger?.Info("Justice: community service shift ended early (" + why + ") after " + _picked + " piece(s).");
+            Stop(false);
+        }
+
         /// <summary>Ends the shift on any path: the hours worked are credited, the litter, the marker and the hold are gone.</summary>
         public void Stop(bool whole)
         {
@@ -361,6 +393,7 @@ namespace RealLifeOverhaul
             _picking = false;
             _inReach = false;
             _stepping = false;
+            _laying = false;
             Free();
             if (_litter != null)
             {
@@ -447,9 +480,12 @@ namespace RealLifeOverhaul
 
         private bool Lay(Vector3 from)
         {
+            // The player's own spot can sit a hair off the walkable mesh after the bend, which fails every route test; the last pile, found on it, cannot.
+            Vector3 route = Active && _picked > 0 ? _at : from;
             for (int attempt = 0; attempt < 14; attempt++)
             {
-                if (!CitySpots.PavementRing(from, 9f, 36f, false, out Vector3 spot) || !CitySpots.Stand(spot, 0.5f, out spot) || !CitySpots.Reachable(from, spot))
+                if (!CitySpots.PavementRing(from, 9f, 36f, false, out Vector3 spot) || !CitySpots.Stand(spot, 0.5f, out spot)
+                    || !(CitySpots.Reachable(from, spot) || CitySpots.Reachable(route, spot)))
                 {
                     continue;
                 }
