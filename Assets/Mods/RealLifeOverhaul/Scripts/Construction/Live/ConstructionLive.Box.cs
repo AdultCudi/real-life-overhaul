@@ -243,7 +243,48 @@ namespace RealLifeOverhaul.Construction
                 m.DetailLocateRun = LocateRun;
             }
 
-            /// <summary>The page's card for a side: the lines and the buttons without a head, for what a tab is before anything is picked.</summary>
+            /// <summary>The page as the cards that stand beside a table: its head as the first card, the sections, and the buttons at the foot of the last.</summary>
+        public UiFactCardModel[] Side(ConstructionModel m)
+        {
+            Close();
+            var cards = new List<UiFactCardModel>(_cards.Count + 2);
+            UiRole tone = ChipTone == CellTone.Green ? UiRole.Ok : ChipTone == CellTone.Red ? UiRole.Danger : ChipTone == CellTone.Yellow ? UiRole.Warn : UiRole.Muted;
+            var head = new UiFactCardModel { Title = TitleWords, Sub = SubtitleWords, Chip = ChipWords, ChipTone = tone };
+            var actions = new List<UiActionModel>(4);
+            var headLines = new List<UiFactLine>(2);
+            for (int r = 0; r < _rows.Count; r++)
+            {
+                for (int b = 0; b < _rows[r].Buttons.Count; b++)
+                {
+                    KitButton k = _rows[r].Buttons[b];
+                    if (k.Key == BackKey)
+                    {
+                        continue;
+                    }
+                    if (k.Key == MapKey)
+                    {
+                        headLines.Add(UiFactLine.Go(_words(MapKey), ConstructionFace.ActionCommand, _runs.Do(k.Click)));
+                        continue;
+                    }
+                    bool main = k.Kind == Positive && actions.Count == 0;
+                    actions.Add(new UiActionModel
+                    {
+                        Label = _words(k.Key), Kind = main ? UiButtonKind.Primary : UiButtonKind.Secondary, Icon = UiIcon.None, Key = main ? UiAction.Alt : UiAction.Count,
+                        Command = ConstructionFace.ActionCommand, Arg = _runs.Do(k.Click)
+                    });
+                }
+            }
+            head.Lines = headLines.ToArray();
+            cards.Add(head);
+            cards.AddRange(_cards);
+            if (actions.Count > 0)
+            {
+                cards.Add(new UiFactCardModel { Actions = actions.ToArray() });
+            }
+            return cards.ToArray();
+        }
+
+        /// <summary>The page's card for a side: the lines and the buttons without a head, for what a tab is before anything is picked.</summary>
             public UiFactCardModel Card(string title)
             {
                 Close();

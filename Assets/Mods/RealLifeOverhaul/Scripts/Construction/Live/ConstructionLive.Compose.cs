@@ -35,10 +35,39 @@ namespace RealLifeOverhaul.Construction
             m.HeadSub = Headline(state);
             Figures(m, state);
             m.Table = TableOf(m);
-            m.Card = _box.Card(null);
+            if (_previewing)
+            {
+                m.Side = _box.Side(m);
+                if (_previewKey != null && _previewKey.StartsWith("prj:", StringComparison.Ordinal) && int.TryParse(_previewKey.Substring(4), NumberStyles.Integer, Inv, out int pid))
+                {
+                    ProjectFile shown = state.Project(pid);
+                    if (shown != null)
+                    {
+                        var steps = new List<UiFactLine>(StepKeys.Length);
+                        int at = Math.Min((int)shown.Stage, StepKeys.Length - 1);
+                        for (int i = 0; i < StepKeys.Length; i++)
+                        {
+                            steps.Add(UiFactLine.Tick(ConstructionText.T(StepKeys[i]), i < at || shown.Stage == ProjectStage.Finished));
+                        }
+                        var withSteps = new List<UiFactCardModel>(m.Side);
+                        withSteps.Insert(1, new UiFactCardModel { Title = ConstructionText.T("reallife_ui_cons_track"), Heading = true, Lines = steps.ToArray() });
+                        m.Side = withSteps.ToArray();
+                    }
+                }
+                m.Card = null;
+                m.Table.Selected = Array.FindIndex(m.RowKeys, k => k == _previewKey);
+            }
+            else
+            {
+                m.Card = _box.Card(null);
+            }
             if (_tab == ConstructionDirector.TabLand)
             {
                 m.Foot = AsksCard(state);
+            }
+            else if (_tab == ConstructionDirector.TabProjects || _tab == ConstructionDirector.TabTenders)
+            {
+                m.Foot = WeekCard(state);
             }
         }
 
@@ -209,6 +238,22 @@ namespace RealLifeOverhaul.Construction
         {
             labels.Add(ConstructionText.T(key));
             values.Add(value);
+        }
+
+        // What is coming to the sites, as a card under the table: the same dated list the overview carries.
+        private UiFactCardModel WeekCard(BuildState state)
+        {
+            ConstructionDay[] week = Week(state);
+            if (week.Length == 0)
+            {
+                return null;
+            }
+            var lines = new UiFactLine[week.Length];
+            for (int i = 0; i < week.Length; i++)
+            {
+                lines[i] = UiFactLine.Row(week[i].When + "  " + week[i].What, week[i].Amount);
+            }
+            return new UiFactCardModel { Title = ConstructionText.T("reallife_ui_cons_week_title"), Heading = true, Lines = lines };
         }
 
         // What land asks a square metre in each district, the mean of the lots for sale, with the change on the month before once there is a month before it.

@@ -124,8 +124,45 @@ internal static partial class UiSamples
                 ConsOverview(t, runs, m);
                 break;
         }
+        if (m.Shape == ConstructionShape.Table && m.Table != null && m.Table.Rows.Length > 0)
+        {
+            ConsPreview(runs, m);
+        }
         m.Runs = runs.ToArray();
         return m;
+    }
+
+    // A table's tab shows its first row beside it: the row as a head and the rest of its cells as facts, with the button that opens it.
+    private static void ConsPreview(ConstructionRuns runs, ConstructionModel m)
+    {
+        UiDataRow row = m.Table.Rows[0];
+        var lines = new List<UiFactLine>(8);
+        for (int c = 1; c < m.Table.Columns.Length && c < row.Cells.Length; c++)
+        {
+            if (!string.IsNullOrEmpty(row.Cells[c]))
+            {
+                lines.Add(UiFactLine.Row(m.Table.Columns[c].Title, row.Cells[c]));
+            }
+        }
+        m.Table.Selected = 0;
+        m.Card = null;
+        if (m.HeadTitle != null && (m.Tab == 2 || m.Tab == 3))
+        {
+            m.Foot = new UiFactCardModel
+            {
+                Title = "On the sites soon", Heading = true, Lines = new[]
+                {
+                    UiFactLine.Row("Day 215  Materials for Office block arrive", string.Empty), UiFactLine.Row("Day 216  The inspector visits Cafe refit", "No cost"),
+                    UiFactLine.Row("Day 218  The council decides on Car park", string.Empty)
+                }
+            };
+        }
+        m.Side = new[]
+        {
+            new UiFactCardModel { Title = row.Cells[0], Sub = m.HeadTitle },
+            new UiFactCardModel { Lines = lines.ToArray() },
+            new UiFactCardModel { Actions = new[] { runs.Button(m.HeadTitle, UiButtonKind.Primary, UiIcon.None, UiAction.Alt, () => { }) } }
+        };
     }
 
     // ------------------------------------------------------------------------------------------------------------------ the overview
