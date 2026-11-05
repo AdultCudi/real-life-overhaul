@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using RealLifeOverhaul.Map25;
+using RealLifeOverhaul.Ui;
 using UnityEditor;
 using UnityEngine;
 
@@ -12,6 +13,115 @@ public static partial class UiPreviewRunner
     // minimap_base file), the camera maths. What is made up is said in Map25Real: the heights, the roads (the gaps through the buildings), the trees.
     static partial void AddMap(List<Screen> screens)
     {
+        Func<string, Sprite> before = UiPictures.Find;
+        UiPictures.Find = key => key != null && key.StartsWith("map5:", StringComparison.Ordinal) ? MapPicture(key) : before?.Invoke(key);
+        foreach (string state in UiSamples.MapFilterStates)
+        {
+            screens.Add(MapFiltersScreenOf(state, "en"));
+        }
+        foreach (string state in UiSamples.MapPlaceStates)
+        {
+            screens.Add(MapPlaceScreenOf(state, "en"));
+        }
+        foreach (string state in UiSamples.MapDistrictStates)
+        {
+            screens.Add(MapDistrictScreenOf(state, "en"));
+        }
+        foreach (string state in UiSamples.MapMinimapStates)
+        {
+            screens.Add(MapMinimapScreenOf(state, "en", false));
+        }
+        screens.Add(MapMinimapScreenOf("route_tilt", "en", true));
+        foreach (string lang in new[] { "pt", "zh-cn" })
+        {
+            screens.Add(MapFiltersScreenOf("filters", lang));
+            screens.Add(MapFiltersScreenOf("picker_long", lang));
+            screens.Add(MapFiltersScreenOf("subway", lang));
+            screens.Add(MapPlaceScreenOf("overview", lang));
+            screens.Add(MapPlaceScreenOf("reviews", lang));
+            screens.Add(MapDistrictScreenOf("rent", lang));
+            screens.Add(MapDistrictScreenOf("wealth", lang));
+            screens.Add(MapMinimapScreenOf("route_long", lang, false));
+        }
+    }
+
+    // The real 2.5D shots the minimap card shows as its view: a picture of the owner's own footprints, from the backdrops folder.
+    private static readonly Dictionary<string, Sprite> MapPictures = new Dictionary<string, Sprite>();
+
+    private static Sprite MapPicture(string key)
+    {
+        if (string.IsNullOrEmpty(_backdrops))
+        {
+            return null;
+        }
+        if (MapPictures.TryGetValue(key, out Sprite known))
+        {
+            return known;
+        }
+        string path = Path.Combine(_backdrops, key.Substring("map5:".Length) + ".png");
+        Sprite sprite = null;
+        if (File.Exists(path))
+        {
+            var tex = new Texture2D(2, 2, TextureFormat.RGB24, false);
+            tex.LoadImage(File.ReadAllBytes(path));
+            sprite = Sprite.Create(tex, new Rect(0f, 0f, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+        }
+        MapPictures[key] = sprite;
+        return sprite;
+    }
+
+    // The place card over the real tilted map with the route strip, the layers and the buttons.
+    private static Screen MapPlaceScreenOf(string state, string lang)
+    {
+        UiWords t = DialogWords(lang);
+        bool reviews = state == "reviews", business = state == "business";
+        return new Screen
+        {
+            Name = "map_place_" + state + Suffix(lang), AppName = "City map", Icon = UiIcon.MapTrifold, Backdrop = state == "unrated" ? "real_full_junction.png" : "real_full_tilt.png",
+            Lay = (s, f, d, k) => UiSamples.MapPlaceScene(s, f, d, k, t, state),
+            HoverCommand = reviews ? UiMapPlace.ReviewCommand : business ? UiMapPlace.TabCommand : UiMapPlace.SaveCommand, HoverArg = reviews ? 1 : business ? 1 : 0,
+            Walk = Moves("DDDRRDDDD")
+        };
+    }
+
+    // The district view over the tinted map (the game's rent shot) or the real picture.
+    private static Screen MapDistrictScreenOf(string state, string lang)
+    {
+        UiWords t = DialogWords(lang);
+        return new Screen
+        {
+            Name = "map_district_" + state + Suffix(lang), AppName = "City map", Icon = UiIcon.MapTrifold, Backdrop = state == "crime" ? "real_full_flat.png" : "map_rent.png",
+            Lay = (s, f, d, k) => UiSamples.MapDistrictScene(s, f, d, k, t, state),
+            HoverCommand = UiMapDistrict.RowCommand, HoverArg = 2, Walk = Moves("DDDRRRDDDD")
+        };
+    }
+
+    // The minimap with a toast, an objective and a prompt all up, by day (13) and by night (11).
+    private static Screen MapMinimapScreenOf(string state, string lang, bool night)
+    {
+        UiWords t = DialogWords(lang);
+        return new Screen
+        {
+            Name = "map_minimap_" + state + (night ? "_night" : string.Empty) + Suffix(lang), AppName = "HUD", Icon = UiIcon.MapTrifold, Backdrop = night ? "11.jpg" : "13.jpg",
+            Lay = (s, f, d, k) => UiSamples.MapMinimapScene(s, f, d, k, t, state == "route_long", state),
+            HoverCommand = UiObjectives.LocateCommand, HoverArg = 0, Walk = Moves("DDDD")
+        };
+    }
+
+    // The map's left dock over the real 2.5D picture (or the game's tinted map for the Rent view), the mouse resting on a line and the pad's walk down it.
+    private static Screen MapFiltersScreenOf(string state, string lang)
+    {
+        UiWords t = DialogWords(lang);
+        bool picker = state.StartsWith("picker", StringComparison.Ordinal), subway = state == "subway";
+        string backdrop = state == "taxi" ? "real_full_flat.png" : subway ? "real_full_flat.png" : picker ? "real_full_junction.png" : state == "filters" ? "real_full_tilt.png" : "map_rent.png";
+        return new Screen
+        {
+            Name = "map_" + state + Suffix(lang), AppName = "City map", Icon = UiIcon.MapTrifold, Backdrop = backdrop,
+            Lay = (s, f, d, k) => UiSamples.MapFiltersScene(s, f, d, k, t, state),
+            HoverCommand = picker ? UiMapFilters.ChoiceCommand : subway ? UiMapFilters.StationCommand : state == "search" ? UiMapFilters.ResultCommand : UiMapFilters.LineCommand,
+            HoverArg = picker || subway ? 2 : state == "search" ? 1 : 7,
+            Walk = Moves(picker ? "DDDDD" : subway ? "DDDDDD" : "RRDDDDDDDDDDRRD")
+        };
     }
 }
 

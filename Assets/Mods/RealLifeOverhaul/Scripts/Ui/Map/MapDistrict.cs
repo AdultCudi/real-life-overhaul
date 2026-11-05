@@ -1,0 +1,308 @@
+using System;
+
+namespace RealLifeOverhaul.Ui
+{
+    /// <summary>A district in the view's ranked table: its band's colour on the map, its figure, how it moved this month and how much of it stands empty.</summary>
+    public struct MapDistrictRow
+    {
+        public string Name;
+        public UiRole Swatch;      // the key's step the district is tinted in; None for a district with no figure (grey)
+        public string Figure;      // the layer's figure, or the sentence for none
+        public string Month;       // "+1.8%", or null where no month is kept yet
+        public int MonthSign;      // 1 up, -1 down, 0 flat or unknown: the arrow
+        public UiRole MonthTone;   // Ok, Danger, or None for a layer whose rise is neither good nor bad
+        public string Empty;       // "5.1%", or null
+        public bool Chosen;
+    }
+
+    /// <summary>
+    /// What the district view shows, after the approved mockup (districts_rent): the ten layers as tinted icons beside a panel of the city's average, a
+    /// donut of a share where one helps, the map's key on the kit's ramp, the chosen district as a short block, and every district ranked in a table.
+    /// The district view fills it from its figures, once a day and when the pointer changes the district; the kit only draws it.
+    /// </summary>
+    public sealed class MapDistrictModel
+    {
+        public string Title;                                  // "Districts, Rent"
+        public UiIcon Icon = UiIcon.Coin;
+        public string FiltersLabel;                           // the rail's first button goes back to the filters, or null for none
+        public MapRailItem[] Layers = new MapRailItem[0];     // the ten layers
+        public int Layer;
+        public string About;                                  // a quiet sentence under the strip: what the layer measures, or null
+        public string AverageTitle;                           // "City average"
+        public UiInfoRow[] Average = new UiInfoRow[0];
+        public string ChartTitle, ChartCentre, ChartCentreSub;
+        public string[] ChartLabels = new string[0], ChartValues = new string[0];
+        public float[] ChartShares = new float[0];
+        public string LegendTitle, ScaleLabel, ScaleLow, ScaleHigh;
+        public UiRole[] ScaleSteps;                           // null for the kit's ramp
+        public bool HasChosen;
+        public string ChosenName, ChosenRank, ShowLabel;      // "Midtown", "Rank 1 of 7", "Show on map"
+        public UiInfoRow[] Chosen = new UiInfoRow[0];
+        public string TableTitle;                             // "Ranked by rent"
+        public string ColDistrict, ColFigure, ColMonth, ColEmpty;
+        public MapDistrictRow[] Rows = new MapDistrictRow[0];
+        public float Offset;
+        public int Reveal = -1;
+        public UiPrompt[] Prompts = new UiPrompt[0];
+        public int PromptCount;
+    }
+
+    /// <summary>
+    /// The district view as an info view: the layers on the rail (the first button goes back to the filters), and the panel's sections on their bands. The
+    /// ranked table takes the room the rest leave and scrolls; the donut goes first on a short screen. Commands, the 5060 block: <see cref="LayerCommand"/>,
+    /// <see cref="RowCommand"/>, <see cref="ShowCommand"/>, <see cref="FiltersCommand"/>. Game-free. Cost: a layout a change, the rows in view only.
+    /// </summary>
+    public static class UiMapDistrict
+    {
+        public const int LayerCommand = 5060, RowCommand = 5061, ShowCommand = 5062, FiltersCommand = 5063;
+        public const float Width = UiMapFilters.Width;
+        private const float RowHeight = UiTokens.TableRow;     // px: a district's row
+        private const float DonutSize = 96f;
+        private const byte RailRegion = 1, PanelRegion = 2;
+        private static readonly UiRole[] Ramp = { UiRole.Ramp1, UiRole.Ramp2, UiRole.Ramp3, UiRole.Ramp4, UiRole.Ramp5 };
+
+        public static float Draw(UiScene s, UiAt at, MapDistrictModel m, UiFrame frame, float x, float y, IUiKeys keys)
+        {
+            int buttons = m.Layers.Length + (string.IsNullOrEmpty(m.FiltersLabel) ? 0 : 1);
+            float px = x;
+            if (buttons > 0)
+            {
+                Rail(s, at.InRegion(RailRegion), m, buttons, x, y);
+                px = x + UiMapFilters.Menu + UiTokens.S2;
+            }
+            float h = UiMapFilters.PanelHeight(frame);
+            UiAt column = at.InRegion(PanelRegion);
+            int panel = UiDraw.Box(s, column, px, y, Width, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
+            UiAt on = column.In(panel);
+            float cy = UiDraw.TitleStrip(s, on, px, y, Width, m.Icon, m.Title, true);
+            float ix = px + UiTokens.S4, iw = Width - UiTokens.S4 * 2f;
+            float bottom = y + h;
+            if (!string.IsNullOrEmpty(m.About))
+            {
+                int lines = UiTextRules.Lines(m.About, UiStyle.Small, iw, 2, out float widest);
+                UiDraw.Text(s, on, ix, cy + UiTokens.S2, iw, UiStyle.Small, UiRole.Text2, m.About, UiFlags.Wrap | UiFlags.Truncate, lines);
+                cy += UiTokens.S2 + UiDraw.Snap(lines * UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S1;
+            }
+            // The sections in the order of the mockup; each is kept only while the table keeps its least rows (three) under them.
+            float least = TableHead(m) + RowHeight * 3f + UiTokens.S2;
+            cy = Band(s, on, px, cy, m.AverageTitle, m.Average, ix, iw);
+            if (m.ChartShares != null && m.ChartShares.Length > 0 && bottom - cy - ChartHeight(m) - LegendHeight(m) - ChosenHeight(m) >= least)
+            {
+                cy = Donut(s, on, m, px, cy, ix, iw);
+            }
+            if (!string.IsNullOrEmpty(m.LegendTitle))
+            {
+                cy = Legend(s, on, m, px, cy, ix, iw);
+            }
+            if (m.HasChosen && bottom - cy - ChosenHeight(m) >= least)
+            {
+                cy = Chosen(s, on, m, px, cy, ix, iw);
+            }
+            Table(s, on, m, px, cy, bottom);
+            return px + Width;
+        }
+
+        // ------------------------------------------------------------------------------------------------- the rail
+
+        private static void Rail(UiScene s, UiAt at, MapDistrictModel m, int buttons, float x, float y)
+        {
+            float h = UiMapFilters.RailHeight(buttons);
+            int menu = UiDraw.Box(s, at, x, y, UiMapFilters.Menu, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
+            UiAt on = at.In(menu);
+            int offset = string.IsNullOrEmpty(m.FiltersLabel) ? 0 : 1;
+            for (int i = 0; i < buttons; i++)
+            {
+                float cx = x + UiTokens.S2 + (i % 2) * (UiMapFilters.Cell + UiTokens.S1), cy = y + UiTokens.S2 + (i / 2) * (UiMapFilters.Cell + UiTokens.S1);
+                if (i < offset)
+                {
+                    UiDraw.IconButton(s, on, cx, cy, UiMapFilters.Cell, UiIcon.Funnel, UiRole.None, FiltersCommand, 0);
+                    continue;
+                }
+                int layer = i - offset;
+                int node = UiDraw.IconButton(s, on, cx, cy, UiMapFilters.Cell, m.Layers[layer].Icon, m.Layers[layer].Tint, LayerCommand, layer, layer == m.Layer);
+                if (layer == m.Layer)
+                {
+                    s.FocusFirst = node;
+                }
+            }
+        }
+
+        // ------------------------------------------------------------------------------------------------- sections
+
+        private static float Band(UiScene s, UiAt at, float px, float y, string title, UiInfoRow[] rows, float ix, float iw)
+        {
+            if (rows == null || rows.Length == 0)
+            {
+                return y;
+            }
+            float h = UiTokens.S2 + UiTokens.PairRow * (1 + rows.Length) + UiTokens.S2;
+            UiDraw.Band(s, at, px, y, Width, h);
+            float cy = y + UiTokens.S2;
+            cy += UiDraw.SectionRow(s, at, ix, cy, iw, title, null, false, -1, 0);
+            for (int i = 0; i < rows.Length; i++)
+            {
+                cy += UiDraw.InfoRow(s, at, ix, cy, iw, rows[i].Label, rows[i].Value, false, -1, 0, rows[i].Ink == UiRole.None ? UiRole.Text : rows[i].Ink);
+            }
+            return y + h + UiTokens.S1;
+        }
+
+        private static float ChartHeight(MapDistrictModel m) => UiTokens.S3 + UiTokens.PairRow + UiTokens.S2 + Math.Max(DonutSize, m.ChartLabels.Length * 20f) + UiTokens.S3 + UiTokens.S1;
+
+        private static float Donut(UiScene s, UiAt at, MapDistrictModel m, float px, float y, float ix, float iw)
+        {
+            float h = ChartHeight(m) - UiTokens.S1;
+            UiDraw.Band(s, at, px, y, Width, h);
+            float cy = y + UiTokens.S3;
+            UiDraw.TextMiddle(s, at, ix, cy, UiTokens.PairRow, iw, UiStyle.SectionHeader, UiRole.Text, m.ChartTitle, UiFlags.Label | UiFlags.Truncate);
+            cy += UiTokens.PairRow + UiTokens.S2;
+            UiDraw.Donut(s, at, ix, cy, DonutSize, m.ChartShares, m.ChartShares.Length);
+            if (!string.IsNullOrEmpty(m.ChartCentre))
+            {
+                float inner = DonutSize * 0.56f, cx = ix + (DonutSize - inner) / 2f;
+                float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
+                bool two = !string.IsNullOrEmpty(m.ChartCentreSub);
+                float top = cy + (DonutSize - lh - (two ? sh : 0f)) / 2f;
+                UiDraw.TextMiddle(s, at, cx, top, lh, inner, UiStyle.Title, UiRole.Text, m.ChartCentre, UiFlags.Centre | UiFlags.Truncate);
+                if (two)
+                {
+                    UiDraw.TextMiddle(s, at, cx, top + lh, sh, inner, UiStyle.Small, UiRole.Text2, m.ChartCentreSub, UiFlags.Centre | UiFlags.Truncate);
+                }
+            }
+            int n = m.ChartLabels.Length;
+            float lx = ix + DonutSize + UiTokens.S6, lw = ix + iw - lx, lh2 = n * 20f;
+            UiDraw.Legend(s, at, lx, cy + (DonutSize - lh2) / 2f, lw, m.ChartLabels, m.ChartValues, n);
+            return y + h + UiTokens.S1;
+        }
+
+        private static float LegendHeight(MapDistrictModel m) => string.IsNullOrEmpty(m.LegendTitle) ? 0f
+            : UiTokens.S3 + UiTokens.PairRow + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)) + UiTokens.S2 + UiDraw.Snap(UiTokens.S2 + UiTokens.S1 + UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S3 + UiTokens.S1;
+
+        private static float Legend(UiScene s, UiAt at, MapDistrictModel m, float px, float y, float ix, float iw)
+        {
+            float h = LegendHeight(m) - UiTokens.S1;
+            UiDraw.Band(s, at, px, y, Width, h);
+            float cy = y + UiTokens.S3;
+            UiDraw.TextMiddle(s, at, ix, cy, UiTokens.PairRow, iw, UiStyle.SectionHeader, UiRole.Text, m.LegendTitle, UiFlags.Label | UiFlags.Truncate);
+            cy += UiTokens.PairRow;
+            UiDraw.Text(s, at, ix, cy, iw, UiStyle.Body, UiRole.Text2, m.ScaleLabel, UiFlags.Label | UiFlags.Truncate);
+            cy += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)) + UiTokens.S2;
+            UiDraw.Scale(s, at, ix, cy, iw, m.ScaleLow, m.ScaleHigh, m.ScaleSteps ?? Ramp);
+            return y + h + UiTokens.S1;
+        }
+
+        private static float ChosenHeight(MapDistrictModel m) => !m.HasChosen ? 0f : UiTokens.S3 + UiTokens.PairRow + UiTokens.S1 + m.Chosen.Length * UiTokens.PairRow + UiTokens.S2 + UiTokens.S1;
+
+        private static float Chosen(UiScene s, UiAt at, MapDistrictModel m, float px, float y, float ix, float iw)
+        {
+            float h = ChosenHeight(m) - UiTokens.S1;
+            UiDraw.Band(s, at, px, y, Width, h);
+            float cy = y + UiTokens.S3;
+            float nw = UiDraw.Snap(UiTextRules.Width(m.ChosenName, UiStyle.Title) + UiTokens.S1);
+            float lw = string.IsNullOrEmpty(m.ShowLabel) ? 0f : UiDraw.Snap(UiTextRules.Width(m.ShowLabel, UiStyle.SmallStrong) + UiTokens.IconSmall + UiTokens.S3 * 2f);
+            float cw = string.IsNullOrEmpty(m.ChosenRank) ? 0f : UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(m.ChosenRank, UiStyle.SmallStrong) + UiTokens.S1);
+            nw = Math.Min(nw, iw - lw - cw - UiTokens.S3 * 2f);
+            UiDraw.TextMiddle(s, at, ix, cy, UiTokens.PairRow, nw, UiStyle.Title, UiRole.Text, m.ChosenName, UiFlags.Truncate);
+            if (cw > 0f)
+            {
+                UiDraw.Chip(s, at, ix + nw + UiTokens.S3, cy + (UiTokens.PairRow - UiTokens.Badge - UiTokens.S1) / 2f, m.ChosenRank, UiRole.Accent, cw);
+            }
+            if (lw > 0f)
+            {
+                int link = UiDraw.Box(s, at, ix + iw - lw, cy, lw, UiTokens.PairRow, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
+                UiAt inside = at.In(link);
+                UiDraw.Icon(s, inside, ix + iw - lw + UiTokens.S3, cy + (UiTokens.PairRow - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, UiIcon.Locate, UiRole.AccentText, UiFlags.Middle);
+                UiDraw.TextMiddle(s, inside, ix + iw - lw + UiTokens.S3 + UiTokens.IconSmall + UiTokens.S1, cy, UiTokens.PairRow, lw - UiTokens.S3 * 2f - UiTokens.IconSmall - UiTokens.S1, UiStyle.SmallStrong,
+                    UiRole.AccentText, m.ShowLabel, UiFlags.Label | UiFlags.Right);
+                UiDraw.Node(s, at, ix + iw - lw, cy, lw, UiTokens.PairRow, ShowCommand, 0, link);
+            }
+            cy += UiTokens.PairRow + UiTokens.S1;
+            for (int i = 0; i < m.Chosen.Length; i++)
+            {
+                cy += UiDraw.InfoRow(s, at, ix, cy, iw, m.Chosen[i].Label, m.Chosen[i].Value, false, -1, 0, m.Chosen[i].Ink == UiRole.None ? UiRole.Text : m.Chosen[i].Ink);
+            }
+            return y + h + UiTokens.S1;
+        }
+
+        // ------------------------------------------------------------------------------------------------- the ranked table
+
+        private static float TableHead(MapDistrictModel m) => UiTokens.S3 + UiTokens.PairRow + UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2;
+
+        // Columns: the rank, the district with its band's colour, its figure, the month's change and the share standing empty, the figures right aligned.
+        private static void Table(UiScene s, UiAt at, MapDistrictModel m, float px, float y, float bottom)
+        {
+            float ix = px + UiTokens.S4, iw = Width - UiTokens.S4 * 2f;
+            UiDraw.Band(s, at, px, y, Width, bottom - y);
+            float cy = y + UiTokens.S3;
+            UiDraw.TextMiddle(s, at, ix, cy, UiTokens.PairRow, iw, UiStyle.SectionHeader, UiRole.Text, m.TableTitle, UiFlags.Label | UiFlags.Truncate);
+            cy += UiTokens.PairRow + UiTokens.S1;
+            float empty = Math.Min(UiDraw.Snap(UiTextRules.Width(m.ColEmpty, UiStyle.SmallStrong) + UiTokens.S2), 60f);
+            float month = 84f, figure = 76f, rank = 24f;
+            float emptyX = ix + iw - empty, monthX = emptyX - month, figureX = monthX - figure, nameX = ix + rank + UiTokens.S2 + UiTokens.S3 + UiTokens.S3;
+            float hh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
+            UiDraw.TextMiddle(s, at, nameX, cy, hh, figureX - nameX, UiStyle.SmallStrong, UiRole.Muted, m.ColDistrict, UiFlags.Label | UiFlags.Truncate);
+            UiDraw.TextMiddle(s, at, figureX, cy, hh, figure, UiStyle.SmallStrong, UiRole.Muted, m.ColFigure, UiFlags.Label | UiFlags.Right | UiFlags.Truncate);
+            UiDraw.TextMiddle(s, at, monthX, cy, hh, month, UiStyle.SmallStrong, UiRole.Muted, m.ColMonth, UiFlags.Label | UiFlags.Right | UiFlags.Truncate);
+            UiDraw.TextMiddle(s, at, emptyX, cy, hh, empty, UiStyle.SmallStrong, UiRole.Muted, m.ColEmpty, UiFlags.Label | UiFlags.Right | UiFlags.Truncate);
+            cy += hh + UiTokens.S2;
+            int rows = m.Rows.Length;
+            float room = Math.Max(0f, bottom - cy - UiTokens.S2);
+            float viewH = Math.Max(RowHeight, (float)Math.Floor(room / RowHeight) * RowHeight);
+            float content = rows * RowHeight;
+            float offset = m.Offset;
+            if (m.Reveal >= 0 && m.Reveal < rows)
+            {
+                offset = Math.Min(offset, m.Reveal * RowHeight);
+                offset = Math.Max(offset, m.Reveal * RowHeight + RowHeight - viewH);
+            }
+            offset = Math.Max(0f, Math.Min((float)Math.Round(offset / RowHeight) * RowHeight, Math.Max(0f, content - viewH)));
+            m.Offset = offset;
+            m.Reveal = -1;
+            if (rows == 0)
+            {
+                return;
+            }
+            short clip = s.AddClip(px, cy, Width, Math.Min(viewH, content), offset);
+            s.Clips[clip].ContentHeight = content;
+            int first = Math.Min(rows - 1, (int)(offset / RowHeight));
+            int last = Math.Min(rows - 1, (int)((offset + viewH - 0.5f) / RowHeight));
+            short list = s.AddList(rows, first, last - first + 1, clip, -1);
+            var inClip = new UiAt { Parent = -1, Clip = clip, Layer = at.Layer, Order = -1, Region = at.Region };
+            float cix = UiTokens.S4;
+            float ciw = Width - UiTokens.S4 * 2f - (content > viewH + 0.5f ? UiTokens.S2 : 0f);
+            float cEmptyX = cix + ciw - empty, cMonthX = cEmptyX - month, cFigureX = cMonthX - figure, cNameX = cix + rank + UiTokens.S2 + UiTokens.S3 + UiTokens.S3;
+            for (int r = first; r <= last; r++)
+            {
+                MapDistrictRow d = m.Rows[r];
+                float ry = r * RowHeight;
+                UiAt arriving = inClip.Arriving(r - first);
+                int face = UiDraw.Box(s, arriving, 0f, ry, Width, RowHeight, d.Chosen ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusLarge, d.Chosen ? UiFlags.Selected : UiFlags.None);
+                UiAt inside = arriving.In(face);
+                UiDraw.TextMiddle(s, inside, cix, ry, RowHeight, rank, UiStyle.Small, UiRole.Muted, (r + 1).ToString(System.Globalization.CultureInfo.InvariantCulture), UiFlags.Right);
+                UiDraw.Box(s, inside, cix + rank + UiTokens.S2, ry + (RowHeight - UiTokens.StatusDot - UiTokens.S1) / 2f, UiTokens.StatusDot + UiTokens.S1, UiTokens.StatusDot + UiTokens.S1,
+                    d.Swatch == UiRole.None ? UiRole.Track : d.Swatch, UiRole.None, UiTokens.RadiusSmall, UiFlags.Middle);
+                UiDraw.TextMiddle(s, inside, cNameX, ry, RowHeight, cFigureX - cNameX, UiStyle.Body, UiRole.Text, d.Name, UiFlags.Truncate);
+                UiDraw.TextMiddle(s, inside, cFigureX, ry, RowHeight, figure, UiStyle.Body, d.Swatch == UiRole.None ? UiRole.Muted : UiRole.Text, d.Figure, UiFlags.Right | UiFlags.Truncate);
+                if (!string.IsNullOrEmpty(d.Month))
+                {
+                    UiRole tone = d.MonthTone == UiRole.Ok ? UiRole.OkText : d.MonthTone == UiRole.Danger ? UiRole.DangerText : UiRole.Text2;
+                    float mw = UiDraw.Snap(UiTextRules.Width(d.Month, UiStyle.Small) + UiTokens.S1);
+                    UiDraw.TextMiddle(s, inside, cMonthX + month - mw, ry, RowHeight, mw, UiStyle.Small, tone, d.Month, UiFlags.Right | UiFlags.Truncate);
+                    if (d.MonthSign != 0)
+                    {
+                        UiDraw.Icon(s, inside, cMonthX + month - mw - UiTokens.IconSmall - UiTokens.S1, ry + (RowHeight - UiTokens.IconSmall) / 2f, UiTokens.IconSmall,
+                            d.MonthSign > 0 ? UiIcon.TrendUp : UiIcon.TrendDown, d.MonthTone == UiRole.None ? UiRole.Muted : d.MonthTone, UiFlags.Middle);
+                    }
+                }
+                if (!string.IsNullOrEmpty(d.Empty))
+                {
+                    UiDraw.TextMiddle(s, inside, cEmptyX, ry, RowHeight, empty, UiStyle.Small, UiRole.Text2, d.Empty, UiFlags.Right | UiFlags.Truncate);
+                }
+                UiDraw.Node(s, inClip, 0f, ry, Width, RowHeight, RowCommand, r, face, false, list, r);
+            }
+            if (content > viewH + 0.5f)
+            {
+                UiDraw.ScrollThumb(s, at, px + Width - UiTokens.S1, cy, Math.Min(viewH, content), offset, content);
+            }
+        }
+    }
+}

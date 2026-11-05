@@ -183,6 +183,9 @@ namespace RealLifeOverhaul.Ui
         FrameCorners,  // the picture alone, no controls
         Funnel,        // a filter of a list
         PortraitFocus, // a portrait, the person sharp
+        Walk, // on foot: a route's walk, a quiet street
+        Taxi, // a cab: a route by taxi
+        Bookmark, // a place the player saved
         Count
     }
 
@@ -215,17 +218,17 @@ namespace RealLifeOverhaul.Ui
                     return UiRole.Chart7;   // stress's purple, as the mod's own needs bar had it
                 case UiIcon.Cloud: case UiIcon.CloudRain: case UiIcon.CloudSnow:
                     return UiRole.Chart5;   // the weather's grey days in a cool blue, a fair one keeps the sun's yellow
-                case UiIcon.Check: case UiIcon.ShieldCheck: case UiIcon.SmileyHappy: case UiIcon.TrendUp: case UiIcon.Phone:
+                case UiIcon.Check: case UiIcon.ShieldCheck: case UiIcon.SmileyHappy: case UiIcon.TrendUp: case UiIcon.Phone: case UiIcon.Walk:
                     return UiRole.Ok;
                 case UiIcon.Trash: case UiIcon.SmileySad: case UiIcon.TrendDown: case UiIcon.Heartbeat: case UiIcon.Heart:
                     return UiRole.Danger;
-                case UiIcon.Warning: case UiIcon.SmileyMeh: case UiIcon.Bell: case UiIcon.Lightning:
+                case UiIcon.Warning: case UiIcon.SmileyMeh: case UiIcon.Bell: case UiIcon.Lightning: case UiIcon.Taxi:   // a cab's amber
                     return UiRole.Warn;
                 case UiIcon.Info: case UiIcon.Locate: case UiIcon.Navigation: case UiIcon.Send: case UiIcon.Spark: case UiIcon.Eye: case UiIcon.Newspaper:
                 case UiIcon.Play: case UiIcon.Pause: case UiIcon.FastForward:
                     return UiRole.Accent;
                 case UiIcon.Star: case UiIcon.StarHalf: case UiIcon.Trophy: case UiIcon.Coin: case UiIcon.Key:
-                case UiIcon.Clock: case UiIcon.Home: case UiIcon.Lightbulb:   // the Planner, Property and the Guide (PhoneLooks)
+                case UiIcon.Clock: case UiIcon.Home: case UiIcon.Lightbulb: case UiIcon.Bookmark:   // the Planner, Property and the Guide (PhoneLooks), and a saved place
                     return UiRole.Gold;
                 case UiIcon.Person: case UiIcon.People: case UiIcon.IdBadge: case UiIcon.Grid:
                 case UiIcon.Envelope: case UiIcon.GenreSports:

@@ -200,6 +200,9 @@ ICONS = [
     ("FrameCorners", "frame-corners", "duotone", "191a46ae6739f685a87b18d2a39d5115d5c812a3b5a3fd01257de19f5905566a"),
     ("Funnel", "funnel", "duotone", "ba1eb55b4d6abd28131ac98dc5269957291f76d09ed3de4eef78c21c8cf73bb7"),
     ("PortraitFocus", "user-focus", "duotone", "7e0815457e65da664500eb64b4a38b5f6bfcfd3ddc7b02728bf83a423911bfd8"),
+    ("Walk", "person-simple-walk", "duotone", "26ab881dea91b7484cd115af1abd38448f26790fb5045538fb31f762384c0be7"),
+    ("Taxi", "taxi", "duotone", "26efeae2bd5ff23693ee20b011d3029375c180346f5f569d6176a0906bf542b7"),
+    ("Bookmark", "bookmark-simple", "duotone", "b560161da8079c67c381dcfd1ae69b39e8eed3815370cf2adc6ba4b3bea04aff"),
 ]
 
 # Phosphor's fill weight of every duotone icon, its second variant: the chunky solid glyph a toolbar's tile asks for
@@ -334,6 +337,9 @@ FILLS = {
     "FrameCorners": "33896f65db543919b48a3a20bb17eacd7747e877af026d49c82da28e5c9fdeb6",
     "Funnel": "fd3cd3e6c43a5f76b34e1bb987061c7bff95133d94d4d72668c123e782747417",
     "PortraitFocus": "fdfd93a0bf89db5ac8c7f72ef581f890def3df830f5233da62bdc7e98ee77be3",
+    "Walk": "1bd98cb5854e25fb93e4fcb59cb3ebe2af4c4fc1d4ad9cc28f52508ebb35bbee",
+    "Taxi": "5b0fcb03fa1bf56b8a701aece4017de93aebc9a62bd0ae938e3cef3b537cb015",
+    "Bookmark": "379dfd32059dc79b50e9e51a92ff94e028f0325262a985ad8136b0d4c661db65",
 }
 
 # The shapes an icon may be drawn with, and the attributes each may carry. Anything else stops the run, so an icon is never
