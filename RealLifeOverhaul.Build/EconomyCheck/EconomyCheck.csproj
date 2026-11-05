@@ -1012,6 +1012,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiGarageStrip.cs" Link="Mod\UiGarageStrip.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiStatement.cs" Link="Mod\UiStatement.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFactCard.cs" Link="Mod\UiFactCard.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Services\ServicesModel.cs" Link="Mod\Services\ServicesModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Services\ServicesRuns.cs" Link="Mod\Services\ServicesRuns.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Services\ServicesFace.cs" Link="Mod\Services\ServicesFace.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Services\ServicesScreen.cs" Link="Mod\Services\ServicesScreen.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\EstateModel.cs" Link="Mod\Estate\EstateModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\EstateRuns.cs" Link="Mod\Estate\EstateRuns.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\EstateCharts.cs" Link="Mod\Estate\EstateCharts.cs" />

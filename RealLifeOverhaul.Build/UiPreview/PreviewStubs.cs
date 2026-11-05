@@ -110,3 +110,18 @@ namespace RealLifeOverhaul.Economy
         public const int CarTermLeast = 60, CarTermMost = 240, CarTermStep = 30;
     }
 }
+
+// The kit reads the mouse's own place while a button is down (UiView.Pointer); the preview has no input package, and no pointer.
+namespace UnityEngine.InputSystem
+{
+    public sealed class ButtonStub { public bool isPressed => false; }
+
+    public sealed class PositionStub { public Vector2 ReadValue() => default(Vector2); }
+
+    public sealed class Mouse
+    {
+        public static Mouse current => null;
+        public ButtonStub leftButton => null;
+        public PositionStub position => null;
+    }
+}

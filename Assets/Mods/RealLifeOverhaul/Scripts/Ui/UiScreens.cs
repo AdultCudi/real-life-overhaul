@@ -93,6 +93,7 @@ namespace RealLifeOverhaul.Ui
             AddCompany(screens);
             AddConstruction(screens);
             AddEstate(screens);
+            AddServices(screens);
             AddTech(screens);
             AddVentures(screens);
             AddWork(screens);
@@ -130,6 +131,7 @@ namespace RealLifeOverhaul.Ui
         static partial void AddCompany(List<UiScreenDef> screens);
         static partial void AddConstruction(List<UiScreenDef> screens);
         static partial void AddEstate(List<UiScreenDef> screens);
+        static partial void AddServices(List<UiScreenDef> screens);
         static partial void AddTech(List<UiScreenDef> screens);
         static partial void AddVentures(List<UiScreenDef> screens);
         static partial void AddWork(List<UiScreenDef> screens);

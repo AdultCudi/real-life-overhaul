@@ -552,10 +552,11 @@ namespace RealLifeOverhaul.Ui
             {
                 new CompanyButton { Label = w.T("reallife_co_open_bizman", "Open in BizMan"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Locate, Act = CompanyAct.Of(CompanyDo.BizMan, file.Place) }
             };
-            if (CompanyGame.CanSell(file.Place))
+            if (CompanyGame.SaleOffered(file.Place, out string saleWhy))
             {
+                // A sale the game would refuse is shown off with its reason, so it is not found only inside the Sell page.
                 buttons.Add(new CompanyButton { Label = w.T("reallife_co_sell", "Sell this business"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Handshake,
-                    Act = CompanyAct.Of(CompanyDo.SellBusiness, file.Place) });
+                    Act = CompanyAct.Of(CompanyDo.SellBusiness, file.Place), Disabled = saleWhy != null, Why = saleWhy });
             }
             blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Buttons, Buttons = buttons.ToArray() });
             if (d.On(CompanyPart.Staff))

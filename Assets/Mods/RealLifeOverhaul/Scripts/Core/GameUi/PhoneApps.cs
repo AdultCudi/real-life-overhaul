@@ -688,17 +688,36 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>Opens the mod's app of that id as its button does; false, with nothing done, when it is not on the phone.</summary>
         public static bool OpenById(string id)
         {
+            string want = null;
+            int at = id != null ? id.IndexOf(WantMark) : -1;
+            if (at > 0)
+            {
+                want = id.Substring(at + 1);   // a calendar entry names the app and the place in it: "RealLifeServices#3:bid:7"
+                id = id.Substring(0, at);
+            }
             if (string.IsNullOrEmpty(id) || !ById.TryGetValue(id, out PhoneApp app) || app == null || !app.Installed)
             {
                 return false;
+            }
+            if (want != null && Wants.TryGetValue(id, out Action<string> take) && take != null)
+            {
+                take(want);
             }
             app.Open();
             return true;
         }
 
+        /// <summary>Between an app's id and what to open in it, in the id a calendar entry carries.</summary>
+        public const char WantMark = '#';
+
+        /// <summary>By app id: what an app does with the place a link named in it (its tab and row), before it opens; set by the app's director.</summary>
+        public static readonly Dictionary<string, Action<string>> Wants = new Dictionary<string, Action<string>>(8, StringComparer.Ordinal);
+
         /// <summary>The app's name as its button shows it, in the game's language; null when it is not on the phone.</summary>
         public static string TitleOf(string id)
         {
+            int mark = id != null ? id.IndexOf(WantMark) : -1;
+            id = mark > 0 ? id.Substring(0, mark) : id;
             if (string.IsNullOrEmpty(id) || !ById.TryGetValue(id, out PhoneApp app) || app == null || !app.Installed || app._def == null)
             {
                 return null;

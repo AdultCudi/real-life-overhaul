@@ -139,8 +139,19 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The player's own bank app can be opened.</summary>
         public static bool CanOpenBank => OwnBankDirector.CanOpen;
 
-        /// <summary>A business can be put up for sale.</summary>
-        public static bool CanSell(string place) => ServicesDirector.CanSell;
+        /// <summary>This business can be put up for sale now.</summary>
+        public static bool CanSell(string place) => ServicesDirector.CanSellPlace(place, out _);
+
+        /// <summary>
+        /// Selling is offered for this business: true shows the button. With a reason (not null) it is shown off with the reason's words, as the sale itself would
+        /// refuse it (the player stands inside, a vehicle or a gift is kept there, a dealership has cars, a Going Public session); with none it can be pressed.
+        /// </summary>
+        public static bool SaleOffered(string place, out string why)
+        {
+            bool can = ServicesDirector.CanSellPlace(place, out string key);
+            why = key != null ? ServicesText.T(key) : null;
+            return can || key != null;
+        }
 
         public static void OpenCleaning() => ServicesDirector.OpenCleaning();
 
