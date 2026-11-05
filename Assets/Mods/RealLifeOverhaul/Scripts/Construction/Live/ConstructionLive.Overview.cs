@@ -45,7 +45,9 @@ namespace RealLifeOverhaul.Construction
             switch (p.Stage)
             {
                 case ProjectStage.Design:
-                    return NextStep(p) != ConstructionText.T("reallife_bld_next_wait_plans") && NextStep(p) != ConstructionText.T("reallife_bld_next_wait_engineer");
+                    string next = NextStep(p);
+                    return next != ConstructionText.T("reallife_bld_next_wait_plans") &&
+                        next != ConstructionText.T("reallife_bld_next_wait_engineer") && !(p.Variance == VarianceState.Pending && ConstructionDirector.VarianceKind(p));
                 case ProjectStage.Planning:
                     return p.Planning == PlanningState.Refused || p.Planning == PlanningState.AppealLost;
                 case ProjectStage.Ready:
@@ -303,6 +305,10 @@ namespace RealLifeOverhaul.Construction
                         ? ConstructionText.Day(p.DecideDay) : ConstructionText.StageWords(p),
                         p.Planning == PlanningState.Refused || p.Planning == PlanningState.AppealLost ? UiRole.DangerText : UiRole.None));
                 }
+                else if (p.Variance == VarianceState.Pending && ConstructionDirector.VarianceKind(p))
+                {
+                    plan.Add(UiFactLine.Row(ConstructionText.T("reallife_ui_cons_variance_line", "project", Director.ProjectName(p)), ConstructionText.Day(p.VarianceDay), UiRole.WarnText));
+                }
             }
             if (plan.Count > 0)
             {
@@ -367,6 +373,14 @@ namespace RealLifeOverhaul.Construction
                 if (p.Planning == PlanningState.Submitted && p.DecideDay >= today && p.DecideDay - today <= WeekDays)
                 {
                     list.Add(Dated(p.DecideDay, ConstructionText.T("reallife_ui_cons_wk_council", "project", name), null, id));
+                }
+                if (p.Variance == VarianceState.Pending && p.VarianceDay >= today && p.VarianceDay - today <= WeekDays)
+                {
+                    list.Add(Dated(p.VarianceDay, ConstructionText.T("reallife_ui_cons_wk_variance", "project", name, "floors", p.VarianceFloors.ToString()), null, id));
+                }
+                if (ConstructionDirector.FinishOpen(p) && p.Finish == 0 && p.FinishBy >= today && p.FinishBy - today <= WeekDays)
+                {
+                    list.Add(Dated(p.FinishBy, ConstructionText.T("reallife_ui_cons_wk_finish", "project", name), null, id));
                 }
                 if (p.PlansDay >= today && !p.PlansDone && p.PlansDay - today <= WeekDays)
                 {

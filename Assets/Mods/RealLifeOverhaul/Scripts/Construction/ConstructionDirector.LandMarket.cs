@@ -326,6 +326,10 @@ namespace RealLifeOverhaul.Construction
                 site = Joined(_marketStrip);
             }
             _state.Lots.Add(new LotFile { Id = g.Lot, Bought = day, Paid = o.Price, Zones = LandRules.ZonesOf(site.Class), TaxedTo = day, EmptySince = day, Spaces = g.Spaces });
+            if (g.Owner == GrowOwner.Builder)
+            {
+                _state.Rivals[BuildCatalogue.Clamp(g.Rival, 0, BuildCatalogue.RivalCount - 1)].Gained += o.Price - g.Price;   // what the builder cleared on the land it sold the player
+            }
             g.Stage = GrowStage.Dropped;   // its plans and what it paid for them are dropped on its side; nothing is refunded to anyone
             g.Until = day;
             GrowsChanged();

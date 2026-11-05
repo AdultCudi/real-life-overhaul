@@ -235,6 +235,10 @@ namespace RealLifeOverhaul.Construction
                 r.Use = _convertTo[RedevelopRules.PickOf(_state.Seed, day, 0xC0, _convertTo.Count)];
             }
             r.Rival = DevelopmentRules.Rival(b.Lot, r.Use);
+            if (move == CityMove.Extend)
+            {
+                CityVariance(r, UptownStoreys(), day);   // a builder at the top of the code may ask the council for a floor more
+            }
             Holdings(_holdings);
             if (_holdings.Count > 0 && RedevelopRules.ByHolding(_state.Seed, day))
             {

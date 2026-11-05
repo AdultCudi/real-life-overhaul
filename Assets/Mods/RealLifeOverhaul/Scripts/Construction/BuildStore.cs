@@ -125,6 +125,7 @@ namespace RealLifeOverhaul.Construction
             WritePark(t, s);
             WriteMarket(t, s);
             WriteKit(t, s);
+            WriteNew(t, s);
             return t.ToString();
         }
 
@@ -426,7 +427,7 @@ namespace RealLifeOverhaul.Construction
                             break;
                         }
                         default:
-                            if (!ReadGrow(part[0], body, s) && !ReadPark(part[0], body, s) && !ReadMarket(part[0], body, s) && !ReadKit(part[0], body, s))
+                            if (!ReadGrow(part[0], body, s) && !ReadPark(part[0], body, s) && !ReadMarket(part[0], body, s) && !ReadKit(part[0], body, s) && !ReadNew(part[0], body, s))
                             {
                                 ReadCity(part[0], body, s);   // the city around the company (BuildStore.City), or a part of a newer version's: passed over
                             }

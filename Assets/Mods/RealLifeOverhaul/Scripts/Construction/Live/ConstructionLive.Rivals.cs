@@ -28,6 +28,8 @@ namespace RealLifeOverhaul.Construction
                 row.Set(5, ConstructionText.T("reallife_ui_cons_floors_n", "count", LevelRules.FloorsOf(Director.RivalLevel(r)).ToString()), Director.RivalLevel(r));
                 int jobs = Math.Max(rival.Jobs, Director.HiredBy(r));
                 row.Set(6, jobs > 0 ? ConstructionText.N(jobs) : string.Empty, jobs);
+                long worth = Director.RivalWorth(r);
+                row.Set(7, ConstructionText.Money(worth), worth);
                 picked = row.Id == selected ? r : picked;
             }
             if (state.Firm.Founded > 0)
@@ -40,6 +42,8 @@ namespace RealLifeOverhaul.Construction
                 own.Set(3, ConstructionText.N(state.Firm.TendersWon), state.Firm.TendersWon);
                 own.Set(4, ConstructionText.N(state.Firm.Finished), state.Firm.Finished);
                 own.Set(5, ConstructionText.T("reallife_ui_cons_floors_n", "count", Director.FloorsLicensed.ToString()), state.Firm.Level);
+                long mine = Director.Worth();
+                own.Set(7, ConstructionText.Money(mine), mine);
             }
             if (picked < 0)
             {
@@ -71,6 +75,9 @@ namespace RealLifeOverhaul.Construction
             }
             box.RowPair("reallife_bld_row_going_up", ConstructionText.N(going), "reallife_bld_row_for_you", ConstructionText.N(Math.Max(rival.Jobs, Director.HiredBy(r))));
             box.Row("reallife_ui_cons_row_licensed", ConstructionText.T("reallife_ui_cons_floors_n", "count", LevelRules.FloorsOf(Director.RivalLevel(r)).ToString()));
+            box.RowPair("reallife_ui_cons_row_worth", ConstructionText.Money(Director.RivalWorth(r)), "reallife_ui_cons_row_land_cash", ConstructionText.Money(Director.RivalCash(r)));
+            box.RowPair("reallife_ui_cons_row_made", ConstructionText.Money(rival.Gained), "reallife_ui_cons_row_variances",
+                ConstructionText.T("reallife_ui_cons_variances_of", "granted", rival.VarianceGranted.ToString(), "asked", rival.VarianceAsked.ToString()));
             string office = ConstructionBridges.RivalOffice != null ? ConstructionBridges.RivalOffice(r) : null;
             box.Row("reallife_bld_row_office", office ?? ConstructionText.T("reallife_bld_rival_office_none"));
             int against = 0;

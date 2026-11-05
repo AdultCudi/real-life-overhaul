@@ -92,6 +92,11 @@ namespace RealLifeOverhaul.Construction
             {
                 int buyer = _landBuyers[RedevelopRules.PickOf(_state.Seed, day, 0x3B, _landBuyers.Count)];
                 int from = seller.Rival;
+                if (seller.Owner == GrowOwner.Builder)
+                {
+                    // the seller clears the tenth the buyer pays
+                    _state.Rivals[BuildCatalogue.Clamp(from, 0, BuildCatalogue.RivalCount - 1)].Gained += LandMarketRules.TradePrice(seller.Price) - seller.Price;
+                }
                 seller.Rival = buyer;
                 seller.Holding = string.Empty;
                 seller.Price = LandMarketRules.TradePrice(seller.Price);   // what the buyer paid is what the next ask rests on
@@ -119,6 +124,11 @@ namespace RealLifeOverhaul.Construction
                 return;
             }
             long price = LandMarketRules.CityPrice(g.Price, ValueOf(g.Lot, g.Spaces, string.Empty));
+            if (g.Owner == GrowOwner.Builder)
+            {
+                // the city pays the fair price: a builder that paid more loses the difference
+                _state.Rivals[BuildCatalogue.Clamp(g.Rival, 0, BuildCatalogue.RivalCount - 1)].Gained += price - g.Price;
+            }
             _state.CityLandBack += price;
             Paper("reallife_land_paper_back", GrowName(g), g.Spaces);
             Logger?.Info("Construction: the city bought the land at " + g.Lot + " (" + g.Spaces + " space(s)) back from " + GrowDeveloper(g) + " for " + price + " (it paid " + g.Price + ").");

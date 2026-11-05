@@ -442,6 +442,8 @@ namespace RealLifeOverhaul.Construction
                 Tell(NotificationType.Info, "reallife_bld_notice_tender_lost", TenderName(t), BuildCatalogue.RivalKeys[won.Bidder], TabTenders, t.Id);
             }
             _state.Rivals[won.Bidder].Won++;
+            // what the works clear for the builder that won them
+            _state.Rivals[won.Bidder].Gained += won.Price * BuildCatalogue.RivalMarginPermille[BuildCatalogue.Clamp(won.Bidder, 0, BuildCatalogue.RivalCount - 1)] / 1000L;
             RivalWorks(t, won);
         }
 

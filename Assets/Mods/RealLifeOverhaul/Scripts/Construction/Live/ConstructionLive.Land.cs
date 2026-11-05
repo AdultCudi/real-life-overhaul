@@ -108,6 +108,11 @@ namespace RealLifeOverhaul.Construction
             }
             bool business = WriteUnitRows(ref selected, out UnitView pickedUnit);
             RedevFile pickedOffer = WriteOfferRows(ref selected);   // ConstructionApp.Redevelop.cs: the developers' offers for Uptown's buildings for sale
+            WriteAuctionRows(box, ref selected, out bool auctionPage);   // ConstructionLive.Auction.cs: lots under the hammer, and the player's offers for the city's spaces
+            if (auctionPage)
+            {
+                return;
+            }
             WriteMarketRows(box, ref selected, out bool marketPage);   // ConstructionApp.Market.cs: land the rivals hold, and their offers for the player's
             if (marketPage)
             {
@@ -204,6 +209,7 @@ namespace RealLifeOverhaul.Construction
                 first.Depth.ToString()), "reallife_bld_row_traffic", ConstructionText.N(first.Traffic));
             box.Row("reallife_bld_row_zoned", ConstructionText.ZonesWords(Director.ClassZones(first.Class)));
             box.Note(ConstructionText.T("reallife_bld_land_run_note"));
+            CityOfferBox(box, first.Id);   // ConstructionLive.Auction.cs: the auction it is up at, or an offer under its list price
             // How many of its spaces side by side to buy, from its first: one site, one building that fills it.
             int spaces = Mathf.Clamp(_runSpaces, 1, run.Spaces);
             box.Selector(run.Spaces, spaces - 1, i => ConstructionText.T(i == 0 ? "reallife_bld_set_one_space" : "reallife_bld_set_spaces", "count", (i + 1).ToString()),

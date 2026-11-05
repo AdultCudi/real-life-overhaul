@@ -295,7 +295,7 @@ namespace RealLifeOverhaul.Construction
                 case "Projects": return new[] { UiCellKind.Tile, UiCellKind.Text, UiCellKind.Meter, UiCellKind.Money, UiCellKind.Chip };
                 case "Tenders": return new[] { UiCellKind.Tile, UiCellKind.Money, UiCellKind.Text, UiCellKind.Text, UiCellKind.Chip };
                 case "Crews": return new[] { UiCellKind.Tile, UiCellKind.Text, UiCellKind.Meter, UiCellKind.Meter, UiCellKind.Money, UiCellKind.Chip };
-                case "Rivals": return new[] { UiCellKind.Tile, UiCellKind.Text, UiCellKind.Meter, UiCellKind.Figure, UiCellKind.Figure, UiCellKind.Text, UiCellKind.Figure };
+                case "Rivals": return new[] { UiCellKind.Tile, UiCellKind.Text, UiCellKind.Meter, UiCellKind.Figure, UiCellKind.Figure, UiCellKind.Text, UiCellKind.Figure, UiCellKind.Money };
                 case "City": return new[] { UiCellKind.Tile, UiCellKind.Text, UiCellKind.Money, UiCellKind.Text };
                 default: return new[] { UiCellKind.Text, UiCellKind.Text };
             }
@@ -308,7 +308,7 @@ namespace RealLifeOverhaul.Construction
             switch (tab)
             {
                 case "Land": return new[] { 0, 1, 2, 3, 5, 4 };
-                case "Rivals": return new[] { 0, 1, 2, 5, 3, 4, 6 };
+                case "Rivals": return new[] { 0, 1, 2, 5, 3, 4, 6, 7 };
                 default:
                     var order = new int[own];
                     for (int i = 0; i < own; i++)
@@ -321,7 +321,7 @@ namespace RealLifeOverhaul.Construction
 
         private static string ExtraTitle(string tab, int column)
         {
-            string key = tab == "Land" ? "reallife_ui_cons_col_sqm" : column == 5 ? "reallife_ui_cons_col_floors" : "reallife_ui_cons_col_jobs";
+            string key = tab == "Land" ? "reallife_ui_cons_col_sqm" : column == 5 ? "reallife_ui_cons_col_floors" : column == 7 ? "reallife_ui_cons_col_worth" : "reallife_ui_cons_col_jobs";
             return ConstructionText.T(key);
         }
 
@@ -332,7 +332,8 @@ namespace RealLifeOverhaul.Construction
                 case "Land":
                     return kind == ConstructionTables.LandOwned ? UiIcon.Key : kind == ConstructionTables.LandBuilding
                         ? UiIcon.Building : kind == ConstructionTables.LandLandmark ? UiIcon.Flag
-                        : kind == ConstructionTables.LandRival ? UiIcon.Handshake : kind == ConstructionTables.LandOfferIn ? UiIcon.Envelope : UiIcon.MapTrifold;
+                        : kind == ConstructionTables.LandRival ? UiIcon.Handshake : kind == ConstructionTables.LandOfferIn ? UiIcon.Envelope
+                        : kind == ConstructionTables.LandAuction ? UiIcon.Hammer : kind == ConstructionTables.LandMyOffer ? UiIcon.Tag : UiIcon.MapTrifold;
                 case "Projects": return UiIcon.Hammer;
                 case "Tenders": return UiIcon.ClipboardText;
                 case "Crews":
