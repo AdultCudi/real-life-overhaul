@@ -240,7 +240,7 @@ internal static partial class Program
             "build mode plots sources: one mesh a square of the city on the land layer's material, the map culls the rest; buy and rent the game's own BizMan page; refit, rebuild and demolition the existing calls and checks");
         Check(window.Contains("BuildModeCityRules.ToolWhyAt((BuildTool)t, _holdings, _state.ViewOnly, _inUptown)")
               && MethodText(window, "private void ToolPicked(int tool)").Contains("BuildModeCityRules.ToolWhyAt((BuildTool)tool, _holdings, _state.ViewOnly, _inUptown) != null")
-              && MethodText(window, "private void Act(int id)").Contains("if (ActPlot(id))"), "build mode plots sources: the toolbar greyed by where the map looks; a greyed tool not chosen; a plot's buttons its own");
+              && MethodText(window, "private void Act(int id)").Contains("if (ActPlot(id) || ActFit(id))"), "build mode plots sources: the toolbar greyed by where the map looks; a greyed tool not chosen; a plot's buttons its own");
         Check(director.Contains("ConstructionBridges.AllSites") && ModSource(@"Construction\ConstructionBridges.cs").Contains("AllSites = null;")
               && ModSource(@"Wiring\Wiring.ConstructionLinks.cs").Contains("ConstructionBridges.AllSites = AllSites;") && ModSource(@"Wiring\Wiring.ConstructionLinks.cs").Contains("ConstructionBridges.AllSites = null;"),
             "build mode plots sources: the city's works under way read through a bridge wired in and out (a rival's and the city's as well as the player's)");

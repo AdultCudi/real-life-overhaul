@@ -52,7 +52,7 @@ namespace RealLifeOverhaul.Construction
         }
 
         // The Place panel's car park part for squares of the player's: what one would be, and the two buttons.
-        private void WritePark(BuildModeSheet s)
+        private void WritePark(IBuildSheet s)
         {
             ParkFacts f = _parkFacts;
             s.Line(T("reallife_park_sheet_line"), BuildModeBar.Soft);
@@ -76,7 +76,7 @@ namespace RealLifeOverhaul.Construction
         }
 
         // The panel of a car park that stands: the player's to run, a builder's to lease bays at.
-        private void WriteParkManage(BuildModeSheet s)
+        private void WriteParkManage(IBuildSheet s)
         {
             CarParkFile c = _parkPicked;
             s.Line(ConstructionText.Fill("reallife_park_sheet_name", "name", _d.ParkName(c), "owner", ConstructionDirector.ParkOwnerName(c)), BuildModeBar.Text);
@@ -163,7 +163,7 @@ namespace RealLifeOverhaul.Construction
         }
 
         // The Bulldoze tool on a car park of the player's: closing it.
-        private void WriteParkClose(BuildModeSheet s, CarParkFile c, bool demolish)
+        private void WriteParkClose(IBuildSheet s, CarParkFile c, bool demolish)
         {
             s.Begin(_d.ParkName(c), null);
             if (!demolish)

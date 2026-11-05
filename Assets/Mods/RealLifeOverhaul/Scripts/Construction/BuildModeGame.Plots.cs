@@ -167,7 +167,7 @@ namespace RealLifeOverhaul.Construction
         // What a building is to the player, from the game's registration the controller keeps.
         private static PlotFacts FactsOf(CityBuildingController c, Building b, bool forSale)
         {
-            var f = new PlotFacts { ForSale = forSale, Use = BuildCatalogue.UseOf(b.BuildingType) };
+            var f = new PlotFacts { ForSale = forSale, Use = BuildCatalogue.UseOf(b.BuildingType), RentStep = -1, TrafficStep = BuildModeRules.TrafficStepOf(b.trafficIndex) };
             BuildingRegistration reg = c.buildingRegistration;
             f.Kept = b.SpecialService != null;
             if (reg == null)

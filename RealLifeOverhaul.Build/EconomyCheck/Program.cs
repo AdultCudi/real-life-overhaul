@@ -125,6 +125,15 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--buildmode-ui")
+        {
+            BuildModeChecks();   // the rules Build mode stands on, then the kit's face: its layers, designs, places and wiring, then its screen in every state (UiChecks.BuildMode.cs)
+            BuildModeKitAll();
+            Environment.SetEnvironmentVariable("RLO_UI_ONLY", "build_mode");
+            UiScreenChecks();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--other-mods")
         {
             UiForeignChecks();   // another author's mod on the kit's screens (UiForeignChecks.cs) and the host's own rules, alone

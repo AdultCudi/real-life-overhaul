@@ -340,7 +340,7 @@ internal static partial class Program
             "build mode look: the legend is out of the tool panel, over the views, the view's first entries only");
         Check(sheet.Contains("_kit.Frame(s.Button, BuildModeBar.ButtonGrey, false);") && sheet.Contains("_kit.Frame(a.Side, BuildModeBar.ButtonGrey, false);"),
             "build mode look: the zone rows and Clear are buttons with a face inside an edge");
-        Check(MethodText(window, "private void Write(bool top)").Contains("_bar.Hud(BuildModeGame.Hud(_bar.Root));") && game.Contains("container.Find(\"Left Bar\")") && game.Contains("\"Container/Panel\""),
+        Check(MethodText(window, "private void Write(bool top)").Contains("_bar.ReadHud();") && game.Contains("container.Find(\"Left Bar\")") && game.Contains("\"Container/Panel\""),
             "build mode look: the hint bar stands under the game's top bar and what hangs under it, clear of the objectives, measured at each writing");
         string open = MethodText(mode, "public bool Open(ConstructionDirector d)");
         string leave = MethodText(mode, "private void Leave(string why)");

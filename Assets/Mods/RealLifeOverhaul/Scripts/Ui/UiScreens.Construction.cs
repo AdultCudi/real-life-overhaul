@@ -9,7 +9,32 @@ namespace RealLifeOverhaul.Ui
         {
             screens.Add(new UiScreenDef("construction", UiTemplate.AppWindow, "ConstructionScreen", ConstructionKeys())
                 .Switch(UiScreenSwitches.Construction));
+            screens.Add(new UiScreenDef("build_mode", UiTemplate.Hud, "BuildFace", BuildModeKeys()).Switch(UiScreenSwitches.Construction));
         }
+
+        // Every label Build mode's kit face writes: the tools, the views and their legends, what the district wants, the design window, the tour and the buttons.
+        private static string[] BuildModeKeys() => new[]
+        {
+            "reallife_bld_cat_back", "reallife_bld_cat_none", "reallife_bld_cat_place", "reallife_bld_fit_title",
+            "reallife_bld_mode_key_mixed", "reallife_bld_mode_key_nozone", "reallife_bld_mode_key_rent_high",
+            "reallife_bld_mode_key_rent_low", "reallife_bld_mode_key_traffic_high",
+            "reallife_bld_mode_key_traffic_low", "reallife_bld_mode_title", "reallife_bld_mode_tool_bulldoze",
+            "reallife_bld_mode_tool_join", "reallife_bld_mode_tool_land", "reallife_bld_mode_tool_place",
+            "reallife_bld_mode_tool_refurbish", "reallife_bld_mode_tool_zone", "reallife_bld_mode_view_occupancy",
+            "reallife_bld_mode_view_rents", "reallife_bld_mode_view_status", "reallife_bld_mode_view_traffic",
+            "reallife_bld_mode_view_underway", "reallife_bld_mode_view_value", "reallife_bld_mode_view_zoning",
+            "reallife_bld_tip_view_rents", "reallife_bld_tip_view_traffic", "reallife_bld_tip_view_zoning",
+            "reallife_bld_tour_next", "reallife_bld_tour_skip", "reallife_bld_tour_tools_body",
+            "reallife_bld_tour_tools_title", "reallife_bld_use_homes", "reallife_bld_use_offices",
+            "reallife_bld_use_shops", "reallife_bld_use_warehouses", "reallife_ui_build_dem_high",
+            "reallife_ui_build_dem_low", "reallife_ui_build_dem_some", "reallife_ui_build_demand",
+            "reallife_ui_build_favourite", "reallife_ui_build_favourites", "reallife_ui_build_leave",
+            "reallife_ui_build_planning", "reallife_ui_build_price", "reallife_ui_build_rent",
+            "reallife_ui_build_search", "reallife_ui_build_size", "reallife_ui_build_time",
+            "reallife_ui_build_wanted", "reallife_ui_build_wants", "reallife_ui_build_weeks",
+            "reallife_season_name_autumn", "reallife_ui_hud_weather_sunny", "reallife_ui_prompt_back",
+            "reallife_ui_shell_all_apps"
+        };
 
         // Every label the Construction screen writes (ConstructionLive asks for these and the keys of the old app's words it reuses).
         private static string[] ConstructionKeys()

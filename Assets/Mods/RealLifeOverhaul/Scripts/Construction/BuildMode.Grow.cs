@@ -24,7 +24,7 @@ namespace RealLifeOverhaul.Construction
         public bool GrowShown => _growPanel;
 
         // The Place panel's Let it grow part: the tiers, the chosen one's estimate, rent level and quality, and the buttons.
-        private void WriteGrow(BuildModeSheet s)
+        private void WriteGrow(IBuildSheet s)
         {
             for (int i = 0; i < (int)GrowTier.Count; i++)
             {

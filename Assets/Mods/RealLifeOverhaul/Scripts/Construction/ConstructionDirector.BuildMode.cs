@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using RealLifeOverhaul.Economy;
 
 namespace RealLifeOverhaul.Construction
 {
@@ -253,6 +254,60 @@ namespace RealLifeOverhaul.Construction
             {
                 into[c] = BuildModeRules.ValueStepOf(into[c], least == long.MaxValue ? 0L : least, most);
             }
+        }
+
+        private readonly long[] _rentUse = new long[BuildCatalogue.UseTypes.Length];
+
+        /// <summary>
+        /// The Rents and Traffic layers' steps into every column's facts: rent from the city's rents a square metre for the column's use
+        /// (the estate's RentMapData, read a day), traffic from its lot's traffic index, the game's own figure for the building. A column
+        /// with no use, or no rent read yet, takes none (-1) and is not tinted. Worked when the facts are read, never a frame.
+        /// </summary>
+        public void RentAndTraffic(BuildModeRules.ColumnFacts[] facts)
+        {
+            long least = long.MaxValue, most = 0L;
+            RentRange(ref least, ref most);
+            for (int c = 0; c < facts.Length && c < Cells.Columns.Count; c++)
+            {
+                BuildModeRules.ColumnFacts f = facts[c];
+                int use = f.Building ? f.Use : f.Mine && f.Paint > 0 ? f.Paint - 1 : f.MainUse >= 0 ? f.MainUse : f.CouncilUse;
+                f.RentStep = use >= 0 && use < _rentUse.Length && _rentUse[use] > 0L ? BuildModeRules.RampStepOf(_rentUse[use], least, most) : -1;
+                f.TrafficStep = LotOfColumn(c, out LotView lot) ? BuildModeRules.TrafficStepOf(lot.Traffic) : -1;
+                facts[c] = f;
+            }
+        }
+
+        private void RentRange(ref long least, ref long most)
+        {
+            RentMapData rents = EstateDirector.Instance != null ? EstateDirector.Instance.Rents : null;
+            for (int u = 0; u < _rentUse.Length; u++)
+            {
+                long cents = rents != null && u < RentMapData.Uses ? rents.PerSqm(u) : -1;
+                _rentUse[u] = cents;
+                if (cents > 0L)
+                {
+                    least = Math.Min(least, cents);
+                    most = Math.Max(most, cents);
+                }
+            }
+        }
+
+        /// <summary>Each use's rent step for the city's plots (-1 where none is read), into <paramref name="into"/>.</summary>
+        public void RentStepsByUse(int[] into)
+        {
+            long least = long.MaxValue, most = 0L;
+            RentRange(ref least, ref most);
+            for (int u = 0; u < into.Length; u++)
+            {
+                into[u] = u < _rentUse.Length && _rentUse[u] > 0L ? BuildModeRules.RampStepOf(_rentUse[u], least, most) : -1;
+            }
+        }
+
+        /// <summary>What a use lets for a square metre in a month, cents, from the city's rents; -1 where none is read.</summary>
+        public int RentPerSqm(BuildUse use)
+        {
+            RentMapData rents = EstateDirector.Instance != null ? EstateDirector.Instance.Rents : null;
+            return rents != null && (int)use < RentMapData.Uses ? rents.PerSqm((int)use) : -1;
         }
 
         /// <summary>One cell in words for the pointer: its address and row, who holds it, its zoning, the height limit and a cell's price.</summary>

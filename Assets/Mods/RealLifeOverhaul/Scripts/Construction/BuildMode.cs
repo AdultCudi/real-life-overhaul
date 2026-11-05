@@ -32,6 +32,15 @@ namespace RealLifeOverhaul.Construction
 
         public static IModLogger Logger;
 
+        /// <summary>Set by the kit's side: whether its panels draw Build mode now (their switch, the HUD host), and how one is made. Unset or off: the old panels.</summary>
+        internal static Func<bool> KitOn;
+        internal static Func<BuildFaceCalls, IBuildBar> KitMake;
+
+        private BuildFaceCalls Calls() => new BuildFaceCalls
+        {
+            Tool = ToolPicked, View = ViewPicked, Row = Picked, Leave = Close, Card = CardPicked, Use = UsePicked, Favourite = FavouritePicked, Back = CatalogueBack, Place = CataloguePlace
+        };
+
         private const float DragEvery = 0.05f;   // seconds (real time) between looks at the cell under the pointer while dragging
         private const float HoverEvery = 0.1f;   // seconds (real time) between looks at the cell under the pointer otherwise
         private const float ClickPixels = 8f;    // a press and release closer than this is a click on one cell
@@ -40,9 +49,9 @@ namespace RealLifeOverhaul.Construction
         private ConstructionDirector _d;
         private MapPicker _map;                  // the map opened and its markers, its own window kept hidden
         private BuildModeKit _kit;               // the parts, copies of the game's interior designer's
-        private BuildModeBar _bar;               // the interface over the map
-        private BuildModePanel _catalogue;       // the design window
-        private BuildModeTour _tour;
+        private IBuildBar _bar;                  // the interface over the map: the old panels or the kit's
+        private IBuildCatalogue _catalogue;      // the design window
+        private IBuildTour _tour;
         private BuildModeGame.Layer _layer;
         private int[] _cellStart = new int[0];   // each column's first cell in the layer
         private byte[] _fills = new byte[0];
@@ -158,7 +167,10 @@ namespace RealLifeOverhaul.Construction
                 _map.Destroy();
                 _map = null;
             }
-            _catalogue?.Destroy();
+            if (!((object)_bar is IBuildFace))
+            {
+                _catalogue?.Destroy();   // the kit's face is its own catalogue: one object, destroyed once below
+            }
             _catalogue = null;
             _bar?.Destroy();
             _bar = null;
@@ -191,18 +203,37 @@ namespace RealLifeOverhaul.Construction
                 }
                 _map.Windowless = true;   // the map and the markers only: the window is the panel
             }
-            if (_bar == null || !_bar.Alive)
+            bool kitWanted = KitOn != null && KitOn() && KitMake != null;
+            if (_bar == null || !_bar.Alive || ((object)_bar is IBuildFace) != kitWanted)
             {
                 BuildModePanel.Logger = BuildModeBar.Logger = BuildModeKit.Logger = Logger;
-                Transform canvas = BuildModeGame.WindowCanvas();
-                _kit?.Destroy();
-                _kit = canvas != null ? BuildModeKit.Take(UiClone.Dormant(canvas, "RealLife Build Mode parts (asleep)")) : null;
-                _bar = _kit != null ? BuildModeBar.Make(canvas, _kit, ToolPicked, ViewPicked, Picked, Close) : null;
-                if (_bar == null)
+                if (_bar != null)
                 {
-                    return false;
+                    _catalogue = (object)_bar is IBuildFace ? null : _catalogue;
+                    _bar.Destroy();
+                    _catalogue?.Destroy();
+                    _bar = null;
                 }
-                _tour = new BuildModeTour(_kit, _bar);
+                _kit?.Destroy();
+                _kit = null;
+                _catalogue = null;
+                _bar = kitWanted ? KitMake(Calls()) : null;   // the kit's panels, while their switch is on and the HUD stands
+                if (_bar != null)
+                {
+                    _tour = (IBuildTour)_bar;
+                }
+                else
+                {
+                    Transform canvas = BuildModeGame.WindowCanvas();
+                    _kit = canvas != null ? BuildModeKit.Take(UiClone.Dormant(canvas, "RealLife Build Mode parts (asleep)")) : null;
+                    var old = _kit != null ? BuildModeBar.Make(canvas, _kit, ToolPicked, ViewPicked, Picked, Close) : null;
+                    if (old == null)
+                    {
+                        return false;
+                    }
+                    _bar = old;
+                    _tour = new BuildModeTour(_kit, old);
+                }
                 _catalogue = null;   // made at its first opening, on the same parts
             }
             if (_layer == null || _layer.Object == null || _layer.Cells != grid.LayerCells)
@@ -240,6 +271,7 @@ namespace RealLifeOverhaul.Construction
             _playerAt = ConstructionGame.Player;
             BuildModeGame.CloseMenu();
             _valuesRead = false;
+            _fitsRead = false;
             ReadFacts();
             UptownRect(grid);
             _inUptown = true;   // it opens over Uptown; the map's middle is looked at with the pointer from then on
@@ -840,6 +872,7 @@ namespace RealLifeOverhaul.Construction
             {
                 _facts[c].ValueStep = _values[c];
             }
+            _d.RentAndTraffic(_facts);   // the two layers' figures, from the estate's rents and each lot's traffic index
         }
 
         private void Colour()

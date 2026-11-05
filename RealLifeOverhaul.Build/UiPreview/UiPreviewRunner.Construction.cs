@@ -6,6 +6,7 @@ public static partial class UiPreviewRunner
     // The Construction app: every state over the street, and the longest languages' pages beside the English.
     static partial void AddConstruction(List<Screen> screens)
     {
+        AddBuildModeScreens(screens);
         for (int i = 0; i < UiSamples.ConstructionStates.Length; i++)
         {
             string st = UiSamples.ConstructionStates[i];

@@ -34,6 +34,12 @@ namespace RealLifeOverhaul.Ui
         /// <summary>True while the HUD's All apps stands over it: its tile filled cyan.</summary>
         public static bool AllAppsOpen;
 
+        /// <summary>
+        /// A tool row standing on the bar in the apps' place (Build mode's): the bar leaves its apps out and keeps the row's width clear of its pills (UiStatusModel.Middle).
+        /// Null while none stands.
+        /// </summary>
+        public static UiToolRowModel ToolRow;
+
         private static bool _said;
         private static int _widestDay = -1;   // the day the widest day's words were worked out for
         private static string _widest;
@@ -74,6 +80,12 @@ namespace RealLifeOverhaul.Ui
             }
             m.PillsPress = ForHud;
             m.AllAppsOpen |= AllAppsOpen;
+            if (ToolRow != null && ToolRow.Tools.Length > 0)
+            {
+                m.Apps = null;
+                m.AllApps = false;
+                m.Middle = UiToolRow.Width(ToolRow);
+            }
             return m;
         }
 
