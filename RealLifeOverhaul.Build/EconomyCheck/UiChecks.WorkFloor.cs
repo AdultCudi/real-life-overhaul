@@ -116,7 +116,8 @@ internal static partial class Program
                 }
             }
         }
-        Check(faults.Length == 0 && pages > 60, "work screens: no page leaves more than " + (int)WorkFloorMost + " px of nothing between its lowest thing and the window's foot (" + pages + " pages)" + faults);
+        Check(faults.Length == 0 && pages > 60,
+            "work screens: no page leaves more than " + (int)WorkFloorMost + " px of nothing between its lowest thing and the window's foot (" + pages + " pages)" + faults);
         // the rule that fills it: bands in balanced rows, never one alone beside a full row
         string rows = string.Join("|", Counts(WorkForm.RowCounts(5, 3))) + " " + string.Join("|", Counts(WorkForm.RowCounts(4, 3))) + " " + string.Join("|", Counts(WorkForm.RowCounts(6, 3)))
             + " " + string.Join("|", Counts(WorkForm.RowCounts(7, 4))) + " " + string.Join("|", Counts(WorkForm.RowCounts(1, 3))) + " " + WorkForm.RowCounts(0, 3).Length;
@@ -171,7 +172,8 @@ internal static partial class Program
         WorkBands.Tenure(bands, w, new[] { "A", "B", "C", "D" }, new[] { "r", "r", "r", "r" }, new[] { 300, 380, 250, 390 }, new[] { "d300", "d380", "d250", "d390" });
         var few = new List<WorkFormBand>();
         WorkBands.Tenure(few, w, new[] { "A", "B" }, new[] { "r", "r" }, new[] { 300, 380 }, new[] { "d", "d" });
-        Check(bands.Count == 2 && bands[0].Rows[0].Person.Name == "D" && bands[0].Rows[1].Person.Name == "B" && bands[1].Rows[0].Person.Name == "C" && bands[1].Rows[1].Person.Name == "A" && few.Count == 0,
+        Check(bands.Count == 2 && bands[0].Rows[0].Person.Name == "D" && bands[0].Rows[1].Person.Name == "B" && bands[1].Rows[0].Person.Name == "C"
+            && bands[1].Rows[1].Person.Name == "A" && few.Count == 0,
             "work screens: the team's newest and longest serving are found by the day each joined, and a team of two is not split");
         // applicants: the strongest craft first, the lowest ask first
         var cand = new List<WorkFormBand>();
@@ -181,8 +183,10 @@ internal static partial class Program
         // the market: the deal furthest under its price first; the seller with most listings first
         var rows = new List<WorkRow>
         {
-            new WorkRow { Id = 1, Name = "a", Seller = "S1", Price = "$1", Under = "-5%", UnderValue = -5 }, new WorkRow { Id = 2, Name = "b", Seller = "S2", Price = "$1", Under = "-20%", UnderValue = -20 },
-            new WorkRow { Id = 3, Name = "c", Seller = "S2", Price = "$1", Under = "+3%", UnderValue = 3 }, new WorkRow { Id = 4, Name = "d", Seller = "S2", Price = "$1", Under = "-9%", UnderValue = -9 }
+            new WorkRow { Id = 1, Name = "a", Seller = "S1", Price = "$1", Under = "-5%", UnderValue = -5 },
+            new WorkRow { Id = 2, Name = "b", Seller = "S2", Price = "$1", Under = "-20%", UnderValue = -20 },
+            new WorkRow { Id = 3, Name = "c", Seller = "S2", Price = "$1", Under = "+3%", UnderValue = 3 },
+            new WorkRow { Id = 4, Name = "d", Seller = "S2", Price = "$1", Under = "-9%", UnderValue = -9 }
         };
         var market = new List<WorkFormBand>();
         MarketBands.Market(w, market, rows);
@@ -196,7 +200,8 @@ internal static partial class Program
         }
         var picks = new List<WorkFormBand>();
         CampusBands.Picks(w, picks, courses);
-        Check(picks.Count == 2 && picks[0].Rows[0].Label == "c4" && picks[1].Rows[0].Label == "c0" && picks[1].Rows.Count == 3, "work screens: the cheapest and the shortest courses are found by their own fee and length");
+        Check(picks.Count == 2 && picks[0].Rows[0].Label == "c4" && picks[1].Rows[0].Label == "c0" && picks[1].Rows.Count == 3,
+            "work screens: the cheapest and the shortest courses are found by their own fee and length");
         // the transcript's figures are the best and the lowest graded exam and the attendance on average of its own lines
         var st = new WorkStatement();
         var term = new WorkTerm();
@@ -205,7 +210,8 @@ internal static partial class Program
         term.Marks.Add(new WorkMark { ExamGrade = -1, AttendanceGrade = 80 });
         st.Terms.Add(term);
         CampusBands.MarkFigures(w, st);
-        Check(st.Below.Count == 1 && st.Below[0].Rows[0].Value == "74%" && st.Below[0].Rows[1].Value == "52%" && st.Below[0].Rows[2].Value == "90%", "work screens: the transcript's figures are those of its own lines");
+        Check(st.Below.Count == 1 && st.Below[0].Rows[0].Value == "74%" && st.Below[0].Rows[1].Value == "52%" && st.Below[0].Rows[2].Value == "90%",
+            "work screens: the transcript's figures are those of its own lines");
         var none = new WorkStatement();
         none.Terms.Add(new WorkTerm());
         CampusBands.MarkFigures(w, none);
@@ -270,7 +276,8 @@ internal static partial class Program
                 lowRowWide |= it.X + it.W > listRight + 1f;       // the last row runs on under the panel
             }
         }
-        Check(over <= 0.5f && end <= bottom + 0.5f && leftRowInColumn && lowRowWide && lowRowY > panelBottom, "work screens: bands under a list stand beside its panel first and across both under it, and none past the foot (" +
+        Check(over <= 0.5f && end <= bottom + 0.5f && leftRowInColumn && lowRowWide && lowRowY > panelBottom,
+            "work screens: bands under a list stand beside its panel first and across both under it, and none past the foot (" +
             (int)topRowY + ", " + (int)lowRowY + ", past by " + (int)over + ")");
     }
 }
