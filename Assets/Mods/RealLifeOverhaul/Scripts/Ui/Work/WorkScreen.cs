@@ -83,9 +83,9 @@ namespace RealLifeOverhaul.Ui
             {
                 s.Begin("app window", frame.Width, frame.Height, dark);
                 UiAt at = UiAppWindow.Shell(s, frame, m.Title, m.Icon, m.Nav, m.NavSelected, m.TabsAcross, keys, out float x, out float y, out float w, out float bottom);
-                int before = s.NodeCount;
                 _page.Body(s, at, x, y, w, bottom, keys);
-                FocusFirst(s, before);
+                Quiet(s);
+                FocusFirst(s);
                 for (int i = 0; i < m.PromptCount; i++)
                 {
                     s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
@@ -108,10 +108,23 @@ namespace RealLifeOverhaul.Ui
             _dirty = false;
         }
 
+        // The lines of recent shifts and of people on a shift are read, never acted on (Route says so): they are not stops for the pad.
+        private static void Quiet(UiScene s)
+        {
+            for (int i = 0; i < s.NodeCount; i++)
+            {
+                int c = s.Nodes[i].Command;
+                if (c == UiAppWindow.RowCommand || c == UiAppWindow.MoreCommand || c == UiAppWindow.PersonCommand)
+                {
+                    s.Nodes[i].Disabled = true;
+                }
+            }
+        }
+
         // The keys and the pad start on the page, not on the section already chosen: the chosen row, card or day; a page that chooses nothing starts on its
         // main action (a reflexive press does what the page is for, and never steps an amount or gives something up), else on its first target in reading
         // order that is not a button that ends something. A page with no target of its own leaves the focus on its section.
-        private void FocusFirst(UiScene s, int before)
+        private void FocusFirst(UiScene s)
         {
             int focus = -1;
             if (_page.Table != null && _page.Chosen >= 0)
@@ -129,6 +142,10 @@ namespace RealLifeOverhaul.Ui
             if (focus < 0)
             {
                 focus = MainNode(s);
+            }
+            if (focus < 0)
+            {
+                focus = s.FindNode(WorkCmd.PageTab, _view.PageTab);   // a person's page starts on the tab it shows, not on File
             }
             if (focus < 0)
             {
@@ -199,7 +216,18 @@ namespace RealLifeOverhaul.Ui
         public WorkWalk.Walked WalkOf(UiScene s)
         {
             int start = UiFocusRules.First(s);
-            return start < 0 ? null : WorkWalk.Walk(s, start, n => Danger(s.Nodes[n]), MainNode(s));
+            return start < 0 ? null : WorkWalk.Walk(s, start, n => Commits(s.Nodes[n]), MainNode(s));
+        }
+
+        /// <summary>A button that does something once pressed (anything but the page's main one, a chip or a stepper): the walk does not end on one while a quieter target is left.</summary>
+        public bool Commits(UiNode n)
+        {
+            if (_page == null || n.Command != UiAppWindow.ActionCommand || n.Arg < 0 || n.Arg >= _page.Model.Actions.Length)
+            {
+                return false;
+            }
+            UiButtonKind k = _page.Model.Actions[n.Arg].Kind;
+            return k == UiButtonKind.Secondary || k == UiButtonKind.Destructive || k == UiButtonKind.Armed;
         }
 
         private void AddPrompt(UiAppModel m, UiAction action, string key, string english)

@@ -212,9 +212,11 @@ namespace RealLifeOverhaul.Ui
                 b.M.PeopleCount = j.Peers.Count.ToString();
             }
             // F is the desk's locate link (a shift starts at the desk, never here), P the rise; the answers to a matter and a conflict come after, and leaving last.
-            int head = b.Button(w.T("reallife_work_show_desk", "Show the desk"), UiButtonKind.Primary, UiIcon.Locate, UiAction.Alt, WorkBuilder.Do((int)CareerAct.ShowDesk, 0, null, true));
+            // The profile numbers its two buttons by their place in the row (the rise left, the desk right), so they are made in that order: made the other
+            // way round, the button saying "Ask for a rise" would run the desk.
             int rise = b.Button(w.T("reallife_life_button_rise", "Ask for a rise"), UiButtonKind.Secondary, UiIcon.TrendUp, UiAction.Option,
                 WorkBuilder.Do((int)CareerAct.AskRise, 0, j.CanAsk ? null : j.AskWhy));
+            int head = b.Button(w.T("reallife_work_show_desk", "Show the desk"), UiButtonKind.Primary, UiIcon.Locate, UiAction.Alt, WorkBuilder.Do((int)CareerAct.ShowDesk, 0, null, true));
             int a = -1, c2 = -1, d = -1;
             if (j.MatterText != null)
             {

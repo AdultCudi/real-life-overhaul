@@ -243,6 +243,7 @@ namespace RealLifeOverhaul.Ui
             }
             ChooseMode(d, f, t, view, w);
             CampusBands.Picks(w, t.Below, t.Rows);
+            t.Bands = (into, rows) => CampusBands.Picks(w, into, rows);
             return t;
         }
 

@@ -56,7 +56,15 @@ namespace RealLifeOverhaul.Ui
             var order = new List<int>(s.NodeCount);
             var column = new int[s.NodeCount];
             s.NodeBox(start, out float sx, out float _, out float sw, out float _);
-            Reading(s, top, order, column, sx + sw / 2f);
+            var block = new int[s.NodeCount];
+            Reading(s, top, order, column, sx + sw / 2f, block);
+            // Starting in a later block of the page (the main action stands in the right column): on down that column, then round to the ones before it.
+            if (block[start] > 0)
+            {
+                var earlier = new List<int>(order.Count);
+                order.RemoveAll(n => block[n] < block[start] && Take(earlier, n));
+                order.AddRange(earlier);
+            }
             order.Remove(start);   // the first stop is where the keys already are
             if (primary >= 0 && primary != start && order.Remove(primary))
             {
@@ -71,9 +79,15 @@ namespace RealLifeOverhaul.Ui
                 }
                 if (safe >= 0 && safe < order.Count - 1)
                 {
-                    int moved = order[safe];
-                    order.RemoveAt(safe);
-                    order.Add(moved);
+                    // the quiet targets that stand together (a stepper's less, its figure and its more) go to the end together, in their order
+                    int first = safe;
+                    while (first > 0 && !danger(order[first - 1]))
+                    {
+                        first--;
+                    }
+                    List<int> run = order.GetRange(first, safe - first + 1);
+                    order.RemoveRange(first, run.Count);
+                    order.AddRange(run);
                 }
             }
             w.Stops.Add(start);
@@ -112,6 +126,27 @@ namespace RealLifeOverhaul.Ui
             return w;
         }
 
+        // Blocks stand for columns of a page only when each holds at least two targets: one button set apart at a corner (the third card of a row) belongs to the row it is in.
+        private static bool Columns(List<List<int>> blocks)
+        {
+            for (int i = 0; i < blocks.Count; i++)
+            {
+                if (blocks[i].Count < 2)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        private static bool Take(List<int> into, int node)
+        {
+            into.Add(node);
+            return true;
+        }
+
+        private const float Gutter = 32f;   // a gap this wide between two blocks of targets is the gutter between two columns of panels: those are read a column at a time
+        private const float TileHeight = 64f;
         private const float Gap = 8f;   // px of nothing between two groups of targets that reading treats as apart
 
         /// <summary>
@@ -120,7 +155,7 @@ namespace RealLifeOverhaul.Ui
         /// nearest the last stop, so a grid is read as a serpentine. <paramref name="column"/> gets each target's column, to tell a hop along a column from one
         /// into the next.
         /// </summary>
-        public static void Reading(UiScene s, int top, List<int> into, int[] column = null, float fromX = 0f)
+        public static void Reading(UiScene s, int top, List<int> into, int[] column = null, float fromX = 0f, int[] block = null)
         {
             var nodes = new List<int>(s.NodeCount);
             for (int i = 0; i < s.NodeCount; i++)
@@ -133,7 +168,23 @@ namespace RealLifeOverhaul.Ui
             var col = new int[s.NodeCount];
             int next = 0;
             float lastX = fromX;
-            Cut(s, nodes, into, col, ref next, 0, ref lastX);
+            List<List<int>> blocks = nodes.Count > 1 ? Split(s, nodes, true, out float _, Gutter) : null;
+            if (blocks != null && blocks.Count > 1 && Columns(blocks))
+            {
+                for (int i = 0; i < blocks.Count; i++)
+                {
+                    int id = ++next;
+                    Cut(s, blocks[i], into, col, ref next, id, ref lastX);
+                    for (int k = 0; block != null && k < blocks[i].Count; k++)
+                    {
+                        block[blocks[i][k]] = i;
+                    }
+                }
+            }
+            else
+            {
+                Cut(s, nodes, into, col, ref next, 0, ref lastX);
+            }
             if (column != null)
             {
                 Array.Copy(col, column, Math.Min(col.Length, column.Length));
@@ -145,8 +196,28 @@ namespace RealLifeOverhaul.Ui
             if (nodes.Count > 1)
             {
                 // the cut along the wider gap first: the column a page keeps beside its list (a gap of a gutter) before the rows of a grid (a gap of a few px)
+                List<List<int>> major = Split(s, nodes, true, out float _, Gutter);
+                if (major.Count > 1 && Columns(major))
+                {
+                    // the gutters between panels first: one column of the page after the other, each then read by its own bands
+                    for (int i = 0; i < major.Count; i++)
+                    {
+                        int id = ++next;
+                        Cut(s, major[i], into, col, ref next, id, ref lastX);
+                    }
+                    return;
+                }
                 List<List<int>> bands = Split(s, nodes, false, out float bandGap);
                 List<List<int>> columns = Split(s, nodes, true, out float columnGap);
+                bool aRow = columns.Count > 1;
+                for (int i = 0; i < columns.Count; i++)
+                {
+                    aRow &= columns[i].Count == 1;
+                }
+                if (columns.Count > 1 && !aRow && !Columns(columns))
+                {
+                    columns.Clear();   // a lone button at a corner is no column: the page is read by its bands
+                }
                 if (bands.Count > 1 && (columns.Count < 2 || bandGap >= columnGap))
                 {
                     for (int i = 0; i < bands.Count; i++)
@@ -157,12 +228,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 if (columns.Count > 1)
                 {
-                    bool aRow = true;
-                    for (int i = 0; i < columns.Count; i++)
-                    {
-                        aRow &= columns[i].Count == 1;
-                    }
-                    if (aRow && Math.Abs(Centre(s, columns[columns.Count - 1][0], true) - lastX) < Math.Abs(Centre(s, columns[0][0], true) - lastX))
+                    if (aRow && Tall(s, columns[0][0]) && Math.Abs(Centre(s, columns[columns.Count - 1][0], true) - lastX) < Math.Abs(Centre(s, columns[0][0], true) - lastX))
                     {
                         columns.Reverse();   // a row of single targets is read from its nearer end
                     }
@@ -199,7 +265,7 @@ namespace RealLifeOverhaul.Ui
                     }
                     var row = nodes.GetRange(from, to - from);
                     row.Sort((a, b) => Centre(s, a, true).CompareTo(Centre(s, b, true)));
-                    if (row.Count > 1 && Math.Abs(Centre(s, row[row.Count - 1], true) - lastX) < Math.Abs(Centre(s, row[0], true) - lastX))
+                    if (row.Count > 1 && Tall(s, row[0]) && Math.Abs(Centre(s, row[row.Count - 1], true) - lastX) < Math.Abs(Centre(s, row[0], true) - lastX))
                     {
                         row.Reverse();
                     }
@@ -222,7 +288,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         // The targets in groups along one axis (vertical: side by side, else one under another), cut where a gap of nothing runs clear across the other.
-        private static List<List<int>> Split(UiScene s, List<int> nodes, bool sideBySide, out float widest)
+        private static List<List<int>> Split(UiScene s, List<int> nodes, bool sideBySide, out float widest, float apart = Gap)
         {
             var sorted = new List<int>(nodes);
             sorted.Sort((a, b) => Start(s, a, sideBySide).CompareTo(Start(s, b, sideBySide)));
@@ -232,7 +298,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < sorted.Count; i++)
             {
                 float start = Start(s, sorted[i], sideBySide);
-                if (i > 0 && start > reach + Gap)
+                if (i > 0 && start > reach + apart)
                 {
                     groups.Add(new List<int>(sorted.Count - i));
                     widest = Math.Max(widest, start - reach);
@@ -242,6 +308,9 @@ namespace RealLifeOverhaul.Ui
             }
             return groups;
         }
+
+        // A card or a tile, not a chip or a button: only those are read in a snake (the end of a row, then the next row from that end); a strip of chips reads left to right.
+        private static bool Tall(UiScene s, int node) => Length(s, node, false) >= TileHeight && Length(s, node, true) >= TileHeight * 2f;
 
         private static float Start(UiScene s, int node, bool x)
         {

@@ -33,6 +33,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (t.Diary != null)
             {
+                t.Diary.Month.AheadRead = true;   // the things coming up are read here: the days of the month are what the pad chooses
                 UiDiary.Lay(s, at, t.Diary.Month, x, cy, w, bottom - cy, keys);
             }
         }

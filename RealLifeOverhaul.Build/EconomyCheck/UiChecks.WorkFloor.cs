@@ -148,13 +148,13 @@ internal static partial class Program
                     for (int i = 0; i < scene.ItemCount; i++)
                     {
                         UiItem it = scene.Items[i];
-                        if (it.Kind != UiKind.Text || string.IsNullOrEmpty(it.Text) || (it.Flags & UiFlags.Wrap) != 0 || it.Layer != 0)
+                        if (it.Kind != UiKind.Text || string.IsNullOrEmpty(it.Text) || ((it.Flags & UiFlags.Wrap) != 0 && !it.Text.EndsWith("...", StringComparison.Ordinal)) || it.Layer != 0)
                         {
                             continue;
                         }
                         float width = UiTextRules.Width(it.Text, it.Style);
                         bool ends = it.Text.EndsWith("...", StringComparison.Ordinal) || it.Text.EndsWith("…", StringComparison.Ordinal);
-                        if ((width > it.W + 0.5f || ends) && seen.Add(it.Text))
+                        if (((width > it.W + 0.5f && (it.Flags & UiFlags.Wrap) == 0) || ends) && seen.Add(it.Text))
                         {
                             Console.WriteLine("  cut " + lang + " " + id + " " + st + ": '" + it.Text + "' " + (int)width + " in " + (int)it.W + " at " + (int)it.X + "," + (int)it.Y);
                         }

@@ -51,7 +51,7 @@ namespace RealLifeOverhaul.Ui
                 AsideChosen = t.Aside != null ? asideRole : -1, UnderLead = t.NoteLead,
                 UnderText = t.NoteText };
             m.Chips = Chips(b, t, v, w, out m.ChosenChip);
-            m.Below = t.Below;
+            m.Below = BelowOf(t, shown);
             UiDataTableModel tm = m.Table;
             tm.Columns = t.Columns;
             tm.RowCount = shown.Count;
@@ -120,6 +120,18 @@ namespace RealLifeOverhaul.Ui
             List<WorkRow> shown = Shown(t, v, out int _);
             int at = v.Row >= 0 && v.Row < shown.Count ? v.Row : shown.Count > 0 ? 0 : -1;
             return at >= 0 ? shown[at] : null;
+        }
+
+        // The bands under a catalogue or a table speak of the rows it shows: made again from the rows a chip or a search leaves, not from the whole list.
+        private static List<WorkFormBand> BelowOf(WorkTab t, List<WorkRow> shown)
+        {
+            if (t.Bands == null || shown.Count == t.Rows.Count)
+            {
+                return t.Below;
+            }
+            var bands = new List<WorkFormBand>(3);
+            t.Bands(bands, shown);
+            return bands;
         }
 
         // The rows the chips, the search and the chosen role of an aside leave.
@@ -237,7 +249,7 @@ namespace RealLifeOverhaul.Ui
             var m = new WorkCardsModel { SearchHint = t.Search, Query = v.Query, Cards = shown.ToArray(), Chosen = at, Offset = v.Offset, Reveal = v.Reveal, EmptyTitle = t.EmptyTitle,
                 EmptyBody = t.EmptyBody, EmptyIcon = t.EmptyIcon, SortLabel = t.SortWord };
             m.Chips = Chips(b, t, v, w, out m.ChosenChip);
-            m.Below = t.Below;
+            m.Below = BelowOf(t, shown);
             var panelActs = new List<UiActionModel>(4);
             if (chosen != null)
             {

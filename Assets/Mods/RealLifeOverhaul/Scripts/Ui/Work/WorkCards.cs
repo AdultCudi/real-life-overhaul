@@ -20,6 +20,8 @@ namespace RealLifeOverhaul.Ui
         public UiIcon EmptyIcon = UiIcon.Search;
         public string SortLabel;                       // "Newest first", at the right of the tool row
         public string Why;
+        public float CardHeightNow;                    // written by the layout: the height the cards stand at
+        public int DescLines = 2;                      // written by the layout: the lines a course card's description takes (the most any card needs, so the cards are one height)
         public int Columns = 1, FirstList = -1;        // written by the layout: the grid's columns and its first list, to find the card a focus stands for
         public List<WorkFormBand> Below = new List<WorkFormBand>(3);   // bands under a grid that a filter left short: what the whole catalogue holds that the filter hides
     }
@@ -48,9 +50,26 @@ namespace RealLifeOverhaul.Ui
             else
             {
                 // a filter that leaves a few cards leaves the rest of the page bare: the grid then ends under its last row and the bands of the whole catalogue stand beneath it
-                float room = bottom - ty, used = GridContent(m, gw - UiTokens.S4);
+                float room = bottom - ty, gridW = gw - UiTokens.S4;
+                Shape(m, gridW, out int columns, out float cardW);
+                m.DescLines = DescriptionLines(m, cardW);
+                float used = GridContent(m, gridW), card = CardHeight(m.Cards[0], m.DescLines);
                 bool bands = m.Below.Count > 0 && used + UiTokens.S4 + WorkForm.LeastBand <= room;
-                Grid(s, at, m, x, ty, gw - UiTokens.S4, bands ? used : room);
+                float view = bands ? used : room;
+                int rows = (m.Cards.Length + columns - 1) / columns;
+                if (!bands && used > room + 0.5f)
+                {
+                    // a grid that scrolls rests on whole rows, the cards a little taller to take up what a whole row could not: no card is cut at the foot, none is a blank slab
+                    int fit = (int)((room + UiTokens.S3) / (card + UiTokens.S3));
+                    if (fit >= 1 && fit < rows)
+                    {
+                        float stretched = UiDraw.SnapDown(Math.Min(card * 1.2f, (room + UiTokens.S3) / fit - UiTokens.S3));
+                        card = Math.Max(card, stretched);
+                        view = fit * (card + UiTokens.S3) - UiTokens.S3;
+                    }
+                }
+                m.CardHeightNow = card;
+                Grid(s, at, m, x, ty, gridW, view);
                 if (bands)
                 {
                     WorkForm.Strip(s, at, m.Below, x, ty + used + UiTokens.S4, gw - UiTokens.S4, bottom, keys);
@@ -85,14 +104,39 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        private static float CardHeight(WorkRow r) => string.IsNullOrEmpty(r.Seller) ? Course : Listing;
+        private static float CardHeight(WorkRow r, int lines) => string.IsNullOrEmpty(r.Seller) ? Course + (lines - 2) * UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)) : Listing;
+
+        private static void Shape(WorkCardsModel m, float w, out int columns, out float cardW)
+        {
+            columns = Math.Max(1, (int)((w + UiTokens.S3) / (Least + UiTokens.S3)));
+            cardW = UiDraw.SnapDown((w - UiTokens.S3 * (columns - 1)) / columns);
+        }
+
+        // The lines the longest description of the cards needs in their width, from two (a card's room) to four: whole words, so none is left unfinished.
+        private static int DescriptionLines(WorkCardsModel m, float cardW)
+        {
+            float iw = cardW - UiTokens.S4 * 2f;
+            int most = 2;
+            for (int i = 0; i < m.Cards.Length && most < MostLines; i++)
+            {
+                WorkRow r = m.Cards[i];
+                if (string.IsNullOrEmpty(r.Seller) && !string.IsNullOrEmpty(r.Line))
+                {
+                    float h = UiTextRules.WrappedHeight(r.Line, UiStyle.Body, iw, MostLines + 1);
+                    most = Math.Max(most, Math.Min(MostLines, (int)Math.Ceiling(h / UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)) - 0.01f)));
+                }
+            }
+            return most;
+        }
+
+        private const int MostLines = 4;
 
         // The height the cards take in the width the grid has, with no scroll.
         private static float GridContent(WorkCardsModel m, float w)
         {
             int columns = Math.Max(1, (int)((w + UiTokens.S3) / (Least + UiTokens.S3)));
             int rows = (m.Cards.Length + columns - 1) / columns;
-            return rows * (CardHeight(m.Cards[0]) + UiTokens.S3) - UiTokens.S3;
+            return rows * (CardHeight(m.Cards[0], m.DescLines) + UiTokens.S3) - UiTokens.S3;
         }
 
         private static void Grid(UiScene s, UiAt at, WorkCardsModel m, float x, float y, float w, float h)
@@ -100,7 +144,7 @@ namespace RealLifeOverhaul.Ui
             int n = m.Cards.Length;
             int columns = Math.Max(1, (int)((w + UiTokens.S3) / (Least + UiTokens.S3)));
             float cw = UiDraw.SnapDown((w - UiTokens.S3 * (columns - 1)) / columns);
-            float ch = CardHeight(m.Cards[0]), rowH = ch + UiTokens.S3;
+            float ch = m.CardHeightNow > 0f ? m.CardHeightNow : CardHeight(m.Cards[0], m.DescLines), rowH = ch + UiTokens.S3;
             int rows = (n + columns - 1) / columns;
             float content = rows * rowH - UiTokens.S3, offset = m.Offset;
             if (m.Reveal >= 0 && m.Reveal < n)
@@ -153,7 +197,7 @@ namespace RealLifeOverhaul.Ui
             UiAt inside = at.In(face);
             if (string.IsNullOrEmpty(r.Seller))
             {
-                CourseCard(s, inside, r, x, y, w, h, chosen);
+                CourseCard(s, inside, r, x, y, w, h, chosen, m.DescLines);
             }
             else
             {
@@ -163,7 +207,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         // A course: the subject's glyph on a tile at the left, its level as a tag at the right, then name, school, a line, the next class, a rule and the foot.
-        private static void CourseCard(UiScene s, UiAt at, WorkRow r, float x, float y, float w, float h, bool chosen)
+        private static void CourseCard(UiScene s, UiAt at, WorkRow r, float x, float y, float w, float h, bool chosen, int lines)
         {
             UiRole quiet = chosen ? UiRole.Text : UiRole.Text2;   // the chosen card's fill is lighter: its quiet words are the main ink
             float pad = UiTokens.S4, iw = w - pad * 2f, tile = UiTokens.IconTile;
@@ -185,7 +229,7 @@ namespace RealLifeOverhaul.Ui
             cy += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2;
             if (!string.IsNullOrEmpty(r.Line))
             {
-                UiDraw.Text(s, at, x + pad, cy, iw, UiStyle.Body, UiRole.Text, FitWords(r.Line, UiStyle.Body, iw, 2), UiFlags.Wrap, 2);
+                UiDraw.Text(s, at, x + pad, cy, iw, UiStyle.Body, UiRole.Text, FitWords(r.Line, UiStyle.Body, iw, lines), UiFlags.Wrap, lines);
             }
             float foot = y + h - pad - UiDraw.Snap(UiTextRules.LineHeight(UiStyle.BodyStrong));
             float next = UiDraw.SnapDown(foot - UiTokens.S3 * 2f - UiDraw.Snap(UiTextRules.LineHeight(UiStyle.BodyStrong)) - UiTokens.S1);

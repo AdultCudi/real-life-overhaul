@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Ui
@@ -230,22 +230,6 @@ namespace RealLifeOverhaul.Ui
                 stood++;
             }
             return stood;
-        }
-
-        // The y offset of band i's row from the strip's top: the tallest band of the rows above it, and a gap.
-        private static float RowEnd(List<WorkFormBand> bands, int cols, int i, float cw)
-        {
-            float off = 0f;
-            for (int row = 0; row < i / cols; row++)
-            {
-                float tall = 0f;
-                for (int k = row * cols; k < (row + 1) * cols && k < bands.Count; k++)
-                {
-                    tall = Math.Max(tall, Height(bands[k], cw));
-                }
-                off += tall + UiTokens.S4;
-            }
-            return off;
         }
 
         private static float Column(UiScene s, UiAt at, List<WorkFormBand> bands, UiActionModel[] actions, WorkAmount[] amounts, float x, float y, float w, float bottom, IUiKeys keys)

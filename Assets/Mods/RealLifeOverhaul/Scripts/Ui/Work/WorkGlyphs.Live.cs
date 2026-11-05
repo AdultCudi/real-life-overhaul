@@ -118,7 +118,7 @@ namespace RealLifeOverhaul.Ui
                 case "speaker": return UiIcon.SpeakerHigh;
                 case "camera": return UiIcon.Camera;
                 case "sofa": return UiIcon.Sofa;
-                case "armchair": return UiIcon.Home;
+                case "armchair": return UiIcon.Sofa;
                 case "table": return UiIcon.ForkKnife;
                 case "bookcase": return UiIcon.Books;
                 case "jacket": case "coat": case "suit": return UiIcon.ShoppingBag;

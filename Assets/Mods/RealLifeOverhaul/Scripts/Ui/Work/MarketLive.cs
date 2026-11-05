@@ -247,6 +247,7 @@ namespace RealLifeOverhaul.Ui
                 t.Rows.Add(r);
             }
             MarketBands.Market(w, t.Below, t.Rows);
+            t.Bands = (into, rows) => MarketBands.Market(w, into, rows);
             return t;
         }
 

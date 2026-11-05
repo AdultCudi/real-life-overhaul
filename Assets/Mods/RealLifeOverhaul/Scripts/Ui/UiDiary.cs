@@ -34,6 +34,7 @@ namespace RealLifeOverhaul.Ui
         public UiPairModel[] ChosenFigures = new UiPairModel[0];   // the day's money in and out, as the calendar tallies it
         public string ChosenEmpty;                     // a useful sentence for a day with nothing on it
         public string AheadTitle;                      // "Coming up": the next days' things under the chosen day's
+        public bool AheadRead;                         // the next days' things are only read: their rows are not targets (the days above are the way to choose one)
         public UiDiaryEntry[] Ahead;                   // what the title stands over, when it is not the later days of Entries (tomorrow's, from the next month too); null: those
         public bool CanBack = true, CanOn = true;      // a month before and after can be turned to (MonthViewRules.Step)
     }
@@ -257,7 +258,10 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDraw.TextMiddle(s, inside, x + w - vw, y, AheadRow, vw, UiStyle.Small, UiRole.Text2, entry.Value, UiFlags.Right);
             }
-            UiDraw.Node(s, at, x - UiTokens.S2, y, w + UiTokens.S4, AheadRow, DayCommand, entry.Day, face);
+            if (!m.AheadRead)
+            {
+                UiDraw.Node(s, at, x - UiTokens.S2, y, w + UiTokens.S4, AheadRow, DayCommand, entry.Day, face);
+            }
         }
 
         // A thing of the chosen day: its kind's glyph on a tile, its name over its figure, and the words that lead where it is dealt with.

@@ -278,6 +278,7 @@ namespace RealLifeOverhaul.Ui
         public readonly List<WorkRow> Rows = new List<WorkRow>(24);
         public string[] Chips = new string[0];         // the names of the filter chips after "All"; the page adds every count
         public bool ChipsByMask;                       // the chips count the rows' masks; else their groups
+        public Action<List<WorkFormBand>, List<WorkRow>> Bands;   // makes the bands under the list from the rows a filter leaves (so they never speak of rows the list does not show); null keeps Below
         public string AllWord;                         // "All" in the player's words
         public string Search;                          // a search field's hint; null for none
         public UiIcon EmptyIcon = UiIcon.Search;

@@ -98,7 +98,8 @@ internal static partial class Program
         for (int i = 0; i < w.Stops.Count; i++)
         {
             UiNode n = s.Nodes[w.Stops[i]];
-            sb.Append(i == 0 ? "\n    " : " > ").Append(n.Command).Append('.').Append(n.Arg).Append('@').Append((int)n.X).Append(',').Append((int)n.Y).Append(i > 0 && w.Hops[i] > 1 ? "(" + w.Hops[i] + ")" : string.Empty);
+            s.NodeBox(w.Stops[i], out float nx, out float ny, out float nw, out float nh);
+            sb.Append(i == 0 ? "\n    " : " > ").Append(n.Command).Append('.').Append(n.Arg).Append('@').Append((int)nx).Append(',').Append((int)ny).Append('+').Append((int)nw).Append('x').Append((int)nh).Append(n.Command == UiAppWindow.ActionCommand && n.Arg >= 0 && n.Arg < screen.Page.Model.Actions.Length ? "[" + screen.Page.Model.Actions[n.Arg].Kind + " " + screen.Page.Model.Actions[n.Arg].Label + "]" : string.Empty).Append(i > 0 && w.Hops[i] > 1 ? "(" + w.Hops[i] + ")" : string.Empty);
         }
         for (int i = 0; i < w.Missed.Count; i++)
         {
@@ -119,6 +120,15 @@ internal static partial class Program
         {
             fault = (fault != null ? fault + "; " : string.Empty) + "ends on a destructive button";
         }
+        bool quieter = false;
+        for (int i = 1; i < w.Stops.Count - 1; i++)
+        {
+            quieter |= !screen.Commits(s.Nodes[w.Stops[i]]);
+        }
+        if (w.Stops.Count > 1 && screen.Commits(s.Nodes[last]) && quieter)
+        {
+            fault = (fault != null ? fault + "; " : string.Empty) + "ends on a button that does something while a quieter target was left to end on";
+        }
         return fault;
     }
 
@@ -130,12 +140,6 @@ internal static partial class Program
         }
         _workWalkChecked = true;
         bool report = Environment.GetEnvironmentVariable("RLO_WALK_REPORT") == "1";
-        if (Environment.GetEnvironmentVariable("RLO_WALK_DEBUG") == "1")
-        {
-            UiScene dbg = WorkSceneOf(WorkScreenOf("marketplace", WorkEnglish, "listings"));
-            int cn = dbg.FindNode(WorkCmd.Card, 0);
-            Console.WriteLine("DEBUG card0 node " + cn + " clip " + dbg.Nodes[cn].Clip + " xy " + dbg.Nodes[cn].X + "," + dbg.Nodes[cn].Y + " clips " + dbg.ClipCount + (dbg.Nodes[cn].Clip >= 0 ? " clipxy " + dbg.Clips[dbg.Nodes[cn].Clip].X + "," + dbg.Clips[dbg.Nodes[cn].Clip].Y : ""));
-        }
         var faults = new StringBuilder();
         int pages = 0, stops = 0;
         foreach (string id in new[] { "career", "campus", "open_roles", "marketplace" })
@@ -157,6 +161,45 @@ internal static partial class Program
                 }
             }
         }
+        // A button runs the action it is numbered for: the words drawn on it are the words of that action (a profile numbers its buttons by their place in its row, and two made
+        // in the other order would swap what they do).
+        var swapped = new StringBuilder();
+        foreach (string id in new[] { "career", "campus", "open_roles", "marketplace" })
+        {
+            foreach (string st in WorkStatesOf(id))
+            {
+                WorkScreen screen = WorkScreenOf(id, WorkEnglish, st);
+                UiScene scene = WorkSceneOf(screen);
+                for (int n = 0; n < scene.NodeCount; n++)
+                {
+                    UiNode node = scene.Nodes[n];
+                    if (node.Command != UiAppWindow.ActionCommand || node.Arg < 0 || node.Arg >= screen.Page.Model.Actions.Length)
+                    {
+                        continue;
+                    }
+                    string label = screen.Page.Model.Actions[node.Arg].Label, drawn = null;
+                    bool any = false;
+                    for (int i = 0; i < scene.ItemCount; i++)
+                    {
+                        if (scene.Items[i].Node == n && scene.Items[i].Kind == UiKind.Text && !string.IsNullOrEmpty(scene.Items[i].Text))
+                        {
+                            any = true;
+                            drawn = scene.Items[i].Text;
+                            if (string.Equals(drawn, label, StringComparison.OrdinalIgnoreCase) || label.StartsWith(drawn.TrimEnd('.'), StringComparison.OrdinalIgnoreCase))
+                            {
+                                any = false;
+                                break;
+                            }
+                        }
+                    }
+                    if (any)
+                    {
+                        swapped.Append(" [" + id + " " + st + ": '" + drawn + "' runs '" + label + "']");
+                    }
+                }
+            }
+        }
+        Check(swapped.Length == 0, "work screens: every button runs the action whose words it shows" + swapped);
         Check(faults.Length == 0 && pages > 30, "work screens: the pad walks every page in reading order through the real focus links, from a safe start, reaching every target and never ending on a destructive button (" + pages + " pages)" + faults);
         // The rule itself: a page whose links cannot walk it is found (a target stands alone, out of every link's reach), and one that starts on a stepper is.
         var lone = new UiScene();
