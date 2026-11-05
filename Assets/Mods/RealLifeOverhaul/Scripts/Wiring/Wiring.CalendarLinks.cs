@@ -82,7 +82,8 @@ namespace RealLifeOverhaul
                         }
                         e.Value = group == CalendarGroup.Money && !string.IsNullOrEmpty(p.Money) ? p.Money : PlannerText.When(p);
                         int at = Array.IndexOf(Ids, p.Id.Source);
-                        e.App = at >= 0 ? (p.Id.Source == "services" ? ServicesLinks.CalendarApp(Apps[at], p.Id.A, p.Id.B) : Apps[at]) : null;
+                        e.App = at >= 0 ? (p.Id.Source == "services" ? ServicesLinks.CalendarApp(Apps[at], p.Id.A,
+                            p.Id.B) : p.Id.Source == "ventures" ? VenturesLinks.CalendarApp(Apps[at], p.Id.A, p.Id.B) : Apps[at]) : null;
                     }
                 }
             }

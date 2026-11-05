@@ -31,13 +31,94 @@ namespace RealLifeOverhaul.Economy
                 int rival = OnlineExtraRules.LowestRival(_state.Seed, shop.Lines[line].Item, ask);
                 return Math.Max(ask * 7 / 10, Math.Min(ask, rival));
             };
+            OnlineRules.HoldHook = (shop, hour) => OnlineExtraRules.HoldHours(_extra.Of(shop.Place, true), hour);
             OnlineRules.ArrivedHook = (shop, order, late) =>
             {
                 ShopExtra x = _extra.Of(shop.Place, true);
                 int day = order.Arrive / 24;
                 OnlineExtraRules.Sold(x, day, order.Total);
-                return OnlineExtraRules.Delivered(x, _state.Seed, order.Id, day, order.District, order.Count, order.Total, late);
+                string first = order.Count > 0 && order.Line[0] >= 0 && order.Line[0] < shop.Lines.Count ? shop.Lines[order.Line[0]].Item : null;
+                return OnlineExtraRules.Delivered(x, _state.Seed, order.Id, day, order.District, order.Count, order.Total, late, first, order.Short, CustomerOf(_state.Seed, order.Id));
             };
+        }
+
+        /// <summary>The customer of an order: a person of the shared people pool, the same one for the same order. 0 while the pool does not run.</summary>
+        public static int CustomerOf(int seed, int order)
+        {
+            int people = RealLifeOverhaul.Population.CityPopulation.People;
+            if (people <= 0)
+            {
+                return 0;
+            }
+            uint h = unchecked((uint)(seed * 31 + order) * 2654435761u);
+            return 1 + (int)((h >> 3) % (uint)people);
+        }
+
+        /// <summary>The owner sets a product title; empty gives the game's name back.</summary>
+        public void SetTitle(string place, string item, string text)
+        {
+            ShopExtra x = ExtraOf(place);
+            if (x != null)
+            {
+                x.LineOf(item, true).Title = (text ?? string.Empty).Trim();
+                Revision++;
+            }
+        }
+
+        /// <summary>The owner sets a product description.</summary>
+        public void SetDescription(string place, string item, string text)
+        {
+            ShopExtra x = ExtraOf(place);
+            if (x != null)
+            {
+                x.LineOf(item, true).Desc = (text ?? string.Empty).Trim();
+                Revision++;
+            }
+        }
+
+        /// <summary>The owner answers a review (by its place in the ring); empty takes the answer back.</summary>
+        public void Reply(string place, int note, string text)
+        {
+            ShopExtra x = ExtraOf(place);
+            if (x != null && note >= 0 && note < x.Notes.Count)
+            {
+                x.Notes[note].Reply = (text ?? string.Empty).Trim();
+                Revision++;
+            }
+        }
+
+        /// <summary>A price was changed through the page: what it was is kept while the new one is under it.</summary>
+        internal void PriceNoted(string place, string item, int oldCents, int newCents)
+        {
+            ShopExtra x = ExtraOf(place);
+            if (x != null)
+            {
+                OnlineExtraRules.PriceChanged(x, item, oldCents, newCents);
+            }
+        }
+
+        /// <summary>The owner refunds an order now.</summary>
+        public bool RefundOrder(string place, int orderId)
+        {
+            WebPlace p = _running ? PlaceAt(place) : null;
+            bool done = p != null && OnlineRules.Refund(p.Shop, orderId);
+            if (done)
+            {
+                Changed();
+            }
+            return done;
+        }
+
+        /// <summary>The owner sends the courier for a packed order now.</summary>
+        public bool SendCourier(string place, int orderId)
+        {
+            WebPlace p = _running ? PlaceAt(place) : null;
+            bool done = p != null && OnlineRules.SendNow(p.Shop, p.Site, Now, orderId);
+            if (done)
+            {
+                Changed();
+            }
+            return done;
         }
 
         private void ExtraSave()

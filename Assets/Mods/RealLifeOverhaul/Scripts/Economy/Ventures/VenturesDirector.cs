@@ -329,6 +329,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                 return;
             }
             _view = view;
+            PhoneApp.Wants[AppId] = RealLifeOverhaul.Ui.VenturesLive.WantFrom;   // a calendar entry opens the app on its tab and row
             RealLifeOverhaul.Ui.UiShell.Face(_app, def);   // the kit's face over the app, once its switch is on (Ui/Shell/UiShell.Tick)
             Badge();
         }

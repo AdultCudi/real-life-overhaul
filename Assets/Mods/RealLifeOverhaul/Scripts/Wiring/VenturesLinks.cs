@@ -33,6 +33,13 @@ namespace RealLifeOverhaul
                 VenturesBridges.Reset();   // the Planner's director goes with the city, and its sources with it
             }
 
+            /// <summary>The app id a calendar entry of the investors carries: the app, then the tab and row the entry is about (an offer, a promise, a deal).</summary>
+            internal static string CalendarApp(string app, int kind, int number)
+            {
+                string pick = kind == 1 ? "offer:" : kind == 2 ? "pledge:" : kind >= 3 ? "deal:" : null;
+                return pick != null ? app + GameUi.PhoneApp.WantMark + VenturesPhone.Investors + ":" + pick + number.ToString(System.Globalization.CultureInfo.InvariantCulture) : app;
+            }
+
             private static int JobsHeld()
             {
                 try

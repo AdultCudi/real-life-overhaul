@@ -47,6 +47,16 @@ namespace RealLifeOverhaul.Ui
             TakeWant(view);
         }
 
+        /// <summary>A calendar entry names a place in the app as "tab:pick".</summary>
+        public static void WantFrom(string want)
+        {
+            int colon = want != null ? want.IndexOf(':') : -1;
+            if (colon > 0 && int.TryParse(want.Substring(0, colon), NumberStyles.Integer, Inv, out int tab))
+            {
+                Want(tab, colon + 1 < want.Length ? want.Substring(colon + 1) : null);
+            }
+        }
+
         private static void TakeWant(VentView view)
         {
             if (_wantTab < 0)

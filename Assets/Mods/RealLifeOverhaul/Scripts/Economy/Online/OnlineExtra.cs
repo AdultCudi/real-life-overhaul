@@ -12,6 +12,20 @@ namespace RealLifeOverhaul.Economy
         public bool Late, Returned;
     }
 
+    /// <summary>What the owner set for one product on the site: the price it was before it was lowered, its own title and its description.</summary>
+    public sealed class LineExtra
+    {
+        public string Item = string.Empty, Title = string.Empty, Desc = string.Empty;
+        public int WasCents;
+    }
+
+    /// <summary>A customer review of a product: who (a person of the shared pool), how many stars, where, when, and the answer of the owner if there is one.</summary>
+    public sealed class ReviewNote
+    {
+        public string Item = string.Empty, Reply = string.Empty;
+        public int Person, Stars, Day, District;
+    }
+
     /// <summary>What a web shop is set to, beyond the old settings, and what it has kept: the customer-paid delivery fee, the area, the packing time,
     /// night orders and prices that follow rivals.</summary>
     public sealed class ShopExtra
@@ -31,6 +45,27 @@ namespace RealLifeOverhaul.Economy
         public int LastDay;
         public readonly int[] Sales = new int[SalesDays];   // takings in cents by the day's number mod 30
         public readonly List<FinishedOrder> Done = new List<FinishedOrder>(DoneMost);
+        public const int NotesMost = 60;
+        public readonly List<LineExtra> Lines = new List<LineExtra>(8);
+        public readonly List<ReviewNote> Notes = new List<ReviewNote>(NotesMost);
+
+        public LineExtra LineOf(string item, bool make)
+        {
+            for (int i = 0; i < Lines.Count; i++)
+            {
+                if (string.Equals(Lines[i].Item, item, StringComparison.Ordinal))
+                {
+                    return Lines[i];
+                }
+            }
+            if (!make)
+            {
+                return null;
+            }
+            var line = new LineExtra { Item = item ?? string.Empty };
+            Lines.Add(line);
+            return line;
+        }
 
         public bool Serves(int district) => DistrictMask == 0 || (district >= 0 && district < 31 && (DistrictMask & (1 << district)) != 0);
     }
@@ -111,6 +146,19 @@ namespace RealLifeOverhaul.Economy
                     t.Append(d > 0 ? ";" : string.Empty).Append(o.Day).Append(',').Append(o.Person).Append(',').Append(o.Items).Append(',').Append(o.Total).Append(',').Append(o.District).Append(',')
                         .Append(o.Late ? 1 : 0).Append(',').Append(o.Returned ? 1 : 0);
                 }
+                t.Append('|');
+                for (int d = 0; d < s.Lines.Count; d++)
+                {
+                    LineExtra l = s.Lines[d];
+                    t.Append(d > 0 ? ";" : string.Empty).Append(Clean(l.Item)).Append('^').Append(l.WasCents).Append('^').Append(Clean(l.Title)).Append('^').Append(Clean(l.Desc));
+                }
+                t.Append('|');
+                for (int d = 0; d < s.Notes.Count && d < ShopExtra.NotesMost; d++)
+                {
+                    ReviewNote n = s.Notes[d];
+                    t.Append(d > 0 ? ";" : string.Empty).Append(Clean(n.Item)).Append('^').Append(n.Person).Append('^').Append(n.Stars).Append('^').Append(n.Day)
+                        .Append('^').Append(n.District).Append('^').Append(Clean(n.Reply));
+                }
             }
             return t.ToString();
         }
@@ -150,6 +198,22 @@ namespace RealLifeOverhaul.Economy
                         s.Done.Add(new FinishedOrder { Day = I(o, 0), Person = I(o, 1), Items = I(o, 2), Total = I(o, 3), District = I(o, 4), Late = I(o, 5) != 0, Returned = I(o, 6) != 0 });
                     }
                 }
+                foreach (string rec in c.Length > 12 && c[12].Length > 0 ? c[12].Split(';') : new string[0])
+                {
+                    string[] l = rec.Split('^');
+                    if (l.Length >= 4)
+                    {
+                        s.Lines.Add(new LineExtra { Item = l[0], WasCents = Math.Max(0, I(l, 1)), Title = l[2], Desc = l[3] });
+                    }
+                }
+                foreach (string rec in c.Length > 13 && c[13].Length > 0 ? c[13].Split(';') : new string[0])
+                {
+                    string[] n = rec.Split('^');
+                    if (n.Length >= 6 && s.Notes.Count < ShopExtra.NotesMost)
+                    {
+                        s.Notes.Add(new ReviewNote { Item = n[0], Person = I(n, 1), Stars = Math.Max(1, Math.Min(5, I(n, 2))), Day = I(n, 3), District = I(n, 4), Reply = n[5] });
+                    }
+                }
                 x.Shops.Add(s);
             }
             return x;
@@ -161,7 +225,7 @@ namespace RealLifeOverhaul.Economy
             return at < c.Length && int.TryParse(c[at], NumberStyles.Integer, Inv, out value) ? value : 0;
         }
 
-        private static string Clean(string text) => string.IsNullOrEmpty(text) ? string.Empty : text.Replace('|', ' ').Replace(';', ' ').Replace('~', ' ');
+        private static string Clean(string text) => string.IsNullOrEmpty(text) ? string.Empty : text.Replace('|', ' ').Replace(';', ' ').Replace('~', ' ').Replace('^', ' ');
     }
 
     /// <summary>The rules the extras follow, game-free and seeded by the save, so rivals and customers behave the same on every machine.</summary>
@@ -249,7 +313,8 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>An order has reached its door: it is kept in the ring, may be rated, and the customer pays the delivery fee.</summary>
-        public static int Delivered(ShopExtra s, int seed, int orderId, int day, int district, int items, int totalCents, bool late)
+        public static int Delivered(ShopExtra s, int seed, int orderId, int day, int district, int items, int totalCents, bool late, string item = null,
+            bool shortOrder = false, int person = 0)
         {
             if (s.Done.Count >= ShopExtra.DoneMost)
             {
@@ -264,12 +329,111 @@ namespace RealLifeOverhaul.Economy
                 if ((int)((h >> 8) % 100u) < ReviewChancePct)
                 {
                     s.Reviews++;
+                    if (item != null)
+                    {
+                        // A customer rates what came: late or short takes stars off, a good order gives four or five.
+                        int roll = (int)((h >> 20) % 100u);
+                        int stars = late ? 1 + roll % 3 : shortOrder ? 2 + roll % 3 : 4 + roll % 2;
+                        if (s.Notes.Count >= ShopExtra.NotesMost)
+                        {
+                            s.Notes.RemoveAt(0);
+                        }
+                        s.Notes.Add(new ReviewNote { Item = item, Person = person, Stars = stars, Day = day, District = district });
+                    }
                 }
             }
             return FeeFor(s, totalCents);
         }
 
-        /// <summary>The day's takings go into the thirty day ring.</summary>
+        /// <summary>A product reviews by star, one star first; returns how many.</summary>
+        public static int Breakdown(ShopExtra s, string item, int[] into)
+        {
+            int n = 0;
+            for (int i = 0; i < into.Length; i++)
+            {
+                into[i] = 0;
+            }
+            for (int i = 0; i < s.Notes.Count; i++)
+            {
+                if (string.Equals(s.Notes[i].Item, item, StringComparison.Ordinal))
+                {
+                    into[s.Notes[i].Stars - 1]++;
+                    n++;
+                }
+            }
+            return n;
+        }
+
+        /// <summary>The stars of a product in halves (0 to 10) from its reviews, or -1 with none.</summary>
+        public static int Halves(int[] breakdown)
+        {
+            int n = 0, sum = 0;
+            for (int i = 0; i < breakdown.Length; i++)
+            {
+                n += breakdown[i];
+                sum += breakdown[i] * (i + 1);
+            }
+            return n == 0 ? -1 : (sum * 2 + n / 2) / n;
+        }
+
+        /// <summary>A rival shop reviews of a product by the same rule: a count and an average of its own, seeded, and the stars spread round the average.</summary>
+        public static int RivalReviews(int seed, int rival, string item, int[] into, out int halves)
+        {
+            unchecked
+            {
+                uint h = (uint)seed * 0x9E3779B1u ^ (uint)(rival + 7) * 0xC2B2AE35u;
+                for (int i = 0; item != null && i < item.Length; i++)
+                {
+                    h = (h ^ item[i]) * 16777619u;
+                }
+                h ^= h >> 13;
+                int count = 20 + (int)(h % 880u);
+                halves = 7 + (int)((h >> 11) % 4u);   // 3.5 to 5 stars
+                int[] weight = { 1, 2, 5, 25, 40 };
+                int total = 0;
+                for (int i = 0; i < 5; i++)
+                {
+                    into[i] = Math.Max(1, weight[i] + (i - 2) * (halves - 8) * 6);
+                    total += into[i];
+                }
+                int left = count;
+                for (int i = 0; i < 5; i++)
+                {
+                    into[i] = i == 4 ? left : (int)((long)count * into[i] / total);
+                    left -= into[i];
+                }
+                return count;
+            }
+        }
+
+        /// <summary>When an order placed now is due, as the page says it: days from today (1 is tomorrow) and the hour.</summary>
+        public static void ArrivesBy(int dueHour, int nowHour, out int days, out int hour)
+        {
+            days = dueHour / 24 - nowHour / 24;
+            hour = dueHour % 24;
+        }
+
+        /// <summary>The price a product had before it was lowered: kept while the new price stays under it, so the page shows what was saved.</summary>
+        public static void PriceChanged(ShopExtra s, string item, int oldCents, int newCents)
+        {
+            LineExtra l = s.LineOf(item, true);
+            if (newCents < oldCents && newCents > 0)
+            {
+                l.WasCents = Math.Max(l.WasCents, oldCents);
+            }
+            else if (l.WasCents > 0 && newCents >= l.WasCents)
+            {
+                l.WasCents = 0;
+            }
+        }
+
+        /// <summary>Only a few left: at five or fewer in stock.</summary>
+        public static bool OnlyLeft(int stock) => stock > 0 && stock <= 5;
+
+        /// <summary>The hours an order placed at this hour waits for the morning, when the shop takes night orders.</summary>
+        public static int HoldHours(ShopExtra s, int hour) => s.Night ? PickFrom(s, hour) - hour : 0;
+
+        /// <summary>The day takings go into the thirty day ring.</summary>
         public static void Sold(ShopExtra s, int day, int takingsCents)
         {
             if (s.LastDay != day)
