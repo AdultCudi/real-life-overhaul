@@ -30370,7 +30370,6 @@
   "reallife_flare_kit_pick_thread": "Escolha uma conversa",
   "reallife_flare_kit_pick_thread_body": "Suas mensagens abrem aqui.",
   "reallife_flare_kit_view_profile": "Perfil",
-  "reallife_flare_kit_offer_line": "Oferece {money} por post, em {posts} posts",
   "reallife_flare_kit_accept": "Aceitar {money}",
   "reallife_flare_kit_decline": "Recusar",
   "reallife_flare_kit_quick_calm": "Responder com calma",
@@ -30395,7 +30394,6 @@
   "reallife_flare_kit_tab_media": "Imagens",
   "reallife_flare_kit_empty_profile_body": "Seus posts aparecem aqui com o que trouxeram.",
   "reallife_flare_kit_post_title": "Post",
-  "reallife_flare_kit_replies_count": "{count} respostas",
   "reallife_flare_kit_business_title": "Seus negócios",
   "reallife_flare_kit_business_line": "{kind} em {district}",
   "reallife_flare_kit_no_business": "Nenhum negócio ainda",
@@ -30425,7 +30423,6 @@
   "reallife_flare_kit_why_4_good": "Limpo e arrumado por dentro.",
   "reallife_flare_kit_why_4_poor": "Não estava limpo.",
   "reallife_flare_kit_studio_title": "Estúdio de criação",
-  "reallife_flare_kit_studio_line": "{tier}, {followers} seguidores",
   "reallife_flare_kit_fig_money": "Dinheiro do Flare",
   "reallife_flare_kit_line_title": "Seguidores nesta semana",
   "reallife_flare_kit_tier_title": "Patrocínio",
@@ -31436,5 +31433,6 @@
   "reallife_flare_kit_funnel_bad": "{seen} viram e {kept} foram afastados",
   "reallife_flare_kit_funnel_more": "{interested} se interessaram e {followed} seguiram você",
   "reallife_flare_kit_results_ads": "Seus anúncios",
-  "reallife_flare_kit_result_ad": "Seu anúncio para {business}"
+  "reallife_flare_kit_result_ad": "Seu anúncio para {business}",
+  "reallife_flare_kit_section_busy": "Onde a cidade mais postou hoje"
 }

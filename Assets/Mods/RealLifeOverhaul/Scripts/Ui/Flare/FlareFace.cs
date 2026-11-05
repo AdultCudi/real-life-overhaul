@@ -549,9 +549,11 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>
-        /// Every target the d-pad reaches from <paramref name="start"/>, as a player would walk it: right first, then down, then left, then up, going on from each target
-        /// to the first one it has not been to. <paramref name="order"/> gets the targets in the order they are met and <paramref name="from"/> the target each was
-        /// pressed from (the start has -1), so the preview draws every step as one real press and the checks count what a page leaves out. Returns how many were met.
+        /// Every target the d-pad reaches from <paramref name="start"/>, in the order a player presses to meet them: at each target right first, then down, then left, then up, to the
+        /// first one not been to, and where all four lead to places already seen, back to the target before and on from there (a depth first walk, so each number follows the press that
+        /// found it and the nav, which only left and up from the page reach, comes last and in order down its column). <paramref name="order"/> gets the targets as they are met and
+        /// <paramref name="from"/> the target each was pressed from (the start has -1), so the preview numbers every stop in press order and the checks count what a page leaves
+        /// out. Returns how many were met. Cost: a walk over the page's targets, in the previews and the checks only.
         /// </summary>
         public static int Reach(UiScene s, int start, int[] order, int[] from)
         {
@@ -560,35 +562,56 @@ namespace RealLifeOverhaul.Ui
                 return 0;
             }
             var met = new bool[s.NodeCount];
-            var stack = new int[s.NodeCount * 4 + 4];
-            var parent = new int[s.NodeCount * 4 + 4];
-            int top = 0, n = 0;
-            stack[top] = start;
-            parent[top++] = -1;
-            while (top > 0 && n < order.Length)
+            met[start] = true;
+            order[0] = start;
+            from[0] = -1;
+            int n = 1;
+            // Three rounds of the same walk. First the page, with the nav kept out of it (the page's own presses reach the nav only at its foot, which would number it from the bottom
+            // up); then the nav, from the entry that left of the page goes to, down its column and then up it; then whatever only the nav leads to.
+            for (int phase = 0; phase <= 2; phase++)
             {
-                top--;
-                int at = stack[top], came = parent[top];
-                if (met[at])
+                for (bool more = true; more && n < order.Length; )
                 {
-                    continue;
-                }
-                met[at] = true;
-                order[n] = at;
-                from[n++] = came;
-                // pushed last-first so that right is tried first, then down, left and up
-                for (int d = 3; d >= 0; d--)
-                {
-                    int to = UiFocusRules.Next(s, at, d == 0 ? 1 : d == 2 ? -1 : 0, d == 1 ? 1 : d == 3 ? -1 : 0);
-                    if (to >= 0 && to < s.NodeCount && !met[to] && top < stack.Length)
+                    more = false;
+                    for (int i = 0; i < n && !more; i++)
                     {
-                        stack[top] = to;
-                        parent[top++] = at;
+                        for (int d = 0; d < 4 && !more; d++)
+                        {
+                            int to = Press(s, order[i], d);
+                            if (to >= 0 && !met[to] && Allowed(s, to, phase))
+                            {
+                                // back at the earliest target with a way not yet taken, press on from there as far as the d-pad leads to places not been to
+                                more = true;
+                                int at = order[i];
+                                while (to >= 0 && n < order.Length)
+                                {
+                                    met[to] = true;
+                                    order[n] = to;
+                                    from[n++] = at;
+                                    at = to;
+                                    to = -1;
+                                    for (int k = 0; k < 4 && to < 0; k++)
+                                    {
+                                        int next = Press(s, at, k);
+                                        to = next >= 0 && !met[next] && Allowed(s, next, phase) ? next : -1;
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             }
             return n;
         }
+
+        // The target a press of the d-pad (0 right, 1 down, 2 left, 3 up) goes to, or -1.
+        private static int Press(UiScene s, int node, int d)
+        {
+            int to = UiFocusRules.Next(s, node, d == 0 ? 1 : d == 2 ? -1 : 0, d == 1 ? 1 : d == 3 ? -1 : 0);
+            return to >= 0 && to < s.NodeCount ? to : -1;
+        }
+
+        private static bool Allowed(UiScene s, int node, int phase) => phase == 2 || (s.Nodes[node].Region == RegionNav) == (phase == 1);
 
         // Whether the d-pad finds a target of the page that way. The window's close stands at the top right and is the nearest "right" of anything near it, but it is the end of the
         // walk and not a place a row goes on to, so it counts as nothing.
@@ -773,8 +796,9 @@ namespace RealLifeOverhaul.Ui
             int n = Math.Min(3, m.WeekLabels.Length);
             const float lineH = 48f;
             float tileH = 88f + L(UiStyle.Small);   // the same in every language: a change of a longer language takes the second line, and the rail below holds the same rows
-            float title = L(UiStyle.Number), link = UiTokens.Control;
-            float h = UiTokens.S4 + title + UiTokens.S3 + (n > 0 ? tileH + UiTokens.S3 : 0f) + (Drawn(m.Line) ? lineH + UiTokens.S2 : 0f) + link + UiTokens.S2;
+            // An account with nothing to count has no tiles and no title over them: its card is the way to the studio and nothing else.
+            float title = n > 0 ? L(UiStyle.Number) : 0f, link = UiTokens.Control;
+            float h = UiTokens.S4 + (n > 0 ? title + UiTokens.S3 + tileH + UiTokens.S3 : 0f) + (Drawn(m.Line) ? lineH + UiTokens.S2 : 0f) + link + UiTokens.S2;
             if (y + h > bottom)
             {
                 return y;
@@ -782,10 +806,10 @@ namespace RealLifeOverhaul.Ui
             int card = Card(s, at, x, y, w, h);
             UiAt inCard = at.In(card);
             float ix = x + UiTokens.S4, iw = w - UiTokens.S8, cy = y + UiTokens.S4;
-            Line(s, inCard, ix, cy, iw, UiStyle.Number, UiRole.Text, m.WeekTitle, UiFlags.Label | UiFlags.Truncate);
-            cy += title + UiTokens.S3;
             if (n > 0)
             {
+                Line(s, inCard, ix, cy, iw, UiStyle.Number, UiRole.Text, m.WeekTitle, UiFlags.Label | UiFlags.Truncate);
+                cy += title + UiTokens.S3;
                 float tw = UiDraw.SnapDown((iw - UiTokens.S2 * (n - 1)) / n);
                 for (int i = 0; i < n; i++)
                 {
@@ -862,7 +886,7 @@ namespace RealLifeOverhaul.Ui
         private static void WhoToFollow(UiScene s, UiAt at, FlareFaceModel m, float x, float y, float w, float bottom)
         {
             FlareList list = m.Who;
-            const float row = WhoRow;
+            float row = WhoRow;
             float title = L(UiStyle.Number);
             int n = list.Count;
             while (n > 0 && y + UiTokens.S4 + title + UiTokens.S2 + n * row + UiTokens.S2 > bottom)
@@ -873,6 +897,9 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
+            // What the rows leave of the column is shared among them (a few pixels each at most), so the card ends at the column's foot and not a row's worth short of it.
+            float left = bottom - (y + UiTokens.S4 + title + UiTokens.S2 + n * row + UiTokens.S2);
+            row += Math.Min(UiTokens.S2, UiDraw.SnapDown(left / n));
             float h = UiTokens.S4 + title + UiTokens.S2 + n * row + UiTokens.S2;
             int card = Card(s, at, x, y, w, h);
             UiAt inCard = at.In(card);
@@ -893,7 +920,7 @@ namespace RealLifeOverhaul.Ui
                 Line(s, inRow, tx, cy + UiTokens.S2, tw, UiStyle.Title, UiRole.Text, r.Name, UiFlags.Truncate);
                 Line(s, inRow, tx, cy + UiTokens.S2 + UiTokens.S6, tw, UiStyle.Small, UiRole.Text2, r.Handle, UiFlags.Truncate);
                 UiDraw.Node(s, inCard, ix, cy, bx - UiTokens.S2 - ix, row, WhoCommand, i, face);
-                Pill(s, inCard, bx, cy + (row - UiTokens.ControlSmall) / 2f, bw, word, following ? PillKind.Quiet : PillKind.Cyan, WhoFollowCommand, i);
+                Pill(s, inCard, bx, cy + UiDraw.SnapDown((row - UiTokens.ControlSmall) / 2f), bw, word, following ? PillKind.Quiet : PillKind.Cyan, WhoFollowCommand, i);
                 cy += row;
             }
         }
@@ -954,7 +981,27 @@ namespace RealLifeOverhaul.Ui
             {
                 return Line(s, at, x, y, w, style, ink, text, UiFlags.Truncate);
             }
-            return UiDraw.Text(s, at, x, y, w, style, ink, text, UiFlags.Wrap | UiFlags.Truncate, lines);
+            return UiDraw.Text(s, at, x, y, Balanced(text, style, w, lines), style, ink, text, UiFlags.Wrap | UiFlags.Truncate, lines);
+        }
+
+        /// <summary>
+        /// The width words wrap in so that their lines are of one length and the last is never a character or a word alone: the narrowest width that keeps the lines the words
+        /// take at <paramref name="width"/> (a language that breaks between characters, Chinese, left "红。" on a line of its own), with a character's room to spare so the real
+        /// text engine, which measures a little differently, still wraps to the same lines. The width itself for words that fit one line or would be cut at <paramref name="most"/>.
+        /// </summary>
+        public static float Balanced(string text, UiStyle style, float width, int most)
+        {
+            int lines = UiTextRules.Lines(text, style, width, 0, out float _);
+            if (lines < 2 || lines > most)
+            {
+                return width;
+            }
+            float narrow = width;
+            while (narrow - 4f > width * 0.5f && UiTextRules.Lines(text, style, narrow - 4f, 0, out float _) == lines)
+            {
+                narrow -= 4f;
+            }
+            return Math.Min(width, narrow + UiTokens.S2);
         }
 
         /// <summary>A placeholder's words a step dimmer than the words typed over it.</summary>

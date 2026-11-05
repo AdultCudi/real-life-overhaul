@@ -284,25 +284,9 @@ namespace RealLifeOverhaul.Ui
             FlareStudioModel st = _m.Studio;
             int today = (int)(now / 1440);
             _m.Head = FlareText.T("reallife_flare_kit_studio_title");
-            _m.HeadLine = FlareText.Fill("reallife_flare_kit_studio_line", "tier", FlareText.Tier(file.Tier), "followers", FlareFeedRules.Count(file.Followers));
-            int gain = FlareFeedRules.WeekGain(file.History, file.Followers);
-            FlareFeedRules.Reach(file.Posts, today, out long week, out long before);
-            int change = FlareFeedRules.Change(week, before);
+            _m.HeadLine = null;   // its first tile is the followers and the sponsorship card is the tier: a head saying them again told them twice
             Brought(file, null, now, out int visitors, out long cents, out int visitorsBefore, out long centsBefore);
-            st.Labels = new[]
-            {
-                FlareText.T("reallife_flare_kit_fig_followers"), FlareText.T("reallife_flare_kit_fig_reach"), FlareText.T("reallife_flare_kit_fig_visitors"),
-                FlareText.T("reallife_flare_kit_fig_money")
-            };
-            st.Figures = new[] { FlareFeedRules.Count(file.Followers), FlareFeedRules.Count(week), FlareText.N(visitors), FlareText.Money(cents / 100) };
-            st.Deltas = new[]
-            {
-                FlareText.Fill("reallife_flare_kit_week_followers", "change", FlareText.Signed(gain)),
-                FlareText.Fill("reallife_flare_kit_week_reach", "change", FlareText.Signed(change)),
-                FlareText.Fill("reallife_flare_kit_week_before", "change", FlareText.Signed(visitors - visitorsBefore)),
-                FlareText.Fill("reallife_flare_kit_week_before", "change", Signed(cents - centsBefore))
-            };
-            st.Tones = new[] { Math.Sign(gain), Math.Sign(change), Math.Sign(visitors - visitorsBefore), Math.Sign(cents - centsBefore) };
+            FlareFigures.StudioTiles(WeekFacts(file, now), visitors, visitorsBefore, cents / 100, centsBefore / 100, Words, Money, st);
             st.LineTitle = FlareText.T("reallife_flare_kit_line_title");
             st.Line = FlareFeedRules.Line(file.History, file.Followers);
             Creator(st);
@@ -708,6 +692,7 @@ namespace RealLifeOverhaul.Ui
                     rivals = true;
                 }
                 ref FlareRow r = ref Add(_m.List, attack ? RowAct.Conversation : RowAct.Thread, p, attack ? "k:" + p.Name : FlareLiveRules.KeyOf(p));
+                _bodyAccounts.Add("k:" + p.Name);   // the card names the business: the side does not offer it to follow beside it
                 r.Kind = FlareRowKind.Card;
                 r.Icon = attack ? UiIcon.Warning : UiIcon.Megaphone;
                 r.Tint = attack ? UiRole.DangerText : UiRole.Chart2;
@@ -735,6 +720,7 @@ namespace RealLifeOverhaul.Ui
                 Author(p, out string name, out _, out string key, out _);
                 bool going = _flare.IsGoing(p.Id);
                 ref FlareRow r = ref Add(_m.List, RowAct.Going, p, key);
+                _bodyAccounts.Add(key ?? string.Empty);
                 r.Kind = FlareRowKind.Card;
                 r.Icon = UiIcon.Calendar;
                 r.Tint = UiRole.AccentText;
@@ -812,6 +798,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
+            bool fresh = FlareFigures.NewAccount(WeekFacts(file, now));   // nothing to count: the page says so once, in the donut's words
             c.DonutTitle = FlareText.T("reallife_flare_kit_donut_title");
             c.DonutEmpty = FlareText.T("reallife_flare_kit_donut_empty");
             if (_flare.FollowersInDistricts("me", _bandNames, _bandCounts, out int rest, out int total))
@@ -828,6 +815,15 @@ namespace RealLifeOverhaul.Ui
                 }
                 c.Rest = rest;
                 c.DonutRest = rest > 0 ? FlareText.Fill("reallife_flare_kit_donut_rest", "count", FlareText.N(rest)) : null;
+            }
+            else if (!fresh)
+            {
+                // Followers the city has not placed in a district yet: "nobody follows you" would contradict the followers the side counts, so the page draws no donut at all.
+                c.DonutTitle = c.DonutEmpty = null;
+            }
+            if (fresh)
+            {
+                return;   // no week of zeros beside the sentence
             }
             c.WeekTitle = FlareText.T("reallife_flare_kit_city_week");
             c.WeekLabels = new[] { FlareText.T("reallife_flare_kit_fig_seen"), FlareText.T("reallife_flare_kit_fig_visits"), FlareText.T("reallife_flare_kit_fig_takings") };

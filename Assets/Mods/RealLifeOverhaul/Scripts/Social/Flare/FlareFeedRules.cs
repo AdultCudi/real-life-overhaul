@@ -64,30 +64,7 @@ namespace RealLifeOverhaul.Flare
         }
 
         /// <summary>A count as a feed writes it: 842, 1.2K, 11.9K, 96K, 120K, 1.4M. The point is the invariant one.</summary>
-        public static string Count(long n)
-        {
-            if (n < 0)
-            {
-                return "-" + Count(-n);
-            }
-            if (n < 1000)
-            {
-                return n.ToString(CultureInfo.InvariantCulture);
-            }
-            if (n < 100000)
-            {
-                long tenths = n / 100;   // 11,950 is 11.9K: a count is never rounded up past what it is
-                return tenths % 10 == 0 ? (tenths / 10).ToString(CultureInfo.InvariantCulture) + "K"
-                    : (tenths / 10).ToString(CultureInfo.InvariantCulture) + "." + (tenths % 10).ToString(CultureInfo.InvariantCulture) + "K";
-            }
-            if (n < 1000000)
-            {
-                return (n / 1000).ToString(CultureInfo.InvariantCulture) + "K";
-            }
-            long m = n / 100000;
-            return m % 10 == 0 ? (m / 10).ToString(CultureInfo.InvariantCulture) + "M"
-                : (m / 10).ToString(CultureInfo.InvariantCulture) + "." + (m % 10).ToString(CultureInfo.InvariantCulture) + "M";
-        }
+        public static string Count(long n) => Ui.FlareFigures.Count(n);   // one writer of a count, shared with the kit face and its previews
 
         /// <summary>A post's words with the hash marks taken off its tags ("#lunch" reads "lunch"): the tags line under it carries them.</summary>
         public static string Plain(string text)
@@ -320,15 +297,7 @@ namespace RealLifeOverhaul.Flare
         }
 
         /// <summary>A change in whole per cent: from nothing to something is a hundred.</summary>
-        public static int Change(long now, long before)
-        {
-            if (before <= 0)
-            {
-                return now > 0 ? 100 : 0;
-            }
-            long c = (now - before) * 100 / before;
-            return c > 9999 ? 9999 : c < -100 ? -100 : (int)c;
-        }
+        public static int Change(long now, long before) => Ui.FlareFigures.Change(now, before);
 
         /// <summary>The people the player's own posts reached in the last week (ending today) and in the week before.</summary>
         public static void Reach(List<FlarePost> posts, int today, out long week, out long before)

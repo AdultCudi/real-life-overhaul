@@ -43,7 +43,8 @@ internal static partial class Program
             && fill.Contains("if (!AwaitsAnswer(file, p, mine, now))") && !fill.Contains("_flare.KitNotices();\n            _unseen") && fill.Contains("_badges[FlareFace.Notices] = _page == FlareFace.Notices ? 0 : _unseen;")
             && fill.Contains("int unread = _flare.UnreadMessages;") && fill.Contains("_badges[FlareFace.Messages] = _flare.UnreadMessages;"),
             "flare world: Live badges and heads read one source each (the notifications as Notified lists them, the director's unread messages), and an open offer or an unanswered review is a card, not also a line");
-        Check(fill.Contains("own = _page == FlareFace.Profile") && fill.Contains("labels = new[] { labels[1], labels[2] };") && fill.Contains("_m.Line = own ? null"),
+        string figures = PlayFile("Ui", "Flare", "FlareFigures.cs");
+        Check(fill.Contains("own = _page == FlareFace.Profile") && figures.Contains("labels = new[] { labels[1], labels[2] };") && fill.Contains("own || FlareFigures.NewAccount(facts) ? null"),
             "flare world: on the player's own profile the week beside it leaves out the followers and their line");
         // A page of its own opens with focus reset: on its first target, or on the nav entry that was pressed, from which right goes in (the focus rules are FlareOrderPage's).
         string screen = PlayFile("Ui", "Flare", "FlareScreen.cs"), face = PlayFile("Ui", "Flare", "FlareFace.cs");
@@ -59,7 +60,8 @@ internal static partial class Program
     // The nav's badge for each page is the count that page's own head says, and the same everywhere else.
     private static string FlareBadges(FlareFaceModel m, UiScene scene, string state)
     {
-        int notices = UiSamples.FlareNewNotices, messages = UiSamples.FlareUnreadMessages;
+        bool fresh = UiSamples.FlareWorldOf(state).NewPlayer;   // a new account has nothing unread
+        int notices = fresh ? 0 : UiSamples.FlareNewNotices, messages = fresh ? 0 : UiSamples.FlareUnreadMessages;
         int open = 0;   // the unread count of the conversation open: it is read, so the badge and the head leave it out
         for (int i = 0; m.Page == FlareFace.Messages && i < m.List.Count; i++)
         {

@@ -92,6 +92,10 @@ namespace RealLifeOverhaul.Ui
         private void PostRow(FlareFile file, FlarePost p, long now, bool comment = false)
         {
             Author(p, out string name, out string handle, out string key, out bool verified);
+            if (key != null)
+            {
+                _bodyAccounts.Add(key);   // the page names this account: the side does not offer it again
+            }
             ref FlareRow r = ref Add(_m.List, comment ? RowAct.None : RowAct.Thread, p, key);
             r.Kind = FlareRowKind.Post;
             r.Name = name;
@@ -124,8 +128,8 @@ namespace RealLifeOverhaul.Ui
             r.Comments = replies > 0 ? FlareFeedRules.Count(replies) : null;
             int reposts = FlareLiveRules.Shown(p.Reposts, p, now);
             r.Reposts = reposts > 0 ? FlareFeedRules.Count(reposts) : null;
-            int views = FlareLiveRules.Shown(p.Reach, p, now);
-            r.Views = views > 0 ? FlareFeedRules.Count(views) : null;
+            FlareFunnel did = p.Author == FlareAuthor.Player ? _flare.FunnelOfPost(p.Id) : null;   // the residents who saw it are among the views
+            r.Views = FlareFigures.Views(FlareLiveRules.Shown(p.Reach, p, now), did != null ? did.Seen : 0);
             ResultOf(file, p, now, ref r);
         }
 

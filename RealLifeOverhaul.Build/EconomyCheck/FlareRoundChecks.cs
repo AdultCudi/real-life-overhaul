@@ -17,6 +17,7 @@ internal static partial class Program
         FlareRoundWords();
         FlareOrderChecks();
         FlareTwiceChecks();
+        FlareWorldChecks();
     }
 
     // Every text the Flare screens say is in Portuguese and Chinese in those languages, not the English left in their place: each key the screens' entry names and each key the samples

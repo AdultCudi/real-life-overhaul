@@ -329,7 +329,7 @@ public static partial class UiPreviewRunner
             {
                 if (shot.Screen.Tour)
                 {
-                    TourOf(host, scene, focus);
+                    TourOf(host, scene, frame, focus);
                 }
                 else
                 {
@@ -444,21 +444,12 @@ public static partial class UiPreviewRunner
 
     // The pad's walk of a Flare screen drawn as a player takes it: from the first target, right first, then down, then left and up, on to the first target not been to, every stop joined to the
     // one it was pressed from by one real press of the game's own links (FlareFace.Reach). The log says how many of the screen's targets the walk met.
-    private static void TourOf(RectTransform parent, UiScene scene, int start)
+    private static void TourOf(RectTransform parent, UiScene scene, UiFrame frame, int start)
     {
         var order = new int[scene.NodeCount + 1];
         var from = new int[scene.NodeCount + 1];
         int met = FlareFace.Reach(scene, start, order, from);
-        var stops = new List<Vector2>(met);
-        var came = new List<int>(met);
-        var place = new int[scene.NodeCount];
-        for (int i = 0; i < met; i++)
-        {
-            place[order[i]] = i;
-            stops.Add(Centre(scene, order[i]));
-            came.Add(from[i] < 0 ? -1 : place[from[i]]);
-        }
-        DrawStops(parent, stops, came);
+        DrawReach(parent, scene, frame, order, from, met);   // UiPreviewRunner.FlareReach.cs: numbered markers by each target, short arrows between neighbours
         int top = 0;
         for (int i = 0; i < scene.NodeCount; i++)
         {

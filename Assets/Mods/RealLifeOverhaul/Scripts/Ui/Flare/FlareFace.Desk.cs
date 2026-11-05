@@ -53,7 +53,8 @@ namespace RealLifeOverhaul.Ui
             }
             if (!string.IsNullOrEmpty(b.Warning))
             {
-                int warn = UiDraw.Box(s, at, cx, cy, inner, WarningHeight, UiRole.WarnSoft, UiRole.None, UiTokens.RadiusLarge);
+                // A slate row like the rival's under it, the state said by the amber glyph (a large fill of the warning's colour is a brown band on the dark panel).
+                int warn = Card(s, at, cx, cy, inner, WarningHeight);
                 UiAt inWarn = at.In(warn);
                 UiDraw.Icon(s, inWarn, cx + UiTokens.S4, cy + (WarningHeight - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Warning, UiRole.WarnText, UiFlags.Middle, true);
                 UiDraw.TextMiddle(s, inWarn, cx + UiTokens.S4 + UiTokens.Icon + UiTokens.S3, cy, WarningHeight, inner - UiTokens.S12 - UiTokens.Icon, UiStyle.Body, UiRole.Text, b.Warning,
@@ -320,23 +321,31 @@ namespace RealLifeOverhaul.Ui
             cy += UiTokens.S3;
             if (c.Shown)
             {
-                // A new account has no followers to count: its band is as short as its words, and the week's figures stand in a row beside them.
+                // A new account has no followers to count: its band is as short as its words, and the week's figures stand in a row beside them. An account the city has not
+                // placed a follower of draws no donut and says nothing of one: the week's figures run across.
                 bool followers = c.Names.Length > 0;
-                float gap = UiTokens.S4, lw = UiDraw.SnapDown((inner - gap) * (followers ? 0.6f : 0.5f)), rw = inner - lw - gap;
+                bool donut = followers || !string.IsNullOrEmpty(c.DonutEmpty), week = c.WeekLabels.Length > 0;   // a new account has no week of zeros: its sentence stands alone
+                float gap = UiTokens.S4, lw = donut ? (week ? UiDraw.SnapDown((inner - gap) * (followers ? 0.6f : 0.5f)) : inner) : 0f, rw = donut ? (week ? inner - lw - gap : 0f) : inner;
                 int columns = followers ? 2 : 3;
                 float band = followers ? CityBandHeight : CityBandNew;
-                if (!followers && FigureLabelLines(c.WeekLabels, UiDraw.SnapDown((rw - UiTokens.S8 - UiTokens.S3 * (columns - 1)) / columns)) > 1)
+                if (week && !followers && FigureLabelLines(c.WeekLabels, UiDraw.SnapDown((rw - UiTokens.S8 - UiTokens.S3 * (columns - 1)) / columns)) > 1)
                 {
                     band += L(UiStyle.Small);   // a label of a longer language takes a second line
                 }
-                if (!followers && !string.IsNullOrEmpty(c.DonutEmpty))
+                if (donut && !followers)
                 {
                     // what the page says of its empty donut takes the lines a language needs (up to five)
                     float say = UiTokens.S4 + L(UiStyle.SectionHeader) + UiTokens.S3 + UiDraw.Snap(UiTextRules.WrappedHeight(c.DonutEmpty, UiStyle.Body, lw - UiTokens.S8, EmptyLines)) + UiTokens.S4;
                     band = Math.Max(band, UiDraw.Snap(say));
                 }
-                DonutCard(s, at, c, cx, cy, lw, band);
-                FiguresCard(s, at, c.WeekTitle, c.WeekFigures, c.WeekLabels, cx + lw + gap, cy, rw, band, columns);
+                if (donut)
+                {
+                    DonutCard(s, at, c, cx, cy, lw, band);
+                }
+                if (week)
+                {
+                    FiguresCard(s, at, c.WeekTitle, c.WeekFigures, c.WeekLabels, donut ? cx + lw + gap : cx, cy, rw, band, columns);
+                }
                 cy += band + UiTokens.S3;
             }
             List(s, at, m.List, cx, cy, inner + UiTokens.S3, y + h - cy, keys);   // with nothing in it the list says so once, in its own words

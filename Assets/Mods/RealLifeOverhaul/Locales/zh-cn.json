@@ -30370,7 +30370,6 @@
   "reallife_flare_kit_pick_thread": "选择一个会话",
   "reallife_flare_kit_pick_thread_body": "你的私信会在这里打开。",
   "reallife_flare_kit_view_profile": "主页",
-  "reallife_flare_kit_offer_line": "每条{money}，共{posts}条帖子",
   "reallife_flare_kit_accept": "接受{money}",
   "reallife_flare_kit_decline": "拒绝",
   "reallife_flare_kit_quick_calm": "冷静回复",
@@ -30395,7 +30394,6 @@
   "reallife_flare_kit_tab_media": "图片",
   "reallife_flare_kit_empty_profile_body": "你的帖子会显示在这里，以及它们带来的效果。",
   "reallife_flare_kit_post_title": "帖子",
-  "reallife_flare_kit_replies_count": "{count}条回复",
   "reallife_flare_kit_business_title": "你的企业",
   "reallife_flare_kit_business_line": "{district}的{kind}",
   "reallife_flare_kit_no_business": "还没有企业",
@@ -30425,7 +30423,6 @@
   "reallife_flare_kit_why_4_good": "店里干净整洁。",
   "reallife_flare_kit_why_4_poor": "店里不干净。",
   "reallife_flare_kit_studio_title": "创作中心",
-  "reallife_flare_kit_studio_line": "{tier}，{followers}位粉丝",
   "reallife_flare_kit_fig_money": "Flare收入",
   "reallife_flare_kit_line_title": "本周粉丝",
   "reallife_flare_kit_tier_title": "赞助等级",
@@ -31436,5 +31433,6 @@
   "reallife_flare_kit_funnel_bad": "{seen}人看到，劝退{kept}人",
   "reallife_flare_kit_funnel_more": "{interested}人感兴趣，{followed}人关注了你",
   "reallife_flare_kit_results_ads": "你的广告",
-  "reallife_flare_kit_result_ad": "你为{business}投放的广告"
+  "reallife_flare_kit_result_ad": "你为{business}投放的广告",
+  "reallife_flare_kit_section_busy": "今日帖子最多的街区"
 }

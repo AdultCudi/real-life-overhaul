@@ -299,7 +299,7 @@ namespace RealLifeOverhaul.Ui
                 float nh = UiDraw.Snap(UiTextRules.WrappedHeight(k.Note, UiStyle.Body, w, 2));
                 if (draw)
                 {
-                    UiDraw.Text(s, at, x, cy, w, UiStyle.Body, k.NoteBad ? UiRole.DangerText : UiRole.Text2, k.Note, UiFlags.Wrap | UiFlags.Truncate, 2);
+                    UiDraw.Text(s, at, x, cy, Balanced(k.Note, UiStyle.Body, w, 2), UiStyle.Body, k.NoteBad ? UiRole.DangerText : UiRole.Text2, k.Note, UiFlags.Wrap | UiFlags.Truncate, 2);
                 }
                 cy += nh + UiTokens.S3;
             }
