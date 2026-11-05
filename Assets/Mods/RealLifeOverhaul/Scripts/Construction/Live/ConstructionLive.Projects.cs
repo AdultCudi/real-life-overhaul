@@ -62,6 +62,8 @@ namespace RealLifeOverhaul.Construction
             {
                 case ProjectStage.Design when ConstructionDirector.NeedsNotice(p):
                     return ConstructionText.T("reallife_bld_next_permit");
+                case ProjectStage.Design when p.PlansDone && ConstructionDirector.VarianceKind(p) && p.Variance == VarianceState.Pending:
+                    return ConstructionText.T("reallife_ui_cons_next_variance_wait", "day", ConstructionText.Day(p.VarianceDay));
                 case ProjectStage.Design:
                     return ConstructionText.T(!p.PlansDone ? p.PlansDay > 0 ? "reallife_bld_next_wait_plans" : "reallife_bld_next_plans"
                         : !p.Engineered && PlansRules.NeedsEngineer(p.Storeys, p.Kind) ? p.EngineerDay > 0 ? "reallife_bld_next_wait_engineer" : "reallife_bld_next_engineer"
@@ -69,6 +71,8 @@ namespace RealLifeOverhaul.Construction
                 case ProjectStage.Planning:
                     return ConstructionText.T(p.Planning == PlanningState.Refused ? "reallife_bld_next_refused"
                         : p.Planning == PlanningState.AppealLost ? "reallife_bld_next_redraw" : "reallife_bld_next_wait_decision");
+                case ProjectStage.Ready when ConstructionDirector.FinishOpen(p) && p.Finish == 0 && p.FinishBy > 0:
+                    return ConstructionText.T("reallife_ui_cons_next_finish", "day", ConstructionText.Day(p.FinishBy));
                 case ProjectStage.Ready:
                     return ConstructionText.T(Director.StartBlock(p) == null ? "reallife_bld_next_start" : ConstructionDirector.HireKind(p) && Director.HireBlock(p) == null
                         ? "reallife_bld_next_hire" : "reallife_bld_next_prepare");
@@ -258,7 +262,9 @@ namespace RealLifeOverhaul.Construction
                     box.Row("reallife_bld_row_value", ConstructionText.Money(value));
                 }
             }
+            FinishBox(box, p);
             KitRow buttons = box.ButtonRow();
+            VarianceBox(box, p, buttons);
             if (!p.PlansDone)
             {
                 if (asked)
@@ -351,6 +357,7 @@ namespace RealLifeOverhaul.Construction
             box.Section("reallife_bld_sec_planning");
             box.Row("reallife_bld_row_applied", ConstructionText.Day(p.PlanningDay));
             KitRow buttons = box.ButtonRow();
+            VarianceBox(box, p, buttons);
             switch (p.Planning)
             {
                 case PlanningState.Submitted:
@@ -387,6 +394,7 @@ namespace RealLifeOverhaul.Construction
             box.Section("reallife_bld_sec_ready");
             box.Row("reallife_bld_row_estimate", ConstructionText.Money(p.Estimate));
             RentLines(box, p);
+            FinishBox(box, p);
             if (p.Kind == ProjectKind.Contract)
             {
                 box.Row("reallife_bld_row_contract", ConstructionText.Money(p.ClientValue));
@@ -502,6 +510,7 @@ namespace RealLifeOverhaul.Construction
             box.Meter("reallife_bld_row_progress", (float)progress, Mathf.RoundToInt((float)progress * 100f) + "%", CellTone.Plain);
             box.RowPair("reallife_bld_row_started", ConstructionText.Day(p.StartDay), "reallife_bld_row_due", ConstructionText.Day(p.DueDay));
             box.Row("reallife_bld_row_crews", state.CrewsOn(p.Id).ToString(), state.CrewsOn(p.Id) == 0 ? CellTone.Red : CellTone.Plain);
+            FinishBox(box, p);
             box.Section("reallife_bld_sec_materials");
             for (int m = 0; m < (int)Material.Count; m++)
             {
@@ -828,6 +837,7 @@ namespace RealLifeOverhaul.Construction
             {
                 HiredRows(box, p);   // the builder, the contract and what it paid back (ConstructionApp.Hire.cs)
             }
+            FinishBox(box, p);
             HedgeEndRow(box, p);   // what the hedge saved or cost
             KitRow buttons = box.ButtonRow();
             if (p.LoanOwed > 0 || p.InvestorOwed > 0)

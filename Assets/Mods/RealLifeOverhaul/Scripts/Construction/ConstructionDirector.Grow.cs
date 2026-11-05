@@ -253,6 +253,10 @@ namespace RealLifeOverhaul.Construction
                         Day = day, Design = design, Price = SitePrice(firstLot.Id, count)
                     };
                     g.Rival = DevelopmentRules.Rival(g.Lot, g.Use);
+                    if (!holding)
+                    {
+                        g.Tier = BuilderFinish(g.Rival, g.Price, DemandFor(g.Use, g.Lot));   // a builder picks its finish by what it can afford (the land's price stands for the build's size)
+                    }
                     g.Holding = holding ? _holdings[RedevelopRules.PickOf(_state.Seed, day, 0x67, _holdings.Count)] : string.Empty;
                     g.Until = day + GrowRules.PlansDays(_state.Seed, g.Id);
                     _state.Grows.Add(g);
@@ -484,6 +488,7 @@ namespace RealLifeOverhaul.Construction
                 return;
             }
             int hours = PlansRules.Hours(g.Use, Math.Max(1, d.TotalSqm), storeys, ProjectKind.Plot);
+            hours = Math.Min(BuildCatalogue.HoursMost, FinishRules.Hours(hours, (int)g.Tier));   // a premium finish takes a developer longer, a basic one less
             g.Stage = GrowStage.Building;
             g.Until = rush ? day : PlanningRules.AfterWorkingDays(day, TenderRules.StandardDays(hours));
             g.SiteId = SiteCount() < BuildCatalogue.SitesMost
@@ -544,6 +549,10 @@ namespace RealLifeOverhaul.Construction
             g.Handed = day;
             _state.CityLandTax += LandRules.LandTax(g.Price, Math.Max(0, day - g.Day), ConstructionGame.DaysPerYear, false, Permits());
             _state.Rivals[g.Rival].Built++;
+            if (g.Owner == GrowOwner.Builder)
+            {
+                _state.Rivals[g.Rival].Gained += FinishRules.Gain(g.Price, (int)g.Tier);   // what a builder clears on the land it built on, by its finish
+            }
             RivalNews(g.Rival, RivalDeveloped, 1);   // the district grew: its builder, and a little every listed builder
             int quality = g.Owner == GrowOwner.Holding ? GrowRules.TierQuality[(int)g.Tier] : Math.Min(95, _state.Rivals[g.Rival].Reputation + 10);
             NoteFinished(AwardEntry.OfDevelopers, null, g.Lot, site.Street, site.Number, g.Use, g.Rival, quality, 0, day);

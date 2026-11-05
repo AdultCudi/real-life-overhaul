@@ -111,6 +111,12 @@ internal static partial class Program
             ConstructionDebug(args[1], float.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture), args.Length > 3 ? args[3] : "en");
             return 0;
         }
+        if (args.Length == 1 && args[0] == "--construction-new")
+        {
+            ConstructionNewChecks();   // the fit-out finish, the height variance, land auctions and offers, rival worth: each over 720 days game-free (ConstructionNewChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--construction-ui")
         {
             ConstructionKitChecks();   // the rules the screen stands on, then the screen

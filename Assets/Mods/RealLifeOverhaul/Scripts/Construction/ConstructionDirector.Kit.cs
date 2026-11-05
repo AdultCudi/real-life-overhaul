@@ -56,6 +56,9 @@ namespace RealLifeOverhaul.Construction
         {
             LevelDay();
             AsksDay(day);
+            FinishDay(day);
+            VarianceDayPass(day);
+            AuctionDay(day);
         }
 
         private void LevelDay()

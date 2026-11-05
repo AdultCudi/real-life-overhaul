@@ -200,6 +200,15 @@ namespace RealLifeOverhaul.Construction
         public int Grow;                             // Let it grow's tier and one (GrowTier); 0 for a project the player planned themselves
         public int Park;                             // a car park's way of being laid out, 1 to 4 (CarParkRules.Codes); 0 for any other project
 
+        public int Finish;                           // the fit-out finish and one (FinishRules): 0 while not chosen, which reads as the standard finish
+        public int FinishBy;                         // the last day to choose it before the standard finish is taken; 0 until permission is granted
+        public bool FinishFixed;                     // chosen for good: the site is set out on it, or the window closed
+        public bool FinishRented;                    // the finished building's deed has been given the finish's rent
+        public VarianceState Variance;               // a height variance asked of the council (VarianceRules)
+        public int VarianceDay;                      // the day the council hears it; 0 for none
+        public int VarianceFloors;                   // the floors it was asked for
+        public int VarianceAyes, VarianceNoes;       // the council's vote, -1 where the planners decided
+
         public bool Live => Stage != ProjectStage.Finished && Stage != ProjectStage.Abandoned;
 
         /// <summary>True for the player's own building put up by one of the city's builders under contract (a refit or a demolition paid at once by one is not).</summary>
@@ -279,6 +288,8 @@ namespace RealLifeOverhaul.Construction
         public int Reputation;
         public int Won, Lost, Built;
         public int Jobs;                             // the player's own contracts it has been hired for
+        public long Gained;                          // money it has made on land and works beyond its record's means (AuctionRules.Worth)
+        public int VarianceAsked, VarianceGranted;   // height variances it has asked the council for and been given
     }
 
     /// <summary>A development of the city's developers already handed to the district, or one shown going up, by its lot.</summary>

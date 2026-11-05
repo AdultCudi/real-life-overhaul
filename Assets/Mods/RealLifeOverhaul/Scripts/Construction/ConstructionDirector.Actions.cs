@@ -163,7 +163,8 @@ namespace RealLifeOverhaul.Construction
             DevFile dev = _state.Development(lot);
             return (dev != null && (dev.Handed || dev.SiteId > 0 || dev.Design == NoDesign || dev.Public)) || _state.CityRedevOn(lot) != null   // or the city redevelops it
                    || GrowUnderWayOn(lot)   // or the city's growth builds there
-                   || ParkUnderWayOn(lot);  // or one of its builders has a car park there
+                   || ParkUnderWayOn(lot)   // or one of its builders has a car park there
+                   || AuctionOn(lot);       // or the city has it under the hammer
         }
 
         /// <summary>A lot bought outright at its price. Returns a text key.</summary>
