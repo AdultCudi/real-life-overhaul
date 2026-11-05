@@ -14,6 +14,13 @@ namespace RealLifeOverhaul.Nav
     {
         private Action<bool> _onMap, _mapSeen;
         private bool _mapOpen;
+        private NavRouteLabel _labelSent;
+
+        /// <summary>
+        /// Where the interface draws the label on the route's line over the open city map: called with the label whenever it changes (a route found, the map opened) and with
+        /// <see cref="NavRouteLabel.On"/> false once there is none or the map has shut. Set by the interface while its map panels are on, else null.
+        /// </summary>
+        public static Action<NavRouteLabel> RouteLabelTo;
 
         // The game's own event, and the slow tick if the event was missed. Nothing thrown here reaches the game.
         private void OnMap(bool open)
@@ -34,6 +41,8 @@ namespace RealLifeOverhaul.Nav
         private void MapToggled(bool open)
         {
             _mapOpen = open;
+            RouteLabelKeep();
+            OpenPicture(open && !_voogle && Settings.Map25);
             if (_broken || _voogle || !Settings.Gps || _mapGaveUp)
             {
                 if (_map != null)
@@ -64,14 +73,47 @@ namespace RealLifeOverhaul.Nav
                 _map.Clicks = true;
                 _map.Open(open);
             }
+            ArrangeMap();   // both are there now: the picture first, the route over it
         }
 
-        // The map check after the map shut (Diagnostics/SessionWatch.Map): the route's object off with the map.
+        // The label for the line on the map: the middle of the line as drawn, with the minutes and the way to go the minimap's block says. Handed over only when one of them changed
+        // (the map pauses the game, so that is a route found or the map opened), and taken back when the route is gone or the map has shut. Four times a second and on the map's event.
+        private void RouteLabelKeep()
+        {
+            Action<NavRouteLabel> to = RouteLabelTo;
+            if (to == null)
+            {
+                _labelSent.On = false;
+                return;
+            }
+            var now = new NavRouteLabel { Minutes = _minutesWords, Distance = _distanceWords, OnFoot = _routeOnFoot };
+            now.On = _mapOpen && _map != null && _phase == Phase.Routed && !string.IsNullOrEmpty(_minutesWords) && LineMiddle(out now.At);
+            bool same = now.On == _labelSent.On
+                        && (!now.On || (now.Minutes == _labelSent.Minutes && now.Distance == _labelSent.Distance && now.OnFoot == _labelSent.OnFoot
+                                        && (now.At - _labelSent.At).sqrMagnitude < 1f));
+            if (same)
+            {
+                return;
+            }
+            _labelSent = now;
+            to(now);
+        }
+
+        // The point halfway along the line drawn on the map: on the line itself, so the label never floats off it.
+        private bool LineMiddle(out Vector3 middle)
+        {
+            bool found = NavMath.Halfway(_lineX, _lineY, _lineZ, _lineCount, out float x, out float y, out float z);
+            middle = new Vector3(x, y, z);
+            return found;
+        }
+
+        // The map check after the map shut (Diagnostics/SessionWatch.Map): the route's object off with the map, and the 2.5D picture, its texture, the game's
+        // camera's mask and tilt and the tints given back (what the mod draws for the open map is one part of it).
         private int MapLook(StringBuilder line)
         {
             bool shown = _map != null && _map.gameObject.activeSelf;
-            line?.Append("route on the map: ").Append(_mapOpen ? "still as for the open map" : shown ? "its object still shown" : "off with the map");
-            return _mapOpen || shown ? 1 : 0;
+            line?.Append("route on the map: ").Append(_mapOpen ? "still as for the open map" : shown ? "its object still shown" : "off with the map").Append("; ");
+            return (_mapOpen || shown ? 1 : 0) + Map25Look(line);
         }
 
         // Two clicks on one spot of the open map: that spot is the destination.

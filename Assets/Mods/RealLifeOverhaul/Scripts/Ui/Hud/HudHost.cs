@@ -15,6 +15,12 @@ namespace RealLifeOverhaul.Ui
         public Action<int> Pressed;        // an action's index, pressed with the mouse; the game reads its keys itself
         public bool Dirty = true;          // its model changed: laid out again at the next frame
 
+        // A follower of a look of its own (a district's name and figure on the map): drawn by this instead of the world prompt's layout, in a box of this size, and kept off
+        // the rectangle given in px of the layout (a docked panel) when there is one.
+        public Action<UiScene> Draw;
+        public float Width, Height;
+        public float AvoidX, AvoidY, AvoidW, AvoidH;
+
         internal UiView View;
         internal readonly UiScene Scene = new UiScene();
         internal Vector2 At = new Vector2(float.NaN, float.NaN);
@@ -193,6 +199,18 @@ namespace RealLifeOverhaul.Ui
             return f;
         }
 
+        /// <summary>
+        /// A small piece of a look of its own kept beside its point (a name and a figure over a district of the map): <paramref name="draw"/> lays it out once into a box of
+        /// <paramref name="width"/> by <paramref name="height"/> px, and it stays off the rectangle given in px of the layout. It takes no press.
+        /// </summary>
+        public HudFollower Follow(float width, float height, Action<UiScene> draw, Func<Vector3> point, float avoidX, float avoidY, float avoidW, float avoidH)
+        {
+            var f = new HudFollower { Width = width, Height = height, Draw = draw, Point = point, AvoidX = avoidX, AvoidY = avoidY, AvoidW = avoidW, AvoidH = avoidH };
+            f.View = new UiView(_rect, "Tag") { Scale = _scale, Ring = false };
+            _followers.Add(f);
+            return f;
+        }
+
         /// <summary>A world prompt taken away.</summary>
         public void Unfollow(HudFollower f)
         {
@@ -265,6 +283,9 @@ namespace RealLifeOverhaul.Ui
         }
 
         private bool ModalUp => _modalRoot != null && _modalRoot.activeSelf;
+
+        /// <summary>The host of the modal piece while one is up, else null: whoever opened a piece asks whether it is still the one on show before it ends it.</summary>
+        public UiHost ModalHost => ModalUp ? _modal : null;
 
         private void Update()
         {
@@ -431,16 +452,24 @@ namespace RealLifeOverhaul.Ui
         // A world prompt beside its point: laid out when its model changed, then only moved; one projection a frame.
         private void Place(HudFollower f)
         {
-            if (f.Model == null || f.Point == null)
+            if ((f.Model == null && f.Draw == null) || f.Point == null)
             {
                 return;
             }
-            float h = UiWorldPrompt.Height(f.Model);
+            float width = f.Draw != null ? f.Width : UiWorldPrompt.Width;
+            float h = f.Draw != null ? f.Height : UiWorldPrompt.Height(f.Model);
             if (f.Dirty)
             {
-                f.Scene.Begin("world prompt", UiWorldPrompt.Width, h, true);
+                f.Scene.Begin("world prompt", width, h, true);
                 f.Scene.Floats = true;
-                UiWorldPrompt.Lay(f.Scene, UiAt.Screen, f.Model, 0f, 0f);
+                if (f.Draw != null)
+                {
+                    f.Draw(f.Scene);
+                }
+                else
+                {
+                    UiWorldPrompt.Lay(f.Scene, UiAt.Screen, f.Model, 0f, 0f);
+                }
                 f.View.Write(f.Scene, false);
                 f.Dirty = false;
             }
@@ -452,9 +481,11 @@ namespace RealLifeOverhaul.Ui
             Vector3 screen = camera.WorldToScreenPoint(f.Point());
             UiFrame frame = Frame();
             UiHudRules.ToLayout(screen.x, screen.y, UnityEngine.Screen.width, UnityEngine.Screen.height, frame.Width, frame.Height, out float px, out float py);
-            UiHudRules.Beside(px, py, screen.z > 0f, UiWorldPrompt.Width, h, frame.Width, frame.BandY, _leftX, _leftY, _leftW, _leftH, out float x, out float y);
+            bool own = f.AvoidW > 0f;   // a docked panel of its own to keep off, else the HUD's left column
+            UiHudRules.Beside(px, py, screen.z > 0f, width, h, frame.Width, frame.BandY, own ? f.AvoidX : _leftX, own ? f.AvoidY : _leftY, own ? f.AvoidW : _leftW, own ? f.AvoidH : _leftH,
+                out float x, out float y);
             UiHudModel hud = _screen.Model;
-            UiHudRules.Clear(ref x, ref y, UiWorldPrompt.Width, h, frame.Width, hud.AvoidX, hud.AvoidY, hud.AvoidW, hud.AvoidH);   // and off the minimap's card
+            UiHudRules.Clear(ref x, ref y, width, h, frame.Width, hud.AvoidX, hud.AvoidY, hud.AvoidW, hud.AvoidH);   // and off the minimap's card
             var at = new Vector2(x * _scale, -y * _scale);
             if (at != f.At)
             {

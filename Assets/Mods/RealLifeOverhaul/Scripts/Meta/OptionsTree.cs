@@ -318,8 +318,10 @@ namespace RealLifeOverhaul.Meta
                     .Also("pedestrians cars road tow truck wreck recovery braking parking park pull out drivers"),
                 S("transit").For("transport").Opts("transit_buses").Opt("transit_people", "transit_buses").Opts("transit_subway").Also("bus metro train public transport"),
                 S("taxi").For("taxi").Opts("transit_taxi_call").Also("cab cabs ride"),
-                S("nav").For("navigation").Main("nav_minimap").Opts("nav_rotate", "nav_size", "nav_zoom", "nav_base").FreeOpts("nav_gps").Opt("nav_other_route", "nav_gps")
-                    .FreeOpts("map_places_shown", "special_names").Also("map route satnav directions destination names building buildings"),
+                S("nav").For("navigation").Main("nav_minimap").Opts("nav_rotate", "nav_size", "nav_zoom", "nav_base", "nav_minimap25").FreeOpts("nav_gps")
+                    .Opt("nav_other_route", "nav_gps").Also("map route satnav directions destination names building buildings blocks tilt flat perspective"),
+                S("citymap").Guide("navigation").Opts("nav_map25", "map_places_shown", "special_names")
+                    .Also("map city places filters route satnav directions destination names search building buildings blocks tilt flat perspective"),
                 S("districtview").For("districtview").Opts("district_view")
                     .Also("district districts neighbourhood neighbourhoods neighborhood map layer layers stats statistics wealth rent prices footfall crime standing coverage "
                         + "internet competition council"),

@@ -143,6 +143,19 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--map25")
+        {
+            Map25Checks();   // the 2.5D map's game-free parts alone (Map25Checks.cs): RLO_MAP25_REPORT=1 prints the figures
+            MinimapChecks();   // and the minimap's place, order and avoid rect it must leave as the HUD fix has them (UiMinimapChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--map5")
+        {
+            Map5Checks();   // the city map's panels on the kit, game-free parts alone (Map5Checks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--kit-prompt")
         {
             KitPromptChecks();   // (the keys' prompts and the app tray alone, while working on them: KitPromptChecks.cs)
@@ -681,6 +694,8 @@ internal static partial class Program
         Applications();
         OwedAndLegal();
         Bounds();
+        Map25Checks();
+        Map5Checks();
         Gate();
         Terms();
         Fee();

@@ -37,7 +37,10 @@ namespace RealLifeOverhaul.Nav
         private float _downAt = -10f, _tapAt = -10f;
         private Vector2 _downPlace, _tapPlace;
         private bool _downOnInterface;
-        private bool _failed;
+        private bool _failed, _lineHidden;
+
+        /// <summary>The object, for the one place that decides where the marker layer's children stand (<see cref="NavMapLayers"/>).</summary>
+        public RectTransform Rect => _rect;
 
         /// <summary>Whether a double click sets a destination.</summary>
         public bool Clicks;
@@ -57,8 +60,7 @@ namespace RealLifeOverhaul.Nav
             var made = new GameObject(ObjectName, typeof(RectTransform));
             made.SetActive(false);
             var rect = (RectTransform)made.transform;
-            rect.SetParent(layer, false);
-            rect.SetAsFirstSibling();   // under every marker
+            rect.SetParent(layer, false);   // where it stands among the layer's children is the director's to say (NavMapLayers): under every marker, over the 2.5D picture
             rect.anchorMin = rect.anchorMax = rect.pivot = Vector2.zero;
             rect.sizeDelta = Vector2.zero;
             var map = made.AddComponent<NavCityMap>();
@@ -117,6 +119,20 @@ namespace RealLifeOverhaul.Nav
             if (_failed || _count < 2)
             {
                 return;
+            }
+            if (NavMap25.PictureStands)
+            {
+                if (!_lineHidden)
+                {
+                    _lineHidden = true;
+                    _line.Clear();   // the 2.5D picture draws the route itself, on the ground, with its casing and its faint copy over the blocks
+                }
+                return;
+            }
+            if (_lineHidden)
+            {
+                _lineHidden = false;
+                _stale = true;
             }
             try
             {

@@ -1137,6 +1137,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_ui_test_buy_switch", () => Ui.UiDirector.Instance?.TestBuySwitch())
                 .AddButton("reallife_ui_test_pause_menu", () => Ui.UiDirector.Instance?.TestPauseMenu())
                 .AddButton("reallife_ui_test_pause_switch", () => Ui.UiDirector.Instance?.TestPauseSwitch())
+                .AddButton("reallife_ui_test_map_open", () => Ui.UiDirector.Instance?.TestMapOpen())
+                .AddButton("reallife_ui_test_map_switch", () => Ui.UiDirector.Instance?.TestMapSwitch())
                 .AddButton("reallife_ui_test_persona", () => Ui.UiDirector.Instance?.TestPersona())
                 .AddButton("reallife_ui_test_rivals", () => Ui.UiDirector.Instance?.TestRivals())
                 .AddButton("reallife_ui_test_market", () => Ui.UiDirector.Instance?.TestMarket())
@@ -1342,6 +1344,10 @@ namespace RealLifeOverhaul
                     v => Settings.MinimapZoom = v, Meta.SettingsTable.SliderPercent)
                 .AddToggle(Settings.MinimapBaseId, "reallife_nav_base", Settings.MinimapBase,
                     v => Settings.MinimapBase = v)
+                .AddToggle(Settings.Minimap25Id, "reallife_nav_minimap25", Settings.Minimap25,
+                    v => Settings.Minimap25 = v)
+                .AddToggle(Settings.Map25Id, "reallife_nav_map25", Settings.Map25,
+                    v => Settings.Map25 = v)
                 .AddButton("reallife_nav_test_station", () => Nav.NavDirector.Instance?.TestStation())
                 .AddButton("reallife_nav_test_far", () => Nav.NavDirector.Instance?.TestFar())
                 .AddButton("reallife_nav_test_clear", () => Nav.NavDirector.Instance?.TestClear())
@@ -1783,6 +1789,8 @@ namespace RealLifeOverhaul
             Guard.Step("Nav.NavHud", () => Nav.NavHud.Logger = context.Logger);
             Guard.Step("Nav.NavBase", () => Nav.NavBase.Logger = context.Logger);
             Guard.Step("Nav.NavCityMap", () => Nav.NavCityMap.Logger = context.Logger);
+            Guard.Step("Nav.NavScene", () => Nav.NavScene.Logger = context.Logger);
+            Guard.Step("Nav.NavMap25", () => Nav.NavMap25.Logger = context.Logger);
             Guard.Step("Nav.NavDirector", () => Nav.NavDirector.Logger = context.Logger);
             Guard.Step("Nav.NavDirector", () => Guard.Add<Nav.NavDirector>(_root));
             Guard.Step("CivicDirector", () => Guard.Add<CivicDirector>(_root));   // its own cast of five

@@ -100,6 +100,7 @@ namespace RealLifeOverhaul.Ui
             PauseKits.Remove(why);
             ShellNotices.Remove(why);
             ActivityKit.Remove(why);
+            MapKits.Remove(why);
             HudLive.Remove(why);
         }
 
@@ -170,6 +171,7 @@ namespace RealLifeOverhaul.Ui
                 PauseKits.Rearm();
                 ShellNotices.Rearm();
                 ActivityKit.Rearm();
+                MapKits.Rearm();
                 HudLive.Rearm();
                 _said = 0;
                 _waited = 0;
@@ -218,6 +220,7 @@ namespace RealLifeOverhaul.Ui
             PauseKits.Install();
             ShellNotices.Install();
             ActivityKit.Install();
+            MapKits.Install();
             HudLive.Install();
             if (UiScreenSwitches.On("phone"))
             {
@@ -245,7 +248,8 @@ namespace RealLifeOverhaul.Ui
                    + WorldKits.State + ", "
                    + EconoViewKit.State + ", the phone (" + PhoneKit.State + "), " + EmployeesKit.State + ", " + PersonaKit.State + ", " + UniformsKit.State + ", " + RivalsKit.State + ", "
                    + MarketKit.State + ", " + DialogKits.State + ", "
-                   + ShellBoxes.States() + ", " + ShellNotices.States() + ", " + ActivityKit.States() + ", the HUD (" + HudLive.State + "), " + BuyKits.States() + ", " + PauseKits.States()
+                   + ShellBoxes.States() + ", " + ShellNotices.States() + ", " + ActivityKit.States() + ", " + MapKits.States() + ", the HUD (" + HudLive.State + "), "
+                   + BuyKits.States() + ", " + PauseKits.States()
                    + ", pages (" + ShellPages.States() + "), desk sessions (" + (Settings.LivingDesks ? "over the game's panel as each opens" : "off")
                    + "); the full menu's frame while an app on the kit shows; from Options, Tests: the gallery and each screen.";
         }

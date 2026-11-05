@@ -322,6 +322,16 @@ internal static partial class Program
         Check(NavMath.Classify(90f) == NavTurnKind.Left && NavMath.Classify(-90f) == NavTurnKind.Right && NavMath.Classify(120f) == NavTurnKind.Left, "turn left and right");
         Check(NavMath.Classify(170f) == NavTurnKind.UTurn && NavMath.Classify(-155f) == NavTurnKind.UTurn, "a U-turn either way");
         Check(NavMath.RoundMetres(3f) == 10 && NavMath.RoundMetres(44f) == 40 && NavMath.RoundMetres(196f) == 200 && NavMath.RoundMetres(430f) == 450 && NavMath.RoundMetres(1930f) == 1900, "distances as a satnav says them");
+        // The label on the route drawn on the city map stands halfway along the line by its length, on the line.
+        float[] hx = { 0f, 10f, 30f }, hy = { 0f, 0f, 4f }, hz = { 0f, 0f, 0f };
+        Check(NavMath.Halfway(hx, hy, hz, 3, out float mx, out float my, out float mz) && Near(mx, 15f) && Near(my, 1f) && Near(mz, 0f), "the label's place: halfway along a straight line of 30 m is 15 m on, at the height the line has there");
+        float[] lx = { 0f, 0f, 10f }, ly = { 5f, 5f, 5f }, lz = { 0f, 10f, 10f };
+        Check(NavMath.Halfway(lx, ly, lz, 3, out mx, out my, out mz) && Near(mx, 0f) && Near(mz, 10f), "the label's place: halfway along an L of 10 m and 10 m is its corner");
+        float[] ux = { 0f, 60f, 60f }, uz = { 0f, 0f, 20f };
+        Check(NavMath.Halfway(ux, new float[3], uz, 3, out mx, out my, out mz) && Near(mx, 40f) && Near(mz, 0f), "the label's place: halfway along a leg of 60 m and one of 20 m is on the first leg, 40 m on");
+        Check(!NavMath.Halfway(hx, hy, hz, 1, out mx, out my, out mz) && !NavMath.Halfway(null, hy, hz, 3, out mx, out my, out mz) && !NavMath.Halfway(new float[] { 5f, 5f }, new float[2], new float[] { 5f, 5f }, 2, out mx, out my, out mz)
+              && !NavMath.Halfway(hx, hy, hz, 9, out mx, out my, out mz), "the label's place: no line, one point, no length or a count past the arrays has none");
+        Check(NavMath.Halfway(new float[] { 0f, 4f, 4f }, new float[] { 0f, 0f, 0f }, new float[] { 0f, 0f, 0f }, 3, out mx, out my, out mz) && Near(mx, 2f), "the label's place: a line whose last point repeats its one before still has its middle");
     }
 
     private static void SearchWholeAndSliced()

@@ -28,6 +28,9 @@ namespace RealLifeOverhaul.Districts
         public long Value;                      // money a square metre
         public int Traffic;                     // tenths of the game's traffic index, averaged over the buildings that are not homes
         public int Businesses, Mine, Rivals;
+        public int Residents = -1;              // the living population's people there, or -1 where it does not run
+        public long LetArea, EmptyArea;         // square metres of the buildings that are not homes, and of those standing empty (to let, with no business)
+        public readonly int[] Vacant = new int[4];   // buildings standing empty by kind: retail, office, home, warehouse (VacantKind)
         public readonly List<KeyValuePair<string, int>> Types = new List<KeyValuePair<string, int>>(3);   // the three kinds of business most open there
 
         // From the other features, on each refresh (DistrictBridges).
@@ -192,6 +195,8 @@ namespace RealLifeOverhaul.Districts
                 index[d.Id] = i;
                 types[i] = new Dictionary<string, int>(16, StringComparer.Ordinal);
                 d.Buildings = d.Businesses = d.Mine = d.Rivals = 0;
+                d.LetArea = d.EmptyArea = 0;
+                Array.Clear(d.Vacant, 0, d.Vacant.Length);
                 d.Types.Clear();
                 NeighborhoodData data = null;
                 try
@@ -245,10 +250,17 @@ namespace RealLifeOverhaul.Districts
                 {
                     // (a building of a kind the game's size or type data does not know: left out of the averages)
                 }
+                bool empty = reg.AvailableForRent && !reg.RentedByPlayer && (string.IsNullOrEmpty(reg.businessTypeName) || reg.businessTypeName == Empty);
                 if (!home)
                 {
                     traffic[i, 0] += building.trafficIndex;
                     traffic[i, 1]++;
+                    d.LetArea += sqm;
+                    d.EmptyArea += empty ? sqm : 0;
+                }
+                if (empty)
+                {
+                    d.Vacant[VacantKind(building.BuildingType)]++;
                 }
                 if (string.IsNullOrEmpty(reg.businessTypeName) || reg.businessTypeName == Empty || !reg.HasEstablishedBusiness)
                 {
@@ -286,6 +298,21 @@ namespace RealLifeOverhaul.Districts
             }
         }
 
+        /// <summary>
+        /// A building type's place among the four kinds the district view counts as standing empty: 0 retail (and the theatres, cinemas and the like), 1 office, 2 home,
+        /// 3 warehouse.
+        /// </summary>
+        public static int VacantKind(string buildingType)
+        {
+            switch (buildingType)
+            {
+                case "ba:buildingtype_office": return 1;
+                case Residential: return 2;
+                case "ba:buildingtype_warehouse": return 3;
+                default: return 0;
+            }
+        }
+
         /// <summary>A figure a square metre in the game's own unit of area (a square foot where the game is set to imperial).</summary>
         public static float PerArea(float perSqm)
         {
@@ -309,6 +336,7 @@ namespace RealLifeOverhaul.Districts
             {
                 district.Zone.gameObject.SetActive(true);
             }
+            Nav.NavBridges.MapLooks?.Invoke();   // the 2.5D city map draws the zones into its picture: it looks at them again
         }
 
         /// <summary>A zone back in the game's own colour and hidden; the game's own filters show it again if ticked.</summary>
@@ -318,6 +346,7 @@ namespace RealLifeOverhaul.Districts
             {
                 Paint(district.Zone, district.OwnColour);
                 district.Zone.gameObject.SetActive(false);
+                Nav.NavBridges.MapLooks?.Invoke();
             }
         }
 

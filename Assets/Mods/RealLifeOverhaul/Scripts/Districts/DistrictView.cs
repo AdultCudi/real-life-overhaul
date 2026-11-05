@@ -113,6 +113,7 @@ namespace RealLifeOverhaul.Districts
             SaveHook.Drop(_onSave);
             GlobalEvents.onCityMapToggle -= _onMap;
             GlobalEvents.onNewDay -= _onDay;
+            KitTagsClear();
             if (_panel != null)
             {
                 _panel.Destroy();
@@ -167,6 +168,7 @@ namespace RealLifeOverhaul.Districts
                     SaveLines.Unreadable(save.modData, DistrictLog.Key, "its version is not one this version of the mod reads");   // (kept as it was read: Core/SaveLines)
                 }
                 _log.Prune(save.Day);
+                KitLoad(save);
                 _logSave = save;
                 _logLoaded = true;
                 _readDay = int.MinValue;
@@ -179,6 +181,10 @@ namespace RealLifeOverhaul.Districts
             else if (_mapOpen)
             {
                 Decide();   // (the option may have been switched on the options page)
+                if (_showing && OnKit != _wasKit)
+                {
+                    Card();   // (so may the page's switch, or the kit's hold on the map's dock)
+                }
             }
         }
 
@@ -292,6 +298,17 @@ namespace RealLifeOverhaul.Districts
             }
             int layer = Layer;
             Paint(layer);
+            if (OnKit)
+            {
+                _wasKit = true;
+                _showing = true;
+                _carded = null;
+                _kitStamp++;
+                _panel?.Show(false);
+                KitTags();
+                return;   // the dock's page says it (DistrictView.Kit); the old window is not made
+            }
+            _wasKit = false;
             if (_panel == null || !_panel.Alive)
             {
                 _panel = _panelFailed ? null : DistrictPanel.Make();
@@ -315,6 +332,7 @@ namespace RealLifeOverhaul.Districts
         private void Hide(bool giveBack)
         {
             _showing = false;
+            KitTagsClear();
             _panel?.Show(false);
             if (_tinted)
             {
@@ -337,10 +355,9 @@ namespace RealLifeOverhaul.Districts
             {
                 return;
             }
-            LayerSense sense = DistrictRules.Sense((DistrictLayer)layer);
             for (int i = 0; i < _districts.Count; i++)
             {
-                DistrictGame.Tint(_districts[i], DistrictRules.Colour(sense, _districts[i].Band[layer]));
+                DistrictGame.Tint(_districts[i], DistrictRules.Colour(_districts[i].Band[layer]));
             }
             _tinted = true;
             _paintedLayer = layer;
@@ -486,6 +503,8 @@ namespace RealLifeOverhaul.Districts
                     _districts[i].Band[layer] = bands[i];
                 }
             }
+            KitSnapshot(today);
+            _kitStamp++;
         }
 
         private static void Set(MapDistrict d, DistrictLayer layer, bool has, long figure)
@@ -498,6 +517,7 @@ namespace RealLifeOverhaul.Districts
         private void Bridges(MapDistrict d, int today)
         {
             d.HasIncome = d.HasStanding = d.HasSupply = d.HasInternet = d.HasCouncil = false;
+            d.Residents = -1;
             d.Footfall = d.Bears = null;
             d.Winner = null;
             try
@@ -506,6 +526,7 @@ namespace RealLifeOverhaul.Districts
                 {
                     d.HasIncome = DistrictBridges.Income(d.Id, out d.Income, out d.IncomeLive);
                 }
+                d.Residents = DistrictBridges.Residents != null ? DistrictBridges.Residents(d.Id) : -1;
                 d.Footfall = DistrictBridges.Footfall?.Invoke(d.Id);
                 d.Bears = DistrictBridges.Bears?.Invoke(d.Id);
                 if (DistrictBridges.Standing != null)
@@ -623,6 +644,7 @@ namespace RealLifeOverhaul.Districts
                 {
                     save.modData.Remove(DistrictLog.Key);
                 }
+                KitSave(save);
             }
             catch (Exception e)
             {
@@ -634,6 +656,7 @@ namespace RealLifeOverhaul.Districts
         public void Forget()
         {
             _log.Clear();
+            _months = new DistrictMonths();
             _readDay = int.MinValue;
         }
 

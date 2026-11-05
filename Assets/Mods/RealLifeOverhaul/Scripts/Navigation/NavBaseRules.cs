@@ -317,7 +317,9 @@ namespace RealLifeOverhaul.Nav
     /// </summary>
     public sealed class NavBaseData
     {
-        public const int Format = 2;   // 2: each outline's building is named by its address, not by its place in the game's list (which the game does not keep from one load to the next)
+        // 2: each outline's building is named by its address, not by its place in the game's list (which the game does not keep from one
+        // load to the next); 3: and each outline has the height of its ground and its own, for the 2.5D map's blocks
+        public const int Format = 3;
         private const int Magic = 0x424D4C52;   // "RLMB"
 
         public int Build;                              // the game's build number
@@ -328,6 +330,8 @@ namespace RealLifeOverhaul.Nav
         public long[] HullKey = new long[0];           // each outline's building, by its address (NavBaseMath.BuildingKey); 0 for none
         public float[] HullX = new float[0];
         public float[] HullZ = new float[0];
+        public float[] HullFoot = new float[0];        // each outline's ground: the street beside the building (world height, metres)
+        public float[] HullHeight = new float[0];      // and how tall the building stands above it
         public int Columns, Rows;
         public float Cell;                             // metres a side
         public byte[] Cells = new byte[0];             // see NavBaseWater
@@ -336,7 +340,7 @@ namespace RealLifeOverhaul.Nav
         /// This city with more outlines on top (the buildings the mod stands in it), for drawing only: the same squares of
         /// water, the outlines appended with no building of the game's list (key 0). Itself when there are none.
         /// </summary>
-        public NavBaseData With(List<float> moreX, List<float> moreZ, List<int> moreStart)
+        public NavBaseData With(List<float> moreX, List<float> moreZ, List<int> moreStart, List<float> moreFoot = null, List<float> moreHeight = null)
         {
             int more = moreStart != null ? moreStart.Count : 0;
             if (more == 0)
@@ -348,8 +352,11 @@ namespace RealLifeOverhaul.Nav
             {
                 Build = Build, OriginX = OriginX, OriginZ = OriginZ, WorldWidth = WorldWidth, WorldHeight = WorldHeight, Columns = Columns, Rows = Rows, Cell = Cell,
                 Cells = Cells, Hulls = Hulls + more, HullStart = new int[Hulls + more + 1], HullKey = new long[Hulls + more],
-                HullX = new float[corners + moreX.Count], HullZ = new float[corners + moreZ.Count]
+                HullX = new float[corners + moreX.Count], HullZ = new float[corners + moreZ.Count],
+                HullFoot = new float[Hulls + more], HullHeight = new float[Hulls + more]
             };
+            Array.Copy(HullFoot, drawn.HullFoot, Math.Min(HullFoot.Length, Hulls));
+            Array.Copy(HullHeight, drawn.HullHeight, Math.Min(HullHeight.Length, Hulls));
             Array.Copy(HullStart, drawn.HullStart, Hulls + 1);
             Array.Copy(HullKey, drawn.HullKey, Hulls);
             Array.Copy(HullX, drawn.HullX, corners);
@@ -358,6 +365,8 @@ namespace RealLifeOverhaul.Nav
             {
                 drawn.HullKey[Hulls + i] = 0;
                 drawn.HullStart[Hulls + i] = corners + moreStart[i];
+                drawn.HullFoot[Hulls + i] = moreFoot != null && i < moreFoot.Count ? moreFoot[i] : 0f;
+                drawn.HullHeight[Hulls + i] = moreHeight != null && i < moreHeight.Count ? moreHeight[i] : 12f;
             }
             drawn.HullStart[Hulls + more] = corners + moreX.Count;
             for (int i = 0; i < moreX.Count; i++)
@@ -395,7 +404,7 @@ namespace RealLifeOverhaul.Nav
         /// <summary>The whole of it as bytes, with a sum at the end that tells a file cut short.</summary>
         public byte[] Encode()
         {
-            using (var stream = new MemoryStream(64 + HullX.Length * 8 + Cells.Length))
+            using (var stream = new MemoryStream(64 + HullX.Length * 8 + Hulls * 8 + Cells.Length))
             using (var writer = new BinaryWriter(stream))
             {
                 writer.Write(Magic);
@@ -415,6 +424,11 @@ namespace RealLifeOverhaul.Nav
                 for (int i = 0; i < Hulls; i++)
                 {
                     writer.Write(HullKey[i]);
+                }
+                for (int i = 0; i < Hulls; i++)
+                {
+                    writer.Write(i < HullFoot.Length ? HullFoot[i] : 0f);
+                    writer.Write(i < HullHeight.Length ? HullHeight[i] : 0f);
                 }
                 for (int i = 0; i < corners; i++)
                 {
@@ -472,7 +486,7 @@ namespace RealLifeOverhaul.Nav
                     int corners = reader.ReadInt32();
                     if (data.Build != build || Math.Abs(data.OriginX - originX) > 0.5f || Math.Abs(data.OriginZ - originZ) > 0.5f
                         || Math.Abs(data.WorldWidth - worldWidth) > 0.5f || Math.Abs(data.WorldHeight - worldHeight) > 0.5f
-                        || data.Hulls < 0 || corners < 0 || (long)data.Hulls * 12 + (long)corners * 8 > length)
+                        || data.Hulls < 0 || corners < 0 || (long)data.Hulls * 20 + (long)corners * 8 > length)
                     {
                         return null;
                     }
@@ -489,6 +503,13 @@ namespace RealLifeOverhaul.Nav
                     for (int i = 0; i < data.Hulls; i++)
                     {
                         data.HullKey[i] = reader.ReadInt64();
+                    }
+                    data.HullFoot = new float[data.Hulls];
+                    data.HullHeight = new float[data.Hulls];
+                    for (int i = 0; i < data.Hulls; i++)
+                    {
+                        data.HullFoot[i] = reader.ReadSingle();
+                        data.HullHeight[i] = reader.ReadSingle();
                     }
                     data.HullX = new float[corners];
                     data.HullZ = new float[corners];

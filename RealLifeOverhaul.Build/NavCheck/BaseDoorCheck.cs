@@ -196,14 +196,21 @@ internal static partial class Program
         Check(NavBaseMath.WorstOutside(dx, dz, data, three, 0, out int nobody) == 0f && nobody == -1, "minimap doors: with no pick there is no one to blame");
 
         // ---- the kept file keeps the names, and a file of the old kind is made again
+        data.HullFoot = new float[60];
+        data.HullHeight = new float[60];
+        for (int i = 0; i < 60; i++)
+        {
+            data.HullFoot[i] = 3.5f + i * 0.25f;
+            data.HullHeight[i] = 8f + i * 1.5f;
+        }
         byte[] bytes = data.Encode();
         NavBaseData read = NavBaseData.Decode(bytes, 1, 0f, 0f, 0f, 0f);
         bool same = read != null && read.Hulls == 60;
         for (int i = 0; same && i < 60; i++)
         {
-            same &= read.HullKey[i] == data.HullKey[i];
+            same &= read.HullKey[i] == data.HullKey[i] && read.HullFoot[i] == data.HullFoot[i] && read.HullHeight[i] == data.HullHeight[i];
         }
-        Check(same && NavBaseData.Format == 2, "minimap doors: the keys are written and read back, in a file of the second kind");
+        Check(same && NavBaseData.Format == 3, "minimap doors: the keys, each outline's ground and its height are written and read back, in a file of the third kind");
         byte[] first = (byte[])bytes.Clone();
         first[4] = 1;   // the file's kind, as the first kind (the place in the list) wrote it
         uint sum = 2166136261u;

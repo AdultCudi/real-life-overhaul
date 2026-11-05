@@ -16,6 +16,7 @@ param(
     [string]$Only = '',
     [string]$Set = '',          # cs2: the prototype's six screens over the game's world (needs -Backdrops)
     [string]$Backdrops = '',    # a folder of the game's own street pictures, local only, never committed
+    [string]$Method = 'UiPreviewRunner.Render',   # another editor entry that draws into -Out (the 2.5D map's own pictures: Map25Preview.Render)
     [string]$Unity = 'C:\Program Files\Unity\Hub\Editor\2022.3.62f2\Editor\Unity.exe'
 )
 $ErrorActionPreference = 'Stop'
@@ -44,6 +45,10 @@ Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate')
 }
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\News') -Filter *.cs -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike 'NewsLive*.cs' -and $_.Name -ne 'NewsPeopleRules.cs' -and $_.Name -ne 'NewsReadingPage.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company') -Filter *.cs -ErrorAction SilentlyContinue | Where-Object { $_.Name -ne 'CompanyLiveDoes.cs' -and $_.Name -notlike '*Live.cs' -and $_.Name -notlike '*Live.*.cs' -and $_.Name -notlike '*Screen.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
+# The city map's 2.5D picture (Ui\Map) and its panels (Ui\MapDock): the game-free files of both; the live screens, the files that meet the game and the kits that bind them stay out.
+@('Map', 'MapDock') | ForEach-Object { Get-ChildItem (Join-Path $repo (Join-Path 'Assets\Mods\RealLifeOverhaul\Scripts\Ui' $_)) -Filter *.cs -ErrorAction SilentlyContinue } | Where-Object { $_.Name -notlike '*Live.cs' -and $_.Name -notlike '*Live.*.cs' -and $_.Name -notlike '*Game.cs' -and $_.Name -notlike '*Screen.cs' -and $_.Name -ne 'MapKits.cs' -and $_.Name -ne 'MapRouteTag.cs' -and $_.Name -notlike 'UiDirector*.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
+# The 2.5D map's made-up city and the owner's real footprints are preview and check code, kept out of the mod: they come from the shared build folder.
+@('Map25Fixture.cs', 'Map25Real.cs') | ForEach-Object { Copy-Item (Join-Path $repo (Join-Path 'RealLifeOverhaul.Build\Shared' $_)) (Join-Path $preview 'Kit') }
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui') -Filter *.cs | Where-Object {
     $name = $_.Name
     -not ($gameFiles | Where-Object { $name -like $_ })
@@ -66,7 +71,7 @@ New-Item -ItemType Directory -Force $Out | Out-Null
 $Out = (Resolve-Path $Out).Path
 $log = Join-Path $project 'Logs\preview.log'
 New-Item -ItemType Directory -Force (Split-Path $log) | Out-Null
-$arguments = @('-batchmode', '-quit', '-projectPath', "`"$project`"", '-executeMethod', 'UiPreviewRunner.Render', '-bundle', "`"$bundle`"", '-out', "`"$Out`"", '-logFile', "`"$log`"")
+$arguments = @('-batchmode', '-quit', '-projectPath', "`"$project`"", '-executeMethod', $Method, '-bundle', "`"$bundle`"", '-out', "`"$Out`"", '-logFile', "`"$log`"")
 if ($Only) { $arguments += @('-only', $Only) }
 if ($Set) { $arguments += @('-set', $Set) }
 if ($Backdrops) { $arguments += @('-backdrops', "`"$Backdrops`"") }

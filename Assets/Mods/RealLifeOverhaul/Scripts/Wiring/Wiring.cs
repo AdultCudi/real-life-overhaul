@@ -76,6 +76,7 @@ namespace RealLifeOverhaul
             Step("RLO Texts", TextsLinks.Connect);
             Step("permadeath", PermadeathLinks.Connect);
             Step("the district view", DistrictLinks.Connect);
+            Step("the city map's place card", MapLinks.Connect);
             Step("empty shops as offices", OfficeLinks.Connect);
             Step("the player's bank", OwnBankLinks.Connect);   // after running a business: its pieces of the paper follow the company's
             Step("the end game at scale", EndScaleLinks.Connect);
@@ -131,6 +132,7 @@ namespace RealLifeOverhaul
             Step("the game studio's sessions", StudioLinks.Disconnect);
             Step("the desk sessions", SessionLinks.Disconnect);
             Step("the end game at scale", EndScaleLinks.Disconnect);
+            Step("the city map's place card", MapLinks.Disconnect);
             Step("the district view", DistrictLinks.Disconnect);
             Step("empty shops as offices", OfficeLinks.Disconnect);
             Step("permadeath", PermadeathLinks.Disconnect);
