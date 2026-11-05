@@ -41,6 +41,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
+            _pickFrom = _sheet == FlareFace.EditSheet ? FlareFace.EditSheet : FlareFace.ComposeSheet;
             _pickQuery.Clear();
             _pickBuilt = false;
             _pickTexts.T = UiText.T;
@@ -126,10 +127,18 @@ namespace RealLifeOverhaul.Ui
             PhotoEntry photo = _pickShown[index];
             string path = System.IO.Path.Combine(d.Folder, photo.Name);
             _chosenPhoto = "f:" + path;
+            _sheetWhy = null;
+            if (_pickFrom == FlareFace.EditSheet)
+            {
+                _kit.Banner = _chosenPhoto;   // the profile's picture
+                _bannerChip = _photos.Count + 1;
+                _sheet = FlareFace.EditSheet;
+                _field = FlareFace.BioField;
+                return true;
+            }
             _photo = GalleryPhoto;
             TagBusiness(photo.HasSide ? photo.Side.BusinessPlace : null);
             _sheet = FlareFace.ComposeSheet;
-            _sheetWhy = null;
             return true;
         }
 

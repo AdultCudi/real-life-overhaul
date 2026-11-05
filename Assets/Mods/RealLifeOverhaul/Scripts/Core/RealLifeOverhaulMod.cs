@@ -1056,7 +1056,6 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_ui_test_ending", () => Ui.UiDirector.Instance?.TestEnding())
                 .AddButton("reallife_ui_test_news_switch", () => Ui.UiDirector.Instance?.TestNewsSwitch())
                 .AddButton("reallife_ui_test_population", () => Ui.UiDirector.Instance?.TestPopulation())
-                .AddButton("reallife_ui_test_flare", () => Ui.UiDirector.Instance?.TestFlareCity())
                 .AddButton("reallife_ui_test_hud", () => Ui.UiDirector.Instance?.TestHud())
                 .AddButton("reallife_ui_test_hud_box", () => Ui.UiDirector.Instance?.TestHudPrompt())
                 .AddButton("reallife_ui_test_hud_sides", () => Ui.UiDirector.Instance?.TestHudSides())

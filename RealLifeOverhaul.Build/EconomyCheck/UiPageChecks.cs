@@ -19,7 +19,6 @@ internal static partial class Program
     {
         UiPlaceChecks();
         UiPopulationPageChecks();
-        UiFlarePageChecks();
         UiStudioPageChecks();
     }
 
@@ -117,51 +116,6 @@ internal static partial class Program
     }
 
     // Flare's views as feeds: the entries that lead somewhere are targets, a tab says where its page is, and no action opens its own page.
-    private static void UiFlarePageChecks()
-    {
-        UiWords en = UiWords("en");
-        Func<long, string> money = v => "$" + v.ToString("#,0", System.Globalization.CultureInfo.InvariantCulture);
-        Func<int, bool, string> resident = (id, female) => female ? "Rosa Lin" : "Tom Hale";
-        string[] tabs = { "Account", "Trends", "Offers" };
-        const string K = "reallife" + "_flare_city_";
-        var account = new FlareCityView { Kind = FlareViewKind.Account, Title = K + "title_account", TitleKey = true, RowsHeader = K + "rows_funnel", Empty = K + "empty_funnel" };
-        account.Hero.Add(FlareViewFigure.Of(K + "fig_city", 34, FlareViewFormat.Count));
-        account.Hero.Add(FlareViewFigure.Of(K + "fig_beyond", 4, FlareViewFormat.Count));
-        account.Today = 12;
-        account.Rows.Add(new FlareViewRow { Title = "Bloom Café", Subtitle = K + "row_post", Value = 38, Format = FlareViewFormat.Signed, Second = 412, Target = "bloom", Day = 12,
-            Seen = 1240 });
-        account.Rows.Add(new FlareViewRow { Title = K + "row_ad", TitleKey = true, Subtitle = K + "row_ad", Value = 9, Format = FlareViewFormat.Signed, Day = 10, Seen = 300 });
-        account.Rows.Add(new FlareViewRow { Title = "Night Owl Bar", Subtitle = K + "row_post", Value = -12, Format = FlareViewFormat.Signed, Second = -140, Day = 11 });
-        var trends = new FlareCityView { Kind = FlareViewKind.Trends, Title = K + "trend_title", TitleKey = true, Empty = K + "trend_empty" };
-        var business = new FlareCityView { Kind = FlareViewKind.Business, Title = "Bloom Café", Subtitle = K + "sub_mine", RowsHeader = K + "rows_reviews", Empty = K + "empty_reviews",
-            Primary = K + "action_ad", PrimaryTarget = "bloom" };
-        business.Hero.Add(FlareViewFigure.Of(K + "fig_followers", 2418, FlareViewFormat.Count));
-        business.Details.Add(FlareViewFigure.Of(K + "detail_reviews", 3, FlareViewFormat.Count));
-        business.Rows.Add(new FlareViewRow { Person = 7, Female = true, Subtitle = K + "row_post", Value = 50, Format = FlareViewFormat.Stars });
-        UiFrame frame = UiFrame.FullMenu(16f / 9f, en("reallife_ui_page_flare", "Flare in the city"));
-        var scene = new UiScene();
-        UiDashboardModel am = FlareCityPages.Model(account, en, money, resident, tabs, 0);
-        UiDashboard.Lay(scene, am, frame, true, UiDefaultKeys.Keyboard);
-        int rows = 0;
-        for (int n = 0; n < scene.NodeCount; n++)
-        {
-            rows += scene.Nodes[n].Command == UiDashboard.RowCommand ? 1 : 0;
-        }
-        Check(am.Shape == UiPageShape.Feed && am.Title == null && rows == 1 && am.EntryLeads[0] && !am.EntryLeads[1],
-            "ui pages: Flare's account is a feed headed by its tabs, and only an entry that opens a business is a target");
-        Check(am.Entries[0].Preview == "A post, seen by 1,240, 38 came, $412 spent" && am.Entries[0].Time == "Today"
-              && am.Entries[1].Preview.StartsWith("An ad, seen by 300", StringComparison.Ordinal) && am.Entries[1].Time == "2 days ago"
-              && am.Entries[2].Preview == "A post, seen by 0, kept 12 away, $140 lost" && am.Entries[2].Time == "Yesterday",
-            "ui pages: what each post on Flare's account did is said in words, one that put people off as kept away, and each says when it went up");
-        UiDashboardModel tm = FlareCityPages.Model(trends, en, money, resident, tabs, 1, account);
-        UiDashboard.Lay(scene, tm, frame, true, UiDefaultKeys.Keyboard);
-        string said = "none";
-        int broken = UiCheckRules.EmptyPanels(scene, l => said = l) + UiCheckRules.Spills(scene, l => said = l) + UiCheckRules.Unfit(scene, l => said = l) + UiCheckRules.DeadSpace(scene, l => said = l);
-        Check(tm.FigureCount == 2 && broken == 0, "ui pages: a Flare tab with nothing yet has its words wrapped in its panel and the account's followers at the side, no empty box (" + said + ")");
-        UiDashboardModel bm = FlareCityPages.Model(business, en, money, resident, null, 0, null, "bloom");
-        Check(!bm.HasAction && bm.Title == "Bloom Café" && bm.Entries[0].Name == "Rosa Lin", "ui pages: a business's page names it after the app's name, signs its reviews, and has no action that opens itself");
-    }
-
     // The firms' pages offer only what the page can run: the acts the director carries out itself. The Tech app's own
     // screens (a new product, the contracts, the concept) open only inside that app, so a button for them would do nothing.
     private static void UiStudioPageChecks()

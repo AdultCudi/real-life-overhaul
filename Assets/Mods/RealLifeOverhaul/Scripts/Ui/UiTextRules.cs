@@ -69,6 +69,13 @@ namespace RealLifeOverhaul.Ui
         /// </summary>
         public static int Lines(string text, UiStyle style, float width, int most, out float widest) => Wrap(text, style, width, most, -1, out widest, out int _, out int _);
 
+        /// <summary>The index in a text where line number <paramref name="line"/> (0 is the first) begins when it is wrapped in a width; the text's length when it takes fewer lines.</summary>
+        public static int LineStart(string text, UiStyle style, float width, int line)
+        {
+            int lines = Wrap(text, style, width, 0, line, out float _, out int start, out int _);
+            return lines > line ? start : text == null ? 0 : text.Length;
+        }
+
         // The greedy wrap: the lines it takes, the widest, where line number wantLine begins and where the last line begins.
         private static int Wrap(string text, UiStyle style, float width, int most, int wantLine, out float widest, out int wantStart, out int lastStart)
         {
@@ -113,6 +120,11 @@ namespace RealLifeOverhaul.Ui
                         break;
                     }
                     float w = (AdvanceEm(Cased(c, t.Case), primary, backup) + t.Tracking) * t.Size;
+                    if (j > i && MayBeginLine(c) && text[j - 1] != ' ' && !Wide(text[j - 1]))
+                    {
+                        brk = j - 1;   // an ideograph may begin a line after a digit or a Latin letter, a closing or stopping mark may not, as the text engine breaks it
+                        atBreak = line;
+                    }
                     if (c == ' ')
                     {
                         if (line + w > width && j > i)
@@ -257,6 +269,22 @@ namespace RealLifeOverhaul.Ui
             return (c >= 'ᄀ' && c <= 'ᅟ') || (c >= '⺀' && c <= '꓏') || (c >= '가' && c <= '힣')
                    || (c >= '豈' && c <= '﫿') || (c >= '︰' && c <= '﹏') || (c >= '＀' && c <= '｠')
                    || (c >= '￠' && c <= '￦');
+        }
+
+        /// <summary>
+        /// A character that may begin a line after a Latin letter or a digit: an ideograph, a kana or a Hangul syllable that is not
+        /// a mark the text engine keeps off the start of a line (closing brackets, the full-width comma, stop, colon, semicolon,
+        /// question and exclamation mark, the ideographic comma, small kana, the iteration mark and the prolonged sound mark).
+        /// </summary>
+        public static bool MayBeginLine(char c)
+        {
+            if (!Wide(c))
+            {
+                return false;
+            }
+            bool letter = (c >= 'ᄀ' && c <= 'ᇿ') || (c >= 'ぁ' && c <= 'ヿ') || (c >= '㐀' && c <= '䶿')
+                          || (c >= '一' && c <= '鿿') || (c >= '가' && c <= '힣') || (c >= '豈' && c <= '﫿');
+            return letter && "ぁぃぅぇぉっゃゅょゎゕゖ゛゜ゝゞァィゥェォッャュョヮヵヶ・ーヽヾ々".IndexOf(c) < 0;
         }
 
         private static char Cased(char c, UiCase textCase) => textCase == UiCase.Upper ? char.ToUpperInvariant(c) : textCase == UiCase.Lower ? char.ToLowerInvariant(c) : c;

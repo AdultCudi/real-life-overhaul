@@ -38,6 +38,7 @@ internal static partial class Program
         FlareCompleteChecks();   // the kit's Flare whole: a post's words, the inbox, the notifications, a hire, answers to reviews, the rivals' parity, every handler, Home's cost (FlareCompleteChecks.cs)
         FlarePlayChecks();
         FlarePeopleChecks();   // Flare's people: a fresh city's first morning and day 5, Stories, Who to follow, Explore, the cost of a day, a save from before growing (FlarePeopleChecks.cs)
+        FlareAuditChecks();   // the audit fix: presses, notices, tiers, hires and the city, the day's work, the words and ages, the pad's order (FlareAuditChecks.cs, FlareRoundChecks.cs, FlareOrderChecks.cs)
     }
 
     private static List<FlarePerson> FlarePeople()

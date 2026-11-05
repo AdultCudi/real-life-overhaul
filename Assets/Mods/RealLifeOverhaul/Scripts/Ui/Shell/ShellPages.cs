@@ -33,8 +33,6 @@ namespace RealLifeOverhaul.Ui
         {
             new Page { Id = UiShellApps.ShellPeople, ScreenId = "population", TitleKey = "reallife_ui_page_population", Icon = UiIcon.People,
                 Ready = () => Population.CityPopulation.Running, Make = () => new PopulationScreen { Close = CloseMenu } },
-            new Page { Id = UiShellApps.ShellFlare, ScreenId = "flare_city", TitleKey = "reallife_ui_page_flare", Icon = UiIcon.Megaphone,
-                Ready = () => Flare.FlareDirector.Instance != null && Flare.FlareDirector.Instance.CityOn, Make = () => new FlareCityScreen { Close = CloseMenu } },
             new Page { Id = UiShellApps.ShellFirm, ScreenId = "studio", TitleKey = "reallife_ui_page_studio", Icon = UiIcon.GameController,
                 Ready = () => Tech.TechDirector.Instance != null && Tech.TechDirector.Instance.FirmPlaces.Count > 0,
                 Make = () => new StudioPageScreen(Tech.TechDirector.Instance.FirmPlaces[0].File.Place) { Close = CloseMenu } },

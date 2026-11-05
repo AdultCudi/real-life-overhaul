@@ -48,6 +48,8 @@ namespace RealLifeOverhaul.Flare
             _city.CreatorDay = day;
             if (cents > 0 && FlareCityGame.PayCreator(cents))
             {
+                _city.CreatorPaid = cents;
+                _city.CreatorTotal += cents;
                 Logger?.Info("Flare in the city: a creator income of " + cents / 100 + " for " + views + " views of the player's posts in " + FlareCityRules.CreatorDays + " days.");
                 Notice(NotificationType.Success, "reallife_flare_creator_note", _openFeed, "money", FlareText.Money((int)(cents / 100)), "views", FlareText.N((int)Math.Min(int.MaxValue, views)));
             }

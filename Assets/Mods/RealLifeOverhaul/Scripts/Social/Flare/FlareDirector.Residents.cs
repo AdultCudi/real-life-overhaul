@@ -745,6 +745,31 @@ namespace RealLifeOverhaul.Flare
             return _city.Funnel(row.Subtitle != null && row.Subtitle.EndsWith("row_ad", StringComparison.Ordinal) ? FunnelKind.Ad : FunnelKind.Post, row.Post);
         }
 
+        /// <summary>
+        /// What a post of the player's did in the city: the residents who saw it, were interested, followed, came and spent (negative when it put people off), the record
+        /// the retired Flare in the city page listed. Null while the residents' side does not run or the post was not measured.
+        /// </summary>
+        public FlareFunnel FunnelOfPost(int post)
+        {
+            return CityOn && post >= 0 ? _city.Funnel(FunnelKind.Post, post) : null;
+        }
+
+        /// <summary>The player's ads measured, newest first, at most <paramref name="most"/>, written into <paramref name="into"/>.</summary>
+        public void AdFunnels(List<FlareFunnel> into, int most)
+        {
+            into.Clear();
+            for (int i = CityOn ? _city.Funnels.Count - 1 : -1; i >= 0 && into.Count < most; i--)
+            {
+                if (_city.Funnels[i].Kind == FunnelKind.Ad)
+                {
+                    into.Add(_city.Funnels[i]);
+                }
+            }
+        }
+
+        /// <summary>The name of the business a place is, the player's as the game names it and the city's by its address.</summary>
+        public string BusinessNameAt(string place) => place != null ? PlaceName(place) : null;
+
         /// <summary>A resident's name as a review signs it.</summary>
         public string ResidentName(int person, bool female)
         {

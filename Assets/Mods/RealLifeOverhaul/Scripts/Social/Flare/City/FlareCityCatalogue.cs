@@ -91,6 +91,7 @@ namespace RealLifeOverhaul.Flare
         public static readonly int[] AgeFrom = { AdultAge, AdultAge, 30, 50 };   // the age bands an ad targets: anybody, under 30, 30 to 49, 50 and over
         public static readonly int[] AgeTo = { 200, 29, 49, 200 };
         public const int CityAdsDay = 6;                 // the city's and the rivals' businesses that run an ad a day (parity: the same rules as the player's)
+        public const int CityAdsKept = 12;               // the city's own ads of the last days the kit's notifications and the shared-reach line read (not saved)
         public const int CityAdReach = 1500;             // residents a day of one of their ads
 
         // ---- the market and the council: the residents behind a viral thread and a following

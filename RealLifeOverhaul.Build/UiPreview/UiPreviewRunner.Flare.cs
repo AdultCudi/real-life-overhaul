@@ -13,34 +13,89 @@ public static partial class UiPreviewRunner
     {
         Func<string, Sprite> before = UiPictures.Find;
         UiPictures.Find = key => key != null && key.StartsWith(FlareFace.PicturePrefix, StringComparison.Ordinal) ? FlarePicture(key) : before?.Invoke(key);
-        Add("home", "13.jpg", FlareFace.LikeCommand, 0, "DRD");
-        Add("home_following", "02.jpg", FlareFace.TabCommand, 1, "D");
-        Add("home_businesses", "13.jpg", FlareFace.AuthorCommand, 0, "DD");
-        Add("explore", "02.jpg", FlareFace.RowCommand, 1, "DD");
-        Typed(Add("explore_search", "13.jpg", FlareFace.FollowCommand, 1, "D"), FlareFace.SearchField);
-        Add("explore_tag", "11.jpg", FlareFace.LikeCommand, 0, "D");
-        Add("notices", "13.jpg", FlareFace.RowCommand, 0, "DD");
-        Add("notices_empty", "02.jpg", FlareFace.NavCommand, 0, "D");
-        Typed(Add("messages", "02.jpg", FlareFace.QuickCommand, 1, "D"), FlareFace.ThreadField);
-        Add("messages_offer", "13.jpg", FlareFace.QuickCommand, 0, "D");
-        Add("messages_none", "02.jpg", FlareFace.RowCommand, 1, "D");
-        Add("profile", "13.jpg", FlareFace.TabCommand, 1, "DD");
-        Add("profile_other", "11.jpg", FlareFace.ProfileFollowCommand, 0, "D");
-        Typed(Add("thread", "11.jpg", FlareFace.LikeCommand, 0, "D"), FlareFace.ReplyField);
-        Add("business", "02.jpg", FlareFace.ButtonCommand, 0, "DD");
-        Add("business_turning", "13.jpg", FlareFace.PickCommand, 1, "D");
-        Add("business_none", "02.jpg", FlareFace.NavCommand, 6, "D");
-        Add("studio", "13.jpg", FlareFace.RowCommand, 1, "DD");
-        Add("hire", "02.jpg", FlareFace.ButtonCommand, 0, "DD");
-        Add("city", "11.jpg", FlareFace.ButtonCommand, 1, "DD");
-        Add("city_empty", "13.jpg", FlareFace.NavCommand, 8, "D");
-        Typed(Add("compose", "13.jpg", FlareFace.SheetChipCommand, 0, "D"), FlareFace.ComposeField);
-        Add("compose_promote", "02.jpg", FlareFace.SheetConfirmCommand, 0, "D");
-        Add("hire_sheet", "13.jpg", FlareFace.SheetConfirmCommand, 0, "D");
-        Add("reply_sheet", "02.jpg", FlareFace.OptionCommand, 1, "D");
-        Typed(Add("photo_picker", "13.jpg", FlareFace.PickerPhotoCommand, 2, "D"), FlareFace.PickerField);
+        Add("home", "13.jpg", FlareFace.LikeCommand, 0);
+        Add("home_following", "02.jpg", FlareFace.TabCommand, 1);
+        Add("home_businesses", "13.jpg", FlareFace.AuthorCommand, 0);
+        Add("explore", "02.jpg", FlareFace.RowCommand, 1);
+        Typed(Add("explore_search", "13.jpg", FlareFace.FollowCommand, 1), FlareFace.SearchField);
+        Add("explore_tag", "11.jpg", FlareFace.LikeCommand, 0);
+        Add("notices", "13.jpg", FlareFace.RowCommand, 0);
+        Add("notices_empty", "02.jpg", FlareFace.NavCommand, 0);
+        Typed(Add("messages", "02.jpg", FlareFace.QuickCommand, 1), FlareFace.ThreadField);
+        Add("messages_offer", "13.jpg", FlareFace.QuickCommand, 0);
+        Add("messages_none", "02.jpg", FlareFace.RowCommand, 1);
+        Add("profile", "13.jpg", FlareFace.TabCommand, 1);
+        Add("profile_other", "11.jpg", FlareFace.ProfileFollowCommand, 0);
+        Typed(Add("thread", "11.jpg", FlareFace.LikeCommand, 0), FlareFace.ReplyField);
+        Add("thread_mine", "13.jpg", FlareFace.LikeCommand, 0);
+        Add("business", "02.jpg", FlareFace.ButtonCommand, 0);
+        Add("business_turning", "13.jpg", FlareFace.PickCommand, 1);
+        Add("business_none", "02.jpg", FlareFace.NavCommand, 6);
+        Add("studio", "13.jpg", FlareFace.RowCommand, 1);
+        Add("hire", "02.jpg", FlareFace.ButtonCommand, 0);
+        Add("city", "11.jpg", FlareFace.ButtonCommand, 1);
+        Add("city_empty", "13.jpg", FlareFace.NavCommand, 8);
+        Typed(Add("compose", "13.jpg", FlareFace.SheetChipCommand, 0), FlareFace.ComposeField);
+        Add("compose_promote", "02.jpg", FlareFace.SheetConfirmCommand, 0);
+        Add("hire_sheet", "13.jpg", FlareFace.SheetConfirmCommand, 0);
+        Add("reply_sheet", "02.jpg", FlareFace.OptionCommand, 1);
+        Typed(Add("photo_picker", "13.jpg", FlareFace.PickerPhotoCommand, 2), FlareFace.PickerField);
+        Add("notices_sales", "02.jpg", FlareFace.MarkAllCommand, 0);
+        // Every pad shot is the d-pad's reach from the first target (UiPreviewRunner.TourOf): right first and then down, left and up, each stop joined to the one it was pressed from.
+        Add("city_new", "13.jpg", FlareFace.NavCommand, 8);
+        Add("compose_report", "11.jpg", FlareFace.SheetChipCommand, 2);
+        Add("compose_moment", "02.jpg", FlareFace.SheetChipCommand, 1);
+        Add("ad_sheet", "13.jpg", FlareFace.SheetConfirmCommand, 0);
+        Typed(Add("edit_sheet", "02.jpg", FlareFace.SheetConfirmCommand, 0), FlareFace.BioField);
+        // The same pages with the pad's focus on the nav entry the page stands on, as it is after a press on it: the walk then starts by right, which goes into the page.
+        AddFromNav("home", "13.jpg", FlareFace.Home);
+        AddFromNav("explore", "02.jpg", FlareFace.Explore);
+        AddFromNav("hire", "02.jpg", FlareFace.Hire);
+        AddFromNav("studio", "13.jpg", FlareFace.Studio);
+        // The wide languages, where a label is longest: the hire table's header, the sheet's chips and the city page (the owner's bar: no word cut in any language).
+        foreach (string lang in new[] { "pt", "zh-cn" })
+        {
+            AddIn(lang, "hire", "02.jpg", FlareFace.ButtonCommand, 0);
+            AddIn(lang, "compose_report", "11.jpg", FlareFace.SheetChipCommand, 2);
+            AddIn(lang, "city_new", "13.jpg", FlareFace.NavCommand, 8);
+            AddIn(lang, "home", "13.jpg", FlareFace.LikeCommand, 0);
+            AddIn(lang, "studio", "13.jpg", FlareFace.RowCommand, 1);
+            AddIn(lang, "business", "02.jpg", FlareFace.ButtonCommand, 0);
+            AddIn(lang, "profile", "13.jpg", FlareFace.TabCommand, 1);
+            AddIn(lang, "notices_sales", "02.jpg", FlareFace.MarkAllCommand, 0);
+            AddIn(lang, "hire_sheet", "13.jpg", FlareFace.SheetConfirmCommand, 0);
+            AddIn(lang, "ad_sheet", "13.jpg", FlareFace.SheetConfirmCommand, 0);
+            AddIn(lang, "compose_moment", "02.jpg", FlareFace.SheetChipCommand, 1);
+        }
 
-        Screen Add(string state, string backdrop, int hover, int arg, string walk)
+        Screen AddIn(string lang, string state, string backdrop, int hover, int arg)
+        {
+            UiWords words = DialogWords(lang);
+            var made = new Screen
+            {
+                Name = "flare_" + state + Suffix(lang),
+                AppName = "Flare",
+                Icon = UiIcon.Fire,
+                Backdrop = backdrop,
+                HoverCommand = hover,
+                HoverArg = arg,
+                Tour = true,   // the pad shot is every target the d-pad reaches from the first, right then down (UiPreviewRunner.TourOf)
+                Lay = (s, f, d, k) => UiSamples.Flare(s, f, d, k, words, state)
+            };
+            screens.Add(made);
+            return made;
+        }
+
+        Screen AddFromNav(string state, string backdrop, int page)
+        {
+            Screen screen = Add(state, backdrop, FlareFace.NavCommand, page);
+            screen.Name += "_fromnav";
+            screen.FocusCommand = FlareFace.NavCommand;
+            screen.FocusArg = page;
+            return screen;
+        }
+
+        Screen Add(string state, string backdrop, int hover, int arg)
         {
             var screen = new Screen
             {
@@ -50,7 +105,7 @@ public static partial class UiPreviewRunner
                 Backdrop = backdrop,
                 HoverCommand = hover,
                 HoverArg = arg,
-                Walk = Moves(walk),
+                Tour = true,   // the pad shot is every target the d-pad reaches from the first, right then down (UiPreviewRunner.TourOf)
                 Lay = (s, f, d, k) => UiSamples.Flare(s, f, d, k, ModEnglish, state)
             };
             screens.Add(screen);
@@ -59,6 +114,7 @@ public static partial class UiPreviewRunner
 
         void Typed(Screen screen, int field) => Typing(screen, FlareFace.FieldCommand, field);
     }
+
 
     private static readonly Dictionary<string, Sprite> FlarePictures = new Dictionary<string, Sprite>();
     private static string _flareMock;

@@ -37,14 +37,16 @@ internal static partial class Program
         public List<BusinessSeed> Seeds;
         public FlareCityState C;
         public FlareCityPass Pass;
+        public int Own = -1;   // the business made the player's before the first pass, so the city's ads of that pass know a rival from a neighbour
     }
 
-    private static FlareResidentRig FlareResidentCity(int seed, int followers, int tier)
+    private static FlareResidentRig FlareResidentCity(int seed, int followers, int tier, int ownKind = -1)
     {
         var rig = new FlareResidentRig();
         rig.Sim = PopulationMade(seed, out rig.S, out rig.Seeds);
         rig.C = new FlareCityState();
         rig.Pass = new FlareCityPass();
+        rig.Own = ownKind >= 0 ? FlareRoundOwn(rig, ownKind) : -1;
         FlareResidentInputs(rig, followers, tier);
         rig.Pass.Begin(rig.C, rig.S, rig.Sim.Demand, rig.S.Day);
         rig.Pass.RunAll();

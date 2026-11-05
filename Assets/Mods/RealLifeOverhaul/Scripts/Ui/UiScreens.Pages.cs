@@ -4,7 +4,7 @@ namespace RealLifeOverhaul.Ui
 {
     public static partial class UiScreens
     {
-        // The overhaul's own pages: the city's people, Flare in the city, the tech firms and the desk session's panel.
+        // The overhaul's own pages: the city's people, the tech firms and the desk session's panel.
         static partial void AddPages(List<UiScreenDef> screens)
         {
             screens.AddRange(new[]
@@ -14,12 +14,6 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_page_details", "reallife_ui_page_empty", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back",
                     "reallife_pop_view_city", "reallife_ui_pop_household", "reallife_ui_pop_household_plain", "reallife_ui_pop_last_month", "reallife_ui_pop_home",
                     "reallife_ui_pop_age", "reallife_ui_pop_gone_body", "reallife_ui_pop_gone_named", "reallife_pop_fig_field", "reallife_pop_landlord_city"
-                }).Switch(UiScreenSwitches.Apps),
-                new UiScreenDef("flare_city", UiTemplate.Dashboard, "FlareCityScreen", new[]
-                {
-                    "reallife_ui_flare_tab_account", "reallife_ui_flare_tab_trends", "reallife_ui_flare_tab_offers", "reallife_ui_page_details", "reallife_ui_page_empty",
-                    "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_page", "reallife_ui_prompt_back", "reallife_ui_flare_did", "reallife_ui_flare_trend_did",
-                    "reallife_ui_flare_did_bad", "reallife_ui_when_today", "reallife_ui_when_yesterday", "reallife_ui_when_days"
                 }).Switch(UiScreenSwitches.Apps),
                 new UiScreenDef("studio", UiTemplate.Dashboard, "StudioPageScreen", new[]
                 {

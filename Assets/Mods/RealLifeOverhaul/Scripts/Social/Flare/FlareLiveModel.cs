@@ -155,7 +155,11 @@ namespace RealLifeOverhaul.Flare
         Offer = 9,       // a business of the city's offers paid posts
         Job = 10,        // one of the city's people writes about a job
         Campaign = 11,   // an influencer hired posted, and what it brought
-        Promo = 12       // a post's boost ran its hours, and what it brought
+        Promo = 12,      // a post's boost ran its hours, and what it brought
+        Milestone = 13,  // a tier passed (FlareNoticeRules.TierUp keeps the day)
+        Gained = 14,     // the followers a post of the player's brought
+        TrendPart = 15,  // a tag is trending and a post of the player's is part of it
+        Rival = 16       // a rival's or the city's business runs a promoted post in a district
     }
 
     /// <summary>What one of the city's people is like: what they post about.</summary>

@@ -80,7 +80,7 @@ internal static partial class Program
         string links = PlayFile("Social", "Flare", "FlareDirector.Links.cs");
         // The kit's screen with its parts (FlareScreen.Fill, .Desk, .Sheet and .Rows since the kit's Flare was completed), read as one.
         string screen = PlayFile("Ui", "Flare", "FlareScreen.cs") + PlayFile("Ui", "Flare", "FlareScreen.Fill.cs") + PlayFile("Ui", "Flare", "FlareScreen.Desk.cs")
-                        + PlayFile("Ui", "Flare", "FlareScreen.Sheet.cs") + PlayFile("Ui", "Flare", "FlareScreen.Rows.cs");
+                        + PlayFile("Ui", "Flare", "FlareScreen.Sheet.cs") + PlayFile("Ui", "Flare", "FlareScreen.Rows.cs") + PlayFile("Ui", "Flare", "FlareScreen.Compose.cs");
         string attention = PlayFile("Social", "Flare", "City", "FlareCityRules.Attention.cs");
         Check(use.Contains("KeepsBoost(") && use.IndexOf("PromoteReach <= 0", System.StringComparison.Ordinal) < 0
               && use.Contains("ReadSidecar(") && use.Contains("PhotoPlace(") && use.IndexOf("PhotoPlace(null", System.StringComparison.Ordinal) < 0
@@ -103,9 +103,23 @@ internal static partial class Program
         Check(attention.Contains("StarPull("), "Flare play: attention reads the saved stars");
     }
 
+    // The repository's root, found by walking up from where the checker runs to the folder that holds RealLifeOverhaul.Build, so a build output that moves (another
+    // configuration, another target) still finds the sources the checks read.
+    private static string RepoRoot()
+    {
+        for (var dir = new System.IO.DirectoryInfo(System.AppContext.BaseDirectory); dir != null; dir = dir.Parent)
+        {
+            if (System.IO.Directory.Exists(System.IO.Path.Combine(dir.FullName, "RealLifeOverhaul.Build")) && System.IO.Directory.Exists(System.IO.Path.Combine(dir.FullName, "Assets")))
+            {
+                return dir.FullName;
+            }
+        }
+        return System.IO.Path.GetFullPath(System.IO.Path.Combine(System.AppContext.BaseDirectory, @"..\..\..\..\.."));
+    }
+
     private static string PlayFile(params string[] parts)
     {
-        string root = System.IO.Path.GetFullPath(System.IO.Path.Combine(System.AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
+        string root = System.IO.Path.Combine(RepoRoot(), "Assets", "Mods", "RealLifeOverhaul", "Scripts");
         string path = root;
         for (int i = 0; i < parts.Length; i++)
         {

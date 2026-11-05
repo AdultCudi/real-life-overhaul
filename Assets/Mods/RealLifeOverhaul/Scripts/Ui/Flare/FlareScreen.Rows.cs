@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using RealLifeOverhaul.Flare;
 
 namespace RealLifeOverhaul.Ui
@@ -24,7 +25,8 @@ namespace RealLifeOverhaul.Ui
             Hire,           // an influencer: the hire sheet
             Trend,          // the city's trend: a post about it
             Going,          // an invitation: going or not
-            Business        // one of the player's businesses: its page
+            Business,       // one of the player's businesses: its page
+            Campaign        // a campaign running: its influencer's conversation, and the button that ends it
         }
 
         private struct RowRef
@@ -84,12 +86,26 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        /// <summary>
+        /// A post's reply count, the one rule for its card in a feed and in its own thread (FlareFigures.ReplyTotal): the replies posted under it and the ones its model drew by now.
+        /// Cost: a dictionary read.
+        /// </summary>
+        private int RepliesOf(FlarePost p, long now)
+        {
+            _replyCount.TryGetValue(p.Id, out int posted);
+            return FlareFigures.ReplyTotal(posted, p.Id >= 0 ? FlareLiveRules.Shown(p.Replies, p, now) : 0);
+        }
+
         private static bool Hidden(FlareFile file, FlarePost p) => p.Author == FlareAuthor.Network && file.Net.IsHidden(p.AuthorId);
 
         /// <summary>A post's card: its author, when, its words with its tags under them, its picture, its line and its counts.</summary>
         private void PostRow(FlareFile file, FlarePost p, long now, bool comment = false)
         {
             Author(p, out string name, out string handle, out string key, out bool verified);
+            if (key != null)
+            {
+                _bodyAccounts.Add(key);   // the page names this account: the side does not offer it again
+            }
             ref FlareRow r = ref Add(_m.List, comment ? RowAct.None : RowAct.Thread, p, key);
             r.Kind = FlareRowKind.Post;
             r.Name = name;
@@ -99,6 +115,7 @@ namespace RealLifeOverhaul.Ui
             r.Flags = (verified ? FlareRowFlags.Verified : FlareRowFlags.None) | (p.Liked ? FlareRowFlags.Liked : FlareRowFlags.None)
                       | (p.Reposted ? FlareRowFlags.Reposted : FlareRowFlags.None) | (comment ? FlareRowFlags.Comment : FlareRowFlags.None)
                       | (p.Author == FlareAuthor.Player ? FlareRowFlags.Mine : FlareRowFlags.None);
+            LookOfPost(p, ref r, key);
             string built = _flare.WordsFor(p, name);
             string words = p.Text ?? built;
             r.Text = FlareFeedRules.Plain(words);
@@ -115,14 +132,13 @@ namespace RealLifeOverhaul.Ui
             r.Line = LineOf(file, p, built, out UiIcon icon);
             r.Icon = icon;
             int likes = FlareLiveRules.Shown(p.Likes, p, now) + p.PlayerLikes + (p.Liked ? 1 : 0);
-            _replyCount.TryGetValue(p.Id, out int replies);
-            replies += p.Id >= 0 ? FlareLiveRules.Shown(p.Replies, p, now) : 0;
+            int replies = RepliesOf(p, now);
             r.Likes = likes > 0 ? FlareFeedRules.Count(likes) : null;
             r.Comments = replies > 0 ? FlareFeedRules.Count(replies) : null;
             int reposts = FlareLiveRules.Shown(p.Reposts, p, now);
             r.Reposts = reposts > 0 ? FlareFeedRules.Count(reposts) : null;
-            int views = FlareLiveRules.Shown(p.Reach, p, now);
-            r.Views = views > 0 ? FlareFeedRules.Count(views) : null;
+            FlareFunnel did = p.Author == FlareAuthor.Player ? _flare.FunnelOfPost(p.Id) : null;   // the residents who saw it are among the views
+            r.Views = FlareFigures.Views(FlareLiveRules.Shown(p.Reach, p, now), did != null ? did.Seen : 0);
             ResultOf(file, p, now, ref r);
         }
 
@@ -216,6 +232,69 @@ namespace RealLifeOverhaul.Ui
         }
 
         private static bool HasTag(string topic, string tag) => FlareFeedRules.HasTag(topic, tag);
+
+        // ------------------------------------------------------------------------------------------------ the face an account wears
+
+        // A person's face is painted from their name on the ring of their mood where the game has one (a friend's mood, the player's happiness, an influencer's record);
+        // a business, a brand or an office keeps its initials. The name is set before this is asked.
+        private void Look(string key, ref FlareRow r)
+        {
+            if (string.IsNullOrEmpty(key))
+            {
+                return;
+            }
+            FlareFile file = _flare.File;
+            int n;
+            if (key == "me" || key == _flare.MeKey)
+            {
+                r.Flags |= FlareRowFlags.Person;
+                r.Ring = _m.MyRing;
+            }
+            else if (key.StartsWith("i:", StringComparison.Ordinal) && int.TryParse(key.Substring(2), out n))
+            {
+                FlareInfluencer inf = file != null ? file.Influencer(n) : null;
+                if (inf != null)
+                {
+                    r.Flags |= FlareRowFlags.Person;
+                    r.Ring = UiTokens.Grade(inf.Reliability);
+                }
+            }
+            else if (key.Length > 1 && key[0] == 'f' && int.TryParse(key.Substring(1), out n) && _flare.Person(n, out FlarePerson person))
+            {
+                r.Flags |= FlareRowFlags.Person;
+                r.Ring = FlareFace.MoodRing(person.Mood);
+                UiFaces.Traits(r.Name, person.Female, person.Age);
+            }
+            else if (key.Length > 1 && key[0] == 'c' && key[1] != ':' && int.TryParse(key.Substring(1), out n) && n >= 0 && n < _flare.Citizens.Count)
+            {
+                FlareCitizen c = _flare.Citizens[n];
+                r.Flags |= FlareRowFlags.Person;
+                UiFaces.Traits(r.Name, c.Female, c.Age);   // no mood is known of the city's people: no ring
+            }
+        }
+
+        // The face a post's author wears: the account is told from who wrote it, since a friend's or the player's own post has no key.
+        private void LookOfPost(FlarePost p, ref FlareRow r, string key)
+        {
+            switch (p.Author)
+            {
+                case FlareAuthor.Player:
+                    Look("me", ref r);
+                    break;
+                case FlareAuthor.Friend:
+                    Look("f" + p.Who.ToString(CultureInfo.InvariantCulture), ref r);
+                    break;
+                case FlareAuthor.Citizen:
+                    Look("c" + p.Who.ToString(CultureInfo.InvariantCulture), ref r);
+                    break;
+                case FlareAuthor.Influencer:
+                    Look("i:" + p.Who.ToString(CultureInfo.InvariantCulture), ref r);
+                    break;
+                default:
+                    Look(key, ref r);
+                    break;
+            }
+        }
 
         // ------------------------------------------------------------------------------------------------ who wrote it
 
@@ -386,11 +465,14 @@ namespace RealLifeOverhaul.Ui
                 case RowAct.Thread: return r.Post != null && r.Post.Id >= 0 && OpenThread(r.Post.Id);
                 case RowAct.Profile: return OpenProfile(r.Key);
                 case RowAct.Tag: return OpenTag(r.Key);
-                case RowAct.Conversation: return OpenConversation(r.Key);
+                case RowAct.Conversation:
+                case RowAct.Campaign: return OpenConversation(r.Key);
                 case RowAct.Business: return OpenBusiness(r.Id);
                 case RowAct.Review:
                 case RowAct.Note: return OpenReply(r);
-                case RowAct.Hire: return OpenHire(r.Id);
+                case RowAct.Hire:
+                    _dirty = true;
+                    return _kit.ChooseHire(r.Id);   // the row chooses the influencer the card under the table tells of; the button hires them
                 default: return false;
             }
         }
@@ -403,8 +485,9 @@ namespace RealLifeOverhaul.Ui
             {
                 case RowAct.Review:
                 case RowAct.Note: return OpenReply(r);
-                case RowAct.Hire: return OpenHire(r.Id);
-                case RowAct.Trend: return OpenCompose(-1, r.Key);
+                case RowAct.Hire: return _kit.HireOpen(r.Id);
+                case RowAct.Trend: return PromoteTrend(r.Id, r.Key);
+                case RowAct.Campaign: return _kit.End(r.Id);
                 case RowAct.Going:
                     if (r.Post == null)
                     {
@@ -485,7 +568,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
-            _compose.Mention = r.Key != null && r.Key != "me" && r.Key != _flare.MeKey ? r.Key : null;
+            _mention = r.Key != null && r.Key != "me" && r.Key != _flare.MeKey ? r.Key : null;
             Author(r.Post, out string name, out _, out _, out _);
             _compose.Text = FlareLiveRules.Clip(FlareText.Fill("reallife_flare_kit_share_text", "name", name), FlareLiveRules.TextMost);
             return true;

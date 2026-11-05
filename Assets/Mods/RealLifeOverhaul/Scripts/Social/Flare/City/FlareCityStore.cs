@@ -285,7 +285,7 @@ namespace RealLifeOverhaul.Flare
         private static void WriteUse(Writer w, FlareCityState c)
         {
             bool any = c.ReviewNotes.Count > 0 || c.StarRows.Count > 0 || c.AdMasks.Count > 0 || c.OfferNeeds.Count > 0
-                || c.RivalBoosts.Count > 0 || !string.IsNullOrEmpty(c.WarnKey) || c.RivalDay >= 0;
+                || c.RivalBoosts.Count > 0 || !string.IsNullOrEmpty(c.WarnKey) || c.RivalDay >= 0 || c.CreatorTotal > 0;
             if (!any)
             {
                 return;
@@ -356,6 +356,8 @@ namespace RealLifeOverhaul.Flare
                 w.Int(s.Raised);
                 w.Int(s.RaisedStars);
             }
+            w.Long(c.CreatorPaid);   // the creator income last paid and all paid, after the answers each rating weighs: an older reader stops before them
+            w.Long(c.CreatorTotal);
         }
 
         private static void ReadUse(Reader r, FlareCityState c)
@@ -418,6 +420,11 @@ namespace RealLifeOverhaul.Flare
                     s.Raised = raised;
                     s.RaisedStars = raisedStars;
                 }
+            }
+            if (r.More)
+            {
+                c.CreatorPaid = Math.Max(0, r.Long());
+                c.CreatorTotal = Math.Max(0, r.Long());
             }
         }
 

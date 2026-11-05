@@ -25,6 +25,9 @@ namespace RealLifeOverhaul
             {
                 FlareBridges.Residents = Residents;
                 FlareBridges.Pools = Pools;
+                FlareBridges.CityMoves = CityMoves;
+                _toLetScan = new Districts.ToLetScan();   // a new map for each connect: a save loaded on the same day number starts with none
+                FlareBridges.ToLetSlice = ToLetSlice;
                 CityPopulation.DayLived += Lived;
                 PopulationAttention.Register(Source, Attention);
                 StudioBridges.Talk = Talk;
@@ -42,6 +45,51 @@ namespace RealLifeOverhaul
                 PopulationAttention.Unregister(Source);
                 CityPopulation.DayLived -= Lived;
                 FlareBridges.ResetCity();
+            }
+
+            private static Districts.ToLetScan _toLetScan = new Districts.ToLetScan();
+
+            // The premises to let, a few hundred buildings a call: the scan starts over when asked to, and the finished map comes back once, else null.
+            private static System.Collections.Generic.Dictionary<string, int> ToLetSlice(bool restart, int most)
+            {
+                try
+                {
+                    if (restart)
+                    {
+                        _toLetScan.Begin();
+                    }
+                    return _toLetScan.Step(most) ? _toLetScan.Done : null;
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareCityLinks.ToLetSlice", e);
+                    return _toLetScan.Done;
+                }
+            }
+
+            // The rivals' new shops (the rivals' live Outlet moves), for the city page; the premises to let are the day's own sliced scan (ToLetSlice).
+            private static void CityMoves(System.Collections.Generic.List<FlareCityMove> into)
+            {
+                try
+                {
+                    Rivals.RivalDirector rivals = Rivals.RivalDirector.Instance;
+                    Rivals.RivalFile f = rivals != null && rivals.Running && !rivals.Resting ? rivals.File : null;
+                    for (int m = 0; f != null && m < f.Moves.Count; m++)
+                    {
+                        Rivals.RivalMove mv = f.Moves[m];
+                        if (mv.Kind == Rivals.RivalMoveKind.Outlet && mv.Live && !mv.Test && mv.Tycoon >= 0 && mv.Tycoon < f.Tycoons.Length)
+                        {
+                            into.Add(new FlareCityMove
+                            {
+                                Kind = FlareMoveKind.Outlet, District = mv.District, Name = mv.Name, By = f.Tycoons[mv.Tycoon].Def.Name, Day = mv.Announced
+                            });
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("FlareCityLinks.CityMoves", e);
+                }
             }
 
             // The game studio on Flare (Tech/Studio/StudioBridges): its news as its account's posts, a devlog's hype, a campaign's pledges; Flare off, nothing.

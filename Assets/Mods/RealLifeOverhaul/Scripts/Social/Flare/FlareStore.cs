@@ -283,7 +283,8 @@ namespace RealLifeOverhaul.Flare
                 }
             }
             bool reach = f.ReachDay >= 0;
-            if (!string.IsNullOrEmpty(f.Bio) || !string.IsNullOrEmpty(f.Banner) || f.TierSeen != 0 || f.ReviewWarnDay != -1 || reach)
+            bool tiers = FlareNoticeRules.AnyTierDay(f);
+            if (!string.IsNullOrEmpty(f.Bio) || !string.IsNullOrEmpty(f.Banner) || f.TierSeen != 0 || f.ReviewWarnDay != -1 || reach || tiers)
             {
                 b.Append("\nU|").Append(Clean(f.Bio)).Append('|').Append(Clean(f.Banner));
                 Join(b, f.TierSeen, f.ReviewWarnDay, f.ReachDay);
@@ -291,6 +292,11 @@ namespace RealLifeOverhaul.Flare
                 for (int i = 0; i < f.ReachDays.Length; i++)
                 {
                     b.Append(i > 0 ? "," : string.Empty).Append(f.ReachDays[i].ToString(Inv));
+                }
+                b.Append('|');   // after the reach series, so an older reader stops before it: the day each tier was reached
+                for (int i = 0; i < f.TierDays.Length; i++)
+                {
+                    b.Append(i > 0 ? "," : string.Empty).Append(f.TierDays[i].ToString(Inv));
                 }
             }
             for (int i = 0; i < f.Boosts.Count; i++)
@@ -407,6 +413,14 @@ namespace RealLifeOverhaul.Flare
                             for (int d = 0; d < f.ReachDays.Length && d < days.Length; d++)
                             {
                                 f.ReachDays[d] = Math.Max(0, I(days, d));
+                            }
+                        }
+                        if (c.Length >= 8)
+                        {
+                            string[] tierDays = c[7].Split(',');
+                            for (int d = 0; d < f.TierDays.Length && d < tierDays.Length; d++)
+                            {
+                                f.TierDays[d] = I(tierDays, d, -1);
                             }
                         }
                     }

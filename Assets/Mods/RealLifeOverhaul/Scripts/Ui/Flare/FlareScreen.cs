@@ -10,13 +10,15 @@ namespace RealLifeOverhaul.Ui
     /// own text box, into the field the player pressed. Cost: nothing per frame but a comparison of the account's revision;
     /// a fill and a layout when something changed; a list's rows are filled up to their caps and laid only where in view.
     /// </summary>
-    public sealed partial class FlareScreen : IUiScreen, IUiTypingSubmit, IUiTypingQuiet
+    public sealed partial class FlareScreen : IUiScreen, IUiTypingSubmit, IUiTypingQuiet, IFlareKitHost
     {
         public const int FeedMost = 100, NoticesMost = FlareDirector.KitNoticesMost, ThreadsMost = 40, BubblesMost = 80, ResultsMost = 30, ReviewsMost = 40,
-            InfluencersMost = 30, CardsMost = 24, StoriesMost = FlareFace.MostStories, WhoMost = 5, ExploreWhoMost = 12, TrendsMost = 5, HistoryMost = 8;   // the side drops the rows that do not fit
+            InfluencersMost = 30, CardsMost = 24, StoriesMost = FlareFace.MostStories, WhoMost = 8, ExploreWhoMost = 12, TrendsMost = 5, ExploreTrendsMost = 8, HistoryMost = 8,
+            NeedsMost = 4, AdsMost = 4;   // the side drops the rows that do not fit
 
         private readonly FlareDirector _flare;
         private readonly FlareFaceModel _m = new FlareFaceModel();
+        private readonly FlareKitPress _kit;
 
         // Where the player is, and where Back goes.
         private struct Spot
@@ -50,6 +52,7 @@ namespace RealLifeOverhaul.Ui
         public FlareScreen(FlareDirector flare)
         {
             _flare = flare;
+            _kit = new FlareKitPress(this) { AdTargets = FlareCityCatalogue.AdTargets, AdSizes = FlareCityCatalogue.AdReach.Length, AdDays = FlareCityCatalogue.AdDays.Length };
             PicturesOn();
             TakeKitPage();
             TakeWantedPhoto();
@@ -114,13 +117,14 @@ namespace RealLifeOverhaul.Ui
                 if (_field == FlareFace.SearchField && _page != FlareFace.Explore)
                 {
                     Show(FlareFace.Explore);   // the side's search: its words show in Explore's field as they are typed
+                    _m.NewPage = false;        // and the field stays the focus, the player is typing in it
                 }
                 return Typing(_field) ?? string.Empty;
             }
         }
 
         public int TypingLimit => _field == FlareFace.ThreadField ? FlareLiveRules.DmTextMost : _field == FlareFace.SearchField || _field == FlareFace.InboxField ? 40
-            : FlareLiveRules.TextMost;
+            : _field == FlareFace.BioField ? FlareDeskRules.BioMost : FlareLiveRules.TextMost;
 
         private string Typing(int field)
         {
@@ -132,6 +136,7 @@ namespace RealLifeOverhaul.Ui
                 case FlareFace.ThreadField: return _message;
                 case FlareFace.ReplyField: return _reply;
                 case FlareFace.PickerField: return _pickQuery.Search;
+                case FlareFace.BioField: return _kit.Bio;
                 default: return null;
             }
         }
@@ -147,6 +152,7 @@ namespace RealLifeOverhaul.Ui
                 case FlareFace.ThreadField: _message = text; break;
                 case FlareFace.ReplyField: _reply = text; break;
                 case FlareFace.PickerField: _pickQuery.Search = text.Length == 0 ? null : text; _pickBuilt = false; _m.Picker.Photos.Offset = 0f; break;
+                case FlareFace.BioField: _kit.Bio = text.Length > FlareDeskRules.BioMost ? text.Substring(0, FlareDeskRules.BioMost) : text; break;
                 default: return;
             }
             _dirty = true;
@@ -195,6 +201,10 @@ namespace RealLifeOverhaul.Ui
         public bool Press(int command, int arg)
         {
             bool done;
+            if (command != FlareFace.ButtonCommand)
+            {
+                _kit.EndArmed = -1;   // asked to end a campaign, then did something else: the question lapses
+            }
             try
             {
                 done = Pressed(command, arg);
@@ -212,7 +222,7 @@ namespace RealLifeOverhaul.Ui
         {
             switch (command)
             {
-                case FlareFace.NavCommand: return arg >= 0 && arg < FlareFace.Pages && Nav(arg);
+                case FlareFace.NavCommand: return arg >= 0 && arg < FlareFace.Pages && NavPressed(arg);
                 case FlareFace.PostCommand:
                 case FlareFace.ComposerCommand: return OpenCompose(-1);
                 case FlareFace.ChipCommand: return OpenCompose(arg);
@@ -245,6 +255,11 @@ namespace RealLifeOverhaul.Ui
                 case FlareFace.SheetCancelCommand: return CloseSheet();
                 case FlareFace.PickerPhotoCommand: return PickPhoto(arg);
                 case FlareFace.PickerAlbumCommand: return PickAlbum(arg);
+                case FlareFace.MarkAllCommand:
+                case FlareFace.SortCommand:
+                case FlareFace.NicheCommand: return KitPress(command, arg);
+                case FlareFace.PromoteCommand: return OpenAd(arg);
+                case FlareFace.EditCommand: return OpenEdit();
                 default: return false;
             }
         }
@@ -300,6 +315,10 @@ namespace RealLifeOverhaul.Ui
             {
                 SetTab((_profileTab + step + 3) % 3);
             }
+            else if (_page == FlareFace.Notices)
+            {
+                SetTab((_kit.NoticeTab + step + FlareKitPress.NoticeTabs) % FlareKitPress.NoticeTabs);
+            }
         }
 
         public bool Act(UiAction action)
@@ -345,6 +364,14 @@ namespace RealLifeOverhaul.Ui
             return true;
         }
 
+        // A press on a nav entry: the page opens and focus stays on the entry, as in every sidebar of the kit, so right goes into the page.
+        private bool NavPressed(int page)
+        {
+            Nav(page);
+            _m.FromNav = true;
+            return true;
+        }
+
         // Where the player is now, kept for Back before they go further.
         private void Push()
         {
@@ -358,6 +385,9 @@ namespace RealLifeOverhaul.Ui
         private void Show(int page)
         {
             _page = page;
+            _m.NewPage = true;   // focus starts again on the new page (FlareFace.Lay); a press on the nav says so with FromNav and keeps it on its entry
+            _m.FromNav = false;
+            _kit.EndArmed = -1;
             _sheet = FlareFace.NoSheet;
             _m.List.Offset = 0f;
             _m.List.Footed = false;
@@ -448,6 +478,11 @@ namespace RealLifeOverhaul.Ui
 
         private bool SetTab(int tab)
         {
+            if (_page == FlareFace.Notices)
+            {
+                _m.List.Offset = 0f;
+                return _kit.SetNoticeTab(tab);
+            }
             if (tab < 0 || tab > 2)
             {
                 return false;
@@ -477,6 +512,10 @@ namespace RealLifeOverhaul.Ui
             }
             else if (_page == FlareFace.Hire)
             {
+                if (arg > _hireDistricts.Count)
+                {
+                    return false;
+                }
                 _district = arg;
             }
             else

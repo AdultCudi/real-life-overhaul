@@ -233,6 +233,33 @@ namespace RealLifeOverhaul.Flare
             return K + "trend_kind_" + Math.Max(0, Math.Min(kind, FlareCityRules.Kinds - 1)).ToString(System.Globalization.CultureInfo.InvariantCulture);
         }
 
+        // The tag a kind of goods or going out is posted under, one word in English whatever the language: the same on every machine of a session.
+        private static readonly string[] KindTags =
+        {
+            null, null, null, "eatingout", "coffee", "fashion", "gadgets", "furniture", "booksandgifts", "flowers", "jewellery", "workingout", "cinema", "theatre",
+            "nightlife", "casinos", null, "hairandbeauty"
+        };
+
+        /// <summary>
+        /// The tag a trend is promoted under, from the trend's own key (<see cref="TrendKindKey"/> or a genre's), never from its words in the player's
+        /// language; null for a key it does not know.
+        /// </summary>
+        public static string TrendTag(string whatKey)
+        {
+            if (string.IsNullOrEmpty(whatKey))
+            {
+                return null;
+            }
+            const string kindStart = K + "trend_kind_";
+            if (whatKey.StartsWith(kindStart, StringComparison.Ordinal))
+            {
+                return int.TryParse(whatKey.Substring(kindStart.Length), System.Globalization.NumberStyles.None, System.Globalization.CultureInfo.InvariantCulture, out int kind)
+                       && kind >= 0 && kind < KindTags.Length ? KindTags[kind] : null;
+            }
+            int at = whatKey.IndexOf("_genre_", StringComparison.Ordinal);
+            return at >= 0 && at + 7 < whatKey.Length ? whatKey.Substring(at + 7).ToLowerInvariant() : null;
+        }
+
         /// <summary>The words of an ad's target, by its number (FlareDirector.AdOf's targets).</summary>
         public static string TargetKey(int target)
         {

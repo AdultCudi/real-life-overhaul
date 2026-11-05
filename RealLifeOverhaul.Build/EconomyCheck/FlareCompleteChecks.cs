@@ -497,7 +497,7 @@ internal static partial class Program
         {
             pages = fill.Contains("case FlareFace." + pageNames[page] + ": " + pageNames[page] + "(file, now); break;") ? pages : pageNames[page];
         }
-        bool allNavs = navs.Count == FlareFace.Pages && pressed.Contains("case FlareFace.NavCommand: return arg >= 0 && arg < FlareFace.Pages && Nav(arg);");
+        bool allNavs = navs.Count == FlareFace.Pages && pressed.Contains("case FlareFace.NavCommand: return arg >= 0 && arg < FlareFace.Pages && NavPressed(arg);");
         Check(allNavs && pages == "none", "Flare complete: each of the nine pages of the nav, and a post's thread, is filled from the account (" + navs.Count + " in the nav, unfilled " + pages + ")");
         string sheets = File.ReadAllText(System.IO.Path.Combine(ui, "FlareScreen.Sheet.cs"));
         int open = sheets.IndexOf("private bool OpenCompose(int chip", StringComparison.Ordinal);

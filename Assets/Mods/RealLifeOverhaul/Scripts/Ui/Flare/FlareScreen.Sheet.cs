@@ -52,6 +52,7 @@ namespace RealLifeOverhaul.Ui
             _poll = false;
             _composeTag = tag;
             _sheetWhy = null;
+            ResetKinds();
             List<FlareShop> shops = _flare.MyShops();
             switch (chip)
             {
@@ -126,7 +127,7 @@ namespace RealLifeOverhaul.Ui
         {
             if (_sheet == FlareFace.PhotosSheet)
             {
-                _sheet = FlareFace.ComposeSheet;   // the picker's cancel goes back to the post being written
+                _sheet = _pickFrom;   // the picker's cancel goes back to the sheet it was opened from
                 _dirty = true;
                 return true;
             }
@@ -154,6 +155,10 @@ namespace RealLifeOverhaul.Ui
             k.Chosen = new int[0];
             k.Figures = k.FigureLabels = k.Options = k.OptionLines = None;
             k.Option = -1;
+            k.FieldArg = FlareFace.ComposeField;
+            k.BarsTitle = null;
+            k.BarLabels = k.BarFigures = None;
+            k.BarShares = new float[0];
             k.Cancel = FlareText.T("reallife_flare_kit_cancel");
             _groups.Clear();
             switch (_sheet)
@@ -162,99 +167,9 @@ namespace RealLifeOverhaul.Ui
                 case FlareFace.HireSheet: HireSheet(file, now, k); break;
                 case FlareFace.ReplySheet: ReplySheet(file, k); break;
                 case FlareFace.PhotosSheet: FillPicker(); break;
+                case FlareFace.AdSheet: AdSheet(k); break;
+                case FlareFace.EditSheet: EditSheet(k); break;
             }
-        }
-
-        private void ComposeSheet(FlareSheetModel k)
-        {
-            List<FlareShop> shops = _flare.MyShops();
-            if (_place >= shops.Count)
-            {
-                _place = -1;
-            }
-            Apply(shops);
-            string first = _flare.MyName;
-            int space = first.IndexOf(' ');
-            k.Title = FlareText.T("reallife_flare_kit_compose_title");
-            k.Line = FlareText.Fill("reallife_flare_kit_compose_as", "name", _flare.MyName, "handle", _flare.MyHandle);
-            k.Field = true;
-            k.FieldText = _compose.Text;
-            k.FieldHint = FlareText.Fill("reallife_flare_kit_composer", "name", space > 0 ? first.Substring(0, space) : first);
-            k.FieldCount = FlareText.Fill("reallife_flare_kit_count", "count", (_compose.Text ?? string.Empty).Length.ToString(CultureInfo.InvariantCulture), "most",
-                FlareLiveRules.TextMost.ToString(CultureInfo.InvariantCulture));
-            k.Picture = _compose.Pic;
-            var groups = new List<string>(5);
-            var chips = new List<string[]>(5);
-            var chosen = new List<int>(5);
-            string[] photos = new string[_photos.Count + 2];
-            photos[0] = FlareText.T("reallife_flare_kit_no_photo");
-            for (int i = 0; i < _photos.Count; i++)
-            {
-                photos[i + 1] = FlareText.Fill(_photos[i].IndexOf(System.IO.Path.DirectorySeparatorChar) < 0 && _photos[i].IndexOf('/') < 0 ? "reallife_flare_kit_photo_mine"
-                    : "reallife_flare_kit_photo_n", "n", (i + 1).ToString(CultureInfo.InvariantCulture));
-            }
-            photos[_photos.Count + 1] = FlareText.T("reallife_flare_kit_photo_gallery");   // the whole Gallery, in the picker
-            Group(groups, chips, chosen, GroupPhoto, FlareText.T("reallife_flare_kit_chip_photo"), photos, _photo == GalleryPhoto ? _photos.Count + 1 : _photo + 1);
-            if (shops.Count > 0)
-            {
-                string[] places = new string[Math.Min(shops.Count, ShopsMost) + 1];
-                places[0] = FlareText.T("reallife_flare_kit_no_place");
-                for (int i = 1; i < places.Length; i++)
-                {
-                    places[i] = shops[i - 1].Name ?? "?";
-                }
-                Group(groups, chips, chosen, GroupPlace, FlareText.T("reallife_flare_kit_chip_place"), places, _place + 1);
-            }
-            if (_place >= 0)
-            {
-                string[] steps = new string[FlareUseRules.ReachSteps.Length];
-                steps[0] = FlareText.T("reallife_flare_kit_free");
-                for (int i = 1; i < steps.Length; i++)
-                {
-                    steps[i] = FlareText.Fill("reallife_flare_kit_reach_step", "count", FlareFeedRules.Count(FlareUseRules.ReachSteps[i]));
-                }
-                Group(groups, chips, chosen, GroupPromote, FlareText.T("reallife_flare_kit_chip_promote"), steps, _promote);
-                if (_promote > 0)
-                {
-                    string[] days = new string[PromoteDays.Length];
-                    for (int i = 0; i < days.Length; i++)
-                    {
-                        days[i] = PromoteDays[i] == 1
-                            ? FlareText.T("reallife_flare_kit_day_one")
-                            : FlareText.Fill("reallife_flare_kit_days_n", "count", PromoteDays[i].ToString(CultureInfo.InvariantCulture));
-                    }
-                    Group(groups, chips, chosen, GroupDays, FlareText.T("reallife_flare_kit_for_how_long"), days, _promoteDays);
-                }
-            }
-            Group(groups, chips, chosen, GroupPoll, FlareText.T("reallife_flare_kit_chip_poll"), new[] { FlareText.T("reallife_flare_kit_no_poll"), FlareText.T("reallife_flare_kit_poll_yes_no") },
-                _poll ? 1 : 0);
-            k.Groups = groups.ToArray();
-            k.Chips = chips.ToArray();
-            k.Chosen = chosen.ToArray();
-            int cost = 0;
-            if (_compose.Place != null)
-            {
-                FlareExpect ex = _flare.Preview(_compose);
-                cost = ex.Cost;
-                k.FigureLabels = new[]
-                {
-                    FlareText.T("reallife_flare_kit_fig_reach"), FlareText.T("reallife_flare_kit_fig_likely"), FlareText.T("reallife_flare_kit_fig_takings"),
-                    FlareText.T("reallife_flare_kit_fig_cost")
-                };
-                k.Figures = new[]
-                {
-                    FlareFeedRules.Count(ex.Reach), FlareText.N(ex.Visitors), FlareText.Money(ex.Cents / 100), ex.Cost > 0 ? FlareText.Money(ex.Cost / 100) : FlareText.T("reallife_flare_kit_free")
-                };
-                k.Note = FlareText.Fill("reallife_flare_kit_forecast", "hours", ex.Hours.ToString(CultureInfo.InvariantCulture), "flop", (ex.Flop / 10).ToString(CultureInfo.InvariantCulture),
-                    "viral", (ex.Viral / 10).ToString(CultureInfo.InvariantCulture));
-            }
-            if (_sheetWhy != null)
-            {
-                k.Note = FlareText.T(_sheetWhy);
-                k.NoteBad = true;
-            }
-            k.Confirm = cost > 0 ? FlareText.Fill("reallife_flare_kit_post_pay", "money", FlareText.Money(cost / 100)) : FlareText.T("reallife_flare_post");
-            k.ConfirmOff = string.IsNullOrWhiteSpace(_compose.Text) && _compose.Pic == null;
         }
 
         private void Group(List<string> groups, List<string[]> chips, List<int> chosen, int kind, string label, string[] words, int on)
@@ -263,27 +178,6 @@ namespace RealLifeOverhaul.Ui
             groups.Add(label);
             chips.Add(words);
             chosen.Add(on);
-        }
-
-        // The sheet's choices onto the compose the director posts.
-        private void Apply(List<FlareShop> shops)
-        {
-            _compose.Kind = FlareSource.Life;
-            _compose.Pic = _photo == GalleryPhoto ? _chosenPhoto : _photo >= 0 && _photo < _photos.Count ? _photos[_photo] : null;
-            if (_place >= 0 && _place < shops.Count)
-            {
-                _compose.Place = shops[_place].Place;
-                _compose.Name = shops[_place].Name;
-                _compose.District = shops[_place].District;
-            }
-            else
-            {
-                _compose.Place = _compose.Name = _compose.District = null;
-            }
-            _compose.PromoteReach = _compose.Place != null ? FlareUseRules.PromoteOf(_promote) : 0;
-            _compose.PromoteDays = PromoteDays[Math.Max(0, Math.Min(_promoteDays, PromoteDays.Length - 1))];
-            _compose.Poll = _poll;
-            _compose.Tags = _poll ? (string.IsNullOrEmpty(_composeTag) ? FlareFeedRules.PollTag : _composeTag + " " + FlareFeedRules.PollTag) : _composeTag;
         }
 
         private void HireSheet(FlareFile file, long now, FlareSheetModel k)
@@ -336,6 +230,12 @@ namespace RealLifeOverhaul.Ui
                 can ? FlareText.Money(cost) : "-", can ? "+" + percent.ToString(CultureInfo.InvariantCulture) + "%" : "-", FlareText.N(ex.Visitors * posts),
                 FlareText.District(inf.District)
             };
+            if (_flare.AudienceOf(inf.Id, _bandNames, _bandCounts, out int rest, out int total) && _bandCounts.Count > 0)
+            {
+                // Where their followers in the city live: the bars the hire card draws for the same influencer, from the same function.
+                k.BarsTitle = FlareText.T("reallife_flare_kit_audience_title");
+                FlareFigures.Audience(_bandNames, _bandCounts, total, FlareText.District, out k.BarLabels, out k.BarFigures, out k.BarShares);
+            }
             if (!can)
             {
                 k.Note = why == FlareDirector.BusyWhy && _flare.CampaignAt(shop.Place, out FlareCampaign busy) ? FlareText.Busy(busy, _flare.CurrentDay)
@@ -344,8 +244,8 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
-                k.Note = FlareText.Fill(fits ? "reallife_flare_kit_hire_fits" : "reallife_flare_kit_hire_far", "posts", posts.ToString(CultureInfo.InvariantCulture),
-                    "flop", (ex.Flop / 10).ToString(CultureInfo.InvariantCulture), "viral", (ex.Viral / 10).ToString(CultureInfo.InvariantCulture));
+                k.Note = FlareFigures.Bind(FlareText.Fill(fits ? "reallife_flare_kit_hire_fits" : "reallife_flare_kit_hire_far", "posts", posts.ToString(CultureInfo.InvariantCulture),
+                    "flop", FlareFigures.Odds(ex.Flop), "viral", FlareFigures.Odds(ex.Viral)));
             }
             if (_sheetWhy != null)
             {
@@ -455,7 +355,9 @@ namespace RealLifeOverhaul.Ui
             }
             _sheetWhy = null;
             List<FlareShop> shops = _flare.MyShops();
-            switch (_groups[group])
+            int kind = _groups[group];
+            bool done;
+            switch (kind)
             {
                 case GroupPhoto:
                     if (chip == _photos.Count + 1)
@@ -463,6 +365,7 @@ namespace RealLifeOverhaul.Ui
                         return OpenPicker();
                     }
                     _photo = chip - 1;
+                    done = true;
                     break;
                 case GroupPlace:
                     _place = chip - 1;
@@ -471,27 +374,46 @@ namespace RealLifeOverhaul.Ui
                         _promote = 0;
                     }
                     Photos(shops);
+                    done = true;
                     break;
                 case GroupPromote:
                     _promote = Math.Min(chip, FlareUseRules.ReachSteps.Length - 1);
+                    done = true;
                     break;
                 case GroupDays:
                     _promoteDays = Math.Min(chip, PromoteDays.Length - 1);
+                    done = true;
                     break;
                 case GroupPoll:
                     _poll = chip == 1;
+                    done = true;
                     break;
                 case GroupBusiness:
                     _hireShop = chip;
+                    done = true;
                     break;
                 case GroupDeal:
                     _hireDeal = Math.Min(chip, HireDeals.Length - 1);
+                    done = true;
+                    break;
+                case GroupAdTarget:
+                    done = _kit.AdChip(0, chip);
+                    break;
+                case GroupAdSize:
+                    done = _kit.AdChip(1, chip);
+                    break;
+                case GroupAdDays:
+                    done = _kit.AdChip(2, chip);
+                    break;
+                case GroupBanner:
+                    done = BannerChip(chip);
                     break;
                 default:
-                    return false;
+                    done = ComposeChip(kind, chip);
+                    break;
             }
-            _dirty = true;
-            return true;
+            _dirty |= done;
+            return done;
         }
 
         private bool SheetOption(int option)
@@ -512,6 +434,8 @@ namespace RealLifeOverhaul.Ui
                 case FlareFace.ComposeSheet: return PostNow();
                 case FlareFace.HireSheet: return HireNow();
                 case FlareFace.ReplySheet: return ReplyNow();
+                case FlareFace.AdSheet: return AdNow();
+                case FlareFace.EditSheet: return EditNow();
                 default: return false;
             }
         }
@@ -521,9 +445,16 @@ namespace RealLifeOverhaul.Ui
         {
             List<FlareShop> shops = _flare.MyShops();
             Apply(shops);
-            if (string.IsNullOrWhiteSpace(_compose.Text) && _compose.Pic == null)
+            if (_kind == KindLife && string.IsNullOrWhiteSpace(_compose.Text) && _compose.Pic == null)
             {
                 return false;
+            }
+            string needs = ComposeNeeds(_flare.File);
+            if (needs != null && _kind != KindLife)
+            {
+                _sheetWhy = needs;
+                _dirty = true;
+                return true;   // the sheet stays open and says what is missing
             }
             if (!_flare.Compose(_compose, out string why))
             {
