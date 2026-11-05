@@ -197,7 +197,7 @@ namespace RealLifeOverhaul
                                 e.Sign = -1;
                                 e.Amount = cost;
                                 e.Title = CalendarText.T("reallife_calendar_hosting_title", "shop", shop.Name);
-                                e.App = OnlineDirector.AppId;
+                                e.App = OnlineDirector.AppId + GameUi.PhoneApp.WantMark + OnlineDirector.TabShops + ":shop:" + shop.Place;   // opens the site whose hosting it is
                             }
                         }
                     }

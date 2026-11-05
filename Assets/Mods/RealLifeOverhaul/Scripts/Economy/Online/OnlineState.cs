@@ -51,6 +51,7 @@ namespace RealLifeOverhaul.Economy
         public readonly int[] Unit = new int[OnlineCatalogue.OrderLines];   // cents, the price when ordered
         public readonly int[] Paid = new int[OnlineCatalogue.OrderLines];   // cents the picked units cost the shop
         public int Total;               // cents paid for what was picked
+        public int PickAt;              // not saved: the hour it may be picked from (a night order is held until the morning)
         public int Tilt;                // its prices against the going price when ordered, thousandths
         public bool Short;              // something asked for was not there
 

@@ -193,7 +193,7 @@ namespace RealLifeOverhaul.Economy
         public static WebOrder NewOrder()
         {
             WebOrder o = Pool.Count > 0 ? Pool.Pop() : new WebOrder();
-            o.Id = o.District = o.Placed = o.Due = o.Arrive = o.Count = o.Total = o.Tilt = 0;
+            o.Id = o.District = o.Placed = o.Due = o.Arrive = o.Count = o.Total = o.Tilt = o.PickAt = 0;
             o.Stage = OrderStage.Waiting;
             o.Short = false;
             for (int i = 0; i < OnlineCatalogue.OrderLines; i++)
@@ -243,6 +243,9 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Asked of an order about to be placed: false turns it away (an area not served, a night order the shop does not take).</summary>
         public static Func<WebShop, int, int, bool> Gate;
 
+        /// <summary>Asked of an order just placed: the hours it is held before it may be picked (0 for none).</summary>
+        public static Func<WebShop, int, int> HoldHook;
+
         /// <summary>Asked of a product's price in an order: the price the customer sees, given the shop's own.</summary>
         public static Func<WebShop, int, int, int> PriceHook;
 
@@ -273,6 +276,12 @@ namespace RealLifeOverhaul.Economy
                 {
                     shop.Today.Turned++;
                     continue;
+                }
+                if (HoldHook != null)
+                {
+                    int held = Math.Max(0, HoldHook(shop, hour));   // hours a night order waits for the morning
+                    o.PickAt = hour + held;
+                    o.Due += held;
                 }
                 for (int c = 0; price != null && c < o.Count; c++)
                 {

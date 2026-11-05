@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using Localizor;
 using RealLifeOverhaul.Economy;
 
@@ -40,15 +41,34 @@ namespace RealLifeOverhaul.Ui
             TakeWant(view);
         }
 
+        /// <summary>A calendar entry or a notice names a place in the app as "tab:pick"; the pick is "shop:place" for a site, "ord:id" for an order, "line:item" for a product.</summary>
+        public static void WantFrom(string want)
+        {
+            int colon = want != null ? want.IndexOf(':') : -1;
+            if (colon > 0 && int.TryParse(want.Substring(0, colon), NumberStyles.Integer, CultureInfo.InvariantCulture, out int tab))
+            {
+                Want(tab, colon + 1 < want.Length ? want.Substring(colon + 1) : null);
+            }
+        }
+
         private static void TakeWant(VentView view)
         {
             if (_wantTab < 0)
             {
                 return;
             }
-            view.Tab = Math.Max(0, Math.Min(2, _wantTab));
+            view.Tab = Math.Max(0, Math.Min(3, _wantTab));
             view.Pick = null;
-            view.S1 = _wantPick != null && _wantPick.StartsWith("shop:", StringComparison.Ordinal) ? ShopPages.SiteKey.Length > 0 ? _wantPick.Substring(5) : null : null;
+            view.From = null;
+            string pick = _wantPick;
+            if (pick != null && pick.StartsWith("shop:", StringComparison.Ordinal))
+            {
+                view.S1 = pick.Substring(5);   // a notice about one site opens it
+            }
+            else if (pick != null && (pick.StartsWith(ShopPages.OrderKey, StringComparison.Ordinal) || pick.StartsWith(ShopPages.LineKey, StringComparison.Ordinal)))
+            {
+                view.Pick = pick;
+            }
             _wantTab = -1;
             _wantPick = null;
         }
@@ -115,7 +135,8 @@ namespace RealLifeOverhaul.Ui
                     WebOrder order = shop.Orders[o];
                     open.Add(new ShopOrderFact
                     {
-                        Customer = CustomerOf(state.Seed, order.Id), Items = ItemsOf(d, shop, order),
+                        Customer = CustomerOf(state.Seed, order.Id), Id = order.Id, StageCode = (int)order.Stage, CanRefund = true, CanSend = order.Stage == OrderStage.Picked,
+                            Items = ItemsOf(d, shop, order),
                             District = order.District < state.Districts.Count ? OnlineText.District(state.Districts[order.District]) : string.Empty,
                         Total = order.Total > 0 ? order.Total : order.Asked, Day = order.Placed / 24, Open = true,
                         Stage = order.Stage == OrderStage.Waiting ? _words.T("reallife_ui_shop_stage_waiting",
@@ -129,7 +150,7 @@ namespace RealLifeOverhaul.Ui
                     FinishedOrder fo = x.Done[done.Length - 1 - o];
                     done[o] = new ShopOrderFact
                     {
-                        Customer = CustomerOf(state.Seed, fo.Person), Items = _words.F("reallife_ui_shop_n_items", "{count} products", "count", fo.Items.ToString()),
+                        Customer = CustomerOf(state.Seed, fo.Person, fo.Person), Items = _words.F("reallife_ui_shop_n_items", "{count} products", "count", fo.Items.ToString()),
                         District = fo.District < state.Districts.Count ? OnlineText.District(state.Districts[fo.District]) : string.Empty, Total = fo.Total, Day = fo.Day,
                             Late = fo.Late, Returned = fo.Returned
                     };
@@ -142,20 +163,24 @@ namespace RealLifeOverhaul.Ui
                         Offline = shop.Offline,
                     Express = OnlineExtraRules.Express(x, state.Districts.Count), FeeCents = x.FeeCents, FreeOverCents = x.FreeOverCents, Packing = x.Packing, Night = x.Night,
                         Match = x.Match,
-                    ShowStock = x.ShowStock, Areas = areas, Sales30 = sales, SalesDays = names, Lines = lines, Open = open.ToArray(), Done = done, CanPay = shop.Offline,
+                    ShowStock = x.ShowStock, StoreName = shop.Name, Areas = areas, Sales30 = sales, SalesDays = names, Lines = lines, Open = open.ToArray(), Done = done,
+                        CanPay = shop.Offline,
                         CanAdvertise = shop.AdEnd <= 0,
                     HostingLine = shop.Offline ? OnlineText.T("reallife_online_row_offline") : null
                 };
+                StoreFacts(d, state, p, x, sites[i], now);
             }
             return new ShopFacts { Sites = sites };
         }
 
-        // A customer is a name from the catalogue's own first and last names, chosen by the order: the same order always has the same customer.
-        private static string CustomerOf(int seed, int order)
+        // A customer is a person of the shared people pool, the one the order chose (OnlineDirector.CustomerOf); a saved person number from before the pool is taken modulo its size,
+        // and with no pool running the order is named by its number.
+        private string CustomerOf(int seed, int order, int saved = 0)
         {
-            string[] first = RealLifeOverhaul.Economy.Ventures.VenturesCatalogue.FirstNames, last = RealLifeOverhaul.Economy.Ventures.VenturesCatalogue.LastNames;
-            uint h = unchecked((uint)(seed * 31 + order) * 2654435761u);
-            return first[(int)((h >> 4) % (uint)first.Length)] + " " + last[(int)((h >> 12) % (uint)last.Length)];
+            int people = RealLifeOverhaul.Population.CityPopulation.People;
+            int id = saved > 0 && people > 0 ? 1 + (int)((uint)saved % (uint)people) : OnlineDirector.CustomerOf(seed, order);
+            EstatePerson p = id > 0 ? EstateLive.ReadPerson(id) : default(EstatePerson);
+            return p.Found && !string.IsNullOrEmpty(p.Name) ? p.Name : _words.F("reallife_ui_shop_customer_n", "Customer {n}", "n", order.ToString(CultureInfo.InvariantCulture));
         }
 
         private static string ItemsOf(OnlineDirector d, WebShop shop, WebOrder order)
@@ -167,6 +192,118 @@ namespace RealLifeOverhaul.Ui
                 sb.Append(j > 0 ? ", " : string.Empty).Append(order.Qty[j]).Append(" x ").Append(d.ItemName(item));
             }
             return sb.ToString();
+        }
+
+        // The shop as customers see it, from the same state the seller pages read: the products with their prices, reviews and promise, the rivals and the latest basket.
+        private void StoreFacts(OnlineDirector d, OnlineState state, WebPlace p, ShopExtra x, ShopSiteFact site, int now)
+        {
+            WebShop shop = p.Shop;
+            var names = new List<string>(4);
+            RealLifeOverhaul.Economy.Ventures.VenturesGame.RivalNames(names);
+            var rivals = new ShopRivalFact[OnlineExtraRules.RivalsMost];
+            for (int r = 0; r < rivals.Length; r++)
+            {
+                rivals[r] = new ShopRivalFact { Index = r, Name = names.Count > 0 ? names[r % names.Count] : _words.F("reallife_ui_shop_rival_n", "Seller {n}", "n",
+                    (r + 1).ToString(CultureInfo.InvariantCulture)) };
+            }
+            int due = OnlineRules.Due(shop.Promise, now);
+            OnlineExtraRules.ArrivesBy(due, now, out int days, out int hour);
+            string arrives = days <= 0 ? _words.F("reallife_ui_shop_arrives_today", "Today by {hour}", "hour", hour.ToString("00", CultureInfo.InvariantCulture) + ":00")
+                : _words.F("reallife_ui_shop_arrives_tomorrow", "Tomorrow by {hour}", "hour", hour.ToString("00", CultureInfo.InvariantCulture) + ":00");
+            var products = new List<ShopProductFact>(site.Lines.Length);
+            var seen = new int[5];
+            var rival = new int[5];
+            var rivalLines = new List<ShopRivalLine>[rivals.Length];
+            for (int r = 0; r < rivals.Length; r++)
+            {
+                rivalLines[r] = new List<ShopRivalLine>(site.Lines.Length);
+            }
+            var rivalStars = new long[rivals.Length];
+            var rivalCount = new long[rivals.Length];
+            for (int l = 0; l < site.Lines.Length; l++)
+            {
+                ShopLineFact line = site.Lines[l];
+                LineExtra le = x.LineOf(line.Item, false);
+                int count = OnlineExtraRules.Breakdown(x, line.Item, seen);
+                var prod = new ShopProductFact
+                {
+                    Item = line.Item, Name = line.Name, Title = le != null ? le.Title : null, Desc = le != null ? le.Desc : null, Cents = line.AskCents,
+                        WasCents = le != null ? le.WasCents : 0,
+                    Stock = line.Stock, OnlyLeft = OnlineExtraRules.OnlyLeft(line.Stock), Express = site.Express, On = line.On, Arrives = arrives,
+                        Halves = OnlineExtraRules.Halves(seen), Count = count,
+                    Breakdown = (int[])seen.Clone()
+                };
+                prod.PercentOff = prod.WasCents > prod.Cents && prod.WasCents > 0 ? (int)((prod.WasCents - prod.Cents) * 100 / prod.WasCents) : 0;
+                var reviews = new List<ShopReviewFact>(6);
+                for (int n = x.Notes.Count - 1; n >= 0 && reviews.Count < 6; n--)
+                {
+                    ReviewNote note = x.Notes[n];
+                    if (string.Equals(note.Item, line.Item, StringComparison.Ordinal))
+                    {
+                        reviews.Add(new ShopReviewFact
+                        {
+                            Index = n, Name = CustomerOf(state.Seed, n, note.Person), Stars = note.Stars, Day = note.Day, Reply = note.Reply,
+                            District = note.District >= 0 && note.District < state.Districts.Count ? OnlineText.District(state.Districts[note.District]) : string.Empty
+                        });
+                    }
+                }
+                prod.Reviews = reviews.ToArray();
+                var sellers = new List<ShopSellerFact>(rivals.Length + 1)
+                {
+                    new ShopSellerFact { Name = site.Name, Cents = line.AskCents, Halves = prod.Halves, Reviews = count, Express = site.Express, Mine = true, Rival = -1 }
+                };
+                for (int r = 0; r < rivals.Length; r++)
+                {
+                    int halves;
+                    int rc = OnlineExtraRules.RivalReviews(state.Seed, r, line.Item, rival, out halves);
+                    long cents = line.GoingCents > 0 ? OnlineExtraRules.RivalPrice(state.Seed, r, line.Item, (int)line.GoingCents) : 0;
+                    if (cents <= 0)
+                    {
+                        continue;
+                    }
+                    sellers.Add(new ShopSellerFact { Name = rivals[r].Name, Cents = cents, Halves = halves, Reviews = rc, Express = r % 2 == 0, Rival = r });
+                    rivalLines[r].Add(new ShopRivalLine { Name = line.Name, Cents = cents, Halves = halves, Count = rc });
+                    rivalStars[r] += halves * rc;
+                    rivalCount[r] += rc;
+                }
+                sellers.Sort((a, b) => a.Cents.CompareTo(b.Cents));
+                prod.Sellers = sellers.ToArray();
+                products.Add(prod);
+            }
+            for (int r = 0; r < rivals.Length; r++)
+            {
+                rivals[r].Lines = rivalLines[r].ToArray();
+                rivals[r].Reviews = (int)Math.Min(int.MaxValue, rivalCount[r]);
+                rivals[r].Halves = rivalCount[r] > 0 ? (int)(rivalStars[r] / rivalCount[r]) : -1;
+                rivals[r].Express = r % 2 == 0;
+            }
+            site.Products = products.ToArray();
+            site.Rivals = rivals;
+            site.Basket = BasketOf(d, state, shop, x, site, arrives);
+        }
+
+        // The latest order, open or finished, as its customer saw the basket: its lines at the prices of the day, the fee the rule asks and the promise.
+        private ShopBasketFact BasketOf(OnlineDirector d, OnlineState state, WebShop shop, ShopExtra x, ShopSiteFact site, string arrives)
+        {
+            WebOrder last = shop.Orders.Count > 0 ? shop.Orders[shop.Orders.Count - 1] : null;
+            if (last == null)
+            {
+                return null;
+            }
+            var lines = new List<ShopBasketLine>(last.Count);
+            long subtotal = 0;
+            for (int j = 0; j < last.Count; j++)
+            {
+                string item = last.Line[j] >= 0 && last.Line[j] < shop.Lines.Count ? shop.Lines[last.Line[j]].Item : null;
+                lines.Add(new ShopBasketLine { Name = d.ItemName(item), Qty = last.Qty[j], Cents = last.Unit[j] });
+                subtotal += (long)last.Qty[j] * last.Unit[j];
+            }
+            long fee = OnlineExtraRules.FeeFor(x, (int)Math.Min(int.MaxValue, subtotal));
+            return new ShopBasketFact
+            {
+                Customer = CustomerOf(state.Seed, last.Id), Arrives = arrives, Lines = lines.ToArray(), Subtotal = subtotal, Fee = fee, FreeOver = x.FreeOverCents,
+                ToFree = x.FreeOverCents > 0 && subtotal < x.FreeOverCents && x.FeeCents > 0 ? x.FreeOverCents - subtotal : 0, Total = subtotal + fee
+            };
         }
 
         // ------------------------------------------------------------------------------------------------- the buttons
@@ -243,6 +380,68 @@ namespace RealLifeOverhaul.Ui
                 d.Rename(place, text);
                 Done();
             }, null, p.Shop.Name, false, OnlineCatalogue.NameMost);
+        }
+
+        private void Ask(string placeholder, string initial, int most, Action<string> done)
+        {
+            RealLifeOverhaul.GameUi.TextBox.Ask(placeholder, "common_confirm", text =>
+            {
+                done(text);
+                Done();
+            }, null, initial ?? string.Empty, true, most);
+        }
+
+        public void Title(string place, string item)
+        {
+            OnlineDirector d = OnlineDirector.Instance;
+            LineExtra l = d != null && d.Extra != null ? d.Extra.Of(place, true).LineOf(item, false) : null;
+            Ask("reallife_ui_shop_title_placeholder", l != null ? l.Title : string.Empty, OnlineCatalogue.NameMost, text => d.SetTitle(place, item, text));
+        }
+
+        public void Describe(string place, string item)
+        {
+            OnlineDirector d = OnlineDirector.Instance;
+            LineExtra l = d != null && d.Extra != null ? d.Extra.Of(place, true).LineOf(item, false) : null;
+            Ask("reallife_ui_shop_desc_placeholder", l != null ? l.Desc : string.Empty, 200, text => d.SetDescription(place, item, text));
+        }
+
+        public void Reply(string place, int note)
+        {
+            OnlineDirector d = OnlineDirector.Instance;
+            ShopExtra x = d != null && d.Extra != null ? d.Extra.Of(place, false) : null;
+            if (x == null || note < 0 || note >= x.Notes.Count)
+            {
+                return;
+            }
+            Ask("reallife_ui_shop_reply_placeholder", x.Notes[note].Reply, 160, text => d.Reply(place, note, text));
+        }
+
+        public void Refund(string place, int order)
+        {
+            OnlineDirector d = OnlineDirector.Instance;
+            if (d == null)
+            {
+                return;
+            }
+            GameConfirm.Show("reallife_ui_shop_refund_title".Localize(), "reallife_ui_shop_refund_body".Localize(new { id = order.ToString(CultureInfo.InvariantCulture) }), Guard.Wrap(() =>
+            {
+                d.RefundOrder(place, order);
+                Done();
+            }), null, null, null, true, true);
+        }
+
+        public void Courier(string place, int order)
+        {
+            OnlineDirector d = OnlineDirector.Instance;
+            if (d == null)
+            {
+                return;
+            }
+            GameConfirm.Show("reallife_ui_shop_send_title".Localize(), "reallife_ui_shop_send_body".Localize(new { id = order.ToString(CultureInfo.InvariantCulture) }), Guard.Wrap(() =>
+            {
+                d.SendCourier(place, order);
+                Done();
+            }), null, null, null, true, false);
         }
 
         public void Close(string place)

@@ -16,9 +16,72 @@ namespace RealLifeOverhaul.Ui
         public bool On;
     }
 
+    /// <summary>A review as the product page shows it: who, where, how many stars, when, and what the owner answered.</summary>
+    public sealed class ShopReviewFact
+    {
+        public int Index, Stars, Day;
+        public string Name, District, Reply;
+    }
+
+    /// <summary>One seller of a product on the marketplace: the player or a rival, its price, rating and badge.</summary>
+    public sealed class ShopSellerFact
+    {
+        public string Name;
+        public long Cents;
+        public int Halves, Reviews, Rival;
+        public bool Express, Mine;
+    }
+
+    /// <summary>A product of the player as customers see it.</summary>
+    public sealed class ShopProductFact
+    {
+        public string Item, Name, Title, Desc, Arrives;
+        public long Cents, WasCents;
+        public int PercentOff, Stock, Halves, Count;
+        public bool OnlyLeft, Express, On;
+        public int[] Breakdown = new int[5];
+        public ShopReviewFact[] Reviews = new ShopReviewFact[0];
+        public ShopSellerFact[] Sellers = new ShopSellerFact[0];
+    }
+
+    /// <summary>A line of a rival catalogue.</summary>
+    public struct ShopRivalLine
+    {
+        public string Name;
+        public long Cents;
+        public int Halves, Count;
+    }
+
+    /// <summary>A rival web shop: its name, rating and the catalogue it lists beside yours.</summary>
+    public sealed class ShopRivalFact
+    {
+        public int Index, Halves, Reviews;
+        public string Name;
+        public bool Express;
+        public ShopRivalLine[] Lines = new ShopRivalLine[0];
+    }
+
+    /// <summary>A line of a basket.</summary>
+    public struct ShopBasketLine
+    {
+        public string Name;
+        public int Qty;
+        public long Cents;
+    }
+
+    /// <summary>The basket of the latest order, as the customer saw it: lines, the delivery fee under the free-over amount, and when it arrives.</summary>
+    public sealed class ShopBasketFact
+    {
+        public string Customer, Arrives;
+        public ShopBasketLine[] Lines = new ShopBasketLine[0];
+        public long Subtotal, Fee, FreeOver, ToFree, Total;
+    }
+
     /// <summary>An order, open or finished.</summary>
     public sealed class ShopOrderFact
     {
+        public int Id, StageCode;
+        public bool CanRefund, CanSend;
         public string Customer, Items, District, Stage;
         public long Total;
         public int Day;
@@ -39,7 +102,10 @@ namespace RealLifeOverhaul.Ui
         public string[] SalesDays = new string[0];
         public ShopLineFact[] Lines = new ShopLineFact[0];
         public ShopOrderFact[] Open = new ShopOrderFact[0], Done = new ShopOrderFact[0];
-        public string AdLine;
+        public string AdLine, StoreName;
+        public ShopProductFact[] Products = new ShopProductFact[0];
+        public ShopRivalFact[] Rivals = new ShopRivalFact[0];
+        public ShopBasketFact Basket;
         public bool CanAdvertise, CanPay;
     }
 
@@ -66,5 +132,10 @@ namespace RealLifeOverhaul.Ui
         void Advertise(string place);
         void Rename(string place);
         void Close(string place);
+        void Title(string place, string item);
+        void Describe(string place, string item);
+        void Reply(string place, int note);
+        void Refund(string place, int order);
+        void Courier(string place, int order);
     }
 }

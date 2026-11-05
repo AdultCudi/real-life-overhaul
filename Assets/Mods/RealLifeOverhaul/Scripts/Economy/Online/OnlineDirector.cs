@@ -354,6 +354,7 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             _view = view;
+            PhoneApp.Wants[AppId] = RealLifeOverhaul.Ui.ShopLive.WantFrom;
             RealLifeOverhaul.Ui.UiShell.Face(_app, def);   // the kit's face over the app, once its switch is on
             Badge();
         }

@@ -281,7 +281,7 @@ namespace RealLifeOverhaul.Ui
                 Columns = new[]
                 {
                     new UiDataColumn { Title = w.T("reallife_ui_bra_col_shop", "Shop"), Kind = UiCellKind.Tile, Width = 0f },
-                    new UiDataColumn { Title = w.T("reallife_ui_bra_col_owner", "Owner"), Kind = UiCellKind.Person, Width = 0f },
+                    new UiDataColumn { Title = w.T("reallife_ui_bra_col_owner", "Owner"), Kind = UiCellKind.Person, Width = 176f },
                     new UiDataColumn { Title = w.T("reallife_ui_bra_col_brand", "Brand"), Kind = UiCellKind.Text, Width = 0f },
                     new UiDataColumn { Title = w.T("reallife_ui_bra_col_day", "A day"), Kind = UiCellKind.Money, Width = 104f },
                     new UiDataColumn { Title = w.T("reallife_ui_bra_col_rating", "Rating"), Kind = UiCellKind.Stars, Width = 120f },
@@ -426,7 +426,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Columns = new[]
                 {
-                    new UiDataColumn { Title = w.T("reallife_ui_bra_col_applicant", "Applicant"), Kind = UiCellKind.Person, Width = 0f },
+                    new UiDataColumn { Title = w.T("reallife_ui_bra_col_applicant", "Applicant"), Kind = UiCellKind.Person, Width = 208f },
                     new UiDataColumn { Title = w.T("reallife_ui_bra_col_brand", "Brand"), Kind = UiCellKind.Text, Width = 0f },
                     new UiDataColumn { Title = w.T("reallife_ui_bra_col_district", "District"), Kind = UiCellKind.Text, Width = 0f },
                     new UiDataColumn { Title = w.T("reallife_ui_bra_col_temper", "Temper"), Kind = UiCellKind.Text, Width = 128f },

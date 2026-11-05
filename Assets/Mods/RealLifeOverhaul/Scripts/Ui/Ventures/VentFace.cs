@@ -18,6 +18,7 @@ namespace RealLifeOverhaul.Ui
         public const int BackCommand = 7656;     // the way out of a page under a tab
         public const int HeadCommand = 7657;     // a button at the head's right: the index of the action
         public const int TableTwo = 140;         // the second table of a page: its commands from here
+        public const int SearchArg = 1000;       // the argument of the search field's typing target
         public const int BackArg = -77;          // an action's argument that means the way back
         public const float Gap = UiTokens.S6;
 
@@ -184,6 +185,7 @@ namespace RealLifeOverhaul.Ui
                     return UiTokens.Control + UiTokens.S1;
                 case VentBlockKind.Actions: return ActionRows(b, w, keys) * (UiTokens.Control + UiTokens.S2) + UiTokens.S1;
                 case VentBlockKind.Steps: return UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S2 + UiTokens.Segment + UiTokens.S3;
+                case VentBlockKind.Search: return UiTokens.Control + UiTokens.S2;
                 case VentBlockKind.Link: return UiTokens.Control;
             }
             return UiTokens.PairRow;
@@ -285,6 +287,9 @@ namespace RealLifeOverhaul.Ui
                 }
                 case VentBlockKind.Steps:
                     return y + UiDraw.Steps(s, at, x, y, w, b.Text, Math.Max(1, b.Count), b.Reached - 1) + UiTokens.S3;
+                case VentBlockKind.Search:
+                    UiDraw.Search(s, at, x, y, w, b.Hint, b.Text, b.Value, StepType, SearchArg);
+                    return y + UiTokens.Control + UiTokens.S2;
                 case VentBlockKind.Link:
                     return y + UiDraw.LinkRow(s, at, x, y, w, UiTokens.Control, b.Text, LinkCommand, b.Run);
             }

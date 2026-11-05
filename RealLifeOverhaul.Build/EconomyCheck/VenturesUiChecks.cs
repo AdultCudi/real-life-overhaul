@@ -363,7 +363,10 @@ internal static partial class Program
                     case VentBlockKind.Table:
                         for (int r = 0; r < b.RowKeys.Length; r++)
                         {
-                            targets.Add((b.Base + UiDataTable.Row, r, "table row " + b.RowKeys[r]));
+                            if (!string.IsNullOrEmpty(b.RowKeys[r]))
+                            {
+                                targets.Add((b.Base + UiDataTable.Row, r, "table row " + b.RowKeys[r]));
+                            }
                         }
                         for (int r = 0; r < b.RowRuns.Length; r++)
                         {

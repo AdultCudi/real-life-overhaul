@@ -308,10 +308,17 @@ namespace RealLifeOverhaul.Ui
         /// <summary>A stepper's field takes the keys when it is pressed (the host starts it).</summary>
         public int TypingCommand => VentFace.StepType;
 
-        public string TypingText => _m.TypedText != null && _typeArg >= 0 ? _m.TypedText(_typeArg) ?? string.Empty : string.Empty;
+        public string TypingText => _typeArg == VentFace.SearchArg ? _view.Query ?? string.Empty : _m.TypedText != null && _typeArg >= 0 ? _m.TypedText(_typeArg) ?? string.Empty : string.Empty;
 
         public void Typed(string text)
         {
+            if (_typeArg == VentFace.SearchArg)
+            {
+                _view.Query = text ?? string.Empty;
+                _view.Offset = 0f;
+                _dirty = true;
+                return;
+            }
             if (_m.Typed != null && _typeArg >= 0 && _m.Typed(_typeArg, text))
             {
                 _dirty = true;

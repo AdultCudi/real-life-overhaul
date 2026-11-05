@@ -343,6 +343,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 return;
             }
             _view = view;
+            PhoneApp.Wants[AppId] = RealLifeOverhaul.Ui.BrandsLive.WantFrom;
             RealLifeOverhaul.Ui.UiShell.Face(_app, def);   // the kit's face over the app, once its switch is on
             Badge();
         }

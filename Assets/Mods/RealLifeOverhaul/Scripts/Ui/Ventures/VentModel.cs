@@ -19,7 +19,8 @@ namespace RealLifeOverhaul.Ui
         Meter,     // a graded bar with its label
         Steps,     // a ring of months or weeks as segments, the reached ones filled
         Link,      // a cyan link that opens or locates something
-        Choice     // a setting with a few values, pressed to go to the next
+        Choice,    // a setting with a few values, pressed to go to the next
+        Search     // a field to type a search in: Text is what is typed, Hint its placeholder, Value its count
     }
 
     /// <summary>A short row of a page: a glyph or a face, a title and a line under it, a chip and an amount. A press runs <see cref="Run"/>.</summary>

@@ -92,7 +92,7 @@ namespace RealLifeOverhaul.Economy
                         Tell(NotificationType.Warning, "reallife_online_note_idle", new Dictionary<string, string>
                         {
                             { "name", place.Shop.Name }, { "count", place.Shop.Count(OrderStage.Waiting).ToString() }
-                        }, TabOrders, null);
+                        }, TabOrders, "shop:" + place.Shop.Place);
                     }
                 }
                 _state.LastHour = hour;
