@@ -350,6 +350,24 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        // How far across its column a row's name, chip and amount may spread: the least of the column and RowContentMost, or what the row's own words need where they are longer (a landlord's
+        // line in another language), so no name is cut while a figure waits for it.
+        private static float RowContent(EstateRow r, float w, float tile)
+        {
+            if (w <= RowContentMost)
+            {
+                return w;
+            }
+            string title = string.IsNullOrEmpty(r.Title) ? r.Title : char.ToUpperInvariant(r.Title[0]) + r.Title.Substring(1);
+            float words = Math.Max(string.IsNullOrEmpty(title) ? 0f : UiTextRules.Width(title, UiStyle.Title), string.IsNullOrEmpty(r.Sub) ? 0f : UiTextRules.Width(r.Sub, UiStyle.Small));
+            float chip = string.IsNullOrEmpty(r.Chip) ? 0f : Math.Min(UiDraw.SnapDown(w * 0.46f), UiFactCard.ChipWidth(r.Chip)) + UiTokens.S3;
+            float amount = string.IsNullOrEmpty(r.Amount) ? 0f : UiDraw.Snap(UiTextRules.Width(r.Amount, UiStyle.BodyStrong) + UiTokens.S1) + UiTokens.S3;
+            float stars = r.Stars > 0 ? 5f * UiTokens.IconSmall + 8f * UiTokens.Hairline + UiTokens.S3 : 0f;
+            float button = string.IsNullOrEmpty(r.Button) ? 0f : UiDraw.ButtonWidth(UiButtonKind.Secondary, r.Button, UiIcon.None, UiAction.Count, null) + UiTokens.S3;
+            float need = tile + UiTokens.S3 + words + UiTokens.S6 + chip + amount + stars + button;
+            return Math.Min(w, Math.Max(RowContentMost, UiDraw.Snap(need)));
+        }
+
         /// <summary>A short row: a glyph (or a face) on its tile, a title with a line under it, a state chip and an amount; the whole row a target when it has a run.</summary>
         internal static void Row(UiScene s, UiAt at, EstateRow r, float x, float y, float w)
         {
@@ -365,7 +383,7 @@ namespace RealLifeOverhaul.Ui
                 int t = UiDraw.Tile(s, on, x, ty, tile, r.Tint, false);
                 UiDraw.Icon(s, on.In(t), x + (tile - UiTokens.Icon) / 2f, ty + (tile - UiTokens.Icon) / 2f, UiTokens.Icon, r.Icon, r.Tint, UiFlags.Middle | UiFlags.Centre, true);
             }
-            float tx = x + tile + UiTokens.S3, right = x + Math.Min(w, RowContentMost);
+            float tx = x + tile + UiTokens.S3, right = x + RowContent(r, w, tile);
             int button = -1;
             if (!string.IsNullOrEmpty(r.Button))
             {
