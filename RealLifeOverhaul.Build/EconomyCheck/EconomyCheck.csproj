@@ -942,6 +942,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Districts\DistrictMonths.cs" Link="Mod\DistrictMonths.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\MapDock\MapSaved.cs" Link="Mod\MapSaved.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\MapDock\MapBusy.cs" Link="Mod\MapBusy.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\MapDock\MapText.cs" Link="Mod\MapText.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WorkQueueStep.cs" Link="Mod\WorkQueueStep.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\MapDock\MapCountRules.cs" Link="Mod\MapCountRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\MapDock\MapLook.cs" Link="Mod\MapLook.cs" />

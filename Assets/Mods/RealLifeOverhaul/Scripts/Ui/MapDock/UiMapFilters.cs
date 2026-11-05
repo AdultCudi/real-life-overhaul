@@ -571,7 +571,7 @@ namespace RealLifeOverhaul.Ui
         public static float PickedHeight(MapPanelModel m)
         {
             bool chips = m.Place.Chips != null && m.Place.Chips.Length > 0;
-            return UiTokens.S3 + UiTokens.PairRow + UiTokens.S1 + PickedTile + (chips ? UiTokens.S2 + UiTokens.Badge + UiTokens.S1 : 0f) + UiTokens.S3 + UiTokens.Control + UiTokens.S3;
+            return UiTokens.S3 + UiTokens.PairRow + UiTokens.S1 + PickedTile + (chips ? UiTokens.S2 + UiMapPlace.ChipsHeight(m.Place.Chips, Width - UiTokens.S4 * 2f) : 0f) + UiTokens.S3 + UiTokens.Control + UiTokens.S3;
         }
 
         private static void Picked(UiScene s, UiAt at, MapPanelModel m, float px, float y, float ix, float iw, IUiKeys keys)
@@ -623,12 +623,7 @@ namespace RealLifeOverhaul.Ui
             if (p.Chips != null && p.Chips.Length > 0)
             {
                 cy += UiTokens.S2;
-                float cx = ix;
-                for (int i = 0; i < p.Chips.Length; i++)
-                {
-                    cx += UiDraw.Chip(s, at, cx, cy, p.Chips[i].Label, p.Chips[i].Tone, ix + iw - cx) + UiTokens.S2;
-                }
-                cy += UiTokens.Badge + UiTokens.S1;
+                cy += UiMapPlace.Chips(s, at, p.Chips, ix, cy, iw);
             }
             cy += UiTokens.S3;
             float half = UiDraw.SnapDown((iw - UiTokens.S2) / 2f);
