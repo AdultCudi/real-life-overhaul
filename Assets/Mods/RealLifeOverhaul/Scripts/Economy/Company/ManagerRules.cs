@@ -12,8 +12,10 @@ namespace RealLifeOverhaul.Economy
         Stock = 4,      // the week's order of a repeating delivery contract, set to keep the stock floor
         Prices = 5,     // the prices, within the price band, where no pricing manager of the game's covers the district
         Rota = 6,       // the week's rota, written by the rota planner
-        Hiring = 7,     // somebody from the place's own job board hired to keep the staff it had
-        Count = 8
+        Hiring = 7,     // somebody from the place's own job board hired to keep the staff it had; somebody late three days running let go
+        Marketing = 8,  // a campaign of the company's own kinds booked at a business with none, inside the month's marketing limit
+        Leases = 9,     // the landlord's offer at a renewal, answered inside a rise limit
+        Count = 10
     }
 
     /// <summary>Where a decision stands. Saved as a number.</summary>
@@ -66,6 +68,16 @@ namespace RealLifeOverhaul.Economy
         public static readonly int[] Budgets = { 0, 500, 1000, 2500, 5000, 10000, 25000, 50000 };  // a month, at prices: overtime and hires
         public const int BudgetDefault = 3;
         public const int KeepMost = 60;             // staff a place may be told to keep at most
+        public const int HireCrewMost = 12;         // crew a manager hires a place up to: past it the gap is the owner's (the hierarchy raises it)
+        public static readonly int[] MarketingSteps = { 0, 250, 500, 1000, 2500, 5000 };   // a month, at prices: campaigns a manager may start
+        public const int MarketingDefault = 2;
+        public static readonly int[] LeaseRises = { 0, 30, 50, 80, 120, 200 };             // thousandths a renewal may raise the rent that a manager agrees on their own
+        public const int LeaseDefault = 2;
+        public const int SpeedKept = 20;            // settled requests a manager's speed is the mean of
+        public const int SpeedDays = 4;             // days of waiting, on average, at which the speed grade reaches nothing: a request lapses in that time
+        public const int JudgeLearn = 8;            // decisions from which a month's own mistakes weigh as much as the skill's chance of one
+        public const int HireLate = 3;              // late days an employee is let go after, by a manager who hires and lets go
+        public const int CampaignLeast = 3;         // per cent of customers a campaign must add to be worth a manager booking it
 
         public const int MistakeMost = 300;         // thousandths: a decision's chance of a mistake at a skill of nothing
         public const int ReviewCut = 400;           // thousandths of that chance a regional manager at a skill of 100 takes away
@@ -78,6 +90,7 @@ namespace RealLifeOverhaul.Economy
         public const int PriceHour = 8;             // the hour prices are looked at (PricingManagerSettings.updateHour)
         public const int StaffHour = 9;             // the hour requests, offers, overtime and claims are answered
         public const int HireHour = 11;             // the hour the job board's candidates are looked at
+        public const int MarketHour = 10;           // the hour a campaign is looked at
         public const int StockHour = 12;            // the hour of a Sunday the week's orders are set: eight hours before the game's lock
         public const int RotaHour = 21;             // the hour of a Sunday the week's rota is written
         public const int DigestHour = 18;           // the hour the day's decisions are told in one notice
@@ -118,8 +131,8 @@ namespace RealLifeOverhaul.Economy
             switch (kind)
             {
                 case ManagedKind.Shop: return (1 << (int)ManagerTask.Count) - 1;
-                case ManagedKind.Works: return Bit(ManagerTask.Stock) | Bit(ManagerTask.Rota) | Bit(ManagerTask.Hiring);
-                default: return Bit(ManagerTask.Stock) | Bit(ManagerTask.Hiring);
+                case ManagedKind.Works: return Bit(ManagerTask.Stock) | Bit(ManagerTask.Rota) | Bit(ManagerTask.Hiring) | Bit(ManagerTask.Leases);
+                default: return Bit(ManagerTask.Stock) | Bit(ManagerTask.Hiring) | Bit(ManagerTask.Leases);
             }
         }
 
@@ -158,6 +171,8 @@ namespace RealLifeOverhaul.Economy
                 case ManagerTask.Overtime:
                 case ManagerTask.Claims: return hour == ManagerCatalogue.StaffHour;
                 case ManagerTask.Hiring: return hour == ManagerCatalogue.HireHour;
+                case ManagerTask.Marketing: return hour == ManagerCatalogue.MarketHour;
+                case ManagerTask.Leases: return hour == ManagerCatalogue.StaffHour;
                 case ManagerTask.Stock: return sunday && hour == ManagerCatalogue.StockHour;
                 case ManagerTask.Rota: return sunday && hour == ManagerCatalogue.RotaHour;
                 default: return false;
@@ -203,6 +218,59 @@ namespace RealLifeOverhaul.Economy
                 return RotaCall.CoversLess;
             }
             return fill.CoveredHours > now.CoveredHours || placedAfter > placedNow ? RotaCall.Write : RotaCall.NoBetter;
+        }
+
+        /// <summary>
+        /// The person a new rota moves to another station, for the manager's log ("moved Lena Adler from the fryer to the grill"): of those on both weeks (the planner's
+        /// own fixed ones apart), whose main station (the one they stand at for most hours) is not the same, the one with the most hours at the new one. False when nobody
+        /// changes station. Cost: one pass over both weeks' cells, once a week a place.
+        /// </summary>
+        public static bool Move(RotaPlan now, RotaPlan fill, int stations, int workers, bool[] fixedWorker, out int worker, out int from, out int to)
+        {
+            worker = from = to = -1;
+            int most = 0;
+            if (now == null || fill == null || stations <= 0 || workers <= 0 || now.Stations != stations || fill.Stations != stations)
+            {
+                return false;
+            }
+            int cells = Math.Min(Math.Min(now.At.Length, fill.At.Length), RotaCatalogue.Cells * stations);
+            for (int w = 0; w < workers; w++)
+            {
+                if (fixedWorker != null && w < fixedWorker.Length && fixedWorker[w])
+                {
+                    continue;
+                }
+                int a = MainStation(now, stations, cells, w, out int hoursNow), b = MainStation(fill, stations, cells, w, out int hoursAfter);
+                if (a >= 0 && b >= 0 && a != b && hoursNow > 0 && hoursAfter > most)
+                {
+                    most = hoursAfter;
+                    worker = w;
+                    from = a;
+                    to = b;
+                }
+            }
+            return worker >= 0;
+        }
+
+        // The station a worker stands at for most hours of a week, the lowest on a tie; -1 for none, and the hours they stand there.
+        private static int MainStation(RotaPlan plan, int stations, int cells, int worker, out int hours)
+        {
+            int best = -1;
+            hours = 0;
+            for (int s = 0; s < stations; s++)
+            {
+                int n = 0;
+                for (int c = s; c < cells; c += stations)
+                {
+                    n += plan.At[c] == worker ? 1 : 0;
+                }
+                if (n > hours)
+                {
+                    hours = n;
+                    best = s;
+                }
+            }
+            return best;
         }
 
         /// <summary>
@@ -314,6 +382,61 @@ namespace RealLifeOverhaul.Economy
             return chance * (1000 - ManagerCatalogue.ReviewCut * CompanyCatalogue.Clamp(review, 0, 100) / 100) / 1000;
         }
 
+        /// <summary>The days a settled request waited, put at the end of a manager's ring of the last <see cref="ManagerCatalogue.SpeedKept"/>.</summary>
+        public static void AddSpeed(System.Collections.Generic.List<int> ring, int days)
+        {
+            ring.Add(CompanyCatalogue.Clamp(days, 0, 99));
+            while (ring.Count > ManagerCatalogue.SpeedKept)
+            {
+                ring.RemoveAt(0);
+            }
+        }
+
+        /// <summary>
+        /// How fast a manager answers, 0 to 100: a hundred less the mean days their last settled requests waited, scaled so that a mean of
+        /// <see cref="ManagerCatalogue.SpeedDays"/> days is nothing. -1 before any has been settled.
+        /// </summary>
+        public static int Speed(System.Collections.Generic.IList<int> ring)
+        {
+            if (ring == null || ring.Count == 0)
+            {
+                return -1;
+            }
+            long sum = 0;
+            for (int i = 0; i < ring.Count; i++)
+            {
+                sum += Math.Max(0, ring[i]);
+            }
+            long meanHundredths = sum * 100 / ring.Count;
+            return CompanyCatalogue.Clamp((int)(100 - meanHundredths / ManagerCatalogue.SpeedDays), 0, 100);
+        }
+
+        /// <summary>
+        /// A manager's judgement, 0 to 100: how rarely they err. The skill's own chance of a mistake (<see cref="MistakeChance"/>) is the grade while little
+        /// has been decided, and the month's mistakes against its decisions take over as the number grows.
+        /// </summary>
+        public static int Judgement(int skill, int review, int decided, int mistakes)
+        {
+            int expected = MistakeChance(skill, review);
+            int seen = Math.Max(0, decided);
+            int observed = seen > 0 ? (int)Math.Min(1000L, Math.Max(0, mistakes) * 1000L / seen) : expected;
+            int weight = Math.Min(seen, ManagerCatalogue.JudgeLearn);
+            int rate = (observed * weight + expected * (ManagerCatalogue.JudgeLearn - weight)) / ManagerCatalogue.JudgeLearn;
+            return CompanyCatalogue.Clamp(100 - rate * 100 / ManagerCatalogue.MistakeMost, 0, 100);
+        }
+
+        /// <summary>A manager's thrift, 0 to 100: how much of the month's budget is still there. -1 with no budget to spend.</summary>
+        public static int Thrift(int spent, int budget)
+        {
+            return budget <= 0 ? -1 : CompanyCatalogue.Clamp(100 - (int)(Math.Max(0, spent) * 100L / budget), 0, 100);
+        }
+
+        /// <summary>The crew's morale under a manager, 0 to 100: the staff's standing on average. -1 with no staff.</summary>
+        public static int Morale(int standing, int staff)
+        {
+            return staff <= 0 ? -1 : CompanyCatalogue.Clamp(standing, 0, 100);
+        }
+
         /// <summary>A number from 0 to 999, always the same for the same save, day, place, kind and subject.</summary>
         public static int Roll(int seed, int day, string place, int task, string subject)
         {
@@ -386,10 +509,52 @@ namespace RealLifeOverhaul.Economy
             return answer;
         }
 
+        /// <summary>
+        /// A refusal a manager would give becomes a one-off bonus when the month's budget left covers it (the bonus is money out of that budget).
+        /// A raise, whole or half, stays one, and a mistake never adds a bonus.
+        /// </summary>
+        public static RaiseAnswer OrBonus(RaiseAnswer answer, int bonus, int left, bool mistake)
+        {
+            return answer == RaiseAnswer.Refuse && !mistake && bonus > 0 && bonus <= left ? RaiseAnswer.Bonus : answer;
+        }
+
         /// <summary>Whether a rival's offer is matched: only inside the ceiling. A mistake lets somebody go who could have stayed.</summary>
         public static bool Match(int offer, int ceiling, bool mistake)
         {
             return offer > 0 && offer <= ceiling && !mistake;
+        }
+
+        /// <summary>
+        /// Whether a manager who hires and lets go of crew lets somebody go for being late: <see cref="ManagerCatalogue.HireLate"/> late days running, and
+        /// only when the job board has somebody to take their place inside the wage band and the budget, so a place is never left short by it.
+        /// </summary>
+        public static bool LetGo(int lateDays, bool replacementAvailable)
+        {
+            return lateDays >= ManagerCatalogue.HireLate && replacementAvailable;
+        }
+
+        /// <summary>
+        /// The campaign a manager books: of those on offer (their cost and the customers they add, per cent) the best effect for the money that fits what
+        /// is left of the month's marketing limit and adds at least <paramref name="least"/> per cent; ties go to the cheaper. A mistake takes the cheapest
+        /// that fits instead, never one past the limit. -1 for none.
+        /// </summary>
+        public static int Campaign(int[] cost, int[] effect, int count, int left, int least, bool mistake)
+        {
+            int best = -1, cheapest = -1;
+            for (int i = 0; i < count; i++)
+            {
+                if (cost[i] <= 0 || cost[i] > left || effect[i] < least)
+                {
+                    continue;
+                }
+                cheapest = cheapest < 0 || cost[i] < cost[cheapest] ? i : cheapest;
+                if (best < 0 || (long)effect[i] * cost[best] > (long)effect[best] * cost[i]
+                    || ((long)effect[i] * cost[best] == (long)effect[best] * cost[i] && cost[i] < cost[best]))
+                {
+                    best = i;
+                }
+            }
+            return mistake ? cheapest : best;
         }
 
         /// <summary>The budget left this month, never less than nothing.</summary>

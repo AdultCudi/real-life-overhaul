@@ -67,6 +67,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--company")
+        {
+            CompanyAll();   // the Company app's new logic and its screens alone (CompanyRunChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 2 && args[0] == "--tycoon-sheet")
         {
             return TycoonSheet(args[1]);
@@ -866,6 +872,7 @@ internal static partial class Program
         CardFix();      // the credit card: paid off by hand inside a debt arrangement and the arrangement ended once, one miss a statement, the overdue minimum carried (CardFixChecks.cs)
         EconomyFixes(); // brands, services, the dealership and property: money paid short or twice, figures stale or a day out, state never put back (EconomyFixChecks.cs)
         CompanyFixes(); // running a business: a campaign's report, the day's books, cover, licences, a strike's overtime, a rival's offer, the strike's day (CompanyFixChecks.cs)
+        CompanyAll();   // the Company app on the kit: its new answers, hand down, late days, leases, rota plans, the tax reserve, licences and the screens (CompanyRunChecks.cs)
         RotaFixes();    // the staff rota planner: a choice kept, a job never stuck, raises in the stamp, a confirmed plan as confirmed, the goods, the ladder, the page (RotaFixChecks.cs)
         EconomyFixes2(); // the own bank, the city, the web shops, investors and the Finance app: days run while off, money paid short or twice, sums at the start's prices, state lost (EconomyFix2Checks.cs)
         ShortCash();    // the overdraft pays whatever leaves the cash under nothing, the import payment is in the books, the bank's profit a day (OverdraftChecks.cs)

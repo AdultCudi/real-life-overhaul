@@ -27,7 +27,10 @@ namespace RealLifeOverhaul.Economy
             {
                 string type = typeId.StartsWith("ba:businesstype_") ? typeId.Substring("ba:businesstype_".Length) : typeId;
                 types.Add(CompanionSnapshot.Row("typeId", typeId,
-                    "licenceNeedsMask", LicenceRules.Needs(Is(type, FoodTypes), Is(type, AlcoholTypes), false)));
+                    "licenceNeedsMask", LicenceRules.Needs(new LicenceSite
+                    {
+                        Food = Is(type, FoodTypes), Alcohol = Is(type, AlcoholTypes), Crowd = Is(type, CrowdTypes), Seating = Is(type, SeatingTypes), Cellar = Is(type, CellarTypes)
+                    })));   // by type alone: late opening and a delivery driver on the staff are of the business
             }
             var licences = new List<object>();
             for (int kind = 0; kind < CompanyCatalogue.LicenceFee.Length; kind++)

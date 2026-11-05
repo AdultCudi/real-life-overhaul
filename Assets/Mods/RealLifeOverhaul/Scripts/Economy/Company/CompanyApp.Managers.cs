@@ -25,18 +25,19 @@ namespace RealLifeOverhaul.Economy
         private static readonly string[] TaskKeys =
         {
             "reallife_mgr_task_raises", "reallife_mgr_task_offers", "reallife_mgr_task_overtime", "reallife_mgr_task_claims",
-            "reallife_mgr_task_stock", "reallife_mgr_task_prices", "reallife_mgr_task_rota", "reallife_mgr_task_hiring"
+            "reallife_mgr_task_stock", "reallife_mgr_task_prices", "reallife_mgr_task_rota", "reallife_mgr_task_hiring", "reallife_mgr_task_marketing", "reallife_mgr_task_leases"
         };
         private static readonly string[] TaskWhatKeys =
         {
             "reallife_mgr_task_raises_what", "reallife_mgr_task_offers_what", "reallife_mgr_task_overtime_what", "reallife_mgr_task_claims_what",
-            "reallife_mgr_task_stock_what", "reallife_mgr_task_prices_what", "reallife_mgr_task_rota_what", "reallife_mgr_task_hiring_what"
+            "reallife_mgr_task_stock_what", "reallife_mgr_task_prices_what", "reallife_mgr_task_rota_what", "reallife_mgr_task_hiring_what",
+            "reallife_mgr_task_marketing_what", "reallife_mgr_task_leases_what"
         };
         // Why a kind given waits, by kind; none for the two nothing else stops.
         private static readonly string[] TaskWaitKeys =
         {
             "reallife_mgr_task_staff_waits", "reallife_mgr_task_staff_waits", "reallife_mgr_task_staff_waits", "reallife_mgr_task_claims_waits",
-            null, "reallife_mgr_task_prices_waits", "reallife_mgr_task_rota_waits", null
+            null, "reallife_mgr_task_prices_waits", "reallife_mgr_task_rota_waits", null, "reallife_mgr_task_marketing_waits", "reallife_mgr_task_leases_waits"
         };
         private static readonly string[] KindKeys = { "reallife_mgr_kind_shop", "reallife_mgr_kind_works", "reallife_mgr_kind_warehouse" };
         private static readonly string[] StateKeys = { "reallife_mgr_state_done", "reallife_mgr_state_undone", "reallife_mgr_state_overridden", "reallife_mgr_state_closed" };
@@ -256,6 +257,11 @@ namespace RealLifeOverhaul.Economy
                 case ManagerTask.Prices:
                     return CompanyText.T("reallife_mgr_limit_price_value", "low", CompanyText.Share(ManagerCatalogue.Step(ManagerCatalogue.PriceLows, m.PriceLow)),
                         "high", CompanyText.Share(ManagerCatalogue.Step(ManagerCatalogue.PriceHighs, m.PriceHigh)));
+                case ManagerTask.Marketing:
+                    return CompanyText.T("reallife_mgr_limit_marketing_value", "amount", CompanyText.Money(CompanyCatalogue.AtPrices(
+                        ManagerCatalogue.Step(ManagerCatalogue.MarketingSteps, m.MarketingStep), CompanyDirector.Instance != null ? CompanyDirector.Instance.Index : CompanyCatalogue.IndexStart)));
+                case ManagerTask.Leases:
+                    return CompanyText.T("reallife_mgr_limit_lease_value", "share", CompanyText.Share(ManagerCatalogue.Step(ManagerCatalogue.LeaseRises, m.LeaseStep)));
                 default:
                     return string.Empty;
             }
@@ -372,6 +378,14 @@ namespace RealLifeOverhaul.Economy
                     BudgetLimit(box, place, m);
                     Limit(box, "reallife_mgr_limit_keep", place, CompanyDirector.LimitKeep, ManagerCatalogue.KeepMost + 1, Math.Max(0, m.Keep),
                         i => CompanyText.T("reallife_mgr_limit_keep_value", "count", i.ToString()));
+                    break;
+                case ManagerTask.Marketing:
+                    Limit(box, "reallife_mgr_limit_marketing", place, CompanyDirector.LimitMarketing, ManagerCatalogue.MarketingSteps.Length, m.MarketingStep,
+                        i => CompanyText.T("reallife_mgr_limit_marketing_value", "amount", CompanyText.Money(CompanyCatalogue.AtPrices(ManagerCatalogue.MarketingSteps[i], _director.Index))));
+                    break;
+                case ManagerTask.Leases:
+                    Limit(box, "reallife_mgr_limit_lease", place, CompanyDirector.LimitLease, ManagerCatalogue.LeaseRises.Length, m.LeaseStep,
+                        i => CompanyText.T("reallife_mgr_limit_lease_value", "share", CompanyText.Share(ManagerCatalogue.LeaseRises[i])));
                     break;
                 case ManagerTask.Stock:
                     Limit(box, "reallife_mgr_limit_stock", place, CompanyDirector.LimitStock, ManagerCatalogue.StockDays.Length, m.StockDays,
@@ -503,6 +517,10 @@ namespace RealLifeOverhaul.Economy
             switch ((ManagerTask)d.Task)
             {
                 case ManagerTask.Raises:
+                    if (d.F == (int)RaiseAnswer.Bonus)
+                    {
+                        return CompanyText.T("reallife_mgr_did_raise_bonus", "name", name, "amount", CompanyText.Money(d.G));
+                    }
                     return CompanyText.T(d.F == (int)RaiseAnswer.Agree ? "reallife_mgr_did_raise_agree" : d.F == (int)RaiseAnswer.Less ? "reallife_mgr_did_raise_less"
                         : "reallife_mgr_did_raise_refuse", "name", name, "raise", CompanyText.Wage(d.A));
                 case ManagerTask.Offers:
@@ -520,8 +538,18 @@ namespace RealLifeOverhaul.Economy
                     return d.A == -1 ? CompanyText.T("reallife_mgr_did_rota_missed") : d.A == -2 ? CompanyText.T("reallife_mgr_did_rota_unwritten")
                         : d.A == -3 ? CompanyText.T("reallife_mgr_did_rota_kept_out", "count", d.B.ToString())
                         : d.A == -4 ? CompanyText.T("reallife_mgr_did_rota_kept_less", "after", d.B.ToString(), "wanted", d.C.ToString(), "now", d.D.ToString())
+                        : RotaMoved(d) is string[] moved ? CompanyText.Fill("reallife_mgr_did_rota_moved", "shifts", d.A.ToString(), "covered", d.B.ToString(), "wanted", d.C.ToString(), "person",
+                            moved[0], "from", moved[1], "to", moved[2])
                         : CompanyText.T("reallife_mgr_did_rota", "shifts", d.A.ToString(), "covered", d.B.ToString(), "wanted", d.C.ToString());
+                case ManagerTask.Marketing:
+                    return CompanyText.Fill("reallife_mgr_did_marketing", "campaign", CompanyText.Campaign(d.A), "amount", CompanyText.Money(d.B), "percent", d.C.ToString(), "days", d.D.ToString());
+                case ManagerTask.Leases:
+                    return CompanyText.T(d.A == 1 ? "reallife_mgr_did_lease_accept" : "reallife_mgr_did_lease_decline", "rent", CompanyText.Money(d.C), "now", CompanyText.Money(d.B));
                 case ManagerTask.Hiring:
+                    if (d.F == 1)
+                    {
+                        return CompanyText.T("reallife_mgr_did_letgo", "name", name, "days", d.D.ToString());
+                    }
                     return CompanyText.T("reallife_mgr_did_hire", "name", name, "skill", d.B.ToString(), "wage", CompanyText.Wage(d.A));
                 default:
                     return string.Empty;

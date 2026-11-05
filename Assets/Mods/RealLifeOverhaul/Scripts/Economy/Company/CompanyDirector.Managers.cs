@@ -30,6 +30,7 @@ namespace RealLifeOverhaul.Economy
         public const int TabManagers = 6;
         public const int LimitWage = 0, LimitStock = 1, LimitPriceLow = 2, LimitPriceHigh = 3, LimitBudget = 4, LimitKeep = 5;
         public const int LimitPriceStance = 6, LimitPriceMargin = 7, LimitPriceNinety = 8, LimitPriceCost = 9, LimitPriceStep = 10;   // the place's price strategy
+        public const int LimitMarketing = 11, LimitLease = 12;
 
         private ManagerState _mgr;
         private bool _mgrBroken;
@@ -266,14 +267,19 @@ namespace RealLifeOverhaul.Economy
             return roll < ManagerRules.MistakeChance(skill, review);
         }
 
+        // A request settled: the days it waited go in the ring of whoever settled it, the place's manager or the regional manager who stood in.
+        private void Took(ManagedPlace mp, string who, int days)
+        {
+            ManagerFile by = MadeBy(mp, who) ?? mp.Own;
+            if (by != null)
+            {
+                ManagerRules.AddSpeed(by.Speeds, days);
+            }
+        }
+
         private Decision Record(ManagedPlace mp, ManagerTask task, string subject, string who, int day, int hour, bool mistake)
         {
-            Decision d = _mgr.Add(day, hour, mp.Place.Place, task, ManagerStore.Clean(subject), ManagerStore.Clean(who));
-            d.Mistake = mistake;
-            ManagerFile by = MadeBy(mp, who) ?? mp.Own;   // the regional manager standing in for one off sick counts their own
-            by.Decided++;
-            by.Mistakes += mistake ? 1 : 0;
-            return d;
+            return CompanyDay.Written(_mgr, MadeBy(mp, who) ?? mp.Own, mp.Place.Place, task, subject, who, day, hour, mistake);   // the regional manager standing in for one off sick counts their own
         }
 
         /// <summary>The month's budget of a manager, at today's prices, with what the finance chief or the owner added this month.</summary>
@@ -345,10 +351,9 @@ namespace RealLifeOverhaul.Economy
                     ManagedPlace mp = _managed[i];
                     int skill, review;
                     string who;
-                    if (mp.Own == null || !ManagerRules.Runs(mp.Own.Tasks, mp.Kind, task) || !PolicyAllows(mp, task) || mp.Place.Reg == null
-                        || !GoingPublic.Mine(mp.Place.Reg) || !Decider(mp, out skill, out review, out who))
+                    if (!CompanyDay.Deciding(this, mp.Place.Place, mp.Kind, mp.Own, task, out skill, out review, out who))
                     {
-                        continue;
+                        continue;   // the managers' switch, a manager with this work, the policy, the company's own place, somebody who can decide today
                     }
                     Decide(task, mp, skill, review, who, day, hour);
                 }
@@ -377,6 +382,8 @@ namespace RealLifeOverhaul.Economy
                 case ManagerTask.Prices: DecidePrices(mp, skill, review, who, day, hour); break;
                 case ManagerTask.Rota: DecideRota(mp, skill, review, who, day, hour); break;
                 case ManagerTask.Hiring: DecideHiring(mp, skill, review, who, day, hour); break;
+                case ManagerTask.Marketing: DecideMarketing(mp, skill, review, who, day, hour); break;
+                case ManagerTask.Leases: DecideLeases(mp, skill, review, who, day, hour); break;
             }
         }
 
@@ -652,6 +659,8 @@ namespace RealLifeOverhaul.Economy
                 case LimitPriceNinety: m.Strategy.Ninety = step > 0; break;
                 case LimitPriceCost: m.Strategy.OverCost = step > 0; break;
                 case LimitPriceStep: m.Strategy.Step = PriceStrategyRules.Steps[CompanyCatalogue.Clamp(step, 0, PriceStrategyRules.Steps.Length - 1)]; break;
+                case LimitMarketing: m.MarketingStep = CompanyCatalogue.Clamp(step, 0, ManagerCatalogue.MarketingSteps.Length - 1); break;
+                case LimitLease: m.LeaseStep = CompanyCatalogue.Clamp(step, 0, ManagerCatalogue.LeaseRises.Length - 1); break;
             }
             if (limit == LimitWage || limit == LimitBudget)
             {
@@ -699,6 +708,14 @@ namespace RealLifeOverhaul.Economy
             if (!RotaOn)
             {
                 blocked |= ManagerRules.Bit(ManagerTask.Rota);
+            }
+            if (!On(CompanyPart.Marketing))
+            {
+                blocked |= ManagerRules.Bit(ManagerTask.Marketing);
+            }
+            if (!LeasesOn)
+            {
+                blocked |= ManagerRules.Bit(ManagerTask.Leases);
             }
             if (mp != null && mp.Kind == ManagedKind.Shop && (ManagerGame.PricingManagerCovers(mp.District) || CompanyBridges.PricesKeptAt(mp.Place.Place)))
             {

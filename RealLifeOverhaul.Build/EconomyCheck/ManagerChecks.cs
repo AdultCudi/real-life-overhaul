@@ -351,7 +351,7 @@ internal static partial class Program
         ManagerFile rr = r != null ? r.At("ba:neighborhood_midtown") : null;
         Check(rr != null && rr.Region && rr.Base == "Office%20Rd~9" && rr.Id == "hq1", "managers: a regional manager comes back with their headquarters");
         Decision rd = r != null ? r.Find(5) : null;
-        Check(r != null && r.Decisions.Count == (int)ManagerTask.Count && r.NextId == 9 && r.MonthFrom == 33 && r.Today == s.Today && rd != null && rd.Task == 4 && rd.C == 104
+        Check(r != null && r.Decisions.Count == (int)ManagerTask.Count && r.NextId == (int)ManagerTask.Count + 1 && r.MonthFrom == 33 && r.Today == s.Today && rd != null && rd.Task == 4 && rd.C == 104
               && rd.Subject == "sub j e ct" && rd.Who == "Ann   Bee", "managers: the decisions come back, the dividers in their words taken out");
         var items = new List<ItemChange>();
         ManagerStore.Items(rd != null ? rd.Detail : string.Empty, items);

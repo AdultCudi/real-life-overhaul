@@ -315,7 +315,7 @@ internal static partial class Program
             "public bool Hire(string place, FlareDeal deal, int influencer)");
         string links = FlareMethod(File.ReadAllText(System.IO.Path.Combine(scripts, "Wiring", "FlareLinks.cs")), "private static bool Book(string place, int kind)");
         string booking = FlareMethod(File.ReadAllText(System.IO.Path.Combine(scripts, "Economy", "Company", "CompanyDirector.Marketing.cs")),
-            "public void BookCampaign(string place, int kind)");
+            "private bool Book(string place, int kind, bool quiet)");
         int paid = booking.IndexOf("Cost(cost, CompanyGame.CampaignKey, shop, shop.Name, CostKind.Marketing", StringComparison.Ordinal);
         int booked = booking.IndexOf("CampaignRules.Book(shop.File, kind, cost, percent, Save.Day);", StringComparison.Ordinal);
         Check(hireCode.Contains("FlareBridges.Book(place, _hireKind)") && links.Contains("company.BookCampaign(place, kind);") && paid > 0 && booked > paid

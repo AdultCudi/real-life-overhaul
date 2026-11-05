@@ -82,6 +82,9 @@ namespace RealLifeOverhaul
                 RivalBridges.PaperOn = () => Settings.SocialNewspaper;
                 RivalBridges.ShowList = ShowList;
                 RivalBridges.Open = Finance.OpenRivals;
+                RivalBridges.LeaseTrend = () => CompanyDirector.Instance != null ? CompanyDirector.Instance.CityTrend : 0;
+                RivalBridges.LeaseRenewed = (district, rise) => CompanyDirector.Instance?.RivalRenewed(district, rise);
+                RivalBridges.Seats = RivalSeatsGame.Instance;
                 EconomyBridges.Rivals = new StandingPage { On = RivalPage.On, Spec = RivalPage.Spec, Write = RivalPage.Write };
                 _ambientBefore = BusinessGame.Ambient;
                 BusinessGame.Ambient = Ambient;

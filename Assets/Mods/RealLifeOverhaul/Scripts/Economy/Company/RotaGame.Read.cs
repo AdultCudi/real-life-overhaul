@@ -65,6 +65,7 @@ namespace RealLifeOverhaul.Economy
             }
             ReadWeek(sheet, reg);
             ReadSkillsAndDemands(sheet, reg, raise);
+            PutPlan(sheet);
             RotaLedger.Bench(problem, sheet.Fixed);
             shop.FixedHours = hq;   // the game's schedule screen refuses to change a headquarters' hours (ScheduleHourToggle.OnPointerDown)
             ReadCustomers(sheet, reg, place.Type == RotaType.Customers, dayPromotion);
@@ -217,6 +218,30 @@ namespace RealLifeOverhaul.Economy
                 sheet.Workers.Add(e);
             }
             People.Clear();
+        }
+
+        /// <summary>The plan in use for the business being read (set by the director before a read; null for none): its floor of crew and its cap on each person's hours.</summary>
+        internal static RotaPlanFile Plan;
+
+        // A plan in use is put on what was read: the cap on each person's hours, and the floor of crew under the need (RotaAdvisor.Grid lifts the worth to it).
+        private static void PutPlan(RotaSheet sheet)
+        {
+            RotaPlanFile plan = Plan;
+            sheet.Plan = plan;
+            if (plan == null || sheet.Stations.Count == 0)
+            {
+                return;
+            }
+            RotaProblem problem = sheet.Problem;
+            for (int w = 0; w < sheet.Workers.Count; w++)
+            {
+                problem.Worker[w].Demands = RotaPlanRules.Capped(problem.Worker[w].Demands, plan);
+            }
+            RotaPlanRules.FloorCells(plan, sheet.Shop.Floor);
+            for (int i = 0; i < sheet.Shop.Floor.Length && !sheet.Shop.HasFloor; i++)
+            {
+                sheet.Shop.HasFloor = sheet.Shop.Floor[i] > 0;
+            }
         }
 
         private static void ReadSkillsAndDemands(RotaSheet sheet, BuildingRegistration reg, Func<string, int> raise)

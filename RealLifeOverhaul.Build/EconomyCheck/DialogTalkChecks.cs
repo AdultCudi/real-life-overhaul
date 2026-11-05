@@ -120,7 +120,7 @@ internal static partial class Program
         s.Tax.QuietUntil = 99;
         string company = CompanyStore.Write(s);
         CompanyState read = CompanyStore.Read(company, out _);
-        string olderCompany = company.Replace("|99^s:", "^s:");
+        string olderCompany = TaxRecordCut(company, 20);   // a settlement's quiet time is the twenty-first field: a line from before has the twenty before it
         CompanyState was = CompanyStore.Read(olderCompany, out _);
         Check(read != null && read.Tax.QuietUntil == 99 && CompanyStore.Write(read) == company && olderCompany != company && was != null && was.Tax.QuietUntil == 0
               && was.Tax.CaseNumber == 7 && was.Shops.Count == 2, "tax: a settlement's quiet time comes back from the save, and a save from before has none and loads every business");

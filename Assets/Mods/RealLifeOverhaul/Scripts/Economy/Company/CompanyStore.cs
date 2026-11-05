@@ -41,7 +41,15 @@ namespace RealLifeOverhaul.Economy
             TaxFile x = s.Tax;
             t.Append("^t:");
             Join(t, x.QuarterFrom, x.Quarter, x.Costs[0], x.Costs[1], x.Costs[2], x.Costs[3], x.Costs[4], x.ReturnDue, x.ReturnQuarter, x.ReturnTakings, x.ReturnCosts,
-                x.ReturnPenalties, x.LateRun, x.Accountant, x.AccountantNext, x.Risk, x.Saved, x.Owed, x.LastAudit, x.CaseNumber, x.QuietUntil);
+                // the rent's rise after the rest: a newer figure goes at the end
+                x.ReturnPenalties, x.LateRun, x.Accountant, x.AccountantNext, x.Risk, x.Saved, x.Owed, x.LastAudit, x.CaseNumber, x.QuietUntil, x.Costs[5],
+                x.Reserve, x.ReserveAuto ? 1 : 0, x.YearTax, x.YearFrom, x.ReturnTax);   // then the tax reserve and the year's account
+            for (int i = 0; i < TaxRules.SettledKept; i++)   // then the past returns, the oldest first, four places always
+            {
+                SettledReturn r = i < x.Settled.Count ? x.Settled[i] : null;
+                t.Append('|');
+                Join(t, r != null ? r.Quarter : 0, r != null ? r.Day : 0, r != null ? r.Takings : 0, r != null ? r.Costs : 0, r != null ? r.Tax : 0, r != null ? r.State : 0);
+            }
             t.Append("^s:");
             for (int i = 0; i < s.Shops.Count && i < CompanyCatalogue.ShopsMost; i++)
             {
@@ -56,7 +64,7 @@ namespace RealLifeOverhaul.Economy
                     t.Append('|');
                     Join(t, p.Insurer, p.Premium, p.From, p.Until, p.Claims, p.Missed, p.Declined);
                 }
-                for (int k = 0; k < shop.Permits.Length; k++)
+                for (int k = 0; k < CompanyCatalogue.LicenceOwnKinds; k++)
                 {
                     Licence l = shop.Permits[k];
                     t.Append('|');
@@ -67,6 +75,12 @@ namespace RealLifeOverhaul.Economy
                     t.Append('|').Append(shop.PushEnded[k].ToString(Inv));   // after all an older version reads, so it leaves them alone
                 }
                 t.Append('|').Append(shop.PushGiven.ToString(Inv));   // after those: a kind added later goes after this
+                for (int k = CompanyCatalogue.LicenceOwnKinds; k < shop.Permits.Length; k++)
+                {
+                    Licence l = shop.Permits[k];
+                    t.Append('|');
+                    Join(t, l.Until, l.Auto ? 1 : 0, l.Reminded ? 1 : 0, l.Decide);   // the licences added later, after the rest of the record
+                }
             }
             t.Append("^e:");
             for (int i = 0; i < s.Staff.Count && i < CompanyCatalogue.StaffMost; i++)
@@ -75,6 +89,7 @@ namespace RealLifeOverhaul.Economy
                 t.Append(i > 0 ? ";" : string.Empty).Append(Clean(f.Id)).Append('|').Append(Clean(f.Place)).Append('|');
                 Join(t, f.Standing, f.Raise, f.UnderDays, f.AskDay, f.AskTo, f.AskRest, f.PoachDay, f.PoachOffer, f.PoachRest, f.LeaveDay);
                 t.Append('|').Append(Clean(f.Rival));
+                t.Append('|').Append(f.LateDays.ToString(Inv));   // after the rival: a newer figure goes at the end, an older line has none
             }
             t.Append("^c:");
             for (int i = Math.Max(0, s.Claims.Count - CompanyCatalogue.ClaimsMost), n = 0; i < s.Claims.Count; i++, n++)
@@ -161,7 +176,8 @@ namespace RealLifeOverhaul.Economy
                                         Id = c[0], Place = c[1], Standing = CompanyCatalogue.Clamp(I(c, 2, CompanyCatalogue.StandingStart), 0, CompanyCatalogue.StandingMost),
                                         Raise = Math.Max(0, I(c, 3)), UnderDays = Math.Max(0, I(c, 4)), AskDay = Math.Max(0, I(c, 5)), AskTo = Math.Max(0, I(c, 6)),
                                         AskRest = Math.Max(0, I(c, 7)), PoachDay = Math.Max(0, I(c, 8)), PoachOffer = Math.Max(0, I(c, 9)), PoachRest = Math.Max(0, I(c, 10)),
-                                        LeaveDay = Math.Max(0, I(c, 11)), Rival = c.Length > 12 ? c[12] : string.Empty
+                                        LeaveDay = Math.Max(0, I(c, 11)), Rival = c.Length > 12 ? c[12] : string.Empty,
+                                        LateDays = CompanyCatalogue.Clamp(I(c, 13), 0, CompanyCatalogue.LateMost)
                                     });
                                 }
                             }
@@ -214,9 +230,9 @@ namespace RealLifeOverhaul.Economy
         {
             x.QuarterFrom = Math.Max(0, I(c, 0));
             x.Quarter = Math.Max(1, I(c, 1, 1));
-            for (int k = 0; k < x.Costs.Length; k++)
+            for (int k = 0; k <= (int)CostKind.Accountant; k++)
             {
-                x.Costs[k] = Math.Max(0, I(c, 2 + k));
+                x.Costs[k] = Math.Max(0, I(c, 2 + k));   // the five the first version kept; the rent's rise is at the end of the record
             }
             x.ReturnDue = Math.Max(0, I(c, 7));
             x.ReturnQuarter = Math.Max(0, I(c, 8));
@@ -232,6 +248,25 @@ namespace RealLifeOverhaul.Economy
             x.LastAudit = Math.Max(0, I(c, 18));
             x.CaseNumber = Math.Max(0, I(c, 19));
             x.QuietUntil = Math.Max(0, I(c, 20));   // absent from older saves: no quiet time
+            x.Costs[(int)CostKind.Rent] = Math.Max(0, I(c, 21));   // absent from older saves: no rent rise paid
+            x.Reserve = CompanyCatalogue.Clamp(I(c, 22), 0, CompanyCatalogue.ReserveHeld);   // absent from older saves: nothing set aside
+            x.ReserveAuto = I(c, 23) != 0;
+            x.YearTax = Math.Max(0, I(c, 24));
+            x.YearFrom = Math.Max(0, I(c, 25));
+            x.ReturnTax = Math.Max(0, I(c, 26));
+            x.Settled.Clear();
+            for (int i = 0; i < TaxRules.SettledKept; i++)
+            {
+                int at = 27 + i * 6, quarter = I(c, at);
+                if (quarter > 0)
+                {
+                    x.Settled.Add(new SettledReturn
+                    {
+                        Quarter = quarter, Day = Math.Max(0, I(c, at + 1)), Takings = Math.Max(0, I(c, at + 2)), Costs = Math.Max(0, I(c, at + 3)), Tax = Math.Max(0, I(c, at + 4)),
+                        State = CompanyCatalogue.Clamp(I(c, at + 5), TaxRules.StateOnTime, TaxRules.StateMissed)
+                    });
+                }
+            }
         }
 
         private static ShopFile Shop(string[] c)
@@ -248,7 +283,7 @@ namespace RealLifeOverhaul.Economy
                 shop.PushCost = Math.Max(0, I(c, 6));
                 shop.PushPercent = CompanyCatalogue.Clamp(I(c, 7), 0, CompanyCatalogue.CampaignMost);
             }
-            int later = ShopFields + shop.Cover.Length * PolicyFields + shop.Permits.Length * LicenceFields;   // the first field past the licences
+            int later = ShopFields + shop.Cover.Length * PolicyFields + CompanyCatalogue.LicenceOwnKinds * LicenceFields;   // the first field past the licences the first version kept
             for (int k = 0; k < shop.PushEnded.Length; k++)
             {
                 shop.PushEnded[k] = Math.Max(0, I(c, k < CompanyCatalogue.CampaignOwnKinds ? 8 + k : later + k - CompanyCatalogue.CampaignOwnKinds));
@@ -280,12 +315,21 @@ namespace RealLifeOverhaul.Economy
                     p.Missed = CompanyCatalogue.Clamp(I(c, at + 5), 0, CompanyCatalogue.PremiumMissedMost);
                 }
             }
-            for (int k = 0; k < shop.Permits.Length; k++)
+            for (int k = 0; k < CompanyCatalogue.LicenceOwnKinds; k++)
             {
                 int at = ShopFields + shop.Cover.Length * PolicyFields + k * LicenceFields;
                 shop.Permits[k].Until = Math.Max(0, I(c, at));
                 shop.Permits[k].Auto = I(c, at + 1) != 0;
                 shop.Permits[k].Reminded = I(c, at + 2) != 0;
+            }
+            int more = later + shop.PushEnded.Length - CompanyCatalogue.CampaignOwnKinds + 1;   // the licences added later: after the campaigns' figures, four fields each
+            for (int k = CompanyCatalogue.LicenceOwnKinds; k < shop.Permits.Length; k++)
+            {
+                int at = more + (k - CompanyCatalogue.LicenceOwnKinds) * 4;
+                shop.Permits[k].Until = Math.Max(0, I(c, at));
+                shop.Permits[k].Auto = I(c, at + 1) != 0;
+                shop.Permits[k].Reminded = I(c, at + 2) != 0;
+                shop.Permits[k].Decide = Math.Max(0, I(c, at + 3));   // absent from older saves: nothing applied for
             }
             return shop;
         }

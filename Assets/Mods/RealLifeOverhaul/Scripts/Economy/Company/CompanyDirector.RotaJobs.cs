@@ -155,7 +155,15 @@ namespace RealLifeOverhaul.Economy
                     _rotaSheetGood = false;
                     _rotaRaise = _rotaRaise ?? RaiseOf;
                     int days = RotaDays(place);
-                    RotaGame.Read(sheet, place, _rotaPromotion, _rotaRaise);
+                    RotaGame.Plan = RotaPlanFor(place.Place, RotaPlanDay());   // the plan in use for the week this rota is for
+                    try
+                    {
+                        RotaGame.Read(sheet, place, _rotaPromotion, _rotaRaise);
+                    }
+                    finally
+                    {
+                        RotaGame.Plan = null;
+                    }
                     RotaGame.ReadDeep(sheet, RotaMarket(place));
                     sheet.Stamp = RotaGame.Stamp(place, days);
                     sheet.Permit = (days & 2) != 0;

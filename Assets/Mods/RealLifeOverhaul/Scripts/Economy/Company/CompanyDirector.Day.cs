@@ -110,7 +110,7 @@ namespace RealLifeOverhaul.Economy
                 int day = Save.Day;
                 if (day > _state.LastDay)
                 {
-                    CompanyGame.NoteHours(_state);   // before the game's run pays and clears them
+                    CompanyGame.NoteHours(_state, day - 1);   // before the game's run pays and clears them: the day that has ended
                     return;                          // the day event writes every figure in a moment
                 }
                 for (int i = 0; i < _shops.Count; i++)
@@ -193,10 +193,12 @@ namespace RealLifeOverhaul.Economy
                         PartFault(part, "the day", e);
                     }
                 }
+                ReserveFreed();   // with the tax part off nothing tops up or pays the reserve out: what was set aside goes back to the cash, not held for a part that does not run
                 using (HotSpots.Time(HotManagersDay))
                 {
                     ManagerDay(day);   // the allowances are yesterday's costs: in the books read next
                 }
+                LeaseDay(day);   // after the managers read the places: the rent's rises paid, an offer made, an answer applied
                 using (HotSpots.Time(HotBooksDay))
                 {
                     Books(day, next);
@@ -273,8 +275,10 @@ namespace RealLifeOverhaul.Economy
             }
             save.modData[CompanyStore.Key] = CompanyStore.Write(_state);
             RotaSave(save);
+            RotaPlansSave(save);
             ManagerSave(save);
             HierarchySave(save);
+            LeaseSave(save);
             PricePlansSave(save);
             if (_beforeTests != null)
             {

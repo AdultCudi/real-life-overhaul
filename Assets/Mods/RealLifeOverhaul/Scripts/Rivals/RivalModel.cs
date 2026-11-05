@@ -78,6 +78,7 @@ namespace RealLifeOverhaul.Rivals
         public readonly Tycoon[] Tycoons = new Tycoon[RivalCatalogue.TycoonCount];
         public readonly List<RivalMove> Moves = new List<RivalMove>(RivalCatalogue.MovesKept + 2);
         public readonly List<RivalCounterNote> Counters = new List<RivalCounterNote>(RivalCatalogue.CountersKept + 2);
+        public readonly List<RivalOutlet> Outlets = new List<RivalOutlet>(RivalFirms.OutletsMost * RivalCatalogue.TycoonCount);   // the businesses they run (RivalFirms)
 
         public RivalFile()
         {

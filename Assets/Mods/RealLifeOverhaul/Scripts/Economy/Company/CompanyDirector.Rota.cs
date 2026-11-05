@@ -212,7 +212,8 @@ namespace RealLifeOverhaul.Economy
             }
             int raises = _state != null ? StaffRules.RaisesAt(_state.Staff, place.Place) : 0;   // the wages are read with them
             return (unchecked(sum * 4) + (On(CompanyPart.Staff) ? 1 : 0) + (permit ? 2 : 0)) ^ (RotaModeOf(place.Place) << 24)
-                   ^ (RotaCleaned(place) ? 1 << 27 : 0) ^ ((shop != null ? shop.Income : 0) << 12) ^ (_index << 4) ^ unchecked(raises << 2);
+                   ^ (RotaCleaned(place) ? 1 << 27 : 0) ^ ((shop != null ? shop.Income : 0) << 12) ^ (_index << 4) ^ unchecked(raises << 2)
+                   ^ unchecked(RotaPlanStamp(place.Place) << 2);
         }
 
         // A business's own promotion figure before the mod's, as the mod's one writer of it says; asked once a game hour.

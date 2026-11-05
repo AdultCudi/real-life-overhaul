@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Economy
         /// A day's premium: a base and a share of an average day's takings, by insurer, district, the last term's
         /// claims and today's prices. One at least.
         /// </summary>
-        public static int Premium(int kind, int insurer, int takings, int income, int claims, int index)
+        public static int Premium(int kind, int insurer, int takings, int income, int claims, int index, bool certified = false)
         {
             // Thousandths of money. Only the base is put at today's prices: the game's takings already are.
             long list = (long)CompanyCatalogue.CoverBase[kind] * CompanyCatalogue.Clamp(index, 500, 4000)
@@ -28,6 +28,10 @@ namespace RealLifeOverhaul.Economy
             list = list * CompanyCatalogue.InsurerPrice[insurer] / 1000;
             list = list * District(kind, income) / 1000;
             list = list * (1000 + (long)Math.Max(0, claims) * CompanyCatalogue.ClaimLoading) / 1000;
+            if (certified && kind == (int)CoverKind.Fire)
+            {
+                list = list * (1000 - CompanyCatalogue.FireCoverCut) / 1000;   // a fire safety certificate in force
+            }
             return (int)Math.Max(1, Math.Min(int.MaxValue / 4, (list + 500) / 1000));
         }
 
@@ -115,7 +119,7 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>Term over: renewed counting its claims (true), or declined for good by the insurer.</summary>
-        public static bool Renew(Policy p, int kind, int takings, int income, int index, int day, int termDays)
+        public static bool Renew(Policy p, int kind, int takings, int income, int index, int day, int termDays, bool certified = false)
         {
             int insurer = p.Insurer;
             if (!Renews(insurer, p.Claims))
@@ -124,18 +128,22 @@ namespace RealLifeOverhaul.Economy
                 End(p);
                 return false;
             }
-            Buy(p, insurer, Premium(kind, insurer, takings, income, p.Claims, index), day, termDays);
+            Buy(p, insurer, Premium(kind, insurer, takings, income, p.Claims, index, certified), day, termDays);
             return true;
         }
 
         /// <summary>A covered loss becomes a claim; null if not covered that day or nothing would be paid.</summary>
-        public static Claim Open(CompanyState state, Policy p, string place, string name, int kind, int loss, int day)
+        public static Claim Open(CompanyState state, Policy p, string place, string name, int kind, int loss, int day, bool uncertified = false)
         {
             if (!Covers(p, day) || loss <= 0)
             {
                 return null;
             }
             int payout = Payout(kind, p.Insurer, loss);
+            if (uncertified && kind == (int)CoverKind.Fire)
+            {
+                payout = CompanyCatalogue.Share(payout, CompanyCatalogue.FireClaimShare);   // the certificate the business needs had run out
+            }
             if (payout <= 0)
             {
                 return null;

@@ -164,6 +164,25 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\UtilitiesFace.cs" Link="Mod\Money\UtilitiesFace.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\UtilitiesFace.Card.cs" Link="Mod\Money\UtilitiesFace.Card.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Money\UtilitiesFace.Sheet.cs" Link="Mod\Money\UtilitiesFace.Sheet.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiOrgTree.cs" Link="Mod\UiOrgTree.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFacts.cs" Link="Mod\Company\CompanyFacts.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFacts.Pages.cs" Link="Mod\Company\CompanyFacts.Pages.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyView.cs" Link="Mod\Company\CompanyView.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyWords.cs" Link="Mod\Company\CompanyWords.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.cs" Link="Mod\Company\CompanyFace.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyLiveDoes.cs" Link="Mod\Company\CompanyLiveDoes.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.Overview.cs" Link="Mod\Company\CompanyFace.Overview.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.Question.cs" Link="Mod\Company\CompanyFace.Question.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.Pages.cs" Link="Mod\Company\CompanyFace.Pages.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.Managers.cs" Link="Mod\Company\CompanyFace.Managers.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.Profile.cs" Link="Mod\Company\CompanyFace.Profile.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyGlyphs.cs" Link="Mod\Company\CompanyGlyphs.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyDays.cs" Link="Mod\Company\CompanyDays.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyBlocks.cs" Link="Mod\Company\CompanyBlocks.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyLeaseLive.cs" Link="Mod\Company\CompanyLeaseLive.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.Rota.cs" Link="Mod\Company\CompanyFace.Rota.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyFace.Tax.cs" Link="Mod\Company\CompanyFace.Tax.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Company\CompanyScreen.cs" Link="Mod\Company\CompanyScreen.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookStore.cs" Link="Mod\Outlook\OutlookStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookReadings.cs" Link="Mod\Outlook\OutlookReadings.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookRules.cs" Link="Mod\Outlook\OutlookRules.cs" />
@@ -369,6 +388,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLadder.Week.cs" Link="Mod\RotaLadder.Week.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaStore.cs" Link="Mod\RotaStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ManagerRules.cs" Link="Mod\ManagerRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\LeaseRules.cs" Link="Mod\LeaseRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\CompanyDay.cs" Link="Mod\CompanyDay.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaPlanRules.cs" Link="Mod\RotaPlanRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ManagerState.cs" Link="Mod\ManagerState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ManagerStore.cs" Link="Mod\ManagerStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\PriceStrategy.cs" Link="Mod\PriceStrategy.cs" />
@@ -706,6 +728,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankFund.cs" Link="Mod\OwnBankFund.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalCatalogue.cs" Link="Mod\RivalCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalModel.cs" Link="Mod\RivalModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalFirms.cs" Link="Mod\RivalFirms.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalRules.cs" Link="Mod\RivalRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalRules.Moves.cs" Link="Mod\RivalRules.Moves.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalRules.Counters.cs" Link="Mod\RivalRules.Counters.cs" />

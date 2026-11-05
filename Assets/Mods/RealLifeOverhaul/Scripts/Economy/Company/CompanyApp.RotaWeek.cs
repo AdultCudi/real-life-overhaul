@@ -175,7 +175,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        private string RotaWhyPlan(RotaSheet sheet, RotaRung r, int index)
+        internal static string RotaWhyPlan(RotaSheet sheet, RotaRung r, int index)
         {
             if (r.Kind == RotaRungKind.AsItIs)
             {

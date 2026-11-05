@@ -21,6 +21,7 @@ namespace RealLifeOverhaul.Economy
         public int PoachRest;           // no new offer before this day
         public int LeaveDay;            // the day they go; 0 while they stay
         public string Rival = string.Empty;
+        public int LateDays;            // working days running they were short of the day planned by an hour or more (StaffRules.LateDay); a full day clears it
 
         // Read from the game; never saved.
         public string Name = string.Empty;
@@ -60,6 +61,9 @@ namespace RealLifeOverhaul.Economy
         public int Until;               // the last day it is good for; 0 with none
         public bool Auto;               // renewed by itself from the day after it runs out, as soon as its fee can be paid
         public bool Reminded;           // this term's reminder has gone out; renewing by itself, that its fee could not be paid
+        public int Decide;              // applied for: the day the city decides (the fee is paid); 0 with no application waiting
+
+        public bool Pending => Decide > 0;
     }
 
     /// <summary>One of the player's businesses as the mod knows it, by its place.</summary>
@@ -69,7 +73,7 @@ namespace RealLifeOverhaul.Economy
         public int FirstDay;            // the day the mod first saw it
         public int Hide;                // per cent of takings kept off the books
         public readonly Policy[] Cover = { new Policy(), new Policy(), new Policy() };
-        public readonly Licence[] Permits = { new Licence(), new Licence(), new Licence(), new Licence() };
+        public readonly Licence[] Permits = { new Licence(), new Licence(), new Licence(), new Licence(), new Licence(), new Licence(), new Licence(), new Licence() };
 
         public int Push = -1;           // the campaign running or booked: its kind; -1 with none
         public int PushFrom;            // its first day
@@ -145,6 +149,16 @@ namespace RealLifeOverhaul.Economy
         public int Footfall => CustomersBefore > 0 ? (int)Math.Max(-999L, Math.Min(9999L, ((long)CustomersDuring - CustomersBefore) * 100 / CustomersBefore)) : 0;
     }
 
+    /// <summary>A return that is done with: filed on time, filed late, or dropped unfiled when the next quarter closed.</summary>
+    public sealed class SettledReturn
+    {
+        public int Quarter;
+        public int Day;                 // the day it was filed; the day it was dropped
+        public int Takings, Costs;
+        public int Tax;                 // the business tax at the game's rate on its taxable profit, an estimate
+        public int State;               // TaxRules.StateOnTime, StateLate or StateMissed
+    }
+
     /// <summary>Tax: the quarter, the return that waits, the accountant, and the cash kept off the books.</summary>
     public sealed class TaxFile
     {
@@ -165,6 +179,12 @@ namespace RealLifeOverhaul.Economy
         public int LastAudit;           // the day of the last audit; 0 for never
         public int CaseNumber;          // the court's number for an audit's case; 0 for none
         public int QuietUntil;          // after a tax case settled with the city, audits come at half the chance until this day; 0 for none
+        public int ReturnTax;           // the waiting return's business tax at the game's rate, an estimate
+        public int Reserve;             // money set aside for the year's tax bill, out of the cash; whole money
+        public bool ReserveAuto;        // the finance chief tops the reserve up when a quarter closes
+        public int YearTax;             // the estimated tax of the quarters closed since the game's tax year began
+        public int YearFrom;            // the first day of the game's tax year the reserve is for; 0 before it is known
+        public readonly System.Collections.Generic.List<SettledReturn> Settled = new System.Collections.Generic.List<SettledReturn>(TaxRules.SettledKept);
 
         public bool ReturnWaiting => ReturnDue > 0;
     }

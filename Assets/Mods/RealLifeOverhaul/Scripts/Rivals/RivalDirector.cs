@@ -232,6 +232,7 @@ namespace RealLifeOverhaul.Rivals
             }
             Orphans();
             Settle(day);
+            Firms(day);
             Rents(day);
             PayBreakUps(day);
             RivalMove announced = r.Announced > 0 ? _file.Move(r.Announced) : null;
@@ -254,6 +255,19 @@ namespace RealLifeOverhaul.Rivals
                              + "), the player " + rank + " on the rich list, " + _file.Moves.Count + " move(s) kept of " + RivalCatalogue.MovesKept + ": "
                              + (gap <= RivalRules.Gap(Math.Max(1, _file.Tier), Strength) + RivalCatalogue.JitterDays
                                  && _file.Moves.Count <= RivalCatalogue.MovesKept * 2 ? "PASS" : "the pace is off"));
+            }
+        }
+
+        // The tycoons' own businesses (RivalFirms): each outlet's crew and lease run by the staff and lease rules the player's company runs by; what they pay comes off
+        // the tycoon's worth, and the rises their landlords asked are told to the company, which sets the trend the player's landlords ask by.
+        private void Firms(int day)
+        {
+            int monthDays = Math.Max(1, _world.YearDays / 12), index = Math.Max(10, _world.Level / 10), trend = RivalBridges.LeaseTrend != null ? RivalBridges.LeaseTrend() : 0;
+            int before = _file.Outlets.Count;
+            long paid = RivalFirms.Day(_file, _file.Seed, day, monthDays, trend, index, RivalBridges.LeaseRenewed, RivalBridges.Seats);
+            if (_file.Outlets.Count > 0 || before > 0)
+            {
+                Logger?.Info("Rivals: " + _file.Outlets.Count + " outlet(s) run by the tycoons paid " + paid + " in wages and rent on day " + day + ".");
             }
         }
 

@@ -71,6 +71,7 @@ namespace RealLifeOverhaul.Economy
                 t.Append(i > 0 ? ";" : string.Empty);
                 Join(t, e.Id, e.Kind, e.Level, e.Day, e.Moved, e.State, e.A, e.B, e.C);
                 t.Append('|').Append(Clean(e.Place)).Append('|').Append(Clean(e.Subject)).Append('|').Append(Clean(e.Detail)).Append('|').Append(Clean(e.By));
+                t.Append('|').Append(e.Down ? '1' : '0');   // after the name: a newer figure goes at the end, an older line has none
             }
             t.Append("^l:");
             for (int i = Math.Max(0, s.Entries.Count - HierarchyState.EntriesKept), n = 0; i < s.Entries.Count; i++)
@@ -307,14 +308,15 @@ namespace RealLifeOverhaul.Economy
             {
                 Id = Math.Max(1, I(c, 0, 1)), Kind = kind, Level = CompanyCatalogue.Clamp(I(c, 2, EscalationRules.LevelOwner), EscalationRules.LevelRegion, EscalationRules.LevelOwner),
                 Day = Math.Max(0, I(c, 3)), Moved = Math.Max(0, I(c, 4)), State = state, A = I(c, 6), B = I(c, 7), C = I(c, 8),
-                Place = c[9], Subject = c.Length > 10 ? c[10] : string.Empty, Detail = c.Length > 11 ? c[11] : string.Empty, By = c.Length > 12 ? c[12] : string.Empty
+                Place = c[9], Subject = c.Length > 10 ? c[10] : string.Empty, Detail = c.Length > 11 ? c[11] : string.Empty, By = c.Length > 12 ? c[12] : string.Empty,
+                Down = I(c, 13) != 0
             };
         }
 
         private static HierarchyEntry EntryOf(string[] c)
         {
             int kind = I(c, 3, -1);
-            if (c.Length < 9 || kind < 0 || kind > (int)HierarchyLog.Policy)
+            if (c.Length < 9 || kind < 0 || kind > (int)HierarchyLog.Reserve)
             {
                 return null;
             }

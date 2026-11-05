@@ -175,6 +175,11 @@ namespace RealLifeOverhaul.Economy
         partial void HierarchySave(GameInstance save);
         partial void HierarchyDay(int day);
         partial void HierarchyHour(int day, int hour);
+        partial void RotaPlansLoad(GameInstance save);
+        partial void RotaPlansSave(GameInstance save);
+        partial void LeaseLoad(GameInstance save);
+        partial void LeaseSave(GameInstance save);
+        partial void LeaseDay(int day);
         partial void PricePlansLoad(GameInstance save);
         partial void PricePlansSave(GameInstance save);
         partial void PricePlansHour(int day, int hour);
@@ -312,9 +317,11 @@ namespace RealLifeOverhaul.Economy
             TaxLevel();
             WriteAll(today, true, false);
             RotaLoad(save);
+            RotaPlansLoad(save);
             RotaRead();
             ManagerLoad(save);
             HierarchyLoad(save);   // after the managers: a save from before the policy keeps their own limits as their stores' rules
+            LeaseLoad(save);
             PricePlansLoad(save);
             BuildAlerts(today);
             Logger?.Info("Company: " + (fresh ? "opened for this save" : "state loaded (version " + version + ")") + " on day " + today + ". "
@@ -429,15 +436,19 @@ namespace RealLifeOverhaul.Economy
             }
             var view = new CompanyApp(this);
             bool tryAgain;
-            _app = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = AppId,
                 TitleKey = "reallife_co_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(), new Color32(120, 150, 232, 255), new Color32(52, 78, 176, 255), 0.42f, "AppIcon-Company"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
-            }, out tryAgain);
+                Closed = view.Closed,
+                Kit = () => new RealLifeOverhaul.Ui.CompanyScreen(RealLifeOverhaul.Ui.CompanyLive.Instance, RealLifeOverhaul.Ui.CompanyLive.Vocabulary()),
+                KitScreen = RealLifeOverhaul.Ui.CompanyScreen.ScreenId,
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Briefcase
+            };
+            _app = PhoneApp.Install(def, out tryAgain);
             if (_app == null)
             {
                 _gaveUp = !tryAgain;
@@ -449,6 +460,7 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             _view = view;
+            RealLifeOverhaul.Ui.UiShell.Face(_app, def);   // the kit's face over the app, once its switch is on (Ui/Shell/UiShell.Tick); the old pages stay the way back
             Badge();
         }
 
@@ -482,6 +494,7 @@ namespace RealLifeOverhaul.Economy
             if (_app != null && _view != null && _running)
             {
                 _view.Want(tab, pick);
+                RealLifeOverhaul.Ui.CompanyLive.Want(tab, pick);   // the kit's face takes the same request once, in its own tab numbering
                 _app.Open();
             }
         }
@@ -507,6 +520,7 @@ namespace RealLifeOverhaul.Economy
                 RotaRead();
                 ManagerRead();
                 Badge();
+                RealLifeOverhaul.Ui.CompanyLive.Opened();   // the kit's face starts from the tab as left and reads again
                 return true;
             }
             catch (Exception e)
@@ -526,6 +540,7 @@ namespace RealLifeOverhaul.Economy
             BuildAlerts(Save.Day);
             Badge();
             _view?.Changed();
+            RealLifeOverhaul.Ui.CompanyLive.Touch();   // the kit's face reads again, once
         }
 
         private void Badge()

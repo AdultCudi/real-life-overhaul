@@ -562,6 +562,11 @@ namespace RealLifeOverhaul.Ui
             string span = chosen && m.Moving && !string.IsNullOrEmpty(m.MovingSpan) ? m.MovingSpan : shift.Span;
             bool times = !string.IsNullOrEmpty(span) && UiTextRules.Width(span, UiStyle.Small) + UiTokens.S1 <= room;
             string words = BarWords(shift.Name, room);
+            if (words == null && string.IsNullOrEmpty(shift.Name) && times)
+            {
+                // A bar with no name (its lane's head says whose it is) carries its hours alone, in the middle of the bar.
+                UiDraw.Text(s, inside, bx + pad, by + (bh - UiTextRules.LineHeight(UiStyle.SmallStrong)) / 2f, room, UiStyle.SmallStrong, ink, span, UiFlags.Truncate | UiFlags.Share | UiFlags.Middle);
+            }
             if (words != null)
             {
                 float nameH = UiTextRules.LineHeight(UiStyle.SmallStrong), timeH = UiTextRules.LineHeight(UiStyle.Small);
