@@ -8,7 +8,7 @@ internal static partial class UiSamples
 {
     public static readonly string[] ConstructionStates =
     {
-        "overview", "overview_new", "overview_empty", "land", "land_plot", "projects", "project_plans", "project_ready", "project_site", "tenders", "tender_bid", "crews", "crew", "company",
+        "overview", "overview_new", "overview_empty", "land", "land_plot", "projects", "project_plans", "project_ready", "project_site", "project_quotes", "tenders", "tender_bid", "crews", "crew", "company",
         "licence", "rivals", "city", "off"
     };
 
@@ -93,6 +93,10 @@ internal static partial class UiSamples
                 m.Tab = 2;
                 ConsProject(t, runs, m, state);
                 break;
+            case "project_quotes":
+                m.Tab = 2;
+                ConsQuotes(t, runs, m);
+                break;
             case "tenders":
             case "tender_bid":
                 m.Tab = 3;
@@ -140,11 +144,11 @@ internal static partial class UiSamples
         m.Shape = ConstructionShape.Overview;
         m.HeadMark = "PC";
         m.HeadTitle = "Pioneer Construction";
-        m.HeadSub = W(t, "reallife_ui_cons_head_sub", "{licence}, {crews} crews, office at {address}").Replace("{licence}", "Licensed until day 412").Replace("{crews}", "3")
+        m.HeadSub = W(t, "reallife_ui_cons_head_sub", "Licence for {floors} floors, {crews} crews, office at {address}").Replace("{floors}", "10").Replace("{crews}", "3")
             .Replace("{address}", "520 8th Avenue, Midtown");
-        m.FigLabels = new[] { W(t, "reallife_ui_cons_fig_standing", "Standing"), W(t, "reallife_ui_cons_fig_under_way", "Under way"), W(t, "reallife_ui_cons_fig_on_site", "Crews on site"),
+        m.FigLabels = new[] { W(t, "reallife_ui_cons_fig_worth", "Worth"), W(t, "reallife_ui_cons_fig_under_way", "Under way"), W(t, "reallife_ui_cons_fig_on_site", "Crews on site"),
             W(t, "reallife_ui_cons_fig_done", "Completed") };
-        m.FigValues = new[] { "72", "5", W(t, "reallife_ui_cons_x_of_y", "{n} of {of}").Replace("{n}", "3").Replace("{of}", "3"), "14" };
+        m.FigValues = new[] { "$2,410,000", "5", W(t, "reallife_ui_cons_x_of_y", "{n} of {of}").Replace("{n}", "3").Replace("{of}", "3"), "14" };
         m.Lead = new ConstructionLead
         {
             Icon = UiIcon.Hammer, Kicker = W(t, "reallife_ui_cons_lead_next", "Next decision, {project}").Replace("{project}", "Show flats, 41 E 37th Street"),
@@ -306,25 +310,32 @@ internal static partial class UiSamples
         ConsHead(t, m, UiIcon.MapTrifold, "reallife_bld_tab_land", "Land", new[] { W(t, "reallife_ui_cons_fig_for_sale", "For sale"), W(t, "reallife_ui_cons_fig_yours", "Yours") }, new[] { "7", "2" });
         string[][] rows =
         {
-            new[] { "17 E 41st Street", "40 x 31 m", "Mixed use", "$2,480,000", "For sale" },
-            new[] { "233 W 39th Street", "28 x 31 m", "Commercial", "$1,376,000", "For sale" },
-            new[] { "9 E 33rd Street", "36 x 31 m", "Homes", "$1,430,000", "For sale" },
-            new[] { "75 W 125th Street", "60 x 30 m", "Homes", "$1,440,000", "Yours" },
-            new[] { "Eastgate yard", "18 x 18 m", "Shops, offices", string.Empty, "Held for a landmark" }
+            new[] { "17 E 41st Street", "40 x 31 m", "Mixed use", "$2,480,000", "$2,000", "For sale" },
+            new[] { "233 W 39th Street", "28 x 31 m", "Commercial", "$1,376,000", "$1,586", "For sale" },
+            new[] { "9 E 33rd Street", "36 x 31 m", "Homes", "$1,430,000", "$1,281", "For sale" },
+            new[] { "75 W 125th Street", "60 x 30 m", "Homes", "$1,440,000", "$800", "Yours" },
+            new[] { "Eastgate yard", "18 x 18 m", "Shops, offices", string.Empty, string.Empty, "Held for a landmark" }
         };
         UiRole[][] tones = new UiRole[rows.Length][];
         int[][] values = new int[rows.Length][];
         for (int i = 0; i < rows.Length; i++)
         {
-            tones[i] = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, i == 3 ? UiRole.Ok : UiRole.Muted };
-            values[i] = new[] { Icon(i == 3 ? UiIcon.Key : UiIcon.MapTrifold), 0, 0, 0, 0 };
+            tones[i] = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, i == 3 ? UiRole.Ok : UiRole.Muted };
+            values[i] = new[] { Icon(i == 3 ? UiIcon.Key : UiIcon.MapTrifold), 0, 0, 0, 0, 0 };
         }
         m.Table = ConsTable(new[]
         {
             Col(W(t, "reallife_bld_col_place", "Place")), Col(W(t, "reallife_bld_col_size", "Size"), 168f), Col(W(t, "reallife_bld_col_zoned", "Zoned for"), 168f),
-            Col(W(t, "reallife_bld_col_price", "Price"), 144f), Col(W(t, "reallife_bld_col_state", "State"), 232f)
-        }, rows, new[] { UiCellKind.Tile, UiCellKind.Text, UiCellKind.Text, UiCellKind.Money, UiCellKind.Chip }, tones, values);
+            Col(W(t, "reallife_bld_col_price", "Price"), 144f), Col(W(t, "reallife_ui_cons_col_sqm", "A m2"), 120f), Col(W(t, "reallife_bld_col_state", "State"), 232f)
+        }, rows, new[] { UiCellKind.Tile, UiCellKind.Text, UiCellKind.Text, UiCellKind.Money, UiCellKind.Money, UiCellKind.Chip }, tones, values);
         m.Table.Filters = new[] { W(t, "reallife_bld_all_land", "All land") };
+        m.Foot = new UiFactCardModel
+        {
+            Title = W(t, "reallife_ui_cons_asks_title", "Asking a m2 by district"), Heading = true, Lines = new[]
+            {
+                UiFactLine.Bar("Uptown", 100, "$1,520  +3.1%"), UiFactLine.Bar("Cedar Heights", 62, "$940  -0.8%")
+            }
+        };
         m.FilterKinds = 6;
         m.RowKeys = new[] { "lot:a", "lot:b", "lot:c", "own:d", "lmk:e" };
         m.Card = new UiFactCardModel
@@ -590,20 +601,21 @@ internal static partial class UiSamples
         ConsHead(t, m, UiIcon.Flag, "reallife_bld_tab_rivals", "Rivals", new[] { W(t, "reallife_ui_cons_fig_builders", "Builders"), W(t, "reallife_ui_cons_fig_rank", "Your rank") }, new[] { "8", "3 of 9" });
         string[][] rows =
         {
-            new[] { "Huang Guo Developments", "Offices", "78", "9", "21" }, new[] { "Hartigan & Sons", "Homes", "64", "6", "17" }, new[] { "Eastside Builders", "Renovation", "58", "4", "12" },
-            new[] { "Northgate Roadworks", "Roads", "51", "3", "10" }
+            new[] { "Huang Guo Developments", "Offices", "78", "9", "21", "12 floors", "3" }, new[] { "Hartigan & Sons", "Homes", "64", "6", "17", "10 floors", "" },
+            new[] { "Eastside Builders", "Renovation", "58", "4", "12", "10 floors", "1" }, new[] { "Northgate Roadworks", "Roads", "51", "3", "10", "8 floors", "" }
         };
         var values = new int[rows.Length][];
         int[] rep = { 78, 64, 58, 51 };
         for (int i = 0; i < rows.Length; i++)
         {
-            values[i] = new[] { Icon(UiIcon.Flag), 0, rep[i], 0, 0 };
+            values[i] = new[] { Icon(UiIcon.Flag), 0, rep[i], 0, 0, 0, 0 };
         }
         m.Table = ConsTable(new[]
         {
             Col(W(t, "reallife_bld_col_builder", "Builder")), Col(W(t, "reallife_bld_col_speciality", "Speciality"), 168f), Col(W(t, "reallife_bld_col_reputation", "Reputation"), 144f),
-            Col(W(t, "reallife_bld_col_won", "Won"), 96f), Col(W(t, "reallife_bld_col_built", "Built"), 96f)
-        }, rows, new[] { UiCellKind.Tile, UiCellKind.Text, UiCellKind.Meter, UiCellKind.Figure, UiCellKind.Figure }, null, values);
+            Col(W(t, "reallife_ui_cons_col_floors", "Floors"), 144f), Col(W(t, "reallife_bld_col_won", "Won"), 96f), Col(W(t, "reallife_bld_col_built", "Built"), 96f),
+            Col(W(t, "reallife_ui_cons_col_jobs", "Your jobs"), 120f)
+        }, rows, new[] { UiCellKind.Tile, UiCellKind.Text, UiCellKind.Meter, UiCellKind.Text, UiCellKind.Figure, UiCellKind.Figure, UiCellKind.Figure }, null, values);
         m.RowKeys = new[] { "rival:0", "rival:1", "rival:2", "rival:3" };
         m.Card = new UiFactCardModel { Lines = new[] { UiFactLine.Say(W(t, "reallife_bld_rivals_pick", "Pick a builder to see what it is known for.")) } };
     }
@@ -630,5 +642,64 @@ internal static partial class UiSamples
         m.Table.Filters = new[] { W(t, "reallife_bld_all_city", "Everything") };
         m.RowKeys = new[] { "rule:0", "council:1", "bill:2", "award:3" };
         m.Card = new UiFactCardModel { Lines = new[] { UiFactLine.Say(W(t, "reallife_bld_city_note", "The building code in force: {code}.").Replace("{code}", "Standard code")) } };
+    }
+
+    private static void ConsQuotes(UiWords t, ConstructionRuns runs, ConstructionModel m)
+    {
+        m.Shape = ConstructionShape.Detail;
+        m.Back = W(t, "reallife_bld_back", "Back");
+        m.DetailIcon = UiIcon.Hammer;
+        m.DetailTitle = "Show flats";
+        m.DetailSub = W(t, "reallife_bld_stage_ready", "Ready to build");
+        m.DetailLocate = W(t, "reallife_bld_button_map", "Show on map");
+        m.DetailLocateRun = runs.Do(() => { });
+        string[][] rows =
+        {
+            new[] { "Pioneer Hire", "$186,000", W(t, "reallife_ui_cons_days_n", "{count} days").Replace("{count}", "42"), "", W(t, "reallife_ui_cons_risk_low", "Low") },
+            new[] { "Hartigan & Sons", "$171,500", W(t, "reallife_ui_cons_days_n", "{count} days").Replace("{count}", "56"), "", W(t, "reallife_ui_cons_risk_medium", "Medium") },
+            new[] { "Eastside Builders", "$194,000", W(t, "reallife_ui_cons_days_n", "{count} days").Replace("{count}", "35"), "", W(t, "reallife_ui_cons_risk_low", "Low") },
+            new[] { "Huang Guo Developments", "$169,000", W(t, "reallife_ui_cons_days_n", "{count} days").Replace("{count}", "63"), "", W(t, "reallife_ui_cons_risk_unlicensed", "Not licensed") }
+        };
+        var tones = new UiRole[rows.Length][];
+        var values = new int[rows.Length][];
+        int[] quality = { 84, 68, 91, 41 };
+        UiRole[] risk = { UiRole.Ok, UiRole.Warn, UiRole.Ok, UiRole.Danger };
+        for (int i = 0; i < rows.Length; i++)
+        {
+            tones[i] = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, risk[i] };
+            values[i] = new[] { Icon(UiIcon.Flag), 0, 0, quality[i], 0 };
+        }
+        m.DetailTable = ConsTable(new[]
+        {
+            Col(W(t, "reallife_bld_col_builder", "Builder"), 0f, false), Col(W(t, "reallife_bld_row_quote", "Quote"), 144f, false), Col(W(t, "reallife_ui_cons_col_time", "Time"), 120f, false),
+            Col(W(t, "reallife_ui_cons_col_quality", "Quality"), 168f, false), Col(W(t, "reallife_ui_cons_col_risk", "Risk"), 200f, false)
+        }, rows, new[] { UiCellKind.Tile, UiCellKind.Money, UiCellKind.Text, UiCellKind.Meter, UiCellKind.Chip }, tones, values);
+        m.DetailTable.Selected = 0;
+        m.RowKeys = new[] { "q:0", "q:1", "q:2", "q:3" };
+        m.Actions = new[]
+        {
+            ConsButton(runs, W(t, "reallife_bld_button_cheapest", "The cheapest"), UiButtonKind.Secondary, UiAction.Option),
+            ConsButton(runs, W(t, "reallife_bld_button_hire_this", "Hire this builder"), UiButtonKind.Primary, UiAction.Alt)
+        };
+        m.Cards = new[]
+        {
+            new UiFactCardModel
+            {
+                Title = W(t, "reallife_ui_cons_sec_quote", "The quote"), Heading = true, Lines = new[]
+                {
+                    UiFactLine.Row(W(t, "reallife_bld_row_quote", "Quote"), "$186,000"), UiFactLine.Row(W(t, "reallife_bld_row_quote_days", "Working days"), "42"),
+                    UiFactLine.Row(W(t, "reallife_bld_row_deposit", "Deposit"), "$18,600"), UiFactLine.Row(W(t, "reallife_bld_row_retention", "Retention"), "$9,300")
+                }
+            },
+            new UiFactCardModel
+            {
+                Title = W(t, "reallife_ui_cons_sec_means", "What the quote means"), Heading = true, Lines = new[]
+                {
+                    UiFactLine.Say(W(t, "reallife_ui_cons_means_cheap_sooner", "{builder} asks {amount} more than {other}, the cheapest, but finishes sooner.")
+                        .Replace("{builder}", "Pioneer Hire").Replace("{amount}", "$14,500").Replace("{other}", "Hartigan & Sons")),
+                    UiFactLine.Say(W(t, "reallife_ui_cons_means_rent", "{count} days of waiting costs a building about {amount} in rent.").Replace("{count}", "14").Replace("{amount}", "$17,200"))
+                }
+            }
+        };
     }
 }

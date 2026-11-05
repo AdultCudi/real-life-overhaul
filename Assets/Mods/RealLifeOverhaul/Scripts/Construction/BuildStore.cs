@@ -96,7 +96,7 @@ namespace RealLifeOverhaul.Construction
             {
                 RivalFile r = s.Rivals[i];
                 t.Append(i > 0 ? ";" : string.Empty);
-                Join(t, r.Reputation, r.Won, r.Lost, r.Built);
+                Join(t, r.Reputation, r.Won, r.Lost, r.Built, r.Jobs);   // the jobs for the player after the others: an older reader stops before it
             }
             t.Append("^d:");
             for (int i = 0; i < s.Developments.Count && i < 600; i++)
@@ -124,6 +124,7 @@ namespace RealLifeOverhaul.Construction
             WriteGrow(t, s);
             WritePark(t, s);
             WriteMarket(t, s);
+            WriteKit(t, s);
             return t.ToString();
         }
 
@@ -377,6 +378,7 @@ namespace RealLifeOverhaul.Construction
                                 rival.Won = Math.Max(0, r.I(0));
                                 rival.Lost = Math.Max(0, r.I(0));
                                 rival.Built = Math.Max(0, r.I(0));
+                                rival.Jobs = Math.Max(0, r.I(0));
                             }
                             break;
                         }
@@ -424,7 +426,7 @@ namespace RealLifeOverhaul.Construction
                             break;
                         }
                         default:
-                            if (!ReadGrow(part[0], body, s) && !ReadPark(part[0], body, s) && !ReadMarket(part[0], body, s))
+                            if (!ReadGrow(part[0], body, s) && !ReadPark(part[0], body, s) && !ReadMarket(part[0], body, s) && !ReadKit(part[0], body, s))
                             {
                                 ReadCity(part[0], body, s);   // the city around the company (BuildStore.City), or a part of a newer version's: passed over
                             }

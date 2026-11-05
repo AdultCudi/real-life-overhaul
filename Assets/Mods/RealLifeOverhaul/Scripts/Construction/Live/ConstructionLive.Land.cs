@@ -37,6 +37,7 @@ namespace RealLifeOverhaul.Construction
                 long price = owned != null ? owned.Paid : Director.LotPrice(lot);
                 row.Set(3, price > 0 ? ConstructionText.Money(price) : "-", price);
                 row.Set(4, LotState(state, lot, owned), owned != null ? CellTone.Green : CellTone.Plain);
+                SqmCell(row, price, lot.Width * lot.Depth);
                 if (row.Id == selected)
                 {
                     pickedLot = lot.Id;
@@ -147,6 +148,16 @@ namespace RealLifeOverhaul.Construction
                 ? "reallife_bld_land_session" : "reallife_bld_land_pick"));
             box.Note(ConstructionText.T("reallife_land_tip"));
             Guide(box);
+        }
+
+        // What a square metre of the lot costs: the kit's column beside its price.
+        private static void SqmCell(TableRow row, long price, int area)
+        {
+            if (price > 0L && area > 0)
+            {
+                long each = price / area;
+                row.Set(5, ConstructionText.Money(each), each);
+            }
         }
 
         private string LotState(BuildState state, LotView lot, LotFile owned)

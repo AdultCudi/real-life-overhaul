@@ -19,6 +19,8 @@ namespace RealLifeOverhaul.Construction
                 m.DetailIcon = TabIcons[_tab];
                 m.Back = ConstructionText.T("reallife_bld_back");
                 _box.Finish(m);
+                m.DetailTable = _detailTable;
+                m.RowKeys = _detailKeys;
                 Project(m, state, selected);
                 return;
             }
@@ -34,6 +36,10 @@ namespace RealLifeOverhaul.Construction
             Figures(m, state);
             m.Table = TableOf(m);
             m.Card = _box.Card(null);
+            if (_tab == ConstructionDirector.TabLand)
+            {
+                m.Foot = AsksCard(state);
+            }
         }
 
         private string Headline(BuildState state)
@@ -205,6 +211,34 @@ namespace RealLifeOverhaul.Construction
             values.Add(value);
         }
 
+        // What land asks a square metre in each district, the mean of the lots for sale, with the change on the month before once there is a month before it.
+        private UiFactCardModel AsksCard(BuildState state)
+        {
+            long most = 0L;
+            for (int i = 0; i < state.Asks.Count; i++)
+            {
+                most = Math.Max(most, state.Asks[i].Latest);
+            }
+            if (most <= 0L)
+            {
+                return null;
+            }
+            var lines = new List<UiFactLine>(state.Asks.Count);
+            for (int i = 0; i < state.Asks.Count; i++)
+            {
+                AskRing ring = state.Asks[i];
+                if (ring.Latest <= 0L)
+                {
+                    continue;
+                }
+                int change = ring.Change;
+                string figure = ConstructionText.Money(ring.Latest) + (ring.Count < 2 ? "  " + ConstructionText.T("reallife_ui_cons_ask_wait")
+                    : "  " + (change > 0 ? "+" : string.Empty) + (change / 10f).ToString("0.0", Inv) + "%");
+                lines.Add(UiFactLine.Bar(ConstructionText.T(ring.District), (int)(ring.Latest * 100L / most), figure));
+            }
+            return lines.Count == 0 ? null : new UiFactCardModel { Title = ConstructionText.T("reallife_ui_cons_asks_title"), Heading = true, Lines = lines.ToArray() };
+        }
+
         // ------------------------------------------------------------------ the table
 
         // The kind of each column of a tab's table: the first is the thing's name on a tile, the last of a state a chip.
@@ -212,14 +246,38 @@ namespace RealLifeOverhaul.Construction
         {
             switch (tab)
             {
-                case "Land": return new[] { UiCellKind.Tile, UiCellKind.Text, UiCellKind.Text, UiCellKind.Money, UiCellKind.Chip };
+                case "Land": return new[] { UiCellKind.Tile, UiCellKind.Text, UiCellKind.Text, UiCellKind.Money, UiCellKind.Chip, UiCellKind.Money };
                 case "Projects": return new[] { UiCellKind.Tile, UiCellKind.Text, UiCellKind.Meter, UiCellKind.Money, UiCellKind.Chip };
                 case "Tenders": return new[] { UiCellKind.Tile, UiCellKind.Money, UiCellKind.Text, UiCellKind.Text, UiCellKind.Chip };
                 case "Crews": return new[] { UiCellKind.Tile, UiCellKind.Text, UiCellKind.Meter, UiCellKind.Meter, UiCellKind.Money, UiCellKind.Chip };
-                case "Rivals": return new[] { UiCellKind.Tile, UiCellKind.Text, UiCellKind.Meter, UiCellKind.Figure, UiCellKind.Figure };
+                case "Rivals": return new[] { UiCellKind.Tile, UiCellKind.Text, UiCellKind.Meter, UiCellKind.Figure, UiCellKind.Figure, UiCellKind.Text, UiCellKind.Figure };
                 case "City": return new[] { UiCellKind.Tile, UiCellKind.Text, UiCellKind.Money, UiCellKind.Text };
                 default: return new[] { UiCellKind.Text, UiCellKind.Text };
             }
+        }
+
+        // The columns in the order they are shown, by the column of the row that fills them: a column the kit adds (the price a square metre, the floors a builder is
+        // licensed to, the jobs it has done for the player) stands past the old table's own and is put where it reads best.
+        private static int[] OrderOf(string tab, int own)
+        {
+            switch (tab)
+            {
+                case "Land": return new[] { 0, 1, 2, 3, 5, 4 };
+                case "Rivals": return new[] { 0, 1, 2, 5, 3, 4, 6 };
+                default:
+                    var order = new int[own];
+                    for (int i = 0; i < own; i++)
+                    {
+                        order[i] = i;
+                    }
+                    return order;
+            }
+        }
+
+        private static string ExtraTitle(string tab, int column)
+        {
+            string key = tab == "Land" ? "reallife_ui_cons_col_sqm" : column == 5 ? "reallife_ui_cons_col_floors" : "reallife_ui_cons_col_jobs";
+            return ConstructionText.T(key);
         }
 
         private static UiIcon RowIcon(string tab, int kind)
@@ -258,13 +316,19 @@ namespace RealLifeOverhaul.Construction
         {
             TableSpec spec = _spec;
             UiCellKind[] kinds = KindsOf(spec.Tab);
-            int cols = Math.Min(spec.Count, kinds.Length);
+            int[] shownAs = OrderOf(spec.Tab, Math.Min(spec.Count, kinds.Length));
+            int cols = shownAs.Length;
             var columns = new UiDataColumn[cols];
-            for (int c = 0; c < cols; c++)
+            for (int d = 0; d < cols; d++)
             {
-                TableColumn col = spec.Columns[c];
-                columns[c] = new UiDataColumn { Title = ConstructionText.T(col.TitleKey), Kind = kinds[c], Width = col.Flexible
-                    ? 0f : Width(kinds[c]), Sortable = col.Sort != TableSort.None };
+                int c = shownAs[d];
+                bool own = c < spec.Count;
+                TableColumn col = own ? spec.Columns[c] : null;
+                columns[d] = new UiDataColumn
+                {
+                    Title = own ? ConstructionText.T(col.TitleKey) : ExtraTitle(spec.Tab, c), Kind = kinds[c], Width = own && col.Flexible ? 0f : Width(kinds[c]),
+                    Sortable = !own || col.Sort != TableSort.None
+                };
             }
             int filter = spec.FilterCount > 0 ? _view.Filter : -1;
             m.FilterKinds = spec.FilterCount > 0 && spec.Filters[0].KindKeys != null ? spec.Filters[0].KindKeys.Length : 0;
@@ -278,11 +342,11 @@ namespace RealLifeOverhaul.Construction
                 }
                 shown.Add(r);
             }
-            int sort = _view.Sort >= 0 && _view.Sort < cols ? _view.Sort : spec.FirstColumn;
+            int sort = _view.Sort >= 0 && _view.Sort < cols ? _view.Sort : spec.FirstColumn >= 0 ? Array.IndexOf(shownAs, spec.FirstColumn) : -1;
             bool down = _view.Sort >= 0 ? _view.SortDown : !spec.FirstAscending;
             if (sort >= 0 && sort < cols)
             {
-                int by = sort;
+                int by = shownAs[sort];
                 shown.Sort((a, b) =>
                 {
                     double x = a.KeyAt(by), y = b.KeyAt(by);
@@ -298,16 +362,17 @@ namespace RealLifeOverhaul.Construction
                 var cells = new string[cols];
                 var values = new int[cols];
                 var tones = new UiRole[cols];
-                for (int c = 0; c < cols; c++)
+                for (int d = 0; d < cols; d++)
                 {
+                    int c = shownAs[d];
                     string words = r.TextAt(c);
-                    cells[c] = words == "-" ? string.Empty : words ?? string.Empty;
-                    tones[c] = c == 0 ? UiRole.None : Tone(r.ToneAt(c));
+                    cells[d] = words == "-" ? string.Empty : words ?? string.Empty;
+                    tones[d] = c == 0 ? UiRole.None : Tone(r.ToneAt(c));
                     double key = r.KeyAt(c);
-                    values[c] = kinds[c] == UiCellKind.Tile ? (int)RowIcon(spec.Tab, r.Kind) : kinds[c] == UiCellKind.Meter ? MeterValue(spec.Tab, c, key) : 0;
+                    values[d] = kinds[c] == UiCellKind.Tile ? (int)RowIcon(spec.Tab, r.Kind) : kinds[c] == UiCellKind.Meter ? MeterValue(spec.Tab, c, key) : 0;
                     if (kinds[c] == UiCellKind.Meter && double.IsNaN(key))
                     {
-                        cells[c] = string.Empty;
+                        cells[d] = string.Empty;
                     }
                 }
                 rows[i] = new UiDataRow { Cells = cells, Values = values, Tones = tones };

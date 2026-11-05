@@ -9,11 +9,12 @@ namespace RealLifeOverhaul.Construction
     /// <summary>The Company tab: the office, the contractor's licence, the standing, the speciality, the cover, the yard and the books.</summary>
     public sealed partial class ConstructionLive
     {
-        private static readonly string[] CompanyRows = { "office", "licence", "reputation", "speciality", "cover", "yard", "record", "books" };
+        private static readonly string[] CompanyRows = { "office", "licence", "level", "reputation", "speciality", "cover", "yard", "record", "books" };
 
         private static readonly string[] CompanyKeys =
         {
-            "reallife_bld_co_office", "reallife_bld_co_licence", "reallife_bld_co_reputation", "reallife_bld_co_speciality", "reallife_bld_co_cover", "reallife_bld_co_yard",
+            "reallife_bld_co_office", "reallife_bld_co_licence", "reallife_ui_cons_co_level", "reallife_bld_co_reputation", "reallife_bld_co_speciality", "reallife_bld_co_cover",
+            "reallife_bld_co_yard",
             "reallife_bld_co_record", "reallife_bld_co_books"
         };
         private readonly List<PlaceView> _yards = new List<PlaceView>(4);
@@ -47,6 +48,7 @@ namespace RealLifeOverhaul.Construction
             {
                 case "office": WriteOffice(box, state, office, place); break;
                 case "licence": WriteLicence(box, state); break;
+                case "level": WriteLevel(box, state); break;
                 case "reputation": WriteReputation(box, state); break;
                 case "speciality": WriteSpeciality(box, state); break;
                 case "cover": WriteCover(box, state); break;
@@ -65,6 +67,8 @@ namespace RealLifeOverhaul.Construction
                     return office ? place.Name : ConstructionText.T("reallife_bld_value_none");
                 case "licence":
                     return ConstructionText.LicenceWords(f);
+                case "level":
+                    return ConstructionText.T("reallife_ui_cons_floors_n", "count", Director.FloorsLicensed.ToString());
                 case "reputation":
                     return ConstructionText.N(f.Reputation);
                 case "speciality":
@@ -136,6 +140,28 @@ namespace RealLifeOverhaul.Construction
             }
             KitBox.Button(buttons, KitBox.Additional, "reallife_bld_back", () => Back());
             Guide(box);
+        }
+
+        // The builder's licence by floors: what the company may build now, and what the next level asks of its builds and its standing.
+        private void WriteLevel(KitBox box, BuildState state)
+        {
+            FirmFile f = state.Firm;
+            box.Subtitle(ConstructionText.T("reallife_ui_cons_floors_n", "count", Director.FloorsLicensed.ToString()));
+            box.RowPair("reallife_ui_cons_row_level", ConstructionText.N(f.Level + 1), "reallife_ui_cons_row_licensed", ConstructionText.T("reallife_ui_cons_floors_n", "count",
+                Director.FloorsLicensed.ToString()));
+            if (LevelRules.Next(f.Level, out int builds, out int standing, out int floors))
+            {
+                box.Section("reallife_ui_cons_sec_next_level");
+                box.Check(ConstructionText.T("reallife_ui_cons_next_builds", "have", f.Finished.ToString(), "need", builds.ToString()), f.Finished >= builds);
+                box.Check(ConstructionText.T("reallife_ui_cons_next_standing", "have", f.Reputation.ToString(), "need", standing.ToString()), f.Reputation >= standing);
+                box.Note(ConstructionText.T("reallife_ui_cons_next_note", "count", floors.ToString()));
+            }
+            else
+            {
+                box.Note(ConstructionText.T("reallife_ui_cons_level_top"));
+            }
+            box.Note(ConstructionText.T("reallife_ui_cons_level_note"));
+            BackButton(box);
         }
 
         private void WriteReputation(KitBox box, BuildState state)

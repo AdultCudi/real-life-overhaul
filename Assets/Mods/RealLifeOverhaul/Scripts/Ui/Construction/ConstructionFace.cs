@@ -147,9 +147,18 @@ namespace RealLifeOverhaul.Ui
             int rows = m.Projects.Length;
             // Rows that do not leave the week's list its room are cut at the row that would cross it, never drawn over it.
             int fit = Math.Max(1, (int)((bottom - ly - weekH) / ProjectRow));
+            // The chip and the money stand in columns as wide as the widest of the rows, so the tracks between them start at one place.
+            float chipCol = 0f, moneyCol = 0f;
+            for (int i = 0; i < rows; i++)
+            {
+                ConstructionProject p = m.Projects[i];
+                chipCol = Math.Max(chipCol, string.IsNullOrEmpty(p.Chip) ? 0f : Math.Min(UiDraw.SnapDown(lw * 0.3f), UiFactCard.ChipWidth(p.Chip)));
+                float spentW = UiTextRules.Width(p.Spent ?? string.Empty, UiStyle.BodyStrong), ofW = UiTextRules.Width(p.Of ?? string.Empty, UiStyle.Small);
+                moneyCol = Math.Max(moneyCol, UiDraw.Snap(Math.Max(spentW, ofW) + UiTokens.S1));
+            }
             for (int i = 0; i < Math.Min(rows, fit); i++)
             {
-                ProjectLay(s, left, m.Projects[i], x, ly + i * ProjectRow, lw);
+                ProjectLay(s, left, m.Projects[i], x, ly + i * ProjectRow, lw, chipCol, moneyCol);
             }
             m.Dropped += Math.Max(0, rows - fit);
             ly += Math.Min(rows, fit) * ProjectRow;
@@ -221,7 +230,7 @@ namespace RealLifeOverhaul.Ui
 
         // A project: its glyph on a tile, its name and place, its stage track with the works' bar under it, what it has cost against its budget and the word that says whether it
         // waits on the player. The whole row opens the project.
-        private static void ProjectLay(UiScene s, UiAt at, ConstructionProject p, float x, float y, float w)
+        private static void ProjectLay(UiScene s, UiAt at, ConstructionProject p, float x, float y, float w, float chipCol, float moneyCol)
         {
             int face = UiDraw.Box(s, at, x - UiTokens.S2, y, w + UiTokens.S4, ProjectRow - UiTokens.S2, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
             UiAt on = at.In(face);
@@ -322,6 +331,20 @@ namespace RealLifeOverhaul.Ui
             bool side = m.Card != null;
             float sw = side ? Math.Max(MinSide, Math.Min(TableSideWidth, UiDraw.SnapDown(w * 0.3f))) : 0f;
             float tw = w - (sw > 0f ? sw + UiTokens.S4 : 0f), th = bottom - y;
+            float footH = m.Foot != null ? UiFactCard.Height(m.Foot, tw, keys, true) : 0f;
+            if (footH > 0f)
+            {
+                float room = th - footH - UiTokens.S3;
+                if (room >= UiTokens.S16 * 3f)
+                {
+                    th = UiDraw.SnapDown(room);
+                }
+                else
+                {
+                    footH = 0f;   // no room for both: the table, which is what the page is for, keeps it
+                    m.Dropped += 1;
+                }
+            }
             if (m.Table != null)
             {
                 float[] widths = Narrow(m.Table, tw);
@@ -332,9 +355,13 @@ namespace RealLifeOverhaul.Ui
                 }
                 m.TableClip = m.TableList >= 0 && m.TableList < s.ListCount ? s.Lists[m.TableList].Clip : (short)-1;
             }
+            if (footH > 0f)
+            {
+                UiFactCard.Lay(s, at.InRegion(RegionRight), m.Foot, x, y + th + UiTokens.S3, tw, footH, keys, true);
+            }
             if (side)
             {
-                UiFactCard.Lay(s, at.InRegion(RegionRight), m.Card, x + tw + UiTokens.S4, y, sw, th, keys, true, true);
+                UiFactCard.Lay(s, at.InRegion(RegionRight), m.Card, x + tw + UiTokens.S4, y, sw, th, keys, true);   // as tall as its words: an empty band to the floor says nothing
             }
         }
 
@@ -427,6 +454,18 @@ namespace RealLifeOverhaul.Ui
             if (m.Track != null && m.Track.Steps.Length > 0)
             {
                 y += UiTrack.Lay(s, at.InRegion(RegionLead), m.Track, x, y, w) + UiTokens.S4;
+            }
+            if (m.DetailTable != null)
+            {
+                float th = Math.Min(UiDraw.Snap(UiDataTable.Chrome(m.DetailTable) + m.DetailTable.RowCount * UiDataTable.RowHeight(m.DetailTable)), UiDraw.SnapDown((bottom - y) * 0.45f));
+                float[] widths = Narrow(m.DetailTable, w);
+                m.TableList = UiDataTable.Lay(s, at.InRegion(RegionTable), m.DetailTable, x, y, w, th, keys, TableBase);
+                for (int c = 0; widths != null && c < widths.Length; c++)
+                {
+                    m.DetailTable.Columns[c].Width = widths[c];
+                }
+                m.TableClip = m.TableList >= 0 && m.TableList < s.ListCount ? s.Lists[m.TableList].Clip : (short)-1;
+                y += th + UiTokens.S4;
             }
             Columns(s, at.InRegion(RegionCards), m, x, y, w, bottom, keys);
         }

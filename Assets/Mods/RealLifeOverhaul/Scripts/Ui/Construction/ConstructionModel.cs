@@ -77,6 +77,7 @@ namespace RealLifeOverhaul.Ui
         public UiDataTableModel Table;
         public string[] RowKeys = new string[0];                    // by row of the table: what a press picks
         public UiFactCardModel Card;                                // beside the table: what the tab is and what to do first
+        public UiFactCardModel Foot;                                // under the table: what the tab's rows say together (the land's asks by district)
         public string TableLink;
         public int TableLinkRun = -1;
         public UiActionModel[] TableActions = new UiActionModel[0];
@@ -88,6 +89,7 @@ namespace RealLifeOverhaul.Ui
         public UiRole DetailChipTone = UiRole.Ok;
         public int DetailLocateRun = -1;
         public UiTrackModel Track;
+        public UiDataTableModel DetailTable;                        // a table over the cards of a page that compares things (the builders' quotes), its rows picked by RowKeys
         public UiFactCardModel[] Cards = new UiFactCardModel[0];    // in the order read: the face stands them in columns
         public UiActionModel[] Actions = new UiActionModel[0];      // what to do, the main one last, over the cards
         public int Dropped;                                         // written back by the layout: lines it had no room for, which a check holds at nothing

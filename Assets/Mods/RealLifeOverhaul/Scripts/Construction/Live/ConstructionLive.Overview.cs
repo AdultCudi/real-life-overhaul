@@ -74,12 +74,12 @@ namespace RealLifeOverhaul.Construction
             }
             if (f.Founded > 0 && office)
             {
-                m.HeadSub = ConstructionText.T("reallife_ui_cons_head_sub", "licence", ConstructionText.LicenceWords(f), "crews", state.Crews.Count.ToString(Inv),
+                m.HeadSub = ConstructionText.T("reallife_ui_cons_head_sub", "floors", Director.FloorsLicensed.ToString(Inv), "crews", state.Crews.Count.ToString(Inv),
                     "address", ConstructionGame.AddressText(place.Street, place.Number));
-                m.FigLabels = new[] { ConstructionText.T("reallife_ui_cons_fig_standing"), ConstructionText.T("reallife_ui_cons_fig_under_way"),
+                m.FigLabels = new[] { ConstructionText.T("reallife_ui_cons_fig_worth"), ConstructionText.T("reallife_ui_cons_fig_under_way"),
                     ConstructionText.T("reallife_ui_cons_fig_on_site"),
                     ConstructionText.T("reallife_ui_cons_fig_done") };
-                m.FigValues = new[] { f.Reputation.ToString(Inv), state.Building().ToString(Inv), ConstructionText.T("reallife_ui_cons_x_of_y", "n", crewsOn.ToString(Inv), "of",
+                m.FigValues = new[] { ConstructionText.Money(Director.Worth()), state.Building().ToString(Inv), ConstructionText.T("reallife_ui_cons_x_of_y", "n", crewsOn.ToString(Inv), "of",
                     state.Crews.Count.ToString(Inv)), f.Finished.ToString(Inv) };
             }
             else

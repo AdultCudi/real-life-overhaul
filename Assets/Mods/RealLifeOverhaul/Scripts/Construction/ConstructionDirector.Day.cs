@@ -112,6 +112,7 @@ namespace RealLifeOverhaul.Construction
             GrowProjectsDay(day);   // the player's Let it grow projects carried to City Hall by their builder (ConstructionDirector.LetItGrow)
             GrowDeedsDay();         // ... and their deeds asking their tier's rent once written
             FlatsHeldDay();         // the player's blocks with flats on sale: their unsold share let, or their residents' once the last is sold (ConstructionDirector.Projects)
+            KitDay(day);            // the licence by floors and the land's monthly asks (ConstructionDirector.Kit.cs)
             ParkDay(day);           // the car parks: the night's accounts, leases and offers, the programme's projects, the city's builders' lots (ConstructionDirector.ParkRun.cs)
             if (Verbose)
             {

@@ -43,6 +43,8 @@ namespace RealLifeOverhaul.Construction
         private string _pick;      // a row's id: "lot:", "own:", "prj:", "tnd:", "crew:", "offer:", "plant:", "buy:", "staff:", "co:", "rival:"
         private int _page;         // a project's second page (its money) when 1, its materials and hedge when 2
         private bool _opened;
+        private UiDataTableModel _detailTable;   // a page that compares things (the builders' quotes) has a table over its cards
+        private string[] _detailKeys = new string[0];
 
         private ConstructionLive()
         {
@@ -106,6 +108,12 @@ namespace RealLifeOverhaul.Construction
             {
                 return false;
             }
+            if (key.StartsWith("q:", StringComparison.Ordinal) && int.TryParse(key.Substring(2), NumberStyles.Integer, CultureInfo.InvariantCulture, out int quote))
+            {
+                _quotePick = quote;   // a builder's quote on the project's quotes page: the page stays and shows that builder's
+                _local++;
+                return true;
+            }
             _pick = key;
             _page = 0;
             _local++;
@@ -165,6 +173,8 @@ namespace RealLifeOverhaul.Construction
             _view = v;
             TakeWant();
             _runs = new ConstructionRuns();
+            _detailTable = null;
+            _detailKeys = new string[0];
             _box = new KitBox(_runs, ConstructionText.T);
             m.Title = ConstructionText.T("reallife_bld_app");
             m.Icon = UiIcon.Building;

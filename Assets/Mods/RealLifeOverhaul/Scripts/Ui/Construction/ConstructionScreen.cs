@@ -66,16 +66,17 @@ namespace RealLifeOverhaul.Ui
                 _seen = _source.Generation;
                 _source.Fill(_m, _view);
             }
-            if (_m.Table != null)
+            UiDataTableModel table = _m.Table ?? _m.DetailTable;
+            if (table != null)
             {
-                _m.Table.Offset = _view.Offset;
-                _m.Table.Reveal = _view.Reveal;
+                table.Offset = _view.Offset;
+                table.Reveal = _view.Reveal;
             }
             _view.Reveal = -1;
             ConstructionFace.Lay(s, _m, frame, dark, keys);
-            if (_m.Table != null)
+            if (table != null)
             {
-                _view.Offset = _m.Table.Offset;
+                _view.Offset = table.Offset;
             }
             _dirty = false;
         }
@@ -101,7 +102,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (command == ConstructionFace.TableBase + UiDataTable.Row)
             {
-                if (_m.Table == null || arg < 0 || arg >= _m.RowKeys.Length || string.IsNullOrEmpty(_m.RowKeys[arg]))
+                if ((_m.Table == null && _m.DetailTable == null) || arg < 0 || arg >= _m.RowKeys.Length || string.IsNullOrEmpty(_m.RowKeys[arg]))
                 {
                     return false;
                 }
@@ -244,7 +245,7 @@ namespace RealLifeOverhaul.Ui
 
         public void Wheel(int clip, float notches)
         {
-            if (clip == _m.TableClip && _m.Table != null)
+            if (clip == _m.TableClip && (_m.Table != null || _m.DetailTable != null))
             {
                 _view.Offset = Math.Max(0f, _view.Offset - notches * UiTokens.TableRow);
                 _dirty = true;

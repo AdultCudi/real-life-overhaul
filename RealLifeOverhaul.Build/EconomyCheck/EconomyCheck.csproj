@@ -1133,6 +1133,11 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\CarParkLayout.cs" Link="Mod\Construction\CarParkLayout.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildState.Park.cs" Link="Mod\Construction\BuildState.Park.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildStore.Park.cs" Link="Mod\Construction\BuildStore.Park.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\LevelRules.cs" Link="Mod\Construction\LevelRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\AskRules.cs" Link="Mod\Construction\AskRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\QuoteRules.cs" Link="Mod\Construction\QuoteRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildState.Kit.cs" Link="Mod\Construction\BuildState.Kit.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildStore.Kit.cs" Link="Mod\Construction\BuildStore.Kit.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildModeRules.cs" Link="Mod\Construction\BuildModeRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildModeHintRules.cs" Link="Mod\Construction\BuildModeHintRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildModeCityRules.cs" Link="Mod\Construction\BuildModeCityRules.cs" />

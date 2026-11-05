@@ -110,3 +110,26 @@ namespace RealLifeOverhaul.Economy
         public const int CarTermLeast = 60, CarTermMost = 240, CarTermStep = 30;
     }
 }
+
+// The preview project has no Input System package: the one place the kit's view asks the mouse where it is (UiView.Pointer) is told there is no mouse.
+namespace UnityEngine.InputSystem
+{
+    internal sealed class PreviewButton
+    {
+        public bool isPressed => false;
+    }
+
+    internal sealed class PreviewPoint
+    {
+        public Vector2 ReadValue() => Vector2.zero;
+    }
+
+    internal sealed class Mouse
+    {
+        public static Mouse current => null;
+
+        public PreviewButton leftButton => null;
+
+        public PreviewPoint position => null;
+    }
+}
