@@ -493,7 +493,7 @@ namespace RealLifeOverhaul.Ui
             for (int t = 0; t < c.Tabs.Length; t++)
             {
                 string label = c.Tabs[t] ?? string.Empty;
-                float tw = UiDraw.ButtonWidth(UiButtonKind.Chip, label, UiIcon.None, UiAction.Count, keys);
+                float tw = Math.Max(UiDraw.ButtonWidth(UiButtonKind.Chip, label, UiIcon.None, UiAction.Count, keys), UiDraw.ButtonWidth(UiButtonKind.Chosen, label, UiIcon.None, UiAction.Count, keys));
                 UiDraw.Button(s, on, hx, hy, tw, UiTokens.Control, t == c.Tab ? UiButtonKind.Chosen : UiButtonKind.Chip, label, UiIcon.None, UiAction.Count, keys, TabCommand, t);
                 hx += tw + UiTokens.S2;
             }
