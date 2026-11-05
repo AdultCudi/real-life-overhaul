@@ -287,7 +287,7 @@ namespace RealLifeOverhaul.Ui
                     rows.Add(new UiDataRow
                     {
                         Cells = new[] { _member.Name, _member.Skill.ToString(Inv), _member.Mood.ToString(Inv), CompanyText.Wage(_member.Wage), _member.WeekHours.ToString(Inv), today,
-                            ServicesText.T(crew ? "reallife_svc_crew_on" : "reallife_svc_crew_off") },
+                        crew && _s.GroupOf(_member.Id) >= 0 ? GroupName(_s.GroupOf(_member.Id)) : ServicesText.T(crew ? "reallife_svc_crew_on" : "reallife_svc_crew_off") },
                         Values = new[] { 0, _member.Skill, _member.Mood, 0, 0, 0, 0 },
                         Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, crew ? UiRole.Ok : UiRole.Muted },
                         Subs = new[] { _member.Base != null ? _member.BaseName : ServicesText.T("reallife_svc_crew_no_base"), null, null, null, null, null, null },
@@ -345,6 +345,12 @@ namespace RealLifeOverhaul.Ui
                     "rate", (CleaningRules.Rate(_member.Skill, _member.Mood, 1) / 100).ToString(Inv))));
                 lines.Add(UiFactLine.Say(ServicesText.T("reallife_svc_crew_wage", "wage", CompanyText.Wage(_member.Wage), "hours", _member.WeekHours.ToString(Inv))));
                 lines.Add(UiFactLine.Row(ServicesText.T("reallife_svc_crew_base"), _member.Base != null ? _member.BaseName : ServicesText.T("reallife_svc_crew_no_base")));
+                int group = _s.GroupOf(id);
+                if (on)
+                {
+                    lines.Add(_runs.Step(ServicesText.T("reallife_ui_svc_row_named_crew"), group >= 0 ? GroupName(group) : ServicesText.T("reallife_ui_svc_no_group"), null, group >= 0,
+                        group < ServicesCatalogue.CrewGroups - 1, () => _d.SetGroup(id, group - 1), () => _d.SetGroup(id, group + 1)));
+                }
                 IReadOnlyList<DayVisit> visits = _d.Visits;
                 int shown = 0;
                 for (int i = 0; on && i < visits.Count && shown < 4; i++)
@@ -396,7 +402,7 @@ namespace RealLifeOverhaul.Ui
                     rows.Add(new UiDataRow
                     {
                         Cells = new[] { o.Name, Money(o.Fee), o.Standard.ToString(Inv), string.Empty, ServicesText.T("reallife_econ_day", "day", o.Until.ToString(Inv)),
-                            ServicesText.T("reallife_ui_svc_state_offer") },
+                            Bidding(o) },
                         Values = new[] { (int)UiIcon.Building, 0, 0, -1, 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.Warn },
                         Subs = new[] { ServicesText.District(o.District), null, null, null, null, null }
                     });
@@ -417,7 +423,8 @@ namespace RealLifeOverhaul.Ui
                         Cells = new[] { c.Name, Money(c.Fee), c.Standard.ToString(Inv), c.Now.ToString(Inv), ServicesText.T("reallife_econ_day", "day", weekEnds.ToString(Inv)),
                             ServicesText.T(late ? "reallife_ui_svc_state_late" : "reallife_ui_svc_state_active") },
                         Values = new[] { (int)UiIcon.Building, 0, 0, c.Now, 0, 0 }, Tones = new[] { UiRole.None, UiRole.None, UiRole.None, UiRole.None, UiRole.None, late ? UiRole.Danger : UiRole.Ok },
-                        Subs = new[] { ServicesText.District(c.District), null, null, null, null, null }
+                        Subs = new[] { c.Crew >= 0 ? ServicesText.T("reallife_ui_svc_sub_crew", "district", ServicesText.District(c.District), "crew", GroupName(c.Crew))
+                            : ServicesText.District(c.District), null, null, null, null, null }
                     });
                     keys.Add("con:" + c.Place);
                     contract = "con:" + c.Place == _v.Pick ? c : contract;
@@ -429,22 +436,118 @@ namespace RealLifeOverhaul.Ui
                     new UiDataColumn { Title = ServicesText.T("reallife_svc_col_standard"), Kind = UiCellKind.Figure, Width = 80f },
                     new UiDataColumn { Title = ServicesText.T("reallife_svc_col_floor"), Kind = UiCellKind.Meter, Width = 128f },
                     new UiDataColumn { Title = ServicesText.T("reallife_ui_svc_col_week_ends"), Kind = UiCellKind.Date, Width = 112f },
-                    new UiDataColumn { Title = ServicesText.T("reallife_co_col_state"), Kind = UiCellKind.Chip, Width = 128f }
+                    new UiDataColumn { Title = ServicesText.T("reallife_co_col_state"), Kind = UiCellKind.Chip, Width = 168f }
                 };
                 Chips(new[] { ServicesText.T("reallife_ui_svc_chip_all"), ServicesText.T("reallife_svc_kind_offer"), ServicesText.T("reallife_ui_svc_chip_running") },
                     new[] { _s.Offers.Count + running, _s.Offers.Count, running });
                 Rows(columns, rows, keys, ServicesText.T("reallife_ui_svc_no_contracts"),
                     ServicesText.T(_s.Crew.Count == 0 ? "reallife_svc_row_no_offer_no_crew" : "reallife_svc_row_no_offer"), UiIcon.ClipboardText);
+                _m.Chart = MonthChart();
                 _m.Side = offer != null ? OfferCard(offer) : contract != null ? ContractCard(contract) : ContractsCard(running);
             }
 
+            private static string GroupName(int group) => ServicesText.T("reallife_ui_svc_crew_name", "letter", ((char)('A' + group)).ToString());
+
+            // "Bidding, 2 rivals" while rival firms bid for the same contract; a plain offer otherwise.
+            private static string Bidding(CleaningOffer o)
+            {
+                return o.Rivals.Count == 0 ? ServicesText.T("reallife_ui_svc_state_offer")
+                    : ServicesText.T(o.Rivals.Count == 1 ? "reallife_ui_svc_state_bidding_one" : "reallife_ui_svc_state_bidding", "count", o.Rivals.Count.ToString(Inv));
+            }
+
+            // The fees contracted a month over the months kept, with this month's figure and its change on the month before; a series with no history says so.
+            private UiChartModel MonthChart()
+            {
+                int[] series = ContractRules.MonthSeries(_s);
+                var chart = new UiChartModel
+                {
+                    Kind = UiChartKind.Line, Still = true, Whole = false, Format = v => Money((int)Math.Round(v)),
+                    EmptyTitle = ServicesText.T("reallife_ui_svc_month_none"), EmptyBody = ServicesText.T("reallife_ui_svc_month_none_body")
+                };
+                string now = Money(ContractRules.MonthFees(_s));
+                if (series.Length >= 2)
+                {
+                    int before = series[series.Length - 2];
+                    int tenths = before > 0 ? (int)Math.Round((series[series.Length - 1] - before) * 1000.0 / before) : 0;
+                    chart.Title = ServicesText.T("reallife_ui_svc_month_title", "amount", now, "change", (tenths >= 0 ? "+" : "-") + (Math.Abs(tenths) / 10f).ToString("0.#", Inv) + "%");
+                    chart.Points = new string[series.Length];
+                    chart.Reads = new string[series.Length];
+                    var values = new float[series.Length];
+                    for (int i = 0; i < series.Length; i++)
+                    {
+                        chart.Points[i] = ServicesText.T("reallife_ui_svc_month_n", "n", (_s.FeeMonth - series.Length + 2 + i).ToString(Inv));
+                        chart.Reads[i] = chart.Points[i];
+                        values[i] = series[i];
+                    }
+                    chart.Series = new[] { new UiSeries { Label = ServicesText.T("reallife_ui_svc_month_series"), Values = values } };
+                }
+                else
+                {
+                    chart.Title = ServicesText.T("reallife_ui_svc_month_title_now", "amount", now);
+                }
+                return chart;
+            }
+
+            // The named crews as people with their skill, the lead first: who works which contracts.
+            private void CrewLines(List<UiFactLine> lines)
+            {
+                ServicesGame.Cleaners(_cleaners);
+                for (int g = 0; g < ServicesCatalogue.CrewGroups; g++)
+                {
+                    string lead = ContractRules.Lead(_s, g, id => SkillOf(id));
+                    bool any = false;
+                    for (int pass = 0; pass < 2; pass++)
+                    {
+                        for (int i = 0; i < _s.Places.Count; i++)
+                        {
+                            string id = _s.Places[i].Id;
+                            if (_s.Places[i].Group != g || (id == lead) != (pass == 0) || !MemberOf(id))
+                            {
+                                continue;
+                            }
+                            if (!any)
+                            {
+                                lines.Add(UiFactLine.Section(GroupName(g)));
+                                any = true;
+                            }
+                            lines.Add(UiFactLine.Who(_member.Name, ServicesText.T(pass == 0 ? "reallife_ui_svc_role_lead" : "reallife_ui_svc_role_cleaner"), _member.Skill.ToString(Inv),
+                                UiTokens.Grade(_member.Skill) == UiRole.Ok ? UiRole.OkText : UiRole.None));
+                        }
+                    }
+                }
+                _cleaners.Clear();
+            }
+
+            // Fills the member scratch with the cleaner of this id from the cleaners just read.
+            private bool MemberOf(string id)
+            {
+                for (int i = 0; i < _cleaners.Count; i++)
+                {
+                    ServicesGame.Fill(_member, _cleaners[i]);
+                    if (string.Equals(_member.Id, id, StringComparison.Ordinal))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            private int SkillOf(string id) => MemberOf(id) ? _member.Skill : 0;
+
             private UiFactCardModel ContractsCard(int running)
             {
-                return new UiFactCardModel
+                var crews = new List<UiFactLine>(12);
+                CrewLines(crews);
+                if (crews.Count == 0)
                 {
-                    Title = ServicesText.T("reallife_ui_svc_sec_contracts"), Heading = true,
-                    Lines = new[]
-                    {
+                    crews.Add(UiFactLine.Say(ServicesText.T("reallife_ui_svc_crews_none"), UiRole.Muted));
+                }
+                if (_s.RivalWon > 0)
+                {
+                    crews.Insert(0, UiFactLine.Say(ServicesText.T("reallife_ui_svc_rivals_won", "count", _s.RivalWon.ToString(Inv)), UiRole.WarnText));
+                }
+                var all = new List<UiFactLine>(20)
+                {
                         UiFactLine.Row(ServicesText.T("reallife_svc_contracts_running"), running.ToString(Inv)),
                         UiFactLine.Row(ServicesText.T("reallife_ui_svc_row_fees_week"), Money(_d.ContractWeekFees())),
                         UiFactLine.Row(ServicesText.T("reallife_ui_svc_row_booked_week"), ServicesText.Signed(ServicesState.Week(_s.FeeIncome))),
@@ -452,8 +555,9 @@ namespace RealLifeOverhaul.Ui
                         UiFactLine.Say(ServicesText.T("reallife_svc_contracts_says_week", "days", ServicesCatalogue.ContractDaysUnderMost.ToString(Inv), "share",
                             ServicesCatalogue.ContractPenaltyPct.ToString(Inv),
                             "weeks", ServicesCatalogue.ContractMissesMost.ToString(Inv)))
-                    }
                 };
+                all.AddRange(crews);
+                return new UiFactCardModel { Title = ServicesText.T("reallife_ui_svc_sec_contracts"), Heading = true, Lines = all.ToArray() };
             }
 
             private UiFactCardModel OfferCard(CleaningOffer offer)
@@ -469,6 +573,18 @@ namespace RealLifeOverhaul.Ui
                         ServicesCatalogue.ContractMissesMost.ToString(Inv)), UiRole.Muted),
                     UiFactLine.Say(ServicesText.T("reallife_svc_contract_until", "day", offer.Until.ToString(Inv)), UiRole.WarnText)
                 };
+                if (offer.Rivals.Count > 0)
+                {
+                    lines.Add(UiFactLine.Section(ServicesText.T("reallife_ui_svc_sec_bidding")));
+                    for (int r = 0; r < offer.Rivals.Count; r++)
+                    {
+                        lines.Add(UiFactLine.Row(ServicesCatalogue.RivalFirms[offer.Rivals[r].Firm], ServicesText.T("reallife_ui_svc_rival_bid", "pct", ServicesText.Percent(offer.Rivals[r].Pct),
+                            "skill", offer.Rivals[r].Skill.ToString(Inv))));
+                    }
+                    int win = ContractRules.Winner(offer, _d.CrewSkill());
+                    lines.Add(UiFactLine.Say(win >= 0 ? ServicesText.T("reallife_ui_svc_forecast_lose", "firm", ServicesCatalogue.RivalFirms[offer.Rivals[win].Firm])
+                        : ServicesText.T("reallife_ui_svc_forecast_win", "skill", _d.CrewSkill().ToString(Inv)), win >= 0 ? UiRole.WarnText : UiRole.OkText));
+                }
                 return new UiFactCardModel
                 {
                     Title = offer.Name, Sub = ServicesText.District(offer.District), Chip = ServicesText.T("reallife_ui_svc_state_offer"), ChipTone = UiRole.Warn, Lines = lines.ToArray(),
@@ -504,6 +620,9 @@ namespace RealLifeOverhaul.Ui
                     "day", (c.WeekFrom + ServicesCatalogue.ContractWeekDays).ToString(Inv))));
                 lines.Add(UiFactLine.Row(ServicesText.T("reallife_svc_contract_earned"), Money(c.Earned)));
                 lines.Add(UiFactLine.Say(ServicesText.T("reallife_svc_contract_pattern", "mode", ServicesText.Mode(c.Mode)), UiRole.Muted));
+                int crew = c.Crew;
+                lines.Add(_runs.Step(ServicesText.T("reallife_ui_svc_row_served_by"), crew >= 0 ? GroupName(crew) : ServicesText.T("reallife_ui_svc_whoever"), null, crew >= 0,
+                    crew < ServicesCatalogue.CrewGroups - 1 && _d.CrewHas(crew + 1), () => _d.SetContractCrew(place, crew - 1), () => _d.SetContractCrew(place, crew + 1)));
                 lines.Add(_runs.Link(ServicesText.T("reallife_svc_contract_visits"), () => Show(() =>
                 {
                     _v.Tab = ServicesDirector.TabCleaning;

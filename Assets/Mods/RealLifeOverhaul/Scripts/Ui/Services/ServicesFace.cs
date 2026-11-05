@@ -184,7 +184,7 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.TextMiddle(s, head, rx + rw - note, y, UiTokens.Control, note, UiStyle.Small, UiRole.Muted, p.OffersNote, UiFlags.Right | UiFlags.Truncate);
             }
             float cardsTop = ry;
-            float lowerNeed = UiTokens.S16 * 7f;
+            float lowerNeed = UiTokens.S16 * 9f;
             float th = Math.Max(UiTokens.S16 * 3f, Math.Min(Natural(p.Offers), bottom - ry - lowerNeed));
             m.TableList = UiDataTable.Lay(s, at.InRegion(RegionTable), p.Offers, rx, ry, rw, th, keys, TableBase);
             m.TableClip = ClipOf(s, m.TableList);

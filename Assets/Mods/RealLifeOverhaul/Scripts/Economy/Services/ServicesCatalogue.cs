@@ -37,6 +37,14 @@ namespace RealLifeOverhaul.Economy
         public const int NeedDaysAverage = 3;        // days a business's daily dirt is averaged over
         public const int OwnShiftLeastHours = 1;     // hours: the shortest daily shift a shop's own cleaner would be given
 
+        public const int OtherCrewMinutes = 30;      // a cleaner outside a contract's own crew counts as this much later than they are
+        public const int CrewGroups = 3;             // named crews: A, B and C
+        public const int FeeMonths = 12;             // months of contracted fees kept
+        public const int MonthDays = 30;             // days a month of the ring counts
+        public const int WorthDays = 30;             // days of a business's worth kept
+        public const int RivalBidsMost = 3;          // rival cleaning firms that bid on one offer
+        public static readonly string[] RivalFirms = { "Spotless Services", "Brightside Cleaners", "Tidy Hands", "Northgate Facilities", "Clean Sweep Co",
+            "Harbour Maintenance", "Pinewood Cleaning", "Fresh Floor Group" };
         public const int OffersMost = 3;             // contract offers open at once
         public const int OfferEveryDays = 3;         // days between looks for a new offer
         public const int OfferOpenDays = 5;          // days an offer stands

@@ -347,6 +347,7 @@ internal static partial class Program
         Check(allKeys, "services: every refusal the game's state can give (not a business, inside, vehicle, gift, busy, stock, lot) has its words");
 
         ServicesSaleRulesChecks();
+        ServicesRunChecks();
     }
 
     private static string ServicesDirectorBlockKey(int block)

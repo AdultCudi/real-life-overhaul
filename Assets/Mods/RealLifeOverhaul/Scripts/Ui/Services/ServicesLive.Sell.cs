@@ -113,6 +113,30 @@ namespace RealLifeOverhaul.Ui
                 p.WorthLabel = ServicesText.T("reallife_ui_svc_worth_today");
                 p.Worth = Money(b.Value);
                 p.WorthSub = ServicesText.T("reallife_ui_svc_worth_sub", "days", VenturesCatalogue.OfferValueDays.ToString(Inv));
+                // The worth by day as a line, with its change over the days kept: nothing is drawn for a business whose days are not yet two.
+                int[] days = ContractRules.WorthSeries(_s, ServicesGame.Place(reg), _day);
+                if (days.Length >= 2)
+                {
+                    int tenths = ContractRules.Change(days);
+                    p.WorthSub = ServicesText.T("reallife_ui_svc_worth_change", "change", (tenths >= 0 ? "+" : "-") + (Math.Abs(tenths) / 10f).ToString("0.#", Inv) + "%",
+                        "days", days.Length.ToString(Inv));
+                    p.WorthSubInk = tenths >= 0 ? UiRole.OkText : UiRole.DangerText;
+                    var values = new float[days.Length];
+                    var points = new string[days.Length];
+                    var reads = new string[days.Length];
+                    for (int i = 0; i < days.Length; i++)
+                    {
+                        values[i] = days[i];
+                        points[i] = (_day - days.Length + 1 + i).ToString(Inv);
+                        reads[i] = ServicesText.T("reallife_econ_day", "day", points[i]);
+                    }
+                    p.Spark = new UiChartModel
+                    {
+                        Kind = UiChartKind.Line, Still = true, Points = points, Reads = reads,
+                            Series = new[] { new UiSeries { Label = ServicesText.T("reallife_ui_svc_worth_today"), Values = values } },
+                        Format = v => Money((int)Math.Round(v)), EvenAxis = true
+                    };
+                }
                 var valued = new List<UiFactLine>(10)
                 {
                     UiFactLine.Row(ServicesText.T("reallife_svc_value_base"), ServicesText.T("reallife_svc_value_base_value", "amount", Money(b.Base), "days",

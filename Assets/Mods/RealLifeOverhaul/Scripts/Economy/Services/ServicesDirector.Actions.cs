@@ -206,6 +206,7 @@ namespace RealLifeOverhaul.Economy
                 else
                 {
                     _state.Crew.Remove(id);
+                    ContractRules.Tidy(_state);
                     for (int i = _visits.Count - 1; i >= 0; i--)
                     {
                         if (string.Equals(_visits[i].CleanerId, id, StringComparison.Ordinal) && _visits[i].End > ServicesGame.Now)
@@ -223,6 +224,63 @@ namespace RealLifeOverhaul.Economy
                 Replan("the crew changed");
                 Changed();
             });
+        }
+
+        /// <summary>A member of the crew goes into one of the named crews (A, B or C), or out of it (a group below nothing). Nothing of theirs in the game changes.</summary>
+        public void SetGroup(string id, int group)
+        {
+            if (!Ready(true) || string.IsNullOrEmpty(id) || !_state.InCrew(id) || _state.GroupOf(id) == group)
+            {
+                return;
+            }
+            CleaningGuard("a named crew", () =>
+            {
+                ContractRules.Place(_state, id, group);
+                ContractRules.Tidy(_state);
+                Logger?.Info("Cleaning service: a cleaner is " + (group >= 0 ? "in crew " + (char)('A' + group) : "in no named crew") + ".");
+                Replan("a named crew changed");
+                Changed();
+            });
+        }
+
+        /// <summary>A contract is served by one of the named crews first, or by whoever is free (a group below nothing). Only a crew somebody stands in can be named.</summary>
+        public void SetContractCrew(string place, int group)
+        {
+            CleaningClient c = Ready(true) ? _state.Client(place) : null;
+            if (c == null || c.Crew == group || group >= ServicesCatalogue.CrewGroups || (group >= 0 && !CrewHas(group)))
+            {
+                return;
+            }
+            CleaningGuard("a contract's crew", () =>
+            {
+                c.Crew = group;
+                Replan("a contract's crew changed");
+                Changed();
+            });
+        }
+
+        /// <summary>The crew's mean cleaning skill: what a client weighs a bid by against the rival firms'.</summary>
+        public int CrewSkill()
+        {
+            int sum = 0;
+            for (int i = 0; i < _crew.Count; i++)
+            {
+                sum += _crew[i].Skill;
+            }
+            return _crew.Count > 0 ? sum / _crew.Count : 0;
+        }
+
+        /// <summary>Whether somebody stands in a named crew.</summary>
+        public bool CrewHas(int group)
+        {
+            for (int i = 0; i < _state.Places.Count; i++)
+            {
+                if (_state.Places[i].Group == group)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         public void AcceptOffer(string place)

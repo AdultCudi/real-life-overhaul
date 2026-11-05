@@ -270,6 +270,7 @@ internal static partial class UiSamples
                     UiFactLine.Say(Fx(W(t, "reallife_svc_crew_skill", "Cleaning {skill}, satisfaction {mood}%. Takes {rate} points an hour off a small shop's floor."), "skill", "72", "mood", "66", "rate", "31")),
                     UiFactLine.Say(Fx(W(t, "reallife_svc_crew_wage", "Paid {wage} an hour for {hours} hours a week."), "wage", "$18.00", "hours", "32")),
                     UiFactLine.Row(W(t, "reallife_svc_crew_base", "Assigned to:"), "Hudson Data Hall"),
+                    SvStep(runs, W(t, "reallife_ui_svc_row_named_crew", "Named crew"), Fx(W(t, "reallife_ui_svc_crew_name", "Crew {letter}"), "letter", "A"), null),
                     UiFactLine.Say(Fx(W(t, "reallife_svc_crew_visit", "{from} to {to}: {business} ({way} to get there)"), "from", "18:00", "to", "18:45", "business", "Pioneer Game Studio", "way", "850 m"))
                 },
                 Actions = new[] { SvBack(t), SvBtn(runs, W(t, "reallife_svc_crew_take_off", "Take off the crew"), UiButtonKind.Secondary, UiAction.Alt) }
@@ -303,7 +304,8 @@ internal static partial class UiSamples
         {
             bool offer = i < 2, late = i == 3;
             rows.Add(SvRow(new[] { names[i], SvMoney(1200 + i * 330), (70 + i * 5).ToString(), offer ? "" : (84 - i * 6).ToString(), "day " + (412 + i),
-                    W(t, offer ? "reallife_ui_svc_state_offer" : late ? "reallife_ui_svc_state_late" : "reallife_ui_svc_state_active", offer ? "Offer" : late ? "Late" : "Active") },
+                    offer ? (i == 0 ? Fx(W(t, "reallife_ui_svc_state_bidding", "Bidding, {count} rivals"), "count", "2") : W(t, "reallife_ui_svc_state_bidding_one", "Bidding, 1 rival"))
+                        : W(t, late ? "reallife_ui_svc_state_late" : "reallife_ui_svc_state_active", late ? "Late" : "Active") },
                 new[] { (int)UiIcon.Building, 0, 0, offer ? -1 : 84 - i * 6, 0, 0 }, SvTones(6, 5, offer ? UiRole.Warn : late ? UiRole.Danger : UiRole.Ok),
                 new[] { where[i], null, null, null, null, null }));
         }
@@ -314,7 +316,7 @@ internal static partial class UiSamples
             new UiDataColumn { Title = W(t, "reallife_svc_col_standard", "Asks"), Kind = UiCellKind.Figure, Width = 80f },
             new UiDataColumn { Title = W(t, "reallife_svc_col_floor", "Floor now"), Kind = UiCellKind.Meter, Width = 128f },
             new UiDataColumn { Title = W(t, "reallife_ui_svc_col_week_ends", "Week ends"), Kind = UiCellKind.Date, Width = 112f },
-            new UiDataColumn { Title = W(t, "reallife_co_col_state", "State"), Kind = UiCellKind.Chip, Width = 128f }
+            new UiDataColumn { Title = W(t, "reallife_co_col_state", "State"), Kind = UiCellKind.Chip, Width = 168f }
         };
         var keys = new string[rows.Count];
         for (int i = 0; i < keys.Length; i++)
@@ -325,6 +327,17 @@ internal static partial class UiSamples
         m.Table = SvTable(columns, rows, state == "contracts_offer" ? 0 : state == "contracts_running" ? 3 : -1, W(t, "reallife_ui_svc_no_contracts", "No contracts"),
             W(t, "reallife_svc_row_no_offer", "No business asks for a contract at the moment."), UiIcon.ClipboardText);
         SvChips(m, t, new[] { W(t, "reallife_ui_svc_chip_all", "All"), W(t, "reallife_svc_kind_offer", "Offers"), W(t, "reallife_ui_svc_chip_running", "Running") }, new[] { 5, 2, 3 }, 0);
+        float[] months = { 24100, 26300, 27800, 30100, 31900, 31200, 33700, 35100, 36800, 38200, 37900, 41220 };
+        var monthPoints = new string[12];
+        for (int i = 0; i < 12; i++)
+        {
+            monthPoints[i] = Fx(W(t, "reallife_ui_svc_month_n", "Month {n}"), "n", (i + 1).ToString());
+        }
+        m.Chart = new UiChartModel
+        {
+            Kind = UiChartKind.Line, Still = true, Title = Fx(W(t, "reallife_ui_svc_month_title", "Contracted a month: {amount}, {change} on last month"), "amount", SvMoney(41220), "change", "+8.8%"),
+            Points = monthPoints, Reads = monthPoints, Series = new[] { new UiSeries { Label = W(t, "reallife_ui_svc_month_series", "Contracted a month"), Values = months } }, Format = v => SvMoney((int)v)
+        };
         if (state == "contracts_offer")
         {
             m.Side = new UiFactCardModel
@@ -336,7 +349,11 @@ internal static partial class UiSamples
                     UiFactLine.Say(Fx(W(t, "reallife_svc_contract_standard", "Wants its floor at {standard} or better. Mornings a week allowed under it: {days}"), "standard", "70", "days", "2")),
                     UiFactLine.Say(Fx(W(t, "reallife_svc_contract_work", "{size} m2. About {minutes} of your crew's cleaning a day."), "size", "420", "minutes", "55 minutes")),
                     UiFactLine.Say(Fx(W(t, "reallife_svc_contract_penalty", "A missed week pays no fee and costs {share}% of it. Missed weeks running that end it: {weeks}"), "share", "25", "weeks", "2"), UiRole.Muted),
-                    UiFactLine.Say(Fx(W(t, "reallife_svc_contract_until", "The offer stands until day {day}."), "day", "412"), UiRole.WarnText)
+                    UiFactLine.Say(Fx(W(t, "reallife_svc_contract_until", "The offer stands until day {day}."), "day", "412"), UiRole.WarnText),
+                    UiFactLine.Section(W(t, "reallife_ui_svc_sec_bidding", "Rival firms bidding")),
+                    UiFactLine.Row("Spotless Services", Fx(W(t, "reallife_ui_svc_rival_bid", "{pct} of your fee, skill {skill}"), "pct", "94%", "skill", "71")),
+                    UiFactLine.Row("Tidy Hands", Fx(W(t, "reallife_ui_svc_rival_bid", "{pct} of your fee, skill {skill}"), "pct", "88%", "skill", "52")),
+                    UiFactLine.Say(Fx(W(t, "reallife_ui_svc_forecast_lose", "At your crew's skill {firm} would win this contract. Win it on skill, or ask less."), "firm", "Spotless Services"), UiRole.WarnText)
                 },
                 Actions = new[] { SvBack(t), SvBtn(runs, W(t, "reallife_svc_contract_refuse", "Refuse"), UiButtonKind.Secondary, UiAction.Count),
                     SvBtn(runs, W(t, "reallife_svc_contract_take", "Take the contract"), UiButtonKind.Primary, UiAction.Alt) }
@@ -353,6 +370,7 @@ internal static partial class UiSamples
                     UiFactLine.Row(W(t, "reallife_svc_contract_fee", "Fee:"), Fx(W(t, "reallife_svc_row_a_week", "{amount} a week"), "amount", SvMoney(2190))),
                     UiFactLine.Say(Fx(W(t, "reallife_svc_contract_week", "Mornings under the standard this week: {under} of {most} allowed. Week ends on day {day}"), "under", "3", "most", "2", "day", "415")),
                     UiFactLine.Row(W(t, "reallife_svc_contract_earned", "Fees paid so far:"), SvMoney(8760)),
+                    SvStep(runs, W(t, "reallife_ui_svc_row_served_by", "Served by"), Fx(W(t, "reallife_ui_svc_crew_name", "Crew {letter}"), "letter", "B"), null),
                     UiFactLine.Go(W(t, "reallife_svc_contract_visits", "Its visits"), ServicesFace.ActionCommand, SvRun(runs))
                 },
                 Actions = new[] { SvBack(t), SvBtn(runs, W(t, "reallife_svc_contract_end", "End the contract"), UiButtonKind.Secondary, UiAction.Count) }
@@ -368,7 +386,13 @@ internal static partial class UiSamples
                     UiFactLine.Row(W(t, "reallife_svc_contracts_running", "Contracts running:"), "3"),
                     UiFactLine.Row(W(t, "reallife_ui_svc_row_fees_week", "Contract fees a week"), SvMoney(9400)),
                     UiFactLine.Row(W(t, "reallife_ui_svc_row_booked_week", "Booked in the last 7 days"), SvMoney(8200)),
-                    UiFactLine.Say(Fx(W(t, "reallife_svc_contracts_says", "A business asks every {days} days at most, up to {most} offers at once."), "days", "3", "most", "3"))
+                    UiFactLine.Say(Fx(W(t, "reallife_svc_contracts_says", "A business asks every {days} days at most, up to {most} offers at once."), "days", "3", "most", "3")),
+                    UiFactLine.Section(Fx(W(t, "reallife_ui_svc_crew_name", "Crew {letter}"), "letter", "A")),
+                    UiFactLine.Who("Rosa Kowalski", W(t, "reallife_ui_svc_role_lead", "Crew lead"), "88", UiRole.OkText),
+                    UiFactLine.Who("Dan Mbeki", W(t, "reallife_ui_svc_role_cleaner", "Cleaner"), "72"),
+                    UiFactLine.Section(Fx(W(t, "reallife_ui_svc_crew_name", "Crew {letter}"), "letter", "B")),
+                    UiFactLine.Who("Ibrahim Aziz", W(t, "reallife_ui_svc_role_lead", "Crew lead"), "81", UiRole.OkText),
+                    UiFactLine.Who("Nora Olsen", W(t, "reallife_ui_svc_role_cleaner", "Cleaner"), "58")
                 }
             };
         }
@@ -434,7 +458,16 @@ internal static partial class UiSamples
         else
         {
             p.Worth = SvMoney(1284000);
-            p.WorthSub = Fx(W(t, "reallife_ui_svc_worth_sub", "{days} days of its books, by its kind, district and the economy"), "days", "14");
+            p.WorthSub = Fx(W(t, "reallife_ui_svc_worth_change", "{change} over the last {days} days"), "change", "+6.2%", "days", "30");
+            p.WorthSubInk = UiRole.OkText;
+            var worth = new float[30];
+            var worthPoints = new string[30];
+            for (int i = 0; i < 30; i++)
+            {
+                worth[i] = 1210000 + i * 2400 + (i % 4) * 5000;
+                worthPoints[i] = (383 + i).ToString();
+            }
+            p.Spark = new UiChartModel { Kind = UiChartKind.Line, Still = true, Points = worthPoints, Reads = worthPoints, Series = new[] { new UiSeries { Label = "Worth", Values = worth } }, Format = v => SvMoney((int)v), EvenAxis = true };
             var valued = new List<UiFactLine>
             {
                 UiFactLine.Row(W(t, "reallife_svc_value_base", "Recent profit:"), Fx(W(t, "reallife_svc_value_base_value", "{amount} for {days} days"), "amount", SvMoney(1070000), "days", "14")),

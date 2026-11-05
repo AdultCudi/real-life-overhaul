@@ -303,6 +303,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Services\CleaningRules.cs" Link="Mod\CleaningRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Services\RoundRules.cs" Link="Mod\RoundRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Services\ContractRules.cs" Link="Mod\ContractRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Services\ContractRules.Rivals.cs" Link="Mod\ContractRules.Rivals.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Services\SaleRules.cs" Link="Mod\SaleRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Services\SaleRules.Buyers.cs" Link="Mod\SaleRules.Buyers.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Services\SaleRules.Quality.cs" Link="Mod\SaleRules.Quality.cs" />
