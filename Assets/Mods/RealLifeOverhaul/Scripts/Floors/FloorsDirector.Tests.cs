@@ -38,9 +38,14 @@ namespace RealLifeOverhaul.Floors
                 TestRefusals.Tell(Logger, TestName, TestRefusal.InVehicle);
                 return;
             }
-            if (!FloorsGame.Free() || FloorsGame.Entering || Loan.Pending || Loan.Borrowed || _lifting)
+            if (FloorsGame.Entering || Loan.Pending || Loan.Borrowed || _lifting)
             {
                 TestRefusals.Tell(Logger, TestName, TestRefusal.ScreenBusy);
+                return;
+            }
+            if (!FloorsGame.Free())
+            {
+                TestWait.Run(Logger, TestName, FloorsGame.Free, TestPlace);   // the options menu is what is in the way
                 return;
             }
             Instance.TestNow();

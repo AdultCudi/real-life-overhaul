@@ -421,6 +421,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--exercise")
+        {
+            ExerciseFixes();   // (the test buttons that wait for the menu, and the Not now texts, alone: ExerciseFixChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--seasons")
         {
             Seasons();   // (the seasons' checks alone, while working on them: SeasonChecks.cs)
@@ -675,6 +681,7 @@ internal static partial class Program
         OnePerson();    // one face for one person: Alex and Mom fixed, a roommate's copy following the record, an old save mended once, every scene reading it (OnePersonChecks.cs)
         CinemaFixes();  // a film with a friend: rested as in the game's own cinema seat, given back on every way out (CinemaFixChecks.cs)
         PartnerTalk();    // the partner: Social's calls, texts and outings count as talking for family life (PartnerTalkChecks.cs)
+        ExerciseFixes();
         MealFixes();    // a completed meal fills once by the game's food and records bought food through the bridge
         ClientHours();  // cleaning and stocking: a client open for the walk and the work, one closing calls the job off, the clock paid up to closing (ClientHoursChecks.cs)
         TechFixes();    // the tech sector: a board that cannot hire, a pitch whose meeting never opened, the utilities asked safely, an interview cut short (TechFixChecks.cs)

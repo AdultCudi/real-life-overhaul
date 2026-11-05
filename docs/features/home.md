@@ -118,6 +118,9 @@ The director looks at the game's own panel once a second (`ReadDoing`) and takes
   Only the minutes spent actually running count.
   Rain: a fifth less, and soaked.
 - **The Wellbeing contact**: "How am I doing" (needs, illness, fitness and its trend, diet, sleep, one tip), and from it tidying, the exercises and the run.
+  This contact is the only way to start stretching, push-ups, sit-ups and a run in play (and tidying): phone, call Wellbeing, "Go for a run" on the first page, or Routines then Exercise. The Guide's Home page says so. The routine starts once the phone and the conversation are out of the way (`Wish`, up to 20 s).
+  A refusal for a player who is not free names the cause (`BusyKey`: a conversation, an activity on the panel, a time skip, a menu or window, the pause).
+  The Options > Tests buttons for the routines are pressed in a menu with the game paused, where `Free` can never hold; they are held by `Core/TestWait` and run once the menus are closed (20 s), as are the wellbeing page test and the scene tests of Fame, Civic and Floors.
 
 Left out on purpose: laundry (the game has no machine), pharmacy items (it has none), a gym membership (the game charges an entrance fee), a timing game on the game's workout machines (the game's own activity runs them).
 
