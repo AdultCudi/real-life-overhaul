@@ -112,28 +112,31 @@ namespace RealLifeOverhaul.Ui
                     pageX = Math.Max(pageX, s.Nodes[i].X + s.Nodes[i].W);
                 }
             }
-            float left = float.MaxValue;
+            // The first column is the first share of the page's width: a card's button stands a little right of a row's edge below it, and it is the card that comes first to the eye.
+            float right = pageX;
             for (int i = 0; i < s.NodeCount; i++)
             {
                 if (OnPage(s, i, navX, pageX))
                 {
-                    s.NodeBox(i, out float bx, out _, out _, out _);
-                    left = Math.Min(left, bx);
+                    s.NodeBox(i, out float bx, out _, out float bw, out _);
+                    right = Math.Max(right, bx + bw);
                 }
             }
+            float edge = pageX + (right - pageX) * LeftShare;
             int first = -1;
-            float firstY = 0f;
-            for (int i = 0; i < s.NodeCount && left < float.MaxValue; i++)
+            float firstY = 0f, firstX = 0f;
+            for (int i = 0; i < s.NodeCount; i++)
             {
                 if (!OnPage(s, i, navX, pageX))
                 {
                     continue;
                 }
                 s.NodeBox(i, out float bx, out float by, out _, out _);
-                if (bx < left + 40f && (first < 0 || by < firstY))
+                if (bx < edge && (first < 0 || by < firstY - 0.5f || (by < firstY + 0.5f && bx < firstX)))
                 {
                     first = i;
                     firstY = by;
+                    firstX = bx;
                 }
             }
             for (int i = 0; i < s.NodeCount && first >= 0; i++)
@@ -144,6 +147,9 @@ namespace RealLifeOverhaul.Ui
                 }
             }
         }
+
+        /// <summary>The share of the page's width, from the sidebar to its last target, that counts as its first column, for where the pad's Right from the sidebar lands.</summary>
+        internal const float LeftShare = 0.45f;
 
         private static bool IsSidebar(UiScene s, int i, float navX) => s.Nodes[i].Command == UiAppWindow.NavCommand && s.Nodes[i].X < navX + 1f;
 

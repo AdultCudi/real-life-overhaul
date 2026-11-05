@@ -20,9 +20,10 @@ public static partial class UiPreviewRunner
     {
         string st = UiSamples.CompanyStates[i];
         bool card = st.EndsWith("question", System.StringComparison.Ordinal), one = st.EndsWith("_one", System.StringComparison.Ordinal);
-        // The mouse rests on a target that is neither the one chosen nor the one the keys would focus, or the shot shows no fill (the Staff page's own entry, a card's chosen answer).
+        // The mouse rests on a target that is neither the one chosen nor the one the keys would focus, or the shot shows no fill (the Staff page's own entry; on a card the second button, as the
+        // answers' rows take no hover of their own).
         CompanyView view = UiSamples.CompanyViewOf(st);
-        int hoverArg = card ? (view.Choice == 0 ? 1 : 0) : view.Tab == CompanyView.Staff ? 2 : 1;
+        int hoverArg = card ? 1 : view.Tab == CompanyView.Staff ? 2 : 1;
         return new Screen
         {
             Name = "company_" + (lang == "en" ? string.Empty : (lang == "zh-cn" ? "zh" : lang) + "_") + st,
@@ -35,7 +36,7 @@ public static partial class UiPreviewRunner
             },
             Icon = UiIcon.Briefcase,
             Backdrop = card ? "05.jpg" : one ? "02.jpg" : i % 2 == 0 ? "13.jpg" : "02.jpg",
-            HoverCommand = card ? CompanyFace.Choice : UiAppWindow.NavCommand,
+            HoverCommand = card ? CompanyFace.Act : UiAppWindow.NavCommand,
             HoverArg = hoverArg,
             Walk = Moves("DDR"),
             Lay = (s, f, d, k) =>

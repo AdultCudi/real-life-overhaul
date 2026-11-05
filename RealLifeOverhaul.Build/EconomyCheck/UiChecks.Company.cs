@@ -114,20 +114,17 @@ internal static partial class Program
             {
                 continue;   // a card over the world has no sidebar
             }
-            float left = float.MaxValue;
+            float right = pageX;
             for (int i = 0; i < s.NodeCount; i++)
             {
-                UiNode n = s.Nodes[i];
-                s.NodeBox(i, out float bx, out _, out _, out _);
-                if (n.Layer == 0 && !n.Disabled && !side.Contains(i) && bx >= pageX)
-                {
-                    left = Math.Min(left, bx);
-                }
+                s.NodeBox(i, out float bx, out _, out float bw, out _);
+                right = s.Nodes[i].Layer == 0 && !s.Nodes[i].Disabled && !side.Contains(i) && bx >= pageX ? Math.Max(right, bx + bw) : right;
             }
-            if (left == float.MaxValue)
+            if (right <= pageX)
             {
-                continue;
+                continue;   // a page with no target at all
             }
+            float edge = pageX + (right - pageX) * CompanyFace.LeftShare;
             states++;
             foreach (int entry in side)
             {
@@ -136,12 +133,12 @@ internal static partial class Program
                 if (ok)
                 {
                     s.NodeBox(to, out float tx, out float ty, out _, out _);
-                    ok = tx < left + 40f && tx >= pageX;
+                    ok = tx < edge && tx >= pageX;
                     for (int i = 0; ok && i < s.NodeCount; i++)
                     {
                         UiNode n = s.Nodes[i];
                         s.NodeBox(i, out float bx, out float by, out _, out _);
-                        ok = !(n.Layer == 0 && !n.Disabled && !side.Contains(i) && bx >= pageX && bx < left + 40f && by < ty - 0.5f);
+                        ok = !(n.Layer == 0 && !n.Disabled && !side.Contains(i) && bx >= pageX && bx < edge && by < ty - 0.5f);
                     }
                 }
                 if (!ok)
