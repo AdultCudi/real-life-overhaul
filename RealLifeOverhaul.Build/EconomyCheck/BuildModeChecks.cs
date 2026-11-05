@@ -571,35 +571,10 @@ internal static partial class Program
             named &= said.StartsWith(items[bit] + ": ") && said.Length > 12 && !said.Contains("; ");
         }
         Check(named, "whole after a load: each of the thirteen items names its own missing step");
-        // The notice: shown only for a count that grew past what the save last told, or once a load with diagnostics on; never for none.
-        Check(!CompleteRules.NoticeDue(0, 0, true, false) && !CompleteRules.NoticeDue(0, 5, true, false), "the notice of buildings not whole: none failed, none shown, diagnostics or not");
-        Check(CompleteRules.NoticeDue(1, 0, false, false) && CompleteRules.NoticeDue(4, 3, false, true) && !CompleteRules.NoticeDue(3, 3, false, false) && !CompleteRules.NoticeDue(2, 3, false, false),
-            "the notice of buildings not whole: shown when the count grew since last time, never for the same count or fewer");
-        Check(CompleteRules.NoticeDue(3, 3, true, false) && !CompleteRules.NoticeDue(3, 3, true, true), "the notice of buildings not whole: with diagnostics on, once a load for the same count");
-        // Saved and loaded: the count told is kept in the district's line, so a second load with the same count shows nothing.
-        var save = new LifeState();
-        save.Finished.Add(new FinishedBuilding { Lot = "uptown_2_09_0004", Size = "ba:buildingsize_c", Version = 1, Type = "ba:buildingtype_residential", Design = "", Settled = true });
-        int shown = 0;
-        foreach (int failed in new[] { 3, 3, 3, 4, 4, 2, 3 })   // each load's count, the line written and read between loads
-        {
-            if (CompleteRules.NoticeDue(failed, save.Told, false, false))
-            {
-                shown++;
-            }
-            save.Told = failed;
-            save = LifeStore.Read(LifeStore.Write(save), out _);
-        }
-        Check(shown == 3 && save.Told == 3 && save.Finished.Count == 1 && save.Finished[0].Settled, "the notice of buildings not whole: seven loads with 3, 3, 3, 4, 4, 2 and 3 show it three times (3, 4 and the 3 after fewer)");
-        LifeState older = LifeStore.Read("v=1^f:^g:2", out _);
-        LifeState odd = LifeStore.Read("v=1^f:^g:2^w:abc", out _);
-        Check(older != null && older.Told == 0 && odd != null && odd.Told == 0 && !LifeStore.Write(new LifeState()).Contains("^w:") && LifeStore.Write(new LifeState { Told = 2 }).Contains("^w:2"),
-            "the notice of buildings not whole: a line from before reads none told, a bad one none, none written for none");
+        // The notice is gone (UptownNoticeChecks): the check's result is for Player.log alone.
         string complete = ModSource(@"Uptown\LifeDirector.Complete.cs");
-        string stand = ModSource(@"Uptown\LifeDirector.Stand.cs");
-        Check(complete.Contains("CompleteRules.NoticeDue(failed, _state.Told, Meta.Dev.Verbose, _incompleteSaid)") && complete.Contains("Told(failed);") && stand.Contains("StandIncomplete();")
-              && !stand.Contains("LifeGame.SayIncomplete") && ModSource(@"Uptown\LifeDirector.cs").Contains("_incompleteSaid = false;")
-              && complete.Contains("CompleteRules.Line(when, made.Address, facts, passed, made.Spec.Id)"),
-            "whole after a load sources: the notice goes through one rule at a load and at a stand, once a load, and the line carries the lot");
+        Check(complete.Contains("CompleteRules.Line(when, made.Address, facts, passed, made.Spec.Id)") && ModSource(@"Uptown\LifeDirector.Stand.cs").Contains("CompleteOne(made, f, \"its stand\");"),
+            "whole after a load sources: the line carries the lot, at a load and at a stand");
     }
 
     private static void BuildModeStoreChecks()
@@ -724,7 +699,6 @@ internal static partial class Program
         }
         keys.Add("reallife_bld_button_build_mode");
         keys.Add("reallife_opt_tip_construction_buildmode");
-        keys.Add("reallife_uptown_incomplete");
         foreach (string t in new[] { "open", "price", "buy", "zone", "place", "bulldoze", "complete", "stand", "layer", "zoning", "window", "hints", "tools", "tour" })
         {
             keys.Add("reallife_bld_mode_test_" + t);

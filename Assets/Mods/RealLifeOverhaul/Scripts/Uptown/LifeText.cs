@@ -78,6 +78,5 @@ namespace RealLifeOverhaul.Uptown
         public const string WarehouseCar = "reallife_uptown_test_warehouse_car";
         public const string WarehouseNone = "reallife_uptown_test_warehouse_none";
         public const string WarehouseRent = "reallife_uptown_test_warehouse_rent";
-        public const string Incomplete = "reallife_uptown_incomplete";          // a building handed over that is not yet a whole building of the game's
     }
 }
