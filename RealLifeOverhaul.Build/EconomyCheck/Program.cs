@@ -113,6 +113,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--bizman-goods")
+        {
+            BizManGoodsAll();   // BizMan's Browse Store Inventory and Show employees on the kit, and the shift card's components (BizManGoodsChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--bizpace")
         {
             BizPaceAll();   // BizMan's open, switch and tab change alone (BizPaceChecks.cs): RLO_BIZPACE_REPORT=1 prints the figures

@@ -65,6 +65,9 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The order a kit canvas takes over a screen drawn at this order: just above it, below the game's boxes, notices and other mods.</summary>
         public static int Above(int covered) => covered + 1;
 
+        /// <summary>The order a box the game opens from inside an app of the full menu takes: over the app and the frame one above it (All apps), whatever order its own canvas has.</summary>
+        public static int OverMenu(int own, int app, bool inMenu) => inMenu ? Math.Max(own, app + 2) : own;
+
         /// <summary>
         /// The order the minimap's card takes while the kit's HUD is up: one over the HUD's own canvas, so it is drawn over the
         /// bottom bar and every piece on it, and still under every window. The windows that stand with the HUD up are the
