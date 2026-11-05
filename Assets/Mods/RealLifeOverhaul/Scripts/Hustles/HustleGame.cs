@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BigAmbitions.Items;
 using Entities;
 using Extensions;
 using Helpers;
@@ -19,6 +20,72 @@ namespace RealLifeOverhaul.Hustles
     /// </summary>
     internal static class HustleGame
     {
+        private static readonly List<RealLifeOverhaul.Rivals.RivalShop> Shops = new List<RealLifeOverhaul.Rivals.RivalShop>(64);
+
+        /// <summary>A seller of the pool as a person of the city's one people pool (a name of the customers' catalogue while the population is off).</summary>
+        public static RealLifeOverhaul.Careers.PoolPerson Seller(int seed, int index)
+        {
+            return RealLifeOverhaul.Careers.PeoplePool.For(RealLifeOverhaul.Tech.TechRandom.Hash(seed, 4107, index) & long.MaxValue);
+        }
+
+        /// <summary>A vehicle type's cargo room, tank and top speed as the game's own shop lists them (ContractVehicleForSale.GetSpecs); false for a type the game does not know.</summary>
+        public static bool Specs(string type, out int cargo, out float tank, out int speed)
+        {
+            cargo = 0;
+            tank = 0f;
+            speed = 0;
+            try
+            {
+                VehicleType t = VehicleTypeHelper.GetVehicleType(type);
+                if (t == null)
+                {
+                    return false;
+                }
+                cargo = (int)t.maxCargoCapacity;
+                tank = t.maxFuel;
+                speed = (int)t.maxSpeed;
+                return true;
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        /// <summary>The wholesale price of one of the game's goods today, whole money; 0 where the game has none.</summary>
+        public static int Wholesale(string item)
+        {
+            try
+            {
+                BigAmbitions.Items.Item data = ItemsGetter.GetByName(item);
+                return data != null ? Mathf.Max(0, Mathf.RoundToInt(data.GetWholesalePrice())) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
+        /// <summary>The rivals that own a business which sells used vehicles or runs on equipment, by the shops they hold; read once a day.</summary>
+        public static void Dealers(List<RivalDealer> into)
+        {
+            into.Clear();
+            Shops.Clear();
+            RealLifeOverhaul.Rivals.RivalGame.NamesAndTypes(Shops, 64);
+            for (int i = 0; i < Shops.Count && into.Count < SellerRules.RivalsMost; i++)
+            {
+                string type = (Shops[i].Type ?? string.Empty).ToLowerInvariant();
+                bool vehicles = type.Contains("car") && (type.Contains("dealer") || type.Contains("showroom") || type.Contains("workshop")
+                    || type.Contains("garage"));
+                bool machines = type.Contains("restaurant") || type.Contains("bakery") || type.Contains("cafe") || type.Contains("kitchen")
+                    || type.Contains("diner");
+                if ((vehicles || machines) && !string.IsNullOrEmpty(Shops[i].Name))
+                {
+                    into.Add(new RivalDealer { Name = Shops[i].Name, Vehicles = vehicles, Machines = machines });
+                }
+            }
+        }
+
         private const string Residential = "ba:buildingtype_residential";
         private const string ElectronicsStore = "ba:businesstype_electronicsstore";
         private const string ApplianceStore = "ba:businesstype_appliancestore";

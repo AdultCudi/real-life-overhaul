@@ -514,7 +514,7 @@ namespace RealLifeOverhaul.Tech
         internal bool CanSeat(string place, int role) => HiringRules.Seats(TalentGame.Shifts(TalentGame.Find(place)), TalentCatalogue.Role(role));
 
         /// <summary>An ad posted on the jobs board, paid now by the business. False if there is no room or the cash does not cover it.</summary>
-        internal bool PostAd(string place, int role, int level, int payLeast, int payMost, int minSkill, int work, int days, bool boost)
+        internal bool PostAd(string place, int role, int level, int payLeast, int payMost, int minSkill, int work, int days, bool boost, int posts = 1)
         {
             if (!_hiringOn || Save == null)
             {
@@ -549,7 +549,8 @@ namespace RealLifeOverhaul.Tech
             _hiring.Ads.Add(new JobAd
             {
                 Id = _hiring.Next(), Place = place, Role = r.Id, Level = TalentCatalogue.Clamp(level, r.LeastLevel, r.MostLevel), PayLeast = payLeast,
-                PayMost = Math.Max(payLeast, payMost), MinSkill = minSkill, Work = work, From = Save.Day, To = Save.Day + days, Boost = boost
+                PayMost = Math.Max(payLeast, payMost), MinSkill = minSkill, Work = work, From = Save.Day, To = Save.Day + days, Boost = boost,
+                Posts = TalentCatalogue.Clamp(posts, 1, HireOffers.PostsMost)
             });
             Changed();
             return true;

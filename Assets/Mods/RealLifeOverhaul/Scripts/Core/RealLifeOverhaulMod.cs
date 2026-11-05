@@ -71,6 +71,7 @@ namespace RealLifeOverhaul
             Guard.Step("the construction company's business type", () => Construction.ConstructionType.Register());   // before any save that holds one is loaded
             Shops.ShopsDirector.Logger = context.Logger;
             Guard.Step("the new kinds of shop", Shops.ShopsDirector.Start);   // before any save that holds one is loaded
+            Guard.Step("the city's people pool for the work apps", Careers.PeoplePoolGame.Install);   // before anything asks whether the population is up: a wait that is not installed does not wait
             Population.PopulationGame.Logger = context.Logger;
             Guard.Step("the population's count in the game's customer calculators", Population.PopulationGame.InstallCalculators);   // before any customer is worked out
             Designs.DesignsDirector.Logger = context.Logger;
@@ -1049,6 +1050,11 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_ui_test_own_bank", () => Ui.UiDirector.Instance?.TestOwnBank())
                 .AddButton("reallife_ui_test_utilities", () => Ui.UiDirector.Instance?.TestUtilities())
                 .AddButton("reallife_ui_test_money_switch", () => Ui.UiDirector.Instance?.TestMoneySwitch())
+                .AddButton("reallife_ui_test_career", () => Ui.UiDirector.Instance?.TestCareer())
+                .AddButton("reallife_ui_test_campus", () => Ui.UiDirector.Instance?.TestCampus())
+                .AddButton("reallife_ui_test_roles", () => Ui.UiDirector.Instance?.TestRoles())
+                .AddButton("reallife_ui_test_marketplace", () => Ui.UiDirector.Instance?.TestMarketplace())
+                .AddButton("reallife_ui_test_work_switch", () => Ui.UiDirector.Instance?.TestWorkSwitch())
                 .AddButton("reallife_ui_test_economy", () => Ui.UiDirector.Instance?.TestEconomy())
                 .AddButton("reallife_ui_test_people", () => Ui.UiDirector.Instance?.TestPeople())
                 .AddButton("reallife_ui_test_newsstand", () => Ui.UiDirector.Instance?.TestNewsstand())

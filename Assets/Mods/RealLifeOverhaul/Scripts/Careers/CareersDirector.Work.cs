@@ -152,6 +152,7 @@ namespace RealLifeOverhaul.Careers
             Applications(day);
             VacanciesLater(day);   // the job board's renewal: nothing the game reads, made in the frames after (Core/DaySpread)
             LadderDay(day);   // before the review, which reads the performance score
+            StandingDay(day);   // the week's score into the ring, before the review settles it
             WorkDayMore(day);
             if (OwnOn)
             {
@@ -174,10 +175,12 @@ namespace RealLifeOverhaul.Careers
             {
                 return;
             }
+            int shiftMinutes = j.TodayDay == day ? j.TodayMinutes : 0;   // read before the settling closes the day
             bool worked = ProRules.Settle(j, day);
             if (worked)
             {
                 _study.Work.DaysWorked++;
+                RecordShift(j, day, shiftMinutes);
                 return;
             }
             if (Excused(day) || j.OffUntil >= day)
@@ -564,15 +567,19 @@ namespace RealLifeOverhaul.Careers
             }
             var view = new CareerApp(this);
             bool tryAgain;
-            _careerApp = PhoneApp.Install(new PhoneAppDef
+            PhoneAppDef kitDef = new PhoneAppDef
             {
                 Id = CareerAppId,
                 TitleKey = "reallife_career_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(CareerGlyphs), new Color32(84, 132, 214, 255), new Color32(40, 64, 128, 255), 0.42f, "AppIcon-Career"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
-            }, out tryAgain);
+                Closed = view.Closed,
+                Kit = () => new RealLifeOverhaul.Ui.WorkScreen(RealLifeOverhaul.Ui.CareerLive.Instance),
+                KitScreen = "career",
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Briefcase
+            };
+            _careerApp = PhoneApp.Install(kitDef, out tryAgain);
             if (_careerApp == null)
             {
                 _careerGaveUp = !tryAgain;
@@ -583,6 +590,7 @@ namespace RealLifeOverhaul.Careers
                 }
                 return;
             }
+            RealLifeOverhaul.Ui.UiShell.Face(_careerApp, kitDef);   // the kit's face over the app, once its switch is on
             _careerView = view;
             CareerBadge();
         }

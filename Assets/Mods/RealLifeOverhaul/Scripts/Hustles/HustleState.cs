@@ -33,6 +33,7 @@ namespace RealLifeOverhaul.Hustles
         public int Haggles;
         public int Countered;              // their last counter; 0 for none
         public string Seller;
+        public int SellerId;               // the seller's record (SellerFile); 0 in a save from before, then the name alone stands
         public string Street;
         public int Number;
         public bool Gone;                  // sold to someone else today: kept so the app can say so

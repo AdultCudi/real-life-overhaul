@@ -363,7 +363,8 @@ namespace RealLifeOverhaul.Careers
         private void Examine(Enrolment e, int day)
         {
             CourseDef c = e.Def;
-            int score = StudyRules.ExamScore(e, StudyRules.Points(_study, c.SkillA), CareersGame.Energy < 30f, StudyRules.Luck(StudySeed, e));
+            int score = RealLifeOverhaul.Tech.TalentCatalogue.Clamp(StudyRules.ExamScore(e, StudyRules.Points(_study, c.SkillA), CareersGame.Energy < 30f, StudyRules.Luck(StudySeed, e))
+                                              + RosterRules.ExamEdge(TutorOf(c)), 0, 100);   // the tutor's rating moves it a little
             bool passed = StudyRules.Sit(e, score, day);
             StudyRules.Use(_study, c.SkillA, day);
             StudyRules.Use(_study, c.SkillB, day);

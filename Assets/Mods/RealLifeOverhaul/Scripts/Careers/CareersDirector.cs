@@ -601,6 +601,7 @@ namespace RealLifeOverhaul.Careers
             }
             _study = null;
             LadderForget();
+            PeopleForget();
             _news = new TechNews();
         }
     }

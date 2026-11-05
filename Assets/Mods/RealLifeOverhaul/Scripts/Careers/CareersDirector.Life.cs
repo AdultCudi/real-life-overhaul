@@ -204,7 +204,11 @@ namespace RealLifeOverhaul.Careers
                 CareersGame.Pay(bonus, BonusKey, SalaryCategory, employer);
             }
             bool ladderUp = LadderReview(rating, day);
-            bool promoted = !ladderUp && !LadderManages() && LifeRules.CanPromote(_study, j, rating, day, Year);   // a manager rises on the ladder, not the profession's ranks
+            bool promoted = !ladderUp && !LadderManages() && LifeRules.CanPromote(_study, j, rating, day, Year);
+            if (promoted)
+            {
+                promoted = StandingDecides(j, day);   // a colleague up for the same rung with the better record gets it
+            }   // a manager rises on the ladder, not the profession's ranks
             j.Due = j.Worked = j.Late = j.Absent = 0;
             j.Overtime = 0;
             j.Favour /= 2;

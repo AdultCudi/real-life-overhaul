@@ -113,6 +113,24 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--work-ui")
+        {
+            WorkUiChecks();   // the work screens' pages and presses alone (UiChecks.Work.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--work-walk")
+        {
+            WorkWalkChecks();   // the pad's walk of every work page alone (UiChecks.WorkWalk.cs): RLO_WALK_REPORT=1 prints each walk
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--work")
+        {
+            WorkUiRules();   // the work interface's rules and its day by day runs alone (WorkRulesChecks.cs, WorkRunChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--kit-prompt")
         {
             KitPromptChecks();   // (the keys' prompts and the app tray alone, while working on them: KitPromptChecks.cs)
@@ -870,6 +888,7 @@ internal static partial class Program
         DayResults();   // the day-end panel and the top bar show the game's profit or loss with the mod's money, transfers left out: the counting rules, the self-check line, the option and the texts (DayResultChecks.cs)
         BizManLink();   // the Company app's Open in BizMan: on every business's page, the game's BizMan.Open for the player's own business, the notice, the texts (BizManLinkChecks.cs)
         MarketFixes();  // the stock market: a guest's trade lines culture-free, the index steady as companies join over the cap, the tape swapped safely, the chart's guard (MarketFixChecks.cs)
+        WorkUiRules(); // the work interface's new rules: standing, colleagues, other applicants, seats, tutors, grades, rivals' offers, posts, past jobs, sellers (WorkRulesChecks.cs)
         CareersFixes(); // education and careers: stood down once the guard has switched it off, no sitting on a disabled host, a lost course never read back (CareersFixChecks.cs)
         MeetingPlaces(); // a review is held where the player can go: a board that stands, named with the shop it is outside and the way in, else the phone (MeetingPlaceChecks.cs)
         DriveMap();     // the driving test that cannot start (examiner never aboard, time stopped, a car that will not go) and the employers found on the map and in the Career app (DriveMapChecks.cs)

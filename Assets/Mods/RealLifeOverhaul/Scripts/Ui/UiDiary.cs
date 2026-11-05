@@ -9,6 +9,7 @@ namespace RealLifeOverhaul.Ui
         public UiIcon Icon;      // its kind (money, an appointment, the city), in the glyph's own colour
         public UiRole Tint;      // None for the icon's own
         public string Title;     // "Rent to Hudson Realty"
+        public string Short;     // what a cell of the grid says in the room it has (a class's own name); null: the title
         public string Value;     // at its right in the chosen day's rows: "$1,240", "09:00"; null for none
         public string Action;    // the link under it that deals with it ("Open the bank"); null when nothing does
         public string Date;      // in the days ahead: its date and weekday as written ("3 Tue"); null for the day of the month and the grid's weekday
@@ -33,6 +34,7 @@ namespace RealLifeOverhaul.Ui
         public UiPairModel[] ChosenFigures = new UiPairModel[0];   // the day's money in and out, as the calendar tallies it
         public string ChosenEmpty;                     // a useful sentence for a day with nothing on it
         public string AheadTitle;                      // "Coming up": the next days' things under the chosen day's
+        public bool AheadRead;                         // the next days' things are only read: their rows are not targets (the days above are the way to choose one)
         public UiDiaryEntry[] Ahead;                   // what the title stands over, when it is not the later days of Entries (tomorrow's, from the next month too); null: those
         public bool CanBack = true, CanOn = true;      // a month before and after can be turned to (MonthViewRules.Step)
     }
@@ -158,7 +160,8 @@ namespace RealLifeOverhaul.Ui
             {
                 ref UiDiaryEntry entry = ref m.Entries[first + i];
                 UiDraw.Icon(s, inside, lx, ly + (EntryLine - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, entry.Icon, entry.Tint, UiFlags.Middle, true);
-                UiDraw.TextMiddle(s, inside, lx + UiTokens.IconSmall + UiTokens.S1, ly, EntryLine, lw - UiTokens.IconSmall - UiTokens.S1, UiStyle.Small, UiRole.Text, entry.Title,
+                UiDraw.TextMiddle(s, inside, lx + UiTokens.IconSmall + UiTokens.S1, ly, EntryLine, lw - UiTokens.IconSmall - UiTokens.S1, UiStyle.Small, UiRole.Text,
+                    string.IsNullOrEmpty(entry.Short) ? entry.Title : entry.Short,
                     UiFlags.Truncate);
                 ly += EntryLine;
             }
@@ -239,7 +242,12 @@ namespace RealLifeOverhaul.Ui
             UiAt inside = at.In(face);
             string weekday = m.Weekdays.Length == 7 ? m.Weekdays[(m.Lead + entry.Day - 1) % 7] : string.Empty;
             string date = entry.Date ?? entry.Day.ToString(System.Globalization.CultureInfo.InvariantCulture) + " " + weekday;
-            float dw = UiDraw.Snap(UiTextRules.Width("30 Wed", UiStyle.SmallStrong) + UiTokens.S2);
+            float dw = UiTextRules.Width("30 Wed", UiStyle.SmallStrong);
+            for (int d = 0; d < m.Weekdays.Length; d++)
+            {
+                dw = Math.Max(dw, UiTextRules.Width("30 " + m.Weekdays[d], UiStyle.SmallStrong));   // the longest weekday of the language, so none is cut
+            }
+            dw = UiDraw.Snap(Math.Min(dw, UiTokens.S16 * 2f) + UiTokens.S2);
             UiDraw.TextMiddle(s, inside, x, y, AheadRow, dw, UiStyle.SmallStrong, UiRole.Text2, date, UiFlags.Truncate);
             float gx = x + dw;
             UiDraw.Icon(s, inside, gx, y + (AheadRow - UiTokens.IconSmall) / 2f, UiTokens.IconSmall, entry.Icon, entry.Tint, UiFlags.Middle, true);
@@ -250,7 +258,10 @@ namespace RealLifeOverhaul.Ui
             {
                 UiDraw.TextMiddle(s, inside, x + w - vw, y, AheadRow, vw, UiStyle.Small, UiRole.Text2, entry.Value, UiFlags.Right);
             }
-            UiDraw.Node(s, at, x - UiTokens.S2, y, w + UiTokens.S4, AheadRow, DayCommand, entry.Day, face);
+            if (!m.AheadRead)
+            {
+                UiDraw.Node(s, at, x - UiTokens.S2, y, w + UiTokens.S4, AheadRow, DayCommand, entry.Day, face);
+            }
         }
 
         // A thing of the chosen day: its kind's glyph on a tile, its name over its figure, and the words that lead where it is dealt with.

@@ -169,6 +169,18 @@ namespace RealLifeOverhaul.Ui
                     found++;
                     say?.Invoke(s.Name + ": \"" + Cut(it.Text) + "\" has a box lower than one line of its style");
                 }
+                else if (wrap && it.Value >= 1f)
+                {
+                    // a wrapped text's box must hold every line it wraps to (up to its most), or the lines are drawn over what is under them: the Chinese and Portuguese of a tile
+                    int most = (int)it.Value;
+                    float need = UiTextRules.WrappedHeight(it.Text, it.Style, it.W, most);
+                    if (it.H + Tolerance < need)
+                    {
+                        found++;
+                        say?.Invoke(s.Name + ": \"" + Cut(it.Text) + "\" wraps to " + (int)(need / UiTextRules.LineHeight(it.Style) + 0.5f) + " lines in a box of " + (int)it.H
+                            + " px (" + it.Style + ", " + (int)it.W + " px wide)");
+                    }
+                }
             }
             return found;
         }

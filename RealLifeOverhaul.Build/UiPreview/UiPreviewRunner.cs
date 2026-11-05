@@ -34,12 +34,14 @@ public static partial class UiPreviewRunner
         public int HoverCommand = -1, HoverArg;   // the target the mouse rests on in the hover shot, or the second target
         public Vector2Int[] Walk;
         public bool Tour;         // the pad path is every target the d-pad reaches from the first, right then down then left and up (UiPreviewRunner.TourOf)
+        public Func<UiScene, int[]> Reading;   // the pad's walk as the targets it stops on, in order, when the screen reads it from its own focus links (the work apps): the path shot draws that and nothing hand written
         public string Backdrop;   // the game's world behind it, a picture's file in the backdrops folder, or null for black
         public int App = -1;      // the app the status bar marks as open
         public bool Extra;        // also a hover shot and a keys shot (the prototype's two that show input)
         public UiIcon Icon;       // the window's icon, as the host is given it in the game
         public Func<UiStatusModel> Bar;   // the status bar it stands over, when not the sample's with App open (the frame's app row)
         public bool NoKeys;       // takes no key (the notice cards): its keys and pad shots show it as the keys leave it, no ring, no path
+        public bool Single;       // one shot only, the 1080 base (a language's render of a state)
         public bool Types;        // a field of it takes the keys (Typing below): it also gets a shot with the caret hidden, the blink's other half
     }
 
@@ -109,6 +111,10 @@ public static partial class UiPreviewRunner
                 }
                 // One look now: each screen at 1080 and 720, with the mouse resting on a target and with the keys leading.
                 shots.Add(new Shot { Screen = screen, Name = screen.Name + "_1080", Width = 1920, Height = 1080, Dark = true });
+                if (screen.Single)
+                {
+                    continue;
+                }
                 shots.Add(new Shot { Screen = screen, Name = screen.Name + "_720", Width = 1280, Height = 720, Dark = true });
                 if (!prototype || screen.Extra)
                 {
@@ -317,11 +323,19 @@ public static partial class UiPreviewRunner
                 int hover = shot.Screen.HoverCommand >= 0 ? scene.FindNode(shot.Screen.HoverCommand, shot.Screen.HoverArg) : -1;
                 if (hover < 0 || scene.Nodes[hover].Layer != top)
                 {
+                    // the named target is not on the page: the biggest target of the top layer that is not the focus and not a bar across the window, a row or a card before a close button
                     hover = -1;
-                    for (int n = 0; n < scene.NodeCount && hover < 0; n++)
+                    float biggest = 0f;
+                    for (int n = 0; n < scene.NodeCount; n++)
                     {
-                        hover = scene.Nodes[n].Layer == top && n != focus ? n : -1;
+                        scene.NodeBox(n, out float nx, out float ny, out float nw, out float nh);
+                        if (scene.Nodes[n].Layer == top && n != focus && nw < frame.Width * 0.8f && ny < FootY && nw * nh > biggest)
+                        {
+                            biggest = nw * nh;
+                            hover = n;
+                        }
                     }
+                    Debug.Log("[UiPreview] hover target missing for " + shot.Screen.Name + ": using node " + hover);
                 }
                 view.SetHover(hover);
             }
@@ -333,7 +347,7 @@ public static partial class UiPreviewRunner
                 }
                 else
                 {
-                    FocusPath(host, scene, focus, shot.Screen.Walk);
+                    FocusPath(host, scene, focus, shot.Screen.Walk, shot.Screen.Reading != null ? shot.Screen.Reading(scene) : null);
                 }
             }
             Canvas.ForceUpdateCanvases();
@@ -386,27 +400,44 @@ public static partial class UiPreviewRunner
 
     // The pad's path from the first target, a screen's own walk of the d-pad: each stop numbered and joined by a line, as
     // the d-pad moves the one focus (UiFocusRules); a press that leads nowhere is left out.
-    private static void FocusPath(RectTransform parent, UiScene scene, int start, Vector2Int[] moves)
+    private static void FocusPath(RectTransform parent, UiScene scene, int start, Vector2Int[] moves, int[] reading = null)
     {
         var stops = new List<Vector2> { Centre(scene, start) };
         var came = new List<int> { -1 };
+        var small = new List<bool> { IsSmall(scene, start) };
         int at = start;
-        foreach (Vector2Int m in moves)
+        for (int k = 0; reading != null && k < reading.Length; k++)
+        {
+            if (reading[k] == start)
+            {
+                continue;
+            }
+            came.Add(stops.Count - 1);
+            stops.Add(Centre(scene, reading[k]));
+            small.Add(IsSmall(scene, reading[k]));
+        }
+        foreach (Vector2Int m in reading != null ? new Vector2Int[0] : moves)
         {
             int next = UiFocusRules.Next(scene, at, m.x, m.y);
             if (next < 0)
             {
                 continue;
             }
+            scene.NodeBox(next, out float nbx, out float nby, out float nbw, out float nbh);
+            if (nby >= FootY || nby < 80f)
+            {
+                continue;   // the app tray under the window and the window's close are not part of a page's walk
+            }
             at = next;
             came.Add(stops.Count - 1);
             stops.Add(Centre(scene, at));
+            small.Add(IsSmall(scene, at));
         }
-        DrawStops(parent, stops, came);
+        DrawStops(parent, stops, came, small);
     }
 
     // The same drawing for a tour: stop i is joined to the stop it was pressed from.
-    private static void DrawStops(RectTransform parent, List<Vector2> stops, List<int> came)
+    private static void DrawStops(RectTransform parent, List<Vector2> stops, List<int> came, List<bool> small)
     {
         RectTransform layer = UiView.NewRect(parent, "FocusPath");
         UiView.Stretch(layer);
@@ -414,6 +445,10 @@ public static partial class UiPreviewRunner
         for (int i = 1; i < stops.Count; i++)
         {
             Vector2 a = stops[came[i]], b = stops[i];
+            if (Vector2.Distance(a, b) > 700f || (small[came[i]] || small[i]) && Mathf.Abs(a.x - b.x) > 40f)
+            {
+                continue;   // a jump across the page (a list to its detail) is left unjoined: a line over the page would cross its words and figures
+            }
             RectTransform seg = UiView.NewRect(layer, "Step" + i);
             seg.pivot = new Vector2(0f, 0.5f);
             seg.anchoredPosition = new Vector2(a.x, -a.y);
@@ -458,10 +493,30 @@ public static partial class UiPreviewRunner
         Debug.Log(Tag + "pad tour: " + met + " stops by right, down, left and up from the first target, of " + top + " targets");
     }
 
+    private static bool IsSmall(UiScene scene, int node)
+    {
+        scene.NodeBox(node, out float x, out float y, out float w, out float h);
+        return w < 300f && h < 80f;
+    }
+
+    private const float FootY = 950f;   // px: under the window of an app, the key lane and the tray
+
+    // Where a stop's number is drawn: at the corner of a control, beside a row (in the gutter at its left) and on the corner of a card or a day, so no figure or word is covered.
     private static Vector2 Centre(UiScene scene, int node)
     {
         scene.NodeBox(node, out float x, out float y, out float w, out float h);
-        return new Vector2((x + w / 2f) * UiTokens.CanvasPerPx, (y + h / 2f) * UiTokens.CanvasPerPx);
+        float cx = x - 2f, cy = y - 2f;   // a button, chip or field: on its top left corner, over the padding and not its glyph or its key cap
+        if (w >= 240f && h < 100f)
+        {
+            cx = x - 10f;
+            cy = y + h / 2f;
+        }
+        else if (w >= 120f && h >= 64f)
+        {
+            cx = x + w - 12f;
+            cy = y + 12f;
+        }
+        return new Vector2(cx * UiTokens.CanvasPerPx, cy * UiTokens.CanvasPerPx);
     }
 
     private static string English(string key, string english) => english;
@@ -488,6 +543,8 @@ public static partial class UiPreviewRunner
                     face.ascentLine = own.faceInfo.ascentLine * scale;
                     face.descentLine = own.faceInfo.descentLine * scale;
                     face.lineHeight = own.faceInfo.lineHeight * scale;
+                    Debug.Log("[UiPreview] face metrics: own point " + own.faceInfo.pointSize + " ascent " + own.faceInfo.ascentLine + " descent " + own.faceInfo.descentLine + " line " + own.faceInfo.lineHeight + " scale " + own.faceInfo.scale
+                        + " | fallback point " + face.pointSize + " ascent " + face.ascentLine + " descent " + face.descentLine + " line " + face.lineHeight + " scale " + face.scale + " (was ascent " + asset.faceInfo.ascentLine + " line " + asset.faceInfo.lineHeight + ")");
                     asset.faceInfo = face;
                 }
                 Debug.Log("[UiPreview] Chinese and Korean fall back to " + path);

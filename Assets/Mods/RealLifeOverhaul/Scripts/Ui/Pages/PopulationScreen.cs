@@ -30,6 +30,11 @@ namespace RealLifeOverhaul.Ui
             public string Name;
         }
 
+        private static ViewTarget _wanted = ViewTarget.None;
+
+        /// <summary>A person the next opening of the page is to show (the work apps' "Open their page"); taken once.</summary>
+        internal static void Want(ViewTarget at) => _wanted = at;
+
         /// <summary>Back at the city closes the screen.</summary>
         public Action Close;
 
@@ -39,6 +44,14 @@ namespace RealLifeOverhaul.Ui
 
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
+            if (_wanted.Valid)
+            {
+                _way.Clear();
+                _at = _wanted;
+                _wanted = ViewTarget.None;
+                _fresh = true;
+                _focusCommand = -1;
+            }
             _view = Build(_at) ?? Build(ViewTarget.To(ViewKind.City, 0));
             UiDashboardModel m = _view != null ? PopulationPages.Model(_view, UiText.Words, PopulationText.Money, PopulationGame.NameOf, UiText.Place, _name)
                 : new UiDashboardModel { Table = new UiTableModel { EmptyTitle = UiText.T("reallife_ui_page_empty") } };

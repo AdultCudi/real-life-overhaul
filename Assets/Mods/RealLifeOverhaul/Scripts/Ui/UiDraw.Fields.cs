@@ -198,10 +198,11 @@ namespace RealLifeOverhaul.Ui
         /// A requirement on one compact row, read only: the tick in its own green when it is met, the warning's own glyph when
         /// it is not, and its words. Returns the height.
         /// </summary>
-        public static float CheckLine(UiScene s, UiAt at, float x, float y, float w, string words, bool met)
+        public static float CheckLine(UiScene s, UiAt at, float x, float y, float w, string words, bool met, bool pending = false)
         {
             float h = UiTokens.PairRow;
-            Icon(s, at, x, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, met ? UiIcon.Check : UiIcon.Warning, UiRole.None, UiFlags.Middle, true);
+            Icon(s, at, x, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, met ? UiIcon.Check : pending ? UiIcon.PadCircle : UiIcon.Warning,
+                pending && !met ? UiRole.Muted : UiRole.None, UiFlags.Middle, true);
             TextMiddle(s, at, x + UiTokens.Icon + UiTokens.S2, y, h, w - UiTokens.Icon - UiTokens.S2, UiStyle.Body, met ? UiRole.Text : UiRole.Text2, words,
                 UiFlags.Label | UiFlags.Truncate);
             return h;

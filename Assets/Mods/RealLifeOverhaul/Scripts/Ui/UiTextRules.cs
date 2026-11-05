@@ -76,6 +76,12 @@ namespace RealLifeOverhaul.Ui
             return lines > line ? start : text == null ? 0 : text.Length;
         }
 
+        /// <summary>
+        /// Set while a screen is laid that wants Chinese and Japanese wrapped as TextMeshPro draws it (a character early, so a line keeps an em in hand): the work apps, whose
+        /// tiles and notes are boxes of a fixed number of lines. Off for every other screen, whose boxes follow the plain measure.
+        /// </summary>
+        public static bool EmInHand;
+
         // The greedy wrap: the lines it takes, the widest, where line number wantLine begins and where the last line begins.
         private static int Wrap(string text, UiStyle style, float width, int most, int wantLine, out float widest, out int wantStart, out int lastStart)
         {
@@ -90,6 +96,16 @@ namespace RealLifeOverhaul.Ui
             UiFace primary = UiFontMetrics.Face(t.Family, t.Weight);
             UiFace backup = null;
             int lines = 0, i = 0, n = text.Length;
+            for (int k = 0; EmInHand && k < n; k++)
+            {
+                if ((text[k] >= '⺀' && text[k] <= '鿿') || (text[k] >= '＀' && text[k] <= '￯'))
+                {
+                    // TextMeshPro breaks Chinese and Japanese (not Korean, which has spaces) a character early where punctuation may not start a line:
+                    // a line of them keeps an em in hand, so no text is laid in fewer lines than it is drawn in
+                    width -= t.Size;
+                    break;
+                }
+            }
             while (i < n && (most <= 0 || lines < most))
             {
                 while (i < n && text[i] == ' ')
