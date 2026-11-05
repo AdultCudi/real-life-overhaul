@@ -188,6 +188,7 @@ namespace RealLifeOverhaul.Construction
             if (_app != null && _view != null && Running)
             {
                 _view.WantQuotes(project);
+                ConstructionLive.Instance.WantPage(project, 3);
                 _app.Open();
             }
         }

@@ -106,6 +106,18 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length >= 3 && args[0] == "--construction-debug")
+        {
+            ConstructionDebug(args[1], float.Parse(args[2], System.Globalization.CultureInfo.InvariantCulture), args.Length > 3 ? args[3] : "en");
+            return 0;
+        }
+        if (args.Length == 1 && args[0] == "--construction-ui")
+        {
+            Environment.SetEnvironmentVariable("RLO_UI_ONLY", "construction");   // the Construction screen's layouts and its presses alone (UiChecks.Construction.cs)
+            UiScreenChecks();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--other-mods")
         {
             UiForeignChecks();   // another author's mod on the kit's screens (UiForeignChecks.cs) and the host's own rules, alone
