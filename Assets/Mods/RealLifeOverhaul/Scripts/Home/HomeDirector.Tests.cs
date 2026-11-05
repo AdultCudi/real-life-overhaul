@@ -13,14 +13,13 @@ namespace RealLifeOverhaul
         {
             try
             {
-                // The cooking tests are pressed on the options page, where nothing can start: they wait for the
-                // menus to be closed, as what is asked for on the phone does, and say so.
+                // Every routine test is pressed on the options page, a menu with the game paused behind it, where the
+                // game's own check for starting anything can never pass: the test waits for the menus to be closed.
                 PlayerController player = PlayerHelper.PlayerController;
-                if ((wish == HomeWish.Cook || wish == HomeWish.CookFirst) && HomeState.Loaded && Settings.HomeLife && !_broken
+                if (wish != HomeWish.StopRun && HomeState.Loaded && Settings.HomeLife && !_broken
                     && player != null && !Free(player) && !JobDirector.OnShift && !PlayerHelper.IsUsingVehicle && !_run.Active)
                 {
-                    Wish(wish);
-                    Notifications.Show(NotificationType.Info, "reallife_home_test_waits", null, 8f);
+                    TestWait.Run(Logger, "Home " + wish, () => PlayerHelper.PlayerController != null && Free(PlayerHelper.PlayerController), () => Act(wish, true));
                     return;
                 }
                 Act(wish, true);
@@ -89,13 +88,12 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            PlayerController player = PlayerHelper.PlayerController;
-            if (player == null || !Free(player))
+            if (PlayerHelper.PlayerController == null)
             {
-                Refuse("reallife_home_refused_busy", "page");
                 return;
             }
-            HomePhone.OpenInPerson();
+            // The page is a conversation, which cannot open over the menu this button is in.
+            TestWait.Run(Logger, "Home page", () => PlayerHelper.PlayerController != null && Free(PlayerHelper.PlayerController), HomePhone.OpenInPerson);
         }
 
         /// <summary>

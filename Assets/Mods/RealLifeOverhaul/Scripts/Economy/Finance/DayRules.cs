@@ -134,6 +134,16 @@ namespace RealLifeOverhaul.Economy
             return type != null && (Transfers.Contains(type) || BizLines.Of(type) == BizLine.Capital);
         }
 
+        /// <summary>
+        /// True if the game's figure holds a purchase of the game's own stock types already, as the cost of the goods when they are sold: stock marked tax
+        /// deductible (a wholesaler's till, an import delivery) or booked to a business with a statement. A shelf of a shop the player only shops at is not
+        /// deductible and stays the player's own spending.
+        /// </summary>
+        public static bool StockHeld(bool isStock, bool ours, bool taxDeductible, bool inStatement)
+        {
+            return isStock && !ours && (taxDeductible || inStatement);
+        }
+
         /// <summary>What a transaction of a type is to the day's result: a transfer is left out whoever holds it, a held one is the game's already, the rest is counted.</summary>
         public static DayPart Of(string type, bool held)
         {

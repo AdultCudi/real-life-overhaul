@@ -229,16 +229,6 @@ namespace RealLifeOverhaul.Uptown
         }
 
         /// <summary>
-        /// Whether the notice that a building is not whole is shown (the owner, 2 Nov 2026: a player cannot act on it): never when none
-        /// failed; when more failed than the last time the count was told in this save, or, with Developer diagnostics on, once a load.
-        /// The line in Player.log is written whatever this says.
-        /// </summary>
-        public static bool NoticeDue(int failed, int told, bool diagnostics, bool saidThisLoad)
-        {
-            return failed > 0 && (failed > told || (diagnostics && !saidThisLoad));
-        }
-
-        /// <summary>
         /// The check's line for Player.log: each item PASS or FAIL, then the verdict, and inside the brackets, for a failure, what is
         /// missing. <paramref name="lot"/> names its lot when given.
         /// </summary>

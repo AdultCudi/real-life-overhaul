@@ -95,7 +95,7 @@ namespace RealLifeOverhaul.Construction
         }
 
         // Where the game lets the player in: its first spawn point, as BuildingManager.GetFirstExitZone picks it on foot.
-        private static bool Door(BuildingManager manager, out Vector3 door)
+        internal static bool Door(BuildingManager manager, out Vector3 door)
         {
             door = default;
             List<ExitZone> zones = manager.exitZones;

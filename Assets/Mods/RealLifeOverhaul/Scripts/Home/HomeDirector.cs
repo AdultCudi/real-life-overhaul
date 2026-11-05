@@ -401,7 +401,7 @@ namespace RealLifeOverhaul
                 }
                 else if (now > _wishUntil)
                 {
-                    Refuse("reallife_home_refused_busy", _wish.ToString(), "waited 20 s");
+                    Refuse(BusyKey(), _wish.ToString(), "waited 20 s");
                     _wish = HomeWish.None;
                 }
             }
@@ -563,6 +563,36 @@ namespace RealLifeOverhaul
         {
             return LifeEvents.IsSafeForEvent() && !ThirdPersonCamera.IsUiOpen() && !PlayerHelper.IsUsingVehicle && !JobDirector.OnShift
                    && !player.NavigationDisabled && !GameManager.IsAnyMiniGameActive();
+        }
+
+        /// <summary>
+        /// The refusal sentence that names what is in the way, for a player who is not free. Only on a refusal, never per frame.
+        /// A menu is told apart from the pause behind it because the player closes the one and presses the other.
+        /// </summary>
+        private static string BusyKey()
+        {
+            var uis = InstanceBehavior<UIs>.Instance;
+            if (DialogController.current != null)
+            {
+                return "reallife_home_refused_busy_talk";
+            }
+            if (PlayerActivityUI.IsPanelOpen)
+            {
+                return "reallife_home_refused_busy_activity";
+            }
+            if (uis != null && uis.timeMachine != null && uis.timeMachine.isRunning)
+            {
+                return "reallife_home_refused_busy_skip";
+            }
+            if (ThirdPersonCamera.IsUiOpen())
+            {
+                return "reallife_home_refused_busy_menu";
+            }
+            if (uis != null && uis.gameSpeed != null && uis.gameSpeed.Paused)
+            {
+                return "reallife_home_refused_busy_paused";
+            }
+            return "reallife_home_refused_busy";
         }
 
         private Action _onSave;   // made once: Core/SaveHook compares it

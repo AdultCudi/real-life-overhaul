@@ -14,6 +14,7 @@ namespace RealLifeOverhaul.Law
         private const float WaitStayMin = 25f, WaitStayMax = 70f;
         private const float ShiftGapMin = 35f, ShiftGapMax = 80f;
         private const float VisitorGapMin = 30f, VisitorGapMax = 100f;
+        private const float ScreenReach = 1.6f;   // metres, flat, from an officer's chair to the screen on their desk (the chair is drawn up to the desk: about 0.8)
 
         private enum Doing { Away, Coming, Seated, Errand, Leaving }
 
@@ -124,6 +125,8 @@ namespace RealLifeOverhaul.Law
             {
                 SeatPlace s = _seats[i];
                 s.Held = false;
+                DeskScreens.OffScreen(s.Screen);
+                s.Screen = null;
                 _seats[i] = s;
             }
         }
@@ -241,6 +244,11 @@ namespace RealLifeOverhaul.Law
             {
                 SeatPlace s = _seats[seat];
                 s.Held = held;
+                if (!held && s.Screen != null)
+                {
+                    DeskScreens.OffScreen(s.Screen);   // the officer is up and gone: the desk's screen dark again
+                    s.Screen = null;
+                }
                 _seats[seat] = s;
             }
         }
@@ -263,6 +271,22 @@ namespace RealLifeOverhaul.Law
             return true;
         }
 
+        // The screen on the desk the officer sits at lit, as the game lights its employees' screens: the nearest standing one to the chair.
+        private void LightDesk(int index, Transform seat)
+        {
+            SeatPlace s = _seats[index];
+            if (s.Screen != null)
+            {
+                return;
+            }
+            s.Screen = DeskScreens.Near(_furnitureHolder != null ? _furnitureHolder : _root, seat.position, ScreenReach);
+            if (!DeskScreens.OnScreen(s.Screen))
+            {
+                s.Screen = null;
+            }
+            _seats[index] = s;
+        }
+
         private void Settle(Member m, float now)
         {
             ActorRole role = m.Role;
@@ -277,6 +301,10 @@ namespace RealLifeOverhaul.Law
                 {
                     role.Quiet();
                     role.Stand(seat.position + seat.forward * 2f);
+                }
+                else if (m.Use == SeatUse.Desk)
+                {
+                    LightDesk(m.Seat, seat);
                 }
             }
             else

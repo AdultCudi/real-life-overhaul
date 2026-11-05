@@ -622,6 +622,7 @@ namespace RealLifeOverhaul.Careers
                 player.Character.LinkToPointAndClickObject(station);
                 if (Holds(station, player))
                 {
+                    ScreenOn(station);   // the desk computer's screens lit, as the game lights them for its own employee
                     return true;
                 }
                 CareersDirector.Logger?.Warn("Careers: the game did not take the player at the " + station.name + (station is DesktopWorkstationController ? " onto its chair" : " as its employee")
@@ -634,6 +635,23 @@ namespace RealLifeOverhaul.Careers
             StandFrom(station);
             Refused();
             return false;
+        }
+
+        // The screens of a desk computer lit for the player and dark again (Core/DeskScreens); a till or a counter has none of the game's.
+        private static void ScreenOn(EmployeeStationController station)
+        {
+            if (station is DesktopWorkstationController)
+            {
+                DeskScreens.OnItem(station);
+            }
+        }
+
+        private static void ScreenOff(EmployeeStationController station)
+        {
+            if (station is DesktopWorkstationController)
+            {
+                DeskScreens.OffItem(station);
+            }
         }
 
         // True while the player is the station's employee, and on its chair where it is a desk.
@@ -665,6 +683,7 @@ namespace RealLifeOverhaul.Careers
                 if (station != null && !Taken(station))
                 {
                     station.Occupied = false;
+                    ScreenOff(station);
                 }
             }
             catch (Exception e)
@@ -713,6 +732,7 @@ namespace RealLifeOverhaul.Careers
                 player.Character.SitOnChair(seat);
                 if (player.Character.isSittingOn == seat)
                 {
+                    ScreenOn(station);   // seated by the pose alone, so the game's employee call that lights the screens never ran
                     return true;
                 }
                 CareersDirector.Logger?.Warn("Careers: the player could not be seated on the " + seat.name + ": they are given back free to walk and the work does not start.");
@@ -735,6 +755,7 @@ namespace RealLifeOverhaul.Careers
                 if (station != null && !Taken(station))
                 {
                     station.Occupied = false;
+                    ScreenOff(station);
                 }
             }
             catch (Exception e)
