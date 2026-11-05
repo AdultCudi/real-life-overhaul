@@ -31385,7 +31385,7 @@
   "reallife_ui_screen_map_picker": "Escolhas de lugar no mapa",
   "reallife_opt_tip_ui_screen_map_picker": "As escolhas de lugar no mapa feitas pelo mod, como um ponto de ônibus ou um terreno, no mesmo painel, com pesquisa. Desligado, aparece a janela do próprio jogo.",
   "reallife_ui_screen_map_district": "Painel da visão dos bairros",
-  "reallife_opt_tip_ui_screen_map_district": "A visão dos bairros no painel do mapa, com dez camadas, uma legenda, um cartão e todos os bairros em ordem. Desligado, aparece a janela antiga.",
+  "reallife_opt_tip_ui_screen_map_district": "A visão dos bairros no painel do mapa, com dez camadas, uma legenda, um cartão e todos os bairros classificados. Desligado, aparece a janela antiga.",
   "reallife_ui_test_map_open": "Mapa da cidade no kit",
   "reallife_ui_test_map_switch": "Mapa da cidade, o do jogo e voltar",
   "reallife_ui_test_map_none": "O mapa da cidade não pode abrir agora. Saia do que está fazendo e execute o teste de novo.",
