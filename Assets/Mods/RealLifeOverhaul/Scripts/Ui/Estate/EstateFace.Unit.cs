@@ -16,7 +16,7 @@ namespace RealLifeOverhaul.Ui
             y = TopBar(s, head, m.Back, new UiActionModel[0], x, y, w, keys);
             float lw = UiDraw.SnapDown(w * 0.44f), rx = x + lw + UiTokens.S6, rw = x + w - rx;
             // A flat's page is short, and the floor under it is the window's: each column spreads what it has over its own height by widening the gaps between
-            // its sections (by at most 40 px each), so neither stands with a hole under it. The first pass measures into a scene of its own.
+            // its sections (by at most 48 px each), so neither stands with a hole under it. The first pass measures into a scene of its own.
             var trial = new UiScene();
             float leftMore = 0f, rightMore = 0f;
             _breathe = 0f;
@@ -28,11 +28,11 @@ namespace RealLifeOverhaul.Ui
             int rightBreaks = _breaks;
             if (leftBreaks > 0)
             {
-                leftMore = Math.Max(0f, Math.Min(UiTokens.S10, UiDraw.SnapDown((bottom - UiTokens.S2 - leftEnd) / leftBreaks)));
+                leftMore = Math.Max(0f, Math.Min(UiTokens.S12, UiDraw.SnapDown((bottom - UiTokens.S2 - leftEnd) / leftBreaks)));
             }
             if (rightBreaks > 0)
             {
-                rightMore = Math.Max(0f, Math.Min(UiTokens.S10, UiDraw.SnapDown((bottom - UiTokens.S2 - rightEnd) / rightBreaks)));
+                rightMore = Math.Max(0f, Math.Min(UiTokens.S12, UiDraw.SnapDown((bottom - UiTokens.S2 - rightEnd) / rightBreaks)));
             }
             _breathe = leftMore;
             Left(s, at.InRegion(RegionLeft), at.InRegion(RegionTenant), at.InRegion(RegionChart), u, x, y, lw, bottom, keys);

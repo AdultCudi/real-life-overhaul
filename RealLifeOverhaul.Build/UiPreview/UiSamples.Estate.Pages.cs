@@ -340,8 +340,7 @@ internal static partial class UiSamples
         }
         sqmFlat /= Math.Max(1, ranked.Count);
         // Your own units: how many are let of all, and what a let one pays a month on average.
-        var lines = RollLines(EstateWorld("std"));
-        RollTotals mine = EstateFigures.Roll(lines, MonthDays);
+        RollTotals mine = EstateFigures.Roll(RollLines(w), MonthDays);
         long yourMean = mine.Let > 0 ? mine.Due / mine.Let : 0;
         int forSale = w.Market.Count + w.HotelsForSale.Count, homes = 0, shops = 0, offices = 0;
         foreach (EListing l in w.Market)
@@ -704,8 +703,7 @@ internal static partial class UiSamples
                 Lines = new[]
                 {
                     EstateStep(runs, W(t, "reallife_estate_duty_who", "Who runs it"), W(t, "reallife_estate_manager_self", "Yourself"), null, false, true),
-                    UiFactLine.Row(W(t, "reallife_ui_estate_fee_row", "Fee"), W(t, "reallife_ui_estate_fee_none", "None")), EstateSwitch(runs, W(t, "reallife_estate_own_cover", "Landlord's cover"), b.Cover),
-                    EstateLink(runs, W(t, "reallife_ui_estate_works_link", "Works and servicing"))
+                    UiFactLine.Row(W(t, "reallife_ui_estate_fee_row", "Fee"), W(t, "reallife_ui_estate_fee_none", "None")), EstateSwitch(runs, W(t, "reallife_estate_own_cover", "Landlord's cover"), b.Cover)
                 }
             }
         };
@@ -720,6 +718,19 @@ internal static partial class UiSamples
                     UiFactLine.Row(W(t, "reallife_ui_estate_sale_chance", "Chance of an offer a day"), "18%"), UiFactLine.Row(W(t, "reallife_ui_estate_sale_fee", "Selling fee"), "1.5%")
                 },
                 Actions = new[] { EstateButton(runs, W(t, "reallife_estate_btn_list", "List for sale"), UiButtonKind.Primary, UiIcon.Tag, UiAction.Alt) }
+            },
+            // What the building's value is made of and what its cover says, under the way to its works: the live page's third card.
+            new UiFactCardModel
+            {
+                Title = W(t, "reallife_ui_estate_more", "More"), Heading = true,
+                Lines = new[]
+                {
+                    EstateLink(runs, W(t, "reallife_ui_estate_works_link", "Works and servicing")),
+                    UiFactLine.Say(Fx(W(t, "reallife_estate_own_made_of", "Its worth comes from the game's value of {base},"), "base", Usd(b.Value * 10 / 12), "market", (w.MarketLevel / 10f).ToString("0.#", InvD) + "%",
+                        "prices", (w.PricesSince / 10f).ToString("0.#", InvD) + "%") + " " + Fx(W(t, "reallife_estate_own_made_of_2", "times {district} for the district and {share} for a condition of {condition}."),
+                        "district", Percent(t, 98), "share", Percent(t, WorthOfBest(b.Cond)), "condition", Percent(t, b.Cond))),
+                    UiFactLine.Say(Fx(W(t, "reallife_estate_own_cover_what", "Cover costs {amount} a day."), "amount", Usd(b.Value / 25000), "excess", Percent(t, 10)))
+                }
             }
         };
         var happy = new List<int>();

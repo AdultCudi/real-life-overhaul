@@ -154,7 +154,10 @@ internal static partial class UiSamples
         {
             Rivals(s);
             Deals(s, pioneer, eastside);
-            Plans(s, pioneer, eastside);
+            if (variant == "std")
+            {
+                Plans(s, pioneer, eastside);   // a showroom that has just opened has sold nothing on finance yet
+            }
             Market(s);
         }
         else
@@ -240,7 +243,10 @@ internal static partial class UiSamples
         {
             new object[] { "Daniel Ortiz", "Alder sedan", 18200, 900, 418, 0, 720, pioneer }, new object[] { "Lena Hoffmann", "Quill hatchback", 7300, 420, 411, 2, 580, pioneer },
             new object[] { "Sofia Marchetti", "Wren roadster", 11350, 560, 415, 0, 790, pioneer }, new object[] { "Marcus Bell", "Linden pickup", 13500, 670, 417, 0, 650, pioneer },
-            new object[] { "Zoe Adler", "Pell hatchback", 4200, 310, 410, 1, 610, pioneer }, new object[] { "Chen Wei", "Stoat van", 9950, 480, 419, 0, 700, eastside }
+            new object[] { "Zoe Adler", "Pell hatchback", 4200, 310, 410, 1, 610, pioneer }, new object[] { "Chen Wei", "Stoat van", 9950, 480, 419, 0, 700, eastside },
+            new object[] { "Ben Carter", "Ember sedan", 8900, 430, 416, 0, 740, pioneer }, new object[] { "Ravi Shah", "Finch van", 12600, 610, 418, 0, 680, pioneer },
+            new object[] { "Mia Lang", "Hale saloon", 5400, 280, 412, 0, 770, eastside }, new object[] { "Luis Pena", "Drift hatchback", 6800, 330, 420, 0, 690, pioneer },
+            new object[] { "Noor Haddad", "Jasper SUV", 21400, 1010, 417, 0, 810, pioneer }
         };
         foreach (object[] p in plans)
         {
@@ -252,7 +258,8 @@ internal static partial class UiSamples
         }
         object[][] covers =
         {
-            new object[] { "Theo Brandt", "Fenn SUV", 1, 490, 1, 1240, pioneer }, new object[] { "Imani Cole", "Orion saloon", 0, 468, 1, 860, pioneer }, new object[] { "Ana Souza", "Dale hatchback", 2, 520, 0, 0, eastside }
+            new object[] { "Theo Brandt", "Fenn SUV", 1, 490, 1, 1240, pioneer }, new object[] { "Imani Cole", "Orion saloon", 0, 468, 1, 860, pioneer }, new object[] { "Ana Souza", "Dale hatchback", 2, 520, 0, 0, eastside },
+            new object[] { "Tom Okafor", "Garnet pickup", 1, 505, 0, 0, pioneer }
         };
         foreach (object[] c in covers)
         {

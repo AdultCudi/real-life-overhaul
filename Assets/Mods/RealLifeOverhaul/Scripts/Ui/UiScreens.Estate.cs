@@ -313,7 +313,9 @@ namespace RealLifeOverhaul.Ui
                 "reallife_estate_tenant_offices_5",
                 "reallife_estate_tenant_offices_6",
                 "reallife_estate_tenant_offices_7",
-                "reallife_estate_fault_0"
+                "reallife_estate_fault_0",
+                "reallife_estate_own_made_of",
+                "reallife_estate_own_made_of_2"
             };
         }
 

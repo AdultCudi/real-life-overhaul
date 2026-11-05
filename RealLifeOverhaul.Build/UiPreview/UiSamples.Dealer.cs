@@ -429,7 +429,7 @@ internal static partial class UiSamples
                 continue;
             }
             bool auction = l.Kind == ListingKind.Auction;
-            int left = Math.Max(0, l.Ends - NowHour), shown = l.Inspected ? l.Condition : l.Shown;
+            int left = Math.Max(0, l.Ends - NowHour), shown = (l.Inspected ? l.Condition : l.Shown) / 10;
             string time = auction ? (l.Gone ? W(t, "reallife_dealer_ended", "Ended") : DHours(t, left)) : W(t, "reallife_ui_dealer_today", "Today");
             string chip = auction ? AuctionWords(t, l) : l.Kind == ListingKind.Used ? (l.Inspected ? W(t, "reallife_dealer_state_inspected", "Inspected") : W(t, "reallife_dealer_state_not_inspected", "Not inspected")) : W(t, "reallife_dealer_state_new", "New");
             rows.Add(Row(new[] { l.Type, DKind(t, l.Kind), DKm(t, l.Km), Math.Max(0, Math.Min(100, shown)).ToString(InvD), Usd(l.Asking), time, chip },
@@ -504,7 +504,7 @@ internal static partial class UiSamples
         };
         m.ShareTitle = W(t, "reallife_ui_dealer_sh_said", "As the owner says");
         m.ShareLabels = new[] { W(t, "reallife_ui_dealer_l_condition", "Condition") };
-        m.ShareValues = new[] { Math.Max(0, Math.Min(100, l.Shown)) };
+        m.ShareValues = new[] { Math.Max(0, Math.Min(100, l.Shown / 10)) };
         var like = new List<EstateRow>();
         foreach (DealerListing o in s.Market)
         {
@@ -548,7 +548,7 @@ internal static partial class UiSamples
         {
             Lines = new[]
             {
-                UiFactLine.Row(W(t, "reallife_ui_dealer_l_worth", "Market value"), Usd(worth)), UiFactLine.Bar(W(t, "reallife_ui_dealer_l_condition", "Condition"), Math.Max(0, Math.Min(100, l.Shown))),
+                UiFactLine.Row(W(t, "reallife_ui_dealer_l_worth", "Market value"), Usd(worth)), UiFactLine.Bar(W(t, "reallife_ui_dealer_l_condition", "Condition"), Math.Max(0, Math.Min(100, l.Shown / 10))),
                 UiFactLine.Row(W(t, "reallife_ui_dealer_l_km", "Mileage"), DKm(t, l.Km)), UiFactLine.Row(W(t, "reallife_ui_dealer_free_bays", "Your free bays"), free.ToString(InvD))
             }
         };

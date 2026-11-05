@@ -4,10 +4,10 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
-    /// The d-pad's walk over a card: from its first target to every other, each target once and none twice, as one run of presses that UiFocusRules itself would take. A card is read in
-    /// reading order (a row left to right, the rows top to bottom, a two-column card down its left column and then its right), and the walk prefers the next target in that order wherever
-    /// the pad can reach it without passing a target it has already stood on. Where no walk can avoid standing twice somewhere, the check names the card. The previews draw the walk as
-    /// the pad path. Game-free. Cost: a search over a card's dozen targets, offline only.
+    /// The d-pad's walk over a card: from its first target to every other, each target once and none twice, as one run of presses that UiFocusRules itself would take, and of all such runs
+    /// the shortest on the card, so the line the preview draws crosses it no more than it must and every stop shows. Where no run can avoid standing twice somewhere, the walk goes on
+    /// from the longest run it found by the shortest ways to the rest, in reading order (a row left to right, the rows top to bottom, a two-column card down its left column and then its
+    /// right), and the check names the card. Game-free. Cost: a search over a card's dozen targets, offline only.
     /// </summary>
     public static class EstateTour
     {
@@ -107,8 +107,9 @@ namespace RealLifeOverhaul.Ui
             var presses = new List<char>(targets);
             var best = new List<char>();
             int bestStands = 1, steps = 0;
+            float bestLength = float.MaxValue;
             visited[startRep] = true;
-            Search(next, rank, visited, path, presses, letters, targets, best, ref bestStands, ref steps);
+            Search(s, next, visited, path, presses, letters, targets, best, ref bestStands, ref bestLength, 0f, ref steps);
             // Where the pad can stand on every target only by passing one twice, the walk goes on from the longest run it found by the shortest ways to the rest, standing again where it must.
             if (bestStands < targets)
             {
@@ -120,22 +121,20 @@ namespace RealLifeOverhaul.Ui
 
         private static int Rep(UiScene s, int node, Dictionary<int, int> listed) => s.Nodes[node].List >= 0 && listed.TryGetValue(s.Nodes[node].List, out int first) ? first : node;
 
-        // A depth first search over the pad's moves for a run through every target once, trying the next in reading order first.
-        private static bool Search(int[][] next, int[] rank, bool[] visited, List<int> path, List<char> presses, char[] letters, int targets, List<char> best, ref int bestStands, ref int steps)
+        // A depth first search over the pad's moves for the run through every target once that is shortest on the card (the straightest line for the eye), the nearer target tried first.
+        private static void Search(UiScene s, int[][] next, bool[] visited, List<int> path, List<char> presses, char[] letters, int targets, List<char> best, ref int bestStands,
+            ref float bestLength, float length, ref int steps)
         {
-            if (path.Count > bestStands)
+            if (path.Count > bestStands || path.Count == targets && path.Count == bestStands && length < bestLength)
             {
                 bestStands = path.Count;
+                bestLength = path.Count == targets ? length : float.MaxValue;
                 best.Clear();
                 best.AddRange(presses);
             }
-            if (path.Count == targets)
+            if (path.Count == targets || length >= bestLength || ++steps > SearchMost)
             {
-                return true;
-            }
-            if (++steps > SearchMost)
-            {
-                return false;
+                return;
             }
             int at = path[path.Count - 1];
             var tries = new List<int>(4);
@@ -146,22 +145,24 @@ namespace RealLifeOverhaul.Ui
                     tries.Add(d);
                 }
             }
-            tries.Sort((a, b) => rank[next[at][a]].CompareTo(rank[next[at][b]]));
+            tries.Sort((a, b) => Distance(s, at, next[at][a]).CompareTo(Distance(s, at, next[at][b])));
             foreach (int d in tries)
             {
                 int to = next[at][d];
                 visited[to] = true;
                 path.Add(to);
                 presses.Add(letters[d]);
-                if (Search(next, rank, visited, path, presses, letters, targets, best, ref bestStands, ref steps))
-                {
-                    return true;
-                }
+                Search(s, next, visited, path, presses, letters, targets, best, ref bestStands, ref bestLength, length + Distance(s, at, to), ref steps);
                 presses.RemoveAt(presses.Count - 1);
                 path.RemoveAt(path.Count - 1);
                 visited[to] = false;
             }
-            return false;
+        }
+
+        private static float Distance(UiScene s, int a, int b)
+        {
+            float dx = s.Nodes[a].X + s.Nodes[a].W / 2f - s.Nodes[b].X - s.Nodes[b].W / 2f, dy = s.Nodes[a].Y + s.Nodes[a].H / 2f - s.Nodes[b].Y - s.Nodes[b].H / 2f;
+            return (float)Math.Sqrt(dx * dx + dy * dy);
         }
 
         // The best run found, continued by the shortest ways to what it left out, in reading order.

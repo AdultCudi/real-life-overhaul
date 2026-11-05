@@ -58,7 +58,7 @@ namespace RealLifeOverhaul.Ui
                     {
                         continue;
                     }
-                    int shown = l.Inspected ? l.Condition : l.Shown;
+                    int shown = (l.Inspected ? l.Condition : l.Shown) / 10;   // a listing's condition is kept in thousandths, and a meter is a per cent
                     bool auction = l.Kind == ListingKind.Auction;
                     int left = Mathf.Max(0, l.Ends - _now);
                     string state = auction ? (l.Gone ? DealerText.T("reallife_dealer_ended") : DealerText.Hours(left)) : DealerText.T("reallife_dealer_today");
@@ -161,7 +161,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 _m.ShareTitle = DealerText.T(l.Inspected ? "reallife_ui_dealer_sh_inspected" : "reallife_ui_dealer_sh_said");
                 _m.ShareLabels = new[] { DealerText.T("reallife_ui_dealer_l_condition") };
-                _m.ShareValues = new[] { Mathf.Clamp(l.Inspected ? l.Condition : l.Shown, 0, 100) };
+                _m.ShareValues = new[] { Mathf.Clamp((l.Inspected ? l.Condition : l.Shown) / 10, 0, 100) };
                 _m.Right = new[] { new UiFactCardModel { Title = DealerText.T("reallife_ibox_sec_car"), Heading = true, Lines = car.ToArray() } };
                 var lines = new List<UiFactLine>(6);
                 int placesFree = 0;
@@ -269,7 +269,7 @@ namespace RealLifeOverhaul.Ui
                 var facts = new List<UiFactLine>(10)
                 {
                     UiFactLine.Row(DealerText.T("reallife_ui_dealer_l_worth"), Money(worth)),
-                    UiFactLine.Bar(DealerText.T("reallife_ui_dealer_l_condition"), Mathf.Clamp(l.Inspected ? l.Condition : l.Shown, 0, 100)),
+                    UiFactLine.Bar(DealerText.T("reallife_ui_dealer_l_condition"), Mathf.Clamp((l.Inspected ? l.Condition : l.Shown) / 10, 0, 100)),
                     UiFactLine.Row(DealerText.T("reallife_ui_dealer_l_km"), DealerText.Km(l.Km)),
                     UiFactLine.Row(DealerText.T("reallife_ui_dealer_free_bays"), free.ToString(Inv), free == 0 ? UiRole.DangerText : UiRole.None),
                     UiFactLine.Section(DealerText.T("reallife_ui_dealer_if_you_win")),

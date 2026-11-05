@@ -301,7 +301,7 @@ namespace RealLifeOverhaul.Ui
                     }
                 }
                 rows.Sort((a, b) => 0);
-                return rows.Count > 2 ? rows.GetRange(0, 2).ToArray() : rows.ToArray();
+                return rows.Count > 3 ? rows.GetRange(0, 3).ToArray() : rows.ToArray();
             }
 
             private void OpenWorks(string pick)

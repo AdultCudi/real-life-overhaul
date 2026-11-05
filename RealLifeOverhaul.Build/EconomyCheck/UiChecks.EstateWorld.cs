@@ -131,6 +131,7 @@ internal static partial class Program
         WorldFailed = 0;
         PropertyWorldChecks();
         ShowroomWorldChecks();
+        DeadFloorChecks();
         Check(WorldChecks > 120, "world: the figures of both apps held against their rows (" + WorldChecks + " comparisons)");
         Check(WorldFailed == 0, "world: every head, count and chart agrees with its rows and with the other tabs (" + WorldFailed + " differ)");
     }
@@ -597,4 +598,61 @@ internal static partial class Program
     }
 
     private static long SumColWhere(UiDataRow[] rows, int col, Func<UiDataRow, bool> take) => SumCol(rows, col, take);
+
+    // ------------------------------------------------------------------------------------------------- the floor of a page
+
+    // A window page leaves no more than this bare between its last line and the window's floor, in the left half of its page or in the right (the hotel's 35 px and the fleet's 19 are the
+    // measure): a table or a list takes the room a short column would leave, or a chart does.
+    private const float FloorMost = 64f;
+
+    private static void DeadFloorChecks()
+    {
+        string bare = "none";
+        int pages = 0;
+        foreach (bool dealerApp in new[] { false, true })
+        {
+            foreach (string state in dealerApp ? UiSamples.DealerStates : UiSamples.EstateStates)
+            {
+                EstateModel m = dealerApp ? DM(state) : PM(state);
+                if (m.Card || m.Shape == EstateShape.Decide || m.Shape == EstateShape.Auction || m.Shape == EstateShape.Rents || m.Shape == EstateShape.Off || m.Shape == EstateShape.Empty
+                    || m.Shape == EstateShape.Catalogue || m.Table != null && m.Table.RowCount == 0)
+                {
+                    continue;   // a card is as tall as its words, an info view has no window, a catalogue's cards scroll, an empty table is one empty state
+                }
+                var scene = new UiScene();
+                EstateFace.Lay(scene, m, UiFrame.FullMenu(16f / 9f, "Property"), true, UiDefaultKeys.Keyboard);
+                float floor = 946f, left = dealerApp ? 148f : 380f, right = 1770f, mid = (left + right) / 2f, leftEnd = 0f, rightEnd = 0f;
+                for (int i = 0; i < scene.ItemCount; i++)
+                {
+                    UiItem it = scene.Items[i];
+                    float top = it.Y, height = it.H;
+                    if (it.Clip >= 0)
+                    {
+                        top = scene.Clips[it.Clip].Y;
+                        height = scene.Clips[it.Clip].H;
+                    }
+                    float x = it.Clip >= 0 ? scene.Clips[it.Clip].X : it.X, w = it.Clip >= 0 ? scene.Clips[it.Clip].W : it.W;
+                    if (it.Layer != 0 || (it.Flags & (UiFlags.Chrome | UiFlags.Decor)) != 0 || top >= floor - 1f || x < left - 1f || w <= 0f || height <= 0f || (it.Flags & UiFlags.Panel) != 0 && w > 1500f)
+                    {
+                        continue;
+                    }
+                    float end = Math.Min(floor, top + height);
+                    if (x < mid)
+                    {
+                        leftEnd = Math.Max(leftEnd, end);
+                    }
+                    if (x + w > mid)
+                    {
+                        rightEnd = Math.Max(rightEnd, end);
+                    }
+                }
+                pages++;
+                if (floor - leftEnd > FloorMost || floor - rightEnd > FloorMost)
+                {
+                    bare = Collect(bare, (dealerApp ? "dealer " : "estate ") + state + " " + (int)(floor - leftEnd) + "/" + (int)(floor - rightEnd), new HashSet<string>());
+                }
+            }
+        }
+        Check(bare == "none" && pages > 18, "estate: no window page leaves more than " + FloorMost + " px bare above its floor in either half (" + pages + " pages; " + bare + ")");
+    }
 }

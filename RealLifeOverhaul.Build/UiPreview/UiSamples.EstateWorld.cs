@@ -142,8 +142,8 @@ internal static partial class UiSamples
     {
         var u = new EUnit { Tenant = who, RentDay = rentDay, MarketDay = market, Until = until, Happy = happy, Record = record, Since = since, ArrearsDays = arrearsDays, Repairs = 70 + happy / 40, ValueForRent = 40 + (market - rentDay) * 100 / Math.Max(1, market) * 4 + 20 };
         u.ValueForRent = Math.Max(10, Math.Min(95, u.ValueForRent));
-        // Four months of the rent record, the newest first, each paid on its day except where the unit has been late.
-        int[] due = { 376, 346, 316, 286 };
+        // Six months of the rent record (what the game keeps), the newest first, each paid on its day except where the unit has been late.
+        int[] due = { 376, 346, 316, 286, 256, 226 };
         for (int i = 0; i < due.Length; i++)
         {
             u.Pays.Add(new EPay { Due = due[i], Paid = due[i] + (record < 60 && i == 1 ? 4 : 0), State = record < 60 && i == 1 ? 1 : 0 });
@@ -216,7 +216,7 @@ internal static partial class UiSamples
         danielUnit.ImproveCost = 2900;
         danielUnit.Refused = 1;
         EBuilding first = Building("41 E 37th Street", "Murray Hill", 'h', 1, 80, 4860000, 3900000, 120000, 98000, 14000, 9, LetUnit(priya, 87, 90, 490, 820, 85, 120), danielUnit, sofiaUnit);
-        first.Services.Add(new EService { Kind = 1, Day = 417, Fee = 340, Who = "Okonkwo Heating" });
+        first.Services.Add(new EService { Kind = 5, Day = 421, Fee = 260, Who = "Garrick Damp Proofing" });
         EBuilding shops = Building("12 W 39th Street", "Garment District", 's', 1, 64, 3100000, 2500000, 60000, 112000, 9000, 31, LetUnit(lena, 180, 186, 620, 680, 80, 200), LetUnit(ines, 150, 156, 560, 810, 85, 90));
         shops.Services.Add(new EService { Kind = 4, Day = 424, Fee = 310, Who = "Hartley Locks" });
         EUnit amaraUnit = LetUnit(amara, 207, 210, 480, 390, 45, 80, 14);
@@ -240,7 +240,7 @@ internal static partial class UiSamples
         EBuilding harlem = Building("75 W 125th Street", "Uptown", 'h', 0, 58, 2210000, 1800000, 0, 30000, 5000, 6, imaniUnit);
         harlem.Services.Add(new EService { Kind = 6, Day = 431, Fee = 220, Who = "Fenwick Fittings" });
         var dock = new EUnit { MarketDay = 130, Ask = 1050, VoidDays = 12, Repairs = 70, ValueForRent = 58 };
-        int[] dockDue = { 376, 346, 316, 286, 256 };
+        int[] dockDue = { 376, 346, 316, 286, 256, 226 };
         for (int i = 0; i < dockDue.Length; i++)
         {
             dock.Pays.Add(new EPay { Due = dockDue[i], Paid = dockDue[i] + (i == 3 ? 4 : 0), State = i == 3 ? 1 : 0 });
@@ -248,7 +248,7 @@ internal static partial class UiSamples
         dock.Applicants.Add(new EApplicant { Kind = 2, Offer = 133, Record = 80, Lapse = 421, Term = 150 });
         dock.Applicants.Add(new EApplicant { Kind = 5, Offer = 124, Record = 52, Lapse = 424, Term = 120 });
         EBuilding dockSide = Building("1 Dock Street", "Uptown", 's', 1, 70, 1250000, 1000000, 22000, 36900, 1100, 9, dock);
-        dockSide.Services.Add(new EService { Kind = 6, Day = 431, Fee = 220, Who = "Fenwick Fittings" });
+        dockSide.Services.Add(new EService { Kind = 3, Day = 428, Fee = 290, Who = "Brightline Electrics" });
         EBuilding offices = Building("17 E 41st Street", "Midtown", 'o', 2, 71, 6100000, 5200000, 90000, 94000, 12000, 14, LetUnit(owen, 260, 266, 572, 710, 80, 220));
         EUnit yukiUnit = LetUnit(yuki, 187, 190, 430, 330, 60, 150);
         yukiUnit.Notice = true;
@@ -271,13 +271,13 @@ internal static partial class UiSamples
             w.Buildings.Add(Building("6 Harlem Court", "Uptown", 'h', 1, 64, 1100000, 900000, 0, 30000, 3000, 30, LetUnit(zoe, 90, 95, 380, 700, 75, 90)));
         }
         // The hotels you run, the cars you hire out, the agency's instructions: they stand beside the buildings in every variant that has any.
-        w.Hotels.Add(new EHotel { Name = "Pier House Hotel", District = "Midtown", Stars = 8, Clean = 82, Staff = 70, Costs = 4900, TakingsYear = 44000, CostsYear = 36100, PushDays = 3, Rooms = new[] { 28, 12 }, Sold = new[] { 24, 10 },
+        w.Hotels.Add(new EHotel { Name = "Pier House Hotel", District = "Midtown", Stars = 8, Clean = 82, Staff = 70, Costs = 3300, TakingsYear = 44000, CostsYear = 36100, PushDays = 3, Rooms = new[] { 28, 12 }, Sold = new[] { 24, 10 },
             Going = new[] { 120, 100 }, Yours = new[] { 128, 96 }, Reviews = new[] { 1, 3 } });
-        w.Hotels.Add(new EHotel { Name = "Canal Street Inn", District = "Garment District", Stars = 6, Clean = 64, Staff = 50, Costs = 2300, TakingsYear = 19600, CostsYear = 17500, Rooms = new[] { 20, 10 }, Sold = new[] { 12, 6 },
+        w.Hotels.Add(new EHotel { Name = "Canal Street Inn", District = "Garment District", Stars = 6, Clean = 64, Staff = 50, Costs = 1400, TakingsYear = 19600, CostsYear = 17500, Rooms = new[] { 20, 10 }, Sold = new[] { 12, 6 },
             Going = new[] { 110, 70 }, Yours = new[] { 104, 74 }, Reviews = new[] { 2, 4 } });
-        w.Hotels.Add(new EHotel { Name = "Hartley Suites", District = "Uptown", Stars = 10, Clean = 91, Staff = 85, Costs = 6100, TakingsYear = 71400, CostsYear = 52900, Rooms = new[] { 30, 20 }, Sold = new[] { 24, 12 },
+        w.Hotels.Add(new EHotel { Name = "Hartley Suites", District = "Uptown", Stars = 10, Clean = 91, Staff = 85, Costs = 5300, TakingsYear = 71400, CostsYear = 52900, Rooms = new[] { 30, 20 }, Sold = new[] { 24, 12 },
             Going = new[] { 200, 150 }, Yours = new[] { 210, 160 }, Reviews = new[] { 5, 1 } });
-        w.Hotels.Add(new EHotel { Name = "Dockside Rooms", District = "Hell's Kitchen", Stars = 5, Clean = 58, Staff = 40, Costs = 2800, TakingsYear = 22000, CostsYear = 19500, Rooms = new[] { 26, 14 }, Sold = new[] { 14, 6 },
+        w.Hotels.Add(new EHotel { Name = "Dockside Rooms", District = "Hell's Kitchen", Stars = 5, Clean = 58, Staff = 40, Costs = 1350, TakingsYear = 22000, CostsYear = 19500, Rooms = new[] { 26, 14 }, Sold = new[] { 14, 6 },
             Going = new[] { 92, 64 }, Yours = new[] { 88, 66 }, Reviews = new[] { 6, 3 } });
         string[] names = { "Corvin roadster", "Lark hatchback", "Hollis sedan", "Bram pickup", "Ivel sedan", "Rowan saloon", "Sable SUV", "Ivel estate" };
         string[] classes = { "premium", "economy", "standard", "standard", "standard", "standard", "standard", "standard" };
@@ -298,6 +298,8 @@ internal static partial class UiSamples
         w.Instructions.Add(new EInstruction { Sale = false, District = "Midtown", Value = 4800, Stage = 0, Day = 420, Hours = 16 });
         w.Instructions.Add(new EInstruction { Sale = true, District = "Uptown", Value = 1980000, Stage = 2, Day = 413, Hours = 21 });
         w.Instructions.Add(new EInstruction { Sale = false, District = "Hell's Kitchen", Value = 2900, Stage = 2, Day = 415, Hours = 10 });
+        w.Instructions.Add(new EInstruction { Sale = true, District = "Murray Hill", Value = 1620000, Stage = 1, Day = 428, Hours = 26 });
+        w.Instructions.Add(new EInstruction { Sale = false, District = "Garment District", Value = 5200, Stage = 1, Day = 424, Hours = 14 });
         EstateWorlds[variant] = w;
         return w;
     }

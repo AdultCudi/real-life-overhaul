@@ -189,7 +189,7 @@ internal static partial class UiSamples
     public static EstateModel Estate(UiWords t, string state)
     {
         var runs = new List<Func<bool>>();
-        string variant = state == "roll_twenty" ? "twenty" : state == "roll_first" ? "first" : state == "roll_empty" ? "empty" : "std";
+        string variant = state == "roll_twenty" ? "twenty" : state == "roll_first" || state == "rents_new" ? "first" : state == "roll_empty" ? "empty" : "std";
         EstateWorldData w = EstateWorld(variant);
         EstateModel m = EstateBase(t, w);
         switch (state)
@@ -319,7 +319,7 @@ internal static partial class UiSamples
         m.ListAEmpty = W(t, "reallife_ui_estate_no_repairs", "Nothing is due for repair.");
         m.ListBTitle = W(t, "reallife_ui_estate_other_landlords", "Other landlords");
         m.ListBEmpty = W(t, "reallife_ui_estate_no_landlords", "No other landlord holds buildings in the city yet.");
-        // What is due for repair: a building's booked services, then its units' calls, the first two as the live page keeps them.
+        // What is due for repair: a building's booked services, then its units' calls, the first three as the live page keeps them.
         var repairs = new List<EstateRow>();
         foreach (EBuilding b in w.Buildings)
         {
@@ -339,7 +339,7 @@ internal static partial class UiSamples
                     Chip = u.CallBooked ? W(t, "reallife_ibox_chip_booked", "Booked") : W(t, "reallife_ui_estate_quote_asked", "Quote asked"), ChipTone = u.CallBooked ? UiRole.Ok : UiRole.Warn, Amount = Usd(u.CallCost), Run = -1 });
             }
         }
-        m.ListA = repairs.Count > 2 ? repairs.GetRange(0, 2).ToArray() : repairs.ToArray();
+        m.ListA = repairs.Count > 3 ? repairs.GetRange(0, 3).ToArray() : repairs.ToArray();
         bool fresh = w.Buildings.Count == 0;   // a new save has no other landlord and no month of rents kept yet
         var lords = new List<ELandlord>(fresh ? new List<ELandlord>() : w.Landlords);
         lords.Sort((a, b) => b.Units.CompareTo(a.Units));
@@ -431,7 +431,7 @@ internal static partial class UiSamples
                 Chip = pay.State == 0 ? W(t, "reallife_ui_estate_paid", "Paid") : pay.State == 1 ? W(t, "reallife_ui_estate_paid_late", "Paid late") : W(t, "reallife_ui_estate_missed", "Missed"),
                 ChipTone = pay.State == 0 ? UiRole.Ok : pay.State == 1 ? UiRole.Warn : UiRole.Danger, Amount = Mo(u.Let ? u.RentDay : Math.Max(1, u.MarketDay))
             });
-            if (record.Count >= 5)
+            if (record.Count >= 6 + (u.Arrears > 0 ? 1 : 0))
             {
                 break;
             }

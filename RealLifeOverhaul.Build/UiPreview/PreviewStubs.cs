@@ -101,3 +101,12 @@ namespace RealLifeOverhaul.Ui
         public static bool Caught(Exception e, string screenId, string screenName) => false;
     }
 }
+
+// What the showroom's rules read from the bank's product table: the terms a car loan runs over, in game days. The preview builds the showrooms' state and rules, not the bank.
+namespace RealLifeOverhaul.Economy
+{
+    public static class ProductCatalogue
+    {
+        public const int CarTermLeast = 60, CarTermMost = 240, CarTermStep = 30;
+    }
+}

@@ -104,18 +104,18 @@ namespace RealLifeOverhaul.Ui
         private const int SentenceLines = 8;
 
         /// <summary>Draws the card; returns the height it takes (never more than <paramref name="limit"/>).</summary>
-        public static float Lay(UiScene s, UiAt at, UiFactCardModel c, float x, float y, float w, float limit, IUiKeys keys, bool band)
+        public static float Lay(UiScene s, UiAt at, UiFactCardModel c, float x, float y, float w, float limit, IUiKeys keys, bool band, bool fill = false)
         {
-            return Run(s, at, c, x, y, w, limit, keys, band, true);
+            return Run(s, at, c, x, y, w, limit, keys, band, true, fill);
         }
 
         /// <summary>The height the card takes at a width with everything it holds.</summary>
         public static float Height(UiFactCardModel c, float w, IUiKeys keys, bool band)
         {
-            return Run(null, default(UiAt), c, 0f, 0f, w, float.MaxValue, keys, band, false);
+            return Run(null, default(UiAt), c, 0f, 0f, w, float.MaxValue, keys, band, false, false);
         }
 
-        private static float Run(UiScene s, UiAt at, UiFactCardModel c, float x, float y, float w, float limit, IUiKeys keys, bool band, bool draw)
+        private static float Run(UiScene s, UiAt at, UiFactCardModel c, float x, float y, float w, float limit, IUiKeys keys, bool band, bool draw, bool fill)
         {
             float pad = band ? UiTokens.S4 : 0f;
             float x0 = x + pad, iw = w - pad * 2f;
@@ -130,7 +130,7 @@ namespace RealLifeOverhaul.Ui
             float actionsH = ActionsHeight(c.Actions, iw, keys);
             total += c.Actions.Length > 0 ? UiTokens.S3 + actionsH : 0f;
             total = UiDraw.Snap(total + pad);
-            float height = Math.Min(limit, total);
+            float height = fill && limit < float.MaxValue / 2f ? limit : Math.Min(limit, total);   // a card beside a table may stand as tall as the table, its buttons at its foot
             if (!draw)
             {
                 return total;

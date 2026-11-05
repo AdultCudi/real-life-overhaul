@@ -174,7 +174,7 @@ namespace RealLifeOverhaul.Ui
             LowerCard(s, at, m, x, under, w, bottom, LowerLeast, LowerMost);
         }
 
-        private const float LowerLeast = 200f, LowerMost = 380f;   // a series reads at this height: a few months stretched over the floor say no more
+        private const float LowerLeast = 200f, LowerMost = 560f;   // a series reads at this height: a few months stretched over the floor say no more
 
         // What the pages say, put in one style before they are drawn: a state chip begins with a capital, an empty cell is blank (no stray hyphen),
         // a graded figure carries its percent, and a side box that only repeats the section's name has no title.
@@ -437,7 +437,7 @@ namespace RealLifeOverhaul.Ui
             m.TableClip = ClipOf(s, m.TableList);
             if (side)
             {
-                UiFactCard.Lay(s, at.InRegion(RegionRight), m.Side, x + tw + UiTokens.S4, y, sw, th, keys, true);
+                UiFactCard.Lay(s, at.InRegion(RegionRight), m.Side, x + tw + UiTokens.S4, y, sw, th, keys, true, true);
             }
             float under = y + th + UiTokens.S3;
             if (foot > 0f)

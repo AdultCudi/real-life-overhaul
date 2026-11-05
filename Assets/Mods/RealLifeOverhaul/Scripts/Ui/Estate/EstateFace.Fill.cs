@@ -36,7 +36,7 @@ namespace RealLifeOverhaul.Ui
             return UiDraw.Snap((string.IsNullOrEmpty(title) ? 0f : UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SectionHeader)) + UiTokens.S3) + rows * UiTokens.PairRow + UiTokens.S3);
         }
 
-        private static float Shares(UiScene s, UiAt at, string title, string[] labels, int[] values, float x, float y, float w, string[] texts = null, bool plain = false)
+        private static float Shares(UiScene s, UiAt at, string title, string[] labels, int[] values, float x, float y, float w, string[] texts = null, bool plain = false, float height = 0f)
         {
             int n = labels == null || values == null ? 0 : Math.Min(labels.Length, values.Length);
             if (n == 0)
@@ -52,18 +52,20 @@ namespace RealLifeOverhaul.Ui
             int columns = w >= UiTokens.S16 * 40f ? 2 : 1;
             float gap = UiTokens.S8, cw = UiDraw.SnapDown((w - gap * (columns - 1)) / columns);
             int rows = (n + columns - 1) / columns;
+            // Beside a taller block, the rows stand a little further apart (by at most 16 px each) so the blocks of a foot end together.
+            float pitch = UiTokens.PairRow + (height > 0f ? Math.Max(0f, Math.Min(UiTokens.S4, UiDraw.SnapDown((height - SharesHeight(labels, values, title, w)) / Math.Max(1, rows)))) : 0f);
             float lw = UiDraw.LabelColumn(cw, labels);
             for (int i = 0; i < n; i++)
             {
                 bool said = texts != null && i < texts.Length && !string.IsNullOrEmpty(texts[i]);
                 if (plain)
                 {
-                    PlainBar(s, on, x + (i / rows) * (cw + gap), y + (i % rows) * UiTokens.PairRow, cw, labels[i], values[i], lw);
+                    PlainBar(s, on, x + (i / rows) * (cw + gap), y + (i % rows) * pitch, cw, labels[i], values[i], lw);
                     continue;
                 }
-                UiDraw.GradeBar(s, on, x + (i / rows) * (cw + gap), y + (i % rows) * UiTokens.PairRow, cw, labels[i], values[i], lw, said ? null : "%", said ? texts[i] : null);
+                UiDraw.GradeBar(s, on, x + (i / rows) * (cw + gap), y + (i % rows) * pitch, cw, labels[i], values[i], lw, said ? null : "%", said ? texts[i] : null);
             }
-            return y + rows * UiTokens.PairRow + UiTokens.S3;
+            return y + rows * pitch + UiTokens.S3;
         }
 
         // A share of a whole (the buyers by rating): one colour and its percent, never a grade, since a third of them being A is no warning.
@@ -347,7 +349,7 @@ namespace RealLifeOverhaul.Ui
             float each = UiDraw.SnapDown((w - UiTokens.S6 * (n - 1)) / n), bx = x;
             if (m.ShareLabels != null && m.ShareLabels.Length > 0)
             {
-                Shares(s, at, m.ShareTitle, m.ShareLabels, m.ShareValues, bx, y, each, m.ShareTexts, m.SharePlain);
+                Shares(s, at, m.ShareTitle, m.ShareLabels, m.ShareValues, bx, y, each, m.ShareTexts, m.SharePlain, FootHeight(m, w));
                 bx += each + UiTokens.S6;
             }
             if (m.Related != null && m.Related.Length > 0)
