@@ -6,7 +6,7 @@ namespace RealLifeOverhaul.Map25
     /// The city's buildings as the map keeps them: each a convex outline seen from above (anticlockwise, x east, z north, in
     /// metres), the height of its foot above the scene's ground plane, the height it is drawn at (<see cref="Height"/>, from the game's
     /// own by <see cref="Map25Height"/>), and the address it is known by (0 for none, which only the mod's own buildings and the fixture have).
-    /// The tint is the game's highlight on it, written by the director while the map is open. Game-free; the game's measure of it is Navigation/NavBase.
+    /// Game-free; the game's measure of it is Navigation/NavBase.
     /// </summary>
     public sealed class Map25City
     {
@@ -15,8 +15,6 @@ namespace RealLifeOverhaul.Map25
         public float[] HullX = new float[0], HullZ = new float[0];
         public float[] BaseY = new float[0], Height = new float[0], Real = new float[0];
         public long[] Key = new long[0];
-        public Map25Colour[] Tint = new Map25Colour[0];
-        public float[] TintShare = new float[0];
         public float MinX, MinZ, MaxX, MaxZ;
 
         /// <summary>Sizes the per building arrays for <paramref name="count"/> buildings and <paramref name="corners"/> outline corners.</summary>
@@ -30,8 +28,6 @@ namespace RealLifeOverhaul.Map25
             Height = new float[count];
             Real = new float[count];
             Key = new long[count];
-            Tint = new Map25Colour[count];
-            TintShare = new float[count];
         }
 
         /// <summary>
@@ -88,23 +84,11 @@ namespace RealLifeOverhaul.Map25
         }
     }
 
-    /// <summary>How much of the blocks' detail a set carries: the full map wants every one, the minimap, a pixel of which is a metre, wants the shapes and the bands.</summary>
-    public struct Map25Detail
-    {
-        public float Band;   // metres of height one window band stands for (the minimap's, which has no windows)
-        public bool Fine;    // windows, awnings, lit windows, cornices
-
-        public static Map25Detail Full => new Map25Detail { Band = 7.2f, Fine = true };
-        public static Map25Detail Small => new Map25Detail { Band = 21.6f, Fine = false };
-    }
-
     /// <summary>
-    /// The blocks, every detail of the approved mockups (make_map25d.py) as colour in the vertices and a few triangles: the
+    /// The minimap's blocks, as the approved mockups (make_map25d.py) have them, as colour in the vertices and a few triangles: the
     /// walls shaded by the way they face with a darker foot (in metres), a heavier podium and a lighter crown, a cornice, a parapet rim on
-    /// the roof, a setback on a wide tower, a water tank on legs, a row of air conditioners and a stair hut on some roofs; and, in the full
-    /// detail, a translucent pane a window, awnings on the north and south walls of shops, a few lit windows on towers. A building's
-    /// draws are fixed by its address alone: the tint and the detail change colours and counts of nothing else, so a tint is a write of
-    /// colours into the same vertices. One instance a thread (it keeps its scratch arrays).
+    /// the roof, a setback on a wide tower, a water tank on legs, a row of air conditioners and a stair hut on some roofs, and a band of
+    /// window colour every three floors. A building's draws are fixed by its address alone. One instance a thread (it keeps its scratch arrays).
     /// </summary>
     public sealed partial class Map25Blocks
     {
@@ -112,6 +96,7 @@ namespace RealLifeOverhaul.Map25
         private const int Most = 32;                 // corners of an outline we take
         private const float Floor = 3.0f;            // metres of the shop's ground floor band
         private const float WindowShare = 0.16f;     // how far a minimap band goes to the window colour
+        private const float BandMetres = 21.6f;      // metres of height one window band stands for (a pixel is a metre: three floors a band)
         private const float TierFrom = 21f;          // metres: a setback only on a block at least this tall
         private const float TierWide = 26f;          // and on a lot at least this wide: below it the tier would not read
         private const float TierStep = 0.22f;        // of the shorter side, the setback's inset
@@ -129,16 +114,11 @@ namespace RealLifeOverhaul.Map25
         private readonly bool[] _slot = new bool[2];
         private readonly float[] _slotKind = new float[2], _slotFx = new float[2], _slotFy = new float[2];
         private readonly int[] _slotCount = new int[2];
-        private readonly int[] _lit = new int[4];
-        private readonly float[] _litAt = new float[4];
-        private readonly int[] _litFloor = new int[4];
-        private float _paneScale = 1f;
 
         /// <summary>
-        /// Draws building <paramref name="i"/> of the city into the builders, solid and shaded. With <paramref name="panes"/> false the panes are
-        /// left out (a tint rewrites colours of the blocks, crowns and fronts and the panes do not change with it).
+        /// Draws building <paramref name="i"/> of the city into the builders, solid and shaded.
         /// </summary>
-        public void Generate(Map25Builders t, Map25City city, int i, Map25Detail detail, bool panes)
+        public void Generate(Map25Builders t, Map25City city, int i)
         {
             int start = city.HullStart[i];
             int n = city.HullStart[i + 1] - start;
@@ -150,30 +130,17 @@ namespace RealLifeOverhaul.Map25
             float h = Math.Max(Map25Height.Least, city.Height[i]);
             long key = city.Key.Length > i ? city.Key[i] : 0L;
             uint seed = key != 0L ? (uint)(key ^ (key >> 32)) : (uint)i * 2654435761u + 97u;
-            Decide(seed, h, n);
+            Decide(seed, h);
             for (int k = 0; k < n; k++)
             {
                 _x[k] = city.HullX[start + k];
                 _z[k] = city.HullZ[start + k];
             }
             Map25Colour tone = Map25Palette.Tone(_tone).Scale(_vary);
-            Map25Colour paneTone = tone;   // a pane is translucent over whatever wall is under it, tinted or not
-            // The game's highlight is the full map's: the minimap has no pointer and shows none, so its blocks stay as they are whatever the city holds (the set is built once, from a city
-            // that may have tints in it, and is never written again).
-            float share = detail.Fine && city.TintShare.Length > i ? city.TintShare[i] : 0f;
-            bool tinted = share > 0f;
-            Map25Colour tint = tinted ? city.Tint[i] : default;
-            if (tinted)
-            {
-                tone = Map25Palette.Tinted(tone, tint, share);
-            }
-            bool drawPanes = panes && detail.Fine;
-            _paneScale = drawPanes ? PaneScale(n, h) : 1f;
-            var awningRng = new Map25Rng(seed ^ 0xA5A5A5A5u);
             for (int e = 0; e < n; e++)
             {
                 int f = (e + 1) % n;
-                Wall(t, _x[e], _z[e], _x[f], _z[f], y0, h, tone, paneTone, detail, e, tint, share, ref awningRng, drawPanes);
+                Wall(t, _x[e], _z[e], _x[f], _z[f], y0, h, tone);
             }
             Extents(_x, _z, n, out float ux, out float uz, out float u0, out float u1, out float v0, out float v1);
             float width = Math.Min(u1 - u0, v1 - v0);
@@ -216,7 +183,7 @@ namespace RealLifeOverhaul.Map25
         }
 
         // Every choice of a building, drawn whether or not it is used.
-        private void Decide(uint seed, float height, int corners)
+        private void Decide(uint seed, float height)
         {
             var rng = new Map25Rng(seed);
             _tone = rng.Int(5);
@@ -231,16 +198,9 @@ namespace RealLifeOverhaul.Map25
                 _slotFy[s] = rng.Range(0.3f, 0.7f);
                 _slotCount[s] = 1 + rng.Int(3);
             }
-            for (int k = 0; k < 4; k++)
-            {
-                _lit[k] = rng.Int(corners);
-                _litAt[k] = rng.Range(0.2f, 0.8f);
-                _litFloor[k] = rng.Int(8);
-            }
         }
 
-        private void Wall(Map25Builders t, float ax, float az, float bx, float bz, float y0, float h, Map25Colour tone, Map25Colour paneTone, Map25Detail detail,
-                          int edge, Map25Colour tint, float share, ref Map25Rng awningRng, bool panes)
+        private void Wall(Map25Builders t, float ax, float az, float bx, float bz, float y0, float h, Map25Colour tone)
         {
             float dx = bx - ax, dz = bz - az;
             float length = (float)Math.Sqrt(dx * dx + dz * dz);
@@ -248,10 +208,8 @@ namespace RealLifeOverhaul.Map25
             {
                 return;
             }
-            float ux = dx / length, uz = dz / length;
-            float nx = uz, nz = -ux;
-            float factor = Map25Palette.WallFactor(nx, nz);
-            Map25Colour wall = tone.Scale(factor);
+            float nx = dz / length, nz = -dx / length;
+            Map25Colour wall = tone.Scale(Map25Palette.WallFactor(nx, nz));
             Map25Builder b = t.Blocks;
             float body = h >= 22f ? h - 1.6f : h;
             float ground = _shop ? Math.Min(Floor, h * 0.5f) : 0f;
@@ -259,52 +217,11 @@ namespace RealLifeOverhaul.Map25
             {
                 Piece(b, ax, az, bx, bz, y0, h, 0f, ground, wall.Scale(0.74f));
             }
-            if (detail.Fine)
-            {
-                Body(b, ax, az, bx, bz, y0, h, ground, body, wall);
-            }
-            else
-            {
-                Bands(b, ax, az, bx, bz, y0, h, ground, body, wall, wall.Mix(Map25Palette.Window, WindowShare), detail.Band);
-            }
-            if (h >= 22f && detail.Fine)
-            {
-                Piece(b, ax, az, bx, bz, y0, h, body, body + 0.5f, wall.Scale(0.84f));
-                Piece(b, ax, az, bx, bz, y0, h, body + 0.5f, h, wall.Scale(1.16f));
-            }
-            else if (h >= 22f)
+            Bands(b, ax, az, bx, bz, y0, h, ground, body, wall, wall.Mix(Map25Palette.Window, WindowShare), BandMetres);
+            if (h >= 22f)
             {
                 Piece(b, ax, az, bx, bz, y0, h, body, h, wall.Scale(1.10f));
             }
-            if (panes)
-            {
-                Panes(t.Panes, ax, az, ux, uz, nx, nz, length, y0, h, paneTone.Scale(factor), edge);
-            }
-            if (_shop && detail.Fine && (nz > 0.75f || nz < -0.75f) && length >= 9f)
-            {
-                Awnings(t.Fronts, ax, az, ux, uz, nx, nz, length, y0, tint, share, paneTone, factor, ref awningRng);
-            }
-        }
-
-        // The body of a tall wall between its shop base and its cornice: a heavier podium to a third of the way up, a lighter crown over the top quarter, a hard step between.
-        private static void Body(Map25Builder b, float ax, float az, float bx, float bz, float y0, float h, float from, float to, Map25Colour wall)
-        {
-            float lo = from;
-            if (h >= 20f)
-            {
-                float podium = h * 0.30f, crown = h * 0.74f;
-                if (podium > lo && podium < to)
-                {
-                    Piece(b, ax, az, bx, bz, y0, h, lo, podium, wall);
-                    lo = podium;
-                }
-                if (crown > lo && crown < to)
-                {
-                    Piece(b, ax, az, bx, bz, y0, h, lo, crown, wall);
-                    lo = crown;
-                }
-            }
-            Piece(b, ax, az, bx, bz, y0, h, lo, to, wall);
         }
 
         // The minimap's walls: a band of glass colour every floor group, so a wall is not one slab at a pixel a metre.

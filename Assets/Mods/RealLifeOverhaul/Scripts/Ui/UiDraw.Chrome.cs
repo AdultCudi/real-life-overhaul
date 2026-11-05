@@ -406,11 +406,14 @@ namespace RealLifeOverhaul.Ui
             return s.Add(ref item);
         }
 
+        /// <summary>The width a state chip takes for its words: its dot and its padding round them, on the grid.</summary>
+        public static float ChipWidth(string text) => Snap(UiTokens.S2 + UiTokens.StatusDot + UiTokens.S2 + UiTextRules.Width(text, UiStyle.SmallStrong) + UiTokens.S1 + UiTokens.S2);
+
         /// <summary>A soft status chip, inZOI's: a dot in its tone and its words, cut to a width when given one. Returns its width.</summary>
         public static float Chip(UiScene s, UiAt at, float x, float y, string text, UiRole tone, float most = 0f)
         {
             float tw = UiTextRules.Width(text, UiStyle.SmallStrong) + UiTokens.S1;
-            float w = Snap(UiTokens.S2 + UiTokens.StatusDot + UiTokens.S2 + tw + UiTokens.S2);
+            float w = ChipWidth(text);
             if (most > 0f && w > most)
             {
                 w = SnapDown(most);   // a longer translation keeps the column: its words end in an ellipsis

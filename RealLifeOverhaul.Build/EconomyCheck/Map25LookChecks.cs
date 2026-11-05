@@ -3,21 +3,18 @@ using System.Collections.Generic;
 using System.Reflection;
 using RealLifeOverhaul.Map25;
 
-// The 2.5D map's look, as rules with numbers (round 2 of the job: the critic's thirteen defects, one check each where the game-free code can say):
-// the heights (a knee and a cap, so a thin real lot is a block and not a needle), the windows (a pane each, 4.4 by 3.1 m, a few lit), the foot
-// shading in metres, the setback only where it reads, the awnings (a strip that stands out, on the north and south walls), the water tank (a drum
-// on four legs), the lane marking, the trees and the parks they make, the sizes of the route and the view cone in pixels, the ring and the roof
-// line of a tinted building, the game's zones, and which kinds of drawing a view of a given height has. The previews prove the look by eye (real
-// footprints, see docs/features/navigation.md); these keep it from going back.
+// The minimap's 2.5D look, as rules with numbers: the heights (a knee and a cap, so a thin real lot is a block and not a needle), the foot
+// shading in metres, the setback only where it reads, the water tank (a drum on four legs), the lane marking, the trees and the parks they make,
+// the sizes of the route and the view cone in pixels, and which kinds of drawing a view of a given height has. The previews prove the look by eye
+// (real footprints, see docs/features/navigation.md); these keep it from going back.
 internal static partial class Program
 {
     private static void Map25LookChecks(Map25Map map)
     {
         Map25HeightChecks(map);
-        Map25PaneChecks(map);
         Map25ShapeChecks();
         Map25UnderChecks();
-        Map25MarkChecks(map);
+        Map25MarkChecks();
         Map25RuleChecks();
         Map25RealChecks();
     }
@@ -43,8 +40,8 @@ internal static partial class Program
             {
                 return;
             }
-            Map25Set full = Map25Set.Build(real.City, Map25Detail.Full, -0.3f), small = Map25Set.Build(real.City, Map25Detail.Small, -0.3f);
-            double fullMb = (full.Vertices * 20.0 + full.Triangles * 6.0) / 1048576.0, smallMb = (small.Vertices * 20.0 + small.Triangles * 6.0) / 1048576.0;
+            Map25Set small = Map25Set.Build(real.City, -0.3f);
+            double smallMb = (small.Vertices * 20.0 + small.Triangles * 6.0) / 1048576.0;
             var sx = new float[32];
             var sz = new float[32];
             int needles = 0, high = 0;
@@ -57,9 +54,9 @@ internal static partial class Program
                 high += h > 50f ? 1 : 0;
                 tallest = Math.Max(tallest, h);
             }
-            Check(fullMb < 11.5 && smallMb < 3.4 && full.Vertices / (double)real.City.Count < 560 && full.Layers[(int)Map25Kind.Panes].Vertices < 340000 && needles == 0 && tallest < 100f && high < real.City.Count / 12,
-                "2.5D map: on the owner's own 883 footprints (" + (tall ? "deliberately tall" : "ordinary") + " heights) the full detail is " + fullMb.ToString("F1") + " MB, the minimap's " + smallMb.ToString("F1")
-                + " MB, " + (full.Vertices / (double)real.City.Count).ToString("F0") + " vertices a building, no block is a needle, the tallest is " + tallest.ToString("F0") + " m and " + high + " are over 50 m");
+            Check(smallMb < 3.4 && needles == 0 && tallest < 100f && high < real.City.Count / 12,
+                "2.5D map: on the owner's own 883 footprints (" + (tall ? "deliberately tall" : "ordinary") + " heights) the minimap's blocks are " + smallMb.ToString("F1")
+                + " MB, " + (small.Vertices / (double)real.City.Count).ToString("F0") + " vertices a building, no block is a needle, the tallest is " + tallest.ToString("F0") + " m and " + high + " are over 50 m");
             if (tall)
             {
                 continue;
@@ -105,8 +102,8 @@ internal static partial class Program
         }
     }
 
-    // One building of a given ground and height, drawn into fresh builders (its height is taken as the drawn one), with the game's highlight on it when a share of a tint is given.
-    private static Map25Builders Map25One(float width, float depth, float height, long key, bool full, bool panes = true, Map25Colour tint = default, float share = 0f)
+    // One building of a given ground and height, drawn into fresh builders (its height is taken as the drawn one).
+    private static Map25Builders Map25One(float width, float depth, float height, long key)
     {
         var city = new Map25City();
         city.Reserve(1, 4);
@@ -117,10 +114,8 @@ internal static partial class Program
         Array.Copy(hz, city.HullZ, 4);
         city.Height[0] = height;
         city.Key[0] = key;
-        city.Tint[0] = tint;
-        city.TintShare[0] = share;
         var builders = new Map25Builders(8192);
-        new Map25Blocks().Generate(builders, city, 0, full ? Map25Detail.Full : Map25Detail.Small, panes);
+        new Map25Blocks().Generate(builders, city, 0);
         return builders;
     }
 
@@ -230,70 +225,23 @@ internal static partial class Program
         }
     }
 
-    private static void Map25PaneChecks(Map25Map map)
-    {
-        // a 40 by 30 m building 30 m tall, a shop or not by its address: its windows are the panes on its walls, a pane of 1.75 by 1.3 m every 4.4 by 3.1 m
-        int expectedPlain = (Map25Blocks.PaneColumns(40f) * 2 + Map25Blocks.PaneColumns(30f) * 2) * Map25Blocks.PaneFloors(30f, false);
-        int expectedShop = (Map25Blocks.PaneColumns(40f) * 2 + Map25Blocks.PaneColumns(30f) * 2) * Map25Blocks.PaneFloors(30f, true);
-        Map25Builders t = Map25One(40f, 30f, 30f, 0x1234, true);
-        Map25Chunk panes = t.Panes.ToChunk();
-        int quads = panes.Vertices / 4, lit = 0;
-        bool alphas = true, onWalls = true, inHeight = true;
-        for (int v = 0; v < panes.Vertices; v++)
-        {
-            float x = panes.Pos[v * 3], y = panes.Pos[v * 3 + 1], z = panes.Pos[v * 3 + 2], a = FromHalf(panes.Col[v * 4 + 3]);
-            if (Math.Abs(a - 0.75f) < 0.01f)
-            {
-                lit++;
-            }
-            else
-            {
-                alphas &= Math.Abs(a - 0.24f) < 0.003f;
-            }
-            bool onSouth = Math.Abs(z + 0.08f) < 0.04f && x > 0.5f && x < 39.5f, onNorth = Math.Abs(z - 30.08f) < 0.04f && x > 0.5f && x < 39.5f;
-            bool onWest = Math.Abs(x + 0.08f) < 0.04f && z > 0.5f && z < 29.5f, onEast = Math.Abs(x - 40.08f) < 0.04f && z > 0.5f && z < 29.5f;
-            onWalls &= onSouth || onNorth || onWest || onEast;
-            inHeight &= y >= 1.2f && y <= 29f;
-        }
-        int windows = quads - lit / 4;
-        double perWindow = 4200.0 / Math.Max(1, windows);
-        Check((windows == expectedPlain || windows == expectedShop) && lit <= 16 && perWindow > 11.0 && perWindow < 20.0,
-            "2.5D map: a 40 by 30 m tower of 30 m has a pane for every window, " + windows + " of them, one to every " + perWindow.ToString("F1") + " square metres of wall (the mockup's dashes: 13.6), and at most four lit");
-        Check(alphas && onWalls && inHeight, "2.5D map: every pane lies 8 to 11 cm out of one of the walls, between the first floor and the cornice, as translucent (0.24, lit ones 0.75) as the mockup's dashes");
-        // a vast building has larger windows, not fewer: the same look, no more than the cap
-        Map25Builders vast = Map25One(120f, 90f, 60f, 0x777, true);
-        Map25Chunk vastPanes = vast.Panes.ToChunk();
-        float firstWidth = (float)Math.Sqrt(Math.Pow(vastPanes.Pos[3] - vastPanes.Pos[0], 2) + Math.Pow(vastPanes.Pos[5] - vastPanes.Pos[2], 2));
-        Check(vastPanes.Vertices / 4 <= Map25Blocks.PaneCap + 4 && firstWidth > 1.75f * 1.15f, "2.5D map: a building that would have more than " + Map25Blocks.PaneCap + " windows has them drawn larger and fewer, not left out (" + vastPanes.Vertices / 4 + " windows of " + firstWidth.ToString("F1") + " m)");
-        int most = 0;
-        for (int i = 0; i < map.City.Count; i++)
-        {
-            most = Math.Max(most, map.Full.Layers[(int)Map25Kind.Panes].Count[i]);
-        }
-        Check(most <= (Map25Blocks.PaneCap + 4) * 4 && map.Small.Layers[(int)Map25Kind.Panes].Vertices == 0 && map.Small.Layers[(int)Map25Kind.Fronts].Vertices == 0,
-            "2.5D map: no building has more than " + (Map25Blocks.PaneCap + 4) + " panes (" + most / 4 + " at the most here), and the minimap's detail has no windows or awnings: its pixel is a metre");
-        Check(!Map25Rules.Draws(Map25Kind.Panes, Map25View.LeastRise) && Map25Rules.Draws(Map25Kind.Panes, 1f), "2.5D map: windows are drawn when the blocks stand and not on the flat map");
-    }
-
     private static void Map25ShapeChecks()
     {
         // the foot of a wall is shaded in metres from the ground: 0.55 there, 0.14 at 12 m, nothing from 28 m, so a tall wall's foot is no taller than a low one's
         bool foot = Math.Abs(Map25Palette.Foot(0f) - 0.55f) < 1e-4f && Math.Abs(Map25Palette.Foot(12f) - 0.14f) < 1e-4f && Map25Palette.Foot(28f) == 0f && Map25Palette.Foot(120f) == 0f
                     && Map25Palette.Foot(6f) > Map25Palette.Foot(12f) && Map25Palette.Foot(20f) < Map25Palette.Foot(12f) && Map25Palette.Foot(20f) > 0f;
-        Map25Builders tower = Map25One(30f, 24f, 60f, 0x4321, true);
+        Map25Builders tower = Map25One(30f, 24f, 60f, 0x4321);
         Map25Chunk wall = tower.Blocks.ToChunk();
-        bool knees = false, kneesEnd = false, podium = false, crown = false;
+        bool knees = false, kneesEnd = false;
         for (int v = 0; v < wall.Vertices; v++)
         {
             float y = wall.Pos[v * 3 + 1];
             knees |= Math.Abs(y - 12f) < 1e-3f;
             kneesEnd |= Math.Abs(y - 28f) < 1e-3f;
-            podium |= Math.Abs(y - 18f) < 1e-3f;
-            crown |= Math.Abs(y - 44.4f) < 1e-3f;
         }
-        Check(foot && knees && kneesEnd && podium && crown, "2.5D map: the foot's shade is in metres (0.55 at the ground, 0.14 at 12 m, none from 28 m) and a wall's pieces break at those metres and at the podium (30 per cent) and the crown (74 per cent), as hard steps");
+        Check(foot && knees && kneesEnd, "2.5D map: the foot's shade is in metres (0.55 at the ground, 0.14 at 12 m, none from 28 m) and a wall's pieces break at those metres, as hard steps");
         // the setback: a wide block gets a crown of its own kind, a thin one or a low one none
-        Map25Builders wide = Map25One(40f, 40f, 40f, 0x55, true), thin = Map25One(12f, 40f, 40f, 0x55, true), lowWide = Map25One(40f, 40f, 15f, 0x55, true);
+        Map25Builders wide = Map25One(40f, 40f, 40f, 0x55), thin = Map25One(12f, 40f, 40f, 0x55), lowWide = Map25One(40f, 40f, 15f, 0x55);
         Map25Chunk crownChunk = wide.Crowns.ToChunk();
         float top = 0f, inset = float.MaxValue, base_ = float.MaxValue;
         for (int v = 0; v < crownChunk.Vertices; v++)
@@ -305,58 +253,6 @@ internal static partial class Program
         Check(crownChunk.Vertices > 0 && Math.Abs(base_ - 40f) < 0.01f && Math.Abs(top - (40f + 16.8f)) < 0.01f && Math.Abs(inset - 8.8f) < 0.05f && thin.Crowns.Vertices == 0 && lowWide.Crowns.Vertices == 0,
             "2.5D map: a block 40 m wide and 40 m tall has a crown 22 per cent of its width in from the walls and 42 per cent of its height up (at most 45 per cent of its width), standing on its roof; a thin block or a low one has none");
         Check(!Map25Rules.Draws(Map25Kind.Crowns, Map25View.LeastRise) && Map25Rules.Draws(Map25Kind.Crowns, 1f), "2.5D map: the crown is its own kind, drawn only when the blocks stand: the flat map has no frame inside a frame");
-        // the awnings: on the north and south walls of a shop only, standing out 1.25 m with a valance, in their own kind
-        Map25Builders shop = null;
-        long shopKey = 0;
-        for (long key = 1; key < 400 && (shop == null || shop.Fronts.Vertices == 0); key++)
-        {
-            shop = Map25One(40f, 30f, 20f, key, true);
-            shopKey = key;
-        }
-        Map25Chunk awnings = shop.Fronts.ToChunk();
-        float minX = float.MaxValue, maxX = float.MinValue, minZ = float.MaxValue, maxZ = float.MinValue;
-        for (int v = 0; v < awnings.Vertices; v++)
-        {
-            minX = Math.Min(minX, awnings.Pos[v * 3]);
-            maxX = Math.Max(maxX, awnings.Pos[v * 3]);
-            minZ = Math.Min(minZ, awnings.Pos[v * 3 + 2]);
-            maxZ = Math.Max(maxZ, awnings.Pos[v * 3 + 2]);
-        }
-        Check(awnings.Vertices == 48 && minX >= 0f && maxX <= 40f && Math.Abs(minZ + 1.25f) < 0.01f && Math.Abs(maxZ - 31.25f) < 0.01f,
-            "2.5D map: a shop's awnings are on its two 40 m walls (three to a wall, a strip and a valance each) and none on the 30 m ones, each standing out 1.25 m (" + awnings.Vertices + " vertices)");
-        Check(!Map25Rules.Draws(Map25Kind.Fronts, 0.4f) && Map25Rules.Draws(Map25Kind.Fronts, 0.6f), "2.5D map: awnings are drawn from a half height of the blocks, so a flat map has no bars beside the shop fronts");
-        // the game's hover is white at the hover share, a filter's highlight a colour at the tint share: a shop's awning is its own colour lifted that much towards it, as its walls
-        // are, never the raw tint (a hovered shop's awning was pure white, the brightest speck of the picture), and nothing of a hovered building is near white
-        Map25Colour white = new Map25Colour(1f, 1f, 1f), green = Map25Colour.Hex(0x3FCF8E);
-        Map25Builders plainShop = Map25One(40f, 30f, 20f, shopKey, true), hoverShop = Map25One(40f, 30f, 20f, shopKey, true, true, white, Map25Palette.HoverShare);
-        Map25Builders greenShop = Map25One(40f, 30f, 20f, shopKey, true, true, green, Map25Palette.TintShare);
-        Map25Chunk hoverBlocks = hoverShop.Blocks.ToChunk(), hoverCrowns = hoverShop.Crowns.ToChunk(), hoverFronts = hoverShop.Fronts.ToChunk();   // a builder hands its vertices out once
-        Map25Chunk plainBlocks = plainShop.Blocks.ToChunk(), greenBlocks = greenShop.Blocks.ToChunk();
-        float lightest = Math.Max(Map25Lightest(hoverBlocks), Math.Max(Map25Lightest(hoverCrowns), Map25Lightest(hoverFronts)));
-        float[] plainAwning = Map25Written(plainShop.Fronts.ToChunk(), 0), hoverAwning = Map25Written(hoverFronts, 0), greenAwning = Map25Written(greenShop.Fronts.ToChunk(), 0);
-        bool lifted = true;
-        for (int c = 0; c < 3; c++)
-        {
-            lifted &= hoverAwning[c] - plainAwning[c] >= 0.01f && hoverAwning[c] - plainAwning[c] <= 0.32f;
-        }
-        bool notRaw = Math.Abs(greenAwning[0] - green.R) > 0.04f || Math.Abs(greenAwning[1] - green.G) > 0.04f || Math.Abs(greenAwning[2] - green.B) > 0.04f;
-        Check(lightest < 0.95f && Math.Max(hoverAwning[0], Math.Max(hoverAwning[1], hoverAwning[2])) < 0.92f && lifted && notRaw && greenAwning[1] - greenAwning[0] > plainAwning[1] - plainAwning[0],
-            "2.5D map: a hovered shop's awning is its own colour a little lighter, not white (the lightest written channel of the hovered building is " + lightest.ToString("F2") + ", its awning's " + Math.Max(hoverAwning[0], Math.Max(hoverAwning[1], hoverAwning[2])).ToString("F2")
-            + "), and a highlighted shop's awning is lifted towards the highlight's colour by its share, not the raw colour");
-        // the minimap shows no highlight: a city with tints in it builds the same minimap blocks as one without, and the full map's blocks show them
-        Map25Builders miniPlain = Map25One(40f, 30f, 20f, shopKey, false), miniTinted = Map25One(40f, 30f, 20f, shopKey, false, true, green, Map25Palette.TintShare);
-        Map25Builders miniHover = Map25One(40f, 30f, 20f, shopKey, false, true, white, Map25Palette.HoverShare);
-        bool miniSame = true;
-        for (int k = 0; k < Map25Builders.Kinds; k++)
-        {
-            Map25Chunk plainKind = miniPlain.All[k].ToChunk();
-            miniSame &= Map25SameColours(plainKind, miniTinted.All[k].ToChunk()) && Map25SameColours(plainKind, miniHover.All[k].ToChunk());
-        }
-        Check(miniSame && !Map25SameColours(plainBlocks, greenBlocks) && !Map25SameColours(plainBlocks, hoverBlocks),
-            "2.5D map: the minimap's blocks show no highlight, whatever tints the city holds when the set is built (it has no pointer), and the full map's blocks show a hover and a tint");
-        string drawBody = Map25Body(ModSource(@"Ui\Map\Map25Scene.cs"), "public void Draw(");
-        Check(drawBody.Contains("_sets[which].Detail.Fine") && drawBody.Contains("_ringsOn && fine") && drawBody.Contains("_marksOn && fine"),
-            "2.5D map: the rings and roof lines of tinted buildings are drawn in the full map only: the minimap has no pointer and shows no highlight, whatever the scene holds");
         // the water tank: four thin legs, a drum on them with a gap under it, a lid and a cone
         MethodInfo tank = typeof(Map25Blocks).GetMethod("Tank", BindingFlags.NonPublic | BindingFlags.Static);
         var b = new Map25Builder(256);
@@ -539,18 +435,18 @@ internal static partial class Program
             + "jumps by more than 5 m between two readings 2 m apart " + jumps + " times in " + rows + " (a stair of 10 m squares jumps by 10 every few readings)");
     }
 
-    private static void Map25MarkChecks(Map25Map map)
+    private static void Map25MarkChecks()
     {
-        // pixels, not metres: the route's line is 7 of a full map's 1080 pixels and 4.2 of a minimap's 300, the view cone 142 and 55 pixels long
+        // pixels, not metres: the route's line is 4.2 of a minimap's 300 pixels, the view cone 55 pixels long, the halo 11.6 across
         float m = 0.4f;
-        float fullLine = Map25Marks.RouteHalf(false, 1080f, m) * 2f / m, miniLine = Map25Marks.RouteHalf(true, 300f, m) * 2f / m;
-        float fullCone = Map25Marks.ConeMetres(false, 1080f, m) / m, miniCone = Map25Marks.ConeMetres(true, 300f, m) / m;
-        float fullHalo = Map25Marks.HaloMetres(false, 1080f, m) / m, miniHalo = Map25Marks.HaloMetres(true, 300f, m) / m;
-        Check(Math.Abs(fullLine - 7f) < 0.01f && Math.Abs(miniLine - 4.2f) < 0.01f && Math.Abs(fullCone - 142f) < 0.1f && Math.Abs(miniCone - 55f) < 0.1f && Math.Abs(fullHalo - 30f) < 0.1f && Math.Abs(miniHalo - 11.6f) < 0.1f,
-            "2.5D map: the route's line is 7 pixels on a full map 1080 high and 4.2 on a minimap 300 wide, the view cone 142 and 55 pixels long, the halo 30 and 11.6 across, at any zoom");
-        float onAvenue = fullLine * Map25Marks.CasingShare / 46f;
-        Check(onAvenue < 0.28f && Math.Abs(Map25Marks.RouteHalf(false, 2160f, m) / Map25Marks.RouteHalf(false, 1080f, m) - 2f) < 1e-3f,
-            "2.5D map: the route with its casing takes " + (100 * onAvenue).ToString("F0") + " per cent of a 46 pixel avenue (it took 68) and it grows with the screen");
+        float miniLine = Map25Marks.RouteHalf(300f, m) * 2f / m;
+        float miniCone = Map25Marks.ConeMetres(300f, m) / m;
+        float miniHalo = Map25Marks.HaloMetres(300f, m) / m;
+        Check(Math.Abs(miniLine - 4.2f) < 0.01f && Math.Abs(miniCone - 55f) < 0.1f && Math.Abs(miniHalo - 11.6f) < 0.1f,
+            "2.5D map: the route's line is 4.2 pixels on a minimap 300 wide, the view cone 55 pixels long, the halo 11.6 across, at any zoom");
+        float onAvenue = miniLine * Map25Marks.CasingShare / 46f;
+        Check(onAvenue < 0.28f && Math.Abs(Map25Marks.RouteHalf(600f, m) / Map25Marks.RouteHalf(300f, m) - 2f) < 1e-3f,
+            "2.5D map: the route with its casing takes " + (100 * onAvenue).ToString("F0") + " per cent of a 46 pixel avenue and it grows with the picture");
         // the view cone and the halo as the eye gets them, not as the constant says: the picture is blended in linear light, where an opacity of 0.17 shows 0.28 of the route's
         // colour over the avenue (the first and second builds' cone, near twice the mockup's); the mockup's own pixels over the avenue are (47, 67, 87) to (52, 86, 111)
         Map25Colour avenue = Map25Palette.Avenue, route = Map25Palette.Route;
@@ -569,66 +465,19 @@ internal static partial class Program
             steps &= Math.Abs(s / h - 1f) <= 0.0626f && Math.Abs(Map25Marks.Step(s) / s - 1f) < 1e-3f;
         }
         Check(steps, "2.5D map: the route's width is kept to steps of an eighth, so a zoom that moves it by a hair writes nothing again");
-        // a ring on the ground round a tinted building, and a line round its roof at its roof's height
-        Map25City city = map.City;
-        int hull = 7;
-        var ring = new Map25Builder(256);
-        city.Tint[hull] = Map25Colour.Hex(0x3FCF8E);
-        Map25Ground.Ring(ring, city, hull, city.Tint[hull], 5f, 1.6f, 0.08f);
-        Map25Chunk rc = ring.ToChunk();
-        int s0 = city.HullStart[hull], n = city.HullStart[hull + 1] - s0;
-        float minx = float.MaxValue, maxx = float.MinValue, fx0 = float.MaxValue, fx1 = float.MinValue;
-        for (int k = 0; k < n; k++)
-        {
-            fx0 = Math.Min(fx0, city.HullX[s0 + k]);
-            fx1 = Math.Max(fx1, city.HullX[s0 + k]);
-        }
-        int fills = 0, lines = 0;
-        for (int v = 0; v < rc.Vertices; v++)
-        {
-            minx = Math.Min(minx, rc.Pos[v * 3]);
-            maxx = Math.Max(maxx, rc.Pos[v * 3]);
-            float a = FromHalf(rc.Col[v * 4 + 3]);
-            fills += Math.Abs(a - 0.20f) < 0.002f ? 1 : 0;
-            lines += Math.Abs(a - 0.62f) < 0.003f ? 1 : 0;
-        }
-        var roof = new Map25Builder(256);
-        Map25Ground.RoofLine(roof, city, hull, city.Tint[hull], 0.9f, 0.62f);
-        Map25Chunk lc = roof.ToChunk();
-        bool atTop = lc.Vertices == n * 4;
-        for (int v = 0; v < lc.Vertices; v++)
-        {
-            atTop &= Math.Abs(lc.Pos[v * 3 + 1] - (city.BaseY[hull] + city.Height[hull])) < 1e-3f;
-        }
-        city.Tint[hull] = default;
-        Check(Math.Abs(minx - (fx0 - 5f)) < 0.2f && Math.Abs(maxx - (fx1 + 5f)) < 0.2f && fills == n && lines == n * 4 && atTop,
-            "2.5D map: a tinted building has a ring on the ground 5 m round it (a faint fill, a stronger line) and a line round its roof at its roof's height, so a taller block in front cannot hide where it is");
-        // the game's zones: the rectangle of a mesh's box through its matrix, and four corners going round
-        float[] identity = { 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f, 0f, 0f, 0f, 0f, 1f };
-        Map25Zones.Rectangle(identity, 10f, 0f, 20f, 5f, 0.1f, 8f, out float ax0, out float az0, out float ax1, out float az1);
-        float[] quarter = { 0f, 0f, -1f, 0f, 0f, 1f, 0f, 0f, 1f, 0f, 0f, 0f, 100f, 0f, 50f, 1f };   // turned a quarter, moved
-        Map25Zones.Rectangle(quarter, 10f, 0f, 20f, 5f, 0.1f, 8f, out float bx0, out float bz0, out float bx1, out float bz1);
-        var corners = new float[16];
-        Map25Zones.Corners(ax0, az0, ax1, az1, corners, 1);
-        double turn = (corners[10] - corners[8]) * (corners[13] - corners[9]) - (corners[11] - corners[9]) * (corners[12] - corners[8]);
-        Check(Math.Abs(ax0 - 5f) < 1e-4f && Math.Abs(ax1 - 15f) < 1e-4f && Math.Abs(az0 - 12f) < 1e-4f && Math.Abs(az1 - 28f) < 1e-4f
-              && Math.Abs((bx1 - bx0) - 16f) < 1e-3f && Math.Abs((bz1 - bz0) - 10f) < 1e-3f && Math.Abs(bx0 - (100f + 12f)) < 1e-3f && turn > 0,
-            "2.5D map: a zone's ground rectangle is its mesh's box through its matrix (turned and moved, as the district view reads it), and its four corners go round");
     }
 
     private static void Map25RuleChecks()
     {
-        bool flat = Map25Rules.Draws(Map25Kind.Blocks, Map25View.LeastRise) && !Map25Rules.Draws(Map25Kind.Crowns, Map25View.LeastRise) && !Map25Rules.Draws(Map25Kind.Fronts, Map25View.LeastRise)
-                    && !Map25Rules.Draws(Map25Kind.Panes, Map25View.LeastRise) && !Map25Rules.Draws(Map25Kind.Contacts, Map25View.LeastRise);
-        bool full = Map25Rules.Draws(Map25Kind.Crowns, 1f) && Map25Rules.Draws(Map25Kind.Fronts, 1f) && Map25Rules.Draws(Map25Kind.Panes, 1f) && Map25Rules.Draws(Map25Kind.Contacts, 1f);
-        bool between = Map25Rules.Draws(Map25Kind.Crowns, 0.2f) && Map25Rules.Draws(Map25Kind.Panes, 0.3f) && !Map25Rules.Draws(Map25Kind.Fronts, 0.3f) && Map25Rules.Draws(Map25Kind.Fronts, 0.6f);
-        Check(flat && full && between, "2.5D map: seen from above only the blocks are drawn; every kind from half height up; crowns from a tenth, windows from a quarter, awnings from a half");
+        bool flat = Map25Rules.Draws(Map25Kind.Blocks, Map25View.LeastRise) && !Map25Rules.Draws(Map25Kind.Crowns, Map25View.LeastRise) && !Map25Rules.Draws(Map25Kind.Contacts, Map25View.LeastRise);
+        bool full = Map25Rules.Draws(Map25Kind.Crowns, 1f) && Map25Rules.Draws(Map25Kind.Contacts, 1f);
+        Check(flat && full, "2.5D map: seen from above only the blocks are drawn; the crowns and the contact patches from a tenth of the height up");
         string scene = ModSource(@"Ui\Map\Map25Scene.cs");
         int from = scene.IndexOf("public void Draw(", StringComparison.Ordinal);
         string[] order =
         {
-            "DrawGroup(cmd, _under[0]", "DrawGroup(cmd, _under[1]", "DrawGroup(cmd, _under[2]", "DrawGroup(cmd, _under[3]", "cmd.DrawMesh(_zones", "cmd.DrawMesh(_rings", "cmd.DrawMesh(_cone",
-            "Map25Kind.Contacts]", "DrawGroup(cmd, _under[4]", "Map25Kind.Blocks]", "Map25Kind.Crowns]", "Map25Kind.Fronts]", "Map25Kind.Panes]", "cmd.DrawMesh(_route", "cmd.DrawMesh(_marks", "cmd.DrawMesh(_fog"
+            "DrawGroup(cmd, _under[0]", "DrawGroup(cmd, _under[1]", "DrawGroup(cmd, _under[2]", "DrawGroup(cmd, _under[3]", "cmd.DrawMesh(_cone",
+            "Map25Kind.Contacts]", "DrawGroup(cmd, _under[4]", "Map25Kind.Blocks]", "Map25Kind.Crowns]", "cmd.DrawMesh(_route", "cmd.DrawMesh(_fog"
         };
         int last = -1;
         string wrong = "none";
@@ -641,7 +490,7 @@ internal static partial class Program
             }
             last = Math.Max(last, at);
         }
-        Check(wrong == "none", "2.5D map: a picture is drawn water, land, green ground, roads, lane marking, the game's zones, rings, the cone and halo, contact patches, trees, blocks, crowns, awnings, windows, the route, the roof lines, the fade (" + wrong + ")");
+        Check(wrong == "none", "2.5D map: a picture is drawn water, land, green ground, roads, lane marking, the cone and halo, contact patches, trees, blocks, crowns, the route, the fade (" + wrong + ")");
         string folder = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map"));
         Check(!System.IO.File.Exists(System.IO.Path.Combine(folder, "Map25Fixture.cs")) && !System.IO.File.Exists(System.IO.Path.Combine(folder, "Map25Real.cs"))
               && System.IO.File.Exists(System.IO.Path.GetFullPath(System.IO.Path.Combine(folder, @"..\..\..\..\..\..\RealLifeOverhaul.Build\Shared\Map25Fixture.cs"))),

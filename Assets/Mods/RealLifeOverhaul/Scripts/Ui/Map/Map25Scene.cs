@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.Map25
     /// The map's blocks, ground, roads and route in meshes, and the one way they are drawn: into a render texture the interface
     /// shows, with the engine's own colour shader (the vertex colour is the colour: no light, no exposure, no volume, so the
     /// picture is the mockup's at any hour). Meshes are made from <see cref="Map25Chunk"/>s a slice at a time (<see cref="Upload"/>),
-    /// the CPU copy of everything but the colours a tint rewrites let go. A frame: the chunks in view, in a command buffer
+    /// the CPU copy let go. A frame: the chunks in view, in a command buffer
     /// that is made once. Nothing here allocates once built. Uses only the engine, so the preview draws with it too.
     /// </summary>
     public sealed class Map25Scene : IDisposable
@@ -36,27 +36,24 @@ namespace RealLifeOverhaul.Map25
         /// </summary>
         public static int DepthTest = 4;
 
-        // A run of chunks that become meshes: where they come from, where the meshes go, whether the colours stay writable.
+        // A run of chunks that become meshes: where they come from, where the meshes go.
         private sealed class Group
         {
             public Map25Chunk[] Chunks;
             public Mesh[] Meshes;
-            public bool Writable;
             public string Name;
         }
 
-        private readonly Map25Set[] _sets;           // the detail sets: 0 is the full map's, 1 the minimap's (one when only one is wanted)
         private readonly Group[] _under = new Group[5];   // land, greens, roads, lanes, trees
-        private readonly Group[][] _kinds;            // by set, then by kind
+        private readonly Group[] _kinds;              // by kind
         private readonly List<Group> _groups = new List<Group>(16);
-        private readonly int[][][] _seen;             // by set, kind and chunk: the colour version the mesh has
-        private Mesh _water, _cone, _halo, _fog, _route, _ghost, _zones, _rings, _marks;
-        private readonly Map25Builder _routeBuilder = new Map25Builder(512), _zoneBuilder = new Map25Builder(256), _ringBuilder = new Map25Builder(1024), _markBuilder = new Map25Builder(1024);
-        private bool _routeOn, _zonesOn, _ringsOn, _marksOn;
+        private Mesh _water, _cone, _halo, _fog, _route, _ghost;
+        private readonly Map25Builder _routeBuilder = new Map25Builder(512);
+        private bool _routeOn;
         private float[] _rx, _ry, _rz;   // the route's points, the director's own arrays
         private int _rcount;
         private float _ry0;
-        private Material _flat, _solid, _blend, _pane;
+        private Material _flat, _solid, _blend;
         private CommandBuffer _cmd;
         private readonly Matrix4x4[] _matrices = new Matrix4x4[3];   // the view, the GPU projection, the blocks' own
         private int _cursor, _groupAt, _inGroup;
@@ -163,28 +160,19 @@ namespace RealLifeOverhaul.Map25
             }
         }
 
-        public Map25Scene(Map25Set[] sets, Map25Under under, float minX, float minZ, float maxX, float maxZ)
+        public Map25Scene(Map25Set set, Map25Under under, float minX, float minZ, float maxX, float maxZ)
         {
-            _sets = sets;
-            _kinds = new Group[sets.Length][];
-            _seen = new int[sets.Length][][];
+            _kinds = new Group[Map25Builders.Kinds];
             string[] names = { "land", "greens", "roads", "lanes", "trees" };
             Map25Chunk[][] chunks = { under.Land, under.Greens, under.Roads, under.Lanes, under.Trees };
             for (int g = 0; g < _under.Length; g++)
             {
-                _under[g] = Add(chunks[g], false, "RealLife Map " + names[g]);
+                _under[g] = Add(chunks[g], "RealLife Map " + names[g]);
             }
-            string[] kinds = { "blocks", "crowns", "fronts", "panes", "contacts" };
-            for (int s = 0; s < sets.Length; s++)
+            string[] kinds = { "blocks", "crowns", "contacts" };
+            for (int k = 0; k < Map25Builders.Kinds; k++)
             {
-                _kinds[s] = new Group[Map25Builders.Kinds];
-                _seen[s] = new int[Map25Builders.Kinds][];
-                for (int k = 0; k < Map25Builders.Kinds; k++)
-                {
-                    Map25Layer layer = sets[s].Layers[k];
-                    _kinds[s][k] = Add(layer.Chunks, layer.Tints, "RealLife Map " + kinds[k] + " " + s);
-                    _seen[s][k] = new int[layer.Chunks.Length];
-                }
+                _kinds[k] = Add(set.Layers[k].Chunks, "RealLife Map " + kinds[k]);
             }
             for (int g = 0; g < _groups.Count; g++)
             {
@@ -194,7 +182,6 @@ namespace RealLifeOverhaul.Map25
             _flat = Make(shader, "RealLife Map flat", 1, 0, 0, 8);
             _solid = Make(shader, "RealLife Map solid", 1, 0, 1, DepthTest);
             _blend = Make(shader, "RealLife Map blend", 5, 10, 0, 8);
-            _pane = Make(shader, "RealLife Map pane", 5, 10, 0, DepthTest);
             _cmd = new CommandBuffer { name = "RealLife Map" };
             _water = Quad(minX - 20000f, WaterY, minZ - 20000f, maxX + 20000f, WaterY, maxZ + 20000f, Map25Palette.Water, 1f);
             Map25Colour blue = Map25Palette.Route;
@@ -203,9 +190,9 @@ namespace RealLifeOverhaul.Map25
             _fog = FogQuad();
         }
 
-        private Group Add(Map25Chunk[] chunks, bool writable, string name)
+        private Group Add(Map25Chunk[] chunks, string name)
         {
-            var group = new Group { Chunks = chunks, Meshes = new Mesh[chunks.Length], Writable = writable, Name = name };
+            var group = new Group { Chunks = chunks, Meshes = new Mesh[chunks.Length], Name = name };
             _groups.Add(group);
             return group;
         }
@@ -237,17 +224,7 @@ namespace RealLifeOverhaul.Map25
                     _inGroup = 0;
                 }
                 Group group = _groups[_groupAt];
-                group.Meshes[_inGroup] = FromChunk(group.Chunks[_inGroup], group.Name + "." + _inGroup, group.Writable);
-                for (int s = 0; s < _kinds.Length && group.Writable; s++)
-                {
-                    for (int k = 0; k < Map25Builders.Kinds; k++)
-                    {
-                        if (ReferenceEquals(_kinds[s][k], group))
-                        {
-                            _seen[s][k][_inGroup] = group.Chunks[_inGroup].ColourVersion;
-                        }
-                    }
-                }
+                group.Meshes[_inGroup] = FromChunk(group.Chunks[_inGroup], group.Name + "." + _inGroup);
                 _inGroup++;
                 _cursor++;
                 if ((Stopwatch.GetTimestamp() - began) * 1000.0 / Stopwatch.Frequency >= milliseconds)
@@ -258,8 +235,8 @@ namespace RealLifeOverhaul.Map25
             return _cursor < _total;
         }
 
-        // A mesh from a chunk's arrays. A mesh whose colours are written again stays readable; every other is let go of on the CPU side (the chunk's own places and indices always).
-        private static Mesh FromChunk(Map25Chunk chunk, string name, bool keepColours)
+        // A mesh from a chunk's arrays, let go of on the CPU side.
+        private static Mesh FromChunk(Map25Chunk chunk, string name)
         {
             var mesh = new Mesh { name = name, indexFormat = IndexFormat.UInt16 };
             Fill(mesh, chunk.Pos, chunk.Col, chunk.Idx, chunk.Vertices, chunk.Indices);
@@ -267,11 +244,8 @@ namespace RealLifeOverhaul.Map25
                                      new Vector3(chunk.MaxX - chunk.MinX, chunk.MaxY - chunk.MinY, chunk.MaxZ - chunk.MinZ));
             chunk.Pos = null;
             chunk.Idx = null;
-            if (!keepColours)
-            {
-                chunk.Col = null;
-                mesh.UploadMeshData(true);
-            }
+            chunk.Col = null;
+            mesh.UploadMeshData(true);
             return mesh;
         }
 
@@ -349,8 +323,8 @@ namespace RealLifeOverhaul.Map25
         public float RouteHalf { get; private set; } = 3.5f;
 
         /// <summary>
-        /// Writes the route again when its half width is not <paramref name="half"/> (the pictures want a few pixels, so the metres follow the zoom and the
-        /// full map's differ from the minimap's); a compare while it is. Call it before a draw with <see cref="Map25Marks.Step"/> of the width wanted.
+        /// Writes the route again when its half width is not <paramref name="half"/> (the picture wants a few pixels, so the metres follow the zoom);
+        /// a compare while it is. Call it before a draw with <see cref="Map25Marks.Step"/> of the width wanted.
         /// </summary>
         public void SetRouteHalf(float half)
         {
@@ -382,91 +356,6 @@ namespace RealLifeOverhaul.Map25
             _routeOn = _routeBuilder.Indices > 0;
         }
 
-        /// <summary>
-        /// The game's neighbourhood zones that show on its map, flat at the ground: <paramref name="corners"/> holds eight numbers for each (the four
-        /// corners' x and z, round), with its colour and opacity. A few quads written into one mesh; none clears it.
-        /// </summary>
-        public void SetZones(float[] corners, Map25Colour[] colours, float[] alphas, int count, float y)
-        {
-            if (count <= 0)
-            {
-                _zonesOn = false;
-                return;
-            }
-            if (_zones == null)
-            {
-                _zones = Empty("RealLife Map zones");
-            }
-            _zoneBuilder.Clear();
-            for (int i = 0; i < count; i++)
-            {
-                Map25Ground.Zone(_zoneBuilder, corners[i * 8], corners[i * 8 + 1], corners[i * 8 + 2], corners[i * 8 + 3], corners[i * 8 + 4], corners[i * 8 + 5],
-                                 corners[i * 8 + 6], corners[i * 8 + 7], colours[i], alphas[i], y);
-            }
-            Fill(_zones, _zoneBuilder.PositionData, _zoneBuilder.ColourData, _zoneBuilder.IndexData, _zoneBuilder.Vertices, _zoneBuilder.Indices);
-            _zonesOn = _zoneBuilder.Indices > 0;
-        }
-
-        /// <summary>
-        /// A ring on the ground and a line round the roof for each of the tinted buildings <paramref name="hulls"/> (their tint colours in the city), so
-        /// a taller block in front cannot hide where one is; none clears them.
-        /// </summary>
-        public void SetMarks(Map25City city, int[] hulls, int count, float y)
-        {
-            if (count <= 0)
-            {
-                _ringsOn = _marksOn = false;
-                return;
-            }
-            if (_rings == null)
-            {
-                _rings = Empty("RealLife Map rings");
-                _marks = Empty("RealLife Map roof lines");
-            }
-            _ringBuilder.Clear();
-            _markBuilder.Clear();
-            for (int i = 0; i < count; i++)
-            {
-                int hull = hulls[i];
-                Map25Colour tint = city.Tint[hull];
-                Map25Ground.Ring(_ringBuilder, city, hull, tint, 5f, 1.6f, y);
-                Map25Ground.RoofLine(_markBuilder, city, hull, tint, 0.9f, 0.62f);
-            }
-            Fill(_rings, _ringBuilder.PositionData, _ringBuilder.ColourData, _ringBuilder.IndexData, _ringBuilder.Vertices, _ringBuilder.Indices);
-            Fill(_marks, _markBuilder.PositionData, _markBuilder.ColourData, _markBuilder.IndexData, _markBuilder.Vertices, _markBuilder.Indices);
-            _ringsOn = _ringBuilder.Indices > 0;
-            _marksOn = _markBuilder.Indices > 0;
-        }
-
-        /// <summary>Writes building <paramref name="hull"/>'s colours again in the full map's set, as the city now tints it (the minimap's set is never tinted: it shows no highlight).</summary>
-        public bool Retint(Map25City city, int hull, Map25Blocks generator, Map25Builders scratch)
-        {
-            return _sets[0].Retint(city, hull, generator, scratch);
-        }
-
-        /// <summary>Sends the colours of the chunks whose tint changed to their meshes; a few compares while none did.</summary>
-        public void Refresh()
-        {
-            for (int s = 0; s < _sets.Length; s++)
-            {
-                for (int k = 0; k <= (int)Map25Kind.Fronts; k++)
-                {
-                    Group group = _kinds[s][k];
-                    for (int c = 0; c < group.Chunks.Length; c++)
-                    {
-                        Map25Chunk chunk = group.Chunks[c];
-                        if (chunk.ColourVersion != _seen[s][k][c] && group.Meshes[c] != null && chunk.Col != null)
-                        {
-                            group.Meshes[c].SetVertexBufferData(chunk.Col, 0, 0, chunk.Vertices * 4, 1, MeshUpdateFlags.DontRecalculateBounds | MeshUpdateFlags.DontValidateIndices);
-                            _seen[s][k][c] = chunk.ColourVersion;
-                            chunk.DirtyFrom = int.MaxValue;
-                            chunk.DirtyTo = -1;
-                        }
-                    }
-                }
-            }
-        }
-
         // The chunks of a group that are in view, as one draw each.
         private void DrawGroup(CommandBuffer cmd, Group group, Map25View view, bool tall, Matrix4x4 matrix, Material material)
         {
@@ -481,13 +370,12 @@ namespace RealLifeOverhaul.Map25
 
         /// <summary>
         /// Draws the picture into <paramref name="target"/> as <paramref name="view"/> sees it. Everything out of view is left out whole
-        /// chunks at a time. Order: water, land, green ground, roads and their lane marking, the game's zones, the rings of the tinted
-        /// buildings (the full map's only: the minimap has no pointer and shows no highlight), the player's cone
-        /// and halo, the contact patches, the trees, the blocks (the only things that write depth) with their crowns and awnings when they
-        /// stand tall enough, the windows over them, the route and its faint copy over the blocks, the roof lines of the tinted ones (the full map's),
+        /// chunks at a time. Order: water, land, green ground, roads and their lane marking, the player's cone
+        /// and halo, the contact patches, the trees, the blocks (the only things that write depth) with their crowns when they
+        /// stand tall enough, the route and its faint copy over the blocks,
         /// and the distance's fade. <see cref="Map25Rules.Draws"/> says which kinds a view has.
         /// </summary>
-        public void Draw(RenderTexture target, Map25View view, in Map25Frame frame, int detail)
+        public void Draw(RenderTexture target, Map25View view, in Map25Frame frame)
         {
             CommandBuffer cmd = _cmd;
             cmd.Clear();
@@ -503,7 +391,6 @@ namespace RealLifeOverhaul.Map25
             }
             _matrices[1] = GL.GetGPUProjectionMatrix(_matrices[2], IntoTexture);
             _solid.SetInt(DepthTestId, DepthTest);
-            _pane.SetInt(DepthTestId, DepthTest);
             cmd.SetViewProjectionMatrices(_matrices[0], _matrices[1]);
             Matrix4x4 identity = Matrix4x4.identity;
             cmd.DrawMesh(_water, identity, _flat, 0, 0);
@@ -511,16 +398,6 @@ namespace RealLifeOverhaul.Map25
             DrawGroup(cmd, _under[1], view, false, identity, _flat);   // green ground
             DrawGroup(cmd, _under[2], view, false, identity, _flat);   // roads
             DrawGroup(cmd, _under[3], view, false, identity, _flat);   // their lane marking
-            int which = detail < _sets.Length ? detail : 0;
-            bool fine = _sets[which].Detail.Fine;   // only the full map shows the game's highlights: the minimap has no pointer, so no ring or roof line either
-            if (_zonesOn)
-            {
-                cmd.DrawMesh(_zones, identity, _blend, 0, 0);
-            }
-            if (_ringsOn && fine)
-            {
-                cmd.DrawMesh(_rings, identity, _blend, 0, 0);
-            }
             if (frame.Player)
             {
                 // on the ground, under the blocks: a tall block hides the part of the cone behind it
@@ -530,7 +407,7 @@ namespace RealLifeOverhaul.Map25
             }
             Matrix4x4 rise = Matrix4x4.identity;
             rise.m11 = view.Rise;
-            Group[] kinds = _kinds[which];
+            Group[] kinds = _kinds;
             if (Map25Rules.Draws(Map25Kind.Contacts, view.Rise))
             {
                 DrawGroup(cmd, kinds[(int)Map25Kind.Contacts], view, false, identity, _blend);
@@ -541,22 +418,10 @@ namespace RealLifeOverhaul.Map25
             {
                 DrawGroup(cmd, kinds[(int)Map25Kind.Crowns], view, true, rise, _solid);
             }
-            if (Map25Rules.Draws(Map25Kind.Fronts, view.Rise))
-            {
-                DrawGroup(cmd, kinds[(int)Map25Kind.Fronts], view, true, rise, _solid);
-            }
-            if (Map25Rules.Draws(Map25Kind.Panes, view.Rise))
-            {
-                DrawGroup(cmd, kinds[(int)Map25Kind.Panes], view, true, rise, _pane);
-            }
             if (_routeOn)
             {
                 cmd.DrawMesh(_route, identity, _solid, 0, 0);
                 cmd.DrawMesh(_ghost, identity, _blend, 0, 0);
-            }
-            if (_marksOn && fine)
-            {
-                cmd.DrawMesh(_marks, rise, _blend, 0, 0);
             }
             if (frame.Fog)
             {
@@ -608,13 +473,9 @@ namespace RealLifeOverhaul.Map25
             DestroyMesh(ref _fog);
             DestroyMesh(ref _route);
             DestroyMesh(ref _ghost);
-            DestroyMesh(ref _zones);
-            DestroyMesh(ref _rings);
-            DestroyMesh(ref _marks);
             DropMaterial(ref _flat);
             DropMaterial(ref _solid);
             DropMaterial(ref _blend);
-            DropMaterial(ref _pane);
             if (_cmd != null)
             {
                 _cmd.Release();

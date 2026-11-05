@@ -380,7 +380,7 @@ namespace RealLifeOverhaul.Ui
                 m.Popups = Popups;
                 m.PopupCount = popups;
                 sig = sig * 31 + (SampleSides != null ? SidesSample(m) : _sides ? HudSides.Look(m) : NoSides(m));
-                sig = sig * 31 + (SampleGoals != null ? GoalsSample(m) : _goals ? HudGoals.Look(m, FrameHeight - (m.MapDock ? UiMapChrome.RouteTop - UiTokens.S4 : 0f)) : NoGoals(m));
+                sig = sig * 31 + (SampleGoals != null ? GoalsSample(m) : _goals ? HudGoals.Look(m, FrameHeight - (m.MapDock ? m.AvoidY + UiMapChrome.RouteTop - UiTokens.S4 : 0f)) : NoGoals(m));
                 sig = sig * 31 + (_notes || SampleNote != null ? HudNotes.Look(m, _notes, SampleNote) : 0);
                 sig = sig * 31 + HudHints.Look(m);
                 m.ActivityClear = ActivityStrip != null ? ActivityStrip() : null;

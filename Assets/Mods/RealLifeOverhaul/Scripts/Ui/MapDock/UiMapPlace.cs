@@ -114,12 +114,7 @@ namespace RealLifeOverhaul.Ui
             cy += RatingLine(s, on, m, ix, cy, iw) + UiTokens.S2;
             if (m.Chips.Length > 0)
             {
-                float cx = ix;
-                for (int i = 0; i < m.Chips.Length; i++)
-                {
-                    cx += UiDraw.Chip(s, on, cx, cy, m.Chips[i].Label, m.Chips[i].Tone, ix + iw - cx) + UiTokens.S2;
-                }
-                cy += UiTokens.Badge + UiTokens.S1 + UiTokens.S3;
+                cy += Chips(s, on, m.Chips, ix, cy, iw) + UiTokens.S3;
             }
             Actions(s, on, m, ix, cy, iw, keys);
             cy += UiTokens.Control * 2f + UiTokens.S2 + UiTokens.S3;
@@ -189,13 +184,50 @@ namespace RealLifeOverhaul.Ui
                 m.RouteShown ? UiAction.Count : UiAction.Alt, keys, DestinationCommand, 0, !m.CanDestination);
         }
 
+        /// <summary>
+        /// The state chips in rows: a chip that does not fit the rest of its row starts the next, so the open state with its hours and a long "Business owned by ..." are shown
+        /// whole (cut only where one alone is wider than the column). Returns the height the rows take.
+        /// </summary>
+        public static float Chips(UiScene s, UiAt at, MapStateChip[] chips, float x, float y, float w)
+        {
+            float cx = x, cy = y;
+            for (int i = 0; i < chips.Length; i++)
+            {
+                float cw = Math.Min(w, UiDraw.ChipWidth(chips[i].Label));
+                if (cx > x && cx + cw > x + w)
+                {
+                    cx = x;
+                    cy += UiTokens.Badge + UiTokens.S1 + UiTokens.S1;
+                }
+                cx += UiDraw.Chip(s, at, cx, cy, chips[i].Label, chips[i].Tone, x + w - cx) + UiTokens.S2;
+            }
+            return cy - y + UiTokens.Badge + UiTokens.S1;
+        }
+
+        /// <summary>The height <see cref="Chips"/> takes in a column <paramref name="w"/> wide, without laying them out.</summary>
+        public static float ChipsHeight(MapStateChip[] chips, float w)
+        {
+            float cx = 0f, rows = chips.Length > 0 ? 1f : 0f;
+            for (int i = 0; i < chips.Length; i++)
+            {
+                float cw = Math.Min(w, UiDraw.ChipWidth(chips[i].Label));
+                if (cx > 0f && cx + cw > w)
+                {
+                    cx = 0f;
+                    rows++;
+                }
+                cx += cw + UiTokens.S2;
+            }
+            return rows == 0f ? 0f : rows * (UiTokens.Badge + UiTokens.S1) + (rows - 1f) * UiTokens.S1;
+        }
+
         /// <summary>The height the card needs: its head, the actions and tabs, and the body of the tab it shows (the overview whole, the reviews, the business rows).</summary>
         public static float Needed(MapPlaceModel m)
         {
             float iw = Width - UiTokens.S4 * 2f;
             float need = UiFrame.Strip + UiTokens.S3 + Hero + UiTokens.S3 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Hero)) + UiTokens.S1
                 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)) + UiTokens.S2
-                         + (m.Chips.Length > 0 ? UiTokens.Badge + UiTokens.S1 + UiTokens.S3 : 0f) + UiTokens.Control * 2f + UiTokens.S2 + UiTokens.S3
+                         + (m.Chips.Length > 0 ? ChipsHeight(m.Chips, iw) + UiTokens.S3 : 0f) + UiTokens.Control * 2f + UiTokens.S2 + UiTokens.S3
                          + (m.Tabs.Length > 0 ? UiTokens.Control + UiTokens.S2 : 0f);
             if (m.Tab == 1)
             {

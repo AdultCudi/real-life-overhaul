@@ -70,16 +70,20 @@ namespace RealLifeOverhaul.Ui
             return true;
         }
 
-        private static string LabelWords(Localizor.LanguageChangeEvent.TextLocalizationComponent label)
+        // A game label's words on one line, its text tags taken out (the open state's break between "Open" and "Closing in 7 hours" was drawn as the tag itself).
+        private static string LabelWords(Localizor.LanguageChangeEvent.TextLocalizationComponent label) => MapText.OneLine(LabelLines(label));
+
+        // The same with its breaks kept as line feeds, for the one label that wants its lines apart.
+        private static string LabelLines(Localizor.LanguageChangeEvent.TextLocalizationComponent label)
         {
             TMP_Text text = label != null ? label.TextContainer : null;
-            return text != null ? text.text : null;
+            return text != null ? MapText.Plain(text.text) : null;
         }
 
         // The taxi button's own words ("Travel here" over the fare and the minutes), as the game writes them.
         private static string TaxiWords(BuildingResume card)
         {
-            string words = LabelWords(card.taxiTravelButtonText);
+            string words = LabelLines(card.taxiTravelButtonText);
             return string.IsNullOrWhiteSpace(words) ? UiText.T("common_setdestination") : words.Replace("\n", ", ").Trim();
         }
 

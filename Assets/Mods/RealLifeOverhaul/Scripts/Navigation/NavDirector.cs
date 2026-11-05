@@ -65,8 +65,7 @@ namespace RealLifeOverhaul.Nav
             Instance = this;
             NavMarks.Reset();
             _onMap = Guard.Wrap<bool>(OnMap);
-            MapParts.Add("route on the map", MapLook);   // asked after the map shut, with Developer diagnostics on (Diagnostics/SessionWatch.Map); the 2.5D picture is in it
-            NavBridges.MapLooks = PokeMap;                // the district view changed a zone's colour: the picture looks at the zones again
+            MapParts.Add("route on the map", MapLook);   // asked after the map shut, with Developer diagnostics on (Diagnostics/SessionWatch.Map); the camera's tilt is in it
             OtherMods.Look(Logger);   // done once for the city already; a loop over the table
             _voogle = OtherMods.VoogleRoute.Loaded;
             ScenePrewarm.AddLate("navigation: the road graph, the walking graph and the minimap's two pictures being made", PrewarmRoads);
@@ -103,10 +102,6 @@ namespace RealLifeOverhaul.Nav
         private void OnDestroy()
         {
             GlobalEvents.onCityMapToggle -= _onMap;
-            if (NavBridges.MapLooks == (Action)PokeMap)
-            {
-                NavBridges.MapLooks = null;
-            }
             Remove();
             _base.Drop(false);   // the picture is kept for the next load of the same city
             SceneRemove();
@@ -255,9 +250,9 @@ namespace RealLifeOverhaul.Nav
                 {
                     _graph.Step();   // the 2.5D city map alone is on: its roads are still made a step a tick
                 }
-                if (inGame && Settings.Map25 && !_voogle)
+                if (inGame && !_voogle)
                 {
-                    KeepMapEvent();   // the 2.5D city map needs the map's own event whatever the minimap and the GPS are
+                    KeepMapEvent();   // the map button's tilt needs the map's own event whatever the minimap and the GPS are
                 }
                 return;
             }

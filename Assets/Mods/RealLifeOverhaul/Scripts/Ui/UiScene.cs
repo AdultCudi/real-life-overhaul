@@ -63,6 +63,7 @@ namespace RealLifeOverhaul.Ui
         public byte Layer;       // 0 the screen, 1 an overlay, 2 a toast
         public short Order;      // its place in an arriving list (staggered), or -1 for none
         public int Parent;       // the item it sits inside, or -1: what the clip and overlap checks measure against
+        public bool Window;      // laid between WindowBegin and WindowEnd: it moves with the window the player drags (UiWindowDrag)
     }
 
     /// <summary>A focus target: where it is, what pressing it does and how the d-pad leaves it.</summary>
@@ -79,6 +80,7 @@ namespace RealLifeOverhaul.Ui
         public UiAction Key;     // the key that presses it from anywhere on its layer (its cap is drawn on it), or Count
         public int Index;        // its row in that list
         public bool Disabled;
+        public bool Window;      // laid between WindowBegin and WindowEnd: it moves with the window the player drags
         public bool Handle;      // a window's title strip as the mouse's grip (UiWindowDrag): never focused, never pressed, only dragged
         public int Up, Down, Left, Right;   // a node the d-pad goes to, or -1 to find the nearest that way
     }
@@ -91,6 +93,7 @@ namespace RealLifeOverhaul.Ui
         public float ContentHeight;    // px of content laid out
         public bool Fills;             // its whole room is its content's (a short thread under the line of its beginning)
         public short List;             // the list it shows, or -1
+        public bool Window;            // laid between WindowBegin and WindowEnd: it moves with the window the player drags
     }
 
     /// <summary>A list whose rows are virtualised: only those in view are in the scene, the rest are counted.</summary>
@@ -174,6 +177,8 @@ namespace RealLifeOverhaul.Ui
         public bool Draggable;           // the player may move the screen's window by its title strip: set by the host before a layout, kept across layouts
         public int HandleNode = -1;      // the title strip's grip this layout (UiDraw.TitleStrip), or -1
         public int HandlePanel = -1;     // the item of the window the grip belongs to, or -1 when its strip had no parent
+        public bool HasWindow;           // the screen marked what is its window (WindowBegin): only that moves when the player drags it
+        private bool _inWindow;
 
         /// <summary>Empties the scene for a new layout at a size, keeping its arrays.</summary>
         public void Begin(string name, float width, float height, bool dark)
@@ -187,15 +192,33 @@ namespace RealLifeOverhaul.Ui
             FocusReset = false;
             CaretItem = -1;
             HandleNode = HandlePanel = -1;
+            HasWindow = _inWindow = false;
             Pointer = false;
             Floats = false;
             Held = false;
             PromptW = PromptH = 0f;
         }
 
+        /// <summary>
+        /// Everything laid until <see cref="WindowEnd"/> (items, targets, scrolling regions) is the window the player drags by its title strip, for a screen that lays
+        /// other things beside it that stay put. Its rail, its panel and the rows of its lists need no parent to belong to it.
+        /// </summary>
+        public void WindowBegin()
+        {
+            HasWindow = true;
+            _inWindow = true;
+        }
+
+        /// <summary>The window's last piece has been laid.</summary>
+        public void WindowEnd()
+        {
+            _inWindow = false;
+        }
+
         /// <summary>Adds an item and returns its index.</summary>
         public int Add(ref UiItem item)
         {
+            item.Window = _inWindow;
             if (item.Kind == UiKind.Text && item.Text != null && item.Text.IndexOf('(') >= 0)
             {
                 item.Text = UiPlural.Fix(item.Text);   // "3 day(s)" reads "3 days", "1 day(s)" reads "1 day"
@@ -215,6 +238,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Array.Resize(ref Nodes, Nodes.Length * 2);
             }
+            node.Window = _inWindow;
             Nodes[NodeCount] = node;
             if (FocusFirst < 0 && !node.Disabled && node.Layer == 0 && node.Command != UiDraw.CloseCommand)   // a pad's first press would close the window
             {
@@ -230,7 +254,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Array.Resize(ref Clips, Clips.Length * 2);
             }
-            Clips[ClipCount] = new UiClip { X = x, Y = y, W = w, H = h, Offset = offset, List = -1 };
+            Clips[ClipCount] = new UiClip { X = x, Y = y, W = w, H = h, Offset = offset, List = -1, Window = _inWindow };
             return (short)ClipCount++;
         }
 

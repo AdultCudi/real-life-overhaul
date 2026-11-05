@@ -482,9 +482,22 @@ namespace RealLifeOverhaul.Ui
             UiFrame frame = Frame();
             UiHudRules.ToLayout(screen.x, screen.y, UnityEngine.Screen.width, UnityEngine.Screen.height, frame.Width, frame.Height, out float px, out float py);
             bool own = f.AvoidW > 0f;   // a docked panel of its own to keep off, else the HUD's left column
-            UiHudRules.Beside(px, py, screen.z > 0f, width, h, frame.Width, frame.BandY, own ? f.AvoidX : _leftX, own ? f.AvoidY : _leftY, own ? f.AvoidW : _leftW, own ? f.AvoidH : _leftH,
-                out float x, out float y);
             UiHudModel hud = _screen.Model;
+            float ax = own ? f.AvoidX : _leftX, ay = own ? f.AvoidY : _leftY, aw = own ? f.AvoidW : _leftW, ah = own ? f.AvoidH : _leftH;
+            if (own && hud.MapDock)
+            {
+                // The map's dock where it stands now (dragged or not) and the objectives beside it, which the dock has pushed over: one box to keep off.
+                ax = hud.AvoidX;
+                ay = hud.AvoidY;
+                aw = hud.AvoidW;
+                ah = hud.AvoidH;
+                if (_leftW > 0f && _leftX > UiHud.Left)
+                {
+                    aw = Math.Max(aw, _leftX + _leftW + UiTokens.S2 - ax);
+                    ah = Math.Max(ah, _leftY + _leftH + UiTokens.S2 - ay);
+                }
+            }
+            UiHudRules.Beside(px, py, screen.z > 0f, width, h, frame.Width, frame.BandY, ax, ay, aw, ah, out float x, out float y);
             UiHudRules.Clear(ref x, ref y, width, h, frame.Width, hud.AvoidX, hud.AvoidY, hud.AvoidW, hud.AvoidH);   // and off the minimap's card
             var at = new Vector2(x * _scale, -y * _scale);
             if (at != f.At)

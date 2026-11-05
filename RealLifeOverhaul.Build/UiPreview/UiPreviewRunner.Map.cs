@@ -126,10 +126,9 @@ public static partial class UiPreviewRunner
 }
 
 /// <summary>
-/// Draws the 2.5D map's views into PNGs: <c>-executeMethod Map25Preview.Render -out folder [-city path to a minimap_base file]</c>. With the file, the city
+/// Draws the minimap's 2.5D views into PNGs: <c>-executeMethod Map25Preview.Render -out folder [-city path to a minimap_base file]</c>. With the file, the city
 /// is the owner's own (883 footprints); without it, the made-up city of the checks. A second set is drawn with a deliberately tall height model, to
-/// show that a block's height has a limit. The two discs in the full tilt shot (the player, the destination) are drawn on the picture here to show the
-/// framing: in the game they are the interface's own pins and are not part of the picture.
+/// show that a block's height has a limit. The city map itself is the game's own city and is not drawn here.
 /// </summary>
 public static class Map25Preview
 {
@@ -143,10 +142,9 @@ public static class Map25Preview
         public int Width, Height;
         public float Heading, Pitch, Across;
         public At Where = At.Route;
-        public bool Mini, Fog, Pins, Marks = true;
+        public bool Mini, Fog, Pins;
         public bool Bare;            // the same picture without the player's view cone and halo, for measuring their share of the colour in rendered pixels
         public int Aa;               // multisampling of the picture: 0 for what the game's pictures have (2 for the full map, 4 for the minimap)
-        public int Detail;           // for At.Building: which kind of building (see Pick); 0 the one the pointer is on
         public bool AtJunction;      // the player stands on the first junction of the route, looking north: the cone shows on the open ground
     }
 
@@ -154,7 +152,7 @@ public static class Map25Preview
     {
         public string Prefix;
         public Map25City City;
-        public Map25Set Full, Small;
+        public Map25Set Small;
         public Map25Scene Scene;
         public float[] RouteX, RouteZ, RouteY;
         public float StartX, StartZ, EndX, EndZ;
@@ -209,7 +207,7 @@ public static class Map25Preview
                     Draw(world, look, folder);
                     shots++;
                 }
-                Debug.Log("[UiPreview] map25 " + world.Prefix + ": " + world.City.Count + " buildings, " + world.Full.Vertices + " + " + world.Small.Vertices + " vertices; " + world.Notes);
+                Debug.Log("[UiPreview] map25 " + world.Prefix + ": " + world.City.Count + " buildings, " + world.Small.Vertices + " vertices; " + world.Notes);
                 world.Scene.Dispose();
             }
             Debug.Log("[UiPreview] rendered " + shots + " map views into " + folder);
@@ -289,28 +287,11 @@ public static class Map25Preview
             w.CoastZ = 0f;
             w.Notes = "the made-up city of the checks" + (tall ? " (deliberately tall)" : "");
         }
-        // As in the game: the sets are built from a city nothing is highlighted in (NavScene.Job), and the highlights come later, one building at a time, by the scene's retint of
-        // the full map's set (NavScene.Tint). The minimap's set is never tinted, so its pictures show no highlight and no ring.
-        w.Full = Map25Set.Build(w.City, Map25Detail.Full, -0.3f);
-        w.Small = Map25Set.Build(w.City, Map25Detail.Small, -0.3f);
-        w.Scene = new Map25Scene(new[] { w.Full, w.Small }, under, w.City.MinX, w.City.MinZ, w.City.MaxX, w.City.MaxZ);
+        w.Small = Map25Set.Build(w.City, -0.3f);
+        w.Scene = new Map25Scene(w.Small, under, w.City.MinX, w.City.MinZ, w.City.MaxX, w.City.MaxZ);
         while (w.Scene.Upload(200.0))
         {
         }
-        Color[] colours = { new Color(0.247f, 0.812f, 0.557f), new Color(0.937f, 0.478f, 0.353f), new Color(0.553f, 0.486f, 0.941f), new Color(0.941f, 0.698f, 0.227f) };
-        var generator = new Map25Blocks();
-        var scratch = new Map25Builders(4096);
-        for (int k = 0; k < w.Tinted.Length; k++)
-        {
-            Color c = colours[k % colours.Length];
-            w.City.Tint[w.Tinted[k]] = new Map25Colour(c.r, c.g, c.b);
-            w.City.TintShare[w.Tinted[k]] = Map25Palette.TintShare;
-            w.Scene.Retint(w.City, w.Tinted[k], generator, scratch);
-        }
-        w.City.Tint[w.Hover] = new Map25Colour(1f, 1f, 1f);
-        w.City.TintShare[w.Hover] = Map25Palette.HoverShare;
-        w.Scene.Retint(w.City, w.Hover, generator, scratch);
-        w.Scene.Refresh();
         return w;
     }
 
@@ -346,128 +327,14 @@ public static class Map25Preview
         string p = w.Prefix + "_";
         var looks = new List<Look>
         {
-            new Look { Name = p + "full_flat", Width = 1920, Height = 1080, Pitch = 90f, Across = 800f, Pins = true },
-            new Look { Name = p + "full_tilt", Width = 1920, Height = 1080, Heading = -16f, Pitch = 47f, Across = 760f, Fog = true, Pins = true },
             new Look { Name = p + "mini_flat", Width = 600, Height = 600, Pitch = 90f, Across = 260f, Mini = true, Where = At.Start },
             new Look { Name = p + "mini_tilt", Width = 600, Height = 600, Pitch = 40f, Across = 260f, Mini = true, Where = At.Start, Fog = true },
         };
         if (!tall)
         {
-            looks.Add(new Look { Name = p + "full_flat_bare", Width = 1920, Height = 1080, Pitch = 90f, Across = 800f, Bare = true });
             looks.Add(new Look { Name = p + "mini_flat_bare", Width = 600, Height = 600, Pitch = 90f, Across = 260f, Mini = true, Where = At.Start, Bare = true });
-            looks.Add(new Look { Name = p + "full_tilt_aa1", Width = 1920, Height = 1080, Heading = -16f, Pitch = 47f, Across = 760f, Fog = true, Pins = true, Aa = 1 });
-            // the opened map at the game's own pitch at the distances it allows: 1.77 metres across a picture of this shape for each metre of distance (the 28 degree lens)
-            foreach (int d in new[] { 150, 250, 350 })
-            {
-                looks.Add(new Look { Name = p + "r7_d" + d, Width = 1920, Height = 1080, Heading = -16f, Pitch = 47f, Across = d * 1.77f, Fog = true, Aa = 4 });
-            }
-            looks.Add(new Look { Name = p + "full_p65", Width = 1920, Height = 1080, Pitch = 65f, Across = 780f });
-            looks.Add(new Look { Name = p + "full_p75", Width = 1920, Height = 1080, Pitch = 75f, Across = 780f });
-            looks.Add(new Look { Name = p + "full_junction", Width = 1920, Height = 1080, Pitch = 47f, Across = 220f, Where = At.Start, AtJunction = true, Fog = true, Pins = true });
-            looks.Add(new Look { Name = p + "full_hover", Width = 1920, Height = 1080, Heading = 20f, Pitch = 47f, Across = 240f, Where = At.Building, Fog = true });
-            looks.Add(new Look { Name = p + "full_coast", Width = 1920, Height = 1080, Pitch = 55f, Across = 900f, Where = At.Coast, Fog = true });
-            looks.Add(new Look { Name = p + "full_park", Width = 1920, Height = 1080, Heading = 10f, Pitch = 47f, Across = 280f, Where = At.Park, Fog = true });
-            looks.Add(new Look { Name = p + "detail_tower", Width = 1920, Height = 1080, Heading = 25f, Pitch = 26f, Across = 70f, Where = At.Building, Detail = 1 });
-            looks.Add(new Look { Name = p + "detail_roofs", Width = 1920, Height = 1080, Heading = 200f, Pitch = 52f, Across = 80f, Where = At.Building, Detail = 2 });
-            looks.Add(new Look { Name = p + "detail_awnings", Width = 1920, Height = 1080, Heading = 0f, Pitch = 38f, Across = 40f, Where = At.Building, Detail = 3 });
         }
         return looks;
-    }
-
-    // The building a close look is of: 1 the tallest drawn (on a lot that is not a sliver), 2 one with the most on its roof, 3 a shop front of 15 to 30 m with awnings; the hover one otherwise.
-    private static int Pick(World w, int kind)
-    {
-        Map25City c = w.City;
-        int best = w.Hover;
-        float most = -1f;
-        Map25Layer blocks = w.Full.Layers[(int)Map25Kind.Blocks], fronts = w.Full.Layers[(int)Map25Kind.Fronts];
-        var sx = new float[32];
-        var sz = new float[32];
-        for (int i = 0; i < c.Count; i++)
-        {
-            float near = Math.Abs(c.HullX[c.HullStart[i]] - w.TargetX) + Math.Abs(c.HullZ[c.HullStart[i]] - w.TargetZ);
-            if (near > 420f)
-            {
-                continue;
-            }
-            float score = -1f;
-            if (kind == 1)
-            {
-                Map25Height.Measure(c, i, sx, sz, out float shorter, out _);
-                score = c.Height[i] * (shorter > 18f ? 1f : 0.2f);
-            }
-            else if (kind == 2)
-            {
-                score = c.Height[i] > 18f ? blocks.Count[i] + c.Height[i] * 0.1f : -1f;
-            }
-            else if (kind == 3)
-            {
-                Map25Height.Measure(c, i, sx, sz, out float shorter, out float longer);
-                bool plain = c.TintShare[i] == 0f;
-                score = plain && fronts.Count[i] >= 24 && c.Height[i] >= 10f && c.Height[i] <= 40f && shorter >= 8f && longer <= 70f ? fronts.Count[i] - near * 0.01f : -1f;
-                score += score > 0f && SouthIsOpen(c, i, 38f) ? 1000f : 0f;
-                score = score > 0f && !LargeWindows(c, i) ? score : -1f;
-            }
-            if (score > most)
-            {
-                most = score;
-                best = i;
-            }
-        }
-        return best;
-    }
-
-    // True when the camera looking north at the building's south wall sees its foot: no building south of it stands higher than the line of sight
-    // up to the camera's pitch, over 70 m (the awnings are at the foot of the wall).
-    private static bool SouthIsOpen(Map25City c, int i, float pitchDegrees)
-    {
-        float cx = 0f, minZ = float.MaxValue;
-        int n = c.HullStart[i + 1] - c.HullStart[i];
-        for (int k = c.HullStart[i]; k < c.HullStart[i + 1]; k++)
-        {
-            cx += c.HullX[k] / n;
-            minZ = Math.Min(minZ, c.HullZ[k]);
-        }
-        float slope = Mathf.Tan(pitchDegrees * Mathf.Deg2Rad);
-        for (float t = 3f; t <= 70f; t += 2f)
-        {
-            for (int j = 0; j < c.Count; j++)
-            {
-                if (j != i && c.Height[j] > 3f + t * slope - 1f && Holds(c, j, cx, minZ - t))
-                {
-                    return false;
-                }
-            }
-        }
-        return true;
-    }
-
-    // True when the building has more windows than one is drawn with at their own size (its panes are drawn larger): not a building to show a shop front on.
-    private static bool LargeWindows(Map25City c, int i)
-    {
-        int windows = 0;
-        int s = c.HullStart[i], e = c.HullStart[i + 1];
-        for (int k = s; k < e; k++)
-        {
-            int f = k + 1 < e ? k + 1 : s;
-            windows += Map25Blocks.PaneColumns(Mathf.Sqrt((c.HullX[f] - c.HullX[k]) * (c.HullX[f] - c.HullX[k]) + (c.HullZ[f] - c.HullZ[k]) * (c.HullZ[f] - c.HullZ[k])));
-        }
-        return windows * Map25Blocks.PaneFloors(c.Height[i], true) > Map25Blocks.PaneCap - 20;
-    }
-
-    // Whether the outline of building j (convex, anticlockwise) holds the place.
-    private static bool Holds(Map25City c, int j, float x, float z)
-    {
-        int s = c.HullStart[j], e = c.HullStart[j + 1];
-        for (int k = s; k < e; k++)
-        {
-            int f = k + 1 < e ? k + 1 : s;
-            if ((c.HullX[f] - c.HullX[k]) * (z - c.HullZ[k]) - (c.HullZ[f] - c.HullZ[k]) * (x - c.HullX[k]) < 0f)
-            {
-                return false;
-            }
-        }
-        return true;
     }
 
     private static void Draw(World w, Look look, string folder)
@@ -491,7 +358,7 @@ public static class Map25Preview
                 break;
             case At.Building:
                 {
-                    int i = look.Detail == 0 ? w.Hover : Pick(w, look.Detail);
+                    int i = w.Hover;
                     int s = w.City.HullStart[i], e = w.City.HullStart[i + 1];
                     tx = tz = 0f;
                     for (int k = s; k < e; k++)
@@ -501,16 +368,7 @@ public static class Map25Preview
                     }
                     tx /= e - s;
                     tz /= e - s;
-                    ty = look.Detail == 0 ? 0f : look.Detail == 3 ? 3f : w.City.Height[i] * 0.5f;
-                    if (look.Detail == 3)
-                    {
-                        float south = float.MaxValue;
-                        for (int k = s; k < e; k++)
-                        {
-                            south = Math.Min(south, w.City.HullZ[k]);
-                        }
-                        tz = south;   // the camera looks at the foot of the south wall, where the awnings are
-                    }
+                    ty = 0f;
                     break;
                 }
         }
@@ -528,16 +386,15 @@ public static class Map25Preview
         float pixels = look.Mini ? look.Width : look.Height;
         float mpp = view.MetresPerPixel(tx, 0f, tz, look.Width);
         w.Scene.SetRoute(w.RouteX, w.RouteY, w.RouteZ, w.RouteX.Length, 0f);
-        w.Scene.SetRouteHalf(Map25Marks.Step(Map25Marks.RouteHalf(look.Mini, pixels, mpp)));
-        w.Scene.SetMarks(w.City, look.Marks ? w.Tinted : null, look.Marks ? w.Tinted.Length : 0, 0.08f);
+        w.Scene.SetRouteHalf(Map25Marks.Step(Map25Marks.RouteHalf(pixels, mpp)));
         var target = new RenderTexture(look.Width, look.Height, 24, RenderTextureFormat.ARGB32, RenderTextureReadWrite.sRGB) { antiAliasing = look.Aa > 0 ? look.Aa : look.Mini ? 4 : 2 };
         target.Create();
         var frame = new Map25Frame
         {
             Player = !look.Bare, PlayerX = playerX, PlayerY = 0f, PlayerZ = playerZ, Heading = 0f, Fog = look.Fog,
-            ConeRadius = Map25Marks.ConeMetres(look.Mini, pixels, mpp), HaloRadius = Map25Marks.HaloMetres(look.Mini, pixels, mpp)
+            ConeRadius = Map25Marks.ConeMetres(pixels, mpp), HaloRadius = Map25Marks.HaloMetres(pixels, mpp)
         };
-        w.Scene.Draw(target, view, frame, look.Mini ? 1 : 0);
+        w.Scene.Draw(target, view, frame);
         Measure(w, look, view, frame, playerX, playerZ);
         RenderTexture before = RenderTexture.active;
         RenderTexture.active = target;

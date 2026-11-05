@@ -32,7 +32,7 @@ namespace RealLifeOverhaul.Nav
         private float _scenePlayerX, _scenePlayerY, _scenePlayerZ, _scenePlayerHeading;
 
         /// <summary>True once a draw of the picture came out black, kept for the session (<see cref="NavMapLatch"/>): the director then leaves the minimap flat.</summary>
-        public bool SceneBroken => NavMapLatch.Drew(NavMapLatch.Minimap);
+        public bool SceneBroken => NavMapLatch.Drew;
 
         private bool _sceneProbed;
 
@@ -134,22 +134,21 @@ namespace RealLifeOverhaul.Nav
                 float tx = px + Mathf.Sin(radians) * lead, tz = pz + Mathf.Cos(radians) * lead;
                 float y0 = _sceneFrom.Y0;
                 _sceneView.Look(tx, py - y0, tz, turn, _sceneTilted ? TiltPitch : 89.5f, metresAcross, width / (float)height);
-                _sceneFrom.Scene.Refresh();
                 // the route, the cone and the halo are a few pixels of the picture, as the mockup has them: their metres are what a pixel is at the player
                 float mpp = _sceneView.MetresPerPixel(tx, 0f, tz, width);
-                _sceneFrom.Scene.SetRouteHalf(Map25Marks.Step(Map25Marks.RouteHalf(true, width, mpp)));
+                _sceneFrom.Scene.SetRouteHalf(Map25Marks.Step(Map25Marks.RouteHalf(width, mpp)));
                 var frame = new Map25Frame
                 {
                     Player = true, PlayerX = px, PlayerY = py - y0, PlayerZ = pz, Heading = heading, Fog = _sceneTilted,
-                    ConeRadius = Map25Marks.ConeMetres(true, width, mpp), HaloRadius = Map25Marks.HaloMetres(true, width, mpp)
+                    ConeRadius = Map25Marks.ConeMetres(width, mpp), HaloRadius = Map25Marks.HaloMetres(width, mpp)
                 };
-                _sceneFrom.Scene.Draw(_sceneTarget, _sceneView, frame, 1);
+                _sceneFrom.Scene.Draw(_sceneTarget, _sceneView, frame);
                 if (!_sceneProbed)
                 {
                     _sceneProbed = true;
                     if (Map25Scene.Blank(_sceneTarget))
                     {
-                        if (NavMapLatch.Mark(NavMapLatch.Minimap))
+                        if (NavMapLatch.Mark())
                         {
                             Logger?.Warn("Navigation: the minimap's 2.5D picture drew nothing (it is black), so the minimap stays flat for this session.");
                         }

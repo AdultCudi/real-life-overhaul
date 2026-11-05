@@ -153,9 +153,135 @@ internal static partial class Program
         string game = ModSource(@"Ui\Host\UiGameHost.cs"), map = ModSource(@"Ui\MapDock\MapFiltersGame.cs"), sign = ModSource(@"Ui\World\SignAppearanceKit.cs");
         Check(map.Contains("\"CityMapFilters\"") && sign.Contains("\"SignAppearance\"") && game.Contains("IUiGameDraggable") && game.Contains("isCurrentlyDragging = true"),
             "window drag: the city map's filters and a sign's look take the game's own window ids, and the game's map camera holds still while one is held");
+        UiWindowDragMapChecks();
         UiWindowPlaces.Forget();
         UiWindowPlaces.Load = null;
         UiWindowPlaces.Save = null;
+    }
+
+    // The city map's dock dragged (the owner's test of 5 Nov: the frame moved and its lists, the rail and the rows stayed behind over the map): the real dock with its rail, its
+    // scrolling rows, its picked place and its buttons, laid in the one scene that also holds the route strip, the layers and the map's buttons. After a drag every node and every
+    // scrolling region of the dock is offset by exactly the drag, what the dock draws moved with it, and the strip, the layers and the buttons stood where they were.
+    private static void UiWindowDragMapChecks()
+    {
+        UiWindowPlaces.Forget();
+        UiWords t = UiWords("en");
+        foreach (float[] size in new[] { new[] { 1920f, 1080f }, new[] { 1280f, 720f } })
+        {
+            string at = (int)size[0] + "x" + (int)size[1];
+            var frame = new UiFrame { Width = size[0], Height = size[1], Band = UiFrame.BandHeight };
+            foreach (string page in new[] { "filters", "place", "district" })
+            {
+                var scene = new UiScene { Draggable = true };
+                var grip = new UiWindowGrip { Id = "CityMapFilters", Saved = false };
+                Action lay = () =>
+                {
+                    var model = new MapScreenModel { Route = UiSamples.MapRoute(t), Buttons = UiSamples.MapButtons(t, true), HasLabel = true, Label = UiSamples.MapNextLabel(t) };
+                    if (page == "filters")
+                    {
+                        model.Filters = UiSamples.MapFilters(t, "filters");
+                    }
+                    else if (page == "place")
+                    {
+                        model.Place = UiSamples.MapPlace(t, "overview");
+                        model.Layers = UiSamples.MapLayers(t);
+                    }
+                    else
+                    {
+                        model.District = UiSamples.MapDistrict(t, "rent");
+                        model.Layers = UiSamples.MapLayers(t);
+                    }
+                    UiMap.Lay(scene, model, frame, true, UiDefaultKeys.Keyboard);
+                    grip.Place(scene, frame.Width, frame.BandY);
+                };
+                UiWindowPlaces.Forget();
+                lay();
+                var nodes = new float[scene.NodeCount * 2];
+                var items = new float[scene.ItemCount * 2];
+                var clips = new float[scene.ClipCount * 2];
+                for (int i = 0; i < scene.NodeCount; i++)
+                {
+                    nodes[i * 2] = scene.Nodes[i].X;
+                    nodes[i * 2 + 1] = scene.Nodes[i].Y;
+                }
+                for (int i = 0; i < scene.ItemCount; i++)
+                {
+                    items[i * 2] = scene.Items[i].X;
+                    items[i * 2 + 1] = scene.Items[i].Y;
+                }
+                for (int i = 0; i < scene.ClipCount; i++)
+                {
+                    clips[i * 2] = scene.Clips[i].X;
+                    clips[i * 2 + 1] = scene.Clips[i].Y;
+                }
+                int nodeCount = scene.NodeCount, itemCount = scene.ItemCount, clipCount = scene.ClipCount;
+                bool hadList = page != "place" || clipCount > 0;
+                float gx = scene.Nodes[scene.HandleNode].X + 60f, gy = scene.Nodes[scene.HandleNode].Y + UiFrame.Strip / 2f;
+                float dx = 120f, dy = 8f;   // the dock stands nearly the screen's height, so it has only a few px to move down
+                Drag(grip, gx, gy, dx, dy, lay);
+                bool sameShape = scene.NodeCount == nodeCount && scene.ItemCount == itemCount && scene.ClipCount == clipCount;
+                int dockNodes = 0, dockMoved = 0, stayNodes = 0, stayMoved = 0, dockItems = 0, itemsMoved = 0;
+                for (int i = 0; i < nodeCount && sameShape; i++)
+                {
+                    int command = scene.Nodes[i].Command;
+                    bool stays = command >= UiMapChrome.OptionCommand && command <= UiMapChrome.HideAllCommand;
+                    bool moved = Same(scene.Nodes[i].X, nodes[i * 2] + dx) && Same(scene.Nodes[i].Y, nodes[i * 2 + 1] + dy) || (scene.Nodes[i].Clip >= 0 && Same(scene.Nodes[i].X, nodes[i * 2]) && Same(scene.Nodes[i].Y, nodes[i * 2 + 1]));
+                    bool still = Same(scene.Nodes[i].X, nodes[i * 2]) && Same(scene.Nodes[i].Y, nodes[i * 2 + 1]);
+                    if (stays)
+                    {
+                        stayNodes++;
+                        stayMoved += still ? 0 : 1;
+                    }
+                    else
+                    {
+                        dockNodes++;
+                        dockMoved += moved ? 0 : 1;
+                    }
+                }
+                int clipsMoved = 0, clipsLeft = 0;
+                for (int i = 0; i < clipCount && sameShape; i++)
+                {
+                    bool moved = Same(scene.Clips[i].X, clips[i * 2] + dx) && Same(scene.Clips[i].Y, clips[i * 2 + 1] + dy);
+                    clipsMoved += moved ? 1 : 0;
+                    clipsLeft += moved ? 0 : 1;
+                }
+                for (int i = 0; i < itemCount && sameShape; i++)
+                {
+                    if (scene.Items[i].Clip >= 0 || (scene.Items[i].Flags & UiFlags.Prompt) != 0 || !scene.Items[i].Window)
+                    {
+                        continue;
+                    }
+                    dockItems++;
+                    itemsMoved += Same(scene.Items[i].X, items[i * 2] + dx) && Same(scene.Items[i].Y, items[i * 2 + 1] + dy) ? 0 : 1;
+                }
+                Check(sameShape && dockNodes > 5 && dockMoved == 0 && clipsLeft == 0 && (!hadList || clipsMoved > 0),
+                    "window drag: the city map's " + page + " dock at " + at + ": every target (" + dockNodes + ") and every scrolling region (" + clipsMoved + ") of the dock is offset by exactly the drag (" + dx + ", " + dy + "), "
+                    + dockMoved + " targets and " + clipsLeft + " regions left behind");
+                Check(dockItems > 20 && itemsMoved == 0 && stayNodes > 0 && stayMoved == 0,
+                    "window drag: the city map's " + page + " dock at " + at + ": everything the dock draws (" + dockItems + " items, its rail, rows and picked place with them) moved with it, and the route strip, the map's buttons and the layers (" + stayNodes + " targets) stood where they were");
+                // The rows of a scrolling list are drawn in their region's own coordinates: the region moved, so where each row lands on the screen moved by the drag.
+                if (page == "filters")
+                {
+                    int rows = 0, rowsOff = 0;
+                    for (int i = 0; i < scene.NodeCount; i++)
+                    {
+                        if (scene.Nodes[i].Clip < 0 || scene.Nodes[i].Layer != 0)
+                        {
+                            continue;
+                        }
+                        scene.NodeBox(i, out float rx, out float ry, out _, out _);
+                        UiClip c = scene.Clips[scene.Nodes[i].Clip];
+                        rows++;
+                        rowsOff += rx >= c.X - 0.01f && rx <= c.X + c.W + 0.01f ? 0 : 1;
+                    }
+                    Check(rows > 5 && rowsOff == 0, "window drag: the dock's rows stand inside their moved region, not over the map where the dock was (" + rows + " rows, " + rowsOff + " outside)");
+                }
+                UiWindowPlaces.Moved("CityMapFilters", out float shownX, out float shownY);
+                Check(Same(shownX, dx) && Same(shownY, dy) && Same(grip.X, dx) && Same(grip.Y, dy),
+                    "window drag: the move the dock was laid with is noted for the HUD's avoid box (" + shownX + ", " + shownY + ")");
+            }
+        }
+        UiWindowPlaces.Forget();
     }
 
     private static bool Same(float a, float b) => Math.Abs(a - b) < 0.01f;

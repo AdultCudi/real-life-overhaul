@@ -187,14 +187,14 @@ namespace RealLifeOverhaul.Ui
         {
             Component label = GameContract.MapGroupLabel.Field?.GetValue(cat) as Component;
             TMP_Text text = label != null ? label.GetComponentInChildren<TMP_Text>(true) : null;
-            string words = text != null ? text.text : null;
+            string words = text != null ? MapText.OneLine(text.text) : null;
             return string.IsNullOrWhiteSpace(words) ? DistrictNameOf(key) : words.Trim();
         }
 
         private static string LineName(CityMapFilter f, string key)
         {
             TMP_Text text = GameContract.MapLineLabel.Field?.GetValue(f) as TMP_Text;
-            string words = text != null ? text.text : null;
+            string words = text != null ? MapText.OneLine(text.text) : null;
             return string.IsNullOrWhiteSpace(words) ? DistrictNameOf(key) : words.Trim();
         }
 

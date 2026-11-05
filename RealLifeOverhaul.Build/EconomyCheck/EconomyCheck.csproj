@@ -924,7 +924,6 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiAllApps.cs" Link="Mod\UiAllApps.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Host\UiHostRules.cs" Link="Mod\UiHostRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Math.cs" Link="Mod\Map25Math.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Names.cs" Link="Mod\Map25Names.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Palette.cs" Link="Mod\Map25Palette.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Builder.cs" Link="Mod\Map25Builder.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Blocks.cs" Link="Mod\Map25Blocks.cs" />
@@ -932,19 +931,18 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Ground.cs" Link="Mod\Map25Ground.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Height.cs" Link="Mod\Map25Height.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Layer.cs" Link="Mod\Map25Layer.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Blocks.Panes.cs" Link="Mod\Map25Blocks.Panes.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Blocks.Props.cs" Link="Mod\Map25Blocks.Props.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Blocks.Contact.cs" Link="Mod\Map25Blocks.Contact.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Under.cs" Link="Mod\Map25Under.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Zones.cs" Link="Mod\Map25Zones.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25Marks.cs" Link="Mod\Map25Marks.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Navigation\NavMapLights.cs" Link="Mod\NavMapLights.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Navigation\NavMapLatch.cs" Link="Mod\NavMapLatch.cs" />
     <Compile Include="..\Shared\Map25Fixture.cs" Link="Shared\Map25Fixture.cs" />
     <Compile Include="..\Shared\Map25Real.cs" Link="Shared\Map25Real.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25View.cs" Link="Mod\Map25View.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Districts\DistrictMonths.cs" Link="Mod\DistrictMonths.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\MapDock\MapSaved.cs" Link="Mod\MapSaved.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\MapDock\MapBusy.cs" Link="Mod\MapBusy.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\MapDock\MapText.cs" Link="Mod\MapText.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WorkQueueStep.cs" Link="Mod\WorkQueueStep.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\MapDock\MapCountRules.cs" Link="Mod\MapCountRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\MapDock\MapLook.cs" Link="Mod\MapLook.cs" />

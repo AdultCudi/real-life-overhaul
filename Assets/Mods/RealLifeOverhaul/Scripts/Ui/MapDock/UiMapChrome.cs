@@ -293,6 +293,7 @@ namespace RealLifeOverhaul.Ui
             float dockRight = UiTokens.S2;
             UiPrompt[] prompts = null;
             int count = 0;
+            s.WindowBegin();   // the dock with its rail, which the player drags by its title strip; the strip over the map, the layers and the buttons stay put
             if (m.Place != null)
             {
                 dockRight = UiMapPlace.Draw(s, UiAt.Screen, m.Place, frame, UiTokens.S2, UiTokens.S4, keys);
@@ -311,6 +312,7 @@ namespace RealLifeOverhaul.Ui
                 prompts = m.Filters.Prompts;
                 count = m.Filters.PromptCount;
             }
+            s.WindowEnd();
             if (m.Route != null && m.Route.Options.Length > 0)
             {
                 // Up to the Layers panel's edge when that is there, else the screen's.
@@ -327,7 +329,9 @@ namespace RealLifeOverhaul.Ui
             }
             if (m.HasLabel)
             {
+                s.WindowBegin();   // the label of a row stands beside the dock, so it goes where the dock is dragged to
                 UiMapChrome.Label(s, UiAt.Screen, m.Label, frame, dockRight);
+                s.WindowEnd();
             }
             for (int i = 0; prompts != null && i < count; i++)
             {

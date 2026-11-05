@@ -28,6 +28,9 @@ namespace RealLifeOverhaul.Ui
             if (layoutW > 0f && layoutH > 0f && Dock)
             {
                 UiMapFilters.DockBox(layoutH, out x, out y, out w, out h);
+                MapKits.DockMove(out float dx, out float dy);   // the player may have dragged it: the HUD keeps clear of where it stands
+                x += dx;
+                y += dy;
                 return;
             }
             RectTransform card = RealLifeOverhaul.Nav.NavHud.Card;

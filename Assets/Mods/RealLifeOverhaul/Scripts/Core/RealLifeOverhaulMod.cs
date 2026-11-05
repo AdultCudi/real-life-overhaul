@@ -1360,8 +1360,6 @@ namespace RealLifeOverhaul
                     v => Settings.MinimapBase = v)
                 .AddToggle(Settings.Minimap25Id, "reallife_nav_minimap25", Settings.Minimap25,
                     v => Settings.Minimap25 = v)
-                .AddToggle(Settings.Map25Id, "reallife_nav_map25", Settings.Map25,
-                    v => Settings.Map25 = v)
                 .AddButton("reallife_nav_test_station", () => Nav.NavDirector.Instance?.TestStation())
                 .AddButton("reallife_nav_test_far", () => Nav.NavDirector.Instance?.TestFar())
                 .AddButton("reallife_nav_test_clear", () => Nav.NavDirector.Instance?.TestClear())
@@ -1804,7 +1802,6 @@ namespace RealLifeOverhaul
             Guard.Step("Nav.NavBase", () => Nav.NavBase.Logger = context.Logger);
             Guard.Step("Nav.NavCityMap", () => Nav.NavCityMap.Logger = context.Logger);
             Guard.Step("Nav.NavScene", () => Nav.NavScene.Logger = context.Logger);
-            Guard.Step("Nav.NavMap25", () => Nav.NavMap25.Logger = context.Logger);
             Guard.Step("Nav.NavDirector", () => Nav.NavDirector.Logger = context.Logger);
             Guard.Step("Nav.NavDirector", () => Guard.Add<Nav.NavDirector>(_root));
             Guard.Step("CivicDirector", () => Guard.Add<CivicDirector>(_root));   // its own cast of five
