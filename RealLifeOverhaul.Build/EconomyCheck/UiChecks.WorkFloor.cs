@@ -91,28 +91,32 @@ internal static partial class Program
         bool report = Environment.GetEnvironmentVariable("RLO_FLOOR_REPORT") == "1";
         var faults = new StringBuilder();
         int pages = 0;
-        foreach (string id in new[] { "career", "campus", "open_roles", "marketplace" })
+        foreach (string lang in new[] { "en", "pt", "zh-cn" })
         {
-            foreach (string st in WorkStatesOf(id))
+            UiWords words = lang == "en" ? WorkEnglish : UiWords(lang);   // the longer words make a taller panel and a shorter list: every language is held to it
+            foreach (string id in new[] { "career", "campus", "open_roles", "marketplace" })
             {
-                UiScene scene = WorkSceneOf(WorkScreenOf(id, WorkEnglish, st));
-                float worst = WorkFloorOf(scene, out string where);
-                if (report)
+                foreach (string st in WorkStatesOf(id))
                 {
-                    Console.WriteLine("  floor " + id + " " + st + ": " + (int)worst + " (" + where + ")" + (WorkFloorExempt(st) ? " exempt" : string.Empty));
-                }
-                if (WorkFloorExempt(st))
-                {
-                    continue;
-                }
-                pages++;
-                if (worst < 0f || worst > WorkFloorMost)
-                {
-                    faults.Append(" [" + id + " " + st + ": " + (int)worst + " px at " + where + "]");
+                    UiScene scene = WorkSceneOf(WorkScreenOf(id, words, st));
+                    float worst = WorkFloorOf(scene, out string where);
+                    if (report)
+                    {
+                        Console.WriteLine("  floor " + lang + " " + id + " " + st + ": " + (int)worst + " (" + where + ")" + (WorkFloorExempt(st) ? " exempt" : string.Empty));
+                    }
+                    if (WorkFloorExempt(st))
+                    {
+                        continue;
+                    }
+                    pages++;
+                    if (worst < 0f || worst > WorkFloorMost)
+                    {
+                        faults.Append(" [" + lang + " " + id + " " + st + ": " + (int)worst + " px at " + where + "]");
+                    }
                 }
             }
         }
-        Check(faults.Length == 0 && pages > 20, "work screens: no page leaves more than " + (int)WorkFloorMost + " px of nothing between its lowest thing and the window's foot (" + pages + " pages)" + faults);
+        Check(faults.Length == 0 && pages > 60, "work screens: no page leaves more than " + (int)WorkFloorMost + " px of nothing between its lowest thing and the window's foot (" + pages + " pages)" + faults);
         // the rule that fills it: bands in balanced rows, never one alone beside a full row
         string rows = string.Join("|", Counts(WorkForm.RowCounts(5, 3))) + " " + string.Join("|", Counts(WorkForm.RowCounts(4, 3))) + " " + string.Join("|", Counts(WorkForm.RowCounts(6, 3)))
             + " " + string.Join("|", Counts(WorkForm.RowCounts(7, 4))) + " " + string.Join("|", Counts(WorkForm.RowCounts(1, 3))) + " " + WorkForm.RowCounts(0, 3).Length;
@@ -218,8 +222,8 @@ internal static partial class Program
         return text;
     }
 
-    // Bands under a list that has a detail panel beside it: the row that ends within the slack of the panel's foot stands in the list's column, the rest across the whole
-    // width under the lower of the two, and nothing stands past the window's foot.
+    // Bands under a list that has a detail panel beside it: the rows that fit stand in the list's column while the panel runs on, the rest across the whole width under the
+    // lower of the two, and nothing stands past the window's foot. When that cannot lay every band whole, all of them stand in rows across the width.
     private static void WorkFlowCheck()
     {
         var bands = new List<WorkFormBand>();

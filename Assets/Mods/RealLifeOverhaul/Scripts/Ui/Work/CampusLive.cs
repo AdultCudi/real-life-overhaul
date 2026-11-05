@@ -401,7 +401,7 @@ namespace RealLifeOverhaul.Ui
                 Entries = WorkSkills.Tinted(entries),
                     ChosenTitle = weekdays[(RealLifeOverhaul.Calendar.MonthViewRules.Lead(from) + chosen - 1) % 7] + " " + chosen.ToString(Inv) + " " + name,
                     ChosenEmpty = UiText.T("reallife_work_diary_empty"),
-                AheadTitle = UiText.T("reallife_work_diary_ahead"), CanBack = true, CanOn = true
+                AheadTitle = UiText.T("reallife_work_diary_ahead"), More = UiText.T("reallife_ui_life_more"), CanBack = true, CanOn = true
             };
         }
 

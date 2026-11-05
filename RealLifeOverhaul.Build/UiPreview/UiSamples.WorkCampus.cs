@@ -156,7 +156,7 @@ internal static partial class UiSamples
         {
             Month = Sx(w, "reallife_calendar_month_3"), Weekdays = new[] { SWd(w, 0), SWd(w, 1), SWd(w, 2), SWd(w, 3), SWd(w, 4), SWd(w, 5), SWd(w, 6) }, Lead = 2, Length = 31, Today = 14, Chosen = 16, PastBefore = 14,
             ChosenTitle = SWd(w, 3) + " 16 " + Sx(w, "reallife_calendar_month_3"), ChosenEmpty = w.T("reallife_work_diary_empty", "No class, homework or exam falls on this day."),
-                AheadTitle = w.T("reallife_work_diary_ahead", "Coming up")
+                AheadTitle = w.T("reallife_work_diary_ahead", "Coming up"), More = w.T("reallife_ui_life_more", "+{0} more")
         };
         var entries = new List<UiDiaryEntry>();
         if (state != "studying_none")
