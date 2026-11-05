@@ -19,6 +19,15 @@ namespace RealLifeOverhaul.Ui
         {
             return new[]
             {
+                "reallife_pro_rank_design_1", "reallife_pro_rank_design_2", "reallife_pro_rank_hr_1", "reallife_pro_rank_hr_2",
+                "reallife_pro_rank_marketing_1", "reallife_pro_rank_marketing_2",                 "reallife_pro_rank_teaching_1", "reallife_work_where_leads",
+                "reallife_pro_rank_teaching_2", "reallife_work_against_market", "reallife_work_below_theirs",
+                "reallife_work_cash_after", "reallife_work_day_card_0", "reallife_work_day_card_1", "reallife_work_day_card_2",
+                "reallife_work_day_card_3", "reallife_work_day_card_4", "reallife_work_day_card_5", "reallife_work_offer_stands",
+
+
+                "ba:vehicletype_deliverytruck", "ba:vehicletype_freighttruckt1", "ba:vehicletype_mersaidimgagt", "ba:vehicletype_umcdesertdeliveryjob",
+                "ba:vehicletype_vordv150",
                 "reallife_calendar_month_3", "reallife_campus_app", "reallife_campus_button_child_decline", "reallife_campus_button_child_pay",
                 "reallife_campus_button_graduate", "reallife_campus_button_loan", "reallife_campus_button_pay", "reallife_campus_button_tutor",
                 "reallife_campus_button_withdraw", "reallife_campus_child_home", "reallife_campus_child_offered", "reallife_campus_child_studying",

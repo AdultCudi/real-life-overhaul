@@ -314,11 +314,13 @@ ba:transaction_wage
 ba:transaction_wage_label
 ba:vehicletype_anselmoaf90
 ba:vehicletype_bima320
+ba:vehicletype_deliverytruck
 ba:vehicletype_electricscooter
 ba:vehicletype_ferdinand112
 ba:vehicletype_freighttruckt1
 ba:vehicletype_honzamimic
 ba:vehicletype_mersaididash
+ba:vehicletype_mersaidimgagt
 ba:vehicletype_mersaidis500
 ba:vehicletype_missamvillian
 ba:vehicletype_petrollsfanton
@@ -326,6 +328,7 @@ ba:vehicletype_umcdesert
 ba:vehicletype_umcdesertdeliveryjob
 ba:vehicletype_umcnunavut
 ba:vehicletype_vordpony
+ba:vehicletype_vordv150
 bizman_add_plan
 bizman_alerts
 bizman_avg_daily_income
