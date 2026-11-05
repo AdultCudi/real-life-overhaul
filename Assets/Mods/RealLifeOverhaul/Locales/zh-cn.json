@@ -34391,5 +34391,17 @@
   "reallife_infra_note_colo_offer": "{rival} 对 {client} 在 {name} 的 {racks} 个机架报了价。合同即将到期。",
   "reallife_infra_note_colo_renewed": "{client} 续签了在 {name} 的 {racks} 个机架。",
   "reallife_infra_note_colo_lost": "{client} 把在 {name} 的 {racks} 个机架迁到了 {rival}。",
-  "reallife_infra_note_colo_left": "{client} 退掉了在 {name} 的 {racks} 个机架。"
+  "reallife_infra_note_colo_left": "{client} 退掉了在 {name} 的 {racks} 个机架。",
+  "reallife_bld_mode_view_rents": "租金",
+  "reallife_bld_mode_view_traffic": "交通",
+  "reallife_bld_tip_view_rents": "按每个方格的用途划分的每平方米租金。越绿越贵。",
+  "reallife_bld_tip_view_traffic": "游戏给每个地块的交通指数，从安静到繁忙。",
+  "reallife_bld_mode_key_rent_low": "每平方米最低",
+  "reallife_bld_mode_key_rent_high": "每平方米最高",
+  "reallife_bld_mode_key_traffic_low": "安静",
+  "reallife_bld_mode_key_traffic_high": "繁忙",
+  "reallife_bld_sheet_since": "自{day}起归你所有",
+  "reallife_bld_cat_plan_zoned": "此处允许",
+  "reallife_bld_cat_plan_hall": "需要市政厅批准",
+  "reallife_bld_fit_title": "你可以在这里建造"
 }

@@ -99,6 +99,54 @@ namespace RealLifeOverhaul.Construction
             return null;
         }
 
+        // ------------------------------------------------------------------ the kit's tabs, search, favourites and the wanted badge
+
+        public const int WantedLeast = 55;   // a use is WANTED where its demand is the district's highest and at least this (the demand bars' "wants more" starts at DemandHigh)
+        public const int TabAll = -1;        // the tab that shows every design of the use in hand
+
+        /// <summary>The use the district wants most (0 to 3), or -1 where none stands out: demand known, highest, and at least <see cref="WantedLeast"/>; a tie goes to the first.</summary>
+        public static int Wanted(int[] demand, int n)
+        {
+            int best = -1, value = WantedLeast - 1;
+            for (int u = 0; u < n && u < demand.Length; u++)
+            {
+                if (demand[u] > value)
+                {
+                    value = demand[u];
+                    best = u;
+                }
+            }
+            return best;
+        }
+
+        /// <summary>Weeks a build takes, from its days: whole weeks, at least one.</summary>
+        public static int Weeks(int days) => Math.Max(1, (Math.Max(0, days) + 6) / 7);
+
+        /// <summary>True when a design's name holds every word of the search (case does not count); an empty search holds all.</summary>
+        public static bool Matches(string name, string query)
+        {
+            if (string.IsNullOrWhiteSpace(query))
+            {
+                return true;
+            }
+            if (string.IsNullOrEmpty(name))
+            {
+                return false;
+            }
+            string[] words = query.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
+            for (int i = 0; i < words.Length; i++)
+            {
+                if (name.IndexOf(words[i], StringComparison.OrdinalIgnoreCase) < 0)
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        /// <summary>A design's id for the favourites: its use and its name, or the corner building's model.</summary>
+        public static string FavouriteId(int use, string look, string name) => use.ToString(System.Globalization.CultureInfo.InvariantCulture) + ":" + (string.IsNullOrEmpty(look) ? name : look);
+
         /// <summary>The game's picture for a use's card (none known: the building).</summary>
         public static string Picture(int use)
         {

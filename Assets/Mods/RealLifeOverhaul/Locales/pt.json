@@ -34391,5 +34391,17 @@
   "reallife_infra_note_colo_offer": "{rival} fez uma oferta pelos {racks} racks de {client} em {name}. O contrato termina em breve.",
   "reallife_infra_note_colo_renewed": "{client} renovou os {racks} racks em {name}.",
   "reallife_infra_note_colo_lost": "{client} levou os {racks} racks de {name} para {rival}.",
-  "reallife_infra_note_colo_left": "{client} deixou os {racks} racks em {name}."
+  "reallife_infra_note_colo_left": "{client} deixou os {racks} racks em {name}.",
+  "reallife_bld_mode_view_rents": "Rendas",
+  "reallife_bld_mode_view_traffic": "Trânsito",
+  "reallife_bld_tip_view_rents": "Quanto rende um metro quadrado, pelo uso de cada quadrado. Mais verde, mais caro.",
+  "reallife_bld_tip_view_traffic": "O trânsito que o jogo dá a cada lote, de calmo a movimentado.",
+  "reallife_bld_mode_key_rent_low": "Menos por metro quadrado",
+  "reallife_bld_mode_key_rent_high": "Mais por metro quadrado",
+  "reallife_bld_mode_key_traffic_low": "Calmo",
+  "reallife_bld_mode_key_traffic_high": "Movimentado",
+  "reallife_bld_sheet_since": "Seu desde {day}",
+  "reallife_bld_cat_plan_zoned": "Permitido aqui",
+  "reallife_bld_cat_plan_hall": "Precisa da Prefeitura",
+  "reallife_bld_fit_title": "Você poderia construir aqui"
 }

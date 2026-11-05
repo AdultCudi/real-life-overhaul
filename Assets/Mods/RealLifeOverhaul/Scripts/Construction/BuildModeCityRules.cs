@@ -48,6 +48,8 @@ namespace RealLifeOverhaul.Construction
         public int Progress;    // ... their share done, 0 to 100
         public int Use;         // its use (BuildUse) by the game's building type, -1 for none of the four
         public int ValueStep;   // its price a square metre among the city's, 0 (lowest) to BuildModeRules.ValueSteps - 1
+        public int RentStep;    // what its use lets for a square metre among the uses', 0 to BuildModeRules.RampSteps - 1; -1 for none
+        public int TrafficStep; // the game's traffic index for it in five steps; -1 for none
     }
 
     /// <summary>
@@ -134,6 +136,12 @@ namespace RealLifeOverhaul.Construction
                 case BuildView.Occupancy:
                     fill = s == PlotStatus.Kept ? BuildModeRules.Nothing : f.ToLet ? BuildModeRules.Vacant : BuildModeRules.Let;
                     return;
+                case BuildView.Rents:
+                    fill = f.RentStep >= 0 ? BuildModeRules.RentRamp + Math.Min(BuildModeRules.RampSteps - 1, f.RentStep) : BuildModeRules.Nothing;
+                    return;
+                case BuildView.Traffic:
+                    fill = f.TrafficStep >= 0 ? BuildModeRules.TrafficRamp + Math.Min(BuildModeRules.RampSteps - 1, f.TrafficStep) : BuildModeRules.Nothing;
+                    return;
                 case BuildView.UnderWay:
                     fill = !f.UnderWay ? BuildModeRules.Nothing : f.Progress >= 50 ? BuildModeRules.UnderWayDone : BuildModeRules.UnderWay;
                     return;
@@ -182,6 +190,16 @@ namespace RealLifeOverhaul.Construction
                 case BuildView.Value:
                     n = Key(fills, lines, keys, n, BuildModeRules.Value, BuildModeRules.LinePlain, "reallife_bld_plot_key_value_low");
                     n = Key(fills, lines, keys, n, BuildModeRules.Value + BuildModeRules.ValueSteps - 1, BuildModeRules.LinePlain, "reallife_bld_plot_key_value_high");
+                    n = Key(fills, lines, keys, n, -1, BuildModeRules.LineYours, "reallife_bld_mode_key_yours_edge");
+                    return n;
+                case BuildView.Rents:
+                    n = Key(fills, lines, keys, n, BuildModeRules.RentRamp, BuildModeRules.LinePlain, "reallife_bld_mode_key_rent_low");
+                    n = Key(fills, lines, keys, n, BuildModeRules.RentRamp + BuildModeRules.RampSteps - 1, BuildModeRules.LinePlain, "reallife_bld_mode_key_rent_high");
+                    n = Key(fills, lines, keys, n, -1, BuildModeRules.LineYours, "reallife_bld_mode_key_yours_edge");
+                    return n;
+                case BuildView.Traffic:
+                    n = Key(fills, lines, keys, n, BuildModeRules.TrafficRamp, BuildModeRules.LinePlain, "reallife_bld_mode_key_traffic_low");
+                    n = Key(fills, lines, keys, n, BuildModeRules.TrafficRamp + BuildModeRules.RampSteps - 1, BuildModeRules.LinePlain, "reallife_bld_mode_key_traffic_high");
                     n = Key(fills, lines, keys, n, -1, BuildModeRules.LineYours, "reallife_bld_mode_key_yours_edge");
                     return n;
                 case BuildView.Occupancy:

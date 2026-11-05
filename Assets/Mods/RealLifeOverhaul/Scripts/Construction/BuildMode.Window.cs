@@ -75,7 +75,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return;
             }
-            _bar.Hud(BuildModeGame.Hud(_bar.Root));   // under the game's top bar and its needs, clear of the objectives, wherever they are drawn now
+            _bar.ReadHud();   // under the game's top bar and its needs, clear of the objectives, wherever they are drawn now
             _holdings = BuildModeHintRules.Holdings(_facts, _facts.Length);
             _landCells = 0;
             for (int c = 0; c < _facts.Length; c++)
@@ -171,7 +171,7 @@ namespace RealLifeOverhaul.Construction
 
         private void WriteSheet()
         {
-            BuildModeSheet s = _bar.Sheet;
+            IBuildSheet s = _bar.Sheet;
             if (_plot >= 0 && _plots != null && _plot < _plots.Count)
             {
                 WritePlot(s);   // a building of the city's picked: its own tool panel, whatever the tool
@@ -207,7 +207,7 @@ namespace RealLifeOverhaul.Construction
         // The view's legend over the views (the owner, 26 Oct 2026: not in the tool panel): its first entries, the rest in its tooltip.
         private void WriteLegend()
         {
-            BuildModeLegend legend = _bar.Legend;
+            IBuildLegend legend = _bar.Legend;
             if (legend == null)
             {
                 return;
@@ -231,7 +231,7 @@ namespace RealLifeOverhaul.Construction
         }
 
         // What the last drag left out, said under the heading (CellRules.Took*).
-        private void TookLine(BuildModeSheet s)
+        private void TookLine(IBuildSheet s)
         {
             string key = _picked.Count > 0 ? BuildModeHintRules.TookKey(_state.Tool, _took) : null;
             if (key != null)
@@ -240,7 +240,7 @@ namespace RealLifeOverhaul.Construction
             }
         }
 
-        private void WriteLand(BuildModeSheet s)
+        private void WriteLand(IBuildSheet s)
         {
             s.Begin(T("reallife_bld_mode_tool_land"), Count());
             if (_picked.Count == 0)
@@ -268,6 +268,7 @@ namespace RealLifeOverhaul.Construction
             int zones = mine != null ? _d.ZonesNow(mine) : LandRules.ZonesOf(_site.Count >= 3 ? 3 : _site.Count == 2 ? 1 : 0);   // a site's class by its spaces, as Joined gives it
             long tax = price > 0L ? LandRules.LandTax(price, ConstructionGame.DaysPerYear, ConstructionGame.DaysPerYear, false, ConstructionDirector.Code) : 0L;   // a year's, as the Land tab says it
             s.Line(Where(first, corner), BuildModeBar.Soft);
+            SinceLine(s, mine);
             s.Fact(T("reallife_bld_sheet_price"), price > 0L ? ConstructionText.Money(price) : "-", BuildModeBar.Text);
             s.Fact(T("reallife_bld_sheet_tax"), ConstructionText.Money(tax), BuildModeBar.Text);
             s.Fact(T("reallife_bld_sheet_zoned"), ConstructionDirector.UsesWords(zones), ZonedColour(zones));
@@ -290,8 +291,17 @@ namespace RealLifeOverhaul.Construction
                 RowClear, T("reallife_bld_sheet_clear"), true);
         }
 
+        // The day the player bought a site, as the lot panel says it ("yours since Day 188"): the purchase day is on the lot's own record.
+        private static void SinceLine(IBuildSheet s, LotFile lot)
+        {
+            if (lot != null && lot.Bought > 0)
+            {
+                s.Line(ConstructionText.Fill("reallife_bld_sheet_since", "day", ConstructionText.Day(lot.Bought)), BuildModeBar.Soft);
+            }
+        }
+
         // What is known of squares that make no site: their street, the council's zoning there and the height limit.
-        private void KnownFacts(BuildModeSheet s, int column)
+        private void KnownFacts(IBuildSheet s, int column)
         {
             if (!_d.LotOfColumn(column, out LotView lot))
             {
@@ -330,7 +340,7 @@ namespace RealLifeOverhaul.Construction
             return BuildModeBar.Text;
         }
 
-        private void WriteZone(BuildModeSheet s)
+        private void WriteZone(IBuildSheet s)
         {
             s.Begin(T("reallife_bld_mode_tool_zone"), ConstructionText.Fill("reallife_bld_sheet_zone_count", "cells", ConstructionText.N(_landCells)));
             LotFile site = _targetSite != null ? _d.State.Lot(_targetSite) : null;
@@ -356,6 +366,7 @@ namespace RealLifeOverhaul.Construction
             else if (site != null)
             {
                 s.Line(ConstructionText.Fill("reallife_bld_sheet_zone_site", "uses", ConstructionDirector.UsesWords(_d.ZonesNow(site))), BuildModeBar.Soft);
+                SinceLine(s, site);
             }
             else
             {
@@ -408,7 +419,7 @@ namespace RealLifeOverhaul.Construction
             return T("reallife_bld_sheet_zone_ask", "fee", ConstructionText.Money(ConstructionDirector.ZoneFee));
         }
 
-        private void WritePlace(BuildModeSheet s)
+        private void WritePlace(IBuildSheet s)
         {
             if (_state.Step == BuildStep.Ghost || _state.Step == BuildStep.Confirming)
             {
@@ -420,6 +431,10 @@ namespace RealLifeOverhaul.Construction
             if (_picked.Count == 0)
             {
                 s.Line(T(_parkMode ? "reallife_park_sheet_pick" : "reallife_bld_sheet_place_none"), BuildModeBar.Soft);
+                if (!_parkMode && !_state.ViewOnly)
+                {
+                    WriteFits(s);
+                }
                 if (parks)
                 {
                     s.Buttons(_parkMode ? 0 : RowCarPark, _parkMode ? null : T("reallife_park_button"), !_parkMode, _parkMode ? RowCarParkBack : 0,
@@ -455,6 +470,8 @@ namespace RealLifeOverhaul.Construction
                 WriteNoDesign(s, parks);   // BuildMode.Join: the join that would give designs
                 return;
             }
+            _d.RowsHeld(_picked[0].Column, out LotFile placed);
+            SinceLine(s, placed);
             s.Line(ConstructionText.Fill("reallife_bld_sheet_place_fit", "count", ConstructionText.N(_designs.Count), "cells", ConstructionText.N(PickedCells), "use",
                 T(BuildCatalogue.UseKeys[(int)_use])), BuildModeBar.Soft);
             if (_growPanel)
@@ -467,7 +484,7 @@ namespace RealLifeOverhaul.Construction
             s.Buttons(parks ? RowCarPark : 0, parks ? T("reallife_park_button") : null, parks, RowClear, T("reallife_bld_sheet_clear"), true);   // a Parking lot beside Clear
         }
 
-        private void WriteGhost(BuildModeSheet s)
+        private void WriteGhost(IBuildSheet s)
         {
             if (_design < 0 || _design >= _designs.Count)
             {
@@ -506,7 +523,7 @@ namespace RealLifeOverhaul.Construction
             return size + ", " + (string.IsNullOrEmpty(d.Type) ? string.Empty : d.Type.GetLocalization());
         }
 
-        private void WriteBuilding(BuildModeSheet s, int row)
+        private void WriteBuilding(IBuildSheet s, int row)
         {
             bool demolish = row == RowDemolish;
             if (_picked.Count == 0 || !_hasTarget)
@@ -537,7 +554,7 @@ namespace RealLifeOverhaul.Construction
             s.Buttons(row, main, block == null && !_state.ViewOnly, RowClear, T("reallife_bld_sheet_clear"), true);
         }
 
-        private void WriteJoin(BuildModeSheet s)
+        private void WriteJoin(IBuildSheet s)
         {
             s.Begin(T("reallife_bld_mode_tool_join"), Count());
             if (_picked.Count == 0)
@@ -593,12 +610,25 @@ namespace RealLifeOverhaul.Construction
         {
             if (_catalogue == null || !_catalogue.Alive)
             {
-                _catalogue = BuildModePanel.Make(BuildModeGame.WindowCanvas(), _kit, FilterPicked, CardPicked, CatalogueBack, CataloguePlace);
+                _catalogue = (object)_bar is IBuildFace face ? face : BuildModePanel.Make(BuildModeGame.WindowCanvas(), _kit, FilterPicked, CardPicked, CatalogueBack, CataloguePlace);
                 if (_catalogue == null)
                 {
                     return;
                 }
             }
+            ReadUseCounts();
+            ReadDesignFacts();
+            int n = Math.Min(_designs.Count, BuildModeCatalogue.Most);
+            _filter = BuildModeCatalogue.First(_dCorner, _dFits, n);
+            _card = _design >= 0 && _design < n ? _design : -1;
+            BuildModeGame.HideHover();
+            _catalogue.Show(true, _bar != null ? _bar.ToolbarTop() : float.NaN);   // drawn to fit the screen and the game's UI scale, clear of the toolbar
+            WriteCatalogue(true);
+        }
+
+        // Each design's warnings, estimate and days for the use in hand, and the cards' order.
+        private void ReadDesignFacts()
+        {
             int n = Math.Min(_designs.Count, BuildModeCatalogue.Most);
             for (int i = 0; i < n; i++)
             {
@@ -608,12 +638,37 @@ namespace RealLifeOverhaul.Construction
                 _dDays[i] = _d.PlaceDays(_designs[i], _use);
             }
             BuildModeCatalogue.Order(_dCost, _dFits, n, _dOrder);
-            _filter = BuildModeCatalogue.First(_dCorner, _dFits, n);
-            _card = _design >= 0 && _design < n ? _design : -1;
-            BuildModeGame.HideHover();
-            _catalogue.Show(true, _bar != null ? _bar.ToolbarTop() : float.NaN);   // drawn to fit the screen and the game's UI scale, clear of the toolbar
-            WriteCatalogue(true);
         }
+
+        // How many designs fit for each use (the kit's tabs) and what each use's demand is in the district. The use in hand is the list already read; the others are read as the
+        // footprint's designs, quietly.
+        private void ReadUseCounts()
+        {
+            if (!((object)_bar is IBuildFace))
+            {
+                return;
+            }
+            for (int u = 0; u < (int)BuildUse.Count; u++)
+            {
+                if (u == (int)_use)
+                {
+                    _useCount[u] = _designs.Count;
+                    continue;
+                }
+                _d.FootprintDesigns(_site.FirstColumn, _site.Count, _site.MinRows, (BuildUse)u, _otherDesigns, true);
+                _useCount[u] = Math.Min(_otherDesigns.Count, BuildModeCatalogue.Most);
+            }
+            _otherDesigns.Clear();
+            int district = _d.DistrictOfColumn(_site.FirstColumn);
+            for (int u = 0; u < (int)BuildUse.Count; u++)
+            {
+                _demandNow[u] = _d.DemandFor((BuildUse)u, district);
+            }
+        }
+
+        private readonly int[] _useCount = new int[(int)BuildUse.Count];
+        private readonly int[] _demandNow = new int[(int)BuildUse.Count];
+        private readonly List<DesignChoice> _otherDesigns = new List<DesignChoice>(BuildModeCatalogue.Most);
 
         private void WriteCatalogue(bool top)
         {
@@ -629,10 +684,13 @@ namespace RealLifeOverhaul.Construction
             _d.LotOfColumn(_site.FirstColumn, out LotView first);
             bool corner = CellRules.Corner(_d.Cells, _site.FirstColumn, _site.Count, out _, out _);
             string street = StreetOf(first);
+            _catalogue.Uses(_useCount, (int)_use);
             _catalogue.Begin(ConstructionText.Fill(corner ? "reallife_bld_cat_context_corner" : "reallife_bld_cat_context", "cells", ConstructionText.N(PickedCells), "street", street, "use",
                 T(BuildCatalogue.UseKeys[(int)_use]), "storeys", ConstructionText.N(_d.UptownStoreys())), _filterNames, _filter);
             string use = T(BuildCatalogue.UseKeys[(int)_use]);
-            Sprite picture = _kit.Icon(BuildModeCatalogue.Picture((int)_use), "Icon-Building");
+            Sprite picture = _kit != null ? _kit.Icon(BuildModeCatalogue.Picture((int)_use), "Icon-Building") : null;
+            bool wanted = BuildModeCatalogue.Wanted(_demandNow, _demandNow.Length) == (int)_use;
+            int rent = _d.RentPerSqm(_use);
             for (int k = 0; k < n; k++)
             {
                 int i = _dOrder[k];
@@ -643,13 +701,56 @@ namespace RealLifeOverhaul.Construction
                 DesignChoice d = _designs[i];
                 string why = BuildModeCatalogue.Why(_dWarn[i]);
                 string kind = why != null ? T(why) : ConstructionText.Fill(_dCorner[i] ? "reallife_bld_cat_kind_corner" : "reallife_bld_cat_kind_city", "use", use);
-                string size = ConstructionText.Fill("reallife_bld_cat_size", "storeys", ConstructionText.N(PlansRules.Storeys(d.Height)), "area", ConstructionText.N(d.TotalSqm));
-                _catalogue.Add(i, picture, SizeName(d), kind, size, ConstructionText.Money(_dCost[i]), why == null && !_state.ViewOnly, i == _card);
+                int storeys = PlansRules.Storeys(d.Height);
+                string size = ConstructionText.Fill("reallife_bld_cat_size", "storeys", ConstructionText.N(storeys), "area", ConstructionText.N(d.TotalSqm));
+                bool zoned = (_dWarn[i] & BuildModeRules.WarnZone) == 0;
+                var card = new CatalogueCard
+                {
+                    Index = i, Picture = picture, Name = SizeName(d), Kind = kind, Size = size, Cost = ConstructionText.Money(_dCost[i]), Usable = why == null && !_state.ViewOnly,
+                    Chosen = i == _card, Use = (int)_use, Wanted = wanted, Favourite = BuildFavourites.Has(BuildModeCatalogue.FavouriteId((int)_use, d.Look, d.Name)), Floors = storeys,
+                    Width = Mathf.RoundToInt(d.Width), Depth = Mathf.RoundToInt(d.Depth), Weeks = BuildModeCatalogue.Weeks(_dDays[i]),
+                    RentMonth = rent > 0 ? (long)rent * Math.Max(0, d.TotalSqm) / 100L : 0L, Demand = _demandNow[(int)_use],
+                    Planning = T(zoned ? "reallife_bld_cat_plan_zoned" : "reallife_bld_cat_plan_hall"), PlanningOk = zoned, WhyNot = why != null ? T(why) : null
+                };
+                _catalogue.Add(ref card);
             }
             string summary = _card >= 0 && _card < n
                 ? ConstructionText.Fill("reallife_bld_cat_summary", "name", SizeName(_designs[_card]), "cost", ConstructionText.Money(_dCost[_card]), "days", ConstructionText.N(_dDays[_card]))
                 : T(BuildModeCatalogue.Count(_filter, _dCorner, _dFits, n) == 0 ? "reallife_bld_cat_none" : "reallife_bld_cat_pick");
             _catalogue.End(summary, _card >= 0 && _card < n && _dFits[_card] && !_state.ViewOnly, top);
+        }
+
+        // A use's tab pressed (the kit's): the designs of that use read for the same squares, none picked, the window written again.
+        private void UsePicked(int use)
+        {
+            if (use < 0 || use >= (int)BuildUse.Count || use == (int)_use || _siteWhy != null)
+            {
+                return;
+            }
+            _use = (BuildUse)use;
+            _designsRead = _d.FootprintDesigns(_site.FirstColumn, _site.Count, _site.MinRows, _use, _designs);
+            if (_designs.Count > BuildModeCatalogue.Most)
+            {
+                _designs.RemoveRange(BuildModeCatalogue.Most, _designs.Count - BuildModeCatalogue.Most);
+            }
+            _design = -1;
+            _card = -1;
+            ReadUseCounts();
+            ReadDesignFacts();
+            _filter = BuildModeCatalogue.First(_dCorner, _dFits, Math.Min(_designs.Count, BuildModeCatalogue.Most));
+            WriteCatalogue(true);
+        }
+
+        // A star pressed on a design (the kit's): on or off, kept on this computer, the cards written again.
+        private void FavouritePicked(int index)
+        {
+            if (!BuildModeCatalogue.Valid(index, _designs.Count))
+            {
+                return;
+            }
+            DesignChoice d = _designs[index];
+            BuildFavourites.Toggle(BuildModeCatalogue.FavouriteId((int)_use, d.Look, d.Name));
+            WriteCatalogue(false);
         }
 
         private void FilterPicked(int filter)
@@ -713,6 +814,7 @@ namespace RealLifeOverhaul.Construction
             _zoneBrush = -1;
             _catalogue?.Show(false);
             ClearPick();
+            _fitsRead = false;
             ReadFacts();
             Write(true);
             Colour();
@@ -806,9 +908,9 @@ namespace RealLifeOverhaul.Construction
 
         private void Act(int id)
         {
-            if (ActPlot(id))
+            if (ActPlot(id) || ActFit(id))
             {
-                return;   // a button of a plot's panel
+                return;   // a button of a plot's panel, a site of "You could build here"
             }
             switch (id)
             {
@@ -984,6 +1086,7 @@ namespace RealLifeOverhaul.Construction
             {
                 return;
             }
+            _fitsRead = false;
             ReadFacts();
             if (_picked.Count > 0)
             {

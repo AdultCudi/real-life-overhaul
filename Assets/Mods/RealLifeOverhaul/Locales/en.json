@@ -34391,5 +34391,17 @@
   "reallife_infra_note_colo_offer": "{rival} has bid for {client}'s {racks} racks at {name}. Their term ends soon.",
   "reallife_infra_note_colo_renewed": "{client} renewed its {racks} racks at {name}.",
   "reallife_infra_note_colo_lost": "{client} moved its {racks} racks from {name} to {rival}.",
-  "reallife_infra_note_colo_left": "{client} gave up its {racks} racks at {name}."
+  "reallife_infra_note_colo_left": "{client} gave up its {racks} racks at {name}.",
+  "reallife_bld_mode_view_rents": "Rents",
+  "reallife_bld_mode_view_traffic": "Traffic",
+  "reallife_bld_tip_view_rents": "What a square metre lets for, by each square's use. Greener is dearer.",
+  "reallife_bld_tip_view_traffic": "The traffic the game gives each lot, from quiet to busy.",
+  "reallife_bld_mode_key_rent_low": "Least a square metre",
+  "reallife_bld_mode_key_rent_high": "Most a square metre",
+  "reallife_bld_mode_key_traffic_low": "Quiet",
+  "reallife_bld_mode_key_traffic_high": "Busy",
+  "reallife_bld_sheet_since": "Yours since {day}",
+  "reallife_bld_cat_plan_zoned": "Allowed here",
+  "reallife_bld_cat_plan_hall": "Needs City Hall",
+  "reallife_bld_fit_title": "You could build here"
 }

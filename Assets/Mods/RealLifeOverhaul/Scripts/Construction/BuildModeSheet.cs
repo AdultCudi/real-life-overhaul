@@ -15,7 +15,7 @@ namespace RealLifeOverhaul.Construction
     /// plain one. The view's legend is not here (BuildModeLegend, over the views). Parts are kept and reused; a part not written is
     /// hidden. Written only when the state changes; nothing a frame.
     /// </summary>
-    internal sealed class BuildModeSheet
+    internal sealed class BuildModeSheet : IBuildSheet
     {
         private const float PanelWide = 880f;           // the panel, in the canvas's units (3840 by 2160)
         private const float TitleSize = 48f;
@@ -248,6 +248,11 @@ namespace RealLifeOverhaul.Construction
         /// A row of up to four plain buttons side by side sharing its width, the one chosen with the blue edge (the Zone tool's ways of
         /// picking squares, Let it grow's tiers): button i answers <paramref name="firstId"/> + i. Names past the first null are not shown.
         /// </summary>
+        public void Site(int id, string name, string fits, bool mine)
+        {
+            Line(name + ": " + fits, BuildModeBar.Soft);
+        }
+
         public void Choices(int firstId, string[] names, int chosen, bool usable)
         {
             ChoiceRow c;
