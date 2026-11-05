@@ -130,10 +130,17 @@ namespace RealLifeOverhaul
                 Vector2 size = box.sizeDelta;
                 size.y = -FirstLine + LineStep * (Lines - 1) + Foot;
                 box.sizeDelta = size;
-                panel.AddComponent<Canvas>();   // batched by itself: a line written here does not rebuild the HUD's canvas
+                // The game's panel can already carry a canvas or a group (it adds one while its job shows), and the copy keeps what the
+                // original had at that moment, so a component is taken when it is there and added only when it is not.
+                if (panel.GetComponent<Canvas>() == null)
+                {
+                    panel.AddComponent<Canvas>();   // batched by itself: a line written here does not rebuild the HUD's canvas
+                }
                 var card = new ShiftCard(panel, title, lines, game.panel);
-                card._room = panel.AddComponent<NoticeRoomMark>();   // the game's notifications start under it while it shows (GameUi.NoticeRoom)
-                card._seen = panel.AddComponent<CanvasGroup>();      // the mod's own copy: unseen while the HUD draws it
+                card._room = panel.GetComponent<NoticeRoomMark>() ?? panel.AddComponent<NoticeRoomMark>();   // the game's notifications start under it while it shows (GameUi.NoticeRoom)
+                card._seen = panel.GetComponent<CanvasGroup>() ?? panel.AddComponent<CanvasGroup>();   // the mod's own copy: unseen while the HUD draws it
+                card._seen.interactable = false;
+                card._seen.blocksRaycasts = false;
                 card._seen.alpha = _unseen ? 0f : 1f;
                 Made.RemoveAll(c => c == null || !c.Alive);
                 Made.Add(card);

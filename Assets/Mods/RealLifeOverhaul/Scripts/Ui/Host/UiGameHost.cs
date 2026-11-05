@@ -598,8 +598,16 @@ namespace RealLifeOverhaul.Ui
             if (_canvas != null)
             {
                 _canvas.overrideSorting = true;
-                _canvas.sortingOrder = _order;
+                _canvas.sortingOrder = OrderNow();
             }
+        }
+
+        // A window the game opens from inside an app of the full menu (a store's goods, a rival's staff from BizMan) has a canvas
+        // under the one the kit draws the app and its frame on, so it drew at its own order and the player saw nothing: while
+        // the menu is up it stands over the app and its frame (All apps one above the app), as the game's window stood over its app.
+        private int OrderNow()
+        {
+            return UiHostRules.OverMenu(_order, AppOrder(), _screen.Kind == UiGameKind.Box && global::UI.Smartphone.FullMenu.IsOpen);
         }
 
         // Often the screen is only not built yet, so it is looked at again a little later, a few times a city.
