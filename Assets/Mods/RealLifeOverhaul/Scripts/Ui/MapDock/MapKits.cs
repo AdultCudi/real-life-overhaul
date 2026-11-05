@@ -89,7 +89,10 @@ namespace RealLifeOverhaul.Ui
         /// <summary>True while a docked panel of the map (filters, subway list, a choice of a place) stands on the screen: the HUD's pieces keep clear of it.</summary>
         internal static bool DockShowing => CityMap.IsOpen && (Filters.Showing || Subway.Showing || _pickerShown != null);
 
-        /// <summary>How far the player has dragged the filters' dock from where its screen puts it, px of the layout: none while another dock (the stations, a choice of a place) is up, which stay put.</summary>
+        /// <summary>
+        /// How far the player has dragged the filters' dock from where its screen puts it, px of the layout: none while another dock (the stations, a choice of a place) is up,
+        /// which stay put.
+        /// </summary>
         internal static void DockMove(out float dx, out float dy)
         {
             dx = dy = 0f;

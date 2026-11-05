@@ -571,7 +571,8 @@ namespace RealLifeOverhaul.Ui
         public static float PickedHeight(MapPanelModel m)
         {
             bool chips = m.Place.Chips != null && m.Place.Chips.Length > 0;
-            return UiTokens.S3 + UiTokens.PairRow + UiTokens.S1 + PickedTile + (chips ? UiTokens.S2 + UiMapPlace.ChipsHeight(m.Place.Chips, Width - UiTokens.S4 * 2f) : 0f) + UiTokens.S3 + UiTokens.Control + UiTokens.S3;
+            float chipRows = chips ? UiTokens.S2 + UiMapPlace.ChipsHeight(m.Place.Chips, Width - UiTokens.S4 * 2f) : 0f;
+            return UiTokens.S3 + UiTokens.PairRow + UiTokens.S1 + PickedTile + chipRows + UiTokens.S3 + UiTokens.Control + UiTokens.S3;
         }
 
         private static void Picked(UiScene s, UiAt at, MapPanelModel m, float px, float y, float ix, float iw, IUiKeys keys)
