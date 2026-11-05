@@ -186,7 +186,7 @@ namespace RealLifeOverhaul.Ui
                     Columns = new[]
                     {
                         Col("reallife_ui_tech_col_firm", UiCellKind.Tile), Col("reallife_tech_col_products", UiCellKind.Text, 232f), Col("reallife_ui_tech_col_takings", UiCellKind.Money, 112f),
-                        Col("reallife_ui_tech_col_change", UiCellKind.Trend, 80f), Col("reallife_ui_tech_col_staff", UiCellKind.Figure, 72f), Col("reallife_ui_tech_col_status", UiCellKind.Chip, 152f)
+                        Col("reallife_ui_tech_col_change", UiCellKind.Trend, 80f), Col("reallife_ui_tech_col_staff", UiCellKind.Figure, 72f), Col("reallife_ui_tech_col_status", UiCellKind.Chip, 176f)
                     },
                     Rows = rows.ToArray(),
                     RowCount = rows.Count,

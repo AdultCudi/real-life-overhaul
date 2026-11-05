@@ -82,20 +82,20 @@ namespace RealLifeOverhaul.Ui
             float room = bottom - y;
             float natural = Natural(m.Table);
             float sideH = side ? UiFactCard.Height(m.Side, sw, keys, true) : 0f;
-            bool chart = m.Chart != null && room - Math.Max(natural, sideH) - UiTokens.S4 >= LeastChart;
-            float th = chart ? Math.Max(UiTokens.S16, Math.Max(natural, sideH)) : room;
+            bool chart = m.Chart != null && room - natural - UiTokens.S4 >= LeastChart;
+            float th = chart ? Math.Max(UiTokens.S16, natural) : room;
             float[] widths = Fit(m.Table, tw);
             m.TableList = UiDataTable.Lay(s, at.InRegion(RegionTable), m.Table, x, y, tw, th, keys, TableBase);
             Unfit(m.Table, widths);
             m.TableClip = ClipOf(s, m.TableList);
             if (side)
             {
-                UiFactCard.Lay(s, at.InRegion(RegionRight), m.Side, x + tw + UiTokens.S4, y, sw, th, keys, true, !chart);
+                UiFactCard.Lay(s, at.InRegion(RegionRight), m.Side, x + tw + UiTokens.S4, y, sw, chart ? room : th, keys, true, !chart);
             }
             if (chart)
             {
                 float cy = UiDraw.Snap(y + th + UiTokens.S4);
-                UiChart.Lay(s, at.InRegion(RegionChart), m.Chart, x, cy, w, UiDraw.SnapDown(bottom - cy), UiChart.First);
+                UiChart.Lay(s, at.InRegion(RegionChart), m.Chart, x, cy, tw, UiDraw.SnapDown(bottom - cy), UiChart.First);
             }
         }
 

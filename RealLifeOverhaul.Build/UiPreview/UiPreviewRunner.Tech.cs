@@ -25,7 +25,7 @@ public static partial class UiPreviewRunner
         {
             UiWords words = ModWords(lang);
             string suffix = lang == "pt" ? "pt" : "zh";
-            foreach (string st in new[] { "firms", "studio", "datacentre" })
+            foreach (string st in new[] { "firms", "studio", "game", "datacentre" })
             {
                 string name = st;
                 screens.Add(new Screen

@@ -151,7 +151,7 @@ internal static partial class UiSamples
             {
                 TechCol(t, "reallife_ui_tech_col_firm", "Firm", UiCellKind.Tile), TechCol(t, "reallife_tech_col_products", "Products", UiCellKind.Text, 232f),
                 TechCol(t, "reallife_ui_tech_col_takings", "Takings, 30 days", UiCellKind.Money, 112f), TechCol(t, "reallife_ui_tech_col_change", "Change", UiCellKind.Trend, 80f),
-                TechCol(t, "reallife_ui_tech_col_staff", "Staff", UiCellKind.Figure, 72f), TechCol(t, "reallife_ui_tech_col_status", "Status", UiCellKind.Chip, 152f)
+                TechCol(t, "reallife_ui_tech_col_staff", "Staff", UiCellKind.Figure, 72f), TechCol(t, "reallife_ui_tech_col_status", "Status", UiCellKind.Chip, 176f)
             },
             Rows = rows.ToArray(), RowCount = rows.Count, Selected = -1,
             TotalsLabel = empty ? null : TW(t, "all_firms", "All firms"), Totals = empty ? null : new[] { "", "", "$366,100", "", "32", "" },
