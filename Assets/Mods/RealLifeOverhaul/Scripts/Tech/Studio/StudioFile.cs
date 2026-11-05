@@ -102,6 +102,9 @@ namespace RealLifeOverhaul.Tech
         public bool BonusDone;                // the bonus day has passed (paid, or none)
         public long LeadsPaid;                // cents at the start's prices paid to the leads
         public int LastLeadsPay;              // the day the leads were last paid
+        public readonly System.Collections.Generic.List<GameReview> Reviews = new System.Collections.Generic.List<GameReview>(12);   // what the outlets wrote on its release
+        public readonly long[] Sales = new long[StudioCatalogue.SalesDays];   // copies by day for the last 90 days, a ring (StudioRules.RecordSales)
+        public int SalesLast = -1;            // the day the ring last holds; -1 none
 
         public GameModel M => (GameModel)Model;
         public bool Live => Phase == (int)GamePhase.Live;

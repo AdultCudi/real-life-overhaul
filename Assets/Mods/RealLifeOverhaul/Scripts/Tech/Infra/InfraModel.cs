@@ -16,6 +16,9 @@ namespace RealLifeOverhaul.Tech
         public int Outages, DownUntil;
         public long Takings30;       // what it took over the last thirty days, cents (rolled)
         public readonly long[] Days = new long[FirmsCatalogue.MonthDays];
+        public long Prev30;          // the month before the ring's (TechStatusRules.Age)
+        public int PrevDays;
+        public readonly int[] Outage90 = new int[InfraCatalogue.UptimeWords];   // a bit a day for the last 90 days: set when the centre was down that day (InfraRules.MarkDay)
         public int Dense, DenseGpu;  // of the racks, those of the new kind (bought at scale, Core/EndScale); the rest are the old kind
         public readonly int[] Crew = new int[InfraCatalogue.CrewKinds];   // its crews at scale: operators, engineers, security
         // read each day, never saved

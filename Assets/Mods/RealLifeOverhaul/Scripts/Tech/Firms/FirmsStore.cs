@@ -33,7 +33,7 @@ namespace RealLifeOverhaul.Tech
                     days.Append(m.Days[i].ToString(System.Globalization.CultureInfo.InvariantCulture));
                 }
                 w.Record().Place(m.Place).Add(m.Kind).Add(m.Founded).Add(m.Focus).Add(m.Debt).Add(m.Reputation).Add(m.RegisteredUntil).Add(m.Breaches).Add(m.Outages).Add(m.RnD).Add(m.ReliefDay)
-                    .Add(m.Revenue30).Add(days.ToString()).Add(m.OwnDay).Add(m.OwnMinutes).Add(m.OwnPrevDay).Add(m.OwnPrevMinutes);
+                    .Add(m.Revenue30).Add(days.ToString()).Add(m.OwnDay).Add(m.OwnMinutes).Add(m.OwnPrevDay).Add(m.OwnPrevMinutes).Add(m.Prev30).Add(m.PrevDays);
             }
             w.Part('p');
             foreach (Product p in f.Products)
@@ -79,6 +79,9 @@ namespace RealLifeOverhaul.Tech
                 m.OwnMinutes = Math.Max(0, x.Int());
                 m.OwnPrevDay = x.Int(-1);
                 m.OwnPrevMinutes = Math.Max(0, x.Int());
+                // the month before the ring, appended last: a save from before it has none, and the table says the firm is new until a month has gathered
+                m.Prev30 = Math.Max(0, x.Long());
+                m.PrevDays = Math.Max(0, Math.Min(TechStatusRules.ChangeFromDays, x.Int()));
                 if (f.Firms.Count < 32)
                 {
                     f.Firms.Add(m);

@@ -46,6 +46,16 @@ namespace RealLifeOverhaul.Tech
     /// </summary>
     public static class StudioCatalogue
     {
+        /// <summary>The games outlets that review every game on its release: twelve, each its own name. Invented, none a real paper or site.</summary>
+        public static readonly string[] Outlets =
+        {
+            "Pixel Post", "Joystick Weekly", "The Cartridge", "Loadscreen", "Hardmode", "Patchnotes", "Side Quest Daily", "Co-op Corner", "The Save Point", "Boss Rush", "Frame Rate",
+            "Replay Magazine"
+        };
+
+        /// <summary>The days of a game's copies a day the page draws, and the ring that holds them.</summary>
+        public const int SalesDays = 90;
+
         // The games market's years are the save's (CalendarRules.MoneyYearDays's note on the one clock): installed bases grow, the critics'
         // bar rises and the year's award is given by them, as the studio's people's careers count them (TalentCatalogue.Scaled); a game's
         // own life (its window, its tail, the days it is looked after) is money, by the game day.

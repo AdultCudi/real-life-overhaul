@@ -17,6 +17,8 @@ namespace RealLifeOverhaul.Tech
         public int ReliefDay;            // the day the last relief was given
         public long Revenue30;           // takings of the last 30 days, cents (rolled each day)
         public readonly long[] Days = new long[FirmsCatalogue.MonthDays];   // takings by day, the ring Revenue30 is the sum of
+        public long Prev30;              // the month before the ring's, cents: aged a day at a time (TechStatusRules.Age), so the table can say how takings moved
+        public int PrevDays;             // the days Prev30 has gathered, up to a month
         // the owner's own minutes at a desk here (OwnDeskRules.Credit): the day being counted and the one before, as a professional's hours are kept
         public int OwnDay = -1, OwnMinutes;
         public int OwnPrevDay = -1, OwnPrevMinutes;

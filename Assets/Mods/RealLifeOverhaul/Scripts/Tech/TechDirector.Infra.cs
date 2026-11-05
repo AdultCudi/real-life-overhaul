@@ -402,6 +402,7 @@ namespace RealLifeOverhaul.Tech
                     _due[i * 3 + 2] = InfraRules.Crews(d) * level / 1000;
                 }
                 InfraGame.WriteDown(r.WriteDown * level / 1000);
+                InfraRules.MarkDay(d, day, r.Outage || !d.Power || !d.Net);   // the 90 day ring the page's uptime reads
                 InfraRules.Roll(d, day, r.Takings);
             }
             _opsDue = 0;
@@ -620,6 +621,13 @@ namespace RealLifeOverhaul.Tech
             BuildingRegistration reg = TalentGame.Find(place);
             if (d == null || reg == null || racks <= 0 || InfraRules.Room(d) < (gpu ? racks * 2 : racks))
             {
+                return false;
+            }
+            // growth stops where a supply is full: the feed, the cooling plant or the connection, as the page's meters say
+            if (InfraLimits.Fit(d, gpu, TechBridges.PlanMbpsAt(reg), out int binding) < racks)
+            {
+                TellTech(NotificationType.Warning, binding == InfraLimits.Power ? "reallife_infra_note_limit_power" : binding == InfraLimits.Cooling ? "reallife_infra_note_limit_cooling"
+                    : "reallife_infra_note_limit_bandwidth", Data("name", d.Name), TabInfra, TechApp.CentreRow + place);
                 return false;
             }
             int share = BuyScale;

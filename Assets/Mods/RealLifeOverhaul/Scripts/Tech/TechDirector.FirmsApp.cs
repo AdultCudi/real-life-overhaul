@@ -22,15 +22,19 @@ namespace RealLifeOverhaul.Tech
                 return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var view = new TechApp(this);
-            _techApp = PhoneApp.Install(new PhoneAppDef
+            var def = new PhoneAppDef
             {
                 Id = TechAppId,
                 TitleKey = "reallife_tech_app",
                 Icon = like => AppIconPainter.Paint(like, Glyph(TechGlyphs), new Color32(120, 120, 230, 255), new Color32(60, 50, 160, 255), 0.42f, "AppIcon-TechSector"),
                 Build = view.Build,
                 Opened = view.Opened,
-                Closed = view.Closed
-            }, out bool tryAgain);
+                Closed = view.Closed,
+                Kit = () => new RealLifeOverhaul.Ui.TechScreen(RealLifeOverhaul.Ui.TechLive.Instance),
+                KitScreen = RealLifeOverhaul.Ui.TechScreen.ScreenId,
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Monitor
+            };
+            _techApp = PhoneApp.Install(def, out bool tryAgain);
             if (_techApp == null)
             {
                 _techGaveUp = !tryAgain;
@@ -42,6 +46,7 @@ namespace RealLifeOverhaul.Tech
                 return;
             }
             _techView = view;
+            RealLifeOverhaul.Ui.UiShell.Face(_techApp, def);   // the kit's face over the app, once its switch is on (Ui/Shell/UiShell.Tick); the old pages stay the way back
             TechBadge();
         }
 
@@ -49,6 +54,7 @@ namespace RealLifeOverhaul.Tech
         {
             if (_techApp != null && _techView != null)
             {
+                RealLifeOverhaul.Ui.TechLive.Want(tab, pick);
                 _techView.Want(tab, pick);
                 _techApp.Open();
             }
@@ -103,8 +109,12 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        /// <summary>Moves whenever the firms, products or contracts change, so the kit's Tech screen writes its page again.</summary>
+        public int Revision { get; private set; }
+
         internal void ChangedTech()
         {
+            Revision++;
             _techView?.Changed();
             TechBadge();
         }

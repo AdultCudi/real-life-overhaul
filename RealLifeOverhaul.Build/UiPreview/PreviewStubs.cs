@@ -110,3 +110,26 @@ namespace RealLifeOverhaul.Economy
         public const int CarTermLeast = 60, CarTermMost = 240, CarTermStep = 30;
     }
 }
+
+// The pointer's own place, read by the kit's press (UiView.Pointer): the preview has no mouse, so the engine's pointer data stands.
+namespace UnityEngine.InputSystem
+{
+    public sealed class MouseButtonStub
+    {
+        public bool isPressed => false;
+    }
+
+    public sealed class MousePositionStub
+    {
+        public Vector2 ReadValue() => default;
+    }
+
+    public sealed class Mouse
+    {
+        public static Mouse current => null;
+
+        public MouseButtonStub leftButton => null;
+
+        public MousePositionStub position => null;
+    }
+}
