@@ -722,13 +722,9 @@ internal static partial class UiSamples
             // What the building's value is made of and what its cover says, under the way to its works: the live page's third card.
             new UiFactCardModel
             {
-                Title = W(t, "reallife_ui_estate_more", "More"), Heading = true,
-                Lines = new[]
+                Lines = new[]   // a card of its own with no title: its first line is the way to the works
                 {
                     EstateLink(runs, W(t, "reallife_ui_estate_works_link", "Works and servicing")),
-                    UiFactLine.Say(Fx(W(t, "reallife_estate_own_made_of", "Its worth comes from the game's value of {base},"), "base", Usd(b.Value * 10 / 12), "market", (w.MarketLevel / 10f).ToString("0.#", InvD) + "%",
-                        "prices", (w.PricesSince / 10f).ToString("0.#", InvD) + "%") + " " + Fx(W(t, "reallife_estate_own_made_of_2", "times {district} for the district and {share} for a condition of {condition}."),
-                        "district", Percent(t, 98), "share", Percent(t, WorthOfBest(b.Cond)), "condition", Percent(t, b.Cond))),
                     UiFactLine.Say(Fx(W(t, "reallife_estate_own_cover_what", "Cover costs {amount} a day."), "amount", Usd(b.Value / 25000), "excess", Percent(t, 10)))
                 }
             }

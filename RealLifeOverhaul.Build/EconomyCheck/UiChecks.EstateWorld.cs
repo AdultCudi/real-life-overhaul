@@ -607,7 +607,7 @@ internal static partial class Program
 
     private static void DeadFloorChecks()
     {
-        string bare = "none";
+        string bare = "none", cutOff = "none";
         int pages = 0;
         foreach (bool dealerApp in new[] { false, true })
         {
@@ -621,6 +621,28 @@ internal static partial class Program
                 }
                 var scene = new UiScene();
                 EstateFace.Lay(scene, m, UiFrame.FullMenu(16f / 9f, "Property"), true, UiDefaultKeys.Keyboard);
+                var said = new HashSet<string>();
+                for (int i = 0; i < scene.ItemCount; i++)
+                {
+                    said.Add(scene.Items[i].Text ?? string.Empty);
+                }
+                foreach (EstateRow[] list in new[] { m.Related, m.Related2, m.ListA, m.ListB })
+                {
+                    for (int i = 0; list != null && i < list.Length && i < Math.Max(1, m.RelatedRows); i++)
+                    {
+                        string title = list[i].Title;
+                        string head = string.IsNullOrEmpty(title) ? title : (char.ToUpperInvariant(title[0]) + title.Substring(1)).Substring(0, Math.Min(title.Length, 12));   // the plural marks are put right when it is drawn
+                        bool laid = false;
+                        foreach (string text in said)
+                        {
+                            laid |= head != null && text.StartsWith(head, StringComparison.Ordinal);
+                        }
+                        if (!string.IsNullOrEmpty(title) && !laid)
+                        {
+                            cutOff = Collect(cutOff, (dealerApp ? "dealer " : "estate ") + state + " drops " + title, new HashSet<string>());
+                        }
+                    }
+                }
                 float floor = 946f, left = dealerApp ? 148f : 380f, right = 1770f, mid = (left + right) / 2f, leftEnd = 0f, rightEnd = 0f;
                 for (int i = 0; i < scene.ItemCount; i++)
                 {
@@ -653,6 +675,7 @@ internal static partial class Program
                 }
             }
         }
+        Check(cutOff == "none", "estate: every row of every list a page holds is laid, none left off the foot of the window (" + cutOff + ")");
         Check(bare == "none" && pages > 18, "estate: no window page leaves more than " + FloorMost + " px bare above its floor in either half (" + pages + " pages; " + bare + ")");
     }
 }

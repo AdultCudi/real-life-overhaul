@@ -216,7 +216,7 @@ namespace RealLifeOverhaul.Ui
                     + EstateText.T("reallife_estate_own_made_of_2", "district", EstateText.Share(EstateRules.DistrictValue(h.Income)), "condition", EstateText.Level(h.Cond),
                         "share", EstateText.Share(EstateRules.ConditionValue(h.Cond)))));
                 lines.Add(UiFactLine.Say(EstateText.T("reallife_estate_own_cover_what", "amount", Money(EstateRules.Premium(h.Base, _c)), "excess", EstateText.Share(EstateCatalogue.CoverExcess))));
-                return new UiFactCardModel { Title = EstateText.T("reallife_ui_estate_more"), Heading = true, Lines = lines.ToArray(), Actions = actions.ToArray() };
+                return new UiFactCardModel { Lines = lines.ToArray(), Actions = actions.ToArray() };   // no title: its first line is the way to the works
             }
         }
     }
