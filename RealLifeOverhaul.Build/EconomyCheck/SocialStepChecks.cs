@@ -121,10 +121,33 @@ internal static partial class Program
                     all &= words.TryGetValue(key, out string many) && many.Contains("{days}") && words.TryGetValue(key + "_one", out string one) && !one.Contains("{days}") && one.Length > 10;
                 }
             }
-            string row = words.TryGetValue("reallife_changes_next", out string r) ? r : string.Empty;
+            string row = SocialRow(words, marks[l]);
             next &= row.Split(new[] { marks[l] }, StringSplitOptions.None).Length - 1 >= 2;
         }
         Check(all, "social steps: each wait is said in en, pt and zh-cn, in the plural with the days and in the singular without");
         Check(next, "social steps: What's new says both fixes in all eleven languages");
+    }
+
+    // The next row before a release; once the version script has numbered it, the newest numbered row holds the lines.
+    private static string SocialRow(Dictionary<string, string> words, string mark)
+    {
+        string next = words.TryGetValue("reallife_changes_next", out string r) ? r : string.Empty;
+        if (next.Contains(mark))
+        {
+            return next;
+        }
+        string newest = string.Empty;
+        int best = -1;
+        foreach (KeyValuePair<string, string> row in words)
+        {
+            string[] parts = row.Key.Split('_');
+            if (parts.Length == 4 && row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal)
+                && int.TryParse(parts[2], out int minor) && int.TryParse(parts[3], out int patch) && minor * 1000 + patch > best)
+            {
+                best = minor * 1000 + patch;
+                newest = row.Value;
+            }
+        }
+        return newest;
     }
 }
