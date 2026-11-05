@@ -22,6 +22,11 @@ internal static partial class Program
 
     static partial void UiCasesConstruction(UiScreenDef def, List<UiScreenCase> cases)
     {
+        if (def.Id == "build_mode")
+        {
+            UiCasesBuildMode(def, cases);   // Build mode's kit face (UiChecks.BuildMode.cs)
+            return;
+        }
         if (def.Id != "construction")
         {
             return;

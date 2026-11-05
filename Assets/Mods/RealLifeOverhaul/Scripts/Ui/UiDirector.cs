@@ -102,6 +102,7 @@ namespace RealLifeOverhaul.Ui
             ShellNotices.Remove(why);
             ActivityKit.Remove(why);
             MapKits.Remove(why);
+            BuildKits.Remove(why);
             HudLive.Remove(why);
         }
 
@@ -222,6 +223,7 @@ namespace RealLifeOverhaul.Ui
             ShellNotices.Install();
             ActivityKit.Install();
             MapKits.Install();
+            BuildKits.Install();
             HudLive.Install();
             if (UiScreenSwitches.On("phone"))
             {

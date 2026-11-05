@@ -25,6 +25,12 @@ namespace RealLifeOverhaul.Ui
         public static void Read(float layoutW, float layoutH, out float x, out float y, out float w, out float h)
         {
             x = y = w = h = 0f;
+            if (layoutW > 0f && layoutH > 0f && BuildFace.Showing)
+            {
+                UiBuildModel build = BuildFace.Current;
+                UiBuildPanels.LeftBox(build, default(UiFrame), out x, out y, out w, out h);   // Build mode's panels stand where the minimap's card does: the objectives keep clear
+                return;
+            }
             if (layoutW > 0f && layoutH > 0f && Dock)
             {
                 UiMapFilters.DockBox(layoutH, out x, out y, out w, out h);

@@ -40,6 +40,9 @@ namespace RealLifeOverhaul.Construction
             return true;
         }
 
+        /// <summary>The face the panels are drawn by now, in a line, for the tests.</summary>
+        public string FaceLine => (object)_bar is IBuildFace face ? "the kit (" + face.Describe() + ")" : _bar != null ? "the old panels" : "no panels";
+
         /// <summary>The list of "You could build here" as read now (read again after an action), for the panel and the tests.</summary>
         public IReadOnlyList<FitSite> FitList
         {
