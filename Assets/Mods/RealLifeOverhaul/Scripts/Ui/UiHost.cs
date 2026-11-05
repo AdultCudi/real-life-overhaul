@@ -36,6 +36,7 @@ namespace RealLifeOverhaul.Ui
         private readonly UiScene _scene = new UiScene();
         private int _beforeFocus = -2, _beforeLaid = -1;   // the focus and layout count as a press began, for its trace
         private string _beforeNode, _confirmNote;
+        private int _beforeCommand = -1, _beforeArg;
         private readonly UiFocusMode _mode = new UiFocusMode(UiLead.Pointer);
         private UiView _view;
         private IUiScreen _screen;
@@ -726,6 +727,8 @@ namespace RealLifeOverhaul.Ui
             using var cost = Measured(UiWork.Press);
             _beforeFocus = _view.Focus;
             _beforeNode = NodeName(node);
+            _beforeCommand = node >= 0 && node < _scene.NodeCount ? _scene.Nodes[node].Command : -1;
+            _beforeArg = node >= 0 && node < _scene.NodeCount ? _scene.Nodes[node].Arg : 0;
             _beforeLaid = _laid;
             if (node < 0 || node >= _scene.NodeCount)
             {
@@ -788,7 +791,21 @@ namespace RealLifeOverhaul.Ui
             if (_state.MoveX != 0 || _state.MoveY != 0) { others.Append(" Move"); }
             UiDirector.Logger?.Info("UI press: " + (_cost != null ? _cost.Name : "screen") + " frame " + Time.frameCount + "; down: ray " + NodeName(r.RayNode) + ", here " + NodeName(r.HereNode)
                 + ", began on " + NodeName(r.DownNode) + "; up: " + pressed + "; Confirm this frame: " + confirm + "; other input this frame:" + (others.Length == 0 ? " none" : others.ToString())
+                + "; drawn after: " + Drawn(_beforeCommand, _beforeArg)
+                + "; screen dirty after: " + (_screen != null && _screen.Dirty ? "yes" : "no")
                 + "; focus " + NodeName(beforeFocus) + " -> " + NodeName(_view.Focus) + "; layouts " + _laid + " (" + (_laid - laidBefore) + " by the press)");
+        }
+
+        // What the layout now on show draws for the target just pressed: its face's fill and flags (a chosen chip or row reads Accent/Selected or RowSel/Selected).
+        private string Drawn(int command, int arg)
+        {
+            int node = command >= 0 && _scene != null ? _scene.FindNode(command, arg) : -1;
+            if (node < 0 || _scene.Nodes[node].Face < 0)
+            {
+                return "no face";
+            }
+            ref UiItem face = ref _scene.Items[_scene.Nodes[node].Face];
+            return face.Fill + "/" + face.Flags;
         }
 
         private string NodeName(int node)

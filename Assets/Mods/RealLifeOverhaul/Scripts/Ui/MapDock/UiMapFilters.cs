@@ -133,6 +133,12 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class UiMapFilters
     {
+        /// <summary>
+        /// The rail entry shown when a press asks the list to scroll to a group: that group's, since the offset the list has now still names the
+        /// group before; else the one the offset names.
+        /// </summary>
+        public static int RailAfterReveal(int byOffset, int reveal, int railOfReveal) => reveal >= 0 && railOfReveal >= 0 ? railOfReveal : byOffset;
+
         public const int RailCommand = 5000, ShowAllCommand = 5001, SearchCommand = 5002, ResultCommand = 5003, ChipCommand = 5004, GroupCommand = 5005, GroupAllCommand = 5006,
             LineCommand = 5007, LocateCommand = 5008, StationCommand = 5009, ChoiceCommand = 5010, FooterCommand = 5011, PickedLocateCommand = 5012, PickedDestinationCommand = 5013,
             PickedClearCommand = 5014, PickedMoreCommand = 5015;

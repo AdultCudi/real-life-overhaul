@@ -498,6 +498,8 @@ namespace RealLifeOverhaul.Ui
                         m.Reveal = i;
                     }
                 }
+                // The list is scrolled to the group as it is laid out, so the rail names that group now: read from the offset the list had before, it named the group of the press before.
+                m.RailShown = UiMapFilters.RailAfterReveal(m.RailShown, m.Reveal, _rowCats.Count > 0 && m.Reveal >= 0 && m.Reveal < _rowCats.Count ? _railCats.IndexOf(_rowCats[m.Reveal]) : -1);
                 _revealGroup = null;
             }
         }
