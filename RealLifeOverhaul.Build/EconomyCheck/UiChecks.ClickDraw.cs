@@ -78,5 +78,25 @@ internal static partial class Program
         string lines = ModSource(@"Ui\MapDock\MapLive.Lines.cs"), host = ModSource(@"Ui\UiHost.cs");
         Check(lines.Contains("UiMapFilters.RailAfterReveal(m.RailShown, m.Reveal"), "click draw: the map's layout gives the rail the group it reveals, not the group of the offset before");
         Check(host.Contains("drawn after: ") && host.Contains("screen dirty after: "), "click draw: the press trace says what the layout on show draws for the pressed target");
+        Check(host.Contains("steps: focusing laid out ") && host.Contains("screen.Press "), "click draw: the press trace says how many layouts the focusing made and what the press did");
+
+        // Flare's nav, as the host restores focus after a nav press: it lands on the entry pressed, press after press.
+        UiChrome.Status = () => UiSamples.Status;
+        UiWords en = UiWords("en");
+        UiFrame frame = UiFrame.FullMenu(16f / 9f, "Flare");
+        var flare = new UiScene();
+        FlareFaceModel m = UiSamples.FlareSample(en, "home");
+        FlareFace.Lay(flare, frame, true, UiDefaultKeys.Keyboard, en, m);
+        bool landed = true;
+        foreach (int page in new[] { 3, 2, 4, 5 })
+        {
+            m.Page = page;
+            m.NewPage = true;
+            m.FromNav = true;
+            FlareFace.Lay(flare, frame, true, UiDefaultKeys.Keyboard, en, m);
+            int again = flare.FocusReset ? UiFocusRules.First(flare) : -1;
+            landed &= again >= 0 && flare.Nodes[again].Command == FlareFace.NavCommand && flare.Nodes[again].Arg == page;
+        }
+        Check(landed, "click draw: after a nav press Flare's layout puts focus on the entry pressed, each press in a row");
     }
 }
