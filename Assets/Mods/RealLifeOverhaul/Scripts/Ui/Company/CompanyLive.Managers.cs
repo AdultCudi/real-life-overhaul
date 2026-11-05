@@ -765,7 +765,6 @@ namespace RealLifeOverhaul.Ui
             return items.ToArray();
         }
 
-        // The people with the best standing across the businesses, the likeliest to be given a post: a company with no manager shows who the owner could start with.
         // The managers of a district's places with what each has spent of the month's budget, as grades with the sum and the budget under it.
         private CompanyItem[] BudgetRows(CompanyDirector d, string area, Words w)
         {
@@ -791,6 +790,7 @@ namespace RealLifeOverhaul.Ui
             return items.ToArray();
         }
 
+        // The people with the best standing across the businesses, the likeliest to be given a post: a company with no manager shows who the owner could start with.
         private CompanyItem[] CouldManage(CompanyDirector d, Words w, int most)
         {
             var all = new List<StaffFile>(d.State.Staff);
