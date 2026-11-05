@@ -317,3 +317,44 @@ EconomyCheck's `Map25Checks.cs`, `Map25LookChecks.cs` and `Map25LogicChecks.cs` 
 ### Not verified (the game could not be run)
 
 That `Hidden/Internal-Colored` is found and draws in the game's player (the self-test says so in the log line "the 2.5D map is made"), the picture's place under the game's pins (a child of the pin layer, whose canvas order is the game's), that the pins and the route line land on the roofs (the game's pin offsets are for its real heights, which the picture compresses), that a highlighted building's layer and property block read as described and the highlights' timing, that the wrap of the queue's step (`_updateAction`) sees every filter toggle in the game's order of updates, that the cone and the halo look in the game's colour pipeline as they do in the preview's pixels, that the game restores its culling mask on every toggle as its code says, that `TreeController.AllTrees` is complete when the scene is made and that the trees are the size of the picture's, where the game's zone planes lie (the picture draws them on the ground) and their colour as the game blends it, the real heights, and the look in the real city. Each has a fallback that leaves the game's own map.
+
+## The city map's panels (`Scripts/Ui/MapDock`)
+
+The map's side panels are drawn on the interface kit over the game's own windows. Those stay up underneath with only their own leaves hidden, and every press goes to the game's own widget. So every rule of the game's, Going Public's lines and the other mods' rows stay the game's. Each panel has its own option under "RLO interface": `map_filters` (the filters with the place card), `map_subway` (the list of stations), `map_picker` (the mod's choices of a place) and `map_district` (the district view's page). With one off, that window is the game's own again. The panels take the pointer only, because the stick and the movement keys pan and turn the map.
+
+| File | What it is |
+| --- | --- |
+| `MapFiltersGame`, `MapKits` | binds the game's filter window and its station list to the host, installs and removes them, and puts a choice of a place on the HUD's modal piece |
+| `MapLive` (`.Build`, `.Lines`, `.Picked`, `.Place`, `.Actions`, `.Picker`) | the one screen: looks at the game's state four times a second and lays out only when it changed |
+| `UiMapFilters`, `UiMapPlace`, `UiMapDistrict`, `UiMapChrome` | the dock's pages, the route strip, the layers, the buttons, the labels (game-free, so the preview draws them and EconomyCheck lays them out) |
+| `MapCountRules`, `MapSaved`, `MapBusy` | the counts, the quick chips, the place card's rules, the route's minutes, the saved places and the usual busy figures (game-free) |
+| `MapStoreGame`, `MapSavedGame` | the game's side of those: the save's lines, the row of saved places on the map |
+| `MapRouteTag` | the label on the route's line over the open map |
+
+- **The filters page.** A rail of the groups with a count each, a search, quick chips (Food, Groceries, Fuel, Parking, Jobs, For rent, Your places) only where the game has lines for them, the count "11 of 31 on" (only lines the map can show now), the groups with their lines, each with a switch and a Locate. The game's own search filters the lines. Places that match the words are listed under the field. The lines are read from each group's own list, because a mod's rows are taken out of the game's table of lines, so the lines of Going Public (`bamp_players`) and of other mods show under "Other mod" and are only ever switched, never changed.
+- **The picked place** (the game's building card) is a block at the foot of the dock: name, address, the way there (by road when the roads know it, else in a straight line), what it is now, Locate and Set destination. In taxi mode the button says the taxi's minutes and price. In subway mode the page is the list of stations with each one's district and where the player stands.
+- **The place card** is the page the block opens. The rating and the reviews come from the Flare city's own figures, and a price tier ("$$") only shows where it can be worked out from the place's price against the city's typical one. The reviews' words are picked by the resident and the day from two lines for each rating and reason, so the same review always reads the same and nothing is saved. Tabs: Overview (address, hours today, the unit for rent next door, busy times by the hour, what people say), Reviews and Business. Busy times are the simulation's own hourly multipliers, and "Busier than usual" is today's arrivals against a rolling average kept per place (`reallife:map_busy`, 64 places at most, the longest unlooked at dropped first). "Save" keeps a place in a list (`reallife:map_places`, 40 at most, the newest first) that is also a row of the map's filter list, "Saved places".
+- **The route strip** sits over the top when Directions is chosen: Walk, Taxi, Subway and Your car with their minutes and fare and Go. Walking and driving come from the walking and driving graphs, the taxi's from `TaxiDirector.Quote` (its wait, its ride and its fare), the subway's from the two nearest stations (walk, wait, ride, walk) and only where that beats the way by road by a margin. Each option is as wide as its words need, and they give up room evenly only when the strip would meet the Layers panel. Go sets the destination as the game's own button does. By taxi it shuts the map and opens the City Cabs offer with its own Send.
+- **On the map itself.** The Layers panel (the map's main lines as switches and Hide all), the map's buttons (north, centre on me, zoom in and out, tilt), a label "For rent next door" where that unit stands while the pointer rests on its row, and, when the district view is on, each district's name with the layer's figure (the cyan one is the district the page is about). The label on the route's line is `MapRouteTag`: Navigation hands it over (`NavDirector.RouteLabelTo`) when the route or the map changes and takes it back when the route is gone or the map shut. It shows the minutes and the way to go that the minimap's destination block shows, with a walker or a car, halfway along the line as drawn (`NavMath.Halfway`). The fare of a taxi or the subway is on the strip. Neither has a line of its own on the map.
+- **The district view's page** has the ten layers as a rail, the city average, a donut where one helps (the classes, the rent by kind of space, who runs the businesses), the key (the kit's ramp, `UiTokens.Ramp`), the district the page is about with its rank and its residents, and every district ranked with its figure, how it moved this month and the share of space standing empty. The month's change comes from a snapshot kept once a calendar month (`reallife:district_months`, 12 months), so it says "no change yet" until a second month has been kept. The old window is still there when its switch is off.
+- **The minimap's destination block** (the place's name and address, the minutes and the distance) is part of the minimap, see above.
+
+### Cost
+
+Nothing while the map is shut. While it is open, one look at the game's windows four times a second (a few dozen numbers) and a layout when something changed. The counts are made when the map opens, because the map pauses the game. The route's label is handed over only when the route or the map changes. The district tags are a few small pieces moved by the HUD's host, one projection each a frame while the view is on.
+
+### Safety
+
+Everything is read from this player's own city and nothing new goes on the network. The saved places and the busy figures are the player's own lines. Going Public's rows are only read and switched on and off, and nothing of another player's is changed or kept.
+
+### Checks
+
+EconomyCheck `--map5` runs the rules (counts, chips, the card, the route, the saved places, the months, busy times, the tags and every command reaching its call), the screens' own cases (`map_filters`, `map_subway`, `map_picker`, `map_district`) are laid out in every language, shape and input by `--ui`, and NavCheck holds `NavMath.Halfway`. `--map25` still holds the picture and the minimap.
+
+### Previews
+
+`not-in-repo/previews/ui/map5/` holds a sheet for every state in English, Portuguese and Chinese at 1080 and 720, with the keys, the pad and the pointer.
+
+### Not verified (the game could not be run)
+
+That the host binds the filter window and the station list as the games' windows are built, that the pointer's glide to a place of a choice works, that the HUD's host shows the tags and the labels over the map (it may sleep while the map is up), that the saved places' row and the taxi's hand-over to City Cabs work, and that the game's own building box does not also show beside the picked place's block.
