@@ -785,6 +785,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiFontMetrics.Data.cs" Link="Mod\UiFontMetrics.Data.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiTextRules.cs" Link="Mod\UiTextRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiScene.cs" Link="Mod\UiScene.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPress.cs" Link="Mod\UiPress.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiAction.cs" Link="Mod\UiAction.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiIcon.cs" Link="Mod\UiIcon.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiIconRaster.cs" Link="Mod\UiIconRaster.cs" />

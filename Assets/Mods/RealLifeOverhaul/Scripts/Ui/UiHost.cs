@@ -52,6 +52,7 @@ namespace RealLifeOverhaul.Ui
         private UiPad _laidPad;
         private int _laidFaces;   // UiFaces.Version at the last layout: a game picture that arrived since lays the screen out again
         private int _heldX, _heldY;
+        private int _laid;   // layouts made, so a press can tell that its own focus laid the screen out again
         private float _nextRepeat;
         private UiInputState _state;
         private bool _dragging;      // a target is held by the pointer (IUiDragging)
@@ -554,6 +555,7 @@ namespace RealLifeOverhaul.Ui
         // Lays the screen out and draws it; focus stays on the same target (by its command and argument) where it still is.
         private void Layout()
         {
+            _laid++;
             using var cost = Measured(UiWork.Layout);
             var rect = (RectTransform)transform;
             Vector2 size = rect.rect.size;
@@ -714,17 +716,37 @@ namespace RealLifeOverhaul.Ui
         private void PointerPressed(int node)
         {
             using var cost = Measured(UiWork.Press);
+            if (node < 0 || node >= _scene.NodeCount)
+            {
+                if (_typing)
+                {
+                    EndTyping();
+                }
+                return;
+            }
+            // Ending a field or moving the focus can lay the screen out again (a screen that reads Focused), which renumbers the targets:
+            // the press is found again by what it is, so it never lands on the target that took its number.
+            int command = _scene.Nodes[node].Command, arg = _scene.Nodes[node].Arg, layer = _scene.Nodes[node].Layer, laid = _laid;
             if (_typing)
             {
                 EndTyping();
             }
-            if (node >= 0 && node < _scene.NodeCount && _scene.Nodes[node].Layer == UiFocusRules.TopLayer(_scene))
+            if (_laid != laid)
+            {
+                node = UiPress.Find(_scene, command, arg, layer);
+            }
+            if (node >= 0 && _scene.Nodes[node].Layer == UiFocusRules.TopLayer(_scene))
             {
                 if (_mode.PointerMoved())
                 {
                     _view.Ring = false;
                 }
+                laid = _laid;
                 FocusNode(node, Time.unscaledTime, false);
+                if (_laid != laid)
+                {
+                    node = UiPress.Find(_scene, command, arg, layer);
+                }
                 PressNode(node, Time.unscaledTime);
             }
         }

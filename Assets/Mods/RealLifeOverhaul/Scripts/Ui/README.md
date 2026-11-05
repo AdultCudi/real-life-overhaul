@@ -341,7 +341,7 @@ rest is the review.
 - **Registry**: `UiScreens`, `IUiScreen`, `UiScreenSwitches` (each screen's own switch, from its entry).
 - **Frame, boxes and notices**: `UiDraw.AppRow`, `UiAllApps`, `UiShellApps`, `UiCard`, `UiNotices`; the game side in `Shell/`.
 - **Host**: `Host/` (`UiGameHost`, `IUiGameScreen`, `UiConceal`, `UiWidgets`, `UiGameWatch`, `UiBoxes`, `UiHostRules`).
-- **Drawing**: `UiView*`, `UiHost`, `UiTweens`, `UiSprites`, `UiFonts`, `UiSpark`, `UiHit`.
+- **Drawing**: `UiView*`, `UiHost`, `UiTweens`, `UiSprites`, `UiFonts`, `UiSpark`, `UiHit` (hover and wheel), `UiPointer` and `UiPress` (the mouse press, kept by what the target is).
 - **Screens**: `Pages/`, the overhaul's pages (`*Pages`, game-free) and the screens that run them with their features'
   directors, and `SessionKit` over the game's own desk panel.
 - **The game**: `UiGame`, `UiText`, `UiDirector`, `UiGuide`, `Contacts/`.

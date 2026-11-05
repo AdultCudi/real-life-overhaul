@@ -5,13 +5,13 @@ using UnityEngine.EventSystems;
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
-    /// The pointer on a kit screen: entering and leaving a target's face, a click on it, and the wheel over a scroll
+    /// The pointer on a kit screen: entering and leaving a target's face and the wheel over a scroll
     /// region (over a gap in it, or over a target's face standing in it), each told to the view, which tells its host
-    /// (UiFocusMode decides what a hover does). Pooled with its object and pointed at the target it shows now. Cost a frame:
-    /// nothing, the engine calls it on pointer events.
+    /// (UiFocusMode decides what a hover does). Pooled with its object and pointed at the target it shows now. A press is not
+    /// its: the engine clicks only the object the pointer went down on, and this one is handed to other targets (UiPointer). Cost a
+    /// frame: nothing, the engine calls it on pointer events.
     /// </summary>
-    public sealed class UiHit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IPointerClickHandler, IScrollHandler, IPointerDownHandler, IBeginDragHandler,
-        IDragHandler, IEndDragHandler, IPointerMoveHandler
+    public sealed class UiHit : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler, IScrollHandler, IPointerMoveHandler
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("ui", "UiHit", typeof(UiHit));   // the engine's calls of it (Core/Guard)
 
@@ -95,91 +95,6 @@ namespace RealLifeOverhaul.Ui
             {
                 _view.ToLayout(data.position, data.pressEventCamera, out Vector2 px);
                 _view.PointerMoved(_node, new UiDragPoint { Phase = UiDrag.Move, X = px.x, Y = px.y });
-            }
-            catch (Exception e)
-            {
-                Guard.Fail(FrameGuard, e);
-            }
-        }
-
-        public void OnPointerClick(PointerEventData data)
-        {
-            if (FrameGuard.Off || _view == null || _node < 0 || (data != null && data.button != PointerEventData.InputButton.Left))
-            {
-                return;
-            }
-            try
-            {
-                _view.PointerPressed?.Invoke(_node);
-            }
-            catch (Exception e)
-            {
-                Guard.Fail(FrameGuard, e);
-            }
-        }
-
-        // A press or a drag on this face, its place turned into the layout's px, for a screen that takes hold of its targets.
-        public void OnPointerDown(PointerEventData data)
-        {
-            if (FrameGuard.Off || _view == null || _node < 0 || data == null || data.button != PointerEventData.InputButton.Left || _view.PointerDragged == null)
-            {
-                return;
-            }
-            try
-            {
-                _view.ToLayout(data.position, data.pressEventCamera, out Vector2 px);
-                _view.PointerDragged(_node, new UiDragPoint { Phase = UiDrag.Down, X = px.x, Y = px.y });
-            }
-            catch (Exception e)
-            {
-                Guard.Fail(FrameGuard, e);
-            }
-        }
-
-        public void OnBeginDrag(PointerEventData data)
-        {
-            if (FrameGuard.Off || _view == null || _node < 0 || data == null || data.button != PointerEventData.InputButton.Left || _view.PointerDragged == null)
-            {
-                return;
-            }
-            try
-            {
-                _view.ToLayout(data.position, data.pressEventCamera, out Vector2 px);
-                _view.PointerDragged(_node, new UiDragPoint { Phase = UiDrag.Begin, X = px.x, Y = px.y });
-            }
-            catch (Exception e)
-            {
-                Guard.Fail(FrameGuard, e);
-            }
-        }
-
-        public void OnDrag(PointerEventData data)
-        {
-            if (FrameGuard.Off || _view == null || _node < 0 || data == null || data.button != PointerEventData.InputButton.Left || _view.PointerDragged == null)
-            {
-                return;
-            }
-            try
-            {
-                _view.ToLayout(data.position, data.pressEventCamera, out Vector2 px);
-                _view.PointerDragged(_node, new UiDragPoint { Phase = UiDrag.Move, X = px.x, Y = px.y });
-            }
-            catch (Exception e)
-            {
-                Guard.Fail(FrameGuard, e);
-            }
-        }
-
-        public void OnEndDrag(PointerEventData data)
-        {
-            if (FrameGuard.Off || _view == null || _node < 0 || data == null || data.button != PointerEventData.InputButton.Left || _view.PointerDragged == null)
-            {
-                return;
-            }
-            try
-            {
-                _view.ToLayout(data.position, data.pressEventCamera, out Vector2 px);
-                _view.PointerDragged(_node, new UiDragPoint { Phase = UiDrag.End, X = px.x, Y = px.y });
             }
             catch (Exception e)
             {

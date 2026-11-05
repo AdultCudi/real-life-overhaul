@@ -179,7 +179,7 @@ internal static partial class Program
         int knobAt = FindArg(scene, UiPartsGallery.Slider, slider);
         Check(before != null && UiDraw.SliderShare(320f, "8", 1f) == 1f && UiDraw.SliderShare(320f, "8", 0f) == 0f && !clickHolds && knobAt >= 0,
             "ui parts: the pointer sets a slider where it goes down or drags, and its click does not hold it for the keys");
-        Check(laid != null && host.Contains("_view.PointerDragged = Guard.Wrap<int, UiDragPoint>(PointerDragged)") && File.ReadAllText(System.IO.Path.Combine(folder, "UiHit.cs")).Contains("IDragHandler"),
+        Check(laid != null && host.Contains("_view.PointerDragged = Guard.Wrap<int, UiDragPoint>(PointerDragged)") && File.ReadAllText(System.IO.Path.Combine(folder, "UiPointer.cs")).Contains("IDragHandler"),
             "ui parts: the host hears the pointer drag across a target, through the guard");
         bool closed = screen.Press(UiPartsGallery.Choice, van) && screen.Back() && !screen.Back();
         Check(closed, "ui parts: a choice's list opens on a press and Back shuts it before it shuts the gallery");
