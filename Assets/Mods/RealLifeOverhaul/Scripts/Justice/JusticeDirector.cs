@@ -60,6 +60,8 @@ namespace RealLifeOverhaul
 
         public bool WantsKey => (_door != null && _door.TakesKey) || (_community != null && _community.WantsKey);
 
+        public bool ServiceOn => _community != null && _community.Active;
+
         /// <summary>True while the Legal file is the page on screen, the only page that holds nobody.</summary>
         public bool FileIsOpen => _fileOpen;
 

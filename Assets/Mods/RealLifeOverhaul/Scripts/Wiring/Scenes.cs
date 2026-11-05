@@ -13,7 +13,8 @@ namespace RealLifeOverhaul
             Accident = 1,      // Traffic/TrafficAccidents: wrecks, a cordon, ambulance and police
             Crime = 2,         // Crime/CrimeDirector: a staged crime and its arrest
             Event = 4,         // Events/EventDirector: a fire, or a street event on a closed road
-            Rally = 8          // Civic/CampaignWorld: a campaign rally
+            Rally = 8,         // Civic/CampaignWorld: a campaign rally
+            Service = 16       // Justice/CommunityService: a played shift of litter picking, which no other scene may break into
         }
 
         /// <summary>
@@ -31,7 +32,8 @@ namespace RealLifeOverhaul
                 (TrafficAccidents.IsActive ? Scene.Accident : Scene.None)
                 | (CrimeDirector.IsActive ? Scene.Crime : Scene.None)
                 | (Events.EventDirector.IsActive ? Scene.Event : Scene.None)
-                | (CivicDirector.RallyOn ? Scene.Rally : Scene.None);
+                | (CivicDirector.RallyOn ? Scene.Rally : Scene.None)
+                | (Justice.ServiceOn ? Scene.Service : Scene.None);
 
             public static bool AnyLargeSceneActive => Active != Scene.None;
 

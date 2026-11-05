@@ -238,6 +238,9 @@ namespace RealLifeOverhaul
 
         public static bool InPrison => JusticeState.Loaded && JusticeState.InPrison;
 
+        /// <summary>A community service shift is being played: no street scene starts until it is over (Wiring.Scenes).</summary>
+        public static bool ServiceOn => JusticeDirector.Instance != null && JusticeDirector.Instance.ServiceOn;
+
         /// <summary>A court has suspended the player's driving licence (the Licences bridge is asked first).</summary>
         public static bool DrivingSuspended
         {
