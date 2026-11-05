@@ -30,11 +30,14 @@ namespace RealLifeOverhaul
 
         private static readonly long[] Now = new long[Count];    // the frame being run
         private static readonly long[] Last = new long[Count];   // the frame before it, complete
+        private static readonly long[] Before = new long[Count]; // ...and the one before that, for a time the engine counts a frame late
         private static readonly PlayerLoopSystem.UpdateFunction BeginStep = Begin;
         private static readonly PlayerLoopSystem.UpdateFunction RollStep = Roll;
+        private static readonly PlayerLoopSystem.UpdateFunction ReadStep = Read;
         private static PlayerLoopSystem.UpdateFunction[] _ends;
         private static long[] _otherNow = new long[0];      // every other step, the frame being run
         private static long[] _otherLast = new long[0];     // ...and the frame before it
+        private static long[] _otherBefore = new long[0];   // ...and the one before that
         private static string[] _otherNames = new string[0];
 
         private static long _began;
@@ -42,8 +45,13 @@ namespace RealLifeOverhaul
         private static long _spanLast;          // the frame before this one, roll-over to roll-over
         private static long _stepsLast;         // ...and the time in all its timed steps, the groups and every other step
         private static long _restLast;          // ...of which in the steps outside the groups ("the rest")
+        private static long _spanBefore, _stepsBefore, _restBefore;   // the same three for the frame before that
+        private static long _readAt;            // the clock at the last pass of the step where the engine reads the time for its scripts
+        private static long _readSpan;          // ...and the time between its last two passes
+        private static int _reads;
         private static int _rolls;
         private static int _rolledFrame = -10;
+        private static int _readFrame = -10;
         private static bool _wanted, _paused, _installed;
         private static string _shape = "not read";
 
@@ -53,11 +61,32 @@ namespace RealLifeOverhaul
         /// <summary>True when <see cref="LastMs"/> speaks of the whole frame before this one.</summary>
         public static bool Valid => _installed && _rolls >= 2 && Time.frameCount - _rolledFrame <= 1;
 
+        /// <summary>True when the frame before the last one was complete too (<see cref="BeforeSpanMs"/> and the figures of <see cref="BeforeMs"/>).</summary>
+        public static bool ValidBefore => Valid && _rolls >= 3;
+
+        /// <summary>True when the engine's own read of the time has a stretch between two passes (<see cref="ReadSpanMs"/>).</summary>
+        public static bool ValidRead => Valid && _reads >= 2 && _readFrame == _rolledFrame;
+
         /// <summary>Milliseconds the frame before this one spent in a group of steps.</summary>
         public static float LastMs(int group) => (float)(Last[group] * 1000.0 / Stopwatch.Frequency);
 
         /// <summary>Milliseconds between the roll-overs around the frame: its length by the same clock as its steps.</summary>
         public static double LastSpanMs => _spanLast * 1000.0 / Stopwatch.Frequency;
+
+        /// <summary>Milliseconds between the engine's last two reads of the time for its scripts (Initialization.PlayerUpdateTime), or below zero when the loop has none.</summary>
+        public static double ReadSpanMs => ValidRead ? _readSpan * 1000.0 / Stopwatch.Frequency : -1.0;
+
+        /// <summary>The frame before the one <see cref="LastSpanMs"/> speaks of, roll-over to roll-over; below zero when not complete.</summary>
+        public static double BeforeSpanMs => ValidBefore ? _spanBefore * 1000.0 / Stopwatch.Frequency : -1.0;
+
+        /// <summary>Milliseconds the frame before the last one spent in a group of steps.</summary>
+        public static float BeforeMs(int group) => (float)(Before[group] * 1000.0 / Stopwatch.Frequency);
+
+        /// <summary>Milliseconds the frame before the last one spent in all its timed steps.</summary>
+        public static double BeforeStepsMs => _stepsBefore * 1000.0 / Stopwatch.Frequency;
+
+        /// <summary>...and in the steps outside the named groups.</summary>
+        public static double BeforeRestMs => _restBefore * 1000.0 / Stopwatch.Frequency;
 
         /// <summary>Milliseconds the frame before this one spent in all its timed steps.</summary>
         public static double LastStepsMs => _stepsLast * 1000.0 / Stopwatch.Frequency;
@@ -69,16 +98,21 @@ namespace RealLifeOverhaul
         public static string Shape => _shape;
 
         /// <summary>The step outside the named groups that took the most of the frame before this one, with its milliseconds; false if none.</summary>
-        public static bool LastOther(out string name, out float ms)
+        public static bool LastOther(out string name, out float ms) => Other(_otherLast, out name, out ms);
+
+        /// <summary>The same for the frame before the last one.</summary>
+        public static bool BeforeOther(out string name, out float ms) => Other(_otherBefore, out name, out ms);
+
+        private static bool Other(long[] sums, out string name, out float ms)
         {
             name = null;
             ms = 0f;
             long best = 0L;
-            for (int i = 0; i < _otherLast.Length; i++)
+            for (int i = 0; i < sums.Length && i < _otherNames.Length; i++)
             {
-                if (_otherLast[i] > best)
+                if (sums[i] > best)
                 {
-                    best = _otherLast[i];
+                    best = sums[i];
                     name = _otherNames[i];
                 }
             }
@@ -174,6 +208,23 @@ namespace RealLifeOverhaul
                     }
                 }
             }
+            // Where the engine reads the time for its scripts, when that is not the step above: a stretch of the frame between the two
+            // would lie in the engine's frame time and in no frame of the mod's own clock.
+            int readPhase = -1, readStep = -1;
+            for (int p = 0; p < phases.Length && readPhase < 0; p++)
+            {
+                PlayerLoopSystem[] steps = phases[p].subSystemList;
+                for (int s = 0; steps != null && s < steps.Length; s++)
+                {
+                    Type step = steps[s].type;
+                    if (step != null && step.Namespace == "UnityEngine.PlayerLoop" && step.Name == "PlayerUpdateTime" && !(p == rollPhase && s == rollStep))
+                    {
+                        readPhase = p;
+                        readStep = s;
+                        break;
+                    }
+                }
+            }
             bool rolled = false;
             var shape = new System.Text.StringBuilder(256);
             // Every step outside the named groups gets a slot of its own, with its name, and an end that adds to that slot.
@@ -189,7 +240,7 @@ namespace RealLifeOverhaul
                     timedPhases[p] = phase;
                     continue;
                 }
-                var with = new PlayerLoopSystem[steps.Length * 3 + (rolled ? 0 : 1)];
+                var with = new PlayerLoopSystem[steps.Length * 3 + (rolled ? 0 : 1) + 1];
                 int at = 0;
                 if (!rolled && rollPhase < 0)
                 {
@@ -219,6 +270,10 @@ namespace RealLifeOverhaul
                         rolled = true;
                         with[at++] = new PlayerLoopSystem { type = typeof(FrameSteps), updateDelegate = RollStep };   // just after the time update: the frame's end
                     }
+                    if (p == readPhase && s == readStep)
+                    {
+                        with[at++] = new PlayerLoopSystem { type = typeof(FrameSteps), updateDelegate = ReadStep };
+                    }
                 }
                 if (at < with.Length)
                 {
@@ -229,7 +284,10 @@ namespace RealLifeOverhaul
             }
             Array.Clear(Now, 0, Count);
             Array.Clear(Last, 0, Count);
+            Array.Clear(Before, 0, Count);
             _rolls = 0;
+            _reads = 0;
+            _spanBefore = _stepsBefore = _restBefore = 0L;
             _shape = (rollPhase >= 0
                          ? "rolled over just after " + StepName(phases[rollPhase].type, phases[rollPhase].subSystemList[rollStep].type) + ", where the engine updates the time"
                          : "rolled over before the loop's first step (no step that updates the time was found)")
@@ -238,6 +296,7 @@ namespace RealLifeOverhaul
             _otherNames = otherNames.ToArray();
             _otherNow = new long[_otherNames.Length];
             _otherLast = new long[_otherNames.Length];
+            _otherBefore = new long[_otherNames.Length];
             loop.subSystemList = timedPhases;
             PlayerLoop.SetPlayerLoop(loop);
             _installed = true;
@@ -299,26 +358,43 @@ namespace RealLifeOverhaul
             for (int g = 0; g < Count; g++)
             {
                 steps += Now[g];
+                Before[g] = Last[g];
                 Last[g] = Now[g];
                 Now[g] = 0;
             }
-            long[] now = _otherNow, last = _otherLast;
-            for (int i = 0; i < now.Length && i < last.Length; i++)
+            long[] now = _otherNow, last = _otherLast, before = _otherBefore;
+            for (int i = 0; i < now.Length && i < last.Length && i < before.Length; i++)
             {
                 rest += now[i];
+                before[i] = last[i];
                 last[i] = now[i];
                 now[i] = 0;
             }
+            _spanBefore = _spanLast;
+            _stepsBefore = _stepsLast;
+            _restBefore = _restLast;
             _stepsLast = steps + rest;
             _restLast = rest;
             _spanLast = at - _rolledAt;
             _rolledAt = at;
-            if (_rolls < 2)
+            if (_rolls < 3)
             {
                 _rolls++;   // the first roll-over after the timestamps go in closes a part of a frame only
             }
             _rolledFrame = Time.frameCount;
             MachineClock.Sample();
+        }
+
+        private static void Read()
+        {
+            long at = Stopwatch.GetTimestamp();
+            _readSpan = at - _readAt;
+            _readAt = at;
+            _readFrame = Time.frameCount;
+            if (_reads < 2)
+            {
+                _reads++;
+            }
         }
 
         // The step in which the engine updates the frame's time (and so where Time.unscaledDeltaTime ends).

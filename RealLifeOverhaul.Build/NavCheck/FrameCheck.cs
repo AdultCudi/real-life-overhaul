@@ -69,9 +69,9 @@ internal static partial class Program
         FrameFigures f = Stutter(362.0, 1.0, 16.0, 0.05);
         Check(Math.Abs(f.StepsMs + f.OutsideMs - f.SpanMs) < 1e-9 && FrameFigures.Unknown(10.0).OutsideMs < 0.0, "frames: the steps and the time outside them add up to the frame; untimed steps leave it unknown");
         bool distinct = true;
-        for (int a = 0; a < 7; a++)
+        for (int a = 0; a < 8; a++)
         {
-            for (int b = a + 1; b < 7; b++)
+            for (int b = a + 1; b < 8; b++)
             {
                 distinct &= FrameRules.Short((FrameCause)a) != FrameRules.Short((FrameCause)b);
             }
@@ -116,7 +116,7 @@ internal static partial class Program
         Check(missing.Contains("the main thread's time not available (this system has no GetThreadTimes)") && missing.Contains("the machine's load not available (this system has no GetSystemTimes)")
               && missing.Contains("page faults in it: not available (this system has no K32GetProcessMemoryInfo)"), "frames: a measure the system lacks is said to be not available" + Gave(missing));
         bool plain = Plain(starved) && Plain(work) && Plain(card) && Plain(missing);
-        for (int c = 0; c < 7; c++)
+        for (int c = 0; c < 8; c++)
         {
             plain &= Plain(FrameRules.Short((FrameCause)c));
         }
