@@ -120,6 +120,7 @@ namespace RealLifeOverhaul.Nav
             _line2 = Line("Line 2", lineLike, new Color32(202, 205, 206, 255));   // the grey of the task panel's group labels
             UiClone.Key(_title, "reallife_nav_title");
             _titleShown = null;
+            DestinationMake();   // the address and the minutes in the headline, shown while a route leads somewhere
         }
 
         /// <summary>Copies the game's task panel with the minimap in it; null if it cannot, <paramref name="later"/> saying whether to ask again.</summary>

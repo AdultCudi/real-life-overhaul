@@ -36,7 +36,8 @@ namespace RealLifeOverhaul.Nav
 
         private DirectionGuider _guider;
         private Vector3 _goal;
-        private string _goalName;
+        private string _goalName, _goalAddress;
+        private string _minutesWords, _distanceWords;   // the minimap's right-hand figures: the minutes left and the way still to go
         private bool _hasGoal;
         private bool _arrived;
 
@@ -199,6 +200,8 @@ namespace RealLifeOverhaul.Nav
             _guider = guider;
             _goal = at;
             _goalName = NameOf(guider);
+            _goalAddress = AddressOf(guider);
+            _minutesWords = _distanceWords = null;
             _hasGoal = true;
             _arrived = false;
             _phase = Phase.Idle;
@@ -257,8 +260,47 @@ namespace RealLifeOverhaul.Nav
             return NavText.T("poi_custom_location");
         }
 
+        // The place's address as the game writes it, when the destination is a building: the line under its name on the minimap. A marker with no address gives none.
+        // The 2D and 3D button on the minimap's card: the picture turned flat or tilted, kept for the player; drawn again at once.
+        private void SwitchPicture()
+        {
+            bool tilted = NavTilt.ToggleMinimap();
+            if (_hud != null)
+            {
+                _hud.SwitchShows(tilted);
+            }
+            _next = 0f;   // the slow tick asks the picture its new view now
+        }
+
+        // "4 min", or "5 h 43 min" over a hundred (the game's clock runs a minute a second, so a long way is hours of it).
+        private static string MinutesWords(int minutes)
+        {
+            NavDestRules.Split(minutes, out int hours, out int rest);
+            var plain = System.Globalization.CultureInfo.InvariantCulture;
+            if (hours == 0)
+            {
+                return NavText.T("reallife_nav_minutes", "{minutes}", rest.ToString(plain));
+            }
+            return rest == 0 ? NavText.T("reallife_nav_hours_even", "{hours}", hours.ToString(plain))
+                : NavText.T("reallife_nav_hours", "{hours}", hours.ToString(plain), "{minutes}", rest.ToString(plain));
+        }
+
+        private static string AddressOf(DirectionGuider guider)
+        {
+            try
+            {
+                Address address = guider.CurrentAddress;
+                return address.IsUndefined() ? null : address.ToFormattedString();
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
         private void Forget()
         {
+            _goalAddress = _minutesWords = _distanceWords = null;
             _hasGoal = false;
             _guider = null;
             _arrived = false;
@@ -526,6 +568,8 @@ namespace RealLifeOverhaul.Nav
                 _leftShown = leftRounded;
                 float seconds = onFoot ? left / Mathf.Max(1f, _pace) : _route.SecondsFrom(_along) / DrivingPace + lastSteps / 3f;
                 _line2 = NavText.T("reallife_nav_remaining", "{distance}", leftRounded.ToFormattedDistance(), "{time}", ClockAfter(seconds));
+                _minutesWords = MinutesWords(NavDestRules.Minutes(seconds, _rate));
+                _distanceWords = leftRounded.ToFormattedDistance();
             }
         }
 

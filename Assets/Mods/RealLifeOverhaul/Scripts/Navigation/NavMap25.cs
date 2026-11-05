@@ -210,7 +210,7 @@ namespace RealLifeOverhaul.Nav
                 return;
             }
             bool rest = Resting();
-            Tilt(map, Map25View.PitchFor(map.cityMapCam.distance), rest);
+            Tilt(map, NavMapTilt.Pitch(NavTilt.Map, map.cityMapCam.distance), rest);   // the map's own button can fix it flat or tilted at any distance
             if (!rest)
             {
                 Hide(map);

@@ -64,6 +64,8 @@ namespace RealLifeOverhaul.Nav
             dot.GetComponent<Image>().sprite = NavMarks.Blob;
             _compassDot = dot;
 
+            SwitchMake(plate, accent);   // the 2D and 3D button under the compass
+
             _scaleBox = Child("Scale", _view);
             _scaleBox.anchorMin = _scaleBox.anchorMax = _scaleBox.pivot = Vector2.zero;
             _scaleBox.anchoredPosition = new Vector2(StripPad + 4f, StripPad + 4f);
@@ -93,6 +95,10 @@ namespace RealLifeOverhaul.Nav
             }
             _strip.gameObject.SetActive(on);
             _compass.gameObject.SetActive(on);
+            if (_switch != null)
+            {
+                _switch.gameObject.SetActive(on);
+            }
             _scaleBox.gameObject.SetActive(on);
             _stripShown = null;
             _scaleMetres = 0;

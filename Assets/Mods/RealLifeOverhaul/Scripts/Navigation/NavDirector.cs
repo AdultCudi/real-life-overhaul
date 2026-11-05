@@ -317,12 +317,16 @@ namespace RealLifeOverhaul.Nav
             if (_hud != null)
             {
                 _hud.Place(Settings.MinimapSize, wantMap, lines);
-                _hud.Scene(_scene, wantMap && Settings.Minimap25 && _scene.Ready && !_hud.SceneBroken, true);
+                bool tilted = NavTilt.Minimap;
+                _hud.Scene(_scene, wantMap && Settings.Minimap25 && _scene.Ready && !_hud.SceneBroken, tilted);
+                _hud.SwitchShows(tilted);
+                _hud.SwitchPressed = SwitchPicture;
                 SceneStrip();
                 if (lines)
                 {
                     _hud.Lines(_line1, _line2);
                 }
+                _hud.Destination(lines ? _goalAddress : null, lines ? _minutesWords : null, lines ? _distanceWords : null);
             }
             Show(show);
             if (show && wantMap)

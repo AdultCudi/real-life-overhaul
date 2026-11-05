@@ -859,6 +859,12 @@
     <Compile Include="..\Shared\Map25Fixture.cs" Link="Shared\Map25Fixture.cs" />
     <Compile Include="..\Shared\Map25Real.cs" Link="Shared\Map25Real.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\Map25View.cs" Link="Mod\Map25View.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Navigation\NavMapTilt.cs" Link="Mod\NavMapTilt.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Navigation\NavDestRules.cs" Link="Mod\NavDestRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\MapDistrict.cs" Link="Mod\MapDistrict.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\MapChrome.cs" Link="Mod\MapChrome.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\MapPlaceCard.cs" Link="Mod\MapPlaceCard.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Map\MapPanel.cs" Link="Mod\MapPanel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiForeignMark.cs" Link="Mod\UiForeignMark.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiBreaker.cs" Link="Mod\UiBreaker.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Compat\UiForeignRules.cs" Link="Mod\UiForeignRules.cs" />
