@@ -86,5 +86,13 @@ namespace RealLifeOverhaul.Ui
         /// phone off and on alone, so after it the phone stood over the bar; one order apart, the bar stays over the phone.
         /// </summary>
         public static int OverPhone(int own, int phone) => phone == int.MinValue || phone < own ? own : phone + 1;
+
+        /// <summary>
+        /// Why a change on a screen is not laid out now, or null when it is: switched off with what it stands on (hidden), put
+        /// to sleep by its owner, or leaving (the full menu closing on the way to the map), so drawn for nobody. Its keys resting
+        /// under a box or another mod's window is no reason: a held screen is in front and takes the mouse, so a press on it
+        /// is laid out in the same press. Also the words the press line gives.
+        /// </summary>
+        public static string Gone(bool active, bool running, bool leaving) => !active ? "hidden" : !running ? "asleep" : leaving ? "leaving" : null;
     }
 }

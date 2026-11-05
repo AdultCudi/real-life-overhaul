@@ -106,6 +106,9 @@ namespace RealLifeOverhaul.Ui
         /// </summary>
         public Func<bool> Leaving;
 
+        /// <summary>For the press line only (Developer diagnostics): what holds the screen's keys now, from its owner; null for a screen never held.</summary>
+        public Func<string> HeldBy;
+
         /// <summary>What the screen costs while it shows, by name (UiCost); named by its owner through <see cref="Measure"/>.</summary>
         public UiCost Cost => _cost;
 
@@ -230,8 +233,10 @@ namespace RealLifeOverhaul.Ui
         }
 
         // The screen was handed away by what it just did (the game closed it, or the full menu is closing on the way to the
-        // map): a layout now would be drawn for nobody, and its owner hides it.
-        private bool Gone() => !isActiveAndEnabled || (Leaving != null && Leaving());
+        // map): a layout now would be drawn for nobody, and its owner hides it. Null while it is in front, held or not.
+        private string GoneWhy() => UiHostRules.Gone(gameObject.activeInHierarchy, enabled, Leaving != null && Leaving());
+
+        private bool Gone() => GoneWhy() != null;
 
         /// <summary>What the frame draws round the screen changed (the status bar's app row): it is laid out again next frame.</summary>
         public void Again()
@@ -240,8 +245,9 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>
-        /// Something of the kit's stands over the screen (a box, All apps): its keys rest and it stays drawn as it is, with no
-        /// arrival when it gets them back, since it never left.
+        /// Something stands over the screen (a box, All apps, another mod's window): its keys rest, and it stays in front and
+        /// running, so the mouse still works on it and what it does is drawn at once. No arrival when it gets the keys back,
+        /// since it never left.
         /// </summary>
         public void Hold(bool hold)
         {
@@ -257,9 +263,11 @@ namespace RealLifeOverhaul.Ui
             if (_held != hold)
             {
                 _held = hold;
-                Layout();   // a held screen drops its key caps and prompts: the keys are the layer's over it, one key one thing
+                if (!Gone())
+                {
+                    Layout();   // a held screen drops its key caps and prompts: the keys are the layer's over it, one key one thing
+                }
             }
-            enabled = !hold;
         }
 
         private void Update()
@@ -303,8 +311,10 @@ namespace RealLifeOverhaul.Ui
             {
                 WindowHeld?.Invoke();
             }
-            if (PointerOnly)
+            if (PointerOnly || _held)
             {
+                // No key is read here (a held screen's are the layer's over it), but the screen is in front and takes the mouse,
+                // so it is drawn as it changes.
                 if (_screen.Dirty || UiFaces.Version != _laidFaces || ((RectTransform)transform).rect.size != _laidSize || (WindowId != null && UiWindowPlaces.Version != _placesSeen))
                 {
                     Layout();
@@ -588,7 +598,12 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             bool done = _screen.Press(n.Command, n.Arg);
-            _pressNote = "screen.Press " + (done ? "true" : "false") + ", dirty " + (_screen.Dirty ? "yes" : "no") + ", gone " + (Gone() ? "yes" : "no");
+            if (Meta.Dev.Verbose)
+            {
+                // So a click drawn late reads from the press line alone: what kept it from being laid out, and what held the keys.
+                _pressNote = "screen.Press " + (done ? "true" : "false") + ", dirty " + (_screen.Dirty ? "yes" : "no") + ", gone " + (GoneWhy() ?? "no")
+                    + ", keys " + (_held ? "held by " + (HeldBy?.Invoke() ?? "what stands over it") : "its own");
+            }
             _sound?.Play(done ? UiCue.Confirm : UiCue.Error);
             if (_screen.Dirty && !Gone())
             {

@@ -42,6 +42,7 @@ namespace RealLifeOverhaul.Ui
             canvas.sortingOrder = UiHostRules.Above(above[UiBindRules.Sorter(overrides, above.Length)].sortingOrder);
             go.AddComponent<GraphicRaycaster>();
             go.SetActive(false);
+            UiForeignWindows.Forget(root);   // the canvas the kit now stands on, if it was taken for another mod's window before
             return rect;
         }
     }

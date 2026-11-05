@@ -171,6 +171,20 @@ namespace RealLifeOverhaul.Ui
         /// </summary>
         public static bool IsWindow(bool wasThere, bool kits, bool gameOwn, bool active, bool takesMouse) => active && takesMouse && !wasThere && !kits && !gameOwn;
 
+        /// <summary>
+        /// Whether a canvas is another mod's. The canvas the kit draws its screens on (the full menu's, the HUD's) never is,
+        /// whatever a mod hooked inside it: a mod that watches every app of the full menu made the menu's own canvas read as
+        /// that mod's window, and every app under it lost its keys and drew each click one late. Any other canvas outside the
+        /// game's interface is another mod's, and one inside it is when a script or a listener of a mod's is in it.
+        /// </summary>
+        public static bool Foreign(bool kitGround, bool inGame, bool modInside) => !kitGround && (!inGame || modInside);
+
+        /// <summary>
+        /// A canvas takes the mouse as a window does: its raycaster is on, and its own canvas group, if any, is seen and stops
+        /// the pointer. One faded out or letting clicks through stands over nothing, so it holds no kit screen's keys.
+        /// </summary>
+        public static bool TakesMouse(bool raycaster, bool grouped, float alpha, bool blocks) => raycaster && (!grouped || (alpha > 0f && blocks));
+
         /// <summary>The words for what a mod's piece is, in English, for Player.log: "a tab", "a canvas".</summary>
         public static string Words(UiPieceKind kind)
         {
