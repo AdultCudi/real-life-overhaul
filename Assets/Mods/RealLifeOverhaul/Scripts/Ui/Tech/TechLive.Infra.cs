@@ -305,13 +305,36 @@ namespace RealLifeOverhaul.Ui
 
             private void ColoRows(DataCentre d, List<UiAppRow> rows)
             {
-                if (d.Colo > 0)
+                InfraFile f = _d.Infra;
+                var mine = new List<ColoContract>(8);
+                for (int i = 0; f != null && i < f.Colo.Count; i++)
+                {
+                    if (f.Colo[i].Place == d.Place)
+                    {
+                        mine.Add(f.Colo[i]);
+                    }
+                }
+                // what needs the player first: a rival's offer, then the terms ending soonest
+                mine.Sort((a, b) => ColoRules.State(b, _day) == 2 ? (ColoRules.State(a, _day) == 2 ? a.End.CompareTo(b.End) : 1) : ColoRules.State(a, _day) == 2 ? -1 : a.End.CompareTo(b.End));
+                for (int i = 0; i < mine.Count && rows.Count < 7; i++)
+                {
+                    ColoContract c = mine[i];
+                    int state = ColoRules.State(c, _day);
+                    string chip = TechText.T("reallife_ui_tech_colo_state_" + state.ToString(Inv));
+                    rows.Add(new UiAppRow
+                    {
+                        Icon = UiIcon.Building, Tint = UiRole.None, Grade = -1, Status = chip, StatusTone = state == 0 ? UiRole.Ok : state == 1 ? UiRole.Accent : UiRole.Warn,
+                        Cells = new[] { ColoRules.NameOf(c.Client), c.Racks.ToString(Inv), Cents(_d.Level(c.Fee)), TechText.Day(c.End), chip }
+                    });
+                }
+                int small = d.Colo - ColoRules.Held(f ?? new InfraFile(), d.Place);
+                if (small > 0)
                 {
                     rows.Add(new UiAppRow
                     {
-                        Icon = UiIcon.Building, Tint = UiRole.None, Grade = -1, Status = TechText.T("reallife_ui_tech_colo_active"), StatusTone = UiRole.Ok,
-                        Cells = new[] { TechText.T("reallife_ui_tech_colo_city"), d.Colo.ToString(Inv), Cents(_d.Level((long)d.Colo * InfraCatalogue.ColoMonth)), "-",
-                            TechText.T("reallife_ui_tech_colo_active") }
+                        Icon = UiIcon.Building, Tint = UiRole.None, Grade = -1, Status = TechText.T("reallife_ui_tech_colo_state_0"), StatusTone = UiRole.Ok,
+                        Cells = new[] { TechText.T("reallife_ui_tech_colo_small"), small.ToString(Inv), Cents(_d.Level((long)small * InfraCatalogue.ColoMonth)),
+                            "-", TechText.T("reallife_ui_tech_colo_state_0") }
                     });
                 }
             }

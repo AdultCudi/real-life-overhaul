@@ -90,7 +90,7 @@ namespace RealLifeOverhaul.Ui
             m.TableClip = ClipOf(s, m.TableList);
             if (side)
             {
-                UiFactCard.Lay(s, at.InRegion(RegionRight), m.Side, x + tw + UiTokens.S4, y, sw, th, keys, true, true);
+                UiFactCard.Lay(s, at.InRegion(RegionRight), m.Side, x + tw + UiTokens.S4, y, sw, th, keys, true, !chart);
             }
             if (chart)
             {

@@ -15,6 +15,7 @@ internal static partial class Program
         TechSalesChecks();
         TechCentreChecks();
         TechMilestoneChecks();
+        TechColoChecks();
     }
 
     private static void TechChangeChecks()

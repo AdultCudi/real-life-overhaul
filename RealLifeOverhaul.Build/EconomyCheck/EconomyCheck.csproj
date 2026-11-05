@@ -1073,6 +1073,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Studio\StudioRules.Reviews.cs" Link="Mod\StudioRules.Reviews.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Studio\StudioViews.Track.cs" Link="Mod\StudioViews.Track.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\InfraLimits.cs" Link="Mod\InfraLimits.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\ColoContract.cs" Link="Mod\ColoContract.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\ColoRules.cs" Link="Mod\ColoRules.cs" />
     <Compile Include="..\UiPreview\UiSamples*.cs" Link="Shared\%(Filename)%(Extension)" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\BugReportRules.cs" Link="Mod\BugReportRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\ReleaseDates.cs" Link="Mod\ReleaseDates.cs" />

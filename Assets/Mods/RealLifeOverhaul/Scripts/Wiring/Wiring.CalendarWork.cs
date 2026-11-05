@@ -181,7 +181,7 @@ namespace RealLifeOverhaul
                                 e.Sign = 1;
                                 e.Amount = w.Value * level / 1000 / 100f;
                                 e.Title = CalendarText.T("reallife_calendar_invoice_title", "firm", file.FirmAt(w.Place).Name, "client", w.Client);
-                                e.App = TechDirector.TechAppId;
+                                e.App = TechDirector.TechAppId + GameUi.PhoneApp.WantMark + TechDirector.TabContracts + ":" + TechApp.ContractRow + w.Id;   // the Contracts tab and that contract
                             }
                         }
                     }

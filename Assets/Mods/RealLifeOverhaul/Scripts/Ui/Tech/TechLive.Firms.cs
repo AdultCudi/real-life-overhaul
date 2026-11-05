@@ -12,6 +12,7 @@ namespace RealLifeOverhaul.Ui
         {
             private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
             private static readonly List<LeagueRow> Table = new List<LeagueRow>(16);
+            private const int MostLeague = 8;
 
             private static UiDataRow Row(int cells) => new UiDataRow { Cells = new string[cells], Values = new int[cells], Tones = new UiRole[cells] };
 
@@ -330,9 +331,10 @@ namespace RealLifeOverhaul.Ui
                 {
                     card.Sub = TechText.T("reallife_ui_tech_league_rank", "rank", rank.ToString(Inv), "of", Table.Count.ToString(Inv));
                 }
-                for (int i = 0; i < Table.Count && i < 11; i++)
+                for (int i = 0; i < Table.Count && i < MostLeague; i++)
                 {
-                    LeagueRow r = Table[i];
+                    // the league shows its head and always the player: a rank below the last line takes its place
+                    LeagueRow r = Table[i == MostLeague - 1 && rank > MostLeague ? rank - 1 : i];
                     string name = r.Company == SectorRules.LeagueYou ? TechText.T("reallife_ui_tech_league_you") : HiringCatalogue.RivalFirms[r.Company];
                     string line = r.Company == SectorRules.LeagueYou ? TechText.T("reallife_ui_tech_league_yours", "count", _d.FirmPlaces.Count.ToString(Inv))
                         : TechText.T("reallife_ui_tech_league_customers", "customers", TechText.Whole(r.Customers));

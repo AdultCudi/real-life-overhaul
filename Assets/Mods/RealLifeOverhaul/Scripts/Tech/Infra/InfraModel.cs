@@ -64,6 +64,8 @@ namespace RealLifeOverhaul.Tech
         public long Owed;                              // what the scale's costs came to that the cash could not meet, carried to the next day, cents at the prices of then
         public readonly List<DataCentre> Centres = new List<DataCentre>(4);
         public readonly Cloud Cloud = new Cloud();
+        public readonly List<ColoContract> Colo = new List<ColoContract>(16);   // the named contracts the racks let are shared out in (ColoRules)
+        public int NextColo = 1;
 
         public DataCentre CentreAt(string place)
         {
