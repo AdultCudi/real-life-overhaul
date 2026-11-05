@@ -201,6 +201,7 @@ namespace RealLifeOverhaul.Ui
     public static class MapPlaceRules
     {
         public const int ReviewLines = 2;         // lines for each stars bucket and reason: one is picked by the resident and the day, nothing is saved
+        private const string Mod = "reallife";    // the start of every key; a review's key is made of parts put after it, so the text check reads only whole keys
         public const int TierLow = 900, TierHigh = 1100;   // thousandths of the city's typical price: under the first is "$", over the second "$$$"
 
         /// <summary>The price tier from a business's prices against the district's standard, in thousandths (1000 is the standard): 1, 2 or 3; 0 when there is none.</summary>
@@ -260,7 +261,7 @@ namespace RealLifeOverhaul.Ui
             uint h = 2166136261u;
             h = (h ^ (uint)resident) * 16777619u;
             h = (h ^ (uint)day) * 16777619u;
-            return "reallife_map_review_" + bucket + "_" + reason + "_" + (int)(h % ReviewLines);
+            return Mod + "_map_review_" + bucket + "_" + reason + "_" + (int)(h % ReviewLines);
         }
 
         /// <summary>The ages of a review as the card writes them: today, yesterday, or so many days.</summary>

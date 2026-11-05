@@ -117,7 +117,7 @@ namespace RealLifeOverhaul.Districts
         // The city's figure for a layer is a sum where a district's share of it is a count (reports, businesses), else the districts' mean.
         private static bool IsTotal(int layer) => layer == (int)DistrictLayer.Crime || layer == (int)DistrictLayer.Competition;
 
-        private static string Stem(string stem, int layer) => T("reallife_map_" + stem + "_" + DistrictRules.Ids[layer]);
+        private static string Stem(string stem, int layer) => T(Mod + "_map_" + stem + "_" + DistrictRules.Ids[layer]);
 
         /// <summary>Fills the dock's page for the layer shown; false when there is nothing to say yet.</summary>
         internal bool KitFill(MapDistrictModel m)
@@ -167,7 +167,7 @@ namespace RealLifeOverhaul.Districts
             KitChosen(m, which, layer, carded);
             m.TableTitle = Stem("ranked", layer);
             m.ColDistrict = UiText.T("reallife_map_col_district");
-            m.ColFigure = UiText.Fill("reallife_map_col_" + id, "unit", DistrictGame.AreaUnit());
+            m.ColFigure = UiText.Fill(Mod + "_map_col_" + id, "unit", DistrictGame.AreaUnit());
             m.ColMonth = UiText.T("reallife_map_col_month");
             m.ColEmpty = HasEmpty(layer) ? UiText.T("reallife_map_col_empty") : null;
             if (m.Rows.Length != _ranked.Count)

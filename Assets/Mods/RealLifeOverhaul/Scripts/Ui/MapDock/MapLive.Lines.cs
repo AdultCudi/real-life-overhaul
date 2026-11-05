@@ -15,6 +15,8 @@ namespace RealLifeOverhaul.Ui
     /// <summary>The filters' side of the live dock: the game's groups and lines read into the kit's rows, the rail, the quick chips, the counts and the station list.</summary>
     internal sealed partial class MapLive
     {
+        private const string Mod = "reallife";   // the start of every key; a chip's key is made of parts put after it, so the text check reads only whole keys
+
         private sealed class Cat
         {
             public CityMapFilterCategory Obj;
@@ -400,7 +402,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;
                 }
-                _chips.Add(new MapChip { Label = UiText.T("reallife_map_chip_" + ChipId(kind)), Icon = ChipIcon(kind), On = MapChipRules.Lit(_chipLines, _on) });
+                _chips.Add(new MapChip { Label = UiText.T(Mod + "_map_chip_" + ChipId(kind)), Icon = ChipIcon(kind), On = MapChipRules.Lit(_chipLines, _on) });
                 _chipKinds.Add(k);
             }
         }
