@@ -335,7 +335,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_dealer_kind_wholesale", "reallife_dealer_lot_count", "reallife_dealer_lots_about", "reallife_dealer_lots_staff",
                 "reallife_dealer_lots_title", "reallife_dealer_market_about", "reallife_dealer_market_sum", "reallife_dealer_market_title",
                 "reallife_dealer_mission_0", "reallife_dealer_mission_0_about", "reallife_dealer_none", "reallife_dealer_off_body",
-                "reallife_dealer_off_title", "reallife_dealer_offers_about", "reallife_dealer_offers_title", "reallife_dealer_offers_today",
+                "reallife_dealer_off_title", "reallife_ui_estate_close", "reallife_dealer_offers_about", "reallife_dealer_offers_title", "reallife_dealer_offers_today",
                 "reallife_dealer_perk_2", "reallife_dealer_plan_missed", "reallife_dealer_plan_paying", "reallife_dealer_profile_bargain",
                 "reallife_dealer_profile_fair", "reallife_dealer_report_age", "reallife_dealer_report_all", "reallife_dealer_report_arrears",
                 "reallife_dealer_report_conversion", "reallife_dealer_report_none", "reallife_dealer_report_profit",
