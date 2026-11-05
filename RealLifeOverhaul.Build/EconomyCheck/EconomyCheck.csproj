@@ -860,7 +860,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiTimeOfDay.cs" Link="Mod\UiTimeOfDay.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiMapPanel.cs" Link="Mod\UiMapPanel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiToolRow.cs" Link="Mod\UiToolRow.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BuildMode\BuildModel.cs" Link="Mod\BuildMode\BuildModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BuildMode\UiBuildModel.cs" Link="Mod\BuildMode\UiBuildModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BuildMode\UiBuildPanels.cs" Link="Mod\BuildMode\UiBuildPanels.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildFavouriteRules.cs" Link="Mod\BuildFavouriteRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiHud.cs" Link="Mod\UiHud.cs" />
