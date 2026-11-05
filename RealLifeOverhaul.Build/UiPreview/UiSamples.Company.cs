@@ -458,10 +458,6 @@ internal static partial class UiSamples
                     new CompanyItem { Title = Lic(w, "signage"), Icon = UiIcon.Tag, Chip = w.T("reallife_co_row_lic_missing", "Missing"), ChipTone = UiRole.Danger, Grade = -1, Press = true, Act = CA(CompanyDo.Go, "lic:Speedy Bites~7:3", CompanyView.Tax, CompanyView.SubLicence) }
                 }
         });
-        if (!panel)
-        {
-            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Break });
-        }
         blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Section, Text = w.T("reallife_co_r_cover", "Cover held") });
         blocks.Add(new CompanyBlock
         {
@@ -473,6 +469,10 @@ internal static partial class UiSamples
                     Act = CA(CompanyDo.Go, panel ? "pol:Corner Cafe~12:1" : "pol:Speedy Bites~7:1", CompanyView.Cover) }
             }
         });
+        if (!panel)
+        {
+            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Break });
+        }
         blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Link, Text = w.T("reallife_co_r_campaign", "Campaign"), Value = w.T("reallife_co_none", "None"), Act = CA(CompanyDo.Go, panel ? "biz:Corner Cafe~12" : "biz:Speedy Bites~7", CompanyView.Marketing) });
         blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Section, Text = w.T("reallife_co_sec_do", "What you can do here") });
         blocks.Add(new CompanyBlock
@@ -483,13 +483,24 @@ internal static partial class UiSamples
                 CB(w.T("reallife_co_sell", "Sell this business"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.SellBusiness, panel ? "Corner Cafe~12" : "Speedy Bites~7"), UiIcon.Handshake)
             }
         });
+        if (panel)
+        {
+            var two = new[]
+            {
+                new CompanyItem { Title = "Ana Costa", Sub = Tr(w, "Cooking"), Face = true, Hue = 0.45f, Ring = UiRole.Ok, Figure = w.F("reallife_rota_hours_n", "{hours} h", "hours", "8"), Note = "$13.00 / h", Grade = -1, Press = true, Act = CA(CompanyDo.Go, "emp:0", CompanyView.Staff) },
+                new CompanyItem { Title = "Jin Park", Sub = Tr(w, "Customer service"), Face = true, Hue = 0.7f, Ring = UiRole.Ok, Figure = w.F("reallife_rota_hours_n", "{hours} h", "hours", "8"), Note = "$13.00 / h", Grade = -1, Press = true, Act = CA(CompanyDo.Go, "emp:1", CompanyView.Staff) }
+            };
+            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Section, Text = w.T("reallife_co_staff_people", "Your people"), Value = "2" });
+            blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = two });
+        }
         if (!panel)
         {
             string[][] crew =
             {
-                new[] { "Dev Kapoor", Tr(w, "Customer service"), "$17.00", "0.35" }, new[] { "Lena Adler", Tr(w, "Cooking"), "$16.50", "0.1" }, new[] { "Rui Tanaka", Tr(w, "Customer service"), "$15.90", "0.5" },
-                new[] { "Ines Duarte", Tr(w, "Cooking"), "$16.20", "0.15" }, new[] { "Hana Sato", Tr(w, "Cleaning"), "$15.60", "0.8" }, new[] { "Leo Martin", Tr(w, "Cooking"), "$16.00", "0.3" },
-                new[] { "Maya Okafor", Tr(w, "Customer service"), "$18.20", "0.6" }, new[] { "Tomas Reyes", Tr(w, "Cleaning"), "$15.40", "0.8" }, new[] { "Sana Malik", Tr(w, "Cooking"), "$24.00", "0.25" }
+                // The nine of Speedy Bites as the rota and the staff list have them, with their skills and wages.
+                new[] { "Dev Kapoor", Tr(w, "Customer service"), "$17.00", "0.35" }, new[] { "Lena Adler", Tr(w, "Cooking"), "$16.50", "0.1" }, new[] { "Noa Silva", Tr(w, "Customer service"), "$15.80", "0.2" },
+                new[] { "Kai Brennan", Tr(w, "Cleaning"), "$15.70", "0.45" }, new[] { "Zara Quinn", Tr(w, "Cooking"), "$16.40", "0.7" }, new[] { "Rui Tanaka", Tr(w, "Customer service"), "$15.90", "0.5" },
+                new[] { "Ben Ortiz", Tr(w, "Cooking"), "$15.50", "0.1" }, new[] { "Eli Novak", Tr(w, "Cleaning"), "$15.60", "0.85" }, new[] { "Ines Duarte", Tr(w, "Customer service"), "$16.20", "0.15" }
             };
             var rows = new CompanyItem[crew.Length];
             for (int i = 0; i < crew.Length; i++)
@@ -502,7 +513,7 @@ internal static partial class UiSamples
         }
         if (panel)
         {
-            CompanyFace.AsideSections(blocks, w.T("reallife_co_r_licences", "Licences"));
+            CompanyFace.AsideSections(blocks, w.T("reallife_co_r_licences", "Licences"), w.T("reallife_co_staff_people", "Your people"));
         }
         c.Blocks = blocks.ToArray();
         return c;

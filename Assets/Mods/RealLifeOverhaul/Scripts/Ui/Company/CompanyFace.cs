@@ -90,14 +90,24 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>
         /// The way from the sidebar into a page, in reading order: Right from any entry goes to the top of the page's left column, where the eye goes next, and not to whatever target stands nearest
-        /// the entry's own height (the second row of a list, a switch half way down the card). The page's first column is the one its leftmost target stands in.
+        /// the entry's own height (the second row of a list, a switch half way down the card). Boxes are read through NodeBox: a list's rows keep their place inside the list, so their own X is
+        /// 0 and only the box says where they stand, which is why a page with a list once sent the pad to its far right column. The sidebar is the entries of the sidebar's number that stand at the
+        /// leftmost of them, because other kit parts reuse that number further right on a page.
         /// </summary>
         private static void SidebarIntoPage(UiScene s)
         {
-            float pageX = 0f;   // the sidebar's right edge: a row that bleeds a little past the page's margin still belongs to the page
+            float navX = float.MaxValue;
             for (int i = 0; i < s.NodeCount; i++)
             {
                 if (s.Nodes[i].Command == UiAppWindow.NavCommand)
+                {
+                    navX = Math.Min(navX, s.Nodes[i].X);
+                }
+            }
+            float pageX = 0f;   // the sidebar's right edge: a row that bleeds a little past the page's margin still belongs to the page
+            for (int i = 0; i < s.NodeCount; i++)
+            {
+                if (IsSidebar(s, i, navX))
                 {
                     pageX = Math.Max(pageX, s.Nodes[i].X + s.Nodes[i].W);
                 }
@@ -105,28 +115,46 @@ namespace RealLifeOverhaul.Ui
             float left = float.MaxValue;
             for (int i = 0; i < s.NodeCount; i++)
             {
-                UiNode n = s.Nodes[i];
-                if (n.Layer == 0 && !n.Disabled && n.Command != UiAppWindow.NavCommand && n.X >= pageX)
+                if (OnPage(s, i, navX, pageX))
                 {
-                    left = Math.Min(left, n.X);
+                    s.NodeBox(i, out float bx, out _, out _, out _);
+                    left = Math.Min(left, bx);
                 }
             }
             int first = -1;
+            float firstY = 0f;
             for (int i = 0; i < s.NodeCount && left < float.MaxValue; i++)
             {
-                UiNode n = s.Nodes[i];
-                if (n.Layer == 0 && !n.Disabled && n.Command != UiAppWindow.NavCommand && n.X >= pageX && n.X < left + 40f && (first < 0 || n.Y < s.Nodes[first].Y))
+                if (!OnPage(s, i, navX, pageX))
+                {
+                    continue;
+                }
+                s.NodeBox(i, out float bx, out float by, out _, out _);
+                if (bx < left + 40f && (first < 0 || by < firstY))
                 {
                     first = i;
+                    firstY = by;
                 }
             }
             for (int i = 0; i < s.NodeCount && first >= 0; i++)
             {
-                if (s.Nodes[i].Command == UiAppWindow.NavCommand)
+                if (IsSidebar(s, i, navX))
                 {
                     s.Nodes[i].Right = first;
                 }
             }
+        }
+
+        private static bool IsSidebar(UiScene s, int i, float navX) => s.Nodes[i].Command == UiAppWindow.NavCommand && s.Nodes[i].X < navX + 1f;
+
+        private static bool OnPage(UiScene s, int i, float navX, float pageX)
+        {
+            if (s.Nodes[i].Layer != 0 || s.Nodes[i].Disabled || IsSidebar(s, i, navX))
+            {
+                return false;
+            }
+            s.NodeBox(i, out float bx, out _, out _, out _);
+            return bx >= pageX;
         }
 
         /// <summary>The sidebar: your company, then money and rules, each entry its own glyph.</summary>

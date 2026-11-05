@@ -23,7 +23,7 @@ namespace RealLifeOverhaul.Ui
                 if (cw >= 1000f && t.Licences.Length > 0)
                 {
                     float lwD = UiDraw.SnapDown((cw - gapD) * 0.44f), rwD = cw - gapD - lwD;
-                    Licences(s, at.InRegion(RegionMain), lay, v, w, t, x, y, lwD, bottom, keys, true);
+                    Licences(s, at.InRegion(RegionMain), lay, v, w, t, x, y, lwD, bottom, keys, out bool _, true);
                     CardPage(s, at.InRegion(RegionSide), t.Card, v, w, lay, x + lwD + gapD, y, rwD, bottom, keys);
                     return;
                 }
@@ -37,8 +37,8 @@ namespace RealLifeOverhaul.Ui
             }
             float gap = UiTokens.S6;
             float lw = UiDraw.SnapDown((cw - gap) * 0.6f), rw = cw - gap - lw;
-            bool paidLeft = Licences(s, at.InRegion(RegionMain), lay, v, w, t, x, cy, lw, bottom, keys);
-            Statement(s, at.InRegion(RegionSide), lay, v, w, t, x + lw + gap, cy, rw, bottom, keys, paidLeft);
+            bool paidLeft = Licences(s, at.InRegion(RegionMain), lay, v, w, t, x, cy, lw, bottom, keys, out bool termsLeft);
+            Statement(s, at.InRegion(RegionSide), lay, v, w, t, x + lw + gap, cy, rw, bottom, keys, paidLeft, termsLeft);
         }
 
         private static float TaxLead(UiScene s, UiAt at, CompanyLayout lay, CompanyView v, CompanyTaxFacts t, float x, float y, float cw, IUiKeys keys)
@@ -83,8 +83,9 @@ namespace RealLifeOverhaul.Ui
 
         // The licences: what, where, who handles it, how it stands, when, and the button; then what is coming up, and the returns paid when the column has the room (true when drawn here).
         private static bool Licences(UiScene s, UiAt at, CompanyLayout lay, CompanyView v, CompanyWords w, CompanyTaxFacts t, float x, float y, float width, float bottom, IUiKeys keys,
-            bool compact = false)
+            out bool termsDrawn, bool compact = false)
         {
+            termsDrawn = false;
             float cy = Section(s, at, lay, x, y, width, t.LicencesTitle, t.LicencesCount);
             int comingNeed = t.ComingUp.Length > 0 ? (int)(UiTokens.PairRow + UiTokens.S1 + Math.Min(t.ComingUp.Length, 3) * DoneRow + UiTokens.S4) : 0;
             int fit = (int)Math.Max(1f, Math.Floor((bottom - cy - comingNeed) / LicenceRow));
@@ -97,6 +98,31 @@ namespace RealLifeOverhaul.Ui
             float managerW = showManager ? Math.Min(UiDraw.SnapDown(width * 0.2f), 168f) : 0f;
             float stateW = Math.Min(UiDraw.SnapDown(width * (compact ? 0.3f : 0.2f)), 176f), dayW = compact ? 0f : 76f;
             int rows = Math.Min(t.Licences.Length, fit);
+            // The name of a licence keeps the room it needs, whole: the manager's column gives way to it (down to a portrait and a short name), and where even that is too little the column goes (the
+            // licence's own page says who handles it). "Licença de armazen..." said nothing.
+            float nameNeed = 0f, actNeed = 0f;
+            for (int i = 0; i < rows; i++)
+            {
+                float named = UiTextRules.Width(t.Licences[i].Name ?? string.Empty, UiStyle.Title), placed = UiTextRules.Width(t.Licences[i].Place ?? string.Empty, UiStyle.Small);
+                nameNeed = Math.Max(nameNeed, Math.Max(named, placed) + UiTokens.S1);
+                if (!compact && t.Licences[i].HasAction)
+                {
+                    CompanyButton a0 = t.Licences[i].Action;
+                    actNeed = Math.Max(actNeed, Math.Min(UiDraw.SnapDown(width * 0.2f), UiDraw.ButtonWidth(a0.Kind, a0.Label, a0.Icon, a0.Key, keys)));
+                }
+            }
+            if (showManager)
+            {
+                float taken = UiTokens.S2 + actNeed + (actNeed > 0f ? UiTokens.S3 : 0f) + dayW + UiTokens.S2 + stateW + UiTokens.S3;
+                taken += UiTokens.S1 + UiTokens.IconTile + UiTokens.S3 + nameNeed + UiTokens.S3;
+                float left = width - taken;
+                managerW = UiDraw.SnapDown(Math.Min(managerW, left));
+                if (managerW < 96f)
+                {
+                    showManager = false;
+                    managerW = 0f;
+                }
+            }
             // The button's column is as wide as the widest button of the rows in view, so that the manager, the state and the day stand in the same place in every row.
             float actCol = 0f;
             for (int i = 0; i < rows; i++)
@@ -179,6 +205,17 @@ namespace RealLifeOverhaul.Ui
                 {
                     cy += LineItem(s, at, lay, ref t.Extra[i], x, cy, width);
                 }
+                cy += UiTokens.S3;
+            }
+            // What an accountant costs stands under the permits where this column would end short, and the right column keeps the figures: said once, in the column with the room.
+            if (!compact && t.Terms.Length > 0 && bottom - cy >= UiTokens.PairRow + LineRow * t.Terms.Length + UiTokens.S8 * 2f)
+            {
+                cy = Section(s, at, lay, x, cy, width, t.TermsTitle);
+                for (int i = 0; i < t.Terms.Length && cy + LineRow <= bottom; i++)
+                {
+                    cy += LineItem(s, at, lay, ref t.Terms[i], x, cy, width);
+                }
+                termsDrawn = true;
             }
             return drawn;
         }
@@ -208,7 +245,8 @@ namespace RealLifeOverhaul.Ui
         }
 
         // The right column: the quarter so far, the reserve's controls, the returns paid, the tools, the property tax.
-        private static void Statement(UiScene s, UiAt at, CompanyLayout lay, CompanyView v, CompanyWords w, CompanyTaxFacts t, float x, float y, float width, float bottom, IUiKeys keys, bool paidLeft)
+        private static void Statement(UiScene s, UiAt at, CompanyLayout lay, CompanyView v, CompanyWords w, CompanyTaxFacts t, float x, float y, float width, float bottom, IUiKeys keys, bool paidLeft,
+            bool termsLeft)
         {
             float cy = Section(s, at, lay, x, y, width, t.QuarterTitle, t.QuarterRange);
             for (int i = 0; i < t.Quarter.Length && cy + StatementRow <= bottom; i++)
@@ -243,7 +281,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 cy += UiTokens.S3;
             }
-            if (t.Terms.Length > 0 && bottom - cy >= UiTokens.PairRow + LineRow)
+            if (!termsLeft && t.Terms.Length > 0 && bottom - cy >= UiTokens.PairRow + LineRow)
             {
                 cy = Section(s, at, lay, x, cy, width, t.TermsTitle);
                 for (int i = 0; i < t.Terms.Length && cy + LineRow <= bottom; i++)

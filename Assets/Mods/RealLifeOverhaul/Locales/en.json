@@ -31934,5 +31934,14 @@
   "reallife_rota_ask_staff": "People on the staff here",
   "reallife_rota_legend_unmet": "Asked to be off, kept on",
   "reallife_rota_look_shape": "On shift by hour, an average day",
-  "reallife_rota_to_hire_role": "{skill}, {wage} an hour"
+  "reallife_rota_ask_short_one": "The busiest block needs one more person than the place has.",
+  "reallife_co_hand_over_more": "And these too",
+  "reallife_co_push_kind_record": "{kind} so far",
+  "reallife_rota_plan_delete_short": "Delete",
+  "reallife_co_could_manage": "Who could take a post",
+  "reallife_co_task_elsewhere": "The same decision elsewhere",
+  "reallife_co_asked_in_area": "Asked in their area",
+  "reallife_mgr_skill_far": "Skill standing in for a place",
+  "reallife_co_post_cost": "What a manager here costs",
+  "reallife_co_allowance_range": "from {least} to {most} a day"
 }

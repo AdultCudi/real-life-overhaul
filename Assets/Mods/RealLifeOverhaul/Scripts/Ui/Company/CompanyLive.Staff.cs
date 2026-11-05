@@ -263,16 +263,11 @@ namespace RealLifeOverhaul.Ui
                 AddPeopleWho(blocks, d, s, w, false, w.T("reallife_co_strike_low_sec", "Who stands low"));
             }
             SickBlocks(blocks, s, w);
-            blocks.Add(Note(CompanyText.T("reallife_co_staff_market")));
-            if (!few)
-            {
-                blocks.Add(Note(CompanyText.T("reallife_co_staff_picked")));
-            }
             c.Blocks = blocks.ToArray();
             return c;
         }
 
-        // Up to three people, the ones paid furthest under the going rate or standing lowest, as rows with what is wrong: the summary names whom it counts.
+        // Up to two people, the ones paid furthest under the going rate or standing lowest, as rows with what is wrong, and a count of the rest: the summary names whom it counts.
         private static void AddPeopleWho(List<CompanyBlock> blocks, CompanyDirector d, CompanyState s, Words w, bool underpaid, string title)
         {
             var who = new List<StaffFile>(s.Staff.Count);
@@ -289,8 +284,8 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
-            var items = new List<CompanyItem>(3);
-            for (int i = 0; i < who.Count && i < 3; i++)
+            var items = new List<CompanyItem>(2);
+            for (int i = 0; i < who.Count && i < 2; i++)
             {
                 StaffFile p = who[i];
                 Face(p.Name, p.Id);
@@ -301,7 +296,9 @@ namespace RealLifeOverhaul.Ui
                     Act = CompanyAct.Of(CompanyDo.Go, "emp:" + p.Id, CompanyView.Staff)
                 });
             }
-            blocks.Add(Sec(title, who.Count.ToString()));
+            // The count at the right says how many of all of them the rows are ("2 of 4"), so that the head's count and the rows agree.
+            string shown = who.Count > items.Count ? w.F("reallife_rota_blocks_count", "{count} of {most}", "count", items.Count.ToString(), "most", who.Count.ToString()) : who.Count.ToString();
+            blocks.Add(Sec(title, shown));
             blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = items.ToArray() });
         }
 

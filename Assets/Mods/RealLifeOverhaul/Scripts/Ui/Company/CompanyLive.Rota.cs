@@ -38,13 +38,13 @@ namespace RealLifeOverhaul.Ui
             {
                 RotaPlace p = places[i];
                 bool gaps = p.Type != RotaType.Warehouse && !p.Shut && p.Staff > 0 && p.GapHours > 0;
-                string hours = p.OpenHours > 0 ? CompanyText.T("reallife_co_rota_open", "hours", p.OpenHours.ToString()) : CompanyText.T("reallife_rota_closed");
                 string state = p.Type == RotaType.Warehouse ? CompanyText.T("reallife_rota_row_none") : p.Staff == 0 ? CompanyText.T("reallife_rota_row_no_staff")
                     : gaps ? w.F("reallife_co_row_gap_short", "{hours} h short", "hours", p.GapHours.ToString()) : CompanyText.T("reallife_rota_row_covered");
                 rows.Add(new CompanyRow
                 {
-                    Id = "p:" + p.Place, Title = p.Name, Sub = RotaGame.TypeName(p.Reg) + ", " + hours, Icon = UiIcon.Calendar, Figure = state, Note = w.F("reallife_co_tree_staff", "{count} staff",
-                        "count", p.Staff.ToString()),
+                    // The people count stands in the line under the name, where it has the room: with the opening hours in it the line was cut in the narrow list.
+                    Id = "p:" + p.Place, Title = p.Name, Icon = UiIcon.Calendar, Figure = state,
+                    Sub = RotaGame.TypeName(p.Reg) + ", " + w.F("reallife_co_tree_staff", "{count} staff", "count", p.Staff.ToString()),
                     FigureTone = p.Type == RotaType.Warehouse ? UiRole.Muted : p.Staff == 0 ? UiRole.DangerText : gaps ? UiRole.WarnText : UiRole.OkText
                 });
                 AddPlanRows(rows, d, p.Place, w);
@@ -887,21 +887,23 @@ namespace RealLifeOverhaul.Ui
                 Value = shown.Overtime ? w.T("reallife_co_on", "On") : w.T("reallife_co_off", "Off"),
                 Act = shown.OvertimeAct
             });
-            var plansButtons = new List<CompanyButton>(2);
+            var plansButtons = new List<CompanyButton>(3);
             if (!plan.Dated && !inUse)
             {
-                plansButtons.Add(Btn(CompanyText.T("reallife_rota_use_this"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.PlanUse, place, id), UiAction.Alt, UiIcon.Check));
+                // The main action stands alone on its row where there is one; new, copy and delete are the one row of tools on every plan's page.
+                blocks.Add(Buttons(Btn(CompanyText.T("reallife_rota_use_this"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.PlanUse, place, id), UiAction.Alt, UiIcon.Check)));
             }
             plansButtons.Add(Btn(CompanyText.T("reallife_rota_plan_new"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.PlanNew, place), UiAction.Count, UiIcon.Plus, false,
                 set != null && set.Plans.Count >= RotaPlanRules.PlansMost, CompanyText.T("reallife_rota_plans_most", "count", RotaPlanRules.PlansMost.ToString())));
-            blocks.Add(Buttons(plansButtons.ToArray()));
             int undated = 0;
             for (int i = 0; set != null && i < set.Plans.Count; i++)
             {
                 undated += set.Plans[i].Dated ? 0 : 1;
             }
-            blocks.Add(Buttons(shown.Copy, Btn(CompanyText.T("reallife_rota_plan_delete"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.PlanDelete, place, id), UiAction.Count, UiIcon.Close, true,
-                set == null || (!plan.Dated && undated <= 1), CompanyText.T("reallife_rota_plan_delete_last"))));
+            plansButtons.Add(shown.Copy);
+            plansButtons.Add(Btn(w.T("reallife_rota_plan_delete_short", "Delete"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.PlanDelete, place, id), UiAction.Count, UiIcon.Close, true,
+                set == null || (!plan.Dated && undated <= 1), CompanyText.T("reallife_rota_plan_delete_last")));
+            blocks.Add(Buttons(plansButtons.ToArray()));
             blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Break });
             blocks.Add(Sec(w.T("reallife_rota_needs", "Needs by time"), CompanyText.T("reallife_rota_blocks_count", "count", plan.Blocks.Count.ToString(), "most",
                 RotaPlanRules.BlocksMost.ToString())));

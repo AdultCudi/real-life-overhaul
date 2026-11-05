@@ -65,7 +65,8 @@ namespace RealLifeOverhaul.Ui
             if (busiest > staff)
             {
                 list.Add(new CompanyBlock { Kind = CompanyBlockKind.Note,
-                    Text = w.F("reallife_rota_ask_short", "The busiest block needs {count} more people than the place has.", "count", (busiest - staff).ToString()),
+                    Text = busiest - staff == 1 ? w.T("reallife_rota_ask_short_one", "The busiest block needs one more person than the place has.")
+                        : w.F("reallife_rota_ask_short", "The busiest block needs {count} more people than the place has.", "count", (busiest - staff).ToString()),
                     Tone = UiRole.WarnText });
             }
             return list.ToArray();

@@ -391,8 +391,23 @@ namespace RealLifeOverhaul.Ui
                         UiDraw.TextMiddle(s, at, dx, dy, dh, dw, UiStyle.Small, UiRole.Muted, w.T("reallife_rota_day_off", "off"), UiFlags.Centre | UiFlags.Truncate);
                         continue;
                     }
-                    int cell = UiDraw.Box(s, at, dx, dy, dw, dh, warn ? UiRole.WarnSoft : press && d == day ? UiRole.RowSel : UiRole.Row, UiRole.None, UiTokens.RadiusLarge, UiFlags.None);
-                    UiDraw.TextMiddle(s, at.In(cell), dx, dy, dh, dw, UiStyle.SmallStrong, warn ? UiRole.WarnText : UiRole.Text, shift, UiFlags.Centre | UiFlags.Truncate);
+                    // A day split in runs ("07-11, 13-17") stands as one run a line in a taller cell: both on one line they were cut to "07-11...".
+                    string[] runs = shift.Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries);
+                    float cellH = runs.Length > 1 ? Math.Min(rowH - UiTokens.S1, UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SmallStrong)) * 2f + UiTokens.S2) : dh;
+                    float cellY = cy + Mid(rowH, cellH);
+                    int cell = UiDraw.Box(s, at, dx, cellY, dw, cellH, warn ? UiRole.WarnSoft : press && d == day ? UiRole.RowSel : UiRole.Row, UiRole.None, UiTokens.RadiusLarge, UiFlags.None);
+                    UiRole ink = warn ? UiRole.WarnText : UiRole.Text;
+                    if (runs.Length > 1)
+                    {
+                        float lineH = (cellH - UiTokens.S1) / 2f;
+                        string second = runs.Length > 2 ? runs[1] + " +" + (runs.Length - 2) : runs[1];
+                        UiDraw.TextMiddle(s, at.In(cell), dx, cellY + UiTokens.S1 / 2f, lineH, dw, UiStyle.SmallStrong, ink, runs[0], UiFlags.Centre | UiFlags.Truncate);
+                        UiDraw.TextMiddle(s, at.In(cell), dx, cellY + UiTokens.S1 / 2f + lineH, lineH, dw, UiStyle.SmallStrong, ink, second, UiFlags.Centre | UiFlags.Truncate);
+                    }
+                    else
+                    {
+                        UiDraw.TextMiddle(s, at.In(cell), dx, dy, dh, dw, UiStyle.SmallStrong, ink, shift, UiFlags.Centre | UiFlags.Truncate);
+                    }
                 }
                 UiDraw.TextMiddle(s, at, x + personW + dayW * 7f, cy, rowH, hoursW, UiStyle.BodyStrong, pr.HoursTone == UiRole.None ? UiRole.Text : pr.HoursTone, pr.Hours ?? string.Empty,
                     UiFlags.Right | UiFlags.Truncate);
@@ -849,8 +864,9 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // The crew on shift in each hour averaged over the seven days, from the people's shifts as "07-15" (null for a day off); null where nobody works.
-        private static CompanyFloor ShapeOf(CompanyRotaPerson[] people, string title)
+        // The crew on shift in each hour averaged over the seven days, from the people's shifts as "07-15" (null for a day off), and as "07-11, 13-17" where the day is split in two
+        // runs (the live rota writes every run of a day so, CompanyLive.Rota); null where nobody works.
+        internal static CompanyFloor ShapeOf(CompanyRotaPerson[] people, string title)
         {
             int from = 24, to = 0;
             var spans = new System.Collections.Generic.List<int[]>(people.Length * 7);
@@ -858,14 +874,16 @@ namespace RealLifeOverhaul.Ui
             {
                 for (int d = 0; people[i].Shifts != null && d < people[i].Shifts.Length; d++)
                 {
-                    string shift = people[i].Shifts[d];
-                    int dash = string.IsNullOrEmpty(shift) ? -1 : shift.IndexOf('-');
-                    int a, b;
-                    if (dash > 0 && int.TryParse(shift.Substring(0, dash), out a) && int.TryParse(shift.Substring(dash + 1), out b) && b > a)
+                    string[] runs = string.IsNullOrEmpty(people[i].Shifts[d]) ? new string[0] : people[i].Shifts[d].Split(new[] { ", " }, StringSplitOptions.RemoveEmptyEntries);
+                    for (int k = 0; k < runs.Length; k++)
                     {
-                        spans.Add(new[] { a, b });
-                        from = Math.Min(from, a);
-                        to = Math.Max(to, b);
+                        int dash = runs[k].IndexOf('-'), a, b;
+                        if (dash > 0 && int.TryParse(runs[k].Substring(0, dash), out a) && int.TryParse(runs[k].Substring(dash + 1), out b) && b > a)
+                        {
+                            spans.Add(new[] { a, b });
+                            from = Math.Min(from, a);
+                            to = Math.Max(to, b);
+                        }
                     }
                 }
             }

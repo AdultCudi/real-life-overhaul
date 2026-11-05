@@ -307,11 +307,11 @@ namespace RealLifeOverhaul.Ui
                 float gap = UiTokens.S8, colW = Math.Min(CardMeasure, UiDraw.SnapDown((cw - gap) / 2f)), rx = x + colW + gap, ry = cy, ly = cy;
                 for (int i = 0; i < split && ly < bottom; i++)
                 {
-                    ly = Block(s, at, lay, v, w, c.Blocks[i], x, ly, colW, bottom, keys);
+                    ly = Block(s, at, lay, v, w, c.Blocks[i], x, ly + GapBefore(c.Blocks, i), colW, bottom, keys);
                 }
                 for (int i = split + 1; i < c.Blocks.Length && ry < bottom; i++)
                 {
-                    ry = Block(s, at, lay, v, w, c.Blocks[i], rx, ry, colW, bottom, keys);
+                    ry = Block(s, at, lay, v, w, c.Blocks[i], rx, ry + GapBefore(c.Blocks, i), colW, bottom, keys);
                 }
                 return Math.Max(ly, ry);
             }
@@ -325,10 +325,15 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;
                 }
-                cy = Block(s, at, lay, v, w, c.Blocks[i], x, cy, Math.Min(cw, CardMeasure), bottom, keys);   // a row's words and its figure stay within a line's reach, however wide the window
+                // A row's words and its figure stay within a line's reach, however wide the window.
+                cy = Block(s, at, lay, v, w, c.Blocks[i], x, cy + GapBefore(c.Blocks, i), Math.Min(cw, CardMeasure), bottom, keys);
             }
             return cy;
         }
+
+        // The run of buttons that follows a row or a link has a gap above it: the dismiss button stood 2 px under the last figure of the seat's page.
+        private static float GapBefore(CompanyBlock[] blocks, int i) =>
+            i > 0 && blocks[i].Kind == CompanyBlockKind.Buttons && (blocks[i - 1].Kind == CompanyBlockKind.Row || blocks[i - 1].Kind == CompanyBlockKind.Link) ? UiTokens.S3 : 0f;
 
         // The head: a face in its ring or a glyph on a tile, the kicker over the title, what it is under it and its chips; up to four facts across the right.
         private static float CardHead(UiScene s, UiAt at, CompanyCard c, float x, float y, float cw)
@@ -612,15 +617,29 @@ namespace RealLifeOverhaul.Ui
             lay.Add(new CompanyButton { Label = b.Text, Act = b.Act3, Disabled = b.Disabled });
             float sw = Math.Min(UiDraw.SnapDown(cw * 0.42f), 220f);
             float tw = cw - sw - UiTokens.S4;
+            float rowH = LabelRow(s, at, x, y, tw, b.Text, b.Sub);
+            UiDraw.Stepper(s, at, x + cw - sw, y + Mid(rowH, UiTokens.Control), sw, b.Value, b.CanLess && !b.Disabled, b.CanMore && !b.Disabled, StepLess, StepType, StepMore, first, b.Disabled);
+            return y + rowH;
+        }
+
+        // The words of a control row: its name over its hint at the left of the control. A hint that does not fit the room takes a second line and the row grows by it, where it was cut to its first
+        // words ("Do valor de mercado, acima do salário..."). Returns the row's height.
+        private static float LabelRow(UiScene s, UiAt at, float x, float y, float tw, string text, string sub)
+        {
             float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
-            float top = y + UiDraw.SnapDown((SwitchRow - th - (string.IsNullOrEmpty(b.Sub) ? 0f : sh)) / 2f);
-            UiDraw.TextMiddle(s, at, x, top, th, tw, UiStyle.Title, UiRole.Text, b.Text ?? string.Empty, UiFlags.Truncate);
-            if (!string.IsNullOrEmpty(b.Sub))
+            bool has = !string.IsNullOrEmpty(sub), two = has && UiTextRules.Width(sub, UiStyle.Small) > tw;
+            float rowH = two ? SwitchRow + sh : SwitchRow;
+            float top = y + UiDraw.SnapDown((rowH - th - (has ? (two ? sh * 2f : sh) : 0f)) / 2f);
+            UiDraw.TextMiddle(s, at, x, top, th, tw, UiStyle.Title, UiRole.Text, text ?? string.Empty, UiFlags.Truncate);
+            if (two)
             {
-                UiDraw.TextMiddle(s, at, x, top + th, sh, tw, UiStyle.Small, UiRole.Text2, b.Sub, UiFlags.Truncate);
+                UiDraw.Text(s, at, x, top + th, tw, UiStyle.Small, UiRole.Text2, sub, UiFlags.Wrap | UiFlags.Truncate, 2);
             }
-            UiDraw.Stepper(s, at, x + cw - sw, y + Mid(SwitchRow, UiTokens.Control), sw, b.Value, b.CanLess && !b.Disabled, b.CanMore && !b.Disabled, StepLess, StepType, StepMore, first, b.Disabled);
-            return y + SwitchRow;
+            else if (has)
+            {
+                UiDraw.TextMiddle(s, at, x, top + th, sh, tw, UiStyle.Small, UiRole.Text2, sub, UiFlags.Truncate);
+            }
+            return rowH;
         }
 
         // A name to type: the words and their hint at the left, the kit's text field at the right. Typing goes through the host's field; the screen puts the typed words in the action.
@@ -634,15 +653,9 @@ namespace RealLifeOverhaul.Ui
             bool typing = v.Typing != null && v.TypingKind == CompanyTyping.PlanName && v.TypingId == id;
             float fw = Math.Min(UiDraw.SnapDown(cw * 0.5f), 320f);
             float tw = cw - fw - UiTokens.S4;
-            float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
-            float top = y + UiDraw.SnapDown((SwitchRow - th - (string.IsNullOrEmpty(b.Sub) ? 0f : sh)) / 2f);
-            UiDraw.TextMiddle(s, at, x, top, th, tw, UiStyle.Title, UiRole.Text, b.Text ?? string.Empty, UiFlags.Truncate);
-            if (!string.IsNullOrEmpty(b.Sub))
-            {
-                UiDraw.TextMiddle(s, at, x, top + th, sh, tw, UiStyle.Small, UiRole.Text2, b.Sub, UiFlags.Truncate);
-            }
-            UiDraw.TextField(s, at, x + cw - fw, y + Mid(SwitchRow, UiTokens.Control), fw, typing ? v.Typing : b.Value, b.Text, StepType, first, b.Disabled, typing);
-            return y + SwitchRow;
+            float rowH = LabelRow(s, at, x, y, tw, b.Text, b.Sub);
+            UiDraw.TextField(s, at, x + cw - fw, y + Mid(rowH, UiTokens.Control), fw, typing ? v.Typing : b.Value, b.Text, StepType, first, b.Disabled, typing);
+            return y + rowH;
         }
 
         // A choice among a few: the words at the left, the options as chips at the right, the chosen one filled.
@@ -654,9 +667,11 @@ namespace RealLifeOverhaul.Ui
             {
                 chips += UiDraw.ButtonWidth(UiButtonKind.Chip, options[i], UiIcon.None, UiAction.Count, null) + (i > 0 ? UiTokens.S2 : 0f);
             }
-            bool below = chips > cw * 0.62f;
+            // The chips go under the words where the words do not fit beside them: a label cut to its first words ("Questions Ray cannot...") says nothing of what is chosen.
+            float beside = cw - chips - UiTokens.S4;
+            bool below = chips > cw * 0.62f || UiTextRules.Width(b.Text ?? string.Empty, UiStyle.Title) > beside || (!string.IsNullOrEmpty(b.Sub) && UiTextRules.Width(b.Sub, UiStyle.Small) > beside);
             float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
-            float tw = below ? cw : cw - chips - UiTokens.S4;
+            float tw = below ? cw : beside;
             float top = y + UiDraw.SnapDown((SwitchRow - th - (string.IsNullOrEmpty(b.Sub) ? 0f : sh)) / 2f);
             UiDraw.TextMiddle(s, at, x, top, th, tw, UiStyle.Title, UiRole.Text, b.Text ?? string.Empty, UiFlags.Truncate);
             if (!string.IsNullOrEmpty(b.Sub))

@@ -28,6 +28,12 @@ internal static partial class Program
                 Lay = (s, f, dark, k, t) => CompanyFace.Lay(s, UiSamples.CompanyFactsOf(t, st), UiSamples.CompanyViewOf(st), UiSamples.CompanyWordsOf(t), new CompanyLayout(), f, dark, k)
             });
         }
+        if (Environment.GetEnvironmentVariable("RLO_UI_FLOOR") != null && !_companyFaceChecked)
+        {
+            _companyFaceChecked = true;
+            CompanyFloors(only);
+            return;
+        }
         string dump = Environment.GetEnvironmentVariable("RLO_UI_DUMP");   // a state's name: its items with their places, in English at 16:9, to see where a box lands
         if (dump != null && !_companyFaceChecked)
         {
@@ -78,8 +84,9 @@ internal static partial class Program
         Check(worst < 5.0, "company face cost: the heaviest of " + heavy.Length + " pages (" + worstState + ") lays out in " + worst.ToString("0.00") + " ms, the " + heavy.Length + " together in " + total.ToString("0.00") + " ms: one layout when the facts change or the player acts, nothing per frame");
     }
 
-    // The pad's way into a page follows reading order: Right from the sidebar lands on the top of the page's left column, in every state, so that the first press goes where the eye does and the
-    // path then runs down the column and across to the next. A state whose page has no target at all is skipped.
+    // The pad's way into a page follows reading order: Right from every sidebar entry lands on the top of the page's left column, in every state, by the d-pad's own step (UiFocusRules.Next),
+    // so that the first press goes where the eye does and the path then runs down the column and across to the next. A list's rows keep their place inside the list (their own X is 0), so
+    // every position is read through NodeBox. A state whose page has no target at all is skipped.
     private static void CompanyPadOrderChecks()
     {
         UiWords en = UiWords("en");
@@ -89,17 +96,21 @@ internal static partial class Program
         {
             var s = new UiScene();
             CompanyFace.Lay(s, UiSamples.CompanyFactsOf(en, state), UiSamples.CompanyViewOf(state), UiSamples.CompanyWordsOf(en), new CompanyLayout(), UiFrame.FullMenu(16f / 9f, "Company"), true, UiDefaultKeys.Keyboard);
-            float pageX = 0f;
-            int nav = -1;
+            var side = new List<int>();
+            float navX = float.MaxValue, pageX = 0f;
             for (int i = 0; i < s.NodeCount; i++)
             {
-                if (s.Nodes[i].Command == UiAppWindow.NavCommand && nav < 0)
+                navX = s.Nodes[i].Command == UiAppWindow.NavCommand ? Math.Min(navX, s.Nodes[i].X) : navX;
+            }
+            for (int i = 0; i < s.NodeCount; i++)
+            {
+                if (s.Nodes[i].Command == UiAppWindow.NavCommand && s.Nodes[i].X < navX + 1f)
                 {
-                    nav = i;
-                    pageX = s.Nodes[i].X + s.Nodes[i].W;
+                    side.Add(i);
+                    pageX = Math.Max(pageX, s.Nodes[i].X + s.Nodes[i].W);
                 }
             }
-            if (nav < 0)
+            if (side.Count == 0)
             {
                 continue;   // a card over the world has no sidebar
             }
@@ -107,9 +118,10 @@ internal static partial class Program
             for (int i = 0; i < s.NodeCount; i++)
             {
                 UiNode n = s.Nodes[i];
-                if (n.Layer == 0 && !n.Disabled && n.Command != UiAppWindow.NavCommand && n.X >= pageX)
+                s.NodeBox(i, out float bx, out _, out _, out _);
+                if (n.Layer == 0 && !n.Disabled && !side.Contains(i) && bx >= pageX)
                 {
-                    left = Math.Min(left, n.X);
+                    left = Math.Min(left, bx);
                 }
             }
             if (left == float.MaxValue)
@@ -117,19 +129,44 @@ internal static partial class Program
                 continue;
             }
             states++;
-            int to = s.Nodes[nav].Right;
-            bool ok = to >= 0 && s.Nodes[to].X < left + 40f;
-            for (int i = 0; ok && i < s.NodeCount; i++)
+            foreach (int entry in side)
             {
-                UiNode n = s.Nodes[i];
-                ok = !(n.Layer == 0 && !n.Disabled && n.Command != UiAppWindow.NavCommand && n.X >= pageX && n.X < left + 40f && n.Y < s.Nodes[to].Y - 0.5f);
-            }
-            if (!ok)
-            {
-                wrong.Append(" ").Append(state).Append("[to=" + to + " left=" + left + " pageX=" + pageX + (to >= 0 ? " toX=" + s.Nodes[to].X + " toY=" + s.Nodes[to].Y : "") + "]");
+                int to = UiFocusRules.Next(s, entry, 1, 0);
+                bool ok = to >= 0;
+                if (ok)
+                {
+                    s.NodeBox(to, out float tx, out float ty, out _, out _);
+                    ok = tx < left + 40f && tx >= pageX;
+                    for (int i = 0; ok && i < s.NodeCount; i++)
+                    {
+                        UiNode n = s.Nodes[i];
+                        s.NodeBox(i, out float bx, out float by, out _, out _);
+                        ok = !(n.Layer == 0 && !n.Disabled && !side.Contains(i) && bx >= pageX && bx < left + 40f && by < ty - 0.5f);
+                    }
+                }
+                if (!ok)
+                {
+                    wrong.Append(" ").Append(state).Append("[entry=" + entry + " to=" + to + "]");
+                    break;
+                }
             }
         }
-        Check(wrong.Length == 0 && states > 40, "company pad: Right from the sidebar lands on the top of the page's left column in every state (" + states + " states)" + (wrong.Length > 0 ? ", not in:" + wrong : string.Empty));
+        Check(wrong.Length == 0 && states > 40, "company pad: Right from every sidebar entry lands on the top of the page's left column in every state (" + states + " states)" + (wrong.Length > 0 ? ", not in:" + wrong : string.Empty));
+    }
+
+    // The rota's on-shift-by-hour chart reads each person's day as the live rota writes it: one run "07-15", or several joined by a comma and a space "07-11, 13-17". A person with two runs in a day
+    // counts in both of them (and in none of the hours between), so the chart's hours and crew are not too low where shifts are split.
+    private static void CompanyShapeChecks()
+    {
+        var split = new[] { new CompanyRotaPerson { Name = "Kai Brennan", Shifts = new[] { "07-11, 13-17", "07-11, 13-17", "07-11, 13-17", "07-11, 13-17", "07-11, 13-17", "07-11, 13-17", "07-11, 13-17" } } };
+        CompanyFloor floor = CompanyFace.ShapeOf(split, "shape");
+        Check(floor != null && floor.Crew.Length == 10 && floor.Hours[0] == "07" && floor.Hours[9] == "16",
+            "company rota shape: two runs in a day give the chart the hours 07 to 16 (" + (floor == null ? "no chart" : floor.Hours.Length + " hours from " + floor.Hours[0]) + ")");
+        Check(floor != null && floor.Crew[0] == 1 && floor.Crew[3] == 1 && floor.Crew[4] == 0 && floor.Crew[5] == 0 && floor.Crew[6] == 1 && floor.Crew[9] == 1,
+            "company rota shape: a person on 07-11 and 13-17 every day is one on shift at 07 to 10 and at 13 to 16, and none at 11 and 12 (" + (floor == null ? "no chart" : string.Join(",", new List<int>(floor.Crew).ConvertAll(c => c.ToString()).ToArray())) + ")");
+        var single = new CompanyRotaPerson[1] { new CompanyRotaPerson { Name = "One", Shifts = new[] { "07-15", null, "", "13-17, 19-21", "bad", "09-08", null } } };
+        CompanyFloor one = CompanyFace.ShapeOf(single, "shape");
+        Check(one != null && one.Hours[0] == "07" && one.Hours[one.Hours.Length - 1] == "20", "company rota shape: a single run, a day off, an empty day, a bad text and a run that ends before it starts are read as they are");
     }
 
     // The managers' tree and its two filters (the places waiting for you, the open posts, one district): what each keeps in the sample and in a company of the cap's size, and that a
@@ -223,6 +260,50 @@ internal static partial class Program
             seen |= 1 << screen.View.State;
         }
         Check(seen == 7 && screen.View.State == (4 % CompanyView.StateCount), "company managers filter: the state chip turns through all three values and round");
+    }
+
+    // The empty page left under what each state draws, per band of the window's width (English at 16:9): the pixels from the last drawn thing to the window's foot, as the previews are measured.
+    private static void CompanyFloors(string only)
+    {
+        float[][] bands = { new[] { 384f, 560f }, new[] { 560f, 760f }, new[] { 760f, 940f }, new[] { 960f, 1160f }, new[] { 1160f, 1360f }, new[] { 1360f, 1560f }, new[] { 1560f, 1764f } };
+        UiWords en = UiWords("en");
+        foreach (string state in UiSamples.CompanyStates)
+        {
+            if (only != null && !state.StartsWith(only, StringComparison.Ordinal))
+            {
+                continue;
+            }
+            var s = new UiScene();
+            CompanyFace.Lay(s, UiSamples.CompanyFactsOf(en, state), UiSamples.CompanyViewOf(state), UiSamples.CompanyWordsOf(en), new CompanyLayout(), UiFrame.FullMenu(16f / 9f, "Company"), true, UiDefaultKeys.Keyboard);
+            var low = new float[bands.Length];
+            for (int i = 0; i < s.ItemCount; i++)
+            {
+                UiItem it = s.Items[i];
+                if (it.Parent < 0 || it.X < 370f || it.Y < 82f || it.Y > 948f || it.H > 500f || (it.Kind == UiKind.Box && it.W > 1000f))
+                {
+                    continue;
+                }
+                float x = it.X, y = it.Y;
+                if (it.Clip >= 0)
+                {
+                    x += s.Clips[it.Clip].X;
+                    y += s.Clips[it.Clip].Y - s.Clips[it.Clip].Offset;
+                }
+                for (int b = 0; b < bands.Length; b++)
+                {
+                    if (x < bands[b][1] && x + it.W > bands[b][0])
+                    {
+                        low[b] = Math.Max(low[b], y + it.H);
+                    }
+                }
+            }
+            var line = new StringBuilder();
+            for (int b = 0; b < bands.Length; b++)
+            {
+                line.Append(((int)(946f - low[b])).ToString().PadLeft(5));
+            }
+            Console.WriteLine("FLOOR " + state.PadRight(26) + line);
+        }
     }
 
     private static void CompanyDump(string state)
@@ -327,6 +408,7 @@ internal static partial class Program
         CompanyCost();
         CompanyFilterChecks();
         CompanyPadOrderChecks();
+        CompanyShapeChecks();
         // No action without a page that draws it, and none without the live source's handler: an orphan either way is a button nobody can press or a press nothing answers.
         var orphans = new StringBuilder();
         var unhandled = new StringBuilder();

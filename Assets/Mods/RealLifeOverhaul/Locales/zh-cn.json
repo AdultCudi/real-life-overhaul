@@ -31934,5 +31934,14 @@
   "reallife_rota_ask_staff": "这里的员工",
   "reallife_rota_legend_unmet": "申请休假却被安排上班",
   "reallife_rota_look_shape": "一个普通日各小时的在岗人数",
-  "reallife_rota_to_hire_role": "{skill}，每小时{wage}"
+  "reallife_rota_ask_short_one": "最忙时段需要的人手比这里现有的多一人。",
+  "reallife_co_hand_over_more": "还有这些",
+  "reallife_co_push_kind_record": "{kind}至今成效",
+  "reallife_rota_plan_delete_short": "删除",
+  "reallife_co_could_manage": "谁能担任经理岗位",
+  "reallife_co_task_elsewhere": "其他地点的同类决定",
+  "reallife_co_asked_in_area": "其辖区内待决问题",
+  "reallife_mgr_skill_far": "代管地点时的技能",
+  "reallife_co_post_cost": "此处经理的成本",
+  "reallife_co_allowance_range": "每天{least}至{most}"
 }

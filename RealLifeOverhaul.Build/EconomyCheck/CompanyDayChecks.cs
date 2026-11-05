@@ -154,7 +154,8 @@ internal static partial class Program
     // Offer takes the market rent from the one function the property feature feeds: none known leaves the ask as it was; a market above the rent pulls the ask up by a
     // share of the way, one below pulls it down; and the director asks CompanyBridges.MarketRent, and nothing else, for it.
     // The lease question's figures are measured against the rent paid now (the escalation's own A, with the agreed rise and a hold-over premium in it), not the game's base rent: in a falling
-    // market the landlord's offer is under what is paid, and the card must show a cut with its figure and a Rent now that differs from the Offered.
+    // market the landlord's offer is under what is paid, and the card must show a cut with its figure and a Rent now that differs from the Offered. The check presses the card the screen
+    // shows (CompanyLeaseLive.Fill, which the live source calls), so reading the base rent in its place fails here.
     private static void DayLeaseCard()
     {
         var held = new LeaseFile { Place = "Mill~9", Start = 100, Term = 360, Rent = 200, Rise = 0, Hold = true };
@@ -162,10 +163,15 @@ internal static partial class Program
         int paidNow = LeaseRules.RentAt(held.Rent, held.Running), offered = LeaseRules.RentAt(held.Rent, held.Offer);
         int more, less;
         LeaseRules.YearChange(paidNow, offered, 365, out more, out less);
-        Check(paidNow != offered && less > 0 && more == 0, "lease card: a hold-over lease in a falling market shows rent now (" + paidNow + ") apart from the offered (" + offered + ") and a cut of " + less + " a year, not nought");
-        int baseRent = held.Rent;
-        LeaseRules.YearChange(baseRent, offered, 365, out more, out less);
-        Check(less == 0 && baseRent == offered, "lease card: measured against the game's base rent the same cut reads as nought, which is what the card said before");
+        Check(paidNow != offered && less > 0 && more == 0, "lease card: a hold-over lease in a falling market has rent now (" + paidNow + ") apart from the offered (" + offered + ") and a cut of " + less + " a year, not nought");
+        var e = new Escalation { Kind = (int)EscalationKind.Lease, Place = held.Place, A = paidNow, B = offered, C = 14, Detail = "Mill Road" };
+        var q = new RealLifeOverhaul.Ui.CompanyQuestion();
+        var words = new RealLifeOverhaul.Ui.CompanyWords((key, english) => english, money => "$" + ((int)money).ToString());
+        RealLifeOverhaul.Ui.CompanyLeaseLive.Fill(q, words, e, held, perDay => perDay * 30, amount => "$" + amount.ToString(), share => (share / 10f).ToString("0.#") + "%", 365, 30, 0, 1, 2);
+        string cut = "About $" + less + " a year less in rent";
+        Check(q.FactValues[0] == "$" + paidNow * 30 && q.FactValues[1] == "$" + offered * 30 && q.FactValues[0] != q.FactValues[1],
+            "lease card: the question shows Rent now (" + q.FactValues[0] + ") and Offered (" + q.FactValues[1] + ") as two figures, the first being what is paid");
+        Check(q.Choices[0].Lines[0].Text == cut && q.Headline.Contains("goes down"), "lease card: renewing reads as a cut of " + less + " a year, not as the rent staying (it says \"" + q.Choices[0].Lines[0].Text + "\")");
     }
 
     private static void DayMarketRent()

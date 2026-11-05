@@ -630,6 +630,7 @@ namespace RealLifeOverhaul.Ui
                 left.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = places.ToArray() });
             }
             var month = new List<CompanyBlock>(8);
+            bool noManagers = false;
             int decided = 0, cost = 0;
             for (int i = 0; i < d.ManagerData.Managers.Count; i++)
             {
@@ -643,6 +644,7 @@ namespace RealLifeOverhaul.Ui
             {
                 left.Add(Note(CompanyText.T("reallife_co_no_managers")));   // nothing to count for a company that has no manager: no month of zeros
                 month.Clear();
+                noManagers = true;
                 // What a manager would decide, from the decisions the catalogue gives every kind of place: the owner sees what there is to hand over.
                 var every = new List<CompanyItem>(ManagerTaskCount);
                 var start = new ManagerFile();   // the steps a new manager starts at: the limit each kind of decision would have
@@ -651,38 +653,27 @@ namespace RealLifeOverhaul.Ui
                     string line = CompanyApp.TaskLine(start, (ManagerTask)t);
                     every.Add(new CompanyItem { Grade = -1, Title = CompanyApp.TaskTitle(t), Sub = string.IsNullOrEmpty(line) ? null : line, Icon = TaskIcons[Math.Min(t, TaskIcons.Length - 1)] });
                 }
+                // The ten stand in two columns, five and five, under the note and beside the levels: one long column left a third of the page empty.
+                int half = (every.Count + 1) / 2;
                 left.Add(Sec(w.T("reallife_co_hand_over", "What you can hand over"), every.Count.ToString()));
-                left.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = every.ToArray() });
+                left.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = every.GetRange(0, half).ToArray() });
+                if (h != null)
+                {
+                    AddLevels(left, h, w);   // under the first five, where that column would end short
+                }
+                month.Add(Sec(w.T("reallife_co_hand_over_more", "And these too")));
+                month.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = every.GetRange(half, every.Count - half).ToArray() });
+                CompanyItem[] could = CouldManage(d, w, 3);
+                if (could.Length > 0)
+                {
+                    month.Add(Sec(w.T("reallife_co_could_manage", "Who could take a post")));
+                    month.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = could });
+                }
             }
             var right = month;   // (the open posts are the tree's list at the left: said once, there)
-            if (h != null)
+            if (h != null && !noManagers)
             {
-                right.Add(Sec(w.T("reallife_co_owner_levels", "Levels")));
-                right.Add(new CompanyBlock
-                {
-                    Kind = CompanyBlockKind.Switch, Text = w.T("reallife_co_deep_mode", "Deep Mode"), Sub = w.T("reallife_co_deep_sub",
-                        "The executives, regions, the policy centre and every question's inbox"),
-                    On = h.Deep, Value = w.T(h.Deep ? "reallife_co_on" : "reallife_co_off", h.Deep ? "On" : "Off"), Act = CompanyAct.Of(CompanyDo.DeepMode, null, h.Deep ? 0 : 1)
-                });
-                if (h.Deep)
-                {
-                    right.Add(new CompanyBlock
-                    {
-                        Kind = CompanyBlockKind.Items, Items = new[]
-                        {
-                            new CompanyItem { Grade = -1, Title = w.T("reallife_co_inbox", "Questions inbox"), Icon = UiIcon.Envelope,
-                                Sub = w.T("reallife_co_level_inbox", "Every question your managers pass up"),
-                                Figure = w.F("reallife_co_inbox_open", "{count} open", "count", OpenCount(h).ToString()), Press = true,
-                                Act = CompanyAct.Of(CompanyDo.Go, null, CompanyView.Managers, CompanyView.SubInbox) },
-                            new CompanyItem { Grade = -1, Title = w.T("reallife_co_policy_centre", "Policy centre"), Icon = UiIcon.Sliders,
-                                Sub = w.T("reallife_co_level_policy", "Rules for the company, a region or a place"),
-                                Press = true, Act = CompanyAct.Of(CompanyDo.Go, null, CompanyView.Managers, CompanyView.SubPolicy) },
-                            new CompanyItem { Grade = -1, Title = w.T("reallife_co_templates", "Templates"), Sub = w.T("reallife_co_level_templates", "Sets of rules to put on a scope in one step"),
-                                Icon = UiIcon.ClipboardText, Figure = (PolicyCatalogue.TemplateKeys.Length + h.Templates.Count).ToString(), Press = true,
-                                Act = CompanyAct.Of(CompanyDo.Go, null, CompanyView.Managers, CompanyView.SubTemplates) }
-                        }
-                    });
-                }
+                AddLevels(right, h, w);
             }
             if (managers > 0)
             {
@@ -692,6 +683,80 @@ namespace RealLifeOverhaul.Ui
             left.AddRange(right);
             p.More = left.ToArray();
             return p;
+        }
+
+        // The owner's levels: Deep Mode as a switch and, when it is on, the questions inbox, the policy centre and the templates.
+        private static void AddLevels(List<CompanyBlock> blocks, HierarchyState h, Words w)
+        {
+            blocks.Add(Sec(w.T("reallife_co_owner_levels", "Levels")));
+            blocks.Add(new CompanyBlock
+            {
+                Kind = CompanyBlockKind.Switch, Text = w.T("reallife_co_deep_mode", "Deep Mode"), Sub = w.T("reallife_co_deep_sub",
+                    "The executives, regions, the policy centre and every question's inbox"),
+                On = h.Deep, Value = w.T(h.Deep ? "reallife_co_on" : "reallife_co_off", h.Deep ? "On" : "Off"), Act = CompanyAct.Of(CompanyDo.DeepMode, null, h.Deep ? 0 : 1)
+            });
+            if (h.Deep)
+            {
+                blocks.Add(new CompanyBlock
+                {
+                    Kind = CompanyBlockKind.Items, Items = new[]
+                    {
+                        new CompanyItem { Grade = -1, Title = w.T("reallife_co_inbox", "Questions inbox"), Icon = UiIcon.Envelope,
+                            Sub = w.T("reallife_co_level_inbox", "Every question your managers pass up"),
+                            Figure = w.F("reallife_co_inbox_open", "{count} open", "count", OpenCount(h).ToString()), Press = true,
+                            Act = CompanyAct.Of(CompanyDo.Go, null, CompanyView.Managers, CompanyView.SubInbox) },
+                        new CompanyItem { Grade = -1, Title = w.T("reallife_co_policy_centre", "Policy centre"), Icon = UiIcon.Sliders,
+                            Sub = w.T("reallife_co_level_policy", "Rules for the company, a region or a place"),
+                            Press = true, Act = CompanyAct.Of(CompanyDo.Go, null, CompanyView.Managers, CompanyView.SubPolicy) },
+                        new CompanyItem { Grade = -1, Title = w.T("reallife_co_templates", "Templates"), Sub = w.T("reallife_co_level_templates", "Sets of rules to put on a scope in one step"),
+                            Icon = UiIcon.ClipboardText, Figure = (PolicyCatalogue.TemplateKeys.Length + h.Templates.Count).ToString(), Press = true,
+                            Act = CompanyAct.Of(CompanyDo.Go, null, CompanyView.Managers, CompanyView.SubTemplates) }
+                    }
+                });
+            }
+        }
+
+        // The questions open at the places of an area, newest first: who asks and what, so that a regional manager's page shows what is on their desk.
+        private CompanyItem[] AreaAsks(CompanyDirector d, string area, Words w, int most)
+        {
+            HierarchyState hs = d.HierarchyOn ? d.HierarchyData : null;
+            var items = new List<CompanyItem>(most);
+            for (int i = hs != null ? hs.Escalations.Count - 1 : -1; i >= 0 && items.Count < most; i--)
+            {
+                Escalation e = hs.Escalations[i];
+                ManagedPlace mp = e.Open && !string.IsNullOrEmpty(e.Place) ? d.ManagedAt(e.Place) : null;
+                if (mp == null || mp.Area != area)
+                {
+                    continue;
+                }
+                float hue;
+                string asker = AskerOf(d, e, out hue);
+                items.Add(new CompanyItem
+                {
+                    Grade = -1, Title = AskTitle(e, w), FaceName = asker, Face = asker != null, Hue = hue, Ring = UiRole.Warn, Icon = UiIcon.Envelope, Sub = PlaceNameOf(d, e.Place),
+                    Figure = CompanyText.T("reallife_mgr_row_day", "day", e.Day.ToString()), Press = true, Act = CompanyAct.Of(CompanyDo.Go, "card", e.Id)
+                });
+            }
+            return items.ToArray();
+        }
+
+        // The people with the best standing across the businesses, the likeliest to be given a post: a company with no manager shows who the owner could start with.
+        private CompanyItem[] CouldManage(CompanyDirector d, Words w, int most)
+        {
+            var all = new List<StaffFile>(d.State.Staff);
+            all.Sort((a, b) => b.Standing.CompareTo(a.Standing));
+            var items = new List<CompanyItem>(most);
+            for (int i = 0; i < all.Count && items.Count < most; i++)
+            {
+                StaffFile p = all[i];
+                Face(p.Name, p.Id);
+                items.Add(new CompanyItem
+                {
+                    Title = p.Name, Sub = CompanyGame.SkillName(p.Id) + ", " + PlaceNameOf(d, p.Place), Face = true, Hue = UiColour.HueOf(p.Name), Ring = UiRole.Ok, Grade = p.Standing,
+                    Figure = p.Standing.ToString(), Press = true, Act = CompanyAct.Of(CompanyDo.Go, "emp:" + p.Id, CompanyView.Staff)
+                });
+            }
+            return items.ToArray();
         }
 
         // The kinds of decision some place's manager does not hold yet, each with how many of the place managers do: what the owner can still hand over.
@@ -818,7 +883,10 @@ namespace RealLifeOverhaul.Ui
                     continue;
                 }
                 int count, at = d.StandingAt(mp.Place.Place, out count);
-                var item = new CompanyItem { Grade = count > 0 ? at : -1, Figure = count > 0 ? at.ToString() : null, Press = true };
+                var item = new CompanyItem
+                {
+                    Grade = count > 0 ? at : -1, Figure = count > 0 ? at.ToString() : null, Note = count > 0 ? w.T("reallife_co_crew_standing", "crew standing") : null, Press = true
+                };
                 if (mp.Own != null)
                 {
                     Face(mp.Own.Name, mp.Own.Id);
@@ -840,9 +908,17 @@ namespace RealLifeOverhaul.Ui
             }
             more.Add(Sec(w.T("reallife_mgr_region_their_places", "Their places"), total.ToString()));
             more.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = rows.ToArray() });
+            // The questions open in their area, under the places they come from: what the regional manager has on the desk.
+            CompanyItem[] asked = AreaAsks(d, area, w, 3);
+            if (asked.Length > 0)
+            {
+                more.Add(Sec(w.T("reallife_co_asked_in_area", "Asked in their area"), asked.Length.ToString()));
+                more.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = asked });
+            }
             more.Add(new CompanyBlock { Kind = CompanyBlockKind.Break });
             more.Add(Sec(w.T("reallife_mgr_sec_manager", "Manager")));
-            more.Add(Row(CompanyText.T("reallife_mgr_skill"), r.Skill.ToString() + " / " + ManagerRules.FromAfar(r.Skill).ToString()));
+            more.Add(Row(CompanyText.T("reallife_mgr_skill"), r.Skill.ToString()));
+            more.Add(Row(w.T("reallife_mgr_skill_far", "Skill standing in for a place"), ManagerRules.FromAfar(r.Skill).ToString()));
             more.Add(Row(CompanyText.T("reallife_mgr_allowance"), CompanyText.T("reallife_co_row_a_day", "amount", CompanyText.Money(d.AllowanceOf(r)))));
             more.Add(Row(CompanyText.T("reallife_mgr_pay"), CompanyText.Wage(d.PayOf(r))));
             more.Add(Row(CompanyText.T("reallife_mgr_mistakes"), r.Mistakes.ToString()));
@@ -947,11 +1023,24 @@ namespace RealLifeOverhaul.Ui
             {
                 more.Add(Note(CompanyText.T("reallife_mgr_row_no_staff")));
             }
-            more.Add(new CompanyBlock { Kind = CompanyBlockKind.Break });
             more.Add(Sec(w.T("reallife_mgr_sec_post", "The post")));
             more.Add(Note(CompanyText.T("reallife_mgr_place_none")));
             more.Add(Row(w.T("reallife_mgr_row_place", "Place"), mp.Place.Name));
             more.Add(Row(w.T("reallife_mgr_row_district", "District"), CompanyText.District(mp.District)));
+            more.Add(new CompanyBlock { Kind = CompanyBlockKind.Break });
+            if (_hands.Count > 0)
+            {
+                // What the post would cost a day on top of the person's wage, from the least skill to the best among the people there.
+                int least = int.MaxValue;
+                for (int i = 0; i < _hands.Count; i++)
+                {
+                    least = Math.Min(least, _hands[i].Skill);
+                }
+                more.Add(Sec(w.T("reallife_co_post_cost", "What a manager here costs")));
+                more.Add(Row(w.T("reallife_mgr_allowance", "Allowance"), w.F("reallife_co_allowance_range", "from {least} to {most} a day", "least",
+                    CompanyText.Money(ManagerRules.Allowance(ManagerCatalogue.RolePlace, least, d.Index)), "most",
+                    CompanyText.Money(ManagerRules.Allowance(ManagerCatalogue.RolePlace, best, d.Index)))));
+            }
             // What a manager of this kind of place would decide, each with its own glyph and what it does.
             int kinds = ManagerRules.Kinds(mp.Kind);
             var would = new List<CompanyItem>(ManagerTaskCount);

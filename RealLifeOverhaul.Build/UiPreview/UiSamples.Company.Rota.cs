@@ -36,6 +36,12 @@ internal static partial class UiSamples
                 }
                 int from = starts[i % starts.Length];
                 shifts[d] = from.ToString("00") + "-" + (from + length).ToString("00");
+                if (!hire && variant == 0 && i == (count > 5 ? 3 : 0) && d >= 3)
+                {
+                    // A split day, as the live rota writes it: two runs with two hours between, the same hours worked.
+                    int first = length / 2;
+                    shifts[d] = from.ToString("00") + "-" + (from + first).ToString("00") + ", " + (from + first + 2).ToString("00") + "-" + (from + length + 2).ToString("00");
+                }
                 hours += length;
                 dayTotals[d] += length;
                 tones[d] = !hire && i == 4 && d == 5 && variant == 0 ? UiRole.WarnText : UiRole.None;
@@ -43,7 +49,7 @@ internal static partial class UiSamples
             total += hours;
             people[i] = new CompanyRotaPerson
             {
-                Name = hire ? Tr(w, "To hire") : RotaNames[i % RotaNames.Length], Role = hire ? w.F("reallife_rota_to_hire_role", "{skill}, {wage} an hour", "skill", Tr(w, "Customer service"), "wage", "$18.00") : Tr(w, RotaRoles[i % RotaRoles.Length]), Hue = 0.1f + i * 0.14f, Ring = UiRole.Ok,
+                Name = hire ? Tr(w, "To hire") : RotaNames[i % RotaNames.Length], Role = hire ? Tr(w, "Customer service") + ", " + w.F("reallife_rota_person_wage", "{wage} an hour", "wage", "$18.00") : Tr(w, RotaRoles[i % RotaRoles.Length]), Hue = 0.1f + i * 0.14f, Ring = UiRole.Ok,
                 Shifts = shifts, Tones = tones, Hours = hours + "h", HoursTone = !hire && i == 4 && variant == 0 ? UiRole.WarnText : UiRole.None, ToHire = hire
             };
         }
@@ -67,28 +73,28 @@ internal static partial class UiSamples
         string inUse = w.T("reallife_rota_in_use", "In use");
         if (one)
         {
-            rows.Add(new CompanyRow { Id = "p:Corner Cafe~12", Title = "Corner Cafe", Sub = Kind(w, "Cafe") + ", " + w.F("reallife_co_rota_open", "open {hours} h a week", "hours", "84"), Icon = UiIcon.Calendar,
-                Figure = w.F("reallife_co_row_gap_short", "{hours} h short", "hours", "14"), FigureTone = UiRole.WarnText, Note = w.F("reallife_co_tree_staff", "{count} staff", "count", "2") });
+            rows.Add(new CompanyRow { Id = "p:Corner Cafe~12", Title = "Corner Cafe", Sub = Kind(w, "Cafe") + ", " + w.F("reallife_co_tree_staff", "{count} staff", "count", "2"), Icon = UiIcon.Calendar,
+                Figure = w.F("reallife_co_row_gap_short", "{hours} h short", "hours", "14"), FigureTone = UiRole.WarnText });
             rows.Add(new CompanyRow { Id = "pl:Corner Cafe~12:1", Title = w.T("reallife_rota_plan_standard", "Standard week"), Sub = w.T("reallife_rota_repeat_every", "Every week"), Icon = UiIcon.ClipboardText, Dim = true, Nested = true,
                 Chip = inUse, ChipTone = UiRole.Ok });
-            rows.Add(new CompanyRow { Id = "pl:Corner Cafe~12:2", Title = "Quiet week", Sub = w.F("reallife_rota_plan_range", "Days {from} to {to}", "from", "190", "to", "196"), Icon = UiIcon.ClipboardText,
+            rows.Add(new CompanyRow { Id = "pl:Corner Cafe~12:2", Title = "Quiet week", Sub = w.F("reallife_rota_plan_range", "Days {from} to {to}", "from", "22", "to", "28"), Icon = UiIcon.ClipboardText,
                 Dim = true, Nested = true });
         }
         else
         {
-            rows.Add(new CompanyRow { Id = "p:Speedy Bites~7", Title = "Speedy Bites", Sub = Kind(w, "Cafe") + ", " + w.F("reallife_co_rota_open", "open {hours} h a week", "hours", "112"), Icon = UiIcon.Calendar,
-                Figure = w.T("reallife_rota_row_covered", "Covered"), FigureTone = UiRole.OkText, Note = w.F("reallife_co_tree_staff", "{count} staff", "count", "9") });
+            rows.Add(new CompanyRow { Id = "p:Speedy Bites~7", Title = "Speedy Bites", Sub = Kind(w, "Cafe") + ", " + w.F("reallife_co_tree_staff", "{count} staff", "count", "9"), Icon = UiIcon.Calendar,
+                Figure = w.T("reallife_rota_row_covered", "Covered"), FigureTone = UiRole.OkText });
             rows.Add(new CompanyRow { Id = "pl:Speedy Bites~7:1", Title = w.T("reallife_rota_plan_standard", "Standard week"), Sub = w.T("reallife_rota_repeat_every", "Every week"), Icon = UiIcon.ClipboardText, Dim = true, Nested = true,
                 Chip = inUse, ChipTone = UiRole.Ok });
             rows.Add(new CompanyRow { Id = "pl:Speedy Bites~7:2", Title = "Quiet week", Sub = w.T("reallife_rota_repeat_odd", "Odd weeks"), Icon = UiIcon.ClipboardText, Dim = true, Nested = true });
             rows.Add(new CompanyRow { Id = "pl:Speedy Bites~7:3", Title = "Holiday week", Sub = w.F("reallife_rota_plan_range", "Days {from} to {to}", "from", "220", "to", "226"),
                 Icon = UiIcon.ClipboardText, Dim = true, Nested = true });
-            rows.Add(new CompanyRow { Id = "p:Bloom & Co~214", Title = "Bloom & Co", Sub = Kind(w, "Shop") + ", " + w.F("reallife_co_rota_open", "open {hours} h a week", "hours", "72"), Icon = UiIcon.Calendar,
-                Figure = w.F("reallife_co_row_gap_short", "{hours} h short", "hours", "6"), FigureTone = UiRole.WarnText, Note = w.F("reallife_co_tree_staff", "{count} staff", "count", "5") });
+            rows.Add(new CompanyRow { Id = "p:Bloom & Co~214", Title = "Bloom & Co", Sub = Kind(w, "Shop") + ", " + w.F("reallife_co_tree_staff", "{count} staff", "count", "5"), Icon = UiIcon.Calendar,
+                Figure = w.F("reallife_co_row_gap_short", "{hours} h short", "hours", "6"), FigureTone = UiRole.WarnText });
             rows.Add(new CompanyRow { Id = "pl:Bloom & Co~214:1", Title = w.T("reallife_rota_plan_standard", "Standard week"), Sub = w.T("reallife_rota_repeat_every", "Every week"), Icon = UiIcon.ClipboardText, Dim = true, Nested = true,
                 Chip = inUse, ChipTone = UiRole.Ok });
-            rows.Add(new CompanyRow { Id = "p:Hudson Warehouse~4", Title = "Hudson Warehouse", Sub = w.T("reallife_mgr_kind_warehouse", "Warehouse"), Icon = UiIcon.Calendar, Figure = w.T("reallife_rota_row_none", "No rota"),
-                FigureTone = UiRole.Muted, Note = w.F("reallife_co_tree_staff", "{count} staff", "count", "4") });
+            rows.Add(new CompanyRow { Id = "p:Hudson Warehouse~4", Title = "Hudson Warehouse", Sub = w.T("reallife_mgr_kind_warehouse", "Warehouse") + ", " + w.F("reallife_co_tree_staff", "{count} staff", "count", "4"), Icon = UiIcon.Calendar,
+                Figure = w.T("reallife_rota_row_none", "No rota"), FigureTone = UiRole.Muted });
         }
         r.Places = new CompanyList { Title = w.T("reallife_rota_tab", "Rota"), Count = one ? "1" : "3", Rows = rows.ToArray(), Chosen = -1 };
         for (int i = 0; i < rows.Count; i++)
@@ -140,16 +146,16 @@ internal static partial class UiSamples
         if (one)
         {
             people[0].Name = "Ana Costa";
-            people[0].Role = Tr(w, "Barista");
+            people[0].Role = Tr(w, "Cooking");
             people[1].Name = "Jin Park";
-            people[1].Role = Tr(w, "Cooking");
+            people[1].Role = Tr(w, "Customer service");
             people[1].Hours = "35h";
             people[0].HoursTone = UiRole.None;
         }
-        p.Weekly = w.F("reallife_rota_weekly", "Week {week}, open {hours} hours", "week", "31", "hours", open);
+        p.Weekly = w.F("reallife_rota_weekly", "Week {week}, open {hours} hours", "week", one ? "1" : "31", "hours", open);
         p.PlanNames = one ? new[] { Tr(w, "Standard week"), "Quiet week" } : new[] { Tr(w, "Standard week"), "Quiet week", "Holiday week" };
         p.PlanChosen = state == "rota_edit_other" ? 1 : 0;
-        p.Ahead = one ? w.F("reallife_co_plan_ahead", "{plan} holds from day {from} to day {to}: up to {cap} each, and {floor} crew hours of floor a week against this plan", "plan", "Quiet week", "from", "190", "to", "196", "cap", w.F("reallife_rota_hours_n", "{hours} h", "hours", "28"), "floor", "-14") : w.F("reallife_co_plan_ahead", "{plan} holds from day {from} to day {to}: up to {cap} each, and {floor} crew hours of floor a week against this plan", "plan", "Holiday week", "from", "220",
+        p.Ahead = one ? w.F("reallife_co_plan_ahead", "{plan} holds from day {from} to day {to}: up to {cap} each, and {floor} crew hours of floor a week against this plan", "plan", "Quiet week", "from", "22", "to", "28", "cap", w.F("reallife_rota_hours_n", "{hours} h", "hours", "28"), "floor", "-14") : w.F("reallife_co_plan_ahead", "{plan} holds from day {from} to day {to}: up to {cap} each, and {floor} crew hours of floor a week against this plan", "plan", "Holiday week", "from", "220",
             "to", "226", "cap", w.F("reallife_rota_hours_n", "{hours} h", "hours", "32"), "floor", "+8");
         p.RepeatOptions = new[] { w.T("reallife_rota_repeat_every", "Every week"), w.T("reallife_rota_repeat_odd", "Odd weeks"), w.T("reallife_rota_repeat_even", "Even weeks") };
         int planId = state == "rota_edit_other" ? 2 : 1;
@@ -423,15 +429,17 @@ internal static partial class UiSamples
             new CompanyBlock { Kind = CompanyBlockKind.Stepper, Text = w.T("reallife_rota_most_hours", "Most hours each"), Value = p.HoursValue, CanLess = true, CanMore = true, Act = p.HoursLessAct,
                 Act2 = p.HoursMoreAct, Act3 = p.HoursTypeAct },
             new CompanyBlock { Kind = CompanyBlockKind.Switch, Text = w.T("reallife_rota_overtime", "Overtime"), On = false, Value = w.T("reallife_co_off", "Off"), Act = p.OvertimeAct },
+            // The main action alone on its row where there is one (use this plan); new, copy and delete are the one row of tools on both pages.
             other
-                ? CBtns(CB(w.T("reallife_rota_use_this", "Use this plan"), UiButtonKind.Primary, UiAction.Alt, CA(CompanyDo.PlanUse, p.Id, id), UiIcon.Check),
-                    CB(w.T("reallife_rota_plan_new", "New plan"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.PlanNew, p.Id), UiIcon.Plus))
-                : CBtns(CB(w.T("reallife_rota_plan_new", "New plan"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.PlanNew, p.Id), UiIcon.Plus)),
-            CBtns(p.Copy, CB(w.T("reallife_rota_plan_delete", "Delete this plan"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.PlanDelete, p.Id, id), UiIcon.Close, false, null, true)),
+                ? CBtns(CB(w.T("reallife_rota_use_this", "Use this plan"), UiButtonKind.Primary, UiAction.Alt, CA(CompanyDo.PlanUse, p.Id, id), UiIcon.Check))
+                : null,
+            CBtns(CB(w.T("reallife_rota_plan_new", "New plan"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.PlanNew, p.Id), UiIcon.Plus), p.Copy,
+                CB(w.T("reallife_rota_plan_delete_short", "Delete"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.PlanDelete, p.Id, id), UiIcon.Close, false, null, true)),
             new CompanyBlock { Kind = CompanyBlockKind.Break },
             CSec(w.T("reallife_rota_needs", "Needs by time"), w.F("reallife_rota_blocks_count", "{count} of {most}", "count", blocks.Length.ToString(), "most", "4")),
             CNote(w.T("reallife_rota_needs_what", "A floor of crew in a block of hours, whatever the customers say."))
         };
+        list.RemoveAll(b => b == null);   // (no use-this button on the plan in use)
         for (int i = 0; i < blocks.Length; i++)
         {
             list.Add(new CompanyBlock

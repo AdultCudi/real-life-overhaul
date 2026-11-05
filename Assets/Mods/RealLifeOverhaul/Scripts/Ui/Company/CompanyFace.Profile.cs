@@ -214,16 +214,26 @@ namespace RealLifeOverhaul.Ui
             float textW = w - switchW - UiTokens.S3;
             UiAt inside = at;
             float size = UiTokens.ControlSmall;
-            int tile = UiDraw.Tile(s, inside, x, y + Mid(TaskRow, size), size, UiRole.None, false);
-            float g = UiTokens.Icon;
-            UiDraw.Icon(s, inside.In(tile), x + (size - g) / 2f, y + Mid(TaskRow, size) + (size - g) / 2f, g, t.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
             float tx = x + size + UiTokens.S3, tw = textW - size - UiTokens.S3;
             float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
-            float top = y + UiDraw.SnapDown((TaskRow - th - sh) / 2f);
+            // A line that does not fit the column runs on to a second one: cut to its first words it said little ("Sundays at 18:00, only to fill a gap, never taking anybody off...").
+            bool two = !string.IsNullOrEmpty(t.Line) && UiTextRules.Width(t.Line, UiStyle.Small) > tw;
+            float rowH = two ? TaskRow + sh : TaskRow;
+            int tile = UiDraw.Tile(s, inside, x, y + Mid(rowH, size), size, UiRole.None, false);
+            float g = UiTokens.Icon;
+            UiDraw.Icon(s, inside.In(tile), x + (size - g) / 2f, y + Mid(rowH, size) + (size - g) / 2f, g, t.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
+            float top = y + UiDraw.SnapDown((rowH - th - (two ? sh * 2f : sh)) / 2f);
             UiDraw.TextMiddle(s, inside, tx, top, th, tw, UiStyle.Title, t.Disabled ? UiRole.Text2 : UiRole.Text, t.Title ?? string.Empty, UiFlags.Truncate);
-            UiDraw.TextMiddle(s, inside, tx, top + th, sh, tw, UiStyle.Small, UiRole.Text2, t.Line ?? string.Empty, UiFlags.Truncate);
-            UiDraw.Switch(s, at, x + w - switchW, y + Mid(TaskRow, UiTokens.Control), switchW, t.On, t.Who, Act, index, t.Disabled);
-            return y + TaskRow;
+            if (two)
+            {
+                UiDraw.Text(s, inside, tx, top + th, tw, UiStyle.Small, UiRole.Text2, t.Line, UiFlags.Wrap | UiFlags.Truncate, 2);
+            }
+            else
+            {
+                UiDraw.TextMiddle(s, inside, tx, top + th, sh, tw, UiStyle.Small, UiRole.Text2, t.Line ?? string.Empty, UiFlags.Truncate);
+            }
+            UiDraw.Switch(s, at, x + w - switchW, y + Mid(rowH, UiTokens.Control), switchW, t.On, t.Who, Act, index, t.Disabled);
+            return y + rowH;
         }
 
         // The question waiting for the owner on a manager's page: what it is and the one button that answers it.

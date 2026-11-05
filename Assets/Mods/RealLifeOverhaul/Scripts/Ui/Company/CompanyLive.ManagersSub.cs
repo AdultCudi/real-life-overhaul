@@ -439,6 +439,29 @@ namespace RealLifeOverhaul.Ui
                 blocks.Add(Sec(w.T("reallife_co_log", "Log"), ofKind.Count.ToString()));
                 blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Lines, Rows = ofKind.ToArray() });
             }
+            // The same decision at the other places that have a manager, with who holds it there and how far: the owner sets one place and sees what the others were given.
+            var elsewhere = new List<CompanyItem>(4);
+            for (int i = 0; i < d.Managed.Count && elsewhere.Count < 4; i++)
+            {
+                ManagedPlace other = d.Managed[i];
+                if (other.Own == null || other.Place.Place == place || !ManagerRules.Has(ManagerRules.Kinds(other.Kind), task))
+                {
+                    continue;
+                }
+                bool owns = ManagerRules.Has(other.Own.Tasks, task);
+                Face(other.Own.Name, other.Own.Id);
+                elsewhere.Add(new CompanyItem
+                {
+                    Title = other.Own.Name, Sub = other.Place.Name + ", " + CompanyApp.TaskLine(other.Own, task), Face = true, Hue = UiColour.HueOf(other.Own.Name),
+                    Ring = d.PostOf(other) == PostState.InPost ? UiRole.Ok : UiRole.Warn, Grade = -1, Chip = owns ? FirstName(other.Own.Name) : w.T("reallife_hier_you", "You"),
+                    ChipTone = owns ? UiRole.Ok : UiRole.Muted, Press = true, Act = CompanyAct.Of(CompanyDo.Go, "mgr:" + other.Place.Place, CompanyView.Managers, CompanyView.SubTask, t)
+                });
+            }
+            if (elsewhere.Count > 0)
+            {
+                blocks.Add(Sec(w.T("reallife_co_task_elsewhere", "The same decision elsewhere"), elsewhere.Count.ToString()));
+                blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = elsewhere.ToArray() });
+            }
             card.Blocks = blocks.ToArray();
             page.Card = card;
             return true;
@@ -1231,7 +1254,7 @@ namespace RealLifeOverhaul.Ui
                     continue;
                 }
                 int pc, at = d.StandingAt(mpl.Place.Place, out pc);
-                var item = new CompanyItem { Grade = pc > 0 ? at : -1, Figure = pc > 0 ? at.ToString() : null, Press = true };
+                var item = new CompanyItem { Grade = pc > 0 ? at : -1, Figure = pc > 0 ? at.ToString() : null, Note = pc > 0 ? w.T("reallife_co_crew_standing", "crew standing") : null, Press = true };
                 if (mpl.Own != null)
                 {
                     Face(mpl.Own.Name, mpl.Own.Id);
@@ -1365,7 +1388,8 @@ namespace RealLifeOverhaul.Ui
                     blocks.Add(Row(CompanyText.T("reallife_hier_paid_month"), CompanyText.Money(x.Paid)));
                     blocks.Add(Row(CompanyText.T("reallife_hier_area_open"), d.OpenOfSeat(seat).ToString()));
                     blocks.Add(Row(CompanyText.T("reallife_hier_area_settled"), d.SettledSince(null, x.Name, d.Today - 7).ToString()));
-                    blocks.Add(Row(CompanyText.T("reallife_mgr_decided"), x.Decided.ToString() + " / " + x.LastDecided));
+                    blocks.Add(Row(CompanyText.T("reallife_mgr_decided"), x.Decided.ToString()));   // two figures under two words: "41 / 38" under one told nothing of which was which
+                    blocks.Add(Row(CompanyText.T("reallife_hier_last_month"), x.LastDecided.ToString()));
                     if (!x.Seen)
                     {
                         blocks.Add(Note(CompanyText.T("reallife_hier_seat_waits_line"), UiRole.WarnText));

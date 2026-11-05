@@ -31934,5 +31934,14 @@
   "reallife_rota_ask_staff": "Funcionários daqui",
   "reallife_rota_legend_unmet": "Pediu folga, mas foi escalado",
   "reallife_rota_look_shape": "Em serviço por hora, num dia médio",
-  "reallife_rota_to_hire_role": "{skill}, {wage} por hora"
+  "reallife_rota_ask_short_one": "O período mais movimentado precisa de uma pessoa a mais do que o local tem.",
+  "reallife_co_hand_over_more": "E estes também",
+  "reallife_co_push_kind_record": "{kind} até agora",
+  "reallife_rota_plan_delete_short": "Excluir",
+  "reallife_co_could_manage": "Quem poderia assumir um cargo",
+  "reallife_co_task_elsewhere": "A mesma decisão em outros locais",
+  "reallife_co_asked_in_area": "Perguntas abertas na área deles",
+  "reallife_mgr_skill_far": "Habilidade ao cobrir um local",
+  "reallife_co_post_cost": "Custo de um gerente aqui",
+  "reallife_co_allowance_range": "de {least} a {most} por dia"
 }

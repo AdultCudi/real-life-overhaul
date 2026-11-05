@@ -85,8 +85,9 @@ namespace RealLifeOverhaul.Ui
             float rx = x + lw + gap;
             float toolsH = o.Tools != null && o.Tools.Length > 0 ? UiTokens.Control + UiTokens.S4 : 0f;
             CompanyCard panel = beside.Length > 0 ? WithBlocks(o.Shop, before) : o.Shop;
-            CardPage(s, at.InRegion(RegionSide), panel, v, w, lay, rx, top, rw, bottom - toolsH, keys);
-            ToolsRow(s, at.InRegion(RegionSide), lay, v, o, rx, rw, bottom, keys);
+            float end = CardPage(s, at.InRegion(RegionSide), panel, v, w, lay, rx, top, rw, bottom - toolsH, keys);
+            // The tools stand under the panel's last block, as the big company's do: at the foot of the column they were alone, far from the actions above them.
+            ToolsRow(s, at.InRegion(RegionSide), lay, v, o, rx, rw, Math.Min(bottom, end + UiTokens.S5 + UiTokens.Control), keys);
         }
 
         // The blocks of a card before its first break, and those after it.
@@ -363,7 +364,9 @@ namespace RealLifeOverhaul.Ui
         internal static float DoneLine(UiScene s, UiAt at, CompanyLayout lay, ref CompanyDone row, float x, float y, float w, float h, float limit = -1f)
         {
             // The words have the width left by the time and the money; one that does not fit one line takes two where the column has the room (limit: the y it may not pass).
-            float whenW = Math.Min(UiDraw.SnapDown(w * 0.2f), UiDraw.Snap(UiTextRules.Width("Day 000 00:00", UiStyle.Small) + UiTokens.S2));
+            // The time column is as wide as the widest day and hour of the languages ask, "Day 214, 08:00" or "第214天, 08:00": cut to "第214天, 08..." it dated nothing.
+            float whenW = Math.Min(UiDraw.SnapDown(w * 0.28f),
+                UiDraw.Snap(Math.Max(UiTextRules.Width("Day 000 00:00", UiStyle.Small), UiTextRules.Width(row.When ?? string.Empty, UiStyle.Small)) + UiTokens.S2));
             float mw = string.IsNullOrEmpty(row.Money) ? 0f : Math.Min(UiDraw.SnapDown(w * 0.25f), UiDraw.Snap(UiTextRules.Width(row.Money, UiStyle.BodyStrong) + UiTokens.S1));
             float textW = w - whenW - UiTokens.S2 - mw - UiTokens.S3;
             string text = row.Text ?? string.Empty;

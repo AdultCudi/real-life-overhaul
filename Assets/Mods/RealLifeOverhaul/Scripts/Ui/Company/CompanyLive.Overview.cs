@@ -511,10 +511,6 @@ namespace RealLifeOverhaul.Ui
                     blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = items.ToArray() });
                 }
             }
-            if (page)
-            {
-                blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Break });   // the licences with how it stands at the left, the cover, the campaign and what can be done at the right
-            }
             if (d.On(CompanyPart.Cover))
             {
                 var items = new List<CompanyItem>(3);
@@ -534,6 +530,11 @@ namespace RealLifeOverhaul.Ui
                     blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = items.ToArray() });
                 }
             }
+            if (page)
+            {
+                // The licences with how it stands and the cover at the left, the campaign, what can be done and the people at the right.
+                blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Break });
+            }
             if (d.On(CompanyPart.Marketing))
             {
                 blocks.Add(Link(w.T("reallife_co_r_campaign", "Campaign"), file.Push >= 0
@@ -552,10 +553,11 @@ namespace RealLifeOverhaul.Ui
                     Act = CompanyAct.Of(CompanyDo.SellBusiness, file.Place) });
             }
             blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Buttons, Buttons = buttons.ToArray() });
-            if (page && d.On(CompanyPart.Staff))
+            if (d.On(CompanyPart.Staff))
             {
-                // The people of the business, under what can be done: the rows that fit the room, and a count of the rest.
-                CompanyItem[] crew = CrewItems(d, file.Place, w, false, 12);
+                // The people of the business, under what can be done: the rows that fit the room, and a count of the rest. The panel of a one business company keeps four, at the left under the
+                // licences, where that column would end short.
+                CompanyItem[] crew = CrewItems(d, file.Place, w, false, page ? 12 : 4);
                 if (crew.Length > 0)
                 {
                     blocks.Add(Sec(w.T("reallife_co_staff_people", "Your people"), shop.Staff.ToString()));
@@ -564,7 +566,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (!page)
             {
-                CompanyFace.AsideSections(blocks, w.T("reallife_co_r_licences", "Licences"));   // the panel of a one business company
+                CompanyFace.AsideSections(blocks, w.T("reallife_co_r_licences", "Licences"), w.T("reallife_co_staff_people", "Your people"));   // the panel of a one business company
             }
             c.Blocks = blocks.ToArray();
             return c;

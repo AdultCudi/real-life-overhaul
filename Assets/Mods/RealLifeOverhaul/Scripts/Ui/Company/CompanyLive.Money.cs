@@ -161,6 +161,7 @@ namespace RealLifeOverhaul.Ui
                         Tone = UiRole.Ok });
                 blocks.Add(Note(CompanyText.T("reallife_co_push_report_due", "day", file.PushEnd.ToString())));
                 AddParts(blocks, d, shop, file.Push, w);
+                KindRecord(blocks, d.State, file.Push, w);
                 Earlier(blocks, d, shop.Name, -1, w);
                 card.Blocks = blocks.ToArray();
                 return card;
@@ -195,13 +196,10 @@ namespace RealLifeOverhaul.Ui
             blocks.Add(Sec(w.T("reallife_ibox_sec_campaign", "The campaign")));
             blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = kinds });
             blocks.Add(Note(CompanyText.T(CampaignAboutKeys[kind], "share", CompanyText.Share(CompanyCatalogue.DiscountShare))));
-            blocks.Add(Row(w.T("reallife_co_f_cost", "Cost"), CompanyText.Money(cost)));
+            // The cost and the effect are the card's head figures: said once, there. What the effect is made of stands as rows, as on a running campaign's card.
             blocks.Add(Row(CompanyText.Label("reallife_co_push_length"), CompanyText.T("reallife_co_push_length_value", "days", CompanyCatalogue.CampaignDays[kind].ToString(), "from", (day
                 + 1).ToString())));
-            blocks.Add(Row(w.T("reallife_co_f_effect", "Effect on customers"), CompanyText.Percent(percent), UiRole.OkText));
-            string economy = CompanyText.Share(CompanyCatalogue.CampaignCycle[CompanyCatalogue.Clamp((int)d.Cycle, 0, 3)]);
-            blocks.Add(Note(CompanyText.T("reallife_co_push_parts", "own", CompanyText.Percent(CompanyCatalogue.CampaignFootfall[kind]), "district", CompanyText.Share(suit), "economy", economy)
-                + (repeat < 1000 ? " " + CompanyText.T("reallife_co_push_repeat", "share", CompanyText.Share(repeat)) : string.Empty)));
+            AddParts(blocks, d, shop, kind, w);
             Earlier(blocks, d, shop.Name, -1, w);
             blocks.Add(Sec(w.T("reallife_ibox_sec_how", "How it is measured")));
             blocks.Add(Note(CompanyText.T("reallife_co_push_measure")));
@@ -216,7 +214,7 @@ namespace RealLifeOverhaul.Ui
         {
             int cost, percent, suit, repeat;
             d.CampaignQuote(shop, kind, out cost, out percent, out suit, out repeat);
-            blocks.Add(Sec(w.T("reallife_co_push_parts_sec", "What makes up the effect"), CompanyText.Percent(percent)));
+            blocks.Add(Sec(w.T("reallife_co_push_parts_sec", "What makes up the effect")));   // the effect itself is in the head
             blocks.Add(Row(w.T("reallife_co_push_part_own", "The campaign's own figure"), CompanyText.Percent(CompanyCatalogue.CampaignFootfall[kind])));
             blocks.Add(Row(w.T("reallife_co_push_part_district", "The district counts for"), CompanyText.Share(suit)));
             blocks.Add(Row(w.T("reallife_co_push_part_economy", "The economy counts for"), CompanyText.Share(CompanyCatalogue.CampaignCycle[CompanyCatalogue.Clamp((int)d.Cycle, 0, 3)])));
@@ -224,6 +222,30 @@ namespace RealLifeOverhaul.Ui
             {
                 blocks.Add(Row(w.T("reallife_co_push_part_repeat", "Repeat customers count for"), CompanyText.Share(repeat)));
             }
+        }
+
+        // How this kind of campaign has done across the company's kept reports: how many, the return on average and the profit they left in all. Nothing where none has been run.
+        private static void KindRecord(List<CompanyBlock> blocks, CompanyState s, int kind, Words w)
+        {
+            int count = 0;
+            long returns = 0, extra = 0;
+            for (int i = 0; i < s.Reports.Count; i++)
+            {
+                if (s.Reports[i].Kind == kind)
+                {
+                    count++;
+                    returns += s.Reports[i].Return;
+                    extra += s.Reports[i].Extra;
+                }
+            }
+            if (count == 0)
+            {
+                return;
+            }
+            blocks.Add(Sec(w.F("reallife_co_push_kind_record", "{kind} so far", "kind", CompanyText.Campaign(kind))));
+            blocks.Add(Row(w.T("reallife_co_f_campaigns", "Campaigns"), count.ToString()));
+            blocks.Add(Row(w.L("reallife_co_report_return", "Return on the cost"), CompanyText.Percent((int)(returns / count)), returns > 0 ? UiRole.OkText : UiRole.DangerText));
+            blocks.Add(Row(w.T("reallife_co_f_extra", "Extra profit"), CompanyText.Money((int)extra)));
         }
 
         // The profit a campaign left over its cost; one that cost more than it brought says "less", not a negative "extra".
@@ -582,8 +604,7 @@ namespace RealLifeOverhaul.Ui
                 blocks.Add(Sec(w.T("reallife_co_policy_quotes", "What each insurer asks")));
                 blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = terms });
             }
-            blocks.Add(Note(CompanyText.T("reallife_co_policy_excess", "share", CompanyText.Share(CompanyCatalogue.InsurerExcessShare[insurer]), "least",
-                CompanyText.Money(CompanyCatalogue.InsurerExcessLeast[insurer]))));
+            // (The insurer's excess is the line under its name in the rows above: a sentence that said it again was the same fact twice.)
             blocks.Add(Note(CompanyText.T("reallife_co_policy_most", "most", CompanyText.Money(CompanyCatalogue.CoverMost[kind]), "days", CompanyCatalogue.InsurerPayDays[insurer].ToString())));
             bool writes = CoverRules.WillWrite(p, insurer);
             int carried = CoverRules.Carried(p);
