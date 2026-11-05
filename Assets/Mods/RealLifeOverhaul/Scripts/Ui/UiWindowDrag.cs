@@ -5,7 +5,9 @@ namespace RealLifeOverhaul.Ui
     /// <summary>
     /// A window the player moves by its title strip, as the game's own small windows move (DraggableWindows): the strip is the
     /// only grip, the window is kept whole inside the screen (one larger than the screen is centred), and the place is the
-    /// window's own. A layout is made where the screen put it and this moves what it laid, so no screen has code for it.
+    /// window's own. A layout is made where the screen put it and this moves what it laid, so no screen has code for it. A screen that lays
+    /// more than the window (the city map's dock stands beside its route strip, its buttons and its layers) marks what is the window's
+    /// (<see cref="UiScene.WindowBegin"/>) and only that moves: its rail, its panel, the rows of its lists and the regions they scroll in, its targets.
     /// Game-free. Cost: a pass over the scene's items on a layout of a draggable window; nothing otherwise.
     /// </summary>
     public static class UiWindowDrag
@@ -51,11 +53,12 @@ namespace RealLifeOverhaul.Ui
                 _clipInside = new bool[Math.Max(s.ClipCount, _clipInside.Length * 2)];
             }
             Array.Clear(_clipInside, 0, s.ClipCount);
-            bool panel = s.HandlePanel >= 0 && s.HandlePanel < s.ItemCount;
+            bool marked = s.HasWindow;
+            bool panel = !marked && s.HandlePanel >= 0 && s.HandlePanel < s.ItemCount;
             for (int i = 0; i < s.ItemCount; i++)
             {
                 ref UiItem it = ref s.Items[i];
-                bool in_ = panel ? i == s.HandlePanel || (it.Parent >= 0 && it.Parent < i && _inside[it.Parent]) : (it.Flags & UiFlags.Prompt) == 0;
+                bool in_ = marked ? it.Window : panel ? i == s.HandlePanel || (it.Parent >= 0 && it.Parent < i && _inside[it.Parent]) : (it.Flags & UiFlags.Prompt) == 0;
                 _inside[i] = in_;
                 if (!in_)
                 {
@@ -72,7 +75,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < s.NodeCount; i++)
             {
                 ref UiNode n = ref s.Nodes[i];
-                bool in_ = !panel ? true : n.Face >= 0 && n.Face < s.ItemCount ? _inside[n.Face] : false;
+                bool in_ = marked ? n.Window : !panel ? true : n.Face >= 0 && n.Face < s.ItemCount ? _inside[n.Face] : false;
                 if (!in_)
                 {
                     continue;
@@ -87,7 +90,7 @@ namespace RealLifeOverhaul.Ui
             }
             for (int i = 0; i < s.ClipCount; i++)
             {
-                if (_clipInside[i] || !panel)
+                if (marked ? s.Clips[i].Window : _clipInside[i] || !panel)
                 {
                     s.Clips[i].X += movedX;
                     s.Clips[i].Y += movedY;
@@ -95,10 +98,10 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // The window's box: its panel, or when its strip had none the bounds of what the base layer drew.
+        // The window's box: its panel, or when its strip had none the bounds of what the base layer drew (of what was marked as the window, with its rail).
         private static void Box(UiScene s, out float x, out float y, out float w, out float h)
         {
-            if (s.HandlePanel >= 0 && s.HandlePanel < s.ItemCount && s.Items[s.HandlePanel].Clip < 0)
+            if (!s.HasWindow && s.HandlePanel >= 0 && s.HandlePanel < s.ItemCount && s.Items[s.HandlePanel].Clip < 0)
             {
                 ref UiItem p = ref s.Items[s.HandlePanel];
                 x = p.X;
@@ -112,7 +115,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < s.ItemCount; i++)
             {
                 ref UiItem it = ref s.Items[i];
-                if (it.Layer != 0 || it.Clip >= 0 || (it.Flags & (UiFlags.Prompt | UiFlags.Overflow)) != 0)
+                if (it.Layer != 0 || it.Clip >= 0 || (it.Flags & (UiFlags.Prompt | UiFlags.Overflow)) != 0 || (s.HasWindow && !it.Window))
                 {
                     continue;
                 }
@@ -166,6 +169,7 @@ namespace RealLifeOverhaul.Ui
             UiWindowDrag.Apply(s, _wantX, _wantY, width, bottom, out float x, out float y);
             X = x;
             Y = y;
+            UiWindowPlaces.Laid(Id, x, y);
         }
 
         /// <summary>The pointer on the strip at a phase; true when the screen is to be laid out again.</summary>
@@ -252,6 +256,29 @@ namespace RealLifeOverhaul.Ui
             return false;
         }
 
+        // The move each window was laid with last, after the screen's edge cut it short: what the HUD's pieces that keep clear of a window read, never the kept place, which
+        // a smaller screen may not allow.
+        private static readonly System.Collections.Generic.Dictionary<string, Place> Shown = new System.Collections.Generic.Dictionary<string, Place>();
+
+        /// <summary>Notes the move a window was laid with (its grip, at each layout).</summary>
+        public static void Laid(string id, float dx, float dy)
+        {
+            Shown[id] = new Place { X = dx, Y = dy };
+        }
+
+        /// <summary>The move a window was last laid with, from where its screen puts it; none when it has not been laid.</summary>
+        public static bool Moved(string id, out float dx, out float dy)
+        {
+            if (Shown.TryGetValue(id, out Place p))
+            {
+                dx = p.X;
+                dy = p.Y;
+                return true;
+            }
+            dx = dy = 0f;
+            return false;
+        }
+
         /// <summary>Keeps a window's move; a saved one is written out when <paramref name="keep"/> (the drag has ended).</summary>
         public static void Set(string id, float dx, float dy, bool saved, bool keep)
         {
@@ -311,6 +338,7 @@ namespace RealLifeOverhaul.Ui
         public static void Forget()
         {
             Moves.Clear();
+            Shown.Clear();
             _read = false;
         }
 
