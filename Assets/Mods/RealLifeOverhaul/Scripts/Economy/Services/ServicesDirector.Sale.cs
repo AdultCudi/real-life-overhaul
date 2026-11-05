@@ -385,6 +385,13 @@ namespace RealLifeOverhaul.Economy
 
         private void SaleDay(int day)
         {
+            // Each business's worth is noted once a day for the change on the month and the line under the figure.
+            ServicesGame.Sellable(_regs);
+            for (int i = 0; i < _regs.Count; i++)
+            {
+                ContractRules.NoteWorth(_state, ServicesGame.Place(_regs[i]), day, Value(_regs[i]).Value);
+            }
+            _regs.Clear();
             // A listing no longer the player's, or past its days, comes off; the rest may draw an offer.
             for (int i = _state.Listings.Count - 1; i >= 0; i--)
             {

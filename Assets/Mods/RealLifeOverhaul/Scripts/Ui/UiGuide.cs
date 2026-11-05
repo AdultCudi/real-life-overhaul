@@ -55,6 +55,7 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_test_ending", "reallife_ui_test_news_switch")
                 .Test("reallife_ui_test_company", "reallife_ui_test_company_manager", "reallife_ui_test_company_rota", "reallife_ui_test_company_switch")
                 .Test("reallife_ui_test_estate", "reallife_ui_test_estate_rents", "reallife_ui_test_dealer", "reallife_ui_test_estate_switch")
+                .Test("reallife_ui_test_services", "reallife_ui_test_services_sell", "reallife_ui_test_services_switch")
                 .Data(PlayTimeStore.Key)   // the time played in the city, for the pause menu's card (Ui/Pause/PlayTime)
                 .ResetData(PlayTime.Forget)
                 .Data(MapSaved.Key, MapBusy.Key)   // the city map's saved places and what the places looked at usually draw (Ui/MapDock/MapStoreGame)

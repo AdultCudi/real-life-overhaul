@@ -65,6 +65,30 @@ namespace RealLifeOverhaul
                 }
             }
 
+            /// <summary>The app id a calendar entry of the services carries: the app, then the tab and row the entry is about (an offer for a
+            /// contract, an offer for a business, a part still to come).</summary>
+            internal static string CalendarApp(string app, int kind, int number)
+            {
+                string want = null;
+                ServicesState s = ServicesDirector.Instance != null ? ServicesDirector.Instance.State : null;
+                if (s != null && kind == 1)
+                {
+                    for (int i = 0; i < s.Offers.Count && want == null; i++)
+                    {
+                        want = ServicesCatalogue.Number(s.Offers[i].Place) == number ? ServicesDirector.TabContracts + ":offer:" + s.Offers[i].Place : null;
+                    }
+                }
+                else if (kind == 2)
+                {
+                    want = ServicesDirector.TabSale + ":bid:" + number.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                }
+                else if (kind == 3)
+                {
+                    want = ServicesDirector.TabSale + ":";
+                }
+                return want != null ? app + GameUi.PhoneApp.WantMark + want : app;
+            }
+
             private const string PayOffKey = "ba:transaction_loanpayoff";   // the game's own, for a loan paid off (LoanEntryUi.PayOffLoan)
 
             private static readonly ServicesSource Source = new ServicesSource();

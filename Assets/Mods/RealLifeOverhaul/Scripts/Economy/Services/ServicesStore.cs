@@ -115,6 +115,7 @@ namespace RealLifeOverhaul.Economy
                     .Append('|').Append(Clean(v.Buyer)).Append('|').Append(Clean(v.BuyerName)).Append('|');
                 Join(t, v.Price, v.Weekly, v.Day, v.Deadline);
             }
+            WriteMore(t, s);
             return t.ToString();
         }
 
@@ -257,6 +258,13 @@ namespace RealLifeOverhaul.Economy
                                 }
                             }
                             break;
+                        case 'g':
+                        case 'm':
+                        case 'b':
+                        case 'q':
+                        case 'w':
+                            ReadMore(s, part[0], records, part);
+                            break;
                         case 'v':
                             foreach (string record in records)
                             {
@@ -315,6 +323,145 @@ namespace RealLifeOverhaul.Economy
             }
             return client;
         }
+
+        // The parts a later version added, each its own letter so an older reader skips them and an older save has none: the named crews, the fees contracted by month and the
+        // contracts rivals took, the rivals' bids on the open offers, the crew each contract has, and the worth of each business by day.
+        private static void WriteMore(StringBuilder t, ServicesState s)
+        {
+            t.Append("^g:");
+            for (int i = 0; i < s.Places.Count && i < ServicesCatalogue.CrewMost; i++)
+            {
+                t.Append(i > 0 ? ";" : string.Empty).Append(Clean(s.Places[i].Id)).Append('|');
+                Join(t, s.Places[i].Group);
+            }
+            t.Append("^m:");
+            Join(t, s.FeeMonth, s.FeeNoted, s.RivalWon);
+            for (int i = 0; i < s.FeeMonths.Length; i++)
+            {
+                t.Append('|').Append(s.FeeMonths[i].ToString(Inv));
+            }
+            t.Append("^b:");
+            int n = 0;
+            for (int i = 0; i < s.Offers.Count && i < ServicesCatalogue.OffersMost; i++)
+            {
+                CleaningOffer o = s.Offers[i];
+                if (o.Rivals.Count == 0)
+                {
+                    continue;
+                }
+                t.Append(n++ > 0 ? ";" : string.Empty).Append(Clean(o.Place));
+                for (int r = 0; r < o.Rivals.Count && r < ServicesCatalogue.RivalBidsMost; r++)
+                {
+                    t.Append('|');
+                    Triple(t, o.Rivals[r].Firm, o.Rivals[r].Pct, o.Rivals[r].Skill);
+                }
+            }
+            t.Append("^q:");
+            n = 0;
+            for (int i = 0; i < s.Clients.Count && i < ServicesCatalogue.ClientsMost; i++)
+            {
+                if (s.Clients[i].Crew >= 0)
+                {
+                    t.Append(n++ > 0 ? ";" : string.Empty).Append(Clean(s.Clients[i].Place)).Append('|');
+                    Join(t, s.Clients[i].Crew);
+                }
+            }
+            t.Append("^w:");
+            for (int i = 0; i < s.Worths.Count && i < ServicesCatalogue.ListingsMost; i++)
+            {
+                WorthRing w = s.Worths[i];
+                t.Append(i > 0 ? ";" : string.Empty).Append(Clean(w.Place));
+                for (int d = 0; d < w.Day.Length; d++)
+                {
+                    if (w.Day[d] > 0)
+                    {
+                        t.Append('|');
+                        Triple(t, d, w.Day[d], w.Value[d]);
+                    }
+                }
+            }
+        }
+
+        private static void ReadMore(ServicesState s, char kind, string[] records, string part)
+        {
+            switch (kind)
+            {
+                case 'g':
+                    foreach (string record in records)
+                    {
+                        string[] c = record.Split('|');
+                        int group = I(c, 1, -1);
+                        if (c.Length >= 2 && c[0].Length > 0 && group >= 0 && group < ServicesCatalogue.CrewGroups && s.Places.Count < ServicesCatalogue.CrewMost && s.GroupOf(c[0]) < 0)
+                        {
+                            s.Places.Add(new CrewPlace { Id = c[0], Group = group });
+                        }
+                    }
+                    break;
+                case 'm':
+                {
+                    string[] c = part.Substring(2).Split('|');
+                    s.FeeMonth = Math.Max(-1, I(c, 0, -1));
+                    s.FeeNoted = ServicesCatalogue.Clamp(I(c, 1), 0, ServicesCatalogue.FeeMonths);
+                    s.RivalWon = Math.Max(0, I(c, 2));
+                    for (int i = 0; i < s.FeeMonths.Length; i++)
+                    {
+                        s.FeeMonths[i] = Math.Max(0, I(c, 3 + i));
+                    }
+                    break;
+                }
+                case 'b':
+                    foreach (string record in records)
+                    {
+                        string[] c = record.Split('|');
+                        CleaningOffer o = c.Length > 1 ? s.Offer(c[0]) : null;
+                        for (int r = 1; o != null && r < c.Length && o.Rivals.Count < ServicesCatalogue.RivalBidsMost; r++)
+                        {
+                            string[] b = c[r].Split(',');
+                            o.Rivals.Add(new RivalBid
+                            {
+                                Firm = ServicesCatalogue.Clamp(I(b, 0), 0, ServicesCatalogue.RivalFirms.Length - 1), Pct = ServicesCatalogue.Clamp(I(b, 1, 100), 50, 150),
+                                Skill = ServicesCatalogue.Clamp(I(b, 2, 50), 0, 100)
+                            });
+                        }
+                    }
+                    break;
+                case 'q':
+                    foreach (string record in records)
+                    {
+                        string[] c = record.Split('|');
+                        CleaningClient client = c.Length >= 2 ? s.Client(c[0]) : null;
+                        if (client != null)
+                        {
+                            client.Crew = ServicesCatalogue.Clamp(I(c, 1, -1), -1, ServicesCatalogue.CrewGroups - 1);
+                        }
+                    }
+                    break;
+                case 'w':
+                    foreach (string record in records)
+                    {
+                        string[] c = record.Split('|');
+                        if (c[0].Length == 0 || s.Worths.Count >= ServicesCatalogue.ListingsMost)
+                        {
+                            continue;
+                        }
+                        var ring = new WorthRing { Place = c[0] };
+                        for (int i = 1; i < c.Length; i++)
+                        {
+                            string[] x = c[i].Split(',');
+                            int slot = I(x, 0, -1);
+                            if (slot >= 0 && slot < ring.Day.Length)
+                            {
+                                ring.Day[slot] = Math.Max(0, I(x, 1));
+                                ring.Value[slot] = Math.Max(0, I(x, 2));
+                            }
+                        }
+                        s.Worths.Add(ring);
+                    }
+                    break;
+            }
+        }
+
+        private static void Triple(StringBuilder t, int a, int b, int c) => t.Append(a.ToString(Inv)).Append(',').Append(b.ToString(Inv)).Append(',').Append(c.ToString(Inv));
 
         private static void Join(StringBuilder t, params int[] values)
         {
