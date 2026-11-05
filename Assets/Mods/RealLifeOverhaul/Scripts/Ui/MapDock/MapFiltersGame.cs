@@ -23,7 +23,9 @@ namespace RealLifeOverhaul.Ui
         public string Id => _subway ? MapKits.SubwayId : MapKits.FiltersId;
 
         // CityMapFilters is the game's draggable window; its stations' list is not one.
-        public string WindowId => _subway ? null : "CityMapFilters";
+        public const string FiltersWindow = "CityMapFilters";
+
+        public string WindowId => _subway ? null : FiltersWindow;
 
         public string Name => _subway ? "the city map's subway list" : "the city map's filters";
 

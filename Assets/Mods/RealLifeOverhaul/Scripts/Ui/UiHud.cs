@@ -247,7 +247,7 @@ namespace RealLifeOverhaul.Ui
                 x = (float)Math.Ceiling(m.AvoidX + m.AvoidW + UiTokens.S2);
                 if (m.MapDock)
                 {
-                    y = UiMapChrome.RouteTop;   // the route strip stands over the map beside the dock, at the very top
+                    y = m.AvoidY + UiMapChrome.RouteTop;   // the route strip stands over the map at the very top, so under its row, the dock's top being wherever it was dragged to
                 }
             }
         }
