@@ -676,7 +676,7 @@ internal static partial class Program
         Check(Regex.Matches(tests, "ModeLine\\(").Count >= 16 && tests.Contains("\"Construction check (build mode: \""), "build mode sources: each test writes its check line");
         string stand = ModSource(@"Uptown\LifeDirector.Stand.cs");
         string load = ModSource(@"Uptown\LifeDirector.cs");
-        Check(stand.Contains("if (!CompleteOne(made, f, \"its stand\"))") && load.Contains("CompleteAll(\"the load\");"), "whole buildings sources: checked at every stand and at every load");
+        Check(stand.Contains("CompleteOne(made, f, \"its stand\");") && load.Contains("CompleteAll(\"the load\");"), "whole buildings sources: checked at every stand and at every load");
         string complete = ModSource(@"Uptown\LifeDirector.Complete.cs");
         Check(complete.Contains("f.Owner == FinishOwner.City && !GoingPublic.InSession") && complete.Contains("LifeGame.MendOwner(made, OwnerRivals)"), "whole buildings sources: a city's building with no owner given one, never in a session");
         string market = ModSource(@"Uptown\LifeDirector.Market.cs");
