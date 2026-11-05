@@ -14,6 +14,7 @@ namespace RealLifeOverhaul.Ui
         private static MapSaved _saved = new MapSaved();
         private static MapBusy _busy = new MapBusy();
         private static GameInstance _save;
+        private static int _savedVersion;
         private static bool _savedKept = true, _busyKept = true;   // false while the line in the save is one this version cannot read: it is left as it was
         private static Action _onSave;
 
@@ -27,6 +28,23 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        /// <summary>Changes whenever the list of saved places does (a place saved or taken out, a save loaded or the city gone).</summary>
+        public static int SavedVersion
+        {
+            get
+            {
+                Load();
+                return _savedVersion;
+            }
+        }
+
+        /// <summary>The saved place at an index of the list, the newest first.</summary>
+        public static MapSavedPlace SavedAt(int index)
+        {
+            Load();
+            return _saved[index];
+        }
+
         public static bool Saved(string street, int number)
         {
             Load();
@@ -37,6 +55,7 @@ namespace RealLifeOverhaul.Ui
         public static bool Toggle(string street, int number, string name)
         {
             Load();
+            _savedVersion++;
             return _saved.Toggle(street, number, name);
         }
 
@@ -79,6 +98,7 @@ namespace RealLifeOverhaul.Ui
                 _savedKept = false;
             }
             _saved = _savedKept ? MapSaved.Read(line) : new MapSaved();
+            _savedVersion++;
             line = null;
             _busyKept = true;
             if (save.modData != null && save.modData.TryGetValue(MapBusy.Key, out line) && !MapBusy.Readable(line))
@@ -126,6 +146,7 @@ namespace RealLifeOverhaul.Ui
             _save = null;
             _saved = new MapSaved();
             _busy = new MapBusy();
+            _savedVersion++;
         }
     }
 }

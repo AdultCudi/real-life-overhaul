@@ -16,7 +16,7 @@ namespace RealLifeOverhaul.Ui
     /// the mod's own rows stay the game's. Beside the dock it draws the route strip, the map's buttons and the Layers panel, and swaps the dock for the place card or the
     /// district view when the player asks for them. A look at the game's state four times a second, laid out only when it changed; nothing is allocated or searched per frame.
     /// </summary>
-    internal sealed partial class MapLive : IUiScreen, IUiTyping
+    internal sealed partial class MapLive : IUiScreen, IUiTyping, IUiPointing
     {
         private enum Dock : byte
         {
@@ -31,6 +31,8 @@ namespace RealLifeOverhaul.Ui
         private readonly Component _found;
         private readonly bool _subway;
         private readonly GameUi.MapPicker _picker;   // the mod's choice of a place, when this is the picker's face
+        private int _pointedEntry = -1;               // the entry of the choice the pointer rests on
+        private bool _hoverNext;                      // the pointer rests on the row of the unit next door
         private readonly CityMapFilters _filters;
         private readonly CityMapSubwayStations _stations;
         private readonly MapScreenModel _model = new MapScreenModel();
@@ -85,6 +87,7 @@ namespace RealLifeOverhaul.Ui
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
             Build();
+            _model.HasLabel = NextDoorLabel(frame);
             UiMap.Lay(s, _model, frame, dark, keys);
             _dirty = false;
             _seen = Signature();
@@ -99,10 +102,42 @@ namespace RealLifeOverhaul.Ui
 
         public void Focused(int command, int arg)
         {
-            // The pointer on a place of a choice: the map glides there after the pause, as it does for the window's own entry.
-            if (_picker != null && command == UiMapFilters.ChoiceCommand && arg >= 0 && arg < _pickerRows.Count)
+            // A key or the pad on a place of a choice: the map glides there after the pause, as it does for the window's own entry.
+            Pointed(command, arg);
+        }
+
+        /// <summary>
+        /// What the pointer (or the keys' focus) rests on: a place of a choice glides the map there, the unit next door shows its label over the map, a district's row makes the
+        /// card about that district. Left alone (command -1) they all stop.
+        /// </summary>
+        public void Pointed(int command, int arg)
+        {
+            if (_picker != null)
             {
-                _picker.KitPoint(_pickerRows[arg]);
+                int entry = command == UiMapFilters.ChoiceCommand && arg >= 0 && arg < _pickerRows.Count ? _pickerRows[arg] : -1;
+                if (entry != _pointedEntry)
+                {
+                    if (_pointedEntry >= 0)
+                    {
+                        _picker.KitUnpoint(_pointedEntry);
+                    }
+                    _pointedEntry = entry;
+                    if (entry >= 0)
+                    {
+                        _picker.KitPoint(entry);
+                    }
+                }
+                return;
+            }
+            bool next = _dock == Dock.Place && command == UiMapPlace.RentCommand && _nextDoor != null;
+            if (next != _hoverNext)
+            {
+                _hoverNext = next;
+                _dirty = true;
+            }
+            if (_dock == Dock.District && DistrictOwner != null)
+            {
+                DistrictOwner.KitPoint(command == UiMapDistrict.RowCommand ? arg : -1);
             }
         }
 
@@ -120,6 +155,7 @@ namespace RealLifeOverhaul.Ui
             {
                 _dock = Dock.Filters;
                 _routeShown = false;
+                _hoverNext = false;
                 _dirty = true;
                 return true;
             }

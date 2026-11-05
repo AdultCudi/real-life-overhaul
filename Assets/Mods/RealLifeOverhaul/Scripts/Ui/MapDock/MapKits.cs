@@ -28,6 +28,14 @@ namespace RealLifeOverhaul.Ui
             DistrictView.KitDraws = DistrictOnKit;
             MapPicker.KitShow = PickerShow;
             MapPicker.KitHide = PickerHide;
+            if (UiScreenSwitches.On(FiltersId))
+            {
+                MapRouteTag.On();
+            }
+            else
+            {
+                MapRouteTag.Off();
+            }
             for (int i = 0; i < All.Length; i++)
             {
                 if (UiScreenSwitches.On(All[i].Id))
@@ -39,6 +47,7 @@ namespace RealLifeOverhaul.Ui
                     All[i].Remove("its switch is off");
                 }
             }
+            MapSavedGame.Look();
         }
 
         /// <summary>The map's windows the game's own again.</summary>
@@ -50,6 +59,7 @@ namespace RealLifeOverhaul.Ui
             }
             MapPicker.KitShow = null;
             MapPicker.KitHide = null;
+            MapRouteTag.Off();
             if (_pickerShown != null)
             {
                 MapPicker open = _pickerShown;
@@ -66,6 +76,8 @@ namespace RealLifeOverhaul.Ui
                 All[i].Rearm();
             }
             MapStoreGame.Forget();
+            MapSavedGame.Forget();
+            MapRouteTag.Clear();
         }
 
         /// <summary>The windows' states for the interface's line at load.</summary>

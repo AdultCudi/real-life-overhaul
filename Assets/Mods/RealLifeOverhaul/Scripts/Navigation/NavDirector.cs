@@ -231,6 +231,7 @@ namespace RealLifeOverhaul.Nav
         // Four times a second.
         private void Slow(float now)
         {
+            RouteLabelKeep();
             bool wantMap = Settings.Minimap;
             bool wantGps = Settings.Gps && !RouteLeft;
             if (_voogle && !_otherSaid && Meta.Dev.Verbose)
@@ -467,6 +468,7 @@ namespace RealLifeOverhaul.Nav
             _baseGiven = false;
             _aloneUntil = 0f;
             _hudSaid = false;
+            RouteLabelKeep();   // no route, no map object: the label on the map goes with them
         }
 
         /// <summary>For the save tools: off the HUD and the map. It comes back with the options on the next tick.</summary>

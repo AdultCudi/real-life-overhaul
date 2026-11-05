@@ -31545,5 +31545,8 @@
   "reallife_map_ranked_supply": "按电力与供水排序",
   "reallife_map_ranked_internet": "按互联网排序",
   "reallife_map_ranked_competition": "按竞争排序",
-  "reallife_map_ranked_council": "按停车价格排序"
+  "reallife_map_ranked_council": "按停车价格排序",
+  "reallife_map_row_saved": "已保存的地点",
+  "reallife_map_next_label": "隔壁出租",
+  "reallife_map_next_figure": "每{unit}每天 {rent}"
 }

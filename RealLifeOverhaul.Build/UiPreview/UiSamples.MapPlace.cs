@@ -4,7 +4,7 @@ using RealLifeOverhaul.Ui;
 internal static partial class UiSamples
 {
     /// <summary>The states of the place card the previews and the checks draw.</summary>
-    public static readonly string[] MapPlaceStates = { "overview", "reviews", "business", "unrated", "yours" };
+    public static readonly string[] MapPlaceStates = { "overview", "reviews", "business", "unrated", "yours", "hover" };
 
     /// <summary>The district view's layers the previews and the checks draw.</summary>
     public static readonly string[] MapDistrictStates = { "rent", "wealth", "crime", "no_month" };
@@ -100,11 +100,29 @@ internal static partial class UiSamples
     public static MapButtonsModel MapButtons(UiWords t, bool tilted) => new MapButtonsModel { North = t("reallife_map_north", "N"), Tilt = tilted ? "3D" : "2D", Tilted = tilted };
 
     /// <summary>The place card over the map with the route strip, the Layers panel and the map's buttons, the status bar under them.</summary>
-    public static void MapPlaceScene(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, string state) =>
-        WithBar(Over(HudBar(t, false, false, false)), () => UiMap.Lay(s, new MapScreenModel
+    public static void MapPlaceScene(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, string state, bool routeTag = false) =>
+        WithBar(Over(HudBar(t, false, false, false)), () =>
         {
-            Place = MapPlace(t, state), Route = state == "unrated" ? null : MapRoute(t), Layers = MapLayers(t), Buttons = MapButtons(t, true),
-        }, f, dark, k));
+            UiMap.Lay(s, new MapScreenModel
+            {
+                Place = MapPlace(t, state), Route = state == "unrated" ? null : MapRoute(t), Layers = MapLayers(t), Buttons = MapButtons(t, true),
+                HasLabel = state == "hover", Label = MapNextLabel(t),
+            }, f, dark, k);
+            if (routeTag && state != "unrated")
+            {
+                // The label on the route's line, as the HUD's host keeps it over the middle of the line (the preview only).
+                string minutes = t("reallife_nav_minutes", "{minutes} min").Replace("{minutes}", "14");
+                UiMapChrome.RouteTagSize(minutes, "1.2 km", out float w, out float h);
+                UiMapChrome.RouteTag(s, UiAt.Screen, 1013f - w / 2f, 592f - h / 2f, w, h, true, minutes, "1.2 km");
+            }
+        });
+
+    // The label over the unit next door, where the unit stands on the map, while the pointer rests on the card's row for it.
+    public static MapLabel MapNextLabel(UiWords t) => new MapLabel
+    {
+        Icon = UiIcon.Key, Title = t("reallife_map_next_label", "For rent next door"), X = 900f, Y = 560f,
+        Figure = t("reallife_map_next_figure", "{rent} per {unit} a day").Replace("{rent}", "$96").Replace("{unit}", "m2"),
+    };
 
     // ------------------------------------------------------------------------------------------------- the district view
 
@@ -154,7 +172,7 @@ internal static partial class UiSamples
                 };
                 m.ChartTitle = t("reallife_map_classes", "Classes");
                 m.ChartCentre = "18.4K";
-                m.ChartCentreSub = t("reallife_map_residents_lower", "residents");
+                m.ChartCentreSub = t("reallife_map_residents_lower", "people");
                 m.ChartLabels = new[] { t("reallife_map_class_working", "Working"), t("reallife_map_class_middle", "Middle"), t("reallife_map_class_upper", "Upper") };
                 m.ChartValues = new[] { "42%", "41%", "17%" };
                 m.ChartShares = new[] { 0.42f, 0.41f, 0.17f };
@@ -164,7 +182,7 @@ internal static partial class UiSamples
                 m.ScaleHigh = "124";
                 m.TableTitle = t("reallife_map_ranked_wealth", "Ranked by wealth");
                 m.ColFigure = t("reallife_map_col_wealth", "Level");
-                m.Chosen = new[] { new UiInfoRow { Label = t("reallife_map_avg_wealth", "Income level"), Value = "124" }, new UiInfoRow { Label = t("reallife_map_residents", "Residents"), Value = "18,400" } };
+                m.Chosen = new[] { new UiInfoRow { Label = t("reallife_map_avg_wealth", "Income level"), Value = "118" }, new UiInfoRow { Label = t("reallife_map_residents", "Residents"), Value = "18,400" } };
                 m.Rows = new[]
                 {
                     District("Uptown", 4, "124", "+0.9%", 1, UiRole.Ok, "6.4%"), District("Midtown", 3, "118", "+0.6%", 1, UiRole.Ok, "5.1%", true), District("Lower Manhattan", 3, "112", "-0.2%", -1, UiRole.Danger, "7.9%"),
@@ -212,6 +230,13 @@ internal static partial class UiSamples
                 FillRent(t, m);
                 break;
         }
+        for (int i = 0; i < m.Rows.Length; i++)
+        {
+            if (m.Rows[i].Chosen)
+            {
+                m.ChosenRank = t("reallife_map_rank", "Rank {n} of {m}").Replace("{n}", (i + 1).ToString()).Replace("{m}", m.Rows.Length.ToString());
+            }
+        }
         return m;
     }
 
@@ -250,6 +275,27 @@ internal static partial class UiSamples
     }
 
     /// <summary>The district view over the map with the status bar under it and the map's buttons and layers.</summary>
-    public static void MapDistrictScene(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, string state) =>
-        WithBar(Over(HudBar(t, false, false, false)), () => UiMap.Lay(s, new MapScreenModel { District = MapDistrict(t, state), Buttons = MapButtons(t, true) }, f, dark, k));
+    public static void MapDistrictScene(UiScene s, UiFrame f, bool dark, IUiKeys k, UiWords t, string state, bool tags = false) =>
+        WithBar(Over(HudBar(t, false, false, false)), () =>
+        {
+            MapDistrictModel m = MapDistrict(t, state);
+            UiMap.Lay(s, new MapScreenModel { District = m, Buttons = MapButtons(t, true) }, f, dark, k);
+            if (tags)
+            {
+                MapTags(s, m);   // the names over the districts, as the HUD's host keeps them beside each district's middle (the preview only)
+            }
+        });
+
+    // Where seven districts stand on the sample's map, in px of the layout.
+    private static readonly float[] MapTagAt = { 1180f, 250f, 800f, 300f, 1420f, 470f, 760f, 560f, 1050f, 650f, 1500f, 780f, 880f, 840f };
+
+    private static void MapTags(UiScene s, MapDistrictModel m)
+    {
+        for (int i = 0; i < m.Rows.Length && i * 2 + 1 < MapTagAt.Length; i++)
+        {
+            MapDistrictRow d = m.Rows[i];
+            UiMapDistrict.TagSize(d.Name, d.Figure, out float w, out float h);
+            UiMapDistrict.Tag(s, UiAt.Screen, MapTagAt[i * 2], MapTagAt[i * 2 + 1], w, h, d.Name, d.Figure, d.Swatch, d.Chosen);
+        }
+    }
 }

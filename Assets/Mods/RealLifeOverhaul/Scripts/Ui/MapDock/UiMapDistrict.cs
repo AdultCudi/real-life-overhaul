@@ -57,7 +57,7 @@ namespace RealLifeOverhaul.Ui
         public const int LayerCommand = 5060, RowCommand = 5061, ShowCommand = 5062, FiltersCommand = 5063;
         public const float Width = UiMapFilters.Width;
         private const float RowHeight = UiTokens.TableRow;     // px: a district's row
-        private const float DonutSize = 96f;
+        private const float DonutSize = 108f, DonutHole = 0.62f;   // px; the share of its width the ring leaves open
         private const byte RailRegion = 1, PanelRegion = 2;
         private static readonly UiRole[] Ramp = { UiRole.Ramp1, UiRole.Ramp2, UiRole.Ramp3, UiRole.Ramp4, UiRole.Ramp5 };
 
@@ -122,6 +122,34 @@ namespace RealLifeOverhaul.Ui
 
         private static float BandHeight(UiInfoRow[] rows) => rows == null || rows.Length == 0 ? 0f : UiTokens.S2 + UiTokens.PairRow * (1 + rows.Length) + UiTokens.S2 + UiTokens.S1;
 
+        // ------------------------------------------------------------------------------------------------- the names on the map
+
+        private const float TagMost = 168f;   // px: a tag's words at most
+
+        /// <summary>The size of a district's tag over the map: its colour, its name and the layer's figure.</summary>
+        public static void TagSize(string name, string figure, out float w, out float h)
+        {
+            float words = Math.Min(TagMost, Math.Max(UiTextRules.Width(name, UiStyle.SmallStrong), UiTextRules.Width(figure, UiStyle.Body)));
+            w = UiDraw.Snap(UiTokens.S3 + UiTokens.StatusDot + UiTokens.S2 + words + UiTokens.S3 + UiTokens.S1);
+            h = UiDraw.Snap(UiTokens.S2 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SmallStrong)) + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)) + UiTokens.S2);
+        }
+
+        /// <summary>
+        /// A district's tag: a square in its band's colour, its name over its figure, on a slate piece, or on the cyan one for the district the page is about. Drawn once into the
+        /// size <see cref="TagSize"/> gave.
+        /// </summary>
+        public static void Tag(UiScene s, UiAt at, float x, float y, float w, float h, string name, string figure, UiRole swatch, bool chosen = false)
+        {
+            int box = UiDraw.Box(s, at, x, y, w, h, chosen ? UiRole.Accent : UiRole.Panel, UiRole.None, UiTokens.RadiusLarge);
+            UiAt on = at.In(box);
+            float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SmallStrong));
+            UiDraw.Box(s, on, x + UiTokens.S3, y + UiTokens.S2 + UiDraw.Snap((lh - UiTokens.StatusDot) / 2f), UiTokens.StatusDot, UiTokens.StatusDot, swatch == UiRole.None ? UiRole.Track : swatch,
+                UiRole.None, UiTokens.RadiusSmall);
+            float tx = x + UiTokens.S3 + UiTokens.StatusDot + UiTokens.S2, tw = w - (tx - x) - UiTokens.S3;
+            UiDraw.Text(s, on, tx, y + UiTokens.S2, tw, UiStyle.SmallStrong, chosen ? UiRole.OnAccent : UiRole.Text, name, UiFlags.Truncate);
+            UiDraw.Text(s, on, tx, y + UiTokens.S2 + lh, tw, UiStyle.Body, chosen ? UiRole.OnAccent : swatch == UiRole.None ? UiRole.Text2 : UiRole.Text, figure, UiFlags.Truncate);
+        }
+
         // ------------------------------------------------------------------------------------------------- the rail
 
         private static void Rail(UiScene s, UiAt at, MapDistrictModel m, int buttons, float x, float y)
@@ -178,9 +206,12 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Donut(s, at, ix, cy, DonutSize, m.ChartShares, m.ChartShares.Length);
             if (!string.IsNullOrEmpty(m.ChartCentre))
             {
-                float inner = DonutSize * 0.56f, cx = ix + (DonutSize - inner) / 2f;
+                float inner = DonutSize * DonutHole, cx = ix + (DonutSize - inner) / 2f;
                 float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
-                bool two = !string.IsNullOrEmpty(m.ChartCentreSub);
+                // The word under the figure only where the hole holds it whole, as wide as the hole is at the word's foot: a translation too long for it is left out, not cut off
+                // by the ring (the chart's title says what it counts).
+                float half = (lh + sh) / 2f, chord = 2f * (float)Math.Sqrt(Math.Max(0f, inner * inner / 4f - half * half));
+                bool two = !string.IsNullOrEmpty(m.ChartCentreSub) && UiTextRules.Width(m.ChartCentreSub, UiStyle.Small) <= chord - UiTokens.S1;
                 float top = cy + (DonutSize - lh - (two ? sh : 0f)) / 2f;
                 UiDraw.TextMiddle(s, at, cx, top, lh, inner, UiStyle.Title, UiRole.Text, m.ChartCentre, UiFlags.Centre | UiFlags.Truncate);
                 if (two)
@@ -249,6 +280,21 @@ namespace RealLifeOverhaul.Ui
 
         private static float TableHead(MapDistrictModel m) => UiTokens.S3 + UiTokens.PairRow + UiTokens.S1 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2;
 
+        // The share standing empty: as wide as its heading or its widest figure, whichever is more (a script with narrower letters has a narrower heading than its figures).
+        private static float EmptyWidth(MapDistrictModel m)
+        {
+            if (string.IsNullOrEmpty(m.ColEmpty))
+            {
+                return 0f;
+            }
+            float widest = UiTextRules.Width(m.ColEmpty, UiStyle.SmallStrong);
+            for (int i = 0; i < m.Rows.Length; i++)
+            {
+                widest = Math.Max(widest, UiTextRules.Width(m.Rows[i].Empty, UiStyle.Small));
+            }
+            return Math.Min(UiDraw.Snap(widest + UiTokens.S2), 72f);
+        }
+
         // Columns: the rank, the district with its band's colour, its figure, the month's change and the share standing empty, the figures right aligned.
         private static void Table(UiScene s, UiAt at, MapDistrictModel m, float px, float y, float bottom)
         {
@@ -258,7 +304,7 @@ namespace RealLifeOverhaul.Ui
             UiDraw.TextMiddle(s, at, ix, cy, UiTokens.PairRow, iw, UiStyle.SectionHeader, UiRole.Text, m.TableTitle, UiFlags.Label | UiFlags.Truncate);
             cy += UiTokens.PairRow + UiTokens.S1;
             // A layer the share standing empty means nothing for has no such column: its room goes to the figures' columns.
-            float empty = string.IsNullOrEmpty(m.ColEmpty) ? 0f : Math.Min(UiDraw.Snap(UiTextRules.Width(m.ColEmpty, UiStyle.SmallStrong) + UiTokens.S2), 60f);
+            float empty = EmptyWidth(m);
             float month = 84f, figure = 76f, rank = 24f;
             float emptyX = ix + iw - empty, monthX = emptyX - month, figureX = monthX - figure, nameX = ix + rank + UiTokens.S2 + UiTokens.S3 + UiTokens.S3;
             float hh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
@@ -309,7 +355,7 @@ namespace RealLifeOverhaul.Ui
                     d.Swatch == UiRole.None ? UiRole.Track : d.Swatch, UiRole.None, UiTokens.RadiusSmall, UiFlags.Middle);
                 UiDraw.TextMiddle(s, inside, cNameX, ry, RowHeight, cFigureX - cNameX, UiStyle.Body, UiRole.Text, d.Name, UiFlags.Truncate);
                 UiDraw.TextMiddle(s, inside, cFigureX, ry, RowHeight, figure, UiStyle.Body, d.Swatch == UiRole.None && !d.Chosen ? UiRole.Muted : UiRole.Text, d.Figure,
-                    UiFlags.Right | UiFlags.Truncate);
+                    UiFlags.Label | UiFlags.Right | UiFlags.Truncate);
                 if (!string.IsNullOrEmpty(d.Month))
                 {
                     UiRole tone = d.MonthTone == UiRole.Ok ? UiRole.OkText : d.MonthTone == UiRole.Danger ? UiRole.DangerText : d.Chosen ? UiRole.Text : UiRole.Text2;
@@ -324,7 +370,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 if (!string.IsNullOrEmpty(d.Empty))
                 {
-                    UiDraw.TextMiddle(s, inside, cEmptyX, ry, RowHeight, empty, UiStyle.Small, d.Chosen ? UiRole.Text : UiRole.Text2, d.Empty, UiFlags.Right | UiFlags.Truncate);
+                    UiDraw.TextMiddle(s, inside, cEmptyX, ry, RowHeight, empty, UiStyle.Small, d.Chosen ? UiRole.Text : UiRole.Text2, d.Empty, UiFlags.Label | UiFlags.Right | UiFlags.Truncate);
                 }
                 UiDraw.Node(s, inClip, 0f, ry, Width, RowHeight, RowCommand, r, face, false, list, r);
             }

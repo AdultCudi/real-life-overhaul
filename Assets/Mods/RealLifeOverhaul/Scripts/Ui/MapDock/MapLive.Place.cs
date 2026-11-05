@@ -306,6 +306,36 @@ namespace RealLifeOverhaul.Ui
             return true;
         }
 
+        // The unit next door named over the map where it stands, while the pointer rests on its row: a piece laid out with the page (the camera does not move while the pointer
+        // is on the dock, so where the unit is on the screen holds until it leaves), never a frame's work.
+        private bool NextDoorLabel(UiFrame frame)
+        {
+            if (!_hoverNext || _dock != Dock.Place || _nextDoor == null || _nextDoor.building == null)
+            {
+                return false;
+            }
+            Camera camera = GameManager.GetMainCamera();
+            if (camera == null)
+            {
+                return false;
+            }
+            Vector3 screen = camera.WorldToScreenPoint(PositionOf(_nextDoor, _nextDoor));
+            if (screen.z <= 0f)
+            {
+                return false;
+            }
+            UiHudRules.ToLayout(screen.x, screen.y, UnityEngine.Screen.width, UnityEngine.Screen.height, frame.Width, frame.Height, out float x, out float y);
+            float perSqm = _nextDoor.building.GetBuildingDailyMarketRentPerSqm();
+            _model.Label = new MapLabel
+            {
+                Icon = UiIcon.Key, Title = UiText.T("reallife_map_next_label"), X = x, Y = y,
+                Figure = perSqm > 0f
+                    ? UiText.Fill("reallife_map_next_figure", "rent", UiText.Money(Districts.DistrictGame.PerArea(perSqm)), "unit", Districts.DistrictGame.AreaUnit())
+                    : null
+            };
+            return true;
+        }
+
         public bool PlaceAllReviews()
         {
             _placeTab = 1;

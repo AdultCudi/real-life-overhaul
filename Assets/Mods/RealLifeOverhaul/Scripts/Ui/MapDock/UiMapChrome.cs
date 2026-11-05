@@ -38,6 +38,15 @@ namespace RealLifeOverhaul.Ui
         public MapLayer[] Layers = new MapLayer[0];
     }
 
+    /// <summary>A label over a place of the map: what the pointer rests on in a panel (the unit next door), shown where that place stands on the map.</summary>
+    public struct MapLabel
+    {
+        public UiIcon Icon;
+        public string Title;       // "For rent next door"
+        public string Figure;      // "$96 per m2 a day", or null
+        public float X, Y;         // px of the layout: the place on the screen
+    }
+
     /// <summary>The map's buttons at its right edge: north, centre on me, zoom in and out, and the tilt.</summary>
     public sealed class MapButtonsModel
     {
@@ -59,23 +68,51 @@ namespace RealLifeOverhaul.Ui
             LayerCommand = 5047, HideAllCommand = 5048;
         public const float Button = UiTokens.Control;      // px: a map button
         public const float LayersWidth = 320f;
-        private const float OptionWidth = 116f;
+        private const float OptionWidth = 116f, LeastOption = 88f;
         private const float StripHeight = 64f;
         private const float LayerRow = 48f;   // two lines of a longer translation fit a row
         private static readonly byte RightRegion = 3, TopRegion = 4;
 
         // ------------------------------------------------------------------------------------------------- the route strip
 
-        /// <summary>The strip's width for its options and Go.</summary>
-        public static float RouteWidth(MapRouteModel m) => UiTokens.S3 * 2f + m.Options.Length * (OptionWidth + UiTokens.S1) - UiTokens.S1 + UiTokens.S4 + GoWidth(m);
+        /// <summary>The strip's width for its options and Go, each option as wide as its words need.</summary>
+        public static float RouteWidth(MapRouteModel m) => UiTokens.S3 * 2f + OptionsWidth(m) + UiTokens.S4 + GoWidth(m);
 
         private static float GoWidth(MapRouteModel m) => UiDraw.ButtonWidth(UiButtonKind.Primary, m.GoLabel, UiIcon.None, UiAction.Alt, UiDefaultKeys.Keyboard);
 
-        /// <summary>The route strip at a place (px of the layout): its options as tiles, the chosen one cyan, and Go. Returns the strip's right edge.</summary>
-        public static float Route(UiScene s, UiAt at, MapRouteModel m, float x, float y, IUiKeys keys)
+        // An option's width: the least one, or what its minutes and its words (a longer translation, a fare) need beside the glyph, so no word is cut short.
+        private static float OptionWidthOf(MapRouteOption o)
+        {
+            float words = Math.Max(UiTextRules.Width(o.Minutes, UiStyle.BodyStrong), UiTextRules.Width(o.Sub, UiStyle.Small));
+            return Math.Max(OptionWidth, UiDraw.Snap(UiTokens.S2 + UiTokens.Icon + UiTokens.S2 + words + UiTokens.S2 + UiTokens.S1));
+        }
+
+        private static float OptionsWidth(MapRouteModel m)
+        {
+            float sum = Math.Max(0, m.Options.Length - 1) * UiTokens.S1;
+            for (int i = 0; i < m.Options.Length; i++)
+            {
+                sum += OptionWidthOf(m.Options[i]);
+            }
+            return sum;
+        }
+
+        /// <summary>
+        /// The route strip at a place (px of the layout): its options as tiles, the chosen one cyan, and Go. Returns the strip's right edge. <paramref name="room"/> is the width
+        /// it may take: where its words need more, the options give up room evenly down to a least width, and a word is only cut short past that.
+        /// </summary>
+        public static float Route(UiScene s, UiAt at, MapRouteModel m, float x, float y, float room, IUiKeys keys)
         {
             UiAt top = at.InRegion(TopRegion);
-            float w = RouteWidth(m);
+            float natural = OptionsWidth(m), spare = room - (RouteWidth(m) - natural);
+            float squeeze = natural > spare && natural > 0f ? Math.Max(0.7f, spare / natural) : 1f;
+            float w = RouteWidth(m) - natural;
+            float[] widths = new float[m.Options.Length];
+            for (int i = 0; i < widths.Length; i++)
+            {
+                widths[i] = squeeze < 1f ? Math.Max(LeastOption, UiDraw.Snap(OptionWidthOf(m.Options[i]) * squeeze)) : OptionWidthOf(m.Options[i]);
+                w += widths[i] + (i > 0 ? UiTokens.S1 : 0f);
+            }
             int panel = UiDraw.Box(s, top, x, y, w, StripHeight, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt on = top.In(panel);
             float cx = x + UiTokens.S3;
@@ -83,20 +120,21 @@ namespace RealLifeOverhaul.Ui
             {
                 MapRouteOption o = m.Options[i];
                 bool chosen = i == m.Chosen;
-                int face = UiDraw.Box(s, on, cx, y + UiTokens.S2, OptionWidth, StripHeight - UiTokens.S2 * 2f, chosen ? UiRole.Accent : UiRole.None, UiRole.None, UiTokens.RadiusLarge,
+                float ow = widths[i];
+                int face = UiDraw.Box(s, on, cx, y + UiTokens.S2, ow, StripHeight - UiTokens.S2 * 2f, chosen ? UiRole.Accent : UiRole.None, UiRole.None, UiTokens.RadiusLarge,
                     chosen ? UiFlags.Selected : UiFlags.None);
                 UiAt inside = on.In(face);
                 UiRole ink = chosen ? UiRole.OnAccent : o.Off ? UiRole.Muted : UiRole.Text;
                 UiRole sub = chosen ? UiRole.OnAccent : UiRole.Text2;
                 UiDraw.Icon(s, inside, cx + UiTokens.S2, y + UiTokens.S2 + (StripHeight - UiTokens.S2 * 2f - UiTokens.Icon) / 2f, UiTokens.Icon, o.Icon, chosen ? UiRole.OnAccent : UiRole.None,
                     UiFlags.Middle, !chosen);
-                float tx = cx + UiTokens.S2 + UiTokens.Icon + UiTokens.S2, tw = OptionWidth - (tx - cx) - UiTokens.S2;
+                float tx = cx + UiTokens.S2 + UiTokens.Icon + UiTokens.S2, tw = ow - (tx - cx) - UiTokens.S2;
                 float lh = UiTextRules.LineHeight(UiStyle.BodyStrong), sh = UiTextRules.LineHeight(UiStyle.Small);
                 float ty = y + (StripHeight - lh - sh) / 2f;
-                UiDraw.Text(s, inside, tx, ty, tw, UiStyle.BodyStrong, ink, o.Minutes, UiFlags.Truncate | UiFlags.Middle);
-                UiDraw.Text(s, inside, tx, ty + lh, tw, UiStyle.Small, sub, o.Sub, UiFlags.Truncate | UiFlags.Middle);
-                UiDraw.Node(s, on, cx, y + UiTokens.S2, OptionWidth, StripHeight - UiTokens.S2 * 2f, OptionCommand, i, face, o.Off);
-                cx += OptionWidth + UiTokens.S1;
+                UiDraw.Text(s, inside, tx, ty, tw, UiStyle.BodyStrong, ink, o.Minutes, UiFlags.Label | UiFlags.Truncate | UiFlags.Middle);
+                UiDraw.Text(s, inside, tx, ty + lh, tw, UiStyle.Small, sub, o.Sub, UiFlags.Label | UiFlags.Truncate | UiFlags.Middle);
+                UiDraw.Node(s, on, cx, y + UiTokens.S2, ow, StripHeight - UiTokens.S2 * 2f, OptionCommand, i, face, o.Off);
+                cx += ow + UiTokens.S1;
             }
             float gw = GoWidth(m);
             UiDraw.Button(s, on, x + w - UiTokens.S3 - gw, y + (StripHeight - UiTokens.Control) / 2f, gw, UiTokens.Control, UiButtonKind.Primary, m.GoLabel, UiIcon.None, UiAction.Alt, keys,
@@ -125,6 +163,55 @@ namespace RealLifeOverhaul.Ui
             s.Nodes[s.NodeCount - 1].Disabled = !m.CanZoomOut;
             y += Button + UiTokens.S2;
             TextTile(s, right, x, y, m.Tilt, m.Tilted, TiltCommand);
+        }
+
+        /// <summary>The size of the label on the route's line: the glyph of the way, the minutes over the way still to go.</summary>
+        public static void RouteTagSize(string minutes, string distance, out float w, out float h)
+        {
+            bool two = !string.IsNullOrEmpty(distance);
+            float words = Math.Max(UiTextRules.Width(minutes, UiStyle.BodyStrong), two ? UiTextRules.Width(distance, UiStyle.Small) : 0f);
+            w = UiDraw.Snap(UiTokens.S3 + UiTokens.Icon + UiTokens.S2 + words + UiTokens.S3 + UiTokens.S1);
+            h = UiDraw.Snap(UiTokens.S2 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.BodyStrong)) + (two ? UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) : 0f) + UiTokens.S2);
+        }
+
+        /// <summary>The label on the route's line, drawn once into the size <see cref="RouteTagSize"/> gave: a walker or a car, "14 min" over "1.2 km". It takes no press.</summary>
+        public static void RouteTag(UiScene s, UiAt at, float x, float y, float w, float h, bool onFoot, string minutes, string distance)
+        {
+            int box = UiDraw.Box(s, at, x, y, w, h, UiRole.Panel, UiRole.None, UiTokens.RadiusLarge);
+            UiAt on = at.In(box);
+            UiDraw.Icon(s, on, x + UiTokens.S3, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, onFoot ? UiIcon.Walk : UiIcon.Car, UiRole.None, UiFlags.Middle);
+            float tx = x + UiTokens.S3 + UiTokens.Icon + UiTokens.S2, tw = w - (tx - x) - UiTokens.S3;
+            float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.BodyStrong));
+            UiDraw.Text(s, on, tx, y + UiTokens.S2, tw, UiStyle.BodyStrong, UiRole.Text, minutes, UiFlags.Label | UiFlags.Truncate);
+            if (!string.IsNullOrEmpty(distance))
+            {
+                UiDraw.Text(s, on, tx, y + UiTokens.S2 + lh, tw, UiStyle.Small, UiRole.Text2, distance, UiFlags.Label | UiFlags.Truncate);
+            }
+        }
+
+        /// <summary>
+        /// The label of a place over the map: a small slate piece above the place's point, its glyph and words, kept off the dock and the map's buttons and inside the screen.
+        /// It takes no press.
+        /// </summary>
+        public static void Label(UiScene s, UiAt at, MapLabel m, UiFrame frame, float dockRight)
+        {
+            float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.SmallStrong)), fh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
+            bool figure = !string.IsNullOrEmpty(m.Figure);
+            float words = Math.Max(UiTextRules.Width(m.Title, UiStyle.SmallStrong), figure ? UiTextRules.Width(m.Figure, UiStyle.Small) : 0f);
+            float w = UiDraw.Snap(UiTokens.S3 + UiTokens.Icon + UiTokens.S2 + words + UiTokens.S3 + UiTokens.S1);
+            float h = UiDraw.Snap(UiTokens.S2 + lh + (figure ? fh : 0f) + UiTokens.S2);
+            float left = dockRight + UiTokens.S2, right = frame.Width - UiTokens.S4 * 2f - Button - w;
+            float x = UiDraw.Snap(Math.Max(left, Math.Min(right, m.X - w / 2f)));
+            float y = UiDraw.Snap(Math.Max(UiTokens.S4, Math.Min(frame.BandY - h - UiTokens.S4, m.Y - h - UiTokens.S4)));
+            int box = UiDraw.Box(s, at, x, y, w, h, UiRole.Panel, UiRole.None, UiTokens.RadiusLarge);
+            UiAt on = at.In(box);
+            UiDraw.Icon(s, on, x + UiTokens.S3, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, m.Icon, UiRole.None, UiFlags.Middle);
+            float tx = x + UiTokens.S3 + UiTokens.Icon + UiTokens.S2, top = y + UiTokens.S2;
+            UiDraw.Text(s, on, tx, top, words + UiTokens.S1, UiStyle.SmallStrong, UiRole.Text, m.Title, UiFlags.Label | UiFlags.Truncate);
+            if (figure)
+            {
+                UiDraw.Text(s, on, tx, top + lh, words + UiTokens.S1, UiStyle.Small, UiRole.Text2, m.Figure, UiFlags.Truncate);
+            }
         }
 
         // A square tile with words in it (N, 3D), as an icon button is one with a glyph; the chosen one is the cyan.
@@ -184,6 +271,8 @@ namespace RealLifeOverhaul.Ui
         public MapRouteModel Route;          // over the top while Directions is chosen, or null
         public MapLayersModel Layers;        // while the place card or the district view has the dock, or null
         public MapButtonsModel Buttons;      // always while the map is open, or null
+        public MapLabel Label;               // over a place of the map while the pointer rests on its row in a panel
+        public bool HasLabel;
     }
 
     /// <summary>The city map's panels laid out as one scene, so the keys and the pad walk one focus graph and the preview draws what the host will.</summary>
@@ -218,7 +307,9 @@ namespace RealLifeOverhaul.Ui
             }
             if (m.Route != null && m.Route.Options.Length > 0)
             {
-                UiMapChrome.Route(s, UiAt.Screen, m.Route, dockRight + UiTokens.S6, UiTokens.S4, keys);
+                // Up to the Layers panel's edge when that is there, else the screen's.
+                float stripX = dockRight + UiTokens.S6, limit = frame.Width - UiTokens.S4 - (m.Layers != null ? UiMapChrome.LayersWidth + UiTokens.S4 : 0f);
+                UiMapChrome.Route(s, UiAt.Screen, m.Route, stripX, UiTokens.S4, limit - stripX, keys);
             }
             if (m.Layers != null)
             {
@@ -227,6 +318,10 @@ namespace RealLifeOverhaul.Ui
             if (m.Buttons != null)
             {
                 UiMapChrome.Buttons(s, UiAt.Screen, m.Buttons, frame);
+            }
+            if (m.HasLabel)
+            {
+                UiMapChrome.Label(s, UiAt.Screen, m.Label, frame, dockRight);
             }
             for (int i = 0; prompts != null && i < count; i++)
             {

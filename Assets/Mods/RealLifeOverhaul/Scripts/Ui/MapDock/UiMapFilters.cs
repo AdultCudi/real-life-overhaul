@@ -138,6 +138,7 @@ namespace RealLifeOverhaul.Ui
             PickedClearCommand = 5014, PickedMoreCommand = 5015;
         public const float Width = UiInfoPanel.Width;   // px: the dock's panel is an info panel's width
         public const float Menu = 104f;                  // px: the rail, two icons across as an info view's menu
+        public const float DockRight = Menu + UiTokens.S2 + Width + UiTokens.S4;   // px: past the dock with its rail, which the names over the map keep off
         public const float Cell = 44f;                   // px: a rail icon
         public const float RowHeight = UiTokens.Control; // px: a group, a line
         public const float TwoLineRow = 48f;             // px: a station or a choice with its quiet line

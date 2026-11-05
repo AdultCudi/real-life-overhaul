@@ -35,12 +35,17 @@ namespace RealLifeOverhaul.Districts
                 _carded = null;
                 if (!kit)
                 {
+                    KitTagsClear();
                     Show();
                     return;
                 }
                 _panel?.Show(false);
             }
             _kitStamp++;
+            if (kit)
+            {
+                KitTagChosen();   // the pointer on the map or a click there: the cyan tag goes to that district
+            }
             if (kit || !_showing || _panel == null || !_panel.Alive)
             {
                 return;

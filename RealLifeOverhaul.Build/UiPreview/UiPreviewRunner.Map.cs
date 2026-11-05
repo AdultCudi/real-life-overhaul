@@ -74,12 +74,12 @@ public static partial class UiPreviewRunner
     private static Screen MapPlaceScreenOf(string state, string lang)
     {
         UiWords t = DialogWords(lang);
-        bool reviews = state == "reviews", business = state == "business";
+        bool reviews = state == "reviews", business = state == "business", hover = state == "hover";
         return new Screen
         {
             Name = "map_place_" + state + Suffix(lang), AppName = "City map", Icon = UiIcon.MapTrifold, Backdrop = state == "unrated" ? "real_full_junction.png" : "real_full_tilt.png",
-            Lay = (s, f, d, k) => UiSamples.MapPlaceScene(s, f, d, k, t, state),
-            HoverCommand = reviews ? UiMapPlace.ReviewCommand : business ? UiMapPlace.TabCommand : UiMapPlace.SaveCommand, HoverArg = reviews ? 1 : business ? 1 : 0,
+            Lay = (s, f, d, k) => UiSamples.MapPlaceScene(s, f, d, k, t, state, true),
+            HoverCommand = hover ? UiMapPlace.RentCommand : reviews ? UiMapPlace.ReviewCommand : business ? UiMapPlace.TabCommand : UiMapPlace.SaveCommand, HoverArg = reviews ? 1 : business ? 1 : 0,
             Walk = Moves("DDDRRDDDD")
         };
     }
@@ -91,7 +91,7 @@ public static partial class UiPreviewRunner
         return new Screen
         {
             Name = "map_district_" + state + Suffix(lang), AppName = "City map", Icon = UiIcon.MapTrifold, Backdrop = state == "crime" ? "real_full_flat.png" : "map_rent.png",
-            Lay = (s, f, d, k) => UiSamples.MapDistrictScene(s, f, d, k, t, state),
+            Lay = (s, f, d, k) => UiSamples.MapDistrictScene(s, f, d, k, t, state, true),
             HoverCommand = UiMapDistrict.RowCommand, HoverArg = 2, Walk = Moves("DDDRRRDDDD")
         };
     }

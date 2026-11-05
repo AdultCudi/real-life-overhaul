@@ -31494,7 +31494,7 @@
   "reallife_map_key": "Map legend",
   "reallife_map_rank": "Rank {n} of {m}",
   "reallife_map_residents": "Residents",
-  "reallife_map_residents_lower": "residents",
+  "reallife_map_residents_lower": "people",
   "reallife_map_businesses": "Businesses",
   "reallife_map_show_on_map": "Show on map",
   "reallife_map_hide_view": "Hide view",
@@ -31545,5 +31545,8 @@
   "reallife_map_ranked_supply": "Ranked by power and water",
   "reallife_map_ranked_internet": "Ranked by internet",
   "reallife_map_ranked_competition": "Ranked by competition",
-  "reallife_map_ranked_council": "Ranked by parking price"
+  "reallife_map_ranked_council": "Ranked by parking price",
+  "reallife_map_row_saved": "Saved places",
+  "reallife_map_next_label": "For rent next door",
+  "reallife_map_next_figure": "{rent} per {unit} a day"
 }

@@ -31,6 +31,10 @@ namespace RealLifeOverhaul.Districts
         private readonly List<long[]> _figures = new List<long[]>(16);
         private readonly List<bool[]> _has = new List<bool[]>(16);
         private readonly List<MapDistrict> _ranked = new List<MapDistrict>(16);
+        private readonly List<HudFollower> _tags = new List<HudFollower>(12);
+        private int _tagsStamp = -1;
+        private bool _tagsBroken;
+        private string _tagChosen;   // the district the page is about: its tag is the cyan one
 
         private bool OnKit => KitDraws != null && KitDraws();
 
@@ -490,6 +494,7 @@ namespace RealLifeOverhaul.Districts
             }
             _kept = _ranked[row].Id;
             _kitStamp++;
+            KitTagChosen();
             return true;
         }
 
@@ -507,5 +512,103 @@ namespace RealLifeOverhaul.Districts
 
         /// <summary>The view switched off, as its close button did.</summary>
         internal void KitClose() => _choice?.Pick(-1);
+
+        /// <summary>The pointer rests on a row of the table (or left it with -1): the card is about that district while it does, as the old window's list did.</summary>
+        internal void KitPoint(int row)
+        {
+            string id = row >= 0 && row < _ranked.Count ? _ranked[row].Id : null;
+            if (id != _listHover)
+            {
+                _listHover = id;
+                _kitStamp++;
+                KitTagChosen();
+            }
+        }
+
+        // ------------------------------------------------------------------------------------------------- the names on the map
+
+        // Each district's name with the layer's figure, a small piece of the kit's beside the district's middle on the open map: one when the layer or the day's figures change,
+        // moved a frame by the HUD's host as the map's camera moves (a projection each). With the HUD's host not there, or after a fault, there are none.
+        private void KitTags()
+        {
+            int layer = Layer;
+            HudHost hud = HudHost.Instance;
+            if (_tagsBroken || layer < 0 || !_showing || !OnKit || hud == null)
+            {
+                KitTagsClear();
+                return;
+            }
+            int stamp = unchecked(layer * 1000003 + _readDay);
+            if (stamp == _tagsStamp && _tags.Count > 0)
+            {
+                KitTagChosen();
+                return;
+            }
+            KitTagsClear();
+            _tagsStamp = stamp;
+            _tagChosen = Carded()?.Id;
+            try
+            {
+                var which = (DistrictLayer)layer;
+                for (int i = 0; i < _districts.Count; i++)
+                {
+                    MapDistrict d = _districts[i];
+                    if (!d.HasFigure[layer])
+                    {
+                        continue;
+                    }
+                    string name = d.Name, figure = ShortFigure(which, d.Figure[layer]);
+                    UiRole swatch = d.Band[layer] >= 0 ? UiTokens.Ramp(d.Band[layer]) : UiRole.None;
+                    UiMapDistrict.TagSize(name, figure, out float w, out float h);
+                    Vector3 at = d.Centre;
+                    string id = d.Id;
+                    _tags.Add(hud.Follow(w, h, s => UiMapDistrict.Tag(s, UiAt.Screen, 0f, 0f, w, h, name, figure, swatch, id == _tagChosen), () => at, 0f, 0f, UiMapFilters.DockRight, 10000f));
+                }
+            }
+            catch (Exception e)
+            {
+                _tagsBroken = true;
+                Logger?.Error(e);
+                Logger?.Warn("District view: the names over the districts could not be made after the error above; the page and the tint go on without them.");
+                KitTagsClear();
+            }
+        }
+
+        // The page is about another district now (the pointer moved to one, the player kept one): the tags are laid out again, a few small pieces, so the cyan one moves.
+        private void KitTagChosen()
+        {
+            string now = Carded()?.Id;
+            if (now == _tagChosen)
+            {
+                return;
+            }
+            _tagChosen = now;
+            for (int i = 0; i < _tags.Count; i++)
+            {
+                _tags[i].Dirty = true;
+            }
+        }
+
+        private void KitTagsClear()
+        {
+            _tagsStamp = -1;
+            if (_tags.Count == 0)
+            {
+                return;
+            }
+            HudHost hud = HudHost.Instance;
+            for (int i = 0; i < _tags.Count; i++)
+            {
+                try
+                {
+                    hud?.Unfollow(_tags[i]);
+                }
+                catch (Exception e)
+                {
+                    Logger?.Error(e);
+                }
+            }
+            _tags.Clear();
+        }
     }
 }

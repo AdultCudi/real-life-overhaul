@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
+using RealLifeOverhaul;
 using RealLifeOverhaul.Districts;
 using RealLifeOverhaul.Ui;
 
@@ -18,6 +19,7 @@ internal static partial class Program
         Map5SavedChecks();
         Map5MonthChecks();
         Map5BusyChecks();
+        Map5TagChecks();
         Map5PressChecks();
     }
 
@@ -328,6 +330,59 @@ internal static partial class Program
         (UiMapChrome.HideAllCommand, "HideAll", false), (UiMapDistrict.LayerCommand, "DistrictLayer", true), (UiMapDistrict.RowCommand, "DistrictRow", true), (UiMapDistrict.ShowCommand, "DistrictShow", false),
         (UiMapDistrict.FiltersCommand, "DistrictFilters", false),
     };
+
+    // ------------------------------------------------------------------------------------------------- the pieces over the map
+
+    // The small pieces the HUD's host keeps over the map (a district's tag, the label on the route) are laid out once into the size they say: in every language each one holds its
+    // words whole inside its box, on the grid, with words that stand out, the cyan tag of the district the page is about as well as the slate ones.
+    private static void Map5TagChecks()
+    {
+        var s = new UiScene();
+        var said = new HashSet<string>();
+        Action<string> say = line =>
+        {
+            if (said.Add(line))
+            {
+                Console.WriteLine("        " + line);
+            }
+        };
+        var districts = new[] { ("Murray Hill", "$152"), ("Lower Manhattan", "112"), ("Industry City, the old docks and the warehouses beyond", "$1,240,500"), ("Hell's Kitchen", null) };
+        foreach (string lang in ModLanguages.All)
+        {
+            UiWords t = UiWords(lang);
+            string minutes = t("reallife_nav_minutes", "{minutes} min").Replace("{minutes}", "14");
+            string hours = t("reallife_nav_hours", "{hours} h {minutes} min").Replace("{hours}", "1").Replace("{minutes}", "40");
+            bool fits = true;
+            foreach (string words in new[] { minutes, hours })
+            {
+                foreach (bool onFoot in new[] { true, false })
+                {
+                    foreach (string distance in new[] { "1.2 km", "850 m", null })
+                    {
+                        UiMapChrome.RouteTagSize(words, distance, out float w, out float h);
+                        s.Begin("route tag", w + 40f, h + 40f, true);
+                        UiMapChrome.RouteTag(s, UiAt.Screen, 20f, 20f, w, h, onFoot, words, distance);
+                        fits &= UiCheckRules.Spills(s, say) == 0 && UiCheckRules.OffGrid(s, say) == 0 && UiCheckRules.Unfit(s, say) == 0 && UiCheckRules.TooSmall(s, say) == 0
+                                && UiCheckRules.LowContrast(s, say) == 0 && UiCheckRules.Overlaps(s, say) == 0 && w >= 60f && h >= 32f;
+                    }
+                }
+            }
+            Check(fits, "map tags: the label on the route holds its minutes (\"" + minutes + "\", \"" + hours + "\") and its way to go whole, on the grid, in " + lang);
+        }
+        bool tagsFit = true;
+        foreach (var d in districts)
+        {
+            foreach (bool chosen in new[] { false, true })
+            {
+                UiMapDistrict.TagSize(d.Item1, d.Item2 ?? "", out float w, out float h);
+                s.Begin("district tag", w + 40f, h + 40f, true);
+                UiMapDistrict.Tag(s, UiAt.Screen, 20f, 20f, w, h, d.Item1, d.Item2 ?? "", UiRole.Ramp3, chosen);
+                tagsFit &= UiCheckRules.Spills(s, say) == 0 && UiCheckRules.OffGrid(s, say) == 0 && UiCheckRules.TooSmall(s, say) == 0 && UiCheckRules.LowContrast(s, say) == 0
+                           && UiCheckRules.Overlaps(s, say) == 0 && w <= 240f;
+            }
+        }
+        Check(tagsFit, "map tags: a district's tag, slate or cyan, stays inside its box on the grid with words that stand out, and never wider than 240 px for a long name");
+    }
 
     private static void Map5PressChecks()
     {

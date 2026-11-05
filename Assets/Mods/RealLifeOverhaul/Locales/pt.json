@@ -31494,7 +31494,7 @@
   "reallife_map_key": "Legenda do mapa",
   "reallife_map_rank": "Posição {n} de {m}",
   "reallife_map_residents": "Moradores",
-  "reallife_map_residents_lower": "moradores",
+  "reallife_map_residents_lower": "pessoas",
   "reallife_map_businesses": "Negócios",
   "reallife_map_show_on_map": "Mostrar no mapa",
   "reallife_map_hide_view": "Ocultar a visão",
@@ -31545,5 +31545,8 @@
   "reallife_map_ranked_supply": "Ordenado por luz e água",
   "reallife_map_ranked_internet": "Ordenado por internet",
   "reallife_map_ranked_competition": "Ordenado pela concorrência",
-  "reallife_map_ranked_council": "Ordenado pelo preço do estacionamento"
+  "reallife_map_ranked_council": "Ordenado pelo preço do estacionamento",
+  "reallife_map_row_saved": "Lugares salvos",
+  "reallife_map_next_label": "Para alugar ao lado",
+  "reallife_map_next_figure": "{rent} por {unit} ao dia"
 }

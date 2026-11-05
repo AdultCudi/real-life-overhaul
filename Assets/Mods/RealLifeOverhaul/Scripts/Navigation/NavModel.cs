@@ -67,6 +67,52 @@ namespace RealLifeOverhaul.Nav
             return rounded < 10 ? 10 : rounded;
         }
 
+        /// <summary>
+        /// The point halfway along a line by its length, measured flat with the line's own height carried along it: where the label on a route drawn on the map stands, always on
+        /// the line. False for fewer than two points, or a line with no length.
+        /// </summary>
+        public static bool Halfway(float[] x, float[] y, float[] z, int count, out float px, out float py, out float pz)
+        {
+            px = py = pz = 0f;
+            if (x == null || y == null || z == null || count < 2 || count > x.Length || count > y.Length || count > z.Length)
+            {
+                return false;
+            }
+            float total = 0f;
+            for (int i = 1; i < count; i++)
+            {
+                total += FlatStep(x, z, i);
+            }
+            if (total <= 0f)
+            {
+                return false;
+            }
+            float half = total / 2f, run = 0f;
+            for (int i = 1; i < count; i++)
+            {
+                float length = FlatStep(x, z, i);
+                if (length > 0f && run + length >= half)
+                {
+                    float t = (half - run) / length;
+                    px = x[i - 1] + (x[i] - x[i - 1]) * t;
+                    py = y[i - 1] + (y[i] - y[i - 1]) * t;
+                    pz = z[i - 1] + (z[i] - z[i - 1]) * t;
+                    return true;
+                }
+                run += length;
+            }
+            px = x[count - 1];
+            py = y[count - 1];
+            pz = z[count - 1];
+            return true;
+        }
+
+        private static float FlatStep(float[] x, float[] z, int i)
+        {
+            float dx = x[i] - x[i - 1], dz = z[i] - z[i - 1];
+            return (float)Math.Sqrt(dx * dx + dz * dz);
+        }
+
         /// <summary>The road number in a lane point's name ("Road_25-Lane_3-Waypoint_7" is 25); -1 if the name is not of that form.</summary>
         public static int RoadOf(string name)
         {

@@ -22,16 +22,16 @@ namespace RealLifeOverhaul.Ui
             "reallife_map_col_rent", "reallife_map_col_wealth", "reallife_map_directions", "reallife_map_distance_road", "reallife_map_district_title",
             "reallife_map_empty", "reallife_map_filters_title", "reallife_map_for_rent", "reallife_map_for_rent_by_type", "reallife_map_go", "reallife_map_here",
             "reallife_map_hide_all", "reallife_map_hide_view", "reallife_map_highest", "reallife_map_key", "reallife_map_kind_home", "reallife_map_kind_office",
-            "reallife_map_kind_retail", "reallife_map_kind_warehouse", "reallife_map_layers", "reallife_map_locate", "reallife_map_lowest", "reallife_map_no_change",
-            "reallife_map_no_line", "reallife_map_no_place", "reallife_map_no_reviews", "reallife_map_north", "reallife_map_on_of", "reallife_map_other_mod",
-            "reallife_map_people", "reallife_map_picked", "reallife_map_place_title", "reallife_map_rank", "reallife_map_ranked_crime", "reallife_map_ranked_rent",
-            "reallife_map_ranked_wealth", "reallife_map_residents", "reallife_map_residents_lower", "reallife_map_review_high_clean_1",
-            "reallife_map_review_high_wait_0", "reallife_map_review_low_wait_1", "reallife_map_review_mid_mixed_0", "reallife_map_review_mid_price_1",
-            "reallife_map_route_car", "reallife_map_route_subway", "reallife_map_route_taxi", "reallife_map_route_walk", "reallife_map_row_address",
-            "reallife_map_row_for_rent", "reallife_map_row_hours", "reallife_map_row_next", "reallife_map_row_owner", "reallife_map_row_type", "reallife_map_save",
-            "reallife_map_saved", "reallife_map_show_all", "reallife_map_show_on_map", "reallife_map_subway_note", "reallife_map_tab_business",
-            "reallife_map_tab_overview", "reallife_map_tab_reviews", "reallife_map_taxi_note", "reallife_map_you", "reallife_nav_minutes", "reallife_season_name_autumn",
-            "reallife_ui_hud_weather_sunny", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_shell_all_apps"
+            "reallife_map_kind_retail", "reallife_map_kind_warehouse", "reallife_map_layers", "reallife_map_locate", "reallife_map_lowest", "reallife_map_next_figure",
+            "reallife_map_next_label", "reallife_map_no_change", "reallife_map_no_line", "reallife_map_no_place", "reallife_map_no_reviews", "reallife_map_north",
+            "reallife_map_on_of", "reallife_map_other_mod", "reallife_map_people", "reallife_map_picked", "reallife_map_place_title", "reallife_map_rank",
+            "reallife_map_ranked_crime", "reallife_map_ranked_rent", "reallife_map_ranked_wealth", "reallife_map_residents", "reallife_map_residents_lower",
+            "reallife_map_review_high_clean_1", "reallife_map_review_high_wait_0", "reallife_map_review_low_wait_1", "reallife_map_review_mid_mixed_0",
+            "reallife_map_review_mid_price_1", "reallife_map_route_car", "reallife_map_route_subway", "reallife_map_route_taxi", "reallife_map_route_walk",
+            "reallife_map_row_address", "reallife_map_row_for_rent", "reallife_map_row_hours", "reallife_map_row_next", "reallife_map_row_owner",
+            "reallife_map_row_type", "reallife_map_save", "reallife_map_saved", "reallife_map_show_all", "reallife_map_show_on_map", "reallife_map_subway_note",
+            "reallife_map_tab_business", "reallife_map_tab_overview", "reallife_map_tab_reviews", "reallife_map_taxi_note", "reallife_map_you", "reallife_nav_minutes",
+            "reallife_season_name_autumn", "reallife_ui_hud_weather_sunny", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_shell_all_apps"
         };
 
         // The city map's panels over the game's own windows (Scripts/Ui/MapDock, MapKits): its filters with the picked place, the place card, the route strip, the layers and

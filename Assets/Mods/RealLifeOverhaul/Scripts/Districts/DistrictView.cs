@@ -113,6 +113,7 @@ namespace RealLifeOverhaul.Districts
             SaveHook.Drop(_onSave);
             GlobalEvents.onCityMapToggle -= _onMap;
             GlobalEvents.onNewDay -= _onDay;
+            KitTagsClear();
             if (_panel != null)
             {
                 _panel.Destroy();
@@ -304,6 +305,7 @@ namespace RealLifeOverhaul.Districts
                 _carded = null;
                 _kitStamp++;
                 _panel?.Show(false);
+                KitTags();
                 return;   // the dock's page says it (DistrictView.Kit); the old window is not made
             }
             _wasKit = false;
@@ -330,6 +332,7 @@ namespace RealLifeOverhaul.Districts
         private void Hide(bool giveBack)
         {
             _showing = false;
+            KitTagsClear();
             _panel?.Show(false);
             if (_tinted)
             {
