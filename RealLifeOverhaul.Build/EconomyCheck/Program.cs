@@ -177,6 +177,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--map-drag")
+        {
+            UiMapDragChecks();   // (a kit window let go after a drag, so the map camera is free again: UiChecks.MapDrag.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--kit-click")
         {
             UiClickChecks();   // (a single click on a kit screen alone: UiChecks.Click.cs)
