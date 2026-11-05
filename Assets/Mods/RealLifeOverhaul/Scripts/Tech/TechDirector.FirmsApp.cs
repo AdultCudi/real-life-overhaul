@@ -46,6 +46,7 @@ namespace RealLifeOverhaul.Tech
                 return;
             }
             _techView = view;
+            PhoneApp.Wants[TechAppId] = RealLifeOverhaul.Ui.TechLive.WantFrom;   // a calendar entry opens the app on its tab and row
             RealLifeOverhaul.Ui.UiShell.Face(_techApp, def);   // the kit's face over the app, once its switch is on (Ui/Shell/UiShell.Tick); the old pages stay the way back
             TechBadge();
         }

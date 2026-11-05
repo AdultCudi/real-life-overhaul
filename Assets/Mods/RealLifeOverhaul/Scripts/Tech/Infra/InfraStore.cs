@@ -38,6 +38,12 @@ namespace RealLifeOverhaul.Tech
                     .Add(d.Dense).Add(d.DenseGpu).Add(d.Crew[InfraCatalogue.Operators]).Add(d.Crew[InfraCatalogue.Engineers]).Add(d.Crew[InfraCatalogue.Security])
                     .Add(d.Prev30).Add(d.PrevDays).Add(d.Outage90[0]).Add(d.Outage90[1]).Add(d.Outage90[2]);
             }
+            // the named colocation contracts, a part of their own after the centres: a save from before them has none, and its centres' racks are placed on their next day
+            w.Part('k').Record().Add(f.NextColo);
+            foreach (ColoContract k in f.Colo)
+            {
+                w.Record().Add(k.Id).Place(k.Place).Add(k.Client).Add(k.Racks).Add(k.Fee).Add(k.Start).Add(k.End).Add(k.Rival).Add(k.Weighed);
+            }
             return w.ToString();
         }
 
@@ -95,6 +101,25 @@ namespace RealLifeOverhaul.Tech
                 if (f.Centres.Count < InfraCatalogue.CentresMost)
                 {
                     f.Centres.Add(d);
+                }
+            }
+            bool first = true;
+            foreach (Fields x in r.Records('k'))
+            {
+                if (first)
+                {
+                    first = false;
+                    f.NextColo = Math.Max(1, x.Int(1));
+                    continue;
+                }
+                var k = new ColoContract
+                {
+                    Id = x.Int(), Place = x.Place(), Client = x.Int(), Racks = Math.Max(0, x.Int()), Fee = Math.Max(0, x.Long()), Start = x.Int(), End = x.Int(), Rival = x.Int(-1), Weighed = x.Bool()
+                };
+                if (k.Id > 0 && k.Racks > 0 && f.Colo.Count < ColoRules.ContractsMost)
+                {
+                    f.Colo.Add(k);
+                    f.NextColo = Math.Max(f.NextColo, k.Id + 1);
                 }
             }
             return f;

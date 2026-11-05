@@ -31,6 +31,16 @@ namespace RealLifeOverhaul.Ui
             Instance._local++;
         }
 
+        /// <summary>A calendar entry's place in the app, "tab:pick" (the director's tab number, then the row's id): taken as a notice's want is.</summary>
+        public static void WantFrom(string want)
+        {
+            int colon = want != null ? want.IndexOf(':') : -1;
+            if (colon > 0 && int.TryParse(want.Substring(0, colon), System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out int tab))
+            {
+                Want(tab, colon + 1 < want.Length ? want.Substring(colon + 1) : null);
+            }
+        }
+
         public int Generation
         {
             get

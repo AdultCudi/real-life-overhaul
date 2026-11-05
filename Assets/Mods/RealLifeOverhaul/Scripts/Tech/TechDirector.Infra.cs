@@ -402,6 +402,10 @@ namespace RealLifeOverhaul.Tech
                     _due[i * 3 + 2] = InfraRules.Crews(d) * level / 1000;
                 }
                 InfraGame.WriteDown(r.WriteDown * level / 1000);
+                _coloNotes.Clear();
+                ColoRules.Sync(_infra, d, day, _coloNotes);
+                ColoRules.Turn(_infra, d, day, InfraRules.Uptime(d, day, d.Fitted), _coloNotes);
+                TellColo(d);
                 InfraRules.MarkDay(d, day, r.Outage || !d.Power || !d.Net);   // the 90 day ring the page's uptime reads
                 InfraRules.Roll(d, day, r.Takings);
             }
@@ -410,6 +414,22 @@ namespace RealLifeOverhaul.Tech
             Settle(day - 1);
             TechBridges.Books?.Invoke(day - 1);
             _ownHosting = 0;
+        }
+
+        private readonly List<ColoNote> _coloNotes = new List<ColoNote>(4);
+
+        // What happened to a hall's named contracts today: an offer from a rival hall, a renewal, a client lost to a rival or gone.
+        private void TellColo(DataCentre d)
+        {
+            for (int i = 0; i < _coloNotes.Count; i++)
+            {
+                ColoNote n = _coloNotes[i];
+                string rival = n.Rival >= 0 ? HiringCatalogue.RivalFirms[n.Rival] : string.Empty;
+                string key = n.Kind == ColoNote.Offer ? "reallife_infra_note_colo_offer" : n.Kind == ColoNote.Renewed ? "reallife_infra_note_colo_renewed"
+                    : n.Kind == ColoNote.Lost ? "reallife_infra_note_colo_lost" : "reallife_infra_note_colo_left";
+                TellTech(n.Kind == ColoNote.Renewed ? NotificationType.Success : NotificationType.Warning, key,
+                    Data("client", ColoRules.NameOf(n.Client), "racks", n.Racks.ToString(), "name", d.Name, "rival", rival), TabInfra, TechApp.CentreRow + d.Place);
+            }
         }
 
         // A data centre's power a day, thousandths of a kWh: its racks', the AI racks' cut while they are throttled for a spike.
