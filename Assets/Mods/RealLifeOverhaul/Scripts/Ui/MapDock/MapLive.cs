@@ -41,7 +41,8 @@ namespace RealLifeOverhaul.Ui
         private string _search = string.Empty;
         private float _next;
         private int _seen = int.MinValue;
-        private bool _dirty = true, _wasOpen;
+        private bool _dirty = true;
+        private readonly MapLook _look = new MapLook();   // the counts and the groups are read afresh on every open, though nothing looks while the dock is hidden
 
         public MapLive(Component found, bool subway)
         {
@@ -86,6 +87,7 @@ namespace RealLifeOverhaul.Ui
 
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
+            _look.Look(CityMap.IsOpen, Time.unscaledTime);
             Build();
             _model.HasLabel = NextDoorLabel(frame);
             UiMap.Lay(s, _model, frame, dark, keys);
@@ -137,7 +139,12 @@ namespace RealLifeOverhaul.Ui
             }
             if (_dock == Dock.District && DistrictOwner != null)
             {
+                int stamp = DistrictOwner.KitStamp;
                 DistrictOwner.KitPoint(command == UiMapDistrict.RowCommand ? arg : -1);
+                if (DistrictOwner.KitStamp != stamp)
+                {
+                    _dirty = true;   // the chosen district block and the highlighted row follow the district pointed at
+                }
             }
         }
 
@@ -261,13 +268,9 @@ namespace RealLifeOverhaul.Ui
                 h = h * 31 + TimeHelper.CurrentHour;
                 h = h * 31 + (int)_dock;
                 bool open = CityMap.IsOpen;
-                if (open && !_wasOpen)
-                {
-                    _countsDirty = true;   // the map opened: the places on each line are counted again (the map pauses the game, so they cannot change while it is up)
-                    _groupsStale = true;
-                }
-                _wasOpen = open;
-                h = h * 31 + (CityMap.IsOpen && InstanceBehavior<CityManager>.Instance.cityMap.IsTaxiMode ? 1 : 0);
+                _look.Look(open, Time.unscaledTime);   // a fresh open counts the places on each line again (the map pauses the game, so they cannot change while it is up)
+                h = h * 31 + (_dock == Dock.District && DistrictOwner != null ? MapLook.DistrictStamp(true, DistrictOwner.KitStamp) : 0);
+                h = h * 31 + (CityMap.IsOpen &&InstanceBehavior<CityManager>.Instance.cityMap.IsTaxiMode ? 1 : 0);
                 h = h * 31 + NavTiltStamp();
                 h = h * 31 + (_filters != null ? SignLines(_filters) : SignStations());
                 return h * 31 + SignOther();

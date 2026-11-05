@@ -864,6 +864,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\MapDock\MapBusy.cs" Link="Mod\MapBusy.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WorkQueueStep.cs" Link="Mod\WorkQueueStep.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\MapDock\MapCountRules.cs" Link="Mod\MapCountRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\MapDock\MapLook.cs" Link="Mod\MapLook.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\MapDock\MapPresses.cs" Link="Mod\MapPresses.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Navigation\NavMapTilt.cs" Link="Mod\NavMapTilt.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Navigation\NavDestRules.cs" Link="Mod\NavDestRules.cs" />

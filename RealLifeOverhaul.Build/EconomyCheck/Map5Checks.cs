@@ -18,6 +18,7 @@ internal static partial class Program
     {
         Map5MinimapChecks();
         Map5RuleChecks();
+        Map6Checks();
         WorkQueueChecks();   // the wraps on the game's queue of work on the city map's buildings, against replicas of its class
     }
 

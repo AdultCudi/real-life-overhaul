@@ -60,7 +60,6 @@ namespace RealLifeOverhaul.Ui
         private readonly List<CityBuildingController> _resultBuildings = new List<CityBuildingController>(8);
         private static readonly Dictionary<string, Sprite> Pictures = new Dictionary<string, Sprite>(64, StringComparer.Ordinal);
         private Dictionary<string, CityMapFilter> _entries;
-        private bool _countsDirty = true;
         private string _revealGroup;
         private int _lit, _litTotal;
 
@@ -78,7 +77,7 @@ namespace RealLifeOverhaul.Ui
         private static Toggle MasterSwitch(CityMapFilters filters) => GameContract.MapFilterAll.Field?.GetValue(filters) as Toggle;
 
         // What else the signature holds: the saved places and the map's own events the counts follow.
-        private int SignOther() => MapStoreGame.Count * 31 + (_countsDirty ? 1 : 0);
+        private int SignOther() => MapStoreGame.Count * 31 + (_look.CountsStale ? 1 : 0);
 
         private CityMapFilterCategory[] _groups;
 
@@ -86,15 +85,14 @@ namespace RealLifeOverhaul.Ui
         // game's table by name, so the table alone would leave them off the kit's list).
         private CityMapFilterCategory[] Groups()
         {
-            if ((_groups == null || _groups.Length == 0 || _groupsStale) && _filters != null)
+            if ((_groups == null || _groups.Length == 0 || _look.GroupsStale) && _filters != null)
             {
-                _groupsStale = false;
+                _look.GroupsStale = false;
                 _groups = _filters.GetComponentsInChildren<CityMapFilterCategory>(true);
             }
             return _groups;
         }
 
-        private bool _groupsStale = true;
 
         private static List<CityMapFilter> LinesOf(CityMapFilterCategory group) => group != null ? GameContract.MapGroupLines.Field?.GetValue(group) as List<CityMapFilter> : null;
 
@@ -175,7 +173,7 @@ namespace RealLifeOverhaul.Ui
                 _avail.Add(_lines[i].Available);
             }
             MapCountRules.Tally(_on, _avail, out _lit, out _litTotal);
-            if (_countsDirty)
+            if (_look.CountsStale)
             {
                 CountPlaces();
             }
@@ -263,7 +261,7 @@ namespace RealLifeOverhaul.Ui
         // One pass over the city's buildings, once when the map opens and when a business changes: the same tests the game's filter work puts each through.
         private void CountPlaces()
         {
-            _countsDirty = false;
+            _look.CountsStale = false;
             CityManager city = InstanceBehavior<CityManager>.Instance;
             CityBuildingController[] all = city != null ? GameDlc.Open(city) : null;
             if (all == null)

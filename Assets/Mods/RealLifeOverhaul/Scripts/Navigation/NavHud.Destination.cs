@@ -19,7 +19,7 @@ namespace RealLifeOverhaul.Nav
         private RectTransform _titleRect;
         private Vector2 _titleMin, _titleMax, _titleOffMin, _titleOffMax;
         private bool _destinationOn;
-        private string _subShown, _rightShown;
+        private string _subShown, _rightShown, _minutesShown, _distanceShown;
         private RectTransform _switch;
         private TMP_Text _switchText;
         private UnityEngine.Events.UnityAction _switchListener;
@@ -103,13 +103,20 @@ namespace RealLifeOverhaul.Nav
                     _titleRect.offsetMin = _titleOffMin;
                     _titleRect.offsetMax = _titleOffMax;
                 }
-                _subShown = _rightShown = null;
+                _subShown = _rightShown = _minutesShown = _distanceShown = null;
             }
             if (!on)
             {
                 return;
             }
-            string right = minutes == null ? null : string.IsNullOrEmpty(distance) ? minutes : minutes + "\n<size=75%><color=#93A6B7>" + distance + "</color></size>";
+            string right = _rightShown;
+            if (minutes != _minutesShown || distance != _distanceShown)
+            {
+                // Joined only when a part changed: the tick runs four times a second and most of them find the same words.
+                _minutesShown = minutes;
+                _distanceShown = distance;
+                right = minutes == null ? null : string.IsNullOrEmpty(distance) ? minutes : minutes + "\n<size=75%><color=#93A6B7>" + distance + "</color></size>";
+            }
             if (address != _subShown)
             {
                 _subShown = address;

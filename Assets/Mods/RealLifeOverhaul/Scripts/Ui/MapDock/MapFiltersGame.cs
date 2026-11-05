@@ -1,3 +1,4 @@
+using Helpers;
 using UI;
 using UnityEngine;
 using UnityEngine.UI;
@@ -66,6 +67,19 @@ namespace RealLifeOverhaul.Ui
                 conceal.Add(panel.GetChild(i));
             }
             conceal.Add(panel.GetComponent<Graphic>());
+            if (!_subway)
+            {
+                // The game's building box would stand beside the dock's picked block for the same building. Alpha and raycast only: the box stays active, so its
+                // buttons (set destination, taxi) and its options panel keep answering the dock, and the host gives it back when it hides.
+                conceal.Add(CardPanel());
+            }
+        }
+
+        private static Transform CardPanel()
+        {
+            UIs uis = InstanceBehavior<UIs>.Instance;
+            System.Reflection.FieldInfo field = GameContract.ResumePanel.Field;
+            return uis != null && uis.buildingResume != null && field != null ? field.GetValue(uis.buildingResume) as Transform : null;
         }
 
         public IUiScreen Make(Component found) => new MapLive(found, _subway);
