@@ -35,6 +35,10 @@ namespace RealLifeOverhaul.Ui
         // Appended with the minimap's place (4 Nov 2026): px of the layout, the mod's minimap card, which every piece standing
         // near the bottom left or the top centre keeps clear of; 0 wide while the card is hidden.
         public float AvoidX, AvoidY, AvoidW, AvoidH;
+
+        // Appended with the city map's dock (5 Nov 2026): the box above is the map's dock, not the minimap's card. The left column then
+        // stands beside it under the route strip's row, and the notice cards keep off the column too.
+        public bool MapDock;
     }
 
     /// <summary>
@@ -149,8 +153,7 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The pieces in their places, with the bar's model already read; the prompts said first keep their chips clear.</summary>
         public static void Draw(UiScene s, UiHudModel m, UiFrame frame, IUiKeys keys, bool prompt, UiStatusModel bar)
         {
-            float top = UiTokens.S4;
-            LeftColumn(m, out float column, out _, out _, out _);
+            LeftColumn(m, out float column, out float top, out _, out _);
             if (m.Info != null)
             {
                 top = UiInfoPanel.Draw(s, m.Info, column, top) + UiTokens.S2;
@@ -171,7 +174,8 @@ namespace RealLifeOverhaul.Ui
             }
             if (m.NoticeCount > 0)
             {
-                UiHudNotice.LayStack(s, UiAt.Screen, m.Notices, m.NoticeCount, frame.Width, UiTokens.S4, m.AvoidX, m.AvoidY, m.AvoidW, m.AvoidH);
+                NoticeAvoid(m, out float nx, out float ny, out float nw, out float nh);
+                UiHudNotice.LayStack(s, UiAt.Screen, m.Notices, m.NoticeCount, frame.Width, UiTokens.S4, nx, ny, nw, nh);
             }
             if (m.PopupCount > 0)
             {
@@ -241,7 +245,30 @@ namespace RealLifeOverhaul.Ui
             if (clear && w > 0f && m.AvoidW > 0f && UiHudRules.Overlaps(x, y, w, h, m.AvoidX, m.AvoidY, m.AvoidW, m.AvoidH))
             {
                 x = (float)Math.Ceiling(m.AvoidX + m.AvoidW + UiTokens.S2);
+                if (m.MapDock)
+                {
+                    y = UiMapChrome.RouteTop;   // the route strip stands over the map beside the dock, at the very top
+                }
             }
+        }
+
+        /// <summary>
+        /// What the notice cards keep clear of: the minimap's card (or the map's dock) and, while the dock has pushed the left column
+        /// beside it, the column too, which would otherwise stand under the cards' centre.
+        /// </summary>
+        public static void NoticeAvoid(UiHudModel m, out float x, out float y, out float w, out float h)
+        {
+            x = m.AvoidX;
+            y = m.AvoidY;
+            w = m.AvoidW;
+            h = m.AvoidH;
+            LeftColumn(m, out float cx, out float cy, out float cw, out float ch);
+            if (!m.MapDock || cw <= 0f || cx <= Left)
+            {
+                return;
+            }
+            w = Math.Max(w, cx + cw + UiTokens.S2 - x);
+            h = Math.Max(h, cy + ch + UiTokens.S2 - y);
         }
 
         /// <summary>Where the world prompt stands this frame: beside its point, inside the screen above the bar, off the left column.</summary>

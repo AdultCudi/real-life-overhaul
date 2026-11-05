@@ -70,6 +70,12 @@ namespace RealLifeOverhaul.Ui
         public const float LayersWidth = 320f;
         private const float OptionWidth = 116f, LeastOption = 88f;
         private const float StripHeight = 64f;
+
+        /// <summary>
+        /// The top of a piece standing beside the dock, under the route strip's row. The strip shows only while Directions is chosen,
+        /// and a piece placed under it never has to move for it.
+        /// </summary>
+        public const float RouteTop = UiTokens.S4 + StripHeight + UiTokens.S2;
         private const float LayerRow = 48f;   // two lines of a longer translation fit a row
         private static readonly byte RightRegion = 3, TopRegion = 4;
 

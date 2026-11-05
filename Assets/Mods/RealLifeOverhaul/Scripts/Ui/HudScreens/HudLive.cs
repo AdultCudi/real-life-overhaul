@@ -371,6 +371,7 @@ namespace RealLifeOverhaul.Ui
                 FrameHeight = size.y / host.PxScale;
             }
             UiHudModel m = host.Screen.Model;
+            int box = MinimapBox(m);   // first: the map's dock moves the objectives down under the route strip's row, which they are fitted to
             int popups = 0;
             int sig;
             unchecked
@@ -379,13 +380,13 @@ namespace RealLifeOverhaul.Ui
                 m.Popups = Popups;
                 m.PopupCount = popups;
                 sig = sig * 31 + (SampleSides != null ? SidesSample(m) : _sides ? HudSides.Look(m) : NoSides(m));
-                sig = sig * 31 + (SampleGoals != null ? GoalsSample(m) : _goals ? HudGoals.Look(m, FrameHeight) : NoGoals(m));
+                sig = sig * 31 + (SampleGoals != null ? GoalsSample(m) : _goals ? HudGoals.Look(m, FrameHeight - (m.MapDock ? UiMapChrome.RouteTop - UiTokens.S4 : 0f)) : NoGoals(m));
                 sig = sig * 31 + (_notes || SampleNote != null ? HudNotes.Look(m, _notes, SampleNote) : 0);
                 sig = sig * 31 + HudHints.Look(m);
                 m.ActivityClear = ActivityStrip != null ? ActivityStrip() : null;
                 sig = sig * 31 + (m.ActivityClear != null ? 1 + (int)m.ActivityClear.State : 0);
                 sig = sig * 31 + PhoneBox(m);
-                sig = sig * 31 + MinimapBox(m);
+                sig = sig * 31 + box;
             }
             if (sig != _signature)
             {
@@ -399,7 +400,8 @@ namespace RealLifeOverhaul.Ui
         private static int MinimapBox(UiHudModel m)
         {
             UiMinimapBox.Read(FrameWidth, FrameHeight, out m.AvoidX, out m.AvoidY, out m.AvoidW, out m.AvoidH);
-            return UiMinimapBox.Stamp(m.AvoidX, m.AvoidY, m.AvoidW, m.AvoidH);
+            m.MapDock = m.AvoidW > 0f && UiMinimapBox.Dock;
+            return unchecked(UiMinimapBox.Stamp(m.AvoidX, m.AvoidY, m.AvoidW, m.AvoidH) * 2 + (m.MapDock ? 1 : 0));
         }
 
         private static int SidesSample(UiHudModel m)
