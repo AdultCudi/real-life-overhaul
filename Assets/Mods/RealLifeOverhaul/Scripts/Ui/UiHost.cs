@@ -59,6 +59,8 @@ namespace RealLifeOverhaul.Ui
         private float _nextRepeat;
         private UiInputState _state;
         private bool _dragging;      // a target is held by the pointer (IUiDragging)
+        private readonly UiWindowGrip _grip = new UiWindowGrip();   // the window held by its title strip (UiWindowDrag)
+        private int _placesSeen;
         private Vector2 _dragAt;     // where, in px of the layout
         private TMP_InputField _field;
         private UnityEngine.Events.UnityAction<string> _onTyped, _onTypingEnded, _onSubmit;
@@ -70,6 +72,25 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>The screen takes no key, only the pointer (the notices over the world: a toast never steals the player's walk).</summary>
         public bool PointerOnly;
+
+        /// <summary>
+        /// The window id the player may move this screen's window by (its title strip), as the game's own small windows are moved; null
+        /// for a screen that stands still. <see cref="WindowSaved"/>: the place is kept on this computer for the next session.
+        /// </summary>
+        public string WindowId
+        {
+            get => _grip.Id;
+            set => _grip.Id = value;
+        }
+
+        public bool WindowSaved
+        {
+            get => _grip.Saved;
+            set => _grip.Saved = value;
+        }
+
+        /// <summary>Called every frame the window is held by its strip: the game file tells the game's own mouse and map camera that a window is being dragged.</summary>
+        public Action WindowHeld;
 
         /// <summary>Told once when the host stops after a fault, so its owner gives the game's own screen back.</summary>
         public Action<Exception> Failed;
@@ -196,6 +217,7 @@ namespace RealLifeOverhaul.Ui
             using var hotSpot = HotSpots.Time(HotHide);
             EndTyping();
             EndDrag(true);
+            _grip.End();
             _view?.Still();
             enabled = false;
             string line = _cost?.Hidden(Time.unscaledTime);
@@ -275,9 +297,13 @@ namespace RealLifeOverhaul.Ui
             }
             float now = Time.unscaledTime;
             _state = default(UiInputState);
+            if (_grip.Moving)
+            {
+                WindowHeld?.Invoke();
+            }
             if (PointerOnly)
             {
-                if (_screen.Dirty || UiFaces.Version != _laidFaces || ((RectTransform)transform).rect.size != _laidSize)
+                if (_screen.Dirty || UiFaces.Version != _laidFaces || ((RectTransform)transform).rect.size != _laidSize || (WindowId != null && UiWindowPlaces.Version != _placesSeen))
                 {
                     Layout();
                 }
@@ -306,7 +332,8 @@ namespace RealLifeOverhaul.Ui
             }
             Vector2 size = ((RectTransform)transform).rect.size;
             bool dark = _dark != null && _dark();
-            if (_screen.Dirty || UiFaces.Version != _laidFaces || size != _laidSize || dark != _laidDark || (_state.Pad != _laidPad && !_typing))
+            if (_screen.Dirty || UiFaces.Version != _laidFaces || size != _laidSize || dark != _laidDark || (_state.Pad != _laidPad && !_typing)
+                || (WindowId != null && UiWindowPlaces.Version != _placesSeen))
             {
                 Layout();
             }
@@ -581,7 +608,9 @@ namespace RealLifeOverhaul.Ui
             IUiKeys keys = _input != null ? _input.Keys : UiDefaultKeys.Keyboard;
             _scene.TypingCommand = _typing ? _typeCommand : -1;   // the field that takes the keys draws its caret (UiDraw.Typing)
             _scene.TypingArg = _typeArg;
+            _scene.Draggable = WindowId != null;
             _screen.Lay(_scene, frame, dark, keys);
+            PlaceWindow(frame);
             _laidSize = size;
             _laidDark = dark;
             _laidPad = keys.Pad;
@@ -738,6 +767,10 @@ namespace RealLifeOverhaul.Ui
                 }
                 return;
             }
+            if (_scene.Nodes[node].Handle)
+            {
+                return;   // a click on a window's title strip does nothing: the strip is only a grip
+            }
             // Ending a field or moving the focus can lay the screen out again (a screen that reads Focused), which renumbers the targets:
             // the press is found again by what it is, so it never lands on the target that took its number.
             int command = _scene.Nodes[node].Command, arg = _scene.Nodes[node].Arg, layer = _scene.Nodes[node].Layer, laid = _laid;
@@ -856,6 +889,14 @@ namespace RealLifeOverhaul.Ui
         {
             using var cost = Measured(UiWork.Pointer);
             var px = new Vector2(at.X, at.Y);
+            if (node >= 0 && node < _scene.NodeCount && _scene.Nodes[node].Handle)
+            {
+                if (_grip.Drag(at))
+                {
+                    Layout();
+                }
+                return;
+            }
             if (!(_screen is IUiDragging dragging) || node < 0 || node >= _scene.NodeCount)
             {
                 return;
@@ -885,6 +926,13 @@ namespace RealLifeOverhaul.Ui
             {
                 Layout();
             }
+        }
+
+        // The window's place is read from where the player left it unless it is held now.
+        private void PlaceWindow(UiFrame frame)
+        {
+            _placesSeen = UiWindowPlaces.Version;
+            _grip.Place(_scene, frame.Width, frame.BandY);
         }
 
         private void EndDrag(bool cancelled)

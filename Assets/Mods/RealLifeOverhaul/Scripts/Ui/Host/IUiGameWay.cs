@@ -32,4 +32,14 @@ namespace RealLifeOverhaul.Ui
     public interface IUiGameInteract
     {
     }
+
+    /// <summary>
+    /// A game screen the game lets the player move by its title (its DraggableWindow): the kit's window is moved by its title strip
+    /// the same way (UiWindowDrag). Game side; read once, as the host binds.
+    /// </summary>
+    public interface IUiGameDraggable
+    {
+        /// <summary>The window's id in the game's settings (DraggableWindow.id); empty for a window the game moves but does not remember; null for a screen that stays.</summary>
+        string WindowId { get; }
+    }
 }

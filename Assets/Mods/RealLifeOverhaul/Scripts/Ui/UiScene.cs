@@ -79,6 +79,7 @@ namespace RealLifeOverhaul.Ui
         public UiAction Key;     // the key that presses it from anywhere on its layer (its cap is drawn on it), or Count
         public int Index;        // its row in that list
         public bool Disabled;
+        public bool Handle;      // a window's title strip as the mouse's grip (UiWindowDrag): never focused, never pressed, only dragged
         public int Up, Down, Left, Right;   // a node the d-pad goes to, or -1 to find the nearest that way
     }
 
@@ -128,6 +129,10 @@ namespace RealLifeOverhaul.Ui
         {
             s.ItemCount = _items;
             s.NodeCount = _nodes;
+            if (s.HandleNode >= _nodes)
+            {
+                s.HandleNode = s.HandlePanel = -1;   // the grip was laid in the shape taken away
+            }
             s.ClipCount = _clips;
             s.ListCount = _lists;
             s.PromptCount = _prompts;
@@ -166,6 +171,9 @@ namespace RealLifeOverhaul.Ui
         public int TypingArg = -1;
         public int CaretItem = -1;       // the caret drawn in that field this layout, for the host to blink (UiView.SetCaret), or -1
         public float PromptX, PromptY, PromptW, PromptH;   // where the prompt bar stands
+        public bool Draggable;           // the player may move the screen's window by its title strip: set by the host before a layout, kept across layouts
+        public int HandleNode = -1;      // the title strip's grip this layout (UiDraw.TitleStrip), or -1
+        public int HandlePanel = -1;     // the item of the window the grip belongs to, or -1 when its strip had no parent
 
         /// <summary>Empties the scene for a new layout at a size, keeping its arrays.</summary>
         public void Begin(string name, float width, float height, bool dark)
@@ -178,6 +186,7 @@ namespace RealLifeOverhaul.Ui
             FocusFirst = -1;
             FocusReset = false;
             CaretItem = -1;
+            HandleNode = HandlePanel = -1;
             Pointer = false;
             Floats = false;
             Held = false;

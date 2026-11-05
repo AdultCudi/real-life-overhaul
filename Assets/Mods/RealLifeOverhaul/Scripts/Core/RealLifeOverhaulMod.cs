@@ -234,6 +234,7 @@ namespace RealLifeOverhaul
                         GameUi.PhoneLayoutPrefs.Tell();   // the phones lay themselves out again at once
                     })
                 .AddButton("reallife_phone_layout_reset", GameUi.PhoneMove.ResetAll)
+                .AddButton("reallife_windows_reset", Ui.UiWindowPrefs.ResetAll)
                 .AddButton("reallife_phone_test_check", GameUi.PhoneMove.TestCheck)
                 .AddButton("reallife_phone_test_folder", GameUi.PhoneMove.TestFolder)
                 .AddButton("reallife_phone_test_pages", GameUi.PhoneApp.TestPages)
