@@ -52,11 +52,43 @@ namespace RealLifeOverhaul.Ui
         /// </summary>
         public int Up(UiScene scene, float x, float y)
         {
+            bool was = _armed;
             int node = Current(scene);
             bool dragged = _dragged;
             _armed = false;
             _dragged = false;
-            return node >= 0 && !dragged && Over(scene, node, x, y) ? node : -1;
+            Why = !was ? NoPress : dragged ? "it became a drag" : node < 0 ? "the target is gone from the layout" : !Over(scene, node, x, y) ? "the pointer left the target" : Pressed;
+            return Why == Pressed ? node : -1;
+        }
+
+        public const string Pressed = "pressed";
+        private const string NoPress = "no press was down";
+
+        /// <summary>Why the last up pressed nothing (or Pressed), for the press trace.</summary>
+        public string Why { get; private set; } = NoPress;
+
+        /// <summary>
+        /// The target under a place of the layout (px), read from the scene itself: the one on the topmost layer, and on it the one
+        /// drawn last, or -1. The press is told from where the pointer is, never from the object the engine's last raycast named.
+        /// </summary>
+        public static int At(UiScene scene, float x, float y)
+        {
+            int best = -1;
+            long rank = -1;
+            for (int i = 0; scene != null && i < scene.NodeCount; i++)
+            {
+                if (!Over(scene, i, x, y))
+                {
+                    continue;
+                }
+                long r = scene.Nodes[i].Layer * 100000000L + (scene.Nodes[i].Face >= 0 ? scene.Nodes[i].Face : i);
+                if (r >= rank)
+                {
+                    rank = r;
+                    best = i;
+                }
+            }
+            return best;
         }
 
         /// <summary>The node of a layer that runs a command with an argument, or -1.</summary>

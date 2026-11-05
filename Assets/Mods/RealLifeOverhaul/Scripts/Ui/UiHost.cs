@@ -34,6 +34,8 @@ namespace RealLifeOverhaul.Ui
         private const float SolidFor = 0.6f;       // seconds the caret stays shown after a layout (a key typed lays the screen out): it never blinks mid-word
 
         private readonly UiScene _scene = new UiScene();
+        private int _beforeFocus = -2, _beforeLaid = -1;   // the focus and layout count as a press began, for its trace
+        private string _beforeNode, _confirmNote;
         private readonly UiFocusMode _mode = new UiFocusMode(UiLead.Pointer);
         private UiView _view;
         private IUiScreen _screen;
@@ -118,6 +120,7 @@ namespace RealLifeOverhaul.Ui
                 _view.PointerEntered = Guard.Wrap<int>(PointerEntered);
                 _view.PointerExited = Guard.Wrap<int>(PointerExited);
                 _view.PointerPressed = Guard.Wrap<int>(PressedSafe);
+                _view.PointerReport = PressTrace;
                 _view.Wheeled = Guard.Wrap<int, float>(WheeledSafe);
                 _view.PointerDragged = Guard.Wrap<int, UiDragPoint>(PointerDragged);
                 _view.PointerMoved = Guard.Wrap<int, UiDragPoint>(PointerMoved);
@@ -354,6 +357,10 @@ namespace RealLifeOverhaul.Ui
             }
             if ((step || _state.Confirm) && _mode.Woke())
             {
+                if (_state.Confirm)
+                {
+                    _confirmNote = Time.frameCount + " woke the ring, pressed nothing";
+                }
                 LeadChanged();   // the press only shows where the focus is: nobody acts on a target they could not see
                 return;
             }
@@ -371,6 +378,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (_state.Confirm)
             {
+                _confirmNote = Time.frameCount + " pressed " + NodeName(_view.Focus);
                 PressNode(_view.Focus, now);
             }
             if (_state.Back && _dragging)
@@ -716,6 +724,9 @@ namespace RealLifeOverhaul.Ui
         private void PointerPressed(int node)
         {
             using var cost = Measured(UiWork.Press);
+            _beforeFocus = _view.Focus;
+            _beforeNode = NodeName(node);
+            _beforeLaid = _laid;
             if (node < 0 || node >= _scene.NodeCount)
             {
                 if (_typing)
@@ -749,6 +760,40 @@ namespace RealLifeOverhaul.Ui
                 }
                 PressNode(node, Time.unscaledTime);
             }
+        }
+
+        // One line for a mouse press while a kit screen is up, written only on a press (Developer diagnostics on):
+        // "UI press: <screen> frame F; down: ray <node>, here <node>, began on <node>; up: <pressed node or why none>; Confirm this frame: <what>;
+        // other input this frame: <list or none>; focus A -> B; layouts N (M by the press)". A node reads "cmd/arg#number", or "none".
+        private void PressTrace(UiPressReport r)
+        {
+            int beforeFocus = _beforeFocus == -2 ? _view.Focus : _beforeFocus;
+            int laidBefore = _beforeLaid < 0 ? _laid : _beforeLaid;
+            string pressed = r.Pressed >= 0 ? _beforeNode : r.Why;
+            _beforeFocus = -2;
+            _beforeLaid = -1;
+            if (!Meta.Dev.Verbose)
+            {
+                return;
+            }
+            string confirm = _confirmNote != null && _confirmNote.StartsWith(Time.frameCount + " ", StringComparison.Ordinal) ? _confirmNote.Substring(_confirmNote.IndexOf(' ') + 1) : "no";
+            var others = new System.Text.StringBuilder();
+            if (_state.Back) { others.Append(" Back"); }
+            if (_state.Alt) { others.Append(" Alt"); }
+            if (_state.Option) { others.Append(" Option"); }
+            if (_state.TabPrev || _state.TabNext) { others.Append(" Tab"); }
+            if (_state.View) { others.Append(" View"); }
+            if (_state.Page != 0) { others.Append(" Page"); }
+            if (_state.Pick != 0) { others.Append(" Pick").Append(_state.Pick); }
+            if (_state.MoveX != 0 || _state.MoveY != 0) { others.Append(" Move"); }
+            UiDirector.Logger?.Info("UI press: " + (_cost != null ? _cost.Name : "screen") + " frame " + Time.frameCount + "; down: ray " + NodeName(r.RayNode) + ", here " + NodeName(r.HereNode)
+                + ", began on " + NodeName(r.DownNode) + "; up: " + pressed + "; Confirm this frame: " + confirm + "; other input this frame:" + (others.Length == 0 ? " none" : others.ToString())
+                + "; focus " + NodeName(beforeFocus) + " -> " + NodeName(_view.Focus) + "; layouts " + _laid + " (" + (_laid - laidBefore) + " by the press)");
+        }
+
+        private string NodeName(int node)
+        {
+            return _scene != null && node >= 0 && node < _scene.NodeCount ? _scene.Nodes[node].Command + "/" + _scene.Nodes[node].Arg + "#" + node : "none";
         }
 
         // A step the screen takes for what it holds chosen (a board's shift), the focus staying where it is.
