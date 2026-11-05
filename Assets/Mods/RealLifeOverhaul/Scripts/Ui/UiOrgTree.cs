@@ -319,11 +319,18 @@ namespace RealLifeOverhaul.Ui
             float lw = Math.Max(0f, right - rw - (rw > 0f ? UiTokens.S3 : 0f) - lx);
             bool two = !string.IsNullOrEmpty(n.Sub) && h >= PersonHeight;
             float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
+            // An open post's name is the longest text of a tree (a seat's title) and its link stands on the second line at the right, so that the name keeps the whole first line.
+            bool linkBelow = two && post && rw > 0f;
             if (two)
             {
                 float top = y + UiDraw.SnapDown((h - th - sh) / 2f);
-                UiDraw.TextMiddle(s, inside, lx, top, th, lw, UiStyle.Title, post && !chosen ? UiRole.Text2 : UiRole.Text, n.Name, UiFlags.Truncate);
+                UiDraw.TextMiddle(s, inside, lx, top, th, linkBelow ? right - lx : lw, UiStyle.Title, post && !chosen ? UiRole.Text2 : UiRole.Text, n.Name, UiFlags.Truncate);
                 UiDraw.TextMiddle(s, inside, lx, top + th, sh, lw, UiStyle.Small, chosen ? UiRole.Text : UiRole.Text2, n.Sub, UiFlags.Truncate);
+                if (linkBelow)
+                {
+                    UiDraw.TextMiddle(s, inside, right - rw, top + th, sh, rw, UiStyle.SmallStrong, UiRole.AccentText, n.Right, UiFlags.Right | UiFlags.Truncate);
+                    rw = 0f;
+                }
             }
             else
             {

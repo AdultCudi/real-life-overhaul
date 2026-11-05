@@ -139,6 +139,7 @@ namespace RealLifeOverhaul.Ui
         private static float RotaHeader(UiScene s, UiAt at, CompanyLayout lay, CompanyView v, CompanyWords w, CompanyRotaPlace p, int sub, float x, float y, float width, IUiKeys keys)
         {
             string[] views = { w.T("reallife_rota_view_week", "Week"), w.T("reallife_rota_view_day", "Day"), w.T("reallife_rota_view_advice", "Advice") };
+            int bar = s.NodeCount;
             float vx = x, chipY = y + Mid(UiTokens.Control, UiTokens.Chip);
             for (int i = 0; i < views.Length; i++)
             {
@@ -168,6 +169,7 @@ namespace RealLifeOverhaul.Ui
             {
                 s.Nodes[lastChip].Right = firstButton;   // the day's tabs lie nearer than the buttons, so the last view chip is linked to the first button
             }
+            lay.Bar(bar, s.NodeCount);
             return y + UiTokens.Control + UiTokens.S3;
         }
 
@@ -365,10 +367,10 @@ namespace RealLifeOverhaul.Ui
                 }
                 float tx = x + UiTokens.AvatarRow + UiTokens.S2, tw = personW - UiTokens.AvatarRow - UiTokens.S2;
                 float th = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
-                // A role with what it was before takes the two lines under the name when the row has them, rather than ending in an ellipsis.
+                // A long role takes the two lines under the name when the row has them, rather than ending in an ellipsis.
                 string role = pr.Role ?? string.Empty;
                 float roleH = UiDraw.Snap(UiTextRules.WrappedHeight(role, UiStyle.Small, tw, 2));
-                bool twoLines = roleH > sh + 1f && th + roleH <= rowH + UiTokens.S2;
+                bool twoLines = roleH > sh + 1f && th + roleH <= rowH;   // inside its own row: a longer text would run into the name of the row below
                 float top = cy + UiDraw.SnapDown((rowH - th - (twoLines ? roleH : sh)) / 2f);
                 UiDraw.TextMiddle(s, at, tx, top, th, tw, UiStyle.Title, UiRole.Text, pr.Name ?? string.Empty, UiFlags.Truncate);
                 if (twoLines)
@@ -803,6 +805,7 @@ namespace RealLifeOverhaul.Ui
             CompanyRotaLook l = p.Look;
             float cy = y;
             float right = x + width;
+            int bar = s.NodeCount;
             if (!string.IsNullOrEmpty(l.Chip))
             {
                 float cwid = UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(l.Chip, UiStyle.SmallStrong) + UiTokens.S1);
@@ -819,6 +822,7 @@ namespace RealLifeOverhaul.Ui
                 CompanyButton back = l.Back;
                 Button(s, at, lay, v, ref back, x, cy, Math.Min(UiDraw.SnapDown(width * 0.4f), UiDraw.ButtonWidth(back.Kind, back.Label, back.Icon, back.Key, keys)), keys);
             }
+            lay.Bar(bar, s.NodeCount);
             cy += UiTokens.Control + UiTokens.S4;
             float nameH = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Hero));
             string advised = w.T("reallife_rota_advised", "Advised");

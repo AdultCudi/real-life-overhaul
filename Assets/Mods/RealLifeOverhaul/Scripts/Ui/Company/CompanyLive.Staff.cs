@@ -459,7 +459,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (mates.Count > 0)
             {
-                blocks.Add(Sec(w.F("reallife_co_emp_beside", "Beside them at {business}", "business", d.ShopName(p.Place)), others.ToString()));
+                blocks.Add(Sec(w.F("reallife_co_emp_beside", "Beside them at {business}", "business", d.ShopName(p.Place)), CountOf(w, mates.Count, others)));
                 blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = mates.ToArray() });
             }
             if (d.State.Staff.Count <= SmallCrew)
@@ -521,6 +521,10 @@ namespace RealLifeOverhaul.Ui
                 yield return list[i];
             }
         }
+
+        // A heading's count of a list that shows only its first rows: the rows shown against all there are, so that the figure never says more than the list holds.
+        internal static string CountOf(Words w, int shown, int all) =>
+            shown >= all ? all.ToString() : w.F("reallife_rota_blocks_count", "{count} of {most}", "count", shown.ToString(), "most", all.ToString());
 
         private CompanyItem[] CrewItems(CompanyDirector d, string place, Words w, bool low, int most)
         {

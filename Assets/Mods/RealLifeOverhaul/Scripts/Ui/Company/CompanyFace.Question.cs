@@ -156,12 +156,12 @@ namespace RealLifeOverhaul.Ui
             return total;
         }
 
-        // The card's buttons stand in one row inside the card: when the words of a language make the row too wide, the link to the asker's page is cut to "Open", and where it still does
-        // not fit it goes (the Lead has the link, and the inbox's card has the links of the question).
+        // The card's buttons stand in one row inside the card: when the words of a language make the row too wide, the link to the asker's page is cut to "{name}'s page", then to "Open", and
+        // only where even that does not fit does it go (the Lead has the link, and the inbox's card has the links of the question).
         private static CompanyButton[] FitButtons(CompanyButton[] buttons, CompanyWords w, IUiKeys keys, string who = null)
         {
             float room = UiDecision.Width - 296f - UiTokens.S8 * 2f;
-            for (int pass = 0; pass < 2; pass++)
+            for (int pass = 0; pass < 3; pass++)
             {
                 float total = 0f;
                 for (int i = 0; i < buttons.Length; i++)
@@ -179,10 +179,10 @@ namespace RealLifeOverhaul.Ui
                     {
                         kept.Add(buttons[i]);
                     }
-                    else if (pass == 0)
+                    else if (pass < 2)
                     {
                         CompanyButton shorter = buttons[i];
-                        shorter.Label = string.IsNullOrEmpty(who) ? w.T("reallife_co_open", "Open") : w.F("reallife_co_page_of", "{name}'s page", "name", who);
+                        shorter.Label = pass == 1 || string.IsNullOrEmpty(who) ? w.T("reallife_co_open", "Open") : w.F("reallife_co_page_of", "{name}'s page", "name", who);
                         kept.Add(shorter);
                     }
                 }

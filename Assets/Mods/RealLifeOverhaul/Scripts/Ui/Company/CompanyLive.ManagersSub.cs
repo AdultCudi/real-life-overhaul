@@ -313,6 +313,13 @@ namespace RealLifeOverhaul.Ui
                 blocks.Add(Sec(w.T("reallife_mgr_sec_before", "Before it")));
                 blocks.Add(before);
             }
+            // How much of the month's budget the manager has used, which every decision they make draws on.
+            int allowed = mp.Own != null ? d.BudgetOf(mp.Own) : 0;
+            if (allowed > 0)
+            {
+                int used = Math.Min(100, mp.Own.Spent * 100 / allowed);
+                blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Meter, Text = w.T("reallife_hier_fig_budget_used", "Budget used"), Value = used + "%", Number = used, Tone = UiRole.Ok });
+            }
             blocks.Add(Buttons(Btn(CompanyText.T("reallife_mgr_undo"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Undo, null, dec.Id), UiAction.Count, UiIcon.Back, true, state != 0,
                 state != 0 && why != null ? CompanyText.T(why) : null)));
             card.Blocks = blocks.ToArray();
@@ -1289,9 +1296,15 @@ namespace RealLifeOverhaul.Ui
                     Btn(CompanyText.T("reallife_hier_open_policy"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.Go, "reg:" + area, CompanyView.Managers, CompanyView.SubPolicy), UiAction.Count,
                         UiIcon.Sliders)),
                 Sec(w.T("reallife_mgr_region_their_places", "Their places"), placesTotal.ToString()),
-                new CompanyBlock { Kind = CompanyBlockKind.Items, Items = placeRows.ToArray() },
-                Note(CompanyText.T("reallife_hier_region_dash_what"))
+                new CompanyBlock { Kind = CompanyBlockKind.Items, Items = placeRows.ToArray() }
             };
+            CompanyItem[] budgets = BudgetRows(d, area, w);
+            if (budgets.Length > 0)
+            {
+                blocks.Add(Sec(w.T("reallife_hier_fig_budget", "Budget"), budgets.Length.ToString()));
+                blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = budgets });
+            }
+            blocks.Add(Note(CompanyText.T("reallife_hier_region_dash_what")));
             card.Blocks = blocks.ToArray();
             page.Card = card;
             return true;
@@ -1357,6 +1370,7 @@ namespace RealLifeOverhaul.Ui
                     && x.Id == p.Id,
                     CompanyText.T("reallife_mgr_in_post"))));
                 AddWatch(blocks, d, seat, w);
+                AddArea(blocks, d, seat, w);
                 card.Blocks = blocks.ToArray();
             }
             else
@@ -1370,6 +1384,7 @@ namespace RealLifeOverhaul.Ui
                     blocks.Add(Note(CompanyText.T("reallife_hier_seat_hire", "roles", SeatRolesOf(seat))));
                     blocks.Add(Note(CompanyText.T("reallife_hier_exec_pick")));
                     AddWatch(blocks, d, seat, w);
+                    AddArea(blocks, d, seat, w);
                 }
                 else
                 {
@@ -1420,6 +1435,14 @@ namespace RealLifeOverhaul.Ui
 
         // What a seat has its eye on, place by place from the managers' own figures: the finance chief the month's budget against what was spent, the people chief how the crew stands, the
         // operating chief how many decisions the manager made.
+        // What waits in a seat's area, whoever sits in it: the questions open there and the managers it would watch.
+        private static void AddArea(List<CompanyBlock> blocks, CompanyDirector d, ExecSeat seat, Words w)
+        {
+            blocks.Add(Sec(w.T("reallife_hier_sec_area", "Area")));
+            blocks.Add(Row(w.T("reallife_hier_area_open", "Open in their area"), d.OpenOfSeat(seat).ToString()));
+            blocks.Add(Row(w.T("reallife_co_f_managers", "Managers"), CountManagers(d).ToString()));
+        }
+
         private static void AddWatch(List<CompanyBlock> blocks, CompanyDirector d, ExecSeat seat, Words w)
         {
             var rows = new List<CompanyItem>(5);

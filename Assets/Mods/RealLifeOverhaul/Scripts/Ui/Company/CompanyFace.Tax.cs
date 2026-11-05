@@ -38,7 +38,14 @@ namespace RealLifeOverhaul.Ui
             float gap = UiTokens.S6;
             float lw = UiDraw.SnapDown((cw - gap) * 0.6f), rw = cw - gap - lw;
             bool paidLeft = Licences(s, at.InRegion(RegionMain), lay, v, w, t, x, cy, lw, bottom, keys, out bool termsLeft);
-            Statement(s, at.InRegion(RegionSide), lay, v, w, t, x + lw + gap, cy, rw, bottom, keys, paidLeft, termsLeft);
+            // The right column's parts stand further apart where it comes to a short page: laid out once on a scene of its own to see how short, then drawn.
+            var scratch = new UiScene();
+            scratch.Begin("measure", 4096f, 4096f, true);
+            float end = Statement(scratch, UiAt.Screen, new CompanyLayout(), v, w, t, 0f, 0f, rw, 8192f, keys, paidLeft, termsLeft, 0f);
+            // A second pass with one pixel of air counts the gaps this column has, because which parts it shows depends on what the left column kept.
+            float gaps = Math.Max(1f, Statement(scratch, UiAt.Screen, new CompanyLayout(), v, w, t, 0f, 0f, rw, 8192f, keys, paidLeft, termsLeft, 1f) - end);
+            float slack = bottom - cy - end - 60f;
+            Statement(s, at.InRegion(RegionSide), lay, v, w, t, x + lw + gap, cy, rw, bottom, keys, paidLeft, termsLeft, slack > 0f ? UiDraw.SnapDown(Math.Min(UiTokens.S8, slack / gaps)) : 0f);
         }
 
         private static float TaxLead(UiScene s, UiAt at, CompanyLayout lay, CompanyView v, CompanyTaxFacts t, float x, float y, float cw, IUiKeys keys)
@@ -245,8 +252,8 @@ namespace RealLifeOverhaul.Ui
         }
 
         // The right column: the quarter so far, the reserve's controls, the returns paid, the tools, the property tax.
-        private static void Statement(UiScene s, UiAt at, CompanyLayout lay, CompanyView v, CompanyWords w, CompanyTaxFacts t, float x, float y, float width, float bottom, IUiKeys keys, bool paidLeft,
-            bool termsLeft)
+        private static float Statement(UiScene s, UiAt at, CompanyLayout lay, CompanyView v, CompanyWords w, CompanyTaxFacts t, float x, float y, float width, float bottom, IUiKeys keys,
+            bool paidLeft, bool termsLeft, float air)
         {
             float cy = Section(s, at, lay, x, y, width, t.QuarterTitle, t.QuarterRange);
             for (int i = 0; i < t.Quarter.Length && cy + StatementRow <= bottom; i++)
@@ -261,25 +268,33 @@ namespace RealLifeOverhaul.Ui
                 // How far through the quarter it is: the figures above are of this much of it.
                 Pair(s, at, x, cy, UiTokens.PairRow, width, UiStyle.Body, UiRole.Text2, t.QuarterDayText ?? string.Empty, UiStyle.Body, UiRole.Text, null);
                 UiDraw.Meter(s, at, x, cy + UiTokens.PairRow + UiTokens.S1, width, UiTokens.S1, Math.Max(0, Math.Min(100, t.QuarterDay * 100 / Math.Max(1, t.QuarterLen))), UiRole.Accent);
-                cy += UiTokens.PairRow + UiTokens.S3 + UiTokens.S2;
+                cy += UiTokens.PairRow + UiTokens.S3 + UiTokens.S2 + air;
             }
             for (int i = 0; i < t.ReserveControls.Length && cy + SwitchRow <= bottom; i++)
             {
                 cy = Block(s, at, lay, v, w, t.ReserveControls[i], x, cy, width, bottom, keys);
             }
-            cy += UiTokens.S3;
+            cy += UiTokens.S3 + air;
             if (!paidLeft)
             {
-                cy = PaidList(s, at, lay, t, x, cy, width, bottom, out bool _);
+                cy = PaidList(s, at, lay, t, x, cy, width, bottom, out bool _) + air;
             }
             if (t.Tools.Length > 0 && bottom - cy >= UiTokens.PairRow + LineRow)
             {
                 cy = Section(s, at, lay, x, cy, width, t.ToolsTitle);
-                for (int i = 0; i < t.Tools.Length && cy + LineRow <= bottom; i++)
+                int tools = 0;
+                for (; tools < t.Tools.Length && cy + LineRow <= bottom - (tools + 1 < t.Tools.Length ? UiTokens.PairRow : 0f); tools++)
                 {
-                    cy += LineItem(s, at, lay, ref t.Tools[i], x, cy, width);
+                    cy += LineItem(s, at, lay, ref t.Tools[tools], x, cy, width);
                 }
-                cy += UiTokens.S3;
+                if (tools < t.Tools.Length)
+                {
+                    // Said, not dropped: a list the frame cuts short ends in how many it leaves out.
+                    UiDraw.TextMiddle(s, at, x, cy, UiTokens.PairRow, width, UiStyle.Small, UiRole.Muted,
+                        w.F("reallife_co_and_more", "and {count} more", "count", (t.Tools.Length - tools).ToString()), UiFlags.Truncate);
+                    cy += UiTokens.PairRow;
+                }
+                cy += UiTokens.S3 + air;
             }
             if (!termsLeft && t.Terms.Length > 0 && bottom - cy >= UiTokens.PairRow + LineRow)
             {
@@ -288,7 +303,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     cy += LineItem(s, at, lay, ref t.Terms[i], x, cy, width);
                 }
-                cy += UiTokens.S3;
+                cy += UiTokens.S3 + air;
             }
             if (t.Property.Length > 0 && bottom - cy >= UiTokens.PairRow + StatementRow)
             {
@@ -301,8 +316,9 @@ namespace RealLifeOverhaul.Ui
             }
             if (!string.IsNullOrEmpty(t.PropertyNote) && bottom - cy >= UiTokens.S8)
             {
-                Sentence(s, at, t.PropertyNote, x, cy + UiTokens.S1, width, UiRole.Text2, 3, UiStyle.Small);
+                cy = Sentence(s, at, t.PropertyNote, x, cy + UiTokens.S1 + air, width, UiRole.Text2, 3, UiStyle.Small);
             }
+            return cy;
         }
 
         // A compact line: its words at the left, a chip, its figure at the right; a target when it opens something.

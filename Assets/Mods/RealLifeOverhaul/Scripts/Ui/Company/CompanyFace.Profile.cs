@@ -133,7 +133,12 @@ namespace RealLifeOverhaul.Ui
                 int fit = (int)Math.Max(1f, Math.Floor((bottom - ry - reserve) / DoneRow));
                 for (int i = 0; i < Math.Min(p.Log.Length, fit) && ry + DoneRow <= bottom - reserve; i++)
                 {
-                    ry += DoneLine(s, at, lay, ref p.Log[i], c2x, ry, c2w, DoneRow, bottom - reserve);
+                    float took = DoneLine(s, at, lay, ref p.Log[i], c2x, ry, c2w, DoneRow, bottom - reserve, i > 0);
+                    if (took <= 0f)
+                    {
+                        break;
+                    }
+                    ry += took;
                 }
                 ry += UiTokens.S3;
             }
@@ -185,23 +190,34 @@ namespace RealLifeOverhaul.Ui
             if (split >= 0 && pw >= ProfileWide)
             {
                 float gap = UiTokens.S6, colW = Math.Min(CardMeasure, UiDraw.SnapDown((pw - gap) / 2f)), rx = x + colW + gap, ry = y, ly = y;
-                for (int i = 0; i < split && ly < bottom; i++)
+                int turn = BalancedTurn(blocks, split, v, w, colW, keys, bottom - y);
+                float[] sizes = MeasureBlocks(blocks, v, w, colW, keys);
+                float airL = SectionAir(blocks, sizes, 0, turn, bottom - y), airR = SectionAir(blocks, sizes, turn, blocks.Length, bottom - y);
+                for (int i = 0; i < turn && ly < bottom; i++)
                 {
-                    ly = Block(s, at, lay, v, w, blocks[i], x, ly, colW, bottom, keys);
+                    if (blocks[i].Kind != CompanyBlockKind.Break)
+                    {
+                        ly = Block(s, at, lay, v, w, blocks[i], x, ly + (blocks[i].Kind == CompanyBlockKind.Section && i > 0 ? airL : 0f), colW, bottom, keys);
+                    }
                 }
                 UiAt side = at.InRegion(RegionSide);
-                for (int i = split + 1; i < blocks.Length && ry < bottom; i++)
+                for (int i = turn; i < blocks.Length && ry < bottom; i++)
                 {
-                    ry = Block(s, side, lay, v, w, blocks[i], rx, ry, colW, bottom, keys);
+                    if (blocks[i].Kind != CompanyBlockKind.Break)
+                    {
+                        ry = Block(s, side, lay, v, w, blocks[i], rx, ry + (blocks[i].Kind == CompanyBlockKind.Section && i > turn ? airR : 0f), colW, bottom, keys);
+                    }
                 }
                 return;
             }
             float cy = y;
+            float[] one = MeasureBlocks(blocks, v, w, Math.Min(pw, CardMeasure), keys);
+            float air = SectionAir(blocks, one, 0, blocks.Length, bottom - y);
             for (int i = 0; i < blocks.Length && cy < bottom; i++)
             {
                 if (blocks[i].Kind != CompanyBlockKind.Break)
                 {
-                    cy = Block(s, at, lay, v, w, blocks[i], x, cy, Math.Min(pw, CardMeasure), bottom, keys);
+                    cy = Block(s, at, lay, v, w, blocks[i], x, cy + (blocks[i].Kind == CompanyBlockKind.Section && i > 0 ? air : 0f), Math.Min(pw, CardMeasure), bottom, keys);
                 }
             }
         }

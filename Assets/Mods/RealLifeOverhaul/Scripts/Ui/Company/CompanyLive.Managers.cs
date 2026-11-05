@@ -190,12 +190,19 @@ namespace RealLifeOverhaul.Ui
 
         private static UiOrgNode Caption(string name) => new UiOrgNode { Kind = UiOrgKind.Caption, Name = name };
 
+        // Every manager the company has: a place's, and a district's regional manager. The sidebar, the head line, the tree and the owner's page all say this number, so that none of them
+        // counts the regional managers and the next does not.
         private static int CountManagers(CompanyDirector d)
         {
             int n = 0;
             for (int i = 0; i < d.Managed.Count; i++)
             {
                 n += d.Managed[i].Own != null ? 1 : 0;
+            }
+            ManagerState ms = d.ManagerData;
+            for (int i = 0; ms != null && i < ms.Managers.Count; i++)
+            {
+                n += ms.Managers[i].Region ? 1 : 0;
             }
             return n;
         }
@@ -235,7 +242,7 @@ namespace RealLifeOverhaul.Ui
                 nodes.Add(new UiOrgNode
                 {
                     Kind = UiOrgKind.Person, Level = level, Name = own.Name, Sub = mp.Place.Name, Hue = UiColour.HueOf(own.Name), Ring = post == PostState.InPost ? UiRole.Ok : UiRole.Warn,
-                    Right = w.F("reallife_co_tree_staff", "{count} staff", "count", crew.ToString()), HasKids = crew > 0
+                    Right = w.F("reallife_co_tree_staff", "{count} staff", "count", (crew + 1).ToString()), HasKids = crew > 0   // the staff of the place, the manager among them, as its page counts
                 });
                 ids.Add("mgr:" + mp.Place.Place);
                 int shown = 0;
@@ -624,6 +631,24 @@ namespace RealLifeOverhaul.Ui
                     Act = CompanyAct.Of(CompanyDo.Go, "mgr:" + mp.Place.Place, CompanyView.Managers)
                 });
             }
+            // The district managers stand in the same list, so that it holds as many as it counts.
+            ManagerState regions = d.ManagerData;
+            for (int i = 0; regions != null && i < regions.Managers.Count && places.Count < CrewShown + 2; i++)
+            {
+                ManagerFile r = regions.Managers[i];
+                if (!r.Region)
+                {
+                    continue;
+                }
+                Face(r.Name, r.Id);
+                int standing = d.StandingIn(r.Place);
+                places.Add(new CompanyItem
+                {
+                    Title = r.Name, Sub = w.F("reallife_co_tree_region", "Regional, {district}", "district", CompanyDirector.AreaName(r.Place)), Face = true, Hue = UiColour.HueOf(r.Name),
+                    Ring = CompanyDirector.Sick(r) ? UiRole.Warn : UiRole.Ok, Grade = standing > 0 ? standing : -1, Figure = standing > 0 ? standing.ToString() : null,
+                    Note = standing > 0 ? w.T("reallife_co_crew_standing", "crew standing") : null, Press = true, Act = CompanyAct.Of(CompanyDo.Go, "reg:" + r.Place, CompanyView.Managers)
+                });
+            }
             if (places.Count > 0)
             {
                 left.Add(Sec(w.T("reallife_mgr_sec_directory", "Your managers"), managers.ToString()));
@@ -663,7 +688,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 month.Add(Sec(w.T("reallife_co_hand_over_more", "And these too")));
                 month.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = every.GetRange(half, every.Count - half).ToArray() });
-                CompanyItem[] could = CouldManage(d, w, 3);
+                CompanyItem[] could = CouldManage(d, w, 5);
                 if (could.Length > 0)
                 {
                     month.Add(Sec(w.T("reallife_co_could_manage", "Who could take a post")));
@@ -741,6 +766,31 @@ namespace RealLifeOverhaul.Ui
         }
 
         // The people with the best standing across the businesses, the likeliest to be given a post: a company with no manager shows who the owner could start with.
+        // The managers of a district's places with what each has spent of the month's budget, as grades with the sum and the budget under it.
+        private CompanyItem[] BudgetRows(CompanyDirector d, string area, Words w)
+        {
+            var items = new List<CompanyItem>(CrewShown);
+            for (int i = 0; i < d.Managed.Count && items.Count < 2 * CrewShown; i++)
+            {
+                ManagedPlace mp = d.Managed[i];
+                if (mp.Area != area || mp.Own == null)
+                {
+                    continue;
+                }
+                ManagerFile m = mp.Own;
+                Face(m.Name, m.Id);
+                int budget = d.BudgetOf(m);
+                items.Add(new CompanyItem
+                {
+                    Title = m.Name, Sub = mp.Place.Name, Face = true, Hue = UiColour.HueOf(m.Name), Ring = d.PostOf(mp) == PostState.InPost ? UiRole.Ok : UiRole.Warn,
+                    Grade = budget > 0 ? Math.Min(100, m.Spent * 100 / budget) : -1, Figure = CompanyText.Money(m.Spent),
+                    Note = w.F("reallife_co_of_budget", "of {amount}", "amount", CompanyText.Money(budget)), Press = true,
+                    Act = CompanyAct.Of(CompanyDo.Go, "mgr:" + mp.Place.Place, CompanyView.Managers)
+                });
+            }
+            return items.ToArray();
+        }
+
         private CompanyItem[] CouldManage(CompanyDirector d, Words w, int most)
         {
             var all = new List<StaffFile>(d.State.Staff);
@@ -843,7 +893,7 @@ namespace RealLifeOverhaul.Ui
             int places = 0;
             for (int i = 0; i < d.Managed.Count; i++)
             {
-                places += d.Managed[i].Area == area && d.Managed[i].Own != null ? 1 : 0;
+                places += d.Managed[i].Area == area ? 1 : 0;   // every place of the area, the one without a manager of its own too: the list under says the same
             }
             var p = new CompanyProfile
             {
@@ -867,6 +917,13 @@ namespace RealLifeOverhaul.Ui
             p.GradeLabels = labels.ToArray();
             p.GradeValues = values.ToArray();
             var more = new List<CompanyBlock>(12);
+            // Yesterday in the district, from the figures its dashboard reads: its profit, the places short of crew and the questions waiting.
+            if (managed > 0)
+            {
+                more.Add(new CompanyBlock { Kind = CompanyBlockKind.Figures,
+                    Options = new[] { w.T("reallife_hier_fig_profit", "Profit"), w.T("reallife_co_f_gaps", "Gaps"), w.T("reallife_co_f_pending", "Pending") },
+                    Values = new[] { Signed(profit, w), gaps.ToString(), pending.ToString() } });
+            }
             // Their places, each with its manager's portrait and how its crew stands.
             var rows = new List<CompanyItem>(8);
             int total = 0;
@@ -908,6 +965,13 @@ namespace RealLifeOverhaul.Ui
             }
             more.Add(Sec(w.T("reallife_mgr_region_their_places", "Their places"), total.ToString()));
             more.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = rows.ToArray() });
+            // What each manager of the district has spent of the month's budget: the finance side of the same places.
+            CompanyItem[] budgets = BudgetRows(d, area, w);
+            if (budgets.Length > 0)
+            {
+                more.Add(Sec(w.T("reallife_hier_fig_budget", "Budget"), budgets.Length.ToString()));
+                more.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = budgets });
+            }
             // The questions open in their area, under the places they come from: what the regional manager has on the desk.
             CompanyItem[] asked = AreaAsks(d, area, w, 3);
             if (asked.Length > 0)
@@ -1027,6 +1091,11 @@ namespace RealLifeOverhaul.Ui
             more.Add(Note(CompanyText.T("reallife_mgr_place_none")));
             more.Add(Row(w.T("reallife_mgr_row_place", "Place"), mp.Place.Name));
             more.Add(Row(w.T("reallife_mgr_row_district", "District"), CompanyText.District(mp.District)));
+            int crewHere, standingHere = d.StandingAt(mp.Place.Place, out crewHere);
+            if (crewHere > 0)
+            {
+                more.Add(Row(w.T("reallife_co_f_standing", "Standing"), standingHere.ToString()));
+            }
             more.Add(new CompanyBlock { Kind = CompanyBlockKind.Break });
             if (_hands.Count > 0)
             {
@@ -1041,6 +1110,16 @@ namespace RealLifeOverhaul.Ui
                     CompanyText.Money(ManagerRules.Allowance(ManagerCatalogue.RolePlace, least, d.Index)), "most",
                     CompanyText.Money(ManagerRules.Allowance(ManagerCatalogue.RolePlace, best, d.Index)))));
             }
+            // How the place goes without one: yesterday's result, how its crew stands and the questions waiting there, which are the reasons to put somebody in the post.
+            CompanyShop at = d.ShopAt(mp.Place.Place);
+            int waitingHere = d.HierarchyOn ? OpenAsksOf(d.HierarchyData, mp.Place.Place) : 0;
+            more.Add(Sec(w.T("reallife_co_post_state", "How it goes without one")));
+            if (at != null && at.HasBooks)
+            {
+                more.Add(Row(w.T("reallife_co_f_takings", "Takings"), w.Money(at.Takings)));
+                more.Add(Row(w.T("reallife_co_result_label", "Yesterday's result"), Signed(at.Profit, w), at.Profit >= 0 ? UiRole.OkText : UiRole.DangerText));
+            }
+            more.Add(Row(w.T("reallife_co_post_questions", "Questions waiting here"), waitingHere.ToString()));
             // What a manager of this kind of place would decide, each with its own glyph and what it does.
             int kinds = ManagerRules.Kinds(mp.Kind);
             var would = new List<CompanyItem>(ManagerTaskCount);

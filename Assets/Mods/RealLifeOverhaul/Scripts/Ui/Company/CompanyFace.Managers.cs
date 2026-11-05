@@ -66,7 +66,7 @@ namespace RealLifeOverhaul.Ui
             int managers = 0, posts = 0, needs = 0;
             for (int i = 0; i < m.TreeIds.Length; i++)
             {
-                managers += m.TreeIds[i].StartsWith("mgr:", StringComparison.Ordinal) ? 1 : 0;
+                managers += m.TreeIds[i].StartsWith("mgr:", StringComparison.Ordinal) || m.TreeIds[i].StartsWith("reg:", StringComparison.Ordinal) ? 1 : 0;
                 posts += m.TreeIds[i].StartsWith("post:", StringComparison.Ordinal) ? 1 : 0;
                 needs += i < m.TreeNeeds.Length && m.TreeNeeds[i] && !m.TreeIds[i].StartsWith("post:", StringComparison.Ordinal) ? 1 : 0;
             }

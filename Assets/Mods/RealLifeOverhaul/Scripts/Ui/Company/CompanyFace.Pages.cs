@@ -12,10 +12,10 @@ namespace RealLifeOverhaul.Ui
 
         // A row: its face or tile, two lines, a figure at the right with a note under it, a chip, a meter. Returns nothing; the caller's node makes it a target.
         private static void RowFace(UiScene s, UiAt inside, float x, float y, float w, float h, string title, string sub, string figure, string note, string chip, UiRole chipTone,
-            UiRole figureTone, UiIcon icon, UiRole tint, bool face, float hue, UiRole ring, int grade, bool chosen, bool dim, string faceName = null)
+            UiRole figureTone, UiIcon icon, UiRole tint, bool face, float hue, UiRole ring, int grade, bool chosen, bool dim, string faceName = null, bool wrapSub = false)
         {
             float size = UiTokens.IconTile;
-            float tx = x + UiTokens.S3, ty = y + (h - size) / 2f;
+            float tx = x + UiTokens.S3, ty = y + UiDraw.SnapDown((h - size) / 2f);
             if (face)
             {
                 UiDraw.Portrait(s, inside, tx + UiTokens.S1, ty + UiTokens.S1, size - UiTokens.S2, faceName ?? title ?? string.Empty, hue, ring);
@@ -41,7 +41,10 @@ namespace RealLifeOverhaul.Ui
             float nameFull = UiDraw.Snap(UiTextRules.Width(title ?? string.Empty, UiStyle.Title) + UiTokens.S1);
             float chipNatural = string.IsNullOrEmpty(chip) ? 0f : UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(chip, UiStyle.SmallStrong) + UiTokens.S1);
             float chipW = chipNatural > 0f ? Math.Max(0f, Math.Min(chipNatural, UiDraw.SnapDown(lw - Math.Min(nameFull, UiDraw.SnapDown(lw * 0.45f)) - UiTokens.S3))) : 0f;
-            float block = th + (string.IsNullOrEmpty(sub) ? 0f : UiTokens.S1 + sh) + (meter ? UiTokens.S2 + UiTokens.S1 : 0f);
+            // A line under the name that does not fit takes a second line where the caller made the row tall enough, instead of ending in an ellipsis.
+            bool twoLines = wrapSub && !string.IsNullOrEmpty(sub) && UiTextRules.Width(sub, UiStyle.Small) > lw;
+            float subH = twoLines ? sh * 2f : sh;
+            float block = th + (string.IsNullOrEmpty(sub) ? 0f : UiTokens.S1 + subH) + (meter ? UiTokens.S2 + UiTokens.S1 : 0f);
             float top = y + UiDraw.SnapDown((h - block) / 2f);
             float nameW = Math.Min(nameFull, lw - (chipW > 0f ? chipW + UiTokens.S3 : 0f));
             UiDraw.TextMiddle(s, inside, lx, top, th, nameW, UiStyle.Title, dim && !chosen ? UiRole.Text2 : UiRole.Text, title ?? string.Empty, UiFlags.Truncate);
@@ -53,8 +56,15 @@ namespace RealLifeOverhaul.Ui
             if (!string.IsNullOrEmpty(sub))
             {
                 ly += UiTokens.S1;
-                UiDraw.TextMiddle(s, inside, lx, ly, sh, lw, UiStyle.Small, chosen ? UiRole.Text : UiRole.Text2, sub, UiFlags.Truncate);
-                ly += sh;
+                if (twoLines)
+                {
+                    UiDraw.Text(s, inside, lx, ly, lw, UiStyle.Small, chosen ? UiRole.Text : UiRole.Text2, sub, UiFlags.Wrap | UiFlags.Truncate, 2);
+                }
+                else
+                {
+                    UiDraw.TextMiddle(s, inside, lx, ly, sh, lw, UiStyle.Small, chosen ? UiRole.Text : UiRole.Text2, WholeParts(sub, lw), UiFlags.Truncate);
+                }
+                ly += subH;
             }
             if (meter)
             {
@@ -76,6 +86,37 @@ namespace RealLifeOverhaul.Ui
                     UiDraw.TextMiddle(s, inside, right - fw, fy, sh, fw, UiStyle.Small, chosen ? UiRole.Text : UiRole.Muted, note, UiFlags.Right | UiFlags.Truncate);
                 }
             }
+        }
+
+        /// <summary>
+        /// A line under a name that is too long for its room loses its last part at a comma ("Factory or office, 6 staff" to "Factory or office"), where an ellipsis would cut a word or a figure in
+        /// two ("Fábrica ou escritório, 6..."). One with no comma, or whose first part does not fit either, is left to the ellipsis.
+        /// </summary>
+        private static string WholeParts(string sub, float room)
+        {
+            string cut = sub;
+            while (UiTextRules.Width(cut, UiStyle.Small) > room)
+            {
+                int comma = cut.LastIndexOf(", ", StringComparison.Ordinal);
+                if (comma <= 0)
+                {
+                    return sub;
+                }
+                cut = cut.Substring(0, comma);
+            }
+            return cut;
+        }
+
+        /// <summary>The width a row's words have between its tile and its figure, as RowFace gives them, so a caller can tell before drawing whether a line under the name needs two lines.</summary>
+        private static float RowWordsWidth(float w, string figure, string note)
+        {
+            float fw = 0f;
+            if (!string.IsNullOrEmpty(figure) || !string.IsNullOrEmpty(note))
+            {
+                fw = Math.Min(UiDraw.SnapDown(w * 0.36f), UiDraw.Snap(Math.Max(UiTextRules.Width(figure ?? string.Empty, UiStyle.BodyStrong), UiTextRules.Width(note ?? string.Empty, UiStyle.Small))
+                    + UiTokens.S1));
+            }
+            return Math.Max(0f, w - UiTokens.S3 - fw - (fw > 0f ? UiTokens.S3 : 0f) - (UiTokens.S3 + UiTokens.IconTile + UiTokens.S3));
         }
 
         // ------------------------------------------------------------------------------------------------- the list of a page
@@ -285,7 +326,9 @@ namespace RealLifeOverhaul.Ui
             float cy = y;
             if (c.Back != null && c.Back.Length > 0)
             {
+                int bar = s.NodeCount;
                 cy = Buttons(s, at, lay, v, c.Back, x, cy, cw, keys, true) + UiTokens.S3;
+                lay.Bar(bar, s.NodeCount);
             }
             if (!string.IsNullOrEmpty(c.Title))
             {
@@ -303,18 +346,30 @@ namespace RealLifeOverhaul.Ui
             }
             if (split >= 0 && cw >= TwoColumns)
             {
-                // A wide page: the blocks up to the break at the left, the rest at the right, each column as wide as a line may reach.
+                // A wide page: the blocks up to the break at the left, the rest at the right, each column as wide as a line may reach; the break moves to a heading where the two would be very unlike.
                 float gap = UiTokens.S8, colW = Math.Min(CardMeasure, UiDraw.SnapDown((cw - gap) / 2f)), rx = x + colW + gap, ry = cy, ly = cy;
-                for (int i = 0; i < split && ly < bottom; i++)
+                int turn = BalancedTurn(c.Blocks, split, v, w, colW, keys, bottom - cy);
+                float[] sizes = MeasureBlocks(c.Blocks, v, w, colW, keys);
+                float airL = SectionAir(c.Blocks, sizes, 0, turn, bottom - cy), airR = SectionAir(c.Blocks, sizes, turn, c.Blocks.Length, bottom - cy);
+                for (int i = 0; i < turn && ly < bottom; i++)
                 {
-                    ly = Block(s, at, lay, v, w, c.Blocks[i], x, ly + GapBefore(c.Blocks, i), colW, bottom, keys);
+                    if (c.Blocks[i].Kind != CompanyBlockKind.Break)
+                    {
+                        ly = Block(s, at, lay, v, w, c.Blocks[i], x, ly + GapBefore(c.Blocks, i) + (c.Blocks[i].Kind == CompanyBlockKind.Section && i > 0 ? airL : 0f), colW, bottom, keys);
+                    }
                 }
-                for (int i = split + 1; i < c.Blocks.Length && ry < bottom; i++)
+                for (int i = turn; i < c.Blocks.Length && ry < bottom; i++)
                 {
-                    ry = Block(s, at, lay, v, w, c.Blocks[i], rx, ry + GapBefore(c.Blocks, i), colW, bottom, keys);
+                    if (c.Blocks[i].Kind != CompanyBlockKind.Break)
+                    {
+                        ry = Block(s, at, lay, v, w, c.Blocks[i], rx, ry + GapBefore(c.Blocks, i) + (c.Blocks[i].Kind == CompanyBlockKind.Section && i > turn ? airR : 0f), colW, bottom, keys);
+                    }
                 }
                 return Math.Max(ly, ry);
             }
+            float oneW = Math.Min(cw, CardMeasure);
+            float[] oneSizes = MeasureBlocks(c.Blocks, v, w, oneW, keys);
+            float air = SectionAir(c.Blocks, oneSizes, 0, c.Blocks.Length, bottom - cy);
             for (int i = 0; i < c.Blocks.Length; i++)
             {
                 if (cy >= bottom)
@@ -325,13 +380,95 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;
                 }
+                if (c.Blocks[i].Kind == CompanyBlockKind.Section && i + 1 < c.Blocks.Length && c.Blocks[i + 1].Kind == CompanyBlockKind.Items && cy + oneSizes[i] + ListRow > bottom)
+                {
+                    break;   // a heading is left out with the rows that would end past the window
+                }
                 // A row's words and its figure stay within a line's reach, however wide the window.
-                cy = Block(s, at, lay, v, w, c.Blocks[i], x, cy + GapBefore(c.Blocks, i), Math.Min(cw, CardMeasure), bottom, keys);
+                cy = Block(s, at, lay, v, w, c.Blocks[i], x, cy + GapBefore(c.Blocks, i) + (c.Blocks[i].Kind == CompanyBlockKind.Section && i > 0 ? air : 0f), oneW, bottom, keys);
             }
             return cy;
         }
 
         // The run of buttons that follows a row or a link has a gap above it: the dismiss button stood 2 px under the last figure of the seat's page.
+        /// <summary>
+        /// Where a page of two columns turns from the first to the second. The page's own break is where its author meant the second to begin, and where the two come out about as long that is
+        /// the answer; where one would stand a long way short of the foot, the turn is moved to the section heading that makes them most alike, so that neither is left as a bare floor under a
+        /// short list. Heights are measured by laying the blocks out once on a scene of their own, when the page is read and not while it is shown. Returns the index of the first block of the
+        /// second column.
+        /// </summary>
+        internal static int BalancedTurn(CompanyBlock[] blocks, int split, CompanyView v, CompanyWords w, float colW, IUiKeys keys, float room)
+        {
+            float[] heights = MeasureBlocks(blocks, v, w, colW, keys);
+            float total = 0f;
+            for (int i = 0; i < heights.Length; i++)
+            {
+                total += heights[i];
+            }
+            float left = 0f;
+            for (int i = 0; i < split; i++)
+            {
+                left += heights[i];
+            }
+            // Fine as the author wrote it: neither column stops far short of the foot.
+            if (room - left <= 160f && room - (total - left) <= 160f)
+            {
+                return split + 1;
+            }
+            int best = split + 1;
+            float bestSpread = Math.Abs(total - left - left);
+            float run = 0f;
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                if (blocks[i].Kind == CompanyBlockKind.Section && i > 0)
+                {
+                    float spread = Math.Abs(total - run - run);
+                    if (spread + 1f < bestSpread && Math.Max(run, total - run) <= Math.Max(room, Math.Max(left, total - left)))
+                    {
+                        best = i;
+                        bestSpread = spread;
+                    }
+                }
+                run += heights[i];
+            }
+            return best;
+        }
+
+        /// <summary>The height each block takes at a column's width, laid out once on a scene of its own (a break takes none).</summary>
+        internal static float[] MeasureBlocks(CompanyBlock[] blocks, CompanyView v, CompanyWords w, float colW, IUiKeys keys)
+        {
+            var scratch = new UiScene();
+            var spare = new CompanyLayout();
+            var heights = new float[blocks.Length];
+            for (int i = 0; i < blocks.Length; i++)
+            {
+                if (blocks[i].Kind == CompanyBlockKind.Break)
+                {
+                    continue;
+                }
+                scratch.Begin("measure", 4096f, 4096f, true);
+                heights[i] = Block(scratch, UiAt.Screen, spare, v, w, blocks[i], 0f, 0f, colW, 8192f, keys) + GapBefore(blocks, i);
+            }
+            return heights;
+        }
+
+        /// <summary>
+        /// What a column's sections each stand further apart where its blocks come to a short page: the room left over, less a hundred pixels of floor that a page may keep, shared among the
+        /// headings and never more than a step. A short card then reads as a page with air between its parts and not as a list that stops half way down.
+        /// </summary>
+        internal static float SectionAir(CompanyBlock[] blocks, float[] heights, int from, int to, float room)
+        {
+            float used = 0f;
+            int sections = 0;
+            for (int i = from; i < to; i++)
+            {
+                used += heights[i];
+                sections += blocks[i].Kind == CompanyBlockKind.Section && i > from ? 1 : 0;
+            }
+            float slack = room - used - 100f;
+            return sections > 0 && slack > 0f ? UiDraw.SnapDown(Math.Min(UiTokens.S8, slack / sections)) : 0f;
+        }
+
         private static float GapBefore(CompanyBlock[] blocks, int i) =>
             i > 0 && blocks[i].Kind == CompanyBlockKind.Buttons && (blocks[i - 1].Kind == CompanyBlockKind.Row || blocks[i - 1].Kind == CompanyBlockKind.Link) ? UiTokens.S3 : 0f;
 
@@ -554,24 +691,39 @@ namespace RealLifeOverhaul.Ui
         private static float ItemsBlock(UiScene s, UiAt at, CompanyLayout lay, CompanyWords w, CompanyBlock b, float x, float y, float cw, float bottom)
         {
             int total = b.Items != null ? b.Items.Length : 0;
-            int rows = Math.Min(total, (int)Math.Max(0f, Math.Floor((bottom - y + ListGap) / (ListRow + ListGap))));   // the rows that fit the room
+            // A row is a line taller where the words under its name need a second line.
+            float line = (float)Math.Ceiling(UiTextRules.LineHeight(UiStyle.Small) / 4f) * 4f;   // a whole step of the grid, so the taller row stays on it
+            var heights = new float[total];
+            int rows = 0;
+            float used = 0f;
+            for (int i = 0; i < total; i++)
+            {
+                ref CompanyItem item = ref b.Items[i];
+                heights[i] = !string.IsNullOrEmpty(item.Sub) && UiTextRules.Width(item.Sub, UiStyle.Small) > RowWordsWidth(cw, item.Figure, item.Note) ? ListRow + line : ListRow;
+                if (y + used + heights[i] > bottom)
+                {
+                    break;
+                }
+                used += heights[i] + ListGap;
+                rows++;   // the rows that fit the room
+            }
             bool rest = rows < total;
-            if (rest && rows > 1 && bottom - (y + rows * (ListRow + ListGap)) < UiTokens.PairRow)
+            if (rest && rows > 1 && bottom - (y + used) < UiTokens.PairRow)
             {
                 rows--;   // the room for the count of the rest
             }
             for (int i = 0; i < rows; i++)
             {
                 ref CompanyItem it = ref b.Items[i];
-                int face = UiDraw.Box(s, at, x, y, cw, ListRow, UiRole.None, UiRole.None, UiTokens.RadiusLarge);
-                RowFace(s, at.In(face), x, y, cw, ListRow, it.Title, it.Sub, it.Figure, it.Note, it.Chip, it.ChipTone, it.FigureTone, it.Icon, it.Tint, it.Face, it.Hue, it.Ring, it.Grade,
-                    false, false, it.FaceName);
+                int face = UiDraw.Box(s, at, x, y, cw, heights[i], UiRole.None, UiRole.None, UiTokens.RadiusLarge);
+                RowFace(s, at.In(face), x, y, cw, heights[i], it.Title, it.Sub, it.Figure, it.Note, it.Chip, it.ChipTone, it.FigureTone, it.Icon, it.Tint, it.Face, it.Hue, it.Ring, it.Grade,
+                    false, false, it.FaceName, true);
                 if (it.Press && it.Act.Do != CompanyDo.None)
                 {
                     int index = lay.Add(new CompanyButton { Label = it.Title, Act = it.Act });
-                    UiDraw.Node(s, at, x, y, cw, ListRow, Item, index, face);
+                    UiDraw.Node(s, at, x, y, cw, heights[i], Item, index, face);
                 }
-                y += ListRow + ListGap;
+                y += heights[i] + ListGap;
             }
             if (rest && rows > 0 && bottom - y >= UiTokens.PairRow)
             {

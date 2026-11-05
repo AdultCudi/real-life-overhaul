@@ -361,7 +361,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         // A row of "done for you": when, what the manager did, what it cost or saved.
-        internal static float DoneLine(UiScene s, UiAt at, CompanyLayout lay, ref CompanyDone row, float x, float y, float w, float h, float limit = -1f)
+        internal static float DoneLine(UiScene s, UiAt at, CompanyLayout lay, ref CompanyDone row, float x, float y, float w, float h, float limit = -1f, bool whole = false)
         {
             // The words have the width left by the time and the money; one that does not fit one line takes two where the column has the room (limit: the y it may not pass).
             // The time column is as wide as the widest day and hour of the languages ask, "Day 214, 08:00" or "第214天, 08:00": cut to "第214天, 08..." it dated nothing.
@@ -379,6 +379,10 @@ namespace RealLifeOverhaul.Ui
                     wrapped = two;
                     h = Math.Max(h, two + UiTokens.S3);
                 }
+            }
+            if (whole && wrapped == 0f && UiTextRules.Width(text, UiStyle.Body) > textW)
+            {
+                return 0f;   // a line that would end in an ellipsis is left for the page of the whole log
             }
             bool press = row.Open.Do != CompanyDo.None;
             int face = -1;

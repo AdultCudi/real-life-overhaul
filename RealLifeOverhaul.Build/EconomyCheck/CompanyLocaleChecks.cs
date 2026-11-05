@@ -173,6 +173,7 @@ internal static partial class Program
     {
         UiWords en = UiWords("en");
         var names = new List<string>(SampleNames);
+        names.AddRange(UiSamples.CompanyWorld.AllNames());   // the people, places, addresses and rivals of the sample world
         names.Sort((x, y) => y.Length.CompareTo(x.Length));
         var found = new SortedDictionary<string, string>(StringComparer.Ordinal);
         foreach (string lang in new[] { "pt", "zh-cn" })

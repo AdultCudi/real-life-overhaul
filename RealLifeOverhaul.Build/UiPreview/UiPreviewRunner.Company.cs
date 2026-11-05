@@ -16,6 +16,17 @@ public static partial class UiPreviewRunner
         }
     }
 
+    // The pad shot's walk is the one the pad check takes: laid out as the pad shot lays the page out (the keys leading, the pad's glyphs), so the numbered stops are the d-pad's own path in.
+    private static string PadWalkOf(string state, string lang)
+    {
+        UiWords words = lang == "en" ? ModEnglish : DialogWords(lang);
+        var scene = new UiScene();
+        UiFrame frame = UiFrame.FullMenu(16f / 9f, "Company");
+        frame.Pointer = false;
+        CompanyFace.Lay(scene, UiSamples.CompanyFactsOf(words, state), UiSamples.CompanyViewOf(state), UiSamples.CompanyWordsOf(words), new CompanyLayout(), frame, true, UiDefaultKeys.XboxPad);
+        return CompanyFace.PadWalkOf(scene);
+    }
+
     private static Screen CompanyScreenOf(int i, string lang)
     {
         string st = UiSamples.CompanyStates[i];
@@ -31,14 +42,14 @@ public static partial class UiPreviewRunner
             Bar = () =>
             {
                 UiStatusModel bar = UiSamples.Bar(-1);
-                bar.Day = one ? "Tuesday (Day 7)" : "Tuesday (Day 214)";   // the sample's today: a first week for the cafe, else the days around 214 (Week 31, Q3)
+                bar.Day = UiSamples.CompanyDayText(st);   // the sample world's today, as the bar writes it
                 return bar;
             },
             Icon = UiIcon.Briefcase,
             Backdrop = card ? "05.jpg" : one ? "02.jpg" : i % 2 == 0 ? "13.jpg" : "02.jpg",
             HoverCommand = card ? CompanyFace.Act : UiAppWindow.NavCommand,
             HoverArg = hoverArg,
-            Walk = Moves("DDR"),
+            Walk = Moves(PadWalkOf(st, lang)),
             Lay = (s, f, d, k) =>
             {
                 UiWords words = lang == "en" ? ModEnglish : DialogWords(lang);

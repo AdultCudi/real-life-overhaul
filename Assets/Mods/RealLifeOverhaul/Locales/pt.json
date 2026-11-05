@@ -11255,7 +11255,7 @@
   "reallife_rota_needs_same": "Não foi encontrado nada melhor para este pessoal",
   "reallife_rota_needs_rota": "Uma nova escala para o horário que você mantém",
   "reallife_rota_needs_hours": "Novo horário de funcionamento e nova escala",
-  "reallife_rota_needs_hire": "Mais uma pessoa para {who} por cerca de {wage} por hora",
+  "reallife_rota_needs_hire": "Mais um para {who}, cerca de {wage} a hora",
   "reallife_rota_box_customers": "Clientes por semana pela previsão do jogo: {count}. A hora mais movimentada traz {peak}. Seus postos atendem {cap} por hora quando todos têm funcionário.",
   "reallife_rota_box_unmanned": "Horas abertas sem ninguém no caixa: {hours}. O jogo não vende nada nelas. Clientes por semana que saem sem comprar: {customers}.",
   "reallife_rota_advice_none": "A semana que você tem é a melhor que este pessoal consegue cumprir.",
@@ -20628,7 +20628,7 @@
   "reallife_changes_047_1": "Corrigido: no Flare, uma mensagem de alguém da cidade não diz mais que viu seu post quando você não postou nada. Ela só fala de um post depois de um dos seus dos últimos três dias. Corrigido: as pessoas da cidade não avaliam mais a sua empresa no Flare enquanto ela está temporariamente fechada ou fora do horário de funcionamento. Uma avaliação vem de uma visita com ela aberta e aparece na hora dessa visita. Corrigido: dava para acompanhar a rodada de uma startup várias vezes seguidas, e cada vez comprava mais, até você ficar com quase toda a empresa. Agora isso vale uma vez por rodada, só com direito de pro rata, e leva você de volta à parte que tinha antes daquela rodada, nunca mais que isso. As ações que você já tem continuam suas. Corrigido: a pequena travada quando o ambiente aparece ao você entrar num prédio.",
   "reallife_mgr_sec_tasks": "O que decide",
   "reallife_mgr_tasks_what": "Desligue o que você prefere decidir. Desligado, o gerente nunca faz aquilo, e com a escala semanal desligada ele nunca mexe em um horário.",
-  "reallife_mgr_task_rota_when": "Domingos às {hour}:00, só para cobrir uma lacuna, sem nunca tirar alguém da escala.",
+  "reallife_mgr_task_rota_when": "Domingos às {hour}:00, só cobre lacunas, sem tirar ninguém.",
   "reallife_mgr_did_rota_kept_out": "Deixou a escala como estava: uma nova tiraria {count} pessoas da equipe dela.",
   "reallife_mgr_did_rota_kept_less": "Deixou a escala como estava: uma nova cobriria {after} de {wanted} horas, contra {now} agora.",
   "reallife_co_open_bizman": "Abrir no BizMan",
@@ -31573,7 +31573,7 @@
   "reallife_co_q_stays": "{name} fica",
   "reallife_co_q_c_limit": "Aumentar o limite de {manager} para {limit}, e deixar essa pessoa decidir",
   "reallife_co_q_limit_do": "Aumentar o limite",
-  "reallife_co_q_standing_note": "conceito",
+  "reallife_co_q_standing_note": "permanente",
   "reallife_hier_note_limit_short": "Nem o limite mais largo alcançaria isso.",
   "reallife_co_q_limit_line": "{manager} aprova aumentos até {limit} sem perguntar a você",
   "reallife_co_q_fewer": "Menos perguntas na sua mesa",
@@ -31697,7 +31697,6 @@
   "reallife_rota_block_remove": "Remover o último",
   "reallife_rota_use_this": "Usar este plano",
   "reallife_rota_plan_new": "Novo plano",
-  "reallife_rota_plan_delete": "Excluir este plano",
   "reallife_co_row_lic_pending": "Pendente",
   "reallife_co_coming_quarter": "Trimestre {quarter} fecha",
   "reallife_co_coming_licence": "{licence} vence em {business}",
@@ -31943,5 +31942,7 @@
   "reallife_co_asked_in_area": "Perguntas abertas na área deles",
   "reallife_mgr_skill_far": "Habilidade ao cobrir um local",
   "reallife_co_post_cost": "Custo de um gerente aqui",
-  "reallife_co_allowance_range": "de {least} a {most} por dia"
+  "reallife_co_allowance_range": "de {least} a {most} por dia",
+  "reallife_co_post_state": "Como vai sem gerente",
+  "reallife_co_post_questions": "Perguntas pendentes"
 }

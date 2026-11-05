@@ -31573,7 +31573,7 @@
   "reallife_co_q_stays": "{name} stays",
   "reallife_co_q_c_limit": "Raise {manager}'s limit to {limit}, and let them decide",
   "reallife_co_q_limit_do": "Raise the limit",
-  "reallife_co_q_standing_note": "standing",
+  "reallife_co_q_standing_note": "lasting",
   "reallife_hier_note_limit_short": "Even the widest limit would not reach it.",
   "reallife_co_q_limit_line": "{manager} approves raises up to {limit} without asking you",
   "reallife_co_q_fewer": "Fewer questions at your desk",
@@ -31697,7 +31697,6 @@
   "reallife_rota_block_remove": "Remove the last",
   "reallife_rota_use_this": "Use this plan",
   "reallife_rota_plan_new": "New plan",
-  "reallife_rota_plan_delete": "Delete this plan",
   "reallife_co_row_lic_pending": "Pending",
   "reallife_co_coming_quarter": "Quarter {quarter} closes",
   "reallife_co_coming_licence": "{licence} runs out at {business}",
@@ -31943,5 +31942,7 @@
   "reallife_co_asked_in_area": "Asked in their area",
   "reallife_mgr_skill_far": "Skill standing in for a place",
   "reallife_co_post_cost": "What a manager here costs",
-  "reallife_co_allowance_range": "from {least} to {most} a day"
+  "reallife_co_allowance_range": "from {least} to {most} a day",
+  "reallife_co_post_state": "How it goes without one",
+  "reallife_co_post_questions": "Questions waiting here"
 }

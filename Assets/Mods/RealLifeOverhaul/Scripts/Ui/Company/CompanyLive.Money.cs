@@ -153,13 +153,13 @@ namespace RealLifeOverhaul.Ui
                 card.FactValues = new[] { CompanyText.Money(file.PushCost), CompanyText.Percent(file.PushPercent) };
                 blocks.Add(Sec(w.T("reallife_ibox_sec_campaign", "The campaign")));
                 blocks.Add(Row(CompanyText.Label("reallife_co_push_running"), CompanyText.Campaign(file.Push)));
-                int length = Math.Max(1, file.PushEnd - file.PushFrom), done = Math.Max(0, Math.Min(length, day - file.PushFrom + 1));
-                blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Meter, Text = running ? w.F("reallife_co_push_progress", "Day {done} of {days}", "done", done.ToString(), "days",
-                    length.ToString())
-                    : CompanyText.T("reallife_co_push_days", "from", file.PushFrom.ToString(), "to", (file.PushEnd - 1).ToString()),
-                    Value = running ? w.F("reallife_co_push_left", "{count} days left", "count", Math.Max(0, length - done).ToString()) : null, Number = running ? done * 100 / length : 0,
+                CompanyDays.Campaign days = CompanyDays.Campaign.Of(file.PushFrom, file.PushEnd, day);
+                blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Meter, Text = running ? w.F("reallife_co_push_progress", "Day {done} of {days}", "done", days.Done.ToString(), "days",
+                    days.Length.ToString())
+                    : CompanyText.T("reallife_co_push_days", "from", file.PushFrom.ToString(), "to", days.Last.ToString()),
+                    Value = running ? w.F("reallife_co_push_left", "{count} days left", "count", days.Left.ToString()) : null, Number = running ? days.Done * 100 / days.Length : 0,
                         Tone = UiRole.Ok });
-                blocks.Add(Note(CompanyText.T("reallife_co_push_report_due", "day", file.PushEnd.ToString())));
+                blocks.Add(Note(CompanyText.T("reallife_co_push_report_due", "day", days.Report.ToString())));
                 AddParts(blocks, d, shop, file.Push, w);
                 KindRecord(blocks, d.State, file.Push, w);
                 Earlier(blocks, d, shop.Name, -1, w);

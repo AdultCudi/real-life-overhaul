@@ -351,17 +351,15 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < ms.Managers.Count && list.Count < 12; i++)
             {
                 ManagerFile m = ms.Managers[i];
-                if (m.Region)
-                {
-                    continue;
-                }
-                ManagedPlace mp = d.ManagedAt(m.Place);
+                // A district's manager stands in the list as a place's does: the sidebar counts both, and the list holds as many as it counts.
+                ManagedPlace mp = m.Region ? null : d.ManagedAt(m.Place);
                 int asked = d.HierarchyOn ? OpenAsksOf(d.HierarchyData, m.Place) : 0;
                 list.Add(new CompanyManagerToday
                 {
-                    Name = m.Name, Place = mp != null ? mp.Place.Name : d.ManagedName(m.Place), Hue = UiColour.HueOf(m.Name), Ring = CompanyDirector.Sick(m) ? UiRole.Warn : UiRole.Ok,
+                    Name = m.Name, Place = m.Region ? CompanyDirector.AreaName(m.Place) : mp != null ? mp.Place.Name : d.ManagedName(m.Place), Hue = UiColour.HueOf(m.Name),
+                    Ring = CompanyDirector.Sick(m) ? UiRole.Warn : UiRole.Ok,
                     Figures = w.F("reallife_co_decided_asked", "{decided} decided, {asked} asked you", "decided", m.Decided.ToString(), "asked", asked.ToString()),
-                    Open = CompanyAct.Of(CompanyDo.Go, "mgr:" + m.Place, CompanyView.Managers)
+                    Open = CompanyAct.Of(CompanyDo.Go, (m.Region ? "reg:" : "mgr:") + m.Place, CompanyView.Managers)
                 });
             }
             o.Managers = list.ToArray();
@@ -421,14 +419,21 @@ namespace RealLifeOverhaul.Ui
             var c = new CompanyCard();
             var labels = new List<string>(4);
             var values = new List<string>(4);
-            labels.Add(w.T("reallife_co_f_staff", "Staff"));
-            values.Add(shop.Staff.ToString());
+            // The panel of a one business company stands under a head that has its staff and its result: it says neither again.
+            if (page)
+            {
+                labels.Add(w.T("reallife_co_f_staff", "Staff"));
+                values.Add(shop.Staff.ToString());
+            }
             if (shop.HasBooks)
             {
                 labels.Add(w.T("reallife_co_f_takings", "Takings"));
                 values.Add(w.Money(shop.Takings));
-                labels.Add(w.T("reallife_co_f_profit", "Profit"));
-                values.Add(Signed(shop.Profit, w));
+                if (page)
+                {
+                    labels.Add(w.T("reallife_co_f_profit", "Profit"));
+                    values.Add(Signed(shop.Profit, w));
+                }
             }
             if (shop.Staff > 0)
             {
@@ -560,7 +565,7 @@ namespace RealLifeOverhaul.Ui
                 CompanyItem[] crew = CrewItems(d, file.Place, w, false, page ? 12 : 4);
                 if (crew.Length > 0)
                 {
-                    blocks.Add(Sec(w.T("reallife_co_staff_people", "Your people"), shop.Staff.ToString()));
+                    blocks.Add(Sec(w.T("reallife_co_staff_people", "Your people"), CountOf(w, crew.Length, shop.Staff)));
                     blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = crew });
                 }
             }

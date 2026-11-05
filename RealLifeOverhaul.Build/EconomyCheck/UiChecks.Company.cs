@@ -84,9 +84,90 @@ internal static partial class Program
         Check(worst < 5.0, "company face cost: the heaviest of " + heavy.Length + " pages (" + worstState + ") lays out in " + worst.ToString("0.00") + " ms, the " + heavy.Length + " together in " + total.ToString("0.00") + " ms: one layout when the facts change or the player acts, nothing per frame");
     }
 
-    // The pad's way into a page follows reading order: Right from every sidebar entry lands on the top of the page's left column, in every state, by the d-pad's own step (UiFocusRules.Next),
-    // so that the first press goes where the eye does and the path then runs down the column and across to the next. A list's rows keep their place inside the list (their own X is 0), so
-    // every position is read through NodeBox. A state whose page has no target at all is skipped.
+    // The pad's way into a page follows reading order: Right from the sidebar lands on the first target of the page's content, at the top of its first column, and the path then runs down
+    // that column. The check lays every state out as the pad shots do (the keys leading, the pad's glyphs), walks CompanyFace.PadWalkOf from the entry the app opens on by the d-pad's own step
+    // (UiFocusRules.Next), and wants the target each state is pinned to below, by what it is and not by where it stands: a bar above the content (the way back, the rota's views) is never the
+    // landing, and no state is left to a rule that a test restating the rule would pass whatever it did. A state whose page has no target at all is skipped.
+    private static readonly Dictionary<string, string> PadLanding = new Dictionary<string, string>
+    {
+        { "overview_big", "7418/0" },
+        { "overview_tall", "7418/0" },
+        { "overview_one", "7418/0" },
+        { "overview_quiet", "7418/0" },
+        { "overview_shop", "7416 Food hygiene" },
+        { "company_off", "7410 Settings" },
+        { "managers_off", "7410 Settings" },
+        { "rota_off", "7410 Settings" },
+        { "marketing_off", "7410 Settings" },
+        { "tax_off", "7410 Settings" },
+        { "staff_big", "7417/1" },
+        { "staff_summary", "7417/1" },
+        { "staff_offer", "7417/1" },
+        { "staff_give", "7417/1" },
+        { "staff_strike", "7417/1" },
+        { "staff_overtime", "7417/1" },
+        { "staff_one", "7411/0 emp:ana" },
+        { "managers_big", "7417/1" },
+        { "managers_owner", "7417/1" },
+        { "managers_handover", "7417/1" },
+        { "managers_region", "7417/1" },
+        { "managers_post", "7417/1" },
+        { "managers_none", "7417/1" },
+        { "managers_flat", "7417/1" },
+        { "managers_sub_appoint", "7411/0 mc:ray" },
+        { "managers_sub_decisions", "7411/0 md:1" },
+        { "managers_sub_task", "7411/0 mk:0" },
+        { "managers_sub_inbox", "7411/0 he:1" },
+        { "managers_sub_policy", "7417/0" },
+        { "managers_sub_rule", "7417/0" },
+        { "managers_sub_templates", "7411/0 pk:b0" },
+        { "managers_sub_dashboard", "7411/0 he:1" },
+        { "managers_sub_regiondash", "7411/0 he:1" },
+        { "managers_sub_seat", "7411/0 xc:pro1" },
+        { "managers_sub_tpl_own", "7411/0 pk:b0" },
+        { "managers_sub_seat_pick", "7411/0 xc:pro1" },
+        { "managers_sub_seat_filled", "7411/0 xc:pro1" },
+        { "rota_big", "7411/0 p:Speedy Bites~7" },
+        { "rota_day", "7411/0 p:Speedy Bites~7" },
+        { "rota_advice", "7411/0 p:Speedy Bites~7" },
+        { "rota_look", "7411/0 p:Speedy Bites~7" },
+        { "rota_look_hire", "7411/0 p:Speedy Bites~7" },
+        { "rota_edit", "7411/0 p:Speedy Bites~7" },
+        { "rota_edit_other", "7411/0 p:Speedy Bites~7" },
+        { "rota_refused", "7411/0 p:Speedy Bites~7" },
+        { "rota_one", "7411/0 p:Corner Cafe~12" },
+        { "marketing_big", "7411/0 push:Speedy Bites~7" },
+        { "marketing_running", "7411/0 push:Speedy Bites~7" },
+        { "marketing_report", "7411/0 push:Speedy Bites~7" },
+        { "marketing_summary", "7411/0 push:Speedy Bites~7" },
+        { "marketing_one", "7411/0 push:Corner Cafe~12" },
+        { "cover_big", "7411/0 claim:1" },
+        { "cover_claim", "7411/0 claim:1" },
+        { "cover_covered", "7411/0 claim:1" },
+        { "cover_summary", "7411/0 claim:1" },
+        { "tax_big", "7410 Food hygiene" },
+        { "tax_return", "7410 Food hygiene" },
+        { "tax_accountant", "7410 Food hygiene" },
+        { "tax_hide", "7410 Food hygiene" },
+        { "licence_card", "7410 Food hygiene" },
+        { "tax_one", "7410 Food hygiene" },
+    };
+
+    private static string PadName(UiScene s, CompanyLayout lay, int node)
+    {
+        UiNode n = s.Nodes[node];
+        string label = string.Empty;
+        if ((n.Command == CompanyFace.Act || n.Command == CompanyFace.Item || n.Command == CompanyFace.Opt) && n.Arg >= 0 && n.Arg < lay.ActCount)
+        {
+            return n.Command + " " + lay.Acts[n.Arg].Label;   // by what it says: the number it has among the page's actions moves when a button is added before it
+        }
+        else if (n.Command == CompanyFace.Row && n.Arg >= 0 && n.Arg < lay.RowIds.Length)
+        {
+            label = " " + lay.RowIds[n.Arg];
+        }
+        return n.Command + "/" + n.Arg + label;
+    }
+
     private static void CompanyPadOrderChecks()
     {
         UiWords en = UiWords("en");
@@ -95,9 +176,12 @@ internal static partial class Program
         foreach (string state in UiSamples.CompanyStates)
         {
             var s = new UiScene();
-            CompanyFace.Lay(s, UiSamples.CompanyFactsOf(en, state), UiSamples.CompanyViewOf(state), UiSamples.CompanyWordsOf(en), new CompanyLayout(), UiFrame.FullMenu(16f / 9f, "Company"), true, UiDefaultKeys.Keyboard);
+            var lay = new CompanyLayout();
+            UiFrame frame = UiFrame.FullMenu(16f / 9f, "Company");
+            frame.Pointer = false;
+            CompanyFace.Lay(s, UiSamples.CompanyFactsOf(en, state), UiSamples.CompanyViewOf(state), UiSamples.CompanyWordsOf(en), lay, frame, true, UiDefaultKeys.XboxPad);
             var side = new List<int>();
-            float navX = float.MaxValue, pageX = 0f;
+            float navX = float.MaxValue;
             for (int i = 0; i < s.NodeCount; i++)
             {
                 navX = s.Nodes[i].Command == UiAppWindow.NavCommand ? Math.Min(navX, s.Nodes[i].X) : navX;
@@ -107,48 +191,42 @@ internal static partial class Program
                 if (s.Nodes[i].Command == UiAppWindow.NavCommand && s.Nodes[i].X < navX + 1f)
                 {
                     side.Add(i);
-                    pageX = Math.Max(pageX, s.Nodes[i].X + s.Nodes[i].W);
                 }
             }
             if (side.Count == 0)
             {
                 continue;   // a card over the world has no sidebar
             }
-            float right = pageX;
-            for (int i = 0; i < s.NodeCount; i++)
+            int start = UiFocusRules.First(s);
+            int at = start, landing = -1, stops = 0;
+            foreach (char m in CompanyFace.PadWalkOf(s))
             {
-                s.NodeBox(i, out float bx, out _, out float bw, out _);
-                right = s.Nodes[i].Layer == 0 && !s.Nodes[i].Disabled && !side.Contains(i) && bx >= pageX ? Math.Max(right, bx + bw) : right;
+                int next = UiFocusRules.Next(s, at, m == 'R' ? 1 : 0, m == 'D' ? 1 : 0);
+                if (next < 0)
+                {
+                    continue;
+                }
+                at = next;
+                landing = stops == 0 ? at : landing;
+                stops++;
             }
-            if (right <= pageX)
-            {
-                continue;   // a page with no target at all
-            }
-            float edge = pageX + (right - pageX) * CompanyFace.LeftShare;
+            s.NodeBox(landing >= 0 ? landing : 0, out float lx, out _, out _, out _);
+            bool onSide = landing >= 0 && side.Contains(landing);
+            bool ok = landing >= 0 && !onSide && s.Nodes[landing].Command != UiDraw.CloseCommand;
+            string want;
             states++;
+            ok = ok && PadLanding.TryGetValue(state, out want) && PadName(s, lay, landing) == want;
+            // Every entry of the sidebar goes the same way in, not only the one the app opens on.
             foreach (int entry in side)
             {
-                int to = UiFocusRules.Next(s, entry, 1, 0);
-                bool ok = to >= 0;
-                if (ok)
-                {
-                    s.NodeBox(to, out float tx, out float ty, out _, out _);
-                    ok = tx < edge && tx >= pageX;
-                    for (int i = 0; ok && i < s.NodeCount; i++)
-                    {
-                        UiNode n = s.Nodes[i];
-                        s.NodeBox(i, out float bx, out float by, out _, out _);
-                        ok = !(n.Layer == 0 && !n.Disabled && !side.Contains(i) && bx >= pageX && bx < edge && by < ty - 0.5f);
-                    }
-                }
-                if (!ok)
-                {
-                    wrong.Append(" ").Append(state).Append("[entry=" + entry + " to=" + to + "]");
-                    break;
-                }
+                ok = ok && UiFocusRules.Next(s, entry, 1, 0) == landing;
+            }
+            if (!ok)
+            {
+                wrong.Append(" ").Append(state).Append("[").Append(landing >= 0 ? PadName(s, lay, landing) : "none").Append("]");
             }
         }
-        Check(wrong.Length == 0 && states > 40, "company pad: Right from every sidebar entry lands on the top of the page's left column in every state (" + states + " states)" + (wrong.Length > 0 ? ", not in:" + wrong : string.Empty));
+        Check(wrong.Length == 0 && states > 40, "company pad: Right from the sidebar lands on the page's first content target in every state (" + states + " states), by name" + (wrong.Length > 0 ? ", not so in:" + wrong : string.Empty));
     }
 
     // The rota's on-shift-by-hour chart reads each person's day as the live rota writes it: one run "07-15", or several joined by a comma and a space "07-11, 13-17". A person with two runs in a day
@@ -405,6 +483,7 @@ internal static partial class Program
         CompanyCost();
         CompanyFilterChecks();
         CompanyPadOrderChecks();
+        CompanyWorldChecks();
         CompanyShapeChecks();
         // No action without a page that draws it, and none without the live source's handler: an orphan either way is a button nobody can press or a press nothing answers.
         var orphans = new StringBuilder();

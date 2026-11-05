@@ -73,7 +73,7 @@ namespace RealLifeOverhaul.Ui
                     default: TaxPage(s, at, f, v, w, lay, x, y, cw, bottom, keys); break;
                 }
             }
-            SidebarIntoPage(s);
+            SidebarIntoPage(s, lay);
             for (int i = 0; i < 3; i++)
             {
                 s.AddPrompt(i == 0 ? UiAction.Move : i == 1 ? UiAction.Confirm : UiAction.Back,
@@ -89,12 +89,127 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>
-        /// The way from the sidebar into a page, in reading order: Right from any entry goes to the top of the page's left column, where the eye goes next, and not to whatever target stands nearest
-        /// the entry's own height (the second row of a list, a switch half way down the card). Boxes are read through NodeBox: a list's rows keep their place inside the list, so their own X is
-        /// 0 and only the box says where they stand, which is why a page with a list once sent the pad to its far right column. The sidebar is the entries of the sidebar's number that stand at the
-        /// leftmost of them, because other kit parts reuse that number further right on a page.
+        /// The way from the sidebar into a page, in reading order: Right from any entry goes to the first target of the page's content, at the top of its left column, where the eye goes
+        /// next, and not to whatever target stands nearest the entry's own height (the second row of a list, a switch half way down the card). A bar above the content (the way back, the
+        /// views of a rota, a fill button) is passed over, as the eye passes it: it is where the pad enters only when the page has nothing else. Boxes are read through NodeBox: a list's
+        /// rows keep their place inside the list, so their own X is 0 and only the box says where they stand, which is why a page with a list once sent the pad to its far right column.
+        /// The sidebar is the entries of the sidebar's number that stand at the leftmost of them, because other kit parts reuse that number further right on a page. The shots and the
+        /// check walk <see cref="PadWalkOf"/> from the entry the app opens on, so what they show is this.
         /// </summary>
-        private static void SidebarIntoPage(UiScene s)
+        private static void SidebarIntoPage(UiScene s, CompanyLayout lay)
+        {
+            int first = EntryTarget(s, lay);
+            for (int i = 0; i < s.NodeCount && first >= 0; i++)
+            {
+                if (IsSidebar(s, i, SidebarX(s)))
+                {
+                    s.Nodes[i].Right = first;
+                }
+            }
+            // The bar the pad passed over is one press up from where it entered: the nearest bar target above the first one, so that the way back is reached from the top of the page.
+            if (first >= 0 && s.Nodes[first].Up < 0 && !lay.IsBar(first))
+            {
+                s.NodeBox(first, out _, out float fy, out _, out _);
+                int bar = -1;
+                float barY = float.MinValue;
+                for (int i = 0; i < s.NodeCount; i++)
+                {
+                    s.NodeBox(i, out float bx, out float by, out _, out float bh);
+                    if (lay.IsBar(i) && s.Nodes[i].Layer == 0 && !s.Nodes[i].Disabled && by + bh <= fy + 0.5f && (by > barY + 0.5f || (by > barY - 0.5f && bar >= 0 && bx < BoxX(s, bar))))
+                    {
+                        bar = i;
+                        barY = by;
+                    }
+                }
+                s.Nodes[first].Up = bar >= 0 ? bar : s.Nodes[first].Up;
+            }
+        }
+
+        /// <summary>
+        /// The d-pad's walk the pad shots draw and the pad check takes, from the entry the page opens on: Right into the page, then Down its first column for as long as the column goes on (a
+        /// short column ends the walk, as the next press would only leave it for the sidebar). A card over the world has no sidebar, and its walk is down its choices and across to the buttons.
+        /// </summary>
+        public static string PadWalkOf(UiScene s)
+        {
+            float navX = SidebarX(s);
+            int at = UiFocusRules.First(s);
+            if (navX == float.MaxValue || at < 0)
+            {
+                return "DDR";
+            }
+            at = UiFocusRules.Next(s, at, 1, 0);
+            if (at < 0)
+            {
+                return string.Empty;
+            }
+            string walk = "R";
+            for (int step = 0; step < 2; step++)
+            {
+                int next = UiFocusRules.Next(s, at, 0, 1);
+                if (next < 0 || IsSidebar(s, next, navX) || s.Nodes[next].Command == UiDraw.CloseCommand)
+                {
+                    break;
+                }
+                walk += "D";
+                at = next;
+            }
+            return walk;
+        }
+
+        private static float BoxX(UiScene s, int node)
+        {
+            s.NodeBox(node, out float x, out _, out _, out _);
+            return x;
+        }
+
+        /// <summary>The target Right from the sidebar lands on in a laid out page, or -1 for a page with no target but the sidebar's.</summary>
+        internal static int EntryTarget(UiScene s, CompanyLayout lay)
+        {
+            float navX = SidebarX(s);
+            float pageX = 0f;   // the sidebar's right edge: a row that bleeds a little past the page's margin still belongs to the page
+            for (int i = 0; i < s.NodeCount; i++)
+            {
+                if (IsSidebar(s, i, navX))
+                {
+                    pageX = Math.Max(pageX, s.Nodes[i].X + s.Nodes[i].W);
+                }
+            }
+            // The first column is the first share of the content's width, from the sidebar to its last target: a card's button stands a little right of a row's edge below it, and it is the
+            // card that comes first to the eye. The bar above is not content, unless it is all there is.
+            int first = -1;
+            for (int pass = 0; pass < 2 && first < 0; pass++)
+            {
+                bool bars = pass == 1;
+                float right = pageX;
+                for (int i = 0; i < s.NodeCount; i++)
+                {
+                    if (OnPage(s, i, navX, pageX) && lay.IsBar(i) == bars)
+                    {
+                        s.NodeBox(i, out float bx, out _, out float bw, out _);
+                        right = Math.Max(right, bx + bw);
+                    }
+                }
+                float edge = pageX + (right - pageX) * LeftShare;
+                float firstY = 0f, firstX = 0f;
+                for (int i = 0; i < s.NodeCount; i++)
+                {
+                    if (!OnPage(s, i, navX, pageX) || lay.IsBar(i) != bars)
+                    {
+                        continue;
+                    }
+                    s.NodeBox(i, out float bx, out float by, out _, out _);
+                    if (bx < edge && (first < 0 || by < firstY - 0.5f || (by < firstY + 0.5f && bx < firstX)))
+                    {
+                        first = i;
+                        firstY = by;
+                        firstX = bx;
+                    }
+                }
+            }
+            return first;
+        }
+
+        private static float SidebarX(UiScene s)
         {
             float navX = float.MaxValue;
             for (int i = 0; i < s.NodeCount; i++)
@@ -104,58 +219,17 @@ namespace RealLifeOverhaul.Ui
                     navX = Math.Min(navX, s.Nodes[i].X);
                 }
             }
-            float pageX = 0f;   // the sidebar's right edge: a row that bleeds a little past the page's margin still belongs to the page
-            for (int i = 0; i < s.NodeCount; i++)
-            {
-                if (IsSidebar(s, i, navX))
-                {
-                    pageX = Math.Max(pageX, s.Nodes[i].X + s.Nodes[i].W);
-                }
-            }
-            // The first column is the first share of the page's width: a card's button stands a little right of a row's edge below it, and it is the card that comes first to the eye.
-            float right = pageX;
-            for (int i = 0; i < s.NodeCount; i++)
-            {
-                if (OnPage(s, i, navX, pageX))
-                {
-                    s.NodeBox(i, out float bx, out _, out float bw, out _);
-                    right = Math.Max(right, bx + bw);
-                }
-            }
-            float edge = pageX + (right - pageX) * LeftShare;
-            int first = -1;
-            float firstY = 0f, firstX = 0f;
-            for (int i = 0; i < s.NodeCount; i++)
-            {
-                if (!OnPage(s, i, navX, pageX))
-                {
-                    continue;
-                }
-                s.NodeBox(i, out float bx, out float by, out _, out _);
-                if (bx < edge && (first < 0 || by < firstY - 0.5f || (by < firstY + 0.5f && bx < firstX)))
-                {
-                    first = i;
-                    firstY = by;
-                    firstX = bx;
-                }
-            }
-            for (int i = 0; i < s.NodeCount && first >= 0; i++)
-            {
-                if (IsSidebar(s, i, navX))
-                {
-                    s.Nodes[i].Right = first;
-                }
-            }
+            return navX;
         }
 
-        /// <summary>The share of the page's width, from the sidebar to its last target, that counts as its first column, for where the pad's Right from the sidebar lands.</summary>
+        /// <summary>The share of the content's width, from the sidebar to its last target, that counts as its first column, for where the pad's Right from the sidebar lands.</summary>
         internal const float LeftShare = 0.45f;
 
         private static bool IsSidebar(UiScene s, int i, float navX) => s.Nodes[i].Command == UiAppWindow.NavCommand && s.Nodes[i].X < navX + 1f;
 
         private static bool OnPage(UiScene s, int i, float navX, float pageX)
         {
-            if (s.Nodes[i].Layer != 0 || s.Nodes[i].Disabled || IsSidebar(s, i, navX))
+            if (s.Nodes[i].Layer != 0 || s.Nodes[i].Disabled || s.Nodes[i].Command == UiDraw.CloseCommand || IsSidebar(s, i, navX))
             {
                 return false;
             }

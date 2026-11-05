@@ -96,8 +96,8 @@ namespace RealLifeOverhaul.Ui
             // The quarter so far, the reserve and the returns.
             TaxRules.QuarterFigures q = d.QuarterNow();
             t.QuarterTitle = w.T("reallife_co_quarter_so_far", "This quarter so far");
-            t.QuarterRange = w.F("reallife_co_quarter_range", "Q{quarter}, day {from} to {to}", "quarter", tf.Quarter.ToString(), "from", tf.QuarterFrom.ToString(), "to", (tf.QuarterFrom
-                + d.QuarterDays - 1).ToString());
+            CompanyDays.Quarter span = CompanyDays.Quarter.Of(tf.QuarterFrom, d.QuarterDays, day, CompanyCatalogue.ReturnDays);
+            t.QuarterRange = w.F("reallife_co_quarter_range", "Q{quarter}, day {from} to {to}", "quarter", tf.Quarter.ToString(), "from", tf.QuarterFrom.ToString(), "to", span.Last.ToString());
             bool noTakings = day <= tf.QuarterFrom;
             var lines = new List<CompanyStatementLine>(8);
             if (!noTakings)
@@ -118,7 +118,7 @@ namespace RealLifeOverhaul.Ui
             }
             t.Quarter = lines.ToArray();
             t.QuarterLen = d.QuarterDays;
-            t.QuarterDay = Math.Max(0, Math.Min(d.QuarterDays, day - tf.QuarterFrom + 1));
+            t.QuarterDay = span.Day;
             t.QuarterDayText = w.F("reallife_co_quarter_day", "Day {day} of {days}", "day", t.QuarterDay.ToString(), "days", d.QuarterDays.ToString());
             ReserveFacts(t, d, v, w, q, tf);
             t.TermsTitle = w.T("reallife_co_acc_terms_sec", "What an accountant costs");
@@ -136,9 +136,9 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
-                coming.Add(new KeyValuePair<int, CompanyDone>(tf.QuarterFrom + d.QuarterDays, new CompanyDone
+                coming.Add(new KeyValuePair<int, CompanyDone>(span.Close, new CompanyDone
                 {
-                    When = CompanyText.Day(tf.QuarterFrom + d.QuarterDays), Text = CompanyText.T("reallife_co_coming_quarter", "quarter", tf.Quarter.ToString()), Open = CompanyAct.Of(CompanyDo.Go,
+                    When = CompanyText.Day(span.Close), Text = CompanyText.T("reallife_co_coming_quarter", "quarter", tf.Quarter.ToString()), Open = CompanyAct.Of(CompanyDo.Go,
                         "ret", CompanyView.Tax, CompanyView.SubReturn)
                 }));
             }

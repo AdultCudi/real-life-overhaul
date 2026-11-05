@@ -31573,7 +31573,7 @@
   "reallife_co_q_stays": "{name}留下",
   "reallife_co_q_c_limit": "将{manager}的上限提到{limit}，并让其自行决定",
   "reallife_co_q_limit_do": "提高上限",
-  "reallife_co_q_standing_note": "声望",
+  "reallife_co_q_standing_note": "长期",
   "reallife_hier_note_limit_short": "即使最宽的上限也达不到这个。",
   "reallife_co_q_limit_line": "{manager}可批准加薪至{limit}而无需问你",
   "reallife_co_q_fewer": "办公桌上的问题减少",
@@ -31697,7 +31697,6 @@
   "reallife_rota_block_remove": "删除最后一个",
   "reallife_rota_use_this": "使用此方案",
   "reallife_rota_plan_new": "新方案",
-  "reallife_rota_plan_delete": "删除此方案",
   "reallife_co_row_lic_pending": "待办",
   "reallife_co_coming_quarter": "第{quarter}季度结束",
   "reallife_co_coming_licence": "{business}的{licence}到期",
@@ -31943,5 +31942,7 @@
   "reallife_co_asked_in_area": "其辖区内待决问题",
   "reallife_mgr_skill_far": "代管地点时的技能",
   "reallife_co_post_cost": "此处经理的成本",
-  "reallife_co_allowance_range": "每天{least}至{most}"
+  "reallife_co_allowance_range": "每天{least}至{most}",
+  "reallife_co_post_state": "没有经理时的情况",
+  "reallife_co_post_questions": "待处理问题"
 }

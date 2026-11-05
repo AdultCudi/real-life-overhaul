@@ -218,7 +218,8 @@ namespace RealLifeOverhaul.Ui
                 "reallife_talent_role_business_analyst", "reallife_talent_role_financial_analyst", "reallife_wage_row_city",
                 "reallife_wage_row_game",
                 "common_monday", "common_tuesday", "common_wednesday", "common_thursday", "common_friday", "common_saturday", "common_sunday",
-                "reallife_co_cover_liability", "reallife_pol_unit_day"
+                "reallife_co_cover_liability", "reallife_pol_unit_day", "reallife_co_post_state", "reallife_co_post_questions", "reallife_talent_role_hr_manager",
+                "reallife_talent_role_recruiter", "reallife_hier_seat_what_chro", "reallife_co_lead_return"
                 // KEYS END
             }).Switch(UiScreenSwitches.Company));
         }

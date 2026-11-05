@@ -166,6 +166,34 @@ namespace RealLifeOverhaul.Ui
             }
             ActCount = 0;
             Main = Second = -1;
+            _barCount = 0;
+        }
+
+        // The targets of a page's top bar (the way back, the views, the page's one fill button) as ranges of the scene's targets. The pad enters a page at its content, so these are the
+        // targets it passes over when nothing else is there.
+        private readonly int[] _bars = new int[16];
+        private int _barCount;
+
+        /// <summary>Marks the targets from <paramref name="from"/> up to <paramref name="to"/> as a bar above the page's content.</summary>
+        public void Bar(int from, int to)
+        {
+            if (to > from && _barCount + 2 <= _bars.Length)
+            {
+                _bars[_barCount++] = from;
+                _bars[_barCount++] = to;
+            }
+        }
+
+        public bool IsBar(int node)
+        {
+            for (int i = 0; i < _barCount; i += 2)
+            {
+                if (node >= _bars[i] && node < _bars[i + 1])
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>Registers an action and returns the index its target carries.</summary>
