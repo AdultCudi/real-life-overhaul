@@ -34,6 +34,7 @@ namespace RealLifeOverhaul.Law
             public SeatUse Use;
             public Vector3 Stand;
             public bool Held;         // somebody of the cast has it
+            public ScreenVideoController Screen;   // the game's screen at a desk, lit while an officer works there (Core/DeskScreens); null while dark or for any other seat
         }
 
         private readonly List<Staged> _staged = new List<Staged>(128);
