@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Ui
 {
@@ -19,15 +19,22 @@ namespace RealLifeOverhaul.Ui
         {
             return new[]
             {
-                "reallife_pro_rank_design_1", "reallife_pro_rank_design_2", "reallife_pro_rank_hr_1", "reallife_pro_rank_hr_2",
-                "reallife_pro_rank_marketing_1", "reallife_pro_rank_marketing_2",                 "reallife_pro_rank_teaching_1", "reallife_work_where_leads",
-                "reallife_pro_rank_teaching_2", "reallife_work_against_market", "reallife_work_below_theirs",
-                "reallife_work_cash_after", "reallife_work_day_card_0", "reallife_work_day_card_1", "reallife_work_day_card_2",
-                "reallife_work_day_card_3", "reallife_work_day_card_4", "reallife_work_day_card_5", "reallife_work_offer_stands",
-
-
                 "ba:vehicletype_deliverytruck", "ba:vehicletype_freighttruckt1", "ba:vehicletype_mersaidimgagt", "ba:vehicletype_umcdesertdeliveryjob",
                 "ba:vehicletype_vordv150",
+                "reallife_pro_rank_design_1", "reallife_pro_rank_design_2", "reallife_pro_rank_hr_1", "reallife_pro_rank_hr_2",
+                "reallife_pro_rank_marketing_1", "reallife_pro_rank_marketing_2", "reallife_pro_rank_teaching_1", "reallife_pro_rank_teaching_2",
+                "reallife_work_against_market", "reallife_work_below_theirs", "reallife_work_cash_after", "reallife_work_day_card_0",
+                "reallife_work_day_card_1", "reallife_work_day_card_2", "reallife_work_day_card_3", "reallife_work_day_card_4",
+                "reallife_work_day_card_5", "reallife_work_offer_stands", "reallife_work_where_leads",
+                "reallife_work_band_by_kind", "reallife_work_band_cheapest", "reallife_work_band_cheapest_hire", "reallife_work_band_best_deals",
+                "reallife_work_band_held", "reallife_work_band_helpers", "reallife_work_band_last_week", "reallife_work_band_longest",
+                "reallife_work_band_marks_numbers", "reallife_work_band_most_full", "reallife_work_band_most_listed", "reallife_work_band_newest",
+                "reallife_work_band_on_sale", "reallife_work_band_on_way", "reallife_work_band_rated", "reallife_work_band_sales_numbers",
+                "reallife_work_band_shortest", "reallife_work_band_strongest_cv", "reallife_work_band_under_way",
+                "reallife_work_earned_word", "reallife_work_helpers_paid", "reallife_work_helpers_rating", "reallife_work_helpers_sent",
+                "reallife_work_kind_line", "reallife_work_marks_attendance", "reallife_work_marks_best", "reallife_work_marks_lowest",
+                "reallife_work_n_percent_full", "reallife_work_n_stars", "reallife_work_one_star", "reallife_work_sales_above_cost",
+                "reallife_work_sales_average", "reallife_work_sales_best", "reallife_work_sales_profit_each", "reallife_work_worth_line",
                 "reallife_calendar_month_3", "reallife_campus_app", "reallife_campus_button_child_decline", "reallife_campus_button_child_pay",
                 "reallife_campus_button_graduate", "reallife_campus_button_loan", "reallife_campus_button_pay", "reallife_campus_button_tutor",
                 "reallife_campus_button_withdraw", "reallife_campus_child_home", "reallife_campus_child_offered", "reallife_campus_child_studying",

@@ -115,12 +115,6 @@ namespace RealLifeOverhaul.Ui
             string owed, string borrowed, string repaid)
         {
             WorkBands.AddIfAny(form.Left, WorkBands.Tiles(w.T("reallife_work_band_at_university", "At university"), icons, degrees, hints, paid));
-            if (!string.IsNullOrEmpty(taught))
-            {
-                var tutoring = new WorkFormBand { Title = w.T("reallife_work_band_tutoring", "Tutoring given") };
-                tutoring.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_taught_time", "Time with pupils"), Value = taught });
-                form.Left.Add(tutoring);
-            }
             if (!string.IsNullOrEmpty(borrowed))
             {
                 var loan = new WorkFormBand { Title = w.T("reallife_work_band_loan", "Student loan") };
@@ -129,6 +123,73 @@ namespace RealLifeOverhaul.Ui
                 loan.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_loan_repaid", "Repaid"), Value = repaid });
                 form.Right.Add(loan);
             }
+            if (!string.IsNullOrEmpty(taught))
+            {
+                // in the column that is shorter: the degrees and the study on the left already run longer than the funds and the loan on the right
+                var tutoring = new WorkFormBand { Title = w.T("reallife_work_band_tutoring", "Tutoring given") };
+                tutoring.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_taught_time", "Time with pupils"), Value = taught });
+                form.Right.Add(tutoring);
+            }
+        }
+
+        /// <summary>
+        /// What the whole catalogue holds that a subject filter hides, made from the course rows' own figures (the fee and the length in days, in their values): the
+        /// cheapest courses and the shortest. One maker for the live courses and the previews.
+        /// </summary>
+        public static void Picks(UtilitiesWords w, List<WorkFormBand> into, List<WorkRow> rows)
+        {
+            if (rows.Count < 4)
+            {
+                return;
+            }
+            for (int pass = 0; pass < 2; pass++)
+            {
+                int by = pass;   // 0: the fee, 1: the length
+                var order = new List<WorkRow>(rows);
+                order.RemoveAll(r => r.Values.Length < 2 || (by == 1 && r.Values[1] <= 0));
+                order.Sort((a, b) => a.Values[by] != b.Values[by] ? a.Values[by].CompareTo(b.Values[by]) : a.Id.CompareTo(b.Id));
+                var band = new WorkFormBand { Title = pass == 0 ? w.T("reallife_work_band_cheapest", "Cheapest to take") : w.T("reallife_work_band_shortest", "Shortest courses") };
+                for (int i = 0; i < order.Count && i < 3; i++)
+                {
+                    band.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Icon = order[i].Icon, Label = order[i].Name, Hint = order[i].Sub,
+                        Value = pass == 0 ? order[i].FootRight : order[i].FootLeft });
+                }
+                WorkBands.AddIfAny(into, band);
+            }
+        }
+
+        /// <summary>
+        /// The transcript in numbers, made from its own lines: the best and the lowest exam, and the attendance on average. Left out with no graded exam to say it of,
+        /// so the figures are never about nothing.
+        /// </summary>
+        public static void MarkFigures(UtilitiesWords w, WorkStatement s)
+        {
+            int graded = 0, best = 0, lowest = 100, seen = 0, attended = 0;
+            for (int t = 0; t < s.Terms.Count; t++)
+            {
+                for (int i = 0; i < s.Terms[t].Marks.Count; i++)
+                {
+                    WorkMark m = s.Terms[t].Marks[i];
+                    if (m.ExamGrade >= 0)
+                    {
+                        graded++;
+                        best = Math.Max(best, m.ExamGrade);
+                        lowest = Math.Min(lowest, m.ExamGrade);
+                    }
+                    if (m.AttendanceGrade >= 0)
+                    {
+                        seen++;
+                        attended += m.AttendanceGrade;
+                    }
+                }
+            }
+            if (graded == 0)
+            {
+                return;
+            }
+            s.Below.Add(WorkBands.Pairs(w.T("reallife_work_band_marks_numbers", "Your marks in numbers"),
+                new[] { w.T("reallife_work_marks_best", "Best exam"), w.T("reallife_work_marks_lowest", "Lowest exam"), w.T("reallife_work_marks_attendance", "Attendance on average") },
+                new[] { best + "%", lowest + "%", (seen > 0 ? attended / seen : 0) + "%" }));
         }
 
         /// <summary>The schools page's foot, made from its rows: the schools with the best results, and the ones with the most places free.</summary>
@@ -152,20 +213,38 @@ namespace RealLifeOverhaul.Ui
             byResults.Sort((a, b) => t.Rows[b].Values[3].CompareTo(t.Rows[a].Values[3]));
             byFree.Sort((a, b) => free[b].CompareTo(free[a]));
             var best = new WorkFormBand { Title = w.T("reallife_work_band_best_results", "Best results") };
-            for (int k = 0; k < byResults.Count && k < 3; k++)
+            for (int k = 0; k < byResults.Count && k < 4; k++)
             {
                 WorkRow r = t.Rows[byResults[k]];
                 best.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Icon = UiIcon.Building, Label = r.Name, Hint = r.Cells[1], Value = r.Values[3].ToString() + "%" });
             }
             t.Below.Add(best);
             var freeBand = new WorkFormBand { Title = w.T("reallife_work_band_free_places", "Most places free") };
-            for (int k = 0; k < byFree.Count && k < 3; k++)
+            for (int k = 0; k < byFree.Count && k < 4; k++)
             {
                 WorkRow r = t.Rows[byFree[k]];
                 freeBand.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Icon = UiIcon.Building, Label = r.Name, Hint = r.Cells[1],
                     Value = w.F("reallife_work_n_free", "{n} free", "n", free[byFree[k]].ToString()) });
             }
             t.Below.Add(freeBand);
+            // the schools fullest against their places: the ones a family waits longest for
+            var fullest = new List<int>(n);
+            var share = new int[n];
+            for (int i = 0; i < n; i++)
+            {
+                string[] parts = (t.Rows[i].Cells.Length > 2 ? t.Rows[i].Cells[2] : string.Empty).Split('/');
+                share[i] = parts.Length == 2 && int.TryParse(parts[0].Trim(), out int pupils) && int.TryParse(parts[1].Trim(), out int places) && places > 0 ? pupils * 100 / places : 0;
+                fullest.Add(i);
+            }
+            fullest.Sort((a, b) => share[b].CompareTo(share[a]));
+            var crowded = new WorkFormBand { Title = w.T("reallife_work_band_most_full", "Fullest against their places") };
+            for (int k = 0; k < fullest.Count && k < 4; k++)
+            {
+                WorkRow r = t.Rows[fullest[k]];
+                crowded.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Icon = UiIcon.Building, Label = r.Name, Hint = r.Cells[1],
+                    Value = w.F("reallife_work_n_percent_full", "{n}% full", "n", share[fullest[k]].ToString()) });
+            }
+            t.Below.Add(crowded);
         }
     }
 }

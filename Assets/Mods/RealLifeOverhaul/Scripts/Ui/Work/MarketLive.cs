@@ -246,6 +246,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 t.Rows.Add(r);
             }
+            MarketBands.Market(w, t.Below, t.Rows);
             return t;
         }
 
@@ -463,6 +464,7 @@ namespace RealLifeOverhaul.Ui
                 t.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_profit", "Profit at worth"), HustleText.Money(worthAll - paidAll)));
             }
             SalesFoot(t, s);
+            OwnedFoot(t, d, s);
             WorkRow chosen = WorkTabPages.ChosenRow(t, view);
             Owned mine = chosen != null ? s.Item(chosen.Id) : null;
             if (mine != null && (mine.State == OwnedState.Kept || mine.State == OwnedState.Listed))
@@ -489,7 +491,7 @@ namespace RealLifeOverhaul.Ui
                 if (g.Stage == GigStage.Done && clients.Count < 3)
                 {
                     clients.Add(g.Client);
-                    hints.Add(HustleText.Gig(g.Kind) + ", " + FinanceText.Day(g.From / 24));
+                    hints.Add(HustleText.Gig(g.Kind));   // the kind alone: with the stars and the pay at the right a longer line is cut in some languages
                     pays.Add(HustleText.Money(g.Pay));
                     halves.Add(Math.Max(0, Math.Min(10, g.Rating * 2)));
                 }
@@ -498,6 +500,90 @@ namespace RealLifeOverhaul.Ui
             if (s.JobsDone > 0 || s.Ratings.Count > 0)
             {
                 t.Below.Add(MarketBands.Standing(w, (s.Rating / 1000f).ToString("0.0", Inv), s.JobsDone, late));
+            }
+            ByKindFoot(t, s);
+            if (s.Ratings.Count > 0)
+            {
+                var counts = new int[5];
+                for (int i = 0; i < s.Ratings.Count; i++)
+                {
+                    counts[Math.Max(1, Math.Min(5, s.Ratings[i])) - 1]++;
+                }
+                t.Below.Add(MarketBands.Rated(w, counts));
+            }
+            HelpersFoot(t, s);
+        }
+
+        private static readonly UiIcon[] KindIcons = { UiIcon.Drop, UiIcon.Wrench, UiIcon.Trash, UiIcon.Truck };   // by GigKind: detailing, handyman, junk, moving
+
+        // The visits done, by kind of job, the best paying first: how many, the stars on average and what they paid.
+        private void ByKindFoot(WorkTab t, HustleState s)
+        {
+            UtilitiesWords w = W;
+            var found = new List<int[]>(4);   // kind, done, pay, stars
+            var kinds = new List<string>(3);
+            var hints = new List<string>(3);
+            var icons = new List<UiIcon>(3);
+            var pays = new List<string>(3);
+            foreach (GigKind kind in Enum.GetValues(typeof(GigKind)))
+            {
+                int done = 0, pay = 0, stars = 0;
+                for (int i = 0; i < s.Gigs.Count; i++)
+                {
+                    if (s.Gigs[i].Stage == GigStage.Done && s.Gigs[i].Kind == kind)
+                    {
+                        done++;
+                        pay += s.Gigs[i].Pay;
+                        stars += s.Gigs[i].Rating;
+                    }
+                }
+                if (done > 0)
+                {
+                    found.Add(new[] { (int)kind, done, pay, stars });
+                }
+            }
+            found.Sort((a, b) => b[2].CompareTo(a[2]));
+            for (int i = 0; i < found.Count && i < 3; i++)
+            {
+                int[] f = found[i];
+                icons.Add(f[0] < KindIcons.Length ? KindIcons[f[0]] : UiIcon.Wrench);
+                kinds.Add(HustleText.Gig((GigKind)f[0]));
+                hints.Add(w.F("reallife_work_kind_line", "{n} done, {stars} stars on average", "n", f[1].ToString(Inv), "stars", (f[3] / (float)f[1]).ToString("0.0", Inv)));
+                pays.Add(HustleText.Money(f[2]));
+            }
+            WorkBands.AddIfAny(t.Below, MarketBands.ByKind(w, icons.ToArray(), kinds.ToArray(), hints.ToArray(), pays.ToArray()));
+        }
+
+        // The helpers sent and what they took, and the last seven days of visits.
+        private void HelpersFoot(WorkTab t, HustleState s)
+        {
+            UtilitiesWords w = W;
+            int sent = 0, paid = 0, rated = 0, ratings = 0, week = 0, weekPay = 0, late = 0;
+            int today = SaveGameManager.Current != null ? SaveGameManager.Current.Day : 0;
+            for (int i = 0; i < s.Gigs.Count; i++)
+            {
+                Gig g = s.Gigs[i];
+                if (g.Stage == GigStage.Done && g.HelperFee > 0)
+                {
+                    sent++;
+                    paid += g.HelperFee;
+                    rated += g.HelperRating > 0 ? 1 : 0;
+                    ratings += g.HelperRating;
+                }
+                if (g.Stage == GigStage.Done && g.From / 24 > today - 7)
+                {
+                    week++;
+                    weekPay += g.Pay;
+                    late += g.Late ? 1 : 0;
+                }
+            }
+            if (sent > 0)
+            {
+                t.Below.Add(MarketBands.Helpers(w, sent.ToString(Inv), HustleText.Money(paid), rated > 0 ? (ratings / (float)rated).ToString("0.0", Inv) : WorkBuilder.NotYet(w)));
+            }
+            if (s.JobsDone > 0)
+            {
+                t.Below.Add(MarketBands.LastWeek(w, week.ToString(Inv), HustleText.Money(weekPay), late.ToString(Inv)));
             }
         }
 
@@ -512,7 +598,7 @@ namespace RealLifeOverhaul.Ui
             var values = new string[n];
             for (int i = 0; i < n; i++)
             {
-                Sale sale = s.Sales[s.Sales.Count - 1 - i];   // the newest last in the record: the newest first here
+                Sale sale = s.Sales[i];   // the record keeps the newest at its head (HustleState.Sold)
                 icons[i] = WorkGlyphs.Thing(sale.Thing, sale.Car);
                 things[i] = HustleText.Thing(sale.Thing, sale.Car);
                 hints[i] = w.F("reallife_work_sold_to", "To {buyer}, {day}", "buyer", sale.Buyer, "day", FinanceText.Day(sale.Day));
@@ -523,6 +609,91 @@ namespace RealLifeOverhaul.Ui
             {
                 t.Below.Add(MarketBands.Trade(w, HustleText.Money(s.Profit), s.RepairXp, s.Sales.Count));
             }
+        }
+
+        // What of the player's is on sale now and what is on its way to them: the foot of Yours and of Offers, from the things as the Marketplace keeps them.
+        private void OwnedFoot(WorkTab t, HustleDirector d, HustleState s)
+        {
+            UtilitiesWords w = W;
+            var sale = new List<Owned>(3);
+            var way = new List<Owned>(3);
+            for (int i = 0; i < s.Items.Count; i++)
+            {
+                Owned o = s.Items[i];
+                if (o.State == OwnedState.Listed && sale.Count < 3)
+                {
+                    sale.Add(o);
+                }
+                else if ((o.State == OwnedState.Waiting || o.State == OwnedState.Delivering) && way.Count < 3)
+                {
+                    way.Add(o);
+                }
+            }
+            WorkBands.AddIfAny(t.Below, MarketBands.OnSale(w, IconsOf(sale), NamesOf(sale), HintsOf(sale, d, true), AsksOf(sale, false)));
+            WorkBands.AddIfAny(t.Below, MarketBands.OnTheWay(w, IconsOf(way), NamesOf(way), HintsOf(way, d, false), AsksOf(way, true)));
+        }
+
+        private static UiIcon[] IconsOf(List<Owned> list)
+        {
+            var icons = new UiIcon[list.Count];
+            for (int i = 0; i < icons.Length; i++)
+            {
+                icons[i] = WorkGlyphs.Thing(list[i].Thing, list[i].Car);
+            }
+            return icons;
+        }
+
+        private static string[] NamesOf(List<Owned> list)
+        {
+            var names = new string[list.Count];
+            for (int i = 0; i < names.Length; i++)
+            {
+                names[i] = HustleText.Thing(list[i].Thing, list[i].Car);
+            }
+            return names;
+        }
+
+        // For a thing on sale what it is worth now; for one on its way when to collect it or that it is coming.
+        private string[] HintsOf(List<Owned> list, HustleDirector d, bool onSale)
+        {
+            var hints = new string[list.Count];
+            for (int i = 0; i < hints.Length; i++)
+            {
+                hints[i] = onSale ? W.F("reallife_work_worth_line", "Worth {worth} now", "worth", HustleText.Money(d.WorthOf(list[i]))) : StateOf(list[i]);
+            }
+            return hints;
+        }
+
+        // The figure at a tile's right: the asking price of a thing on sale, what was paid for one on its way.
+        private static string[] AsksOf(List<Owned> list, bool paid)
+        {
+            var values = new string[list.Count];
+            for (int i = 0; i < values.Length; i++)
+            {
+                values[i] = HustleText.Money(paid ? list[i].Paid : list[i].Asking);
+            }
+            return values;
+        }
+
+        // The sales on record in numbers: the foot of Offers.
+        private void SalesNumbersFoot(WorkTab t, HustleState s)
+        {
+            if (s.Sales.Count == 0)
+            {
+                return;
+            }
+            long price = 0, profit = 0;
+            int best = 0, above = 0;
+            for (int i = 0; i < s.Sales.Count; i++)
+            {
+                price += s.Sales[i].Price;
+                profit += s.Sales[i].Price - s.Sales[i].Cost;
+                best = Math.Max(best, s.Sales[i].Price);
+                above += s.Sales[i].Price > s.Sales[i].Cost ? 1 : 0;
+            }
+            int n = s.Sales.Count;
+            t.Below.Add(MarketBands.SalesNumbers(W, HustleText.Money((int)(price / n)), HustleText.Money(best), HustleText.Money((int)(profit / n)),
+                W.F("reallife_work_n_of_m", "{n} of {m}", "n", above.ToString(Inv), "m", n.ToString(Inv))));
         }
 
         private static int DefaultAskStep(Owned o, int worth) => o.State == OwnedState.Listed ? HustleRules.AskStepOf(worth, o.Asking) : HustleRules.AskStepAtWorth;
@@ -602,6 +773,8 @@ namespace RealLifeOverhaul.Ui
                 keptWorth[i] = HustleText.Money(d.WorthOf(kept[i]));
             }
             WorkBands.AddIfAny(t.Below, WorkBands.Tiles(w.T("reallife_work_band_kept", "Yours, not yet listed"), keptIcons, keptNames, keptHints, keptWorth));
+            OwnedFoot(t, d, s);
+            SalesNumbersFoot(t, s);
             if (s.Offers.Count > 0)
             {
                 int best = 0;
@@ -621,9 +794,9 @@ namespace RealLifeOverhaul.Ui
         {
             UtilitiesWords w = W;
             var t = new WorkTab { Shape = WorkShape.Table };
-            t.Columns = new[] { WorkBuilder.Col(w.T("reallife_work_col_client", "Client"), UiCellKind.Person), WorkBuilder.Col(w.T("reallife_work_col_job", "Job"), UiCellKind.Text, 152),
+            t.Columns = new[] { WorkBuilder.Col(w.T("reallife_work_col_client", "Client"), UiCellKind.Person), WorkBuilder.Col(w.T("reallife_work_col_job", "Job"), UiCellKind.Text, 176),
                 WorkBuilder.Col(w.T("reallife_work_col_when", "When"), UiCellKind.Text, 128), WorkBuilder.Col(w.T("reallife_work_col_pay", "Pay"), UiCellKind.Money, 80),
-                WorkBuilder.Col(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 184) };
+                WorkBuilder.Col(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 216) };
             t.EmptyTitle = w.T("reallife_work_no_gigs_title", "No visit is asked for today");
             t.EmptyBody = w.T("reallife_work_no_gigs", "Clients ask each morning for detailing, handyman jobs and moves.");
             t.EmptyIcon = UiIcon.Wrench;

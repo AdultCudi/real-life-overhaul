@@ -149,7 +149,7 @@ namespace RealLifeOverhaul.Ui
             var t = new WorkTab { Shape = WorkShape.Table };
             t.Columns = new[] { WorkBuilder.Col(w.T("reallife_work_col_role", "Role"), UiCellKind.Tile), WorkBuilder.Col(w.T("reallife_work_col_posts", "Posts to fill"), UiCellKind.Text, 112),
                 WorkBuilder.Col(w.T("reallife_work_col_applicants", "Applicants"), UiCellKind.Figure, 96, true), WorkBuilder.Col(w.T("reallife_work_col_pay_up_to", "Up to"), UiCellKind.Money, 88),
-                WorkBuilder.Col(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 136) };
+                WorkBuilder.Col(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 168) };
             t.EmptyTitle = w.T("reallife_work_no_ads_title", "No role is open");
             t.EmptyBody = w.T("reallife_work_no_ads", "Post an ad and applicants arrive over a few days.");
             t.EmptyIcon = UiIcon.ClipboardText;

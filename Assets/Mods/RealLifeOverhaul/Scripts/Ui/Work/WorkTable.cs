@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Ui
@@ -64,6 +64,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Aside(s, at, m, ax, y, aside, bottom - y);
             }
+            float panelBottom = Detail(s, at, m, x + w - panel, y, panel, bottom - y, keys);   // laid first: where it ends says where the bands under the list may stand
             float ty = Tools(s, at, m, tx, y, tw, keys);
             float room = bottom - ty;
             bool strip = m.Stats != null && m.Stats.Count > 0;
@@ -88,22 +89,21 @@ namespace RealLifeOverhaul.Ui
                     }
                     if (below)
                     {
-                        WorkForm.Strip(s, at, m.Below, tx, end + UiTokens.S4, tw, bottom, keys);
+                        WorkForm.Flow(s, at, m.Below, tx, end + UiTokens.S4, tw, x, w, panelBottom, bottom, keys);
                     }
-                    Detail(s, at, m, x + w - panel, y, panel, bottom - y, keys);
                     return;
                 }
             }
             UiDataTable.Lay(s, at, m.Table, tx, ty, tw, room, keys);
-            Detail(s, at, m, x + w - panel, y, panel, bottom - y, keys);
         }
 
-        private static void Detail(UiScene s, UiAt at, WorkTableModel m, float x, float y, float w, float h, IUiKeys keys)
+        private static float Detail(UiScene s, UiAt at, WorkTableModel m, float x, float y, float w, float h, IUiKeys keys)
         {
             if (m.Detail != null && w > 0f)
             {
-                WorkPanel.Lay(s, at, m.Detail, m.Actions, x, y, w, h, keys, m.Amounts, m.Why);
+                return WorkPanel.Lay(s, at, m.Detail, m.Actions, x, y, w, h, keys, m.Amounts, m.Why);
             }
+            return y;
         }
 
         // ------------------------------------------------------------------------------------------------- the tool row
@@ -167,7 +167,19 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Box(s, at, x, y, w, h, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
             float iy = y + UiTokens.S3;
             iy += WorkPanel.SectionHead(s, at, x + UiTokens.S4, iy, w - UiTokens.S4 * 2f, a.Title, a.Count) + UiTokens.S1;
-            float rowH = UiTokens.Row;
+            // a role's name is what tells two ads apart, so one that does not fit a line takes two (the rows all stand as high as that needs) and is never cut
+            float tile0 = UiTokens.ControlSmall, countMost = 0f;
+            for (int i = 0; i < a.Rows.Count; i++)
+            {
+                countMost = Math.Max(countMost, string.IsNullOrEmpty(a.Rows[i].Status) ? 0f : UiTextRules.Width(a.Rows[i].Status, UiStyle.BodyStrong) + UiTokens.S1);
+            }
+            float nameW = w - UiTokens.S3 * 3f - tile0 - countMost - (countMost > 0f ? UiTokens.S2 : 0f);
+            bool twoLines = false;
+            for (int i = 0; i < a.Rows.Count; i++)
+            {
+                twoLines |= UiTextRules.Width(a.Rows[i].Name ?? string.Empty, UiStyle.Title) > nameW;
+            }
+            float rowH = twoLines ? UiTokens.Row + UiTokens.S4 : UiTokens.Row;
             for (int i = 0; i < a.Rows.Count && iy + rowH < y + h; i++)
             {
                 WorkRow r = a.Rows[i];
@@ -180,9 +192,18 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Icon(s, inside.In(t), tx + (tile - UiTokens.Icon) / 2f, ty + (tile - UiTokens.Icon) / 2f, UiTokens.Icon, r.Icon, r.Tint, UiFlags.Middle | UiFlags.Centre, true);
                 float count = string.IsNullOrEmpty(r.Status) ? 0f : UiTextRules.Width(r.Status, UiStyle.BodyStrong) + UiTokens.S1;
                 float nx = tx + tile + UiTokens.S3, nw = x + w - UiTokens.S3 - nx - count - (count > 0f ? UiTokens.S2 : 0f);
-                float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)), top = iy + UiDraw.SnapDown((rowH - lh - sh) / 2f);
-                UiDraw.Text(s, inside, nx, top, nw, UiStyle.Title, UiRole.Text, WorkCards.FitWords(r.Name, UiStyle.Title, nw, 1), UiFlags.Truncate | UiFlags.Middle);
-                UiDraw.Text(s, inside, nx, top + lh, nw, UiStyle.Small, on ? UiRole.Text : UiRole.Text2, WorkCards.FitWords(r.Sub, UiStyle.Small, nw, 1), UiFlags.Truncate | UiFlags.Middle);
+                float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
+                int lines = UiTextRules.Width(r.Name ?? string.Empty, UiStyle.Title) > nw ? 2 : 1;
+                float top = iy + UiDraw.SnapDown((rowH - lh * lines - sh) / 2f);
+                if (lines == 2)
+                {
+                    UiDraw.Text(s, inside, nx, top, nw, UiStyle.Title, UiRole.Text, r.Name, UiFlags.Wrap | UiFlags.Truncate, 2);
+                }
+                else
+                {
+                    UiDraw.Text(s, inside, nx, top, nw, UiStyle.Title, UiRole.Text, WorkCards.FitWords(r.Name, UiStyle.Title, nw, 1), UiFlags.Truncate | UiFlags.Middle);
+                }
+                UiDraw.Text(s, inside, nx, top + lh * lines, nw, UiStyle.Small, on ? UiRole.Text : UiRole.Text2, WorkCards.FitWords(r.Sub, UiStyle.Small, nw, 1), UiFlags.Truncate | UiFlags.Middle);
                 if (count > 0f)
                 {
                     UiDraw.TextMiddle(s, inside, x + w - UiTokens.S3 - count, iy, rowH, count, UiStyle.BodyStrong, on ? UiRole.Text : UiRole.Text2, r.Status, UiFlags.Right);

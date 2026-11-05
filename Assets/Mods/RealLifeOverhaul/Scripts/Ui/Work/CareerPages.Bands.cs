@@ -45,6 +45,32 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>
+        /// What a new player already holds and is working towards, the other half of what an employer reads: the qualifications won (with the day and the grade) and
+        /// the courses under way (with how far each is). A band is left out when it has no line.
+        /// </summary>
+        public static void NewPlayerHolds(UtilitiesWords w, CareerFacts f, List<CareerSpell> quals, UiIcon[] studyIcons, string[] studyNames, string[] studyHints, string[] studyValues)
+        {
+            var held = new WorkFormBand { Title = w.T("reallife_work_band_held", "Qualifications you hold"), Count = quals.Count > 0 ? quals.Count.ToString() : null };
+            for (int i = 0; i < quals.Count && i < 2; i++)
+            {
+                held.Rows.Add(Tile(quals[i].Icon, quals[i].Title, quals[i].Employer, quals[i].Dates));
+            }
+            var under = new WorkFormBand { Title = w.T("reallife_work_band_under_way", "Courses under way") };
+            for (int i = 0; i < studyNames.Length && i < 2; i++)
+            {
+                under.Rows.Add(Tile(studyIcons[i], studyNames[i], studyHints[i], studyValues[i]));
+            }
+            if (under.Rows.Count > 0)
+            {
+                f.NewBelow.Add(under);
+            }
+            if (held.Rows.Count > 0)
+            {
+                f.NewBelow.Add(held);
+            }
+        }
+
+        /// <summary>
         /// A new player's support: the benefit paid and the recruitment office's registration while they last, and the last jobs held with how each ended. A band is left
         /// out when there is nothing to say in it.
         /// </summary>
@@ -72,6 +98,30 @@ namespace RealLifeOverhaul.Ui
             if (last.Rows.Count > 0)
             {
                 f.NewBelow.Insert(Math.Min(2, f.NewBelow.Count), last);
+            }
+        }
+
+        /// <summary>
+        /// Two sections of a post's detail that say what it is worth to the player: its pay against the pay they have now (only in work), and where its profession leads
+        /// (the next rungs with their pay). One builder for the posts of Jobs and of the applications made for them.
+        /// </summary>
+        public static void PostWorthSections(UtilitiesWords w, WorkRow r, string mine, int against, string[] nextTitles, string[] nextRates)
+        {
+            if (!string.IsNullOrEmpty(mine))
+            {
+                var pay = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_pay_against", "Against your pay") };
+                pay.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_your_pay_now", "Your pay now"), mine));
+                pay.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_difference", "The difference"), WorkBuilder.Percent(against)));
+                r.Sections.Add(pay);
+            }
+            var leads = new WorkSection { Part = WorkPart.Pairs, Title = w.T("reallife_work_where_leads", "Where it leads") };
+            for (int i = 0; i < nextTitles.Length; i++)
+            {
+                leads.Pairs.Add(new KeyValuePair<string, string>(nextTitles[i], nextRates[i]));
+            }
+            if (leads.Pairs.Count > 0)
+            {
+                r.Sections.Add(leads);
             }
         }
 
@@ -108,19 +158,19 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>The foot of the Professions list: the best paid posts open to the player, and the courses a door away (what each opens).</summary>
-        public static void ProfessionsBands(UtilitiesWords w, WorkTab pro, string[] posts, string[] pays, UiIcon[] icons, string[] courses, string[] opens)
+        public static void ProfessionsBands(UtilitiesWords w, WorkTab pro, string[] posts, string[] employers, string[] pays, UiIcon[] icons, string[] courses, string[] opens)
         {
             var best = new WorkFormBand { Title = w.T("reallife_work_band_best", "Best paid open to you") };
-            for (int i = 0; i < posts.Length && i < 3; i++)
+            for (int i = 0; i < posts.Length && i < 4; i++)
             {
-                best.Rows.Add(Tile(icons[i], posts[i], null, pays[i] + "/h"));
+                best.Rows.Add(Tile(icons[i], posts[i], employers[i], pays[i] + "/h"));   // the post over its employer: a title and a street in one line did not fit a band
             }
             if (best.Rows.Count > 0)
             {
                 pro.Below.Add(best);
             }
             var door = new WorkFormBand { Title = w.T("reallife_work_band_door_away", "A course away") };
-            for (int i = 0; i < courses.Length && i < 3; i++)
+            for (int i = 0; i < courses.Length && i < 4; i++)
             {
                 door.Rows.Add(Tile(UiIcon.Cap, courses[i], w.F("reallife_work_opens_post", "Opens: {post}", "post", opens[i]), null));
             }

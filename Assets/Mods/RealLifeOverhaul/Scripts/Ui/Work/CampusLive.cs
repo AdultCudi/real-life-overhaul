@@ -158,7 +158,7 @@ namespace RealLifeOverhaul.Ui
                 var r = new WorkRow { Id = c.Id, Icon = WorkGlyphs.Course(c), Name = CareersText.Course(c.Id), Sub = d.PlaceOf(c, StudyMode.FullTime),
                     Line = CareersText.About(c), Status = seatsLeft == 0 ? w.T("reallife_work_full", "Full") : tag,
                     Tone = seatsLeft == 0 ? UiRole.Warn : c.Kind == CourseKind.Short || c.Kind == CourseKind.Certificate ? UiRole.Muted : UiRole.Accent,
-                        Group = WorkGlyphs.Subject(c), FootRight = feeWords,
+                        Group = WorkGlyphs.Subject(c), FootRight = feeWords, Values = new[] { fee, c.Timetabled ? StudyRules.Length(c, StudyMode.FullTime) : 0 },
                     FootLeft = c.Timetabled ? WorkBuilder.Weeks(w, Math.Max(1, StudyRules.Length(c, StudyMode.FullTime) / 7)) : CareersText.Mode(StudyMode.Distance) };
                 if (c.Timetabled)
                 {
@@ -242,6 +242,7 @@ namespace RealLifeOverhaul.Ui
                 t.Rows.Add(r);
             }
             ChooseMode(d, f, t, view, w);
+            CampusBands.Picks(w, t.Below, t.Rows);
             return t;
         }
 
@@ -480,11 +481,12 @@ namespace RealLifeOverhaul.Ui
             s.TotalGpa = gpa >= 0 ? (gpa / 100f).ToString("0.0", Inv) : WorkBuilder.NotYet(w);
             var next = new List<CourseDef>(3);
             Candidates(f, -1, 3, next);
-            WorkFormBand nextBand = CampusBands.CourseTiles(w.T("reallife_work_band_courses_next", "Courses you could take next"), CourseNames(next), CourseAdds(w, next, -1), CourseFees(d, next), 2);
+            WorkFormBand nextBand = CampusBands.CourseTiles(w.T("reallife_work_band_courses_next", "Courses you could take next"), CourseNames(next), CourseAdds(w, next, -1), CourseFees(d, next), 1);
             if (nextBand.Rows.Count > 0)
             {
                 s.Below.Add(nextBand);
             }
+            CampusBands.MarkFigures(w, s);
             var quarters = new List<int>(8);
             var averages = new List<int>(8);
             if (RosterRules.ByTerm(marks, GameCalendar.DaysPerYear, quarters, averages) >= 2)

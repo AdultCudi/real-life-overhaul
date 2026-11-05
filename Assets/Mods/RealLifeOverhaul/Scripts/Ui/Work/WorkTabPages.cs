@@ -237,6 +237,7 @@ namespace RealLifeOverhaul.Ui
             var m = new WorkCardsModel { SearchHint = t.Search, Query = v.Query, Cards = shown.ToArray(), Chosen = at, Offset = v.Offset, Reveal = v.Reveal, EmptyTitle = t.EmptyTitle,
                 EmptyBody = t.EmptyBody, EmptyIcon = t.EmptyIcon, SortLabel = t.SortWord };
             m.Chips = Chips(b, t, v, w, out m.ChosenChip);
+            m.Below = t.Below;
             var panelActs = new List<UiActionModel>(4);
             if (chosen != null)
             {

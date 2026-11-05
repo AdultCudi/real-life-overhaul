@@ -165,6 +165,11 @@ internal static partial class UiSamples
             CareerPages.NewPlayerSupport(w, f, "$310", SDay(w, 440), SDay(w, 431), new[] { UiIcon.Package, UiIcon.Coffee },
                 new[] { SRank(w, "warehouse", 1), SRank(w, "bar", 0) }, new[] { "Harbourside Freight HSF", "The Anchor" },
                 new[] { Sx(w, "reallife_work_leaving_redundant"), Sx(w, "reallife_work_leaving_resigned") });
+            CareerPages.NewPlayerHolds(w, f, new List<CareerSpell>
+            {
+                new CareerSpell { Title = SCourse(w, "forklift"), Employer = SDay(w, 150), Dates = Sx(w, "reallife_study_grade_3"), Icon = UiIcon.Cap },
+                new CareerSpell { Title = SCourse(w, "customer_service"), Employer = SDay(w, 205), Dates = Sx(w, "reallife_study_grade_2"), Icon = UiIcon.Cap }
+            }, new[] { UiIcon.Coffee }, new[] { SCourse(w, "barista") }, new[] { w.T("reallife_work_under_way", "Under way") }, new[] { w.F("reallife_work_attended_pct", "{n}% attended", "n", "100") });
         }
         return f;
     }
@@ -251,6 +256,16 @@ internal static partial class UiSamples
                 terms.Pairs.Add(new KeyValuePair<string, string>(w.T("reallife_work_answer_by", "Answer by"), SDay(w, answerDay)));
             }
             r.Sections.Add(terms);
+            {
+                var nextTitles = new List<string>(2);
+                var nextRates = new List<string>(2);
+                for (int up = 1; up <= 2 && WkEn.ContainsKey("reallife_pro_rank_" + prof + "_" + (rank + up)); up++)
+                {
+                    nextTitles.Add(SRank(w, prof, rank + up));
+                    nextRates.Add(SPerHour(w, WkRate((int)sent[i][7] * (10 + 3 * up) / 10)));
+                }
+                CareerPages.PostWorthSections(w, r, SPerHour(w, "$21.50"), (int)System.Math.Round(((int)sent[i][7] - 2150) * 100.0 / 2150), nextTitles.ToArray(), nextRates.ToArray());
+            }
             if (live)
             {
                 var also = new WorkSection { Part = WorkPart.People, Title = w.T("reallife_work_also_applied", "Also applied"), Note = w.F("reallife_work_n_people", "{n} people", "n", "2") };
@@ -338,12 +353,16 @@ internal static partial class UiSamples
         pro.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_open_posts", "Open posts"), posts.ToString()));
         pro.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_open_to_you", "Open to you"), openTo.ToString()));
         pro.Stats.Add(new KeyValuePair<string, string>(w.T("reallife_work_stat_pay_range", "Starting pay"), Sf(w, "reallife_career_row_hours", "from", "$16.50", "to", "$24.00")));
-        CareerPages.ProfessionsBands(w, pro, new[] { SRank(w, "warehouse", 2) + ", Harbourside Freight HSF", SRank(w, "accountancy", 0) + ", Uptown Savings", SRank(w, "chef", 0) + ", Burger Barn, Broadway" },
-            new[] { "$33.00", "$22.00", "$19.00" }, new[] { UiIcon.Trophy, UiIcon.Bank, UiIcon.ForkKnife },
-            new[] { SCourse(w, "forklift"), SCourse(w, "customer_service"), SCourse(w, "business") }, new[] { SRank(w, "guard", 0), SRank(w, "nursing", 0), SRank(w, "it_support", 0) });
-        CareerPages.ProfessionsBands(w, f.Jobs, new[] { SRank(w, "warehouse", 2) + ", Harbourside Freight HSF", SRank(w, "accountancy", 0) + ", Uptown Savings", SRank(w, "chef", 0) + ", Burger Barn, Broadway" },
-            new[] { "$33.00", "$22.00", "$19.00" }, new[] { UiIcon.Trophy, UiIcon.Bank, UiIcon.ForkKnife },
-            new[] { SCourse(w, "forklift"), SCourse(w, "customer_service"), SCourse(w, "business") }, new[] { SRank(w, "guard", 0), SRank(w, "nursing", 0), SRank(w, "it_support", 0) });
+        CareerPages.ProfessionsBands(w, pro, new[] { SRank(w, "warehouse", 2), SRank(w, "accountancy", 0), SRank(w, "chef", 0), SRank(w, "bar", 0) },
+            new[] { "Harbourside Freight HSF", "Uptown Savings", "Burger Barn, Broadway", "Brewed Beans, 5th Avenue" },
+            new[] { "$33.00", "$22.00", "$19.00", "$16.50" }, new[] { UiIcon.Trophy, UiIcon.Bank, UiIcon.ForkKnife, UiIcon.Coffee },
+            new[] { SCourse(w, "forklift"), SCourse(w, "customer_service"), SCourse(w, "business"), SCourse(w, "bookkeeping") },
+            new[] { SRank(w, "guard", 0), SRank(w, "nursing", 0), SRank(w, "it_support", 0), SRank(w, "accountancy", 1) });
+        CareerPages.ProfessionsBands(w, f.Jobs, new[] { SRank(w, "warehouse", 2), SRank(w, "accountancy", 0), SRank(w, "chef", 0), SRank(w, "bar", 0) },
+            new[] { "Harbourside Freight HSF", "Uptown Savings", "Burger Barn, Broadway", "Brewed Beans, 5th Avenue" },
+            new[] { "$33.00", "$22.00", "$19.00", "$16.50" }, new[] { UiIcon.Trophy, UiIcon.Bank, UiIcon.ForkKnife, UiIcon.Coffee },
+            new[] { SCourse(w, "forklift"), SCourse(w, "customer_service"), SCourse(w, "business"), SCourse(w, "bookkeeping") },
+            new[] { SRank(w, "guard", 0), SRank(w, "nursing", 0), SRank(w, "it_support", 0), SRank(w, "accountancy", 1) });
     }
 
     private static void ManagementTab(UtilitiesWords w, CareerFacts f)

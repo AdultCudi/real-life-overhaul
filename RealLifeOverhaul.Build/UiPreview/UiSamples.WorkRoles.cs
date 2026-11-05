@@ -97,7 +97,7 @@ internal static partial class UiSamples
         var t = new WorkTab { Shape = WorkShape.Table };
         t.Columns = new[] { WkCol(w.T("reallife_work_col_role", "Role"), UiCellKind.Tile), WkCol(w.T("reallife_work_col_posts", "Posts to fill"), UiCellKind.Text, 112),
             WkCol(w.T("reallife_work_col_applicants", "Applicants"), UiCellKind.Figure, 96, true), WkCol(w.T("reallife_work_col_pay_up_to", "Up to"), UiCellKind.Money, 88),
-            WkCol(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 136) };
+            WkCol(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 168) };
         t.EmptyTitle = w.T("reallife_work_no_ads_title", "No role is open");
         t.EmptyBody = w.T("reallife_work_no_ads", "Post an ad and applicants arrive over a few days.");
         t.Acts.Add(WkAct(105, w.T("reallife_work_new_ad", "New ad"), UiButtonKind.Primary, UiIcon.Plus, null, true));
@@ -221,10 +221,10 @@ internal static partial class UiSamples
     private static WorkTab RolesApplicants(UtilitiesWords w, string state, WorkView v)
     {
         var t = new WorkTab { Shape = WorkShape.Table, Search = w.T("reallife_work_search_people", "Search people") };
-        t.Columns = new[] { WkCol(w.T("reallife_work_col_applicant", "Applicant"), UiCellKind.Person), WkCol(w.T("reallife_work_skill_craft", "Craft"), UiCellKind.Meter, 96),
-            WkCol(w.T("reallife_work_skill_ideas", "Ideas"), UiCellKind.Meter, 96), WkCol(w.T("reallife_work_skill_team", "Team"), UiCellKind.Meter,
-                96), WkCol(w.T("reallife_work_col_asks", "Asks"), UiCellKind.Money, 72),
-            WkCol(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 192) };
+        t.Columns = new[] { WkCol(w.T("reallife_work_col_applicant", "Applicant"), UiCellKind.Person), WkCol(w.T("reallife_work_skill_craft", "Craft"), UiCellKind.Meter, 80),
+            WkCol(w.T("reallife_work_skill_ideas", "Ideas"), UiCellKind.Meter, 80), WkCol(w.T("reallife_work_skill_team", "Team"), UiCellKind.Meter,
+                80), WkCol(w.T("reallife_work_col_asks", "Asks"), UiCellKind.Money, 64),
+            WkCol(w.T("reallife_work_col_state", "State"), UiCellKind.Chip, 176) };
         t.EmptyTitle = w.T("reallife_work_no_applicants_title", "No applicants yet");
         t.EmptyBody = w.T("reallife_work_no_applicants", "Applicants arrive over a few days and other firms hire too. A boosted ad brings more.");
         t.EmptyIcon = UiIcon.People;
@@ -234,9 +234,9 @@ internal static partial class UiSamples
         {
             aside.Rows.Add(new WorkRow { Id = i + 1, Icon = (UiIcon)WkAds[i][9], Name = AdName(w, WkAds[i]), Sub = (string)WkAds[i][2], Status = state == "applicants_none" ? "0" : ((int)WkAds[i][5]).ToString() });
         }
-        aside.List.Add(new WorkPerson { Name = "Kenji Mori", Role = RRole(w, "software_engineer") + ", " + SDay(w, 389), Ring = UiRole.Ok });
-        aside.List.Add(new WorkPerson { Name = "Jonah Reyes", Role = RRole(w, "qa_tester") + ", " + SDay(w, 394), Ring = UiRole.Ok });
-        aside.List.Add(new WorkPerson { Name = "Aiko Kato", Role = RRole(w, "data_centre_technician") + ", " + SDay(w, 398), Ring = UiRole.Ok });
+        aside.List.Add(new WorkPerson { Name = "Kenji Mori", Role = RRole(w, "software_engineer"), Ring = UiRole.Ok });
+        aside.List.Add(new WorkPerson { Name = "Jonah Reyes", Role = RRole(w, "qa_tester"), Ring = UiRole.Ok });
+        aside.List.Add(new WorkPerson { Name = "Aiko Kato", Role = RRole(w, "data_centre_technician"), Ring = UiRole.Ok });
         t.Aside = aside;
         if (state == "applicants_none")
         {
@@ -251,11 +251,21 @@ internal static partial class UiSamples
             new object[] { "Zoe Hartley", "Hudson Tech Institute", 49, 77, 79, 22, 0, 0 }, new object[] { "Jonas Weber", "Pixel Harbour Games", 68, 62, 74, 31, 3, 3 },
             new object[] { "Imani Okoro", "Hollowpine Interactive", 73, 59, 68, 33, 0, 0 }, new object[] { "Elif Demir", null, 52, 81, 70, 24, 0, 0 }
         };
+        var shownNames = new List<string>(12);
+        var shownFrom = new List<string>(12);
+        var shownCraft = new List<int>(12);
+        var shownAsk = new List<int>(12);
+        var shownAskText = new List<string>(12);
         for (int i = 0; i < people.Length; i++)
         {
             object[] p = people[i];
             string name = (string)p[0], firm = (string)p[1];
             int craft = (int)p[2], ideas = (int)p[3], team = (int)p[4], ask = (int)p[5], kind = (int)p[6], when = (int)p[7];
+            shownNames.Add(name);
+            shownFrom.Add(firm == null ? w.T("reallife_work_self_taught", "Self taught") : w.F("reallife_work_from_firm", "From {firm}", "firm", firm));
+            shownCraft.Add(craft);
+            shownAsk.Add(ask);
+            shownAskText.Add("$" + ask + ".00");
             bool competing = kind == 1;
             string stateWord = competing ? w.T("reallife_work_competing_offer", "Competing offer") : kind == 0 ? w.T("reallife_work_available_now", "Available now")
                 : w.F("reallife_work_notice_of", "Notice, {n}", "n", kind == 2 ? WorkBuilder.Weeks(w, when) : w.F("reallife_work_n_days", "{n} days", "n", when.ToString()));
@@ -298,6 +308,7 @@ internal static partial class UiSamples
             r.Acts.Add(WkAct(100, w.T("reallife_hire_button_shortlist", "Shortlist"), UiButtonKind.Secondary, UiIcon.Star, null, false, r.Id));
             t.Rows.Add(r);
         }
+        WorkBands.Candidates(t.Below, w, shownNames.ToArray(), shownFrom.ToArray(), shownCraft.ToArray(), shownAsk.ToArray(), shownAskText.ToArray());
         return t;
     }
 
@@ -446,11 +457,19 @@ internal static partial class UiSamples
         var wornNames = new List<string>(3);
         var wornRoles = new List<string>(3);
         var wornRights = new List<string>(3);
+        var allNames = new List<string>(8);
+        var allRoles = new List<string>(8);
+        var allJoined = new List<int>(8);
+        var allJoinedText = new List<string>(8);
         for (int i = 0; i < WkTeam.Length; i++)
         {
             object[] p = WkTeam[i];
             string name = (string)p[0], role = RRole(w, (string)p[1]) + ", " + RLevel(w, (string)p[2]);
             int craft = (int)p[3], pay = (int)p[4], morale = (int)p[5], going = (int)p[8], burnout = (int)p[9];
+            allNames.Add(name);
+            allRoles.Add(role);
+            allJoined.Add((int)p[7]);
+            allJoinedText.Add(SDay(w, (int)p[7]));
             var r = new WorkRow { Id = i + 1, Person = name, Name = name, Sub = (string)p[6], Ring = UiRole.Ok, Cells = new[] { null, role, craft.ToString(), "$" + pay, morale.ToString() },
                 Values = new[] { 0, 0, craft, 0, morale } };
             r.Open = WkAct(111, string.Empty, UiButtonKind.Secondary, UiIcon.Person, null, true, r.Id);
@@ -491,6 +510,7 @@ internal static partial class UiSamples
         }
         WorkBands.AddIfAny(t.Below, WorkBands.People(w.T("reallife_work_band_under_going", "Paid under the going rate"), gapNames.ToArray(), gapRoles.ToArray(), gapRights.ToArray(), 2));
         WorkBands.AddIfAny(t.Below, WorkBands.People(w.T("reallife_work_band_wearing", "Wearing thin"), wornNames.ToArray(), wornRoles.ToArray(), wornRights.ToArray(), 2));
+        WorkBands.Tenure(t.Below, w, allNames.ToArray(), allRoles.ToArray(), allJoined.ToArray(), allJoinedText.ToArray());
         return t;
     }
 

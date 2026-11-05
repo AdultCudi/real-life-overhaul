@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Ui
@@ -38,34 +38,130 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>
-        /// Bands side by side under a page's main part (up to three columns), each as high as its rows: what fills the foot of a short page. A band that
-        /// does not fit the room is left out whole. Returns the y under the tallest.
+        /// Bands side by side under a page's main part, in at most two rows, each row as high as its tallest band so the bottoms agree. The columns follow the
+        /// width (two, three, or four on a wide one) and the bands are spread over the rows evenly, so a row never stands nearly empty beside a full one. A row
+        /// that does not fit the room is left out whole. Returns the y under the last row laid.
         /// </summary>
         public static float Strip(UiScene s, UiAt at, List<WorkFormBand> bands, float x, float y, float w, float bottom, IUiKeys keys)
         {
-            if (bands == null || bands.Count == 0)
+            return Rows(s, at, bands, 0, bands == null ? 0 : bands.Count, x, y, w, bottom, ColumnsFor(w), 2, keys);
+        }
+
+        /// <summary>The columns of a row of bands for a width: wide enough for a band to read in two, three or four.</summary>
+        public static int ColumnsFor(float w) => w >= 1400f ? 4 : w >= 880f ? 3 : 2;
+
+        /// <summary>How many bands each row of <paramref name="n"/> holds under <paramref name="cols"/> columns: as few rows as fit, the bands shared evenly between them.</summary>
+        public static int[] RowCounts(int n, int cols)
+        {
+            if (n <= 0)
             {
-                return y;
+                return new int[0];
             }
-            int cols = Math.Min(w >= 880f ? 3 : 2, bands.Count);
-            float gap = cols == 2 ? UiTokens.S6 : UiTokens.S4, cw = UiDraw.SnapDown((w - gap * (cols - 1)) / cols), end = y;   // two bands stand under a form's two columns
+            int rows = (n + cols - 1) / cols;
+            var counts = new int[rows];
+            for (int r = 0; r < rows; r++)
+            {
+                counts[r] = n / rows + (r < n % rows ? 1 : 0);
+            }
+            return counts;
+        }
+
+        // Bands [from, to) in balanced rows from y down; a row that does not fit, and the rows after it, are left out. Returns the y under the last row.
+        private static float Rows(UiScene s, UiAt at, List<WorkFormBand> bands, int from, int to, float x, float y, float w, float bottom, int cols, int mostRows, IUiKeys keys)
+        {
+            float end = y;
+            if (bands == null || to <= from)
+            {
+                return end;
+            }
+            int[] counts = RowCounts(to - from, Math.Min(cols, to - from));
             var none = new UiActionModel[0];
             var noAmounts = new WorkAmount[0];
-            for (int i = 0; i < bands.Count && i < cols * 2; i++)
+            int at0 = from;
+            for (int row = 0; row < counts.Length && row < mostRows; row++)
             {
-                int col = i % cols;
-                float top = y + RowEnd(bands, cols, i, cw);
-                float h = Height(bands[i], cw);
-                if (top + h > bottom + 0.5f)
+                int n = counts[row];
+                float gap = n == 2 ? UiTokens.S6 : UiTokens.S4, cw = UiDraw.SnapDown((w - gap * (n - 1)) / n), h = 0f;   // two bands stand under a form's two columns
+                for (int k = 0; k < n; k++)
                 {
-                    continue;
+                    h = Math.Max(h, Height(bands[at0 + k], cw));
                 }
-                float bx = x + col * (cw + gap);
-                Band(s, at, bands[i], none, noAmounts, bx, top, col == cols - 1 ? x + w - bx : cw, h, keys);   // the last band reaches the right edge the list above reaches
-                end = Math.Max(end, top + h);
+                if (y + h > bottom + 0.5f)
+                {
+                    if (bottom - y < LeastBand)
+                    {
+                        break;
+                    }
+                    h = bottom - y;   // a row that is a little too tall for the room stands as high as the room is, and each band shows the rows that fit
+                }
+                for (int k = 0; k < n; k++)
+                {
+                    float bx = x + k * (cw + gap);
+                    Band(s, at, bands[at0 + k], none, noAmounts, bx, y, k == n - 1 ? x + w - bx : cw, h, keys);   // the last band reaches the right edge the list above reaches
+                }
+                end = y + h;
+                y = end + UiTokens.S4;
+                at0 += n;
             }
             return end;
         }
+
+        /// <summary>
+        /// The bands of a page that has a detail panel at its right: first the rows that stand beside it in the list's column (while a row ends no more than
+        /// <see cref="Slack"/> past the panel's foot), then the rest across the whole width under both, so neither column leaves a run of nothing under it.
+        /// <paramref name="y"/> is where the list's own parts end, <paramref name="panelBottom"/> the panel's foot (or its top where there is none). Returns the lowest y used.
+        /// </summary>
+        public static float Flow(UiScene s, UiAt at, List<WorkFormBand> bands, float x, float y, float w, float fullX, float fullW, float panelBottom, float bottom, IUiKeys keys)
+        {
+            float end = y;
+            if (bands == null || bands.Count == 0)
+            {
+                return end;
+            }
+            var none = new UiActionModel[0];
+            var noAmounts = new WorkAmount[0];
+            int next = 0, cols = ColumnsFor(w);
+            while (next < bands.Count && panelBottom > y)
+            {
+                int n = Math.Min(cols, bands.Count - next);
+                float gap = n == 2 ? UiTokens.S6 : UiTokens.S4, cw = UiDraw.SnapDown((w - gap * (n - 1)) / n), h = 0f;
+                for (int k = 0; k < n; k++)
+                {
+                    h = Math.Max(h, Height(bands[next + k], cw));
+                }
+                if (y + h > panelBottom + Slack)
+                {
+                    break;
+                }
+                if (y + h > bottom + 0.5f)
+                {
+                    if (bottom - y < LeastBand)
+                    {
+                        break;
+                    }
+                    h = bottom - y;   // as in a row across the page: a little too tall for the room, it stands as high as the room is
+                }
+                for (int k = 0; k < n; k++)
+                {
+                    float bx = x + k * (cw + gap);
+                    Band(s, at, bands[next + k], none, noAmounts, bx, y, k == n - 1 ? x + w - bx : cw, h, keys);
+                }
+                end = y + h;
+                y = end + UiTokens.S4;
+                next += n;
+            }
+            if (next < bands.Count)
+            {
+                float fy = Math.Max(y, panelBottom + UiTokens.S4);
+                end = Math.Max(end, Rows(s, at, bands, next, bands.Count, fullX, fy, fullW, bottom, ColumnsFor(fullW), 2, keys));
+            }
+            return end;
+        }
+
+        public const float LeastBand = 104f;   // px: a band's title and one tile, the least that is worth drawing
+
+        /// <summary>How far past a detail panel's foot a row of bands in the list's column may end: a panel and its neighbour agree to within about two rows.</summary>
+        public const float Slack = 96f;
 
         /// <summary>Bands one under another in a column down to the bottom, each as high as its rows; returns how many stood (a band that does not fit, and those after it, are left out).</summary>
         public static int Stack(UiScene s, UiAt at, List<WorkFormBand> bands, float x, float y, float w, float bottom, IUiKeys keys)
@@ -305,7 +401,8 @@ namespace RealLifeOverhaul.Ui
                     float tile = UiTokens.ControlSmall, ty = y + (h - tile) / 2f;
                     int t = UiDraw.Tile(s, at, x, ty, tile, UiRole.None, false);
                     UiDraw.Icon(s, at.In(t), x + (tile - UiTokens.Icon) / 2f, ty + (tile - UiTokens.Icon) / 2f, UiTokens.Icon, r.Icon, UiRole.None, UiFlags.Middle | UiFlags.Centre, true);
-                    float vw = string.IsNullOrEmpty(r.Value) ? 0f : Math.Min(w * 0.3f, UiTextRules.Width(r.Value, UiStyle.BodyStrong) + UiTokens.S1);
+                    // a leaving and its reference are long in some languages: the figure may take nearly half the row before the words on its left give way
+                    float vw = string.IsNullOrEmpty(r.Value) ? 0f : Math.Min(w * 0.45f, UiTextRules.Width(r.Value, UiStyle.BodyStrong) + UiTokens.S1);
                     float tx = x + tile + UiTokens.S3, tw = w - tile - UiTokens.S3 - vw - (vw > 0f ? UiTokens.S2 : 0f);
                     float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)), top = y + (h - lh - sh) / 2f;
                     UiDraw.Text(s, at, tx, top, tw, UiStyle.Title, UiRole.Text, r.Label, UiFlags.Truncate | UiFlags.Middle);

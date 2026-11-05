@@ -21,6 +21,7 @@ namespace RealLifeOverhaul.Ui
         public string SortLabel;                       // "Newest first", at the right of the tool row
         public string Why;
         public int Columns = 1, FirstList = -1;        // written by the layout: the grid's columns and its first list, to find the card a focus stands for
+        public List<WorkFormBand> Below = new List<WorkFormBand>(3);   // bands under a grid that a filter left short: what the whole catalogue holds that the filter hides
     }
 
     /// <summary>
@@ -46,7 +47,14 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
-                Grid(s, at, m, x, ty, gw - UiTokens.S4, bottom - ty);
+                // a filter that leaves a few cards leaves the rest of the page bare: the grid then ends under its last row and the bands of the whole catalogue stand beneath it
+                float room = bottom - ty, used = GridContent(m, gw - UiTokens.S4);
+                bool bands = m.Below.Count > 0 && used + UiTokens.S4 + WorkForm.LeastBand <= room;
+                Grid(s, at, m, x, ty, gw - UiTokens.S4, bands ? used : room);
+                if (bands)
+                {
+                    WorkForm.Strip(s, at, m.Below, x, ty + used + UiTokens.S4, gw - UiTokens.S4, bottom, keys);
+                }
             }
             if (m.Detail != null)
             {
@@ -78,6 +86,14 @@ namespace RealLifeOverhaul.Ui
         }
 
         private static float CardHeight(WorkRow r) => string.IsNullOrEmpty(r.Seller) ? Course : Listing;
+
+        // The height the cards take in the width the grid has, with no scroll.
+        private static float GridContent(WorkCardsModel m, float w)
+        {
+            int columns = Math.Max(1, (int)((w + UiTokens.S3) / (Least + UiTokens.S3)));
+            int rows = (m.Cards.Length + columns - 1) / columns;
+            return rows * (CardHeight(m.Cards[0]) + UiTokens.S3) - UiTokens.S3;
+        }
 
         private static void Grid(UiScene s, UiAt at, WorkCardsModel m, float x, float y, float w, float h)
         {

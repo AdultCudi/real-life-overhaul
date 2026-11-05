@@ -321,24 +321,15 @@ namespace RealLifeOverhaul.Ui
                 var shift = new WorkSection { Part = WorkPart.Pairs, Title = words.T("reallife_work_the_shift", "The shift") };
                 shift.Pairs.Add(new KeyValuePair<string, string>(words.T("reallife_work_shift_days", "Days"), CareersText.DaySpan(p.Days)));
                 r.Sections.Add(shift);
-                if (mine > 0)
-                {
-                    var against2 = new WorkSection { Part = WorkPart.Pairs, Title = words.T("reallife_work_pay_against", "Against your pay") };
-                    against2.Pairs.Add(new KeyValuePair<string, string>(words.T("reallife_work_your_pay_now", "Your pay now"), CareersText.Rate(mine)));
-                    against2.Pairs.Add(new KeyValuePair<string, string>(words.T("reallife_work_difference", "The difference"), WorkBuilder.Percent(against)));
-                    r.Sections.Add(against2);
-                }
                 // where the post leads: the next rungs of its profession and what they pay (the ranks' own rates at today's prices)
-                var leads = new WorkSection { Part = WorkPart.Pairs, Title = words.T("reallife_work_where_leads", "Where it leads") };
+                var nextTitles = new List<string>(2);
+                var nextRates = new List<string>(2);
                 for (int rank = o.Rank + 1; rank < p.Ranks.Length && rank <= o.Rank + 2; rank++)
                 {
-                    string rate = words.F("reallife_career_row_rate", "{rate} an hour", "rate", CareersText.Rate(Prices.At(p.Ranks[rank].Pay)));
-                    leads.Pairs.Add(new KeyValuePair<string, string>(CareersText.Title(o.Prof, rank), rate));
+                    nextTitles.Add(CareersText.Title(o.Prof, rank));
+                    nextRates.Add(words.F("reallife_career_row_rate", "{rate} an hour", "rate", CareersText.Rate(Prices.At(p.Ranks[rank].Pay))));
                 }
-                if (leads.Pairs.Count > 0)
-                {
-                    r.Sections.Add(leads);
-                }
+                CareerPages.PostWorthSections(words, r, mine > 0 ? CareersText.Rate(mine) : null, against, nextTitles.ToArray(), nextRates.ToArray());
                 d.AlsoApplied(o, others);
                 if (others.Count > 0)
                 {
@@ -445,6 +436,14 @@ namespace RealLifeOverhaul.Ui
             }
             CareerPages.NewPlayerSupport(words, _facts, paid ? CareersText.Money(Prices.At(wf.BenefitWeek)) : null, paid ? CareersText.Day(wf.BenefitUntil) : null,
                 wf.AgencyUntil > today ? CareersText.Day(wf.AgencyUntil) : null, icons.ToArray(), titles.ToArray(), hints.ToArray(), notes.ToArray());
+            var quals = new List<CareerSpell>(2);
+            ReadQualifications(study, quals, 2);
+            var underIcons = new List<UiIcon>(2);
+            var underNames = new List<string>(2);
+            var underHints = new List<string>(2);
+            var underValues = new List<string>(2);
+            ReadCoursesUnderWay(words, study, underIcons, underNames, underHints, underValues, 2);
+            CareerPages.NewPlayerHolds(words, _facts, quals, underIcons.ToArray(), underNames.ToArray(), underHints.ToArray(), underValues.ToArray());
         }
 
         // The vacancies a player with no job could go for first: the ones they qualify for, best pay first.
@@ -465,6 +464,8 @@ namespace RealLifeOverhaul.Ui
         {
             UtilitiesWords words = W;
             WorkTab tab = _facts.Applications;
+            CareersDirector director = CareersDirector.Instance;
+            var others = new List<Peer>(StandingRules.OthersPerPostMost);
             for (int i = w.Applications.Count - 1; i >= 0; i--)
             {
                 Careers.Application a = w.Applications[i];
@@ -483,6 +484,41 @@ namespace RealLifeOverhaul.Ui
                     Have = a.At == ApplyStep.Offered ? CareersText.Rate(Prices.At(a.Offer)) : null });
                 steps.Checks.Add(new WorkNeed { Words = words.T("reallife_work_step_start_desk", "Start at your desk"), Met = a.At == ApplyStep.Accepted, Pending = true });
                 r.Sections.Add(steps);
+                // the post as it was when the player applied, and who else applied for it: what the employer weighs the player's record against
+                var terms = new WorkSection { Part = WorkPart.Pairs, Title = words.T("reallife_work_the_post", "The post") };
+                string postRate = words.F("reallife_career_row_rate", "{rate} an hour", "rate", CareersText.Rate(Prices.At(a.Post.Pay)));
+                terms.Pairs.Add(new KeyValuePair<string, string>(words.T("reallife_career_col_pay", "Pay"), postRate));
+                if (a.Post.Def != null)
+                {
+                    terms.Pairs.Add(new KeyValuePair<string, string>(words.T("reallife_work_col_hours", "Hours"), CareersText.HourSpan(a.Post.Def)));
+                }
+                terms.Pairs.Add(new KeyValuePair<string, string>(words.T("reallife_work_applied", "Applied"), CareersText.Day(a.Day)));
+                if (a.Live)
+                {
+                    terms.Pairs.Add(new KeyValuePair<string, string>(words.T("reallife_work_answer_by", "Answer by"), CareersText.Day(a.Answer)));
+                }
+                r.Sections.Add(terms);
+                int mine = w.Job != null ? Prices.At(w.Job.Pay) : 0, pay = Prices.At(a.Post.Pay);
+                var nextTitles = new List<string>(2);
+                var nextRates = new List<string>(2);
+                for (int rank = a.Post.Rank + 1; a.Post.Def != null && rank < a.Post.Def.Ranks.Length && rank <= a.Post.Rank + 2; rank++)
+                {
+                    nextTitles.Add(CareersText.Title(a.Post.Prof, rank));
+                    nextRates.Add(words.F("reallife_career_row_rate", "{rate} an hour", "rate", CareersText.Rate(Prices.At(a.Post.Def.Ranks[rank].Pay))));
+                }
+                CareerPages.PostWorthSections(words, r, mine > 0 ? CareersText.Rate(mine) : null, mine > 0 ? (int)Math.Round((pay - mine) * 100.0 / mine) : 0,
+                    nextTitles.ToArray(), nextRates.ToArray());
+                if (a.Live && director != null && director.AlsoApplied(a.Post, others) > 0)
+                {
+                    var also = new WorkSection { Part = WorkPart.People, Title = words.T("reallife_work_also_applied", "Also applied"),
+                        Note = words.F("reallife_work_n_people", "{n} people", "n", others.Count.ToString(Inv)) };
+                    for (int k = 0; k < others.Count; k++)
+                    {
+                        also.People.Add(new WorkPerson { Name = others[k].Name, Role = CareersText.Title(a.Post.Prof, others[k].Rank) + ", " + words.F("reallife_work_performance_n",
+                            "performance {n}", "n", others[k].Score.ToString(Inv)), Right = CareersText.Day(others[k].Day), Ring = UiRole.Ok });
+                    }
+                    r.Sections.Add(also);
+                }
                 switch (a.At)
                 {
                     case ApplyStep.Sent:
@@ -650,19 +686,21 @@ namespace RealLifeOverhaul.Ui
             }
             var best = new List<WorkRow>(_facts.Jobs.Rows);
             WorkBuilder.BestPaid(best, 2);
-            int shown = Math.Min(3, best.Count);
+            int shown = Math.Min(4, best.Count);   // four tiles fill the foot of a list of eight or so rows
             var posts3 = new string[shown];
+            var employers = new string[shown];
             var pays = new string[shown];
             var icons = new UiIcon[shown];
             for (int i = 0; i < shown; i++)
             {
-                posts3[i] = best[i].Name + ", " + best[i].Sub;
+                posts3[i] = best[i].Name;
+                employers[i] = best[i].Sub;
                 pays[i] = best[i].Cells[3];
                 icons[i] = best[i].Icon;
             }
-            var courses = new List<string>(3);
-            var opens = new List<string>(3);
-            for (int i = 0; i < ProCatalogue.All.Length && courses.Count < 3; i++)
+            var courses = new List<string>(4);
+            var opens = new List<string>(4);
+            for (int i = 0; i < ProCatalogue.All.Length && courses.Count < 4; i++)
             {
                 Profession p = ProCatalogue.All[i];
                 if (!ProRules.Qualified(study, p, 0) && p.Ranks[0].Quals.Length > 0)
@@ -671,8 +709,8 @@ namespace RealLifeOverhaul.Ui
                     opens.Add(CareersText.Title(p.Id, 0));
                 }
             }
-            CareerPages.ProfessionsBands(words, tab, posts3, pays, icons, courses.ToArray(), opens.ToArray());
-            CareerPages.ProfessionsBands(words, _facts.Jobs, posts3, pays, icons, courses.ToArray(), opens.ToArray());   // a short, filtered list of jobs keeps them under it
+            CareerPages.ProfessionsBands(words, tab, posts3, employers, pays, icons, courses.ToArray(), opens.ToArray());
+            CareerPages.ProfessionsBands(words, _facts.Jobs, posts3, employers, pays, icons, courses.ToArray(), opens.ToArray());   // a short, filtered list of jobs keeps them under it
         }
 
         // ------------------------------------------------------------------------------------------------- doing

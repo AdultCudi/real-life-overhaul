@@ -475,6 +475,38 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------- the CV
 
+        // The qualifications won, in the record's order: the course, the day it ended and the grade. One reading for the CV and for a new player's page.
+        private static void ReadQualifications(StudyFile study, List<CareerSpell> into, int most)
+        {
+            for (int i = 0; i < study.Results.Count && into.Count < most; i++)
+            {
+                Enrolment e = study.Results[i];
+                if (e.Def != null && e.Stage == (int)EnrolStage.Passed)
+                {
+                    into.Add(new CareerSpell { Title = CareersText.Course(e.Course), Employer = CareersText.Day(e.Ended), Dates = CareersText.Grade(e.Def, e.Grade),
+                        Icon = WorkGlyphs.Course(e.Def) });
+                }
+            }
+        }
+
+        // The courses under way: the course, whether it is under way or its exam is open, and how much of it the player attended.
+        private static void ReadCoursesUnderWay(UtilitiesWords words, StudyFile study, List<UiIcon> icons, List<string> names, List<string> hints, List<string> values, int most)
+        {
+            for (int i = 0; i < study.Courses.Count && names.Count < most; i++)
+            {
+                Enrolment e = study.Courses[i];
+                if (e.Def == null)
+                {
+                    continue;
+                }
+                bool examOpen = e.At == EnrolStage.Exam || e.At == EnrolStage.Retake;
+                icons.Add(WorkGlyphs.Course(e.Def));
+                names.Add(CareersText.Course(e.Course));
+                hints.Add(examOpen ? words.T("reallife_work_exam_open", "Exam open") : words.T("reallife_work_under_way", "Under way"));
+                values.Add(e.Seen > 0 ? words.F("reallife_work_attended_pct", "{n}% attended", "n", (e.Done * 100 / e.Seen).ToString(Inv)) : words.T("reallife_work_not_started", "Not started"));
+            }
+        }
+
         private WorkTab CvTab(CareersDirector d, WorkFile w, StudyFile study)
         {
             UtilitiesWords words = W;
@@ -497,15 +529,7 @@ namespace RealLifeOverhaul.Ui
                     Icon = WorkGlyphs.Profession(s.Prof), Tone = s.Reference >= 3 ? UiRole.Ok : UiRole.Warn });
             }
             var quals = new List<CareerSpell>(5);
-            for (int i = 0; i < study.Results.Count && quals.Count < 5; i++)
-            {
-                Enrolment e = study.Results[i];
-                if (e.Def != null && e.Stage == (int)EnrolStage.Passed)
-                {
-                    quals.Add(new CareerSpell { Title = CareersText.Course(e.Course), Employer = CareersText.Day(e.Ended), Dates = CareersText.Grade(e.Def, e.Grade),
-                        Icon = WorkGlyphs.Course(e.Def) });
-                }
-            }
+            ReadQualifications(study, quals, 5);
             var skills = new List<string>(4);
             var values = new List<int>(4);
             var order = new List<int>(Skills.Count);
@@ -533,19 +557,7 @@ namespace RealLifeOverhaul.Ui
             var studyNames = new List<string>(3);
             var studyHints = new List<string>(3);
             var studyValues = new List<string>(3);
-            for (int i = 0; i < study.Courses.Count && studyNames.Count < 3; i++)
-            {
-                Enrolment e = study.Courses[i];
-                if (e.Def == null)
-                {
-                    continue;
-                }
-                bool examOpen = e.At == EnrolStage.Exam || e.At == EnrolStage.Retake;
-                studyIcons.Add(WorkGlyphs.Course(e.Def));
-                studyNames.Add(CareersText.Course(e.Course));
-                studyHints.Add(examOpen ? words.T("reallife_work_exam_open", "Exam open") : words.T("reallife_work_under_way", "Under way"));
-                studyValues.Add(e.Seen > 0 ? words.F("reallife_work_attended_pct", "{n}% attended", "n", (e.Done * 100 / e.Seen).ToString(Inv)) : words.T("reallife_work_not_started", "Not started"));
-            }
+            ReadCoursesUnderWay(words, study, studyIcons, studyNames, studyHints, studyValues, 3);
             string why = d.CanRetire();
             _facts.CanRetire = why == null;
             CareerPages.CvPage(words, t, _facts.Player, w.Job != null ? CareersText.Title(w.Job.Post.Prof, w.Job.Post.Rank) : null, w.Job != null ? CareersText.Employer(w.Job.Post.Employer) : null,

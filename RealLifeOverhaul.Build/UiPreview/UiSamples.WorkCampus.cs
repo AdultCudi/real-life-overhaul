@@ -84,7 +84,7 @@ internal static partial class UiSamples
             string timetable = Sf(w, "reallife_study_timetable", "days", SDays(w, c.D1, c.D2), "hour", c.Hour.ToString("00") + ":00");
             string tag = Sx(w, c.Kind == 0 ? "reallife_study_kind_short" : "reallife_study_kind_vocational");
             var r = new WorkRow { Id = i + 1, Icon = c.Icon, Name = SCourse(w, c.Key), Sub = Sx(w, "reallife_study_campus_school"), Line = Sx(w, "reallife_study_about_" + c.Key), Status = seats == 0 ? w.T("reallife_work_full", "Full") : tag,
-                Tone = seats == 0 ? UiRole.Warn : c.Kind == 0 ? UiRole.Muted : UiRole.Accent, Group = c.Group, NextLabel = w.T("reallife_work_next_class", "Next class"), NextValue = Sf(w, "reallife_work_timetable_short", "days", SDaysCard(w, c.D1, c.D2), "hour", c.Hour.ToString("00") + ":00"), FootLeft = weeks, FootRight = fee };
+                Tone = seats == 0 ? UiRole.Warn : c.Kind == 0 ? UiRole.Muted : UiRole.Accent, Group = c.Group, NextLabel = w.T("reallife_work_next_class", "Next class"), NextValue = Sf(w, "reallife_work_timetable_short", "days", SDaysCard(w, c.D1, c.D2), "hour", c.Hour.ToString("00") + ":00"), FootLeft = weeks, FootRight = fee, Values = new[] { c.Fee, c.Weeks * 7 } };
             r.Title = r.Name;
             r.HeadSub = r.Sub;
             r.Figures.Add(new KeyValuePair<string, string>(w.T("reallife_campus_col_length", "Length"), weeks));
@@ -123,6 +123,7 @@ internal static partial class UiSamples
             r.Acts.Add(WkAct(107, w.T("reallife_work_show_school", "Show school"), UiButtonKind.Secondary, UiIcon.Locate, null, true, r.Id));
             t.Rows.Add(r);
         }
+        CampusBands.Picks(w, t.Below, t.Rows);
         return t;
     }
 
@@ -168,13 +169,15 @@ internal static partial class UiSamples
                 {
                     entries.Add(new UiDiaryEntry { Day = day, Icon = UiIcon.Coffee, Title = w.F("reallife_work_diary_class", "Class: {course}", "course", barista), Short = barista, Value = "10:00" });
                 }
-                if ((weekday == 1 || weekday == 3) && day <= 23)
+                if (weekday == 1 || weekday == 3)   // the diploma runs for sixteen weeks: its classes go on to the month's end
                 {
                     entries.Add(new UiDiaryEntry { Day = day, Icon = UiIcon.Heart, Title = w.F("reallife_work_diary_class", "Class: {course}", "course", care), Short = care, Value = "09:00" });
                 }
             }
             entries.Add(new UiDiaryEntry { Day = 9, Icon = UiIcon.ClipboardText, Title = w.F("reallife_work_diary_homework", "Homework due: {course}", "course", care), Short = care });
             entries.Add(new UiDiaryEntry { Day = 17, Icon = UiIcon.ClipboardText, Title = w.F("reallife_work_diary_homework", "Homework due: {course}", "course", care), Short = care });
+            entries.Add(new UiDiaryEntry { Day = 24, Icon = UiIcon.ClipboardText, Title = w.F("reallife_work_diary_homework", "Homework due: {course}", "course", care), Short = care });
+            entries.Add(new UiDiaryEntry { Day = 31, Icon = UiIcon.ClipboardText, Title = w.F("reallife_work_diary_homework", "Homework due: {course}", "course", care), Short = care });
             entries.Add(new UiDiaryEntry { Day = 23, Icon = UiIcon.Scales, Title = w.F("reallife_work_diary_exam", "Exam: {course}", "course", barista), Short = barista, Value = "10:00" });
             entries.Sort((a, b) => a.Day.CompareTo(b.Day));   // in date order, as the live diary sorts it
         }
@@ -245,7 +248,8 @@ internal static partial class UiSamples
         s.Gains.Add(new WorkBar { Label = SSkill(w, "guarding"), Value = 25, Note = "+5" });
         s.Below.Add(CampusBands.CourseTiles(w.T("reallife_work_band_courses_next", "Courses you could take next"), new[] { SCourse(w, "bookkeeping"), SCourse(w, "coding_bootcamp") },
             new[] { w.F("reallife_work_course_adds", "+{n} {skill}", "n", "20", "skill", SSkill(w, "t:accounting")), w.F("reallife_work_course_adds", "+{n} {skill}", "n", "25", "skill", SSkill(w, "t:coding")) },
-            new[] { "$160", "$900" }, 2));
+            new[] { "$160", "$900" }, 1));
+        CampusBands.MarkFigures(w, s);
         return t;
     }
 

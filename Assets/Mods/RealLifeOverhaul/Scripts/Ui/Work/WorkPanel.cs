@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Ui
@@ -15,8 +15,8 @@ namespace RealLifeOverhaul.Ui
 
         public static float WidthFor(float w) => Math.Max(Least, Math.Min(Most, UiDraw.SnapDown(w * Share)));
 
-        /// <summary>Lays the panel into its box; the buttons come from the page's actions that are not chips.</summary>
-        public static void Lay(UiScene s, UiAt at, WorkRow r, UiActionModel[] actions, float x, float y, float w, float h, IUiKeys keys, WorkAmount[] amounts, string why = null)
+        /// <summary>Lays the panel into its box; the buttons come from the page's actions that are not chips. Returns the y of its foot.</summary>
+        public static float Lay(UiScene s, UiAt at, WorkRow r, UiActionModel[] actions, float x, float y, float w, float h, IUiKeys keys, WorkAmount[] amounts, string why = null)
         {
             int box = UiDraw.Box(s, at, x, y, w, h, UiRole.Band, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor);
             float ix = x + UiTokens.S4, iw = w - UiTokens.S4 * 2f, iy = y + UiTokens.S4;
@@ -87,6 +87,7 @@ namespace RealLifeOverhaul.Ui
                     right -= UiTokens.S3;
                 }
             }
+            return bottom;
         }
 
         // How many rows the buttons take: they stand from the right, and one that does not fit starts a row above.

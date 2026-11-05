@@ -78,7 +78,7 @@ namespace RealLifeOverhaul.Ui
                 Seeker hired = h.SeekerOf(a.Seeker);
                 if (a.Stage == (int)ApplyStage.Started && a.Start >= day - 30 && hired != null)
                 {
-                    aside.List.Add(new WorkPerson { Name = hired.P.Name, Role = TechText.Role(hired.P.Role) + ", " + TechText.Day(a.Start), Ring = UiRole.Ok });
+                    aside.List.Add(new WorkPerson { Name = hired.P.Name, Role = TechText.Role(hired.P.Role), Ring = UiRole.Ok });
                 }
             }
             aside.ListCount = aside.List.Count.ToString(Inv);
@@ -93,6 +93,11 @@ namespace RealLifeOverhaul.Ui
             t.EmptyBody = w.T("reallife_work_no_applicants", "Applicants arrive over a few days and other firms hire too. A boosted ad brings more.");
             t.EmptyIcon = UiIcon.People;
             int teamAverage = TeamAverage(d);
+            var shownNames = new List<string>(12);
+            var shownFrom = new List<string>(12);
+            var shownCraft = new List<int>(12);
+            var shownAsk = new List<int>(12);
+            var shownAskText = new List<string>(12);
             for (int i = 0; i < h.Applicants.Count; i++)
             {
                 Applicant a = h.Applicants[i];
@@ -102,6 +107,11 @@ namespace RealLifeOverhaul.Ui
                 {
                     continue;
                 }
+                shownNames.Add(s.P.Name);
+                shownFrom.Add(string.IsNullOrEmpty(s.Employer) ? w.T("reallife_work_self_taught", "Self taught") : w.F("reallife_work_from_firm", "From {firm}", "firm", s.Employer));
+                shownCraft.Add(s.CvMain);
+                shownAsk.Add(s.Ask);
+                shownAskText.Add(TechText.Rate(s.Ask));
                 bool competing = HireOffers.Competing(a, day);
                 bool found = (a.Revealed & HiringRules.RevealSkill) != 0;
                 UiRole tone = competing ? UiRole.Warn : s.Notice > 0 ? UiRole.Muted : UiRole.Ok;
@@ -154,6 +164,7 @@ namespace RealLifeOverhaul.Ui
                 r.Acts.Add(Act(Walk, a.Id, w.T("reallife_work_walk_away", "Let them go"), UiButtonKind.Destructive, UiIcon.Close));
                 t.Rows.Add(r);
             }
+            WorkBands.Candidates(t.Below, w, shownNames.ToArray(), shownFrom.ToArray(), shownCraft.ToArray(), shownAsk.ToArray(), shownAskText.ToArray());
             return t;
         }
 
@@ -613,6 +624,10 @@ namespace RealLifeOverhaul.Ui
             var wornNames = new List<string>(3);
             var wornRoles = new List<string>(3);
             var wornRights = new List<string>(3);
+            var allNames = new List<string>(8);
+            var allRoles = new List<string>(8);
+            var allJoined = new List<int>(8);
+            var allJoinedText = new List<string>(8);
             long payroll = 0;
             int moraleSum = 0, leaving = 0;
             for (int i = 0; i < d.People.Count && i < 60; i++)
@@ -638,6 +653,10 @@ namespace RealLifeOverhaul.Ui
                 }
                 string state = TalentRules.OfferOpen(f, day) ? TechText.T("reallife_roles_state_offer") : f.NoticeEnd > 0 ? TechText.T("reallife_roles_state_leaving", "day", f.NoticeEnd.ToString())
                     : f.RaiseAsk > 0 ? TechText.T("reallife_roles_state_asks", "percent", TechText.Bp(f.RaiseAsk)) : null;
+                allNames.Add(p.Name);
+                allRoles.Add(TechText.Role(f.Role) + ", " + TechText.Level(f.Level));
+                allJoined.Add(f.Joined);
+                allJoinedText.Add(TechText.Day(f.Joined));
                 var r = new WorkRow { Id = i, Person = p.Name, Name = p.Name, Sub = p.Business, Ring = state != null ? UiRole.Warn : UiRole.Ok,
                     Cells = new[] { null, TechText.Role(f.Role) + ", " + TechText.Level(f.Level), Math.Min(100, p.MainPoints).ToString(Inv), TechText.Rate(paid), (f.Morale / 10).ToString(Inv) },
                     Values = new[] { 0, 0, Math.Min(100, p.MainPoints), 0, Math.Max(0, Math.Min(100, f.Morale / 10)) }, Open = Act(OpenPerson, i,
@@ -672,6 +691,7 @@ namespace RealLifeOverhaul.Ui
             }
             WorkBands.AddIfAny(t.Below, WorkBands.People(w.T("reallife_work_band_under_going", "Paid under the going rate"), gapNames.ToArray(), gapRoles.ToArray(), gapRights.ToArray(), 2));
             WorkBands.AddIfAny(t.Below, WorkBands.People(w.T("reallife_work_band_wearing", "Wearing thin"), wornNames.ToArray(), wornRoles.ToArray(), wornRights.ToArray(), 2));
+            WorkBands.Tenure(t.Below, w, allNames.ToArray(), allRoles.ToArray(), allJoined.ToArray(), allJoinedText.ToArray());
             return t;
         }
 
