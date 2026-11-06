@@ -127,6 +127,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     sig = sig * 31 + (buttons[i] != null && buttons[i].name != null ? buttons[i].name.GetHashCode() : 0) + (buttons[i] != null && buttons[i].interactable ? 1 : 0);
                 }
+                sig = sig * 31 + (Meals.TakeoutButton.Offered(out _, out string eat) ? eat.GetHashCode() : 0);
                 LabelInfo[] labels = a.GetLabels();
                 sig = sig * 31 + (labels != null ? labels.Length : -1);
                 if (a.HasSlider())
@@ -228,6 +229,16 @@ namespace RealLifeOverhaul.Ui
                 button.Kind = kind == UiButtonKind.Primary ? UiButtonKind.Primary : UiButtonKind.Secondary;
                 strip.Add(button);
                 _strip.Add(b);
+            }
+            if (Meals.TakeoutButton.Offered(out UnityEngine.UI.Button eat, out string eatWords))
+            {
+                // Eat at a seat is a button the mod put in the game's panel; it is pressed as that button, so the meal is eaten as the panel's click eats it.
+                var info = new ButtonInfo("RealLifeOverhaul Takeout Eat", null, null, "blue", Guard.Wrap(() => UiWidgets.Hand(eat)), default(PlayerAction));
+                var button = new UiSideButton { Label = eatWords, Kind = UiButtonKind.Secondary, Key = UiAction.Count };
+                card.Add(button);
+                _card.Add(info);
+                strip.Add(button);
+                _strip.Add(info);
             }
             if (state == UiActivityState.NotStarted && a.HasTimeMachine())
             {

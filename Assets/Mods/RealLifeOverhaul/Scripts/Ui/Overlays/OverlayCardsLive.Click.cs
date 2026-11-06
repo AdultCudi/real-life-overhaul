@@ -225,6 +225,23 @@ namespace RealLifeOverhaul.Ui
                 m.AddAction(new UiOverlayAction { Label = UiText.T(playing ? "reallife_ui_overlay_mute" : "reallife_ui_overlay_unmute"),
                     Icon = playing ? UiIcon.Pause : UiIcon.Play, Disabled = !toggle.interactable });
             }
+            // A button put in the panel after the game made it (Dance) is the panel's own to the game, so it stands on the card too.
+            _found.Clear();
+            r.GetComponentsInChildren(false, _found);
+            for (int i = 0; i < _found.Count && m.ActionCount < UiOverlayModel.MostActions; i++)
+            {
+                Button b = _found[i];
+                if (b == null || b == next || b == toggle || !b.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+                string label = Plain(UiWidgets.Label(b));
+                if (!string.IsNullOrEmpty(label))
+                {
+                    _buttons[m.ActionCount] = b;
+                    m.AddAction(new UiOverlayAction { Label = label, Disabled = !b.interactable });
+                }
+            }
         }
 
         // The workstation's name: renamed through the game's own text field, focused here and mirrored in the strip while it is typed in.
