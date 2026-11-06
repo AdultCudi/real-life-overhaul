@@ -110,6 +110,9 @@ namespace RealLifeOverhaul.Tech
 
         public static bool Has(Cap c) => c != null && c.Acc.Open && !c.Acc.Wound;
 
+        /// <summary>Who is owed from a close or a sale: the venture firms and the public a listing sold shares to.</summary>
+        public static bool IsInvestor(int kind) => kind == (int)HolderKind.Vc || kind == (int)HolderKind.Public;
+
         /// <summary>What the firm holds by the ledger: raised, plus its own takings less costs, less what was lawfully taken out.</summary>
         public static long Balance(Cap c) => c.Acc.Raised + c.Acc.Own - c.Acc.Out;
 
@@ -654,7 +657,7 @@ namespace RealLifeOverhaul.Tech
             w.Owed = w.Bridge;
             for (int i = 0; i < c.Holders.Count; i++)
             {
-                w.Owed += c.Holders[i].Kind == (int)HolderKind.Vc ? pay[i] : 0L;
+                w.Owed += IsInvestor(c.Holders[i].Kind) ? pay[i] : 0L;
             }
             w.Paid = Math.Min(w.Owed, Math.Max(0L, wallet));
             w.Gap = w.Owed - w.Paid;

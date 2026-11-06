@@ -71,3 +71,4 @@ uptown	reallife_guide_uptown,reallife_guide_uptown_about	Uptown and Cedar Height
 utilities	reallife_guide_utilities	power, water and internet
 walking	reallife_guide_walking	walking
 rlo-interface	reallife_guide_ui	the RLO interface, its switch and its motion
+startup-exits	reallife_guide_tech_startups	selling, listing and the city startups as places: offers, bankers, roadshow, lock-up, founders and floors

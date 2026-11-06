@@ -56,6 +56,7 @@ namespace RealLifeOverhaul.Economy
             P + "tech_game_engine", P + "tech_game_certification", P + "tech_game_contractors", P + "tech_game_bonus", P + "tech_game_royalty",
             P + "tech_founding_fees", P + "tech_founding_expand", P + "tech_founding_reseller",   // a startup's incorporation, a neighbouring niche opened, a partner's cut of what it resells
             P + "tech_related_cost",   // what a firm pays another business of the player's for work, at the firm
+            P + "tech_listing_bankers",   // the bankers' retainer on the way to the market, at the firm
             P + "tech_desk_costs",   // what a desk session's answer costs: data, credits to customers, an award's fee, a power price fixed
             P + "tech_recruitment_ad", P + "tech_recruitment_checks", P + "tech_recruitment_search",
             P + "tech_recruitment_buyout", P + "tech_recruitment_buyout_paid",   // the second is a rival's money in, counted against the recruiting costs as a refund is
@@ -73,7 +74,7 @@ namespace RealLifeOverhaul.Economy
             P + "tech_game_advance", P + "tech_game_crowdfund",   // a publisher's advance against royalties and pledges: money in, never sales
             P + "tech_venture_bridge_interest", P + "tech_venture_bridge_loan", P + "tech_venture_diligence_fee", P + "tech_venture_fund",
             P + "tech_venture_fund_back", P + "tech_venture_investment", P + "tech_venture_raise", P + "tech_venture_return", P + "tech_venture_share_sale",
-            P + "tech_venture_dividend", P + "tech_venture_wind_down",
+            P + "tech_venture_dividend", P + "tech_venture_wind_down", P + "tech_venture_exit",
             P + "broadband_investment", P + "broadband_investment_sale",
             P + "ownbank_licence", P + "ownbank_investment_capital", P + "ownbank_investment_covered", P + "ownbank_investment_dividend",
             P + "ownbank_investment_kept", P + "ownbank_investment_pay", P + "ownbank_investment_sale",

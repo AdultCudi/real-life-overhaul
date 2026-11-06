@@ -17,6 +17,8 @@ namespace RealLifeOverhaul.Tech
         public const string ShareSaleKey = "reallife_transaction_tech_venture_share_sale";
         public const string DividendKey = "reallife_transaction_tech_venture_dividend";
         public const string WindKey = "reallife_transaction_tech_venture_wind_down";
+        public const string ExitKey = "reallife_transaction_tech_venture_exit";
+        public const string BankersKey = "reallife_transaction_tech_listing_bankers";
         public const string RelatedCostKey = "reallife_transaction_tech_related_cost";
         public const string RelatedTakingsKey = "reallife_transaction_tech_related_takings";
 

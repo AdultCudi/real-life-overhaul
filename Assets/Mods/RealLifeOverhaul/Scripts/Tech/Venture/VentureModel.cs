@@ -5,7 +5,7 @@ namespace RealLifeOverhaul.Tech
     /// <summary>Who holds a line of a cap table: the saved number of <see cref="Holder.Kind"/>.</summary>
     public enum HolderKind
     {
-        Founders = 0, Pool = 1, Vc = 2, Angel = 3, Fund = 4, Player = 5
+        Founders = 0, Pool = 1, Vc = 2, Angel = 3, Fund = 4, Player = 5, Public = 6   // the public a listing sold shares to
     }
 
     /// <summary>A line of a cap table: who, how many shares, what they put in, the preference that comes back first on a sale. Game-free.</summary>
