@@ -20,14 +20,14 @@ namespace RealLifeOverhaul.Ui
                 {
                     return;
                 }
-                string said = DesignerKits.Describe(out string tool, out string met, out string short_, out string apply);
+                string said = DesignerKits.Describe(out string tool, out string met, out string shortOf, out string apply);
                 if (said == null)
                 {
                     Notifications.Show(NotificationType.Info, "reallife_ui_test_designer_shut", null, 8f);
                     return;
                 }
                 Notifications.Show(NotificationType.Info, "reallife_ui_test_designer_state_is",
-                    new Dictionary<string, string> { { "tool", tool }, { "met", met }, { "short", short_ }, { "apply", apply } }, 12f);
+                    new Dictionary<string, string> { { "tool", tool }, { "met", met }, { "short", shortOf }, { "apply", apply } }, 12f);
             }
             catch (System.Exception e)
             {

@@ -164,11 +164,11 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < n; i++)
             {
                 InteriorMaterialPreset p = Shelf[i];
-                bool is_ = selected != null && string.Equals(p.uuid, selected, StringComparison.Ordinal);
-                chosen = is_ ? i : chosen;
+                bool picked = selected != null && string.Equals(p.uuid, selected, StringComparison.Ordinal);
+                chosen = picked ? i : chosen;
                 m.Cards[i] = new UiDesignerMaterial
                 {
-                    Index = i, Name = NameOf(p.localizeKey), Price = UiText.Money(p.price), Picture = MaterialPictureKey(p.uuid, is_ ? colour : 0),
+                    Index = i, Name = NameOf(p.localizeKey), Price = UiText.Money(p.price), Picture = MaterialPictureKey(p.uuid, picked ? colour : 0),
                     HasShades = p.variants != null && p.variants.Count > 1
                 };
             }

@@ -60,9 +60,9 @@ namespace RealLifeOverhaul.Ui
         /// What the face holds now, for the test: the tool in hand, how many of the business's needs are met, the ones still short and what the edit comes to; null while the
         /// kit does not draw the designer.
         /// </summary>
-        internal static string Describe(out string tool, out string met, out string short_, out string apply)
+        internal static string Describe(out string tool, out string met, out string shortOf, out string apply)
         {
-            tool = met = short_ = apply = null;
+            tool = met = shortOf = apply = null;
             DesignerFace face = Face;
             if (face == null || !Host.Showing)
             {
@@ -86,7 +86,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 names.Append(named++ > 0 ? ", " : string.Empty).Append(m.Info.Require[i].Title);
             }
-            short_ = named == 0 ? UiText.T("reallife_ui_designer_no_needs") : names + (more > 0 ? " +" + more : string.Empty);
+            shortOf = named == 0 ? UiText.T("reallife_ui_designer_no_needs") : names + (more > 0 ? " +" + more : string.Empty);
             apply = m.OnApply ?? UiText.Money(0f);
             return met;
         }

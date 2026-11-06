@@ -249,10 +249,10 @@ namespace RealLifeOverhaul.Ui
             {
                 UiChrome.Bar = before;
             }
-            UiAt in_ = UiAt.Screen.In(band);
-            Tools(s, m, frame, p, in_);
-            Steps(s, m, frame, p, in_);
-            End(s, m, frame, p, keys, in_);
+            UiAt onBand = UiAt.Screen.In(band);
+            Tools(s, m, frame, p, onBand);
+            Steps(s, m, frame, p, onBand);
+            End(s, m, frame, p, keys, onBand);
         }
 
         // The tool tiles on the bar's centre line, as the app row's: the one in hand on the cyan, each its own glyph.
