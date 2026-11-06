@@ -71,7 +71,11 @@ internal static partial class UiSamples
         {
             m.Sections = new[]
             {
-                new UiInfoSection { Label = t("reallife_ui_world_owner", "Owners"), Rows = new[] { buildingOwner, new UiInfoRow { Label = businessOwner } } },
+                new UiInfoSection { Label = t("reallife_ui_world_owner", "Owners"), Rows = new[]
+                {
+                    buildingOwner, new UiInfoRow { Label = t("bizman_market_value", "Market value"), Value = "$2.4M" }, new UiInfoRow { Label = businessOwner },
+                    new UiInfoRow { Label = t("reallife_ui_biz_value_sold", "Value if sold"), Value = "$61K" }
+                } },
             };
             return m;
         }
@@ -103,11 +107,13 @@ internal static partial class UiSamples
                         new UiInfoRow { Label = t("reallife_ui_world_kind", "Kind"), Value = kind }, new UiInfoRow { Label = t("reallife_ui_world_open", "Hours"), Value = state },
                         new UiInfoRow { Label = t("reallife_ui_world_traffic", "Traffic index"), Value = "9" }, customers,
                         new UiInfoRow { Label = owner, Value = "Viktor Hale", Link = true },
+                        new UiInfoRow { Label = t("reallife_ui_biz_valuation", "Estimated valuation"), Value = "$48K" },
                     }
                     : new[]
                     {
                         new UiInfoRow { Label = t("reallife_ui_world_kind", "Kind"), Value = kind }, new UiInfoRow { Label = t("reallife_ui_world_open", "Hours"), Value = state },
                         new UiInfoRow { Label = t("reallife_ui_world_traffic", "Traffic index"), Value = "7" }, customers,
+                        new UiInfoRow { Label = t("reallife_ui_biz_value_sold", "Value if sold"), Value = "$61K" },
                     },
             },
         };

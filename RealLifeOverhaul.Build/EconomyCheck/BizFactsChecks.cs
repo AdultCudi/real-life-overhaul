@@ -92,6 +92,10 @@ internal static partial class Program
         Check(parts.Contains("Line = Lines(WordsAt(box, \"RivalBuildingOwner\")") && pages.Contains("IndexOf('\\n', start)"),
             "biz facts: the offer for a building gives its owner, its price and its valuation a line each, so the valuation is not cut off the end of the owner's sentence");
         Check(ModSource(@"Ui\UiPromptCard.cs").Contains("MostSubLines = 7"), "biz facts: the door card has room for a building's seven lines");
+        Check(parts.Contains("OfferSays(_m.Amount") && parts.Contains("a.Line.Contains(value)") && parts.Contains("?? Words(pres.buildingSideInfoValuation)"),
+            "biz facts: the market value fact is left out only where the offer's own lines say it, and a villa on sale shows its valuation under its price");
+        Check(parts.Contains("totalSqm == BuildingHelper.GetBuildingSquareMeters(") && parts.Contains("Fact(\"reallife_ui_world_area\", same ? null : area)"),
+            "biz facts: the game's total size and floor area are one row while they are the same square metres, two where they differ");
 
         // The texts, in every language.
         foreach (string code in new[] { "en", "pt", "zh-cn" })

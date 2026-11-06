@@ -4,6 +4,7 @@ using BigAmbitions.Items;
 using BigAmbitions.Tags;
 using Buildings.Office.Headquarters;
 using Extensions;
+using Helpers;
 using Streets;
 using TMPro;
 using UI.Smartphone.Apps.BizMan;
@@ -85,10 +86,9 @@ namespace RealLifeOverhaul.Ui
         // kind where the head already names it.
         private void Unrepeat(BizManBusiness b)
         {
-            bool offer = (_m.Amount != null && _m.Amount.Field == BizManPages.FieldBuy) || (_m.Second != null && _m.Second.Field == BizManPages.FieldBuy);
             for (int i = 0; i < _m.Facts.Length; i++)
             {
-                bool market = offer && _m.Facts[i].Label == UiText.T("bizman_market_value");
+                bool market = _m.Facts[i].Label == UiText.T("bizman_market_value") && (OfferSays(_m.Amount, _m.Facts[i].Value) || OfferSays(_m.Second, _m.Facts[i].Value));
                 bool kind = _m.Facts[i].Label == UiText.T("common_building_type") && _m.Facts[i].Value == _m.Head.Kind;
                 if (market || kind)
                 {
@@ -96,6 +96,9 @@ namespace RealLifeOverhaul.Ui
                 }
             }
         }
+
+        // True when the offer for the building already writes the market value in its lines: only then is the fact a repeat.
+        private static bool OfferSays(BizManAmount a, string value) => a != null && a.Field == BizManPages.FieldBuy && !string.IsNullOrEmpty(value) && a.Line != null && a.Line.Contains(value);
 
         // The building's photo and its facts, as the game's presentation lists them.
         private void Building(BizManBusiness b, BizManPresentation pres)
@@ -105,12 +108,15 @@ namespace RealLifeOverhaul.Ui
             _m.PictureAspect = photo != null && photo.sprite != null ? Aspect(photo.sprite) : 1.6f;
             Transform top = Get<Transform>(GameContract.ShowTop, pres), bottom = Get<Transform>(GameContract.ShowBottom, pres);
             _m.FactsTitle = UiText.T("reallife_ui_bizman_the_building");
+            // The game writes two figures, the whole size and the unit's area with its size class; one row says both while they are the same square metres.
+            string size = WordsAt(bottom, "TotalSize"), area = WordsAt(bottom, "BuildingArea");
+            bool same = b.building != null && b.building.totalSqm == BuildingHelper.GetBuildingSquareMeters(b.building.Address);
             _m.Facts = new[]
             {
                 Fact("common_building_type", b.building != null ? UiText.T(b.building.BuildingType) : null),
                 Fact("common_neighborhood", WordsAt(top, "Neighborhood")),
-                Fact("bizman_building_total_size", WordsAt(bottom, "TotalSize")),
-                Fact("reallife_ui_world_area", WordsAt(bottom, "BuildingArea")),
+                Fact("bizman_building_total_size", same ? area ?? size : size),
+                Fact("reallife_ui_world_area", same ? null : area),
                 Fact("bizman_traffic_index", WordsAt(top, "TrafficIndex")),
                 Fact("bizman_customers_capacity", Dash(WordsAt(top, "CustomerCapacity"))),
                 Fact("bizman_market_value", Dash(WordsAt(bottom, "MarketValue"))),
@@ -206,7 +212,8 @@ namespace RealLifeOverhaul.Ui
             Button send = UiWidgets.Calling(villa, "SendBuyBuildingOffer") ?? UiWidgets.Calling(pres, "SendBuyBuildingOffer");
             _m.Amount = new BizManAmount
             {
-                Title = UiText.T("bizman_buy_building"), Line = Lines(Words(Get<Component>(GameContract.VillaPrice, villa)), Words(Get<Component>(GameContract.VillaValuation, villa))),
+                Title = UiText.T("bizman_buy_building"), Line = Lines(Words(Get<Component>(GameContract.VillaPrice, villa)),
+                    Words(Get<Component>(GameContract.VillaValuation, villa)) ?? Words(pres.buildingSideInfoValuation)),
                 Figure = villa.offerInputField != null ? villa.offerInputField.text : null, Field = BizManPages.FieldBuy, CanLess = true, CanMore = true,
                 Send = Do(BizManPages.DoBuy, (send != null ? UiWidgets.Label(send) : null) ?? UiText.T("bizman_send_purchase_offer"), UiButtonKind.Primary, UiIcon.Send, UiAction.Alt,
                     send != null && BizManRules.SendHeld(send.gameObject.activeInHierarchy, send.interactable))
