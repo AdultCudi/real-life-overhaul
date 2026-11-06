@@ -44,6 +44,8 @@ public static partial class UiPreviewRunner
             screens.Add(SceneScreenOf("court_tax", lang));
             screens.Add(SceneScreenOf("interview_round", lang));
             screens.Add(SceneScreenOf("pitch_question", lang));
+            screens.Add(SceneScreenOf("venture_pitch", lang));
+            screens.Add(SceneScreenOf("venture_player", lang));
             screens.Add(SpokenScreenOf("fred_more", lang));
             screens.Add(CallScreenOf("loan", lang));
             screens.Add(CallScreenOf("mood", lang));
@@ -160,7 +162,7 @@ public static partial class UiPreviewRunner
     {
         UiWords t = DialogWords(lang);
         bool talk = SceneViews.LookOf(UiSamples.ScenePageOf(t, state, new List<SceneSaid>())) == SceneLook.Talk;
-        string backdrop = state.StartsWith("court") || state == "legal_file" ? "00.jpg" : state == "office_door" ? "13.jpg" : state.StartsWith("interview") || state == "venture_pitch" ? "05.jpg" : "03.jpg";
+        string backdrop = state.StartsWith("court") || state == "legal_file" ? "00.jpg" : state == "office_door" ? "13.jpg" : state.StartsWith("interview") || state.StartsWith("venture_") ? "05.jpg" : "03.jpg";
         int choice = talk ? UiConversation.ChoiceCommand : UiDecision.ChoiceCommand;
         return new Screen
         {

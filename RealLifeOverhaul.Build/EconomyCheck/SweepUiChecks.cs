@@ -41,6 +41,7 @@ internal static partial class Program
         SweepConversionChecks();
         SweepRuleChecks();
         SweepIconChecks();
+        OldWindowsAudit();
     }
 
     // ---------------------------------------------------------------- the table

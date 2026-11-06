@@ -271,6 +271,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--old-windows")
+        {
+            OldWindowsChecks();   // scene windows on the kit at their first opening, the scene card, and the audit by action (OldWindowsChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--sweep-ui")
         {
             SweepUiChecks();   // the audit of the total conversion: its table, its files, its screens' switches and the sweep's own conversions (SweepUiChecks.cs)

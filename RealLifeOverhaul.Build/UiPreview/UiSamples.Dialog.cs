@@ -53,7 +53,7 @@ internal static partial class UiSamples
     public static readonly string[] SceneStates =
     {
         "court_plea", "court_tax", "court_charges", "legal_file", "fame_show", "office_door", "interview_round", "interview_over", "pitch_question", "pitch_offer",
-        "venture_pitch"
+        "venture_pitch", "venture_player"
     };
 
     private const string Bank = "Jensen Capital";
@@ -1039,6 +1039,26 @@ internal static partial class UiSamples
                 Answer(p, 3, t("reallife_vc_topic_burn", "How fast does the money go?"), null);
                 Answer(p, 4, t("reallife_vc_topic_terms", "Are the terms fixed?"), null);
                 Answer(p, 9, t("reallife_vc_meet_leave", "End the meeting"), null);
+                p.Locked = true;
+                break;
+            }
+            case "venture_player":
+            {
+                // The player's pitch to a firm: the firm's question and the three answers the player may give, each said whole.
+                const string firm = "Northgate Capital";
+                p.Reset(Fill(t("reallife_vc_meet_title_player", "Pitch to {firm}"), "firm", firm),
+                    Fill(t("reallife_vc_meet_player_open", "The partners of {firm} are listening."), "firm", firm) + "\n" + t("reallife_vc_pitch_revenue", "What does the firm make a month in recurring revenue?")
+                    + "\n<size=80%>" + Fill(t("reallife_hire_meet_progress", "Question {number} of {of}"), "number", "1", "of", "3") + "</size>");
+                Talk(p, firm, null);
+                string[] keys = { "reallife_vc_pitch_revenue_true", "reallife_vc_pitch_revenue_stretch", "reallife_vc_pitch_revenue_bold" };
+                string[] fallback = { "{amount}, as the books say.", "About {amount}, counting what is signed.", "{amount}, and climbing fast." };
+                string[] sums = { "$38,000", "$49,400", "$76,000" };
+                for (int i = 0; i < 3; i++)
+                {
+                    string words = Fill(t(keys[i], fallback[i]), "amount", sums[i]);
+                    p.Entries.Add(new SceneEntry { Id = i, Name = Fill(t("reallife_vc_meet_answer", "Answer {number}"), "number", (i + 1).ToString()), Detail = words, Said = words, Enabled = true });
+                }
+                Answer(p, 20, t("reallife_vc_meet_leave", "End the meeting"), null);
                 p.Locked = true;
                 break;
             }

@@ -23,6 +23,7 @@ namespace RealLifeOverhaul.Ui
         public SceneDesk(string name, float width, float entryHeight)
         {
             _name = name;
+            SceneKit.Name(name);   // before its window can open: the picker leaves it to the scene's kit
             _desk = new DeskList(name, width, entryHeight);
         }
 
