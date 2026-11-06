@@ -60,7 +60,7 @@ namespace RealLifeOverhaul.Ui
             p.Icon = reg != null ? TypeGlyph(reg) : UiIcon.MapPin;
             p.Tint = reg != null ? UiRole.CatRetail : UiRole.None;
             p.Picture = PictureOfPlace(_pickedBuilding, PickedPicture);
-            p.Chips = PlaceChips(card, reg);
+            p.Chips = PlaceChips(card, reg, BizFacts.Read(_pickedBuilding));
             p.BlockLabel = UiText.T("reallife_map_picked");
             p.ClearLabel = UiText.T("reallife_map_clear");
             p.LocateLabel = UiText.T("reallife_map_locate");
@@ -118,8 +118,9 @@ namespace RealLifeOverhaul.Ui
             return director != null && director.Probe(at.x, at.z, false, out float metres) ? metres : -1f;
         }
 
-        // The state chips of a place: open, closed, to let; whose it is (yours, a rival's); the card's own words and tones.
-        private static MapStateChip[] PlaceChips(BuildingResume card, BuildingRegistration reg)
+        // The state chips of a place: open, closed, to let; whose it is (yours, a rival's) with the business's valuation beside its owner, the card's own words and tones.
+        // The building's owner and its market value are on the place card behind the block, where the building's rows are.
+        private static MapStateChip[] PlaceChips(BuildingResume card, BuildingRegistration reg, BizWorth worth)
         {
             var chips = new System.Collections.Generic.List<MapStateChip>(2);
             if (reg != null)
@@ -133,7 +134,7 @@ namespace RealLifeOverhaul.Ui
                 string owner = card.rivalBusinessOwner != null && card.rivalBusinessOwner.gameObject.activeSelf ? LabelWords(card.rivalBusinessOwner) : null;
                 if (!string.IsNullOrWhiteSpace(owner))
                 {
-                    chips.Add(new MapStateChip { Label = owner.Trim(), Tone = reg.RentedByPlayer ? UiRole.Accent : UiRole.Warn });
+                    chips.Add(new MapStateChip { Label = BizFactsRules.Commas(owner, BizFacts.ValuationSentence(worth)), Tone = reg.RentedByPlayer ? UiRole.Accent : UiRole.Warn });
                 }
             }
             return chips.ToArray();

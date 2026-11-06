@@ -287,11 +287,15 @@ namespace RealLifeOverhaul.Ui
             }
             y = Title(s, at, x, y, w, a.Title);
             string line = AmountLine(a);
-            if (!string.IsNullOrEmpty(line))
+            for (int start = 0; !string.IsNullOrEmpty(line) && start <= line.Length;)
             {
-                UiDraw.Text(s, at, x, y, w, UiStyle.Body, UiRole.Text2, line, UiFlags.Label | UiFlags.Truncate);
-                y += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)) + UiTokens.S2;
+                int end = line.IndexOf('\n', start);
+                end = end < 0 ? line.Length : end;
+                UiDraw.Text(s, at, x, y, w, UiStyle.Body, UiRole.Text2, line.Substring(start, end - start), UiFlags.Label | UiFlags.Truncate);
+                y += UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body));
+                start = end + 1;
             }
+            y += string.IsNullOrEmpty(line) ? 0f : UiTokens.S2;
             float bw = string.IsNullOrEmpty(a.Send.Label) ? 0f : UiDraw.ButtonWidth(a.Send.Kind, a.Send.Label, a.Send.Icon, a.Send.Key, keys);
             float sw = UiDraw.SnapDown(Math.Min(UiTokens.S16 * 4f, w - bw - (bw > 0f ? UiTokens.S3 : 0f)));
             string figure = a.Figure ?? string.Empty;   // an empty field stays empty: its line says what to type
@@ -304,7 +308,7 @@ namespace RealLifeOverhaul.Ui
             return y + UiTokens.Control + UiTokens.S6;
         }
 
-        // The line over an amount: what it is measured against.
+        // The lines over an amount, one a fact: whose it is, its price, what it is measured against.
         private static string AmountLine(BizManAmount a) => a.Line;
 
         /// <summary>A sentence over a block, wrapped to its width in the quiet colour. Returns the y under it.</summary>

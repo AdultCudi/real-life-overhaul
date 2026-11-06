@@ -19,6 +19,7 @@ namespace RealLifeOverhaul.Ui
                     "bizman_insight_interior", "bizman_insight_marketing", "bizman_insight_pricing", "bizman_insight_promotion", "bizman_insight_satisfaction",
                     "bizman_inventory_days_until_empty", "bizman_list_real_estate_type", "bizman_logisticsmanagers_no_driver", "bizman_market_price",
                     "bizman_market_value", "bizman_marketing_cancel_campaign", "bizman_marketing_efficiency", "bizman_marketing_no_campaigns",
+                    "reallife_ui_world_area",
                     "bizman_marketing_total_daily_expenses", "bizman_menu_deliveries", "bizman_menu_drivers", "bizman_menu_factory", "bizman_menu_headhunters",
                     "bizman_menu_insight", "bizman_menu_inventory", "bizman_menu_marketing", "bizman_menu_schedule", "bizman_menu_settings", "bizman_not_for_sale",
                     "bizman_presentation_show_employees", "bizman_preview_button", "bizman_primary_products", "bizman_purchasingagents_next_delivery",

@@ -181,6 +181,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--biz-facts")
+        {
+            BizFactsAll();   // every fact of a business or a building on the kit, with its valuation and market value (BizFactsChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--start-biz")
         {
             StartBizAll();   // BizMan's Start a business page on the kit: the list and detail reachable, the game's facts, sharp pictures (StartBizChecks.cs)
@@ -1188,6 +1194,7 @@ internal static partial class Program
         TechMoves();    // a tech firm moved by the moving company: its data follows whole, a save left behind is put back, nothing followed with a doubt (TechMoveChecks.cs)
         LagSecond();    // the stutter every second: which stretch of the mod's clock the engine's frame time is, and the mod never driving the engine's clock (LagSecondChecks.cs)
         TestShopsAll();   // the test tool that takes businesses over: the pick, the notice, the refusals, the texts (TestShopsChecks.cs)
+        BizFactsAll();  // a business and a building on every card of the kit with the valuation and the market value (BizFactsChecks.cs)
         StartBizAll();  // BizMan's Start a business page: the list and its detail reachable, the game's facts, the sharp pictures (StartBizChecks.cs)
         BizPaceAll();   // what the mod adds to BizMan's open, switch and tab change: the rules, the book, the registration filter and the start screen's walk timed on a large save, the sources, the texts (BizPaceChecks.cs)
         DaySpreadAll(); // the game's midnight spread over frames: a step queued is played in a later frame, a slice a frame equals the job at once, the save and the next day finish it, the weekly look of the investors (DaySpreadChecks.cs)

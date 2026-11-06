@@ -9,6 +9,8 @@ namespace RealLifeOverhaul.Ui
         private static string[] MapKeys => new[]
         {
             "bizman_status", "reallife_co_open_bizman", "buildingresume_rented_by_you", "citymap_category_active_businesses", "citymap_category_activities", "citymap_category_jobs",
+            "bizman_market_value", "bizman_estimated_valuation", "reallife_ui_biz_valuation", "reallife_ui_biz_value_sold", "reallife_ui_world_area",
+            "reallife_ui_world_capacity", "reallife_ui_world_traffic",
             "citymap_category_rentable", "citymap_category_special_buildings", "citymap_filter_hide_closed", "citymap_map_search_placeholder", "common_cancel",
             "common_close", "common_closed", "common_friday", "common_monday", "common_neighborhoods", "common_open", "common_real_estate", "common_saturday",
             "common_setdestination", "common_subwaystation", "common_sunday", "common_thursday", "common_tuesday", "common_wednesday", "reallife_dv_about_crime",

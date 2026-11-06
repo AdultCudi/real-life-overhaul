@@ -39,7 +39,7 @@ namespace RealLifeOverhaul.Ui
         private const float Pad = UiTokens.S3;    // px: the card's inner edge
         private const float Tile = 36f;           // px: the head's glyph tile or face
         private const float ActionRow = 36f;      // px: an action, its cap with room above and below
-        private const int MostSubLines = 4;       // the sub's lines shown (a bus stop's routes, one a line); the rest end in an ellipsis
+        private const int MostSubLines = 7;       // the sub's lines shown (a bus stop's routes, a building's facts, one a line); the rest end in an ellipsis
 
         private static int Actions(UiPromptCardModel m) => Math.Min(UiPromptCardModel.MostActions, Math.Min(m.ActionCount, m.Actions.Length));
 

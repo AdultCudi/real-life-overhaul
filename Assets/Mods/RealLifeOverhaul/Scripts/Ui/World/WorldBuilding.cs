@@ -286,8 +286,11 @@ namespace RealLifeOverhaul.Ui
             string facts = Join(kind, place);
             bool business_ = !string.IsNullOrEmpty(name) && !string.IsNullOrEmpty(kind);
             // At the door: the business by its name, what it is and where, whether it is open, and the game's hints.
+            _cbc = _resume.CityBuildingController;
+            BuildingRegistration reg = _cbc != null ? _cbc.buildingRegistration : null;
+            BizWorth worth = BizFacts.Read(_cbc);
             _card.Title = business_ ? name : address;
-            _card.Sub = facts;
+            _card.Sub = DoorLines(facts, traffic, capacity, area, business, owner, worth);
             _card.State = firstLine;
             _card.StateTone = tone;
             _card.Icon = business_ ? UiIcon.Store : UiIcon.Building;
@@ -317,12 +320,11 @@ namespace RealLifeOverhaul.Ui
             _info.StatusIcon = UiIcon.Clock;
             _info.StatusTone = tone == UiRole.OkText ? UiRole.Ok : tone == UiRole.DangerText ? UiRole.Danger : tone == UiRole.WarnText ? UiRole.Warn : UiRole.None;
             // The building's rows, then the business's; an empty building's kind and traffic are the building's own.
-            _cbc = _resume.CityBuildingController;
-            BuildingRegistration reg = _cbc != null ? _cbc.buildingRegistration : null;
             _ownerRival = Rival(reg != null ? reg.buildingOwnerRivalId : null, owner);
             _businessRival = reg != null && !reg.RentedByPlayer ? Rival(reg.businessOwnerRivalId, business) : null;
             var building = new Rows();
             Owner(building, owner, _ownerRival, LinkOwner);   // "Owner: Hudson Realty", or the game's own sentence ("Owned by you")
+            building.Add("bizman_market_value", worth.Market, 0);   // the value beside the owner it belongs to
             building.Add("reallife_ui_world_neighbourhood", place, LinkMap);
             building.Add("reallife_ui_world_area", area, 0);
             building.Add("reallife_ui_world_capacity", capacity, 0);
@@ -342,6 +344,10 @@ namespace RealLifeOverhaul.Ui
             {
                 trade.Add(null, business, 0);   // the game's line said otherwise than its own words (another mod's): as it is
             }
+            if (business_)
+            {
+                Valuation(trade, worth);
+            }
             // The tabs: the building with the business under it, the business alone, its owners.
             var sections = new List<UiInfoSection>(2);
             _linkAt.Clear();
@@ -359,6 +365,7 @@ namespace RealLifeOverhaul.Ui
             {
                 var owners = new Rows();
                 Owner(owners, owner, _ownerRival, LinkOwner);
+                owners.Add("bizman_market_value", worth.Market, 0);
                 if (_businessRival != null)
                 {
                     Owner(owners, business, _businessRival, LinkBusinessOwner);
@@ -367,11 +374,27 @@ namespace RealLifeOverhaul.Ui
                 {
                     owners.Add(null, business, 0);
                 }
+                Valuation(owners, worth);
                 Section(sections, UiText.T("reallife_ui_world_owner"), null, owners);
             }
             _info.Sections = sections.ToArray();
             Footer();
         }
+
+        // The business's valuation under its owner's row: a rival's by the game's own sum, the player's by what a sale of it would ask.
+        private static void Valuation(Rows rows, BizWorth worth)
+        {
+            if (worth.Valuation != null)
+            {
+                rows.Add(new UiInfoRow { Label = BizFacts.ValuationLabel(worth), Value = worth.Valuation });
+            }
+        }
+
+        // The door card's lines, each of the game's box's facts once: the kind and place, the traffic and the room for customers, the floor area, the business's owner with its
+        // valuation, the building's owner with its market value.
+        private static string DoorLines(string facts, string traffic, string capacity, string area, string business, string owner, BizWorth worth) => BizFactsRules.Lines(facts,
+            BizFactsRules.Commas(BizFactsRules.Pair(UiText.T("reallife_ui_world_traffic"), traffic), BizFactsRules.Pair(UiText.T("reallife_ui_world_capacity"), capacity)),
+            BizFactsRules.Pair(UiText.T("reallife_ui_world_area"), area), business, BizFacts.ValuationSentence(worth), owner, BizFacts.MarketSentence(worth));
 
         // A section's rows and what each row's link opens, gathered before the section's place in the panel is known.
         private sealed class Rows

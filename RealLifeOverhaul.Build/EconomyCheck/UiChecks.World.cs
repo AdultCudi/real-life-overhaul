@@ -264,7 +264,7 @@ internal static partial class Program
             bottom = Math.Max(bottom, s.Items[i].Y + s.Items[i].H);
         }
         Check(w <= UiPromptCard.MostWidth && w >= UiPromptCard.LeastWidth && bottom <= 100f + h + 0.5f,
-            "world prompt: a stop with five routes keeps the card's width (" + w + " px) and stands inside its height, four lines and the rest in an ellipsis");
+            "world prompt: a stop with five routes keeps the card's width (" + w + " px) and stands inside its height, seven lines and the rest in an ellipsis");
         var one = new UiPromptCardModel { Title = "Lift", Actions = new UiPromptAction[0] };
         Check(UiPromptCard.Width(one) == UiPromptCard.LeastWidth && UiPromptCard.Height(one) > 0f, "world prompt: a box with one short line keeps the card's least width");
     }
@@ -283,7 +283,7 @@ internal static partial class Program
         Check(mine.Sections[0].Value == "Rented by you" && mine.Sections[1].Value == "Yours" && rival.Sections[0].Value == "A rival's" && rival.Sections[1].Value == "A rival's"
               && rent.Sections[0].Value == "For rent",
             "world building: each section says whose it is in a word or two (Rented by you, Yours, A rival's, For rent)");
-        Check(mine.Sections[0].Rows[0].Link && mine.Sections[0].Rows[1].Link && rival.Sections[1].Rows.Last().Link && !rent.Sections[0].Rows[0].Link
+        Check(mine.Sections[0].Rows[0].Link && mine.Sections[0].Rows[2].Link && !mine.Sections[0].Rows[1].Link && rival.Sections[1].Rows.Any(r => r.Link) && !rent.Sections[0].Rows[0].Link
               && mine.Footer.Contains(UiIcon.Locate) && rent.Footer.Contains(UiIcon.Locate),
             "world building: the owner and the neighbourhood are links, the city's own sentence is not, and the footer has the button that finds the building on the map");
         UiPickerModel cell = UiSamples.WorldCustody(en);

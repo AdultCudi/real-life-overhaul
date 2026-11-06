@@ -55,7 +55,13 @@ internal static partial class UiSamples
             Business = new[]
             {
                 new MapPlaceRow { Label = t("reallife_map_row_owner", "Owner"), Value = yours ? t("reallife_map_you", "You") : "Onyx Luxury" },
+                new MapPlaceRow { Label = yours ? t("reallife_ui_biz_value_sold", "Value if sold") : t("reallife_ui_biz_valuation", "Estimated valuation"), Value = yours ? "$61K" : "$48K" },
                 new MapPlaceRow { Label = t("reallife_map_row_type", "Type"), Value = unrated ? "Office" : "Fast food" },
+                new MapPlaceRow { Label = "Building owned by Hudson Realty" },
+                new MapPlaceRow { Label = t("bizman_market_value", "Market value"), Value = "$2.4M" },
+                new MapPlaceRow { Label = t("reallife_ui_world_area", "Floor area"), Value = "310 m2 (Size S, version 2)" },
+                new MapPlaceRow { Label = t("reallife_ui_world_capacity", "Customer capacity"), Value = "48" },
+                new MapPlaceRow { Label = t("reallife_ui_world_traffic", "Traffic index"), Value = "72" },
                 new MapPlaceRow { Label = t("common_monday", "Monday"), Value = "07:00 to 23:00" }, new MapPlaceRow { Label = t("common_tuesday", "Tuesday"), Value = "07:00 to 23:00" },
                 new MapPlaceRow { Label = t("common_wednesday", "Wednesday"), Value = "07:00 to 23:00" }, new MapPlaceRow { Label = t("common_thursday", "Thursday"), Value = "07:00 to 23:00" },
                 new MapPlaceRow { Label = t("common_friday", "Friday"), Value = "07:00 to 01:00" }, new MapPlaceRow { Label = t("common_saturday", "Saturday"), Value = "09:00 to 01:00" },

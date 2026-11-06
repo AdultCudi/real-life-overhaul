@@ -94,8 +94,9 @@ internal static partial class UiSamples
         {
             Icon = UiIcon.Coffee, Tint = UiRole.CatFood, Name = "Speedy Bites", Address = "214 5th Avenue, Garment District", Distance = t("reallife_map_distance_road", "{distance} by road").Replace("{distance}", "1.2 km"),
             Chips = rival
-                ? new[] { new MapStateChip { Label = t("common_open", "Open"), Tone = UiRole.Ok }, new MapStateChip { Label = "Rival: Onyx Luxury", Tone = UiRole.Warn } }
-                : new[] { new MapStateChip { Label = t("common_open", "Open"), Tone = UiRole.Ok }, new MapStateChip { Label = t("buildingresume_rented_by_you", "Rented by you"), Tone = UiRole.Accent } },
+                ? new[] { new MapStateChip { Label = t("common_open", "Open"), Tone = UiRole.Ok }, new MapStateChip { Label = "Business owned by Onyx Luxury, Estimated valuation: $48K", Tone = UiRole.Warn } }
+                : new[] { new MapStateChip { Label = t("common_open", "Open"), Tone = UiRole.Ok },
+                    new MapStateChip { Label = t("buildingresume_rented_by_you", "Rented by you") + ", Value if sold: $61K", Tone = UiRole.Accent } },
             BlockLabel = t("reallife_map_picked", "Picked place"), ClearLabel = t("reallife_map_clear", "Clear"), LocateLabel = t("reallife_map_locate", "Locate"),
             DestinationLabel = t("common_setdestination", "Set destination"), CanDestination = true, CanDetails = true,
             CanBizMan = true, BizManLabel = t("reallife_co_open_bizman", "Open in BizMan"),
