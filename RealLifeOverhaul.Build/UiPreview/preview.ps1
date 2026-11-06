@@ -14,6 +14,7 @@ graphics card: it renders with graphics, so no -nographics. Exit code 0 = every 
 param(
     [string]$Out = (Join-Path $PSScriptRoot '..\..\..\not-in-repo\previews\ui'),
     [string]$Only = '',
+    [string]$Shots = '',        # 1080: the 1080 shot of each screen alone (the sweep's contact sheets)
     [string]$Set = '',          # cs2: the prototype's six screens over the game's world (needs -Backdrops)
     [string]$Backdrops = '',    # a folder of the game's own street pictures, local only, never committed
     [string]$Method = 'UiPreviewRunner.Render',   # another editor entry that draws into -Out (the 2.5D map's own pictures: Map25Preview.Render)
@@ -87,6 +88,7 @@ New-Item -ItemType Directory -Force (Split-Path $log) | Out-Null
 $arguments = @('-batchmode', '-quit', '-projectPath', "`"$project`"", '-executeMethod', $Method, '-bundle', "`"$bundle`"", '-out', "`"$Out`"", '-logFile', "`"$log`"")
 if ($Only) { $arguments += @('-only', $Only) }
 if ($Set) { $arguments += @('-set', $Set) }
+if ($Shots) { $arguments += @('-shots', $Shots) }
 if ($Backdrops) { $arguments += @('-backdrops', "`"$Backdrops`"") }
 $process = Start-Process -FilePath $Unity -ArgumentList $arguments -Wait -PassThru -NoNewWindow
 if (Test-Path $log) { Select-String -Path $log -Pattern '^\[UiPreview\]' | ForEach-Object { $_.Line } }

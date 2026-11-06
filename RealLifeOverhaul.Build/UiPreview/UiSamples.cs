@@ -32,7 +32,8 @@ internal static partial class UiSamples
             new Sample { Name = "studio", App = "Your firm", Lay = (s, f, d, k) => UiDashboard.Lay(s, StudioFirm(t), f, d, k), Walk = "LDDDDRDDLU" },
             new Sample { Name = "studio_empty", App = "Your firm", Lay = (s, f, d, k) => UiDashboard.Lay(s, StudioEmpty(t), f, d, k), Walk = "DLR" },
             new Sample { Name = "tech_firm", App = "Your firm", Lay = (s, f, d, k) => UiDashboard.Lay(s, TechFirm(t), f, d, k), Walk = "DDDDRDDLU" },
-            new Sample { Name = "session_panel", App = "Desk", Lay = (s, f, d, k) => UiSessionSteps.Lay(s, DeskPanel(t), f, d, k), Walk = "RDLUL" },
+            new Sample { Name = "session_panel", App = "Desk", Lay = (s, f, d, k) => UiDecision.Lay(s, DeskCard(t), f, d, k), Walk = "RDLUL" },
+            new Sample { Name = "session_panel_start", App = "Desk", Lay = (s, f, d, k) => UiDecision.Lay(s, DeskStart(t), f, d, k), Walk = "RDLUL" },
         };
     }
 

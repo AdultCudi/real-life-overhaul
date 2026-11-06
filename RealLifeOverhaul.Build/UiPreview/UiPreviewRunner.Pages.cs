@@ -10,7 +10,7 @@ public static partial class UiPreviewRunner
         {
             UiSamples.Sample x = sample;
             screens.Add(new Screen { Name = x.Name, AppName = x.App, Lay = (s, f, d, k) => x.Lay(s, f, d, k), Walk = Moves(x.Walk), HoverCommand = UiDashboard.RowCommand, HoverArg = 1,
-                Backdrop = x.Name == "session_panel" ? "03.jpg" : "13.jpg" });
+                Backdrop = x.Name.StartsWith("session_panel") ? "03.jpg" : "13.jpg" });
         }
     }
 }

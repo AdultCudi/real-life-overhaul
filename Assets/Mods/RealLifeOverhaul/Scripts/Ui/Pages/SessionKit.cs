@@ -67,9 +67,9 @@ namespace RealLifeOverhaul.Ui
 
     /// <summary>
     /// A panel of the game's activity system (an IPlayerActivity: its headline, its words, its buttons) as the kit's
-    /// session template: the choices (the buttons that pick one) as cards on 1, 2 and 3, the panel's other buttons at
-    /// the foot (the blue one the primary on F, the next on P, Cancel on Esc), every press the button's own. Looks at the
-    /// panel four times a second while it shows. Cost: a few reads and a layout when the page changes.
+    /// decision card: the choices (the buttons that pick one) numbered 1, 2 and 3 with what each does in plain lines, the
+    /// panel's other buttons at the foot (the blue one the primary on F, the next on P, Cancel on Esc), every press the
+    /// button's own. Looks at the panel four times a second while it shows. Cost: a few reads and a layout when the page changes.
     /// </summary>
     public sealed class ActivityScreen : IUiScreen
     {
@@ -109,14 +109,14 @@ namespace RealLifeOverhaul.Ui
 
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
-            UiSessionSteps.Lay(s, Build(), frame, dark, keys);
+            UiDecision.Lay(s, Build(), frame, dark, keys);
             _dirty = false;
         }
 
         public bool Press(int command, int arg)
         {
-            ButtonInfo b = command == UiSessionSteps.ChoiceCommand && arg >= 0 && arg < _choices.Count ? _choices[arg]
-                : command == UiSessionSteps.ActionCommand && arg >= 0 && arg < _actions.Count ? _actions[arg] : null;
+            ButtonInfo b = command == UiDecision.ChoiceCommand && arg >= 0 && arg < _choices.Count ? _choices[arg]
+                : command == UiDecision.ButtonCommand && arg >= 0 && arg < _actions.Count ? _actions[arg] : null;
             if (b == null || !b.interactable || b.onClick == null)
             {
                 return false;
@@ -167,7 +167,7 @@ namespace RealLifeOverhaul.Ui
             return sig;
         }
 
-        private UiSessionModel Build()
+        private UiDecisionModel Build()
         {
             LabelInfo head = _panel.GetHeadlineLabel();
             LabelInfo[] labels = _panel.GetLabels() ?? new LabelInfo[0];
@@ -175,16 +175,9 @@ namespace RealLifeOverhaul.Ui
             _choices.Clear();
             _actions.Clear();
             _cancel = null;
-            var m = new UiSessionModel
-            {
-                Title = Words(head),
-                About = labels.Length > 0 ? Words(labels[0]) : null,
-                StepCount = 0,
-                SummaryTitle = null,
-            };
-            var choices = new List<UiChoiceModel>(4);
+            var choices = new List<UiDecisionChoice>(4);
             var actions = new List<UiActionModel>(5);
-            int keyed = 0;
+            int keyed = 0, primary = -1;
             foreach (ButtonInfo b in buttons)
             {
                 if (b == null)
@@ -196,43 +189,38 @@ namespace RealLifeOverhaul.Ui
                 {
                     int i = choices.Count;
                     string trade = 1 + i < labels.Length ? Words(labels[1 + i]) : null;
-                    if (trade != null && trade.StartsWith(words + ":", StringComparison.Ordinal))
-                    {
-                        trade = trade.Substring(words.Length + 1).TrimStart();   // the panel's line names the choice the card already names
-                    }
-                    choices.Add(new UiChoiceModel { Key = (UiAction)((int)UiAction.Pick1 + i), Name = words, Trade = trade, Disabled = !b.interactable });
+                    choices.Add(new UiDecisionChoice { Key = (UiAction)((int)UiAction.Pick1 + i), Name = words, Lines = SweepRules.Consequences(trade, words), Disabled = !b.interactable });
                     _choices.Add(b);
                 }
                 else if (b.playerAction == global::PlayerAction.Cancel)
                 {
                     _cancel = b;
-                    actions.Add(new UiActionModel { Label = words, Kind = UiButtonKind.Secondary, Key = UiAction.Back, Command = UiSessionSteps.ActionCommand, Disabled = !b.interactable });
+                    actions.Add(new UiActionModel { Label = words, Kind = UiButtonKind.Secondary, Key = UiAction.Back, Disabled = !b.interactable });
                     _actions.Add(b);
                 }
                 else
                 {
-                    bool primary = b.color == "blue";
-                    actions.Add(new UiActionModel
-                    {
-                        Label = words, Kind = primary ? UiButtonKind.Primary : UiButtonKind.Secondary, Key = primary ? UiAction.Alt : keyed++ == 0 ? UiAction.Option : UiAction.Count,
-                        Command = UiSessionSteps.ActionCommand, Disabled = !b.interactable
-                    });
+                    bool main = b.color == "blue";
+                    primary = main ? actions.Count : primary;
+                    actions.Add(new UiActionModel { Label = words, Kind = main ? UiButtonKind.Primary : UiButtonKind.Secondary,
+                        Key = main ? UiAction.Alt : keyed++ == 0 ? UiAction.Option : UiAction.Count, Disabled = !b.interactable });
                     _actions.Add(b);
                 }
             }
-            m.Question = choices.Count > 0 && labels.Length > 0 ? Words(labels[0]) : null;
-            m.About = choices.Count > 0 ? null : m.About;
-            m.Choices = choices.ToArray();
-            m.ChoiceCount = m.Choices.Length;
-            var summary = new List<UiPairModel>(4);
-            for (int i = choices.Count > 0 ? labels.Length : 1; i < labels.Length; i++)
+            string about = labels.Length > 0 ? Words(labels[0]) : null;
+            var more = new List<string>(4);   // a page without choices says the rest of what the panel says
+            for (int i = 1; choices.Count == 0 && i < labels.Length; i++)
             {
-                summary.Add(new UiPairModel { Key = Words(labels[i]), Value = string.Empty });
+                more.Add(Words(labels[i]));
             }
-            m.Summary = summary.ToArray();
-            m.SummaryCount = m.Summary.Length;
-            m.Actions = actions.ToArray();
-            m.ActionCount = m.Actions.Length;
+            string rest = string.Join(" ", more);
+            var m = new UiDecisionModel
+            {
+                Kicker = UiText.T("reallife_session_enabled"), Title = Words(head), Emblem = UiIcon.Presentation, EmblemTint = UiRole.Accent,
+                Body = string.IsNullOrEmpty(rest) ? about : (string.IsNullOrEmpty(about) ? rest : about + " " + rest), BodyLines = choices.Count > 0 ? 3 : 8,
+                Choices = choices.ToArray(), Selected = choices.Count > 0 ? 0 : -1, Buttons = actions.ToArray(), Start = choices.Count > 0 ? 0 : -1,
+                StartButton = choices.Count > 0 ? -1 : Math.Max(0, primary)
+            };
             m.Prompts = new[]
             {
                 new UiPrompt { Action = UiAction.Move, Label = UiText.T("reallife_ui_prompt_move") },
