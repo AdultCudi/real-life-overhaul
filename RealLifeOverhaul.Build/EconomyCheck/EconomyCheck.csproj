@@ -1097,6 +1097,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizManPages.Lines.cs" Link="Mod\BizManPages.Lines.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizManPages.Ops.cs" Link="Mod\BizManPages.Ops.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizManPages.Logo.cs" Link="Mod\BizManPages.Logo.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizManPages.Start.cs" Link="Mod\BizManPages.Start.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiSharpRules.cs" Link="Mod\UiSharpRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizOpsModel.cs" Link="Mod\BizOpsModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BizOpsRules.cs" Link="Mod\BizOpsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiUniforms.cs" Link="Mod\UiUniforms.cs" />

@@ -47,6 +47,36 @@ namespace RealLifeOverhaul.Ui
         public UiRole Tone;     // a line's colour: None for plain, or the text tone the game's own box gives it
     }
 
+    /// <summary>What a row of the chosen kind's detail is: a heading, a fact, a line of a list or a sentence.</summary>
+    public enum BizManStartKind : byte
+    {
+        Heading = 0,
+        Fact,
+        Item,
+        Note
+    }
+
+    /// <summary>A row of the chosen kind's detail; a list line's mark is its glyph (a tick, a warning) before its words, None for no mark.</summary>
+    public struct BizManStartRow
+    {
+        public BizManStartKind Kind;
+        public string Label;
+        public string Value;
+        public UiRole Tone;
+        public UiIcon Mark;
+    }
+
+    /// <summary>The kind of business chosen on the start page: what it is, its picture and every row the game says about it.</summary>
+    public sealed class BizManStart
+    {
+        public string Kicker;
+        public string Name;
+        public string Picture;     // the game's picture key, or null for the glyph
+        public float Aspect;
+        public UiIcon Icon;
+        public BizManStartRow[] Rows = new BizManStartRow[0];
+    }
+
     /// <summary>A fact of a page: its label and value, the value a link when it sets the destination or opens something.</summary>
     public struct BizManFact
     {
@@ -158,7 +188,12 @@ namespace RealLifeOverhaul.Ui
         public BizManAmount Second;                     // a second (the building's offer beside the business's)
 
         // Start a business
-        public UiCatalogueModel Catalogue;
+        public UiDataTableModel StartKinds;             // the kinds this building takes, a row each, with the game's search
+        public BizManStart StartDetail;                 // the kind chosen, or null while none is
+        public string StartEmptyTitle, StartEmptyBody;  // what the detail says while no kind is chosen
+        public float StartOffset;                       // px the detail's rows are scrolled; Lay writes back what it took
+        public int StartReveal = -1;                    // a heading stepped to, brought into view at the next layout
+        public short StartClip = -1, StartList = -1;    // the detail's scroll region and headings' list, as Lay made them
         public string NameText;
         public string NamePlaceholder;
         public string NameLabel;
