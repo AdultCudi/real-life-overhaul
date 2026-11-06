@@ -15,6 +15,10 @@ namespace RealLifeOverhaul.Tech
         public const string BridgeKey = "reallife_transaction_tech_venture_bridge_loan";
         public const string InterestKey = "reallife_transaction_tech_venture_bridge_interest";
         public const string ShareSaleKey = "reallife_transaction_tech_venture_share_sale";
+        public const string DividendKey = "reallife_transaction_tech_venture_dividend";
+        public const string WindKey = "reallife_transaction_tech_venture_wind_down";
+        public const string RelatedCostKey = "reallife_transaction_tech_related_cost";
+        public const string RelatedTakingsKey = "reallife_transaction_tech_related_takings";
 
         private static GameInstance Save => SaveGameManager.Current;
 

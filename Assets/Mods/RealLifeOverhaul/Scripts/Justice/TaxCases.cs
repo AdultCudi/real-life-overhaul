@@ -58,6 +58,27 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
+        /// A firm's investors' money taken for other uses and not paid back, found by an audit: the sum is the case's, and the audit's
+        /// evidence (0 to 1, from how much of it the books show) is the case's strength.
+        /// </summary>
+        public static int FileInvestorFraud(int amount, float evidence)
+        {
+            if (amount <= 0)
+            {
+                return 0;
+            }
+            JusticeCase opened = Justice.Summon(new JusticeReport(JusticeLaw.InvestorFraud) { Complied = true, Evidence = new[] { System.Math.Max(0f, System.Math.Min(1f, evidence)) } });
+            if (opened == null)
+            {
+                return 0;
+            }
+            opened.Amount = amount;
+            JusticeDirector.Logger?.Info("Justice: case " + opened.Number + " opened on a summons for investor fraud (" + amount + " taken from a firm's investors), to be heard on day "
+                                         + opened.CourtDay + ".");
+            return opened.Number;
+        }
+
+        /// <summary>
         /// A case opened on a summons and not yet heard is taken back (a test put back): it was never before the court. True if
         /// there was one.
         /// </summary>

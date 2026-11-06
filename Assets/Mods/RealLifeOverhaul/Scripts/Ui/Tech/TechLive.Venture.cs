@@ -195,6 +195,10 @@ namespace RealLifeOverhaul.Ui
                     {
                         RaisePage(picked);
                     }
+                    else if (_v.Page == PageBooks)
+                    {
+                        BooksPage(picked);
+                    }
                     else
                     {
                         CapPage(picked);
@@ -285,6 +289,10 @@ namespace RealLifeOverhaul.Ui
                 {
                     card.Say(TechText.T("reallife_vc_cap_all_yours"));
                 }
+                if (c != null)
+                {
+                    AccountLines(card, firm, c);
+                }
                 var chiefs = new List<Person>(8);
                 IReadOnlyList<Person> people = _d.People;
                 for (int i = 0; i < people.Count; i++)
@@ -314,7 +322,13 @@ namespace RealLifeOverhaul.Ui
                         "reallife_vc_confirm_sell_body", () => _d.SellShares(place)));
                 }
                 card.Button(TechText.T("reallife_vc_button_listing"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.PrepareListing(place)));
-                _m.HeadActions = new[] { Button(TechText.T("reallife_vc_button_raise_page"), UiButtonKind.Primary, UiAction.Alt, Go(v => v.Page = PageRaise)) };
+                var head = new List<UiActionModel>(2);
+                if (c != null && StartupMoney.Has(c))
+                {
+                    head.Add(Button(TechText.T("reallife_vc_button_books"), UiButtonKind.Secondary, UiAction.Option, Go(v => v.Page = PageBooks)));
+                }
+                head.Add(Button(TechText.T("reallife_vc_button_raise_page"), UiButtonKind.Primary, UiAction.Alt, Go(v => v.Page = PageRaise)));
+                _m.HeadActions = head.ToArray();
                 _m.Left = new[] { card.Build() };
             }
 

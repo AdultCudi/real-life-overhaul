@@ -30,10 +30,12 @@ namespace RealLifeOverhaul
                 TechBridges.SectorSessions = Hold;
                 TechBridges.DeskRecord = Record;
                 SectorBridges.City = City;
+                BoardLinks.Connect();   // the board's question joins the kinds while the venture part runs
             }
 
             internal static void Disconnect()
             {
+                BoardLinks.Disconnect();
                 Hold(false, false);
                 TechBridges.SectorSessions = null;
                 TechBridges.DeskRecord = null;

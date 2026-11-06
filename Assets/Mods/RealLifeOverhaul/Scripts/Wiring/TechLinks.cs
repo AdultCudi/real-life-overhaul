@@ -30,6 +30,9 @@ namespace RealLifeOverhaul
                 TechBridges.OwnStock = OwnStock;
                 TechBridges.Prosecute = TaxCases.FileDataProtection;
                 TechBridges.Claim = Claim;
+                TechBridges.InvestorClaim = InvestorClaims.File;
+                TechBridges.InvestorFraud = TaxCases.FileInvestorFraud;
+                TechBridges.Skill = Skill;
                 TechBridges.Fame = Fame;
                 TechBridges.Supplied = Supplied;
                 TechBridges.Ipo = Ipo;
@@ -308,6 +311,20 @@ namespace RealLifeOverhaul
                 catch (Exception e)
                 {
                     Fault("TechLinks.Claim", e);
+                }
+            }
+
+            private static int Skill(int skill)
+            {
+                try
+                {
+                    Careers.StudyFile f = Careers.CareersDirector.Instance != null ? Careers.CareersDirector.Instance.Study : null;
+                    return f != null ? Careers.StudyRules.Points(f, skill) : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Skill", e);
+                    return 0;
                 }
             }
 

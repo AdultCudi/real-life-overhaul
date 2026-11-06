@@ -184,6 +184,10 @@ namespace RealLifeOverhaul.Tech
                 {
                     WriteRaise(box, picked, day);
                 }
+                else if (_page == PageBooks)
+                {
+                    WriteBooks(box, picked, day);
+                }
                 else
                 {
                     WriteCap(box, picked, day);
@@ -231,6 +235,10 @@ namespace RealLifeOverhaul.Tech
             {
                 box.Line(TechText.T("reallife_vc_cap_all_yours"));
             }
+            if (c != null)
+            {
+                WriteAccount(box, firm, c, day);
+            }
             // the chief executive: the player, or one of the firm's professionals
             _chiefs.Clear();
             IReadOnlyList<Person> people = _director.People;
@@ -259,6 +267,14 @@ namespace RealLifeOverhaul.Tech
                 Refresh();
             });
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_vc_button_options", () => Do(() => _director.GrantOptions(place)));
+            if (c != null && StartupMoney.Has(c))
+            {
+                InfoBox.Button(buttons, InfoBox.Additional, "reallife_vc_button_books", () =>
+                {
+                    _page = PageBooks;
+                    Refresh();
+                });
+            }
             Transform more = box.ButtonRow();
             if (c != null && c.VcSeats > 0)
             {

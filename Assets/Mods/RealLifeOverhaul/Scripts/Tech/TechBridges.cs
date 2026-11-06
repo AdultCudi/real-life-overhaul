@@ -154,6 +154,45 @@ namespace RealLifeOverhaul.Tech
         /// <summary>Opens a case for a data protection offence against a firm (its name), on a summons; the case's number or 0. Default: none.</summary>
         public static Func<string, int> Prosecute;
 
+        /// <summary>Files the investors' civil claim for money of a firm that was spent elsewhere:
+        /// the sum in whole money, the firm, the lead investor; the suit's number or 0. Default: none.</summary>
+        public static Func<long, string, string, int> InvestorClaim;
+
+        /// <summary>Opens the criminal case for investor fraud on a summons: the sum in whole money and the audit's evidence, 0 to 1; the case's number or 0. Default: none.</summary>
+        public static Func<int, float, int> InvestorFraud;
+
+        /// <summary>The player's own skill in points (a TalentCatalogue skill's number in, 0 to 100 out). Default: none, so 0.</summary>
+        public static Func<int, int> Skill;
+
+        /// <summary><see cref="Skill"/> asked: 0 with no answer, or if Careers fault.</summary>
+        public static int SkillNow(int skill)
+        {
+            try
+            {
+                return Skill != null ? Math.Max(0, Math.Min(100, Skill(skill))) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
+        /// <summary>The board's question session put in (true) or taken out of the sessions' registry as the venture part starts and stops. Default: nothing.</summary>
+        public static Action<bool> BoardSessions;
+
+        /// <summary><see cref="BoardSessions"/> told; a fault in the sessions changes nothing here.</summary>
+        public static void BoardSessionsNow(bool on)
+        {
+            try
+            {
+                BoardSessions?.Invoke(on);
+            }
+            catch (Exception)
+            {
+                // the sessions' fault: the board's question is then answered from the firm's page
+            }
+        }
+
         /// <summary>A loss at a business the company's liability cover may meet: the business and the loss in whole money. Default: nobody is told.</summary>
         public static Action<BuildingRegistration, int> Claim;
 
@@ -443,6 +482,10 @@ namespace RealLifeOverhaul.Tech
             Desks = null;
             SessionDesk = null;
             Prosecute = null;
+            InvestorClaim = null;
+            InvestorFraud = null;
+            Skill = null;
+            BoardSessions = null;
             Claim = null;
             Fame = null;
             Ipo = null;

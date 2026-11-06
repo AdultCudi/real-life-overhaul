@@ -102,6 +102,7 @@ namespace RealLifeOverhaul.Tech
         public long LastMrr;             // the recurring revenue a month when the target was set
         public long Unassigned;          // staff option shares nobody has been given yet, handed out when the firm has people
         public int OptionsChecked;       // 1 once the cap's options have been looked over for shares nobody holds
+        public readonly FirmAccount Acc = new FirmAccount();   // the firm account over the player's wallet; open once the firm has investors
 
         public long Total
         {
