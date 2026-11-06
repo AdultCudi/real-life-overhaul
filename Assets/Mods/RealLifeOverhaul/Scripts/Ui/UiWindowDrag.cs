@@ -18,6 +18,7 @@ namespace RealLifeOverhaul.Ui
         /// </summary>
         public static float Contain(float min, float max, float areaMin, float areaMax, float move)
         {
+            move = Sane(move);
             min += move;
             max += move;
             if (max - min > areaMax - areaMin)
@@ -27,6 +28,14 @@ namespace RealLifeOverhaul.Ui
             return min < areaMin ? move + areaMin - min : max > areaMax ? move + areaMax - max : move;
         }
 
+        /// <summary>
+        /// A kept move that cannot be real (not a number, endless, or further than any screen is wide) is no move: added to a box it would
+        /// round the clamp's own sums away and leave the window nowhere on the screen.
+        /// </summary>
+        public static float Sane(float move) => float.IsNaN(move) || Math.Abs(move) > MostMove ? 0f : move;
+
+        public const float MostMove = 65536f;
+
         private static bool[] _inside = new bool[256];     // per item of the scene: it belongs to the window
         private static bool[] _clipInside = new bool[8];
 
@@ -35,10 +44,17 @@ namespace RealLifeOverhaul.Ui
         /// strip sits in with everything drawn in it; with no panel, everything but the prompt bar. Gives the move made, which the
         /// clamp may have cut short.
         /// </summary>
-        public static void Apply(UiScene s, float dx, float dy, float width, float bottom, out float movedX, out float movedY)
+        public static void Apply(UiScene s, float dx, float dy, float width, float bottom, out float movedX, out float movedY) =>
+            Apply(s, dx, dy, width, width, bottom, out movedX, out movedY);
+
+        /// <summary>
+        /// The same with a narrower reach for a window that fits it: one wider than <paramref name="reach"/> (a label beside the dock on a small screen) is kept
+        /// whole in <paramref name="width"/> instead, never centred half off the screen for want of a reach it cannot have.
+        /// </summary>
+        public static void Apply(UiScene s, float dx, float dy, float reach, float width, float bottom, out float movedX, out float movedY)
         {
             Box(s, out float x, out float y, out float w, out float h);
-            movedX = Contain(x, x + w, 0f, width, dx);
+            movedX = Contain(x, x + w, 0f, w <= reach ? reach : width, dx);
             movedY = Contain(y, y + h, 0f, bottom, dy);
             if (movedX == 0f && movedY == 0f)
             {
@@ -166,7 +182,8 @@ namespace RealLifeOverhaul.Ui
             {
                 UiWindowPlaces.Get(Id, out _wantX, out _wantY);
             }
-            UiWindowDrag.Apply(s, _wantX, _wantY, width, bottom, out float x, out float y);
+            float right = s.WindowRight > 0f ? Math.Min(width, s.WindowRight) : width;
+            UiWindowDrag.Apply(s, _wantX, _wantY, right, width, bottom, out float x, out float y);
             X = x;
             Y = y;
             UiWindowPlaces.Laid(Id, x, y);
@@ -327,7 +344,8 @@ namespace RealLifeOverhaul.Ui
             {
                 string[] f = part.Split('|');
                 if (f.Length == 3 && f[0].Length > 0 && float.TryParse(f[1], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float x)
-                    && float.TryParse(f[2], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float y) && !float.IsNaN(x) && !float.IsNaN(y))
+                    && float.TryParse(f[2], System.Globalization.NumberStyles.Float, System.Globalization.CultureInfo.InvariantCulture, out float y)
+                    && UiWindowDrag.Sane(x) == x && UiWindowDrag.Sane(y) == y)
                 {
                     Moves[f[0]] = new Place { X = x, Y = y, Saved = true };
                 }
