@@ -140,9 +140,8 @@ namespace RealLifeOverhaul.Ui
             Row("Checkout, vehicle purchase, item panel, cargo", SweepState.Kit, "checkout", "buying and holding"),
 
             // ------------------------------------------------------------------------------------------------ not converted yet: the two pages still on the figures, table and side box shape
-            Row("The city's people pages: the city, who contributes, a household, a person, one who moved on", SweepState.Pending, "population",
-                "On the older dashboard shape (UiDashboard); the people info view of the Economy app (the people screen) and a person's profile are what they move to,"
-                + " with their entry points from the work apps and Property."),
+            Row("The city's people pages: the city, who contributes, a household, a person, one who moved on", SweepState.Kit, "population",
+                "an app window over the city: the profile's head, the big table's rows and the facts beside them"),
             Row("The studio page of a tech firm", SweepState.Pending, "studio",
                 "On the older dashboard shape (UiDashboard); an app window page with a hero and a table is what it moves to, with the firm's actions and its next step kept."),
 

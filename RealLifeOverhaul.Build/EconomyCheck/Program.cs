@@ -280,6 +280,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--population-ui")
+        {
+            PopulationUiChecks();   // the city's people pages: every view, its rows, Back with the focus, Estate's entry and every fact on its page (UiChecks.Population.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--services-ui")
         {
             ServicesUiChecks();   // the Services screen's pages, presses and entry points, and the rules a sale keeps, alone (UiChecks.Services.cs)

@@ -927,6 +927,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Ledger.cs" Link="Mod\UiDraw.Ledger.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.Answers.cs" Link="Mod\UiDraw.Answers.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Pages\PopulationPages.cs" Link="Mod\PopulationPages.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Pages\PopulationModel.cs" Link="Mod\PopulationModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Pages\PopulationFace.cs" Link="Mod\PopulationFace.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Pages\PopulationScreen.cs" Link="Mod\PopulationScreen.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Pages\StudioPages.cs" Link="Mod\StudioPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCheckRules.cs" Link="Mod\UiCheckRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiMotionRules.cs" Link="Mod\UiMotionRules.cs" />
