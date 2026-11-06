@@ -54,7 +54,7 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_world_driver_fee_due", "reallife_ui_world_driver_fee_paid", "reallife_ui_world_driver_state_none", "reallife_ui_world_driver_state_no_cars",
                     "reallife_ui_world_driver_none", "reallife_ui_world_driver_locate", "reallife_ui_prompt_move", "input_key_menu"
                 }).Switch(UiScreenSwitches.Tools),
-                new UiScreenDef("world_items_list", UiTemplate.Form, "ItemsListScreen", new[]
+                new UiScreenDef("world_items_list", UiTemplate.Hud, "ItemsListScreen", new[]
                 {
                     "bizman_store_inventory_title", "bizman_store_furniture_delivery_title", "common_search", "common_close", "reallife_ui_prompt_move", "reallife_ui_prompt_select",
                     "reallife_ui_world_items_count", "reallife_ui_world_items_none_found", "reallife_ui_world_items_none_found_body", "reallife_ui_world_items_empty",

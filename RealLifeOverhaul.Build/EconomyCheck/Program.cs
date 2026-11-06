@@ -235,6 +235,15 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--sweep-ui")
+        {
+            SweepUiChecks();   // the audit of the total conversion: its table, its files, its screens' switches and the sweep's own conversions (SweepUiChecks.cs)
+            _staffChecked = true;   // the staff checks read every screen's titles, which a filtered run does not give them: they run with --ui-screens
+            UiOnly = "session_panel";   // the desk session's layouts alone, the one screen the sweep moved to a newer template (UiChecks.Pages.cs)
+            UiScreenChecks();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--services-ui")
         {
             ServicesUiChecks();   // the Services screen's pages, presses and entry points, and the rules a sale keeps, alone (UiChecks.Services.cs)
