@@ -27,7 +27,9 @@ namespace RealLifeOverhaul.Ui
         private struct Dimmed
         {
             public CanvasRenderer Renderer;
+            public Graphic Picture;
             public float Alpha;
+            public bool Deaf, Heard;   // Deaf: the picture also stops taking the pointer while held, so the game's hover tint never runs on it
         }
 
         private struct Hold
@@ -89,7 +91,15 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>A graphic standing on a shared parent (the parent's own picture): hidden by its renderer alone, its children untouched.</summary>
-        public void Add(Graphic graphic)
+        public void Add(Graphic graphic) => Add(graphic, false);
+
+        /// <summary>
+        /// As <see cref="Add(Graphic)"/>, and the picture takes no pointer while held: a button's colour tint, sprite swap or animation
+        /// on hover would otherwise write over the hidden picture and show it again.
+        /// </summary>
+        public void AddDeaf(Graphic graphic) => Add(graphic, true);
+
+        private void Add(Graphic graphic, bool deaf)
         {
             if (graphic == null)
             {
@@ -100,16 +110,38 @@ namespace RealLifeOverhaul.Ui
             {
                 if (_graphics[i].Renderer == r)
                 {
+                    if (deaf && !_graphics[i].Deaf)
+                    {
+                        Dimmed up = _graphics[i];
+                        up.Deaf = true;
+                        up.Picture = graphic;
+                        if (_hiding)
+                        {
+                            up.Heard = graphic.raycastTarget;
+                            graphic.raycastTarget = false;
+                        }
+                        _graphics[i] = up;
+                    }
                     return;
                 }
             }
-            var held = new Dimmed { Renderer = r };
+            var held = new Dimmed { Renderer = r, Picture = graphic, Deaf = deaf };
             if (_hiding)
             {
                 held.Alpha = r.GetAlpha();
                 r.SetAlpha(0f);
+                Deafen(ref held);
             }
             _graphics.Add(held);
+        }
+
+        private static void Deafen(ref Dimmed d)
+        {
+            if (d.Deaf && d.Picture != null)
+            {
+                d.Heard = d.Picture.raycastTarget;
+                d.Picture.raycastTarget = false;
+            }
         }
 
         /// <summary>Everything held goes unseen; what each was is kept.</summary>
@@ -133,6 +165,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     d.Alpha = d.Renderer.GetAlpha();
                     d.Renderer.SetAlpha(0f);
+                    Deafen(ref d);
                 }
                 _graphics[i] = d;
             }
@@ -161,6 +194,10 @@ namespace RealLifeOverhaul.Ui
                 if (_graphics[i].Renderer != null)
                 {
                     _graphics[i].Renderer.SetAlpha(_graphics[i].Alpha);
+                    if (_graphics[i].Deaf && _graphics[i].Picture != null)
+                    {
+                        _graphics[i].Picture.raycastTarget = _graphics[i].Heard;
+                    }
                 }
             }
         }
