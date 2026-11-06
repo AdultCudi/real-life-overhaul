@@ -85,6 +85,8 @@ On the options page, under the Tech sector's startups: "My firm's board looks at
 
 Founding a startup, niches and going to market: [Founding a startup](startup-founding.md).
 
+Rivals in the niches, their reactions, bake offs and listed companies buying or coming in: [Competition in niches](startup-rivals.md).
+
 ## Exits
 
 Sales, listings, secondary sales and the city's startups as places: [Startup exits](startup-exits.md).

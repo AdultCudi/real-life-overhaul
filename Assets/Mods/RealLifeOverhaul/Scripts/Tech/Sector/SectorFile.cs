@@ -26,6 +26,12 @@ namespace RealLifeOverhaul.Tech
         // worked out each day, never saved
         public int Appeal, Awareness;
         public long Attraction;
+        // competition in niches (Tech/Rivals), set each day before its pull is worked out: the niche it sells into (-1: the whole market), the frame its appeal and awareness are weighed in,
+        // the view its customers move towards, and what a war chest or a listed company behind it adds to its reach and team
+        public int Niche = -1;
+        public SectorMarketDay Frame, View;
+        public long PushMarketing;
+        public int PushPoints;
 
         public bool Startups => Company < 0;
     }

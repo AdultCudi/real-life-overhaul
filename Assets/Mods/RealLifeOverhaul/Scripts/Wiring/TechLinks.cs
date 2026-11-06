@@ -51,10 +51,12 @@ namespace RealLifeOverhaul
                 _paperBefore = News.Extra;
                 News.Extra = Paper;
                 FoundLinks.Connect();   // the go to market sessions, the population's people and niches, the study's route for skills
+                BakeLinks.Connect();   // the bake off's desk session
             }
 
             internal static void Disconnect()
             {
+                BakeLinks.Disconnect();
                 FoundLinks.Disconnect();
                 TechBridges.Reset();
                 News.Extra = _paperBefore;

@@ -32,6 +32,7 @@ namespace RealLifeOverhaul.Tech
         private readonly long[] _nicheSoft = new long[NicheCatalogue.Count], _nicheAi = new long[NicheCatalogue.Count];   // buyers today for a software product and an AI one
         private int _nicheDay = -1;
         private readonly SectorMarketDay _nicheMd = new SectorMarketDay();
+        private int _servedNow;   // one bit per niche the product NicheView last weighed sells into; 0 when it sells into none
         private readonly List<CofounderOffer> _cofoundOffers = new List<CofounderOffer>(8);
         private int _cofoundDay = -1;
 
@@ -257,6 +258,7 @@ namespace RealLifeOverhaul.Tech
         /// </summary>
         private SectorMarketDay NicheView(FirmPlace firm, Product p, SectorMarketDay md, int day, long pulled, ref int appeal, ref int aware, ref Crew crew)
         {
+            _servedNow = 0;
             FoundedFirm f = _founding != null ? _founding.Of(firm.File.Place) : null;
             if (f == null || !f.Counts || f.Niche < 0)
             {
@@ -267,10 +269,12 @@ namespace RealLifeOverhaul.Tech
             long[] today = ai ? _nicheAi : _nicheSoft;
             long total = 0;
             bool serves = false;
+            int bits = 0;
             if (NicheRules.Serves(NicheCatalogue.Def(f.Niche), market))
             {
                 total += today[f.Niche];
                 serves = true;
+                bits |= 1 << f.Niche;
             }
             for (int i = 0; i < f.Expanded.Count; i++)
             {
@@ -278,6 +282,7 @@ namespace RealLifeOverhaul.Tech
                 {
                     total += today[f.Expanded[i].Niche] * NicheRules.Ramp(day - f.Expanded[i].Day) / 1000;
                     serves = true;
+                    bits |= 1 << f.Expanded[i].Niche;
                 }
             }
             if (!serves)
@@ -292,7 +297,16 @@ namespace RealLifeOverhaul.Tech
             SectorProduct sp = _sector.ProductAt(p.Id);
             int marketing = FirmsCatalogue.MarketingDay[TalentCatalogue.Clamp(p.Marketing, 0, FirmsCatalogue.MarketingDay.Length - 1)];
             aware = SectorRules.Awareness(marketing, buyers, SectorRules.Have(p), md.Who, SectorRules.Boost(sp, day) + FoundRules.Boost(f.Channel) + f.Wom);
-            NicheRules.Pull(v, md, SectorRules.Attraction(appeal, aware), pulled);
+            _servedNow = bits;
+            if (RivalryOn)
+            {
+                // one pool of buyers for everyone who sells in the niche: the city's startups pull in the same buyers (RivalryRules.PlayerAll)
+                v.All = RivalryRules.PlayerAll(_world, bits, market, md.All, SectorRules.Attraction(appeal, aware), pulled, buyers, md.Buyers, day);
+            }
+            else
+            {
+                NicheRules.Pull(v, md, SectorRules.Attraction(appeal, aware), pulled);
+            }
             if (f.Channel == FoundCatalogue.ChannelSales)
             {
                 crew.Selling += FoundRules.FounderPoints(TechBridges.SkillNow(TalentCatalogue.Selling), TechBridges.SkillNow(TalentCatalogue.Relationships));

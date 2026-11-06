@@ -638,6 +638,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--startup-rivals")
+        {
+            StartupRivalsChecks();   // (competition in niches: the shared pool, the rivals' reactions, bake offs and incumbents alone, while working on them: StartupRivalsChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--startup-founding")
         {
             StartupFoundingChecks();   // (founding a startup, its niches and going to market alone, while working on them: StartupFoundingChecks.cs)
@@ -1126,6 +1132,7 @@ internal static partial class Program
         StartupTermsChecks();
         StartupFoundingChecks();
         StartupExitsChecks();
+        StartupRivalsChecks();
         Firms();
         Competitors();
         LetGo();        // a building let go: the utilities' accounts and bills, business pressure's closures, an underground car park never supplied (LetGoChecks.cs)

@@ -259,7 +259,9 @@ namespace RealLifeOverhaul.Ui
                 mood.Row(TechText.T("reallife_niche_season"), def.Good != null ? TechText.Mille(f.Mood.Season) : "-");
                 mood.Row(TechText.T("reallife_niche_rent"), def.Rented ? TechText.Mille(f.Mood.Rent) : "-");
                 mood.Say(TechText.T("reallife_niche_mood_about"));
-                _m.Left = new[] { facts.Build() };
+                var left = new List<UiFactCardModel>(2) { facts.Build() };
+                NicheRivals(left, niche);
+                _m.Left = left.ToArray();
                 var right = new List<UiFactCardModel>(2) { mood.Build() };
                 FoundedFile file = _d.Foundings;
                 var open = new TechCard(_runs, TechText.T("reallife_niche_card_open"));
@@ -352,6 +354,11 @@ namespace RealLifeOverhaul.Ui
                             Ask("reallife_gtm_part_title", "reallife_gtm_part_body", () => _d.PartWays(place, no)), cap == null);
                     }
                     right.Add(team.Build());
+                }
+                if (f.Niche >= 0 && f.Counts)
+                {
+                    FirmRivals(left, right, place);   // who is coming at it, and the bake offs it can enter
+                    _m.Left = left.ToArray();
                 }
                 _m.Right = right.ToArray();
             }

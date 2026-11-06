@@ -311,8 +311,9 @@ namespace RealLifeOverhaul.Tech
             {
                 RivalProduct r = f.Rivals[i];
                 SectorMarketDay md = f.Markets[Clamp(r.Market, 0, f.Markets.Length - 1)];
-                r.Appeal = RivalAppeal(f, r, md);
-                r.Awareness = Awareness(RivalMarketing(r), md.Buyers, r.Customers, md.Who, 0);
+                SectorMarketDay frame = r.Frame ?? md;   // a rival in a niche is weighed among the niche's buyers at the price the niche bears
+                r.Appeal = RivalAppeal(f, r, frame);
+                r.Awareness = Awareness(RivalMarketing(r), frame.Buyers, r.Customers, md.Who, 0);
                 r.Attraction = Attraction(r.Appeal, r.Awareness);
                 md.All += r.Attraction;
             }

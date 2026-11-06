@@ -48,6 +48,7 @@ namespace RealLifeOverhaul.Tech
             FollowMoves();
             StartMoney();
             StartFounding();
+            StartRivalry();
             if (_pitch == null)
             {
                 _pitch = new VentureMeeting(this);
@@ -79,6 +80,7 @@ namespace RealLifeOverhaul.Tech
                 WriteVenture(Save.modData);
             }
             _pitch?.End();
+            StopRivalry();
             StopFounding();
             StopExits(keep);
             StopMoney();
@@ -93,6 +95,7 @@ namespace RealLifeOverhaul.Tech
                 WriteTerms(data);
                 WriteFounding(data);
                 WriteExits(data);
+                WriteRivalry(data);
             }
         }
 
@@ -144,6 +147,7 @@ namespace RealLifeOverhaul.Tech
             CapsDay(day, mood);
             ExitsDay(day);
             FoundingDay(day);
+            RivalryDay(day);
             _venture.LastDay = day;
             if (Verbose)
             {

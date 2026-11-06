@@ -47,13 +47,13 @@ namespace RealLifeOverhaul.Tech
         /// for its rounds, its team growing with them), and a startup's product goes when the startup does. The host's or a lone
         /// player's (a guest applies the host's). Notes the products that came, by where they stand once the closed ones are gone.
         /// </summary>
-        public static void Startups(SectorFile f, IList<Startup> startups, int day, List<RivalNote> notes)
+        public static void Startups(SectorFile f, IList<Startup> startups, int day, List<RivalNote> notes, Func<RivalProduct, bool> kept = null)
         {
             notes?.Clear();
             for (int i = f.Rivals.Count - 1; i >= 0; i--)
             {
                 RivalProduct r = f.Rivals[i];
-                if (r.Startups && !Running(startups, r.Startup))
+                if (r.Startups && !Running(startups, r.Startup) && (kept == null || !kept(r)))   // a startup a listed company bought goes on as its product
                 {
                     f.Rivals.RemoveAt(i);
                 }
@@ -122,19 +122,19 @@ namespace RealLifeOverhaul.Tech
         {
             if (r.Startups)
             {
-                return SectorCatalogue.StartupTeamSeed + SectorCatalogue.StartupTeamPerStage * Math.Max(0, r.Stage);
+                return SectorCatalogue.StartupTeamSeed + SectorCatalogue.StartupTeamPerStage * Math.Max(0, r.Stage) + r.PushPoints;
             }
             int c = Clamp(r.Company, 0, SectorCatalogue.CompanyTeam.Length - 1), n = 0;
             for (int i = 0; i < f.Rivals.Count; i++)
             {
                 n += f.Rivals[i].Company == c ? 1 : 0;
             }
-            return SectorCatalogue.CompanyTeam[c] / Math.Max(1, n);
+            return SectorCatalogue.CompanyTeam[c] / Math.Max(1, n) + r.PushPoints;
         }
 
         /// <summary>A rival's marketing a day for one product, cents.</summary>
         public static long RivalMarketing(RivalProduct r) =>
-            r.Startups ? SectorCatalogue.StartupMarketing : SectorCatalogue.CompanyMarketing[Clamp(r.Company, 0, SectorCatalogue.CompanyMarketing.Length - 1)];
+            (r.Startups ? SectorCatalogue.StartupMarketing : SectorCatalogue.CompanyMarketing[Clamp(r.Company, 0, SectorCatalogue.CompanyMarketing.Length - 1)]) + r.PushMarketing;
 
         /// <summary>A rival's name: its company's (moving with its products), or a startup's.</summary>
         public static int RivalReputation(SectorFile f, RivalProduct r) =>
@@ -198,7 +198,7 @@ namespace RealLifeOverhaul.Tech
                         notes?.Add(new RivalNote { Rival = i, Kind = NoteShipped });
                     }
                 }
-                RivalCustomers(f, r, m, day);
+                RivalCustomers(f, r, r.View ?? m, day);   // a rival that sells into a niche moves towards its share of that niche's buyers
                 if (r.Customers > 0 && TechRandom.Hash(f.Seed, r.Id, day, 11) % 1000000u < (long)FirmsCatalogue.OutageChance * (1000 - SectorCatalogue.RivalReliability))
                 {
                     r.Customers -= r.Customers * FirmsCatalogue.OutageChurn / 1000;   // the player's own outage rule
@@ -212,6 +212,10 @@ namespace RealLifeOverhaul.Tech
                 {
                     r.Peak = r.Customers;
                     r.PeakDay = day;
+                }
+                if (r.Niche >= 0)
+                {
+                    continue;   // in a niche its price moves with its share there (RivalRules.Shares)
                 }
                 if (r.Tier > 0 && r.Customers < r.Peak * (1000 - SectorCatalogue.RivalCutLoss) / 1000 && day - r.LastCut >= SectorCatalogue.RivalCutGap)
                 {

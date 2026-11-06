@@ -651,6 +651,15 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\ExitPlaces.cs" Link="Mod\ExitPlaces.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\ExitStore.cs" Link="Mod\ExitStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\ExitBridges.cs" Link="Mod\ExitBridges.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Rivals\RivalryCatalogue.cs" Link="Mod\Rivals\RivalryCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Rivals\RivalryFile.cs" Link="Mod\Rivals\RivalryFile.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Rivals\RivalryStore.cs" Link="Mod\Rivals\RivalryStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Rivals\NichePool.cs" Link="Mod\Rivals\NichePool.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Rivals\RivalryRules.cs" Link="Mod\Rivals\RivalryRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Rivals\RivalryRules.Reactions.cs" Link="Mod\Rivals\RivalryRules.Reactions.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Rivals\RivalryRules.Bake.cs" Link="Mod\Rivals\RivalryRules.Bake.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Rivals\RivalryBridges.cs" Link="Mod\Rivals\RivalryBridges.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Rivals\RivalryLine.cs" Link="Mod\Rivals\RivalryLine.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\InfraCatalogue.cs" Link="Mod\InfraCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\InfraModel.cs" Link="Mod\InfraModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\InfraRules.cs" Link="Mod\InfraRules.cs" />

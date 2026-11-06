@@ -9,7 +9,7 @@ internal static partial class UiSamples
     public static readonly string[] TechStates = JoinStates(new[]
     {
         "firms", "firms_empty", "studio", "game", "game_plan", "datacentre", "software", "products", "product", "contracts", "tender", "infra", "startups", "startup", "funding", "cap", "cap_account", "books", "books_free", "terms",
-        "team", "rivals", "concept", "found", "found_angel", "found_none", "niches", "niche", "gtm", "gtm_placed", "off"
+        "team", "rivals", "concept", "found", "found_angel", "found_none", "niches", "niche", "niche_rivals", "gtm", "gtm_placed", "gtm_rivals", "off"
     }, TechExitStates());
 
     private static string[] JoinStates(string[] a, string[] b)
@@ -131,8 +131,10 @@ internal static partial class UiSamples
             case "found_none": TechFoundNone(t, m, runs); break;
             case "niches": TechNiches(t, m, runs); break;
             case "niche": TechNiche(t, m, runs); break;
+            case "niche_rivals": TechNiche(t, m, runs, true); break;
             case "gtm": TechGtm(t, m, runs, false); break;
             case "gtm_placed": TechGtm(t, m, runs, true); break;
+            case "gtm_rivals": TechGtm(t, m, runs, false, true); break;
             case "team": TechTeam(t, m, runs); break;
             case "rivals": TechRivals(t, m, runs); break;
             case "concept": TechConcept(t, m, runs); break;

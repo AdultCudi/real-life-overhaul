@@ -43,7 +43,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Takings: the sales of the business (a refund is the same key, negative).</summary>
         public static readonly string[] TakingsKeys =
         {
-            P + "tech_takings", P + "tech_cloud_takings", P + "tech_related_takings", P + "broadband_takings", P + "ownbank_takings",
+            P + "tech_takings", P + "tech_cloud_takings", P + "tech_related_takings", P + "tech_bakeoff", P + "broadband_takings", P + "ownbank_takings",
             P + "study_academy", P + "bld_contract"
         };
 
