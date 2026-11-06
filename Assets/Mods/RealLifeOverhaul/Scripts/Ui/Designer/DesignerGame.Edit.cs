@@ -84,6 +84,10 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The head of the info panel: the business's name and initials, what it is and where.</summary>
         private static void FillHead(UiDesignerInfo i)
         {
+            i.Name = string.Empty;
+            i.Mark = "?";
+            i.Facts = null;
+            i.FloorWords = null;
             BuildingRegistration reg = Registration();
             if (reg == null)
             {
@@ -102,7 +106,6 @@ namespace RealLifeOverhaul.Ui
             i.Mark = DesignerRules.Initials(name);
             string where = string.IsNullOrEmpty(area) ? place : place + ", " + area;
             i.Facts = string.IsNullOrEmpty(kind) ? where : kind + ", " + where;
-            i.FloorWords = null;
             int floor = FloorShown();
             if (floor >= 0)
             {

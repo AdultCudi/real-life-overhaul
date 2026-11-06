@@ -143,6 +143,8 @@ namespace RealLifeOverhaul.Ui
             c.FavouriteLabel = UiText.T("reallife_ui_designer_favourite");
             c.ClearLabel = UiText.T("reallife_ui_designer_clear");
             c.TabCount = 0;
+            Toggle fav = BuyKits.Get<Toggle>(GameContract.DesignerFavToggle, panel);
+            c.FavouritesOnly = UiWidgets.On(fav);
             if (_catBuilt)
             {
                 Toggle all = SwitchOf(0);
@@ -151,8 +153,11 @@ namespace RealLifeOverhaul.Ui
                 int most = Math.Min(_cats.Length, UiDesignerCatalogue.TabsMost - 1);
                 for (int k = 0; k < most; k++)
                 {
-                    Toggle t = SwitchOf(k + 1);
-                    string words = UiWidgets.Label(t);
+                    string words = UiWidgets.Label(_cats[k]);   // the category's own label, wherever the game put it under its object
+                    if (string.IsNullOrEmpty(words))
+                    {
+                        words = UiWidgets.Label(SwitchOf(k + 1));
+                    }
                     CatNames[k + 1] = string.IsNullOrEmpty(words) ? _cats[k].name : words;
                 }
                 for (int k = 0; k <= most; k++)
@@ -162,10 +167,8 @@ namespace RealLifeOverhaul.Ui
                 }
                 c.TabCount = most + 1;
                 int active = Array.IndexOf(_cats, FurnitureCategoryToggle.CurrentActiveToggle);
-                c.Tab = active >= 0 && active < most ? active + 1 : 0;
+                c.Tab = c.FavouritesOnly ? -1 : active >= 0 && active < most ? active + 1 : 0;   // the favourites stand in the place of a category
             }
-            Toggle fav = BuyKits.Get<Toggle>(GameContract.DesignerFavToggle, panel);
-            c.FavouritesOnly = UiWidgets.On(fav);
             TMP_InputField search = SearchField();
             c.Search = search != null ? search.text ?? string.Empty : string.Empty;
             Listed.Clear();
@@ -175,7 +178,11 @@ namespace RealLifeOverhaul.Ui
                 Listed.AddRange(rows[r].itemTemplates);
             }
             View.Clear();
-            bool narrowed = _needFilter >= 0 && _needFilter < Rows.Count;
+            if (_needFilter >= Rows.Count || (_needFilter >= 0 && Rows[_needFilter].Met))
+            {
+                _needFilter = -1;   // the need is met (the player placed what it wanted) or gone: the catalogue is whole again
+            }
+            bool narrowed = _needFilter >= 0;
             for (int i = 0; i < Listed.Count; i++)
             {
                 Item item = ItemsGetter.GetByName(Listed[i].itemName);

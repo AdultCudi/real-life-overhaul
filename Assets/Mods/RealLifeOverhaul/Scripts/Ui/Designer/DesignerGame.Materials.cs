@@ -31,6 +31,7 @@ namespace RealLifeOverhaul.Ui
         private static readonly List<InteriorMaterialPreset>[] Library = { new List<InteriorMaterialPreset>(64), new List<InteriorMaterialPreset>(64) };
         private static readonly List<InteriorMaterialPreset> Shelf = new List<InteriorMaterialPreset>(64);
         private static readonly Dictionary<string, Sprite> Baked = new Dictionary<string, Sprite>(128, StringComparer.Ordinal);
+        private static readonly HashSet<string> Failed = new HashSet<string>(StringComparer.Ordinal);
         private static readonly Dictionary<string, int> Averages = new Dictionary<string, int>(128, StringComparer.Ordinal);
         private static string _materialSearch = string.Empty;
         private static int _materialTool = -1;
@@ -80,6 +81,7 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             Baked.Clear();
+            Failed.Clear();
             Averages.Clear();
         }
 
@@ -146,7 +148,7 @@ namespace RealLifeOverhaul.Ui
             List<InteriorMaterialPreset> all = Library[kind];
             for (int i = 0; i < all.Count; i++)
             {
-                if (DesignerRules.Matches(Say(all[i].localizeKey), _materialSearch))
+                if (string.IsNullOrEmpty(_materialSearch) || DesignerRules.Matches(NameOf(all[i].localizeKey), _materialSearch))
                 {
                     Shelf.Add(all[i]);
                 }
@@ -166,7 +168,8 @@ namespace RealLifeOverhaul.Ui
                 chosen = is_ ? i : chosen;
                 m.Cards[i] = new UiDesignerMaterial
                 {
-                    Index = i, Name = Say(p.localizeKey), Price = UiText.Money(p.price), Picture = MaterialPictureKey(p.uuid, is_ ? colour : 0), HasShades = p.variants != null && p.variants.Count > 1
+                    Index = i, Name = NameOf(p.localizeKey), Price = UiText.Money(p.price), Picture = MaterialPictureKey(p.uuid, is_ ? colour : 0),
+                    HasShades = p.variants != null && p.variants.Count > 1
                 };
             }
             m.CardCount = n;
@@ -189,7 +192,7 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             int shades = p.variants != null ? p.variants.Count : 0;
-            m.DetailName = Say(p.localizeKey);
+            m.DetailName = NameOf(p.localizeKey);
             string name = UiText.T(kind == 0 ? "interior_designer_floor" : "interior_designer_wall");
             m.DetailKind = shades > 1 ? name + ", " + UiText.Fill("reallife_ui_designer_shades", "n", UiText.Whole(shades)) : name;
             m.DetailLabels[0] = UiText.T("reallife_ui_designer_price_piece");
@@ -452,9 +455,18 @@ namespace RealLifeOverhaul.Ui
             {
                 return null;
             }
+            if (Failed.Contains(key))
+            {
+                return preset.preview;
+            }
             Sprite sprite = Bake(preset, variant, 96, null);
-            Baked[key] = sprite != null ? sprite : preset.preview;
-            return Baked[key];
+            if (sprite == null)
+            {
+                Failed.Add(key);   // tried once; the game's own flat preview stands in, and is never kept or destroyed here
+                return preset.preview;
+            }
+            Baked[key] = sprite;
+            return sprite;
         }
 
         // The mean colour of a shade, made from the game's own preview of it at a small size, kept for the session.

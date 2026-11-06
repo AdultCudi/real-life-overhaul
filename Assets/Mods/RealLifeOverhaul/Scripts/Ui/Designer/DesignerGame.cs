@@ -142,6 +142,12 @@ namespace RealLifeOverhaul.Ui
             InteriorDesignerInfoPanelEvents.onCostBalanceChanged = (Action<double>)Delegate.Combine(InteriorDesignerInfoPanelEvents.onCostBalanceChanged, OnCost);
             InteriorDesignerInfoPanelEvents.onUpdateInteriorScore = (Action<float>)Delegate.Combine(InteriorDesignerInfoPanelEvents.onUpdateInteriorScore, OnScore);
             InteriorDesignerInfoPanelEvents.onUpdateCustomerCapacity = (Action)Delegate.Combine(InteriorDesignerInfoPanelEvents.onUpdateCustomerCapacity, OnCapacity);
+            if (InteriorDesignerUI.IsOpen && !InteriorDesignerHelper.BlueprintCreatorMode && !_opened)
+            {
+                _opened = true;   // the interface came on while the designer was open: what it shows is measured from here
+                Begin();
+                HudHints.Keep(true);
+            }
         }
 
         /// <summary>The game's events let go, and every reference to the game's objects with them.</summary>
