@@ -15,7 +15,7 @@ namespace RealLifeOverhaul.Ui
                     "reallife_pop_view_city", "reallife_ui_pop_household", "reallife_ui_pop_household_plain", "reallife_ui_pop_last_month", "reallife_ui_pop_home",
                     "reallife_ui_pop_age", "reallife_ui_pop_gone_body", "reallife_ui_pop_gone_named", "reallife_pop_fig_field", "reallife_pop_landlord_city"
                 }).Switch(UiScreenSwitches.Apps),
-                new UiScreenDef("studio", UiTemplate.Dashboard, "StudioPageScreen", new[]
+                new UiScreenDef("studio", UiTemplate.AppWindow, "StudioPageScreen", new[]
                 {
                     "reallife_ui_page_empty", "reallife_ui_prompt_move", "reallife_ui_prompt_back", "reallife_studio_page_games_out", "reallife_studio_page_copies",
                     "reallife_studio_page_takings", "reallife_studio_page_col_game", "reallife_studio_page_col_genre", "reallife_studio_page_col_score",
@@ -36,7 +36,8 @@ namespace RealLifeOverhaul.Ui
                     "reallife_tech_mkt_page_desk", "reallife_tech_mkt_page_reputation", "reallife_tech_mkt_market_businesssoftware", "reallife_tech_mkt_market_apps",
                     "reallife_ui_sample_firm", "reallife_ui_sample_firm_note", "reallife_ui_sample_engine", "reallife_studio_genre_adventure",
                     "reallife_studio_genre_simulation", "reallife_studio_genre_strategy", "reallife_studio_next_hire", "reallife_studio_page_needed_how",
-                    "reallife_studio_page_no_games_hire", "reallife_studio_page_age_days", "reallife_tech_mkt_page_building", "reallife_tech_mkt_page_ready"
+                    "reallife_studio_page_no_games_hire", "reallife_studio_page_age_days", "reallife_tech_mkt_page_building", "reallife_tech_mkt_page_ready",
+                    "reallife_ui_tech_skill", "reallife_studio_page_none", "reallife_ui_page_studio"
                 }).Switch(UiScreenSwitches.Apps),
                 new UiScreenDef("session_panel", UiTemplate.Decision, "ActivityScreen", new[]
                 {

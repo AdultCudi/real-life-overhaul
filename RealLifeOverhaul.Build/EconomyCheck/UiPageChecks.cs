@@ -143,14 +143,21 @@ internal static partial class Program
             }
         }
         Check(same, "ui pages: a firm's page offers exactly the acts its director carries out, so no button of the Tech app's own screens does nothing on it (" + odd + ")");
-        UiDashboardModel sample = StudioPages.Sample(UiWords("en"));
+        StudioFaceModel sample = StudioPages.Sample(UiWords("en"));
         UiFrame frame = UiFrame.FullMenu(16f / 9f, "Your firm");
         var scene = new UiScene();
-        UiDashboard.Lay(scene, sample, frame, true, UiDefaultKeys.Keyboard);
+        StudioFace.Lay(scene, sample, frame, true, UiDefaultKeys.Keyboard);
         string said = "none";
         int broken = UiCheckRules.Overlaps(scene, l => said = l) + UiCheckRules.Spills(scene, l => said = l) + UiCheckRules.Unfit(scene, l => said = l) + UiCheckRules.EmptyPanels(scene, l => said = l)
                      + UiCheckRules.NoPrompts(scene, l => said = l) + UiCheckRules.TypeLevels(scene, l => said = l);
-        Check(scene.NodeCount == 1 && scene.Nodes[0].Command == UiDraw.CloseCommand && broken == 0 && sample.Title == UiWords("en")("reallife_ui_sample_firm", "A sample studio"),
-            "ui pages: on a save with no tech firm the firm's test opens a sample studio named as one, with nothing on it to press (" + said + ")");
+        // Its rows are targets only so the keys and the pad can scroll them: the close and the rows are all there is to press, and no action stands on it.
+        bool onlyRows = true;
+        for (int i = 0; i < scene.NodeCount; i++)
+        {
+            int c = scene.Nodes[i].Command;
+            onlyRows &= c == UiDraw.CloseCommand || (System.Array.IndexOf(StudioFace.Commands, c) >= 0 && c != StudioFace.ActionCommand);
+        }
+        Check(onlyRows && sample.Actions.Length == 0 && broken == 0 && sample.Title == UiWords("en")("reallife_ui_sample_firm", "A sample studio"),
+            "ui pages: on a save with no tech firm the firm's test opens a sample studio named as one, with nothing on it to act on (" + said + ")");
     }
 }

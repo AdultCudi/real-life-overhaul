@@ -6,16 +6,20 @@ namespace RealLifeOverhaul.Ui
 {
     /// <summary>
     /// A tech firm's whole page as a screen of the kit: the game studio's (StudioViews.Page) or another firm's
-    /// (SectorViews.Page) on the dashboard, its actions pressed as the Tech app presses them (the director's own acts), and
-    /// worked out again after every press. Cost: a page and a layout when it opens and after a press; nothing per frame.
+    /// (SectorViews.Page) on the app window as the Tech app's own firm pages stand, its actions pressed as the Tech app presses
+    /// them (the director's own acts), and worked out again after every press. Cost: a page and a layout when it opens and
+    /// after a press; nothing per frame.
     /// </summary>
     public sealed class StudioPageScreen : IUiScreen
     {
-        private readonly List<ViewAction> _others = new List<ViewAction>(StudioPages.MostOthers);
+        private const int Tables = 3;
+
+        private readonly List<ViewAction> _acts = new List<ViewAction>(StudioPages.MostOthers + 1);
         private readonly UiStudioWords _words = new UiStudioWords();
-        private readonly UiDashboardScroll _scroll = new UiDashboardScroll();
+        private readonly float[] _offset = new float[Tables];
+        private readonly int[] _reveal = { -1, -1, -1 };
         private readonly string _place;   // the firm's place, or null for the labelled sample studio
-        private ViewAction _primary;
+        private StudioFaceModel _m = new StudioFaceModel();
         private bool _dirty = true;
 
         public Action Close;
@@ -29,39 +33,53 @@ namespace RealLifeOverhaul.Ui
 
         public bool Dirty => _dirty;
 
+        /// <summary>The model as last laid, for the checks and the tests.</summary>
+        public StudioFaceModel Model => _m;
+
         public void Lay(UiScene s, UiFrame frame, bool dark, IUiKeys keys)
         {
             FirmPage page = _place != null ? Page() : null;
-            UiDashboardModel m;
+            _acts.Clear();
             if (_place == null)
             {
-                _primary = null;
-                _others.Clear();
-                m = StudioPages.Sample(UiText.Words);
+                _m = StudioPages.Sample(UiText.Words);
             }
             else if (page != null)
             {
-                m = StudioPages.Page(page, UiText.Words, _others, out _primary);
+                _m = StudioPages.Page(page, UiText.Words, _acts);
             }
             else
             {
-                _primary = null;
-                _others.Clear();
-                string empty = UiText.T("reallife_ui_page_empty");
-                m = new UiDashboardModel { Table = new UiTableModel { EmptyTitle = empty } };
-                m.Prompts = new[] { new UiPrompt { Action = UiAction.Back, Label = UiText.T("reallife_ui_prompt_back") } };
-                m.PromptCount = 1;
+                _m = StudioPages.Empty(UiText.Words);
             }
-            _scroll.Apply(m);
-            UiDashboard.Lay(s, m, frame, dark, keys);
-            _scroll.Keep(m);
+            for (int i = 0; i < Tables; i++)
+            {
+                UiDataTableModel t = Table(i);
+                if (t != null)
+                {
+                    t.Offset = _offset[i];
+                    t.Reveal = _reveal[i];
+                }
+                _reveal[i] = -1;
+            }
+            StudioFace.Lay(s, _m, frame, dark, keys);
+            for (int i = 0; i < Tables; i++)
+            {
+                UiDataTableModel t = Table(i);
+                _offset[i] = t != null ? t.Offset : 0f;
+            }
             _dirty = false;
         }
 
         public bool Press(int command, int arg)
         {
-            ViewAction a = command == UiDashboard.ActionCommand ? _primary : command == UiDashboard.OtherCommand && arg >= 0 && arg < _others.Count ? _others[arg] : null;
-            return a != null && a.Enabled && Do(a.Act, a.Arg);
+            if (command == StudioFace.ActionCommand)
+            {
+                ViewAction a = arg >= 0 && arg < _acts.Count ? _acts[arg] : null;
+                return a != null && a.Enabled && Do(a.Act, a.Arg);
+            }
+            // A row is read where it stands: it is a target so the keys and the pad can scroll to it, and it opens nothing.
+            return command == StudioFace.MainBase + UiDataTable.Row || command == StudioFace.MoreBase + UiDataTable.Row || command == StudioFace.TeamBase + UiDataTable.Row;
         }
 
         public void Focused(int command, int arg)
@@ -78,19 +96,44 @@ namespace RealLifeOverhaul.Ui
         {
         }
 
-        public bool Act(UiAction action) => action == UiAction.Alt && Press(UiDashboard.ActionCommand, 0);
+        // F runs the main action and P the first of the others, as their buttons' caps say.
+        public bool Act(UiAction action)
+        {
+            for (int i = 0; i < _m.Actions.Length; i++)
+            {
+                if (_m.Actions[i].Key == action && action != UiAction.Count)
+                {
+                    return Press(StudioFace.ActionCommand, i);
+                }
+            }
+            return false;
+        }
 
         public void Reveal(int list, int index)
         {
-            _scroll.Reveal(list, index);
-            _dirty = true;
+            for (int i = 0; i < Tables; i++)
+            {
+                if (list >= 0 && list == _m.Lists[i])
+                {
+                    _reveal[i] = index;
+                    _dirty = true;
+                }
+            }
         }
 
         public void Wheel(int clip, float notches)
         {
-            _scroll.Wheel(clip, notches);
-            _dirty = true;
+            for (int i = 0; i < Tables; i++)
+            {
+                if (clip >= 0 && clip == _m.Clips[i])
+                {
+                    _offset[i] = Math.Max(0f, _offset[i] - notches * UiTokens.TableRow);
+                    _dirty = true;
+                }
+            }
         }
+
+        private UiDataTableModel Table(int i) => i == 0 ? _m.Main : i == 1 ? _m.More : _m.Team;
 
         private FirmPage Page()
         {

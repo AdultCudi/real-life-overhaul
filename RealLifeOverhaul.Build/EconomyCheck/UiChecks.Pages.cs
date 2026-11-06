@@ -9,10 +9,10 @@ internal static partial class Program
         if (def.Id == "studio")
         {
             // The one screen draws the studio's page and the other tech firms' pages: both are checked.
-            cases.Add(new UiScreenCase { Def = def, Name = def.Id, Title = "Tech", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.StudioFirm(t), f, dark, k) });
-            cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (another firm)", Title = "Tech", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.TechFirm(t), f, dark, k) });
+            cases.Add(new UiScreenCase { Def = def, Name = def.Id, Title = "Tech", Commands = StudioFace.Commands, Lay = (s, f, dark, k, t) => StudioFace.Lay(s, UiSamples.StudioFirm(t), f, dark, k) });
+            cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (another firm)", Title = "Tech", Commands = StudioFace.Commands, Lay = (s, f, dark, k, t) => StudioFace.Lay(s, UiSamples.TechFirm(t), f, dark, k) });
             // Beta 3's empty studio: no staff, no game, thirty days of nothing taken. Every page has its zero state checked too.
-            cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (empty, new)", Title = "Your firm", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.StudioEmpty(t), f, dark, k) });
+            cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (empty, new)", Title = "Your firm", Commands = StudioFace.Commands, Lay = (s, f, dark, k, t) => StudioFace.Lay(s, UiSamples.StudioEmpty(t), f, dark, k) });
             return;
         }
         if (def.Id == "session_panel")

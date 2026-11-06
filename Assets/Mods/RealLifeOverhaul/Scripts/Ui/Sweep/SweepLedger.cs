@@ -143,8 +143,8 @@ namespace RealLifeOverhaul.Ui
             Row("The city's people pages: the city, who contributes, a household, a person, one who moved on", SweepState.Pending, "population",
                 "On the older dashboard shape (UiDashboard); the people info view of the Economy app (the people screen) and a person's profile are what they move to,"
                 + " with their entry points from the work apps and Property."),
-            Row("The studio page of a tech firm", SweepState.Pending, "studio",
-                "On the older dashboard shape (UiDashboard); an app window page with a hero and a table is what it moves to, with the firm's actions and its next step kept."),
+            Row("The studio page of a tech firm", SweepState.Kit, "studio",
+                "an app window over the city: the next step and the firm's actions, its figures, its tables, the team's bars and its facts, as the Tech app's firm pages stand"),
 
             // ------------------------------------------------------------------------------------------------ left the game's by decision
             Kept("The 3D city map itself", "The 3D map stays the game's; its panels are on the kit.", "1 Nov 2026"),

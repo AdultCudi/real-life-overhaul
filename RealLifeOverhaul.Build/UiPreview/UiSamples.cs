@@ -29,9 +29,9 @@ internal static partial class UiSamples
             new Sample { Name = "population_household", App = "The city's people", Lay = (s, f, d, k) => UiDashboard.Lay(s, PopulationHousehold(t), f, d, k), Walk = "RDDUL" },
             new Sample { Name = "population_person", App = "The city's people", Lay = (s, f, d, k) => UiDashboard.Lay(s, PopulationPerson(t), f, d, k), Walk = "DU" },
             new Sample { Name = "population_gone", App = "The city's people", Lay = (s, f, d, k) => UiDashboard.Lay(s, PopulationGone(t), f, d, k), Walk = "D" },
-            new Sample { Name = "studio", App = "Your firm", Lay = (s, f, d, k) => UiDashboard.Lay(s, StudioFirm(t), f, d, k), Walk = "LDDDDRDDLU" },
-            new Sample { Name = "studio_empty", App = "Your firm", Lay = (s, f, d, k) => UiDashboard.Lay(s, StudioEmpty(t), f, d, k), Walk = "DLR" },
-            new Sample { Name = "tech_firm", App = "Your firm", Lay = (s, f, d, k) => UiDashboard.Lay(s, TechFirm(t), f, d, k), Walk = "DDDDRDDLU" },
+            new Sample { Name = "studio", App = "Your firm", Lay = (s, f, d, k) => StudioFace.Lay(s, StudioFirm(t), f, d, k), Walk = "LDDDDRDDLU" },
+            new Sample { Name = "studio_empty", App = "Your firm", Lay = (s, f, d, k) => StudioFace.Lay(s, StudioEmpty(t), f, d, k), Walk = "DLR" },
+            new Sample { Name = "tech_firm", App = "Your firm", Lay = (s, f, d, k) => StudioFace.Lay(s, TechFirm(t), f, d, k), Walk = "DDDDRDDLU" },
             new Sample { Name = "session_panel", App = "Desk", Lay = (s, f, d, k) => UiDecision.Lay(s, DeskCard(t), f, d, k), Walk = "RDLUL" },
             new Sample { Name = "session_panel_start", App = "Desk", Lay = (s, f, d, k) => UiDecision.Lay(s, DeskStart(t), f, d, k), Walk = "RDLUL" },
         };
@@ -195,14 +195,12 @@ internal static partial class UiSamples
     /// next and its actions, its games out, copies and 30 days' takings, its games and the games market's newest, its
     /// team with the group it lacks, and its sales and support.
     /// </summary>
-    public static UiDashboardModel StudioFirm(UiWords t)
+    public static StudioFaceModel StudioFirm(UiWords t)
     {
-        var m = new UiDashboardModel
+        var m = new StudioFaceModel
         {
             Title = "Lantern Bay Games",
-            Subtitle = "Next: start a game. Draft a concept, then pitch it at your desk at Lantern Bay Games.",
-            SubtitleInk = UiRole.Text,
-            StatsFirst = true,
+            Next = "Next: start a game. Draft a concept, then pitch it at your desk at Lantern Bay Games.",
             Figures = new[]
             {
                 new UiFigureModel { Label = t("reallife_studio_page_games_out", "Games out"), Value = "4" },
@@ -213,9 +211,9 @@ internal static partial class UiSamples
                     Trend = new[] { 38f, 39f, 41f, 40f, 42f, 44f, 47f, 51f, 49f, 46f, 44f, 43f, 45f, 46f, 44f, 42f, 41f, 43f, 45f, 48f, 50f, 49f, 47f, 46f }
                 },
             },
-            Table = FirmTable(t, new[] { "reallife_studio_page_col_game", "reallife_studio_page_col_genre", "reallife_studio_page_col_score", "reallife_studio_page_col_copies",
+            Main = FirmTable(t, new[] { "reallife_studio_page_col_game", "reallife_studio_page_col_genre", "reallife_studio_page_col_score", "reallife_studio_page_col_copies",
                 "reallife_studio_page_col_kept", "reallife_studio_page_col_status" }, new[] { "Game", "Genre", "Score", "Copies", "Kept", "Status" }, 2,
-                "reallife_studio_page_no_games", "No game yet. Draft a concept, then pitch it at your desk.", new[]
+                "reallife_studio_page_no_games", "No game yet. Draft a concept, then pitch it at your desk.", UiIcon.GameController, new[]
                 {
                     new[] { "Cinder Valley", "Simulation", "", "", "", "64% made" },
                     new[] { "Ember Isle", "Adventure", "78", "41,000", "$612,400", Out(t, 96) },
@@ -224,7 +222,8 @@ internal static partial class UiSamples
                     new[] { "Pocket Courts", "Sports", "58", "4,300", "$31,200", "Withdrawn" },
                 }),
             More = FirmTable(t, new[] { "reallife_studio_page_col_rival", "reallife_studio_page_col_studio", "reallife_studio_page_col_genre", "reallife_studio_page_col_score",
-                "reallife_studio_page_col_copies" }, new[] { "Rival game", "Studio", "Genre", "Score", "Copies" }, 3, "reallife_studio_studio_rivals_none", "No rival game is out yet.", new[]
+                "reallife_studio_page_col_copies" }, new[] { "Rival game", "Studio", "Genre", "Score", "Copies" }, 3, "reallife_studio_studio_rivals_none",
+                "No rival game is out yet.", UiIcon.Flag, new[]
                 {
                     new[] { "Iron Tide", "Pixel Harbour Games", "Action", "82", "41,000" },
                     new[] { "Lantern Puzzles", "Copperkettle Games", "Puzzle", "71", "12,300" },
@@ -239,90 +238,56 @@ internal static partial class UiSamples
                     new[] { "Mire", "Blue Kestrel Games", "Puzzle", "65", "7,200" },
                     new[] { "Old Kingdoms", "Saltmarsh Studios", "Role-playing", "81", "48,800" },
                 }),
-            StatsTitle = t("reallife_studio_page_team", "Team"),
-            Stats = new[]
+            Team = TeamOf(t, Group(t, "reallife_studio_page_group_engineers", "Engineers", 5, 64), Group(t, "reallife_studio_page_group_designers", "Designers", 3, 58),
+                Group(t, "reallife_studio_page_group_testers", "Testers", 2, 52), Group(t, "reallife_studio_page_group_product", "Product", 1, 61),
+                Group(t, "reallife_studio_page_group_support", "Support", 0, 0)),
+            Note = Needed(t),
+            Facts = FactsOf(t, "reallife_studio_page_facts", "Sales and support",
+                ("reallife_studio_page_tickets", "Tickets a day", "120, 0 answered"), ("reallife_studio_page_pirated", "Pirated copies", "9,800"),
+                ("reallife_studio_page_drm", "DRM", "On in 1 of 3"), ("reallife_studio_page_asks", "Fan requests", "New levels, co-op play"),
+                ("reallife_studio_page_engine", "Engine", "Under licence"), ("reallife_studio_page_trend", "Hot genre", "Strategy until Day 61"),
+                ("reallife_studio_page_known", "Team knows", "Simulation, Adventure, Strategy")),
+            Actions = new[]
             {
-                Group(t, "reallife_studio_page_group_engineers", "Engineers", 5, 64),
-                Group(t, "reallife_studio_page_group_designers", "Designers", 3, 58),
-                Group(t, "reallife_studio_page_group_testers", "Testers", 2, 52),
-                Group(t, "reallife_studio_page_group_product", "Product", 1, 61),
-                Group(t, "reallife_studio_page_group_support", "Support", 0, 0),
+                new UiActionModel { Label = "Build our own engine", Kind = UiButtonKind.Secondary, Key = UiAction.Option, Command = StudioFace.ActionCommand, Arg = 0 },
+                new UiActionModel { Label = "Start a game", Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = StudioFace.ActionCommand, Arg = 1 },
             },
-            StatsNote = t("reallife_studio_page_needed_how", "To fill a group, hire people in the Business app, then set their roles in Open Roles, on its Team tab."),
-            SideTitle = t("reallife_studio_page_facts", "Sales and support"),
-            Side = new[]
-            {
-                new UiPairModel { Key = t("reallife_studio_page_tickets", "Tickets a day"), Value = "120, 0 answered" },
-                new UiPairModel { Key = t("reallife_studio_page_pirated", "Pirated copies"), Value = "9,800" },
-                new UiPairModel { Key = t("reallife_studio_page_drm", "DRM"), Value = "On in 1 of 3" },
-                new UiPairModel { Key = t("reallife_studio_page_asks", "Fan requests"), Value = "New levels, co-op play" },
-                new UiPairModel { Key = t("reallife_studio_page_engine", "Engine"), Value = "Under licence" },
-                new UiPairModel { Key = t("reallife_studio_page_trend", "Hot genre"), Value = "Strategy until Day 61" },
-                new UiPairModel { Key = t("reallife_studio_page_known", "Team knows"), Value = "Simulation, Adventure, Strategy" },
-            },
-            Others = new[] { new UiActionModel { Label = "Build our own engine", Kind = UiButtonKind.Secondary, Key = UiAction.Option, Command = UiDashboard.OtherCommand } },
-            HasAction = true,
-            Action = new UiActionModel { Label = "Start a game", Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiDashboard.ActionCommand },
         };
-        return Counted(m, t, "Start a game");
+        return Prompted(m, t, "Start a game");
     }
 
     /// <summary>
     /// A new studio as the owner opened it in beta 3: nobody in it, no game, nothing taken. Its next step is to hire, each
     /// needed group says how to fill it, its takings draw no flat line, and its facts say None in one case.
     /// </summary>
-    public static UiDashboardModel StudioEmpty(UiWords t)
+    public static StudioFaceModel StudioEmpty(UiWords t)
     {
-        var m = new UiDashboardModel
+        var m = new StudioFaceModel
         {
             Title = "Pioneer Game studio",
-            Subtitle = t("reallife_studio_next_hire", "Next: hire engineers and designers for {studio}, so it can start a game.")
-                .Replace("{studio}", "Pioneer Game studio"),
-            SubtitleInk = UiRole.WarnText,
-            StatsFirst = true,
+            Next = t("reallife_studio_next_hire", "Next: hire engineers and designers for {studio}, so it can start a game.").Replace("{studio}", "Pioneer Game studio"),
+            NextInk = UiRole.WarnText,
             Figures = new[]
             {
                 new UiFigureModel { Label = t("reallife_studio_page_games_out", "Games out"), Value = "0" },
                 new UiFigureModel { Label = t("reallife_studio_page_copies", "Copies sold"), Value = "0" },
                 new UiFigureModel { Label = t("reallife_studio_page_takings", "Takings, 30 days"), Value = "$0", Span = 2, Trend = new float[24] },
             },
-            Table = FirmTable(t, new[] { "reallife_studio_page_col_game", "reallife_studio_page_col_genre", "reallife_studio_page_col_score", "reallife_studio_page_col_copies",
+            Main = FirmTable(t, new[] { "reallife_studio_page_col_game", "reallife_studio_page_col_genre", "reallife_studio_page_col_score", "reallife_studio_page_col_copies",
                 "reallife_studio_page_col_kept", "reallife_studio_page_col_status" }, new[] { "Game", "Genre", "Score", "Copies", "Kept", "Status" }, 2,
-                "reallife_studio_page_no_games_hire", "No game yet. Hire a team first, then draft a concept.", new string[0][]),
+                "reallife_studio_page_no_games_hire", "No game yet. Hire a team first, then draft a concept.", UiIcon.GameController, new string[0][]),
             More = FirmTable(t, new[] { "reallife_studio_page_col_rival", "reallife_studio_page_col_studio", "reallife_studio_page_col_genre", "reallife_studio_page_col_score",
-                "reallife_studio_page_col_copies" }, new[] { "Rival game", "Studio", "Genre", "Score", "Copies" }, 3, "reallife_studio_studio_rivals_none", "No rival game is out yet.",
-                new string[0][]),
-            StatsTitle = t("reallife_studio_page_team", "Team"),
-            Stats = new[]
-            {
-                Group(t, "reallife_studio_page_group_engineers", "Engineers", 0, 0),
-                Group(t, "reallife_studio_page_group_designers", "Designers", 0, 0),
-            },
-            StatsNote = t("reallife_studio_page_needed_how", "To fill a group, hire people in the Business app, then set their roles in Open Roles, on its Team tab."),
-            SideTitle = t("reallife_studio_page_facts", "Sales and support"),
-            Side = new[]
-            {
-                new UiPairModel { Key = t("reallife_studio_page_tickets", "Tickets a day"), Value = "None" },
-                new UiPairModel { Key = t("reallife_studio_page_pirated", "Pirated copies"), Value = "0" },
-                new UiPairModel { Key = t("reallife_studio_page_drm", "DRM"), Value = "Off" },
-                new UiPairModel { Key = t("reallife_studio_page_asks", "Fan requests"), Value = "None" },
-                new UiPairModel { Key = t("reallife_studio_page_engine", "Engine"), Value = "Under licence" },
-                new UiPairModel { Key = t("reallife_studio_page_trend", "Hot genre"), Value = "None" },
-                new UiPairModel { Key = t("reallife_studio_page_known", "Team knows"), Value = "None" },
-            },
-            Others = new[] { new UiActionModel { Label = "Build our own engine", Kind = UiButtonKind.Secondary, Key = UiAction.Option, Command = UiDashboard.OtherCommand } },
+                "reallife_studio_page_col_copies" }, new[] { "Rival game", "Studio", "Genre", "Score", "Copies" }, 3, "reallife_studio_studio_rivals_none",
+                "No rival game is out yet.", UiIcon.Flag, new string[0][]),
+            Team = TeamOf(t, Group(t, "reallife_studio_page_group_engineers", "Engineers", 0, 0), Group(t, "reallife_studio_page_group_designers", "Designers", 0, 0)),
+            Note = Needed(t),
+            Facts = FactsOf(t, "reallife_studio_page_facts", "Sales and support",
+                ("reallife_studio_page_tickets", "Tickets a day", "None"), ("reallife_studio_page_pirated", "Pirated copies", "0"), ("reallife_studio_page_drm", "DRM", "Off"),
+                ("reallife_studio_page_asks", "Fan requests", "None"), ("reallife_studio_page_engine", "Engine", "Under licence"), ("reallife_studio_page_trend", "Hot genre", "None"),
+                ("reallife_studio_page_known", "Team knows", "None")),
+            Actions = new[] { new UiActionModel { Label = "Build our own engine", Kind = UiButtonKind.Secondary, Key = UiAction.Option, Command = StudioFace.ActionCommand, Arg = 0 } },
         };
-        m.FigureCount = m.Figures.Length;
-        m.StatCount = m.Stats.Length;
-        m.SideCount = m.Side.Length;
-        m.OtherCount = m.Others.Length;
-        m.Prompts = new[]
-        {
-            new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
-            new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
-        };
-        m.PromptCount = m.Prompts.Length;
-        return m;
+        return Prompted(m, t, null);
     }
 
     /// <summary>
@@ -330,14 +295,13 @@ internal static partial class UiSamples
     /// what to do next in its good news's colour, its products, customers and takings, its products and the rivals in its
     /// markets, its team with the group it lacks, and its markets, support and limits.
     /// </summary>
-    public static UiDashboardModel TechFirm(UiWords t)
+    public static StudioFaceModel TechFirm(UiWords t)
     {
-        var m = new UiDashboardModel
+        var m = new StudioFaceModel
         {
             Title = "Signal Works",
-            Subtitle = "Ledger Cloud can launch. Launch it and it starts selling.",
-            SubtitleInk = UiRole.OkText,
-            StatsFirst = true,
+            Next = "Ledger Cloud can launch. Launch it and it starts selling.",
+            NextInk = UiRole.OkText,
             Figures = new[]
             {
                 new UiFigureModel { Label = t("reallife_tech_mkt_page_products", "Products"), Value = "3" },
@@ -348,15 +312,17 @@ internal static partial class UiSamples
                     Trend = new[] { 18f, 18.5f, 19f, 19.4f, 19.2f, 19.8f, 20.4f, 21f, 21.3f, 21.1f, 21.6f, 22f, 22.4f, 22.2f, 22.8f, 23.1f, 23.4f, 23.2f, 23.8f, 24.1f, 24.4f, 24.2f, 24.6f, 24.9f }
                 },
             },
-            Table = FirmTable(t, new[] { "reallife_tech_mkt_page_col_product", "reallife_tech_mkt_page_col_kind", "reallife_tech_mkt_page_col_customers", "reallife_tech_mkt_page_col_takings",
-                "reallife_tech_mkt_page_col_status" }, new[] { "Product", "Kind", "Customers", "Takings", "Status" }, 2, "reallife_tech_mkt_page_no_products", "No product yet.", new[]
+            Main = FirmTable(t, new[] { "reallife_tech_mkt_page_col_product", "reallife_tech_mkt_page_col_kind", "reallife_tech_mkt_page_col_customers", "reallife_tech_mkt_page_col_takings",
+                "reallife_tech_mkt_page_col_status" }, new[] { "Product", "Kind", "Customers", "Takings", "Status" }, 2, "reallife_tech_mkt_page_no_products", "No product yet.",
+                UiIcon.Package, new[]
                 {
                     new[] { "Ledgerly", "Subscription service", "12,400", "$412,000", Out(t, 184) },
                     new[] { "Pocket Ledger", "Phone app", "5,840", "$61,300", Out(t, 96) },
                     new[] { "Ledger Cloud", "Subscription service", "", "", t("reallife_tech_mkt_page_ready", "Ready to launch") },
                 }),
             More = FirmTable(t, new[] { "reallife_tech_mkt_page_col_rival", "reallife_tech_mkt_page_col_market", "reallife_tech_mkt_page_col_customers",
-                "reallife_tech_mkt_page_col_features" }, new[] { "Rival", "Market", "Customers", "Features" }, 2, "reallife_tech_mkt_page_no_rivals", "No rival sells in these markets yet.", new[]
+                "reallife_tech_mkt_page_col_features" }, new[] { "Rival", "Market", "Customers", "Features" }, 2, "reallife_tech_mkt_page_no_rivals",
+                "No rival sells in these markets yet.", UiIcon.Flag, new[]
                 {
                     new[] { "Skyvault Desk", "Business software", "38,200", "14" },
                     new[] { "Abacus Books", "Business software", "26,900", "12" },
@@ -371,66 +337,78 @@ internal static partial class UiSamples
                     new[] { "Signalhill Rota", "Apps", "2,600", "5" },
                     new[] { "Skyvault Forms", "Apps", "1,900", "5" },
                 }),
-            StatsTitle = t("reallife_studio_page_team", "Team"),
-            Stats = new[]
-            {
-                Group(t, "reallife_studio_page_group_engineers", "Engineers", 6, 66),
-                Group(t, "reallife_studio_page_group_designers", "Designers", 1, 60),
-                Group(t, "reallife_studio_page_group_testers", "Testers", 1, 55),
-                Group(t, "reallife_studio_page_group_infrastructure", "Infrastructure", 0, 0),
-                Group(t, "reallife_studio_page_group_support", "Support", 2, 54),
-                Group(t, "reallife_studio_page_group_sales", "Sales", 1, 49),
-            },
-            StatsNote = t("reallife_studio_page_needed_how", "To fill a group, hire people in the Business app, then set their roles in Open Roles, on its Team tab."),
-            SideTitle = t("reallife_tech_mkt_page_facts", "Markets and support"),
-            Side = new[]
-            {
-                new UiPairModel { Key = t("reallife_tech_mkt_market_businesssoftware", "Business software"), Value = "12%, the lead 31%" },
-                new UiPairModel { Key = t("reallife_tech_mkt_market_apps", "Apps"), Value = "4%, the lead 22%" },
-                new UiPairModel { Key = t("reallife_tech_mkt_page_support", "Support people"), Value = "2 of 3 needed" },
-                new UiPairModel { Key = t("reallife_tech_mkt_page_limit", "Products here"), Value = "3 of 16" },
-                new UiPairModel { Key = t("reallife_tech_mkt_page_desk", "Desk sessions"), Value = "1 due" },
-                new UiPairModel { Key = t("reallife_tech_mkt_page_reputation", "Reputation"), Value = "62%" },
-            },
-            HasAction = true,
-            Action = new UiActionModel { Label = "Launch", Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiDashboard.ActionCommand },
+            Team = TeamOf(t, Group(t, "reallife_studio_page_group_engineers", "Engineers", 6, 66), Group(t, "reallife_studio_page_group_designers", "Designers", 1, 60),
+                Group(t, "reallife_studio_page_group_testers", "Testers", 1, 55), Group(t, "reallife_studio_page_group_infrastructure", "Infrastructure", 0, 0),
+                Group(t, "reallife_studio_page_group_support", "Support", 2, 54), Group(t, "reallife_studio_page_group_sales", "Sales", 1, 49)),
+            Note = Needed(t),
+            Facts = FactsOf(t, "reallife_tech_mkt_page_facts", "Markets and support",
+                ("reallife_tech_mkt_market_businesssoftware", "Business software", "12%, the lead 31%"), ("reallife_tech_mkt_market_apps", "Apps", "4%, the lead 22%"),
+                ("reallife_tech_mkt_page_support", "Support people", "2 of 3 needed"), ("reallife_tech_mkt_page_limit", "Products here", "3 of 16"),
+                ("reallife_tech_mkt_page_desk", "Desk sessions", "1 due"), ("reallife_tech_mkt_page_reputation", "Reputation", "62%")),
+            Actions = new[] { new UiActionModel { Label = "Launch", Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = StudioFace.ActionCommand, Arg = 0 } },
         };
-        return Counted(m, t, "Launch");
+        return Prompted(m, t, "Launch");
     }
 
     // A firm page's table: its columns named by their keys, the figures from a column on to the right, its rows as written.
-    private static UiTableModel FirmTable(UiWords t, string[] keys, string[] english, int figuresFrom, string emptyKey, string empty, string[][] rows)
+    private static UiDataTableModel FirmTable(UiWords t, string[] keys, string[] english, int figuresFrom, string emptyKey, string empty, UiIcon icon, string[][] rows)
     {
-        var columns = new UiColumn[keys.Length];
+        var titles = new string[keys.Length];
+        var figures = new bool[keys.Length];
         for (int i = 0; i < keys.Length; i++)
         {
-            bool figure = i >= figuresFrom;
-            columns[i] = new UiColumn { Title = t(keys[i], english[i]), Width = figure ? UiTokens.S16 * 2f + UiTokens.S4 : 0f, Right = figure };
+            titles[i] = t(keys[i], english[i]);
+            figures[i] = i >= figuresFrom;
         }
-        return new UiTableModel { Columns = columns, Rows = rows, RowCount = rows.Length, Selected = -1, EmptyTitle = t(emptyKey, empty) };
+        return StudioFace.Table(titles, keys, figures, rows, t(emptyKey, empty), icon);
     }
 
     // A team group's bar: its name and count, its mean skill, or the word for a group the firm needs and lacks.
-    private static UiStatModel Group(UiWords t, string key, string english, int count, int skill)
+    private static (string Name, int Skill, string Figure) Group(UiWords t, string key, string english, int count, int skill)
     {
         string label = t("reallife_studio_page_group_count", "{group} ({count})").Replace("{group}", t(key, english)).Replace("{count}", count.ToString(System.Globalization.CultureInfo.InvariantCulture));
-        return new UiStatModel { Label = label, Figure = count > 0 ? skill.ToString(System.Globalization.CultureInfo.InvariantCulture) : t("reallife_studio_page_needed", "Needed"), Value = skill };
+        return (label, skill, count > 0 ? skill.ToString(System.Globalization.CultureInfo.InvariantCulture) : t("reallife_studio_page_needed", "Needed"));
     }
 
-    // A firm page's counts and prompt bar: move, its primary action, back.
-    private static UiDashboardModel Counted(UiDashboardModel m, UiWords t, string primary)
+    private static UiDataTableModel TeamOf(UiWords t, params (string Name, int Skill, string Figure)[] groups)
     {
-        m.FigureCount = m.Figures.Length;
-        m.StatCount = m.Stats.Length;
-        m.SideCount = m.Side.Length;
-        m.OtherCount = m.Others.Length;
-        m.Prompts = new[]
+        var names = new string[groups.Length];
+        var skills = new int[groups.Length];
+        var figures = new string[groups.Length];
+        for (int i = 0; i < groups.Length; i++)
         {
-            new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
-            new UiPrompt { Action = UiAction.Alt, Label = primary },
-            new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
-        };
-        m.PromptCount = m.Prompts.Length;
+            names[i] = groups[i].Name;
+            skills[i] = groups[i].Skill;
+            figures[i] = groups[i].Figure;
+        }
+        return StudioFace.TeamTable(t("reallife_studio_page_team", "Team"), t("reallife_ui_tech_skill", "Skill"), names, skills, figures, t("reallife_studio_page_none", "None"));
+    }
+
+    private static UiFactCardModel Needed(UiWords t) =>
+        StudioFace.NoteCard(t("reallife_studio_page_needed_how", "To fill a group, hire people in the Business app, then set their roles in Open Roles, on its Team tab."));
+
+    private static UiFactCardModel FactsOf(UiWords t, string titleKey, string title, params (string Key, string English, string Value)[] facts)
+    {
+        var labels = new string[facts.Length];
+        var values = new string[facts.Length];
+        for (int i = 0; i < facts.Length; i++)
+        {
+            labels[i] = t(facts[i].Key, facts[i].English);
+            values[i] = facts[i].Value;
+        }
+        return StudioFace.FactsCard(t(titleKey, title), labels, values);
+    }
+
+    // A firm page's prompt bar: move, its primary action, back.
+    private static StudioFaceModel Prompted(StudioFaceModel m, UiWords t, string primary)
+    {
+        var prompts = new System.Collections.Generic.List<UiPrompt> { new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") } };
+        if (primary != null)
+        {
+            prompts.Add(new UiPrompt { Action = UiAction.Alt, Label = primary });
+        }
+        prompts.Add(new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") });
+        m.Prompts = prompts.ToArray();
         return m;
     }
 
