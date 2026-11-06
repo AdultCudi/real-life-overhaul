@@ -105,7 +105,19 @@ namespace RealLifeOverhaul.Ui
                 "reallife_vc_raise_title", "reallife_vc_raising", "reallife_vc_replaced", "reallife_vc_sheet_board", "reallife_vc_sheet_line",
                 "reallife_vc_sheet_no_board", "reallife_vc_startup_ask", "reallife_vc_startup_claimed", "reallife_vc_startup_diligence", "reallife_vc_startup_follow_on",
                 "reallife_vc_startup_line", "reallife_vc_startup_no_diligence", "reallife_vc_startup_true", "reallife_vc_startup_yours", "reallife_vc_state_asks",
-                "reallife_vc_steady", "reallife_vc_warned"
+                "reallife_vc_steady", "reallife_vc_warned",
+                "reallife_ui_tech_books", "reallife_ui_tech_books_from", "reallife_ui_tech_books_out", "reallife_ui_tech_books_price",
+                "reallife_ui_tech_books_wallet", "reallife_vc_acct_dev", "reallife_vc_acct_grace", "reallife_vc_acct_line", "reallife_vc_acct_loan",
+                "reallife_vc_acct_loan_free", "reallife_vc_acct_loan_used", "reallife_vc_acct_none", "reallife_vc_acct_pack",
+                "reallife_vc_acct_pack_idle", "reallife_vc_acct_related", "reallife_vc_acct_related_none", "reallife_vc_acct_salary",
+                "reallife_vc_acct_taken", "reallife_vc_acct_title", "reallife_vc_ask_line", "reallife_vc_button_answer_explain",
+                "reallife_vc_button_answer_repay", "reallife_vc_button_answer_stonewall", "reallife_vc_button_books", "reallife_vc_button_delay",
+                "reallife_vc_button_dividend", "reallife_vc_button_loan", "reallife_vc_button_loan_repay", "reallife_vc_button_related",
+                "reallife_vc_button_repay", "reallife_vc_button_salary", "reallife_vc_cap_taken", "reallife_vc_dig_easy", "reallife_vc_dig_ordinary",
+                "reallife_vc_dig_strict", "reallife_vc_misuse_loan", "reallife_vc_misuse_related", "reallife_vc_misuse_rent",
+                "reallife_vc_misuse_running", "reallife_vc_misuse_running_own", "reallife_vc_misuse_unknown", "reallife_vc_mood_0",
+                "reallife_vc_mood_1", "reallife_vc_mood_2", "reallife_vc_mood_3", "reallife_vc_related_none", "reallife_vc_related_tier_0",
+                "reallife_vc_related_tier_1", "reallife_vc_related_tier_2"
                 // KEYS END
             }).Switch(UiScreenSwitches.Tech));
         }

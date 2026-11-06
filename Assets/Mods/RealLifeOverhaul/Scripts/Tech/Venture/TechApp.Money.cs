@@ -51,7 +51,7 @@ namespace RealLifeOverhaul.Tech
             if (c.Acc.Taken > 0)
             {
                 MisuseLine last = c.Acc.Misuse.Count > 0 ? c.Acc.Misuse[c.Acc.Misuse.Count - 1] : null;
-                box.Line(TechText.Fill("reallife_vc_acct_taken", "taken", TechText.Cents(p.Taken), "what", last != null ? TechDirector.Describe(last.Key) : "-",
+                box.Line(TechText.Fill("reallife_vc_acct_taken", "taken", TechText.Cents(p.Taken), "what", last != null ? TechDirector.Describe(last.Key, last.Name) : "-",
                     "day", last != null ? last.Day.ToString() : "-"), CellTone.Yellow);
             }
             box.Line(p.Runway >= 0

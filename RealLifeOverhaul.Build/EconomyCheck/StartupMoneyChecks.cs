@@ -20,6 +20,7 @@ internal static partial class Program
         MoneyHonestFailure();
         MoneyLawfulWays();
         MoneyRelatedParty();
+        MoneyRoutine();
         MoneySuspicion();
         MoneyLadder();
         MoneyWindDown();
@@ -125,16 +126,82 @@ internal static partial class Program
         long fair = StartupMoney.Fair(c);
         Check(fair == VentureCatalogue.BurnByStage[c.Stage] * MoneyCatalogue.RelatedDays, "startup money: the fair price of a unit of work is days of the stage's burn");
         Check(StartupMoney.Related(c, fair, fair, "Shop", 12) == 0 && c.Acc.Taken == 0 && c.Acc.RelatedDeals == 1, "startup money: a deal at the fair price is shown in the pack and counts as nothing taken");
-        long over = StartupMoney.Related(c, fair * 2, fair, "Shop", 13);
-        Check(over == fair && c.Acc.Taken == fair && c.Acc.RelatedOver == fair && c.Acc.Related.Count == 2 && c.Acc.Misuse.Count == 1, "startup money: paying twice the fair price counts the excess as taken");
-        for (int i = 0; i < 9; i++)
+        Check(StartupMoney.RelatedCheck(c, "Shop", fair, 13) == StartupMoney.RelatedSoon && StartupMoney.Related(c, fair, fair, "Shop", 13) == 0 && c.Acc.RelatedDeals == 1
+              && StartupMoney.RelatedCheck(c, "Shop", fair, 12 + MoneyCatalogue.RelatedGap) == StartupMoney.RelatedOk,
+            "startup money: one deal with a business in 30 days, and a second is refused, not booked");
+        Check(StartupMoney.Related(c, fair, fair, "Cafe", 14) == 0 && c.Acc.RelatedDeals == 2 && StartupMoney.RelatedCheck(c, "Gym", fair, 15) == StartupMoney.RelatedNo,
+            "startup money: over 90 days the deals total a share of the firm's burn; past it a strict board refuses");
+        Cap lenient = FundedCap(0);
+        StartupMoney.Related(lenient, fair, fair, "Shop", 12);
+        StartupMoney.Related(lenient, fair, fair, "Cafe", 14);
+        Check(StartupMoney.RelatedCheck(lenient, "Gym", fair, 15) == StartupMoney.RelatedVote && StartupMoney.Related(lenient, fair, fair, "Gym", 15) == 0 && lenient.Acc.CapDay == 15
+              && StartupMoney.RelatedCheck(lenient, "Bar", fair, 20) == StartupMoney.RelatedNo,
+            "startup money: a lenient board agrees to one deal over the cap in 90 days and refuses the next");
+        Cap pricey = FundedCap();
+        long over = StartupMoney.Related(pricey, fair * 2, fair, "Shop", 13);
+        Check(over == fair && pricey.Acc.Taken == fair && pricey.Acc.RelatedOver == fair && pricey.Acc.Related.Count == 1 && pricey.Acc.Misuse.Count == 1,
+            "startup money: paying twice the fair price counts the excess as taken");
+        // a loop of fair deals, one a day with a new business each time, with the account lowered by every one that is booked
+        foreach (int vc in new[] { 6, 0 })
         {
-            StartupMoney.Related(c, fair, fair, "Shop", 14 + i);
+            Cap loop = FundedCap(vc);
+            long cap = VentureCatalogue.BurnByStage[loop.Stage] * MoneyCatalogue.RelatedWindow * MoneyCatalogue.RelatedShare / 1000, floor0 = StartupMoney.Floor(loop, 11), worst = 0, booked = 0;
+            var days = new List<int>();
+            for (int day = 12; day < 12 + 720; day++)
+            {
+                int was = loop.Acc.RelatedDeals;
+                StartupMoney.Related(loop, fair, fair, "B" + day, day);
+                if (loop.Acc.RelatedDeals > was)
+                {
+                    StartupMoney.Profit(loop, -fair, day);
+                    days.Add(day);
+                    booked++;
+                }
+                long window = 0;
+                foreach (int d in days)
+                {
+                    window += day - d < MoneyCatalogue.RelatedWindow ? fair : 0;
+                }
+                worst = Math.Max(worst, window);
+            }
+            Check(worst <= cap + (vc == 0 ? fair : 0) && StartupMoney.Floor(loop, 800) >= floor0 - (720 / 90 + 1) * (cap + fair) && StartupMoney.Floor(loop, 800) > floor0 / 2 && booked > 0 && loop.Acc.Taken == 0,
+                "startup money: a deal a day for two years cannot bring the floor down past the cap (" + booked + " booked, at most " + worst + " in 90 days of " + cap + (vc == 0 ? " and one over" : string.Empty) + ")");
         }
-        Check(c.Acc.Related.Count == MoneyCatalogue.RelatedKept && c.Acc.RelatedDeals == 11, "startup money: the pack keeps the latest deals and counts them all");
+        Check(c.Acc.Related.Count <= MoneyCatalogue.RelatedKept, "startup money: the pack keeps the latest deals only");
         Check(BizLines.Of("reallife_transaction_tech_related_cost") == BizLine.Cost && BizLines.Of("reallife_transaction_tech_related_takings") == BizLine.Takings
               && BizLines.Of("reallife_transaction_tech_venture_dividend") == BizLine.Capital && BizLines.Of("reallife_transaction_tech_venture_wind_down") == BizLine.Capital,
             "startup money: the new money lines are in BizMan's lists, a cost, takings and two capital moves");
+        Cap big = FundedCap(6, Raise / 20);
+        StartupMoney.Related(big, fair, fair, "Shop", 12);
+        StartupMoney.Related(big, fair, fair, "Cafe", 14);
+        Check(StartupMoney.Suspicion(big, 20, 0, 0) > 0, "startup money: deals that grow large against the raise add suspicion even at the fair price (" + StartupMoney.Suspicion(big, 20, 0, 0) + ")");
+        string money = ModSource(@"Tech\TechDirector.Money.cs");
+        Check(money.Contains("StartupMoney.RelatedCheck(c, name, paid, Save.Day)") && money.IndexOf("RelatedCheck(c, name", StringComparison.Ordinal) < money.IndexOf("FirmsGame.Cost(Level(paid)", StringComparison.Ordinal),
+            "startup money: Pay for work asks the limits before anything is booked");
+    }
+
+    private static void MoneyRoutine()
+    {
+        Cap c = FundedCap();
+        var caps = new List<Cap> { c };
+        long counted = StartupMoney.Shortfall(caps, 0, Raise / 50, 30, false, "reallife_vc_misuse_running", true, "Speedy Bites");
+        MisuseLine line = c.Acc.Misuse[0];
+        Check(counted == Raise / 50 && c.Acc.Taken == counted && line.Routine && line.Name == "Speedy Bites" && line.Key == "reallife_vc_misuse_running",
+            "startup money: other businesses' running costs that pull the wallet under the floor are recorded, labelled by what they were");
+        Check(StartupMoney.Suspicion(c, 30, 0, 0) == 0, "startup money: a small honest dip from running costs builds no suspicion");
+        Cap heavy = FundedCap();
+        StartupMoney.Shortfall(new List<Cap> { heavy }, 0, Raise * 3 / 10, 30, false, "reallife_vc_misuse_running", true, "Speedy Bites");
+        Cap bought = FundedCap();
+        StartupMoney.Shortfall(new List<Cap> { bought }, 0, Raise * 3 / 10, 30, false, "ba:transaction_vehiclepurchase");
+        int slow = StartupMoney.Suspicion(heavy, 30, 0, 0), fast = StartupMoney.Suspicion(bought, 30, 0, 0);
+        Check(slow > 0 && slow < fast && heavy.Acc.Taken == bought.Acc.Taken, "startup money: running-cost gaps build suspicion slowly past a small grace, yet the amount counts in full (" + slow + " against " + fast + ")");
+        long back = StartupMoney.Repay(heavy, Raise, Raise, 40);
+        Check(back == Raise * 3 / 10 && heavy.Acc.Taken == 0 && heavy.Acc.Misuse.Count == 0, "startup money: it has to be repaid like any other");
+        string hook = MemberText(ModSource(@"Tech\TechDirector.Money.cs"), "private void OnMoneyEvent(string gameEvent)");
+        int own = hook.IndexOf("CapAt(t.address)", StringComparison.Ordinal), routine = hook.IndexOf("bool routine = t != null && IsRoutine(t)", StringComparison.Ordinal), gap = hook.IndexOf("StartupMoney.Shortfall(", StringComparison.Ordinal);
+        int ownEnd = hook.IndexOf("return;", hook.IndexOf("if (own != null)", StringComparison.Ordinal), StringComparison.Ordinal);
+        Check(own > 0 && routine > own && gap > routine && ownEnd > own && ownEnd < routine && !Regex.IsMatch(hook, @"IsRoutine\(t\)\)\s*\{\s*return;"),
+            "startup money: the firm's own wages and rent are its spending and are never counted, routine costs anywhere else are");
     }
 
     private static void MoneySuspicion()
@@ -287,7 +354,7 @@ internal static partial class Program
         FirmAccount a = c.Acc, b = was.Acc;
         Check(version == VentureStore.Version && VentureStore.Version == 2 && a.Open && a.Raised == b.Raised && a.Own == b.Own && a.Out == b.Out && a.Taken == b.Taken && a.Band == b.Band
               && a.Loan == b.Loan && a.LoanDay == b.LoanDay && a.LoanUsed && a.PackDay == b.PackDay && a.Step == b.Step && a.Suit == b.Suit && a.Case == b.Case && a.Name == b.Name && a.Gone == b.Gone
-              && a.RelatedDeals == b.RelatedDeals && a.Misuse.Count == b.Misuse.Count && a.Misuse[0].Key == b.Misuse[0].Key && a.Related.Count == b.Related.Count && a.Related[0].Fair == b.Related[0].Fair
+              && a.RelatedDeals == b.RelatedDeals && a.Misuse.Count == b.Misuse.Count && a.Misuse[0].Key == b.Misuse[0].Key && a.Misuse[1].Routine && a.Misuse[1].Name == "Speedy Bites" && a.CapDay == 33 && a.Related.Count == b.Related.Count && a.Related[0].Fair == b.Related[0].Fair
               && StartupMoney.Floor(c, 90) == StartupMoney.Floor(was, 90) && VentureStore.Write(back) == line,
             "startup money: the firm account, what was taken and the deals come back from the save line as they were");
         string old = Regex.Replace(line, "~[xmr]:[^~]*", string.Empty).Replace("v=2", "v=1");
@@ -319,7 +386,9 @@ internal static partial class Program
         StartupMoney.Draw(c, 1, 41);
         StartupMoney.Lend(c, 42);
         StartupMoney.Misuse(c, 777777, 50, true, "ba:transaction_boatpurchase");
-        StartupMoney.Related(c, 4000000, 2000000, "Corner Shop", 55);
+        StartupMoney.Misuse(c, 4242, 51, false, "reallife_vc_misuse_running", true, "Speedy Bites");
+        c.Acc.CapDay = 33;
+        StartupMoney.Related(c, 800000, 400000, "Corner Shop", 55);
         StartupMoney.Delay(c, 60);
         c.Acc.Step = StartupMoney.StepDemand;
         c.Acc.StepDay = 70;

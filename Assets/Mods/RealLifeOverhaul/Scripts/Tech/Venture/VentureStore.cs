@@ -90,14 +90,14 @@ namespace RealLifeOverhaul.Tech
                 w.Record().Place(c.Place).Add(a.Wound).Add(a.Opened).Add(a.GraceTo).Add(a.FounderDay).Add(a.Raised).Add(a.Own).Add(a.Out).Add(a.Taken).Add(a.Synced).Add(a.Band)
                     .Add(a.SalaryFrom).Add(a.SalaryDrawn).Add(a.Loan).Add(a.LoanDay).Add(a.LoanUsed).Add(a.Dividends).Add(a.PackDay).Add(a.PackLast).Add(a.DelayUsed).Add(a.DelayDay)
                     .Add(a.Step).Add(a.StepDay).Add(a.AskDay).Add(a.Stonewalled).Add(a.Calm).Add(a.Event).Add(a.WarnDay).Add(a.Suit).Add(a.Case)
-                    .Add(a.RelatedDeals).Add(a.RelatedPaid).Add(a.RelatedOver).Add(a.Gone).Add(a.Name);
+                    .Add(a.RelatedDeals).Add(a.RelatedPaid).Add(a.RelatedOver).Add(a.Gone).Add(a.Name).Add(a.CapDay);
             }
             w.Part('m');
             foreach (Cap c in f.Caps)
             {
                 foreach (MisuseLine m in c.Acc.Misuse)
                 {
-                    w.Record().Place(c.Place).Add(m.Day).Add(m.Cents).Add(m.Burning).Add(m.Key);
+                    w.Record().Place(c.Place).Add(m.Day).Add(m.Cents).Add(m.Burning).Add(m.Key).Add(m.Routine).Add(m.Name);
                 }
             }
             w.Part('r');
@@ -240,11 +240,12 @@ namespace RealLifeOverhaul.Tech
                 a.RelatedOver = Math.Max(0L, x.Long());
                 a.Gone = x.Int();
                 a.Name = x.Text();
+                a.CapDay = x.Int();
             }
             foreach (Fields x in r.Records('m'))
             {
                 Cap c = f.CapOf(x.Place());
-                var m = new MisuseLine { Day = x.Int(), Cents = Math.Max(0L, x.Long()), Burning = x.Bool(), Key = x.Text() };
+                var m = new MisuseLine { Day = x.Int(), Cents = Math.Max(0L, x.Long()), Burning = x.Bool(), Key = x.Text(), Routine = x.Bool(), Name = x.Text() };
                 if (c != null && c.Acc.Open && c.Acc.Misuse.Count < MoneyCatalogue.MisuseKept)
                 {
                     c.Acc.Misuse.Add(m);

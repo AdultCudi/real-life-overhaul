@@ -698,6 +698,49 @@ internal static partial class UiSamples
         return m;
     }
 
+    /// <summary>The board's question to a founder whose firm account is short, as the desk session's one step.</summary>
+    public static UiSessionModel BoardSession(UiWords t)
+    {
+        var m = new UiSessionModel
+        {
+            Title = "The board's question",
+            About = "The investors of a firm have found money missing from its account and ask the founder about it at the founder's desk. Repay what was taken, explain it, or say nothing.",
+            StepLabel = t("reallife_ui_gallery_step", "Step 1 of 1"),
+            StepCount = 1,
+            Step = 0,
+            Question = "What do you tell the board?",
+            Choices = new[]
+            {
+                new UiChoiceModel { Key = UiAction.Pick1, Name = "Repay what you can", Trade = "Puts your spare cash back into the firm account and calms the board.", Note = "20 min", Selected = true },
+                new UiChoiceModel { Key = UiAction.Pick2, Name = "Explain", Trade = "Believed more easily with Accounting and Law and a small sum. A large sum is not believed.", Note = "30 min" },
+                new UiChoiceModel { Key = UiAction.Pick3, Name = "Say nothing", Trade = "Costs nothing now. The board demands the money back within 14 days." },
+            },
+            SummaryTitle = t("reallife_ui_sample_today", "Today"),
+            Summary = new[]
+            {
+                new UiPairModel { Key = "Firm", Value = "Pioneer Game Studio" },
+                new UiPairModel { Key = "Counted as taken", Value = "$360,000" },
+                new UiPairModel { Key = "Spare cash", Value = "$120,000" },
+            },
+            Actions = new[]
+            {
+                new UiActionModel { Label = t("reallife_session_button_begin", "Begin"), Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = 1 },
+            },
+        };
+        m.ChoiceCount = m.Choices.Length;
+        m.SummaryCount = m.Summary.Length;
+        m.ActionCount = m.Actions.Length;
+        m.Prompts = new[]
+        {
+            new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
+            new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_choose", "Choose") },
+            new UiPrompt { Action = UiAction.Alt, Label = t("reallife_session_button_begin", "Begin") },
+            new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
+        };
+        m.PromptCount = m.Prompts.Length;
+        return m;
+    }
+
     /// <summary>A desk session's first step: the weekly team meeting's aim.</summary>
     public static UiSessionModel Session(UiWords t)
     {

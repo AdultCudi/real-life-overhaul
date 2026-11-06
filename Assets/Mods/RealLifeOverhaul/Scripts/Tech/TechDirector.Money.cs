@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using Helpers;
 using Localizor;
 using UI.Notification;
 using UnityEngine;
@@ -126,18 +127,22 @@ namespace RealLifeOverhaul.Tech
                 }
                 return;
             }
-            if (t != null && IsRoutine(t))
+            // The measure is the gap itself: wallet under floor, however it came about. Rent, wages and loan payments elsewhere count too,
+            // labelled by what they were, and weigh lightly on suspicion (StartupMoney.Suspicion); the firm's own are the firm's spending, above.
+            bool routine = t != null && IsRoutine(t);
+            string key = t != null && t.transactionType != null ? t.transactionType : string.Empty, name = string.Empty;
+            if (routine)
             {
-                return;
+                name = BusinessNameAt(t.address);
+                key = IsRent(t) ? RentKey : RunningKey;
             }
-            string key = t != null && t.transactionType != null ? t.transactionType : string.Empty;
-            long counted = StartupMoney.Shortfall(_venture.Caps, Base(wallet), Base(drop), save.Day, Burning(), key);
+            long counted = StartupMoney.Shortfall(_venture.Caps, Base(wallet), Base(drop), save.Day, Burning(), key, routine, name);
             if (counted <= 0)
             {
                 return;
             }
             RefreshFloor(save.Day);
-            Warned(save.Day, counted, key);
+            Warned(save.Day, counted, key, name);
             ChangedTech();
         }
 
@@ -237,7 +242,39 @@ namespace RealLifeOverhaul.Tech
             return false;
         }
 
-        private void Warned(int day, long counted, string key)
+        internal const string RentKey = "reallife_vc_misuse_rent", RunningKey = "reallife_vc_misuse_running";
+
+        private static string BusinessNameAt(Address address)
+        {
+            try
+            {
+                BuildingRegistration reg = address != null ? BuildingHelper.GetBuildingRegistration(address) : null;
+                return reg != null && !string.IsNullOrEmpty(reg.BusinessName) ? TalentGame.NameOf(reg) : string.Empty;
+            }
+            catch (Exception)
+            {
+                return string.Empty;
+            }
+        }
+
+        private static bool IsRent(Transaction t)
+        {
+            if ((t.transactionType ?? string.Empty).IndexOf("rent", StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return true;
+            }
+            List<string> categories = t.transactionCategories;
+            for (int i = 0; categories != null && i < categories.Count; i++)
+            {
+                if (categories[i] == Routine[0])
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        private void Warned(int day, long counted, string key, string name)
         {
             for (int i = 0; i < _venture.Caps.Count; i++)
             {
@@ -250,18 +287,26 @@ namespace RealLifeOverhaul.Tech
                 FirmPlace firm = FirmOf(c.Place);
                 TellTech(NotificationType.Warning, "reallife_vc_note_shortfall",
                     Data("firm", firm != null ? firm.File.Name : string.Empty, "amount", TechText.Cents(Level(counted)),
-                        "what", Describe(key), "floor", TechText.Cents(Level(StartupMoney.Floor(c, day)))),
+                        "what", Describe(key, name), "floor", TechText.Cents(Level(StartupMoney.Floor(c, day)))),
                     TabFunding, TechApp.CapRow + c.Place);
                 return;
             }
         }
 
         /// <summary>A transaction's key as words, without its placeholders ("Vehicle purchase"); the mod's own lines of the account are words already.</summary>
-        internal static string Describe(string key)
+        internal static string Describe(string key, string name = "")
         {
             if (string.IsNullOrEmpty(key))
             {
                 return TechText.T("reallife_vc_misuse_unknown");
+            }
+            if (key == RunningKey)
+            {
+                return string.IsNullOrEmpty(name) ? TechText.T("reallife_vc_misuse_running_own") : TechText.T(RunningKey, "name", name);
+            }
+            if (key == RentKey)
+            {
+                return TechText.T(RentKey);
             }
             string text = key;
             try
@@ -381,6 +426,10 @@ namespace RealLifeOverhaul.Tech
                 GraceTo = a.GraceTo, Grace = day <= a.GraceTo, Delayable = !a.DelayUsed, Step = a.Step, Question = a.Step == StartupMoney.StepAsked
             };
         }
+
+        internal int Today => Save != null ? Save.Day : 0;
+
+        internal string LeadOf(Cap c) => LeadName(c);
 
         private static string LeadName(Cap c)
         {
@@ -711,6 +760,13 @@ namespace RealLifeOverhaul.Tech
             BuildingRegistration other = others[business];
             string name = TalentGame.NameOf(other);
             long fair = StartupMoney.Fair(c), paid = fair * (tier <= 0 ? 1000 : tier == 1 ? 1500 : 2000) / 1000;
+            int allowed = StartupMoney.RelatedCheck(c, name, paid, Save.Day);
+            if (allowed == StartupMoney.RelatedSoon || allowed == StartupMoney.RelatedNo)
+            {
+                TellTech(NotificationType.Warning, allowed == StartupMoney.RelatedSoon ? "reallife_vc_note_related_soon" : "reallife_vc_note_related_capped",
+                    Data("firm", firm.File.Name, "other", name, "days", MoneyCatalogue.RelatedGap.ToString()), TabFunding, TechApp.CapRow + place);
+                return false;
+            }
             VentureGame.Give(Level(paid), VentureGame.RelatedTakingsKey, firm.File.Name, other);
             FirmsGame.Cost(Level(paid), VentureGame.RelatedCostKey, firm.Reg, name, null);
             long over = StartupMoney.Related(c, paid, fair, name, Save.Day);

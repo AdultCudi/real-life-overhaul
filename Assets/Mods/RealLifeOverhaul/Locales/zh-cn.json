@@ -35126,5 +35126,15 @@
   "reallife_vc_test_wind_down": "让我的有资金支持的公司结业",
   "reallife_vc_test_spend": "把投资者的钱花在别处",
   "reallife_vc_test_no_funded": "你的公司中还没有任何一家有投资者。",
-  "reallife_vc_test_no_floor": "你的钱包里没有可供花用的投资者资金，或现金太少。"
+  "reallife_vc_test_no_floor": "你的钱包里没有可供花用的投资者资金，或现金太少。",
+  "reallife_ui_tech_books": "公司账户",
+  "reallife_ui_tech_books_out": "取出资金",
+  "reallife_ui_tech_books_wallet": "你的钱包",
+  "reallife_ui_tech_books_from": "服务来自",
+  "reallife_ui_tech_books_price": "价格",
+  "reallife_vc_misuse_rent": "你的房租",
+  "reallife_vc_misuse_running": "{name}的运营成本",
+  "reallife_vc_misuse_running_own": "你的运营成本",
+  "reallife_vc_note_related_soon": "{firm}不到{days}天前刚向{other}购买过服务。请稍后再与其交易。",
+  "reallife_vc_note_related_capped": "{firm}的董事会暂时不同意与你其他企业的更多交易。这类交易有上限，按公司烧钱额的一定比例计算。"
 }

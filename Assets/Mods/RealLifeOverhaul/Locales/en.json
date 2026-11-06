@@ -35126,5 +35126,15 @@
   "reallife_vc_test_wind_down": "Wind down my funded firm",
   "reallife_vc_test_spend": "Spend investor money on something else",
   "reallife_vc_test_no_funded": "None of your firms has investors yet.",
-  "reallife_vc_test_no_floor": "Your wallet has no investors' money to spend, or too little cash."
+  "reallife_vc_test_no_floor": "Your wallet has no investors' money to spend, or too little cash.",
+  "reallife_ui_tech_books": "Firm account",
+  "reallife_ui_tech_books_out": "Taking money out",
+  "reallife_ui_tech_books_wallet": "Your wallet",
+  "reallife_ui_tech_books_from": "Work from",
+  "reallife_ui_tech_books_price": "Price",
+  "reallife_vc_misuse_rent": "Your rent",
+  "reallife_vc_misuse_running": "Running costs of {name}",
+  "reallife_vc_misuse_running_own": "Your running costs",
+  "reallife_vc_note_related_soon": "{firm} bought work from {other} less than {days} days ago. Wait before another deal with them.",
+  "reallife_vc_note_related_capped": "The board of {firm} will not agree to more deals with your other businesses for now. They are capped at a share of the firm's burn."
 }

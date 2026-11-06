@@ -9,7 +9,9 @@ namespace RealLifeOverhaul.Tech
         public int Day;
         public long Cents;
         public bool Burning;
+        public bool Routine;         // the gap came from running costs, rent or a loan's payments, not from a purchase
         public string Key = string.Empty;
+        public string Name = string.Empty;   // the business whose running costs it was
     }
 
     /// <summary>A deal between the firm and another business of the player's: what was paid, and what the mod's own figure for the work is.</summary>
@@ -58,6 +60,7 @@ namespace RealLifeOverhaul.Tech
         public int RelatedDeals;
         public long RelatedPaid, RelatedOver;
         public int Gone;             // the first day the firm's business was found gone; 0 while it stands
+        public int CapDay;           // the last day the board agreed a deal over the cap on deals with the player's other businesses
         public string Name = string.Empty;   // the firm's name as last seen, for the words once its business is gone
     }
 
@@ -77,6 +80,8 @@ namespace RealLifeOverhaul.Tech
         public const int CostsPermille = 100;        // costs the investors add to a claim
         public const int RelatedDays = 5;            // days of the stage's burn a related party deal is priced against
         public const int MisuseKept = 12, RelatedKept = 6;
+        public const int RelatedGap = 30, RelatedWindow = 90, RelatedShare = 150;   // days between deals with one business; the window and the share (thousandths) of its burn they may total
+        public const int RoutineGrace = 30, RoutineWeight = 3;   // thousandths of the raise that running-cost gaps may total before they count towards suspicion, and the fraction that then counts
         public const long NoiseCents = 5000;         // a payment under this is never counted against the floor
         public const int ScansPerDay = 200;          // looks at the game's transactions a day, at most
         public const int ExplainBase = 450;          // thousandths: the chance an explanation is believed before skills and size
@@ -199,7 +204,7 @@ namespace RealLifeOverhaul.Tech
         /// The wallet fell by <paramref name="drop"/> to <paramref name="wallet"/> and is under the floor: what is under it, up to the drop,
         /// is counted as investors' money spent elsewhere, firm by firm, the largest floor first. Returns the cents counted.
         /// </summary>
-        public static long Shortfall(IList<Cap> caps, long wallet, long drop, int day, bool burning, string key)
+        public static long Shortfall(IList<Cap> caps, long wallet, long drop, int day, bool burning, string key, bool routine = false, string name = "")
         {
             long left = Math.Min(Math.Max(0L, drop), Math.Max(0L, FloorOf(caps, day) - wallet)), counted = 0L;
             while (left > 0)
@@ -220,20 +225,21 @@ namespace RealLifeOverhaul.Tech
                     break;
                 }
                 long take = Math.Min(left, most);
-                Misuse(best, take, day, burning, key);
+                Misuse(best, take, day, burning, key, routine, name);
                 left -= take;
                 counted += take;
             }
             return counted;
         }
 
-        public static void Misuse(Cap c, long cents, int day, bool burning, string key)
+        public static void Misuse(Cap c, long cents, int day, bool burning, string key, bool routine = false, string name = "")
         {
             FirmAccount a = c.Acc;
             a.Taken += cents;
             a.Event = day;
             a.Calm = 0;
-            if (a.Misuse.Count > 0 && a.Misuse[a.Misuse.Count - 1].Day == day && a.Misuse[a.Misuse.Count - 1].Key == key)
+            name = name ?? string.Empty;
+            if (a.Misuse.Count > 0 && a.Misuse[a.Misuse.Count - 1].Day == day && a.Misuse[a.Misuse.Count - 1].Key == key && a.Misuse[a.Misuse.Count - 1].Name == name)
             {
                 a.Misuse[a.Misuse.Count - 1].Cents += cents;
                 return;
@@ -243,7 +249,7 @@ namespace RealLifeOverhaul.Tech
                 a.Misuse[1].Cents += a.Misuse[0].Cents;   // the oldest two become one line, so the lines still add up to what was taken
                 a.Misuse.RemoveAt(0);
             }
-            a.Misuse.Add(new MisuseLine { Day = day, Cents = cents, Burning = burning, Key = key ?? string.Empty });
+            a.Misuse.Add(new MisuseLine { Day = day, Cents = cents, Burning = burning, Routine = routine, Key = key ?? string.Empty, Name = name });
         }
 
         /// <summary>The player puts free cash back: counted against what was taken, oldest first. Returns the cents put back.</summary>
@@ -402,8 +408,17 @@ namespace RealLifeOverhaul.Tech
         /// </summary>
         public static long Related(Cap c, long paid, long fair, string name, int day)
         {
+            int allowed = RelatedCheck(c, name, paid, day);
+            if (allowed == RelatedSoon || allowed == RelatedNo)
+            {
+                return 0L;
+            }
             FirmAccount a = c.Acc;
             long over = Math.Max(0L, paid - fair);
+            if (allowed == RelatedVote)
+            {
+                a.CapDay = day;
+            }
             a.RelatedDeals++;
             a.RelatedPaid += paid;
             a.RelatedOver += over;
@@ -418,6 +433,35 @@ namespace RealLifeOverhaul.Tech
                 Misuse(c, over, day, false, "reallife_vc_misuse_related");
             }
             return over;
+        }
+
+        public const int RelatedOk = 0, RelatedSoon = 1, RelatedNo = 2, RelatedVote = 3;
+
+        /// <summary>
+        /// Whether a deal with another business of the player's may be made: at most one a business every 30 days, and all together over 90 days
+        /// a share of the firm's burn. Over that the board votes: it agrees to one such deal in 90 days, and only for a firm with nothing taken,
+        /// no question open and a lead that is not strict; otherwise it refuses.
+        /// </summary>
+        public static int RelatedCheck(Cap c, string name, long paid, int day)
+        {
+            FirmAccount a = c.Acc;
+            long window = 0L;
+            for (int i = 0; i < a.Related.Count; i++)
+            {
+                RelatedLine r = a.Related[i];
+                if (r.Name == name && day - r.Day < MoneyCatalogue.RelatedGap)
+                {
+                    return RelatedSoon;
+                }
+                window += day - r.Day < MoneyCatalogue.RelatedWindow ? r.Paid : 0L;
+            }
+            long cap = VentureCatalogue.BurnByStage[Math.Max(0, Math.Min(VentureCatalogue.BurnByStage.Length - 1, c.Stage))] * MoneyCatalogue.RelatedWindow * MoneyCatalogue.RelatedShare / 1000;
+            if (window + paid <= cap)
+            {
+                return RelatedOk;
+            }
+            bool agrees = a.Taken == 0 && a.Step == StepNone && (a.CapDay == 0 || day - a.CapDay >= MoneyCatalogue.RelatedWindow) && Diligence(c) < 500;
+            return agrees ? RelatedVote : RelatedNo;
         }
 
         // ---------------------------------------------------------------- what the board sees
@@ -451,14 +495,18 @@ namespace RealLifeOverhaul.Tech
             {
                 return 0;
             }
-            int size = (int)Math.Min(1000L, a.Taken * 1000 / Math.Max(1L, a.Raised));
-            int s = Math.Min(70, size * 14 / 100);
-            s += a.RelatedOver > 0 ? Math.Min(10, 3 + a.RelatedDeals) : 0;
+            long routine = 0L;
             int burning = 0;
             for (int i = 0; i < a.Misuse.Count; i++)
             {
-                burning += a.Misuse[i].Burning ? 1 : 0;
+                burning += a.Misuse[i].Burning && !a.Misuse[i].Routine ? 1 : 0;
+                routine += a.Misuse[i].Routine ? a.Misuse[i].Cents : 0L;
             }
+            long counted = a.Taken - routine + Math.Max(0L, routine - a.Raised * MoneyCatalogue.RoutineGrace / 1000) / MoneyCatalogue.RoutineWeight;
+            int size = (int)Math.Min(1000L, counted * 1000 / Math.Max(1L, a.Raised));
+            int s = Math.Min(70, size * 14 / 100);
+            s += a.RelatedOver > 0 ? Math.Min(10, 3 + a.RelatedDeals) : 0;
+            int deals = Math.Min(10, (int)Math.Min(1000L, a.RelatedPaid * 1000 / Math.Max(1L, a.Raised)) / 20);   // many deals with the player's other businesses, even at the fair price
             s += Math.Min(15, burning * 5);
             bool late = a.DelayDay > 0 && day - a.DelayDay < 90;
             bool missed = c.Misses > 0 || c.Pressure > 0;
@@ -467,8 +515,9 @@ namespace RealLifeOverhaul.Tech
             s += a.Stonewalled ? 15 : 0;
             if (a.Taken <= 0)
             {
-                return Math.Max(0, Math.Min(100, s / 4));
+                return Math.Max(0, Math.Min(100, s / 4 + deals));
             }
+            s += deals;
             s -= Math.Min(30, Math.Max(0, day - a.Event) / 4);
             s -= size < 100 ? Math.Max(0, Math.Min(100, accounting)) * 12 / 100 : 0;
             s -= late || missed ? Math.Max(0, Math.Min(100, leadership)) * 8 / 100 : 0;

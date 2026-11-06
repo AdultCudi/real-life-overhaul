@@ -35126,5 +35126,15 @@
   "reallife_vc_test_wind_down": "Encerrar minha empresa com investidores",
   "reallife_vc_test_spend": "Gastar dinheiro de investidores em outra coisa",
   "reallife_vc_test_no_funded": "Nenhuma das suas empresas tem investidores ainda.",
-  "reallife_vc_test_no_floor": "Sua carteira não tem dinheiro de investidores para gastar, ou tem caixa insuficiente."
+  "reallife_vc_test_no_floor": "Sua carteira não tem dinheiro de investidores para gastar, ou tem caixa insuficiente.",
+  "reallife_ui_tech_books": "Conta da empresa",
+  "reallife_ui_tech_books_out": "Retirar dinheiro",
+  "reallife_ui_tech_books_wallet": "Sua carteira",
+  "reallife_ui_tech_books_from": "Serviço de",
+  "reallife_ui_tech_books_price": "Preço",
+  "reallife_vc_misuse_rent": "Seu aluguel",
+  "reallife_vc_misuse_running": "Custos de funcionamento de {name}",
+  "reallife_vc_misuse_running_own": "Seus custos de funcionamento",
+  "reallife_vc_note_related_soon": "{firm} comprou serviços de {other} há menos de {days} dias. Espere antes de outro negócio com eles.",
+  "reallife_vc_note_related_capped": "O conselho de {firm} não aceita mais negócios com suas outras empresas por enquanto. Eles têm um teto, uma parte do gasto da empresa."
 }

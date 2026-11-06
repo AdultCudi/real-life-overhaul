@@ -8,7 +8,7 @@ internal static partial class UiSamples
 {
     public static readonly string[] TechStates =
     {
-        "firms", "firms_empty", "studio", "game", "game_plan", "datacentre", "software", "products", "product", "contracts", "tender", "infra", "startups", "startup", "funding", "cap",
+        "firms", "firms_empty", "studio", "game", "game_plan", "datacentre", "software", "products", "product", "contracts", "tender", "infra", "startups", "startup", "funding", "cap", "cap_account", "books",
         "team", "rivals", "concept", "off"
     };
 
@@ -17,6 +17,17 @@ internal static partial class UiSamples
     {
         public readonly TechRuns Runs = new TechRuns();
         public int Add() => Runs.Add(() => true);
+    }
+
+    // A key whose words have placeholders, filled with the sample's figures.
+    private static string WF(UiWords t, string key, string english, params string[] pairs)
+    {
+        string text = t(key, english);
+        for (int i = 0; i + 1 < pairs.Length; i += 2)
+        {
+            text = text.Replace("{" + pairs[i] + "}", pairs[i + 1]);
+        }
+        return text;
     }
 
     private static string TW(UiWords t, string key, string english) => t("reallife_ui_tech_" + key, english);
@@ -103,6 +114,8 @@ internal static partial class UiSamples
             case "startup": TechStartup(t, m, runs); break;
             case "funding": TechFunding(t, m, runs); break;
             case "cap": TechCap(t, m, runs); break;
+            case "cap_account": TechCapAccount(t, m, runs); break;
+            case "books": TechBooks(t, m, runs); break;
             case "team": TechTeam(t, m, runs); break;
             case "rivals": TechRivals(t, m, runs); break;
             case "concept": TechConcept(t, m, runs); break;
@@ -715,6 +728,65 @@ internal static partial class UiSamples
             .Step("Chief executive", "You", null, true, true, () => true, () => true).Button("Grant options", UiButtonKind.Secondary, UiAction.Count, () => true)
             .Button("Sell the investors' shares", UiButtonKind.Secondary, UiAction.Count, () => true);
         m.Left = new[] { cap.Build() };
+    }
+
+    // A funded firm's page: the cap table with the firm account under it, the board's mood and what is counted as taken.
+    private static void TechCapAccount(UiWords t, TechModel m, TechRunList runs)
+    {
+        m.Shape = TechShape.Sheet;
+        m.Nav = TechTabNav(t, out string[] keys);
+        m.NavKeys = keys;
+        m.NavSelected = 5;
+        m.Back = TW(t, "back_funding", "Funding");
+        m.Head = new UiHeadModel { Name = "Pioneer Game Studio: owners", Icon = UiIcon.GameController, Role = "Game studio" };
+        m.HeadActions = new[]
+        {
+            TechAct(runs, W(t, "reallife_vc_button_books", "Firm account"), UiButtonKind.Secondary, UiAction.Option),
+            TechAct(runs, W(t, "reallife_vc_button_raise_page", "Raise money"), UiButtonKind.Primary, UiAction.Alt)
+        };
+        var cap = new TechCard(runs.Runs, TW(t, "cap_table", "Who owns it"));
+        cap.Say("It spends $4,200 a day more than it makes, enough for 61 days.", UiRole.WarnText).Row("You", "68%").Row("Option pool", "8%").Row("Northgate Ventures", "24%")
+            .Say("Board of 3 seats, 1 theirs. Target: $60,000 a month by day 520, now $41,000, 1 miss.")
+            .Say(WF(t, "reallife_vc_acct_line", "Firm account $1,640,000, of which investors' $1,640,000. Your wallet must keep $1,640,000 while this firm runs.", "balance", "$1,640,000", "investors", "$1,640,000", "floor", "$1,640,000"))
+            .Say(W(t, "reallife_vc_mood_2", "The board is asking about the books."), UiRole.WarnText)
+            .Say(WF(t, "reallife_vc_cap_taken", "Investors' money counted as taken: $360,000.", "taken", "$360,000"), UiRole.WarnText)
+            .Step("Chief executive", "You", null, true, true, () => true, () => true).Button("Grant options", UiButtonKind.Secondary, UiAction.Count, () => true);
+        m.Left = new[] { cap.Build() };
+    }
+
+    // The firm account's own page: the books on the left, the lawful ways out and the board's question on the right.
+    private static void TechBooks(UiWords t, TechModel m, TechRunList runs)
+    {
+        m.Shape = TechShape.Sheet;
+        m.Nav = TechTabNav(t, out string[] keys);
+        m.NavKeys = keys;
+        m.NavSelected = 5;
+        m.Back = TW(t, "back_cap", "Back to the firm");
+        m.Head = new UiHeadModel { Name = WF(t, "reallife_vc_acct_title", "Firm account: Pioneer Game Studio", "firm", "Pioneer Game Studio"), Icon = UiIcon.Coin, Role = "Game studio" };
+        var books = new TechCard(runs.Runs, TW(t, "books", "Firm account"));
+        books.Say(WF(t, "reallife_vc_acct_line", "Firm account $1,640,000, of which investors' $1,640,000. Your wallet must keep $1,640,000 while this firm runs.", "balance", "$1,640,000", "investors", "$1,640,000", "floor", "$1,640,000"))
+            .Row(TW(t, "books_wallet", "Your wallet"), "$1,280,000")
+            .Say(WF(t, "reallife_vc_acct_taken", "Counted as taken: $360,000. Latest: Speedy Bites running costs, day 214. Putting cash back clears it.", "taken", "$360,000", "what", "Speedy Bites running costs", "day", "214"), UiRole.WarnText)
+            .Say(WF(t, "reallife_vc_acct_pack", "Board pack: burning $4,200 a day, 61 days of runway, revenue $41,000 a month against a target of $60,000. Next pack on day 241.", "burn", "$4,200", "runway", "61", "revenue", "$41,000", "target", "$60,000", "day", "241"))
+            .Say(WF(t, "reallife_vc_acct_related", "Deals with your other businesses: 2, $8,000 paid, of which $0 over the fair price and counted as taken.", "count", "2", "paid", "$8,000", "over", "$0"))
+            .Say(WF(t, "reallife_vc_acct_salary", "Salary this month $9,000 of the $14,000 the board allows.", "drawn", "$9,000", "band", "$14,000"))
+            .Say(WF(t, "reallife_vc_acct_loan_free", "A founder's loan of up to $100,000 can be taken once, repaid within 180 days with interest.", "max", "$100,000", "days", "180"))
+            .Say(W(t, "reallife_vc_mood_2", "The board is asking about the books."), UiRole.WarnText);
+        m.Left = new[] { books.Build() };
+        var out1 = new TechCard(runs.Runs, TW(t, "books_out", "Taking money out"));
+        out1.Say(W(t, "reallife_vc_ask_line", "The board has asked about the books. Answer here or at your desk."), UiRole.WarnText)
+            .Button(W(t, "reallife_vc_button_answer_repay", "Repay"), UiButtonKind.Primary, UiAction.Count, () => true)
+            .Button(W(t, "reallife_vc_button_answer_explain", "Explain"), UiButtonKind.Secondary, UiAction.Count, () => true)
+            .Button(W(t, "reallife_vc_button_answer_stonewall", "Say nothing"), UiButtonKind.Secondary, UiAction.Count, () => true)
+            .Button(W(t, "reallife_vc_button_repay", "Put cash back"), UiButtonKind.Primary, UiAction.Count, () => true)
+            .Button(W(t, "reallife_vc_button_salary", "Draw salary"), UiButtonKind.Secondary, UiAction.Count, () => true)
+            .Button(W(t, "reallife_vc_button_loan", "Take a founder's loan"), UiButtonKind.Secondary, UiAction.Count, () => true)
+            .Button(W(t, "reallife_vc_button_dividend", "Pay a dividend"), UiButtonKind.Secondary, UiAction.Count, () => true)
+            .Button(W(t, "reallife_vc_button_delay", "Delay the board pack"), UiButtonKind.Secondary, UiAction.Count, () => true)
+            .Step(TW(t, "books_from", "Work from"), "Speedy Bites", null, true, true, () => true, () => true)
+            .Step(TW(t, "books_price", "Price"), WF(t, "reallife_vc_related_tier_0", "At the fair price, $4,000", "price", "$4,000"), null, true, true, () => true, () => true)
+            .Button(W(t, "reallife_vc_button_related", "Pay for work"), UiButtonKind.Secondary, UiAction.Count, () => true);
+        m.Right = new[] { out1.Build() };
     }
 
     private static void TechTeam(UiWords t, TechModel m, TechRunList runs)
