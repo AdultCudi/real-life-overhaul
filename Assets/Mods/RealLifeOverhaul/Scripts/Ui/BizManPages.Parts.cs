@@ -466,7 +466,7 @@ namespace RealLifeOverhaul.Ui
                     UiDraw.Choice(s, at, ofx, ry, half - labelW - UiTokens.S4, m.FontChosen >= 0 && m.FontChosen < m.Fonts.Length ? m.Fonts[m.FontChosen] : null, Font, 0, false);
                     ry += UiTokens.Control + UiTokens.S3;
                 }
-                int more = Find(m.Actions, DoLogoClassic);
+                int more = Find(m.Actions, DoLogoEdit);
                 if (more >= 0)
                 {
                     ry += UiDraw.LinkRow(s, at, ofx, ry, half - labelW - UiTokens.S4, UiTokens.Control, m.Actions[more].Label, Action, m.Actions[more].Arg) + UiTokens.S3;

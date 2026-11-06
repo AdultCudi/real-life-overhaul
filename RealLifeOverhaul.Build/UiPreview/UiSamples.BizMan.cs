@@ -14,7 +14,7 @@ internal static partial class UiSamples
     {
         "portfolio", "portfolio_filter_open", "portfolio_warehouses", "portfolio_empty", "portfolio_long", "store_building", "store_insight", "store_pricing",
         "store_deliveries", "store_marketing", "store_settings", "store_settings_unsaved", "store_estate", "store_switch_open", "store_needs_open", "store_classic",
-        "store_foreign", "store_interior", "warehouse", "factory", "headquarters", "start", "rent", "rival", "villa", "store_long", "portfolio_german", "store_german"
+        "store_foreign", "store_interior", "warehouse", "factory", "headquarters", "start", "rent", "rival", "villa", "store_long", "portfolio_german", "store_german", "store_logo", "store_logo_colours"
     };
 
     private static readonly string[] Businesses =
@@ -66,7 +66,7 @@ internal static partial class UiSamples
             case "store_pricing": return Store(t, BizManPart.Pricing, state);
             case "store_deliveries": return Store(t, BizManPart.Deliveries, state);
             case "store_marketing": return Store(t, BizManPart.Marketing, state);
-            case "store_settings": case "store_settings_unsaved": return Store(t, BizManPart.Settings, state);
+            case "store_settings": case "store_settings_unsaved": case "store_logo": case "store_logo_colours": return Store(t, BizManPart.Settings, state);
             case "store_estate": return Store(t, BizManPart.Estate, state);
             case "store_classic": case "store_foreign": return Store(t, BizManPart.Classic, state);
             case "store_interior": return Store(t, BizManPart.Interior, state);
@@ -291,7 +291,7 @@ internal static partial class UiSamples
             case BizManPart.Pricing: m.NavSelected = 2; Pricing(t, m); break;
             case BizManPart.Deliveries: m.NavSelected = 4; Deliveries(t, m); break;
             case BizManPart.Marketing: m.NavSelected = 5; Marketing(t, m); break;
-            case BizManPart.Settings: m.NavSelected = state == "store_foreign" ? 8 : 7; Settings(t, m, state == "store_settings_unsaved", name); break;
+            case BizManPart.Settings: m.NavSelected = state == "store_foreign" ? 8 : 7; Settings(t, m, state == "store_settings_unsaved", name); if (state.StartsWith("store_logo")) { LogoEditor(t, m, state == "store_logo_colours" ? 1 : 0); } break;
             case BizManPart.Estate: m.NavSelected = 8; Estate(t, m); break;
             case BizManPart.Interior: m.NavSelected = 6; Interior(t, m); break;
             case BizManPart.Classic:
@@ -527,7 +527,7 @@ internal static partial class UiSamples
             new UiActionModel { Label = t("bizman_settings_save_logo", "Save logo changes"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Check, Key = UiAction.Count,
                 Command = BizManPages.Action, Arg = BizManPages.DoSaveLogo, Disabled = true },
             new UiActionModel { Label = t("reallife_ui_bizman_logo_more", "Shape and colours"), Kind = UiButtonKind.Quiet, Key = UiAction.Count, Command = BizManPages.Action,
-                Arg = BizManPages.DoLogoClassic },
+                Arg = BizManPages.DoLogoEdit },
             new UiActionModel { Label = t("bizman_terminate_contract_button", "Terminate contract"), Kind = UiButtonKind.Destructive, Icon = UiIcon.Trash, Key = UiAction.Count,
                 Command = BizManPages.Action, Arg = BizManPages.DoTerminate },
             new UiActionModel { Label = t("bizman_shutdown_business", "Shut down business"), Kind = UiButtonKind.Destructive, Icon = UiIcon.Close, Key = UiAction.Count,
@@ -836,4 +836,48 @@ internal static partial class UiSamples
 
     // Money as the game writes it, a loss with its sign before the dollar.
     private static string Signed(int n) => (n < 0 ? "-" : string.Empty) + Dollars(System.Math.Abs(n));
+}
+
+internal static partial class UiSamples
+{
+    // The logo editor open: 40 of the game's shapes (the third chosen), the three colour rows with the add button, Done and Save logo.
+    private static void LogoEditor(UiWords t, BizManModel m, int tab)
+    {
+        m.LogoEdit = true;
+        m.LogoTabs = new[] { t("reallife_ui_bizman_logo_shapes", "Shapes"), t("reallife_ui_bizman_logo_colours", "Colours") };
+        m.LogoTab = tab;
+        m.PartTitle = t("reallife_ui_bizman_logo_more", "Shape and colours");
+        m.ShapesTitle = t("reallife_ui_bizman_logo_shapes", "Shapes");
+        m.ShapesNone = t("reallife_ui_bizman_logo_shapes_none", "The shapes are still loading.");
+        m.ShapesOwn = t("reallife_ui_bizman_logo_own", "Add your own shapes");
+        m.LogoNote = t("reallife_ui_bizman_logo_note", "The shape and background show as they will on your sign.");
+        m.ShapeCount = 40;
+        m.ShapePics = new string[40];
+        for (int i = 0; i < 40; i++)
+        {
+            m.ShapePics[i] = "bizman:shape:" + i;
+        }
+        m.ShapeChosen = 2;
+        m.PreviewPic = "bizman:logopreview";
+        int[] palette = { 0x000000, 0xFFFFFF, 0xE53935, 0xFB8C00, 0xFDD835, 0x43A047, 0x1E88E5, 0x5E35B1 };
+        string[] labels = { "reallife_ui_bizman_logo_colour_shape", "reallife_ui_bizman_logo_colour_text", "reallife_ui_bizman_logo_colour_back" };
+        string[] english = { "Shape colour", "Name colour", "Background colour" };
+        int[] chosen = { 0, 0, 1 };
+        m.Colours = new BizManColours[3];
+        for (int r = 0; r < 3; r++)
+        {
+            var pics = new string[palette.Length];
+            for (int i = 0; i < pics.Length; i++)
+            {
+                pics[i] = UiDraw.SwatchKey(palette[i]);
+            }
+            m.Colours[r] = new BizManColours { Label = t(labels[r], english[r]), Pics = pics, Count = pics.Length, Chosen = chosen[r], CanAdd = true };
+        }
+        m.Actions = new[]
+        {
+            new UiActionModel { Label = t("reallife_ui_bizman_logo_done", "Done"), Kind = UiButtonKind.Quiet, Key = UiAction.Count, Command = BizManPages.Action, Arg = BizManPages.DoLogoDone },
+            new UiActionModel { Label = t("bizman_settings_save_logo", "Save logo changes"), Kind = UiButtonKind.Primary, Icon = UiIcon.Check, Key = UiAction.Alt,
+                Command = BizManPages.Action, Arg = BizManPages.DoSaveLogo },
+        };
+    }
 }

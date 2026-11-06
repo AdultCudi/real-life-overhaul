@@ -73,6 +73,7 @@ internal static partial class Program
         ("Ui/Buy/BuyKits.cs", "sprite", "Squares[rgb] = sprite", "a colour's square for the buying screens' swatches, drawn once a session for each colour the game's cars and clothes offer"),
         ("Tech/Sites/SiteProps.cs", "made", "Tech/Sites/ServerRoomView.cs|UnityEngine.Object.Destroy(_setA)", "the server room's status lights, destroyed when the room's view ends"),
         ("Traffic/TrafficEffects.cs", "clip", "Object.Destroy(_wailClip)", "the sirens' two sounds, made once a session and destroyed in Dispose"),
+        ("Ui/BizMan/BizManScreen.Logo.cs", "sprite", "CodeAssets.DropSprite(_preview)", "the logo editor's picture of the logo, painted again at each pick with the old one dropped first"),
     };
 
     // Findings in folders whose clean-up another change owns: said in a note on every run until that change fixes them,

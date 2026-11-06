@@ -426,7 +426,7 @@ namespace RealLifeOverhaul.Ui
                     Button saveLogo = Get<Button>(GameContract.LogoSave, logo);
                     UI.Elements.Dropdown kind = Get<UI.Elements.Dropdown>(GameContract.SetKind, b.bizManSettings), font = Get<UI.Elements.Dropdown>(GameContract.LogoFont, logo);
                     return sig * 31 + Hash(name != null ? name.text : null) + (save != null && save.interactable ? 1 : 0) + (saveLogo != null && saveLogo.interactable ? 2 : 0)
-                           + (kind != null ? kind.SelectedOptionIndex * 7 : 0) + (font != null ? font.SelectedOptionIndex * 131 : 0);
+                           + (kind != null ? kind.SelectedOptionIndex * 7 : 0) + (font != null ? font.SelectedOptionIndex * 131 : 0) + LogoSignature(logo) * 1009;
                 }
                 case BizManRules.RealEstate:
                 {
@@ -505,6 +505,11 @@ namespace RealLifeOverhaul.Ui
             _m.Kinds = _m.Fonts = new string[0];
             _m.KindOpen = _m.FontOpen = false;
             _m.Uniforms = _m.LogoTitle = _m.NameLabel = _m.NameText = _m.NamePlaceholder = null;
+            _m.LogoEdit = false;
+            _m.ShapesTitle = _m.ShapesNone = _m.ShapesOwn = _m.LogoNote = _m.PreviewPic = null;
+            _m.ShapeCount = 0;
+            _m.ShapeChosen = -1;
+            _m.Colours = new BizManColours[0];
             _m.SliderFigure = null;
             ClearOps();
         }
