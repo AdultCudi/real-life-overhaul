@@ -35,6 +35,7 @@ namespace RealLifeOverhaul.Ui
         private static int _picks;    // the chips on Pick1 to Pick9
         private static string _back;  // the game's name for its menu key, the way back's chip; null for none
         private static bool _shown;
+        private static bool _kept;   // the interior designer's face has the chips
         private static bool _looked;
 
         /// <summary>True while the HUD has chips to show: its frame lets the keys lead so they are drawn.</summary>
@@ -47,12 +48,12 @@ namespace RealLifeOverhaul.Ui
             return Keys;
         }
 
-        /// <summary>The HUD shown or hidden: the game's hint panel hidden under it, or given back.</summary>
+        /// <summary>The HUD shown or hidden: the game's hint panel hidden under it, or given back (the interior designer's face keeps it hidden while it shows).</summary>
         public static void Shown(bool shown)
         {
             _shown = shown;
             Find();
-            if (shown)
+            if (shown || _kept)
             {
                 Hidden.Hide();
             }
@@ -60,6 +61,54 @@ namespace RealLifeOverhaul.Ui
             {
                 Hidden.Show();
             }
+        }
+
+        /// <summary>
+        /// The interior designer's face shows the game's hint lines as chips of its own while the HUD is away: the game's panel stays hidden for as long as it does,
+        /// whichever comes first, the HUD or the face.
+        /// </summary>
+        public static void Keep(bool on)
+        {
+            _kept = on;
+            if (on)
+            {
+                Find();
+                Hidden.Hide();
+            }
+            else if (!_shown)
+            {
+                Hidden.Show();
+            }
+        }
+
+        /// <summary>The game's hint lines alone (no walking keys and no way back) read into chips: how many, and a number that changes when a line does.</summary>
+        public static int Mirror(UiPrompt[] into, out int sig)
+        {
+            _count = _picks = 0;
+            _back = null;
+            sig = 0;
+            Find();
+            try
+            {
+                if (_hints != null && _hints.gameObject.activeInHierarchy)
+                {
+                    Entries.Clear();
+                    _hints.GetComponentsInChildren(false, Entries);
+                    for (int i = 0; i < Entries.Count && _count < Most - 1; i++)
+                    {
+                        sig = unchecked(sig * 31 + Hint(Entries[i].transform));
+                    }
+                }
+            }
+            catch (Exception e) when (Guard.Missing(e))
+            {
+                Guard.DoesWithout(e, "the interior designer's key chips");
+                _count = _picks = 0;
+            }
+            int n = Math.Min(_count, into.Length);
+            Array.Copy(Prompts, into, n);
+            sig = unchecked(sig * 31 + n);
+            return n;
         }
 
         /// <summary>The game's hints given back as found.</summary>
