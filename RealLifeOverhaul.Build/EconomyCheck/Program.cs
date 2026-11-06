@@ -596,6 +596,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--startup-money")
+        {
+            StartupMoneyChecks();   // (the firm account, the investor floor, the board and the courts alone, while working on them: StartupMoneyChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--schools")
         {
             SchoolChecks();   // (Birchwood School and the city's schools alone, while working on them: SchoolChecks.cs)
@@ -1068,6 +1074,7 @@ internal static partial class Program
         Endings();
         Infra2();
         Ventures2();
+        StartupMoneyChecks();
         Firms();
         Competitors();
         LetGo();        // a building let go: the utilities' accounts and bills, business pressure's closures, an underground car park never supplied (LetGoChecks.cs)

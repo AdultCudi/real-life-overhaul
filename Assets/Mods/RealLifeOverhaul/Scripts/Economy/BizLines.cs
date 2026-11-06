@@ -43,7 +43,7 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Takings: the sales of the business (a refund is the same key, negative).</summary>
         public static readonly string[] TakingsKeys =
         {
-            P + "tech_takings", P + "tech_cloud_takings", P + "broadband_takings", P + "ownbank_takings",
+            P + "tech_takings", P + "tech_cloud_takings", P + "tech_related_takings", P + "broadband_takings", P + "ownbank_takings",
             P + "study_academy", P + "bld_contract"
         };
 
@@ -54,6 +54,7 @@ namespace RealLifeOverhaul.Economy
             P + "tech_wages", P + "tech_severance_wage", P + "tech_training", P + "tech_bonus_clause", P + "tech_crew_wages", P + "tech_upkeep",
             P + "tech_it_services", P + "tech_data_fine", P + "tech_register_fee", P + "tech_cloud_licence_fee",
             P + "tech_game_engine", P + "tech_game_certification", P + "tech_game_contractors", P + "tech_game_bonus", P + "tech_game_royalty",
+            P + "tech_related_cost",   // what a firm pays another business of the player's for work, at the firm
             P + "tech_desk_costs",   // what a desk session's answer costs: data, credits to customers, an award's fee, a power price fixed
             P + "tech_recruitment_ad", P + "tech_recruitment_checks", P + "tech_recruitment_search",
             P + "tech_recruitment_buyout", P + "tech_recruitment_buyout_paid",   // the second is a rival's money in, counted against the recruiting costs as a refund is
@@ -71,6 +72,7 @@ namespace RealLifeOverhaul.Economy
             P + "tech_game_advance", P + "tech_game_crowdfund",   // a publisher's advance against royalties and pledges: money in, never sales
             P + "tech_venture_bridge_interest", P + "tech_venture_bridge_loan", P + "tech_venture_diligence_fee", P + "tech_venture_fund",
             P + "tech_venture_fund_back", P + "tech_venture_investment", P + "tech_venture_raise", P + "tech_venture_return", P + "tech_venture_share_sale",
+            P + "tech_venture_dividend", P + "tech_venture_wind_down",
             P + "broadband_investment", P + "broadband_investment_sale",
             P + "ownbank_licence", P + "ownbank_investment_capital", P + "ownbank_investment_covered", P + "ownbank_investment_dividend",
             P + "ownbank_investment_kept", P + "ownbank_investment_pay", P + "ownbank_investment_sale",

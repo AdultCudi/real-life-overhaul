@@ -1303,6 +1303,9 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_vc_test_sale", () => Tech.TechDirector.Instance?.TestSale())
                 .AddButton("reallife_vc_test_round", () => Tech.TechDirector.Instance?.TestRound())
                 .AddButton("reallife_vc_test_board", () => Tech.TechDirector.Instance?.TestBoard())
+                .AddButton("reallife_vc_test_books", () => Tech.TechDirector.Instance?.TestBooks())
+                .AddButton("reallife_vc_test_wind_down", () => Tech.TechDirector.Instance?.TestWindDown())
+                .AddButton("reallife_vc_test_spend", () => Tech.TechDirector.Instance?.TestSpendElsewhere())
                 .AddToggle(Settings.TechSiteRoomsId, "reallife_sites_rooms", Settings.TechSiteRooms,
                     v => Settings.TechSiteRooms = v)
                 .AddToggle(Settings.TechSiteHqId, "reallife_sites_hq", Settings.TechSiteHq,

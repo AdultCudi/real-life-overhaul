@@ -165,6 +165,10 @@ namespace RealLifeOverhaul.Tech
             }
             _interview?.Watch();
             _pitch?.Watch();
+            if (_ventureOn)
+            {
+                KeepMoney();
+            }
             if (!_peopleOn)
             {
                 return;

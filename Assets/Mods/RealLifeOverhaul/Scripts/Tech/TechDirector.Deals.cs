@@ -263,6 +263,8 @@ namespace RealLifeOverhaul.Tech
             TermSheet t = c.Sheets[index];
             long money = VentureRules.Accept(c, t, FirmMrr(place) * 1000 / Math.Max(1, Prices.Level), Save.Day);
             VentureGame.Give(Level(money), VentureGame.RaiseKey, firm.File.Name, firm.Reg);
+            c.Acc.Name = firm.File.Name;
+            RefreshFloor(Save.Day);   // the round is the investors', held in the player's wallet from now
             Story("reallife_tech_news_raised", "name", firm.File.Name, "amount", TechText.Cents(Level(money)));
             string lead = VentureCatalogue.Firms[TalentCatalogue.Clamp(t.Vc, 0, VentureCatalogue.FirmCount - 1)].Name;
             TellTech(NotificationType.Success, "reallife_vc_note_closed", Data("firm", firm.File.Name, "amount", TechText.Cents(Level(money)), "vc", lead), TabFunding, TechApp.CapRow + place);
@@ -283,7 +285,9 @@ namespace RealLifeOverhaul.Tech
             long loan = Math.Max(VentureCatalogue.TicketLeast, VentureRules.BridgeFor(burn));
             c.Bridge = loan;
             c.BridgeDay = Save.Day;
+            StartupMoney.Inflow(c, loan, Save.Day);
             VentureGame.Give(Level(loan), VentureGame.BridgeKey, firm.File.Name, firm.Reg);
+            RefreshFloor(Save.Day);
             ChangedTech();
             return true;
         }

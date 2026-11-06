@@ -8,12 +8,14 @@ namespace RealLifeOverhaul.Tech
     /// <see cref="TechWriter"/>'s format, a header (h), the fund (f), the venture firms' doors (v), startups (s) and their holders
     /// (a), the player's firms (c), their holders (k) and term sheets (t), fields in the order <see cref="Write"/> writes them. A
     /// startup's last fields (the last round's day, the player's shares and all shares before it, its follow-on taken) came in
-    /// 0.47.1 at the end of its record, so an older RLO reads the line and leaves them out.
+    /// 0.47.1 at the end of its record, so an older RLO reads the line and leaves them out. Version 2 adds the firm accounts in parts
+    /// of their own (x the account, m what was taken, r the deals with the player's other businesses), which an older RLO does not
+    /// read and a line from before them leaves empty: a running firm then opens its account with a grace.
     /// </summary>
     public static class VentureStore
     {
         public const string Key = "reallife:tech_ventures";
-        public const int Version = 1;
+        public const int Version = 2;
 
         public static VentureFile Load(Dictionary<string, string> data, out int version) => TechLines.Load(data, Key, Version, Read, out version);
 
@@ -75,6 +77,35 @@ namespace RealLifeOverhaul.Tech
                 foreach (TermSheet t in c.Sheets)
                 {
                     w.Record().Place(c.Place).Add(t.Vc).Add(t.Amount).Add(t.Pre).Add(t.Board).Add(t.ProRata).Add(t.Lapse).Add(t.Score);
+                }
+            }
+            w.Part('x');
+            foreach (Cap c in f.Caps)
+            {
+                FirmAccount a = c.Acc;
+                if (!a.Open)
+                {
+                    continue;
+                }
+                w.Record().Place(c.Place).Add(a.Wound).Add(a.Opened).Add(a.GraceTo).Add(a.FounderDay).Add(a.Raised).Add(a.Own).Add(a.Out).Add(a.Taken).Add(a.Synced).Add(a.Band)
+                    .Add(a.SalaryFrom).Add(a.SalaryDrawn).Add(a.Loan).Add(a.LoanDay).Add(a.LoanUsed).Add(a.Dividends).Add(a.PackDay).Add(a.PackLast).Add(a.DelayUsed).Add(a.DelayDay)
+                    .Add(a.Step).Add(a.StepDay).Add(a.AskDay).Add(a.Stonewalled).Add(a.Calm).Add(a.Event).Add(a.WarnDay).Add(a.Suit).Add(a.Case)
+                    .Add(a.RelatedDeals).Add(a.RelatedPaid).Add(a.RelatedOver).Add(a.Gone).Add(a.Name);
+            }
+            w.Part('m');
+            foreach (Cap c in f.Caps)
+            {
+                foreach (MisuseLine m in c.Acc.Misuse)
+                {
+                    w.Record().Place(c.Place).Add(m.Day).Add(m.Cents).Add(m.Burning).Add(m.Key);
+                }
+            }
+            w.Part('r');
+            foreach (Cap c in f.Caps)
+            {
+                foreach (RelatedLine r in c.Acc.Related)
+                {
+                    w.Record().Place(c.Place).Add(r.Day).Add(r.Paid).Add(r.Fair).Add(r.Name);
                 }
             }
             return w.ToString();
@@ -164,6 +195,68 @@ namespace RealLifeOverhaul.Tech
                 if (c != null && c.Sheets.Count < VentureCatalogue.VcMeetingsMost)
                 {
                     c.Sheets.Add(t);
+                }
+            }
+            foreach (Fields x in r.Records('x'))
+            {
+                Cap c = f.CapOf(x.Place());
+                if (c == null)
+                {
+                    continue;
+                }
+                FirmAccount a = c.Acc;
+                a.Open = true;
+                a.Wound = x.Bool();
+                a.Opened = x.Int();
+                a.GraceTo = x.Int();
+                a.FounderDay = x.Int();
+                a.Raised = Math.Max(0L, x.Long());
+                a.Own = x.Long();
+                a.Out = x.Long();
+                a.Taken = Math.Max(0L, x.Long());
+                a.Synced = x.Int();
+                a.Band = Math.Max(0L, x.Long());
+                a.SalaryFrom = x.Int();
+                a.SalaryDrawn = Math.Max(0L, x.Long());
+                a.Loan = Math.Max(0L, x.Long());
+                a.LoanDay = x.Int();
+                a.LoanUsed = x.Bool();
+                a.Dividends = Math.Max(0L, x.Long());
+                a.PackDay = x.Int();
+                a.PackLast = x.Int();
+                a.DelayUsed = x.Bool();
+                a.DelayDay = x.Int();
+                a.Step = TalentCatalogue.Clamp(x.Int(), 0, StartupMoney.StepCharged);
+                a.StepDay = x.Int();
+                a.AskDay = x.Int();
+                a.Stonewalled = x.Bool();
+                a.Calm = x.Int();
+                a.Event = x.Int();
+                a.WarnDay = x.Int();
+                a.Suit = x.Int();
+                a.Case = x.Int();
+                a.RelatedDeals = x.Int();
+                a.RelatedPaid = Math.Max(0L, x.Long());
+                a.RelatedOver = Math.Max(0L, x.Long());
+                a.Gone = x.Int();
+                a.Name = x.Text();
+            }
+            foreach (Fields x in r.Records('m'))
+            {
+                Cap c = f.CapOf(x.Place());
+                var m = new MisuseLine { Day = x.Int(), Cents = Math.Max(0L, x.Long()), Burning = x.Bool(), Key = x.Text() };
+                if (c != null && c.Acc.Open && c.Acc.Misuse.Count < MoneyCatalogue.MisuseKept)
+                {
+                    c.Acc.Misuse.Add(m);
+                }
+            }
+            foreach (Fields x in r.Records('r'))
+            {
+                Cap c = f.CapOf(x.Place());
+                var d = new RelatedLine { Day = x.Int(), Paid = Math.Max(0L, x.Long()), Fair = Math.Max(0L, x.Long()), Name = x.Text() };
+                if (c != null && c.Acc.Open && c.Acc.Related.Count < MoneyCatalogue.RelatedKept)
+                {
+                    c.Acc.Related.Add(d);
                 }
             }
             return f;

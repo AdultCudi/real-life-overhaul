@@ -52,6 +52,7 @@ namespace RealLifeOverhaul.Tech
             }
             c.Stage = Math.Min((int)RoundStage.Growth, c.Stage + 1);
             c.Post = t.Pre + t.Amount;
+            StartupMoney.Inflow(c, t.Amount, day);
             if (t.Board)
             {
                 c.BoardSeats += VentureCatalogue.BoardSeatsPerRound;

@@ -126,6 +126,9 @@ Nominal values, for a first offence convicted after a trial.
 | `NoShow` | Failure to appear | misdemeanour | 1 000 | 4 h | 12 h | | 3 d | | |
 | `Violation` | Breach of probation | misdemeanour | 1 500 | | 24 h | | 5 d | | |
 | `BidRigging` | Bid rigging (a cover bid for a ring of builders that came out: `TaxCases.FileBidRigging`) | misdemeanour | 7 000 | 12 h | | | 7 d | | |
+| `InvestorFraud` | Defrauding investors (a funded firm's investors' money spent elsewhere and not paid back, found by an audit: `TaxCases.FileInvestorFraud`) | felony | 20 000 | | 48 h | 3 d | 14 d | | |
+
+**Investors' claims and fraud** ([Startup money](startup-money.md)): the investors of a funded firm sue the player for investors' money spent elsewhere and not paid back (`InvestorClaims.File`, an ordinary civil suit filed like `DebtClaims`, the sum plus a tenth in costs), and for the clear pattern, over half the raise or over a tenth followed by a shutdown, a case is opened on a summons for `InvestorFraud` (`TaxCases.FileInvestorFraud`), its strength the audit's evidence (0.45 to 0.95, by the sum against the raise and the transactions the books name). The court reads out the sum with the charge.
 
 **Claims the player brings** (`OwnClaims`, `JusticeState.Claims`, the save's section "O:"): the construction company sues a client or flat buyers who will not pay.
 The court's fee (3 % of the claim, 150 at least, at today's prices) is paid at filing; the claim is heard 6 to 9 days on, decided by its own seed at its strength on the company's books (780 in 1000, 60 more a letter sent, 900 for the city's debt) and counsel's quality a little (`JusticeLaw.ClaimChance`); a win pays the claim and the fee back ("Court award").

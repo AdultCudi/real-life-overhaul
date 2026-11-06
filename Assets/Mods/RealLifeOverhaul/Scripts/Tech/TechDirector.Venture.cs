@@ -45,6 +45,7 @@ namespace RealLifeOverhaul.Tech
             _ventureOn = true;
             CatchUpMoves(MoveRules.PartVenture);
             FollowMoves();
+            StartMoney();
             if (_pitch == null)
             {
                 _pitch = new VentureMeeting(this);
@@ -75,6 +76,7 @@ namespace RealLifeOverhaul.Tech
                 WriteVenture(Save.modData);
             }
             _pitch?.End();
+            StopMoney();
             _ventureOn = false;
         }
 
@@ -252,14 +254,20 @@ namespace RealLifeOverhaul.Tech
 
         private void CapsDay(int day, int mood)
         {
+            _winding.Clear();
             for (int i = 0; i < _venture.Caps.Count; i++)
             {
                 Cap c = _venture.Caps[i];
                 FirmPlace firm = FirmOf(c.Place);
                 if (firm == null)
                 {
+                    if (StartupMoney.Has(c) && _firmsOn && _firmsFile.FirmAt(c.Place) == null && GoneFor(c, day))
+                    {
+                        _winding.Add(c);
+                    }
                     continue;
                 }
+                MoneyDay(c, firm, day);
                 OptionsDay(c);
                 for (int t = c.Sheets.Count - 1; t >= 0; t--)
                 {
@@ -300,6 +308,11 @@ namespace RealLifeOverhaul.Tech
                     ReplaceChief(c, firm, day);
                 }
             }
+            for (int i = 0; i < _winding.Count; i++)
+            {
+                WindDown(_winding[i], string.IsNullOrEmpty(_winding[i].Acc.Name) ? Where(_winding[i].Place) : _winding[i].Acc.Name, day);
+            }
+            RefreshFloor(day);
         }
 
         /// <summary>A venture firm that leads at the firm's next stage and would meet it now; -1 for none.</summary>
