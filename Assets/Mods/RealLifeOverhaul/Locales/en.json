@@ -35349,5 +35349,8 @@
   "reallife_tech_desk_gtm_users_ship": "You put work into what the customers of {firm} asked for.",
   "reallife_tech_desk_gtm_launch_done": "{firm} launches: {channel}. Partner: {partner}.",
   "reallife_tech_desk_gtm_launch_no_partner": "No listed company sells in this market, so none would resell it.",
-  "reallife_tech_desk_gtm_price_done": "{firm} charges the {tier} price, {price} of the list. This niche will bear {bears} at its fit."
+  "reallife_tech_desk_gtm_price_done": "{firm} charges the {tier} price, {price} of the list. This niche will bear {bears} at its fit.",
+  "reallife_transaction_tech_founding_fees_label": "Legal fees of a new startup",
+  "reallife_transaction_tech_founding_expand_label": "A new niche opened",
+  "reallife_transaction_tech_founding_reseller_label": "A reseller's cut"
 }

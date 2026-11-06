@@ -35349,5 +35349,8 @@
   "reallife_tech_desk_gtm_users_ship": "你把工作投入到{firm}客户所要求的内容中。",
   "reallife_tech_desk_gtm_launch_done": "{firm}已推出：{channel}。合作伙伴：{partner}。",
   "reallife_tech_desk_gtm_launch_no_partner": "这个市场中没有上市公司销售，因此没有人会转售。",
-  "reallife_tech_desk_gtm_price_done": "{firm}收取{tier}价格，为列表价的{price}。这个细分市场在当前契合度下将承受{bears}。"
+  "reallife_tech_desk_gtm_price_done": "{firm}收取{tier}价格，为列表价的{price}。这个细分市场在当前契合度下将承受{bears}。",
+  "reallife_transaction_tech_founding_fees_label": "新创业公司的法律费用",
+  "reallife_transaction_tech_founding_expand_label": "新开的细分市场",
+  "reallife_transaction_tech_founding_reseller_label": "经销商分成"
 }

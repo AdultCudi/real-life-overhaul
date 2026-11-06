@@ -136,7 +136,15 @@ namespace RealLifeOverhaul
 
             private static bool Runs()
             {
-                return Live() != null;
+                try
+                {
+                    return Live() != null;
+                }
+                catch (Exception e)
+                {
+                    Fault("FoundLinks.Runs", e);
+                    return false;
+                }
             }
 
             private const int BusinessAnalyst = 30;   // TalentCatalogue role 30

@@ -35349,5 +35349,8 @@
   "reallife_tech_desk_gtm_users_ship": "Você colocou trabalho no que os clientes de {firm} pediram.",
   "reallife_tech_desk_gtm_launch_done": "{firm} foi lançada: {channel}. Parceiro: {partner}.",
   "reallife_tech_desk_gtm_launch_no_partner": "Nenhuma empresa de capital aberto vende neste mercado, então nenhuma revenderia.",
-  "reallife_tech_desk_gtm_price_done": "{firm} cobra o preço {tier}, {price} da tabela. Este nicho vai aceitar {bears} com o fit atual."
+  "reallife_tech_desk_gtm_price_done": "{firm} cobra o preço {tier}, {price} da tabela. Este nicho vai aceitar {bears} com o fit atual.",
+  "reallife_transaction_tech_founding_fees_label": "Taxas legais de uma nova startup",
+  "reallife_transaction_tech_founding_expand_label": "Um novo nicho aberto",
+  "reallife_transaction_tech_founding_reseller_label": "Parte do revendedor"
 }
