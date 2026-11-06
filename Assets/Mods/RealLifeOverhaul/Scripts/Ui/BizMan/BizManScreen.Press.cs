@@ -247,9 +247,10 @@ namespace RealLifeOverhaul.Ui
                 {
                     HamptonsPurchaseBoxUI villa = Get<HamptonsPurchaseBoxUI>(GameContract.ShowVilla, pres);
                     Button send = On(villa) ? Calling(villa, "SendBuyBuildingOffer") : null;
-                    return Click(send ?? Calling(pres, "SendBuyBuildingOffer"), "send an offer for the building");
+                    return pres != null && Send(send ?? Calling(pres, "SendBuyBuildingOffer"), pres.SendBuyBuildingOffer, "send an offer for the building");
                 }
-                case BizManPages.DoTakeover: return Click(Calling(pres, "SendOvertakeOffer"), "send an offer to take the business over");
+                case BizManPages.DoTakeover:
+                    return pres != null && Send(Calling(pres, "SendOvertakeOffer"), pres.SendOvertakeOffer, "send an offer to take the business over");
                 case BizManPages.DoBrowse: return Click(Calling(pres, "BrowseInventory"), "browse the store's goods");
                 case BizManPages.DoEmployees:
                     return pres != null && pres.showEmployeesButton != null && Click(pres.showEmployeesButton.GetComponentInChildren<Button>(true), "show the business's employees");
@@ -274,6 +275,23 @@ namespace RealLifeOverhaul.Ui
                 case BizManPages.DoClassic: return ToClassic(b);
                 default: return false;
             }
+        }
+
+        // An offer's Send: the game's button while it shows, else the public method that button calls. The game keeps the box that
+        // holds Send shut until its make-an-offer button is pressed, and the kit's amount is its own field already; the method
+        // runs the game's checks and notices either way, and the patches of other mods (Going Public) hear it as they would the click.
+        private static bool Send(Button shown, Action call, string what)
+        {
+            if (shown != null)
+            {
+                return Click(shown, what);
+            }
+            using (HotSpots.Game())
+            {
+                call();
+            }
+            UiDirector.Logger?.Info("BizMan (kit): " + what + ": handed to the game's own method");
+            return true;
         }
 
         private BizManContractSettings Contract(BizManBusiness b) => Get<BizManContractSettings>(GameContract.DealSettings, PageOf<BizManDeliveries>(b, BizManRules.Deliveries));

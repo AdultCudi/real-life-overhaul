@@ -745,6 +745,13 @@ internal static partial class UiSamples
             new BizManFact { Label = t("reallife_ui_bizman_first_day", "First day's rent"), Value = "$412" },
             new BizManFact { Label = "Total initial payment", Value = "$15,172", Tone = UiRole.Text },
         };
+        m.Amount = new BizManAmount
+        {
+            Title = t("bizman_buy_building", "Buy building"), Line = t("bizman_not_for_sale", "This building is not for sale"), Figure = "1,850,000", Field = BizManPages.FieldBuy,
+            CanLess = true, CanMore = true,
+            Send = new UiActionModel { Label = t("bizman_send_purchase_offer", "Send building purchase offer"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Send, Key = UiAction.Count,
+                Command = BizManPages.Action, Arg = BizManPages.DoBuy }
+        };
         m.Actions = new[]
         {
             new UiActionModel { Label = t("bizman_preview_button", "Preview"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Eye, Key = UiAction.Option, Command = BizManPages.Action, Arg = BizManPages.DoPreview },
