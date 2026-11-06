@@ -91,7 +91,8 @@ namespace RealLifeOverhaul.Ui
         private static float LeadHeight(string words, float w) => string.IsNullOrEmpty(words) ? 0f : UiDraw.Snap(UiTextRules.WrappedHeight(words, UiStyle.Body, w, 3)) + UiTokens.S4;
 
         private static float AmountHeight(BizManAmount a) => a == null ? 0f
-            : TitleHeight(a.Title) + (string.IsNullOrEmpty(AmountLine(a)) ? 0f : UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)) + UiTokens.S2) + UiTokens.Control + UiTokens.S6;
+            : TitleHeight(a.Title) + (string.IsNullOrEmpty(AmountLine(a)) ? 0f : BizFactsRules.LineCount(AmountLine(a)) * UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)) + UiTokens.S2)
+              + UiTokens.Control + UiTokens.S6;
 
         // ------------------------------------------------------------------------------------------------- insight
 

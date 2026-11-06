@@ -24,6 +24,7 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_world_area", "reallife_ui_world_capacity", "reallife_ui_world_owner_one", "reallife_ui_world_state_for_rent",
                     "reallife_ui_world_state_rented_out", "reallife_ui_world_state_rival", "reallife_ui_world_state_yours", "reallife_ui_world_customers",
                     "reallife_ui_world_customers_of",
+                    "bizman_market_value", "bizman_estimated_valuation", "reallife_ui_biz_valuation", "reallife_ui_biz_value_sold",
                     "reallife_ui_world_kind", "reallife_ui_world_open", "reallife_ui_world_traffic", "buildingresume_open_in_bizman", "buildingresume_left_click",
                     "buildingresume_right_click", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "input_key_menu"
                 }).Switch(UiScreenSwitches.Hud),

@@ -110,6 +110,7 @@ namespace RealLifeOverhaul.Ui
                 Fact("common_building_type", b.building != null ? UiText.T(b.building.BuildingType) : null),
                 Fact("common_neighborhood", WordsAt(top, "Neighborhood")),
                 Fact("bizman_building_total_size", WordsAt(bottom, "TotalSize")),
+                Fact("reallife_ui_world_area", WordsAt(bottom, "BuildingArea")),
                 Fact("bizman_traffic_index", WordsAt(top, "TrafficIndex")),
                 Fact("bizman_customers_capacity", Dash(WordsAt(top, "CustomerCapacity"))),
                 Fact("bizman_market_value", Dash(WordsAt(bottom, "MarketValue"))),
@@ -156,7 +157,8 @@ namespace RealLifeOverhaul.Ui
             bool held = send != null && BizManRules.SendHeld(send.gameObject.activeInHierarchy, send.interactable);
             var a = new BizManAmount
             {
-                Title = UiText.T("bizman_buy_building"), Line = Join(WordsAt(box, "RivalBuildingOwner"), On(forSale) ? WordsAt(box, "BuildingPriceLabel") : Words(pres.buildingSideInfoValuation)),
+                Title = UiText.T("bizman_buy_building"), Line = Lines(WordsAt(box, "RivalBuildingOwner"), On(forSale) ? WordsAt(box, "BuildingPriceLabel") : null,
+                    Words(pres.buildingSideInfoValuation)),
                 Figure = pres.buyBuildingAmountInputField != null ? pres.buyBuildingAmountInputField.text : null, Field = BizManPages.FieldBuy, CanLess = true, CanMore = true,
                 Disabled = pres.buyBuildingAmountInputField == null || !pres.buyBuildingAmountInputField.interactable,
                 Send = Do(BizManPages.DoBuy, UiWidgets.Label(send) ?? UiText.T("bizman_send_purchase_offer"), second ? UiButtonKind.Secondary : UiButtonKind.Primary, UiIcon.Send,
@@ -172,7 +174,8 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        private static string Join(string a, string b) => string.IsNullOrEmpty(a) ? b : string.IsNullOrEmpty(b) ? a : a + ". " + b;
+        // One line a fact, so the figure under the owner is never cut off the end of a long sentence.
+        private static string Lines(params string[] lines) => BizFactsRules.Lines(lines);
 
         private void Rent(RentBuildingUI rent)
         {
@@ -203,7 +206,7 @@ namespace RealLifeOverhaul.Ui
             Button send = UiWidgets.Calling(villa, "SendBuyBuildingOffer") ?? UiWidgets.Calling(pres, "SendBuyBuildingOffer");
             _m.Amount = new BizManAmount
             {
-                Title = UiText.T("bizman_buy_building"), Line = Words(Get<Component>(GameContract.VillaPrice, villa)) ?? Words(Get<Component>(GameContract.VillaValuation, villa)),
+                Title = UiText.T("bizman_buy_building"), Line = Lines(Words(Get<Component>(GameContract.VillaPrice, villa)), Words(Get<Component>(GameContract.VillaValuation, villa))),
                 Figure = villa.offerInputField != null ? villa.offerInputField.text : null, Field = BizManPages.FieldBuy, CanLess = true, CanMore = true,
                 Send = Do(BizManPages.DoBuy, (send != null ? UiWidgets.Label(send) : null) ?? UiText.T("bizman_send_purchase_offer"), UiButtonKind.Primary, UiIcon.Send, UiAction.Alt,
                     send != null && BizManRules.SendHeld(send.gameObject.activeInHierarchy, send.interactable))

@@ -71,7 +71,7 @@ namespace RealLifeOverhaul.Ui
             m.Kind = KindWords(card);
             int tier = _flare.Found ? MapPlaceRules.Tier(_flare.Price) : 0;
             m.Price = tier > 0 ? new string('$', tier) : null;
-            m.Chips = PlaceChips(card, reg);
+            m.Chips = PlaceChips(card, reg, default);
             m.DirectionsLabel = UiText.T("reallife_map_directions");
             m.SaveLabel = UiText.T("reallife_map_save");
             m.SavedLabel = UiText.T("reallife_map_saved");
@@ -240,21 +240,47 @@ namespace RealLifeOverhaul.Ui
         private static string Ago(int days) => days == 0 ? UiText.T("reallife_map_ago_today") : days == 1 ? UiText.T("reallife_map_ago_yesterday")
             : UiText.Fill("reallife_map_ago_days", "days", days.ToString(CultureInfo.InvariantCulture));
 
-        // Whose it is, what it is, and its week's hours.
+        // Whose it is and what it is, then the building: the business's owner with its valuation under it, the building's owner with its market value under it, its floor
+        // area, its customers' room and its traffic, and the week's hours. Each of the game's card's lines once.
         private MapPlaceRow[] BusinessRows(BuildingResume card, BuildingRegistration reg)
         {
-            var rows = new List<MapPlaceRow>(10);
+            var rows = new List<MapPlaceRow>(14);
+            BizWorth worth = BizFacts.Read(_pickedBuilding);
+            Building building = _pickedBuilding.building;
             string owner = card.rivalBusinessOwner != null && card.rivalBusinessOwner.gameObject.activeSelf ? LabelWords(card.rivalBusinessOwner) : null;
             rows.Add(new MapPlaceRow
             {
                 Label = UiText.T("reallife_map_row_owner"),
                 Value = reg.RentedByPlayer ? UiText.T("reallife_map_you") : string.IsNullOrWhiteSpace(owner) ? UiText.T("reallife_map_row_none") : owner.Trim()
             });
+            if (worth.Valuation != null)
+            {
+                rows.Add(new MapPlaceRow { Label = BizFacts.ValuationLabel(worth), Value = worth.Valuation });
+            }
             string kind = KindWords(card);
             if (kind != null)
             {
                 rows.Add(new MapPlaceRow { Label = UiText.T("reallife_map_row_type"), Value = kind });
             }
+            string landlord = card.rivalBuildingOwner != null && card.rivalBuildingOwner.gameObject.activeSelf ? LabelWords(card.rivalBuildingOwner) : null;
+            if (!string.IsNullOrWhiteSpace(landlord))
+            {
+                rows.Add(new MapPlaceRow { Label = landlord.Trim() });
+            }
+            if (worth.Market != null)
+            {
+                rows.Add(new MapPlaceRow { Label = UiText.T("bizman_market_value"), Value = worth.Market });
+            }
+            string area = card.buildingAreaLabel != null && card.buildingAreaLabel.gameObject.activeSelf ? LabelWords(card.buildingAreaLabel) : null;
+            if (!string.IsNullOrWhiteSpace(area))
+            {
+                rows.Add(new MapPlaceRow { Label = UiText.T("reallife_ui_world_area"), Value = area.Trim() });
+            }
+            if (building.GetCustomerCapacity >= 0)
+            {
+                rows.Add(new MapPlaceRow { Label = UiText.T("reallife_ui_world_capacity"), Value = UiText.Whole(building.GetCustomerCapacity) });
+            }
+            rows.Add(new MapPlaceRow { Label = UiText.T("reallife_ui_world_traffic"), Value = building.trafficIndex.ToString(CultureInfo.CurrentCulture) });
             for (int i = 0; reg.scheduleDays != null && i < reg.scheduleDays.Count; i++)
             {
                 ScheduleDay day = reg.scheduleDays[i];

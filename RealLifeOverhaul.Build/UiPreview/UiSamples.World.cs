@@ -62,7 +62,8 @@ internal static partial class UiSamples
         };
         var building = new[]
         {
-            buildingOwner, new UiInfoRow { Label = t("reallife_ui_world_neighbourhood", "Neighbourhood"), Value = district, Link = true },
+            buildingOwner, new UiInfoRow { Label = t("bizman_market_value", "Market value"), Value = rival ? "$5.1M" : "$2.4M" },
+            new UiInfoRow { Label = t("reallife_ui_world_neighbourhood", "Neighbourhood"), Value = district, Link = true },
             new UiInfoRow { Label = t("reallife_ui_world_area", "Floor area"), Value = rival ? "310 m²" : "140 m²" },
             new UiInfoRow { Label = t("reallife_ui_world_capacity", "Customer capacity"), Value = rival ? "64" : "48" },
         };
@@ -132,7 +133,9 @@ internal static partial class UiSamples
     /// <summary>The card at a building's door while the pointer rests on it: its name, kind and place, open or not, and the game's hints.</summary>
     public static UiPromptCardModel WorldBuildingCard(UiWords t) => new UiPromptCardModel
     {
-        Title = "Bloom Café", Sub = t("ba:businesstype_coffeeshop", "Coffee Shop") + ", Midtown", State = t("common_open", "Open"), StateTone = UiRole.OkText, Icon = UiIcon.Store,
+        Title = "Bloom Café", Icon = UiIcon.Store, State = t("common_open", "Open"), StateTone = UiRole.OkText,
+        Sub = string.Join("\n", t("ba:businesstype_coffeeshop", "Coffee Shop") + ", Midtown", "Traffic index: 72, Customer capacity: 48", "Floor area: 140 m2 (Size S, version 2)",
+            "Rented by you", "Value if sold: $61K", "Building owned by Hudson Realty", "Market value: $2.4M"),
         Actions = new[]
         {
             new UiPromptAction { Label = t("buildingresume_left_click", "Left click to enter"), Hint = true },

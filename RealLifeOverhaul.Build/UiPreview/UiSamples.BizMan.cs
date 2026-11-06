@@ -326,6 +326,7 @@ internal static partial class UiSamples
             new BizManFact { Label = t("common_building_type", "Building type"), Value = kind },
             new BizManFact { Label = t("common_neighborhood", "Neighborhood"), Value = district },
             new BizManFact { Label = t("bizman_building_total_size", "Total size"), Value = size },
+            new BizManFact { Label = t("reallife_ui_world_area", "Floor area"), Value = size == null ? null : size + " (Size S, version 2)" },
             new BizManFact { Label = t("bizman_traffic_index", "Traffic Index"), Value = traffic },
             new BizManFact { Label = t("bizman_customers_capacity", "Customer capacity"), Value = capacity },
             new BizManFact { Label = t("bizman_market_value", "Market value"), Value = value },
@@ -334,12 +335,12 @@ internal static partial class UiSamples
         {
             m.Amount = new BizManAmount
             {
-                Title = t("bizman_buy_building", "Buy building"), Line = "Owned by Marsh Holdings. " + t("bizman_not_for_sale", "This building is not for sale"),
+                Title = t("bizman_buy_building", "Buy building"), Line = "Building owned by Marsh Holdings\nEstimated valuation: $1,850,000",
                 Figure = "1,250,000", Field = BizManPages.FieldBuy, CanLess = true, CanMore = true,
                 Send = new UiActionModel { Label = t("bizman_send_purchase_offer", "Send building purchase offer"), Kind = UiButtonKind.Primary, Icon = UiIcon.Send, Key = UiAction.Alt,
                     Command = BizManPages.Action, Arg = BizManPages.DoBuy }
             };
-            m.Facts[5].Value = null;   // the offer's line gives the valuation, as the game's own presentation does
+            m.Facts[6].Value = null;   // the offer's line gives the valuation, as the game's own presentation does
         }
     }
 
