@@ -69,6 +69,12 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>What the interface asks for a person's picture (their contact's id), or null for a logo or a contact with none.</summary>
+        internal static Ui.UiFaceSource FaceOf(string id)
+        {
+            return !string.IsNullOrEmpty(id) && Pictures.TryGetValue(id, out Picture p) && p.Look.Kind == PictureKind.Person ? p.Face ??= new Ui.PictureFace(p) : null;
+        }
+
         /// <summary>A person whose look another feature gives (the sex, age and seed it builds them from): their own face.</summary>
         public static void Person(string id, bool female, int age, int seed)
         {

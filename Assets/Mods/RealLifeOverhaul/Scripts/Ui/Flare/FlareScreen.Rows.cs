@@ -257,6 +257,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     r.Flags |= FlareRowFlags.Person;
                     r.Ring = UiTokens.Grade(inf.Reliability);
+
                 }
             }
             else if (key.Length > 1 && key[0] == 'f' && int.TryParse(key.Substring(1), out n) && _flare.Person(n, out FlarePerson person))
@@ -271,6 +272,8 @@ namespace RealLifeOverhaul.Ui
                 r.Flags |= FlareRowFlags.Person;
                 UiFaces.Traits(r.Name, c.Female, c.Age);   // no mood is known of the city's people: no ring
             }
+            // Whoever has a contact on the phone wears its picture, as Contacts shows them; the painted face stays for those with none.
+            ContactFaces.Tell(r.Name, FlareAvatarRules.ContactOf(key, _flare.People, file));
         }
 
         // The face a post's author wears: the account is told from who wrote it, since a friend's or the player's own post has no key.

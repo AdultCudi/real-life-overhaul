@@ -94,6 +94,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--flare-msg")
+        {
+            FlareMsgChecks();   // Flare's messages in words and its contact faces (FlareMsgChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--flare-round")
         {
             FlareAuditChecks();   // the Flare audit fix's checks alone (FlareAuditChecks.cs, FlareRoundChecks.cs, FlareOrderChecks.cs)
