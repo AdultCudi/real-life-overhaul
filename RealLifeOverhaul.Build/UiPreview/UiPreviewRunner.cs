@@ -211,6 +211,7 @@ public static partial class UiPreviewRunner
         AddOverlays(screens);
         AddPause(screens);
         AddBlueprints(screens);
+        AddOptions(screens);
         AddSweep(screens);
         foreach (Screen screen in screens)
         {
@@ -258,6 +259,7 @@ public static partial class UiPreviewRunner
     static partial void AddOverlays(List<Screen> screens);
     static partial void AddPause(List<Screen> screens);
     static partial void AddBlueprints(List<Screen> screens);
+    static partial void AddOptions(List<Screen> screens);
     static partial void AddSweep(List<Screen> screens);
 
     // A sample's walk of the d-pad, written as letters (U, D, L, R).

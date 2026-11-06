@@ -585,6 +585,7 @@ internal static partial class Program
             UiCasesOverlays(def, cases);
             UiCasesPause(def, cases);
             UiCasesBlueprints(def, cases);
+            UiCasesOptions(def, cases);
             UiCasesSweep(def, cases);
             if (cases.Count == before)
             {
@@ -634,6 +635,7 @@ internal static partial class Program
     static partial void UiCasesOverlays(UiScreenDef def, List<UiScreenCase> cases);
     static partial void UiCasesPause(UiScreenDef def, List<UiScreenCase> cases);
     static partial void UiCasesBlueprints(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesOptions(UiScreenDef def, List<UiScreenCase> cases);
     static partial void UiCasesSweep(UiScreenDef def, List<UiScreenCase> cases);
 
     // The template's own sample: the template_ entries, and every screen whose area adds no case of its own.

@@ -38,6 +38,7 @@ namespace RealLifeOverhaul.Ui
                 .Test("reallife_ui_test_blueprints", () => UiDirector.Instance?.TestBlueprints())
                 .Test("reallife_ui_test_help", () => UiDirector.Instance?.TestHelp())
                 .Test("reallife_ui_test_bp_switch", () => UiDirector.Instance?.TestBlueprintsSwitch())
+                .Test("reallife_ui_test_options", "reallife_ui_test_options_switch")
                 .Test("reallife_ui_test_map_open", "reallife_ui_test_map_switch")
                 .Test("reallife_ui_test_econoview", "reallife_ui_test_econoview_loans", "reallife_ui_test_econoview_switch")
                 .Test("reallife_ui_test_persona", "reallife_ui_test_rivals", "reallife_ui_test_market", "reallife_ui_test_persona_switch", "reallife_ui_test_rivals_switch",

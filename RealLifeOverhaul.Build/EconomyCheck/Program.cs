@@ -221,6 +221,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--options-ui")
+        {
+            OptionsUiChecks();   // the game's Options in the city and its custom difficulty on the kit: rules, rows, texts, the screen's code and its layouts (OptionsUiChecks.cs, UiChecks.Options.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--services-ui")
         {
             ServicesUiChecks();   // the Services screen's pages, presses and entry points, and the rules a sale keeps, alone (UiChecks.Services.cs)

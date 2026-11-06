@@ -29,6 +29,8 @@ namespace RealLifeOverhaul.Ui
         public bool Differs;               // it differs from the nearest preset: a dot by its name
         public int MatchStart, MatchLength;   // the search's letters in its name, marked; length 0 for none
         public UiIcon Icon;                // a heading's glyph, in its own colour on its tile
+        public string Mark;                // a small chip after the name (a key another action shares); null for none
+        public int Command;                // the command a text row answers to; 0 is the list's own row command (a screen with a field besides its search names its own)
     }
 
     /// <summary>
@@ -49,6 +51,7 @@ namespace RealLifeOverhaul.Ui
         public UiActionModel[] PresetActions = new UiActionModel[0];
         public bool CanBack, CanForward;
         public string EmptyTitle, EmptyBody;           // a search that finds nothing
+        public bool NoHead;                            // a page with no search of its own (the way back and forward and the search are left out)
     }
 
     /// <summary>
@@ -96,8 +99,8 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Lays the list into the room an app window's Shell gave its page; writes back the scroll it took.</summary>
         public static void Lay(UiScene s, UiAt at, UiSettingsModel m, float x, float y, float w, float h, IUiKeys keys)
         {
-            float top = Head(s, at.InRegion(RegionHead), m, x, y, w, keys);
-            int search = s.NodeCount - 1;
+            float top = m.NoHead ? y : Head(s, at.InRegion(RegionHead), m, x, y, w, keys);
+            int search = m.NoHead ? -1 : s.NodeCount - 1;
             int presets = s.NodeCount;
             top = Preset(s, at.InRegion(RegionHead), m, x, top, w, keys);
             int presetsEnd = s.NodeCount;
@@ -110,13 +113,16 @@ namespace RealLifeOverhaul.Ui
                 firstRow = !s.Nodes[i].Disabled && s.Nodes[i].Command == RowCommand ? i : -1;
             }
             int below = presetsEnd > presets ? presets : firstRow;
-            if (below >= 0)
+            if (below >= 0 && search >= 0)
             {
                 s.Nodes[search].Down = below;
             }
             for (int i = presets; i < presetsEnd; i++)
             {
-                s.Nodes[i].Up = search;
+                if (search >= 0)
+                {
+                    s.Nodes[i].Up = search;
+                }
                 if (firstRow >= 0)
                 {
                     s.Nodes[i].Down = firstRow;
@@ -124,7 +130,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (firstRow >= 0 && m.Offset <= 0f)
             {
-                s.Nodes[firstRow].Up = presetsEnd > presets ? presetsEnd - 1 : search;
+                s.Nodes[firstRow].Up = presetsEnd > presets ? presetsEnd - 1 : search >= 0 ? search : s.Nodes[firstRow].Up;
             }
         }
 
@@ -179,7 +185,7 @@ namespace RealLifeOverhaul.Ui
                     s.FocusFirst = node;   // the keys start on the group in view, never on the close
                 }
             }
-            if (chosen < 0)
+            if (chosen < 0 && !m.NoHead)
             {
                 s.FocusFirst = s.FindNode(SearchCommand, 0);   // a search spans the groups: the keys start on its words
             }
@@ -380,6 +386,15 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Circle(s, inside, tx + nw + UiTokens.S1, top + (nameH - UiTokens.StatusDot) / 2f, UiTokens.StatusDot, UiTokens.StatusDot, UiRole.AccentText,
                     UiFlags.Middle | UiFlags.Share);
             }
+            if (!string.IsNullOrEmpty(row.Mark))
+            {
+                float chipX = tx + nw + (row.Differs ? UiTokens.S4 : UiTokens.S3);
+                float chipRoom = tx + tw - chipX;
+                if (chipRoom > UiTokens.S8)
+                {
+                    UiDraw.Chip(s, inside, chipX, top + (nameH - UiTokens.Badge - UiTokens.S1) / 2f, row.Mark, UiRole.WarnText, chipRoom);   // a key the row shares: a chip, not a colour on the name
+                }
+            }
             if (tipH > 0f)
             {
                 UiDraw.Text(s, inside, tx, top + nameH + UiTokens.S1, tw, UiStyle.Small, UiRole.Muted, row.Tip, UiFlags.Truncate | UiFlags.Middle);
@@ -391,7 +406,7 @@ namespace RealLifeOverhaul.Ui
                 case UiSettingControl.Slider: node = UiDraw.Slider(s, inside, cx, cy, ControlWidth, row.Value, row.Share, RowCommand, index, row.Greyed); break;
                 case UiSettingControl.Choice: node = UiDraw.Choice(s, inside, cx, cy, ControlWidth, row.Value, RowCommand, index, row.Greyed); break;
                 case UiSettingControl.Key: node = UiDraw.KeyBinding(s, inside, cx, cy, ControlWidth, row.Value, row.Listening, RowCommand, index, row.Greyed); break;
-                case UiSettingControl.Text: node = UiDraw.TextField(s, inside, cx, cy, ControlWidth, row.Value, null, RowCommand, index, row.Greyed); break;
+                case UiSettingControl.Text: node = UiDraw.TextField(s, inside, cx, cy, ControlWidth, row.Value, null, row.Command != 0 ? row.Command : RowCommand, index, row.Greyed); break;
                 default:
                     node = UiDraw.Button(s, inside, cx, cy, ControlWidth, UiTokens.Control, UiButtonKind.Secondary, row.Value, UiIcon.None, UiAction.Count, null, RowCommand, index, row.Greyed);
                     break;

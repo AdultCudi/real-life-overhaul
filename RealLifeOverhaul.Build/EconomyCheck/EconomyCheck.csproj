@@ -1019,6 +1019,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiNetWorthTip.cs" Link="Mod\UiNetWorthTip.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Finance\WorthBook.cs" Link="Mod\WorthBook.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Finance\WorthStore.cs" Link="Mod\WorthStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Options\OptionsRules.cs" Link="Mod\OptionsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Options\OptionsPages.cs" Link="Mod\OptionsPages.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Options\UiOptions.cs" Link="Mod\UiOptions.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.MenuRow.cs" Link="Mod\UiDraw.MenuRow.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiVehicleBuy.cs" Link="Mod\UiVehicleBuy.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiItemPanel.cs" Link="Mod\UiItemPanel.cs" />

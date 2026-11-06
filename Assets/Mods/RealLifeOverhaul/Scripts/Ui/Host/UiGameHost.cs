@@ -506,7 +506,9 @@ namespace RealLifeOverhaul.Ui
                     // mod's window over the world has the keys first, so Escape there is the game's, never this card's Skip. The pause
                     // menu's own kit is that menu: its being open held its keys and left its clicks undrawn.
                     bool pause = global::UI.MiniMenu.MiniMenu.IsOpen && _screen.Id != PauseKits.PauseId;
-                    Hold(!UiForeignRules.KitHasOverlayKeys(pause || global::Scenes.MainMenu.Options.IsVisible
+                    // Options' own kit is that window: its being open holds the others' keys, not its own.
+                    bool options = global::Scenes.MainMenu.Options.IsVisible && _screen.Id != OptionsKits.CityId;
+                    Hold(!UiForeignRules.KitHasOverlayKeys(pause || options
                         || global::BlueprintsUI.BlueprintsPanel.IsOpen, global::UI.Smartphone.FullMenu.IsOpen, UiBoxes.Up || UiBoxes.Over, UiForeignWindows.Up));
                 }
                 if (_screen.Kind == UiGameKind.Box)
