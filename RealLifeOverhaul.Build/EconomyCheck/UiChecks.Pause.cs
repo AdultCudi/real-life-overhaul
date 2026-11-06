@@ -19,6 +19,14 @@ internal static partial class Program
                         Lay = (s, f, d, k, t) => UiPauseMenu.Lay(s, UiSamples.Pause(t, st), f, d, k) });
                 }
                 break;
+            case "tooltips":
+                foreach (string state in UiSamples.TooltipStates)
+                {
+                    string st = state;
+                    cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (" + st + ")", Title = "Tooltip", Commands = HudScreensCommands, Overlay = true,
+                        Lay = (s, f, d, k, t) => UiSamples.TooltipScene(s, f, d, k, t, st, 0.42f, 0.62f) });
+                }
+                break;
         }
     }
 }

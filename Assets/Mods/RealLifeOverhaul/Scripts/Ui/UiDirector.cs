@@ -99,6 +99,7 @@ namespace RealLifeOverhaul.Ui
             ShellBoxes.Remove(why);
             BuyKits.Remove(why);
             PauseKits.Remove(why);
+            TooltipKit.Remove(why);
             ShellNotices.Remove(why);
             ActivityKit.Remove(why);
             MapKits.Remove(why);
@@ -171,6 +172,7 @@ namespace RealLifeOverhaul.Ui
                 ShellBoxes.Rearm();
                 BuyKits.Rearm();
                 PauseKits.Rearm();
+                TooltipKit.Rearm();
                 ShellNotices.Rearm();
                 ActivityKit.Rearm();
                 MapKits.Rearm();
@@ -180,6 +182,7 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             PlayTime.Tick();   // the city's time played, for the pause menu's card: counted with the interface on or off
+            Economy.WorthWatch.Tick();   // the day's net worth figures for the money pill's card and the rich list: taken with the interface on or off
             if (!On)
             {
                 RemoveAll("the switch is off");
@@ -220,6 +223,7 @@ namespace RealLifeOverhaul.Ui
             ShellBoxes.Install();
             BuyKits.Install();
             PauseKits.Install();
+            TooltipKit.Install();
             ShellNotices.Install();
             ActivityKit.Install();
             MapKits.Install();
@@ -252,7 +256,7 @@ namespace RealLifeOverhaul.Ui
                    + EconoViewKit.State + ", the phone (" + PhoneKit.State + "), " + EmployeesKit.State + ", " + PersonaKit.State + ", " + UniformsKit.State + ", " + RivalsKit.State + ", "
                    + MarketKit.State + ", " + DialogKits.State + ", "
                    + ShellBoxes.States() + ", " + ShellNotices.States() + ", " + ActivityKit.States() + ", " + MapKits.States() + ", the HUD (" + HudLive.State + "), "
-                   + BuyKits.States() + ", " + PauseKits.States()
+                   + BuyKits.States() + ", " + PauseKits.States() + ", " + TooltipKit.States()
                    + ", pages (" + ShellPages.States() + "), desk sessions (" + (Settings.LivingDesks ? "over the game's panel as each opens" : "off")
                    + "); the full menu's frame while an app on the kit shows; from Options, Tests: the gallery and each screen.";
         }

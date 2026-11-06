@@ -182,6 +182,7 @@ namespace RealLifeOverhaul.Ui
         public void Hide()
         {
             EndModal();
+            TooltipKit.MoneyOut();
             _view.Still();
             HudStatusGame.Shows = false;
             gameObject.SetActive(false);
@@ -530,12 +531,18 @@ namespace RealLifeOverhaul.Ui
             if (node >= 0 && node < _scene.NodeCount)
             {
                 _view.SetHover(node);
+                ref UiNode over = ref _scene.Nodes[node];
+                if (over.Command == UiDraw.MoneyPillCommand && _laidSize.x > 0f && _laidSize.y > 0f)
+                {
+                    TooltipKit.Money(over.X * _scale / _laidSize.x, over.Y * _scale / _laidSize.y, over.W * _scale / _laidSize.x);   // the net worth card over the pill
+                }
             }
         }
 
         private void PointerExited(int node)
         {
             _view.SetHover(-1);
+            TooltipKit.MoneyOut();
         }
 
         private void PointerPressed(int node)
@@ -544,6 +551,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
+            TooltipKit.MoneyOut();
             ref UiNode n = ref _scene.Nodes[node];
             if (n.Disabled)
             {

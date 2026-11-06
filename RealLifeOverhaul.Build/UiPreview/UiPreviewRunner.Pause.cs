@@ -19,5 +19,6 @@ public static partial class UiPreviewRunner
                 Walk = Moves("DDDDD")
             });
         }
+        AddTooltips(screens);
     }
 }

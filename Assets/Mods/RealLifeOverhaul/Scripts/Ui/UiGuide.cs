@@ -34,6 +34,7 @@ namespace RealLifeOverhaul.Ui
                 .Test("reallife_ui_test_checkout", "reallife_ui_test_vehicle_buy", "reallife_ui_test_item_panel", "reallife_ui_test_cargo", "reallife_ui_test_wardrobe",
                     "reallife_ui_test_buy_switch")
                 .Test("reallife_ui_test_pause_menu", "reallife_ui_test_pause_switch")
+                .Test("reallife_ui_test_tooltip", "reallife_ui_test_worth_card", "reallife_ui_test_tooltips_switch")
                 .Test("reallife_ui_test_map_open", "reallife_ui_test_map_switch")
                 .Test("reallife_ui_test_econoview", "reallife_ui_test_econoview_loans", "reallife_ui_test_econoview_switch")
                 .Test("reallife_ui_test_persona", "reallife_ui_test_rivals", "reallife_ui_test_market", "reallife_ui_test_persona_switch", "reallife_ui_test_rivals_switch",
@@ -62,6 +63,8 @@ namespace RealLifeOverhaul.Ui
                 .Test("reallife_ui_test_ventures", "reallife_ui_test_brands", "reallife_ui_test_webshop", "reallife_ui_test_ventures_switch")
                 .Data(PlayTimeStore.Key)   // the time played in the city, for the pause menu's card (Ui/Pause/PlayTime)
                 .ResetData(PlayTime.Forget)
+                .Data(Economy.WorthStore.Key)   // the days of net worth, the player's and the rivals', for the money pill's card (Economy/Finance/WorthWatch)
+                .ResetData(Economy.WorthWatch.Forget)
                 .Data(MapSaved.Key, MapBusy.Key)   // the city map's saved places and what the places looked at usually draw (Ui/MapDock/MapStoreGame)
                 .ResetData(MapStoreGame.Forget)
                 .Cleanup(() => UiDirector.RemoveAll("cleaned up"), 0);
