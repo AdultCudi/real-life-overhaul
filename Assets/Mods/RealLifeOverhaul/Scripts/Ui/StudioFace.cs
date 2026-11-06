@@ -15,13 +15,24 @@ namespace RealLifeOverhaul.Ui
         public UiRole NextInk = UiRole.Text;                     // its weight: good news, a warning, a fault
         public UiActionModel[] Actions = new UiActionModel[0];   // the others first, the main one last
         public UiFigureModel[] Figures = new UiFigureModel[0];
-        public UiDataTableModel Main, More, Team;
+        public UiDataTableModel Main, More, Team, People;
         public UiFactCardModel Note, Facts;
+        public UiHeroModel Hero;                                 // the game or product in development, over the figures
+        public UiNavEntry[] Tabs = new UiNavEntry[0];            // Overview and Team; none on a page with no people to list
+        public int Tab;                                          // the one in view
         public UiPrompt[] Prompts = new UiPrompt[0];
 
-        // Written back by the layout, so a wheel and a focus reach the table they belong to: the main table, the second and the team.
-        public readonly short[] Lists = { -1, -1, -1 };
-        public readonly short[] Clips = { -1, -1, -1 };
+        // Written back by the layout, so a wheel and a focus reach the table they belong to: the main table, the second, the team's groups and its people.
+        public readonly short[] Lists = { -1, -1, -1, -1 };
+        public readonly short[] Clips = { -1, -1, -1, -1 };
+    }
+
+    /// <summary>What the Tech app's overview shows of a firm that the firm's own page does not carry: its hero, its people and its support ticket count.</summary>
+    public sealed class StudioExtras
+    {
+        public UiHeroModel Hero;
+        public UiPersonRow[] People = new UiPersonRow[0];
+        public string Tickets;     // the support note's sentence, or null when none go unanswered
     }
 
     /// <summary>
@@ -32,22 +43,59 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class StudioFace
     {
-        public const int MainBase = 9840, MoreBase = 9844, TeamBase = 9848, ActionCommand = 9856;
+        public const int MainBase = 9840, MoreBase = 9844, TeamBase = 9848, PeopleBase = 9852, ActionCommand = 9856, NoteCommand = 9857;
         public const float ScoreColumn = 88f, FigureColumn = 104f, StatusColumn = 152f, SideMost = 440f, SideLeast = 320f;
-        private const byte RegionHead = 4, RegionMain = 1, RegionMore = 2, RegionTeam = 3, RegionFacts = 5;
+        private const byte RegionHead = 4, RegionMain = 1, RegionMore = 1, RegionTeam = 3, RegionFacts = 3;   // down stays in a column: the tables at the left, the team and the facts at the right
         private const int EmptyRows = 3;
 
         /// <summary>Every command the page answers, for the checks.</summary>
         public static readonly int[] Commands =
         {
-            MainBase + UiDataTable.Row, MoreBase + UiDataTable.Row, TeamBase + UiDataTable.Row, ActionCommand
+            MainBase + UiDataTable.Row, MoreBase + UiDataTable.Row, TeamBase + UiDataTable.Row, PeopleBase + UiDataTable.Row, ActionCommand, NoteCommand, UiAppWindow.NavCommand
         };
 
         public static void Lay(UiScene s, StudioFaceModel m, UiFrame frame, bool dark, IUiKeys keys)
         {
             s.Begin("studio", frame.Width, frame.Height, dark);
-            UiAt at = UiAppWindow.Shell(s, frame, m.Title, UiIcon.GameController, null, 0, false, keys, out float x, out float y, out float w, out float bottom);
+            for (int i = 0; i < m.Lists.Length; i++)
+            {
+                m.Lists[i] = m.Clips[i] = -1;
+            }
+            UiAt at = UiAppWindow.Shell(s, frame, m.Title, UiIcon.GameController, m.Tabs, m.Tab, true, keys, out float x, out float y, out float w, out float bottom);
             y = Lead(s, at.InRegion(RegionHead), m, x, y, w, keys);
+            if (m.Tabs.Length > 0 && m.Tab == 1 && m.People != null)
+            {
+                TeamTab(s, at, m, x, y, w, bottom - y, keys);
+            }
+            else
+            {
+                Overview(s, at, m, x, y, w, bottom, keys);
+            }
+            for (int i = 0; i < m.Prompts.Length; i++)
+            {
+                s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
+            }
+            UiDraw.PromptBar(s, frame, keys);
+        }
+
+        // The people of the firm in a list that scrolls, the note about what the team lacks beside it.
+        private static void TeamTab(UiScene s, UiAt at, StudioFaceModel m, float x, float y, float w, float room, IUiKeys keys)
+        {
+            float sw = m.Note != null ? Math.Max(Math.Min(SideLeast, UiDraw.SnapDown(w / 2f)), Math.Min(SideMost, UiDraw.SnapDown(w * 0.34f))) : 0f;
+            float lw = sw > 0f ? w - sw - UiTokens.S6 : w;
+            Place(s, at.InRegion(RegionMain), m, 3, m.People, x, y, lw, room, PeopleBase, keys);
+            if (m.Note != null)
+            {
+                UiFactCard.Lay(s, at.InRegion(RegionFacts), m.Note, x + lw + UiTokens.S6, y, sw, room, keys, true);
+            }
+        }
+
+        private static void Overview(UiScene s, UiAt at, StudioFaceModel m, float x, float y, float w, float bottom, IUiKeys keys)
+        {
+            if (m.Hero != null)
+            {
+                y += UiAppWindow.Hero(s, at, m.Hero, x, y, w) + UiTokens.S4;
+            }
             y = UiAppWindow.Figures(s, at, m.Figures, x, y, w);
             float room = bottom - y;
             bool side = m.Team != null || m.Facts != null || m.Note != null;
@@ -58,11 +106,6 @@ namespace RealLifeOverhaul.Ui
             {
                 Right(s, at, m, x + lw + UiTokens.S6, y, sw, room, keys);
             }
-            for (int i = 0; i < m.Prompts.Length; i++)
-            {
-                s.AddPrompt(m.Prompts[i].Action, m.Prompts[i].Label);
-            }
-            UiDraw.PromptBar(s, frame, keys);
         }
 
         // The next step at the left with its mark, the actions at the right with the main one last. A long sentence takes two lines before it is cut.
@@ -111,20 +154,10 @@ namespace RealLifeOverhaul.Ui
             }
             else if (mainH + gap + moreH > room)
             {
-                float half = UiDraw.SnapDown((room - gap) / 2f);
-                if (mainH <= half)
-                {
-                    moreH = room - gap - mainH;
-                }
-                else if (moreH <= half)
-                {
-                    mainH = room - gap - moreH;
-                }
-                else
-                {
-                    mainH = half;
-                    moreH = room - gap - half;
-                }
+                // The main table shows all its rows where it can, so the d-pad leaves it downward to the second, which scrolls in what is left.
+                float least = Math.Min(moreH, UiDataTable.Chrome(m.More) + 2f * UiDataTable.RowHeight(m.More));
+                mainH = Math.Max(0f, Math.Min(mainH, room - gap - least));
+                moreH = room - gap - mainH;
             }
             Place(s, at.InRegion(RegionMain), m, 0, m.Main, x, y, w, mainH, MainBase, keys);
             if (m.More != null)
@@ -139,17 +172,22 @@ namespace RealLifeOverhaul.Ui
             float gap = UiTokens.S4;
             float noteH = m.Note != null ? UiFactCard.Height(m.Note, w, keys, true) : 0f;
             float factsH = m.Facts != null ? UiFactCard.Height(m.Facts, w, keys, true) : 0f;
-            float gaps = (m.Note != null ? gap : 0f) + (m.Facts != null ? gap : 0f);
+            float least = m.Team != null ? UiDataTable.Chrome(m.Team) + 2f * UiDataTable.RowHeight(m.Team) : 0f;
+            // The facts and the team's bars come before the note: where the hero has taken the room, the note stands on the Team view, whole, instead of cut here.
+            if (m.Note != null && room - factsH - least - gap * 2f < noteH)
+            {
+                noteH = 0f;
+            }
+            float gaps = (noteH > 0f ? gap : 0f) + (m.Facts != null ? gap : 0f);
             float teamH = 0f;
             if (m.Team != null)
             {
-                float least = UiDataTable.Chrome(m.Team) + 2f * UiDataTable.RowHeight(m.Team);
                 teamH = Math.Max(least, Math.Min(Natural(m.Team), room - noteH - factsH - gaps));
                 factsH = Math.Max(0f, Math.Min(factsH, room - teamH - noteH - gaps));
                 Place(s, at.InRegion(RegionTeam), m, 2, m.Team, x, y, w, teamH, TeamBase, keys);
                 y += teamH + gap;
             }
-            if (m.Note != null)
+            if (noteH > 0f)
             {
                 y += UiFactCard.Lay(s, at.InRegion(RegionFacts), m.Note, x, y, w, noteH, keys, true) + gap;
             }
@@ -249,7 +287,51 @@ namespace RealLifeOverhaul.Ui
             return new UiFactCardModel { Title = title, Heading = true, Lines = lines };
         }
 
-        /// <summary>A sentence under the team that warns of what it lacks.</summary>
-        public static UiFactCardModel NoteCard(string words) => new UiFactCardModel { Lines = new[] { UiFactLine.Tick(words, false) } };
+        /// <summary>The sentences that warn of what the team lacks or the tickets unanswered, and the way to the place that mends it (Open Roles).</summary>
+        public static UiFactCardModel NoteCard(string[] sentences, string link)
+        {
+            var lines = new List<UiFactLine>(sentences.Length + 1);
+            for (int i = 0; i < sentences.Length; i++)
+            {
+                lines.Add(UiFactLine.Tick(sentences[i], false));
+            }
+            if (!string.IsNullOrEmpty(link))
+            {
+                lines.Add(UiFactLine.Go(link, NoteCommand));
+            }
+            return new UiFactCardModel { Lines = lines.ToArray() };
+        }
+
+        /// <summary>The firm's people: a face, a name with the role under it, and the skill and the morale as graded bars.</summary>
+        public static UiDataTableModel PeopleTable(string name, string skill, string morale, UiPersonRow[] people, string empty)
+        {
+            var table = new UiDataTableModel
+            {
+                Columns = new[]
+                {
+                    new UiDataColumn { Title = name, Kind = UiCellKind.Person },
+                    new UiDataColumn { Title = skill, Kind = UiCellKind.Meter, Width = 200f },
+                    new UiDataColumn { Title = morale, Kind = UiCellKind.Meter, Width = 200f }
+                },
+                Rows = new UiDataRow[people.Length], RowCount = people.Length, EmptyTitle = empty, EmptyIcon = UiIcon.People
+            };
+            for (int i = 0; i < people.Length; i++)
+            {
+                UiPersonRow p = people[i];
+                table.Rows[i] = new UiDataRow
+                {
+                    Cells = new[] { p.Name, p.First.ToString(System.Globalization.CultureInfo.InvariantCulture), p.Second.ToString(System.Globalization.CultureInfo.InvariantCulture) },
+                    Values = new[] { 0, p.First, p.Second }, Sub = p.Role, Hue = p.Hue
+                };
+            }
+            return table;
+        }
+
+        /// <summary>The two views of the page: the overview and the firm's people.</summary>
+        public static UiNavEntry[] TabEntries(string overview, string team, int people) => new[]
+        {
+            new UiNavEntry { Icon = UiIcon.Grid, Tint = UiRole.None, Label = overview },
+            new UiNavEntry { Icon = UiIcon.People, Tint = UiRole.None, Label = team, Count = people.ToString(System.Globalization.CultureInfo.InvariantCulture) }
+        };
     }
 }

@@ -37,7 +37,9 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_sample_firm", "reallife_ui_sample_firm_note", "reallife_ui_sample_engine", "reallife_studio_genre_adventure",
                     "reallife_studio_genre_simulation", "reallife_studio_genre_strategy", "reallife_studio_next_hire", "reallife_studio_page_needed_how",
                     "reallife_studio_page_no_games_hire", "reallife_studio_page_age_days", "reallife_tech_mkt_page_building", "reallife_tech_mkt_page_ready",
-                    "reallife_ui_tech_skill", "reallife_studio_page_none", "reallife_ui_page_studio"
+                    "reallife_ui_tech_skill", "reallife_studio_page_none", "reallife_ui_page_studio", "reallife_ui_tech_col_person", "reallife_ui_tech_morale",
+                    "reallife_ui_tech_open_roles", "reallife_ui_tech_sec_overview", "reallife_ui_tech_sec_team", "reallife_ui_tech_note_support", "reallife_ui_tech_in_development",
+                    "reallife_ui_tech_at_desk"
                 }).Switch(UiScreenSwitches.Apps),
                 new UiScreenDef("session_panel", UiTemplate.Decision, "ActivityScreen", new[]
                 {

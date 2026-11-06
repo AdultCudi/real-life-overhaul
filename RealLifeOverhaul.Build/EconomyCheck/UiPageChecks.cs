@@ -135,7 +135,7 @@ internal static partial class Program
             }
             foreach (System.Reflection.FieldInfo f in type.GetFields(System.Reflection.BindingFlags.Public | System.Reflection.BindingFlags.Static))
             {
-                if (f.IsLiteral && f.FieldType == typeof(int) && StudioPages.Runs((int)f.GetValue(null)) != handled.Contains(f.Name))
+                if (f.IsLiteral && f.FieldType == typeof(int) && StudioPages.Direct((int)f.GetValue(null)) != handled.Contains(f.Name))
                 {
                     same = false;
                     odd = type.Name + "." + f.Name;

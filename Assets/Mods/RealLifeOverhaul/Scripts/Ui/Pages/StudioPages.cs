@@ -14,7 +14,7 @@ namespace RealLifeOverhaul.Ui
     {
         public const int MostOthers = 2;   // actions beside the primary: a page keeps to a few
 
-        public static StudioFaceModel Page(FirmPage page, UiWords t, List<ViewAction> acts)
+        public static StudioFaceModel Page(FirmPage page, UiWords t, List<ViewAction> acts, StudioExtras extras = null)
         {
             StudioScreen v = page.Screen;
             acts.Clear();
@@ -47,7 +47,23 @@ namespace RealLifeOverhaul.Ui
             m.Team = StudioFace.TeamTable(t(page.TeamKey, page.TeamKey), t("reallife_ui_tech_skill", "Skill"), groups, skills, figures, t("reallife_studio_page_none", "None"));
             // A "Needed" alone left the owner unsure how to fill it: the people are hired, then their roles are set in Open Roles.
             string how = t("reallife_studio_page_needed_how", "To fill a group, hire people in the Business app, then set their roles in Open Roles, on its Team tab.");
-            m.Note = needed ? StudioFace.NoteCard(how) : null;
+            var notes = new List<string>(2);
+            if (extras != null && !string.IsNullOrEmpty(extras.Tickets))
+            {
+                notes.Add(extras.Tickets);
+            }
+            if (needed)
+            {
+                notes.Add(how);
+            }
+            m.Note = notes.Count > 0 ? StudioFace.NoteCard(notes.ToArray(), t("reallife_ui_tech_open_roles", "Open Roles")) : null;
+            if (extras != null)
+            {
+                m.Hero = extras.Hero;
+                m.People = StudioFace.PeopleTable(t("reallife_ui_tech_col_person", "Person"), t("reallife_ui_tech_skill", "Skill"), t("reallife_ui_tech_morale", "Morale"), extras.People,
+                    t("reallife_studio_page_none", "None"));
+                m.Tabs = StudioFace.TabEntries(t("reallife_ui_tech_sec_overview", "Overview"), t("reallife_ui_tech_sec_team", "Team"), extras.People.Length);
+            }
             if (page.Facts.Count > 0)
             {
                 string[] labels = new string[page.Facts.Count], values = new string[page.Facts.Count];
@@ -87,11 +103,17 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>
-        /// Whether the page can run an act itself, through the director. The Tech app's own screens (a new product, the
-        /// contracts, the concept) open only inside that app, and its close button is the kit's Back already, so those are
-        /// left off the page rather than drawn as buttons that do nothing.
+        /// Whether the page has a button for an act: the director runs it, or it opens the Tech app on the firm's own screen for it.
+        /// What is left off is what is not a button of the firm's page in the Tech app either: a screen's own way out and the
+        /// choices on its cards (the marketing beat, the project).
         /// </summary>
-        public static bool Runs(int act)
+        public static bool Runs(int act) => Direct(act) || Opens(act);
+
+        /// <summary>The acts that open the Tech app's own screen: a new game's concept, a new product, the contracts.</summary>
+        public static bool Opens(int act) => act == StudioAct.Concept || act == SectorAct.NewProduct || act == SectorAct.Contracts;
+
+        /// <summary>Whether the director runs an act itself.</summary>
+        public static bool Direct(int act)
         {
             switch (act)
             {

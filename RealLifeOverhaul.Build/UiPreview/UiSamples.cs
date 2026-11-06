@@ -30,6 +30,7 @@ internal static partial class UiSamples
             new Sample { Name = "population_person", App = "The city's people", Lay = (s, f, d, k) => UiDashboard.Lay(s, PopulationPerson(t), f, d, k), Walk = "DU" },
             new Sample { Name = "population_gone", App = "The city's people", Lay = (s, f, d, k) => UiDashboard.Lay(s, PopulationGone(t), f, d, k), Walk = "D" },
             new Sample { Name = "studio", App = "Your firm", Lay = (s, f, d, k) => StudioFace.Lay(s, StudioFirm(t), f, d, k), Walk = "LDDDDRDDLU" },
+            new Sample { Name = "studio_team", App = "Your firm", Lay = (s, f, d, k) => StudioFace.Lay(s, StudioTeam(t), f, d, k), Walk = "DDDUL" },
             new Sample { Name = "studio_empty", App = "Your firm", Lay = (s, f, d, k) => StudioFace.Lay(s, StudioEmpty(t), f, d, k), Walk = "DLR" },
             new Sample { Name = "tech_firm", App = "Your firm", Lay = (s, f, d, k) => StudioFace.Lay(s, TechFirm(t), f, d, k), Walk = "DDDDRDDLU" },
             new Sample { Name = "session_panel", App = "Desk", Lay = (s, f, d, k) => UiDecision.Lay(s, DeskCard(t), f, d, k), Walk = "RDLUL" },
@@ -241,7 +242,7 @@ internal static partial class UiSamples
             Team = TeamOf(t, Group(t, "reallife_studio_page_group_engineers", "Engineers", 5, 64), Group(t, "reallife_studio_page_group_designers", "Designers", 3, 58),
                 Group(t, "reallife_studio_page_group_testers", "Testers", 2, 52), Group(t, "reallife_studio_page_group_product", "Product", 1, 61),
                 Group(t, "reallife_studio_page_group_support", "Support", 0, 0)),
-            Note = Needed(t),
+            Note = Needed(t, true),
             Facts = FactsOf(t, "reallife_studio_page_facts", "Sales and support",
                 ("reallife_studio_page_tickets", "Tickets a day", "120, 0 answered"), ("reallife_studio_page_pirated", "Pirated copies", "9,800"),
                 ("reallife_studio_page_drm", "DRM", "On in 1 of 3"), ("reallife_studio_page_asks", "Fan requests", "New levels, co-op play"),
@@ -253,9 +254,18 @@ internal static partial class UiSamples
                 new UiActionModel { Label = "Start a game", Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = StudioFace.ActionCommand, Arg = 1 },
             },
         };
+        Extras(m, t, true);
         return Prompted(m, t, "Start a game");
     }
 
+
+    /// <summary>The same studio's Team view: its people with their skill and morale, the note about what the team lacks beside them.</summary>
+    public static StudioFaceModel StudioTeam(UiWords t)
+    {
+        StudioFaceModel m = StudioFirm(t);
+        m.Tab = 1;
+        return m;
+    }
     /// <summary>
     /// A new studio as the owner opened it in beta 3: nobody in it, no game, nothing taken. Its next step is to hire, each
     /// needed group says how to fill it, its takings draw no flat line, and its facts say None in one case.
@@ -347,6 +357,7 @@ internal static partial class UiSamples
                 ("reallife_tech_mkt_page_desk", "Desk sessions", "1 due"), ("reallife_tech_mkt_page_reputation", "Reputation", "62%")),
             Actions = new[] { new UiActionModel { Label = "Launch", Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = StudioFace.ActionCommand, Arg = 0 } },
         };
+        Extras(m, t, false);
         return Prompted(m, t, "Launch");
     }
 
@@ -384,8 +395,35 @@ internal static partial class UiSamples
         return StudioFace.TeamTable(t("reallife_studio_page_team", "Team"), t("reallife_ui_tech_skill", "Skill"), names, skills, figures, t("reallife_studio_page_none", "None"));
     }
 
-    private static UiFactCardModel Needed(UiWords t) =>
-        StudioFace.NoteCard(t("reallife_studio_page_needed_how", "To fill a group, hire people in the Business app, then set their roles in Open Roles, on its Team tab."));
+    private static UiFactCardModel Needed(UiWords t, bool tickets = false) => StudioFace.NoteCard(
+        tickets
+            ? new[] { t("reallife_ui_tech_note_support", "Support is needed: {tickets} tickets a day go unanswered. Hire people, then give them roles in Open Roles.").Replace("{tickets}", "120"),
+                t("reallife_studio_page_needed_how", "To fill a group, hire people in the Business app, then set their roles in Open Roles, on its Team tab.") }
+            : new[] { t("reallife_studio_page_needed_how", "To fill a group, hire people in the Business app, then set their roles in Open Roles, on its Team tab.") },
+        t("reallife_ui_tech_open_roles", "Open Roles"));
+
+    // The firm's people as the Tech app's overview writes them, with the in-development hero over the figures.
+    private static void Extras(StudioFaceModel m, UiWords t, bool hero)
+    {
+        var people = new[]
+        {
+            new UiPersonRow { Name = "Ava Lindqvist", Hue = 0.1f, RoleIcon = UiIcon.Code, Role = "Lead engineer", First = 86, Second = 72 },
+            new UiPersonRow { Name = "Marcus Hale", Hue = 0.3f, RoleIcon = UiIcon.Code, Role = "Engineer", First = 64, Second = 58 },
+            new UiPersonRow { Name = "Priya Raman", Hue = 0.6f, RoleIcon = UiIcon.PaintBrush, Role = "Game designer", First = 77, Second = 81 },
+            new UiPersonRow { Name = "Tom Becker", Hue = 0.8f, RoleIcon = UiIcon.PaintBrush, Role = "Level designer", First = 52, Second = 44 },
+            new UiPersonRow { Name = "Elena Sokolova", Hue = 0.45f, RoleIcon = UiIcon.Code, Role = "Tester", First = 61, Second = 66 },
+        };
+        m.People = StudioFace.PeopleTable(t("reallife_ui_tech_col_person", "Person"), t("reallife_ui_tech_skill", "Skill"), t("reallife_ui_tech_morale", "Morale"), people, "None");
+        m.Tabs = StudioFace.TabEntries(t("reallife_ui_tech_sec_overview", "Overview"), t("reallife_ui_tech_sec_team", "Team"), people.Length);
+        if (hero)
+        {
+            m.Hero = new UiHeroModel
+            {
+                Icon = UiIcon.GenreSimulation, Kicker = t("reallife_ui_tech_in_development", "In development"), Title = "Cinder Valley", Progress = 64,
+                Line = "Simulation, 64% made, three of five milestones met", Note = t("reallife_ui_tech_at_desk", "At your desk"), NoteIcon = UiIcon.Locate
+            };
+        }
+    }
 
     private static UiFactCardModel FactsOf(UiWords t, string titleKey, string title, params (string Key, string English, string Value)[] facts)
     {

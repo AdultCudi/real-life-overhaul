@@ -12,14 +12,15 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public sealed class StudioPageScreen : IUiScreen
     {
-        private const int Tables = 3;
+        private const int Tables = 4;
 
         private readonly List<ViewAction> _acts = new List<ViewAction>(StudioPages.MostOthers + 1);
         private readonly UiStudioWords _words = new UiStudioWords();
         private readonly float[] _offset = new float[Tables];
-        private readonly int[] _reveal = { -1, -1, -1 };
+        private readonly int[] _reveal = { -1, -1, -1, -1 };
         private readonly string _place;   // the firm's place, or null for the labelled sample studio
         private StudioFaceModel _m = new StudioFaceModel();
+        private int _tab;
         private bool _dirty = true;
 
         public Action Close;
@@ -46,7 +47,9 @@ namespace RealLifeOverhaul.Ui
             }
             else if (page != null)
             {
-                _m = StudioPages.Page(page, UiText.Words, _acts);
+                _m = StudioPages.Page(page, UiText.Words, _acts, TechLive.Extras(_place));
+                _tab = _m.Tabs.Length > 0 ? Math.Max(0, Math.Min(_tab, _m.Tabs.Length - 1)) : 0;
+                _m.Tab = _tab;
             }
             else
             {
@@ -78,8 +81,24 @@ namespace RealLifeOverhaul.Ui
                 ViewAction a = arg >= 0 && arg < _acts.Count ? _acts[arg] : null;
                 return a != null && a.Enabled && Do(a.Act, a.Arg);
             }
+            if (command == UiAppWindow.NavCommand && arg >= 0 && arg < _m.Tabs.Length)
+            {
+                _tab = arg;
+                _dirty = true;
+                return true;
+            }
+            if (command == StudioFace.NoteCommand)
+            {
+                TechDirector d = TechDirector.Instance;
+                if (d != null)
+                {
+                    d.OpenRoles(TechDirector.TabTeam, null);
+                }
+                return d != null;
+            }
             // A row is read where it stands: it is a target so the keys and the pad can scroll to it, and it opens nothing.
-            return command == StudioFace.MainBase + UiDataTable.Row || command == StudioFace.MoreBase + UiDataTable.Row || command == StudioFace.TeamBase + UiDataTable.Row;
+            return command == StudioFace.MainBase + UiDataTable.Row || command == StudioFace.MoreBase + UiDataTable.Row || command == StudioFace.TeamBase + UiDataTable.Row
+                   || command == StudioFace.PeopleBase + UiDataTable.Row;
         }
 
         public void Focused(int command, int arg)
@@ -92,8 +111,14 @@ namespace RealLifeOverhaul.Ui
             return Close != null;
         }
 
+        // The overview and the team change places with Tab.
         public void Tab(int step)
         {
+            if (_m.Tabs.Length > 1)
+            {
+                _tab = ((_tab + step) % _m.Tabs.Length + _m.Tabs.Length) % _m.Tabs.Length;
+                _dirty = true;
+            }
         }
 
         // F runs the main action and P the first of the others, as their buttons' caps say.
@@ -133,7 +158,7 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        private UiDataTableModel Table(int i) => i == 0 ? _m.Main : i == 1 ? _m.More : _m.Team;
+        private UiDataTableModel Table(int i) => i == 0 ? _m.Main : i == 1 ? _m.More : i == 2 ? _m.Team : _m.People;
 
         private FirmPage Page()
         {
@@ -154,7 +179,12 @@ namespace RealLifeOverhaul.Ui
             {
                 return false;
             }
-            if (d.StudioRuns(firm.File.K))
+            if (StudioPages.Opens(act))
+            {
+                // The firm's own screen of the Tech app for this act, the same place the Tech app's button goes to.
+                d.OpenTech(act == SectorAct.Contracts ? TechDirector.TabContracts : TechDirector.TabProducts, act == SectorAct.Contracts ? null : TechApp.NewProductRow + _place);
+            }
+            else if (d.StudioRuns(firm.File.K))
             {
                 d.StudioDo(act, _place, 0, value);
             }

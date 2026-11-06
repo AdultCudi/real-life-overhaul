@@ -11,7 +11,7 @@ public static partial class UiPreviewRunner
             UiSamples.Sample x = sample;
             bool firm = x.Name.StartsWith("studio") || x.Name == "tech_firm";
             screens.Add(new Screen { Name = x.Name, AppName = x.App, Lay = (s, f, d, k) => x.Lay(s, f, d, k), Walk = Moves(x.Walk),
-                HoverCommand = firm ? StudioFace.MainBase + UiDataTable.Row : UiDashboard.RowCommand, HoverArg = 1, Backdrop = x.Name.StartsWith("session_panel") ? "03.jpg" : "13.jpg" });
+                HoverCommand = x.Name == "studio_team" ? StudioFace.PeopleBase + UiDataTable.Row : firm ? StudioFace.MainBase + UiDataTable.Row : UiDashboard.RowCommand, HoverArg = 1, Backdrop = x.Name.StartsWith("session_panel") ? "03.jpg" : "13.jpg" });
         }
         // The firm pages in Brazilian Portuguese and Chinese, whose words run longest.
         foreach (string lang in new[] { "pt", "zh-cn" })
