@@ -33,7 +33,15 @@ internal static partial class Program
         { "\"hotel_\"", "hotels" },
         { "\"utilities_office\"", "utilities_office" },
         { "CityReserves.UtilitiesId", "utilities_office" },   // (Core/CityReserves: "utilities_office", also its building's reservation)
+        { "SchoolsGame.MainId", "schools" },   // (Schools/SchoolsDirector.Campus: Birchwood School's main school, on the card as a school; its row of the map's filters)
+        { "ClaimPrefix", "floors" },   // (Floors/FloorsDirector.Book: a building taken for places that found no spare floor)
+        { "LeaseHold", GameRow + "Construction/ConstructionType.cs" },   // (Uptown/LifeGame.Leases: a rival builder's office, a business of the game's of that type)
     };
+
+    // A claimed building holding a business of a type of the mod's own, registered with the game: the game's own filters give that
+    // type a row (CityMapFilters.CreateActiveBusinessesCategory, for a type players may start that brings in money) which lights
+    // every building of it on the open map. The value names the source file that makes the type.
+    private const string GameRow = "game's own row of the business type made in ";
 
     private sealed class MapRow
     {
@@ -51,7 +59,8 @@ internal static partial class Program
         }
         string locales = Path.Combine(scripts, "..", "Locales");
         Dictionary<string, string> en = MapTexts(locales, "en"), pt = MapTexts(locales, "pt"), zh = MapTexts(locales, "zh-cn");
-        string places = Source(scripts, @"Core\MapPlaces.cs");
+        string places = Source(scripts, @"Core\MapPlaces.cs") + Source(scripts, @"Core\MapPlaces.Rows.cs") + Source(scripts, @"Core\MapPlaces.Choices.cs")
+                        + Source(scripts, @"Core\MapPlaces.Names.cs") + Source(scripts, @"Core\MapPlaces.Driver.cs") + Source(scripts, @"Core\MapPlaces.Glyphs.cs");
         string links = Source(scripts, @"World\MapLinks.cs");
         List<MapRow> rows = MapRowsDeclared(scripts, links);
         MapRowKinds(rows, places, en, pt, zh);
@@ -60,6 +69,22 @@ internal static partial class Program
         MapRowTiming(scripts, places, links);
         MapRowNews(en, pt, zh);
         MapRowUnload(scripts, places);
+        MapRowLabels(places);
+    }
+
+    // A row's label is its own text from the moment the game makes it (a player's Player.log, 2 Nov 2026: twenty lines of
+    // "Localization for key 'rlo_map_police' not found on gameobject 'Label'"). CityMapFilters.CreateFilter localizes the
+    // label with the row's name unless it is handed a text, and the name is no text. The row's name and its leaving the
+    // game's tables (so the save never holds it) stay as they were.
+    private static void MapRowLabels(string places)
+    {
+        int made = Regex.Matches(places, @"create\.Invoke\(filters, new object\[\] \{ name, ").Count;
+        int handed = Regex.Matches(places, @"object languageData = TitleData\(parameters\[4\]\.ParameterType, (category|entry)\.TitleKey\);").Count;
+        string data = Body(places, "private static object TitleData(Type holder, string titleKey)");
+        Check(made == 2 && handed == 2 && !places.Contains("Activator.CreateInstance(parameters[4]") && data.Contains("new LanguageChangeEventDataHolder { Key = titleKey }"),
+            "map rows: every row the mod makes in the map's filters is handed its own text's key, never its name to look up (" + handed + " of " + made + " made so)");
+        Check(Regex.Matches(places, @"toggles\.Remove\(name\);\s*entries\.Remove\(name\);").Count == 2 && Regex.Matches(places, @"row\.name = name;").Count == 2,
+            "map rows: each row still leaves the game's tables, so the save never holds it, and keeps its name");
     }
 
     // The game's map filters are applied again (CityMapFilters.ApplyFilters) in one place of the whole mod, which skips
@@ -196,6 +221,15 @@ internal static partial class Program
                 Check(known, "map rows: the building claimed as " + token + " (" + name + ") has a row of its own on the city map (add it to ClaimRows with its row)");
                 if (!known)
                 {
+                    continue;
+                }
+                if (rowId.StartsWith(GameRow, StringComparison.Ordinal))
+                {
+                    string type = Source(scripts, rowId.Substring(GameRow.Length).Replace('/', '\\'));
+                    Check(type.Contains("ModdingAPI.RegisterModBusinessType(") && type.Contains("AddTag(\"ba:businesstag_allowplayercreation\"")
+                          && type.Contains("AddTag(\"ba:businesstag_generatesrevenue\""),
+                        "map rows: the building claimed as " + token + " (" + name + ") holds a business of a type the game gives a row of its own (registered, one players may start, "
+                        + "bringing in money: " + rowId.Substring(GameRow.Length) + ")");
                     continue;
                 }
                 MapRow row = rows.Find(r => r.Id == rowId);

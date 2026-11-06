@@ -187,6 +187,7 @@ namespace RealLifeOverhaul.Flare
         public FlareNiche Niche;
         public int Stars;            // the game's satisfaction, 0 to 100; -1 not known
         public bool Mine;            // the player's own
+        public int Open;             // the hours of the day the game has it open, bit h for hour h; 0 while temporarily closed or closed all day
     }
 
     /// <summary>The city as the day's posts read it, handed over once a day or made up by the offline checks; never kept.</summary>

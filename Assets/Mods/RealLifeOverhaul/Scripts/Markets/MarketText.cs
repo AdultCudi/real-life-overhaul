@@ -45,6 +45,22 @@ namespace RealLifeOverhaul.Markets
             return T(i >= 0 && i < WhyKeys.Length ? WhyKeys[i] : WhyKeys[0]);
         }
 
+        /// <summary>
+        /// The same, with the company's own most when the holding option is not the tenth: the old sentence says "a tenth",
+        /// and every language has it, so it stays for the default.
+        /// </summary>
+        public static string Why(OrderWhy why, Stock s)
+        {
+            int bp = s != null && why == OrderWhy.HoldingLimit ? MarketTrading.MostHeldBp(s) : MarketCatalogue.HoldingShareBp;
+            return bp == MarketCatalogue.HoldingShareBp ? Why(why) : Fill("reallife_mkt_why_holding_most", "pct", Share(bp));
+        }
+
+        /// <summary>A whole share in basis points: "25%".</summary>
+        public static string Share(int bp)
+        {
+            return (bp / 100).ToString() + "%";
+        }
+
         public static string Price(int cents)
         {
             return (cents / 100f).ToCurrencyFormat();
@@ -187,6 +203,13 @@ namespace RealLifeOverhaul.Markets
                 case MarketNewsKind.OwnAudit:
                     data = new[] { "name", name, "found", ListingText.Findings(n.A) };
                     return "reallife_mkt_news_own_audit";
+                case MarketNewsKind.OwnSector:
+                    data = new[] { "name", name, "from", Sector((MarketSector)Math.Max(0, Math.Min((int)MarketSector.Count - 1, n.A))),
+                        "to", Sector((MarketSector)Math.Max(0, Math.Min((int)MarketSector.Count - 1, n.B))) };
+                    return "reallife_mkt_news_own_sector";
+                case MarketNewsKind.Builder:
+                    data = new[] { "name", name, "change", Percent(Math.Abs(n.B)) };   // the sentence carries the way it went
+                    return BuilderKey((BuilderNewsKind)n.A, n.C);
                 case MarketNewsKind.Paid:
                 {
                     // A dividend paid to this machine's player, never in the city's line nor the Ledger.
@@ -197,6 +220,24 @@ namespace RealLifeOverhaul.Markets
                 default:
                     data = new string[0];
                     return string.Empty;
+            }
+        }
+
+        // A builder's news by what it was and, for a tender, how big the works were; empty for a kind this version does not know.
+        private static string BuilderKey(BuilderNewsKind kind, int weight)
+        {
+            switch (kind)
+            {
+                case BuilderNewsKind.TenderWon: return weight >= BuilderMarket.WeightMost ? "reallife_mkt_news_builder_won_landmark"
+                    : weight >= BuilderMarket.PublicWeight ? "reallife_mkt_news_builder_won_public" : "reallife_mkt_news_builder_won";
+                case BuilderNewsKind.Finished: return "reallife_mkt_news_builder_finished";
+                case BuilderNewsKind.Late: return "reallife_mkt_news_builder_late";
+                case BuilderNewsKind.Developed: return "reallife_mkt_news_builder_developed";
+                case BuilderNewsKind.Bribery: return "reallife_mkt_news_builder_bribery";
+                case BuilderNewsKind.Strike: return "reallife_mkt_news_builder_strike";
+                case BuilderNewsKind.Rigged: return "reallife_mkt_news_builder_rigged";
+                case BuilderNewsKind.Award: return "reallife_mkt_news_builder_award";
+                default: return string.Empty;
             }
         }
 

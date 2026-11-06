@@ -1,13 +1,10 @@
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A fingerprint of everything a piece of work is made from, so that what it made can be kept and used again when the
-    /// same inputs come round (the minimap's two pictures for a city loaded again in the same session: Navigation/NavGraph,
-    /// NavBase). FNV-1a over the inputs' bytes, 64 bits, in the order they are added: any value changed, added or moved
-    /// gives another print. string.GetHashCode is not used (it differs between runs).
-    ///
-    /// A struct: nothing is allocated. Cost: a few nanoseconds a value (some 0.3 ms for a city's road graph). No Unity or
-    /// game types: checked offline (NavCheck, LoadPaceCheck.cs).
+    /// A fingerprint of the inputs of a piece of work, so its result can be used again when the same inputs come round
+    /// (the minimap's pictures for a city loaded again). 64-bit FNV-1a over the bytes in the order added; not
+    /// string.GetHashCode, which differs between runs. Game-free, checked by NavCheck.
+    /// COST: nothing allocated; a few nanoseconds a value.
     /// </summary>
     public struct InputPrint
     {
@@ -17,7 +14,7 @@ namespace RealLifeOverhaul
         private ulong _hash;
         private bool _begun;
 
-        /// <summary>The print of what has been added (the print of nothing is the FNV offset).</summary>
+        /// <summary>The print of what has been added; of nothing, the FNV offset.</summary>
         public ulong Value => _begun ? _hash : Offset;
 
         public void Add(int value)
@@ -91,7 +88,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The float's own bits (0 and -0 differ, as do two NaNs of different payloads: a print, not a comparison of values).
+        // The float's own bits: 0 and -0 differ, as do NaN payloads; a print, not a comparison of values.
         private static int Bits(float value)
         {
             return System.BitConverter.SingleToInt32Bits(value);

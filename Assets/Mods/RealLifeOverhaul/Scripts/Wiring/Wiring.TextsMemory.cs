@@ -9,28 +9,17 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// What people remember of the player, for RLO Texts' cards of data v6 (Texts/TextMemoryRules), from what the game and
-        /// the mod already decided:
-        ///
-        ///   the social life   read, never copied: how and when a person met the player (their origin and day), their
-        ///                     outings, loans and favours, a birthday remembered, being stood up, a rudeness, the arrest
-        ///                     and crash they heard of (SocialPerson.Memories, Debt, Loan), and what they know: the name,
-        ///                     the player's job and business, how well known the player is
-        ///   street talk       recorded at each line the stranger says (<see cref="Street"/>): met in the street, what was
-        ///                     talked about, how it went, the way given, numbers swapped, the name told, the business
-        ///                     heard of, a famous face recognised; a stranger who swaps numbers takes it with them
-        ///   texts and calls   what each text, call or Flare message was about (<see cref="Spoke"/>)
-        ///   the city          the player's own life events the people of the player's life have heard of
-        ///                     (TextsDirector.Events), and what gossip passed on
-        ///
-        /// Only with a pack of data 6 (TextsDirector.Six); only on cards of the player's own people, never a shared one.
-        /// COST: nothing per frame; a few facts a card, a few a line of street talk.
+        /// What people remember of the player, for RLO Texts' cards of data 6: read from the social life (never copied),
+        /// recorded from street talk and from what each text, call or Flare message was about, the last text in a person's
+        /// thread, and the player's life events. Only with a pack of data 6, and only on cards of the player's own people,
+        /// never a shared one. Nothing per frame: a few facts a card, a thread of twenty messages at most.
         /// </summary>
         public static class TextsMemory
         {
             private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+            private static readonly List<SocialThreadLine> Lines = new List<SocialThreadLine>(Entities.Contact.MaxMessages);
 
-            /// <summary>The memory a request's card may carry: its person's kept facts, and for a person of the social life what it keeps of them.</summary>
+            /// <summary>The memory a request's card may carry: its person's kept facts, and what the social life keeps of them.</summary>
             internal static void Fill(TextRequest r, SocialPerson person)
             {
                 if (r == null || !TextsDirector.Six || r.Shared)
@@ -49,11 +38,20 @@ namespace RealLifeOverhaul
                 if (person != null)
                 {
                     Derived(person, r.Day, r.Memory);
+                    Texted(person, r.Day, r.Memory);
                 }
                 Heard(r.Memory);
             }
 
-            /// <summary>What a text, a call or a Flare message was about, remembered by its person (only an intent of the player's own people).</summary>
+            // What a person last texted the player about, from their thread in the game's phone.
+            private static void Texted(SocialPerson p, int today, List<TextFact> into)
+            {
+                SocialPhone.Thread(p, Lines);
+                TextsMemoryFacts.Texted(Lines, p.IsFamily, p.Together, today, into);
+                Lines.Clear();
+            }
+
+            /// <summary>What a text, a call or a Flare message was about, remembered by its person.</summary>
             internal static void Spoke(TextRequest r, string how)
             {
                 if (r == null || r.Person == null || !TextsDirector.Six)
@@ -65,7 +63,7 @@ namespace RealLifeOverhaul
                 {
                     if (r.Intent == null || r.Intent.IndexOf(".dm.", StringComparison.Ordinal) < 0)
                     {
-                        return;   // (a post or a comment: what everybody reads is not a talk with the player)
+                        return;   // a post or a comment, which everybody reads, is not a talk with the player
                     }
                     if (TextsDirector.Memory.Of(r.Person) == null)
                     {
@@ -85,7 +83,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // The player's own events of the last weeks, as everybody in the player's life has heard of them by now.
+            // The player's events of the last weeks, which everybody in their life has heard of by now.
             private static void Heard(List<TextFact> into)
             {
                 IReadOnlyList<TextLifeEvent> events = TextsDirector.Events;
@@ -99,27 +97,14 @@ namespace RealLifeOverhaul
                 }
             }
 
-            /// <summary>What the social life keeps of one of its people, as memory facts (none of it saved again).</summary>
+            /// <summary>What the social life keeps of one of its people, as memory facts; none of it is saved again.</summary>
             internal static void Derived(SocialPerson p, int today, List<TextFact> into)
             {
                 if (p == null || !p.Met)
                 {
                     return;
                 }
-                string met = MetCode(p.Origin);
-                if (met != null)
-                {
-                    into.Add(new TextFact(TextMemoryKinds.Met, met, p.MetDay));
-                }
-                for (int i = 0; i < p.Memories.Count; i++)
-                {
-                    SocialMemory m = p.Memories[i];
-                    TextFact f;
-                    if (FactOf(m, out f))
-                    {
-                        into.Add(f);
-                    }
-                }
+                TextsMemoryFacts.People(p, into);
                 if (p.Debt > 0)
                 {
                     into.Add(new TextFact(TextMemoryKinds.Favour, "owed", Math.Max(p.DebtDay, 0), TextsGame.Money(p.Debt)));
@@ -132,61 +117,7 @@ namespace RealLifeOverhaul
                 Knows(p, into);
             }
 
-            // How the social life met a person, as a memory's code; null for the family (Mom is not "met").
-            private static string MetCode(SocialOrigin origin)
-            {
-                switch (origin)
-                {
-                    case SocialOrigin.OldFriend: return "old_friend";
-                    case SocialOrigin.Gym: return "gym";
-                    case SocialOrigin.Work: return "work";
-                    case SocialOrigin.CoffeeCart: return "coffee";
-                    case SocialOrigin.Neighbour: return "neighbour";
-                    case SocialOrigin.Helped: return "helped";
-                    case SocialOrigin.Customer: return "customer";
-                    case SocialOrigin.Online: return "flare";
-                    case SocialOrigin.Event: return "event";
-                    case SocialOrigin.Street: return "street";
-                    default: return null;
-                }
-            }
-
-            // One of the social life's memories as a memory fact; false for one with none.
-            private static bool FactOf(SocialMemory m, out TextFact f)
-            {
-                f = default(TextFact);
-                switch (m.Code)
-                {
-                    case MemoryCode.Coffee: f = new TextFact(TextMemoryKinds.Talked, "outing", m.Day, TextMemoryTopics.Outings[0]); return true;
-                    case MemoryCode.Meal: f = new TextFact(TextMemoryKinds.Talked, "outing", m.Day, TextMemoryTopics.Outings[1]); return true;
-                    case MemoryCode.Drinks: f = new TextFact(TextMemoryKinds.Talked, "outing", m.Day, TextMemoryTopics.Outings[2]); return true;
-                    case MemoryCode.Cinema: f = new TextFact(TextMemoryKinds.Talked, "outing", m.Day, TextMemoryTopics.Outings[3]); return true;
-                    case MemoryCode.Walk: f = new TextFact(TextMemoryKinds.Talked, "outing", m.Day, TextMemoryTopics.Outings[4]); return true;
-                    case MemoryCode.Drive: f = new TextFact(TextMemoryKinds.Talked, "outing", m.Day, TextMemoryTopics.Outings[5]); return true;
-                    case MemoryCode.Workout: f = new TextFact(TextMemoryKinds.Talked, "outing", m.Day, TextMemoryTopics.Outings[6]); return true;
-                    case MemoryCode.Business: f = new TextFact(TextMemoryKinds.Talked, "outing", m.Day, TextMemoryTopics.Outings[7]); return true;
-                    case MemoryCode.DroppedBy: f = new TextFact(TextMemoryKinds.Talked, "visit", m.Day); return true;
-                    case MemoryCode.Posted: f = new TextFact(TextMemoryKinds.Talked, "tagged", m.Day); return true;
-                    case MemoryCode.Lift: f = new TextFact(TextMemoryKinds.Favour, "lift", m.Day); return true;
-                    case MemoryCode.Moving: f = new TextFact(TextMemoryKinds.Favour, "moving", m.Day); return true;
-                    case MemoryCode.Loan: f = new TextFact(TextMemoryKinds.Favour, "borrowed", m.Day); return true;
-                    case MemoryCode.Borrowed: f = new TextFact(TextMemoryKinds.Favour, "lent", m.Day); return true;
-                    case MemoryCode.NotRepaid: f = new TextFact(TextMemoryKinds.Favour, "not_repaid", m.Day); return true;
-                    case MemoryCode.Birthday: f = new TextFact(TextMemoryKinds.Favour, "birthday", m.Day); return true;
-                    case MemoryCode.Introduced: f = new TextFact(TextMemoryKinds.Favour, "introduced", m.Day); return true;
-                    case MemoryCode.StoodUp: f = new TextFact(TextMemoryKinds.Tone, "stood_up", m.Day); return true;
-                    case MemoryCode.Late: f = new TextFact(TextMemoryKinds.Tone, "late", m.Day); return true;
-                    case MemoryCode.Rude: f = new TextFact(TextMemoryKinds.Tone, "rude", m.Day); return true;
-                    case MemoryCode.AskedOut: f = new TextFact(TextMemoryKinds.Tone, "asked_out", m.Day); return true;
-                    case MemoryCode.BreakUp: f = new TextFact(TextMemoryKinds.Tone, "broke_up", m.Day); return true;
-                    case MemoryCode.Arrest: f = new TextFact(TextMemoryKinds.Event, "arrest", m.Day); return true;
-                    case MemoryCode.Crash: f = new TextFact(TextMemoryKinds.Event, "crash", m.Day); return true;
-                    default: return false;
-                }
-            }
-
-            // What a person of the social life knows of the player: their job (one met at work, or a friend), their business
-            // (a friend, or one met at the shop), and how well known the player is.
+            // The job (to a friend or one met at work), the business (to a friend or one met at the shop), and fame.
             private static void Knows(SocialPerson p, List<TextFact> into)
             {
                 bool friend = p.Stage >= SocialStage.Friend || p.IsFamily;
@@ -211,7 +142,6 @@ namespace RealLifeOverhaul
 
             private static readonly List<BuildingRegistration> Mine = new List<BuildingRegistration>(8);
 
-            // The player's first business by name, or null.
             private static string FirstBusiness()
             {
                 Economy.Books.Businesses(Mine);
@@ -225,15 +155,10 @@ namespace RealLifeOverhaul
                 return null;
             }
 
-            // ---------------------------------------------------------------- street talk
-
-            /// <summary>The memory key of a stranger in the street: their seed (one person for the day).</summary>
+            /// <summary>The memory key of a stranger in the street: their seed, one person for the day.</summary>
             internal static string StrangerKey(StreetChat c) => "sp:" + c.Who.Seed.ToString(Inv);
 
-            /// <summary>
-            /// A line a stranger says, as what they will remember: met in the street (their first line), what was talked
-            /// about, how it went, a favour, what they now know. A number swapped takes what they remember to the contact.
-            /// </summary>
+            /// <summary>A line a stranger says, as what they will remember; a number swapped takes it to the contact.</summary>
             internal static void Street(StreetChat c, StreetLine line, Dictionary<string, string> data)
             {
                 if (c == null || !TextsDirector.Six)
@@ -290,7 +215,7 @@ namespace RealLifeOverhaul
                         TextsDirector.Remember(key, TextMemoryKinds.Favour, "number");
                         if (c.Memo != null && c.Memo.Cast >= 0)
                         {
-                            TextsDirector.Move(key, "s:" + c.Memo.Cast.ToString(Inv));   // (now somebody the player knows: what they remember goes with them)
+                            TextsDirector.Move(key, "s:" + c.Memo.Cast.ToString(Inv));
                         }
                         break;
                 }

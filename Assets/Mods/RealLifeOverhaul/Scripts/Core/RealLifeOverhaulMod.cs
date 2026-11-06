@@ -23,11 +23,18 @@ namespace RealLifeOverhaul
     {
         private ModContext _context;
 
-        // Two copies switched on (the Workshop item and a ModsLocal folder) are one assembly started twice: the second
-        // to start says so and registers nothing, so there is one options page and one set of saved choices in use.
-        // (Told apart by the id the game gives each copy: the same copy started again is not a second one.)
+        // Two copies switched on (the Workshop item and a ModsLocal folder) are one assembly started twice: the second,
+        // told apart by the id the game gives each copy, says so and registers nothing.
         private static string _started;
         private bool _second;
+
+        /// <summary>
+        /// True once a second copy was told to stand down, in the game's start or in a city. The copy that runs is the first one the game
+        /// discovered: the Workshop items come before ModsLocal, so a beta from the Workshop runs over a public copy in ModsLocal.
+        /// (Two Workshop items with this assembly's name never get this far: the game refuses both, "Duplicate mod assembly name".)
+        /// The beta's welcome notice tells the player to switch the public copy off (Meta/Welcome).
+        /// </summary>
+        public static bool TwoCopies;
 
         public string[] RelativeAssetBundlePaths => Array.Empty<string>();
 
@@ -36,28 +43,45 @@ namespace RealLifeOverhaul
             if (_started != null && _started != context.ModId)
             {
                 _second = true;
-                context.Logger.Warn("Real Life Overhaul is switched on twice (the Workshop item and a copy in the ModsLocal folder?). This copy does nothing; switch one of them off under Mods in the main menu.");
+                TwoCopies = true;
+                context.Logger.Warn("Real Life Overhaul is switched on twice (the Workshop item and a copy in the ModsLocal folder?). This copy does nothing; "
+                                    + "switch one of them off under Mods in the main menu.");
                 return Task.CompletedTask;
             }
             _started = context.ModId;
             IModLogger log = context.Logger;
-            Guard.Logger = log;   // (every step below that can fail is one of Guard.Step: one that fails costs the mod only itself)
-            Guard.Step("the bug report's record of the mod's warnings", Meta.BugReportGame.Listen);   // kept from the first line on, for "Report a bug" (Meta/BugReport)
-            context = Meta.Dev.Gated(context);   // Info lines only while "Developer diagnostics" is on (read below; OptionsLayout.Organise applies it)
+            Guard.Logger = log;   // every step below is a Guard.Step: one that fails costs the mod only itself
+            Guard.Step("the bug report's record of the mod's warnings", Meta.BugReportGame.Listen);   // from the first line on, for Report a bug
+            Guard.Step("the traffic mend's count of the game's failed density passes", TrafficMend.Listen);
+            context = Meta.Dev.Gated(context);   // Info lines only while Developer diagnostics is on (read below)
             _context = context;
             Keys.Logger = context.Logger;
-            Settings.Load(context.ModId);
+            Settings.Start(context.ModId);   // the copy's id only says where older versions kept the options
             Economy.Dealership.DealerType.Logger = log;
-            Guard.Step("the car dealership's business type", () => Economy.Dealership.DealerType.Register());   // the car dealership's business type, before any save is read (Scripts/Economy/Dealer)
-            Meta.Dev.Gated(context);   // (the option has been read now)
-            Guard.Start(context.Logger);   // the game contract resolved once, the game's build against the one this version is made for, the mod's code checked against this game, and the notice for an older game (Core/Guard, Core/GameBuild)
+            Guard.Step("the car dealership's business type", () => Economy.Dealership.DealerType.Register());   // before any save is read
+            Meta.Dev.Gated(context);   // the option has been read now
+            Guard.Start(context.Logger);   // the game contract, the game's build and the notice for an older game
             Tech.TechTypes.Logger = context.Logger;
-            Guard.Step("the tech sector's business types", () => Tech.TechTypes.Register());   // the tech sector's business types, before any save that holds one is loaded (Scripts/Tech/Firms/TechTypes)
+            Guard.Step("the tech sector's business types", () => Tech.TechTypes.Register());   // before any save that holds one is loaded
             Careers.AcademyType.Logger = context.Logger;
-            Guard.Step("the training academy's business type", () => Careers.AcademyType.Register());   // the player's own training academy, a business type, before any save that holds one is loaded (Scripts/Careers/AcademyType)
+            Guard.Step("the training academy's business type", () => Careers.AcademyType.Register());   // before any save that holds one is loaded
+            Economy.BranchType.Logger = context.Logger;
+            Guard.Step("the bank branch's business type", () => Economy.BranchType.Register());   // before any save that holds one is loaded
+            Construction.ConstructionType.Logger = context.Logger;
+            Guard.Step("the construction company's business type", () => Construction.ConstructionType.Register());   // before any save that holds one is loaded
+            Shops.ShopsDirector.Logger = context.Logger;
+            Guard.Step("the new kinds of shop", Shops.ShopsDirector.Start);   // before any save that holds one is loaded
             Designs.DesignsDirector.Logger = context.Logger;
-            // The installation firms' designs for the mod's business types, put in place or taken away on a worker (Scripts/Designs).
+            // The installation firms' designs for the mod's business types, put in place or taken away on a worker.
             Guard.Step("the ready-made designs", () => Designs.DesignsDirector.Ask(Settings.Designs));
+            Guard.Step("Uptown's places for the district save", () => Uptown.LifeDirector.Register(context.Logger));   // before any save is read: its early step runs then
+            // After Uptown's: the lift is asked as the district's buildings are declared.
+            Guard.Step("the landmarks' places and their lift of Uptown's traffic", () => Landmarks.LandmarksDirector.Register(context.Logger));
+            // After the landmarks': the campus's name lifts Uptown's traffic after theirs.
+            Guard.Step("the schools' street and their lift of Uptown's traffic", () => Schools.SchoolsDirector.Register(context.Logger));
+            // After Uptown's: its finished buildings that wear a corner building's model ask for it while the city loads.
+            Guard.Step("the corner buildings over Uptown's finished buildings", () => Corners.CornerLook.Register(context.Logger));
+            Guard.Step("the city expansion's test run, if one waits for its load", () => TestRun.RunDirector.Begin(context.Logger));   // before any save is read: it hears the load's own lines
 
             var options = new ModOptions()
                 .AddHeader("reallife_camera_header")
@@ -189,8 +213,15 @@ namespace RealLifeOverhaul
                     v => Settings.CityDrivers = v)
                 .AddToggle(Settings.PhoneContactsId, "reallife_phone_contacts", Settings.PhoneContacts,
                     v => Settings.PhoneContacts = v)
+                .AddToggle(Settings.PhoneContactGroupsId, "reallife_phone_contact_groups", Settings.PhoneContactGroups,
+                    v =>
+                    {
+                        Settings.PhoneContactGroups = v;
+                        ContactGroupsGame.Apply();   // the buttons and the list follow at once
+                    })
                 .AddButton("reallife_contacts_test_pictures", ContactPictures.TestReport)
                 .AddButton("reallife_contacts_test_redraw", ContactPictures.TestRedraw)
+                .AddButton("reallife_contacts_test_groups", ContactGroupsTest.Run)
                 .AddToggle(Settings.PhoneSkinId, "reallife_phone_skin", Settings.PhoneSkin,
                     v => Settings.PhoneSkin = v)
                 .AddToggle(Settings.PhoneFoldersId, "reallife_phone_folders", Settings.PhoneFolders,
@@ -202,10 +233,15 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_phone_layout_reset", GameUi.PhoneMove.ResetAll)
                 .AddButton("reallife_phone_test_check", GameUi.PhoneMove.TestCheck)
                 .AddButton("reallife_phone_test_folder", GameUi.PhoneMove.TestFolder)
+                .AddButton("reallife_phone_test_pages", GameUi.PhoneApp.TestPages)
+                .AddButton("reallife_leftpane_test", Meta.LeftPaneTest.Run)
                 .AddToggle(Settings.NoticeLookId, "reallife_notice_look", Settings.NoticeLook,
                     v => Settings.NoticeLook = v)
                 .AddButton("reallife_test_notice_look", GameUi.NoticeLook.Test)
                 .AddButton("reallife_test_event", () => LifeEvents.Instance?.TriggerEventNow())
+                .AddButton("reallife_test_event_fridge", () => LifeEvents.Instance?.TriggerFridgeBill())
+                .AddButton("reallife_moods_test", MoodsTest.Run)
+                .AddButton("reallife_maptrees_test", MapTreeGuard.RunTest)
                 .AddButton("reallife_test_accident", () => TrafficAccidents.Instance?.StageAccidentNow())
                 .AddButton("reallife_test_accident_minor", () => TrafficAccidents.Instance?.StageAccidentNow(TrafficAccidents.Severity.Minor))
                 .AddButton("reallife_test_accident_moderate", () => TrafficAccidents.Instance?.StageAccidentNow(TrafficAccidents.Severity.Moderate))
@@ -229,6 +265,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_drivers_park", () => CityDrivers.TestNow(CityDrivers.TestKind.Park))
                 .AddButton("reallife_test_drivers_letout", () => CityDrivers.TestNow(CityDrivers.TestKind.LetOut))
                 .AddButton("reallife_test_wave_through", TrafficAccidents.TestWaveThrough)
+                .AddButton("reallife_test_traffic_mend", TrafficMend.Test)
                 .AddSplitter()
                 .AddHeader("reallife_crime_header")
                 .AddToggle(Settings.StreetCrimeId, "reallife_crime_enabled", Settings.StreetCrime,
@@ -269,9 +306,14 @@ namespace RealLifeOverhaul
                     v => Settings.Jobs = v)
                 .AddSlider(Settings.JobPayId, "reallife_jobs_pay", 50, 200, Settings.JobPay,
                     v => Settings.JobPay = v, Meta.SettingsTable.SliderPercent)
+                .AddToggle(Settings.JobTaxiEasyId, "reallife_jobs_taxi_easy", Settings.JobTaxiEasy,
+                    v => Settings.JobTaxiEasy = v)
+                .AddToggle(Settings.JobCartSoundsId, "reallife_jobs_cart_sounds", Settings.JobCartSounds,
+                    v => Settings.JobCartSounds = v)
                 .AddButton("reallife_test_job_flyers", () => JobDirector.Instance?.TestStart(JobCatalogue.Flyers))
                 .AddButton("reallife_test_job_courier", () => JobDirector.Instance?.TestStart(JobCatalogue.Courier))
                 .AddButton("reallife_test_job_taxi",() => JobDirector.Instance?.TestStart(JobCatalogue.Taxi))
+                .AddButton("reallife_test_job_taxi_table", () => JobDirector.Instance?.TestTaxiTable())
                 .AddButton("reallife_test_job_cleaner", () => JobDirector.Instance?.TestStart(JobCatalogue.Cleaner))
                 .AddButton("reallife_test_job_stocker", () => JobDirector.Instance?.TestStart(JobCatalogue.Stocker))
                 .AddButton("reallife_test_job_vendor", () => JobDirector.Instance?.TestStart(JobCatalogue.Vendor))
@@ -290,6 +332,7 @@ namespace RealLifeOverhaul
                     v => Settings.CareersStudy = v)
                 .AddButton("reallife_study_test_class", () => Careers.CareersDirector.Instance?.TestClass())
                 .AddButton("reallife_study_test_computer", () => Careers.CareersDirector.Instance?.TestComputer())
+                .AddButton("reallife_study_test_session_desk", () => Careers.CareersDirector.Instance?.TestSessionDesk())
                 .AddButton("reallife_study_test_outage", () => Careers.CareersDirector.Instance?.TestOutage())
                 .AddButton("reallife_study_test_exam", () => Careers.CareersDirector.Instance?.TestExam())
                 .AddButton("reallife_study_test_skills", () => Careers.CareersDirector.Instance?.TestSkills())
@@ -309,7 +352,13 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_work_test_day", () => Careers.CareersDirector.Instance?.TestWorkDay())
                 .AddButton("reallife_work_test_desk", () => Careers.CareersDirector.Instance?.TestDesk())
                 .AddButton("reallife_work_test_computer", () => Careers.CareersDirector.Instance?.TestComputerWork())
+                .AddButton("reallife_work_test_interview_place", () => Careers.CareersDirector.Instance?.TestInterviewPlace())
+                .AddButton("reallife_work_test_interview_home", () => Careers.CareersDirector.Instance?.TestInterviewHome())
                 .AddButton("reallife_work_test_vacancies", () => Careers.CareersDirector.Instance?.TestVacancies())
+                .AddButton("reallife_work_test_shift_hours", () => Careers.CareersDirector.Instance?.TestShiftHours())
+                .AddButton("reallife_work_test_forklift", () => Careers.CareersDirector.Instance?.TestForklift())
+                .AddButton("reallife_work_test_closed", () => Careers.CareersDirector.Instance?.TestClosed())
+                .AddButton("reallife_work_test_moved", () => Careers.CareersDirector.Instance?.TestMoved())
                 .AddToggle(Settings.CareersAgencyNoteId, "reallife_work_opt_agency_note", Settings.CareersAgencyNote,
                     v => Settings.CareersAgencyNote = v)
                 .AddToggle(Settings.CareersRejectReasonId, "reallife_work_opt_reject_reason", Settings.CareersRejectReason,
@@ -319,6 +368,13 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_life_test_review", () => Careers.CareersDirector.Instance?.TestReview())
                 .AddButton("reallife_life_test_matter", () => Careers.CareersDirector.Instance?.TestMatter())
                 .AddButton("reallife_life_test_approach", () => Careers.CareersDirector.Instance?.TestApproach())
+                .AddToggle(Settings.CareersLadderId, "reallife_ladder_enabled", Settings.CareersLadder,
+                    v => Settings.CareersLadder = v)
+                .AddButton("reallife_ladder_test_job", () => Careers.CareersDirector.Instance?.TestLadderJob())
+                .AddButton("reallife_ladder_test_promote", () => Careers.CareersDirector.Instance?.TestLadderPromote())
+                .AddButton("reallife_ladder_test_tasks", () => Careers.CareersDirector.Instance?.TestLadderTasks())
+                .AddButton("reallife_ladder_test_decide", () => Careers.CareersDirector.Instance?.TestLadderDecide())
+                .AddButton("reallife_ladder_test_ask", () => Careers.CareersDirector.Instance?.TestLadderAsk())
                 .AddToggle(Settings.CareersOwnId, "reallife_own_enabled", Settings.CareersOwn,
                     v => Settings.CareersOwn = v)
                 .AddToggle(Settings.CareersOwnOfferNotesId, "reallife_own_opt_offer_notes", Settings.CareersOwnOfferNotes,
@@ -362,6 +418,7 @@ namespace RealLifeOverhaul
                 .AddSplitter()
                 .Guarded(o => o.AddInteriors())   // interiors and decor that matter (Scripts/Interiors)
                 .Guarded(o => Designs.DesignsOptions.AddDesigns(o))   // the installation firms' designs for the mod's types (Scripts/Designs)
+                .Guarded(o => Shops.ShopsOptions.AddShops(o))   // the ice cream parlour, tea bar and tobacconist (Scripts/Shops)
                 .AddHeader("reallife_home_header")
                 .AddToggle(Settings.HomeLifeId, "reallife_home_enabled", Settings.HomeLife,
                     v => Settings.HomeLife = v)
@@ -457,6 +514,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_test_car_fuel", () => CarOwnership.Instance?.TestFuel())
                 .AddButton("reallife_test_car_breakdown", () => CarOwnership.Instance?.TestBreakdown())
                 .AddButton("reallife_test_car_garage", () => CarOwnership.Instance?.TestGarage())
+                .AddButton("reallife_test_vehicle_costs", () => CarOwnership.Instance?.TestCosts())
                 .AddSplitter()
                 .AddHeader("reallife_leisure_header")
                 .AddToggle(Settings.LeisureId, "reallife_leisure_enabled", Settings.Leisure,
@@ -523,6 +581,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_events_test_fire_car", () => Events.EventDirector.Instance?.TestFire(Events.FireKind.Car))
                 .AddButton("reallife_events_test_fire_bin", () => Events.EventDirector.Instance?.TestFire(Events.FireKind.Bin))
                 .AddButton("reallife_events_test_fire_building", () => Events.EventDirector.Instance?.TestFire(Events.FireKind.Building))
+                .AddButton("reallife_events_test_fire_blocked", () => Events.EventDirector.Instance?.TestFireBlocked())
                 .AddButton("reallife_events_test_weather_rain", () => Events.EventDirector.Instance?.TestWeather(Events.Sky.Rain, Events.Spell.None))
                 .AddButton("reallife_events_test_weather_mist", () => Events.EventDirector.Instance?.TestWeather(Events.Sky.Mist, Events.Spell.None))
                 .AddButton("reallife_events_test_weather_storm", () => Events.EventDirector.Instance?.TestWeather(Events.Sky.Storm, Events.Spell.None))
@@ -555,12 +614,19 @@ namespace RealLifeOverhaul
                     v => Settings.SocialTextsMax = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.SocialComposerId, "reallife_social_composer", Settings.SocialComposer,
                     v => Settings.SocialComposer = v)
+                .AddToggle(Settings.SocialNetworkingId, "reallife_social_networking", Settings.SocialNetworking,
+                    v => Settings.SocialNetworking = v)
+                .AddButton("reallife_social_net_test_intro", Networking.NetworkDirector.TestIntro)
+                .AddButton("reallife_social_net_test_favour", Networking.NetworkDirector.TestFavour)
+                .AddButton("reallife_social_net_test_each", Networking.NetworkDirector.TestEach)
                 .AddButton("reallife_social_test_meet", () => SocialDirector.Instance?.TestMeet())
                 .AddButton("reallife_social_test_person", () => SocialDirector.Instance?.TestPerson())
                 .AddButton("reallife_social_test_advance", () => SocialDirector.Instance?.TestAdvance())
                 .AddButton("reallife_social_test_call", () => SocialDirector.Instance?.TestCall())
                 .AddButton("reallife_social_test_composer", () => SocialDirector.Instance?.TestComposer())
                 .AddButton("reallife_social_test_text", () => SocialDirector.Instance?.TestText())
+                .AddButton("reallife_social_test_followup", () => SocialDirector.Instance?.TestFollowUp())
+                .AddButton("reallife_social_test_nextday", () => SocialDirector.Instance?.TestNextDay())
                 .AddButton("reallife_social_test_favour", () => SocialDirector.Instance?.TestFavour())
                 .AddButton("reallife_social_test_dropby", () => SocialDirector.Instance?.TestDropBy())
                 .AddButton("reallife_social_test_mom", () => SocialDirector.Instance?.TestOutingWithMom())
@@ -575,6 +641,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_social_test_lift", () => SocialDirector.Instance?.TestOuting(PlanKind.Lift))
                 .AddButton("reallife_social_test_moving", () => SocialDirector.Instance?.TestOuting(PlanKind.Moving))
                 .AddButton("reallife_social_test_stop", () => SocialDirector.Instance?.TestStop())
+                .AddButton("reallife_social_test_lose", () => SocialDirector.Instance?.TestLoseTouch())
+                .AddButton("reallife_social_test_looks", () => SocialDirector.Instance?.TestOneLook())
                 .AddSplitter()
                 .AddHeader("reallife_ledger_header")
                 .AddToggle(Settings.SocialNewspaperId, "reallife_social_newspaper", Settings.SocialNewspaper,
@@ -585,8 +653,11 @@ namespace RealLifeOverhaul
                     v => Settings.LedgerOnline = v)
                 .AddToggle(Settings.LedgerOnlineNotesId, "reallife_ledger_opt_online_notes", Settings.LedgerOnlineNotes,
                     v => Settings.LedgerOnlineNotes = v)
+                .AddToggle(Settings.LedgerStoriesId, "reallife_ledger_opt_stories", Settings.LedgerStories,
+                    v => Settings.LedgerStories = v)
                 .AddButton("reallife_ledger_test_open", () => Ledger.LedgerDirector.Instance?.TestOpen())
                 .AddButton("reallife_ledger_test_online", () => Ledger.LedgerDirector.Instance?.TestOnline())
+                .AddButton("reallife_ledger_test_stories", () => Ledger.LedgerDirector.Instance?.TestStories())
                 .AddButton("reallife_social_test_paper", () =>
                 {
                     SocialDirector.Instance?.TestPaper();   // the city's paper written again from its log...
@@ -633,6 +704,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_flare_test_pictures", () => Flare.FlareDirector.Instance?.TestPictures())
                 .AddButton("reallife_flare_test_report", () => Flare.FlareDirector.Instance?.TestReport())
                 .AddButton("reallife_flare_test_cityday", () => Flare.FlareDirector.Instance?.TestCityDay())
+                .AddButton("reallife_flare_test_review_now", () => Flare.FlareDirector.Instance?.TestReviewNow())
                 .AddButton("reallife_flare_test_reactions", () => Flare.FlareDirector.Instance?.TestReactions())
                 .AddButton("reallife_flare_test_pileon", () => Flare.FlareDirector.Instance?.TestPileOn())
                 .AddButton("reallife_flare_test_dm", () => Flare.FlareDirector.Instance?.TestDm())
@@ -660,6 +732,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_fame_test_promises", () => Fame.FameDirector.Instance?.TestPromises())
                 .AddButton("reallife_fame_test_request", () => Fame.FameDirector.Instance?.TestRequest())
                 .AddButton("reallife_fame_test_evening", () => Fame.FameDirector.Instance?.TestEvening())
+                .AddButton("reallife_fame_test_meetings", () => Fame.FameDirector.Instance?.TestMeetings())
                 .AddButton("reallife_fame_test_bribe", () => Fame.FameDirector.Instance?.TestBribe())
                 .AddButton("reallife_fame_test_council", () => Fame.FameDirector.Instance?.TestCouncil())
                 .AddButton("reallife_fame_test_back", () => Fame.FameDirector.Instance?.TestBack())
@@ -670,6 +743,9 @@ namespace RealLifeOverhaul
                 .AddDropdown(Settings.RivalsStrengthId, "reallife_rival_strength",
                     new[] { "reallife_rival_strength_gentle", "reallife_rival_strength_normal", "reallife_rival_strength_hard", "reallife_rival_strength_ruthless" }, Settings.RivalsStrength,
                     v => Settings.RivalsStrength = v)
+                .AddDropdown(Settings.RivalsFirstId, "reallife_rival_first",
+                    new[] { "reallife_rival_first_5", "reallife_rival_first_10", "reallife_rival_first_20", "reallife_rival_first_30", "reallife_rival_first_50" }, Settings.RivalsFirst,
+                    v => Settings.RivalsFirst = v)
                 .AddButton("reallife_rival_test_property", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Property))
                 .AddButton("reallife_rival_test_outlet", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Outlet))
                 .AddButton("reallife_rival_test_poach", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Poach))
@@ -680,6 +756,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_rival_test_press", () => Rivals.RivalDirector.Instance?.TestMove(Rivals.RivalMoveKind.Press))
                 .AddButton("reallife_rival_test_next", () => Rivals.RivalDirector.Instance?.TestAnnounce())
                 .AddButton("reallife_rival_test_forward", () => Rivals.RivalDirector.Instance?.TestForward())
+                .AddButton("reallife_rival_test_first", () => Rivals.RivalDirector.Instance?.TestFirst())
                 .AddButton("reallife_rival_test_list", () => Rivals.RivalDirector.Instance?.TestList())
                 .AddButton("reallife_rival_test_takeover", () => Rivals.RivalDirector.Instance?.TestTakeover())
                 .AddButton("reallife_rival_test_back", () => Rivals.RivalDirector.Instance?.TestBack())
@@ -717,12 +794,18 @@ namespace RealLifeOverhaul
                     v => Settings.GaragePolice = v)
                 .AddToggle(Settings.GarageSoundsId, "reallife_garage_sounds", Settings.GarageSounds,
                     v => Settings.GarageSounds = v)
+                .AddToggle(Settings.GarageResaleId, "reallife_garage_resale", Settings.GarageResale,
+                    v => Settings.GarageResale = v)
                 .AddToggle(Settings.TwoWheelersId, "reallife_garage_two_wheelers", Settings.TwoWheelers,
                     v => Settings.TwoWheelers = v)
                 .AddButton("reallife_garage_test_shop", () => GarageDirector.Instance?.TestShop())
                 .AddButton("reallife_garage_test_random", () => GarageDirector.Instance?.TestRandomBuild())
                 .AddButton("reallife_garage_test_restore", () => GarageDirector.Instance?.TestStock())
                 .AddButton("reallife_garage_test_sounds", () => CarSoundDirector.Instance?.TestReport())
+                .AddButton("reallife_tuning_test_figures", () => GarageDirector.Instance?.TestFigures())
+                .AddButton("reallife_tuning_test_car", () => GarageDirector.Instance?.TestTuning())
+                .AddButton("reallife_tuning_test_sale", () => GarageDirector.Instance?.TestSale())
+
                 .AddButton("reallife_garage_test_vehicles", () => { if (GarageDirector.Instance != null) { GarageSummary.Toggle(); } })
                 .AddButton("reallife_garage_test_bicycle", () => GarageDirector.Instance?.TestBike(BikeKind.CityBicycle))
                 .AddButton("reallife_garage_test_road_bicycle", () => GarageDirector.Instance?.TestBike(BikeKind.RoadBicycle))
@@ -742,17 +825,24 @@ namespace RealLifeOverhaul
                     v => Settings.LicencePoints = v)
                 .AddToggle(Settings.RoadsideChecksId, "reallife_lic_opt_checks", Settings.RoadsideChecks,
                     v => Settings.RoadsideChecks = v)
+                .AddToggle(Settings.HeavyLicenceId, "reallife_lic_opt_heavy", Settings.HeavyLicence,
+                    v => Settings.HeavyLicence = v)
                 .AddButton("reallife_test_lic_card", () => LicenceDirector.Instance?.ShowCard())
                 .AddButton("reallife_test_lic_car", () => LicenceDirector.Instance?.TestToggle(LicenceClass.Car))
                 .AddButton("reallife_test_lic_commercial", () => LicenceDirector.Instance?.TestToggle(LicenceClass.Commercial))
                 .AddButton("reallife_test_lic_taxi", () => LicenceDirector.Instance?.TestToggle(LicenceClass.Taxi))
                 .AddButton("reallife_test_lic_motorcycle", () => LicenceDirector.Instance?.TestToggle(LicenceClass.Motorcycle))
+                .AddButton("reallife_test_lic_heavy", () => LicenceDirector.Instance?.TestToggle(LicenceClass.Heavy))
                 .AddButton("reallife_test_lic_theory", () => LicenceDirector.Instance?.TestTheory())
                 .AddButton("reallife_test_lic_practical", () => LicenceDirector.Instance?.TestPractical(LicenceClass.Car))
                 .AddButton("reallife_test_lic_practical_van", () => LicenceDirector.Instance?.TestPractical(LicenceClass.Commercial))
+                .AddButton("reallife_test_lic_theory_heavy", () => LicenceDirector.Instance?.TestHeavyTheory())
+                .AddButton("reallife_test_lic_practical_heavy", () => LicenceDirector.Instance?.TestPractical(LicenceClass.Heavy))
+                .AddButton("reallife_test_job_heavy_load", () => JobDirector.Instance?.TestHeavyLoad())
                 .AddButton("reallife_test_lic_check", () => LicenceDirector.Instance?.TestCheck())
                 .AddButton("reallife_test_lic_points", () => LicenceDirector.Instance?.TestPoints())
                 .AddSplitter()
+                .Guarded(o => Seasons.SeasonOptions.AddSeasons(o))   // what sells in each season, and the snow (Scripts/Seasons)
                 .AddHeader("reallife_planner_header")
                 .AddToggle(Settings.PlannerId, "reallife_planner_enabled", Settings.Planner,
                     v => Settings.Planner = v)
@@ -763,11 +853,15 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_planner_test_fill", () => Planner.PlannerDirector.Instance?.TestFill())
                 .AddButton("reallife_planner_test_clear", () => Planner.PlannerDirector.Instance?.TestClear())
                 .AddSplitter()
+                .Guarded(o => Calendar.CalendarOptions.AddCalendar(o))   // the month on the phone (Scripts/Calendar)
+                .Guarded(o => Hustles.HustleOptions.AddHustles(o))   // the Marketplace and freelance visits (Scripts/Hustles)
                 .AddHeader("reallife_econ_header")
                 .AddToggle(Settings.EconomyId, "reallife_econ_enabled", Settings.Economy,
                     v => Settings.Economy = v)
                 .AddToggle(Settings.EconomyGradeUpNotesId, "reallife_econ_opt_grade_up_notes", Settings.EconomyGradeUpNotes,
                     v => Settings.EconomyGradeUpNotes = v)
+                .AddToggle(Settings.EconomyDayResultId, "reallife_econ_opt_day_result", Settings.EconomyDayResult,
+                    v => Settings.EconomyDayResult = v)
                 .AddToggle(Settings.EconomyProductsId, "reallife_econ_products", Settings.EconomyProducts,
                     v => Settings.EconomyProducts = v)
                 .AddToggle(Settings.EconomySharkId, "reallife_econ_shark", Settings.EconomyShark,
@@ -818,6 +912,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_macro_test_district_up", () => Economy.CityEconomyDirector.Instance?.TestDistrict(100))
                 .AddButton("reallife_macro_test_district_down", () => Economy.CityEconomyDirector.Instance?.TestDistrict(-100))
                 .AddButton("reallife_macro_test_back", () => Economy.CityEconomyDirector.Instance?.TestBack())
+                .Guarded(o => Outlook.OutlookOptions.AddOutlook(o))   // the Economy app (Scripts/Outlook)
                 .AddToggle(Settings.VenturesInvestorsId, "reallife_ven_investors", Settings.VenturesInvestors,
                     v => Settings.VenturesInvestors = v)
                 .AddDropdown(Settings.VenturesLevelId, "reallife_ven_level",
@@ -851,6 +946,11 @@ namespace RealLifeOverhaul
                     v => Settings.MarketsReinvest = v)
                 .AddToggle(Settings.MarketsDerivativesId, "reallife_mkt_drv_opt", Settings.MarketsDerivatives,
                     v => Settings.MarketsDerivatives = v)
+                .AddToggle(Settings.MarketsBuildersId, "reallife_mkt_builders_opt", Settings.MarketsBuilders,
+                    v => Settings.MarketsBuilders = v)
+                .AddDropdown(Settings.MarketsHoldingId, "reallife_mkt_opt_holding",
+                    new[] { "reallife_mkt_opt_holding_tenth", "reallife_mkt_opt_holding_quarter", "reallife_mkt_opt_holding_half", "reallife_mkt_opt_holding_all" }, Settings.MarketsHolding,
+                    v => Settings.MarketsHolding = v)
                 .AddButton("reallife_mkt_test_open", () => Markets.MarketDirector.Instance?.TestOpen())
                 .AddButton("reallife_mkt_test_crisis", () => Markets.MarketDirector.Instance?.TestNews(true))
                 .AddButton("reallife_mkt_test_windfall", () => Markets.MarketDirector.Instance?.TestNews(false))
@@ -863,6 +963,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_mkt_drv_test_call", () => Markets.MarketDirector.Instance?.TestCall())
                 .AddButton("reallife_mkt_inv_test_work", () => Markets.MarketDirector.Instance?.TestWorkedDay())
                 .AddButton("reallife_mkt_inv_test_back", () => Markets.MarketDirector.Instance?.TestPutBack())
+                .AddButton("reallife_mkt_test_holding", () => Markets.MarketDirector.Instance?.TestHolding())
                 .AddButton("reallife_mkt_inv_test_roll", () => Markets.MarketDirector.Instance?.TestRollover())
                 .AddButton("reallife_lst_test_list", () => Markets.MarketDirector.Instance?.TestListing())
                 .AddButton("reallife_lst_test_results", () => Markets.MarketDirector.Instance?.TestOwnResults())
@@ -870,6 +971,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_lst_test_activist", () => Markets.MarketDirector.Instance?.TestOwnActivist())
                 .AddButton("reallife_lst_test_bid", () => Markets.MarketDirector.Instance?.TestOwnBid())
                 .AddButton("reallife_lst_test_off", () => Markets.MarketDirector.Instance?.TestOwnOff())
+                .AddButton("reallife_lst_test_sector", () => Markets.MarketDirector.Instance?.TestSector())
                 .AddHeader("reallife_co_header")
                 .AddToggle(Settings.EconomyCompanyId, "reallife_co_enabled", Settings.EconomyCompany,
                     v => Settings.EconomyCompany = v)
@@ -889,6 +991,8 @@ namespace RealLifeOverhaul
                     v => Settings.EconomyRota = v)
                 .AddToggle(Settings.EconomyManagersId, "reallife_mgr_enabled", Settings.EconomyManagers,
                     v => Settings.EconomyManagers = v)
+                .AddToggle(Settings.EconomyHierarchyId, "reallife_hier_enabled", Settings.EconomyHierarchy,
+                    v => Settings.EconomyHierarchy = v)
                 .AddToggle(Settings.EconomyCleaningId, "reallife_svc_cleaning_enabled", Settings.EconomyCleaning,
                     v => Settings.EconomyCleaning = v)
                 .AddToggle(Settings.EconomySaleId, "reallife_svc_sale_enabled", Settings.EconomySale,
@@ -896,8 +1000,11 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.OfficeConversionId, "reallife_offices_enabled", Settings.OfficeConversion,
                     v => Settings.OfficeConversion = v)
                 .AddButton("reallife_offices_test_list", () => Offices.Conversions.Instance?.TestList())
+                .AddButton("reallife_held_test", HeldUnits.Test)
                 .AddToggle(Settings.EconomyBankId, "reallife_ob_enabled", Settings.EconomyBank,
                     v => Settings.EconomyBank = v)
+                .AddToggle(Settings.EconomyBranchId, "reallife_branch_enabled", Settings.EconomyBranch,
+                    v => Settings.EconomyBranch = v)
                 .AddToggle(Settings.EndScaleId, "reallife_endscale_enabled", Settings.EndScale,
                     v => Settings.EndScale = v)
                 .AddButton("reallife_endscale_test_phase", () => EndScaleTests.Phase(false))
@@ -906,6 +1013,7 @@ namespace RealLifeOverhaul
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCompanyLevel,
                     v => Settings.EconomyCompanyLevel = v)
                 .AddButton("reallife_co_test_raise", () => Economy.CompanyDirector.Instance?.TestRaise())
+                .AddButton("reallife_co_test_picked_raise", () => Economy.CompanyDirector.Instance?.TestPickedRaise())
                 .AddButton("reallife_co_test_offer", () => Economy.CompanyDirector.Instance?.TestOffer())
                 .AddButton("reallife_co_test_strike", () => Economy.CompanyDirector.Instance?.TestStrike())
                 .AddButton("reallife_co_test_claim", () => Economy.CompanyDirector.Instance?.TestFireClaim())
@@ -919,15 +1027,30 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_rota_test_fill", () => Economy.CompanyDirector.Instance?.TestRotaFillAll())
                 .AddButton("reallife_rota_test_back", () => Economy.CompanyDirector.Instance?.TestRotaBackAll())
                 .AddButton("reallife_mgr_test_appoint", () => Economy.CompanyDirector.Instance?.TestManagerAppoint())
+                .AddButton("reallife_mgr_test_fill", () => Economy.CompanyDirector.Instance?.TestManagerFill())
                 .AddButton("reallife_mgr_test_decide", () => Economy.CompanyDirector.Instance?.TestManagerDecide())
                 .AddButton("reallife_mgr_test_undo", () => Economy.CompanyDirector.Instance?.TestManagerUndoAll())
+                .AddButton("reallife_hier_test_store", () => Economy.CompanyDirector.Instance?.TestHierarchyStore())
+                .AddButton("reallife_hier_test_region", () => Economy.CompanyDirector.Instance?.TestHierarchyRegion())
+                .AddButton("reallife_hier_test_executives", () => Economy.CompanyDirector.Instance?.TestHierarchyExecutives())
+                .AddButton("reallife_hier_test_owner", () => Economy.CompanyDirector.Instance?.TestHierarchyOwner())
+                .AddButton("reallife_hier_test_gap", () => Economy.CompanyDirector.Instance?.TestHierarchyGap())
+                .AddButton("reallife_hier_test_budget", () => Economy.CompanyDirector.Instance?.TestHierarchyBudget())
+                .AddButton("reallife_hier_test_demand", () => Economy.CompanyDirector.Instance?.TestHierarchyDemand())
+                .AddButton("reallife_hier_test_mood", () => Economy.CompanyDirector.Instance?.TestHierarchyMood())
+                .AddButton("reallife_hier_test_wave", () => Economy.CompanyDirector.Instance?.TestHierarchyWave())
+                .AddButton("reallife_hier_test_kpi", () => Economy.CompanyDirector.Instance?.TestHierarchyKpi())
+                .AddButton("reallife_hier_test_exception", () => Economy.CompanyDirector.Instance?.TestHierarchyException())
                 .AddButton("reallife_ob_test_found", () => Economy.OwnBankDirector.Instance?.TestFound())
                 .AddButton("reallife_ob_test_month", () => Economy.OwnBankDirector.Instance?.TestMonth())
                 .AddButton("reallife_ob_test_hard", () => Economy.OwnBankDirector.Instance?.TestHardMonth())
                 .AddButton("reallife_ob_test_run", () => Economy.OwnBankDirector.Instance?.TestRun())
                 .AddButton("reallife_ob_test_deadline", () => Economy.OwnBankDirector.Instance?.TestDeadline())
                 .AddButton("reallife_ob_test_fund", () => Economy.OwnBankDirector.Instance?.TestFund())
+                .AddButton("reallife_ob_test_level", () => Economy.OwnBankDirector.Instance?.TestTierReady())
                 .AddButton("reallife_ob_test_back", () => Economy.OwnBankDirector.Instance?.TestBack())
+                .AddButton("reallife_branch_test_hour", () => Economy.OwnBankDirector.Instance?.TestBranchHour())
+                .AddButton("reallife_branch_test_floor", () => Economy.BranchFloor.Instance?.TestFloor())
                 .AddHeader("reallife_estate_header")
                 .AddToggle(Settings.EstateId, "reallife_estate_enabled", Settings.Estate,
                     v => Settings.Estate = v)
@@ -936,6 +1059,8 @@ namespace RealLifeOverhaul
                 .AddToggle(Settings.EstateHireId, "reallife_estate_opt_hire", Settings.EstateHire,
                     v => Settings.EstateHire = v)
                 .AddSlider(Settings.EstateRentId, "reallife_estate_opt_rent", 50, 300, Settings.EstateRent, v => Settings.EstateRent = v, Meta.SettingsTable.SliderPercent)
+                .AddToggle(Settings.EstateDutiesId, "reallife_estate_opt_duties", Settings.EstateDuties,
+                    v => Settings.EstateDuties = v)
                 .AddButton("reallife_estate_test_applicant", () => Economy.EstateDirector.Instance?.TestApplicant())
                 .AddButton("reallife_estate_test_arrears", () => Economy.EstateDirector.Instance?.TestArrears())
                 .AddButton("reallife_estate_test_works", () => Economy.EstateDirector.Instance?.TestWorks())
@@ -945,6 +1070,10 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_estate_test_group", () => Economy.EstateDirector.Instance?.TestGroup())
                 .AddButton("reallife_estate_test_hire", () => Economy.EstateDirector.Instance?.TestHire())
                 .AddButton("reallife_estate_test_month", () => Economy.EstateDirector.Instance?.TestMonth())
+                .AddButton("reallife_estate_test_call", () => Economy.EstateDirector.Instance?.TestCall())
+                .AddButton("reallife_estate_test_complaint", () => Economy.EstateDirector.Instance?.TestComplaint())
+                .AddButton("reallife_estate_test_inspection", () => Economy.EstateDirector.Instance?.TestInspection())
+                .AddButton("reallife_estate_test_manager", () => Economy.EstateDirector.Instance?.TestManager())
                 .AddButton("reallife_estate_test_back", () => Economy.EstateDirector.Instance?.TestBack())
                 .AddHeader("reallife_talent_header")
                 .AddToggle(Settings.TechPeopleId, "reallife_talent_enabled", Settings.TechPeople,
@@ -952,15 +1081,23 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_talent_test_review", () => Tech.TechDirector.Instance?.TestReview())
                 .AddButton("reallife_talent_test_offer", () => Tech.TechDirector.Instance?.TestOffer())
                 .AddButton("reallife_talent_test_course", () => Tech.TechDirector.Instance?.TestCourse())
+                .AddButton("reallife_names_test", () => Tech.TechDirector.Instance?.TestNames())
                 .AddToggle(Settings.TechJobsId, "reallife_hire_enabled", Settings.TechJobs,
                     v => Settings.TechJobs = v)
                 .AddButton("reallife_hire_test_applicants", () => Tech.TechDirector.Instance?.TestApplicants())
                 .AddButton("reallife_hire_test_market", () => Tech.TechDirector.Instance?.TestMarketDay())
                 .AddButton("reallife_hire_test_search", () => Tech.TechDirector.Instance?.TestSearch())
+                .AddButton("reallife_hire_test_buyout", () => Tech.TechDirector.Instance?.TestBuyout())
+                .AddButton("reallife_talent_test_buyout", () => Tech.TechDirector.Instance?.TestRivalBuyout())
+                .AddButton("reallife_crew_test", () => Tech.TechDirector.Instance?.TestCrewSearch())
+                .AddButton("reallife_dataeng_test", () => Tech.TechDirector.Instance?.TestDataEngineers())
+                .AddButton("reallife_hire_test_orphan", () => Tech.TechDirector.Instance?.TestOrphanRegistration())
                 .AddToggle(Settings.TechSectorId, "reallife_tech_enabled", Settings.TechSector,
                     v => Settings.TechSector = v)
                 .AddToggle(Settings.TechOfferNotesId, "reallife_tech_opt_offer_notes", Settings.TechOfferNotes,
                     v => Settings.TechOfferNotes = v)
+                .AddToggle(Settings.TechInfraOfferId, "reallife_infra_opt_offer", Settings.TechInfraOffer,
+                    v => Settings.TechInfraOffer = v)
                 .AddButton("reallife_tech_test_offer", () => Tech.TechDirector.Instance?.TestContractOffer())
                 .AddButton("reallife_tech_test_tender", () => Tech.TechDirector.Instance?.TestTender())
                 .AddButton("reallife_tech_test_move", () => Tech.TechDirector.Instance?.TestMove())
@@ -968,10 +1105,15 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_tech_test_breach", () => Tech.TechDirector.Instance?.TestBreach())
                 .AddButton("reallife_infra_test_down", () => Tech.TechDirector.Instance?.TestCentreDown())
                 .AddButton("reallife_infra_test_price_war", () => Tech.TechDirector.Instance?.TestPriceWar())
+                .AddButton("reallife_infra_test_offer", () => Tech.TechDirector.Instance?.TestCentreOffer())
+                .AddButton("reallife_tech_test_net", () => Tech.TechDirector.Instance?.TestNet())
+                .AddButton("reallife_tech_test_own_desk", () => Tech.TechDirector.Instance?.TestOwnDesk())
+                .AddButton("reallife_tech_test_desk_seat", () => Tech.TechDirector.Instance?.TestDeskSeat())
                 .AddToggle(Settings.TechStartupsId, "reallife_vc_enabled", Settings.TechStartups,
                     v => Settings.TechStartups = v)
                 .AddButton("reallife_vc_test_pitch", () => Tech.TechDirector.Instance?.TestPitch())
                 .AddButton("reallife_vc_test_sale", () => Tech.TechDirector.Instance?.TestSale())
+                .AddButton("reallife_vc_test_round", () => Tech.TechDirector.Instance?.TestRound())
                 .AddButton("reallife_vc_test_board", () => Tech.TechDirector.Instance?.TestBoard())
                 .AddToggle(Settings.TechSiteRoomsId, "reallife_sites_rooms", Settings.TechSiteRooms,
                     v => Settings.TechSiteRooms = v)
@@ -994,6 +1136,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_online_test_return", () => Economy.OnlineDirector.Instance?.TestReturn())
                 .AddButton("reallife_online_test_day", () => Economy.OnlineDirector.Instance?.TestDay())
                 .AddButton("reallife_online_test_back", () => Economy.OnlineDirector.Instance?.TestBack())
+                .AddButton("reallife_online_test_net", () => Economy.OnlineDirector.Instance?.TestNet())
                 .AddToggle(Settings.EconomyDealerId, "reallife_dealer_enabled", Settings.EconomyDealer,
                     v => Settings.EconomyDealer = v)
                 .AddToggle(Settings.EconomyDealerFloorId, "reallife_showroom_floor_enabled", Settings.EconomyDealerFloor,
@@ -1077,14 +1220,22 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_civic_test_office_seat", () => CivicDirector.Instance?.TestOffice(OfficeRace.Council))
                 .AddButton("reallife_civic_test_office_mayoralty", () => CivicDirector.Instance?.TestOffice(OfficeRace.Mayor))
                 .AddButton("reallife_civic_test_office_scene", () => CivicDirector.Instance?.TestScene())
+                .AddButton("reallife_construction_test_wrap", () => CivicDirector.Instance?.TestWrap())
+                .AddButton("reallife_construction_test_rebuild", () => CivicDirector.Instance?.TestRebuild())
+                .AddButton("reallife_construction_test_stage", () => CivicDirector.Instance?.TestStage())
+                .AddButton("reallife_construction_test_storey", () => CivicDirector.Instance?.TestStorey())
+                .AddButton("reallife_construction_test_crane", () => CivicDirector.Instance?.TestCrane())
                 .AddSplitter()
                 .AddHeader("reallife_util_header")
                 .AddToggle(Settings.UtilitiesId, "reallife_util_enabled", Settings.Utilities,
                     v => Settings.Utilities = v)
+                .AddToggle(Settings.UtilitiesNetSpeedId, "reallife_util_net_speed", Settings.UtilitiesNetSpeed,
+                    v => Settings.UtilitiesNetSpeed = v)
                 .AddButton("reallife_util_test_bill", () => Utilities.UtilitiesDirector.Instance?.TestBill())
                 .AddButton("reallife_util_test_due", () => Utilities.UtilitiesDirector.Instance?.TestDue())
                 .AddButton("reallife_util_test_cut", () => Utilities.UtilitiesDirector.Instance?.TestCutHome())
                 .AddButton("reallife_util_test_restore", () => Utilities.UtilitiesDirector.Instance?.TestRestore())
+                .AddButton("reallife_util_test_phone", () => Utilities.UtilitiesDirector.Instance?.TestByPhone())
                 .AddButton("reallife_util_test_outage", () => Utilities.UtilitiesDirector.Instance?.TestOutage())
                 .AddButton("reallife_util_test_network_month", () => Utilities.UtilitiesDirector.Instance?.TestNetworkMonth())
                 .AddButton("reallife_util_test_network_built", () => Utilities.UtilitiesDirector.Instance?.TestNetworkBuilt())
@@ -1125,19 +1276,30 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_family_test_adopt", () => Family.FamilyDirector.Instance?.TestChild(true))
                 .AddButton("reallife_family_test_year", () => Family.FamilyDirector.Instance?.TestYear())
                 .AddButton("reallife_family_test_walk", () => Family.FamilyDirector.Instance?.TestWalk())
+                .AddButton("reallife_family_test_dinner", () => Family.FamilyDirector.Instance?.TestDinner())
                 .AddButton("reallife_family_test_argue", () => Family.FamilyDirector.Instance?.TestArgue())
                 .AddButton("reallife_family_test_page", () => Family.FamilyDirector.Instance?.TestPage())
                 .AddButton("reallife_family_test_clear", () => Family.FamilyDirector.Instance?.TestClear())
                 .AddSplitter()
                 .Guarded(o => o.AddPermadeath())   // an ending the player chooses, off unless switched on (Scripts/Permadeath)
                 .Guarded(o => o.AddRoommates())
+                .Guarded(o => Household.HouseholdOptions.AddHousehold(o))
                 .Guarded(o => Walking.WalkOptions.AddWalking(o))
+                .Guarded(o => Meals.MealsOptions.AddMeals(o))
+                .Guarded(o => NewBuildings.NewBuildingsOptions.AddNewBuildings(o))   // the mod's own buildings (Scripts/NewBuildings)
+                .Guarded(o => BuildTrades.TradesOptions.AddTrades(o))   // the building trades (Scripts/BuildTrades)
+                .Guarded(o => Construction.ConstructionOptions.AddConstruction(o))   // the construction game (Scripts/Construction)
                 .Guarded(o => o.AddControls())
                 .Guarded(o => o.AddPerformance());
 
-            // Meta puts the finished page in order (sections, presets, guide, test tools); rows are still added above.
-            OptionsService.Register(context.ModId, Guard.Rows(Guard.Organised(context, options)));   // (the page as it was added, if putting it in order fails)
-            log.Info("Real Life Overhaul " + Meta.Changelog.Version + " initialised.");
+            if (OptionKeys.Finish(options, log))
+            {
+                Settings.Reload();   // a row's value was found only now: everything reads it before the page is put in order
+            }
+            // Meta puts the finished page in order (sections, presets, guide, test tools). Under the mod's own id, so the game's own
+            // controls save where the mod reads, whatever the game calls this copy.
+            OptionsService.Register(OptionKeysRules.FixedId, Guard.Rows(Guard.Organised(context, options)));   // the page as added, if putting it in order fails
+            log.Info("Real Life Overhaul " + Meta.Changelog.Shown + " initialised.");
             return Task.CompletedTask;
         }
 
@@ -1154,10 +1316,11 @@ namespace RealLifeOverhaul
                 return Task.CompletedTask;   // the load did not get as far as registering anything
             }
             Meta.OptionsLayout.Dispose();
-            OptionsService.RemoveModOptions(_context.ModId);
+            OptionsService.RemoveModOptions(OptionKeysRules.FixedId);
             Keys.Dispose();
-            EmpireView.Release();   // Empire Motors' view from the driver's seat as it was without this mod (Camera/EmpireView)
-            Economy.Dealership.DealerType.Unregister();   // the dealership's business type off the game's list (Scripts/Economy/Dealer)
+            EmpireView.Release();   // Empire Motors' driver's seat view as it was without this mod
+            Economy.Dealership.DealerType.Unregister();
+            Shops.ShopsDirector.Stop();   // the help pages' handler off the game's language event
             return Task.CompletedTask;
         }
     }
@@ -1171,13 +1334,10 @@ namespace RealLifeOverhaul
 
         public string[] RelativeAssetBundlePaths => Array.Empty<string>();
 
-        // One set of city features per city, whatever loaded them. The game looks for two mods with one assembly name
-        // among the Workshop items and among the ModsLocal folders separately (ModDiscoveryRegistry), so the Workshop
-        // copy and a local build are both started when both are switched on: this class is then made twice and every
-        // feature would run twice. What is looked for is the one thing both would make: the root object, by its
-        // name (that also holds for a copy built under another assembly name, which has statics of its own).
-        // A root that went with its scene is not found, so a load that was never followed by an unload cannot lock the mod out.
-        private static string _running;   // the id of the copy whose features are running (null in a copy that is another assembly)
+        // One set of city features per city: the game starts a Workshop copy and a local build both when both are on
+        // (ModDiscoveryRegistry looks at each place apart), so the second finds the first's root object by name. A root
+        // gone with its scene is not found, so a load never followed by an unload cannot lock the mod out.
+        private static string _running;   // the id of the copy whose features run (null in a copy that is another assembly)
         private bool _second;
 
         public Task OnLoadAsync(ModContext context)
@@ -1185,19 +1345,24 @@ namespace RealLifeOverhaul
             if (_running != context.ModId && GameObject.Find(RootName) != null)
             {
                 _second = true;
-                context.Logger.Warn("Real Life Overhaul is already running in this city (two copies of the mod are switched on). This copy does nothing; switch one of them off under Mods in the main menu.");
+                RealLifeOverhaulInit.TwoCopies = true;
+                context.Logger.Warn("Real Life Overhaul is already running in this city (two copies of the mod are switched on). This copy does nothing; "
+                                    + "switch one of them off under Mods in the main menu.");
                 return Task.CompletedTask;
             }
             _running = context.ModId;
-            context = Meta.Dev.Gated(context);   // Info lines only while "Developer diagnostics" is on; warnings and errors always
-            Guard.Step("the tech sector's business types", () => Tech.TechTypes.Register());   // (furnished as the game's web development agency once its type is known)
-            Guard.Step("the training academy's business type", () => Careers.AcademyType.Register());   // (furnished as the game's recruitment office once its type is known)
-            Guard.Step("other authors' mods", () => OtherMods.Look(context.Logger));   // other authors' mods this one stands aside for: one walk over the loaded assemblies (Core/OtherMods)
+            context = Meta.Dev.Gated(context);   // Info lines only while Developer diagnostics is on
+            Guard.Step("the tech sector's business types", () => Tech.TechTypes.Register());   // furnished as the game's web development agency once its type is known
+            Guard.Step("the training academy's business type", () => Careers.AcademyType.Register());   // furnished as the game's recruitment office once its type is known
+            Guard.Step("the bank branch's business type", () => Economy.BranchType.Register());   // dressed as the city's banks once their type is known
+            Guard.Step("the construction company's business type", () => Construction.ConstructionType.Register());   // furnished as the game's design studio once its type is known
+            Guard.Step("the new kinds of shop", Shops.ShopsDirector.CityLoaded);   // trading as the game's shops they are made like once those are loaded
+            Guard.Step("other authors' mods", () => OtherMods.Look(context.Logger));   // one walk over the loaded assemblies
             Guard.Step("GoingPublic", () => GoingPublic.Logger = context.Logger);
             Guard.Step("GoingPublicLink", () => GoingPublicLink.Logger = context.Logger);
             Guard.Step("SharedCity", () => SharedCity.Logger = context.Logger);
             Guard.Step("Going Public", () => GoingPublic.Reset());
-            Guard.Step("Going Public", () => GoingPublic.Look());   // a Going Public session is known before any feature starts (Core/GoingPublic)
+            Guard.Step("Going Public", () => GoingPublic.Look());   // a session is known before any feature starts
             Guard.Step("CameraYield", () => CameraYield.Logger = context.Logger);
             Guard.Step("EmpireView", () => EmpireView.Logger = context.Logger);
             Guard.Step("GameUi.WorldPanel", () => GameUi.WorldPanel.Logger = context.Logger);
@@ -1221,13 +1386,13 @@ namespace RealLifeOverhaul
             Guard.Step("PropLibrary", () => PropLibrary.Logger = context.Logger);
             Guard.Step("MapPlaces", () => MapPlaces.Logger = context.Logger);
             Guard.Step("SpecialBuildings", () => SpecialBuildings.Logger = context.Logger);
+            Guard.Step("HeldUnits", () => HeldUnits.Logger = context.Logger);
             Guard.Step("MapLinks", () => MapLinks.Logger = context.Logger);
             Guard.Step("Districts.DistrictView", () => Districts.DistrictView.Logger = context.Logger);
             Guard.Step("Districts.DistrictPanel", () => Districts.DistrictPanel.Logger = context.Logger);
-            Guard.Step("the modelled props", () => PropLibrary.Load(context));   // the modelled props, read in the background; plain shapes until they are there
+            Guard.Step("the modelled props", () => PropLibrary.Load(context));   // read in the background; plain shapes until then
             Guard.Step("PolicePursuit", () => PolicePursuit.Logger = context.Logger);
             Guard.Step("ActorPool", () => ActorPool.Logger = context.Logger);
-            Guard.Step("StreetCrime", () => StreetCrime.Logger = context.Logger);
             Guard.Step("CrimeDirector", () => CrimeDirector.Logger = context.Logger);
             Guard.Step("PoliceAttention", () => PoliceAttention.Logger = context.Logger);
             Guard.Step("BeatPatrol", () => BeatPatrol.Logger = context.Logger);
@@ -1242,21 +1407,25 @@ namespace RealLifeOverhaul
             Guard.Step("SolidGame", () => SolidGame.Logger = context.Logger);
             Guard.Step("CityDrivers", () => CityDrivers.Logger = context.Logger);
             Guard.Step("Walking.WalkDirector", () => Walking.WalkDirector.Logger = context.Logger);
+            Guard.Step("Meals.MealsDirector", () => Meals.MealsDirector.Logger = context.Logger);
+            Guard.Step("Networking.NetworkDirector", () => Networking.NetworkDirector.Logger = context.Logger);
             Guard.Step("DriverGame", () => DriverGame.Logger = context.Logger);
             Guard.Step("Jaywalker", () => Jaywalker.Logger = context.Logger);
             Guard.Step("PlayerKnockdown", () => PlayerKnockdown.Logger = context.Logger);
             Guard.Step("PhoneContacts", () => PhoneContacts.Logger = context.Logger);
+            Guard.Step("ContactGroups", () => ContactGroupsGame.Logger = context.Logger);
             Guard.Step("GameFurniture", () => GameFurniture.Logger = context.Logger);
+            Guard.Step("GameRegistrations", () => GameRegistrations.Logger = context.Logger);
             Guard.Step("ContactPictures", () => ContactPictures.Logger = context.Logger);
             Guard.Step("ContactSearch", () => ContactSearch.Logger = context.Logger);
             Guard.Step("CityLifeDirector", () => CityLifeDirector.Logger = context.Logger);
             Guard.Step("ClipLibrary", () => ClipLibrary.Logger = context.Logger);
-            Guard.Step("the animation clips", () => ClipLibrary.Load(context));   // the mod's own animation clips, read in the background
+            Guard.Step("the animation clips", () => ClipLibrary.Load(context));   // read in the background
             Guard.Step("JobDirector", () => JobDirector.Logger = context.Logger);
             Guard.Step("Law.LawDirector", () => Law.LawDirector.Logger = context.Logger);
             Guard.Step("TransitDirector", () => TransitDirector.Logger = context.Logger);
             Guard.Step("TaxiDirector", () => TaxiDirector.Logger = context.Logger);
-            Guard.Step("CarOwnership", () => CarOwnership.Logger = context.Logger);
+            Guard.Step("CarOwnership", () => { CarOwnership.Logger = context.Logger; CarGarage.Logger = context.Logger; });
             Guard.Step("Events.EventDirector", () => Events.EventDirector.Logger = context.Logger);
             Guard.Step("SocialDirector", () => SocialDirector.Logger = context.Logger);
             Guard.Step("BusinessDirector", () => BusinessDirector.Logger = context.Logger);
@@ -1266,23 +1435,30 @@ namespace RealLifeOverhaul
             Guard.Step("CivicDirector", () => CivicDirector.Logger = context.Logger);
             Guard.Step("Family.FamilyDirector", () => Family.FamilyDirector.Logger = context.Logger);
             Guard.Step("Tech.TechDirector", () => Tech.TechDirector.Logger = context.Logger);
-            Guard.Step("Tech.RolesApp", () => Tech.RolesApp.Logger = context.Logger);
             Guard.Step("Tech.HiringGame", () => Tech.HiringGame.Logger = context.Logger);
             Guard.Step("Tech.FirmsGame", () => Tech.FirmsGame.Logger = context.Logger);
-            Guard.Step("Tech.TechApp", () => Tech.TechApp.Logger = context.Logger);
             Guard.Step("Careers.CareersDirector", () => Careers.CareersDirector.Logger = context.Logger);
-            Guard.Step("Careers.CampusApp", () => Careers.CampusApp.Logger = context.Logger);
+            Guard.Step("Floors.FloorsDirector", () => Floors.FloorsDirector.Logger = context.Logger);
 
             _root = new GameObject(RootName);
+            Guard.Step("the city check", () => CityCheck.Begin(_root, context.Logger));   // before any feature: New York's features stand down in another city
             Guard.Step("the start line", () => StartLine.Logger = context.Logger);
-            Guard.Step("the start line", () => StartLine.Begin());   // every director's first load after the save loads waits for a frame of its own again (Core/StartLine), before any director's timer starts
-            Guard.Step("the guard's notices", () => Guard.Add<GuardNotices>(_root));   // what Core/Guard has to tell, once the HUD is there
+            Guard.Step("the start line", () => StartLine.Begin());   // before any director's timer starts
+            Guard.Step("the guard's notices", () => Guard.Add<GuardNotices>(_root));   // once the HUD is there
             Guard.Step("SessionWatch", () => SessionWatch.Logger = context.Logger);
-            Guard.Step("SessionWatch", () => Guard.Add<SessionWatch>(_root));   // the record of the session for "it stutters after a while": disabled unless "Developer diagnostics" is on
-            Guard.Step("GoingPublicWatch", () => Guard.Add<GoingPublicWatch>(_root));   // a look at Going Public's session once a second of real time: one comparison a frame otherwise
-            Guard.Step("ScenePrewarm", () => Guard.Add<ScenePrewarm>(_root));   // one-off searches of the scene done behind the loading screen (Core/SceneFinds): disabled unless a piece is waiting
-            Guard.Step("LoadHold", () => Guard.Add<LoadHold>(_root));   // work that needs frames of its own done behind the loading screen, two seconds at most (Core/LoadHold): disabled unless a piece is waiting
-            Guard.Step("the lane grid's prewarm", () => ScenePrewarm.Add("roads: the lane points put in a grid for the nearest lane point", TrafficTools.PrewarmLaneGrid));   // (pieces run last added first: this one after the road data below is found)
+            Guard.Step("SessionWatch", () => Guard.Add<SessionWatch>(_root));   // disabled unless Developer diagnostics is on
+            Guard.Step("DayWarm", () => DayWarm.Logger = context.Logger);
+            Guard.Step("DayWarm", () => Guard.Add<DayWarm>(_root));   // a slice a frame for some seconds after a load, then disabled
+            Guard.Step("DayPump", () => DayPump.Logger = context.Logger);
+            Guard.Step("DayPump", () => Guard.Add<DayPump>(_root));   // plays the midnight's later steps and held lines; disabled while nothing waits
+            Guard.Step("GoingPublicWatch", () => Guard.Add<GoingPublicWatch>(_root));   // once a second of real time
+            Guard.Step("ScenePrewarm", () => Guard.Add<ScenePrewarm>(_root));   // disabled unless a piece is waiting
+            Guard.Step("LoadHold", () => Guard.Add<LoadHold>(_root));   // disabled unless a piece is waiting
+            Guard.Step("NewGround.GroundDirector", () => NewGround.GroundDirector.Logger = context.Logger);
+            Guard.Step("NewGround.GroundDirector", () => Guard.Add<NewGround.GroundDirector>(_root));   // before the traffic starts: a test road is appended here; disabled while idle
+            // In the game's late call, after the road data below and once its traffic system is up (3.8 ms that waited for the
+            // first black screen; RLO-PERF-024).
+            Guard.Step("the lane grid's prewarm", () => ScenePrewarm.AddLate("roads: the lane points put in a grid for the nearest lane point", TrafficTools.PrewarmLaneGrid));
             Guard.Step("the roads' prewarm", () => ScenePrewarm.Add("roads: the traffic system's road data being found for the city", RoadData.Prewarm));
             Guard.Step("the smoke's prewarm", () => ScenePrewarm.Add("traffic: the game's smoke effect being found for accidents and fires", TrafficEffects.Prewarm));
             Guard.Step("the sirens' prewarm", () => ScenePrewarm.Add("traffic: the sirens' sounds being made", TrafficEffects.PrewarmSirens));
@@ -1290,64 +1466,80 @@ namespace RealLifeOverhaul
             Guard.Step("the bus stops' prewarm", () => ScenePrewarm.Add("transit: the game's navigation obstacles being listed for the bus stops", BusZones.Prewarm));
             Guard.Step("GameUi.NoticeLook", () => GameUi.NoticeLook.Logger = context.Logger);
             Guard.Step("GameUi.NoticeRoom", () => GameUi.NoticeRoom.Logger = context.Logger);
-            Guard.Step("GameUi.NoticeLook", () => Guard.Add<GameUi.NoticeLook>(_root));   // the mod's notifications told from the game's by a picture of their kind on the mod's colour (Core/GameUi/NoticeLook): nothing per frame, a few writes per notification shown
+            Guard.Step("GameUi.NoticeLook", () => Guard.Add<GameUi.NoticeLook>(_root));   // nothing per frame
             Guard.Step("the notices' prewarm", () => ScenePrewarm.Add("game UI: the game's notification toast and list being found, and the notifications' pictures", GameUi.NoticeLook.Prewarm));
+            // Run first (pieces run last added first): every picture the features named in their Awake, in one look.
+            Guard.Step("the pictures' prewarm", () => ScenePrewarm.Add("game UI: the game's interface pictures being found by name (everything in memory gone through)", GameUi.GameSprites.Prewarm));
             Guard.Step("ClickWatch", () => ClickWatch.Logger = context.Logger);
             Guard.Step("OverlayGuard", () => OverlayGuard.Logger = context.Logger);
-            Guard.Step("OverlayGuard", () => Guard.Add<OverlayGuard>(_root));   // the game's card over a thing is put away once the thing is gone (removed while the time machine hid it): two null tests a frame
+            Guard.Step("OverlayGuard", () => Guard.Add<OverlayGuard>(_root));   // two null tests a frame
+            Guard.Step("MapTreeGuard", () => MapTreeGuard.Logger = context.Logger);
+            Guard.Step("MapTreeGuard", () => Guard.Add<MapTreeGuard>(_root));   // a reference comparison a frame; the tree list pruned when the map opens
+            Guard.Step("SceneryCulling", () => SceneryCulling.Logger = context.Logger);   // the culling check's line as the city unloads
+            Guard.Step("GameUi.TextBox", () => GameUi.TextBox.Logger = context.Logger);
+            // A conversation ended another way: the text box closed and the dialogue panel's handle given back; one time
+            // comparison a frame.
+            Guard.Step("GameUi.ConversationWatch", () => Guard.Add<GameUi.ConversationWatch>(_root));
             Guard.Step("GameUi.GuideMark", () => GameUi.GuideMark.Logger = context.Logger);
-            Guard.Step("GameUi.GuideMarkWatch", () => Guard.Add<GameUi.GuideMarkWatch>(_root));   // the mod's marks on the game's destination guider taken off once their owner is gone, stopped or past its time (Core/GameUi/GuideMarkWatch): one time comparison a frame
+            Guard.Step("GameUi.GuideMarkWatch", () => Guard.Add<GameUi.GuideMarkWatch>(_root));   // one time comparison a frame
             Guard.Step("DayRollGuard", () => DayRollGuard.Logger = context.Logger);
-            Guard.Step("DayRollGuard", () => Guard.Add<DayRollGuard>(_root));   // the game's night kept whole: goods of a mod that is not loaded taken out of the market before its rivals' step throws on them, and hours a stopped night left uncleared put right before the wages (Core/DayRollRules): no Update, one comparison a game hour
+            Guard.Step("DayRollGuard", () => Guard.Add<DayRollGuard>(_root));   // no Update, one comparison a game hour
+            Guard.Step("FoundingWatch", () => FoundingWatch.Logger = context.Logger);
+            Guard.Step("FoundingWatch", () => Guard.Add<FoundingWatch>(_root));   // no Update; a one-second timer, a pass over the buildings once a game hour
             Guard.Step("RivalOfferGuard", () => RivalOfferGuard.Logger = context.Logger);
-            Guard.Step("RivalOfferGuard", () => Guard.Add<RivalOfferGuard>(_root));   // a rival's offer that is over loses its buttons (Core/RivalOfferRules): no Update
-            Guard.Step("StaffLeave", () => StaffLeave.Logger = context.Logger);   // an employee the mod lets go leaves once, the game's own way (Core/StaffLeaveRules): nothing per frame
-            Guard.Step("SpecialNames", () => Guard.Add<SpecialNames>(_root));   // the special buildings' own names on the game's card, guiders, headline and map search (Core/SpecialBuildings): one reference comparison a frame while some building is named
-            Guard.Step("ClickWatch", () => Guard.Add<ClickWatch>(_root));     // with "Developer diagnostics" on, what a left click in the city met: one flag test a frame otherwise
+            Guard.Step("RivalOfferGuard", () => Guard.Add<RivalOfferGuard>(_root));   // no Update
+            Guard.Step("WageShown", () => WageShown.Logger = context.Logger);
+            Guard.Step("WageShown", () => Guard.Add<WageShown>(_root));   // no Update; a one-second timer, a reference comparison a table
+            Guard.Step("StaffLeave", () => StaffLeave.Logger = context.Logger);
+            Guard.Step("SpecialNames", () => Guard.Add<SpecialNames>(_root));   // one reference comparison a frame while a building is named
+            Guard.Step("HeldUnits", () => Guard.Add<HeldUnits>(_root));   // no Update; a look once a second, two at the game's night
+            Guard.Step("ClickWatch", () => Guard.Add<ClickWatch>(_root));   // one flag test a frame unless Developer diagnostics is on
             Guard.Step("ThirdPersonCamera", () => Guard.Add<ThirdPersonCamera>(_root));
             Guard.Step("VisualEnhancer", () => Guard.Add<VisualEnhancer>(_root));
             Guard.Step("NearbyInteraction", () => Guard.Add<NearbyInteraction>(_root));
-            Guard.Step("Walking.WalkDirector", () => Guard.Add<Walking.WalkDirector>(_root));   // walking on a key, on foot (Scripts/Walking): one key read a frame, and one speed read while walking
+            Guard.Step("Walking.WalkDirector", () => Guard.Add<Walking.WalkDirector>(_root));   // one key read a frame
             Guard.Step("ChaseCamera", () => Guard.Add<ChaseCamera>(_root));
-            Guard.Step("PoiDirection", () => Guard.Add<PoiDirection>(_root));   // the game's place markers, when what they mark is behind the camera
+            Guard.Step("PoiDirection", () => Guard.Add<PoiDirection>(_root));
             Guard.Step("LifeEvents", () => Guard.Add<LifeEvents>(_root));
             Guard.Step("CrashConsequences", () => Guard.Add<CrashConsequences>(_root));
             Guard.Step("RagdollSystem", () => Guard.Add<RagdollSystem>(_root));   // before anyone who throws people down
             Guard.Step("ActorPool", () => Guard.Add<ActorPool>(_root));   // before the scenes that put people on the street
             Guard.Step("TrafficAccidents", () => Guard.Add<TrafficAccidents>(_root));
-            Guard.Step("TowService", () => Guard.Add<TowService>(_root));   // the tow truck that takes a cleared scene's wrecks away (Traffic/Tow): disabled while there is nothing to tow
+            Guard.Step("TowService", () => Guard.Add<TowService>(_root));   // disabled while there is nothing to tow
             Guard.Step("PolicePursuit", () => Guard.Add<PolicePursuit>(_root));
             Guard.Step("StreetCrime", () => Guard.Add<StreetCrime>(_root));
-            Guard.Step("CrimeDirector", () => Guard.Add<CrimeDirector>(_root));   // the scenes StreetCrime now forwards to
+            Guard.Step("CrimeDirector", () => Guard.Add<CrimeDirector>(_root));   // the scenes StreetCrime forwards to
             Guard.Step("PoliceAttention", () => Guard.Add<PoliceAttention>(_root));
             Guard.Step("BeatPatrol", () => Guard.Add<BeatPatrol>(_root));
             Guard.Step("PolicePresence", () => Guard.Add<PolicePresence>(_root));
             Guard.Step("PedestrianIncidents", () => Guard.Add<PedestrianIncidents>(_root));
             Guard.Step("CarStrikes", () => Guard.Add<CarStrikes>(_root));
-            Guard.Step("HornReactions", () => Guard.Add<HornReactions>(_root));     // people answer the player's horn (People/HornReactions)
-            Guard.Step("RecklessDrivers", () => Guard.Add<RecklessDrivers>(_root));   // reckless drivers and the accidents that come of them (Traffic/Reckless); after CarStrikes and TrafficAccidents
-            Guard.Step("SolidStreets", () => Guard.Add<SolidStreets>(_root));      // traffic sees people in the road (Traffic/Solid); after HornReactions, CarStrikes and RecklessDrivers
-            Guard.Step("CityDrivers", () => Guard.Add<CityDrivers>(_root));        // the city's cars drive with care (Traffic/Drivers); after SolidStreets, which it leaves people to
+            Guard.Step("HornReactions", () => Guard.Add<HornReactions>(_root));
+            Guard.Step("RecklessDrivers", () => Guard.Add<RecklessDrivers>(_root));   // after CarStrikes and TrafficAccidents
+            Guard.Step("SolidStreets", () => Guard.Add<SolidStreets>(_root));   // after HornReactions, CarStrikes and RecklessDrivers
+            Guard.Step("CityDrivers", () => Guard.Add<CityDrivers>(_root));   // after SolidStreets, which it leaves people to
             Guard.Step("PlayerKnockdown", () => Guard.Add<PlayerKnockdown>(_root));
-            Guard.Step("CityLifeDirector", () => Guard.Add<CityLifeDirector>(_root));   // people at work and about their day: its own pool of eight
-            Guard.Step("JobDirector", () => Guard.Add<JobDirector>(_root));   // jobs the player takes themselves (Scripts/Jobs)
+            Guard.Step("CityLifeDirector", () => Guard.Add<CityLifeDirector>(_root));   // its own pool of eight
+            Guard.Step("JobDirector", () => Guard.Add<JobDirector>(_root));
             Guard.Step("HomeDirector", () => HomeDirector.Logger = context.Logger);
-            Guard.Step("HomeDirector", () => Guard.Add<HomeDirector>(_root));   // home life and health (Scripts/Home); after LifeEvents and the city life director, whose clip player it shares
-            Guard.Step("Law.LawDirector", () => Guard.Add<Law.LawDirector>(_root));   // precincts, custody, the record and reputation (Scripts/Law)
-            Guard.Step("TransitDirector", () => Guard.Add<TransitDirector>(_root));   // bus stops, buses and the subway journey (Scripts/Transport)
-            Guard.Step("TaxiDirector", () => Guard.Add<TaxiDirector>(_root));   // a taxi called from the phone: a real taxi of the game driven to the player's street (Scripts/Transport/Taxi)
-            Guard.Step("CarOwnership", () => Guard.Add<CarOwnership>(_root));   // servicing, wear, breakdowns, insurance, the word in the game's vehicle panel for what a car needs (Scripts/Transport)
+            Guard.Step("Meals.MealsDirector", () => Guard.Add<Meals.MealsDirector>(_root));   // meals at a seat and dancing to the music
+            Guard.Step("HomeDirector", () => Guard.Add<HomeDirector>(_root));   // after LifeEvents and CityLifeDirector, whose clip player it shares
+            Guard.Step("Law.LawDirector", () => Guard.Add<Law.LawDirector>(_root));
+            Guard.Step("TransitDirector", () => Guard.Add<TransitDirector>(_root));
+            Guard.Step("TaxiDirector", () => Guard.Add<TaxiDirector>(_root));
+            Guard.Step("CarOwnership", () => Guard.Add<CarOwnership>(_root));
             Guard.Step("Leisure.LeisureDirector", () => Leisure.LeisureDirector.Logger = context.Logger);
-            Guard.Step("Leisure.LeisureDirector", () => Guard.Add<Leisure.LeisureDirector>(_root));   // things to do for fun, the clothes rack, night life, the sound bed, photo mode (Scripts/Leisure)
-            Guard.Step("Events.EventDirector", () => Guard.Add<Events.EventDirector>(_root));   // fires, weather that matters, street events (Scripts/Events): after CityLifeDirector, whose clip player it uses
-            Guard.Step("SocialDirector", () => Guard.Add<SocialDirector>(_root));   // the people in the player's life, outings, the morning paper (Scripts/Social)
+            Guard.Step("Leisure.LeisureDirector", () => Guard.Add<Leisure.LeisureDirector>(_root));
+            Guard.Step("Events.EventDirector", () => Guard.Add<Events.EventDirector>(_root));   // after CityLifeDirector, whose clip player it uses
+            Guard.Step("SocialDirector", () => Guard.Add<SocialDirector>(_root));
             Guard.Step("TravelDirector", () => TravelDirector.Logger = context.Logger);
-            Guard.Step("TravelDirector", () => Guard.Add<TravelDirector>(_root));   // hotels and holidays (Scripts/Travel)
-            Guard.Step("BusinessDirector", () => Guard.Add<BusinessDirector>(_root));   // pressure on the player's businesses (Scripts/Business)
-            Guard.Step("JusticeDirector", () => Guard.Add<JusticeDirector>(_root));   // courts, lawyers, sentences and prison (Scripts/Justice)
-            Guard.Step("LicenceDirector", () => Guard.Add<LicenceDirector>(_root));   // driving licences: the school, the tests, points and what a stop finds (Scripts/Licences)
+            Guard.Step("TravelDirector", () => Guard.Add<TravelDirector>(_root));
+            Guard.Step("BusinessDirector", () => Guard.Add<BusinessDirector>(_root));
+            Guard.Step("JusticeDirector", () => Guard.Add<JusticeDirector>(_root));
+            Guard.Step("LicenceDirector", () => Guard.Add<LicenceDirector>(_root));
             Guard.Step("GameUi.UiClone", () => GameUi.UiClone.Logger = context.Logger);
             Guard.Step("GameUi.GameSprites", () => GameUi.GameSprites.Logger = context.Logger);
+            Guard.Step("GameUi.GameFont", () => GameUi.GameFont.Logger = context.Logger);
             Guard.Step("GameUi.AppIconPainter", () => GameUi.AppIconPainter.Logger = context.Logger);
             Guard.Step("GameUi.PhoneApp", () => GameUi.PhoneApp.Logger = context.Logger);
             Guard.Step("GameUi.PhoneGridPager", () => GameUi.PhoneGridPager.Logger = context.Logger);
@@ -1359,83 +1551,95 @@ namespace RealLifeOverhaul
             Guard.Step("GameUi.OptionRows", () => GameUi.OptionRows.Logger = context.Logger);
             Guard.Step("Planner.PlannerApp", () => Planner.PlannerApp.Logger = context.Logger);
             Guard.Step("Planner.PlannerDirector", () => Planner.PlannerDirector.Logger = context.Logger);
-            Guard.Step("Planner.PlannerDirector", () => Guard.Add<Planner.PlannerDirector>(_root));   // the Planner: an app on the game's phone with everything to do, reminders and notes (Scripts/Planner)
+            Guard.Step("Calendar.CalendarDirector", () => Calendar.CalendarDirector.Logger = context.Logger);
+            Guard.Step("Calendar.CalendarApp", () => Calendar.CalendarApp.Logger = context.Logger);
+            Guard.Step("Calendar.CalendarDirector", () => Guard.Add<Calendar.CalendarDirector>(_root));
+            Guard.Step("Hustles.HustleDirector", () => Hustles.HustleDirector.Logger = context.Logger);
+            Guard.Step("Hustles.HustleApp", () => Hustles.HustleApp.Logger = context.Logger);
+            Guard.Step("Hustles.HustleDirector", () => Guard.Add<Hustles.HustleDirector>(_root));   // the Marketplace: used goods and cars, freelance visits (Scripts/Hustles)
+            Guard.Step("Seasons.SeasonDirector", () => Seasons.SeasonDirector.Logger = context.Logger);
+            Guard.Step("Seasons.SeasonDirector", () => Guard.Add<Seasons.SeasonDirector>(_root));
+            Guard.Step("Planner.PlannerDirector", () => Guard.Add<Planner.PlannerDirector>(_root));
             Guard.Step("Economy.EconomyDirector", () => Economy.EconomyDirector.Logger = context.Logger);
             Guard.Step("Economy.FinanceApp", () => Economy.FinanceApp.Logger = context.Logger);
-            Guard.Step("Economy.EconomyDirector", () => Guard.Add<Economy.EconomyDirector>(_root));   // the credit rating, the banks' terms by it, loans from the phone and the Finance app (Scripts/Economy)
+            Guard.Step("Economy.EconomyDirector", () => Guard.Add<Economy.EconomyDirector>(_root));
             Guard.Step("Economy.BanksDirector", () => Economy.BanksDirector.Logger = context.Logger);
-            Guard.Step("Economy.BanksDirector", () => Guard.Add<Economy.BanksDirector>(_root));   // the Banks app: the three largest banks in one app, on the credit desk (Scripts/Economy/Banks)
+            Guard.Step("Economy.BanksDirector", () => Guard.Add<Economy.BanksDirector>(_root));
             Guard.Step("Economy.CityEconomyDirector", () => Economy.CityEconomyDirector.Logger = context.Logger);
-            Guard.Step("Economy.CityEconomyDirector", () => Guard.Add<Economy.CityEconomyDirector>(_root));   // the city's economy: a central bank, prices, a cycle, districts and supply (Scripts/Economy/City)
+            Guard.Step("Economy.CityEconomyDirector", () => Guard.Add<Economy.CityEconomyDirector>(_root));
             Guard.Step("Economy.Ventures.VenturesDirector", () => Economy.Ventures.VenturesDirector.Logger = context.Logger);
             Guard.Step("Economy.Ventures.VenturesApp", () => Economy.Ventures.VenturesApp.Logger = context.Logger);
-            Guard.Step("Economy.Ventures.VenturesDirector", () => Guard.Add<Economy.Ventures.VenturesDirector>(_root));   // investors, the pitch and the Ventures app (Scripts/Economy/Ventures)
+            Guard.Step("Economy.Ventures.VenturesDirector", () => Guard.Add<Economy.Ventures.VenturesDirector>(_root));
             Guard.Step("Markets.MarketDirector", () => Markets.MarketDirector.Logger = context.Logger);
             Guard.Step("Markets.MarketTapeFile", () => Markets.MarketTapeFile.Logger = context.Logger);
             Guard.Step("Markets.MarketApp", () => Markets.MarketApp.Logger = context.Logger);
-            Guard.Step("Markets.MarketDirector", () => Guard.Add<Markets.MarketDirector>(_root));   // the city's stock market and the Stocks app (Scripts/Markets): after Ventures, whose old market it takes over
+            Guard.Step("Markets.MarketDirector", () => Guard.Add<Markets.MarketDirector>(_root));   // after Ventures, whose old market it takes over
             Guard.Step("Ledger.LedgerDirector", () => Ledger.LedgerDirector.Logger = context.Logger);
-            Guard.Step("Ledger.LedgerDirector", () => Guard.Add<Ledger.LedgerDirector>(_root));   // the City Ledger: the morning paper delivered or bought at a kiosk, and read as a newspaper (Scripts/Ledger)
+            Guard.Step("Ledger.LedgerDirector", () => Guard.Add<Ledger.LedgerDirector>(_root));
             Guard.Step("Economy.OnlineDirector", () => Economy.OnlineDirector.Logger = context.Logger);
             Guard.Step("Economy.OnlineApp", () => Economy.OnlineApp.Logger = context.Logger);
             Guard.Step("Economy.Dealership.DealerDirector", () => Economy.Dealership.DealerDirector.Logger = context.Logger);
             Guard.Step("Economy.Dealership.DealerApp", () => Economy.Dealership.DealerApp.Logger = context.Logger);
-            Guard.Step("Economy.Dealership.DealerDirector", () => Guard.Add<Economy.Dealership.DealerDirector>(_root));
+            Guard.Step("Economy.Dealership.DealerDirector", () => Guard.Add<Economy.Dealership.DealerDirector>(_root));   // before the company, so that its day comes first
             Guard.Step("Economy.Dealership.ShowroomFloor", () => Economy.Dealership.ShowroomFloor.Logger = context.Logger);
             Guard.Step("Economy.Dealership.ShowroomView", () => Economy.Dealership.ShowroomView.Logger = context.Logger);
-            Guard.Step("Economy.Dealership.ShowroomFloor", () => Guard.Add<Economy.Dealership.ShowroomFloor>(_root));   // the Car Showroom's floor: its visitors (Scripts/Economy/Dealer/Floor)
-            Guard.Step("Economy.Dealership.ShowroomView", () => Guard.Add<Economy.Dealership.ShowroomView>(_root));   // ...and its camera and bays   // the car dealership: its stock, market, customers, finance and warranties, and the Dealership app (Scripts/Economy/Dealer); before the company, so that its day comes first
-            Guard.Step("Economy.OnlineDirector", () => Guard.Add<Economy.OnlineDirector>(_root));   // online shops: orders from the whole city, picked from real stock and delivered, and the Web shop app (Scripts/Economy/Online); before the company, so that its day comes first
+            Guard.Step("Economy.Dealership.ShowroomFloor", () => Guard.Add<Economy.Dealership.ShowroomFloor>(_root));
+            Guard.Step("Economy.Dealership.ShowroomView", () => Guard.Add<Economy.Dealership.ShowroomView>(_root));
+            Guard.Step("Economy.OnlineDirector", () => Guard.Add<Economy.OnlineDirector>(_root));   // before the company, so that its day comes first
             Guard.Step("Economy.CompanyDirector", () => Economy.CompanyDirector.Logger = context.Logger);
             Guard.Step("Economy.CompanyApp", () => Economy.CompanyApp.Logger = context.Logger);
             Guard.Step("Economy.ServicesDirector", () => Economy.ServicesDirector.Logger = context.Logger);
             Guard.Step("Economy.ServicesApp", () => Economy.ServicesApp.Logger = context.Logger);
-            Guard.Step("Economy.ServicesDirector", () => Guard.Add<Economy.ServicesDirector>(_root));   // the cleaning service and selling a business, and the Services app (Scripts/Economy/Services)
-            Guard.Step("Economy.CompanyDirector", () => Guard.Add<Economy.CompanyDirector>(_root));   // running a business: staff, insurance, marketing, tax and licences, and the Company app (Scripts/Economy/Company)
-            Guard.Step("Tech.TechDirector", () => Guard.Add<Tech.TechDirector>(_root));   // the professions and the tech sector: roles, skills and the Open Roles app (Scripts/Tech); after the company, so that its day follows the company's
-            Guard.Step("Careers.CareersDirector", () => Guard.Add<Careers.CareersDirector>(_root));   // education and careers: the city's courses, the player's skills and the Campus app (Scripts/Careers); after the tech sector, whose roles it reads
+            Guard.Step("Economy.ServicesDirector", () => Guard.Add<Economy.ServicesDirector>(_root));
+            Guard.Step("Economy.CompanyDirector", () => Guard.Add<Economy.CompanyDirector>(_root));
+            Guard.Step("Tech.TechDirector", () => Guard.Add<Tech.TechDirector>(_root));   // after the company, so that its day follows the company's
+            Guard.Step("Careers.CareersDirector", () => Guard.Add<Careers.CareersDirector>(_root));   // after the tech sector, whose roles it reads
             Guard.Step("FitOut.FitOutDirector", () => FitOut.FitOutDirector.Logger = context.Logger);
-            Guard.Step("FitOut.FitOutDirector", () => Guard.Add<FitOut.FitOutDirector>(_root));   // the mod's buildings fitted out across their whole floor while the player is in one, a little a frame (Scripts/FitOut): before the features whose floors it builds
+            Guard.Step("FitOut.FitOutDirector", () => Guard.Add<FitOut.FitOutDirector>(_root));   // before the features whose floors it builds
+            Guard.Step("Floors.FloorsDirector", () => Guard.Add<Floors.FloorsDirector>(_root));   // a look once a second: the places on floors of the mod's buildings
             Guard.Step("Tech.TechSites", () => Tech.TechSites.Logger = context.Logger);
             Guard.Step("Offices.Conversions", () => Offices.Conversions.Logger = context.Logger);
-            Guard.Step("Offices.Conversions", () => Guard.Add<Offices.Conversions>(_root));   // more offices to rent: some empty shops in the office districts are offices while the mod runs (Scripts/Offices): a look once a second, the choice on a change
-            Guard.Step("Tech.TechSites", () => Guard.Add<Tech.TechSites>(_root));   // the tech sector's buildings: server rooms, the tech companies' headquarters, data centre frontages, tech offices (Scripts/Tech/Sites): a look once a second, nothing per frame
+            Guard.Step("Offices.Conversions", () => Guard.Add<Offices.Conversions>(_root));   // a look once a second
+            Guard.Step("Tech.TechSites", () => Guard.Add<Tech.TechSites>(_root));   // a look once a second
             Guard.Step("Economy.EstateDirector", () => Economy.EstateDirector.Logger = context.Logger);
             Guard.Step("Economy.EstateApp", () => Economy.EstateApp.Logger = context.Logger);
-            Guard.Step("Economy.EstateDirector", () => Guard.Add<Economy.EstateDirector>(_root));   // property: the market, letting, works, selling, an agency, a hotel and car hire, and the Property app (Scripts/Economy/Estate)
+            Guard.Step("Economy.EstateDirector", () => Guard.Add<Economy.EstateDirector>(_root));
             Guard.Step("Economy.OwnBankDirector", () => Economy.OwnBankDirector.Logger = context.Logger);
-            Guard.Step("Economy.OwnBankDirector", () => Guard.Add<Economy.OwnBankDirector>(_root));   // the player's own bank: a licence, savers, loans, a fund and a regulator, and its app (Scripts/Economy/OwnBank); after the company, so that its day's books come after the company's
+            Guard.Step("Economy.BranchFloor", () => Economy.BranchFloor.Logger = context.Logger);
+            Guard.Step("Economy.BranchFloor", () => Guard.Add<Economy.BranchFloor>(_root));
+            Guard.Step("Economy.OwnBankDirector", () => Guard.Add<Economy.OwnBankDirector>(_root));   // after the company, so that its day's books come after the company's
             Guard.Step("Economy.Brands.BrandsDirector", () => Economy.Brands.BrandsDirector.Logger = context.Logger);
             Guard.Step("Economy.Brands.BrandsApp", () => Economy.Brands.BrandsApp.Logger = context.Logger);
-            Guard.Step("Economy.Brands.BrandsDirector", () => Guard.Add<Economy.Brands.BrandsDirector>(_root));   // brands and franchises: recognition, standards, franchised shops, city chains and the Brands app (Scripts/Economy/Brands; after the company: its day follows the company's)
+            Guard.Step("Economy.Brands.BrandsDirector", () => Guard.Add<Economy.Brands.BrandsDirector>(_root));   // after the company: its day follows the company's
             Guard.Step("Nav.NavGraph", () => Nav.NavGraph.Logger = context.Logger);
             Guard.Step("Nav.NavMarks", () => Nav.NavMarks.Logger = context.Logger);
             Guard.Step("Nav.NavHud", () => Nav.NavHud.Logger = context.Logger);
             Guard.Step("Nav.NavBase", () => Nav.NavBase.Logger = context.Logger);
             Guard.Step("Nav.NavCityMap", () => Nav.NavCityMap.Logger = context.Logger);
             Guard.Step("Nav.NavDirector", () => Nav.NavDirector.Logger = context.Logger);
-            Guard.Step("Nav.NavDirector", () => Guard.Add<Nav.NavDirector>(_root));   // the minimap on the HUD and the GPS: a route along the roads to the game's destination (Scripts/Navigation)
-            Guard.Step("CivicDirector", () => Guard.Add<CivicDirector>(_root));   // city government, elections and construction sites (Scripts/Civic): its own cast of five
+            Guard.Step("Nav.NavDirector", () => Guard.Add<Nav.NavDirector>(_root));
+            Guard.Step("CivicDirector", () => Guard.Add<CivicDirector>(_root));   // its own cast of five
             Guard.Step("Faults.FaultDirector", () => Faults.FaultDirector.Logger = context.Logger);
             Guard.Step("Faults.FaultDirector", () => Guard.Add<Faults.FaultDirector>(_root));
             Guard.Step("Texts.TextsDirector", () => Texts.TextsDirector.Logger = context.Logger);
-            Guard.Step("Texts.TextsDirector", () => Guard.Add<Texts.TextsDirector>(_root));   // RLO Texts: the model's words for the city's messages, when a pack is installed (Scripts/Texts): twice a second a look, nothing per frame   // real faults in the city: dark lamps, potholes, litter, crime hot spots, unsafe places, rolled at random (Scripts/Faults): once a second a look, nothing per frame
+            Guard.Step("Texts.TextsDirector", () => Guard.Add<Texts.TextsDirector>(_root));   // twice a second a look
             Guard.Step("Street.StreetDirector", () => Street.StreetDirector.Logger = context.Logger);
-            Guard.Step("Street.StreetDirector", () => Guard.Add<Street.StreetDirector>(_root));   // street talk: the game's panel over a passer-by offers Talk, a conversation in the game's dialogue panel (Scripts/Street): four looks a second on foot, nothing per frame
+            Guard.Step("Street.StreetDirector", () => Guard.Add<Street.StreetDirector>(_root));   // four looks a second on foot
             Guard.Step("Utilities.UtilitiesDirector", () => Utilities.UtilitiesDirector.Logger = context.Logger);
-            Guard.Step("Utilities.UtilitiesApp", () => Utilities.UtilitiesApp.Logger = context.Logger);
-            Guard.Step("Utilities.UtilitiesDirector", () => Guard.Add<Utilities.UtilitiesDirector>(_root));   // power and water: the utilities office, the bills, a cut and the Utilities app (Scripts/Utilities)
-            Guard.Step("Family.FamilyDirector", () => Guard.Add<Family.FamilyDirector>(_root));   // a partner at home, engagement and wedding, children, relatives (Scripts/Family)
-            Guard.Step("the roommate", () => Roommates.RoommateDirector.Attach(_root, context.Logger));   // a roommate who shares the flat and the rent (Scripts/Home/Roommates)
+            Guard.Step("Utilities.BroadbandCompany", () => Utilities.BroadbandCompany.Logger = context.Logger);
+            Guard.Step("Utilities.UtilitiesDirector", () => Guard.Add<Utilities.UtilitiesDirector>(_root));
+            Guard.Step("Family.FamilyDirector", () => Guard.Add<Family.FamilyDirector>(_root));
+            Guard.Step("the roommate", () => Roommates.RoommateDirector.Attach(_root, context.Logger));
+            Guard.Step("household staff", () => Household.HouseholdDirector.Attach(_root, context.Logger));
             Guard.Step("Flare.FlareDirector", () => Flare.FlareDirector.Logger = context.Logger);
             Guard.Step("Flare.FlareApp", () => Flare.FlareApp.Logger = context.Logger);
-            Guard.Step("Flare.FlareDirector", () => Guard.Add<Flare.FlareDirector>(_root));   // Flare, the city's social media app (Scripts/Social/Flare): after the company and the brands, so that its day follows theirs
+            Guard.Step("Flare.FlareDirector", () => Guard.Add<Flare.FlareDirector>(_root));   // after the company and the brands, so that its day follows theirs
             Guard.Step("Fame.FameDirector", () => Fame.FameDirector.Logger = context.Logger);
-            Guard.Step("Fame.FameDirector", () => Guard.Add<Fame.FameDirector>(_root));   // Standing, a city that reacts to the player's success (Scripts/Fame): after Flare and the company, so that its day reads theirs
+            Guard.Step("Fame.FameDirector", () => Guard.Add<Fame.FameDirector>(_root));   // after Flare and the company, so that its day reads theirs
             Guard.Step("Rivals.RivalDirector", () => Rivals.RivalDirector.Logger = context.Logger);
-            Guard.Step("Rivals.RivalDirector", () => Guard.Add<Rivals.RivalDirector>(_root));   // rival tycoons who grow with the player and move against them in the late game (Scripts/Rivals): after Standing, nothing per frame
+            Guard.Step("Rivals.RivalDirector", () => Guard.Add<Rivals.RivalDirector>(_root));   // after Standing
             Guard.Step("PermadeathDirector", () => PermadeathDirector.Logger = context.Logger);
-            Guard.Step("PermadeathDirector", () => Guard.Add<PermadeathDirector>(_root));   // an ending the player chooses: a death after warnings, the obituary, the save ended (Scripts/Permadeath)
+            Guard.Step("PermadeathDirector", () => Guard.Add<PermadeathDirector>(_root));
             Guard.Step("CarTuning", () => CarTuning.Logger = context.Logger);
             Guard.Step("SpeedReading", () => SpeedReading.Logger = context.Logger);
             Guard.Step("CarMeasure", () => CarMeasure.Logger = context.Logger);
@@ -1448,48 +1652,87 @@ namespace RealLifeOverhaul
             Guard.Step("TwoWheelers", () => TwoWheelers.Logger = context.Logger);
             Guard.Step("BikeMount", () => BikeMount.Logger = context.Logger);
             Guard.Step("BikePlaces", () => BikePlaces.Logger = context.Logger);
-            Guard.Step("GarageDirector", () => Guard.Add<GarageDirector>(_root));   // the custom shop, builds on the player's cars, bicycles and motorbikes (Scripts/Garage)
+            Guard.Step("GarageDirector", () => Guard.Add<GarageDirector>(_root));
             Guard.Step("CarSoundDirector", () => CarSoundDirector.Logger = context.Logger);
             Guard.Step("CarSoundBank", () => CarSoundBank.Logger = context.Logger);
-            Guard.Step("the recorded car sounds", () => CarSoundBank.Load(context));   // read in the background, once a session (Scripts/Driving/Sound)
-            Guard.Step("CarSoundDirector", () => Guard.Add<CarSoundDirector>(_root));   // the recorded engine on the driven car and the shop's turntable
+            Guard.Step("the recorded car sounds", () => CarSoundBank.Load(context));   // read in the background, once a session
+            Guard.Step("CarSoundDirector", () => Guard.Add<CarSoundDirector>(_root));
             Guard.Step("PhoneSkin", () => PhoneSkin.Logger = context.Logger);
             Guard.Step("PhoneSkin", () => Guard.Add<PhoneSkin>(_root));
             Guard.Step("Photos.PhotosDirector", () => Photos.PhotosDirector.Logger = context.Logger);
-            Guard.Step("Photos.PhotosDirector", () => Guard.Add<Photos.PhotosDirector>(_root));   // the Camera and Gallery apps on the phone, and the camera itself (Scripts/Photos): nothing per frame while shut
-            Guard.Step("PhoneUiDump", () => PhoneUiDump.Logger = context.Logger);
-            Guard.Step("PhoneUiDump", () => Guard.Add<PhoneUiDump>(_root));   // a development aid: its key does nothing unless "Developer diagnostics" is on
+            Guard.Step("Photos.PhotosDirector", () => Guard.Add<Photos.PhotosDirector>(_root));   // nothing per frame while shut
             Guard.Step("PerfDirector", () => PerfDirector.Logger = context.Logger);
-            Guard.Step("PerfDirector", () => Guard.Add<PerfDirector>(_root));   // performance tweaks for the base game, and the two measurements (their keys are development aids)
-            Guard.Step("MapLinks", () => Guard.Add<MapLinks>(_root));   // every feature's places on the city map (World/MapLinks reads them; no feature knows of it)
-            Guard.Step("Districts.DistrictView", () => Guard.Add<Districts.DistrictView>(_root));   // the district view on the city map: ten layers, the key and a card per district (Scripts/Districts)
+            Guard.Step("PerfDirector", () => Guard.Add<PerfDirector>(_root));
+            Guard.Step("MapLinks", () => Guard.Add<MapLinks>(_root));   // every feature's places on the city map; no feature knows of it
+            Guard.Step("Districts.DistrictView", () => Guard.Add<Districts.DistrictView>(_root));
             Guard.Step("Interiors.InteriorDirector", () => Interiors.InteriorDirector.Logger = context.Logger);
             Guard.Step("CustomerDraw", () => CustomerDraw.Logger = context.Logger);
-            // With Developer diagnostics on, the installation firms' own lists checked against the designs written (Scripts/Designs).
+            Guard.Step("BizPace", () => BizPace.BizPaceWatch.Logger = context.Logger);   // what the mod adds to BizMan's open, switch and tab change, timed with Developer diagnostics on
+            // With Developer diagnostics on, the installation firms' lists checked against the designs written.
             Guard.Step("Designs.DesignsDirector", () => Designs.DesignsDirector.CityLoaded());
-            Guard.Step("Interiors.InteriorDirector", () => Guard.Add<Interiors.InteriorDirector>(_root));   // interiors and decor that matter: the scores once a game day, the BizMan tab (Scripts/Interiors)
-            Guard.Step("the wiring", () => Wiring.Connect(context.Logger, _root));   // every director is there: the bridges between the features are filled in (Scripts/Wiring)
-            // The loading screen is still up: the people of the two street pools are made and dressed now, where the time
-            // it takes is not seen (People/Looks). Each catches its own faults and falls back to making them as they are needed.
+            Guard.Step("Interiors.InteriorDirector", () => Guard.Add<Interiors.InteriorDirector>(_root));
+            Guard.Step("Uptown.GroundDirector", () => Uptown.GroundDirector.Logger = context.Logger);
+            // Uptown's ground is laid in its Awake, before the traffic starts and before the city's buildings are made on its lots.
+            Guard.Step("Uptown.GroundDirector", () => Guard.Add<Uptown.GroundDirector>(_root));
+            Guard.Step("Uptown.LifeDirector", () => Uptown.LifeDirector.Logger = context.Logger);
+            Guard.Step("Uptown.LifeDirector", () => Guard.Add<Uptown.LifeDirector>(_root));   // after Uptown's ground's director: its buildings declared for the made buildings below
+            Guard.Step("Schools.SchoolsDirector", () => Schools.SchoolsDirector.Logger = context.Logger);
+            // Birchwood School: its main school declared for the made buildings below, its other buildings asked of the copy engine.
+            Guard.Step("Schools.SchoolsDirector", () => Guard.Add<Schools.SchoolsDirector>(_root));
+            Guard.Step("Outlook.OutlookDirector", () => Outlook.OutlookDirector.Logger = context.Logger);
+            Guard.Step("Outlook.OutlookApp", () => Outlook.OutlookApp.Logger = context.Logger);
+            // The Economy app: after the city's economy, the market and the council, whose figures it reads; its day follows the city's. No Update.
+            Guard.Step("Outlook.OutlookDirector", () => Guard.Add<Outlook.OutlookDirector>(_root));
+            Guard.Step("NewBuildings.NewBuildingsDirector", () => NewBuildings.NewBuildingsDirector.Logger = context.Logger);
+            // Its buildings are made behind the loading screen, once every director has declared its own.
+            Guard.Step("NewBuildings.NewBuildingsDirector", () => Guard.Add<NewBuildings.NewBuildingsDirector>(_root));
+            Guard.Step("BuildTrades.TradesDirector", () => BuildTrades.TradesDirector.Logger = context.Logger);
+            Guard.Step("BuildTrades.TradesDirector", () => Guard.Add<BuildTrades.TradesDirector>(_root));   // the practice's floor, its panel, the trades' line; no Update
+            Guard.Step("Construction.ConstructionDirector", () => Construction.ConstructionDirector.Logger = context.Logger);
+            Guard.Step("Construction.ConstructionApp", () => Construction.ConstructionApp.Logger = context.Logger);
+            // The company, its projects and the city's builders: a time comparison a frame.
+            Guard.Step("Construction.ConstructionDirector", () => Guard.Add<Construction.ConstructionDirector>(_root));
+            Guard.Step("Landmarks.LandmarksDirector", () => Landmarks.LandmarksDirector.Logger = context.Logger);
+            // Uptown's landmarks: a time comparison a frame; their pieces stood in the game's late call.
+            Guard.Step("Landmarks.LandmarksDirector", () => Guard.Add<Landmarks.LandmarksDirector>(_root));
+            Guard.Step("the wiring", () => Wiring.Connect(context.Logger, _root));   // every director is there: the bridges are filled in
+            // Behind the loading screen: the two street pools' people made and dressed where the time is not seen; each
+            // falls back to making them as needed.
             Guard.Step("the looks", () => Looks.Reset());
             Guard.Step("the city life prewarm", () => CityLifeDirector.Instance?.Prewarm());
             Guard.Step("the street pool prewarm", () => ActorPool.Instance?.Prewarm());
-            // And every search of the whole scene a feature would otherwise make the first time it needs its answer,
-            // a frame of over 100 ms each in the middle of play (Core/SceneFinds).
+            Guard.Step("the game's pictures", WantPictures);   // the helpers' names; each director named its own in its Awake
+            // Every whole-scene search a feature would otherwise make in play, at over 100 ms each.
             Guard.Step("the scene prewarm", () => ScenePrewarm.Begin());
             Guard.Step("the options page in the city", () => Meta.MetaCity.Begin(context, _root));   // the check for leftovers, the guide's contact, the welcome panel
+            Guard.Step("DistrictSave.DistrictSaveDirector", () => DistrictSave.DistrictSaveDirector.Logger = context.Logger);
+            Guard.Step("Uptown's buildings", () => Uptown.LifeDirector.Settle());   // the made buildings stand now: Uptown's into the game's lists, before the district save puts back theirs
+            Guard.Step("the district save", () => DistrictSave.DistrictSaveDirector.City(_root));   // after every step that makes places of the mod's
             context.Logger.Info("City features started.");
-            // The loading screen stays up while the pieces that need frames of their own are done (Flare's faces likely to be
-            // seen first), two seconds at most; with none it goes as before.
+            // The loading screen stays up while pieces that need frames of their own are done, two seconds at most.
             return LoadHold.Wait();
         }
 
-        // The game's font is found by a search of the scene for any text of the interface (Core/GameUi/GameFont) and kept
-        // for the session: asked for here, so that the search is not made when the first bus stop or sign is lettered.
+        // The game's pictures that the helpers and the shell ask for (the round of an InfoBox and of the districts' panel, More
+        // apps and the folders, the Planner's place), named before the one look behind the loading screen.
+        private static void WantPictures()
+        {
+            GameUi.GameSprites.Want("Circle-20", "circle", GameUi.PhoneGridPager.MoreGlyph, "Icon-SetDestination");
+            GameUi.GameSprites.Want(ContactGroups.Glyphs);   // the Contacts app's group buttons
+            GameUi.NoticeLook.WantPictures();
+            Meta.GuideApp.WantPictures();
+            Meta.SettingsApp.WantPictures();
+            Meta.StaffApp.WantPictures();
+            Ledger.NewsstandApp.WantPictures();
+            SpeedReading.WantPictures();
+            CarDash.WantPictures();
+            HomeNeedsBar.WantPictures();
+        }
+
+        // The game's font is found by a scene search and kept: asked for here, not when the first sign is lettered.
         private static bool FindFont()
         {
-            _ = GameUi.GameFont.Asset;
-            return true;
+            return GameUi.GameFont.Refind();
         }
 
         public Task OnUnloadAsync()
@@ -1501,16 +1744,18 @@ namespace RealLifeOverhaul
             }
             _running = null;
             Guard.Step("the options page in the city", () => Meta.MetaCity.End());
-            Guard.Step("the wiring", () => Wiring.Disconnect());   // every bridge back to its stand-alone default
-            Guard.Step("the guide marks", () => GameUi.GuideMark.HideAll("the city is unloading"));   // off the game's destination guider while it is still there
+            Guard.Step("the wiring", () => Wiring.Disconnect());
+            Guard.Step("the guide marks", () => GameUi.GuideMark.HideAll("the city is unloading"));   // while the game's destination guider is still there
+            Guard.Step("the culling check", SceneryCulling.WatchUnload);   // the game's culling lists counted once the menu's scene is in, the city's still there
             if (_root != null)
             {
-                _root.name = RootName + " (closing)";   // it is gone at the end of the frame: a city loaded before then must not take it for a second copy
+                _root.name = RootName + " (closing)";   // gone at the end of the frame: a city loaded before then must not take it for a second copy
                 UnityEngine.Object.Destroy(_root);
                 _root = null;
             }
             Guard.Step("the map places", () => MapPlaces.Shutdown());
             Guard.Step("the modelled props", () => PropLibrary.Dispose());
+            Guard.Step("the city check", CityCheck.End);   // every feature back for the menu and the next city
             return Task.CompletedTask;
         }
     }

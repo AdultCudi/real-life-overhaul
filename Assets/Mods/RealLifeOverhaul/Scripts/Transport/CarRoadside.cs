@@ -205,7 +205,7 @@ namespace RealLifeOverhaul
             }
             _done = true;
             var data = new Dictionary<string, string>(1) { { "amount", TransitText.Money(_fee) } };
-            GameManager.ChangeMoneySafe(-_fee, new TransactionInfo("reallife_transaction_roadside"), null, null, force: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(-_fee, new TransactionInfo("reallife_transaction_roadside"), null, null, force: true);
             if (Job == RoadsideJob.Fuel)
             {
                 if (_car != null)

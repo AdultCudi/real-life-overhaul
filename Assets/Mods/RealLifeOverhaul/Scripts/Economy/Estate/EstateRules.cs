@@ -31,6 +31,9 @@ namespace RealLifeOverhaul.Economy
         public bool Evicted;        // ...or by the court's order
         public bool Renewed;
         public int Damage;          // condition lost when they went
+        public bool PlanBroken;     // an instalment was missed: the plan is over
+        public bool PlanDone;       // the plan paid the arrears off
+        public bool Quit;           // an unhappy tenant went on the day they said
     }
 
     /// <summary>What went wrong at a building on a day.</summary>
@@ -145,6 +148,12 @@ namespace RealLifeOverhaul.Economy
         {
             return Value(h.Base, real, index, h.Income, h.Cond, h.Level);
         }
+
+        /// <summary>
+        /// The estate's rent policy (-1 freed, 0 as it was, +1 controlled) from the council's Rent lever. Civic reads +1 as
+        /// "landlords set their own rents" and -1 as rent control, the other way round, so this is the one place that turns it.
+        /// </summary>
+        public static int FromCouncil(int councilRent) => -Math.Sign(councilRent);
 
         /// <summary>The gross yield a year of a use in a district, thousandths of the value: dear districts yield less.</summary>
         public static int Yield(int use, int income)

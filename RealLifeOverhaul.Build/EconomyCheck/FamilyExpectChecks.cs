@@ -86,7 +86,7 @@ internal static partial class Program
               && ModSource(@"Transport\CarOwnership.cs").Contains("Family.PartnerCar.Is(instance)") && ModSource(@"Economy\Banking\Desk\CreditDesk.Finance.cs").Contains("Family.PartnerCar.Is(v)")
               && ModSource(@"Licences\LicenceDirector.cs").Contains("Family.PartnerCar.Is(instance)") && ModSource(@"Transport\CarPhone.cs").Contains("!Family.PartnerCar.Is(car)"),
             "family expectations: the car handed over is one of the player's own they are not driving, kept out of the city, left alone by insurance, credit, licences and roadside help, made again at a free repair bay when asked back (it has no object for the tow to move), and never in Going Public");
-        Check(expect.Contains("GoingPublic.Mine(r) && r.GetBuildingType() == Residential")
+        Check(expect.Contains("GoingPublic.Mine(r) && GameRegistrations.BuildingType(r) == Residential")
               && expect.Contains("FamilyTalk.Move(-paid, \"reallife_transaction_family_allowance\")") && expect.Contains("day - s.PAllowanceDay < 7"),
             "family expectations: only the player's own homes count, and the allowance is paid once a week");
         Check(MemberText(expect, "public static void Check(int day, int level, bool speak)").Contains("!Settings.FamilyExpect")

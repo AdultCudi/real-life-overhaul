@@ -18,6 +18,7 @@ internal static partial class Program
         WorkSave();
         WorkReapply();
         WorkPath();
+        WorkAppliedAgain();
     }
 
     private static void WorkLadders()
@@ -317,7 +318,7 @@ internal static partial class Program
             "work: a no's day comes back from the save");
         Check(back.Work.TurnedDown(first, 33) != null && back.Work.TurnedDown(first, 34) == null, "work: a no read back from the save still bars its post for the rest of the 14 days");
         screened.Refused = interviewed.Refused = withdrawn.Refused = 98765;
-        string old = CareersStore.Write(g).Replace("|98765", string.Empty);
+        string old = CareersStore.Write(g).Replace("|98765|0", string.Empty);   // a save from before the day held neither it nor the post's week after it (ShiftOpenChecks)
         Check(old.IndexOf("98765", StringComparison.Ordinal) < 0, "work: the old save's line has no day of a no");
         StudyFile was = CareersStore.Read(old, out version);
         WorkFile ow = was.Work;
@@ -441,5 +442,28 @@ internal static partial class Program
         Check(ProPath.For(lawyer, law, 0, t, true).Step == PathStep.Ready, "path: with the degree passed a paralegal's post can be offered");
         PathView cert = ProPath.For(lawyer, law, 2, t, true);
         Check(cert.Step == PathStep.Course && cert.Course == StudyCatalogue.LegalPractice, "path: an associate's rung asks the practice course before the bar");
+    }
+
+    // A post applied to again after a withdrawal holds two applications: every action goes to the live one, and the
+    // withdrawn one is never taken for it (a player's report of 25 Oct: the interview could not be reached).
+    private static void WorkAppliedAgain()
+    {
+        var w = new WorkFile();
+        var post = new Opening { Id = 77, Prof = ProCatalogue.Lawyer, Rank = 1, Kind = (int)EmployerKind.Rival, Employer = "Harbour Law", Street = "Elm St", Number = 12, Pay = 5000, From = 1, To = 400 };
+        var old = new Application { Day = 10, Stage = (int)ApplyStep.Withdrawn };
+        post.CopyTo(old.Post);
+        var again = new Application { Day = 20, Stage = (int)ApplyStep.Interview, InterviewDay = 22, InterviewHour = 10 };
+        post.CopyTo(again.Post);
+        w.Applications.Add(old);
+        w.Applications.Add(again);
+        Check(w.ApplicationOf(77) == again, "work: a post applied to again finds the live application, not the withdrawn one");
+        var third = new Application { Day = 30, Stage = (int)ApplyStep.Declined };
+        post.CopyTo(third.Post);
+        again.Stage = (int)ApplyStep.Withdrawn;
+        w.Applications.Add(third);
+        Check(w.ApplicationOf(77) == third, "work: with none live, the newest application to a post is found");
+        string app = ModSource(@"Careers\CareerApp.cs");
+        Check(app.Contains("OlderApplicationRow + i") && app.Contains("_seenPosts.Add(a.Post.Id)"),
+            "work sources: an older application to the same post has a row of its own, so a click lands on the one meant");
     }
 }

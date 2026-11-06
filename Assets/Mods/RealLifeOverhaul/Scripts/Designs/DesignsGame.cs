@@ -4,6 +4,7 @@ using System.IO;
 using System.Text;
 using Blueprints;
 using Buildings;
+using BusinessLayoutSets;
 using Entities;
 using Helpers;
 using Newtonsoft.Json;
@@ -14,22 +15,20 @@ using UnityEngine;
 namespace RealLifeOverhaul.Designs
 {
     /// <summary>
-    /// The only place the ready-made designs touch the game: where its StreamingAssets folder is, a design file read and
-    /// written in the game's own format (the JSON its BusinessLayoutSetHelper reads, every field kept as it was), the game's
-    /// own list of an address's designs (InteriorInstallationFirmHelper), its installers' orders and its notices. Each read is
-    /// a small method of its own. Nothing here runs per frame: the files on a worker thread once, the rest on a press or a load.
+    /// The only place the designs touch the game: StreamingAssets, design files in the JSON BusinessLayoutSetHelper reads
+    /// (every field kept), the firm's own lists, its orders and notices. The files on a worker thread, the rest on a press or a load.
     /// </summary>
     internal static class DesignsGame
     {
         private static readonly UTF8Encoding Utf8 = new UTF8Encoding(false);
 
-        /// <summary>The game's StreamingAssets folder. The engine answers this on the main thread only.</summary>
+        /// <summary>Main thread only.</summary>
         public static string Root()
         {
             return Application.streamingAssetsPath;
         }
 
-        /// <summary>A design file's items as the rules see them, in the file's order; null for a file that cannot be read.</summary>
+        /// <summary>A design file's items in the file's order; null for a file that cannot be read.</summary>
         public static List<DesignItem> Read(string path)
         {
             try
@@ -94,10 +93,7 @@ namespace RealLifeOverhaul.Designs
                 ? (int)Math.Round((double)value * 100.0) : 0;
         }
 
-        /// <summary>
-        /// Writes a Car Showroom's design: the source as it is, every field kept, with only the items the cut keeps (and what
-        /// stands on them pointing only at kept items), named as offered and marked as the showroom's. False if it could not.
-        /// </summary>
+        /// <summary>Writes the source, every field kept, with only the cut's items and stacks, named and typed as offered; false if not.</summary>
         public static bool WriteCut(string source, ShowroomCut cut, string target, string type, string name)
         {
             JObject design = Parse(source);
@@ -111,6 +107,14 @@ namespace RealLifeOverhaul.Designs
                 {
                     items.RemoveAt(i);
                     continue;
+                }
+                if (items[i] is JObject shelf && shelf["playerItemPurchaserSettings"] is JObject stock && stock["itemName"] is JValue good)
+                {
+                    string now = (string)good, then = DesignRules.Restocked(cut, now);
+                    if (now != null && then != now)
+                    {
+                        stock["itemName"] = then;   // a tea bar's machines pour tea
+                    }
                 }
                 if (items[i] is JObject item && item["stackedItems"] is JArray stacked)
                 {
@@ -131,7 +135,7 @@ namespace RealLifeOverhaul.Designs
             return true;
         }
 
-        /// <summary>The names of the designs the game's own installation firm lists for a type at a size (the main thread only).</summary>
+        /// <summary>How many designs the game's firm lists for a type at a size. Main thread only.</summary>
         public static int Listed(string building, string size, string type)
         {
             string sizeId = DesignRules.SizeId(size, out int version);
@@ -143,7 +147,7 @@ namespace RealLifeOverhaul.Designs
             return names != null ? names.Length : 0;
         }
 
-        /// <summary>The installers' orders waiting for a business of one of these types, of this save.</summary>
+        /// <summary>The firms' orders waiting for a business of one of these types.</summary>
         public static void Orders(HashSet<string> types, List<InteriorInstallationFirmContract> into)
         {
             into.Clear();
@@ -159,7 +163,7 @@ namespace RealLifeOverhaul.Designs
             }
         }
 
-        /// <summary>The game's own installation of an order, now, as on its day (it pays, sells what is there, puts the design in, says so).</summary>
+        /// <summary>The game's own installation, now: it pays, sells what is there, puts the design in and says so.</summary>
         public static void Install(InteriorInstallationFirmContract order)
         {
             order.DoInstallation();
@@ -173,6 +177,79 @@ namespace RealLifeOverhaul.Designs
         public static void Notice(NotificationType kind, string key, Dictionary<string, string> data)
         {
             Notifications.Show(kind, key, data, 8f);
+        }
+
+        // ------------------------------------------------------------------ the show flats' designs
+
+        /// <summary>
+        /// Every show flat design the game's residential designs give (ShowFlatDesigns): each apartment structure the game lists,
+        /// each of the firm's designs for it read by the firm's own helper, staged and cut plain, with its pieces at the game's
+        /// market prices, the firm's fee and the game's interior score of its walls and floors. Main thread, on a press.
+        /// </summary>
+        public static void ShowDesigns(List<ShowDesign> into)
+        {
+            into.Clear();
+            List<BuildingSizeInfo> structures = BuildingSizeHelper.GetBuildingVersionsByBuildingType(ShowFlatDesigns.Building);
+            for (int s = 0; structures != null && s < structures.Count; s++)
+            {
+                BuildingSizeInfo info = structures[s];
+                if (info == null || !ShowFlatDesigns.Flat(info.buildingSize))
+                {
+                    continue;
+                }
+                BuildingSizeData data = BuildingSizeHelper.GetData(info.buildingSize);
+                int sqm = data != null ? Mathf.RoundToInt(data.squareMeters) : 0;
+                string[] names = InteriorInstallationFirmHelper.GetInteriorDesignsNamesForBuilding(ShowFlatDesigns.Building, info);
+                for (int n = 0; names != null && n < names.Length; n++)
+                {
+                    BusinessLayoutSet set = InteriorInstallationFirmHelper.GetInteriorDesignLayout(names[n], ShowFlatDesigns.Building, info);
+                    if (set == null || set.Items == null || set.Items.Count == 0)
+                    {
+                        continue;
+                    }
+                    for (int f = 0; f < 2; f++)
+                    {
+                        ShowDesign d = Cut(set, info, sqm, names[n], (ShowFinish)f);
+                        if (ShowFlatDesigns.Offered(d.Finish, d.Names.Count, set.Items.Count))
+                        {
+                            into.Add(d);
+                        }
+                    }
+                }
+            }
+        }
+
+        private static ShowDesign Cut(BusinessLayoutSet set, BuildingSizeInfo info, int sqm, string name, ShowFinish finish)
+        {
+            var d = new ShowDesign
+            {
+                Folder = info.ToString(), Size = info.buildingSize, Version = info.buildingVersion, Sqm = sqm, Design = name, Finish = finish,
+                Fee = (long)Mathf.Round(InteriorInstallationFirmHelper.GetInstallationFee(info.buildingSize))
+            };
+            d.Id = ShowFlatDesigns.Id(d.Folder, name, finish);
+            double furniture = 0.0;
+            for (int i = 0; i < set.Items.Count; i++)
+            {
+                BusinessLayoutSets.Item item = set.Items[i];
+                if (item == null || !ShowFlatDesigns.Keeps(finish, item.itemName))
+                {
+                    continue;
+                }
+                d.Names.Add(item.itemName);
+                d.Kept.Add(item.id ?? string.Empty);
+                furniture += ItemHelper.GetDefaultMarketPrice(item.itemName);
+            }
+            d.Furniture = (long)Math.Round(furniture);
+            try
+            {
+                d.Interior = set.interiorDesigns != null && set.interiorDesigns.Count > 0
+                    ? Mathf.Clamp(InteriorDesign.InteriorScoreCalculator.GetInteriorScorePercentage(set.interiorDesigns), 0, 100) : 0;
+            }
+            catch (Exception)
+            {
+                d.Interior = 0;   // a material the game no longer knows scores nothing, as the game's own calculator gives
+            }
+            return d;
         }
     }
 }

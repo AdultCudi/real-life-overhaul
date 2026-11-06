@@ -10,16 +10,9 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// Permadeath with the rest of the mod (Permadeath/PermadeathBridges). Permadeath calls no other feature: the life
-        /// an obituary tells, the businesses a save runs and the page it is printed on are all read here, from what each
-        /// feature already keeps in public, once, at a death or a test (and the businesses once a game day).
-        ///
-        ///   Story          the people of the social life (friends, close friends, the family they knew), the partner and
-        ///                  the children of family life, the police record and the court's convictions (Standing), Flare's
-        ///                  followers and the elections voted in (Civic)
-        ///   Businesses     the running businesses, by the address the books key them by, and their names (Economy/Books)
-        ///   ShowObituary   the City Ledger's page, a front page of its own (Ledger/LedgerSpecial), whether the paper runs or not
-        ///   Flu            the test button's flu, through Home's health
+        /// Permadeath (PermadeathBridges) with the life an obituary tells (the social life, family life, the record, Flare,
+        /// the council), the businesses a save runs and the City Ledger's page it is printed on, whether the paper runs or
+        /// not. Read at a death or a test, and the businesses once a game day.
         /// </summary>
         public static class PermadeathLinks
         {
@@ -93,8 +86,8 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // The people of the social life the player has met: the family they knew, a partner (when family life has none),
-            // their friends and, by name, their close friends.
+            // The people the player has met: the family, a partner when family life has none, the friends and, by name, the
+            // close friends.
             private static void People(LifeStory s)
             {
                 try
@@ -104,7 +97,7 @@ namespace RealLifeOverhaul
                         return;
                     }
                     int friends = 0;
-                    for (int i = 0; i < SocialState.People.Length; i++)
+                    for (int i = 0; i < SocialState.Count; i++)
                     {
                         SocialPerson p = SocialState.People[i];
                         if (p == null || !p.Met || string.IsNullOrEmpty(p.Name))

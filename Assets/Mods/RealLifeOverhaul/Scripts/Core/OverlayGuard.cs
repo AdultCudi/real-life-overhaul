@@ -7,29 +7,21 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Keeps the game's card over a thing (the small one shown while the cursor is on it, and the large one after a click)
-    /// from pointing at a thing that is gone. The game moves both cards after its thing every frame
-    /// (OverlayManager.LateUpdate, OverlayBase.UpdatePosition) and takes a card away only when its thing is let go
-    /// (EntityController.OnDestroy, OnIoExit) and only while the card is on screen. The time machine (a night in hospital,
-    /// a sleep, a skip) hides the whole OverlayManager while it runs, so a thing removed meanwhile, by the game or by this
-    /// mod, leaves its card behind: when the interface comes back the card asks its deleted thing where it is, every frame,
-    /// and Player.log fills with NullReferenceExceptions (94,000 of them after a hospital stay) and the frame time with
-    /// their cost.
-    ///
-    /// <see cref="Release"/> is called by the mod first when it removes a thing the game can point at (a car taken back or
-    /// sold, a scooter, a pointer of its own), for that thing. For anything else the component checks
-    /// both cards once a frame (two Unity null tests), before the game's LateUpdate, and right as the time machine ends,
-    /// and puts away a card whose thing is gone, the game's own way when the card is on screen, else by switching it off.
+    /// Keeps the game's small and large cards over a thing from pointing at a thing that is gone. The game takes a card
+    /// away only while it is on screen, and the time machine hides the whole OverlayManager, so a thing removed during a
+    /// sleep or hospital stay leaves its card asking a destroyed object for its place every frame (a log full of
+    /// NullReferenceExceptions). The mod calls <see cref="Release"/> before removing a thing; for anything else both
+    /// cards are checked once a frame (two Unity null tests) and when the time machine ends.
     /// </summary>
     public sealed class OverlayGuard : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For(null, "OverlayGuard", typeof(OverlayGuard));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "OverlayGuard", typeof(OverlayGuard));
 
         public static IModLogger Logger;
 
         private const int MostSaid = 5;
 
-        private static readonly FieldInfo SimpleField = GameContract.OverlaySimple.Field;   // (the game's private fields, resolved once: Core/GameContract)
+        private static readonly FieldInfo SimpleField = GameContract.OverlaySimple.Field;
         private static readonly FieldInfo DetailedField = GameContract.OverlayDetailed.Field;
 
         private static OverlayManager _manager;
@@ -37,12 +29,9 @@ namespace RealLifeOverhaul
         private static DetailedOverlay _detailed;
         private static bool _failed;
         private static int _said;
-        private static readonly Action OnTimeMachineEnded = Guard.Wrap(FrameGuard, Check);   // (a fault here never reaches the game's own handlers: Core/Guard)
+        private static readonly Action OnTimeMachineEnded = Guard.Wrap(FrameGuard, Check);
 
-        /// <summary>
-        /// Puts away the game's card if it is over the given thing (or a part of it), whether or not the interface is on
-        /// screen. Called by the mod before it removes a thing the game can point at. Safe to call with null.
-        /// </summary>
+        /// <summary>Puts away a card over <paramref name="thing"/> before the mod removes it, on screen or not; null is safe.</summary>
         public static void Release(EntityController thing)
         {
             if (ReferenceEquals(thing, null) || !Find())
@@ -99,7 +88,7 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
@@ -128,7 +117,7 @@ namespace RealLifeOverhaul
             _detailed = null;
         }
 
-        // The game's manager and its two cards, found again for each city (a private field each: read once per city).
+        // The game's manager and its two cards, read once per city.
         private static bool Find()
         {
             if (_failed)
@@ -153,14 +142,13 @@ namespace RealLifeOverhaul
             _manager = manager;
             _simple = SimpleField.GetValue(manager) as SimpleOverlay;
             _detailed = DetailedField.GetValue(manager) as DetailedOverlay;
-            // (The game empties its events when a city is unloaded, so the hook is made again for each city.)
+            // The game empties its events when a city unloads, so the hook is made again for each city.
             GlobalEvents.onTimeMachineEnded = (Action)Delegate.Remove(GlobalEvents.onTimeMachineEnded, OnTimeMachineEnded);
             GlobalEvents.onTimeMachineEnded = (Action)Delegate.Combine(GlobalEvents.onTimeMachineEnded, OnTimeMachineEnded);
             return true;
         }
 
-        // The game's own hide when the card is on screen (it also clears the call to action); else the card is switched
-        // off, which is all the game's hide does to it.
+        // The game's own hide when on screen; else switched off, which is all that hide does to the card.
         private static void HideSimple()
         {
             if (_manager.isActiveAndEnabled && _simple.isActiveAndEnabled)
@@ -174,7 +162,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // As above; the game's hide also lets the player walk again and lets the small card show again.
+        // As above; the game's hide also frees the player's walking and the small card.
         private static void HideDetailed()
         {
             if (_manager.isActiveAndEnabled && _detailed.isActiveAndEnabled)
@@ -189,7 +177,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A Unity object that was made and has been destroyed since, or was never set.
+        // A Unity object destroyed since, or never set.
         private static bool Gone(EntityController thing)
         {
             return thing == null;

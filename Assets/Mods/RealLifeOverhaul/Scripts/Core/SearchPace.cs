@@ -1,46 +1,57 @@
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// When a search of the whole scene for something that can turn up at any time may be made: only while a long
-    /// frame is not seen (the loading screen, a pause, the game's own black screen at a door), and there twice at the
-    /// most in one stretch of it: once when it has been up for <see cref="First"/> seconds (the screen is black by
-    /// then), and once more at <see cref="Second"/> if it is still up (a building that took its time to come in). Never
-    /// while the game is being played: such a search is a frame of some 100 ms in a city (Core/SceneFinds), and the
-    /// characters' hair finish asked for one every five seconds of play (Character/CharacterQuality.FindOthers).
-    ///
-    /// One per searcher. Asked once a frame, it costs two comparisons. No Unity or game types: checked offline
-    /// (NavCheck, HitchCheck.cs).
+    /// When a whole-scene search for something that can turn up at any time may be made: only on a frame the screen
+    /// shows black, never in play and never in the game's 0.2 s fades at a door, where a frame of 80 to 110 ms stops the
+    /// picture showing through. In one dark stretch (the fade under way, or the loading screen) a search is made at most
+    /// twice: as soon as the game says a building has come in behind it (<see cref="Arrived"/>, onEnterBuildingDelayed,
+    /// four frames before the fade back in), else after <see cref="First"/> seconds and again at <see cref="Second"/>.
+    /// One per searcher; a few comparisons a frame. Game-free.
     /// </summary>
     public sealed class SearchPace
     {
-        public const float First = 0.5f;    // seconds into a stretch of black screen, loading or pause before the first search
+        public const float First = 0.5f;    // seconds into a stretch of black screen or loading before the first search
         public const float Second = 2.5f;   // ...and before the second, if it is still up
+        public const int Most = 2;          // searches at the most in one stretch
 
-        private float _since = -1f;         // when the screen went; negative while the game is being played
+        private float _since = -1f;         // when the stretch began; negative while the game is being played
         private int _made;                  // searches made in this stretch
+        private bool _arrived;              // a building came in behind the black screen, and no search since
 
-        /// <summary>Searches made while hidden since this pace was made, for the log and the checks.</summary>
+        /// <summary>Searches made while hidden, for the log and the checks.</summary>
         public int Made { get; private set; }
 
-        /// <summary>
-        /// True if a search may be made now. <paramref name="hidden"/>: a long frame would not be seen; <paramref name="now"/>:
-        /// real seconds. The caller makes the search when this says so.
-        /// </summary>
-        public bool Due(bool hidden, float now)
+        /// <summary>A building has come in behind the black screen: the next black frame makes a search.</summary>
+        public void Arrived()
         {
-            if (!hidden)
+            _arrived = true;
+        }
+
+        /// <summary>
+        /// True if a search may be made now. <paramref name="dark"/>: the stretch is under way; <paramref name="black"/>:
+        /// the screen shows black in this frame; <paramref name="now"/>: real seconds.
+        /// </summary>
+        public bool Due(bool dark, bool black, float now)
+        {
+            if (!dark)
             {
                 _since = -1f;
                 _made = 0;
+                _arrived = false;   // said with nothing dark: the game went in without its fade
                 return false;
             }
             if (_since < 0f)
             {
                 _since = now;
             }
-            float into = now - _since;
-            if ((_made == 0 && into >= First) || (_made == 1 && into >= Second))
+            if (!black || _made >= Most)
             {
+                return false;
+            }
+            float into = now - _since;
+            if (_arrived || (_made == 0 && into >= First) || (_made == 1 && into >= Second))
+            {
+                _arrived = false;
                 _made++;
                 Made++;
                 return true;

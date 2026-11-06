@@ -13,31 +13,11 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The City Ledger with the rest of the mod (Ledger/LedgerBridges). The paper calls no other feature and none calls
-        /// it: what it prints is read here from what each feature keeps in public, once a morning.
-        ///
-        ///   Paper     the city's paper as Social/News writes it every morning: the street, the courts, City Hall's stories,
-        ///             the weather, the player's own shops, people, and what the city's economy and the company add to it
-        ///   Market    the market's last close (Markets): the city index and its last weeks, every sector, every company's
-        ///             close and move, and the market's news since the last edition (results, dividends, listings, bids,
-        ///             failures, crises, a crash), in the market's own words (MarketText)
-        ///   Economy   the bank rate and inflation as the Stocks app shows them, and the state of the cycle (Economy/City)
-        ///   Extra     what is on in the street today (Events/EventCalendar) and a spell of weather (Events/Weather)
-        ///   Council   the council's policies (Civic) against how they stood at the last edition: one piece for each that
-        ///             came in or ended
-        ///   Office    the player's own run for office and office (Civic/CivicOffice): the morning's pieces about them, with
-        ///             their names (a filing, an attack, an endorsement, the debate, the result, a scandal, the budget)
-        ///   Taken     the bus stops, the help-wanted boards and the bike docks, which a kiosk keeps clear of
-        ///   Say       a message from the City Ledger's contact (Social/SocialPhone), whose call is the paper's desk
-        ///   Extra     also tomorrow's street event (announced the day before) and, while the night life is on, the
-        ///             evening's clubs, cinemas and theatres: the Weekend Review's pages
-        ///   Connection  the internet at the player's homes (Utilities: each home's connection, a provider's outage, a
-        ///             cut, one being put in), which Newsstand's editions come over; and the Utilities app opened on
-        ///             its internet page, where one is bought
-        ///   the Planner  a source of its own: the morning each online subscription renews, and a cancelled one's last
-        ///             edition
-        ///   Report, Forward  in a Going Public session, what would be news on a guest's street goes to the host's paper
-        ///             (Ledger/LedgerDirector.Share.cs: News.Forward on a guest, News.Report on the host)
+        /// The City Ledger (LedgerBridges) with what it prints, read once a morning: the city's paper, the market's last
+        /// close and news, the economy's figures, the street's events, the weather, the night life, the council and the
+        /// player's office, the listed companies' worth and the rivals taken over (the paper's milestone and rival stories),
+        /// the street's other fixtures, the City Ledger's contact, the internet at the player's homes for Newsstand, and the
+        /// Planner. In a Going Public session a guest's street news goes to the host's paper.
         /// </summary>
         public static class LedgerLinks
         {
@@ -57,9 +37,13 @@ namespace RealLifeOverhaul
                 LedgerBridges.Connection = Connection;
                 LedgerBridges.OpenUtilities = () => Utilities.UtilitiesDirector.Instance != null && Utilities.UtilitiesDirector.Instance.OpenInternet();
                 Planner.PlannerDirector.Instance?.AddSource(Renewals);
-                News.Forward = (kind, where, detail, amount) => LedgerDirector.Instance?.GuestReport((int)kind, where.x, where.z, detail, amount);   // (the city's kinds only: News and LedgerShare.CityKind)
+                // only the city's kinds (LedgerShare.CityKind)
+                News.Forward = (kind, where, detail, amount) => LedgerDirector.Instance?.GuestReport((int)kind, where.x, where.z, detail, amount);
                 LedgerBridges.Filter = Flare.FlareDirector.Filter;
                 LedgerBridges.Report = (kind, x, z, detail, amount) => News.Report((NewsKind)kind, new Vector3(x, 0f, z), detail, amount);
+                LedgerBridges.Companies = Companies;
+                LedgerBridges.Beaten = Beaten;
+                LedgerBridges.TestBeat = TestBeat;
             }
 
             internal static void Disconnect()
@@ -69,8 +53,6 @@ namespace RealLifeOverhaul
                 SocialPhone.LedgerDesk = null;
                 LedgerCta.Remove();
             }
-
-            // ---------------------------------------------------------------- the city's paper
 
             private static void Paper(List<LedgerPiece> into)
             {
@@ -108,8 +90,6 @@ namespace RealLifeOverhaul
                 }
                 return pairs;
             }
-
-            // ---------------------------------------------------------------- the market's last close
 
             private static void Market(LedgerEdition e, int since)
             {
@@ -161,7 +141,13 @@ namespace RealLifeOverhaul
                         MarketNews n = s.News[i];
                         if (n.Day < since || n.Day >= e.Day || n.Kind == MarketNewsKind.Paid)
                         {
-                            continue;   // (a dividend paid to the player is their own news, not the city's)
+                            continue;   // a dividend paid to the player is their own news, not the city's
+                        }
+                        LedgerPiece bought = n.Kind == MarketNewsKind.BidDone && Settings.LedgerStories ? Bought(n, s) : null;
+                        if (bought != null)
+                        {
+                            e.Pieces.Add(bought);   // the buyer named: a business story in place of the markets' line
+                            continue;
                         }
                         string key = MarketText.NewsKey(n, s, out string[] data);
                         if (key.Length == 0)
@@ -195,12 +181,128 @@ namespace RealLifeOverhaul
                 }
             }
 
+            // A takeover completed with a listed bidder (the bid's bidder stays on the company when it leaves; a bid that failed
+            // clears BidDay): the business story naming both. Null for a private buyer, or a rival's holding the player took.
+            private static LedgerPiece Bought(in MarketNews n, MarketState s)
+            {
+                Stock k = s.Stock(n.Stock);
+                Stock bidder = k != null && k.BidderId > 0 && k.BidDay > 0 ? s.Stock(k.BidderId) : null;
+                if (bidder == null || ReferenceEquals(bidder, k))
+                {
+                    return null;
+                }
+                return LedgerStories.Bought(bidder.Name, k.Name, MarketText.Price(n.A), k.Own != null);
+            }
+
+            // Every listed company at its last close, a player's own marked (in a session, any player's: the same on every machine).
+            private static bool Companies(List<LedgerCompany> into)
+            {
+                try
+                {
+                    MarketDirector market = MarketDirector.Instance;
+                    MarketState s = Settings.Markets && market != null ? market.State : null;
+                    if (s == null)
+                    {
+                        return false;
+                    }
+                    for (int i = 0; i < s.Stocks.Count; i++)
+                    {
+                        Stock k = s.Stocks[i];
+                        if (!k.Listed || k.Daily.Count == 0 || k.Shares <= 0)
+                        {
+                            continue;
+                        }
+                        into.Add(new LedgerCompany { Id = k.Id, Name = k.Name, Value = k.Shares * (double)k.Daily[k.Daily.Count - 1].C / 100.0, Player = k.Own != null });
+                    }
+                    return into.Count > 0;
+                }
+                catch (Exception ex)
+                {
+                    Fault("LedgerLinks.Companies", ex);
+                    return false;
+                }
+            }
+
+            // The rivals the player took over on the days from 'since' up to 'day': read from the rivals' own file, which keeps
+            // the day for good, the takeover's cost among the counters and the break-up money until it is paid.
+            private static void Beaten(int since, int day, List<LedgerBeat> into)
+            {
+                try
+                {
+                    Rivals.RivalDirector rivals = Rivals.RivalDirector.Instance;
+                    Rivals.RivalFile f = rivals != null ? rivals.File : null;
+                    for (int i = 0; f != null && i < f.Tycoons.Length; i++)
+                    {
+                        Rivals.Tycoon t = f.Tycoons[i];
+                        if (t.DefeatedDay < since || t.DefeatedDay >= day || t.DefeatedDay < 0)
+                        {
+                            continue;
+                        }
+                        double cost = 0.0;
+                        for (int c = f.Counters.Count - 1; c >= 0; c--)
+                        {
+                            Rivals.RivalCounterNote note = f.Counters[c];
+                            if (note.Tycoon == t.Index && note.Kind == Rivals.RivalCounter.Takeover && note.Day == t.DefeatedDay)
+                            {
+                                cost = note.Cost;
+                                break;
+                            }
+                        }
+                        into.Add(Beat(f.Seed, t.Index, t.DefeatedDay, t.BreakUp > 0 ? cost : 0.0, t.BreakUp, Math.Max(1, t.BreakUpDay - day)));
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Fault("LedgerLinks.Beaten", ex);
+                }
+            }
+
+            // The test's takeover: the first rival in play (else the catalogue's first), priced from their fortune at the
+            // takeover's premium and break-up share; nothing of the rivals changes.
+            private static LedgerBeat TestBeat(int day)
+            {
+                try
+                {
+                    Rivals.RivalDirector rivals = Rivals.RivalDirector.Instance;
+                    Rivals.RivalFile f = rivals != null ? rivals.File : null;
+                    int index = 0;
+                    for (int i = 0; f != null && i < f.Tycoons.Length; i++)
+                    {
+                        if (f.Tycoons[i].Active)
+                        {
+                            index = i;
+                            break;
+                        }
+                    }
+                    Rivals.TycoonDef d = Rivals.RivalCatalogue.Tycoons[index];
+                    double worth = f != null && f.Tycoons[index].Worth > 0 ? f.Tycoons[index].Worth : Prices.At((int)Math.Min(int.MaxValue, d.StartWorth));
+                    return Beat(f != null ? f.Seed : 0, index, day, worth * (1.0 + Rivals.RivalCatalogue.TakeoverPremiumBp / 10000.0),
+                        worth * Rivals.RivalCatalogue.BreakUpPermille / 1000.0, Rivals.RivalCatalogue.BreakUpDays);
+                }
+                catch (Exception ex)
+                {
+                    Fault("LedgerLinks.TestBeat", ex);
+                    return null;
+                }
+            }
+
+            private static LedgerBeat Beat(int seed, int tycoon, int day, double cost, double back, int days)
+            {
+                Rivals.TycoonDef d = Rivals.RivalCatalogue.Tycoons[Rivals.RivalCatalogue.Clamp(tycoon, 0, Rivals.RivalCatalogue.TycoonCount - 1)];
+                MarketDirector market = MarketDirector.Instance;
+                Stock own = market != null ? market.MyCompany : null;
+                string player = Rivals.RivalGame.PlayerName();
+                return new LedgerBeat
+                {
+                    Tycoon = tycoon, Day = day, Seed = seed, Rival = d.Name, Holding = d.Holding, Buyer = own != null ? own.Name : player, Owner = player,
+                    Quip = Rivals.RivalText.Quip(tycoon), Cost = cost, Back = back, Days = days
+                };
+            }
+
             private static int Move(int now, int before)
             {
                 return before > 0 ? (int)Math.Round((now - before) * 10000.0 / before) : 0;
             }
-
-            // ---------------------------------------------------------------- the economy
 
             private static void EconomyFigures(LedgerEdition e)
             {
@@ -210,7 +312,7 @@ namespace RealLifeOverhaul
                     {
                         return;
                     }
-                    e.RateBp = 300 + (int)Math.Round(CityEconomy.BasePoints * 100f);   // as the market reads it (MarketLinks.City), so the paper and the Stocks app agree
+                    e.RateBp = MarketLinks.RateBp();   // the paper and the Stocks app agree
                     e.InflationBp = (int)Math.Round(CityEconomy.InflationPercent * 100f);
                     e.CycleKey = CityText.StateKeys[MacroCatalogue.Clamp((int)CityEconomy.State, 0, CityText.StateKeys.Length - 1)];
                 }
@@ -220,11 +322,9 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // ---------------------------------------------------------------- what is on, and the weather's spell
-
             private static readonly string SpellPrefix = "reallife" + "_ledger_spell_";
             private static readonly string NightPrefix = "reallife" + "_ledger_night_";
-            private const int NightPieces = 3;
+            private const int NightPieces = 3;   // night life pieces, one a day in turn
 
             private static void Extra(int day, List<LedgerPiece> into)
             {
@@ -253,7 +353,7 @@ namespace RealLifeOverhaul
                     }
                     if (Settings.Leisure && Settings.NightLife && Settings.CityLife)
                     {
-                        // the city after dark (Leisure/Night/NightLife: from eight in the evening to three in the morning)
+                        // the city after dark: night life's hours, from eight in the evening to three in the morning
                         LedgerPiece piece = LedgerRules.Piece(NightPrefix + (1 + day % NightPieces).ToString(CultureInfo.InvariantCulture),
                             new[] { "from", 20.GetFormattedTime(0f, true), "to", 3.GetFormattedTime(0f, true) });
                         if (piece != null)
@@ -293,8 +393,6 @@ namespace RealLifeOverhaul
                     Fault("LedgerLinks.Extra", ex);
                 }
             }
-
-            // ---------------------------------------------------------------- the council
 
             private static readonly string PolicyOn = "reallife" + "_ledger_policy_on", PolicyOff = "reallife" + "_ledger_policy_off";
 
@@ -345,49 +443,54 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // ---------------------------------------------------------------- the internet at home (Newsstand)
-
             // The best connection among the player's homes: a working one, else one down for a few hours, one being put
             // in, one cut, none. NotKept while the utilities are off: the paper then counts a home as connected.
             private static NetState Connection(out string home)
             {
                 home = null;
-                Utilities.UtilitiesDirector d = Utilities.UtilitiesDirector.Instance;
-                Utilities.UtilitiesState state = d != null ? d.State : null;
-                GameInstance save = SaveGameManager.Current;
-                if (!Settings.Utilities || state == null || Utilities.UtilitiesDirector.Failed || save == null)
+                try
                 {
+                    Utilities.UtilitiesDirector d = Utilities.UtilitiesDirector.Instance;
+                    Utilities.UtilitiesState state = d != null ? d.State : null;
+                    GameInstance save = SaveGameManager.Current;
+                    if (!Settings.Utilities || state == null || Utilities.UtilitiesDirector.Failed || save == null)
+                    {
+                        return NetState.NotKept;
+                    }
+                    int hour = save.Day * 24 + save.Hour;
+                    NetState best = NetState.NoHome;
+                    IReadOnlyList<Utilities.PlaceInfo> places = d.Places;
+                    for (int i = 0; i < places.Count; i++)
+                    {
+                        Utilities.PlaceInfo place = places[i];
+                        if (place.Kind != Utilities.PlaceKind.Home)
+                        {
+                            continue;
+                        }
+                        Utilities.Account a = state.Find(place.Place, Utilities.Service.Internet);
+                        NetState here = a == null || a.State == Utilities.SupplyState.Closed ? NetState.NoLine
+                            : a.State == Utilities.SupplyState.Pending ? NetState.Installing
+                            : a.State == Utilities.SupplyState.Cut ? NetState.Cut
+                            : a.State != Utilities.SupplyState.Active ? NetState.NoLine
+                            : Utilities.InternetRules.InOutage(a, hour) ? NetState.Outage : NetState.Online;
+                        if (here < best)
+                        {
+                            best = here;
+                            home = place.Name;
+                        }
+                    }
+                    return best;
+                }
+                catch (Exception e)
+                {
+                    Fault("LedgerLinks.Connection", e);
                     return NetState.NotKept;
                 }
-                int hour = save.Day * 24 + save.Hour;
-                NetState best = NetState.NoHome;
-                IReadOnlyList<Utilities.PlaceInfo> places = d.Places;
-                for (int i = 0; i < places.Count; i++)
-                {
-                    Utilities.PlaceInfo place = places[i];
-                    if (place.Kind != Utilities.PlaceKind.Home)
-                    {
-                        continue;
-                    }
-                    Utilities.Account a = state.Find(place.Place, Utilities.Service.Internet);
-                    NetState here = a == null || a.State == Utilities.SupplyState.Closed ? NetState.NoLine
-                        : a.State == Utilities.SupplyState.Pending ? NetState.Installing
-                        : a.State == Utilities.SupplyState.Cut ? NetState.Cut
-                        : a.State != Utilities.SupplyState.Active ? NetState.NoLine
-                        : Utilities.InternetRules.InOutage(a, hour) ? NetState.Outage : NetState.Online;
-                    if (here < best)
-                    {
-                        best = here;
-                        home = place.Name;
-                    }
-                }
-                return best;
             }
-
-            // ---------------------------------------------------------------- the Planner: Newsstand's renewals
 
             private static readonly NewsstandRenewals Renewals = new NewsstandRenewals();
 
+            // Newsstand's renewals in the Planner, and a cancelled subscription's last edition.
             private sealed class NewsstandRenewals : Planner.IPlannerSource
             {
                 public string Id => "newsstand";
@@ -427,8 +530,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // ---------------------------------------------------------------- the street's other fixtures
-
+            // Bus stops, help-wanted boards and bike docks, which a kiosk keeps clear of.
             private static bool Taken(Vector3 at, float within)
             {
                 float sqr = within * within;

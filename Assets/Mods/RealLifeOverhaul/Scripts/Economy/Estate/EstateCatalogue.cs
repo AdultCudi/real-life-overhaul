@@ -21,6 +21,22 @@ namespace RealLifeOverhaul.Economy
         Convert = 4     // the change of use is built
     }
 
+    /// <summary>Who runs a building the player lets himself, day to day. Saved as a number.</summary>
+    public enum EstateManager
+    {
+        Self = 0,       // the player answers everything
+        Agent = 1,      // a letting agent finds and takes tenants, for a fee at each letting
+        Manager = 2     // a property manager does everything, for a cut of the rent
+    }
+
+    /// <summary>How a tenant's repair call is being answered. Saved as a number.</summary>
+    public enum CallAnswer
+    {
+        Waiting = 0,    // nobody has been sent
+        Contractor = 1, // paid for; fixed on its day
+        Yourself = 2    // the player goes to the building to do it
+    }
+
     /// <summary>Where an instruction to the agency stands. Saved as a number.</summary>
     public enum InstructionStage
     {
@@ -56,7 +72,7 @@ namespace RealLifeOverhaul.Economy
         public const int HotelsMost = 8;            // as many as the city has
         public const int HireCarsMost = 12;
         public const int ReviewsKept = 6;
-        public const int AlertsMost = 24;           // rows for the Planner
+        public const int AlertsMost = 32;           // rows for the Planner: room for a landlord's calls and inspections too
         public const int Thousand = 1000;
 
         public const int IndexStart = 1000;         // tenths of a point
@@ -264,6 +280,66 @@ namespace RealLifeOverhaul.Economy
 
         public static readonly int[] ShopCapital = { 25000, 150000, 1000000 };   // dollars, early, mid and late in a game
         public static readonly int[] ShopYearlyBp = { 14000, 12000, 9000 };      // what a shop set up with it returns a year, hundredths of a per cent
+
+        // A landlord's duties (EstateRules.Duties.cs): how tenants feel, their repair calls, the city's inspections, the arrears tools and managers.
+        public const int HappyBase = 520;           // a tenant's satisfaction in a building as good as most, at the market's rent
+        public const int HappyCondFrom = 600;       // condition at which the building neither pleases nor annoys
+        public const int HappyCondPer = 500;        // thousandths of a point of satisfaction for each point of condition off that
+        public const int HappyLevel = 40;           // for each level of refurbishment
+        public const int HappyRentSlope = 600;      // thousandths of a point for each thousandth of the market's rent under (or over) it
+        public const int HappyRentLeast = -250, HappyRentMost = 150;
+        public const int HappyCall = 100;           // an open repair call
+        public const int HappyCallPerDay = 20;      // and more for each day it waits past the grace
+        public const int HappyCallMost = 300;
+        public const int CallGraceDays = 2;         // days a tenant expects a repair to take
+        public const int HappyNotice = 150;         // notice served on them
+        public const int HappyOrder = 60;           // the city's improvement order on the building
+        public const int HappyPull = 150;           // of the gap to the target closed a day
+        public const int HappyFixedQuick = 60, HappyFixed = 20;   // a repair done within the grace, or later
+        public const int HappyReminder = 25;        // lost when reminded of what they owe
+        public const int HappyPlanDone = 40;        // gained when a payment plan is paid off
+        public const int HappyGood = 750, HappyFair = 500, HappyPoor = 300;   // the words a satisfaction is said in
+        public const int ComplainBelow = 450, ComplainChance = 80;   // a day, under that satisfaction
+        public const int QuitBelow = 250, QuitChance = 40, QuitDays = 14;   // a day, under that: they give notice to go in so many days
+        public const int StayAbove = 150;           // over QuitBelow by this before their day, and they stay
+        public const int UnhappyMissPerPoint = 600; // thousandths more of the miss chance for each point under HappyFair
+        public const int RenewLeast = 100, RenewMost = 900, RenewPerHappy = 800;   // the renewal chance by satisfaction
+
+        public const int CallKinds = 6;             // heating, a leak, electrics, a lock, damp, fittings
+        public const int CallBase = 12, CallPerPoint = 40;   // a day a let unit reports a fault: 12, and one more for each 40 of condition lost
+        public const int CallShare = 4;             // of the unit's share of the building's value, at the start's prices
+        public static readonly int[] CallKindCost = { 1000, 800, 1200, 1000, 600, 1400, 900 };   // by kind, of the above; the first is no call
+        public static readonly int[] CallMinutes = { 0, 120, 90, 90, 45, 150, 60 };             // a job done by the player, by kind
+        public const int CallLeast = 60;            // dollars at the start's prices
+        public const int DiyShare = 350;            // materials, of the contractor's quote
+        public const int DiyDays = 3;               // days a job waits for the player before it is open again
+        public const int ContractorDays = 1;        // the contractor comes the next morning
+        public const int CallLapseDays = 10;        // unanswered this long: it does damage and the tenant complains
+        public const int CallLapseLoss = 25;        // condition
+
+        public const int InspectEvery = 45;         // days between the city's inspections of a let building
+        public const int InspectFirstLeast = 10;    // days, the first one drawn from here to InspectEvery
+        public const int InspectPass = ConditionPoor;
+        public const int InspectCallOld = 5;        // days: a call older than this counts against the building
+        public const int InspectCallPenalty = 60;   // condition points, each
+        public const int FineFirst = 400, FineSecond = 1200;   // dollars at the start's prices
+        public const int OrderDays = 14, ReinspectDays = 7;
+        public const int StrikesBarred = 2;         // failed inspections in a row that bar new lettings until one passes
+        public const int ComplaintsToCity = 3;      // a tenant's complaints in a lease, with a call waiting a week, that bring the inspector
+        public const int CityCallDays = 7, CityDays = 2;
+
+        public const int PlanDaysLeast = 4, PlanDaysMost = 12;   // a payment plan's days: twice the days owed, within these
+        public const int PlanAcceptBase = 300, PlanAcceptPerPoint = 7;   // the chance a tenant takes a plan, by record
+        public const int PlanMissShare = 800;       // of a tenant's miss chance, while on a plan
+        public const int ReminderLift = 200;        // added to the chance arrears are paid in full, once reminded
+
+        public const int Managers = 3;              // yourself, a letting agent, a property manager
+        public const int AgentLetDays = 7;          // a letting agent's fee at each letting, days of the agreed rent
+        public const int ManagerShare = 100;        // a property manager's cut of the rent that comes in
+        public const int ManagedApplicants = 1250;  // an agent or a manager brings this much more applicants
+        public const int ManagerRecordLeast = 40;   // neither takes a tenant with a poorer record
+        public const int ManagerOfferLeast = 950;   // of the asking rent, taken at once; less waits for the application's last day
+        public const int ManagerRepairDays = 7;     // days before an order's deadline that a manager starts the repair works
 
         public static int Clamp(int value, int least, int most)
         {

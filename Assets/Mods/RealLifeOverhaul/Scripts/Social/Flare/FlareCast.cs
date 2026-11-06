@@ -10,7 +10,7 @@ namespace RealLifeOverhaul.Flare
         public string Name;
         public FlareNiche Niche;
         public string District;
-        public int OpenedDay;        // when Flare first saw it (a launch is for a business in its first fortnight)
+        public int OpenedDay;        // the day the business opened (a launch is for a business in its first fortnight)
     }
 
     /// <summary>Something that happened to the cast this month or today, for the log, the notification and the paper.</summary>
@@ -437,7 +437,7 @@ namespace RealLifeOverhaul.Flare
             for (int i = 0; i < f.Influencers.Count; i++)
             {
                 FlareInfluencer inf = f.Influencers[i];
-                FlareHire hire = HireOf(f, inf.Id, day);
+                FlareHire hire = HireDue(f, inf.Id, day);
                 if (!inf.Active && hire == null)
                 {
                     continue;   // one who stopped still makes the posts of a deal already paid for
@@ -449,13 +449,10 @@ namespace RealLifeOverhaul.Flare
                 }
                 if (hire != null)
                 {
-                    if (!(hire.Late && day == hire.From))
-                    {
-                        Add(f, inf, day, FlareSource.Hired, hire.Place, hire.Name, hire.OffMessage ? 1 : 0);
-                        hire.Counted |= hire.Posted == 0 && day == hire.From + (hire.Late ? 1 : 0);   // an older save's deal whose first post is this one is counted whole
-                        hire.Posted++;
-                        hire.LastPost = day;
-                    }
+                    Add(f, inf, day, FlareSource.Hired, hire.Place, hire.Name, hire.OffMessage ? 1 : 0);
+                    hire.Counted |= hire.Posted == 0 && day == hire.From + (hire.Late ? 1 : 0);   // an older save's deal whose first post is this one is counted whole
+                    hire.Posted++;
+                    hire.LastPost = day;
                     continue;
                 }
                 int roll = FlareRules.Roll(inf.Seed, day, 70);
@@ -562,16 +559,45 @@ namespace RealLifeOverhaul.Flare
             return !h.Counted ? null : stage == HireWaiting ? "reallife_flare_hire_posts_none" : "reallife_flare_hire_posts_none_over";
         }
 
-        private static FlareHire HireOf(FlareFile f, int id, int day)
+        // The deal, if any, an influencer posts for today. The days between its posts are theirs to post as they like.
+        private static FlareHire HireDue(FlareFile f, int id, int day)
         {
             for (int i = 0; i < f.Hires.Count; i++)
             {
-                if (f.Hires[i].On(day) && f.Hires[i].Who.Contains(id))
+                if (f.Hires[i].On(day) && f.Hires[i].Who.Contains(id) && PostDay(f.Hires[i], day))
                 {
                     return f.Hires[i];
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// Whether a deal's influencer posts for it on a day: as many posts as the deal is priced for (<see cref="DealPosts"/>), spread over its
+        /// days from the first to the last. A late one starts a day on and a post that would fall past the last day is not made.
+        /// </summary>
+        public static bool PostDay(FlareHire h, int day)
+        {
+            int span = h.To - h.From + 1, at = day - h.From - (h.Late ? 1 : 0);
+            if (span < 1 || at < 0 || day > h.To)
+            {
+                return false;
+            }
+            int posts = PostsOf((FlareDeal)FlareRules.Clamp(h.Kind - FirstDealKind, 0, DealPosts.Length - 1));
+            for (int k = 0; k < posts; k++)
+            {
+                if ((posts > 1 ? k * (span - 1) / (posts - 1) : 0) == at)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>The posts each influencer makes in a deal, whatever its days: what the deal's page says and what it is priced for.</summary>
+        public static int PostsOf(FlareDeal deal)
+        {
+            return DealPosts[FlareRules.Clamp((int)deal, 0, DealPosts.Length - 1)];
         }
 
         // A business of the player's an influencer would visit: in their district and niche (local news: any niche).

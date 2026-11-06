@@ -34,10 +34,11 @@ namespace RealLifeOverhaul.Markets
         /// <summary>One business handed over after a takeover: true once it is no longer the player's, false while it cannot be done.</summary>
         public static Func<string, string, bool> HandOver;
 
-        /// <summary>A name for the player's company to begin with, and the trade its takings are most in (-1 none).</summary>
+        /// <summary>A name for the player's company to begin with.</summary>
         public static Func<string> Name;
 
-        public static Func<int> Trade;
+        /// <summary>The player's own businesses' takings by trade (MarketInputs.Trades), into the array, over the statement days from one day up to, not with, another.</summary>
+        public static Action<int, int, long[]> TradeTakings;
 
         /// <summary>The names of the city's three largest banks, the largest first, each offering a certificate of deposit.</summary>
         public static Action<List<string>> Banks;
@@ -54,6 +55,9 @@ namespace RealLifeOverhaul.Markets
         /// <summary>The exchange has set new prices at a close, or its option changed: the importers' prices written again.</summary>
         public static Action MaterialsFixed;
 
+        /// <summary>The player's construction company's own takings over the days from one up to, not with, another; under nothing for none.</summary>
+        public static Func<int, int, long> BuilderBooks;
+
         public static void Reset()
         {
             City = null;
@@ -65,12 +69,13 @@ namespace RealLifeOverhaul.Markets
             Businesses = null;
             HandOver = null;
             Name = null;
-            Trade = null;
+            TradeTakings = null;
             Banks = null;
             NetWorth = null;
             OwnWholesale = null;
             CityPrices = null;
             MaterialsFixed = null;
+            BuilderBooks = null;
         }
     }
 

@@ -4,7 +4,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Faults
 {
-    /// <summary>The options page's tests of the city's faults: each works when pressed, or says why not. Nothing per frame.</summary>
+    /// <summary>The city's faults, part: the options page's tests, each working when pressed or saying why not.</summary>
     public sealed partial class FaultDirector
     {
         private const string TestName = "City faults";
@@ -36,7 +36,7 @@ namespace RealLifeOverhaul.Faults
             return true;
         }
 
-        /// <summary>Options-page test: one fault of each kind near the player, now (a dark lamp, a pothole, litter, an unsafe place and a hot spot where they stand).</summary>
+        /// <summary>Test: one fault of each kind near the player now, the hot spot where they stand.</summary>
         public void TestNear()
         {
             if (!TestReady() || !FaultGame.Player(out Vector3 player))
@@ -71,7 +71,7 @@ namespace RealLifeOverhaul.Faults
             Notifications.Show(NotificationType.Info, "reallife_faults_test_near_done", new Dictionary<string, string>(1) { { "count", made.ToString() } }, 8f);
         }
 
-        /// <summary>Options-page test: the city's people report every fault not yet taken by a crew, now.</summary>
+        /// <summary>Test: the city's people report every fault not yet taken by a crew, now.</summary>
         public void TestReports()
         {
             if (!TestReady())
@@ -97,7 +97,7 @@ namespace RealLifeOverhaul.Faults
             Notifications.Show(NotificationType.Info, "reallife_faults_test_reports_done", new Dictionary<string, string>(1) { { "count", posted.ToString() } }, 8f);
         }
 
-        /// <summary>Options-page test: every fault in the city mended at once, everything put back.</summary>
+        /// <summary>Test: every fault in the city mended at once.</summary>
         public void TestMend()
         {
             if (!TestReady())

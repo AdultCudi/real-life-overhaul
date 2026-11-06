@@ -79,7 +79,7 @@ namespace RealLifeOverhaul.Family
         {
             venue = default;
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] buildings = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] buildings = GameDlc.Open(city);
             if (buildings == null)
             {
                 return false;
@@ -124,7 +124,7 @@ namespace RealLifeOverhaul.Family
         {
             venue = default;
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] buildings = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] buildings = GameDlc.Open(city);
             if (buildings == null || string.IsNullOrEmpty(street))
             {
                 return false;
@@ -278,7 +278,7 @@ namespace RealLifeOverhaul.Family
                 for (int i = 0; all != null && i < all.Count; i++)
                 {
                     BuildingRegistration r = all[i];
-                    if (r == null || !GoingPublic.Mine(r) || r.GetBuildingType() != Residential)
+                    if (r == null || !GoingPublic.Mine(r) || GameRegistrations.BuildingType(r) != Residential)
                     {
                         continue;
                     }

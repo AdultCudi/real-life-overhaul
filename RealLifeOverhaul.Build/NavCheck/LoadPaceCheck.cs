@@ -314,7 +314,7 @@ internal static partial class Program
             Build = 3682, OriginX = -10f, OriginZ = -10f, WorldWidth = 200f, WorldHeight = 120f, Cell = 8f,
             Columns = 25, Rows = 15, Hulls = 2,
             HullStart = new[] { 0, 4, 8 },
-            HullOf = new[] { 0, 1 },
+            HullKey = new[] { 11L, 22L },
             HullX = new[] { 10f, 30f, 30f, 10f, 60f, 90f, 90f, 60f },
             HullZ = new[] { 10f, 10f, 30f, 30f, 40f, 40f, 70f, 70f },
         };

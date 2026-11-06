@@ -17,14 +17,10 @@ namespace RealLifeOverhaul.Family
         /// <summary>What a home's power and water come to a day (Utilities, through Wiring/UtilityLinks); null: none known.</summary>
         internal static Func<BuildingRegistration, float> Bills;
 
-        private static readonly string[] Encourage =
+        private static readonly string[] Encourage =   // encourage_5 runs a bath: only in a home with a bathtub (Core/LineNeeds)
         {
             "reallife_family_encourage_1", "reallife_family_encourage_2", "reallife_family_encourage_3", "reallife_family_encourage_4", "reallife_family_encourage_5",
             "reallife_family_encourage_6"
-        };
-        private static readonly string[] EncourageNoBath =   // encourage_5 runs a bath: not in a home without a bathtub
-        {
-            "reallife_family_encourage_1", "reallife_family_encourage_2", "reallife_family_encourage_3", "reallife_family_encourage_4", "reallife_family_encourage_6"
         };
         private static readonly string[] SickCare = { "reallife_family_sickcare_1", "reallife_family_sickcare_2", "reallife_family_sickcare_3" };
         private static readonly string[] CookLines = { "reallife_family_cook_1", "reallife_family_cook_2", "reallife_family_cook_3", "reallife_family_cook_4" };
@@ -398,7 +394,7 @@ namespace RealLifeOverhaul.Family
         public static void Contribution(int day, int hour)
         {
             FamilySave s = FamilyState.S;
-            if (!s.LivesIn || !FamilyState.Together || hour < 18 || s.LastContributionDay == day)
+            if (!s.LivesIn || !FamilyState.Together || hour < FamilyBalance.ContributionHour || s.LastContributionDay == day)
             {
                 return;
             }
@@ -452,7 +448,7 @@ namespace RealLifeOverhaul.Family
             {
                 s.LastSupportDay = day;
                 ModState.AddModifier(ModState.MoodUp);
-                FamilyText.Toast(NotificationType.Success, FamilyText.Pick(HasBath() ? Encourage : EncourageNoBath, ref _lastEncourage), Args.Us, 9f);
+                FamilyText.Toast(NotificationType.Success, FamilyText.Pick(Encourage, ref _lastEncourage), Args.Us, 9f);
             }
         }
 
@@ -462,22 +458,6 @@ namespace RealLifeOverhaul.Family
         {
             ISocialBridge social = FamilyBridges.Social;
             return social != null && social.Active && social.TryGetPartner(out PersonInfo partner) ? partner.LastContactDay : 0;
-        }
-
-        // Whether the home the player is in has a bathtub among its furniture (read when asked, on an evening's event only).
-        private static bool HasBath()
-        {
-            var manager = InstanceBehavior<BuildingManager>.Instance;
-            System.Collections.Generic.List<ItemController> items = manager != null ? manager.allItemControllers : null;
-            for (int i = 0; items != null && i < items.Count; i++)
-            {
-                string name = items[i] != null ? items[i].itemName : null;
-                if (name != null && (name.IndexOf("bathtub", StringComparison.OrdinalIgnoreCase) >= 0 || name.IndexOf("bath_tub", StringComparison.OrdinalIgnoreCase) >= 0))
-                {
-                    return true;
-                }
-            }
-            return false;
         }
 
         /// <summary>Once a day: a home is kept warm by time spent in it, and cools without.</summary>

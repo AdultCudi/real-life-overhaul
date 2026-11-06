@@ -73,7 +73,7 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
-        /// <summary>A bank founded with the least capital, paid by nobody; it pays nothing out.</summary>
+        /// <summary>A community bank founded with its least capital, paid by nobody; it pays nothing out.</summary>
         public void TestFound()
         {
             if (!TestReady("Found a bank", false))
@@ -89,10 +89,11 @@ namespace RealLifeOverhaul.Economy
                 }
                 Keep();
                 BuildingRegistration hq = OwnBankGame.Headquarters();
-                OwnBankRules.Found(_bank, Save.Day, new System.Random().Next(1, int.MaxValue), OwnBankRules.CapitalLeast(Prices.Level, 0, EndScaleRules.Buying(Settings.EndScale)),
-                    Named(null, hq));
+                int share = EndScaleRules.Buying(Settings.EndScale);
+                OwnBankRules.Found(_bank, Save.Day, new System.Random().Next(1, int.MaxValue), FoundCapital(Prices.Level, 0, share), Named(null, hq), BankTiers.Community);
+                _bank.FoundedLeast = OwnBankRules.TierLeastAt(BankTiers.Community, share, 0);
                 _bank.Test = true;
-                TestDone("a bank founded with the least capital, paid by nobody", TabBank);
+                TestDone("a community bank founded with its least capital, paid by nobody", TabBank);
             });
         }
 
@@ -186,6 +187,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 OwnBank back = before.Length > 0 ? OwnBankStore.Read(before, out _) : null;
                 _bank = back ?? new OwnBank();
+                Fit(_bank);
                 if (_bank.Running)
                 {
                     _bank.LastDay = Save.Day - 1;

@@ -94,7 +94,7 @@ internal static partial class Program
 
     private static void TextsHangSources()
     {
-        string server = TextsSource(@"Texts\TextServer.cs"), director = TextsSource(@"Texts\TextsDirector.cs");
+        string server = TextsSource(@"Texts\TextServer.cs") + TextsSource(@"Texts\TextServer.Start.cs") + TextsSource(@"Texts\TextServer.Process.cs"), director = TextsSource(@"Texts\TextsDirector.cs");
         Check(server.Contains("if (Write(job) && Hung() && !Recover(\"did not answer\"))") && server.Contains("!Recover(\"stopped by itself (exit code \" + Exit() + \")\")"),
             "texts, a hang: the worker probes after a reply that did not come and starts a hung server again, and a server that stopped by itself too");
         Check(server.Contains("Get(\"/slots\"") && server.Contains("TextHang.ProbeSeconds(Speed)") && server.Contains("TextHang.MayRestart(_restarts)"),

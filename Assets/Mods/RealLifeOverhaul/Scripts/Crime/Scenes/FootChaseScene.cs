@@ -27,7 +27,7 @@ namespace RealLifeOverhaul
                 return false;
             }
             First.Go(_far, RunnerPace, _far, 45f);
-            Catchable = First;   // the player can end this chase themselves by getting in the way
+            Catchable = First;   // the player can end the chase by getting in the way
             Cop.Go(First.Position, Pace.Run, _far, 10f);
             Go(Running, now, 9f, 16f);
             return true;
@@ -40,7 +40,7 @@ namespace RealLifeOverhaul
                 case Running:
                     if (!First.Present || !Cop.Present)
                     {
-                        End();   // one of the two could not stay on the street: there is no chase
+                        End();   // one of the two could not stay on the street
                     }
                     else if (now < StepEnd && !First.Settled)
                     {
@@ -52,7 +52,6 @@ namespace RealLifeOverhaul
                     }
                     else if (Is("escaped"))
                     {
-                        // The suspect keeps going and is gone as soon as nobody can see them; the officer fades.
                         if (First.Settled)
                         {
                             First.WalkAwayFrom(Cop.Position, Pace.Run, 40f, 20f);
@@ -65,7 +64,6 @@ namespace RealLifeOverhaul
                     }
                     else
                     {
-                        // Out of breath, or out of pavement: the suspect gives up.
                         if (Is("tripped"))
                         {
                             Ending = Entry.Ending("caught") ?? Ending;   // nobody fell after all
@@ -111,8 +109,7 @@ namespace RealLifeOverhaul
                     }
                     else
                     {
-                        // Lost them. The officer stops and calls it in.
-                        Cop.Stand(First.Position);
+                        Cop.Stand(First.Position);   // lost them: the officer calls it in
                         Cop.Hold(PhonePose, PhoneProp);
                         Conclude();
                         Go(OnPhone, now, 8f, 12f);

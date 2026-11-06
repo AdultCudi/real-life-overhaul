@@ -127,7 +127,7 @@ internal static partial class Program
             at++;
         }
         Check(inSession == 4, "sold back: in a Going Public session nothing is remembered or handed back (who owns what is the host's record): " + inSession + " of the 4 ways in stand aside");
-        Check(!sold.Contains("ChangeMoneySafe") && !sold.Contains("Crime.Pay") && sold.Contains("Release(save, e, rival);"),
+        Check(!sold.Contains("BizBooks.Book") && !sold.Contains("Crime.Pay") && sold.Contains("Release(save, e, rival);"),
             "sold back: handing a building back moves no money, and leaves it as the game's own sale does (the same Release as a sale)");
         int sellAt = game.IndexOf("public static bool Sell(EstateHolding h, int price)", StringComparison.Ordinal);
         int release = game.IndexOf("private static void Release(GameInstance save, RealEstate e, string rival)", StringComparison.Ordinal);

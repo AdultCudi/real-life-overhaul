@@ -97,8 +97,8 @@ namespace RealLifeOverhaul.Economy
             var loan = new Loan(amount, dailyInterest, dailyPayment, lender.Address);
             SaveGameManager.Current.Loans.Add(loan);
             // a dictionary each: the game keeps a transaction's data for as long as it lists the transaction
-            GameManager.ChangeMoneySafe(amount, new TransactionInfo(PayoutTransaction, new Dictionary<string, string> { { "businessName", lender.Name } }), null, null, true);
-            GameManager.ChangeMoneySafe(-fee, new TransactionInfo(FeeTransaction, GameLoans.ExpenseCategory, new Dictionary<string, string> { { "businessName", lender.Name } }), null, null, true);
+            Economy.BizBooks.Book(amount, new TransactionInfo(PayoutTransaction, new Dictionary<string, string> { { "businessName", lender.Name } }), null, null, true);
+            Economy.BizBooks.Book(-fee, new TransactionInfo(FeeTransaction, GameLoans.ExpenseCategory, new Dictionary<string, string> { { "businessName", lender.Name } }), null, null, true);
             GameEvent.Invoke(NewLoanEvent);
             return loan;
         }

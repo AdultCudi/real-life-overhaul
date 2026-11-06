@@ -11,18 +11,18 @@ namespace RealLifeOverhaul.Economy
     {
         public int? BookDay;   // the day transactions are dated on (the day's run books on the day that ended); null for now
 
-        public int Cash => SaveGameManager.Current != null ? Mathf.FloorToInt(Mathf.Max(0f, SaveGameManager.Current.Money)) : 0;
+        public int Cash => SaveGameManager.Current != null ? WholeMoney.Floor(SaveGameManager.Current.Money) : 0;
 
         public bool Take(int amount, string why, string name)
         {
-            return amount <= 0 || (SaveGameManager.Current != null && GameManager.ChangeMoneySafe(-amount, Info(why, name, true), BookDay, null, false));
+            return amount <= 0 || (SaveGameManager.Current != null && RealLifeOverhaul.Economy.BizBooks.Book(-amount, Info(why, name, true), BookDay, null, false));
         }
 
         public void Give(int amount, string why, string name)
         {
             if (amount > 0 && SaveGameManager.Current != null)
             {
-                GameManager.ChangeMoneySafe(amount, Info(why, name, false), BookDay, null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, Info(why, name, false), BookDay, null, true);
             }
         }
 
@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Economy
         {
             if (amount > 0 && SaveGameManager.Current != null)
             {
-                GameManager.ChangeMoneySafe(-amount, Info(why, name, true), BookDay, null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(-amount, Info(why, name, true), BookDay, null, true);
             }
         }
 

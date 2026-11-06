@@ -21,8 +21,6 @@ def register(a):
 
     swatches = {
         "everyday_wine": ((0.34, 0.02, 0.07), 0.0, 0.92, 0.0),
-        "everyday_glass_brown": ((0.25, 0.11, 0.03), 0.0, 0.88, 0.0),
-        "everyday_pink": ((0.93, 0.42, 0.58), 0.0, 0.22, 0.0),
     }
 
     def pan_food():
@@ -74,37 +72,6 @@ def register(a):
             for k in range(2):
                 layer.poly([(x + k * 10, 16), (x + 9 + k * 10, 32), (x + k * 10, 48), (x + 5 + k * 10, 48), (x + 14 + k * 10, 32), (x + 5 + k * 10, 16)], (0.99, 0.86, 0.15))
         return layer.finish(grain=0.03, blotch=0.03)
-
-    def beer_label():
-        cream, red, gold = (0.95, 0.91, 0.76), (0.66, 0.08, 0.06), (0.80, 0.60, 0.20)
-        layer = Layer(112, 56, cream, 0.0, 0.35)
-        layer.rect(0, 0, 112, 5, gold, metal=1.0, smooth=0.7)
-        layer.rect(0, 51, 112, 56, gold, metal=1.0, smooth=0.7)
-        layer.rect(14, 9, 98, 47, red, radius=18)
-        layer.rect(17, 12, 95, 44, cream, radius=15)
-        layer.text("LAGER", (25, 16, 87, 34), red, weight=0.08)
-        layer.text("CITY BREW", (30, 35, 82, 42), INK, weight=0.04)
-        return layer.finish(grain=0.03, blotch=0.03)
-
-    def popcorn_label():
-        red, yellow = (0.74, 0.07, 0.05), (0.99, 0.84, 0.18)
-        layer = Layer(112, 40, yellow, 0.0, 0.3)
-        layer.rect(2, 2, 110, 38, red, radius=8)
-        layer.text("POPCORN", (9, 8, 103, 32), yellow, weight=0.08)
-        return layer.finish(grain=0.03, blotch=0.03)
-
-    def popcorn_top():
-        layer = Layer(64, 64, (0.50, 0.36, 0.12), 0.0, 0.1)
-        rng = np.random.default_rng(83)
-        for _ in range(150):
-            x, y = rng.uniform(-3, 67), rng.uniform(-3, 67)
-            tone = rng.uniform(0.86, 1.0)
-            body = (0.99 * tone, 0.93 * tone, 0.70 * tone)
-            layer.disc(x, y, 4.6, tuple(c * 0.62 for c in body))
-            for _ in range(3):                                                     # each kernel a little cloud
-                layer.disc(x + rng.uniform(-2.2, 2.2), y + rng.uniform(-2.2, 2.2), rng.uniform(1.8, 3.0), body)
-            layer.disc(x + rng.uniform(-1, 1), y + rng.uniform(-1, 1), 0.9, (0.70, 0.42, 0.10))
-        return layer.finish(grain=0.04, blotch=0.03)
 
     def takeaway_side():
         white, red = (0.96, 0.95, 0.92), (0.78, 0.09, 0.07)
@@ -185,18 +152,6 @@ def register(a):
         layer.text("-50%", (114, 20, 142, 36), red, weight=0.08)
         return layer.finish(grain=0.03, blotch=0.03)
 
-    def bag_logo():
-        cream, navy = (0.95, 0.93, 0.87), (0.07, 0.11, 0.25)
-        layer = Layer(80, 96, cream, 0.0, 0.25)
-        layer.rect(0, 70, 80, 96, navy)
-        layer.disc(40, 36, 21, navy)
-        layer.disc(40, 36, 18.5, cream)
-        layer.disc(40, 36, 16.5, navy)
-        layer.text("M", (28, 24, 52, 48), cream, weight=0.07)
-        layer.text("MODA", (16, 74, 64, 86), cream, weight=0.06, spacing=0.12)
-        layer.line([(20, 90), (60, 90)], (0.80, 0.60, 0.20), width=1.2)
-        return layer.finish(grain=0.04, blotch=0.04)
-
     def fare_reader():
         layer = Layer(56, 56, (0.03, 0.03, 0.035), 0.0, 0.8)
         layer.disc(28, 28, 24, (0.98, 0.78, 0.05), smooth=0.6)
@@ -217,43 +172,6 @@ def register(a):
         layer.line([(56, 4), (56, 52)], (0.25, 0.25, 0.27), width=1.5)
         return layer.finish(grain=0.02, blotch=0.02)
 
-    def pump_face():
-        layer = Layer(128, 208, (0.90, 0.90, 0.88), 0.0, 0.5)
-        layer.rect(6, 6, 122, 118, (0.05, 0.05, 0.06), smooth=0.8, radius=5)
-        lcd, digit = (0.62, 0.70, 0.58), (0.06, 0.09, 0.06)
-        for y, height, number, label in ((13, 30, "42.50", 28), (50, 26, "31.07", 22), (83, 24, "1.369", 30)):
-            layer.rect(13, y, 115, y + height, lcd, smooth=0.85, radius=2)
-            layer.text(number, (44, y + 3, 111, y + height - 3), digit, weight=0.07, spacing=0.06)
-            layer.line([(17, y + 7), (17 + label, y + 7)], digit, width=1.6)
-            layer.line([(17, y + 12), (11 + label, y + 12)], digit, width=1.2)
-        layer.text("$", (17, 22, 30, 40), digit, weight=0.07)
-        layer.text("L", (17, 58, 30, 73), digit, weight=0.07)
-        for k, (tint, name) in enumerate((((0.10, 0.50, 0.22), "REGULAR"), ((0.10, 0.25, 0.62), "PREMIUM"), ((0.12, 0.12, 0.13), "DIESEL"))):
-            x = 8 + k * 39
-            layer.rect(x, 126, x + 34, 160, (0.55, 0.56, 0.58), metal=1.0, smooth=0.6, radius=3)
-            layer.rect(x + 2, 128, x + 32, 158, tint, radius=3)
-            layer.text(name, (x + 4, 146, x + 30, 155), WHITE, weight=0.05)
-            layer.text(("87", "91", "D")[k], (x + 7, 130, x + 27, 145), WHITE, weight=0.08)
-        layer.rect(8, 168, 60, 200, (0.12, 0.12, 0.13), radius=3)                  # the card slot and keypad
-        for r in range(3):
-            for c in range(4):
-                layer.rect(13 + c * 11, 172 + r * 9, 21 + c * 11, 178 + r * 9, (0.62, 0.63, 0.65), radius=1)
-        layer.rect(68, 170, 120, 180, (0.12, 0.12, 0.13), radius=2)
-        layer.rect(74, 174, 114, 176, (0.02, 0.02, 0.02))
-        for k in range(3):
-            layer.line([(68, 187 + 5 * k), (118 - 9 * k, 187 + 5 * k)], (0.35, 0.36, 0.38), width=1.4)
-        return layer.finish(grime=0.12, grain=0.03, blotch=0.04, scratches=8)
-
-    def pump_top():
-        red = (0.78, 0.08, 0.06)
-        layer = Layer(128, 48, WHITE, 0.0, 0.6)
-        layer.rect(0, 0, 128, 7, red)
-        layer.rect(0, 41, 128, 48, red)
-        layer.disc(22, 24, 12, red)
-        layer.poly([(22, 14), (28, 25), (22, 33), (16, 25)], (0.99, 0.84, 0.18))    # a drop
-        layer.text("CITY FUEL", (40, 13, 122, 35), red, weight=0.08)
-        return layer.finish(grain=0.02, blotch=0.03)
-
     def flammable():
         layer = Layer(40, 40, (0.72, 0.07, 0.05), 0.0, 0.45)
         layer.poly([(20, 2), (38, 20), (20, 38), (2, 20)], (0.98, 0.80, 0.06))
@@ -262,115 +180,17 @@ def register(a):
         layer.poly([(20, 21), (23, 26), (20, 29), (17, 26)], (0.99, 0.86, 0.12))
         return layer.finish(grain=0.03, blotch=0.03)
 
-    def wash_sign():
-        blue = (0.04, 0.24, 0.66)
-        layer = Layer(320, 64, blue, 0.0, 0.55)
-        layer.rect(3, 3, 317, 61, WHITE, radius=7)
-        layer.rect(7, 7, 313, 57, blue, radius=5)
-        layer.text("CAR WASH", (62, 12, 258, 52), WHITE, weight=0.08, spacing=0.05)
-        for cx, side in ((32, 1), (288, -1)):                                      # suds either side
-            for dx, dy, r in ((-10, 6, 11), (6, -4, 9), (9, 11, 6.5), (-4, -11, 5)):
-                layer.disc(cx + side * dx, 32 + dy, r, (0.62, 0.84, 0.97))
-                layer.disc(cx + side * dx, 32 + dy, r - 1.6, blue)
-                layer.disc(cx + side * dx - r * 0.35, 32 + dy - r * 0.35, r * 0.22, WHITE)
-        return layer.finish(grime=0.1, grain=0.03, blotch=0.04, scratches=10)
-
-    def wash_brush():
-        blue = (0.10, 0.36, 0.80)
-        layer = Layer(48, 64, tuple(c * 0.45 for c in blue), 0.0, 0.2)
-        rng = np.random.default_rng(89)
-        for k in range(40):                                                        # strips of cloth hanging round the drum
-            x = rng.uniform(0, 48)
-            tone = rng.uniform(0.55, 1.25)
-            layer.line([(x, 0), (x + rng.uniform(-2, 2), 64)], tuple(min(1.0, c * tone) for c in blue), width=rng.uniform(1.2, 2.6))
-        return layer.finish(grain=0.05, blotch=0.08)
-
-    def employer(k):
-        def paint():
-            line1, line2, ground, letters = EMPLOYERS[k]
-            layer = Layer(192, 96, ground, 0.0, 0.72)
-            layer.rect(5, 5, 187, 91, letters, radius=5)
-            layer.rect(7.5, 7.5, 184.5, 88.5, ground, radius=4)
-            layer.text(line1, (16, 14, 176, 50), letters, weight=0.075, spacing=0.05)
-            layer.line([(40, 54.5), (152, 54.5)], letters, width=1.4)
-            layer.text(line2, (16, 60, 176, 82), letters, weight=0.06, spacing=0.06)
-            return layer.finish(grime=0.08, grain=0.02, blotch=0.04, scratches=5)
-        return paint
-
-    def plywood():
-        ply = (0.72, 0.56, 0.36)
-        layer = Layer(112, 144, ply, 0.0, 0.12)
-        rng = np.random.default_rng(91)
-        knots = [(rng.uniform(10, 102), rng.uniform(10, 134), rng.uniform(4, 9)) for _ in range(5)]
-        for k in range(40):                                                        # rotary-cut grain: wide wavy bands that part round the knots
-            x0 = k * 3.0 - 2
-            tone = 0.90 + 0.10 * math.sin(k * 1.7) + rng.uniform(-0.03, 0.03)
-            path = []
-            for y in range(0, 149, 6):
-                x = x0 + 5.0 * math.sin(y * 0.021 + k * 0.13) + 2.0 * math.sin(y * 0.07 + k)
-                for kx, ky, kr in knots:
-                    d = math.hypot(x - kx, y - ky)
-                    if d < kr * 3:
-                        x += (x - kx) / max(d, 0.5) * kr * 1.2 * (1 - d / (kr * 3))
-                path.append((x, y))
-            layer.line(path, tuple(c * tone for c in ply), width=1.6)
-        for kx, ky, kr in knots:
-            layer.disc(kx, ky, kr * 0.55, (0.36, 0.22, 0.10))
-            layer.disc(kx, ky, kr * 0.30, (0.22, 0.12, 0.05))
-        spray = (0.05, 0.05, 0.06)                                                 # somebody's tag, and the glazier's note
-        tag = [(22, 92), (34, 66), (44, 90), (54, 62), (66, 88), (80, 64), (90, 84)]
-        layer.line(tag, spray, width=3.2)
-        layer.line([(20, 100), (94, 96)], spray, width=2.4)
-        layer.rect(60, 16, 100, 44, (0.94, 0.93, 0.88))
-        layer.text("SORRY", (63, 19, 97, 29), (0.75, 0.10, 0.08), weight=0.07)
-        layer.text("CLOSED", (63, 31, 97, 41), INK, weight=0.07)
-        return layer.finish(grime=0.35, grain=0.05, blotch=0.08)
-
-    def closed_notice():
-        red = (0.74, 0.07, 0.05)
-        layer = Layer(112, 160, (0.96, 0.95, 0.91), 0.0, 0.25)
-        layer.rect(0, 0, 112, 160, red)
-        layer.rect(6, 6, 106, 154, (0.96, 0.95, 0.91))
-        layer.poly([(46, 12), (66, 12), (66, 24), (56, 33), (46, 24)], (0.10, 0.16, 0.36))           # the city's crest
-        layer.poly([(49, 15), (63, 15), (63, 23), (56, 29.5), (49, 23)], (0.86, 0.70, 0.25))
-        layer.line([(22, 22), (42, 22)], INK, width=1.2)
-        layer.line([(70, 22), (90, 22)], INK, width=1.2)
-        layer.text("CLOSED", (11, 38, 101, 66), red, weight=0.09)
-        layer.rect(11, 68, 101, 84, red)
-        layer.text("BY ORDER", (15, 70, 97, 82), WHITE, weight=0.08)
-        for k, y in enumerate(range(92, 124, 5)):
-            layer.line([(13, y), (99 - (k * 13) % 30, y)], (0.30, 0.30, 0.33), width=1.4)
-        sign = [(14 + t, 138 - 5 * math.sin(t * 0.55) * (1 - t / 60)) for t in np.arange(0, 44, 1.5)]
-        layer.line(sign, (0.08, 0.10, 0.36), width=1.3)
-        layer.line([(13, 144), (62, 144)], (0.30, 0.30, 0.33), width=1)
-        layer.disc(86, 136, 11, red)                                               # the seal
-        layer.disc(86, 136, 8.5, (0.96, 0.95, 0.91))
-        layer.disc(86, 136, 6.5, red)
-        return layer.finish(grain=0.025, blotch=0.03)
-
     decals = {
         "everyday_pan_food": pan_food,
         "everyday_plate_meal": plate_meal,
         "everyday_checkpoint": checkpoint_flag,
-        "everyday_beer_label": beer_label,
-        "everyday_popcorn_label": popcorn_label,
-        "everyday_popcorn_top": popcorn_top,
         "everyday_takeaway": takeaway_side,
         "everyday_noodles": noodles,
         "everyday_box_side": box_side,
         "everyday_ledger_front": ledger_front,
         "everyday_rack_sign": rack_sign,
-        "everyday_bag_logo": bag_logo,
         "everyday_fare_reader": fare_reader,
         "everyday_fare_lamps": fare_lamps,
-        "everyday_pump_face": pump_face,
-        "everyday_pump_top": pump_top,
         "everyday_flammable": flammable,
-        "everyday_wash_sign": wash_sign,
-        "everyday_wash_brush": wash_brush,
-        "everyday_plywood": plywood,
-        "everyday_closed_notice": closed_notice,
     }
-    for k in range(6):
-        decals["everyday_employer_%d" % (k + 1)] = employer(k)
     return swatches, decals

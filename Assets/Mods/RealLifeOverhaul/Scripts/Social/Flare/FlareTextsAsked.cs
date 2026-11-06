@@ -18,6 +18,9 @@ namespace RealLifeOverhaul.Flare
             return !_waiting.Contains(item) && (!_asks.TryGetValue(item, out int n) || n < Most);
         }
 
+        /// <summary>True while a request for the item waits.</summary>
+        public bool Waiting(T item) => _waiting.Contains(item);
+
         public void Asked(T item)
         {
             _waiting.Add(item);

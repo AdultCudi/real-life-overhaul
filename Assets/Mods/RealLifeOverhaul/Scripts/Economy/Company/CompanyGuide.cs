@@ -82,7 +82,26 @@ namespace RealLifeOverhaul.Economy
                 .Fact("co_lic_hours", () => Whole(CompanyCatalogue.LicenceClosedHours))
                 .Fact("co_late_hour", () => Whole(CompanyCatalogue.LateHour))
                 .Fact("co_early_hour", () => Whole(CompanyCatalogue.EarlyHour))
-                .Fact("co_loss_days", () => Whole(CompanyCatalogue.LossRunDays));
+                .Fact("co_loss_days", () => Whole(CompanyCatalogue.LossRunDays))
+                .Fact("co_esteem", () => Whole(CompanyCatalogue.EsteemMost))
+                .Fact("co_stand_match", () => Whole(CompanyCatalogue.StandMatch))
+                .Fact("co_poach_rest", () => Whole(CompanyCatalogue.PoachRestDays))
+                .Fact("co_strike_staff_least", () => Whole(CompanyCatalogue.StrikeStaffLeast))
+                .Fact("co_strike_raise_standing", () => Whole(CompanyCatalogue.StrikeRaiseStanding))
+                .Fact("co_strike_pay_standing", () => Whole(CompanyCatalogue.StrikePayStanding))
+                .Fact("co_strike_after_standing", () => Whole(CompanyCatalogue.StrikeAfterStanding))
+                .Fact("co_ot_answer", () => Whole(CompanyCatalogue.OvertimeAnswerDays))
+                .Fact("co_ot_standing", () => Whole(CompanyCatalogue.OvertimeStanding))
+                .Fact("co_ot_rest", () => Whole(CompanyCatalogue.OvertimeRestDays))
+                .Fact("co_term_least", () => Whole(CompanyCatalogue.TermDaysLeast))
+                .Fact("co_lic_check", () => Tenths(CompanyCatalogue.LicenceCheckChance))
+                .Fact("co_mgr_allow", () => CompanyText.Money(ManagerCatalogue.AllowanceBase[ManagerCatalogue.RolePlace]))
+                .Fact("co_mgr_allow_skill", () => CompanyText.Money(ManagerCatalogue.AllowancePerSkill[ManagerCatalogue.RolePlace]))
+                .Fact("co_mgr_most", () => Whole(ManagerCatalogue.ManagersMost))
+                .Fact("co_mgr_mistake", () => CompanyText.Share(ManagerCatalogue.MistakeMost))
+                .Fact("co_exec_premium", () => CompanyText.Share(HierarchyRules.ExecutivePremium))
+                .Fact("co_acct_fee_least", () => Guide.Money(CompanyCatalogue.AccountantFee[0]))
+                .Fact("co_acct_fee_most", () => Guide.Money(CompanyCatalogue.AccountantFee[CompanyCatalogue.Accountants - 1]));
         }
 
         private static string Whole(int value)

@@ -9,7 +9,6 @@ namespace RealLifeOverhaul
     public sealed partial class CleanerJob
     {
         private const float PatchReach = 1.1f;         // metres
-        private const float PatchSeen = 14f;           // metres from which the spill's panel stands over it to be walked to: the city's marker does not show indoors
         private const float PatchesApart = 2.4f;       // metres
         private const float MopSeconds = 5.5f;         // seconds a spill
         private const int MostTries = 4;               // looks for clear floor before calling the floor done
@@ -101,19 +100,15 @@ namespace RealLifeOverhaul
             {
                 bool hands = PlayerHelper.IsHoldingItem;
                 _panel.Offer(hands ? _panelHands : _panelSpill, _panelLeft, left, _panel.White, ButtonMop, !hands, hands ? null : ButtonSkip, true);
-                _panel.Show(_patchAt + Vector3.up * PanelUp, Ctx.Player);
+                _panel.Show(_patchAt + Vector3.up * PanelUp);
                 Hint(hands ? 4 : 2);
-            }
-            else if (JobSpots.Flat(Ctx.Player.transform.position, _patchAt) < PatchSeen)
-            {
-                // Not on it yet: the panel stands over the spill to walk to, its button off until they are.
-                _panel.Offer(_panelFar, _panelLeft, left, _panel.White, ButtonMop, false, null, false);
-                _panel.Show(_patchAt + Vector3.up * PanelUp, Ctx.Player);
-                Hint(2);
             }
             else
             {
-                _panel.Hide();
+                // Not on it yet, however far: the panel stands over the spill to walk to (at the screen's edge toward it while it is
+                // out of the picture, as indoors the game's guider is hidden), its button off until they are.
+                _panel.Offer(_panelFar, _panelLeft, left, _panel.White, ButtonMop, false, null, false);
+                _panel.Show(_patchAt + Vector3.up * PanelUp);
                 Hint(2);
             }
         }

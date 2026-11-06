@@ -115,7 +115,6 @@ namespace RealLifeOverhaul.Interiors
             }
         }
 
-        /// <summary>A category's name.</summary>
         public static string Category(int category)
         {
             return CategoryKeys[InteriorRules.Clamp(category, 0, CategoryKeys.Length - 1)].GetLocalization();

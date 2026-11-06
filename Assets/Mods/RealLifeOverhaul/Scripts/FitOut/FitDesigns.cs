@@ -9,16 +9,9 @@ using UnityEngine;
 namespace RealLifeOverhaul.FitOut
 {
     /// <summary>
-    /// The game's own finished designs for a unit (Scripts/FitOut): every empty unit of a size is the same room (the game
-    /// loads one interior per size and version), and the game ships designs for those rooms, the interior installation
-    /// firm's (StreamingAssets/InteriorDesigns/&lt;type&gt;/&lt;size&gt;/&lt;business&gt;/&lt;name&gt;.json) and the layouts its own
-    /// businesses are furnished with (StreamingAssets/BusinessLayouts/&lt;business&gt;/&lt;size&gt;/&lt;name&gt;.json). Each is the
-    /// game's items at their places in that room, and the room's walls and floors. They are read with the game's own
-    /// reader (BusinessLayoutSetHelper.Deserialize) on a worker thread, a file once a session, so that nothing of it is
-    /// done in a frame: the plan waits for it.
-    ///
-    /// Which design: of the kinds of business asked for, in that order, the files of the unit's size, the building's own
-    /// pick among them (its number), the first whose size and version are the unit's. Nothing here runs by itself.
+    /// The game's own finished designs for a unit: every empty unit of a size and version is the same room, and the game
+    /// ships designs for it (StreamingAssets/InteriorDesigns and BusinessLayouts). Each file is read with the game's own
+    /// reader on a worker thread, once a session, so nothing of it is done in a frame. Nothing here runs by itself.
     /// </summary>
     internal static class FitDesigns
     {
@@ -29,6 +22,12 @@ namespace RealLifeOverhaul.FitOut
         public static string SizeOf(Buildings.Building building)
         {
             return building != null && !string.IsNullOrEmpty(building.BuildingSize) ? new BuildingSizeInfo(building).ToString() : null;
+        }
+
+        /// <summary>The same for a structure by its size and version (a floor on another structure than its building's own).</summary>
+        public static string SizeOf(string size, int version)
+        {
+            return !string.IsNullOrEmpty(size) ? new BuildingSizeInfo(size, version).ToString() : null;
         }
 
         /// <summary>The design files of one kind of business for a size, from both places the game keeps them, in a fixed order.</summary>
@@ -98,10 +97,7 @@ namespace RealLifeOverhaul.FitOut
             return read;
         }
 
-        /// <summary>
-        /// The design files that may be the unit's, in the order they are to be tried: each kind in turn, its files
-        /// begun from the building's own pick. Their reading is begun at once.
-        /// </summary>
+        /// <summary>The design files that may be the unit's in the order to try them, each kind's begun from the building's pick; the first two are read at once.</summary>
         public static void Candidates(string size, IList<string> kinds, int seed, List<string> into)
         {
             into.Clear();
@@ -123,7 +119,7 @@ namespace RealLifeOverhaul.FitOut
             }
             for (int i = 0; i < into.Count && i < 2; i++)
             {
-                Read(into[i]);   // (the first two: the next is seldom wanted)
+                Read(into[i]);   // the next is seldom wanted
             }
         }
 
@@ -131,6 +127,12 @@ namespace RealLifeOverhaul.FitOut
         public static bool Fits(BusinessLayoutSet set, Buildings.Building building)
         {
             return set != null && building != null && set.Items != null && set.BuildingSize == building.BuildingSize && set.BuildingVersion == building.BuildingVersion;
+        }
+
+        /// <summary>The same for the room's structure by its size and version.</summary>
+        public static bool Fits(BusinessLayoutSet set, string size, int version)
+        {
+            return set != null && set.Items != null && size != null && set.BuildingSize == size && set.BuildingVersion == version;
         }
     }
 }

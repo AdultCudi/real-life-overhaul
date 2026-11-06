@@ -67,7 +67,7 @@ namespace RealLifeOverhaul
                 if (SaveGameManager.Current != null)
                 {
                     ModState.AddModifier(ModState.MoodDown);
-                    JusticeText.Toast(NotificationType.Info, "reallife_justice_custody_released", "hours", JusticeText.N(hours), 10f);
+                    JusticeText.Toast(NotificationType.Info, JusticeLaw.CustodyReleasedKey(GoingPublic.ClockShared), "hours", JusticeText.N(hours), 10f);
                 }
                 _logger?.Info("Justice: " + hours + " h of custody served.");
             }
@@ -286,7 +286,7 @@ namespace RealLifeOverhaul
                 storage = Mathf.Min(storage, 300);
                 if (storage > 0)
                 {
-                    GameManager.ChangeMoneySafe(-storage, new TransactionInfo("reallife_transaction_impound"), null, null, force: true);
+                    RealLifeOverhaul.Economy.BizBooks.Book(-storage, new TransactionInfo("reallife_transaction_impound"), null, null, force: true);
                     JusticeText.Toast(NotificationType.Info, "reallife_justice_release_impound", "amount", JusticeText.Money(storage), 10f);
                 }
                 VehicleTow.BringNear(car, near);
@@ -328,11 +328,12 @@ namespace RealLifeOverhaul
                     }
                 }
             }
-            if (BuildingManager.IsInsideBuilding)
+            var buildings = InstanceBehavior<BuildingManager>.Instance;   // read once: a gone instance is looked for again (a whole-scene search)
+            if (BuildingManager.IsInsideBuilding && buildings != null)
             {
-                InstanceBehavior<BuildingManager>.Instance.ExitFromBuilding(0, playFadeAnimation: false);
+                buildings.ExitFromBuilding(0, playFadeAnimation: false);
                 float waited = 0f;
-                while ((BuildingManager.IsInsideBuilding || InstanceBehavior<BuildingManager>.Instance.exitingBuilding) && waited < 10f)
+                while ((BuildingManager.IsInsideBuilding || buildings.exitingBuilding) && waited < 10f)
                 {
                     waited += Time.unscaledDeltaTime;
                     _hold.Beat();

@@ -8,26 +8,22 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The game's help screen (F1: HelpSystem, Canvases/HelpSystem/Container) copied as a window of the mod's: its frame and
-    /// top bar, the round back and forward buttons, its search box, the list on the left (a category that opens to its pages)
-    /// and the page on the right that scrolls, under the topic's header. The copy is made asleep and every script that drove
-    /// the help is taken off; what is left is the game's (pictures, fonts, layout, scroll views, hover and click sounds),
-    /// painted in the mod's dark colours (DarkLook). The game's own help is not touched, and F1 stays the game's.
-    /// Cost: nothing a frame of its own; the game's scroll views run only while the window shows.
+    /// The game's F1 help screen copied asleep as a window of the mod's, without the scripts that drove the help and painted
+    /// in the dark colours (DarkLook); the game's own help is left alone. Costs nothing a frame of its own.
     /// </summary>
     public sealed class HelpFrame
     {
         public static IModLogger Logger;
 
-        // What only draws or sounds stays on the copy; every other script of the game's is taken off.
+        // What only draws or sounds stays on the copy.
         private static readonly string[] Harmless =
         {
             "ButtonEffects", "ToggleClickSound", "HoverEffect", "ScrollBarDraggingComponent", "ScrollBarHandleSizeLimiter", "TextInputTextChangedSound"
         };
 
         private const float RowGap = 34f;          // between two rows of a page, in canvas units of 3840 x 2160
-        private const float PageFoot = 60f;        // below the last row, so that it never sits on the window's edge
-        private const float NoteSize = 28f;        // a paragraph: the size of the help's own text
+        private const float PageFoot = 60f;        // below the last row, so it never sits on the window's edge
+        private const float NoteSize = 28f;        // a paragraph: the help's own text size
         private const float SmallSize = 24f;       // small capitals over a group of rows
 
         public GameObject Root { get; private set; }
@@ -39,9 +35,9 @@ namespace RealLifeOverhaul.GameUi
         public TMP_InputField Search { get; private set; }
         public Button Clear { get; private set; }
         public ScrollRect PageScroll { get; private set; }
-        /// <summary>The list's content: the categories stand in it, in order.</summary>
+        /// <summary>The list's content: the categories, in order.</summary>
         public RectTransform List { get; private set; }
-        /// <summary>The page's content: the topic's header first, then whatever the page puts there.</summary>
+        /// <summary>The page's content: the topic's header first, then the page.</summary>
         public RectTransform Page { get; private set; }
         public Image TopicGlyph { get; private set; }
         public TMP_Text TopicCategory { get; private set; }
@@ -52,7 +48,7 @@ namespace RealLifeOverhaul.GameUi
         private GameObject _paragraph;      // a text of the page, asleep
         private GameObject _small;          // small capitals over a group of rows, asleep
 
-        /// <summary>The copy, asleep under 'dormant' and painted dark. Null, with one line in Player.log, if the game's help is not built as expected.</summary>
+        /// <summary>The copy, asleep under <paramref name="dormant"/> and painted dark. Null, with one line in Player.log, if the game's help is not built as expected.</summary>
         public static HelpFrame Make(Transform dormant, string name)
         {
             try
@@ -101,7 +97,7 @@ namespace RealLifeOverhaul.GameUi
             {
                 return false;
             }
-            // The page's text was the help's mark-down: its own scripts (not the game's assembly) go first, so nothing renders mark-down here.
+            // The paragraph's own scripts (the help's mark-down, not the game's assembly) go first: nothing renders mark-down here.
             foreach (MonoBehaviour script in paragraph.GetComponents<MonoBehaviour>())
             {
                 if (script != null && !(script is TMP_Text))
@@ -110,7 +106,7 @@ namespace RealLifeOverhaul.GameUi
                 }
             }
             UiClone.StripGameScripts(Root, script => Array.IndexOf(Harmless, script.GetType().Name) >= 0);
-            UiClone.KeepOnly(list, "Category");                  // the categories the help made from its own pages
+            UiClone.KeepOnly(list, "Category");                  // the categories the help made from its pages
             UiClone.KeepOnly(content, "Topic", "TMProTemplate"); // and the page it last showed
             Transform pages = category.Find("Pages");
             if (pages == null || pages.childCount == 0 || category.Find("CategoryButton") == null)
@@ -136,7 +132,7 @@ namespace RealLifeOverhaul.GameUi
             TakeTopic(topic);
             TakeSearch(search);
 
-            // The templates sleep apart from the window; what a page needs is made from them.
+            // The templates sleep apart from the window; a page's parts are made from them.
             _category = category.gameObject;
             category.SetParent(dormant, false);
             _paragraph = paragraph.gameObject;
@@ -149,7 +145,7 @@ namespace RealLifeOverhaul.GameUi
                 UiClone.Words(_small.GetComponent<TMP_Text>(), string.Empty);
             }
 
-            // A status of the mod's own at the right of the top bar, left of the close button: a copy of the headline.
+            // A status at the right of the top bar, left of the close button: a copy of the headline.
             var status = UnityEngine.Object.Instantiate(headline.gameObject, headline.parent, false);
             status.name = "Status";
             var statusRect = (RectTransform)status.transform;
@@ -164,7 +160,7 @@ namespace RealLifeOverhaul.GameUi
             var headlineRect = (RectTransform)headline;
             headlineRect.sizeDelta = new Vector2(-1500f, headlineRect.sizeDelta.y);   // leaves the right of the bar to the status
 
-            // The page: rows a little apart, and room under the last one.
+            // Rows a little apart, and room under the last one.
             var layout = content.GetComponent<VerticalLayoutGroup>();
             if (layout != null)
             {
@@ -175,10 +171,10 @@ namespace RealLifeOverhaul.GameUi
             return true;
         }
 
-        // The header over the page: the coloured square with a picture, the category in small capitals, the page's name, and a note at the right.
+        // The header over the page: the coloured square and its picture, the category, the page's name, and a note at the right.
         private void TakeTopic(Transform topic)
         {
-            // As wide as the page, so that the note can stand at its right (the help's header only ever had words at its left).
+            // As wide as the page, so a note can stand at its right.
             var element = topic.GetComponent<LayoutElement>() ?? topic.gameObject.AddComponent<LayoutElement>();
             element.flexibleWidth = 1f;
             Transform square = topic.Find("Image");
@@ -211,7 +207,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The help's search box: its magnifier shown and its clear button, as the game's InputField script showed them (taken off with it).
+        // Its magnifier and clear button shown as the game's InputField script showed them (taken off with it).
         private void TakeSearch(Transform search)
         {
             Transform magnifier = search.Find("DefaultIcon");
@@ -291,7 +287,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>A category of the list, at the end of it: its button names the group; its pages are added with <see cref="HelpGroup.Add"/>.</summary>
+        /// <summary>A category at the end of the list; its pages are added with <see cref="HelpGroup.Add"/>.</summary>
         public HelpGroup AddGroup(string name)
         {
             GameObject copy = UnityEngine.Object.Instantiate(_category, List, false);
@@ -300,7 +296,7 @@ namespace RealLifeOverhaul.GameUi
             return new HelpGroup(copy.transform);
         }
 
-        /// <summary>A paragraph of the page, made under it (awake); the caller writes it and places it.</summary>
+        /// <summary>A paragraph made under the page, awake; the caller writes and places it.</summary>
         public TMP_Text NewParagraph()
         {
             GameObject copy = UnityEngine.Object.Instantiate(_paragraph, Page, false);
@@ -322,7 +318,7 @@ namespace RealLifeOverhaul.GameUi
             return copy.GetComponent<TMP_Text>();
         }
 
-        // A text the page's layout sizes: its width from the page, its height from its lines.
+        // Sized by the page's layout: its width from the page, its height from its lines.
         private static void TidyText(GameObject text, float size, Color colour, FontStyles style)
         {
             var t = text.GetComponent<TMP_Text>();
@@ -366,7 +362,7 @@ namespace RealLifeOverhaul.GameUi
         }
     }
 
-    /// <summary>One category of the help's list: a button with its name and an arrow, and the pages it opens to. Opened and closed on a click; nothing a frame.</summary>
+    /// <summary>One category of the help's list: a button with its name and arrow, and the pages it opens to. Costs nothing a frame.</summary>
     public sealed class HelpGroup
     {
         public readonly Transform Root;
@@ -375,7 +371,7 @@ namespace RealLifeOverhaul.GameUi
         private readonly Transform _arrow;
         private readonly Transform _pages;
         private readonly GameObject _pagesBack;
-        private readonly GameObject _link;     // the page link the help's category had, kept as the template of this one's
+        private readonly GameObject _link;     // the help's own page link, the template of this one's
         private readonly List<HelpLink> _links = new List<HelpLink>(16);
 
         public bool IsOpen { get; private set; }
@@ -403,7 +399,6 @@ namespace RealLifeOverhaul.GameUi
             SetOpen(false);
         }
 
-        /// <summary>A page of this category, at the end of its pages.</summary>
         public HelpLink Add(string name)
         {
             GameObject copy = UnityEngine.Object.Instantiate(_link, _pages, false);
@@ -414,7 +409,7 @@ namespace RealLifeOverhaul.GameUi
             return link;
         }
 
-        /// <summary>Opens or closes it as the help's own category does (HelpCategory.SetOpenState): its pages and their ground shown, the arrow turned.</summary>
+        /// <summary>Opens or closes it as HelpCategory.SetOpenState does: its pages and their ground shown, the arrow turned.</summary>
         public void SetOpen(bool open)
         {
             IsOpen = open;
@@ -441,10 +436,10 @@ namespace RealLifeOverhaul.GameUi
         }
     }
 
-    /// <summary>One page of a category of the help's list: its name, lighter under the pointer, in the game's blue while it is the page shown. Nothing a frame.</summary>
+    /// <summary>One page link of a category: lighter under the pointer, in the game's blue while it is the page shown. Costs nothing a frame.</summary>
     public sealed class HelpLink
     {
-        // The tint that makes the words (written in Text) read Soft at rest, so that the pointer can lighten them to Text.
+        // The tint that makes words written in Text read Soft at rest, so the pointer can lighten them to Text.
         private static readonly Color Resting = new Color(DarkLook.Soft.r / DarkLook.Text.r, DarkLook.Soft.g / DarkLook.Text.g, DarkLook.Soft.b / DarkLook.Text.b, 1f);
 
         public readonly GameObject Root;
@@ -468,7 +463,7 @@ namespace RealLifeOverhaul.GameUi
             SetChosen(false);
         }
 
-        /// <summary>The page shown: its name in the game's blue; otherwise in the list's soft white, full white under the pointer.</summary>
+        /// <summary>The page shown: its name in the game's blue; otherwise soft white, full white under the pointer.</summary>
         public void SetChosen(bool chosen)
         {
             _chosen = chosen;

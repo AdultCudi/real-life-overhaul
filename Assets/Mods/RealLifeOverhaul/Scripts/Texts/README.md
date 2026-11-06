@@ -11,6 +11,7 @@ RLO Texts: optional packs that word the city's messages on the player's own PC, 
 - `TextsDirector.Service.cs` and `TextService.cs`: Your own AI, the same cards sent to an AI service the player chooses (off unless chosen), with the pack and the written lines behind it.
 - `TextProviders.cs`, `TextServiceRules.cs`: the services, each request and answer, the faults and rests.
 - `TextChatGpt.cs`, `TextSignIn.cs`, `TextKeys.cs`: Sign in with ChatGPT, and the keys and tokens sealed for the Windows user.
+- `TextPlayer2.cs`: Player2, signed in through the Player2 App on this PC (the key held in memory only), its health call, the status look and the Test in Options > Tests.
 
 ## Data v6
 

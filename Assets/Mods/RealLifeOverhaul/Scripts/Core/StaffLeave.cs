@@ -7,37 +7,24 @@ using Helpers;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The one way this mod lets one of the player's employees go: business pressure's dismissal and the company's
-    /// departures for a rival (Business/BusinessGame.Leave, Wiring/CompanyLinks), and the tech sector's resignations
-    /// (Tech/People/TalentGame.Resign). The why and the rule are in <see cref="StaffLeaveRules"/>.
-    ///
-    /// The steps are the game's own, in its order: EmployeeInstance.ComplaintResign's (no satisfaction, the headhunter's
-    /// replacement where their plan takes it, otherwise Resign), then the employee taken off the save's list and the
-    /// game's index of employees, as EmployeeHelper.RunHourly takes off one who resigned in it. So the hours on their count
-    /// are paid once (a count of the day before, which the game's night has paid, is cleared first), the game's notice
-    /// comes once, with its next hour's, and nothing is left for the game's hourly check to resign again. Not
-    /// RemoveEmployee: that is the game's firing, which would go over their shifts and tasks again after Resign, and from
-    /// which Going Public sends a merged company's firing to its owner.
-    ///
-    /// GOING PUBLIC. Only the player's own: an employee at another player's business is left as the game has it.
-    /// Nothing is sent: the notice and the list are this machine's own, as for the game's own resignations.
-    ///
-    /// Cost: nothing per frame; one pass over the save's employees when somebody is let go.
+    /// The one way this mod lets one of the player's employees go (<see cref="StaffLeaveRules"/>): ComplaintResign's
+    /// steps in the game's order, then off the save's list and the game's index as EmployeeHelper.RunHourly takes one
+    /// off, so the count is paid once, one notice comes, and the game's hourly check does not resign them again. Never
+    /// RemoveEmployee, the game's firing, which Going Public sends to a merged company's owner. Going Public: another
+    /// player's employee is left alone; nothing is sent. Nothing per frame; one pass over the employees a leaving.
     /// </summary>
     public static class StaffLeave
     {
         public static IModLogger Logger;
 
-        // Which day an employee last worked an hour: the game's private field (Core/GameContract); null on a game without it.
+        // Which day an employee last worked an hour: the game's private field; null on a game without it.
         private static readonly FieldInfo LastWorkedField = GameContract.LastWorkedDay.Field;
 
         private static bool Verbose => Meta.Dev.Verbose;
 
         /// <summary>
-        /// Lets an employee go the game's own way, once; <paramref name="who"/> names the part of the mod that does, for
-        /// Player.log. A rival's offer to them loses its buttons at once (Core/RivalOfferGuard). False, with nothing
-        /// changed, for somebody who is not the player's to let go now: not on the list, a candidate, being replaced by the
-        /// headhunter, or at another player's business.
+        /// Lets an employee go the game's own way, once; <paramref name="who"/> names the part of the mod, for the log.
+        /// False, with nothing changed, for somebody not the player's to let go now (<see cref="StaffLeaveRules.Why"/>).
         /// </summary>
         public static bool Resign(EmployeeInstance e, string who)
         {
@@ -58,7 +45,7 @@ namespace RealLifeOverhaul
             int pays = StaffLeaveRules.HoursPaid(counted, lastWorked, known, save.Day, save.Hour);
             List<(string, BuildingRegistration)> notices = EmployeeHelper.ResignedEmployeesAndLastRegistrationAssigned;
             int noticesBefore = notices.Count;
-            e.poached = false;                         // ComplaintResign's steps, as this mod always had them: nobody named for the headhunter's reason
+            e.poached = false;                         // ComplaintResign's steps: nobody named for the headhunter's reason
             e.complaintData.isComplaining = false;
             e.satisfaction = 0f;
             if (counted > 0 && pays == 0)
@@ -90,7 +77,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // That very employee is on the save's list: the one the game's hours go over.
+        // That very object is on the save's list, the one the game's hours go over.
         private static bool Listed(EmployeeInstance e, List<EmployeeInstance> staff)
         {
             for (int i = 0; i < staff.Count; i++)
@@ -103,8 +90,7 @@ namespace RealLifeOverhaul
             return false;
         }
 
-        // Off the save's list and the game's index of employees, as EmployeeHelper.RunHourly takes off one who resigned in
-        // it (Resign has let their shifts go and done their tasks).
+        // Off the save's list and the game's index, as EmployeeHelper.RunHourly takes off one who resigned in it.
         private static void TakeOff(EmployeeInstance e, List<EmployeeInstance> staff)
         {
             for (int i = staff.Count - 1; i >= 0; i--)
@@ -120,7 +106,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // An employee at another player's business, in a Going Public session: left as the game has it.
         private static bool Foreign(EmployeeInstance e)
         {
             if (!GoingPublic.InSession || e.assignedAddress == null)

@@ -45,6 +45,26 @@ namespace RealLifeOverhaul.Tech
         /// <summary>A building's internet speed in Mbps; 0 with none or in an outage. Default: unknown, and a data centre counts as connected.</summary>
         public static Func<BuildingRegistration, int> Mbps;
 
+        /// <summary>
+        /// A building's plan speed in Mbps for the work over it, outages aside (the utilities close a firm for those by the
+        /// hour): 0 with no working plan, NetSpeedRules.Grace in the internet's grace, NetSpeedRules.Unknown with nothing to
+        /// ask or the switch off. Default: unknown, so the work runs as before speed counted.
+        /// </summary>
+        public static Func<BuildingRegistration, int> PlanMbps;
+
+        /// <summary><see cref="PlanMbps"/> asked: unknown with no answer, or if the utilities fault.</summary>
+        public static int PlanMbpsAt(BuildingRegistration reg)
+        {
+            try
+            {
+                return PlanMbps != null && reg != null ? PlanMbps(reg) : NetSpeedRules.Unknown;
+            }
+            catch (Exception)
+            {
+                return NetSpeedRules.Unknown;
+            }
+        }
+
         /// <summary>A business's internet: 0 working or not needed, 1 no plan, 2 being installed (when: the day), 3 down (when: the hour back).</summary>
         public delegate int NetAsk(BuildingRegistration reg, out int when);
 
@@ -56,6 +76,9 @@ namespace RealLifeOverhaul.Tech
 
         /// <summary>Opens the Company app's rota with a business (its place) picked; false if it cannot be. Default: none.</summary>
         public static Func<string, bool> OpenRota;
+
+        /// <summary>True while the utilities have no office to visit, so power is applied for in the Utilities app. Default: none (the office).</summary>
+        public static Func<bool> UtilitiesByPhone;
 
         /// <summary>The days a new internet plan takes to be installed (the utilities). Default: 2.</summary>
         public static Func<int> NetDays;
@@ -141,6 +164,38 @@ namespace RealLifeOverhaul.Tech
 
         /// <summary>A day's power (service 0, thousandths of a kWh) or water (1, of a cubic metre), cents at today's prices. Default: a plain tariff.</summary>
         public static Func<int, long, long> UtilityCents;
+
+        /// <summary>Asks Careers for the player as a professional at a business of a type (<see cref="Owner"/>).</summary>
+        public delegate bool OwnerAsk(string businessType, out OwnerStanding standing, out string why, out string professions);
+
+        /// <summary>
+        /// The player as a professional at a desk of their own firm of a type (Careers): true with their standing; false with
+        /// why (a key) and the professions the type employs, final words for its {professions}. Default: nobody works there.
+        /// </summary>
+        public static OwnerAsk Owner;
+
+        /// <summary>The player worked minutes at a desk of their own firm as a profession and rank (Careers: learning, burnout, a clause). Default: nothing.</summary>
+        public static Action<int, int, int> OwnerWorked;
+
+        /// <summary><see cref="Owner"/> asked: false with the switch-off key with no answer, or if Careers faults.</summary>
+        public static bool OwnerAt(string businessType, out OwnerStanding standing, out string why, out string professions)
+        {
+            try
+            {
+                if (Owner != null)
+                {
+                    return Owner(businessType, out standing, out why, out professions);
+                }
+            }
+            catch (Exception)
+            {
+                // Careers' fault: nobody works there, as with none
+            }
+            standing = new OwnerStanding { Prof = -1, Rank = -1, Role = -1 };
+            why = "reallife_tech_own_why_off";
+            professions = string.Empty;
+            return false;
+        }
 
         /// <summary>What the player's record as a founder adds to a pitch, thousandths (Careers). Default: nothing.</summary>
         public static Func<int> Founder;
@@ -246,6 +301,7 @@ namespace RealLifeOverhaul.Tech
 
         public static void Reset()
         {
+            UtilitiesByPhone = null;
             Esteem = null;
             Comfort = null;
             Office = null;
@@ -261,12 +317,15 @@ namespace RealLifeOverhaul.Tech
             Ipo = null;
             Supplied = null;
             Mbps = null;
+            PlanMbps = null;
             Net = null;
             NetDays = null;
             OpenInternet = null;
             OpenRota = null;
             UtilityCents = null;
             Founder = null;
+            Owner = null;
+            OwnerWorked = null;
             CourseShareBp = null;
             DegreeFee = null;
             OthersPicked = null;

@@ -38,6 +38,7 @@ namespace RealLifeOverhaul.Markets
             Dividends(day);
             Income(day);   // the player's bonds (MarketEngine.Bonds.cs)
             Corporate(day);
+            BuildersClose(day);   // a listed builder's own news (MarketEngine.Builders.cs)
             Derivatives(day);   // the raw materials' prices, the futures and options (MarketEngine.Derivatives.cs)
             Variance();
             Interest(day);

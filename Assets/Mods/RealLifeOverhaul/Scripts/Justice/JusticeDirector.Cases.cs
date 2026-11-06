@@ -51,6 +51,7 @@ namespace RealLifeOverhaul
                 c.Fled |= report.Fled;
                 c.Complied = joined ? c.Complied && report.Complied : report.Complied;
                 c.PaidAtScene += Mathf.Max(0, report.PaidAtScene);
+                c.Damages += Mathf.Max(0, report.Damages);
                 c.HeldHours += Mathf.Max(0, report.HeldHours);
                 int added = 0;
                 for (int i = 0; i < report.Charges.Length; i++)
@@ -169,7 +170,8 @@ namespace RealLifeOverhaul
                 LegalPhone.Send("reallife_text_justice_dismissed", Data("number", JusticeText.N(c.Number), "amount", JusticeText.Money(compensation + bail)));
             }
             JusticeText.Toast(NotificationType.Success, "reallife_justice_toast_dismissed", "amount", JusticeText.Money(compensation + bail), 12f);
-            Logger?.Info("Justice: case " + c.Number + " dismissed; " + compensation + " paid in compensation, " + bail + " of bail returned.");
+            Logger?.Info("Justice: case " + c.Number + " dismissed; " + compensation + " paid in compensation, " + bail + " of bail returned"
+                         + (c.Damages > 0 ? "; the " + c.Damages + " of damages it held are never charged." : "."));
         }
 
         // Bail comes back: they appeared, or there was nothing to appear for. Returns the bail returned.

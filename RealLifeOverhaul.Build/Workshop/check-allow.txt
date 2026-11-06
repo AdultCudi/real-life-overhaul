@@ -58,6 +58,7 @@
 11 reallife_guide_endscale
 11 reallife_guide_jobs
 11 reallife_guide_leisure
+11 reallife_guide_shops
 11 reallife_guide_tech_startups
 11 reallife_guide_travel
 11 reallife_job_flyers_obj

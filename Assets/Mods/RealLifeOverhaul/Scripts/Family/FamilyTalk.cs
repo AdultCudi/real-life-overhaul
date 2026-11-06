@@ -188,7 +188,7 @@ namespace RealLifeOverhaul.Family
         /// <summary>Takes money for something; false (with the game's own "not enough money" notice) if the player cannot pay.</summary>
         public static bool Pay(int amount, string transaction)
         {
-            return amount <= 0 || GameManager.ChangeMoneySafe(-amount, new TransactionInfo(transaction), null, null, false, true);
+            return amount <= 0 || RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo(transaction), null, null, false, true);
         }
 
         /// <summary>Money in, or a cost that must be met (a bill that was agreed): never refused.</summary>
@@ -196,7 +196,7 @@ namespace RealLifeOverhaul.Family
         {
             if (amount != 0)
             {
-                GameManager.ChangeMoneySafe(amount, new TransactionInfo(transaction), null, null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, new TransactionInfo(transaction), null, null, true);
             }
         }
     }

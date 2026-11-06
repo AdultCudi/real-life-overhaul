@@ -4,19 +4,11 @@ using System.Runtime.InteropServices;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// What the operating system says of the frame before this one, for the long-frame line of the session record: how
-    /// long the game's main thread ran on a processor in it (GetThreadTimes), how long the whole game ran over all its
-    /// threads (GetProcessTimes), how busy the machine's processors were and so how much of them other programs held
-    /// (GetSystemTimes), and how many page faults the game took (K32GetProcessMemoryInfo). That is what tells a frame the
-    /// game spent working from one in which it waited, and one in which another program held the processor.
-    ///
-    /// Read once a frame by <see cref="FrameSteps"/> at the frame's roll-over, on the main thread, so it covers exactly the
-    /// frame the steps cover; only while the steps are timed ("Developer diagnostics" on, and the option "Measurements
-    /// time every step of the frame"). Four calls into kernel32 with fixed arguments and out values, a microsecond or a
-    /// few, nothing allocated. Windows counts a thread's and the system's times at its clock tick (about 15.6 ms), so
-    /// the times are good for a long frame and for sums, not for a single short one. An entry point that is missing (an
-    /// older Windows, Wine, another system) is found out once, when the timing starts: that measure then says it is not
-    /// available, and nothing throws.
+    /// What the system says of the frame before this one: the main thread's processor time, the whole game's, how busy
+    /// the machine was (so the share other programs held) and the page faults. That tells a frame the game spent working
+    /// from one it waited in, or one another program held the processor in. Read by <see cref="FrameSteps"/> at each
+    /// roll-over while the steps are timed: four kernel32 calls, nothing allocated. Times count at the system's clock tick
+    /// (about 15.6 ms). An entry point that is missing (an older Windows, Wine) is found out once and says so.
     /// </summary>
     public static class MachineClock
     {
@@ -130,7 +122,7 @@ namespace RealLifeOverhaul
         /// <summary>How busy the machine's processors were in the frame before this one, 0 to 1, or below zero.</summary>
         public static double Busy => _system && Valid && _totalLast > 0L ? Clamp01(1.0 - (double)_idleLast / _totalLast) : -1.0;
 
-        /// <summary>Of the machine's processors, the share other programs held in the frame before this one (the busy share less the game's), or below zero.</summary>
+        /// <summary>The share of the machine's processors other programs held in the frame before this one, or below zero.</summary>
         public static double Others => _system && _process && Valid && _totalLast > 0L ? Clamp01((double)(_totalLast - _idleLast - _processLast) / _totalLast) : -1.0;
 
         /// <summary>The game's page faults in the frame before this one, or below zero.</summary>

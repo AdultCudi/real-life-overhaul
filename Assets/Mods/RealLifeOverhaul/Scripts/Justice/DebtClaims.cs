@@ -41,6 +41,20 @@ namespace RealLifeOverhaul
             return false;
         }
 
+        /// <summary>The day a claim with this number must be answered by while it is still before the court; -1 once it is not.</summary>
+        public static int DueDay(int number)
+        {
+            List<JusticeSuit> suits = JusticeState.Suits;
+            for (int i = 0; number > 0 && JusticeState.Loaded && i < suits.Count; i++)   // a save not read yet has no suits of its own
+            {
+                if (suits[i].Number == number)
+                {
+                    return suits[i].DueDay;
+                }
+            }
+            return -1;
+        }
+
         /// <summary>The lender withdraws a claim not yet judged (the debt was written off). True if there was one.</summary>
         public static bool Withdraw(int number)
         {

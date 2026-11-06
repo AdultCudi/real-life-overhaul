@@ -1,5 +1,4 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
 using BAModAPI;
 using Blueprints;
@@ -8,6 +7,7 @@ using BusinessLayoutSets;
 using Helpers;
 using Localizor;
 using PlayerActivity;
+using RealLifeOverhaul.Floors;
 using RealLifeOverhaul.GameUi;
 using TMPro;
 using UI;
@@ -20,32 +20,22 @@ namespace RealLifeOverhaul.Careers
 {
     /// <summary>
     /// Inside Hudson City University: the game's own school interior (structure D1, layout GarmentDistrictSchool) on several
-    /// floors, the building read as D1 while the game loads it and given a registration of the mod's own, kept nowhere. Each
-    /// floor's five rooms hold five of the university's courses. The cost: per frame (CareersDirector.LateUpdate) the building
-    /// card's target compared, near the open door one flag; once a second the panels and marks; the furniture over four frames.
+    /// floors of its building, as the floors core (Floors/FloorsDirector) holds it: the building read as D1 while the game loads
+    /// it, a registration of the mod's own on the floor, kept nowhere, the door's and lift's panels, the lift. Each floor's five
+    /// rooms hold five of the university's courses. The cost: per frame (CareersDirector.LateUpdate) the building card's target
+    /// compared; once a second its hours and the marks on a floor; the floor's furniture laid by the core over four frames.
     /// </summary>
     internal sealed partial class CampusInterior
     {
         public const string SchoolLayout = "GarmentDistrictSchool";
         private const string SizeD = "ba:buildingsize_d";
         private const int SchoolVersion = 1;
-        private const float DoorReach = 3.2f;   // metres: the door's panel shows within
-        private const float LiftReach = 2.6f;   // metres: the lift's panel shows within
-        private const float WatchReach = 12f;   // metres: the game's own click on the building is watched for within
-        private const int Chunks = 4;   // the frames the game keeps the screen dark after it has entered
+        private const float WatchReach = 12f;   // metres: from its door the university takes the player in, and says the game's refusals there
+        private const string Holder = "careers_study";   // the feature whose director holds the university (Meta/FeatureList): its floors go with it
 
         private readonly CareersDirector _director;
         private readonly IModLogger _logger;
-        private readonly DoorPanel _door;
-        private readonly DoorPanel _lift;
-        private readonly Action[] _doorPress = new Action[4];
-        private readonly Action[] _liftPress = new Action[4];
-        private readonly int[] _doorFloor = new int[4];
-        private readonly int[] _liftFloor = new int[4];
         private readonly Dictionary<long, object> _args = new Dictionary<long, object>(16);   // a floor button's arguments by class, floor and course
-        private readonly List<int> _floorList = new List<int>(CampusRules.Floors);              // the floors a panel offers, made again in place each second
-        private Func<string> _doorWhat, _liftWhat;   // what the door's and the lift's panels say in the log (made once)
-        private bool _doorWhatOpen;
         private BuildingResume _card;                 // the game's building card, kept until the city goes
         private long _cardHours = long.MinValue;      // what the card's hours were written from (HoursStamp)...
         private string _cardText;                     // ...and the label's text just after: written again only if either has changed
@@ -53,54 +43,36 @@ namespace RealLifeOverhaul.Careers
         private readonly Transform[] _chairs = new Transform[CampusRules.RoomsPerFloor];   // each room's chair, found as the game's door finds it
         private readonly GameObject[] _signs = new GameObject[CampusRules.RoomsPerFloor];
         private readonly CampusMarks _marks;
+        private readonly CampusFloors _place;   // the university's classrooms on its floors, as the floors core lays them
         private static Material _signLook;    // the game's font's material, drawn from the front only (one for every sign)
         private static TMP_FontAsset _signFont;
 
         private BusinessLayoutSet _set;
         private bool _checked, _available;
-        private Building _asset;
-        private string _wasSize;
-        private int _wasVersion;
-        private bool _mutated;
-        private int _pending = 1, _goCourse = -1;
+        private CampusHost _host;      // its building as the floors core holds it, while the floors are there
+        private FloorVisit _visit;     // the player on one of its floors
+        private int _goCourse = -1;    // a course's classroom to go to once on its floor...
         private bool _goBegin;         // ...and, once there, its class (or exam, or homework) begun at its desk for the player
-        private int _built;            // generation of the floor being laid
-        private bool _watching;
-        private CityBuildingController _doorsOf;
-        private bool[] _doorWas;
-        private bool _doorsOpen;
-        private BuildingRegistration _shadow;
-        private Vector3 _spawn;
-        private int _doorPage, _liftPage;
+        private int _layCourse = -1;   // the same, taken for the floor being laid
+        private bool _layBegin;
         private int _toldClosed = -1;
-        private bool _wrongTold;
         private EntityController _carded;
-        private Action<Address> _onEnter, _enterSeen, _onExit, _exitSeen;
         private Action<NotificationType, string, Dictionary<string, string>, float, string, Action, bool, bool> _onNotice, _noticeSeen;
 
         public CampusInterior(CareersDirector director, IModLogger logger)
         {
             _director = director;
             _logger = logger;
-            _door = new DoorPanel(logger, "Careers check (university door)");
-            _lift = new DoorPanel(logger, "Careers check (university lift)");
-            for (int i = 0; i < 4; i++)
-            {
-                int slot = i;
-                _doorPress[i] = _door.Press(() => DoorPressed(slot));
-                _liftPress[i] = _lift.Press(() => LiftPressed(slot));
-            }
-            _onEnter = Guard.Wrap<Address>(Entered);
-            _onExit = Guard.Wrap<Address>(Left);
             _onNotice = Guard.Wrap<NotificationType, string, Dictionary<string, string>, float, string, Action, bool, bool>(Noticed);
             _marks = new CampusMarks(logger);
+            _place = new CampusFloors(this);
         }
 
         /// <summary>The floor the player is on, from 1; 0 when not inside the university's floors.</summary>
         public int Floor { get; private set; }
 
-        /// <summary>True while either panel of the university is up, and in the frame its button ran.</summary>
-        public bool TakesKey => _door.TakesKey || _lift.TakesKey;
+        /// <summary>True while a panel of the floors' is up (the university's door or lift among them), and in the frame its button ran.</summary>
+        public bool TakesKey => FloorsDirector.TakesInteractKey;
 
         private CampusBuilding Campus => _director.University;
 
@@ -151,12 +123,13 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        private static bool IsDoor(string itemName) => itemName == "ba:itemname_schooldoor";
+        private const string SchoolDoor = "ba:itemname_schooldoor";
 
+        private static bool IsDoor(string itemName) => itemName == SchoolDoor;
+
+        /// <summary>Once a second: the university's building handed to the floors core while its floors are there, its card and the game's refusals.</summary>
         public void Tick()
         {
-            EventHold.Keep(ref GlobalEvents.onEnterBuilding, _onEnter, ref _enterSeen);
-            EventHold.Keep(ref GlobalEvents.onExitBuilding, _onExit, ref _exitSeen);
             EventHold.Keep(ref Notifications.onShow, _onNotice, ref _noticeSeen);
             CampusBuilding campus = Campus;
             if (!Available)
@@ -164,67 +137,31 @@ namespace RealLifeOverhaul.Careers
                 Gone("no university's floors");
                 return;
             }
-            if (!ReferenceEquals(_doorsOf, campus.Building))
+            if (_host == null || !ReferenceEquals(_host.Building, campus.Building))
             {
-                Doors(false);
-                _doorsOf = campus.Building;
-                _doorWas = null;
+                Hold(campus);
             }
-            bool open = OpenNow();
-            Doors(open);
+            _host.Name = CareersText.T("reallife_study_campus_university");
+            _host.Door = campus.Door;
             CardNow();
-            BuildingManager manager = Manager;
-            PlayerController player = PlayerHelper.PlayerController;
-            if (manager == null || player == null)
+        }
+
+        // Its building to the floors core: a new holding for a new building, the old one let go first.
+        private void Hold(CampusBuilding campus)
+        {
+            if (_host != null)
             {
-                return;
+                FloorsDirector.Let(_host, "the university's building changed");
             }
-            bool insideOurs = CareersGame.InsideAt(campus.Street, campus.Number);
-            if (insideOurs && Floor == 0 && !manager.enteringBuilding && !_mutated)
+            _host = new CampusHost(this)
             {
-                Wrong(open);
-                return;
-            }
-            if (Floor > 0 && insideOurs)
-            {
-                _door.Hide("inside");
-                _watching = false;
-                bool wasOpen = manager.isOpen;
-                manager.isOpen = open;
-                if (wasOpen != open && Meta.Dev.Verbose)
-                {
-                    _logger?.Info("Careers check (university floor): the classrooms are " + (open ? "open" : "closed") + " now: PASS");
-                }
-                Marks();
-                LiftPanel(player);
-                return;
-            }
-            _lift.Hide("not on a floor");
-            if (BuildingManager.IsInsideBuilding)
-            {
-                _door.Hide("inside another building");
-                _watching = false;
-                return;
-            }
-            Vector3 at = player.transform.position;
-            Vector3 offset = campus.Door - at;
-            float flat = new Vector2(offset.x, offset.z).magnitude;
-            bool busy = PlayerHelper.IsUsingVehicle || ThirdPersonCamera.IsUiOpen() || PlayerActivityUI.IsPanelOpen || JobDirector.TakesInteractKey;
-            if (open && flat < WatchReach && !_watching)
-            {
-                _watching = true;
-                _director.StartCoroutine(Guard.Routine(WatchClick()));
-            }
-            else if ((!open || flat >= WatchReach) && _watching)
-            {
-                _watching = false;
-            }
-            if (busy || flat > DoorReach || Mathf.Abs(offset.y) > 2.5f)
-            {
-                _door.Hide("away from the door");
-                return;
-            }
-            DoorPanel(open, player);
+                Building = campus.Building,
+                Door = campus.Door,
+                Name = CareersText.T("reallife_study_campus_university"),
+                Rank = FloorsRules.RankCampus
+            };
+            _host.Own.Add(_place);
+            FloorsDirector.Hold(_host);
         }
 
         /// <summary>The university is open now: its hours, or a class, an exam or a ceremony of the player's there now.</summary>
@@ -301,7 +238,7 @@ namespace RealLifeOverhaul.Careers
             return _signLook;
         }
 
-        /// <summary>To another floor from inside: the screen dark, the rooms given that floor's courses, the player at the entrance.</summary>
+        /// <summary>To another floor from inside: the floors core's lift (the screen dark, the rooms given that floor's courses, the player at the entrance).</summary>
         public void ChangeFloor(int floor, int course, bool begin = false)
         {
             if (Floor == 0 || floor < 1 || floor > CampusRules.Floors)
@@ -321,34 +258,14 @@ namespace RealLifeOverhaul.Careers
                 Tell("reallife_study_why_busy");
                 return;
             }
-            _director.StartCoroutine(Guard.Routine(Lift(floor, course, begin)));
-        }
-
-        private IEnumerator Lift(int floor, int course, bool begin)
-        {
-            _lift.Hide("going to another floor");
-            yield return UiFader.Fade(0.25f);
-            int was = Floor;
-            if (Floor > 0)
+            _goCourse = course;
+            _goBegin = begin && course >= 0;
+            string why = FloorsDirector.Lift(floor, "the Campus app");
+            if (why != null)
             {
-                Floor = floor;
-                Label();
-                PlayerController player = PlayerHelper.PlayerController;
-                if (player != null)
-                {
-                    player.ResetNavigation();
-                    player.Character.navmeshAgent.Warp(_spawn);
-                }
-                _logger?.Info("Careers: the player takes the lift from floor " + was + " to floor " + floor + " of the university (at " + Clock() + "); rooms: " + RoomsWords() + ".");
-            }
-            yield return UiFader.UnFade(0.25f);
-            if (Floor > 0)
-            {
-                Tell(NotificationType.Info, "reallife_campus_note_floor", "floor", Floor.ToString(), "courses", RoomsList());
-                if (course >= 0)
-                {
-                    GoToRoom(course, begin);
-                }
+                _goCourse = -1;
+                _goBegin = false;
+                _logger?.Info("Careers: the lift to floor " + floor + " of the university is not taken (" + why + ").");
             }
         }
 
@@ -433,16 +350,16 @@ namespace RealLifeOverhaul.Careers
                 : "day " + save.Day + " (" + TimeHelper.GetDayOfWeek(Math.Max(1, save.Day)) + ") " + save.Hour.ToString("00") + ":" + Mathf.FloorToInt(save.Minute).ToString("00");
         }
 
-        /// <summary>Everything put back: the doors' flags, the building's size, the panels.</summary>
+        /// <summary>Its building let go by the floors core: what was borrowed of it put back, its doors' flags and the panels as found.</summary>
         public void Gone(string why)
         {
-            _watching = false;
-            Restore(why);
-            Doors(false);
-            _doorsOf = null;
-            _doorWas = null;
-            _door.Hide(why);
-            _lift.Hide(why);
+            if (_host != null)
+            {
+                FloorsDirector.Let(_host, why);
+                _host = null;
+            }
+            _goCourse = -1;
+            _goBegin = false;
         }
 
         /// <summary>The city goes, or the part is switched off.</summary>
@@ -450,11 +367,9 @@ namespace RealLifeOverhaul.Careers
         {
             _marks.Clear();
             Gone("the university's part went");
-            GlobalEvents.onEnterBuilding -= _onEnter;
-            GlobalEvents.onExitBuilding -= _onExit;
             Notifications.onShow = (Action<NotificationType, string, Dictionary<string, string>, float, string, Action, bool, bool>)Delegate.Remove(Notifications.onShow, _onNotice);
             Floor = 0;
-            _built++;
+            _visit = null;
         }
     }
 }

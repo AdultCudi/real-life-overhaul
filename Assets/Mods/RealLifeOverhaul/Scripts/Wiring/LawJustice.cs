@@ -9,20 +9,10 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// One arrest, one path (the table is in docs/reference/wiring.md, "Who does what at an arrest"):
-        ///
-        ///   the police code (Crime/PoliceAttention, Traffic/PolicePursuit) catches the player and
-        ///       charges the roadside fines once;
-        ///   Scripts/Law holds them: cuffed, the cell at the nearest precinct, a line on the record;
-        ///   Scripts/Justice opens the case, and is told here how long the cell really was (time
-        ///       served comes off any custody the court gives) and how it ended: let out after
-        ///       sitting it out, the case goes straight to a court date; bail paid at the precinct
-        ///       IS the case's bail (returned on appearing), never a second one;
-        ///   Scripts/Licences adds the points from the same police events, and is told by the
-        ///       court when a sentence suspends the licence (LicenceLinks).
-        ///
-        /// Nothing is polled: the police record says when a line is added or closed
-        /// (<see cref="Record.Changed"/>), and that is the only thing listened to.
+        /// One arrest, one path (docs/reference/wiring.md, "Who does what at an arrest"): Law holds the player, and the
+        /// case Justice opened for it is told here how long the cell really was (time served) and how it ended; bail paid
+        /// at the precinct is the case's bail, never a second one. Nothing is polled: only <see cref="Record.Changed"/> is
+        /// listened to.
         /// </summary>
         public static class Arrests
         {
@@ -30,7 +20,7 @@ namespace RealLifeOverhaul
             private static JusticeCase _case;      // the case today's arrest belongs to, if the courts are on
             private static bool _watching;         // a stay in a cell that began in this session is being followed
             private static int _day, _charges;     // which line of the record it is
-            private static int _hours;             // as sentenced at the precinct: what the case was told
+            private static int _hours;             // as sentenced at the precinct, what the case was told
             private static int _bail;              // what walking out at once costs there
 
             internal static void Connect()
@@ -107,11 +97,11 @@ namespace RealLifeOverhaul
                 Logger?.Info("Wiring: held at a precinct for " + entry.Hours + " h" + (_case != null ? "; case " + _case.Number + " is told." : "; no case is open for it."));
             }
 
-            // Out of the cell. What was really served replaces what was sentenced, and the case does not ask for bail a second time.
+            // Out of the cell: what was really served replaces what was sentenced, and the case asks for no second bail.
             private static void Released(RecordEntry entry)
             {
                 bool followed = _watching;
-                JusticeCase c = followed ? _case : CaseOf(entry.Day);   // (a stay resumed after a load: the case is found by its day)
+                JusticeCase c = followed ? _case : CaseOf(entry.Day);   // a stay resumed after a load: the case is found by its day
                 int bail = followed ? _bail : LawBook.Bail(entry.Charges, Mathf.Max(0, Record.TimesHeld(LawBook.RepeatDays) - 1));
                 int told = _hours;
                 Forget();
@@ -132,9 +122,8 @@ namespace RealLifeOverhaul
             }
 
             /// <summary>
-            /// The family hears of an arrest, once, as it happens (only if the player has a partner and family life is on): 1 a night in the cells,
-            /// 2 when a case has been opened for it, 3 a prison term (pass 0 to have it worked out). Never called for a test button, and not
-            /// when a save is loaded, so an arrest that was under way at the save was told when it happened.
+            /// The partner hears of an arrest as it happens: 1 a night in the cells, 2 a case opened for it, 3 a prison term,
+            /// 0 to have it worked out. Never for a test button or at a load.
             /// </summary>
             internal static void FamilyHears(int severity)
             {
@@ -170,13 +159,9 @@ namespace RealLifeOverhaul
             }
 
             /// <summary>
-            /// What Scripts/Law does for the courts. Its record is the police's (tickets, stays,
-            /// escapes) and has no line for a conviction and no way to take one line off; so the
-            /// convictions stay the courts' own list (asked together through
-            /// <see cref="Standing"/>). What this bridge gives is the cell and the place: hours a
-            /// court orders (remand, a term of custody) are served in the nearest precinct's holding
-            /// cell (<see cref="Custody.Hold"/>), and somebody let out of prison is put down on the
-            /// pavement outside it.
+            /// What Law does for the courts: the cell for the hours a court orders, and the pavement outside the nearest
+            /// precinct for somebody let out. Its record has no line for a conviction, so convictions stay the courts' own
+            /// (read together through <see cref="Standing"/>).
             /// </summary>
             private sealed class LawBridge : ILawBridge
             {
@@ -188,9 +173,8 @@ namespace RealLifeOverhaul
                 public void Cleared(int caseNumber) { }
                 public void RecordSealed() { }
 
-                // Remand and a term of custody are served where an arrest is: the nearest precinct's cell. No bail: a court
-                // that holds somebody has already refused it, or the player chose to stay. False (custody is off, there is no
-                // precinct, somebody is already held) leaves it to the courts' own time skip.
+                // No bail: a court that holds somebody has refused it, or the player chose to stay. False (custody off, no
+                // precinct, somebody already held) leaves it to the courts' own time skip.
                 public bool Custody(int hours, string reasonKey, Action released)
                 {
                     try

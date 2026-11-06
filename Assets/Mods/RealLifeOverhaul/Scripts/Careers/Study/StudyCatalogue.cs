@@ -29,16 +29,17 @@ namespace RealLifeOverhaul.Careers
         Distance = 2      // the same timetable followed online from home (a course that allows it)
     }
 
-    /// <summary>The player's own skills: the professions' 29 specialisms (Tech/People, the same numbers), then fourteen of the trades and care; 0 to 100 points, in thousandths.</summary>
+    /// <summary>The player's own skills: the professions' 29 specialisms (Tech/People, the same numbers), then fifteen of the trades and care; 0 to 100 points, in thousandths.</summary>
     public static class Skills
     {
         public const int Electrical = 29, Plumbing = 30, Joinery = 31, Cooking = 32, Hair = 33, Beauty = 34, Care = 35, Clinical = 36, Teaching = 37,
-            Hospitality = 38, Guarding = 39, Handling = 40, FirstAid = 41, Driving = 42, Count = 43;
+            Hospitality = 38, Guarding = 39, Handling = 40, FirstAid = 41, Driving = 42, Masonry = 43, Count = 44;
 
         /// <summary>reallife_study_skill_{key}, for the skills after the professions' own.</summary>
         public static readonly string[] OwnKeys =
         {
-            "electrical", "plumbing", "joinery", "cooking", "hair", "beauty", "care", "clinical", "teaching", "hospitality", "guarding", "handling", "first_aid", "driving"
+            "electrical", "plumbing", "joinery", "cooking", "hair", "beauty", "care", "clinical", "teaching", "hospitality", "guarding", "handling", "first_aid", "driving",
+            "masonry"
         };
 
         public static bool Professional(int skill) => skill >= 0 && skill < TalentCatalogue.SkillCount;
@@ -116,6 +117,7 @@ namespace RealLifeOverhaul.Careers
         public const int FirstAid = 0, Barista = 1, Bartending = 2, Forklift = 3, SecurityLicence = 4, DrivingRefresher = 5, CodingBootcamp = 6, Bookkeeping = 7,
             CustomerService = 8, DigitalMarketing = 9;
         public const int Electrician = 10, Plumber = 11, Carpenter = 12, Chef = 13, Hairdresser = 14, Beautician = 15, CareWorker = 16, ItSupport = 17;
+        public const int Bricklaying = 18, CraneTicket = 19, ConstructionManagement = 34, ArchitectLicence = 62;   // the building trades' (Scripts/BuildTrades)
         public const int ComputerScience = 20, SoftwareEngineering = 21, DataScience = 22, Cybersecurity = 23, Business = 24, Accounting = 25, Finance = 26, Law = 27,
             Marketing = 28, Architecture = 29, CivilEngineering = 30, Nursing = 31, Teaching = 32, Design = 33;
         public const int Mba = 40, MscComputing = 41, LegalPractice = 42, Pgce = 43;
@@ -186,7 +188,15 @@ namespace RealLifeOverhaul.Careers
             new CourseDef(NetworkProfessional, "network_professional", CourseKind.Certificate, Campus.Online, 0, 6, 0, 0, 0, 800, TalentCatalogue.Networking, 12, TalentCatalogue.Troubleshooting, 5, -1, 3),
             new CourseDef(MachineLearning, "machine_learning", CourseKind.Certificate, Campus.Online, 0, 8, 0, 0, 0, 1300, TalentCatalogue.Learning, 12, TalentCatalogue.Statistics, 5, -1, 10),
             new CourseDef(PrivacyProfessional, "privacy_professional", CourseKind.Certificate, Campus.Online, 0, 6, 0, 0, 0, 1050, TalentCatalogue.Law, 8, TalentCatalogue.SecurityOps, 8, -1, 9),
-            new CourseDef(TestingProfessional, "testing_professional", CourseKind.Certificate, Campus.Online, 0, 6, 0, 0, 0, 500, TalentCatalogue.Testing, 12, TalentCatalogue.Coding, 5, -1, 11)
+            new CourseDef(TestingProfessional, "testing_professional", CourseKind.Certificate, Campus.Online, 0, 6, 0, 0, 0, 500, TalentCatalogue.Testing, 12, TalentCatalogue.Coding, 5, -1, 11),
+
+            // the building trades' (Scripts/BuildTrades): last, so every course before keeps its room at the university and its place in a list
+            new CourseDef(Bricklaying, "bricklaying", CourseKind.Vocational, Campus.School, 6, 3, 4, Tue | Thu | Sat, 13, 2400, Skills.Masonry, 45, TalentCatalogue.Structures, 5, Diploma),
+            new CourseDef(CraneTicket, "crane_ticket", CourseKind.Short, Campus.School, 3, 1, 3, Mon | Thu, 13, 650, Skills.Handling, 25, Skills.Driving, 5),
+            new CourseDef(ConstructionManagement, "construction_management", CourseKind.Degree, Campus.University, 10, 5, 4, Mon | Tue | Thu, 14, 9800, TalentCatalogue.Delivery, 35,
+                TalentCatalogue.Planning, 25, Bachelor),
+            new CourseDef(ArchitectLicence, "architect_licence", CourseKind.Certificate, Campus.Online, 0, 10, 0, 0, 0, 1600, TalentCatalogue.Planning, 12,
+                TalentCatalogue.Structures, 8, -1, -1, false, new[] { Architecture })
         };
 
         public const int ArriveEarlyMinutes = 30;     // a class can be joined this long before it starts

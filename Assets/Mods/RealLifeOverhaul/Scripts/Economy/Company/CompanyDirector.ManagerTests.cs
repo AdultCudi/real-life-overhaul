@@ -1,10 +1,14 @@
 using System;
+using System.Collections.Generic;
+using Entities;
+using UI.Notification;
 
 namespace RealLifeOverhaul.Economy
 {
     /// <summary>
-    /// The managers' test tools on the options page: a manager appointed at once, every kind decided now whatever the
-    /// hour and the day, and every decision undone. What a manager decides by them is real, as it would be at its hour.
+    /// The managers' test tools on the options page: a manager appointed at once, the company filled with managers of
+    /// every kind, every kind decided now whatever the hour and the day, and every decision undone. What a manager decides
+    /// by them is real, as it would be at its hour.
     /// </summary>
     public sealed partial class CompanyDirector
     {
@@ -69,6 +73,90 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
+        /// The company filled with managers at once, so the directory shows every group: every place with staff and no
+        /// manager given its most skilled employee, of every kind (a business, a factory or office, a warehouse), and every
+        /// district without one a regional manager, the most skilled of those at a headquarters on none of the game's plans.
+        /// Real appointments, as the tab's own buttons make them; up to the most posts a company can have.
+        /// </summary>
+        public void TestManagerFill()
+        {
+            const string test = "fill the company with managers";
+            if (!ManagerTestReady(test))
+            {
+                return;
+            }
+            TestGuard(test, () =>
+            {
+                ManagerRead();
+                var hands = new List<ManagerHand>(16);
+                int places = 0, regions = 0;
+                for (int i = 0; i < _managed.Count && _mgr.Managers.Count < ManagerCatalogue.ManagersMost; i++)
+                {
+                    ManagedPlace mp = _managed[i];
+                    if (mp.Own != null || mp.Place.Reg == null || !GoingPublic.Mine(mp.Place.Reg))
+                    {
+                        continue;
+                    }
+                    ManagerGame.StaffAt(mp.Place, _index, hands);
+                    int best = Best(hands, false);
+                    EmployeeInstance e = best >= 0 ? ManagerGame.Employee(hands[best].Id) : null;
+                    if (e != null && Appointed(mp, e, hands[best].Id) != null)
+                    {
+                        places++;
+                    }
+                }
+                ManagerGame.Offices(_mgrPlaces, _index, hands);
+                for (int i = 0; i < _districts.Count && _mgr.Managers.Count < ManagerCatalogue.ManagersMost; i++)
+                {
+                    if (RegionOf(_districts[i]) != null)
+                    {
+                        continue;
+                    }
+                    int best = Best(hands, true);
+                    EmployeeInstance e = best >= 0 ? ManagerGame.Employee(hands[best].Id) : null;
+                    RotaPlace office = best >= 0 ? PlaceOf(hands[best].Place) : null;
+                    if (e != null && office != null && AppointedRegion(_districts[i], e, hands[best].Id, office) != null)
+                    {
+                        regions++;
+                    }
+                    if (best >= 0)
+                    {
+                        hands.RemoveAt(best);   // one district each
+                    }
+                }
+                if (places + regions == 0)
+                {
+                    TestRefusals.TellKey(Logger, test, "reallife_co_test_no_staff");
+                    return;
+                }
+                ManagerRead();
+                Logger?.Warn("Company test: " + places + " place manager(s) and " + regions + " regional manager(s) appointed; " + _mgr.Managers.Count
+                             + " post(s) filled over " + _managed.Count + " place(s) and " + _districts.Count + " district(s).");
+                Notify(NotificationType.Success, "reallife_mgr_test_filled", new Dictionary<string, string>
+                {
+                    { "places", places.ToString() }, { "regions", regions.ToString() }
+                }, 8f);
+                Changed();
+                Open(TabManagers, null);
+            });
+        }
+
+        // The most skilled of a list who manages nothing yet (and, for a district, is on none of the game's plans); -1 for none.
+        private int Best(List<ManagerHand> hands, bool region)
+        {
+            int best = -1;
+            for (int i = 0; i < hands.Count; i++)
+            {
+                if (_mgr.Of(hands[i].Id) != null || (region && ManagerGame.OnAPlan(hands[i].Id)))
+                {
+                    continue;
+                }
+                best = best < 0 || hands[i].Skill > hands[best].Skill ? i : best;
+            }
+            return best;
+        }
+
+        /// <summary>
         /// Every manager decides every kind now, as if each kind's hour had come on a Sunday. A first look at the stock
         /// only takes it: orders are worked out from the use seen at the next look, at least half a day later.
         /// </summary>
@@ -124,6 +212,7 @@ namespace RealLifeOverhaul.Economy
                     }
                     UndoOf(d, Save.Day);
                     d.State = DecisionState.Undone;
+                    CountUndone(d);
                     undone++;
                 }
                 Recount();

@@ -9,23 +9,13 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The recorded car sounds (the Garage's "Recorded car sounds" option): which car plays them, and every way back to
-    /// the game's own. Only one car ever does: the car on the custom shop's turntable while the shop is open, else the car
-    /// the player is driving, if it is the player's own (Going Public: never another player's) and a car with a recorded
-    /// engine (Driving/Sound/CarSoundRules.VoiceFor). Traffic, the bus, the tow truck and the two-wheelers are never
-    /// touched: none of them is the driven car or the turntable's.
-    ///
-    /// The game's own sound comes back on every way out, the frame it happens: getting out or into another car, the
-    /// shop closing on a car nobody drives, a load (LoadScene), the city going (this component's end), the option or the
-    /// Garage switched off, and a fault (logged once; the sounds then stay off for the session). With Developer
-    /// diagnostics on, one "Car sound check" line on taking a car and one on giving it back.
-    ///
-    /// The cost a frame: idle, two reference reads and a comparison (and a retry twice a second while a car waits for its
-    /// clips); with a car held, <see cref="CarSoundCar.Frame"/>, and its build looked at four times a second.
+    /// The recorded car sounds: which one car plays them (the shop's turntable car, else the car the player drives if it is
+    /// their own and has a recorded engine), and every way back to the game's own, the frame it happens. Cost a frame: idle,
+    /// two reference reads and a comparison; with a car held, <see cref="CarSoundCar.Frame"/>.
     /// </summary>
     public sealed class CarSoundDirector : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("garage", "CarSoundDirector", typeof(CarSoundDirector));   // its Update (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("garage", "CarSoundDirector", typeof(CarSoundDirector));
 
         private const float RetryEvery = 0.5f;   // seconds between tries on a car waiting for its clips
         private const float PartsEvery = 0.25f;  // seconds between looks at what the build fits (the shop's cart changes it)
@@ -41,9 +31,6 @@ namespace RealLifeOverhaul
         private int _parts = -1;
         private bool _failed;
         private readonly HashSet<string> _toldWhy = new HashSet<string>();   // a car's reason for keeping the game's sound, said once
-
-        /// <summary>The car playing recorded sounds now, or null.</summary>
-        public CarController Held => _held != null ? _held.Car : null;
 
         private void Awake()
         {
@@ -92,7 +79,7 @@ namespace RealLifeOverhaul
                 _wanted = want;
                 _nextTry = 0f;
             }
-            if (_held != null && (_held.Car == null || _held.Car != want))   // (a car the game has destroyed reads as null: given back too)
+            if (_held != null && (_held.Car == null || _held.Car != want))   // a car the game has destroyed reads as null: given back too
             {
                 GiveBack(_held.Car == null ? "the car is gone" : want == null ? Why() : "another car took its place");
             }
@@ -148,7 +135,7 @@ namespace RealLifeOverhaul
             if (voice == EngineVoice.None)
             {
                 why = "it is not a car with a recorded engine";
-                _nextTry = float.MaxValue;   // (until another car is wanted)
+                _nextTry = float.MaxValue;   // until another car is wanted
             }
             else
             {
@@ -220,8 +207,6 @@ namespace RealLifeOverhaul
                 Instance = null;
             }
         }
-
-        // ---------------------------------------------------------------- the test
 
         /// <summary>Options, Tests: what the recorded car sounds are doing now, in a notice and the log.</summary>
         public void TestReport()

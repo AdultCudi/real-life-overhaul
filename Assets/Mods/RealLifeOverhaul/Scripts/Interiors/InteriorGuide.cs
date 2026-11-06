@@ -5,9 +5,8 @@ using RealLifeOverhaul.Meta;
 namespace RealLifeOverhaul.Interiors
 {
     /// <summary>
-    /// The feature's entries in the mod's feature list, and the figures its Guide pages print: every {name} in their
-    /// text is filled from <see cref="InteriorRules"/> here, so a page never says anything the feature does not do.
-    /// Called once, when the feature list is built (Meta/FeatureList); each figure is worked out when a page is opened.
+    /// The feature's entries in the feature list and the figures its Guide pages print, each {name} filled from
+    /// <see cref="InteriorRules"/> when a page opens, so a page never says what the feature does not do.
     /// </summary>
     public static class InteriorGuide
     {
@@ -25,7 +24,7 @@ namespace RealLifeOverhaul.Interiors
                 .Owns(Settings.InteriorsId, Settings.InteriorsPricesStrengthId, Settings.InteriorsWearStrengthId, Settings.InteriorsStandingId, Settings.InteriorsStaffId)
                 .Preset(Settings.InteriorsPricesStrengthId, 125, 100, 75)   // per cent: Relaxed a quarter more, Realistic the default, Hardcore three quarters
                 .Preset(Settings.InteriorsWearStrengthId, 50, 100, 150)     // Relaxed half as fast, Realistic the default, Hardcore half as fast again
-                .Data(InteriorStore.Key)
+                .Data(InteriorStore.Key, InteriorStore.RefitKey)
                 .Test("reallife_interior_test_report_button", "reallife_interior_test_wear_button", "reallife_interior_test_news_button")
                 .Fact("in_repeat", () => Share(InteriorRules.RepeatShare))
                 .Fact("in_repeat_most", () => N(InteriorRules.RepeatMost))
@@ -49,6 +48,8 @@ namespace RealLifeOverhaul.Interiors
                 .Fact("in_dirt_from", () => N(InteriorRules.DirtFrom))
                 .Fact("in_dirt_penalty", () => Share(InteriorRules.DirtPenaltyMost))
                 .Fact("in_redecorate", () => N(InteriorRules.RedecorateRise))
+                .Fact("in_refit_least", () => N(InteriorRules.RefitGrades[0]))
+                .Fact("in_refit_most", () => N(InteriorRules.RefitMost))
                 .Fact("in_refresh_sqm", () => Economy.FinanceText.Money(Prices.At((float)InteriorRules.RefreshPerSqm)))
                 .Fact("in_refresh_least", () => Economy.FinanceText.Money(Prices.At(InteriorRules.RefreshLeast)))
                 .Fact("in_refresh_most", () => Economy.FinanceText.Money(Prices.At(InteriorRules.RefreshMost)))
@@ -99,7 +100,7 @@ namespace RealLifeOverhaul.Interiors
                 .Fact("in_basket_poor", () => Share(InteriorRules.BasketMostPoor))
                 .Fact("in_basket_rich", () => Share(InteriorRules.BasketMostRich))
                 .Fact("in_basket_middle", () => Share(InteriorRules.BasketShare(InteriorRules.BasketFullAt, InteriorRules.Standard(InteriorRules.IncomeMiddle, 0))))
-                .Fact("in_complaint_dip", () => N(-BusinessCatalogue.ComplaintDip));   // (in_bound, in_bound_top and in_ramp are the main feature's)
+                .Fact("in_complaint_dip", () => N(-BusinessCatalogue.ComplaintDip));   // in_bound, in_bound_top and in_ramp are the main feature's
 
             Features.Add("interiors_decor", "reallife_meta_title_interiors_decor")
                 .About("reallife_guide_interiors_decor_about").Help("reallife_guide_interiors_decor")

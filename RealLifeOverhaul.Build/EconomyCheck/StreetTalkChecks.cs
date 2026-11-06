@@ -32,6 +32,7 @@ internal static partial class Program
         StreetTiming();
         StreetSources();
         StreetCardsUsed();   // street talk worded by RLO Texts (StreetTextsChecks.cs)
+        StreetAge();         // asking their age (StreetAgeChecks.cs)
         Console.WriteLine("  street talk: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
     }
 
@@ -272,9 +273,10 @@ internal static partial class Program
         c.Approach.Warmth = 0;
         c.Rapport = 3;
         Check(StreetRules.Number(c, f, false) == StreetLine.NumberYes, "street talk: after a good talk they give the player their number");
-        Check(StreetRules.Number(c, f, true) == StreetLine.NumberLater, "street talk: nobody of the social life left to meet: they would rather bump into the player again");
+        Check(StreetRules.Number(c, f, true) == StreetLine.NumberFull, "street talk: a good talk, but the player's life has no room for anybody new: they say so, not maybe next time");
         f.SocialOn = false;
         Check(StreetRules.Number(c, f, false) == StreetLine.NumberLater, "street talk: without the social life, no number");
+        Check(StreetRules.Number(c, f, true) == StreetLine.NumberLater, "street talk: without the social life, no number, and never the full life's line");
         f.SocialOn = true;
         c.Rapport = 1;
         Check(StreetRules.Number(c, f, false) == StreetLine.NumberLater, "street talk: a talk that went only a little way: maybe next time");
@@ -473,7 +475,7 @@ internal static partial class Program
         }
         Check(StreetLines.Lines.Length == (int)StreetLine.Count && StreetLines.Asks.Length == (int)StreetAsk.Count, "street talk: every kind of line and every choice has its words");
         // The values each kind's lines may name: what the conversation fills for it (StreetDirector.Talk.cs).
-        var always = new HashSet<string> { "first", "player", "job", "district", "shop", "event" };
+        var always = new HashSet<string> { "first", "player", "job", "district", "shop", "event", "age" };
         var extra = new Dictionary<StreetLine, string[]>
         {
             { StreetLine.AreaPlaces, new[] { "place", "place_two" } }, { StreetLine.AreaEvent, new[] { "event" } },
@@ -516,6 +518,7 @@ internal static partial class Program
         other.AddRange(StreetLines.Small);
         other.AddRange(StreetLines.DayAsks);
         other.AddRange(StreetLines.WorkAsks);
+        other.AddRange(StreetLines.AgeAsks);
         other.AddRange(new[] { StreetLines.AskWorkRetired, StreetLines.AskThanksAnyway });
         other.AddRange(new[]
         {
@@ -523,7 +526,7 @@ internal static partial class Program
             "reallife_street_btn_never_mind", "reallife_street_btn_talk", "reallife_street_btn_say", "reallife_street_say_placeholder", "reallife_street_stranger", "reallife_street_walk_one",
             "reallife_street_walk_many", "reallife_street_note_police", "reallife_street_note_booked", "reallife_street_note_mouth", "reallife_street_header", "reallife_street_enabled",
             "reallife_street_opt_brush", "reallife_street_brush_0", "reallife_street_brush_1", "reallife_street_brush_2", "reallife_street_test_talk", "reallife_street_test_forget",
-            "reallife_street_test_nobody", "reallife_street_test_forgot", "reallife_meta_title_street", "reallife_guide_street_about", "reallife_guide_street", "reallife_opt_sec_street",
+            "reallife_street_test_age", "reallife_street_test_nobody", "reallife_street_test_forgot", "reallife_meta_title_street", "reallife_guide_street_about", "reallife_guide_street", "reallife_opt_sec_street",
             "reallife_opt_tip_street_talk", "reallife_opt_tip_street_brush", "reallife_social_desc_street", "reallife_social_welcome_street", "reallife_social_meet_street_1", "reallife_social_meet_street_2"
         });
         foreach (string key in other)
@@ -599,9 +602,9 @@ internal static partial class Program
 
     private static void StreetSources()
     {
-        string director = TextsSource(@"Street\StreetDirector.cs"), talk = TextsSource(@"Street\StreetDirector.Talk.cs"), game = TextsSource(@"Street\StreetGame.cs");
+        string director = TextsSource(@"Street\StreetDirector.cs"), talk = TextsSource(@"Street\StreetDirector.Talk.cs") + TextsSource(@"Street\StreetDirector.Outcomes.cs"), game = TextsSource(@"Street\StreetGame.cs") + TextsSource(@"Street\StreetHold.cs");
         string links = TextsSource(@"Wiring\StreetLinks.cs");
-        string all = director + talk + game + links + TextsSource(@"Street\StreetRules.cs") + TextsSource(@"Street\StreetSay.cs") + TextsSource(@"Street\StreetModel.cs") + TextsSource(@"Street\StreetStore.cs")
+        string all = director + talk + game + links + TextsSource(@"Street\StreetRules.cs") + TextsSource(@"Street\StreetRules.Choices.cs") + TextsSource(@"Street\StreetMemory.cs") + TextsSource(@"Street\StreetSay.cs") + TextsSource(@"Street\StreetModel.cs") + TextsSource(@"Street\StreetStore.cs")
                      + TextsSource(@"Street\StreetDirector.Tests.cs") + TextsSource(@"Street\StreetGuide.cs") + TextsSource(@"Street\StreetLines.cs") + TextsSource(@"Street\StreetBridges.cs");
         int update = director.IndexOf("private void OnUpdate()", StringComparison.Ordinal);
         string body = update >= 0 ? director.Substring(update, Math.Min(900, director.Length - update)) : string.Empty;

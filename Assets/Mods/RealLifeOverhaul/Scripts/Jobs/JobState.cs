@@ -32,7 +32,7 @@ namespace RealLifeOverhaul
 
         private static Record[] NewRecords()
         {
-            var records = new Record[JobCatalogue.All.Length];
+            var records = new Record[JobCatalogue.Recorded.Length];   // the Gig Line's gigs, then the building trades
             for (int i = 0; i < records.Length; i++)
             {
                 records[i] = new Record();
@@ -42,7 +42,7 @@ namespace RealLifeOverhaul
 
         public static Record Of(JobDef def)
         {
-            int index = JobCatalogue.IndexOf(def.Id);
+            int index = JobCatalogue.RecordOf(def.Id);
             return index >= 0 ? Records[index] : new Record();
         }
 
@@ -58,7 +58,7 @@ namespace RealLifeOverhaul
             {
                 for (int i = 0; i < Records.Length; i++)
                 {
-                    if (JobCatalogue.LevelFor(JobCatalogue.All[i], Records[i].Units) >= JobCatalogue.ReferenceLevel)
+                    if (JobCatalogue.LevelFor(JobCatalogue.Recorded[i], Records[i].Units) >= JobCatalogue.ReferenceLevel)
                     {
                         return true;
                     }
@@ -211,7 +211,7 @@ namespace RealLifeOverhaul
             for (int i = 0; i < Records.Length; i++)
             {
                 Record record = Records[i];
-                text.Append('|').Append(JobCatalogue.All[i].Id).Append(':');
+                text.Append('|').Append(JobCatalogue.Recorded[i].Id).Append(':');
                 Join(text, record.Units, record.Shifts, record.Strikes, record.SackedUntil, record.Today, 0);
             }
             data[Key] = text.ToString();
@@ -253,7 +253,7 @@ namespace RealLifeOverhaul
                 {
                     continue;
                 }
-                int index = JobCatalogue.IndexOf(parts[i].Substring(0, colon));   // a job this build does not have is dropped
+                int index = JobCatalogue.RecordOf(parts[i].Substring(0, colon));   // a job this build does not have is dropped
                 int[] values = Numbers(parts[i].Substring(colon + 1));
                 if (index < 0 || values == null)
                 {

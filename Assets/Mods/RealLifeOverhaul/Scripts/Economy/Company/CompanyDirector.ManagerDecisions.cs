@@ -14,7 +14,9 @@ namespace RealLifeOverhaul.Economy
     ///   claims      A the claim, B 1 counted in the term, C its payout, D 1 put in, E what it adds to the next term
     ///   stock       A the delivery's day, B products changed; the detail holds them, units before and after
     ///   prices      A products changed; the detail holds them, cents before and after
-    ///   rota        A shifts written (-1 a week missed, -2 one the planner could not write), B hours covered, C wanted
+    ///   rota        A shifts written (-1 a week missed, -2 one the planner could not write), B hours covered, C wanted;
+    ///               or A -3 the week kept as it was because a new one would take B of the staff off it, -4 because it would
+    ///               cover only B hours of the C wanted against D now (ManagerRules.Rota)
     ///   hiring      A the wage, B the skill, C of the budget
     /// </summary>
     public sealed partial class CompanyDirector
@@ -29,6 +31,7 @@ namespace RealLifeOverhaul.Economy
         private readonly List<EmployeeInstance> _candidates = new List<EmployeeInstance>(4);
         private readonly Dictionary<string, string> _rotaBy = new Dictionary<string, string>(4, StringComparer.Ordinal);   // who asked for a rota being worked out, by place
         private int[] _hireWage = new int[8], _hireGoing = new int[8], _hireSkill = new int[8];
+        private int[] _rotaHoursNow = new int[16], _rotaHoursAfter = new int[16];   // each worker's hours in the week now and in the new one (ManagerRules.Rota)
 
         private void DecideRaises(ManagedPlace mp, int skill, int review, string who, int day, int hour)
         {
@@ -38,6 +41,7 @@ namespace RealLifeOverhaul.Economy
             }
             ManagerFile m = mp.Own;
             List<StaffFile> staff = _state.Staff;
+            int band = Rule(mp, PolicyField.PayBand), most = Rule(mp, PolicyField.RaiseMost), every = Rule(mp, PolicyField.RaiseEvery);
             for (int i = 0; i < staff.Count; i++)
             {
                 StaffFile f = staff[i];
@@ -45,9 +49,15 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;   // a manager's own request is the player's to answer
                 }
-                int ceiling = ManagerRules.Ceiling(f.Going, m.WageBand), roll;
+                // The policy's ceiling: the band, the largest raise and the days between two (PolicyRules); at its start, the band alone.
+                int ceiling = PolicyRules.RaiseDue(LastRaise(mp, f.Id), day, every) ? PolicyRules.RaiseCeiling(f.Paid, f.Going, band, most) : f.Paid, roll;
+                RaiseAnswer fair = ManagerRules.RaiseAnswerFor(f.Paid, f.AskTo, ceiling, false);
+                if (fair != RaiseAnswer.Agree && ToApprover(mp, f, false, ceiling, day))
+                {
+                    continue;   // past what the manager may agree: left open for whoever the policy names to approve it
+                }
                 bool slip = Slips(skill, review, day, mp.Place.Place, ManagerTask.Raises, f.Id, out roll);
-                RaiseAnswer fair = ManagerRules.RaiseAnswerFor(f.Paid, f.AskTo, ceiling, false), answer = ManagerRules.RaiseAnswerFor(f.Paid, f.AskTo, ceiling, slip);
+                RaiseAnswer answer = ManagerRules.RaiseAnswerFor(f.Paid, f.AskTo, ceiling, slip);
                 int askDay = f.AskDay, askTo = f.AskTo, rest = f.AskRest, standing = f.Standing, added = StaffRules.RaiseFor(f, answer);
                 StaffRules.Answer(f, answer, day);
                 Decision d = Record(mp, ManagerTask.Raises, f.Id, who, day, hour, answer != fair);
@@ -59,7 +69,7 @@ namespace RealLifeOverhaul.Economy
                 d.F = (int)answer;
                 d.Detail = ManagerStore.Word(f.Name);
                 Logger?.Info("Company: " + who + " (manager, skill " + skill + ") answered " + f.Name + "'s request for " + askTo + " an hour (hundredths): " + answer
-                             + "; the ceiling is " + ceiling + " (" + ManagerCatalogue.Step(ManagerCatalogue.WageBands, m.WageBand) + " thousandths of the going rate "
+                             + "; the ceiling is " + ceiling + " (" + ManagerCatalogue.Step(ManagerCatalogue.WageBands, band) + " thousandths of the going rate "
                              + f.Going + ")" + (answer != fair ? ", a mistake: " + fair + " was the answer" : string.Empty) + ".");
             }
             Recount();
@@ -73,6 +83,7 @@ namespace RealLifeOverhaul.Economy
             }
             ManagerFile m = mp.Own;
             List<StaffFile> staff = _state.Staff;
+            int band = Rule(mp, PolicyField.PayBand), most = Rule(mp, PolicyField.RaiseMost);
             for (int i = 0; i < staff.Count; i++)
             {
                 StaffFile f = staff[i];
@@ -86,9 +97,14 @@ namespace RealLifeOverhaul.Economy
                     GaveWay(f, day);   // the game's own offer decides, not the company's, nor its manager
                     continue;
                 }
-                int ceiling = ManagerRules.Ceiling(f.Going, m.WageBand), roll;
+                int ceiling = PolicyRules.RaiseCeiling(f.Paid, f.Going, band, most), roll;
+                bool fair = ManagerRules.Match(f.PoachOffer, ceiling, false);
+                if (!fair && ToApprover(mp, f, true, ceiling, day))
+                {
+                    continue;   // past the band: left open for whoever the policy names to approve it
+                }
                 bool slip = Slips(skill, review, day, mp.Place.Place, ManagerTask.Offers, f.Id, out roll);
-                bool fair = ManagerRules.Match(f.PoachOffer, ceiling, false), match = ManagerRules.Match(f.PoachOffer, ceiling, slip);
+                bool match = ManagerRules.Match(f.PoachOffer, ceiling, slip);
                 int came = f.PoachDay, offer = f.PoachOffer, rest = f.PoachRest, standing = f.Standing, raise = f.Raise;
                 string rival = f.Rival;
                 StaffRules.OfferAnswer(f, match, day);
@@ -396,21 +412,90 @@ namespace RealLifeOverhaul.Economy
                 Logger?.Info("Company: " + who + " (manager, skill " + skill + ") did not write the rota of " + mp.Place.Name + " this week, a mistake; the week as it is stays.");
                 return;
             }
-            int kept = RotaUndoAt(mp.Place.Place);
-            if (kept >= 0)
-            {
-                _rotaUndo.RemoveAt(kept);   // the week before this fill is the one to put back, not an older one
-            }
-            for (int i = 0; i < _mgr.Decisions.Count; i++)
-            {
-                Decision d = _mgr.Decisions[i];
-                if (d.Open && d.Task == (int)ManagerTask.Rota && d.Place == mp.Place.Place)
-                {
-                    d.State = DecisionState.Closed;
-                }
-            }
+            // Worked out now; written only if the week has a gap and the new one is whole (ManagerRotaJudged).
             _rotaBy[mp.Place.Place] = who;
             RotaAsk(mp.Place.Place, JobManager, false);
+        }
+
+        /// <summary>Whether a place's manager still writes its rota: the managers on, a manager there with the weekly rota given, the place the player's.</summary>
+        private bool ManagerRotaGiven(ManagedPlace mp)
+        {
+            return ManagersOn && _mgr != null && mp != null && mp.Own != null && ManagerRules.Runs(mp.Own.Tasks, mp.Kind, ManagerTask.Rota)
+                   && mp.Place.Reg != null && GoingPublic.Mine(mp.Place.Reg);
+        }
+
+        /// <summary>
+        /// A manager's week, worked out by the planner, just before it would be written (RotaJobs): true to write it. It is
+        /// written only while the manager still has the weekly rota, when the week as it is has a gap, and when the new week
+        /// is whole (ManagerRules.Rota): everybody on the rota stays on it and no hour covered now is left with nobody.
+        /// Otherwise nothing of the schedule is touched; a gap the manager could not mend whole is a decision in their log.
+        /// Cost: one pass over the two weeks' cells, once a week a place.
+        /// </summary>
+        private bool ManagerRotaJudged(string place, RotaSheet sheet)
+        {
+            ManagedPlace mp = ManagedAt(place);
+            string who = _rotaBy.TryGetValue(place, out string by) ? by : mp != null && mp.Own != null ? mp.Own.Name : "?";
+            if (!ManagerRotaGiven(mp))
+            {
+                _rotaBy.Remove(place);
+                Logger?.Info("Company: the week's rota of " + ManagedName(place) + " was not written: the weekly rota is no longer the manager's, so its schedule is left alone.");
+                return false;
+            }
+            int workers = sheet.Problem.Workers;
+            if (_rotaHoursNow.Length < workers)
+            {
+                _rotaHoursNow = new int[workers * 2];
+                _rotaHoursAfter = new int[workers * 2];
+            }
+            RotaPlan now = sheet.Now, fill = sheet.Ladder.Fill;
+            RotaCall call = ManagerRules.Rota(now, fill, sheet.Problem, sheet.Fixed, _rotaHoursNow, _rotaHoursAfter, out int dropped);
+            Logger?.Info("Company: " + who + " (manager of " + mp.Place.Name + ") looked at the week's rota: " + now.CoveredHours + " of " + now.WantedHours
+                         + " wanted hours covered now, " + fill.CoveredHours + " with a new rota, which would take " + dropped + " of the staff off it: "
+                         + (call == RotaCall.Write ? "written" : call == RotaCall.Whole ? "left as it is, it has no gap"
+                             : call == RotaCall.NoBetter ? "left as it is, a new one mends nothing"
+                             : call == RotaCall.LeavesOut ? "left as it is, a new one would take somebody off the rota"
+                             : "left as it is, a new one would leave hours with nobody that have somebody now") + ".");
+            if (call == RotaCall.Write)
+            {
+                return true;   // who asked stays for ManagerRotaWritten
+            }
+            _rotaBy.Remove(place);
+            if (call == RotaCall.LeavesOut || call == RotaCall.CoversLess)
+            {
+                Decision d = Record(mp, ManagerTask.Rota, string.Empty, who, Save.Day, Save.Hour, false);
+                d.A = call == RotaCall.LeavesOut ? -3 : -4;
+                d.B = call == RotaCall.LeavesOut ? dropped : fill.CoveredHours;
+                d.C = now.WantedHours;
+                d.D = now.CoveredHours;
+                d.State = DecisionState.Closed;   // nothing changed, nothing to undo
+                Changed();
+            }
+            return false;
+        }
+
+        /// <summary>The weekly rota taken back from a place's manager: a week of theirs waiting to be worked out is dropped.</summary>
+        private void ManagerRotaDropped(string place)
+        {
+            bool underWay = false;
+            for (int i = _rotaJobs.Count - 1; i >= 0; i--)
+            {
+                if (_rotaJobs[i].Place != place || _rotaJobs[i].Kind != JobManager)
+                {
+                    continue;
+                }
+                if (i > 0 || _rotaStage == StageRead)
+                {
+                    _rotaJobs.RemoveAt(i);
+                }
+                else
+                {
+                    underWay = true;   // stopped by ManagerRotaJudged before it can write
+                }
+            }
+            if (!underWay)
+            {
+                _rotaBy.Remove(place);
+            }
         }
 
         // The planner has written a manager's rota (CompanyDirector.RotaFill): the decision, with the week kept to put back.
@@ -423,6 +508,14 @@ namespace RealLifeOverhaul.Economy
             }
             string who = _rotaBy.TryGetValue(place, out string by) ? by : mp.Own.Name;
             _rotaBy.Remove(place);
+            for (int i = 0; i < _mgr.Decisions.Count; i++)
+            {
+                Decision old = _mgr.Decisions[i];
+                if (old.Open && old.Task == (int)ManagerTask.Rota && old.Place == place)
+                {
+                    old.State = DecisionState.Closed;   // the week kept to put back is the one before this rota (RotaWrite), not an older one
+                }
+            }
             Decision d = Record(mp, ManagerTask.Rota, string.Empty, who, Save.Day, Save.Hour, false);
             d.A = shifts;
             d.B = plan.CoveredHours;
@@ -434,12 +527,12 @@ namespace RealLifeOverhaul.Economy
         private void ManagerRotaUnwritten(string place)
         {
             ManagedPlace mp = ManagedAt(place);
-            if (mp == null || mp.Own == null || _mgr == null)
-            {
-                return;
-            }
-            string who = _rotaBy.TryGetValue(place, out string by) ? by : mp.Own.Name;
+            string who = _rotaBy.TryGetValue(place, out string by) ? by : mp != null && mp.Own != null ? mp.Own.Name : "?";
             _rotaBy.Remove(place);
+            if (!ManagerRotaGiven(mp))
+            {
+                return;   // taken back meanwhile: not the manager's to log
+            }
             Decision d = Record(mp, ManagerTask.Rota, string.Empty, who, Save.Day, Save.Hour, false);
             d.A = -2;
             d.State = DecisionState.Closed;
@@ -461,6 +554,7 @@ namespace RealLifeOverhaul.Economy
             int count = _candidates.Count;
             if (count == 0)
             {
+                HireFromRegion(mp, who, day, hour);   // the policy's next source: the region's other boards
                 return;
             }
             if (_hireWage.Length < count)
@@ -477,16 +571,20 @@ namespace RealLifeOverhaul.Economy
                 _hireSkill[i] = ManagerGame.SkillOf(_candidates[i]);
             }
             int left = ManagerRules.Left(BudgetOf(m), m.Spent), roll;
+            int band = Rule(mp, PolicyField.PayBand), cap = Rule(mp, PolicyField.HirePayCap), floor = Rule(mp, PolicyField.SkillFloor);
             bool slip = Slips(skill, review, day, mp.Place.Place, ManagerTask.Hiring, string.Empty, out roll);
-            int fair = ManagerRules.Pick(_hireWage, _hireGoing, _hireSkill, count, m.WageBand, left, false);
-            int pick = ManagerRules.Pick(_hireWage, _hireGoing, _hireSkill, count, m.WageBand, left, slip);
+            // The policy's pick: the band, the hiring cap and the skill floor; at the policy's start the same pick as ManagerRules.Pick.
+            int fair = PolicyRules.Pick(_hireWage, _hireGoing, _hireSkill, count, band, cap, floor, left, false);
+            int pick = PolicyRules.Pick(_hireWage, _hireGoing, _hireSkill, count, band, cap, floor, left, slip);
             if (pick < 0)
             {
                 if (Verbose)
                 {
                     Logger?.Info("Company check (managers, hiring at " + mp.Place.Name + "): " + count + " candidate(s) from the job board, none inside the wage band "
-                                 + ManagerCatalogue.Step(ManagerCatalogue.WageBands, m.WageBand) + " and the " + left + " left of the budget: PASS");
+                                 + ManagerCatalogue.Step(ManagerCatalogue.WageBands, band) + ", the hiring cap " + PolicyCatalogue.Value(PolicyField.HirePayCap, cap)
+                                 + ", the skill floor " + PolicyCatalogue.Value(PolicyField.SkillFloor, floor) + " and the " + left + " left of the budget: PASS");
                 }
+                HireFromRegion(mp, who, day, hour);
                 return;
             }
             EmployeeInstance e = _candidates[pick];
@@ -683,16 +781,22 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             d.State = DecisionState.Undone;
-            ManagerFile m = OwnOf(d.Place);
-            if (m != null)
-            {
-                m.Undone++;
-            }
+            CountUndone(d);
             Logger?.Info("Company: decision " + d.Id + " (" + (ManagerTask)d.Task + " at " + ManagedName(d.Place) + ", day " + d.Day + ", by " + d.Who
                          + ") undone by the player.");
             Notify(NotificationType.Success, "reallife_mgr_note_undone", new Dictionary<string, string> { { "place", ManagedName(d.Place) } }, 7f);
             Recount();
             Changed();
+        }
+
+        // An undone decision counted to whoever made it: the place's manager, or the regional manager who stood in.
+        private void CountUndone(Decision d)
+        {
+            ManagerFile m = MadeBy(ManagedAt(d.Place), d.Who) ?? OwnOf(d.Place);
+            if (m != null)
+            {
+                m.Undone++;
+            }
         }
 
         private void UndoOf(Decision d, int day)

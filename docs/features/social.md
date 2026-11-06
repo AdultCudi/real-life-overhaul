@@ -2,7 +2,7 @@
 
 ## In a sentence
 
-Eight people the player knows (Mom, an old friend and six met in the street), things to do with them, texts and calls, and the morning paper, the City Ledger.
+Up to 400 people the player knows (Mom, an old friend, and everybody met in the street, at work, online and at evenings out), things to do with them, texts and calls, and the morning paper, the City Ledger.
 
 ## Where the code is
 
@@ -16,12 +16,13 @@ Eight people the player knows (Mom, an old friend and six met in the street), th
 | `SocialState` | the social part of the save: game-free |
 | `SocialCatalogue` | names, jobs, traits, outings, every line anybody says: game-free |
 | `SocialLife` | what happens between the player and a person, with its consequences in the game; the optional links (ISocialLaw, ISocialWellbeing) |
-| `SocialDirector` | load and save, the one scene; its parts `.Contact` (who gets in touch, the day's round), `.Meetings` (people on their way), `.Plan` (the plan, the phone ringing), `.Scene`, `.Ui` (the card, the prompt, the marker) and `.Tests` |
+| `SocialDirector` | load and save, the one scene; its parts `.Contact` (who gets in touch, the day's round), `.Meetings` (people on their way), `.Lose` (losing touch, a full cast making room), `.Plan` (the plan, the phone ringing), `.Scene`, `.Ui` (the card, the prompt, the marker) and `.Tests` |
 | `SocialHooks` | the calls other features make into the social life |
 | `SocialScene` | the base of a scene: talking face to face, walking off |
 | `MeetScene` | somebody walks up |
 | `OutingScene` | a plan kept, with parts `.Meeting` (getting there, hello), `.Walk`, `.Ride`, `.Boxes` (helping them move) and `.After` |
-| `PersonDialog` | the call to or from a person; its part `.Composer` (a topic answered in the player's own typed words) |
+| `PersonDialog` | the call to or from a person; its parts `.Composer` (a topic answered in the player's own typed words) and `.CallBack` (a call back opens on what they just texted) |
+| `SocialFollowRules`, `SocialFollowCatalogue` | a call back: which text it opens on, the subject of every text that reaches a person's thread, its line and answers; the day after an outing: game-free |
 | `SocialComposerRules` | when a call's topic is typed, what typed words are worth, what they say (its parts `.Reading` and `.Words`: the words of all nine languages) and what that gets back, which lines go on RLO Texts' card: game-free |
 | `SceneDialog` | the conversation in the street; SceneTalk |
 | `PeopleDialog` | the People page |
@@ -36,6 +37,7 @@ Eight people the player knows (Mom, an old friend and six met in the street), th
 
 - Any feature reports to the paper with `News.Report(kind, where, detail, amount)`; see [The City Ledger](#the-city-ledger-news).
 - The social life asks the law and the home through `ISocialLaw` and `ISocialWellbeing` (`SocialLinks`), filled in by `Wiring/LifeLinks.cs`.
+- Networking ([networking.md](networking.md)) is told who is met and by whom (`SocialLinks.Met`), says what somebody does as they are met (`SocialLinks.Position`), hears of the day's round (`SocialLinks.DayDone`) and puts its favour first under Something else on a call and its lines on the People page (`SocialPhone.Network*`), through `Wiring/Wiring.NetworkLinks.cs`.
 - Family takes the partner from here (`Wiring/FamilyLinks.cs`), Justice a close friend for court and prison visits, Travel a companion for a trip.
 - Flare's links are `Wiring/FlareLinks.cs`, `FlareLiveLinks.cs` and `FlareInviteLinks.cs`; see [Wiring](../reference/wiring.md).
 
@@ -44,7 +46,7 @@ Everything is on the street or on the phone: the cast is never put indoors (the 
 
 ## The cast
 
-Eight people per save, rolled once from a seed and then stored whole (name, look, traits, job, district, free hours, birthday), so a later change to the name lists renames nobody.
+A save starts with eight people (`SocialRules.BaseCast`), rolled once from a seed and then stored whole (name, look, traits, job, district, free hours, birthday), so a later change to the name lists renames nobody.
 One per way of meeting:
 
 | who | met | how |
@@ -53,11 +55,65 @@ One per way of meeting:
 | Alex | known from the start (`reallife-friend`) | an old friend |
 | six others | walking up to the player in the street | after leaving a gym (35 %), after a job shift that paid (30 %), after the second coffee bought at a cart (50 %), outside the player's home (15 %) or own shop (20 %), after a `ModState.Helped` moment (60 %); or brought along by a friend |
 
-A new face comes at most every other day.
+Once a place's first person is met, the place keeps bringing somebody new (`SocialDirector.Newcomer`, rolled by `SocialCatalogue.MakeNew` from the cast's seed and the slot, `SocialRules.SlotSeed`), and so do meetings online, at an evening, through a friend or a roommate, in the street and on Flare, up to `SocialRules.MaxCast` (400) people a save.
+
+A new person is made only when they are about to be met, with a full name nobody of the cast has (each name is one contact); one made but not met is the next met from that place.
+A new face comes at most once a game day (`SocialRules.MeetGapDays`).
+
+With a big cast only the circle gets in touch of its own accord (`SocialRules.InCircle`): family, a partner, anyone met in the last 14 days and the twelve closest (`SocialRules.CircleBar`).
+
+The others are kept and can be called, but never text, ring, wish their own birthday or drift away with a notice; with twelve or fewer met everybody is in the circle, as before.
+The chance an hour that somebody gets in touch grows with the circle and stops at twelve (`SocialRules.TextChance`).
+
+Flare's friends follow and like posts by a bit each, so only the first 31 people of the cast can follow the player there.
 Whoever comes walks in from pavement out of view, stops in front of the player, waves and waits to be spoken to (45 s; they follow a little if the player moves on, then give up).
 
 The conversation is the game's own dialogue panel with both of them facing and talking (`talk_a` / `talk_b` in turn); "Swap numbers" puts them in the phone as a contact whose id is their name.
 A look is the game's own appearance system run from the person's seed (`AppearanceSetter.RandomizeElements(gender, skin, casual, seed)`), so Dana looks like Dana every time; `SocialCast` has two bodies at most and rebuilds one only when it is needed for somebody else.
+
+## Losing touch (`SocialDirector.Lose`)
+
+A player who met everybody early asked for a way to lose an acquaintance; with every slot taken, asking for a number in the street only ever got "maybe next time".
+A person's page in People has Lose touch under More about them (`PeopleDialog.LoseTouch`).
+When somebody cannot go, the page says why, the first reason that holds (`SocialRules.LoseBlockOf`, its lines `SocialCatalogue.LoseBlocks`):
+
+| reason | why |
+|---|---|
+| family (Mom) | family stays, however long it has been |
+| the old friend (Alex) | the phone's own friend contact, which the mod had before the social life |
+| dating or a partner | that ends with a talk (`SocialRules.BrokenUp`), not by drifting apart |
+| lives with the player | a roommate, somebody answering the roommate notice (`SocialLinks.LivesWith`), or a partner who moved in |
+| a plan | a plan with them, or them out with the player, dropping by or bringing somebody along now |
+| money | the player owes them, or they owe the player |
+| Flare | one of Flare's influencers is one of the cast (`SocialLinks.OnFlare`, `FlareCast.IsOne`) |
+
+No feature makes a social person an employee or a boss, so neither is a reason.
+Otherwise the call ends and the game's own question box asks (`SocialDirector.AskLoseTouch`, through `Core/GameConfirm`, as the game's Contacts app asks before it deletes a contact).
+A yes (`SocialDirector.LoseTouch`) takes their contact and thread off the phone as the game's own delete does (`SocialPhone.Remove`), lets Flare go of them (`FlareRules.Forget`: their posts and replies and the player's replies to them, drafts about them, tags, likes and the follow) and RLO Texts of what they remembered, and puts somebody new into their slot, rolled from the one who leaves (`SocialRules.ReplaceSeed`, `SocialCatalogue.MakeRolled`), not met yet, to be met where they would have been.
+The slot keeps its number, so nothing else of the save changes shape: the first eight stay in the record every version reads, and an older version reads the newcomer as somebody still to meet.
+
+Once all `SocialRules.MaxCast` (400) slots are taken and everybody is met, the acquaintance longest without a word who drifted away at least `SocialRules.DriftLoseDays` (60) days ago, and whom nothing holds, goes by themselves when somebody new is wanted (`SocialDirector.MakeRoom`, `SocialRules.LongestDrifted`), with a notification; not with "Relationships fade" off.
+With nobody to make room, the cast is full: a street talk that went well ends with "You seem to know half the city already" (`StreetLine.NumberFull`) and the game's notification says to lose touch with somebody first, and People says the life is full.
+
+## Asking somebody's age in the street (`StreetAsk.Age`)
+
+A player asked to ask people in the street how old they are, as they can ask what they do, rather than read it on the People page afterwards.
+Street talk offers "How old are you, if you don't mind me asking?" (or "Can I ask how old you are?", by the person's seed) as it offers what they do: from the start among the rest, and as a follow-up after what they do (after whether they like it), their name and their work (`StreetRules.FollowUp`). Typed words ask it too ("how old", "your age", "what year were you born": `StreetSay`). It is asked once a day (`StreetMemo.AgeTold`); asked again by typing, they repeat the number (`StreetLine.AgeAgain`).
+
+The answer always says the age, so it is never a refusal to be asked round again (`StreetRules.AgeLine`, `AgeRapport`):
+
+| who | answer | rapport |
+|---|---|---|
+| most people | plainly (`AgeGive`), or, the playful and the cheeky and anybody with a sense of humour once the talk is warm (score `AgeTeaseFrom`, 2), after making the player guess (`AgePlayful`) | +1 |
+| the careful and the envious (`StreetRules.AgeForward`), until the talk is warm (score `AgeForwardWarmAt`, 2) | shortly ("That's a bit forward. 41, if you must know.", `AgeCool`) | -1 |
+| ...once it is warm | plainly | 0 |
+| anybody cool to the player (score under `AgeCoolBelow`, -1) | shortly | 0 (-1 if they find it forward) |
+
+The number is the person's real age as the mod holds it: the figure's own (its look's age in days, `StreetGame.Age`, kept within the cast's 18 to 85), and for somebody the player already knows, the People page's (`StreetBridges.AgeOf`, `SocialTalk.AgeOf`). Met in the street, the age they gave is the one their People page shows: `StreetLinks.MeetInStreet` now makes the age true from the day they were met (`SocialPerson.AgeDay`), where a seat rolled on the first day used to add every birthday since.
+
+The answers are written lines in every RLO Texts pack (`StreetCards.Aged`): no data version has a card for them, and adding one to data v6 would change the contract the shipped packs were trained on. A card belongs to the next data version.
+
+Test: Options, Street talk, "Street talk: ask the nearest passer-by their age" (`StreetDirector.TestAge`) stops the nearest person within 8 m with time to talk, today's answer forgotten, and the blue button asks their age. The answer writes `Street talk check (age)`: the age said and how, and for somebody the player knows the People page's age, PASS or FAIL; swapping numbers afterwards writes the same check against their new People page.
 
 ## The relationship model (`SocialRules`)
 
@@ -192,7 +248,7 @@ Each has two answers and a reaction to each.
 
 On a call, with an RLO Texts pack that can answer this person now and "Type your own words in calls" on (`social_composer`, default on, under the social life's options; it needs RLO Texts on), a topic they raise is answered in the player's own words rather than with its two answers (`PersonDialog.Composer`, `SocialComposerRules`):
 
-- The topic's entry has "Type a reply" (the game's own text box, `Core/GameUi/TextBox`, as Flare and street talk use it: placeholder "What do you say?", at most 160 characters) and "Something else". The words sent show as "You: ..." with only the hang-up button, and their answer follows.
+- The topic's entry has "Type a reply" (the game's own text box, `Core/GameUi/TextBox`, as Flare and street talk use it: placeholder "What do you say?", at most 160 characters) and "Something else". The words sent show as "You: ..." with only the hang-up button, and their answer follows. The box is kept for the call: hung up, the phone put away or Esc, and `Core/GameUi/ConversationWatch` closes it with the game's own close within a quarter of a second (the game itself closes its box only with the box's own buttons, and a box left up took every key; issue 22). Every text box of the mod's is kept so: for the call or talk that asked, else the phone page, the dialogue panel or the options page that was open, and it goes through a door and on a load too (`TextBoxRules`, checked in EconomyCheck's TextBoxChecks).
 - What typed words are worth is settled the moment they are sent, and never from what either side wrote: they are worth the topic's warm answer (its first, the friendly one: `SocialComposerRules.TypedWarm`), through the same `SocialTalk.Answer` as the choice. So a day's chat is worth exactly what it was: the talk once a day (`SocialRules.ChatHad`: a second call that day is "we covered everything"), two topics a call (`SocialRules.CallTopics`), the warm answer each. Typing can never be worth more than choosing.
 - What typed words say is read by the game's own rules (`SocialComposerRules.Read`, game-free, as street talk and Flare's invitations read their words), over the words of all nine languages at once, so an answer reads the same whichever of them it is typed in: good news, bad news, a bare yes or no, or nothing clear. The words are made plain first (lower case, accents off, "don't" as "dont", "I'll" as "i", a stretched "goood" or "noooo" without its stretch, a smiley or an emoji as the sign it is, a Chinese character a word of its own). Strengtheners ("very", "really", "kinda") change nothing; turns ("not", "never", "pas", "nicht", "не", 不, the Turkish "değil" after its word) make the next good or bad word the other, so "not bad" is good and "not great" bad; set phrases are read whole ("could be better" is bad, "can't complain" good, "so so" not clear); after "but" every word counts double; a clause that asks ("are you ok?") counts for nothing, but what comes before a question back ("fine thanks, you?") does. More good than bad is good news, more bad than good bad news; anything else is not clear, never bad for want of a word.
 - Each topic says what a bare yes or no means to its question (`SocialTopic.YesIs`, `NoIs`: a yes to "Be honest, is {shop} holding up?" is good news, a yes to "Are you ill?" bad), and what it answers good news and bad (`TypedGood`, `TypedBad`): its own reaction where it fits that reading ("Look at you! ..." for the shop's good news), else glad lines (`reallife_social_typed_glad_*`) or sorry lines (`reallife_social_typed_sorry_*`). Anything not clear gets a neutral line (`reallife_social_typed_neutral_*`), never the line for bad news; good news never gets a sorry, bad news never a glad line, and typed words never get the cool answer's hurt reaction (they are worth the warm one). A player once typed "very good! holding all our money!" to the shop's loss and got "Ouch. Thanks for telling me...": typed words then always took the warm answer's reaction, which for that topic is the line for bad news.
@@ -204,13 +260,26 @@ On a call, with an RLO Texts pack that can answer this person now and "Type your
 
 What the next pack would need for Mom, and for a call of its own, is said in [RLO Texts' notes below](#what-a-later-pack-could-add-to-calls).
 
-They get in touch themselves (`SocialDirector.Hourly`: each waking hour a chance of 9 % plus 2 % per person known): an invitation, a favour (a lift, a loan repaid or excused in five to nine days, help moving), news of their day, an introduction, or a reaction to the player's crash, break-in, arrest or wealth (10 k, 50 k, 250 k, 1 M, 5 M: the supportive are pleased, the envious are not).
+They get in touch themselves (`SocialDirector.Hourly`: each waking hour a chance of 9 % plus 2 % per person known): an invitation, a favour (a lift, a loan repaid or excused in five to nine days, help moving), news of their day, an introduction, or a reaction to the player's crash, break-in, arrest or wealth (10 k, 50 k, 250 k, 1 M, 5 M: the supportive are pleased, the envious are not). Before the hour's chance, the day after an outing with them they text about how it went (see below). With RLO Texts on, a pack or not, the partner, Mom or a close friend also texts after the player's own big news (a new business, a graduation, a wedding, a baby, the company listed, a court case, a big win or loss: `Texts/TextsDirector.City`), through these same texts and their limits, and whoever texted today, from any feature, is not the one asked.
 
 Texts are the game's own: a `TextMessage` in that contact's thread, with the game's "new message" notification.
 Never more than "Most texts in a day" (3) from everybody together, one a person a day, none from 22:00 to 08:00, none at all with the switch off (what must be said, such as a plan called off, is then a notification).
 
-Somebody close may ring instead: a prompt for 22 s, the interaction key answers, and the call opens in the contacts app with what they rang about.
+Somebody close may ring instead: a prompt for 22 s and a notice, and the call opens in the contacts app with what they rang about. The interaction key or the prompt's button answers, so does a click on the notice (unless a call or conversation is already open), and so does calling them from the phone while it rings (`SocialDirector.TakeRing`). While a screen hides the prompt (the phone open, a menu) the ring waits for it, two minutes at most, so opening the phone never lets it lapse unseen.
 An invitation or favour is answered by calling them.
+
+### Calling back after a text (`PersonDialog.CallBack`)
+
+When somebody texts and the player rings them back, the call opens on what they wrote about, whichever feature sent the text:
+
+- The record is their own thread in the game's phone (`SocialPhone.Thread`, the game's `Contact.messagesQueue`): every text a person of the social life gets lands there, the social life's own, RLO Texts' news and gossip it sends, the family's (Mom, the partner, the old friend's wedding invitation), life's little moments (`reallife_ev_fr*`, `fm*`) and travel's (a nudge to take a break, a souvenir's thanks), each with its written line's key, its values and its time. When RLO Texts worded a text, its message keeps the written line's key beside the words (`t_key`, set in `Wiring/TextsPhone`), so its subject is known too. One choke point, read once a call, and no feature needs a bridge for it.
+- The subject (`SocialFollowCatalogue.Of`): of the newest of their texts that has one. Every text the four features can send has a subject but a welcome, an invitation or a favour asked (the call answers those already), plans and where somebody is waiting, a break-up, their own birthday (the call wishes it), the waters breaking, the partner's asks and wishes (talked over at home), the partner's answer to the player's own text about a new home, and the family's own contact's and the in-laws'. Each subject has a line of theirs that refers to it ("Did you get my message about the garage door? Your father still says he can fix it.") and two answers of a kind: one of the twenty topics' where they fit (the crash, the arrest, a bad day...), or a kind of its own (`reallife_social_follow_<kind>_a`, `_b`, `_ra`, `_rb`).
+- When (`SocialFollowRules.Pick`): on the day the text came or the next game day, and only a text newer than the last one a call opened on. The person keeps that text's game minute (`SocialPerson.FollowedAt`, saved), so it is spent once shown: hanging up or loading the save never plays it again.
+- What it is worth: it is the call's first topic, through the topics' own reckoning (`SocialTalk.Answer`): the day's chat once, two topics a call, the warm or the cool answer's worth. After the day's chat on an earlier call it is said and answered, and worth nothing more. It moves no money and settles nothing a text already settled; an invitation or favour still to answer and a plan that is on keep their own way, before it. A call they make (the phone ringing) is not a call back.
+- With a pack and "Type your own words in calls" on, the player types the answer, as to any topic: the card (`friend.dm.answer`, `partner.dm.answer`) has their line about the text in its thread, and with a pack of data 6 its memory says what they texted about ("texted you about the garage door, today"). Mom's calls keep their two answers, as before.
+- With Developer diagnostics on, one `Social check (call back)` line a call: the text it opened on (its day, hour, key, the feature that sent it, the subject and how it is answered), or why the call opened as always.
+
+The day after an outing they may text about how it went (`SocialFollowRules.NextDay`, `SocialDirector.NextDayText`): Mom's, the partner's after a date or a friend's line, good or bad, from 09:00 on the day after, while they are awake and have not texted or been in touch that day; a good one's thanks sent the same day says it already. The outing is kept on the person when it ends (`SocialPerson.AfterDay`, `AfterKind`, `AfterWell`, `AfterPlace`, saved) and let go after the day after. It is one of the social life's own texts, with their limits; with a pack, a friend's good one is worded as their thanks for the outing (`friend.thanks`, every pack's card), and the rest keep their written lines. Its call back opens on it too.
 
 ### What a later pack could add to calls
 
@@ -220,6 +289,22 @@ The packs' intents are fixed by their data version, so the composer uses what da
 - Better still, a call's own cards, `friend.call.said`, `partner.call.said` and `mom.call.said`: channel `spoken` (a call, not a Flare message), at most 140 characters, `write: spoken: on the phone`, history the last three lines of the call oldest first (their line, the player's, theirs, with the player's typed words last), and an optional fact `topic: {topic}` naming what they brought up (the crash, the shop's takings, their birthday coming). Trained on the same rows as `friend.dm.answer` with the call's framing, they would never speak of messages or Flare.
 
 Each would be registered in `Texts/TextIntents.cs` with its data version and the generator's fixtures, and `Texts/TextsMapRules.Answering` would name it; the composer asks `TextsHub.WhyNot` with the pack's data, so an older pack keeps the cards it has.
+
+And to texts (none of it is asked of a pack now, so every card keeps the shape and size the packs were trained on):
+
+- The last lines of the thread on a text's card (`history:` with one or two of their earlier texts, oldest first). Today a text's card carries what that person last texted about as a memory line (`talked`/`text`, `Wiring.TextsMemoryFacts.Texted`), the form data 6 knows: the packs answer a thread's last line, so a thread on a text's card would change what the text says.
+- Cards of their own for the day after an outing that went badly (`friend.after.bad`), a date (`partner.date.good`, `partner.date.bad`) and Mom's (`mom.after.good`, `mom.after.bad`): each would be registered in `Texts/TextIntents.cs` as data 7 with fixtures, and `Texts/TextsMapRules.Phone` would map `reallife_social_text_nextday_*` to them. Until then their written lines are used.
+- `mom.dm.answer`, so a call back to Mom (and any call to her) could be typed.
+
+### Texting back (not built yet)
+
+A reply to a person's text from their thread, rather than a call, would take:
+
+- A button of the game's own under their newest text, as `Family/FamilySms` puts one under the partner's: the click is the mod's, so it comes off before each save and goes back on after, and a save that is read never has it. Only on a text of today or yesterday that has a subject (`SocialFollowCatalogue.Of`) and is not answered yet: the person would keep the minute of the text answered, as `FollowedAt` keeps the one a call opened on, and a call back and a reply would spend the same text.
+- Without a pack, two written answers to choose from, warm and cool, as a call's topic; with a pack and "Type your own words in calls" on, the player's own words through `Core/GameUi/TextBox`.
+- With a pack, a card of its own (`friend.dm.reply`, `partner.dm.reply`, `mom.dm.reply`, data 7, with fixtures in the generator's spec): the call's `*.dm.answer` cards are spoken, and the packs trained on them would answer as on a call.
+- The player's words in the thread as the player's (`TextMessage.isFromPlayer`), their answer a few game minutes later as theirs (in the morning if they are asleep), counted in the day's texts as every text of theirs but sent at the cap too, since the player asked. Worth what a topic's answer on a call is (`SocialTalk.Answer`: the day's chat once), never money.
+- Each player's own thread: nothing sent in a Going Public session.
 
 ## The City Ledger (`News`)
 
@@ -231,9 +316,23 @@ Each morning after six the paper is written once (`News.Compose`): the worst two
 It arrives as messages from the `reallife-ledger` contact (one notification) and is read out when that contact is called.
 The log, the paper and the fillers seen are in modData.
 
+### Milestones and rivals beaten (`LedgerStories`)
+
+Read when an edition is first printed (`LedgerDirector.Stories`), kept when it is written again, behind the option `ledger_stories`:
+- A rival tycoon the player took over (`Tycoon.DefeatedDay` in the edition's window, the cost from the rivals' counter note, the break-up money until it is paid): a front page business story in one of three versions, drawn from the rivals' seed, the day and the rival, or a plain one without the cost. It replaces the rivals' own one line of the same takeover.
+- A listed company's market value at the last close against the ladder (100 and 250 million, 500 million, each billion to ten, then 25, 50 and 100 billion): a player's company has one story for the highest figure it passed (front page weight from a billion), a city company one for its first billion. The city's companies start between about 140 million and 58 billion, so every figure can be reached.
+- The city's most valuable company: it changes hands only when the leader is 2% ahead of the holder (or the holder left the market); a player's company has its own stories for the first time, again, and losing it.
+- A takeover completed by a listed bidder (the bidder stays on the company that left): a business story naming the buyer, in place of the markets' line.
+- The record is `LedgerState.Marks` (the highest figure per company, whether it was ever first) and `TopId`, one `M|` line of `reallife:ledger`. A save without it sets every company where it stands on its first morning, with no story; an older version leaves the line alone.
+- Going Public: the host prints them from the shared market and they go to guests in the edition as any piece; nothing new is on the market's tape. A guest following the host's paper keeps its record in step quietly, and sends its own rival's story (a piece about its player) with its other pieces.
+- Self-check (Developer diagnostics): `City Ledger check (milestones and rivals)` once an edition. Test: "Put a rival's takeover and a stock milestone in today's City Ledger".
+
 ## Rules kept
 
 - Nothing in the save the game cannot load: `reallife:social*` strings in modData, and contacts made exactly as `Phone/PhoneContacts` makes its own (id, description key, the call dialog set again on every load).
+- The first eight are in `reallife:social_people` as every version wrote them, and a save loads if all eight are there; everybody after them is in `reallife:social_more`, one line each with the same fields, which an older version never reads or writes, so going back a version and forward again keeps them. A line of it that cannot be read is kept as it was read and its slot stays taken.
+- A roommate who is one of the later people is saved in full in the roommate's field 15, and as no friend in field 14, which is what an older version reads.
+- Each person's record (`reallife:social_people`) ends with the minute of the text a call back last opened on and the outing still to be texted about the day after (fields 43 to 47, after the age's day): an older version reads the fields it knows and leaves these; an older save reads as no text taken up yet and no outing waiting.
 - Idle cost: three comparisons a frame; once a second a few more.
   A scene ticks five times a second; per frame only its marker, its key and (via the living city's service) a turn on the spot.
   No per-frame allocation.
@@ -251,6 +350,20 @@ Its label is `reallife_social_test_mom`, and its row is in the chain in `Core/Re
 "Test: a walk with the chosen person, here" does the same thing for the chosen person (Mom until another is chosen): it is agreed for the pavement where the player stands, and looks for a business only if there is no pavement within 8 m.
 
 "Call the chosen person now and type the chat" (`reallife_social_test_composer`, `SocialDirector.TestComposer`) opens a call at once, in the game's contacts app, with the chosen person or else anybody met whose chat today is still to come; press Chat and the first topic is the shop's loss ("Be honest, is {shop} holding up?"), whatever has happened, with "Type a reply": good news gets a glad line, bad news the sorry one, anything else a neutral line. It says why when it cannot: typing in calls switched off, no pack running (or RLO Texts' messages from people off, or the game in a language the pack does not write), or nobody it can be (Mom has no typed chat, and the others have had today's chat).
+
+"The chosen person texts me, and I call them back" (`reallife_social_test_followup`, `SocialDirector.TestFollowUp`) puts a text in their thread as each feature does, in turn the social life's, the family's, life's and travel's (where that feature texts this person, else the social life's), and opens the call at once: it should open on what they wrote about. An invitation, favour or plan of theirs comes first, and a notice says so.
+
+"The chosen person texts me about yesterday's outing" (`reallife_social_test_nextday`, `SocialDirector.TestNextDay`) sends the day after's text now, in turn as if the outing went well and as if it went badly; no outing is recorded.
+
+"Lose touch with the newest acquaintance and check the place is free" (`reallife_social_test_lose`, `SocialDirector.TestLoseTouch`) lets go of the newest acquaintance nothing holds (`SocialRules.NewestLoseable`), without the question, and checks that their slot holds somebody new and not met, that their contact is gone and that somebody is left to meet: the notice and the log line `Social check (lose touch)` say PASS or FAIL. It says why when nobody can go.
+
+## One face for one person
+
+Mom and Alex are two fixed characters, like Uncle Fred: one table, `FixedPeople` (Phone/Contacts/FixedPeople.cs), gives each a gender, an age and a look seed, the same for every player in a new game, an old game and an old save. Nothing about them is rolled or seeded by the save. The social life's record (`SocialCatalogue.FixLook`), every scene that stands them in the world (`SocialCast`, `RoommateCast`, `FamilyCast`'s Mother), the phone and Flare pictures and the contact catalogue read that table alone. Alex is a woman, as the player met her at the start. To give one of them another face by hand, change the table and nothing else.
+
+Everyone else the mod keeps has one stored look per save: the record's `Seed` (and `Look`, if met in the street). A roommate who is one of the social life's people keeps a copy of that record; `RoommateRules.Mend` makes the copy follow the record (the one the player met first), when the save is read, before they are shown at home and before their picture is drawn (`RoommateDirector.Mend`). The partner is drawn at the age of the social life's record at home, on the phone and out (`Partner.LookAge`). A save with two looks for one person is put right on load (`SocialState.Read`, `RoommateDirector.Load`): one log line a person (`People: Alex's look put right in ...`) and one notice (`reallife_social_looks_again`); once saved, nothing is repaired or said again.
+
+"Alex and Mom look the same everywhere" (`reallife_social_test_looks`, `SocialDirector.TestOneLook`) compares each in the social record a gathering dresses from, a roommate's copy made wrong on purpose and mended as a load mends it, and the phone picture, against the table: the log line `Social check (one look per person)` and the notice say PASS or FAIL. The characters themselves are not stood in a scene by this test.
 
 ## On screen: the game's own interface (Social)
 
@@ -280,6 +393,10 @@ The wording and length of the new notifications on screen.
 
 Typing on a call has not been seen in the game: that the game's text box opens over a call in the contacts app and hands its words back while the call is open, how "You: ..." and the model's answer look in the call's thread, and how long a pack takes to answer on the owner's machine (the hold is 6 s, then the written answer).
 
+Losing touch has not been seen in the game: that the game's question box comes up over the phone once the People call ends, and that the Contacts app's list drops the contact at once while it is open.
+
+A call back has not been seen in the game: that the person's thread in the game's phone holds every feature's texts as read here, how their line about a text reads in the contacts app's call, and the texts the day after an outing.
+
 ## Wish-list (drop in by id, no code change)
 
 **Delivered and played:** `social_handshake`, `social_hug`, `social_hug_a` / `_b`, `social_cheek_kiss`, `cheers` (with `wine_glass`), `walk_talk` / `walk_talk_l`, `goodbye_wave_walk`, and the prop `moving_box`.
@@ -303,12 +420,8 @@ Clips (Humanoid, in place, from and back to the standing idle unless said):
 | `goodbye_wave_walk` | 1.4 s | once, right arm | a wave over the shoulder while walking away |
 
 Props (pivot at the grip unless said): `wine_glass` 0.07 x 0.20 x 0.07, pivot the middle of the stem.
-`beer_bottle` 0.07 x 0.24 x 0.07, pivot 0.08 m up.
 `takeaway_box` 0.14 x 0.09 x 0.11, pivot the middle of the underside.
-`popcorn_tub` 0.16 x 0.20 x 0.16, pivot the middle of the underside.
-`gift_box` 0.20 x 0.14 x 0.20 with a ribbon, ground centre.
 
-`flowers_bunch` 0.22 x 0.42 x 0.22, pivot the wrapped stems 0.10 m up.
-`gym_bag` 0.50 x 0.26 x 0.24, pivot the middle of the handles.
+`beer_bottle`, `popcorn_tub`, `gift_box`, `flowers_bunch` and `gym_bag` were made for this list and, as nothing placed them, taken out of the props bundle on 26 Oct 2026 as nothing placed it; a feature that wants it models it anew in the second bundle (PropAssets/README.md, "Adding a prop from Blender").
 `moving_box` 0.45 x 0.35 x 0.35 printed "FRAGILE" (until then `parcel_m`), ground centre.
 `newspaper_ledger` (the `newspaper` prop with the Ledger's masthead), as `newspaper`.

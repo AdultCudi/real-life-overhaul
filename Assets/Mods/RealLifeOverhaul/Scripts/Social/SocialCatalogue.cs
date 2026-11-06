@@ -10,7 +10,8 @@ namespace RealLifeOverhaul
         public string Name;            // locale key: "coffee"
         public string Offer;           // what they say when it is proposed, with {place} and {cost}
         public string[] Match;         // parts of the game's business type names that will do as the venue; null = anywhere
-        public int Cost;               // per head
+        public int BaseCost;           // per head, at the start's prices
+        public int Cost => Prices.At(BaseCost);   // per head, at the prices of now (Prices.Level)
         public int Minutes;            // game minutes spent inside
         public bool SeatedRest;        // rested as in the game's own cinema seat through the time skip (before the settlement)
         public string MealItem;        // the game's food item whose saturation fills the player after a completed outing
@@ -62,6 +63,28 @@ namespace RealLifeOverhaul
             "Yoon", "Marchetti", "Dupree", "Kaplan"
         };
 
+        // More names for the people met after the first eight, who also draw on the lists above. Kept apart from them, so
+        // the first eight are dealt as they always were.
+        internal static readonly string[] LaterWomen =
+        {
+            "Abigail", "Amara", "Astrid", "Beatriz", "Camille", "Daphne", "Elena", "Esme", "Fatima", "Gemma", "Harriet", "Ingrid", "Isla", "Jasmine",
+            "Kaia", "Lucia", "Maeve", "Mira", "Naomi", "Olivia", "Paloma", "Petra", "Rania", "Rhea", "Saoirse", "Selma", "Talia", "Thandi", "Ursula",
+            "Valeria", "Wendy", "Ximena", "Yasmin", "Zara", "Anya", "Clara", "Elif", "Freya", "Lorna", "Noor"
+        };
+        internal static readonly string[] LaterMen =
+        {
+            "Aaron", "Ade", "Ali", "Ben", "Bruno", "Caleb", "Dario", "Eamon", "Elias", "Femi", "Gareth", "Hassan", "Ivan", "Jonah", "Kenji", "Lars",
+            "Leon", "Mateo", "Mikhail", "Nate", "Oscar", "Pablo", "Rafael", "Rohan", "Sean", "Silas", "Tomas", "Umar", "Vikram", "Wesley", "Xavier",
+            "Yusuf", "Zane", "Arjun", "Callum", "Diego", "Gabriel", "Henrik", "Joel", "Stefan"
+        };
+        internal static readonly string[] LaterSurnames =
+        {
+            "Abbott", "Adeyemi", "Almeida", "Andersen", "Bauer", "Bianchi", "Carver", "Chen", "Costa", "Dalton", "Dimitriou", "Ellison", "Eze",
+            "Fischer", "Garrow", "Gupta", "Hartley", "Hoang", "Jensen", "Kaur", "Keane", "Larsen", "Lowell", "Mahmoud", "Mendes", "Moreau", "Navarro",
+            "Osei", "Park", "Pereira", "Ramsey", "Rinaldi", "Rossi", "Santos", "Schmidt", "Sato", "Thorne", "Ueda", "Varga", "Walsh", "Weber",
+            "Wolfe", "Xu", "Yilmaz", "Zielinski", "Kim", "Lopez", "Okoro"
+        };
+
         /// <summary>What they do for a living, as it is said after "a".</summary>
         public static readonly string[] Jobs =
         {
@@ -86,6 +109,13 @@ namespace RealLifeOverhaul
         public const string StageFamily = "reallife_social_stage_family";
         public const string StageLivesWith = "reallife_social_stage_lives_with";
         public const string StageDrifted = "reallife_social_stage_drifted";
+
+        /// <summary>Why the player cannot lose touch with somebody, by LoseBlock (None and NotKnown have no line).</summary>
+        public static readonly string[] LoseBlocks =
+        {
+            null, null, "reallife_social_lose_no_family", "reallife_social_lose_no_oldfriend", "reallife_social_lose_no_together", "reallife_social_lose_no_home",
+            "reallife_social_lose_no_plan", "reallife_social_lose_no_money", "reallife_social_lose_no_flare"
+        };
 
         public static readonly string[] MoodNames =
         {
@@ -132,12 +162,17 @@ namespace RealLifeOverhaul
             new[] { SocialTrait.Punctual, SocialTrait.Careful }, new[] { SocialTrait.Late, SocialTrait.Homebody }, new[] { SocialTrait.Flaky, SocialTrait.Generous }
         };
 
-        /// <summary>Rolls the cast of a new save: Mom, Alex and one person to be met at each place. The same cast for a seed.</summary>
+        /// <summary>
+        /// Rolls the first <see cref="SocialRules.BaseCast"/> people of a new save into the start of
+        /// <paramref name="people"/>: Mom, Alex and one person to be met at each place. The same people for a seed, whatever
+        /// the array's length; the slots after them are left as they are.
+        /// </summary>
         public static void MakeCast(SocialPerson[] people, int seed, int day, int daysPerYear, int districts)
         {
             var random = new Random(seed);
             daysPerYear = Math.Max(8, daysPerYear);
             districts = Math.Max(1, districts);
+            int count = Math.Min(people.Length, SocialRules.BaseCast);
 
             // Dealt without replacement: no two share a first name or a surname.
             int[] first = Shuffled(random, Math.Min(Women.Length, Men.Length));
@@ -146,7 +181,7 @@ namespace RealLifeOverhaul
             int[] jobs = Shuffled(random, Jobs.Length - 1);   // the last job is "retired": Mom's
             int romances = 0;
 
-            for (int i = 0; i < people.Length; i++)
+            for (int i = 0; i < count; i++)
             {
                 var origin = (SocialOrigin)i;
                 var p = new SocialPerson { Index = i, Origin = origin, Seed = random.Next(1, int.MaxValue) };
@@ -201,7 +236,7 @@ namespace RealLifeOverhaul
                         p.FreeFrom = shape == 0 ? 17 : shape == 1 ? 14 : 11;
                         p.FreeTo = shape == 0 ? 23 : shape == 1 ? 22 : 18;
                         // About half could become more than friends, and never fewer than two.
-                        p.Compatible = (p.Age < 50 && random.Next(2) == 0) || (romances < 2 && i >= people.Length - 2);
+                        p.Compatible = (p.Age < 50 && random.Next(2) == 0) || (romances < 2 && i >= SocialRules.BaseCast - 2);
                         if (p.Compatible)
                         {
                             romances++;
@@ -227,7 +262,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            for (int i = 0; i < people.Length; i++)
+            for (int i = 0; i < Math.Min(people.Length, SocialRules.BaseCast); i++)
             {
                 SocialPerson p = people[i];
                 if (i != gym && p != null && p.Origin != SocialOrigin.Family && p.Job == trainer)
@@ -237,22 +272,145 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Mom and Alex get the look that is the same in every game (Phone/Contacts/FixedLooks). True if anything changed.</summary>
+        private const int NameTries = 24;   // rolled names tried for one nobody has, before the lists are walked in turn
+
+        /// <summary>
+        /// Somebody new for slot <paramref name="index"/> past the first eight, to be met at <paramref name="origin"/>: a woman
+        /// (<paramref name="sex"/> 1), a man (0) or either (-1), with a full name none of the first <paramref name="count"/>
+        /// of <paramref name="people"/> has. Everything else is rolled from the cast's seed and the slot, so the same slot of
+        /// a save is the same person on every machine. Never the gym's trainer or retired: the first eight hold those.
+        /// Allocates the person and a few name strings; made once, when somebody is about to be met.
+        /// </summary>
+        public static SocialPerson MakeNew(int index, SocialOrigin origin, int sex, int castSeed, int day, int daysPerYear, int districts,
+            SocialPerson[] people, int count)
+        {
+            return MakeRolled(index, SocialRules.SlotSeed(castSeed, index), origin, sex, day, daysPerYear, districts, people, count);
+        }
+
+        /// <summary>
+        /// As <see cref="MakeNew"/>, everything rolled from <paramref name="seed"/> instead of the slot's own: for whoever takes
+        /// the slot of somebody the player lost touch with (<see cref="SocialRules.ReplaceSeed"/>).
+        /// </summary>
+        public static SocialPerson MakeRolled(int index, int seed, SocialOrigin origin, int sex, int day, int daysPerYear, int districts,
+            SocialPerson[] people, int count)
+        {
+            var random = new Random(seed);
+            daysPerYear = Math.Max(8, daysPerYear);
+            districts = Math.Max(1, districts);
+            bool rolledFemale = random.Next(2) == 0;
+            var p = new SocialPerson { Index = index, Origin = origin, Seed = random.Next(1, int.MaxValue), Female = sex < 0 ? rolledFemale : sex == 1 };
+            SocialTrait[] pair = TraitPairs[random.Next(TraitPairs.Length)];
+            p.Traits = pair[0] | pair[1];
+            if (origin == SocialOrigin.Gym)
+            {
+                p.Traits |= SocialTrait.Sporty;
+            }
+            p.District = random.Next(districts);
+            p.Birthday = 1 + random.Next(daysPerYear);
+            p.Wants = (PlanKind)random.Next((int)PlanKind.Walk + 1);
+            p.WantsDay = day;
+            p.Age = 22 + random.Next(34);
+            int trainer = Array.IndexOf(Jobs, "reallife_social_job_trainer");
+            p.Job = random.Next(Jobs.Length - 2);   // neither retired (the last) nor the trainer, skipped below
+            p.Job += p.Job >= trainer ? 1 : 0;
+            int shape = p.Has(SocialTrait.NightOwl) ? 2 : random.Next(3);
+            p.FreeFrom = shape == 0 ? 17 : shape == 1 ? 14 : 11;
+            p.FreeTo = shape == 0 ? 23 : shape == 1 ? 22 : 18;
+            p.Compatible = p.Age < 50 && random.Next(2) == 0;
+            p.Name = FreeName(random, p.Female, people, count);
+            p.LastContactDay = day;
+            p.StageDay = day;
+            p.AgeDay = day;
+            return p;
+        }
+
+        // A first name and a surname from both lists that nobody of the cast has yet.
+        private static string FreeName(Random random, bool female, SocialPerson[] people, int count)
+        {
+            string[] firsts = female ? Women : Men, laterFirsts = female ? LaterWomen : LaterMen;
+            int firstCount = firsts.Length + laterFirsts.Length, lastCount = Surnames.Length + LaterSurnames.Length;
+            for (int t = 0; t < NameTries; t++)
+            {
+                string name = Pick(firsts, laterFirsts, random.Next(firstCount)) + " " + Pick(Surnames, LaterSurnames, random.Next(lastCount));
+                if (!Taken(people, count, name))
+                {
+                    return name;
+                }
+            }
+            int start = random.Next(firstCount * lastCount);
+            for (int k = 0; k < firstCount * lastCount; k++)
+            {
+                int at = (start + k) % (firstCount * lastCount);
+                string name = Pick(firsts, laterFirsts, at / lastCount) + " " + Pick(Surnames, LaterSurnames, at % lastCount);
+                if (!Taken(people, count, name))
+                {
+                    return name;
+                }
+            }
+            return Pick(firsts, laterFirsts, 0) + " " + Pick(Surnames, LaterSurnames, 0);   // more people than names: never with these lists
+        }
+
+        private static string Pick(string[] first, string[] then, int at) => at < first.Length ? first[at] : then[at - first.Length];
+
+        private static bool Taken(SocialPerson[] people, int count, string name)
+        {
+            for (int i = 0; i < Math.Min(count, people.Length); i++)
+            {
+                if (people[i] != null && string.Equals(people[i].Name, name, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Mom and Alex get the one fixed look of Phone/Contacts/FixedPeople, the same in every game: their gender, age and seed
+        /// are set from there and nowhere else, and a look kept from the street is dropped. True if anything changed.
+        /// </summary>
         public static bool FixLook(SocialPerson p)
         {
-            if (p == null || (p.Origin != SocialOrigin.Family && p.Origin != SocialOrigin.OldFriend))
+            if (p == null || (p.Origin != SocialOrigin.Family && p.Origin != SocialOrigin.OldFriend) || !FixedPeople.TryGet((int)p.Origin, out FixedPeople.Entry fixedLook))
             {
                 return false;
             }
-            bool mom = p.Origin == SocialOrigin.Family;
-            bool female = mom ? FixedLooks.MomFemale : FixedLooks.AlexFemale;
-            int age = mom ? FixedLooks.MomAge : FixedLooks.AlexAge;
-            int seed = mom ? FixedLooks.MomSeed : FixedLooks.AlexSeed;
-            bool changed = p.Female != female || p.Age != age || p.Seed != seed || p.Look != null;
-            p.Female = female;
-            p.Age = age;
-            p.Seed = seed;
+            bool changed = p.Female != fixedLook.Female || p.Age != fixedLook.Age || p.Seed != fixedLook.Seed || p.Look != null;
+            p.Female = fixedLook.Female;
+            p.Age = fixedLook.Age;
+            p.Seed = fixedLook.Seed;
             p.Look = null;
+            return changed;
+        }
+
+        /// <summary>
+        /// As <see cref="FixLook"/>, at the moment somebody is stood in the world or drawn: the record is put right if it is one
+        /// of the two, and the repair is noted (FixedPeople.Mended) for the log and the one notice. Allocates nothing unless it repaired.
+        /// </summary>
+        public static bool FixedFor(SocialPerson p, string where)
+        {
+            if (!FixLook(p))
+            {
+                return false;
+            }
+            FixedPeople.Mended(p.Name, where, p.Female, p.Age, p.Seed);
+            return true;
+        }
+
+        /// <summary>
+        /// One identity for one person: a copy of a person's record (the roommate keeps one) takes the record's gender, age and
+        /// look seed. The record is the one the player met first, so it wins. True if the copy changed.
+        /// </summary>
+        public static bool SameAs(SocialPerson record, SocialPerson copy)
+        {
+            if (record == null || copy == null || ReferenceEquals(record, copy))
+            {
+                return false;
+            }
+            bool changed = copy.Female != record.Female || copy.Age != record.Age || copy.Seed != record.Seed;
+            copy.Female = record.Female;
+            copy.Age = record.Age;
+            copy.Seed = record.Seed;
+            copy.Look = record.Look;
             return changed;
         }
 
@@ -278,7 +436,7 @@ namespace RealLifeOverhaul
             new OutingDef
             {
                 Kind = PlanKind.Coffee, Name = "reallife_social_outing_coffee", Offer = "reallife_social_offer_coffee", Match = new[] { "coffeeshop" },
-                Cost = 6, Minutes = 25, From = 7, To = 19, Energy = 6f, Familiarity = 6f, Affection = 5f, Trust = 2f,
+                BaseCost = 6, Minutes = 25, From = 7, To = 19, Energy = 6f, Familiarity = 6f, Affection = 5f, Trust = 2f,
                 Caption = "reallife_social_tm_coffee", Transaction = "reallife_transaction_social_coffee", Memory = MemoryCode.Coffee,
                 After = new[] { "reallife_social_after_coffee_1", "reallife_social_after_coffee_2", "reallife_social_after_coffee_3" }, Invite = "reallife_social_invite_coffee"
             },
@@ -286,14 +444,14 @@ namespace RealLifeOverhaul
             {
                 Kind = PlanKind.Meal, Name = "reallife_social_outing_meal", Offer = "reallife_social_offer_meal", Match = new[] { "restaurant" },
                 MealItem = "ba:itemname_burger",
-                Cost = 24, Minutes = 70, From = 11, To = 23, Energy = 10f, Familiarity = 8f, Affection = 7f, Trust = 3f,
+                BaseCost = 24, Minutes = 70, From = 11, To = 23, Energy = 10f, Familiarity = 8f, Affection = 7f, Trust = 3f,
                 Caption = "reallife_social_tm_meal", Transaction = "reallife_transaction_social_meal", Memory = MemoryCode.Meal,
                 After = new[] { "reallife_social_after_meal_1", "reallife_social_after_meal_2", "reallife_social_after_meal_3" }, Invite = "reallife_social_invite_meal"
             },
             new OutingDef
             {
                 Kind = PlanKind.Drinks, Name = "reallife_social_outing_drinks", Offer = "reallife_social_offer_drinks", Match = new[] { "nightclub" },
-                Cost = 32, Minutes = 110, From = 19, To = 27, Energy = -6f, Familiarity = 8f, Affection = 8f, Trust = 2f, Needs = SocialStage.Friend,
+                BaseCost = 32, Minutes = 110, From = 19, To = 27, Energy = -6f, Familiarity = 8f, Affection = 8f, Trust = 2f, Needs = SocialStage.Friend,
                 Caption = "reallife_social_tm_drinks", Transaction = "reallife_transaction_social_drinks", Memory = MemoryCode.Drinks,
                 After = new[] { "reallife_social_after_drinks_1", "reallife_social_after_drinks_2", "reallife_social_after_drinks_3" }, Invite = "reallife_social_invite_drinks"
             },
@@ -301,49 +459,49 @@ namespace RealLifeOverhaul
             {
                 Kind = PlanKind.Cinema, Name = "reallife_social_outing_cinema", Offer = "reallife_social_offer_cinema", Match = new[] { "cinema", "theater" },
                 SeatedRest = true,
-                Cost = 18, Minutes = 130, From = 12, To = 24, Energy = 2f, Familiarity = 7f, Affection = 6f, Trust = 2f,
+                BaseCost = 18, Minutes = 130, From = 12, To = 24, Energy = 2f, Familiarity = 7f, Affection = 6f, Trust = 2f,
                 Caption = "reallife_social_tm_cinema", Transaction = "reallife_transaction_social_cinema", Memory = MemoryCode.Cinema,
                 After = new[] { "reallife_social_after_cinema_1", "reallife_social_after_cinema_2", "reallife_social_after_cinema_3" }, Invite = "reallife_social_invite_cinema"
             },
             new OutingDef
             {
                 Kind = PlanKind.Walk, Name = "reallife_social_outing_walk", Offer = "reallife_social_offer_walk", Match = null,
-                Cost = 0, Minutes = 0, From = 7, To = 22, Energy = -3f, Familiarity = 7f, Affection = 6f, Trust = 3f,
+                BaseCost = 0, Minutes = 0, From = 7, To = 22, Energy = -3f, Familiarity = 7f, Affection = 6f, Trust = 3f,
                 Caption = null, Transaction = null, Memory = MemoryCode.Walk,
                 After = new[] { "reallife_social_after_walk_1", "reallife_social_after_walk_2", "reallife_social_after_walk_3" }, Invite = "reallife_social_invite_walk"
             },
             new OutingDef
             {
                 Kind = PlanKind.Drive, Name = "reallife_social_outing_drive", Offer = "reallife_social_offer_drive", Match = null,
-                Cost = 0, Minutes = 0, From = 8, To = 24, Energy = 0f, Familiarity = 7f, Affection = 6f, Trust = 4f, Needs = SocialStage.Friend,
+                BaseCost = 0, Minutes = 0, From = 8, To = 24, Energy = 0f, Familiarity = 7f, Affection = 6f, Trust = 4f, Needs = SocialStage.Friend,
                 Caption = null, Transaction = null, Memory = MemoryCode.Drive,
                 After = new[] { "reallife_social_after_drive_1", "reallife_social_after_drive_2", "reallife_social_after_drive_3" }, Invite = "reallife_social_invite_drive"
             },
             new OutingDef
             {
                 Kind = PlanKind.Workout, Name = "reallife_social_outing_workout", Offer = "reallife_social_offer_workout", Match = new[] { "gym" },
-                Cost = 15, Minutes = 60, From = 6, To = 22, Energy = -14f, Familiarity = 8f, Affection = 5f, Trust = 4f,
+                BaseCost = 15, Minutes = 60, From = 6, To = 22, Energy = -14f, Familiarity = 8f, Affection = 5f, Trust = 4f,
                 Caption = "reallife_social_tm_workout", Transaction = "reallife_transaction_social_workout", Memory = MemoryCode.Workout,
                 After = new[] { "reallife_social_after_workout_1", "reallife_social_after_workout_2", "reallife_social_after_workout_3" }, Invite = "reallife_social_invite_workout"
             },
             new OutingDef
             {
                 Kind = PlanKind.Business, Name = "reallife_social_outing_business", Offer = "reallife_social_offer_business", Match = null,
-                Cost = 0, Minutes = 30, From = 8, To = 22, Energy = 0f, Familiarity = 6f, Affection = 6f, Trust = 5f, Needs = SocialStage.Friend,
+                BaseCost = 0, Minutes = 30, From = 8, To = 22, Energy = 0f, Familiarity = 6f, Affection = 6f, Trust = 5f, Needs = SocialStage.Friend,
                 Caption = "reallife_social_tm_business", Transaction = null, Memory = MemoryCode.Business,
                 After = new[] { "reallife_social_after_business_1", "reallife_social_after_business_2", "reallife_social_after_business_3" }, Invite = "reallife_social_invite_business"
             },
             new OutingDef
             {
                 Kind = PlanKind.Lift, Name = "reallife_social_outing_lift", Offer = "reallife_social_offer_lift", Match = null,
-                Cost = 0, Minutes = 0, From = 0, To = 24, Energy = 0f, Familiarity = 4f, Affection = SocialRules.FavourAffection, Trust = SocialRules.FavourTrust,
+                BaseCost = 0, Minutes = 0, From = 0, To = 24, Energy = 0f, Familiarity = 4f, Affection = SocialRules.FavourAffection, Trust = SocialRules.FavourTrust,
                 Caption = null, Transaction = "reallife_transaction_social_lift", Memory = MemoryCode.Lift,
                 After = new[] { "reallife_social_after_lift_1", "reallife_social_after_lift_2", "reallife_social_after_lift_3" }, Invite = "reallife_social_invite_lift"
             },
             new OutingDef
             {
                 Kind = PlanKind.Moving, Name = "reallife_social_outing_moving", Offer = "reallife_social_offer_moving", Match = null,
-                Cost = 0, Minutes = 0, From = 0, To = 24, Energy = -12f, Familiarity = 6f, Affection = SocialRules.FavourAffection + 2f, Trust = SocialRules.FavourTrust + 2f,
+                BaseCost = 0, Minutes = 0, From = 0, To = 24, Energy = -12f, Familiarity = 6f, Affection = SocialRules.FavourAffection + 2f, Trust = SocialRules.FavourTrust + 2f,
                 Caption = null, Transaction = "reallife_transaction_social_moving", Memory = MemoryCode.Moving,
                 After = new[] { "reallife_social_after_moving_1", "reallife_social_after_moving_2", "reallife_social_after_moving_3" }, Invite = "reallife_social_invite_moving"
             }
@@ -571,6 +729,14 @@ namespace RealLifeOverhaul
         public static readonly string[] TextLoanAsk = { "reallife_social_text_loan_1", "reallife_social_text_loan_2" };
         public static readonly string[] TextMovingAsk = { "reallife_social_text_moving_1", "reallife_social_text_moving_2" };
 
+        // The day after an outing, how it went (SocialFollowRules.NextDay): a friend's, the partner's after a date, Mom's.
+        public static readonly string[] TextNextDayGood = { "reallife_social_text_nextday_good_1", "reallife_social_text_nextday_good_2" };
+        public static readonly string[] TextNextDayBad = { "reallife_social_text_nextday_bad_1", "reallife_social_text_nextday_bad_2" };
+        public static readonly string[] TextNextDayDateGood = { "reallife_social_text_nextday_date_good_1", "reallife_social_text_nextday_date_good_2" };
+        public static readonly string[] TextNextDayDateBad = { "reallife_social_text_nextday_date_bad_1", "reallife_social_text_nextday_date_bad_2" };
+        public static readonly string[] TextNextDayMomGood = { "reallife_social_text_nextday_mom_good_1", "reallife_social_text_nextday_mom_good_2" };
+        public static readonly string[] TextNextDayMomBad = { "reallife_social_text_nextday_mom_bad_1", "reallife_social_text_nextday_mom_bad_2" };
+
         public static readonly string[] NewsAccidentMinor = { "reallife_news_accident_minor_1", "reallife_news_accident_minor_2", "reallife_news_accident_minor_3" };
         public static readonly string[] NewsAccidentModerate = { "reallife_news_accident_moderate_1", "reallife_news_accident_moderate_2", "reallife_news_accident_moderate_3" };
         public static readonly string[] NewsAccidentSevere = { "reallife_news_accident_severe_1", "reallife_news_accident_severe_2", "reallife_news_accident_severe_3" };
@@ -638,23 +804,27 @@ namespace RealLifeOverhaul
         }
     }
 
-    /// <summary>A line from a pool, never the one picked from it last: so two people greeting in turn do not say the same thing.</summary>
+    /// <summary>
+    /// A line from a pool, never the one picked from it last: so two people greeting in turn do not say the same thing. Never
+    /// one whose words take for granted what the player has not got (Core/LineNeeds: a flat, a car).
+    /// </summary>
     public static class SocialLines
     {
         private static readonly Dictionary<string[], int> Last = new Dictionary<string[], int>(64);
         private static readonly Random Dice = new Random();
+        private static readonly Func<float> Random01 = () => (float)Dice.NextDouble();   // made once: handed to every pick
 
-        /// <summary>Null for a null or empty pool.</summary>
+        /// <summary>Null for a null or empty pool, or one none of whose lines fits the player.</summary>
         public static string Pick(string[] pool)
         {
             if (pool == null || pool.Length == 0)
             {
                 return null;
             }
-            int index = Dice.Next(pool.Length);
-            if (pool.Length > 1 && Last.TryGetValue(pool, out int last) && last == index)
+            int index = LineNeeds.Pick(pool, Last.TryGetValue(pool, out int last) ? last : -1, Random01);
+            if (index < 0)
             {
-                index = (index + 1 + Dice.Next(pool.Length - 1)) % pool.Length;
+                return null;
             }
             Last[pool] = index;
             return pool[index];

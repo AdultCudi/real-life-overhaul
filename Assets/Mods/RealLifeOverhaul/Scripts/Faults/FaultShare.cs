@@ -6,17 +6,13 @@ using System.Text;
 namespace RealLifeOverhaul.Faults
 {
     /// <summary>
-    /// The city's faults in a Going Public session (Core/SharedCity, part K): the host rolls every fault and sends them
-    /// all, whole, whenever one appears, is taken by a crew or is mended (a dozen at most: a short line); a guest takes the
-    /// host's as they are and never rolls its own. A guest that joins late is sent them with the rest of the city's parts
-    /// (the snapshot). An RLO that knows no part K skips it (SharedCity looks a part up by its letter and passes over one
-    /// it has not). Also the faults' lines of the save (FaultStore), so there is one way to write a fault.
+    /// The city's faults in a Going Public session (Core/SharedCity, part K): the host sends them whole whenever one
+    /// changes; a guest takes them as they are. An RLO without part K skips it. The save writes a fault the same way.
     ///
     ///     K1                                   the head: the layout
     ///     id|kind|district|address|x|y|z|heading|variant|since|reports|case|caseAt|fixAt|crimes|lastCrime
     ///
-    /// one line each, '\n' between. The district and the address are escaped ('%', '|' and the line's end). Game-free.
-    /// Cost: a short line when a fault changes.
+    /// One line each, '\n' between; the district and address escaped. Game-free. Cost: a short line when a fault changes.
     /// </summary>
     public static class FaultShare
     {
@@ -41,7 +37,7 @@ namespace RealLifeOverhaul.Faults
             return b.ToString();
         }
 
-        /// <summary>A guest: the host's faults in place of its own. False, with nothing changed, if the text is not a whole part of this layout.</summary>
+        /// <summary>A guest: the host's faults in place of its own; false, with nothing changed, if the text is not of this layout.</summary>
         public static bool Apply(FaultFile file, string text)
         {
             if (file == null || string.IsNullOrEmpty(text))
@@ -75,7 +71,6 @@ namespace RealLifeOverhaul.Faults
             return true;
         }
 
-        /// <summary>One fault as a line.</summary>
         public static void Line(Fault f, StringBuilder b)
         {
             b.Append(f.Id.ToString(Inv)).Append('|').Append(((int)f.Kind).ToString(Inv)).Append('|').Append(Escape(f.District)).Append('|').Append(Escape(f.Address)).Append('|')
@@ -84,7 +79,7 @@ namespace RealLifeOverhaul.Faults
              .Append(f.CaseAt.ToString(Inv)).Append('|').Append(f.FixAt.ToString(Inv)).Append('|').Append(f.Crimes.ToString(Inv)).Append('|').Append(f.LastCrime.ToString(Inv));
         }
 
-        /// <summary>A fault from its line; null if the line is not one. A line with more fields (a later version's) reads its first sixteen.</summary>
+        /// <summary>A fault from its line, or null. A later version's longer line reads its first sixteen fields.</summary>
         public static Fault Read(string line)
         {
             string[] p = line != null ? line.Split('|') : null;

@@ -42,6 +42,10 @@ namespace RealLifeOverhaul
             government.ToAgenda = (policy, petition) => Put(policy, petition ? OfficeMotion.ByPetition : OfficeMotion.ByCity, TimeHelper.CurrentDay);
             government.ApprovalExtra = ApprovalExtra;
             government.DepartmentLevel = d => Enabled ? State.Budget[(int)d] : 0;   // the budget is the player's only with the option on
+            government.OfficeMeeting = () => State.NextMeeting;
+            government.ToPlanning = PutZoning;
+            government.OnPlanning = (lot, use) => ZoningMotion(lot, use) != null;
+            government.DecideNow = DecideZoningNow;
         }
 
         /// <summary>Running for office is on: civic life, its elections and this option.</summary>
@@ -78,9 +82,9 @@ namespace RealLifeOverhaul
                 BuildingRegistration r = save.BuildingRegistrations[i];
                 try
                 {
-                    if (r != null && GoingPublic.Mine(r) && r.GetBuildingType() == "ba:buildingtype_residential")
+                    if (r != null && GoingPublic.Mine(r) && GameRegistrations.BuildingType(r) == "ba:buildingtype_residential")
                     {
-                        return r.Neighborhood;
+                        return GameRegistrations.District(r);
                     }
                 }
                 catch (Exception)
@@ -137,7 +141,7 @@ namespace RealLifeOverhaul
                 BuildingRegistration r = save.BuildingRegistrations[i];
                 try
                 {
-                    if (r != null && GoingPublic.Mine(r) && r.HasEstablishedBusiness && (district < 0 || r.Neighborhood == id))
+                    if (r != null && GoingPublic.Mine(r) && r.HasEstablishedBusiness && GameRegistrations.Found(r) && (district < 0 || GameRegistrations.District(r) == id))
                     {
                         count++;
                     }
@@ -343,7 +347,7 @@ namespace RealLifeOverhaul
             }
             if (needDeposit)
             {
-                if (!GameManager.ChangeMoneySafe(-price, new TransactionInfo("reallife_transaction_civic_office_deposit"), null, null, force: false, showNotification: true))
+                if (!RealLifeOverhaul.Economy.BizBooks.Book(-price, new TransactionInfo("reallife_transaction_civic_office_deposit"), null, null, force: false, showNotification: true))
                 {
                     return "reallife_civic_office_no_money";
                 }

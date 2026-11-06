@@ -4,10 +4,8 @@ using RealLifeOverhaul.Meta;
 namespace RealLifeOverhaul.Rivals
 {
     /// <summary>
-    /// The rival tycoons' entry in the mod's feature list, and the figures the Guide's page "Rival tycoons" prints: every
-    /// {name} in its text is filled from <see cref="RivalCatalogue"/> here, so the page can never say anything the rules do
-    /// not do. Called once, when the feature list is built (Meta/FeatureList); each figure is worked out when the page is
-    /// opened.
+    /// The rival tycoons' entry in the feature list, and the Guide page's figures, each filled from
+    /// <see cref="RivalCatalogue"/> when the page opens. Registered once, when the feature list is built.
     /// </summary>
     public static class RivalGuide
     {
@@ -18,13 +16,13 @@ namespace RealLifeOverhaul.Rivals
             Features.Add("rivals", "reallife_meta_title_rivals")
                 .Group("reallife_rival_header")
                 .About("reallife_guide_rivals_about").Help("reallife_guide_rivals")
-                .Owns(Settings.RivalsId, Settings.RivalsStrengthId)
+                .Owns(Settings.RivalsId, Settings.RivalsStrengthId, Settings.RivalsFirstId)
                 .Preset(Settings.RivalsStrengthId, RivalCatalogue.Gentle, RivalCatalogue.Hard, RivalCatalogue.Ruthless)   // (Normal is its default)
                 .Data(RivalStore.Key, RivalStore.TestKey)
                 .Test("reallife_rival_test_property", "reallife_rival_test_outlet", "reallife_rival_test_poach", "reallife_rival_test_stake", "reallife_rival_test_bid",
                     "reallife_rival_test_lobby", "reallife_rival_test_suit", "reallife_rival_test_press", "reallife_rival_test_next", "reallife_rival_test_forward",
-                    "reallife_rival_test_list", "reallife_rival_test_takeover", "reallife_rival_test_back")
-                .Fact("rival_tens", () => Money(RivalCatalogue.TierFrom[1]))
+                    "reallife_rival_test_list", "reallife_rival_test_takeover", "reallife_rival_test_back", "reallife_rival_test_first")
+                .Fact("rival_tens", () => Money(RivalRules.FirstFrom(Settings.RivalsFirst)))   // (the option's amount: the Guide says when they come in this game)
                 .Fact("rival_hundreds", () => Money(RivalCatalogue.TierFrom[2]))
                 .Fact("rival_billions", () => Money(RivalCatalogue.TierFrom[3]))
                 .Fact("rival_ten_billions", () => Money(RivalCatalogue.TierFrom[4]))
@@ -55,12 +53,16 @@ namespace RealLifeOverhaul.Rivals
                 .Fact("rival_bid_after", () => Whole(RivalCatalogue.BidAfterStakeDays))
                 .Fact("rival_bid_rest", () => Whole(RivalCatalogue.BidRestDays))
                 .Fact("rival_threshold", () => (Markets.ListingCatalogue.TakeoverThresholdBp / 100).ToString(Inv) + "%")
-                .Fact("rival_held_most", () => (Markets.MarketCatalogue.HoldingShareBp / 100).ToString(Inv) + "%")
+                .Fact("rival_held_most", () => (System.Math.Min(Markets.MarketTrading.HoldingBp, Markets.MarketCatalogue.HoldingFloatBp) / 100).ToString(Inv) + "%")
                 .Fact("rival_outbid_share", () => Basis(RivalCatalogue.CounterShare[(int)RivalCounter.Outbid]))
                 .Fact("rival_poach_share", () => Basis(RivalCatalogue.CounterShare[(int)RivalCounter.Poach]))
                 .Fact("rival_press_share", () => Basis(RivalCatalogue.CounterShare[(int)RivalCounter.Press]))
                 .Fact("rival_lobby_share", () => Basis(RivalCatalogue.CounterShare[(int)RivalCounter.Lobby]))
                 .Fact("rival_poach_quiet", () => Whole(RivalCatalogue.PoachQuietDays))
+                .Fact("rival_lobby_rest", () => Whole(RivalCatalogue.CounterRestDays[(int)RivalCounter.Lobby]))
+                .Fact("rival_suit_least", () => Money(RivalCatalogue.SuitLeast))
+                .Fact("rival_poach_gap", () => Whole(Economy.CompanyCatalogue.PoachCompanyRestDays))
+                .Fact("rival_poach_answer", () => Whole(Economy.CompanyCatalogue.PoachAnswerDays))
                 .Fact("rival_poach_slow", () => Whole(RivalCatalogue.PoachSlowDays))
                 .Fact("rival_press_delay", () => Whole(RivalCatalogue.PressDelayDays))
                 .Fact("rival_press_cut", () => Permille(RivalCatalogue.PressWorthCut))

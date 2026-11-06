@@ -46,7 +46,10 @@ namespace RealLifeOverhaul.Tech
         public int Fee;                        // a search's fee, cents
         public int FeePaid;                    // ...of which paid
         public int Due;                        // the day a search delivers
+        public int Crew;                       // a data centre's crew search: the technicians briefed for (0 for a senior search)
+        public int Hired;                      // ...of whom started so far, each paying a share of the fee
 
+        public bool CrewSearch => Search && Crew > 0;
         public bool Open(int day) => day >= From && day < To;
     }
 

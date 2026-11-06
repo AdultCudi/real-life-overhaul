@@ -1,0 +1,2 @@
+# Companion fixtures and schema are shared byte for byte with their consumers.
+contracts/companion/v1/*.json text eol=lf

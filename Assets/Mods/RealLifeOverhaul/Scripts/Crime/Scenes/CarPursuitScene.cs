@@ -6,30 +6,26 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
+    /// <summary>Which kind of car a <see cref="CarPursuitScene"/> plays.</summary>
     internal enum CarCrime
     {
-        Stop,      // an ordinary driver is pulled over for something they did
+        Stop,      // an ordinary driver pulled over
         Chase,     // a reckless driver who does not stop
-        Theft      // somebody takes a car at a red light and drives off in it
+        Theft      // a car taken at a red light
     }
 
     /// <summary>
-    /// A traffic car that the police want: pulled over quietly, or chased. The car is taken out
-    /// of traffic (never an ambulance, taxi or working vehicle; see CrimeCars), driven by the
-    /// mod along the road ahead of it with a patrol car behind, and either stops for the patrol
-    /// car (pulling in to the kerb first where the roadside is free, the patrol car tucking in
-    /// behind it) or loses it. When it stops, an officer walks up to the driver's door; an arrest
-    /// puts the driver in the patrol car and takes the car off the road. Whatever happens,
-    /// both cars are handed back to the traffic system when the scene ends.
-    /// Endings: ticket, warning, arrested (a stop); caught, escaped (a chase or a theft).
+    /// A traffic car the police want, taken out of traffic (CrimeCars) and driven by the mod along the road ahead with a
+    /// patrol car behind: it pulls in to the kerb and an officer walks to the driver's door, or it loses the patrol car.
+    /// An arrest takes the car off the road; otherwise both cars go back to the traffic system at the end.
     /// </summary>
     internal sealed class CarPursuitScene : CrimeScene
     {
         private const int Taking = 0, Driving = 1, Stopping = 2, Held = 3, Clearing = 4;
         private const float CalmSpeed = 11f;       // m/s: a driver who has not noticed the lights yet
-        private const float FleeSpeed = 19.5f;
-        private const float PatrolSpeed = 21f;
-        private const float Gap = 9f;
+        private const float FleeSpeed = 19.5f;     // m/s
+        private const float PatrolSpeed = 21f;     // m/s
+        private const float Gap = 9f;              // metres the patrol car keeps behind
         private const float PullInSpeed = 6f;      // m/s while moving over to the kerb
         private const float PullInTime = 2.4f;     // seconds from starting to move over to braking
 
@@ -85,7 +81,6 @@ namespace RealLifeOverhaul
 
             if (_kind == CarCrime.Theft)
             {
-                // The thief comes off the pavement at a run and is in the driver's seat before the light changes.
                 if (!StreetSpots.BesideCar(car, StreetSpots.Left, 0.9f, out Vector3 door)
                     || !StreetSpots.OnPavement(Scene, 14f, out Vector3 kerb)
                     || !First.Enter(kerb, ActorLook.Civilian, 3f, onRoad: true))
@@ -111,7 +106,6 @@ namespace RealLifeOverhaul
             Go(Driving, now, _kind == CarCrime.Stop ? Random.Range(9f, 14f) : Random.Range(22f, 42f));
         }
 
-        // A patrol car on the road behind the suspect, lights on, settling in behind it.
         private bool SendPatrol()
         {
             ResponseUnit suspect = CrimeDirector.Suspect;
@@ -206,13 +200,13 @@ namespace RealLifeOverhaul
                     }
                     if (patrol.InUse && !Is("escaped"))
                     {
-                        // Over to the kerb if the roadside is free, then stopped; in its lane if it is not.
+                        // Over to the kerb if the roadside is free, else stopped in its lane.
                         float over = suspect.Driver.Active ? SceneParking.KerbRoom(suspect.Car, patrol.Car != null ? patrol.Car.rb : null) : 0f;
                         if (over > 0f)
                         {
                             suspect.Driver.CruiseSpeed = PullInSpeed;
                             suspect.Driver.PullOver(over);
-                            patrol.Driver.PullOver(over * 0.7f);   // a little further out than the car it has stopped: its officer's side is covered
+                            patrol.Driver.PullOver(over * 0.7f);   // further out than the stopped car, to cover its officer's side
                             _brakeAt = now + PullInTime;
                             CrimeDirector.Logger?.Info(System.FormattableString.Invariant($"Crime: the stopped car pulls in {over:F1} m to the kerb, the patrol car behind it."));
                         }
@@ -224,8 +218,7 @@ namespace RealLifeOverhaul
                     }
                     else
                     {
-                        // Lost the patrol car, or there never was one: the car melts back into traffic.
-                        Conclude("escaped");
+                        Conclude("escaped");   // no patrol car, or it lost them
                         Finish(now);
                     }
                     break;
@@ -238,9 +231,8 @@ namespace RealLifeOverhaul
                     }
                     if (!suspect.Driver.Active)
                     {
-                        suspect.Park();   // stopped: held still from now (nothing steadies an unparked car the traffic system ignores)
+                        suspect.Park();   // held still: nothing steadies an unparked car the traffic system ignores
                     }
-                    // Wait for the suspect to stop and the patrol car to pull up behind it.
                     bool pulledUp = patrol.Driver.Speed < 0.5f
                                     && (patrol.Car.transform.position - suspect.Car.transform.position).sqrMagnitude < 30f * 30f;
                     if ((!suspect.Driver.Active && pulledUp) || now >= StepEnd)
@@ -277,7 +269,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The cars go their ways now; the scene stays a few seconds for whoever is still on foot.
+        // The cars go; the scene stays a few seconds for whoever is still on foot.
         private void Finish(float now)
         {
             _stop.Clear();
@@ -290,9 +282,9 @@ namespace RealLifeOverhaul
             Go(Clearing, now, Second.Present ? 7f : 1f);
         }
 
+        // An arrested driver's car is taken away; every other car drives on.
         private void ReleaseCars()
         {
-            // An arrested driver's car is taken away; every other car drives on.
             CrimeDirector.Suspect.Release(TrafficTools.Ready, remove: _takeAway && CrimeDirector.Suspect.Parked);
             CrimeDirector.Patrol.Release(TrafficTools.Ready, remove: false, quiet: true);
         }

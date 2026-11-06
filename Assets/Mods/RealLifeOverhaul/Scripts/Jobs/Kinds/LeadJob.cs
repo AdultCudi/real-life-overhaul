@@ -232,7 +232,7 @@ namespace RealLifeOverhaul
                     _panel.Panel.Button(i, key, key == null ? null : choiceKeys != null ? _onChoice[i] : _onCheck, key != null, key != null);
                 }
             }
-            _panel.Show(over, lift, Ctx.Player);
+            _panel.Show(over, lift);
         }
 
         private void Work(float now)

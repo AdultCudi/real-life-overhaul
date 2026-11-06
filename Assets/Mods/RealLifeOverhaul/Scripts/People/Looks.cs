@@ -22,8 +22,11 @@ namespace RealLifeOverhaul
         private static int _lastFrame = -1;
         private static int _mark;   // the session record's number for the look being built
 
-        /// <summary>True while a long frame would not be seen as one: the loading screen is up, or the game is paused.</summary>
-        public static bool Hidden => UI.Load.LoadScene.isLoading || Time.timeScale <= 0f;
+        /// <summary>
+        /// True while a long frame would not be seen as one: the loading screen is up, the game is paused, or its black
+        /// screen covers the picture at full strength (never its fades, which show it).
+        /// </summary>
+        public static bool Hidden => UI.Load.LoadScene.isLoading || Time.timeScale <= 0f || SceneFinds.Covered;
 
         /// <summary>True when a look may be built ahead of need this frame: one a frame while hidden, else one per Gap.</summary>
         public static bool Free

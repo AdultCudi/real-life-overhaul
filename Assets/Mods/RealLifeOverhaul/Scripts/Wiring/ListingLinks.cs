@@ -11,44 +11,17 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The player's own company on the city's market (Markets/Listing, MarketBridges) with the rest of the mod. The
-        /// market calls no other feature and none calls it: what they have to do with each other is here, read from what
-        /// each feature already keeps in public.
-        ///
-        ///   Books       the player's own businesses' takings and profit by day, from the game's own daily statements
-        ///               (GameInstance.financialSummaries, made complete with the mod's costs by Economy/GameBooks), only
-        ///               businesses that are the player's own (Books.IsBusiness: Going Public's test, so another player's
-        ///               business on this machine in a session is never counted)
-        ///   Facts       for the advisers and the auditors: the day the first of the player's businesses was taken on
-        ///               (BuildingRegistration.creationDay), the game's tax (a bill unpaid past its day, back taxes),
-        ///               "running a business" (returns filed late, takings kept off the books, back tax found and unpaid:
-        ///               CompanyDirector.State.Tax and its shops), the credit file (a bankruptcy in the last two years or a
-        ///               debt arrangement: CreditLedger.File.Relief), Standing (its overall reputation, bribes that came out
-        ///               in the last year: FameDirector.File) and what the player owes on the game's loans
-        ///   the day     at each market day's open, while the player has a company on the market or a book open: those
-        ///               statements since the market last counted the company's business, Standing, what the papers made of
-        ///               the player (reputation moved by the press, an interview, the night show or a magazine), a bribe that
-        ///               came out, and the loans (MarketLinks.City puts them in the day's city, which the tape keeps)
-        ///   Businesses  the places of the player's businesses (Economy/Services' own key), for a takeover's hand-over
-        ///   HandOver    one business passed to the buyer as a sale completes (ServicesDirector.HandOver)
-        ///   Sold        a business sold while the company is listed (ServicesBridges.Sold): its price is the company's, so
-        ///               the other holders' part goes into their reserve (MarketDirector.BusinessSold)
-        ///   Name, Trade the player's largest business by yesterday's takings: its name for the company to begin with, and
-        ///               the trade the market knows it by (MarketInputs.TradeOf)
-        ///   the Company the Overview's line on the company and the market, and its button to the Stocks app's page
-        ///   app         (CompanyBridges.ListingLine, OpenListing)
-        ///   the Planner the company's days: its results, the yearly meeting, an investor's meeting, a bid's last day, the
-        ///               audit signed, the book priced, the first day of trading, the end of the lock-up, a hand-over's
-        ///               last day (a source of its own: <see cref="ListingSource"/>)
-        ///
-        /// Nothing here has an Update: each is asked once a game day, at a market day's open, or when the app is opened.
+        /// The player's own company on the city's market (MarketBridges) with their books (the game's daily statements, of
+        /// the player's own businesses only, never another player's in a session), the facts the advisers and auditors
+        /// read, what the city made of the founder, a sale's hand-over, the Company app's line and the Planner. Asked once
+        /// a game day, at a market day's open, or when the app is opened.
         /// </summary>
         public static class ListingLinks
         {
             /// <summary>
-            /// The player's company's days in the Planner. Reads the market and changes nothing. Ids: 1 results, 2 the yearly
-            /// meeting, 3 an investor's meeting, 4 a bid's last day, 5 the audit signed, 6 the book priced, 7 the first day,
-            /// 8 the end of the lock-up, 9 a hand-over's last day.
+            /// The player's company's days in the Planner. Read only. Ids: 1 results, 2 the yearly meeting, 3 an investor's
+            /// meeting, 4 a bid's last day, 5 the audit signed, 6 the book priced, 7 the first day, 8 the end of the lock-up,
+            /// 9 a hand-over's last day.
             /// </summary>
             private sealed class ListingSource : IPlannerSource
             {
@@ -70,13 +43,16 @@ namespace RealLifeOverhaul
                         OwnListing o = own.Own;
                         Day(into, 1, own.ResultsDay, MarketCatalogue.ResultsMinute, false, "reallife_lst_plan_results_title", "reallife_lst_plan_results_what", own.Name);
                         Day(into, 2, o.AgmDay, MarketCatalogue.CloseMinute, true, "reallife_lst_plan_agm_title", "reallife_lst_plan_agm_what", own.Name);
-                        Day(into, 3, o.ActBp > 0 ? o.ActDay : 0, MarketCatalogue.CloseMinute, true, "reallife_lst_plan_egm_title", "reallife_lst_plan_egm_what", ListingText.Demand(o.ActDemand));
-                        Day(into, 4, own.BidCents > 0 ? own.BidEndDay : 0, MarketCatalogue.CloseMinute, true, "reallife_lst_plan_bid_title", "reallife_lst_plan_bid_what", MarketText.Price(own.BidCents));
+                        Day(into, 3, o.ActBp > 0 ? o.ActDay : 0, MarketCatalogue.CloseMinute, true, "reallife_lst_plan_egm_title", "reallife_lst_plan_egm_what",
+                            ListingText.Demand(o.ActDemand));
+                        Day(into, 4, own.BidCents > 0 ? own.BidEndDay : 0, MarketCatalogue.CloseMinute, true, "reallife_lst_plan_bid_title", "reallife_lst_plan_bid_what",
+                            MarketText.Price(own.BidCents));
                         Day(into, 8, o.LockDay > SaveGameManager.Current.Day ? o.LockDay : 0, 0, false, "reallife_lst_plan_lockup_title", "reallife_lst_plan_lockup_what", own.Name);
                     }
                     Day(into, 5, f.Stage == ListingStage.Auditing ? f.AuditDone : 0, 0, false, "reallife_lst_plan_audit_title", "reallife_lst_plan_audit_what", f.Name);
                     Day(into, 6, f.Stage == ListingStage.Building ? f.BookEnd : 0, MarketCatalogue.OpenMinute, false, "reallife_lst_plan_book_title", "reallife_lst_plan_book_what", f.Name);
-                    Day(into, 7, f.Stage == ListingStage.Priced ? f.ListDay : 0, MarketCatalogue.OpenMinute, false, "reallife_lst_plan_first_title", "reallife_lst_plan_first_what", MarketText.Price(f.PriceCents));
+                    Day(into, 7, f.Stage == ListingStage.Priced ? f.ListDay : 0, MarketCatalogue.OpenMinute, false, "reallife_lst_plan_first_title", "reallife_lst_plan_first_what",
+                        MarketText.Price(f.PriceCents));
                     Day(into, 9, f.HandOver.Count > 0 ? f.HandOverBy : 0, 0, true, "reallife_lst_plan_handover_title", "reallife_lst_plan_handover_what", f.HandOverTo ?? string.Empty);
                 }
 
@@ -110,9 +86,11 @@ namespace RealLifeOverhaul
 
             private static readonly ListingSource Source = new ListingSource();
             private static readonly List<BuildingRegistration> Businesses = new List<BuildingRegistration>(16);
+            private static readonly List<int> FirstDays = new List<int>(16);
             private static readonly List<string> Keys = new List<string>(16);
+            private static readonly List<int> KeyTrades = new List<int>(16);
 
-            // The causes of a move of the player's reputation that came from what the press made of them.
+            // The causes of a reputation move that came from what the press made of the player.
             private static readonly FameCause[] PressCauses = { FameCause.Press, FameCause.Reported, FameCause.Interview, FameCause.Show, FameCause.Magazine };
 
             internal static void Connect()
@@ -122,7 +100,7 @@ namespace RealLifeOverhaul
                 MarketBridges.Businesses = Places;
                 MarketBridges.HandOver = HandOver;
                 MarketBridges.Name = Name;
-                MarketBridges.Trade = Trade;
+                MarketBridges.TradeTakings = TradeTakings;
                 CompanyBridges.ListingLine = Line;
                 CompanyBridges.OpenListing = () => MarketDirector.Instance?.OpenListing();
                 ServicesBridges.Sold = (place, price) => MarketDirector.Instance?.BusinessSold(price);
@@ -136,7 +114,7 @@ namespace RealLifeOverhaul
                 MarketBridges.Businesses = null;
                 MarketBridges.HandOver = null;
                 MarketBridges.Name = null;
-                MarketBridges.Trade = null;
+                MarketBridges.TradeTakings = null;
                 CompanyBridges.ListingLine = null;
                 CompanyBridges.OpenListing = null;
                 ServicesBridges.Sold = null;
@@ -145,11 +123,17 @@ namespace RealLifeOverhaul
             // The Company app's line: the market's own words for where the player's company stands.
             private static string Line()
             {
-                MarketDirector market = MarketDirector.Instance;
-                return market != null && market.Running ? market.ListingSummary() : null;
+                try
+                {
+                    MarketDirector market = MarketDirector.Instance;
+                    return market != null && market.Running ? market.ListingSummary() : null;
+                }
+                catch (Exception e)
+                {
+                    Fault("ListingLinks.Line", e);
+                    return null;
+                }
             }
-
-            // ---------------------------------------------------------------- the books
 
             // The player's own businesses now, by the key the statements' addresses are compared under.
             private static void Mine()
@@ -191,7 +175,7 @@ namespace RealLifeOverhaul
                         }
                         if (day.dayNumber < from - 7)
                         {
-                            break;   // (the statements are kept a day after another: none older is wanted)
+                            break;   // the statements are in order of days: none older is wanted
                         }
                         if (day.dayNumber < from || day.dayNumber >= to)
                         {
@@ -210,6 +194,7 @@ namespace RealLifeOverhaul
                         }
                         b.Days += counted ? 1 : 0;
                     }
+                    MarketsBuildLinks.ConstructionBooks(Businesses, from, to, ref revenue, ref profit);   // a construction company's works are not in its office's statement
                     b.Revenue = (long)Math.Round(revenue);
                     b.Profit = (long)Math.Round(profit);
                 }
@@ -219,8 +204,6 @@ namespace RealLifeOverhaul
                 }
                 return b;
             }
-
-            // ---------------------------------------------------------------- the facts
 
             private static ListingFacts Facts()
             {
@@ -233,15 +216,21 @@ namespace RealLifeOverhaul
                 int day = save.Day, year = Math.Max(8, GameCalendar.DaysPerYear);
                 try
                 {
-                    Books.Businesses(Businesses);
-                    for (int i = 0; i < Businesses.Count; i++)
+                    // Every business of the player's still running counts for the years, whatever it sells: Books.Businesses leaves out one the game does not
+                    // tag as taking money (an older office, say), and the oldest then looked like the newest. Each counts from the day it started, which the
+                    // game forgets when the moving company moves the business (Core/FoundingGame keeps it).
+                    FirstDays.Clear();
+                    for (int i = 0; save.BuildingRegistrations != null && i < save.BuildingRegistrations.Count; i++)
                     {
-                        int created = ServicesGame.Created(Businesses[i]);
-                        if (created > 0 && (f.FirstDay == 0 || created < f.FirstDay))
+                        BuildingRegistration reg = save.BuildingRegistrations[i];
+                        if (reg != null && GoingPublic.Mine(reg) && reg.RentedByPlayer && reg.HasEstablishedBusiness && reg.HasValidAddress && !string.IsNullOrEmpty(reg.businessTypeName)
+                            && GameRegistrations.Found(reg))
                         {
-                            f.FirstDay = created;
+                            FirstDays.Add(FoundingGame.Of(reg));
                         }
                     }
+                    f.FirstDay = ListingBook.EarliestDay(FirstDays);
+                    FirstDays.Clear();
                     f.BackTaxes = save.currentBackTaxes > 0.5f || (save.currentUnpaidTaxes != null && day > save.currentUnpaidTaxes.dueDay);
                     for (int i = 0; save.Loans != null && i < save.Loans.Count; i++)
                     {
@@ -294,9 +283,8 @@ namespace RealLifeOverhaul
             }
 
             /// <summary>
-            /// The day's city for the market (MarketLinks.City): the player's own company's statements since the market
-            /// last counted its business, and what the city made of its founder. Only while the player has a company on
-            /// the market or a book open; otherwise nothing, and the day is written as before.
+            /// The day's city for the market (MarketLinks.City): the company's statements since the market last counted its
+            /// business, and what the city made of its founder. Nothing unless the player has a company listed or a book open.
             /// </summary>
             internal static void Env(ref MarketEnv e, int day)
             {
@@ -317,7 +305,7 @@ namespace RealLifeOverhaul
                     int from = s.BusinessDay;
                     if (f.SetAsideDay > 0)
                     {
-                        from = Math.Min(from, f.SetAsideDay);   // (back from another player's city: the days away are counted too)
+                        from = Math.Min(from, f.SetAsideDay);   // back from another player's city: the days away are counted too
                         f.SetAsideDay = 0;
                     }
                     from = Math.Max(from, day - 400);
@@ -353,25 +341,38 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // ---------------------------------------------------------------- the businesses
-
             private static void Places(List<string> into)
             {
-                into.Clear();
-                Books.Businesses(Businesses);
-                for (int i = 0; i < Businesses.Count; i++)
+                try
                 {
-                    if (Businesses[i] != null)
+                    into.Clear();
+                    Books.Businesses(Businesses);
+                    for (int i = 0; i < Businesses.Count; i++)
                     {
-                        into.Add(ServicesGame.Place(Businesses[i]));
+                        if (Businesses[i] != null)
+                        {
+                            into.Add(ServicesGame.Place(Businesses[i]));
+                        }
                     }
+                }
+                catch (Exception e)
+                {
+                    Fault("ListingLinks.Places", e);
                 }
             }
 
             private static bool HandOver(string place, string buyer)
             {
-                ServicesDirector services = ServicesDirector.Instance;
-                return services != null && services.HandOver(place, buyer);
+                try
+                {
+                    ServicesDirector services = ServicesDirector.Instance;
+                    return services != null && services.HandOver(place, buyer);
+                }
+                catch (Exception e)
+                {
+                    Fault("ListingLinks.HandOver", e);
+                    return false;
+                }
             }
 
             // The player's largest business by yesterday's takings.
@@ -407,17 +408,68 @@ namespace RealLifeOverhaul
                 }
             }
 
-            private static int Trade()
+            // Every business of the player's counts by its trade, so the sector follows what the company earns in now and not
+            // its first or its largest shop; a construction company's works are not in its office's statement.
+            private static void TradeTakings(int from, int to, long[] into)
             {
                 try
                 {
-                    BuildingRegistration r = Largest();
-                    return r != null ? MarketInputs.TradeOf(r.businessTypeName) : -1;
+                    Array.Clear(into, 0, into.Length);
+                    GameInstance save = SaveGameManager.Current;
+                    if (save == null || save.financialSummaries == null || to <= from)
+                    {
+                        return;
+                    }
+                    Books.Businesses(Businesses);
+                    Keys.Clear();
+                    KeyTrades.Clear();
+                    for (int i = 0; i < Businesses.Count; i++)
+                    {
+                        BuildingRegistration r = Businesses[i];
+                        int trade = r != null && r.Address != null ? MarketInputs.TradeOf(r.businessTypeName) : -1;
+                        if (trade >= 0 && trade < into.Length)
+                        {
+                            Keys.Add(Books.Key(r.Address));
+                            KeyTrades.Add(trade);
+                        }
+                    }
+                    List<FinancialSummary> all = save.financialSummaries;
+                    for (int i = all.Count - 1; i >= 0 && Keys.Count > 0; i--)
+                    {
+                        FinancialSummary day = all[i];
+                        if (day == null || day.businessIncomeStatements == null)
+                        {
+                            continue;
+                        }
+                        if (day.dayNumber < from - 7)
+                        {
+                            break;   // the statements are in order of days: none older is wanted
+                        }
+                        if (day.dayNumber < from || day.dayNumber >= to)
+                        {
+                            continue;
+                        }
+                        for (int k = 0; k < day.businessIncomeStatements.Count; k++)
+                        {
+                            FinancialSummary.BusinessIncomeStatement s = day.businessIncomeStatements[k];
+                            int at = s != null && s.Address != null ? Keys.IndexOf(Books.Key(s.Address)) : -1;
+                            if (at >= 0)
+                            {
+                                into[KeyTrades[at]] += (long)Math.Round(Math.Max(0f, s.TotalSales));
+                            }
+                        }
+                    }
+                    double works = 0.0, profit = 0.0;
+                    MarketsBuildLinks.ConstructionBooks(Businesses, from, to, ref works, ref profit);
+                    int building = MarketInputs.TradeOf(Construction.ConstructionType.TypeName);
+                    if (building >= 0 && building < into.Length)
+                    {
+                        into[building] += (long)Math.Round(Math.Max(0.0, works));
+                    }
                 }
                 catch (Exception e)
                 {
-                    Fault("ListingLinks.Trade", e);
-                    return -1;
+                    Fault("ListingLinks.TradeTakings", e);
                 }
             }
         }

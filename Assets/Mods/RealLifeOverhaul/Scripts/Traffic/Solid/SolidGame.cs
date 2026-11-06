@@ -12,8 +12,8 @@ namespace RealLifeOverhaul
     /// <summary>
     /// Everything "traffic sees people in the road" asks of the game. Read: what a car's sensor stops for, tried against a
     /// real walking pedestrian, sets the Mode: Native (cars sense walkers), StandIns, or BrakesOnly (SolidBrakes alone). The
-    /// stand-ins are sixteen trigger capsules tagged "AiVehicleHalt", made once and reported gone as the game reports a
-    /// pedestrian put away. The fade: the game's HumanHider is held off for somebody a car brakes for. Cost: nothing per
+    /// stand-ins are sixteen trigger capsules tagged "AiVehicleHalt", made once behind the loading screen (or one a look in play), and
+    /// reported gone as the game reports a pedestrian put away. The fade: the game's HumanHider is held off for somebody a car brakes for. Cost: nothing per
     /// frame; each pooled car is measured once a session.
     /// </summary>
     internal sealed class SolidGame
@@ -93,7 +93,7 @@ namespace RealLifeOverhaul
                     _proxyLayer = candidate;
                 }
             }
-            for (int i = 0; _made && i < _proxy.Length; i++)
+            for (int i = 0; i < _proxy.Length; i++)
             {
                 if (_proxy[i] != null && _proxyLayer >= 0)
                 {
@@ -155,44 +155,94 @@ namespace RealLifeOverhaul
         private readonly Transform[] _proxyAt = new Transform[SolidRules.Proxies];
         private readonly Collider[] _proxyCollider = new Collider[SolidRules.Proxies];
         private readonly bool[] _proxyOut = new bool[SolidRules.Proxies];
-        private bool _made;
+        private int _made;                 // stand-ins made so far
+        private int _madeHidden, _madeLooks, _madeWanted;   // ...behind the loading screen, on looks of their own, when first wanted (the self-check line)
+        private long _makeSlowest;         // Stopwatch ticks: the slowest made in play
 
         /// <summary>True if stand-ins can be used at all (the mode allows it and they could be made).</summary>
         public bool StandInsUsable => (How == Mode.Native || How == Mode.StandIns) && _proxyLayer >= 0 && !_proxiesFailed;
 
-        // The sixteen, made once. False (and the mode falls back on the mod's own braking) if the game refuses the tag.
-        private bool Make(Transform parent)
+        /// <summary>
+        /// Behind the loading screen (ScenePrewarm): all sixteen made where no frame is seen, switched off; their layer is set when
+        /// the senses are read. Sixteen made in the frame that first needed one were 37 ms in the own-spike scan (28 Oct 2026).
+        /// </summary>
+        public bool MakeAll(Transform parent)
         {
-            if (_made)
+            for (int i = 0; i < _proxy.Length && !_proxiesFailed; i++)
+            {
+                MakeOne(i, parent, Made.Hidden);
+            }
+            return true;
+        }
+
+        /// <summary>
+        /// In play, once the senses are read, the next stand-in not made behind the loading screen (the option switched on later,
+        /// another city's traffic): one a look, so none waits for the frame that first needs it. True while some are still to be made.
+        /// </summary>
+        public bool MakeNext(Transform parent)
+        {
+            if (_made >= _proxy.Length || !StandInsUsable)
+            {
+                return false;
+            }
+            for (int i = 0; i < _proxy.Length; i++)
+            {
+                if ((object)_proxy[i] == null)
+                {
+                    MakeOne(i, parent, Made.Look);
+                    break;
+                }
+            }
+            return _made < _proxy.Length && !_proxiesFailed;
+        }
+
+        private enum Made { Hidden, Look, Wanted }
+
+        // One stand-in, the one in this slot. False (and the mode falls back on the mod's own braking) if the game refuses the tag.
+        private bool MakeOne(int i, Transform parent, Made when)
+        {
+            if ((object)_proxy[i] != null)
             {
                 return true;
             }
+            long began = System.Diagnostics.Stopwatch.GetTimestamp();
             try
             {
-                for (int i = 0; i < _proxy.Length; i++)
+                var stand = new GameObject("RealLifeOverhaul Person Ahead " + (i + 1));
+                _proxy[i] = stand;
+                stand.transform.SetParent(parent, false);
+                stand.transform.position = new Vector3(0f, ParkedAt, 0f);
+                stand.layer = _proxyLayer >= 0 ? _proxyLayer : 0;   // behind the loading screen the senses are not read yet: Read sets it
+                stand.tag = HaltTag;   // throws if the game has no such tag any more
+                Rigidbody body = stand.AddComponent<Rigidbody>();
+                body.isKinematic = true;
+                body.useGravity = false;
+                CapsuleCollider capsule = stand.AddComponent<CapsuleCollider>();
+                capsule.isTrigger = true;
+                capsule.direction = 1;
+                capsule.radius = SolidRules.ProxyRadius;
+                capsule.height = SolidRules.ProxyHeight;
+                capsule.center = new Vector3(0f, SolidRules.ProxyHeight * 0.5f, 0f);
+                _proxyAt[i] = stand.transform;
+                _proxyCollider[i] = capsule;
+                stand.SetActive(false);
+                _made++;
+                _madeHidden += when == Made.Hidden ? 1 : 0;
+                _madeLooks += when == Made.Look ? 1 : 0;
+                _madeWanted += when == Made.Wanted ? 1 : 0;
+                if (when != Made.Hidden)
                 {
-                    var stand = new GameObject("RealLifeOverhaul Person Ahead " + (i + 1));
-                    _proxy[i] = stand;
-                    stand.transform.SetParent(parent, false);
-                    stand.transform.position = new Vector3(0f, ParkedAt, 0f);
-                    stand.layer = _proxyLayer;
-                    stand.tag = HaltTag;   // throws if the game has no such tag any more
-                    Rigidbody body = stand.AddComponent<Rigidbody>();
-                    body.isKinematic = true;
-                    body.useGravity = false;
-                    CapsuleCollider capsule = stand.AddComponent<CapsuleCollider>();
-                    capsule.isTrigger = true;
-                    capsule.direction = 1;
-                    capsule.radius = SolidRules.ProxyRadius;
-                    capsule.height = SolidRules.ProxyHeight;
-                    capsule.center = new Vector3(0f, SolidRules.ProxyHeight * 0.5f, 0f);
-                    _proxyAt[i] = stand.transform;
-                    _proxyCollider[i] = capsule;
-                    stand.SetActive(false);
+                    _makeSlowest = Math.Max(_makeSlowest, System.Diagnostics.Stopwatch.GetTimestamp() - began);
                 }
-                _made = true;
-                Logger?.Info($"Traffic sees people: {_proxy.Length} stand-ins made on layer '{LayerMask.LayerToName(_proxyLayer)}' "
-                             + $"(triggers tagged '{HaltTag}'): made once, switched off until needed.");
+                if (_made == _proxy.Length)
+                {
+                    double slowest = _makeSlowest * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+                    Logger?.Info($"Traffic sees people: {_proxy.Length} stand-ins made (triggers tagged '{HaltTag}'): made once, switched off until needed.");
+                    Logger?.Info(FormattableString.Invariant($"Traffic check (stand-ins made out of play): {_madeHidden} made behind the loading screen, {_madeLooks} one a look in play, ")
+                                 + FormattableString.Invariant($"{_madeWanted} in the look that first wanted it; the slowest made in play {slowest:F2} ms ")
+                                 + FormattableString.Invariant($"(wanted: under {SolidRules.StandInMakeMs:F1} ms, never more than one in a frame): ")
+                                 + (slowest < SolidRules.StandInMakeMs ? "PASS" : "FAIL") + ".");
+                }
                 return true;
             }
             catch (Exception e)
@@ -200,7 +250,10 @@ namespace RealLifeOverhaul
                 Logger?.Warn("Traffic sees people: the stand-ins could not be made (" + e.Message + "); cars are stopped for people by the mod's own braking alone.");
                 DestroyStandIns();
                 _proxiesFailed = true;
-                How = Mode.BrakesOnly;
+                if (when != Made.Hidden)
+                {
+                    How = Mode.BrakesOnly;   // behind the loading screen the senses are still to be read: Read then finds no stand-in can be made
+                }
                 return false;
             }
         }
@@ -208,7 +261,7 @@ namespace RealLifeOverhaul
         /// <summary>Puts a stand-in on somebody (their feet), switching it on if it was off. False if stand-ins cannot be used.</summary>
         public bool Place(int slot, Vector3 feet, Transform parent)
         {
-            if (!StandInsUsable || !Make(parent))
+            if (!StandInsUsable || !MakeOne(slot, parent, Made.Wanted))
             {
                 return false;
             }
@@ -224,9 +277,9 @@ namespace RealLifeOverhaul
         /// <summary>Takes a stand-in off the road: the traffic system is told the collider has gone, and it is switched off.</summary>
         public void Park(int slot)
         {
-            if (!_made || !_proxyOut[slot])
+            if (!_proxyOut[slot])
             {
-                return;
+                return;   // never put out, or never made
             }
             _proxyOut[slot] = false;
             if (_proxy[slot] == null)
@@ -258,7 +311,9 @@ namespace RealLifeOverhaul
                 _proxyCollider[i] = null;
                 _proxyOut[i] = false;
             }
-            _made = false;
+            _made = 0;
+            _madeHidden = _madeLooks = _madeWanted = 0;
+            _makeSlowest = 0;
         }
 
         // Each pooled car, measured once.

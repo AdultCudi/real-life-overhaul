@@ -33,7 +33,7 @@ namespace RealLifeOverhaul.Tech
                 }
                 taker = true;
                 Crew c = i < crews.Count ? crews[i] : default(Crew);
-                int chance = FirmsCatalogue.OfferChance * (500 + firm.Reputation) / 1000 * (1000 + Math.Min(2000, c.Selling * 60)) / 1000;
+                int chance = FirmsCatalogue.OfferChance * (500 + firm.Reputation) / 1000 * (1000 + Math.Min(FirmsCatalogue.OfferSellingMost, c.Selling * FirmsCatalogue.OfferSellingPerPoint)) / 1000;
                 if (TechRandom.Mille(f.Seed, day, 71, i) >= chance)
                 {
                     continue;

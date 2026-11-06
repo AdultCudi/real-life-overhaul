@@ -108,7 +108,7 @@ namespace RealLifeOverhaul
 
         public override bool OwnsInteractKey => _panel.Up;
 
-        public override bool QuitIsFailure => DoneCount > 0 && DoneCount * 3 < _bundle && DoneCount + _refusals < FairTry;
+        public override bool QuitIsFailure => DoneCount * 3 < _bundle && DoneCount + _refusals < FairTry;
 
         private int DoneCount => _taken + _clocked;
 
@@ -267,11 +267,11 @@ namespace RealLifeOverhaul
                 someone ? ButtonOffer : null, _with == null, someone || left <= 0 ? null : ButtonSkip, true);
             if (someone)
             {
-                _panel.Show(who.head != null ? who.head : who.transform, who.head != null ? 0.42f : 2.05f, Ctx.Player);
+                _panel.Show(who.head != null ? who.head : who.transform, who.head != null ? 0.42f : 2.05f);
             }
             else
             {
-                _panel.Show(Ctx.Player.transform, PanelOver, Ctx.Player);
+                _panel.Show(Ctx.Player.transform, PanelOver);
             }
         }
 

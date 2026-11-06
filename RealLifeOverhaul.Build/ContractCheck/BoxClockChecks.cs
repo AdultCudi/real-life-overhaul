@@ -104,7 +104,7 @@ internal static partial class Program
         var handOver = new HashSet<string>(StringComparer.Ordinal)
         {
             "public void Title(string words)", "public void Headline(string key)", "public bool Selector(int count, int index, Func<int, string> text, Action<int> changed)",
-            "public void EndSection()", "public static InfoBox From(Transform whiteBox, Transform templates)",
+            "public void EndSection()", "public static InfoBox From(Transform whiteBox, Transform templates, ScrollRect style = null)",
             "public static InfoBox Into(Transform whiteBox, Transform templates, Transform box)", "public string Fit()", "public void SetAccent(int rgb)"
         };
         var untimed = new List<string>();

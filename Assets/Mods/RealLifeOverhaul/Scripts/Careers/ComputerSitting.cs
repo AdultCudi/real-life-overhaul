@@ -12,7 +12,7 @@ using UnityEngine;
 namespace RealLifeOverhaul.Careers
 {
     /// <summary>
-    /// An online class, homework or a working day at the computer at home, as the game's computer passes the time: one press
+    /// An online class, homework, a working day or a video interview at the computer at home, as the game's computer passes the time: one press
     /// walks the player there and sits them; the minutes count once (<see cref="ClassTally"/>). Nothing per frame of its own.
     /// </summary>
     internal sealed class ComputerSitting : IPlayerActivity
@@ -25,13 +25,14 @@ namespace RealLifeOverhaul.Careers
         private readonly ClassTally _tally;
         private readonly LabelInfo _title;
         private readonly string _typing;          // the computer's own using animation, as the game's computer has its user type
-        private readonly bool _work;              // a working day or overtime (else a class or homework)
+        private readonly bool _work;              // a working day, overtime or a video interview (else a class or homework)
         private Sitting _sitting;
         private LabelInfo[] _labels;
         private ButtonInfo[] _stop;
         private PlayerActivityState _state = PlayerActivityState.NotStarted;
         private PlayerActivityState _before = PlayerActivityState.NotStarted;
         private float _nextType;
+        private string _why;                     // who or what ended it, said by the way out taken (Sitting.Why, for the log line of an early end)
         private int _orderFrame = -1;             // the frame the walk order to the computer was given in (DeskGame.SetOffSeen)
 
         public ComputerSitting(CareersDirector director, ComputerController computer, Sitting sitting)
@@ -41,7 +42,7 @@ namespace RealLifeOverhaul.Careers
             _sitting = sitting;
             _tally = new ClassTally(sitting.SkipMinutes);
             _title = DeskGame.Label(sitting.SkipTitle, 0);
-            _work = sitting.Kind == SittingKind.Work || sitting.Kind == SittingKind.Overtime;
+            _work = sitting.Kind == SittingKind.Work || sitting.Kind == SittingKind.Overtime || sitting.Kind == SittingKind.Interview;
             _chair = computer.FindChair();
             AnimationType typing = AnimationType.UsingDesktopComputer;
             try
@@ -151,6 +152,7 @@ namespace RealLifeOverhaul.Careers
             {
                 CareersDirector.Logger?.Error(e);
             }
+            _why = "the mod stopping it (switched off, a load or a fault)";
             End(false, true);
         }
 
@@ -189,6 +191,7 @@ namespace RealLifeOverhaul.Careers
             }
             if (end == TallyEnd.Counted)
             {
+                sitting.Why = _why;
                 sitting.SkipEnded(minutes, whole);
             }
             else if (end == TallyEnd.CalledOff)
@@ -223,7 +226,7 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        // A class or homework ends when the energy runs out, as the game's studying does; a working day does not, as at the desk.
+        // A class or homework ends when the energy runs out, as the game's studying does; a working day or an interview does not, as at the desk.
         public bool RequiresEnergy() => !_work;
 
         public bool BlocksAutoSave() => true;
@@ -253,6 +256,7 @@ namespace RealLifeOverhaul.Careers
             {
                 if (state == PlayerActivityState.Finished)
                 {
+                    _why = _why ?? "the game's panel (energy ran out, the night, an event, or a save or load)";
                     Finish();   // however the panel ends it: the minutes counted once, and the player stood up
                     return;
                 }
@@ -289,6 +293,7 @@ namespace RealLifeOverhaul.Careers
                 _sitting?.SkipWorked(_tally.Done);
                 if (over)
                 {
+                    _why = "the time being done";
                     Finish();
                 }
                 else if (Time.time >= _nextType)
@@ -308,6 +313,13 @@ namespace RealLifeOverhaul.Careers
             {
                 Guard.Fail(FrameGuard, fault);
             }
+        }
+
+        // The player pressed Stop on the game's panel.
+        private void Stopped()
+        {
+            _why = _why ?? "the player pressing Stop";
+            Finish();
         }
 
         /// <summary>Over: by the end of the time, Stop, the game calling it off. The minutes sat are settled, once.</summary>
@@ -358,7 +370,7 @@ namespace RealLifeOverhaul.Careers
             try
             {
                 return _state == PlayerActivityState.Running
-                    ? _stop ?? (_stop = new[] { new ButtonInfo("StopRealLifeClass", "reallife_job_skip_stop", "gray", Guard.Way(Finish), PlayerAction.Cancel) })
+                    ? _stop ?? (_stop = new[] { new ButtonInfo(ClassPlayRules.DeskStopName, "reallife_job_skip_stop", "gray", Guard.Way(Stopped), PlayerAction.Cancel) })
                     : null;
             }
             catch (Exception fault)

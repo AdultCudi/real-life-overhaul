@@ -17,8 +17,11 @@ namespace RealLifeOverhaul.Tech
 
         private void InstallTech()
         {
+            if (!PhoneApp.PhoneUp)
+            {
+                return;   // the game's phone is not built yet: asked again next time, nothing made for it
+            }
             var view = new TechApp(this);
-            GameSprites.Want(TechGlyphs);
             _techApp = PhoneApp.Install(new PhoneAppDef
             {
                 Id = TechAppId,
@@ -114,15 +117,11 @@ namespace RealLifeOverhaul.Tech
         internal Product NewProduct(string place, ProductKind kind, Segment segment, int scope)
         {
             FirmPlace firm = FirmOf(place);
-            int live = 0;
-            for (int i = 0; i < _firmsFile.Products.Count; i++)
+            if (firm == null || !FirmsRules.Makes(firm.File.K, kind) || FirmsRules.Room(_firmsFile, place) != FirmsRules.RoomYes || Save == null)
             {
-                live += _firmsFile.Products[i].Stage < 2 ? 1 : 0;
+                return null;   // the page does not offer the button then, and says which limit it is
             }
-            if (firm == null || !FirmsRules.Makes(firm.File.K, kind) || live >= FirmsCatalogue.ProductsMost || Save == null)
-            {
-                return null;
-            }
+            FirmsRules.TrimWithdrawn(_firmsFile);
             Product p = FirmsRules.NewProduct(_firmsFile, place, kind, segment, scope, null);
             p.Launched = Save.Day;
             _firmsFile.Products.Add(p);
@@ -174,6 +173,7 @@ namespace RealLifeOverhaul.Tech
             if (p != null && p.Stage < 2)
             {
                 p.Stage = 2;
+                FirmsRules.TrimWithdrawn(_firmsFile, p);
                 ChangedTech();
             }
         }
@@ -274,7 +274,13 @@ namespace RealLifeOverhaul.Tech
         /// <summary>What decides whether a firm's people can work on a kind of contract (-1: any of its work), read now.</summary>
         internal FirmFacts FactsOf(FirmPlace firm, int kind)
         {
-            return firm == null || Save == null ? default(FirmFacts) : FirmsGame.Facts(firm.Reg, firm.File.K, kind, _people, firm.File.Place, Save.Day);
+            if (firm == null || Save == null)
+            {
+                return default(FirmFacts);
+            }
+            FirmFacts facts = FirmsGame.Facts(firm.Reg, firm.File.K, kind, _people, firm.File.Place, Save.Day);
+            OwnDeskRules.Count(ref facts, firm.OwnMinutes, firm.OwnRole, kind, firm.File.K);   // the owner at a desk yesterday worked too
+            return facts;
         }
 
         /// <summary>The Utilities app on its internet page.</summary>

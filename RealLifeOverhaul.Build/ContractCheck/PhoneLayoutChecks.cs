@@ -59,14 +59,14 @@ internal static partial class Program
         var want = new Dictionary<string, int>
         {
             { "RealLifeFinance", 0 }, { "RealLifeBanks", 0 }, { "RealLifeOwnBank", 0 }, { "RealLifeStocks", 0 }, { "RealLifeNewsstand", 0 }, { "RealLifeLedger", 0 }, { "RealLifeOverhaulUtilities", 0 },
-            { "RealLifeCareer", 1 }, { "RealLifeCampus", 1 }, { "RealLifeOpenRoles", 1 },
-            { "RealLifeCamera", 2 }, { "RealLifeGallery", 2 },
+            { "RealLifeCareer", 1 }, { "RealLifeCampus", 1 }, { "RealLifeOpenRoles", 1 }, { "RealLifeMarketplace", 1 },
+            { "RealLifeCalendar", 2 }, { "RealLifeCamera", 2 }, { "RealLifeGallery", 2 },
             { "RealLifeCompany", 3 }, { "RealLifeBrands", 3 }, { "RealLifeServices", 3 }, { "RealLifeVentures", 3 }, { "RealLifeOnline", 3 }, { "RealLifeEstate", 3 },
             { "RealLifeDealer", 3 }, { "RealLifeTechSector", 3 },
             { "RealLifeGuide", 4 }, { "RealLifeSettings", 4 },
         };
         var wrong = want.Where(w => PhoneLayoutRules.DefaultOf(w.Key) != w.Value).Select(w => w.Key).ToList();
-        Check(wrong.Count == 0, "money (the banks, credit, the stocks, the paper, the bills), work and study, social and life, business (BizMan's add-ons, tech, the showroom), "
+        Check(wrong.Count == 0, "money (the banks, credit, the stocks, the paper, the bills), work and study, social and life (the calendar, the camera), business (BizMan's add-ons, tech, the showroom), "
                                 + "the Guide and the options each start in their folder (wrong: " + string.Join(", ", wrong) + ")");
         for (int f = 0; f < PhoneLayoutRules.FolderCount; f++)
         {
@@ -431,7 +431,7 @@ internal static partial class Program
 
     private static void PhoneSources(string scripts)
     {
-        string pager = Read(scripts, "Core/GameUi/PhoneGridPager.cs");
+        string pager = PagerSource(scripts);
         string folders = Read(scripts, "Core/GameUi/PhoneFolders.cs");
         string keys = Read(scripts, "Core/GameUi/PhoneFolderKeys.cs");
         string move = Read(scripts, "Core/GameUi/PhoneMove.cs");

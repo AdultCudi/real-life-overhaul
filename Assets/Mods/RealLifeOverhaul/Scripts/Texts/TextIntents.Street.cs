@@ -1,18 +1,12 @@
 namespace RealLifeOverhaul.Texts
 {
     /// <summary>
-    /// The intents of data v4 (data/gen/v4/defs_v4.py BRANCHES, SPEC_v4.txt): street talk, a stranger the player stopped in
-    /// the street saying one spoken line (Scripts/Street; the card is asked by Wiring/StreetTexts). One intent per thing the
-    /// game decides, a branch per outcome: v2's friend face with a stranger's role, the outcome told by the news and the
-    /// facts. Registered with data version 4: a pack of an older data version is never asked them (TextsHub.Data), so until
-    /// a v4 pack is trained street talk words what fits with data v3's intents and the rest with its written lines. Written
-    /// from the generator's own table (one row per branch) and proved byte-identical to its cards (EconomyCheck,
-    /// TextsChecks.cs, fixtures_cs.py --v4). Data v5's (below) are v4's again with optional facts, and eleven new branches.
-    /// Game-free. COST: none until asked.
+    /// The intents of street talk, data v4 (defs_v4.py BRANCHES) and v5: one intent per thing the game decides and a branch
+    /// per outcome, from the generator's own table. Game-free.
     /// </summary>
     public static partial class TextIntents
     {
-        public const int DataV4 = 4;   // ...and of street talk's (data/gen/v4: v3's rows unchanged and street talk's 70 cards)
+        public const int DataV4 = 4;   // ...and of street talk's (data/gen/v4)
 
         public const string StreetWrite = "spoken: street";
 
@@ -45,7 +39,8 @@ namespace RealLifeOverhaul.Texts
             S4("street.area", "news", "{player} asks what is good around here", L("trouble today in: {district}"), L("{district}"));
             S4("street.area", "nothing", "{player} asks what is good around here; there is nothing much nearby", None, null);
             S4("street.directions", "found", "{player} asks you the way somewhere; you know a place", L("place: {place}", "street: {street}", "way: {way}", "walk: {walk}"), L("{place}", "{street}"));
-            S4("street.directions", "far", "{player} asks you the way somewhere; you know a place, but it is a long walk", L("place: {place}", "street: {street}", "way: {way}", "walk: {walk}"), L("{place}", "{street}"));
+            S4("street.directions", "far", "{player} asks you the way somewhere; you know a place, but it is a long walk",
+                L("place: {place}", "street: {street}", "way: {way}", "walk: {walk}"), L("{place}", "{street}"));
             S4("street.directions", "none", "{player} asks you the way somewhere; there is none nearby", L("looking for: {what}"), L("{what}"));
             S4("street.compliment", "well", "{player} pays you a compliment", L("it lands: well"), null);
             S4("street.compliment", "badly", "{player} pays you a compliment", L("it lands: badly"), null);
@@ -90,15 +85,13 @@ namespace RealLifeOverhaul.Texts
             S4("street.bye", "cool", "{player} says goodbye", None, null);
         }
 
-        // A card of street talk: voice "stranger", spoken, at most 140 characters, the friend face (who: name, age, job, home; a stranger's role).
+        // A card of street talk: voice "stranger", spoken, at most 140 characters, the friend face with a stranger's role.
         private static void S4(string key, string branch, string news, string[] facts, string[] must)
         {
             List.Add(new TextIntent(key, branch, "stranger", "spoken", 140, TextFace.Friend, TextUse.People, news, facts, StreetWrite, must, DataV4));
         }
 
-        // ---------------------------------------------------------------- data v5
-
-        public const int DataV5 = 5;   // ...and of street talk answering what was said (data/gen/v5: v4's rows unchanged, v4's cards with optional facts, 11 new branches)
+        public const int DataV5 = 5;   // ...and of street talk answering what was said (data/gen/v5)
 
         // The optional facts of data v5 (defs_v5.EXTRA_MOMENT, EXTRA_KNOWN), after the branch's own, each left out when its slot is empty.
         private static readonly string[] MomentFacts = { "weather: {weather}", "moment: {moment}", "today: {event}", "you know their name: {known}" };
@@ -117,12 +110,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>
-        /// Data v5 (data/gen/v5/defs_v5.py, SPEC_v5.txt): every v4 card again at data 5 with the optional facts (weather,
-        /// moment, today's event on the moment branches; whether they know the player's name on every branch), so a data 4
-        /// pack keeps v4's exact cards (TextIntents.Find by the pack's data), and the eleven branches of the lines worded
-        /// until now with written lines only: how their day is going, the street event, their work, thanks, hello again.
-        /// </summary>
+        /// <summary>Data v5: every v4 card again with the optional facts, so a data 4 pack keeps v4's cards, and eleven new branches.</summary>
         private static void V5()
         {
             int v4 = List.Count;

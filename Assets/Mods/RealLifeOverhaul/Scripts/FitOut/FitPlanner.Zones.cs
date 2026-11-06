@@ -5,53 +5,32 @@ using RealLifeOverhaul.Tech;
 namespace RealLifeOverhaul.FitOut
 {
     /// <summary>
-    /// The rooms the fit-out lays out on bare floor (<see cref="FitPlanner"/>), each in a box with its back on a wall where
-    /// it has one, every piece by the game's own figures for its size (measured by the game side, or FitRoles.Nominal):
-    ///
-    ///   desks       pairs of rows back to back, each desk with its chair 0.75 m out (where the game seats somebody at a
-    ///               desk), a computer and a monitor on it, a plant on some; one row against a wall where only one fits
-    ///   meeting     a long table pointing at a screen on the wall, chairs down both sides and one at the end
-    ///   kitchen     counters along the wall with the coffee machine on the first, the fridge at the end, a table and chairs
-    ///   lounge      a sofa against the wall, a low table, two armchairs facing it, a plant
-    ///   printer     the printer, a cabinet and a paper bin along the wall
-    ///   server      a server closet: two of the mod's small racks (the game has none) and a cabinet along the wall
-    ///   filing      lockers, cabinets and shelving along the wall
-    ///   waiting     waiting seats along the wall, a water cooler, a plant
-    ///   stores      shelving, a workbench (the mod's) and a pallet of boxes
-    ///   staging     deliveries on pallets waiting to be racked, a workbench and a bin, free-standing
-    ///   plants      plants in the corners, where nothing else fits
-    ///
-    /// And the presets of a working day's desk (FitKind.OfficeRow and after), one room of its kind and nothing more, on
-    /// the floor a furnished building leaves free:
-    ///
-    ///   nurses      a nurses' station: two desks side by side, each with a computer and a chair, and the medical
-    ///               cabinets beside them along the wall
-    ///   teacher     a teacher's desk with a computer and a chair, its back to the wall and its sitter facing the room,
-    ///               a cabinet beside it
-    ///   service     the council's service desks: each clerk with their back to the wall, a computer, a visitor's chair
-    ///               across the desk, and the filing along the wall
-    ///   backdesk    a back office desk with a computer and a chair, a cabinet and a paper bin
-    ///   (an office's row is the desks above, four at most)
-    ///
-    /// Each kind of building is given its own of them in turn (TechOrder and the rest), up to so many of each.
+    /// The fit-out planner's rooms for bare floor, each in a box with its back on a wall where it has one, every piece by
+    /// the game's own figure for its size: desks, meeting, kitchen, lounge, printer, server, filing, waiting, stores,
+    /// staging and plants, and for a working day's desk one preset room (an office's row, nurses, teacher, service, back
+    /// desk). Each kind of building gets its own rooms in turn (TechOrder and the rest), up to so many of each.
     /// </summary>
     public static partial class FitPlanner
     {
         /// <summary>The kinds of room the plan lays out.</summary>
         public enum ZoneType { Desks, Meeting, Kitchen, Lounge, Printer, Server, Filing, Waiting, Stores, Staging, Plants, Nurses, Teacher, Service, BackDesk }
 
-        public const int ZoneTypeCount = 15;
+        public const int ZoneTypeCount = 15;          // the members of ZoneType
         private const float ChairOut = 0.75f;         // the game seats somebody this far out from a desk's pivot, along its front
 
         // The rooms each kind of building is given, in turn, and how many of each at most (by ZoneType).
-        private static readonly ZoneType[] TechOrder = { ZoneType.Desks, ZoneType.Meeting, ZoneType.Kitchen, ZoneType.Desks, ZoneType.Lounge, ZoneType.Server, ZoneType.Printer, ZoneType.Desks, ZoneType.Meeting, ZoneType.Lounge, ZoneType.Printer };
+        private static readonly ZoneType[] TechOrder =
+        {
+            ZoneType.Desks, ZoneType.Meeting, ZoneType.Kitchen, ZoneType.Desks, ZoneType.Lounge, ZoneType.Server, ZoneType.Printer, ZoneType.Desks,
+            ZoneType.Meeting, ZoneType.Lounge, ZoneType.Printer
+        };
         private static readonly int[] TechMost = { 99, 3, 1, 2, 2, 1, 0, 0, 0, 0, 99, 0, 0, 0, 0 };
         private static readonly ZoneType[] CivicOrder = { ZoneType.Desks, ZoneType.Filing, ZoneType.Meeting, ZoneType.Kitchen, ZoneType.Desks, ZoneType.Printer, ZoneType.Waiting, ZoneType.Filing };
         private static readonly int[] CivicMost = { 99, 2, 1, 0, 1, 0, 3, 1, 0, 0, 99, 0, 0, 0, 0 };
         private static readonly ZoneType[] DataOrder = { ZoneType.Stores, ZoneType.Staging, ZoneType.Desks, ZoneType.Kitchen, ZoneType.Stores, ZoneType.Staging, ZoneType.Filing };
         private static readonly int[] DataMost = { 1, 0, 1, 0, 0, 0, 2, 0, 4, 3, 99, 0, 0, 0, 0 };
 
-        // The presets of a working day's desk: one room of their own kind, no plants, nothing else.
+        // A working day's desk: one room of its own kind, no plants, nothing else.
         private static readonly ZoneType[] RowOrder = { ZoneType.Desks };
         private static readonly int[] RowMost = { 1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
         private static readonly ZoneType[] WardOrder = { ZoneType.Nurses };
@@ -75,7 +54,7 @@ namespace RealLifeOverhaul.FitOut
         private static readonly string[] PalletKinds = { "decorativepalletwithboxes01", "decorativepalletwithboxes02", "decorativepalletwithboxes03" };
         private static readonly string[] PlantKinds = { "groundplant03", "groundplant01", "groundplant05", "groundplant02" };
 
-        // Every piece the rooms of each kind of building may lay out: what the game side makes ready before the plan.
+        // What the game side makes ready before the plan, for each kind of building.
         private static readonly string[] TechPieces =
         {
             "officedesk1", "officechair2", "computer", "computermonitor", "deskplant01", "largemeetingtable", "table1", "regularchair", "wallmountedtv",
@@ -98,7 +77,7 @@ namespace RealLifeOverhaul.FitOut
             "ceilinglampwarehouse"
         };
 
-        // ...and what each preset may lay out: the game's own furniture only.
+        // Each preset's: the game's own furniture only.
         private static readonly string[] RowPieces = { "officedesk1", "officechair2", "computer", "computermonitor", "deskplant01" };
         private static readonly string[] WardPieces = { "officedesk1", "officechair", "computer", "computermonitor", "deskplant01", "smallcabinet", "bigcabinet" };
         private static readonly string[] ClassPieces = { "officedesk1", "officechair", "computer", "computermonitor", "deskplant01", "smallcabinet" };
@@ -124,7 +103,7 @@ namespace RealLifeOverhaul.FitOut
         /// <summary>The player's desk among so many desks of a fitted floor, picked by a seed; -1 for none (FitDesks).</summary>
         public static int PickDesk(int seats, int seed) => seats <= 0 ? -1 : TechRandom.Range(seed, DeskSalt, seats, 0, 0, seats - 1);
 
-        private const int DeskSalt = 9211;   // the dice of the desk picked among a floor's
+        private const int DeskSalt = 9211;   // the seed's salt for the desk picked
 
         /// <summary>True for the kinds that are a preset of a working day's desk: one room of their own, not a whole floor.</summary>
         public static bool IsPreset(FitKind kind) => kind >= FitKind.OfficeRow;
@@ -144,7 +123,7 @@ namespace RealLifeOverhaul.FitOut
             }
         }
 
-        // How much of a bare box each kind of room takes at most, along its wall and out from it: the rest is left for the next.
+        // How much of a box each kind of room takes at most, along its wall and out from it; the rest is left for the next.
         private static void ZoneSize(Work w, ZoneType type, out float u, out float v)
         {
             FitSite s = w.Site;
@@ -207,7 +186,7 @@ namespace RealLifeOverhaul.FitOut
             }
         }
 
-        // One room of a kind laid out in a box; false if it has no room there (whatever it had put down is taken up by the caller).
+        // False if the room does not fit; the caller takes up whatever it put down.
         private static bool Lay(Work w, ZoneType type, Box b, int zone)
         {
             switch (type)
@@ -216,7 +195,7 @@ namespace RealLifeOverhaul.FitOut
                 case ZoneType.Meeting: return MeetingRoom(w, b, zone);
                 case ZoneType.Kitchen: return Kitchen(w, b, zone);
                 case ZoneType.Lounge: return Lounge(w, b, zone);
-                case ZoneType.Printer: return WallRun(w, b, zone, PrinterRun, 2, false, FitUse.Stop);   // (free-standing where there is no wall)
+                case ZoneType.Printer: return WallRun(w, b, zone, PrinterRun, 2, false, FitUse.Stop);   // free-standing where there is no wall
                 case ZoneType.Server: return WallRun(w, b, zone, ServerRun, 2, true, FitUse.Stop);
                 case ZoneType.Filing: return WallRun(w, b, zone, w.Site.Kind == FitKind.DataCentre ? DataFilingRun : FilingRun, 3, true, FitUse.None);
                 case ZoneType.Waiting: return Waiting(w, b, zone);
@@ -251,10 +230,10 @@ namespace RealLifeOverhaul.FitOut
             float v = 0.1f;
             bool backed = false;
             float row = deskD + behind + 0.6f;                         // a row with its back to the wall, and the walkway behind its chairs
-            bool backFirst = b.WallV0 && !(b.LV >= pair + 0.2f && b.LV < row + pair + 0.1f);   // (unless a pair of rows fills the room better)
+            bool backFirst = b.WallV0 && !(b.LV >= pair + 0.2f && b.LV < row + pair + 0.1f);   // unless a pair of rows fills the room better
             if (backFirst)
             {
-                // One row with its back to the wall, its sitters facing it, before any pairs in the room's middle.
+                // one row with its back to the wall, sitters facing it, before the pairs in the middle
                 float vA = b.WallBack + deskD * 0.5f + 0.02f;
                 if (vA + deskD * 0.5f + behind <= b.LV - 0.1f)
                 {
@@ -281,7 +260,7 @@ namespace RealLifeOverhaul.FitOut
             }
             if (placed < most && !backed && v + deskD + behind <= b.LV - 0.1f)
             {
-                // Room for one more row and no more: its sitters with their backs to the room.
+                // room for one more row: its sitters with their backs to the room
                 for (int k = 0; k < perRow && placed < most; k++)
                 {
                     placed += Workstation(w, b, zone, desk, chair, u0 + k * deskW, v + behind, 0f, 1f) ? 1 : 0;
@@ -298,10 +277,10 @@ namespace RealLifeOverhaul.FitOut
             return true;
         }
 
-        // A desk whose sitter faces (fu, fv) in the box, with its chair, and a computer and a monitor on it. False if the desk could not go there.
+        // A desk whose sitter faces (fu, fv), with its chair, a computer and a monitor; false if the desk could not go there.
         private static bool Workstation(Work w, Box b, int zone, string desk, string chair, float u, float v, float fu, float fv)
         {
-            // The desk's front looks back at its sitter; the chair stands that far out along it, facing the desk.
+            // the desk's front looks back at its sitter; the chair stands out along it, facing the desk
             int deskAt = w.Put(b, desk, FitRole.Floor, FitUse.None, u, v, -fu, -fv, -1, zone, centred: false);
             if (deskAt < 0)
             {
@@ -331,7 +310,7 @@ namespace RealLifeOverhaul.FitOut
             {
                 tableId = "table1";
                 FitSize small = w.Site.Size(tableId);
-                // (turned so that its long side runs out from the wall: the room's u is then its own z)
+                // turned so its long side runs out from the wall: the room's u is then its own z
                 t = new FitSize(small.D, small.W, small.H, small.CZ, small.CX, small.Top);
                 turned = true;
                 if (b.LU < t.W + 2f * side || b.LV < t.D + 2.2f)
@@ -365,8 +344,7 @@ namespace RealLifeOverhaul.FitOut
             return true;
         }
 
-        // A kitchen against a wall: a run of counters with the coffee machine on the first, the fridge at its end, a water
-        // cooler, and a table with chairs in front where there is room.
+        // Counters with the coffee machine on the first, the fridge at the end, a water cooler, a table and chairs if room.
         private static bool Kitchen(Work w, Box b, int zone)
         {
             if (!b.WallV0 || b.LU < 2.4f)
@@ -453,7 +431,7 @@ namespace RealLifeOverhaul.FitOut
         {
             if ((tall && !b.WallV0) || (tall && b.FacadeV0))
             {
-                return false;   // (what is tall stands against a wall, never in the street wall's windows; a printer corner may stand free)
+                return false;   // what is tall stands against a wall; a printer corner may stand free
             }
             float u = 0.15f;
             int placed = 0;
@@ -533,8 +511,7 @@ namespace RealLifeOverhaul.FitOut
             return placed >= 2;
         }
 
-        // A data centre's staging floor, free-standing: deliveries of kit on pallets waiting to be racked, a workbench to
-        // unpack them on and a bin, each a walkway apart.
+        // A data centre's staging floor, free-standing: pallets waiting to be racked, a workbench and a bin, a walkway apart.
         private static bool Staging(Work w, Box b, int zone)
         {
             FitSize pallet = w.Site.Size(PalletKinds[0]), bench = w.Site.Size("rlo:bench");
@@ -566,11 +543,8 @@ namespace RealLifeOverhaul.FitOut
             return placed >= 2;
         }
 
-        // ---------------------------------------------------------------- the presets of a working day's desk
-
-        // Desks side by side with their backs to the wall (or to the box's edge where it stands free), each sitter facing the
-        // room across their desk with a computer and a monitor on it; then the cabinets beside them, the tall ones only
-        // against a wall. False if not one desk has room.
+        // Desks side by side, sitters with their backs to the wall facing the room, then the cabinets beside them (the tall
+        // ones only against a wall). False if not one desk has room.
         private static bool DeskRun(Work w, Box b, int zone, int desks, string[] cabinets)
         {
             const string desk = "officedesk1", chair = "officechair";
@@ -578,7 +552,7 @@ namespace RealLifeOverhaul.FitOut
             float deskW = Math.Max(0.9f, d.W), deskD = Math.Max(0.5f, d.D);
             float back = b.WallV0 ? b.WallBack : 0.2f;
             float behind = ChairOut + c.D * 0.5f + 0.35f;
-            // The sitter has their back to the wall and faces the room: the chair between the wall and the desk.
+            // the chair between the wall and the desk
             float vDesk = back + behind + deskD * 0.5f;
             if (vDesk + deskD * 0.5f > b.LV - 0.2f)
             {
@@ -611,8 +585,8 @@ namespace RealLifeOverhaul.FitOut
             return true;
         }
 
-        // The council's service desks: each clerk with their back to the wall, a computer on the desk, and a visitor's chair
-        // across it on the room's side; the filing along the wall after them. False if not one desk has room.
+        // Service desks, each clerk's back to the wall and a visitor's chair across the desk, then the filing along the wall.
+        // False if not one desk has room.
         private static bool Service(Work w, Box b, int zone)
         {
             const string desk = "officedesk1", chair = "officechair", visitor = "regularchair";

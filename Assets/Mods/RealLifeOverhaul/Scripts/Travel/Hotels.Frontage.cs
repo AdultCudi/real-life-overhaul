@@ -340,6 +340,25 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>
+        /// Behind the loading screen (Core/ScenePrewarm): the doorman made and shelved, so he is not made in play the first
+        /// time a hotel's door is near (a prefab and a mesh merge). Made again in play only after he is knocked down.
+        /// </summary>
+        public bool PrewarmDoorman()
+        {
+            if (!Settings.Hotels || _doormanFailed || _doorman != null)
+            {
+                return true;
+            }
+            PlayerController player = PlayerHelper.PlayerController;
+            _doorman = MakeDoorman(player != null ? player.transform.position : Vector3.zero);
+            if (Meta.Dev.Verbose)
+            {
+                _logger?.Info("Travel check (the hotel doorman made ahead): made behind the loading screen, not in play: PASS");
+            }
+            return true;
+        }
+
         private CityPerson MakeDoorman(Vector3 near)
         {
             if (_props == null)

@@ -36,6 +36,8 @@ namespace RealLifeOverhaul.Markets
         private float _frontierAt;
         private int _startTries;
         private long _frontierWritten;
+        private long _tapeSaved = -1;   // the tape's Changes when it was last written whole; -1: not since the load
+        private const double TapeSaveMs = 1.0;   // milliseconds of the main thread the tape may take at a save: its lines handed over, written on the writer
         private Action _onSave;
         private Action<int, int, int> _say;
         private bool _following;                                    // a guest: the host's market is this one, and its tape the host's
@@ -78,6 +80,7 @@ namespace RealLifeOverhaul.Markets
         private void Awake()
         {
             Instance = this;
+            GameUi.GameSprites.Want(AppGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
             _onSave = OnSave;
             _say = (kind, a, b) => _engine?.Event(kind, a, b);
             _world = new MarketGameWorld(this);
@@ -181,6 +184,7 @@ namespace RealLifeOverhaul.Markets
             FinishMoment();   // waited for above; one comparison
             SaveHook.Keep(_onSave);
             MarketBridges.Poll?.Invoke(_say);   // a guest hears nothing of its own: the tape's events are the host's
+            BuildersSecond();   // the construction game's news of the city's builders (MarketDirector.Builders.cs)
             _engine.TradesAsEvents = SharedCity.Leading || _engine.Tape.Traded(_engine.State.Day);   // for the rest of a day that had a shared trade, so a replay takes every move from the tape
             OwnSecond();
             BotsSecond();
@@ -354,8 +358,10 @@ namespace RealLifeOverhaul.Markets
             _engine.HoldAfterLoad();
             OwnStarted(save);   // who the player is, and their company back if a save as a guest set it aside
             _frontierWritten = tape.Frontier;
+            _tapeSaved = -1;   // the file as read may have lines added after its last whole
             _save = save;
             _running = true;
+            BuilderMarket.Clear();   // news of builders heard before this save's market ran is no news of its
             Behind = _engine.State.Now < Target();
             if (fresh)
             {
@@ -385,7 +391,7 @@ namespace RealLifeOverhaul.Markets
             MarketBridges.Rivals?.Invoke(names, ids);
             List<CarriedPrice> carried = old != null && old.Holdings.Count > 0 && !old.MarketMoved ? MarketCarryOver.Prices(old) : null;
             int minute = save.Hour * 60 + Mathf.FloorToInt(save.Minute);
-            return MarketSetup.Open(id, save.Day, minute, GameCalendar.DaysPerYear, _world.Env(save.Day), id, names, ids, carried);
+            return MarketSetup.Open(id, save.Day, minute, GameCalendar.DaysPerYear, _world.Env(save.Day), id, names, ids, carried, Settings.MarketsBuilders);
         }
 
         // The market stops; with 'keep' it goes into the save's data first, when the current save is certainly its own.
@@ -400,7 +406,7 @@ namespace RealLifeOverhaul.Markets
                     Logger?.Info("Stock market: stopping; " + back + " of worked orders' money with the broker is back in the cash.");
                 }
                 MarketStore.Save(Save.modData, _engine.State);
-                MarketTapeFile.Rewrite(_engine.Tape.Id, _engine.Tape.Whole());
+                MarketTapeFile.Rewrite(_engine.Tape.Id, _engine.Tape.Lines());
             }
             else if (_running)
             {
@@ -416,6 +422,7 @@ namespace RealLifeOverhaul.Markets
             _shared.Length = 0;
             _guestTrades.Clear();   // a guest's unsent trades never reach another host
             _deliveries.Clear();
+            BuilderMarket.Clear();   // the builders' news waiting was this save's
             RemoveApp();
             try
             {
@@ -467,7 +474,7 @@ namespace RealLifeOverhaul.Markets
         private static readonly int HotSave = HotSpots.Slot("Markets: MarketDirector.OnSave");
         private void OnSave()
         {
-            using var hotSpot = HotSpots.Time(HotSave);   // the market and its tape written whole
+            using var hotSpot = HotSpots.Time(HotSave);   // the market, and its tape whole if it changed
             try
             {
                 if (_running && Save != null && ReferenceEquals(Save, _save))
@@ -475,13 +482,35 @@ namespace RealLifeOverhaul.Markets
                     _engine.Finish();
                     Flush();   // the lines on their way, to the file and the guests, before the tape is written whole
                     MarketStore.Save(Save.modData, _engine.State);
-                    MarketTapeFile.Rewrite(_engine.Tape.Id, _engine.Tape.Whole());
-                    _frontierWritten = _engine.Tape.Frontier;
+                    SaveTape();
                 }
             }
             catch (Exception e)
             {
                 Logger?.Error(e);
+            }
+        }
+
+        // The tape whole, from the lines it keeps, only if it changed since the file was last written whole: unchanged, the
+        // file is that whole to the byte already. The first save after a load writes it whole whatever: what was read may
+        // have lines added after its last whole.
+        private void SaveTape()
+        {
+            MarketTape tape = _engine.Tape;
+            long began = System.Diagnostics.Stopwatch.GetTimestamp();
+            bool written = tape.Changes != _tapeSaved;
+            if (written)
+            {
+                MarketTapeFile.Rewrite(tape.Id, tape.Lines());
+                _tapeSaved = tape.Changes;
+            }
+            _frontierWritten = tape.Frontier;
+            if (Meta.Dev.Verbose)
+            {
+                double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+                Logger?.Info("Stock market check (the tape at a save): " + (written ? "written whole from its " + tape.Days + " day(s) of kept lines" : "unchanged since the last, not written")
+                             + ", " + ms.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture) + " ms of the main thread (wanted under " + TapeSaveMs + " ms): "
+                             + (ms < TapeSaveMs ? "PASS" : "SLOW"));
             }
         }
 

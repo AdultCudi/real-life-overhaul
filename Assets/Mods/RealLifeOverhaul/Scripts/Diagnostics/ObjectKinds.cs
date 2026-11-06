@@ -4,11 +4,9 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The session record's count of the mod's objects by kind (Diagnostics/SessionWatch), against the first count of the
-    /// session: one tally for the holders under the mod's roots, one for the kinds below each holder. A kind is an object's
-    /// name with the mod's prefix, numbers and a copy's marks taken off, so that the line a minute names what grows
-    /// ("Civic Props > cone +120") and a leak points at itself. Game-free, checked offline (NavCheck, MemoryCheck.cs).
-    /// COST: once a minute with Developer diagnostics on: an entry looked up per holder or kind (a few hundred).
+    /// The session record's tally of the mod's objects by holder or kind against the session's first count, so the line a
+    /// minute names what grows ("Civic Props > cone +120"). A kind is a name without the mod's prefix, numbers or a copy's
+    /// marks. Game-free, checked offline. Cost: a few hundred look-ups once a minute, with diagnostics on.
     /// </summary>
     public sealed class ObjectKinds
     {
@@ -68,10 +66,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// The kinds that grew the most since the first count, most first (the same growth: by name). Returns how many
-        /// grew, at most <see cref="Shown"/>; read them with <see cref="Top"/>.
-        /// </summary>
+        /// <summary>The kinds that grew the most since the first count, at most <see cref="Shown"/>; read them with <see cref="Top"/>.</summary>
         public int Rank()
         {
             int found = 0;
@@ -114,7 +109,7 @@ namespace RealLifeOverhaul
             now = _topNow[k];
         }
 
-        /// <summary>The key of a holder (below null) or a kind under a root of the mod's: the root's kind, left out for the mod's own root, then the holder's and the kind's.</summary>
+        /// <summary>The key of a holder (below null) or of a kind under it: the root's kind (left out for the mod's own root), the holder's, the kind's.</summary>
         public static string Key(string root, string holder, string below)
         {
             string r = Kind(root);
@@ -130,10 +125,7 @@ namespace RealLifeOverhaul
             return key ?? r;
         }
 
-        /// <summary>
-        /// An object's name as a kind: the mod's prefix, a copy's "(Clone)", and the numbers, brackets and spaces at its end
-        /// taken off ("RealLifeOverhaul Bus Stop 12" is "Bus Stop", "Cone (3)" is "Cone"); the name itself if nothing is left.
-        /// </summary>
+        /// <summary>An object's name as a kind: "RealLifeOverhaul Bus Stop 12" is "Bus Stop", "Cone (3)" is "Cone".</summary>
         public static string Kind(string name)
         {
             if (string.IsNullOrEmpty(name))

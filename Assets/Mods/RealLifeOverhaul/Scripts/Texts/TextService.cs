@@ -4,10 +4,10 @@ using System.Threading;
 
 namespace RealLifeOverhaul.Texts
 {
-    /// <summary>A runner that sends cards to an AI service (TextService; the checks put a pretend one in).</summary>
+    /// <summary>A runner that sends cards to an AI service; the checks put a pretend one in.</summary>
     public interface ITextServiceRunner : ITextRunner
     {
-        /// <summary>True while the service rests after a fault (no connection, too many requests): nothing is sent meanwhile.</summary>
+        /// <summary>True while the service rests after a fault: nothing is sent meanwhile.</summary>
         bool Resting { get; }
     }
 
@@ -16,34 +16,24 @@ namespace RealLifeOverhaul.Texts
     {
         public TextProviderInfo Provider;
         public string Base;               // the address asked (TextProviders.Base)
-        public string Model;              // the model named by the player, or null for the provider's own, or the first listed
-        public string Key;                // an API key (null for a sign-in or a program on this PC)
-        public TextKeys Keys;             // where the ChatGPT sign-in's tokens are kept (a sign-in only)
-        public string Auth = TextProviders.ChatGptAuth;   // the sign-in's address (a sign-in only; the checks point it at a pretend one)
+        public string Model;              // the model named by the player; null for the provider's own, or the first listed
+        public string Key;                // an API key; null for a sign-in or a program on this PC
+        public TextKeys Keys;             // where the ChatGPT sign-in's tokens are kept
+        public string ClientId;           // the game client id the Player2 App is asked a key with; null for every other service
+        public string Auth = TextProviders.ChatGptAuth;   // the sign-in's address; the checks point it at a pretend one
         public int Workers = TextService.Workers;
     }
 
     /// <summary>
-    /// Your own AI's runner: the cards RLO Texts would give its local pack sent to the AI service the player chose, through
-    /// one queue of its own (TextQueue: the same order, deadlines and budget a minute), by at most <see cref="Workers"/>
-    /// worker threads, each with one request at a time, so never more than two in flight. Each request's time is the
-    /// time left to its deadline, at most TextServiceRules.TimeOut; its words go back to the queue, and the hub checks
-    /// them with TextCheck as it does the pack's. A streamed reply (the ChatGPT plan's) marks its job the moment its first
-    /// words come (TextJob.Speaking) and is read only until its last word (TextStreamRead). After a fault it rests as the
-    /// rules say (no connection, too many requests, the service's own fault), and every request waiting meanwhile is
-    /// missed at once, so the hub falls back
-    /// to the pack or the written line without waiting; a refused key, sign-in or model stops it (Failed) until the
-    /// player mends it. A field the service refused (a temperature, a reasoning effort) is left out from then on. A
-    /// program on this PC (Ollama, LM Studio) with no model named is asked for its list first, and its first model used.
-    /// Keys and tokens are only ever in the request's headers; every log line goes through TextServiceRules.Clean.
-    /// Game-free (EconomyCheck, TextsServiceChecks.cs, with a pretend web and a pretend local service).
-    /// COST: nothing on the game's thread; worker threads that sleep until there is a request.
+    /// Your own AI's runner: cards sent to the AI service the player chose, by at most <see cref="Workers"/> threads. After a
+    /// fault it rests and misses every waiting request at once; a refused key or model stops it until mended. Keys stay in
+    /// the request's headers, never the log. Game-free. COST: worker threads that sleep until there is a request.
     /// </summary>
     public sealed class TextService : IDisposable, ITextServiceRunner
     {
         public const int Workers = 2;               // requests in flight at most
         public const int WakeMs = 250;              // a worker's longest sleep between two looks at the queue
-        public const int PerMinute = 20;            // requests started a minute at most (the free tiers allow 10 to 30)
+        public const int PerMinute = 20;            // requests started a minute at most; the free tiers allow 10 to 30
         public const int BackgroundPerMinute = 8;   // ...of which the city's background
 
         private readonly TextQueue _queue;
@@ -54,13 +44,17 @@ namespace RealLifeOverhaul.Texts
         private readonly List<Thread> _threads = new List<Thread>(Workers);
         private readonly object _lock = new object();
         private volatile TextServerState _state = TextServerState.Off;
-        private volatile bool _stop, _quiet = true, _noReasoning, _noTemperature;
+        private volatile bool _stop, _quiet = true, _noReasoning, _noTemperature, _modelRefused;
         private string _model;
         private double _restUntil;
         private TextFault _lastFault;
         private int _inRow, _written, _missed;
-        private int _closedLogged;   // the closing line has been written (1): the workers share it
+        private int _closedLogged;   // 1 once the closing line is written: the workers share it
         private double _took;
+        private readonly object _appLock = new object();   // one worker asks the Player2 App for the key at a time
+        private string _appKey;                            // Player2's key for this player: in memory only, never kept, shown or logged
+        private double _beatAt;                            // the clock time the next health call is due
+        private volatile TextAppState _appState = TextAppState.SignedIn;
 
         public TextService(TextQueue queue, TextServiceStart start, ITextWeb web, Action<string> log)
         {
@@ -90,16 +84,21 @@ namespace RealLifeOverhaul.Texts
             set => _quiet = value;
         }
 
-        /// <summary>Why it failed or rests, for the status and the log (no key in it).</summary>
         public string Why { get; private set; }
 
         /// <summary>The fault that stopped it or that it rests after; None while all is well.</summary>
         public TextFault Fault => _lastFault;
 
-        /// <summary>The model asked (the player's, the provider's own, or the first the service listed); null until known.</summary>
+        /// <summary>The model asked; null until known.</summary>
         public string Model => _model;
 
+        /// <summary>True once the service answered that the model asked is not one it has (404 or "model not found"); the model is in <see cref="Model"/>.</summary>
+        public bool ModelRefused => _modelRefused;
+
         public TextProviderInfo Provider => _start.Provider;
+
+        /// <summary>For the Player2 App: why it gives no key now (not running, nobody signed in); SignedIn otherwise.</summary>
+        public TextAppState AppState => _appState;
 
         /// <summary>Replies that came back with words, and the mean seconds each took.</summary>
         public int Written => _written;
@@ -129,6 +128,11 @@ namespace RealLifeOverhaul.Texts
                 Stop(TextFault.Key, "not signed in to ChatGPT");
                 return;
             }
+            if (p.Access == TextAccess.App && string.IsNullOrEmpty(_start.ClientId))
+            {
+                Stop(TextFault.Key, TextPlayer2.Why(TextAppState.NoClientId));
+                return;
+            }
             if (string.IsNullOrEmpty(_start.Base))
             {
                 Stop(TextFault.Model, "the address for " + p.Name + " is not one on this PC");
@@ -138,16 +142,13 @@ namespace RealLifeOverhaul.Texts
             _state = _model == null ? TextServerState.Loading : TextServerState.Ready;
             for (int i = 0; i < Math.Max(1, _start.Workers); i++)
             {
-                var t = new Thread(Run) { IsBackground = true, Name = "RLO Texts service " + (i + 1), Priority = ThreadPriority.BelowNormal };   // (each mostly waits on the network)
+                var t = new Thread(Run) { IsBackground = true, Name = "RLO Texts service " + (i + 1), Priority = ThreadPriority.BelowNormal };   // each mostly waits on the network
                 _threads.Add(t);
                 t.Start(i);
             }
         }
 
-        /// <summary>
-        /// Stops it taking anything more, at once and without waiting (the game's thread, before a runner of other options
-        /// takes the same queue): a request already under way ends by its own time, and nothing new is sent.
-        /// </summary>
+        /// <summary>Stops it taking anything more at once, before another runner takes the queue; a request under way ends by its own time.</summary>
         public void Halt()
         {
             _stop = true;
@@ -163,16 +164,14 @@ namespace RealLifeOverhaul.Texts
             }
             for (int i = 0; i < _threads.Count; i++)
             {
-                _threads[i].Join(TextWeb.GraceMs);   // (a request under way ends by its own time; the thread is a background one)
+                _threads[i].Join(TextWeb.GraceMs);   // a request under way ends by its own time; the thread is a background one
             }
-            _threads.Clear();   // (what waits is the hub's to hand over: it clears it as the service stops, and a runner after this one may share the queue)
+            _threads.Clear();   // what waits is the hub's to hand over, and a runner after this one may share the queue
             if (_state != TextServerState.Failed)
             {
                 _state = TextServerState.Off;
             }
         }
-
-        // ---------------------------------------------------------------- the workers
 
         private void Run(object index)
         {
@@ -186,7 +185,7 @@ namespace RealLifeOverhaul.Texts
                 {
                     if (_state != TextServerState.Ready || Resting)
                     {
-                        _queue.MissAll(Why ?? "the service rests");   // (the hub falls back at once rather than wait for nothing)
+                        _queue.MissAll(Why ?? "the service rests");   // the hub falls back at once rather than wait for nothing
                         _wake.WaitOne(WakeMs);
                         continue;
                     }
@@ -196,7 +195,7 @@ namespace RealLifeOverhaul.Texts
                         _wake.WaitOne(WakeMs);
                         continue;
                     }
-                    _wake.Set();   // (the other worker looks too: a second request may be waiting)
+                    _wake.Set();   // the other worker looks too: a second request may be waiting
                     Write(job);
                 }
             }
@@ -214,8 +213,8 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        // A worker ended by the game's closing or the service being switched off: one plain line for all the workers, the state
-        // left as it was (Off from Dispose), never Failed, and nothing said of mending it in the options.
+        // A worker ended by the game's closing or the service switched off: one plain line for all the workers, and the state
+        // never Failed.
         private void Closed()
         {
             _stop = true;
@@ -225,8 +224,8 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        // No model named: the service's first listed one (a program on this PC, the ChatGPT plan), asked again after a rest while
-        // nothing answers; Failed with why when it refuses or lists none. Ready only once a model is known.
+        // No model named: the service's first listed one, asked again after a rest while nothing answers; Failed when it
+        // refuses or lists none.
         private bool FindModel()
         {
             int tries = 0;
@@ -275,7 +274,7 @@ namespace RealLifeOverhaul.Texts
             return false;
         }
 
-        // The rest waited out, every request meanwhile missed at once.
+        // Waits out the rest, every request meanwhile missed at once.
         private void Rested()
         {
             while (!_stop && Resting)
@@ -296,7 +295,7 @@ namespace RealLifeOverhaul.Texts
             }
             if (_stop)
             {
-                _queue.Done(job, null, 0.0, "the service was switched off");   // (taken as it stopped: never sent to a service the player has left)
+                _queue.Done(job, null, 0.0, "the service was switched off");   // never sent to a service the player has left
                 return;
             }
             string secret = Secret(out TextFault fault, out string why);
@@ -309,12 +308,21 @@ namespace RealLifeOverhaul.Texts
             TextWebRequest request = TextServiceRules.Build(_start.Provider, _start.Base, _model, job.System ?? TextCard.System, job.Card, secret, _noReasoning, _noTemperature);
             if (_start.Provider.Api == TextApi.Responses)
             {
-                var read = new TextStreamRead { OnBegun = () => job.Speaking = true };   // (streamed: the first words tell the hub, and the read ends at the last word)
+                var read = new TextStreamRead { OnBegun = () => job.Speaking = true };   // streamed: the first words tell the hub, the read ends at the last word
                 request.Lines = read.Feed;
             }
             TextWebAnswer answer = _web.Send(request, (int)(Math.Max(0.05, TextServiceRules.Limit(job.Deadline, TextClock.Now)) * 1000.0));
-            TextServiceResult result = TextServiceRules.Read(_start.Provider.Api, answer);
+            bool app = _start.Provider.Access == TextAccess.App;
+            TextServiceResult result = TextServiceRules.Read(_start.Provider.Api, answer, app);
             double took = TextClock.Now - begun;
+            if (app && result.Fault == TextFault.Key)
+            {
+                result.Fault = TextFault.Network;   // the key lapsed or was withdrawn: the App is asked for it again after a rest, not a stop
+                lock (_appLock)
+                {
+                    _appKey = null;
+                }
+            }
             if (result.Fault == TextFault.None)
             {
                 Interlocked.Increment(ref _written);
@@ -325,19 +333,24 @@ namespace RealLifeOverhaul.Texts
                     _lastFault = TextFault.None;
                 }
                 _queue.Done(job, result.Words, took, null);
+                Beat(secret);
                 return;
             }
             Interlocked.Increment(ref _missed);
+            if (result.Fault == TextFault.Model)
+            {
+                _modelRefused = true;
+            }
             string clean = Clean(result.Why);
             _queue.Done(job, null, took, clean);
             if (result.Fault == TextFault.BadRequest && Leave(result.Param))
             {
-                return;   // (sent again without it from the next request on)
+                return;   // sent without it from the next request on
             }
             After(result.Fault, clean, answer.RetryAfter);
         }
 
-        // The key, or the ChatGPT sign-in's access token (refreshed when it is near its end); null with the fault when there is none.
+        // The key, or the ChatGPT sign-in's access token refreshed near its end; null with the fault when there is none.
         private string Secret(out TextFault fault, out string why)
         {
             fault = TextFault.None;
@@ -346,11 +359,66 @@ namespace RealLifeOverhaul.Texts
             {
                 case TextAccess.Key: return _start.Key;
                 case TextAccess.SignIn: return TextSignIn.Access(_web, _start.Keys, _start.Auth, out fault, out why);
+                case TextAccess.App: return AppKey(out fault, out why);
                 default: return null;
             }
         }
 
-        // A refused field left out from now on: true when it was one the mod sends and may leave out.
+        // Player2: the key the App holds for the signed-in player, asked on this PC when there is none yet or the last was refused, and kept
+        // in memory only. Nothing running, or nobody signed in, is a rest like a lost connection, not a stop: the App may be started later.
+        private string AppKey(out TextFault fault, out string why)
+        {
+            fault = TextFault.None;
+            why = null;
+            lock (_appLock)
+            {
+                if (_appKey != null)
+                {
+                    return _appKey;
+                }
+                TextWebAnswer a = _web.Send(TextPlayer2.Login(_start.ClientId), TextPlayer2.AppMs);
+                TextAppState state = TextPlayer2.State(a, _start.ClientId);
+                _appState = state;
+                if (state != TextAppState.SignedIn)
+                {
+                    fault = TextFault.Network;
+                    why = TextPlayer2.Why(state);
+                    return null;
+                }
+                _appKey = TextPlayer2.Key(a);
+                Log("Your own AI: the Player2 App signed in; its key is held in memory only.");
+                return _appKey;
+            }
+        }
+
+        // Player2 asks for its health call about once a minute while it is used, so the usage is counted for the game; sent after a
+        // reply is handed over, so it never delays words, and its answer matters only when it says the key is refused.
+        private void Beat(string key)
+        {
+            if (!_start.Provider.Heartbeat || key == null)
+            {
+                return;
+            }
+            double now = TextClock.Now;
+            lock (_lock)
+            {
+                if (now < _beatAt)
+                {
+                    return;
+                }
+                _beatAt = now + TextPlayer2.BeatSeconds;
+            }
+            TextWebAnswer a = _web.Send(TextPlayer2.Health(key), TextPlayer2.PingMs);
+            if (a != null && a.Status == 401)
+            {
+                lock (_appLock)
+                {
+                    _appKey = null;   // asked for again with the next request
+                }
+            }
+        }
+
+        // Leaves a refused field out from now on: true when it was one the mod may leave out.
         private bool Leave(string param)
         {
             if (param == null)
@@ -372,7 +440,7 @@ namespace RealLifeOverhaul.Texts
             return false;
         }
 
-        // What a fault means next: stop, rest, or carry on.
+        // A fault's consequence: stop, rest, or carry on.
         private void After(TextFault fault, string why, double asked)
         {
             if (TextServiceRules.Stops(fault))
@@ -421,7 +489,7 @@ namespace RealLifeOverhaul.Texts
         private string Clean(string line)
         {
             string[] tokens = _start.Keys != null ? _start.Keys.Secrets() : null;
-            string clean = TextServiceRules.Clean(line, _start.Key);
+            string clean = TextServiceRules.Clean(line, _start.Key, _start.ClientId, _appKey);
             return tokens != null ? TextServiceRules.Clean(clean, tokens) : clean;
         }
 

@@ -3,11 +3,8 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// One of a scene's people knocked off their feet: a ragdoll from RagdollSystem for a few
-    /// seconds, then standing again where they landed. If no ragdoll can be had (the option is
-    /// off, all three are in use, the person is out of view) they simply stay standing and the
-    /// scene carries on. Letting the person go (ActorRole.Exit) ends the ragdoll as well, so a
-    /// scene that is cut short leaves nobody lying about.
+    /// One of a scene's people knocked down: a ragdoll for a few seconds, then standing where they landed, or no fall at all
+    /// with no ragdoll to be had. Letting the person go ends the ragdoll too.
     /// </summary>
     internal sealed class Knockdown
     {
@@ -34,7 +31,7 @@ namespace RealLifeOverhaul
             away.y = 0f;
             away = away.sqrMagnitude > 0.01f ? away.normalized : Vector3.forward;
 
-            role.GoLimp();   // orders and pose dropped, and drawn whether in view or not
+            role.GoLimp();   // drawn whether in view or not
             ThirdPersonCharacter character = role.Character;
             Ragdoll ragdoll = character != null && ragdolls.CanBegin(character)
                 ? ragdolls.Begin(character, away * force + Vector3.up * 1.4f)
@@ -52,10 +49,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>
-        /// Call while someone is down. Returns true once they are no longer on the ground: back
-        /// on their feet (the role is standing again), or gone (the role is no longer present).
-        /// </summary>
+        /// <summary>Call while someone is down. True once they are off the ground: standing again, or gone.</summary>
         public bool Tick(float now)
         {
             if (_ragdoll == null)
@@ -67,10 +61,7 @@ namespace RealLifeOverhaul
                 // Ended by somebody else (the budget, an error), or it fell out of the world.
                 ActorRole lost = _role;
                 Clear();
-                if (lost != null)
-                {
-                    lost.Exit();
-                }
+                lost?.Exit();
                 return true;
             }
             if (now < _upLatest && (now < _upAt || !_ragdoll.Resting))
@@ -78,7 +69,7 @@ namespace RealLifeOverhaul
                 return false;
             }
 
-            // There is no getting-up animation: the ragdoll ends and they are standing where they landed.
+            // There is no getting-up animation: the ragdoll ends and they stand where they landed.
             Ragdoll ragdoll = _ragdoll;
             ActorRole role = _role;
             _ragdoll = null;

@@ -12,6 +12,9 @@ namespace RealLifeOverhaul.Economy
     {
         private static readonly int HotOnHour = HotSpots.Slot("Economy: EconomyDirector.OnHour");
         private static readonly int HotOnDay = HotSpots.Slot("Economy: EconomyDirector.OnDay");
+        private static readonly int HotSettle = HotSpots.Slot("Economy: the day, the loans settled");
+        private static readonly int HotAfterDay = HotSpots.Slot("Economy: the day, the features' days (AfterDay)");
+        private static readonly int HotBooksDay = HotSpots.Slot("Economy: the day, yesterday's statement brought up to date");
         private static readonly int HotOnGameEvent = HotSpots.Slot("Economy: EconomyDirector.OnGameEvent");
 
         // GlobalEvents.onNewHour: every game hour, and first thing in the game's NewDay, before its daily run.
@@ -37,6 +40,7 @@ namespace RealLifeOverhaul.Economy
                         DeskDo("the overdraft", () => _desk.BeforeRun(day));   // the overdraft covers a day that is short
                     }
                 }
+                DeskDo("the overdraft", _deskHour);   // cash left under nothing by anything is covered by the end of the hour it happened in
                 DeskDo("the hour", () => _desk.Hour(day));
                 CreditLedger.Touch();
                 KeepTerms("the hour");
@@ -56,6 +60,16 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        // The self-check of BizMan's income: said once a day (GameBooks.BizVerdict), whoever refreshed the day's statement last.
+        private static void LogBizman()
+        {
+            string verdict = GameBooks.BizVerdict();
+            if (verdict != null && (Verbose || verdict.Contains("FAIL")))
+            {
+                Logger?.Info(verdict);
+            }
+        }
+
         // GlobalEvents.onNewDay: after the game's daily run (GameManager.NewDay; LoanHelper.RunDaily is in BusinessHelper.RunDaily before it).
         private void OnDay()
         {
@@ -67,7 +81,9 @@ namespace RealLifeOverhaul.Economy
             CustomerDraw.Morning();   // the game has just drawn every business's customers: noted before any feature writes a figure
             try
             {
+                using var settleSpot = HotSpots.Time(HotSettle);
                 Settle(Save.Day);
+                DeskDo("the overdraft", _deskHour);   // what the night's run left under nothing, and the one notice of what was drawn
             }
             catch (Exception e)
             {
@@ -76,6 +92,7 @@ namespace RealLifeOverhaul.Economy
             CustomerDraw.Hold("the economy's day");   // every feature's footfall writes of the morning: one batch, each business drawn again once
             try
             {
+                using var afterSpot = HotSpots.Time(HotAfterDay);
                 Guard.Each(AfterDay);
             }
             finally
@@ -84,11 +101,14 @@ namespace RealLifeOverhaul.Economy
             }
             try
             {
+                using var booksSpot = HotSpots.Time(HotBooksDay);
                 // the game built yesterday's statement before the mod's day: the costs booked for it since are put into it
                 if (GameBooks.Refresh(Save.Day - 1) && Verbose)
                 {
                     Logger?.Info("Economy check (books): the game's statement of day " + (Save.Day - 1) + " brought up to date with the mod's costs booked for it after it was made: PASS.");
                 }
+                LogBizman();
+                ShowDayResult(Save.Day - 1);   // the day-end panel and the top bar: the game's figure with the mod's money, when the game has written its own
                 // another author's dealerships (Core/EmpireMotors): what they spent is deducted by the game's tax, once a day
                 float deducted = GameBooks.Deduct(Save.Day - 1);
                 if (Verbose && (deducted > 0f || GameBooks.DealerTakings != 0f || GameBooks.DealerCosts != 0f))
@@ -181,12 +201,23 @@ namespace RealLifeOverhaul.Economy
                          + " loan(s) given back the rate each was made at, at the new multiplier, and its payment.");
         }
 
-        // A loan paid off in EconoView is read at once, so a debt arrangement it clears ends the moment it is paid.
+        // A loan paid off in EconoView is read at once, so a debt arrangement it clears ends the moment it is paid. A money change that leaves the cash
+        // under nothing (the game forces its rent, wages and fees past what is there) is covered by the overdraft at once. Cost: two string comparisons
+        // per game event, and one float comparison per money change.
         private void OnGameEvent(string gameEvent)
         {
             using var hotSpot = HotSpots.Time(HotOnGameEvent);
-            if (gameEvent != GameLoans.LoanPaidEvent || !_running || _broken || Save == null)
+            bool money = gameEvent == GameLoans.MoneyChangeEvent;
+            if ((!money && gameEvent != GameLoans.LoanPaidEvent) || !_running || _broken || Save == null)
             {
+                return;
+            }
+            if (money)
+            {
+                if (Save.Money < 0f)
+                {
+                    DeskDo("the overdraft", _deskShort);
+                }
                 return;
             }
             try

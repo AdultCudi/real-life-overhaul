@@ -45,6 +45,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 {
                     t.Append('|').Append(y.EventLast[k].ToString(Inv));
                 }
+                t.Append('|').Append(y.Fixed ? '1' : '0');   // after the events' days: a line written before fixed prices reads with them off
                 t.Append("^t:");
                 Join(t, y.Tally);
                 t.Append("^p:");
@@ -196,6 +197,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                             {
                                 yard.EventLast[k] = I(c, 13 + k, -1);
                             }
+                            yard.Fixed = I(c, 13 + yard.EventLast.Length) != 0;
                             s.Yards.Add(yard);
                             break;
                         }

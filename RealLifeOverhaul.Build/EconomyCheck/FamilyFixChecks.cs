@@ -24,6 +24,7 @@ internal static partial class Program
         FamilyContactKept();
         FamilyRetrainedJob();
         FamilyThreeTexts();
+        FamilyBugs();
     }
 
     // People's night owl slept to ten while the family sent the partner to work at eight, and a call at nine went to
@@ -45,17 +46,18 @@ internal static partial class Program
             "family fix: the family's day for People's partner sleeps and works by People's hours, and People asks the family when they are free");
     }
 
-    // With the social life keeping the partner the Family contact is left out, and nothing it offered is lost: talking at home
-    // has the whole list, the fridge's Family button the list without what needs the partner there, the partner's People call
-    // the phone's part (counselling, time apart, the in-laws), and a new home is a text whose button is never saved.
+    // The Family contact is always made while Family life is on. With the social life keeping the partner there are more ways in
+    // at home, and nothing is lost: talking at home has the whole list, the fridge's Family button the list without what needs
+    // the partner there, the partner's People call the phone's part (counselling, time apart, the in-laws), and a new home is a
+    // text whose button is never saved.
     private static void FamilyFaceToFace()
     {
         string phone = ModSource(@"Family\FamilyPhone.cs"), choices = ModSource(@"Family\FamilyPhone.Choices.cs"), sms = ModSource(@"Family\FamilySms.cs");
         string director = ModSource(@"Family\FamilyDirector.cs"), person = ModSource(@"Social\PersonDialog.cs"), fridge = ModSource(@"Home\HomeFridgeButton.cs");
         string links = ModSource(@"Wiring\FamilyLinks.cs");
-        Check(phone.Contains("public static bool Hides => Partner.UsesSocial && Settings.HomeLife && Settings.HomeRoutines;")
-              && phone.Contains("if (!Hides || Saved(FamilyId))") && director.Contains("FamilyPhone.Hides != _hides"),
-            "family face to face: no new Family contact while Social keeps the partner and the fridge's board is there, an earlier one kept, and switching either brings it back");
+        Check(!phone.Contains("Hides") && !director.Contains("Hides") && !fridge.Contains("Hides") && !links.Contains("Hides")
+              && MemberText(phone, "public static void Setup()").Contains("FamilyContact = Register(FamilyId,"),
+            "family face to face: the Family contact is made whatever the social life, home life and home routines are, so nothing out of doors depends on the fridge");
         string[] call = { "HardTimes.Book)))", "HardTimes.CallApart)))", "HardTimes.ComeHome)))", "HardTimes.EndAsk)))", "Relatives.GoToMoms)))", "Relatives.InLawFavour)))" };
         Check(Array.TrueForAll(call, choices.Contains) && Regex.Matches(choices, @"list\.Add\(Call\(").Count == call.Length + 1
               && choices.Contains("list.Add(Call(new Choice(() => FamilyState.Together && s().LivesIn && BuildingManager.IsInsideBuilding")
@@ -217,9 +219,11 @@ internal static partial class Program
     {
         string phone = ModSource(@"Family\FamilyPhone.cs"), setup = MemberText(phone, "public static void Setup()");
         string saved = MemberText(phone, "private static bool Saved(string id)");
-        Check(setup.Contains("if (!Hides || Saved(FamilyId))") && setup.Contains("FamilyContact = Register(FamilyId,") && setup.Contains("else if (Saved(PartnerId))")
-              && saved.Contains("contacts[i].id == id") && !saved.Contains("Remove"),
-            "family contact: with the social life on an earlier session's Family contact is registered again with its thread, and only a new one is not made");
+        string register = MemberText(phone, "private static Contact Register(string id,");
+        Check(!setup.Contains("Hides") && setup.Contains("FamilyContact = Register(FamilyId,") && setup.Contains("else if (Saved(PartnerId))")
+              && saved.Contains("contacts[i].id == id") && !saved.Contains("Remove")
+              && register.Contains("contact.messagesQueue == null || contact.messagesQueue.Count == 0"),
+            "family contact: the Family contact is registered on every load, an earlier session's with its thread kept (the welcome is sent into an empty thread only)");
         string family = IoPath.GetFullPath(IoPath.Combine(LocalesFolder(), "..", "Scripts", "Family"));
         var removing = new System.Collections.Generic.List<string>();
         foreach (string file in Directory.GetFiles(family, "*.cs", SearchOption.AllDirectories))

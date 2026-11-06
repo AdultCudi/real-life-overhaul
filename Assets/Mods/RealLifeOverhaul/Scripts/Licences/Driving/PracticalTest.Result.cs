@@ -24,28 +24,18 @@ namespace RealLifeOverhaul
             int serious = Faults(true);
             _passed = !_lesson && !ended && serious == 0 && minor <= LicenceLaw.MinorsAllowed;
             int day = TimeHelper.CurrentDay;
-            int index = _class == LicenceClass.Commercial ? 1 : 0;
+            bool truck = _class == LicenceClass.Heavy;
             if (_lesson)
             {
                 if (!ended)
                 {
-                    LicenceState.Lessons[index]++;
+                    LicenceState.LessonDone(_class);
                 }
-            }
-            else if (_passed)
-            {
-                LicenceState.Grant(_class, day);
-                LicenceState.RetestDue[index] = false;
-                LicenceState.RetestDay[index] = 0;
-                LicenceState.TestsPassed++;
-                ModState.AddModifier(ModState.MoodUpBig);
             }
             else
             {
-                LicenceState.RetestDue[index] = true;
-                LicenceState.RetestDay[index] = day + LicenceLaw.RetestWaitDays;
-                LicenceState.TestsFailed++;
-                ModState.AddModifier(ModState.MoodDown);
+                LicenceState.DriveMarked(_class, _passed, day);
+                ModState.AddModifier(_passed ? ModState.MoodUpBig : ModState.MoodDown);
             }
 
             _text.Length = 0;
@@ -83,6 +73,7 @@ namespace RealLifeOverhaul
             {
                 _text.Append('\n').Append(_passed
                     ? Licences.T("reallife_lic_sheet_pass", "class", Licences.ClassName(_class), "days", LicenceLaw.ValidDays.ToString())
+                    : truck ? Licences.T("reallife_lic_sheet_fail_heavy", "amount", Licences.Money(HeavyRules.RetestFee), "days", HeavyRules.WaitDays.ToString())
                     : Licences.T("reallife_lic_sheet_fail", "amount", Licences.Money(LicenceLaw.RetestFee)));
             }
             string title = _lesson ? Licences.T("reallife_lic_sheet_title_lesson")
@@ -118,7 +109,8 @@ namespace RealLifeOverhaul
             }
             _closingSheet = false;
             Licences.Toast(_passed ? NotificationType.Success : NotificationType.Info,
-                _lesson ? "reallife_lic_test_bye_lesson" : _passed ? "reallife_lic_test_bye_pass" : "reallife_lic_test_bye_fail", 8f);
+                _lesson ? "reallife_lic_test_bye_lesson" : _passed ? "reallife_lic_test_bye_pass"
+                : _class == LicenceClass.Heavy ? "reallife_lic_test_bye_fail_heavy" : "reallife_lic_test_bye_fail", 8f);
             JobCast cast = _cast();
             bool walking = false;
             try

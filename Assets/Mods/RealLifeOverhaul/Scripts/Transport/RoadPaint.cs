@@ -70,6 +70,9 @@ namespace RealLifeOverhaul
             return made;
         }
 
+        /// <summary>The game's road paint to copy for another decal (the snow on the ground); null until it has been found behind a screen.</summary>
+        public static Material Decal => FindTemplate();
+
         /// <summary>Behind the loading screen: finds the game's road paint unless the one from an earlier load is still there.</summary>
         public static bool Prewarm()
         {

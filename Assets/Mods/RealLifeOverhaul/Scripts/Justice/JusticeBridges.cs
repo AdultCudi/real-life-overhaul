@@ -13,6 +13,7 @@ namespace RealLifeOverhaul
         public bool Fled;               // ran from the police
         public bool Complied;           // stopped when told to and gave no trouble
         public int PaidAtScene;         // fined on the spot for the same thing: credited against any court fine
+        public int Damages;             // owed for what was hit and not yet charged: the case holds it, paid only with a conviction
         public int HeldHours;           // custody after this arrest: compensated if the arrest turns out wrongful
         public float[] Evidence;        // optional: each charge's strength (0 to 1) in place of the mod's own sum
 
@@ -237,6 +238,9 @@ namespace RealLifeOverhaul
 
         public static bool InPrison => JusticeState.Loaded && JusticeState.InPrison;
 
+        /// <summary>A community service shift is being played: no street scene starts until it is over (Wiring.Scenes).</summary>
+        public static bool ServiceOn => JusticeDirector.Instance != null && JusticeDirector.Instance.ServiceOn;
+
         /// <summary>A court has suspended the player's driving licence (the Licences bridge is asked first).</summary>
         public static bool DrivingSuspended
         {
@@ -321,12 +325,15 @@ namespace RealLifeOverhaul
             };
         }
 
-        /// <summary>Got away after hurting somebody but the plate was seen: a summons, on thinner evidence than an arrest.</summary>
-        public static JusticeReport Escaped(bool killed)
+        /// <summary>
+        /// Got away after hurting somebody but the plate was seen: a summons, on thinner evidence than an arrest. The case
+        /// takes the damages from the later bill, so that a dismissal clears them with the charge.
+        /// </summary>
+        public static JusticeReport Escaped(bool killed, int damages)
         {
             return new JusticeReport(killed ? JusticeLaw.HitRunDeath : JusticeLaw.HitRunInjury)
             {
-                Witnesses = UnityEngine.Random.value < 0.5f ? 1 : 0, Cameras = UnityEngine.Random.value < 0.35f, Fled = true
+                Witnesses = UnityEngine.Random.value < 0.5f ? 1 : 0, Cameras = UnityEngine.Random.value < 0.35f, Fled = true, Damages = Math.Max(0, damages)
             };
         }
     }

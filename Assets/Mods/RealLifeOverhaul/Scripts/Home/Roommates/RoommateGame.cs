@@ -59,11 +59,12 @@ namespace RealLifeOverhaul.Roommates
             return null;
         }
 
-        private static bool IsHome(BuildingRegistration r)
+        /// <summary>True for a home: a residential building, the city's flats and the Hamptons houses alike (both are the game's residential type).</summary>
+        public static bool IsHome(BuildingRegistration r)
         {
             try
             {
-                return r.GetBuildingType() == Residential;
+                return GameRegistrations.BuildingType(r) == Residential;
             }
             catch (Exception)
             {
@@ -134,7 +135,7 @@ namespace RealLifeOverhaul.Roommates
                 {
                     return home.RentPerDay * level + bills;
                 }
-                Building building = home.BuildingCached;
+                Building building = GameRegistrations.BuildingOf(home);
                 return (building != null ? building.GetBuildingDailyMarketRent() * level : 0f) + bills;
             }
             catch (Exception e)
@@ -148,14 +149,14 @@ namespace RealLifeOverhaul.Roommates
         {
             if (amount > 0)
             {
-                GameManager.ChangeMoneySafe(amount, new TransactionInfo(transaction), null, null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, new TransactionInfo(transaction), null, null, true);
             }
         }
 
         /// <summary>Money from the player. False, with the game's own notice, if they have not got it.</summary>
         public static bool Pay(int amount, string transaction)
         {
-            return amount <= 0 || GameManager.ChangeMoneySafe(-amount, new TransactionInfo(transaction), null, null, false, true);
+            return amount <= 0 || RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo(transaction), null, null, false, true);
         }
 
         /// <summary>The home is so many points tidier or messier, on the game's own floor where the home has one. False with home life's needs off.</summary>
@@ -188,6 +189,9 @@ namespace RealLifeOverhaul.Roommates
             }
             return dish != null && HomeState.PutBy(1, dish.Number, RoommateRules.MealFill) > 0;
         }
+
+        /// <summary>True if the line's needs (Core/LineNeeds) hold at the home they share: a portion left needs a fridge there.</summary>
+        public static bool FitsAt(string key, string street, int number) => LineNeedsGame.HomeHas(HomeAt(street, number), LineNeeds.Of(key));
 
         public static bool HasMeal => HomeLifeOn && HomeState.Leftovers > 0;
 

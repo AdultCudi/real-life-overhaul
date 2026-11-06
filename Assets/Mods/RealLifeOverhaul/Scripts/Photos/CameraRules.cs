@@ -20,10 +20,8 @@ namespace RealLifeOverhaul.Photos
     }
 
     /// <summary>
-    /// What the camera knows of the moment, read by the game's side (PhotosGame) and judged here. The game holding the player
-    /// comes in two: <see cref="Busy"/> (a minigame, the police's attention: the game's own scenes) and <see cref="WalkHeld"/>
-    /// (the player's walk held by any of the game's blockers), with <see cref="OwnHold"/> when the only blocker is the camera's
-    /// own (7319), which the camera sets itself while it is open.
+    /// The moment as PhotosGame reads it. <see cref="Busy"/> is one of the game's own scenes; <see cref="WalkHeld"/> is any
+    /// walk blocker, and <see cref="OwnHold"/> says the only one is the camera's own (7319).
     /// </summary>
     public struct CameraSituation
     {
@@ -49,39 +47,28 @@ namespace RealLifeOverhaul.Photos
     }
 
     /// <summary>
-    /// The Camera's rules in plain numbers: when it opens and when it closes by itself, the zoom, the aim, the filters, the
-    /// frames and the grid. No Unity or game type, so every rule is run as it is by the offline checks (EconomyCheck,
-    /// PhotoChecks.cs); CameraMode and CameraView do what these say.
-    ///
-    /// WHERE IT WORKS. On foot, out of doors and indoors alike (the rear camera looks from where the phone is held; the
-    /// selfie turns the lens to the player, who holds the phone out as photo mode's selfie does). Refused, with the reason
-    /// in a notice: in any vehicle (car, bicycle, motorbike, boat), on the bus, the subway or in a taxi, while the game holds
-    /// the player (an activity, a scene of the game's own, a shift, a hospital, the funeral), while a window of the game's is
-    /// open (a question, a conversation's panel), in custody or prison, while time is skipped, and while photo mode is on.
-    /// Once open, the camera closes by itself, everything put back, when any of those comes about (a window opens, a question
-    /// is asked, a scene starts), when the phone, the map or the game's menu is opened, and when the city unloads.
+    /// The Camera's game-free rules: when it opens and closes by itself, the zoom, the aim, the filters, the frames and the
+    /// grid. Checked offline (EconomyCheck); CameraMode and CameraView apply them.
     /// </summary>
     public static class CameraRules
     {
-        public const float BaseFieldOfView = 60f;   // degrees: the rear camera at 1x, about a phone's main lens
-        public const float SelfieFieldOfView = 65f; // degrees: a phone's front camera (as photo mode's selfie)
+        public const float BaseFieldOfView = 60f;   // degrees: the rear camera at 1x
+        public const float SelfieFieldOfView = 65f; // degrees: as photo mode's selfie
         public const float ZoomLeast = 1f;
-        public const float ZoomMost = 5f;           // a phone's digital zoom, about
-        public const float ZoomNotch = 1.15f;       // the zoom one notch of the wheel gives
-        public const float PitchLeast = -60f;       // degrees the rear camera looks down at most...
-        public const float PitchMost = 60f;         // ...and up
-        public const float DragDegrees = 0.09f;     // degrees of turn for a pixel of drag at 1080 lines (a sweep of the screen is about a half turn)
-        public const float SelfieDrag = 0.06f;      // ...and of the selfie's arc round the face (photo mode's selfie takes degrees)
-        public const float LensForward = 0.32f;     // metres in front of the eyes the phone is held for the rear camera...
-        public const float LensBelow = 0.05f;       // ...and below them
-        public const float NearPlane = 0.12f;       // metres: the hands holding the phone are nearer than this and are not drawn
-        public const float FlashSeconds = 0.25f;    // the white of the shutter, fading
-        public const float ToastSeconds = 2.5f;     // a line in the viewfinder ("saved") stays this long
-        public const float ReadMost = 50f;          // milliseconds the one read of the screen on the main thread is wanted under (the self-check)
+        public const float ZoomMost = 5f;           // times, about a phone's digital zoom
+        public const float ZoomNotch = 1.15f;       // zoom factor per notch of the wheel
+        public const float PitchLeast = -60f;       // degrees
+        public const float PitchMost = 60f;         // degrees
+        public const float DragDegrees = 0.09f;     // degrees per pixel of drag at 1080 lines
+        public const float SelfieDrag = 0.06f;      // degrees per pixel of drag round the face
+        public const float LensForward = 0.32f;     // metres in front of the eyes
+        public const float LensBelow = 0.05f;       // metres below the eyes
+        public const float NearPlane = 0.12f;       // metres: keeps the hands holding the phone out of the picture
+        public const float FlashSeconds = 0.25f;    // seconds
+        public const float ToastSeconds = 2.5f;     // seconds
+        public const float ReadMost = 50f;          // milliseconds the screen read may take on the main thread (self-check)
 
-        // ---------------------------------------------------------------- opening and closing
-
-        /// <summary>Whether the camera may open now, and if not why (the first reason that holds, in this order).</summary>
+        /// <summary>Whether the camera may open now, and if not the first reason that holds.</summary>
         public static CameraRefusal Refuse(CameraSituation s)
         {
             if (!s.FeatureOn)
@@ -127,22 +114,13 @@ namespace RealLifeOverhaul.Photos
             return CameraRefusal.None;
         }
 
-        /// <summary>
-        /// Whether the camera, open, must close now, and why: everything that refuses it. The walk held by the camera's own
-        /// blocker alone is no reason (the camera holds it itself); held by any other of the game's, or a minigame, the police's
-        /// attention or a scene of the game's own coming about, the camera shuts.
-        /// </summary>
+        /// <summary>Why the open camera must close now: whatever would refuse it (its own walk blocker is no reason).</summary>
         public static CameraRefusal MustClose(CameraSituation s)
         {
             return Refuse(s);
         }
 
-        /// <summary>
-        /// Whether Flare's own picture is taken where the Camera refuses, asked for from Flare's camera button (a shot of the
-        /// screen as it is, which works wherever Flare does) or its selfie button (photo mode's selfie, on foot only, which works
-        /// while the game holds the player or the police have them): true where Flare's works and the Camera's does not, so the
-        /// button does what it did before the Camera. False where neither works (the Camera's word is the one said).
-        /// </summary>
+        /// <summary>True where Flare's own picture works and the Camera's does not, so Flare's button takes its own.</summary>
         public static bool FlareTakesOver(CameraRefusal refusal, bool selfie)
         {
             switch (refusal)
@@ -178,8 +156,6 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // ---------------------------------------------------------------- the zoom and the aim
-
         /// <summary>The zoom after some notches of the wheel (up is in), kept between 1x and the most.</summary>
         public static float Zoom(float zoom, float notches)
         {
@@ -202,17 +178,13 @@ namespace RealLifeOverhaul.Photos
             return (float)(half * 360.0 / Math.PI);
         }
 
-        /// <summary>The zoom as the viewfinder writes it: "1.0x" to "5.0x".</summary>
+        /// <summary>"1.0x" to "5.0x".</summary>
         public static string ZoomWords(float zoom)
         {
             return Math.Max(ZoomLeast, Math.Min(ZoomMost, zoom)).ToString("0.0", CultureInfo.InvariantCulture) + "x";
         }
 
-        /// <summary>
-        /// The rear camera turned by a drag (pixels, at a screen of <paramref name="screenHeight"/> lines; right and up look right
-        /// and up, the pitch counted up from level): the turn is the same
-        /// part of the view whatever the screen, smaller as the zoom narrows it; the pitch kept within its bounds.
-        /// </summary>
+        /// <summary>Turns the rear camera by a drag in pixels, the same part of the view on any screen; the pitch kept in bounds.</summary>
         public static void Aim(ref float yaw, ref float pitch, float dragX, float dragY, float screenHeight, float zoom)
         {
             float scale = DragDegrees * 1080f / Math.Max(240f, screenHeight) / Math.Max(ZoomLeast, Math.Min(ZoomMost, zoom));
@@ -220,22 +192,22 @@ namespace RealLifeOverhaul.Photos
             pitch = Math.Max(PitchLeast, Math.Min(PitchMost, pitch + dragY * scale));
         }
 
-        public const float SeatTurn = 80f;          // degrees either way the rear camera turns from a seat's facing (the body stays as the seat has it)
+        public const float SeatTurn = 80f;          // degrees either way from a seat's facing
 
-        /// <summary>The rear camera's turn kept within <see cref="SeatTurn"/> of a seat's facing: seated, the body does not turn with it.</summary>
+        /// <summary>The rear camera's turn kept within <see cref="SeatTurn"/> of a seat's facing: a seated body does not turn.</summary>
         public static float Seated(float yaw, float seatYaw)
         {
             float off = Wrap(yaw - seatYaw);
             return Wrap(seatYaw + Math.Max(-SeatTurn, Math.Min(SeatTurn, off)));
         }
 
-        /// <summary>The selfie's arc round the face moved by a drag: degrees for photo mode's selfie (its own bounds hold it).</summary>
+        /// <summary>Degrees round the face for a drag, for photo mode's selfie (which keeps its own bounds).</summary>
         public static float SelfieTurn(float drag, float screenHeight)
         {
             return drag * SelfieDrag * 1080f / Math.Max(240f, screenHeight);
         }
 
-        /// <summary>An angle as -180 to 180 degrees.</summary>
+        /// <summary>An angle as -180 to 180 degrees; 0 for NaN or infinity.</summary>
         public static float Wrap(float degrees)
         {
             if (float.IsNaN(degrees) || float.IsInfinity(degrees))
@@ -254,8 +226,6 @@ namespace RealLifeOverhaul.Photos
             return degrees;
         }
 
-        // ---------------------------------------------------------------- the filters
-
         public static readonly CameraFilter[] Filters =
         {
             new CameraFilter { NameKey = "reallife_phonecam_filter_none", R = 1f, G = 1f, B = 1f },
@@ -271,24 +241,18 @@ namespace RealLifeOverhaul.Photos
             return filter > 0 && filter < Filters.Length;
         }
 
-        /// <summary>A filter asked for, kept among those there are.</summary>
         public static int ClampFilter(int filter)
         {
             return filter < 0 || filter >= Filters.Length ? 0 : filter;
         }
 
-        // ---------------------------------------------------------------- the frames
-
         public static readonly string[] FrameKeys = { "reallife_phonecam_frame_none", "reallife_phonecam_frame_border", "reallife_phonecam_frame_film" };
 
-        public const float BorderSide = 0.025f;     // of the screen's height: the white border at the top and the sides...
-        public const float BorderFoot = 0.085f;     // ...and at the foot, where an instant photo is held
-        public const float FilmShape = 2.39f;       // the film frame's width to its height
+        public const float BorderSide = 0.025f;     // of the screen's height, at the top and the sides
+        public const float BorderFoot = 0.085f;     // of the screen's height, at the foot
+        public const float FilmShape = 2.39f;       // width to height
 
-        /// <summary>
-        /// The film frame's bar above and below, as a part of the screen's height, for a screen of this width to height: what is
-        /// left between them is 2.39 to 1. None for a screen as wide as that or wider.
-        /// </summary>
+        /// <summary>The film frame's bar above and below as a part of the screen's height; 0 for a screen as wide as the film.</summary>
         public static float FilmBar(float aspect)
         {
             if (!(aspect > 0f) || aspect >= FilmShape)
@@ -298,15 +262,12 @@ namespace RealLifeOverhaul.Photos
             return (1f - aspect / FilmShape) / 2f;
         }
 
-        /// <summary>A frame asked for, kept among those there are.</summary>
         public static CameraFrame ClampFrame(int frame)
         {
             return frame < 0 || frame >= FrameKeys.Length ? CameraFrame.None : (CameraFrame)frame;
         }
 
-        // ---------------------------------------------------------------- the grid
-
-        /// <summary>The rule of thirds: where the lines stand, as parts of the width (or the height) of the view.</summary>
+        /// <summary>The rule of thirds, as parts of the view's width or height.</summary>
         public static readonly float[] GridLines = { 1f / 3f, 2f / 3f };
     }
 }

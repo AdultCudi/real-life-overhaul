@@ -31,6 +31,8 @@ namespace RealLifeOverhaul.Family
             Func<Bond> bond = () => FamilyState.Bond;
             Func<FamilySave> s = () => FamilyState.S;
 
+            // Today's dinner at Mom's first, while her table is set: it lasts only the day.
+            list.Add(Call(new Choice(() => Relatives.CanGoToMoms, () => FamilyText.Say("reallife_family_do_moms"), "reallife_family_do_moms_yes", Relatives.GoToMoms)));
             _chatAt = list.Count;
             list.Add(new Choice(() => !Partner.UsesSocial && !FamilyState.HasPartner && Settings.Family,
                 () => FamilyText.Say("reallife_family_do_meet"), "reallife_family_do_meet_yes", PartnerFirst));
@@ -117,7 +119,7 @@ namespace RealLifeOverhaul.Family
                 int child = i;
                 list.Add(new Choice(() => Has(child) && s().Children[child].Age >= FamilyBalance.PocketFrom,
                     () => FamilyText.Say("reallife_family_do_pocket",
-                        Args.Us.Kid(s().Children[child].Name).Cost(FamilyBalance.PocketMoney[Mathf.Clamp(s().Children[child].Pocket, 0, 3)])),
+                        Args.Us.Kid(s().Children[child].Name).Cost(FamilyBalance.PocketMoney(s().Children[child].Pocket))),
                     "reallife_family_pocket_change", () => Children.PocketStep(child)));
                 list.Add(new Choice(() => Has(child),
                     () => FamilyText.Say("reallife_family_do_fund",
@@ -141,7 +143,6 @@ namespace RealLifeOverhaul.Family
             list.Add(new Choice(() => PartnerCar.CanOffer && InPerson, () => FamilyText.Say("reallife_family_do_car"), "reallife_family_do_car_yes", PartnerCar.Offer));
             list.Add(new Choice(() => PartnerCar.CanTakeBack && InPerson, () => FamilyText.Say("reallife_family_do_car_back"), "reallife_family_do_car_back_yes", PartnerCar.TakeBack));
 
-            list.Add(Call(new Choice(() => Relatives.CanGoToMoms, () => FamilyText.Say("reallife_family_do_moms"), "reallife_family_do_moms_yes", Relatives.GoToMoms)));
             list.Add(Call(new Choice(() => Relatives.InLawFavourOpen, () => FamilyText.Say("reallife_family_do_favour"), "reallife_family_do_favour_yes", Relatives.InLawFavour)));
             list.Add(new Choice(null, () => FamilyText.Say("reallife_family_do_kin", Args.Us.With(Relatives.NextOfKin())), "reallife_family_kin_change", Relatives.NextOfKinStep));
 

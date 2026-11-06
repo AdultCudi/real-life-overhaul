@@ -6,22 +6,10 @@ using UnityEngine;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The picture on an app's button, made the way the game's own are: the rounded tile and soft shadow of one of the
-    /// game's app icons (read from the game's picture while it runs, never shipped), filled with the app's own two
-    /// colours from corner to corner, and one of the game's white glyphs in the middle. 160 by 160 like theirs.
-    /// If the game's pictures cannot be read back, the glyph alone is the icon.
-    ///
-    /// KEPT FOR THE SESSION. Reading a picture of the game's back from the graphics card makes the processor wait for it (a
-    /// stall of a millisecond or more each), and every app once read two in the first seconds after each load. Now the
-    /// tile is read once a session, each glyph once at each size, and each finished icon is kept by its name and made
-    /// again only if what it is made of is not what it was (another tile, glyph, colour or size): the same pixels, the
-    /// same texture and sprite settings, so the same picture. The kept textures are marked never to be unloaded with a
-    /// scene's unused assets, as the Ledger's runtime faces are (Ledger/LedgerType). An icon made again (after a load
-    /// that brought other pictures of the game's) destroys the one it replaces, and the reads of pictures destroyed since
-    /// are let go then.
-    ///
-    /// Cost: nothing per frame. The first load of a session: one read of the tile and one of each glyph; every load after
-    /// it: one dictionary look-up per app.
+    /// The picture on an app's button, painted as the game's are: one of the game's icon tiles (read back at run time)
+    /// filled with the app's two colours, a white glyph of the game's on it; the glyph alone if the tile cannot be read.
+    /// Reading back stalls the processor, so tiles, glyphs and icons are read or made once a session and kept by name.
+    /// Costs nothing a frame; after the first load, one dictionary look-up per app.
     /// </summary>
     public static class AppIconPainter
     {
@@ -41,11 +29,7 @@ namespace RealLifeOverhaul.GameUi
         private static readonly List<long> Stale = new List<long>(8);
         private static Color32[] _work = new Color32[0];
 
-        /// <summary>
-        /// The tile and shadow of 'like', coloured from 'top' (upper left) to 'bottom' (lower right), with 'glyph' on it in
-        /// white, or in 'ink' (a dark glyph on a light tile), turned left for right when 'mirrored' (the game's chevron
-        /// pointing back); with no glyph the tile alone (a folder's, under its small pictures).
-        /// </summary>
+        /// <summary>The tile of <paramref name="like"/> shaded from top to bottom with the glyph in white or ink (flipped if mirrored); no glyph: the tile alone.</summary>
         public static Sprite Paint(Sprite like, Sprite glyph, Color32 top, Color32 bottom, float glyphSize, string name, Color32? ink = null, bool mirrored = false)
         {
             try
@@ -67,7 +51,7 @@ namespace RealLifeOverhaul.GameUi
                 {
                     if (kept != null && kept.Result != made)
                     {
-                        CodeAssets.DropSprite(kept.Result);   // the icon it replaces was on the buttons of an earlier load, gone with them
+                        CodeAssets.DropSprite(kept.Result);   // the icon it replaces was on the buttons of an earlier load
                     }
                     Made[key] = new Painted { Result = made, Like = like, Glyph = glyph, Top = top, Bottom = bottom, Ink = colour, GlyphSize = glyphSize, Mirrored = mirrored };
                 }
@@ -81,7 +65,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The reads of pictures of the game's destroyed since (a load brings its own): only when an icon is made, never per frame.
+        // Reads of the game's pictures destroyed since: only when an icon is made, never a frame.
         private static void ForgetStale()
         {
             Stale.Clear();
@@ -119,9 +103,8 @@ namespace RealLifeOverhaul.GameUi
             }
             Color32[] tile = _work;   // painted over in place: the tile as read stays as it was, for the next app
             Array.Copy(read, tile, read.Length);
-            // The tile is every pixel that is fully there and not black; the shadow under it is black and faint.
-            // Each of the game's icons has its glyph in white inside the tile, so the tile's own bounds are taken
-            // and everything inside them that is opaque is painted over.
+            // The tile is every opaque pixel that is not black; the shadow under it is black and faint. The game's icons have their
+            // glyph in white inside the tile, so everything opaque inside the tile is painted over.
             int painted = 0;
             for (int y = 0; y < size; y++)
             {
@@ -150,7 +133,7 @@ namespace RealLifeOverhaul.GameUi
                 if (mark != null)
                 {
                     int at = (size - g) / 2;
-                    // the tile sits a little above the middle of the picture: its shadow takes the room below it
+                    // The tile sits a little above the picture's middle: its shadow takes the room below.
                     int up = Mathf.RoundToInt(size * 0.025f);
                     for (int y = 0; y < g; y++)
                     {
@@ -179,9 +162,8 @@ namespace RealLifeOverhaul.GameUi
             return sprite;
         }
 
-        // A sprite's picture at the given size, read back through a render texture (the game's textures cannot be read
-        // directly). The sprite's own part of its sheet is drawn where it belongs in the sprite's full rectangle. Read once a
-        // session for each sprite and size, and kept: whoever asks only reads what it is given.
+        // Read back through a render texture (the game's textures cannot be read directly), the sprite's part of its sheet
+        // drawn where it belongs in its full rectangle. Once a session per sprite and size, then kept.
         private static Color32[] Read(Sprite sprite, int width, int height)
         {
             if (sprite == null || sprite.texture == null || (sprite.packed && sprite.packingRotation != SpritePackingRotation.None))

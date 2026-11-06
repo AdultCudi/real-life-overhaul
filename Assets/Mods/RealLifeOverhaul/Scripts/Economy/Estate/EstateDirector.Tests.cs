@@ -153,6 +153,134 @@ namespace RealLifeOverhaul.Economy
                      + (u.Let ? string.Empty : ", and the tenant has gone"), TabTenants, UnitPick(h, unit));
         }
 
+        // A let unit for a landlord's duties test: the first let one, or an applicant put in at the first that can be let. -1 if none.
+        private int TestLetUnit(string test, EstateHolding h)
+        {
+            int unit = LetOrEmptyUnit(h);
+            EstateUnit u = h.Units[unit];
+            if (!u.Let)
+            {
+                u.Applicants.Clear();
+                RentApplicant a = EstateRules.Apply(h, unit, _state.Seed, Save.Day, _climate, true);
+                if (a == null || !EstateRules.Accept(h, a.Id, Save.Day))
+                {
+                    TestRefusals.TellKey(Logger, test, "reallife_estate_test_no_fit");
+                    return -1;
+                }
+            }
+            if (u.Happy < 0)
+            {
+                u.Happy = EstateRules.HappyTarget(h, unit, Save.Day, _climate);
+            }
+            return unit;
+        }
+
+        /// <summary>Test: a tenant reports a fault now, and the Works tab opens on the call.</summary>
+        public void TestCall()
+        {
+            const string test = "reallife_estate_test_call";
+            if (!TestReady(test, EstatePart.Duties))
+            {
+                return;
+            }
+            BeforeTest();
+            EstateHolding h = TestHolding(test, x => (x.AnyLet || (!x.Busy && EstateRules.MarketRent(x, _climate) > 0)) && EstateRules.OpenCalls(x) < x.Units.Count);
+            int unit = h != null ? TestLetUnit(test, h) : -1;
+            if (unit < 0)
+            {
+                return;
+            }
+            for (int n = 0; n < h.Units.Count && h.Units[unit].Call > 0; n++)
+            {
+                unit = h.Units[n].Let && h.Units[n].Call == 0 ? n : unit;
+            }
+            EstateUnit u = h.Units[unit];
+            if (!EstateRules.RaiseCall(h, unit, _state.Seed, Save.Day + h.NextApplicant, _climate))
+            {
+                TestRefusals.TellKey(Logger, test, "reallife_estate_test_no_fit");
+                return;
+            }
+            u.CallDay = Save.Day;
+            Touched(h);
+            TestDone("a repair call at " + EstateText.UnitName(h, unit) + ": " + EstateText.Fault(u.Call) + ", a contractor's quote of " + u.CallCost + ", the player's materials "
+                     + EstateRules.DiyCost(u.CallCost), TabWorks, CallPick(h, unit));
+        }
+
+        /// <summary>Test: an unhappy tenant complains now, and their lease opens.</summary>
+        public void TestComplaint()
+        {
+            const string test = "reallife_estate_test_complaint";
+            if (!TestReady(test, EstatePart.Duties))
+            {
+                return;
+            }
+            BeforeTest();
+            EstateHolding h = TestHolding(test, x => x.AnyLet || (!x.Busy && EstateRules.MarketRent(x, _climate) > 0));
+            int unit = h != null ? TestLetUnit(test, h) : -1;
+            if (unit < 0)
+            {
+                return;
+            }
+            EstateUnit u = h.Units[unit];
+            u.Happy = Math.Min(u.Happy, EstateCatalogue.ComplainBelow - 100);
+            u.Moans++;
+            string about = EstateText.Complaint(EstateRules.Grievance(h, unit, Save.Day, _climate));
+            Tell(NotificationType.Warning, "reallife_estate_note_complaint", Data("building", EstateText.UnitName(h, unit), "about", about), TabTenants, UnitPick(h, unit));
+            Touched(h);
+            TestDone("a complaint at " + EstateText.UnitName(h, unit) + " about " + about + ": satisfaction " + u.Happy + ", complaint " + u.Moans + " of this lease", TabTenants, UnitPick(h, unit));
+        }
+
+        /// <summary>Test: the city inspects a let building now, below the mark, so it fails with a fine and an order.</summary>
+        public void TestInspection()
+        {
+            const string test = "reallife_estate_test_inspection";
+            if (!TestReady(test, EstatePart.Duties))
+            {
+                return;
+            }
+            BeforeTest();
+            EstateHolding h = TestHolding(test, x => !x.Busy && (x.AnyLet || EstateRules.MarketRent(x, _climate) > 0));
+            if (h == null || TestLetUnit(test, h) < 0)
+            {
+                return;
+            }
+            h.Cond = Math.Min(h.Cond, EstateCatalogue.InspectPass - 50);
+            h.InspectDay = Save.Day;
+            Inspection r = InspectNow(h, Save.Day, true);
+            Touched(h);
+            TestDone("an inspection of " + h.Name + ": scored " + r.Score + " against " + EstateCatalogue.InspectPass + ", " + (r.Passed ? "passed" : "failed, fined " + r.Fine + ", put right by day "
+                     + h.OrderDay), TabMine, "own:" + h.Place);
+        }
+
+        /// <summary>Test: a property manager takes a building on and its morning is run now: a contractor goes to a call.</summary>
+        public void TestManager()
+        {
+            const string test = "reallife_estate_test_manager";
+            if (!TestReady(test, EstatePart.Duties))
+            {
+                return;
+            }
+            BeforeTest();
+            EstateHolding h = TestHolding(test, x => x.AnyLet || (!x.Busy && EstateRules.MarketRent(x, _climate) > 0));
+            int unit = h != null ? TestLetUnit(test, h) : -1;
+            if (unit < 0)
+            {
+                return;
+            }
+            h.Manager = (int)EstateManager.Manager;
+            if (h.Units[unit].Call == 0)
+            {
+                EstateRules.RaiseCall(h, unit, _state.Seed, Save.Day, _climate);
+                h.Units[unit].CallDay = Save.Day;
+            }
+            DutiesMorning(h, Save.Day);
+            Touched(h);
+            EstateUnit u = h.Units[unit];
+            TestDone("a property manager's morning at " + h.Name + ": the call at " + EstateText.UnitName(h, unit) + " is "
+                     + (u.Call == 0 ? "put right" : u.CallAnswer == (int)CallAnswer.Contractor ? "booked with a contractor for day " + u.CallDue : "still waiting (the cash did not cover it)"),
+                TabMine, "own:" + h.Place);
+        }
+
         public void TestWorks()
         {
             const string test = "reallife_estate_test_works";

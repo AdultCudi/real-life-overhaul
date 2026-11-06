@@ -196,8 +196,10 @@ namespace RealLifeOverhaul.Markets
         public const double ImpactPermanent = 0.25;      // the part of it that stays in the price
         public const double ImpactMemorySteps = 12.0;    // steps: recent trading in a company counts towards the next order
         public const int OrderShareOfVolumePct = 20;     // one order: at most this share of a day's usual volume
-        public const int HoldingShareBp = 1000;          // at most 10% of a company's shares
+        public const int HoldingShareBp = 1000;          // at most 10% of a company's shares: the option's default, and always so in a player's listed company
+        public static readonly int[] HoldingCapBp = { HoldingShareBp, 2500, 5000, 10000 };   // the option's choices (Settings.MarketsHolding): a tenth, a quarter, half, all
         public const int HoldingFounderBp = 7500;        // a rival tycoon's own stake in their holding; the rest is free float
+        public const int HoldingFloatBp = 10000 - HoldingFounderBp;   // ...so no outside holder of it can have more than this
         public const int ParticipationPct = 25;          // a resting order takes at most this share of a step's volume
         public const int GoodTillDays = 60;              // market days an order "until cancelled" stays open
         public const int OrdersMost = 60;
@@ -305,7 +307,7 @@ namespace RealLifeOverhaul.Markets
             new CompanyDef(25, "Kestrelmoor Homes", "KMH", Pr, M, 1100, 4400, null),
             new CompanyDef(26, "Fernhollow Storage", "FHS", Pr, S, 300, 5800, null),
             new CompanyDef(27, "Hollowmere Residential", "HMR", Pr, S, 420, 2100, null),
-            new CompanyDef(28, "Gorsebank Construction", "GBC", Cn, L, 11000, 3600, null),
+            new CompanyDef(28, "Gorsebank Construction", "GBC", Cn, L, 11000, 3600, "construction"),
             new CompanyDef(29, "Ashfold Builders", "ASB", Cn, M, 3200, 2300, "interiorinstallation"),
             new CompanyDef(30, "Nettleford Cement", "NFC", Cn, M, 2100, 6700, null),
             new CompanyDef(31, "Yarrowbrook Timber", "YBT", Cn, S, 700, 1300, null),
@@ -421,6 +423,12 @@ namespace RealLifeOverhaul.Markets
             new CompanyDef(140, "Brambleway Retail Trust", "BRT", Pt, M, 600, 1900, null, false, Week),
             new CompanyDef(141, "Mossbank Residential Trust", "MRT", Pt, S, 280, 1500, null, false, Third),
             new CompanyDef(142, "Gullpoint Hotel Trust", "GHT", Pt, S, 320, 1700, null, false, Third),
+            // The construction game's rival builders that a market lists (BuilderMarket); Ironbridge Contracting is listed
+            // as Ironbridge Civil Works' contracting arm, and the family firms stay private
+            new CompanyDef(146, "Ostrander Building Co.", "OBC", Cn, M, 1800, 2800, null),
+            new CompanyDef(147, "Dunmore and Pike Civil", "DPC", Cn, M, 1500, 2100, null),
+            new CompanyDef(148, "Tri-Street Utilities", "TSU", Cn, S, 600, 1600, null),
+            new CompanyDef(149, "Hartwell Groundworks", "HWG", Cn, S, 450, 900, null),
             // The rival tycoons' holdings, listed only once their tycoon comes forward (MarketEngine.ListHolding)
             new CompanyDef(143, "Karen Aerospace & Motors", "KRN", Pr, M, 1400, 3800, null, true, 0, true),
             new CompanyDef(144, "Luthor Everything Co.", "LUTH", St, M, 1800, 2900, null, true, 0, true),

@@ -1,0 +1,1837 @@
+{
+ "build": "3682",
+ "items": {
+  "ba:itemname_apple": {
+   "type": 2,
+   "wholesale": 0.32,
+   "market": 2.89,
+   "ratio": 1.0,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_appleseeds": {
+   "type": 2,
+   "wholesale": 0.5,
+   "market": 0.01,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_bakeryshowcase": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 895.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_croissant",
+    "ba:itemname_cupcake",
+    "ba:itemname_donut"
+   ]
+  },
+  "ba:itemname_bakingmix": {
+   "type": 2,
+   "wholesale": 0.1,
+   "market": 0.1,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_banana": {
+   "type": 2,
+   "wholesale": 0.26,
+   "market": 2.35,
+   "ratio": 1.0,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_bananaseeds": {
+   "type": 2,
+   "wholesale": 0.5,
+   "market": 0.01,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_barley": {
+   "type": 2,
+   "wholesale": 0.24,
+   "market": 0.24,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_battery": {
+   "type": 2,
+   "wholesale": 16.0,
+   "market": 16.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_beer": {
+   "type": 2,
+   "wholesale": 2.0,
+   "market": 12.0,
+   "ratio": 0.66,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_blueagave": {
+   "type": 2,
+   "wholesale": 0.12,
+   "market": 0.12,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_bottleofwine": {
+   "type": 2,
+   "wholesale": 5.8,
+   "market": 21.0,
+   "ratio": 0.7,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_burger": {
+   "type": 2,
+   "wholesale": 4.75,
+   "market": 12.5,
+   "ratio": 0.75,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_butter": {
+   "type": 2,
+   "wholesale": 0.5,
+   "market": 0.5,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_caffeineextract": {
+   "type": 2,
+   "wholesale": 0.1,
+   "market": 0.01,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_capacitors": {
+   "type": 2,
+   "wholesale": 6.0,
+   "market": 10.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_carbondioxide": {
+   "type": 2,
+   "wholesale": 0.01,
+   "market": 69.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_carrot": {
+   "type": 2,
+   "wholesale": 0.28,
+   "market": 2.24,
+   "ratio": 0.95,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_carrotseeds": {
+   "type": 2,
+   "wholesale": 0.5,
+   "market": 0.01,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_cashregister": {
+   "type": 24,
+   "wholesale": 0.0,
+   "market": 900.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_paperbag"
+   ]
+  },
+  "ba:itemname_cheapflower": {
+   "type": 2,
+   "wholesale": 6.0,
+   "market": 25.0,
+   "ratio": 0.6,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_cheapgift": {
+   "type": 2,
+   "wholesale": 5.0,
+   "market": 18.0,
+   "ratio": 0.85,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_cheapjewelry": {
+   "type": 2,
+   "wholesale": 91.0,
+   "market": 160.0,
+   "ratio": 0.8,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_checkoutcounterleft": {
+   "type": 24,
+   "wholesale": 0.0,
+   "market": 2300.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_paperbag"
+   ]
+  },
+  "ba:itemname_checkoutcounterright": {
+   "type": 24,
+   "wholesale": 0.0,
+   "market": 2300.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_paperbag"
+   ]
+  },
+  "ba:itemname_cheese": {
+   "type": 2,
+   "wholesale": 0.32,
+   "market": 10.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_cheeseplatter": {
+   "type": 2,
+   "wholesale": 1.0,
+   "market": 15.0,
+   "ratio": 0.85,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_chickenbreast": {
+   "type": 2,
+   "wholesale": 0.35,
+   "market": 0.35,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_cigar": {
+   "type": 2,
+   "wholesale": 3.6,
+   "market": 12.0,
+   "ratio": 0.5,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_cigarette": {
+   "type": 2,
+   "wholesale": 3.2,
+   "market": 10.0,
+   "ratio": 0.8,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_cigarettepaper": {
+   "type": 2,
+   "wholesale": 0.5,
+   "market": 10.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_cigarpaper": {
+   "type": 2,
+   "wholesale": 1.0,
+   "market": 10.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_cinematicket": {
+   "type": 4,
+   "wholesale": 0.0,
+   "market": 16.0,
+   "ratio": 1.0,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_classiccheapfemaleclothing": {
+   "type": 2,
+   "wholesale": 24.0,
+   "market": 55.0,
+   "ratio": 0.5,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_classiccheapmaleclothing": {
+   "type": 2,
+   "wholesale": 24.0,
+   "market": 55.0,
+   "ratio": 0.5,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_classicexpensivefemaleclothing": {
+   "type": 2,
+   "wholesale": 41.0,
+   "market": 122.0,
+   "ratio": 0.35,
+   "demanded": true,
+   "rivalOnly": true,
+   "shows": []
+  },
+  "ba:itemname_classicexpensivemaleclothing": {
+   "type": 2,
+   "wholesale": 41.0,
+   "market": 122.0,
+   "ratio": 0.35,
+   "demanded": true,
+   "rivalOnly": true,
+   "shows": []
+  },
+  "ba:itemname_clay": {
+   "type": 2,
+   "wholesale": 2.5,
+   "market": 2.5,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_clothingrack": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 490.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_classiccheapfemaleclothing",
+    "ba:itemname_classiccheapmaleclothing",
+    "ba:itemname_classicexpensivefemaleclothing",
+    "ba:itemname_classicexpensivemaleclothing",
+    "ba:itemname_moderncheapfemaleclothing",
+    "ba:itemname_moderncheapmaleclothing",
+    "ba:itemname_modernexpensivefemaleclothing",
+    "ba:itemname_modernexpensivemaleclothing"
+   ]
+  },
+  "ba:itemname_clothingrackangled": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 325.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_classiccheapfemaleclothing",
+    "ba:itemname_classiccheapmaleclothing",
+    "ba:itemname_classicexpensivefemaleclothing",
+    "ba:itemname_classicexpensivemaleclothing",
+    "ba:itemname_moderncheapfemaleclothing",
+    "ba:itemname_moderncheapmaleclothing",
+    "ba:itemname_modernexpensivefemaleclothing",
+    "ba:itemname_modernexpensivemaleclothing"
+   ]
+  },
+  "ba:itemname_coatcheckfee": {
+   "type": 4,
+   "wholesale": 0.0,
+   "market": 5.0,
+   "ratio": 0.66,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_cocktailbarbeershelf": {
+   "type": 2097216,
+   "wholesale": 0.0,
+   "market": 1000.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_beer"
+   ]
+  },
+  "ba:itemname_cocktailbardrinkscounter": {
+   "type": 2097216,
+   "wholesale": 0.0,
+   "market": 800.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_margarita",
+    "ba:itemname_martini",
+    "ba:itemname_whisky"
+   ]
+  },
+  "ba:itemname_colaflavoring": {
+   "type": 2,
+   "wholesale": 0.02,
+   "market": 69.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_concessionsdisplaycase": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 895.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_cheeseplatter",
+    "ba:itemname_cottoncandy",
+    "ba:itemname_popcorn"
+   ]
+  },
+  "ba:itemname_concessionsstandregister": {
+   "type": 24,
+   "wholesale": 0.0,
+   "market": 1250.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_coppercladlaminate": {
+   "type": 2,
+   "wholesale": 8.0,
+   "market": 10.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_cornkernels": {
+   "type": 2,
+   "wholesale": 0.01,
+   "market": 0.01,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_cottoncandy": {
+   "type": 2,
+   "wholesale": 0.1,
+   "market": 6.75,
+   "ratio": 0.85,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_croissant": {
+   "type": 2,
+   "wholesale": 2.91,
+   "market": 7.2,
+   "ratio": 0.45,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_cupcake": {
+   "type": 2,
+   "wholesale": 2.1,
+   "market": 5.2,
+   "ratio": 0.45,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_cupofcoffee": {
+   "type": 2,
+   "wholesale": 0.9,
+   "market": 3.9,
+   "ratio": 0.9,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_cupoftea": {
+   "type": 2,
+   "wholesale": 0.9,
+   "market": 3.9,
+   "ratio": 0.9,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_donut": {
+   "type": 2,
+   "wholesale": 1.52,
+   "market": 3.8,
+   "ratio": 0.7,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_dough": {
+   "type": 2,
+   "wholesale": 0.55,
+   "market": 10.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_drinksfridge": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 875.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_energydrink",
+    "ba:itemname_sodacan"
+   ]
+  },
+  "ba:itemname_drinksshelf": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 850.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_beer",
+    "ba:itemname_margarita",
+    "ba:itemname_martini",
+    "ba:itemname_whisky"
+   ]
+  },
+  "ba:itemname_earbuds01": {
+   "type": 2,
+   "wholesale": 79.0,
+   "market": 159.0,
+   "ratio": 0.24,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_energydrink": {
+   "type": 2,
+   "wholesale": 0.9,
+   "market": 3.9,
+   "ratio": 0.9,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_expensiveflower": {
+   "type": 2,
+   "wholesale": 10.0,
+   "market": 40.0,
+   "ratio": 0.4,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_expensivegift": {
+   "type": 2,
+   "wholesale": 7.0,
+   "market": 32.0,
+   "ratio": 0.5,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_expensivejewelry": {
+   "type": 2,
+   "wholesale": 768.0,
+   "market": 1270.0,
+   "ratio": 0.175,
+   "demanded": true,
+   "rivalOnly": true,
+   "shows": []
+  },
+  "ba:itemname_fabriccheap": {
+   "type": 2,
+   "wholesale": 6.0,
+   "market": 10.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_fabricexpensive": {
+   "type": 2,
+   "wholesale": 12.0,
+   "market": 10.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_flavorsyrup": {
+   "type": 2,
+   "wholesale": 0.04,
+   "market": 0.01,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_flowercheapseeds": {
+   "type": 2,
+   "wholesale": 1.5,
+   "market": 0.01,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_flowerexpensiveseeds": {
+   "type": 2,
+   "wholesale": 3.0,
+   "market": 0.01,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_frenchfries": {
+   "type": 2,
+   "wholesale": 2.22,
+   "market": 6.25,
+   "ratio": 0.8,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_freshfood": {
+   "type": 2,
+   "wholesale": 2.5,
+   "market": 8.0,
+   "ratio": 0.55,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_frozenfood": {
+   "type": 2,
+   "wholesale": 1.1,
+   "market": 6.0,
+   "ratio": 0.55,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_fruitpallet": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 1200.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_apple",
+    "ba:itemname_banana",
+    "ba:itemname_carrot",
+    "ba:itemname_lettuce",
+    "ba:itemname_pear",
+    "ba:itemname_tomato"
+   ]
+  },
+  "ba:itemname_glass": {
+   "type": 2,
+   "wholesale": 0.5,
+   "market": 0.5,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_grapes": {
+   "type": 2,
+   "wholesale": 0.35,
+   "market": 0.35,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_groundbeef": {
+   "type": 2,
+   "wholesale": 0.55,
+   "market": 10.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_groundcoffeebeans": {
+   "type": 2,
+   "wholesale": 0.12,
+   "market": 0.12,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_gymcovercharge": {
+   "type": 4,
+   "wholesale": 0.0,
+   "market": 20.0,
+   "ratio": 1.0,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_haircareformula": {
+   "type": 2,
+   "wholesale": 2.5,
+   "market": 0.01,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_haircareproduct": {
+   "type": 2,
+   "wholesale": 9.0,
+   "market": 19.0,
+   "ratio": 0.2,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_hairchemicalfee": {
+   "type": 4,
+   "wholesale": 0.0,
+   "market": 150.0,
+   "ratio": 0.15,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_haircuttingfee": {
+   "type": 4,
+   "wholesale": 0.0,
+   "market": 80.0,
+   "ratio": 0.65,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_hairdressershelf": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 600.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_haircareproduct"
+   ]
+  },
+  "ba:itemname_hairshampooingfee": {
+   "type": 4,
+   "wholesale": 0.0,
+   "market": 60.0,
+   "ratio": 0.45,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_hairstylingfee": {
+   "type": 4,
+   "wholesale": 0.0,
+   "market": 105.0,
+   "ratio": 0.3,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_headphones01": {
+   "type": 2,
+   "wholesale": 200.0,
+   "market": 349.0,
+   "ratio": 0.16,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_hops": {
+   "type": 2,
+   "wholesale": 0.02,
+   "market": 0.02,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_hotdog": {
+   "type": 2,
+   "wholesale": 4.45,
+   "market": 11.65,
+   "ratio": 0.66,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_hotdoggrill": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 2200.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_hotdog"
+   ]
+  },
+  "ba:itemname_hourlyeventplanningfee": {
+   "type": 4,
+   "wholesale": 0.0,
+   "market": 150.0,
+   "ratio": 1.0,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_hourlygraphicdesignerfee": {
+   "type": 4,
+   "wholesale": 0.0,
+   "market": 160.0,
+   "ratio": 1.0,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_hourlylawyerfee": {
+   "type": 4,
+   "wholesale": 0.0,
+   "market": 225.0,
+   "ratio": 1.0,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_hourlyprogrammerfee": {
+   "type": 4,
+   "wholesale": 0.0,
+   "market": 165.0,
+   "ratio": 1.0,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_hourlytravelconsultantfee": {
+   "type": 4,
+   "wholesale": 0.0,
+   "market": 145.0,
+   "ratio": 1.0,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_icecream": {
+   "type": 2,
+   "wholesale": 4.33,
+   "market": 11.5,
+   "ratio": 0.35,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_icecreamcounter": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 1800.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_icecream"
+   ]
+  },
+  "ba:itemname_industrialcoffeemachine": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 4700.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_cupofcoffee",
+    "ba:itemname_cupoftea"
+   ]
+  },
+  "ba:itemname_industrialfreezer": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 4800.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_frozenfood",
+    "ba:itemname_icecream"
+   ]
+  },
+  "ba:itemname_industrialfridge": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 3300.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_freshfood"
+   ]
+  },
+  "ba:itemname_industrialfryermachine": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 4400.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_frenchfries"
+   ]
+  },
+  "ba:itemname_industrialgrill": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 1400.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_burger",
+    "ba:itemname_kabob"
+   ]
+  },
+  "ba:itemname_integratedcircuits": {
+   "type": 2,
+   "wholesale": 10.0,
+   "market": 10.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_jewelryfloorshowcase": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 8900.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_cheapjewelry",
+    "ba:itemname_expensivejewelry"
+   ]
+  },
+  "ba:itemname_juniperberries": {
+   "type": 2,
+   "wholesale": 0.15,
+   "market": 0.15,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_kabob": {
+   "type": 2,
+   "wholesale": 5.2,
+   "market": 14.0,
+   "ratio": 0.66,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_largebookshelf": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 780.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_limitededitionbook",
+    "ba:itemname_motivationalbook",
+    "ba:itemname_novel",
+    "ba:itemname_picturebook",
+    "ba:itemname_technicalmanual",
+    "ba:itemname_youngnovel"
+   ]
+  },
+  "ba:itemname_largedrinksfridge": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 2200.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_energydrink",
+    "ba:itemname_sodacan"
+   ]
+  },
+  "ba:itemname_lettuce": {
+   "type": 2,
+   "wholesale": 0.28,
+   "market": 2.12,
+   "ratio": 0.9,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_lettuceseeds": {
+   "type": 2,
+   "wholesale": 0.5,
+   "market": 0.01,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_limejuice": {
+   "type": 2,
+   "wholesale": 0.02,
+   "market": 69.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_limitededitionbook": {
+   "type": 2,
+   "wholesale": 45.0,
+   "market": 90.0,
+   "ratio": 0.35,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_margarita": {
+   "type": 2,
+   "wholesale": 4.0,
+   "market": 16.0,
+   "ratio": 0.7,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_martini": {
+   "type": 2,
+   "wholesale": 5.0,
+   "market": 20.0,
+   "ratio": 0.7,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_metalband": {
+   "type": 2,
+   "wholesale": 0.6,
+   "market": 10.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_metalwire": {
+   "type": 2,
+   "wholesale": 3.5,
+   "market": 0.01,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_microphone": {
+   "type": 2,
+   "wholesale": 8.0,
+   "market": 8.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_milk": {
+   "type": 2,
+   "wholesale": 0.05,
+   "market": 0.05,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_moderncheapfemaleclothing": {
+   "type": 2,
+   "wholesale": 27.0,
+   "market": 57.0,
+   "ratio": 0.5,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_moderncheapmaleclothing": {
+   "type": 2,
+   "wholesale": 27.0,
+   "market": 57.0,
+   "ratio": 0.5,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_modernexpensivefemaleclothing": {
+   "type": 2,
+   "wholesale": 45.0,
+   "market": 127.0,
+   "ratio": 0.35,
+   "demanded": true,
+   "rivalOnly": true,
+   "shows": []
+  },
+  "ba:itemname_modernexpensivemaleclothing": {
+   "type": 2,
+   "wholesale": 45.0,
+   "market": 127.0,
+   "ratio": 0.35,
+   "demanded": true,
+   "rivalOnly": true,
+   "shows": []
+  },
+  "ba:itemname_motivationalbook": {
+   "type": 2,
+   "wholesale": 10.0,
+   "market": 25.0,
+   "ratio": 0.7,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_nightclubweekdaycovercharge": {
+   "type": 4,
+   "wholesale": 0.0,
+   "market": 15.0,
+   "ratio": 1.0,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_nightclubweekendcovercharge": {
+   "type": 4,
+   "wholesale": 0.0,
+   "market": 30.0,
+   "ratio": 1.0,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_novel": {
+   "type": 2,
+   "wholesale": 11.5,
+   "market": 28.0,
+   "ratio": 0.66,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_onion": {
+   "type": 2,
+   "wholesale": 0.14,
+   "market": 0.14,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_paper": {
+   "type": 2,
+   "wholesale": 6.25,
+   "market": 0.01,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_pear": {
+   "type": 2,
+   "wholesale": 0.29,
+   "market": 2.62,
+   "ratio": 0.85,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_pearseeds": {
+   "type": 2,
+   "wholesale": 0.5,
+   "market": 0.01,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_pepper": {
+   "type": 2,
+   "wholesale": 0.1,
+   "market": 0.1,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_picturebook": {
+   "type": 2,
+   "wholesale": 2.5,
+   "market": 6.0,
+   "ratio": 0.85,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_pizza": {
+   "type": 2,
+   "wholesale": 8.0,
+   "market": 22.0,
+   "ratio": 0.4,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_pizzaoven": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 10756.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_pizza"
+   ]
+  },
+  "ba:itemname_plastic": {
+   "type": 2,
+   "wholesale": 0.6,
+   "market": 0.6,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_popcorn": {
+   "type": 2,
+   "wholesale": 0.2,
+   "market": 8.5,
+   "ratio": 0.85,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_productdisplaystandtiered": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 450.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_cheapflower",
+    "ba:itemname_expensiveflower"
+   ]
+  },
+  "ba:itemname_productdisplaytable": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 3250.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_earbuds01",
+    "ba:itemname_headphones01",
+    "ba:itemname_smartphone1",
+    "ba:itemname_smartphone2",
+    "ba:itemname_smartwatch1",
+    "ba:itemname_smartwatch2"
+   ]
+  },
+  "ba:itemname_productpanel": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 500.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_cheapgift",
+    "ba:itemname_umbrella"
+   ]
+  },
+  "ba:itemname_rawsausage": {
+   "type": 2,
+   "wholesale": 0.34,
+   "market": 10.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_resistors": {
+   "type": 2,
+   "wholesale": 4.0,
+   "market": 10.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_roundedshelf": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 1200.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_cheapflower",
+    "ba:itemname_cheapgift",
+    "ba:itemname_expensiveflower",
+    "ba:itemname_expensivegift"
+   ]
+  },
+  "ba:itemname_russetpotatoes": {
+   "type": 2,
+   "wholesale": 0.4,
+   "market": 10.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_salad": {
+   "type": 2,
+   "wholesale": 4.9,
+   "market": 13.0,
+   "ratio": 0.4,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_saladbar": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 4000.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_salad"
+   ]
+  },
+  "ba:itemname_singlebookshelf": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 350.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_limitededitionbook",
+    "ba:itemname_motivationalbook",
+    "ba:itemname_novel",
+    "ba:itemname_picturebook",
+    "ba:itemname_technicalmanual",
+    "ba:itemname_youngnovel"
+   ]
+  },
+  "ba:itemname_slicedonions": {
+   "type": 2,
+   "wholesale": 1.66,
+   "market": 10.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_slushi": {
+   "type": 2,
+   "wholesale": 0.9,
+   "market": 7.0,
+   "ratio": 0.85,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_slushimachine": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 2200.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_slushi"
+   ]
+  },
+  "ba:itemname_smallindustrialfreezer": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 2800.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_frozenfood",
+    "ba:itemname_icecream"
+   ]
+  },
+  "ba:itemname_smartphone1": {
+   "type": 2,
+   "wholesale": 350.0,
+   "market": 799.0,
+   "ratio": 0.26,
+   "demanded": true,
+   "rivalOnly": true,
+   "shows": []
+  },
+  "ba:itemname_smartphone2": {
+   "type": 2,
+   "wholesale": 450.0,
+   "market": 999.0,
+   "ratio": 0.2,
+   "demanded": true,
+   "rivalOnly": true,
+   "shows": []
+  },
+  "ba:itemname_smartwatch1": {
+   "type": 2,
+   "wholesale": 250.0,
+   "market": 399.0,
+   "ratio": 0.14,
+   "demanded": true,
+   "rivalOnly": true,
+   "shows": []
+  },
+  "ba:itemname_smartwatch2": {
+   "type": 2,
+   "wholesale": 150.0,
+   "market": 324.0,
+   "ratio": 0.18,
+   "demanded": true,
+   "rivalOnly": true,
+   "shows": []
+  },
+  "ba:itemname_sodacan": {
+   "type": 2,
+   "wholesale": 0.5,
+   "market": 3.0,
+   "ratio": 0.66,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_speaker": {
+   "type": 2,
+   "wholesale": 6.0,
+   "market": 6.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_sugar": {
+   "type": 2,
+   "wholesale": 0.05,
+   "market": 0.05,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_tealeaves": {
+   "type": 2,
+   "wholesale": 0.12,
+   "market": 0.12,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_technicalmanual": {
+   "type": 2,
+   "wholesale": 18.0,
+   "market": 44.0,
+   "ratio": 0.4,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_theaterticket": {
+   "type": 4,
+   "wholesale": 0.0,
+   "market": 85.0,
+   "ratio": 0.66,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_tobacco": {
+   "type": 2,
+   "wholesale": 0.5,
+   "market": 0.5,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_tobaccoshelf1": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 1895.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_cigar",
+    "ba:itemname_cigarette"
+   ]
+  },
+  "ba:itemname_tobaccoshelf2": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 1495.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_cigar",
+    "ba:itemname_cigarette"
+   ]
+  },
+  "ba:itemname_tobaccoshelf3": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 1095.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_cigar",
+    "ba:itemname_cigarette"
+   ]
+  },
+  "ba:itemname_tomato": {
+   "type": 2,
+   "wholesale": 0.29,
+   "market": 2.56,
+   "ratio": 0.9,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_tomatoseeds": {
+   "type": 2,
+   "wholesale": 0.5,
+   "market": 0.01,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_transistors": {
+   "type": 2,
+   "wholesale": 8.0,
+   "market": 10.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_umbrella": {
+   "type": 2,
+   "wholesale": 7.0,
+   "market": 24.0,
+   "ratio": 0.5,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_uncutgemscheap": {
+   "type": 2,
+   "wholesale": 40.0,
+   "market": 10.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_uncutgemsexpensive": {
+   "type": 2,
+   "wholesale": 450.0,
+   "market": 10.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_vermouth": {
+   "type": 2,
+   "wholesale": 0.1,
+   "market": 69.0,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_vinaigrette": {
+   "type": 2,
+   "wholesale": 0.1,
+   "market": 0.1,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_water": {
+   "type": 2,
+   "wholesale": 0.01,
+   "market": 0.01,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_whisky": {
+   "type": 2,
+   "wholesale": 8.0,
+   "market": 26.0,
+   "ratio": 0.66,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_wineshelf": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 1570.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_bottleofwine"
+   ]
+  },
+  "ba:itemname_woodencocktailbarbeershelf": {
+   "type": 2097216,
+   "wholesale": 0.0,
+   "market": 850.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_beer"
+   ]
+  },
+  "ba:itemname_woodencocktailbardrinkscounter": {
+   "type": 2097216,
+   "wholesale": 0.0,
+   "market": 690.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_margarita",
+    "ba:itemname_martini",
+    "ba:itemname_whisky"
+   ]
+  },
+  "ba:itemname_woodenproductcrate": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 150.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_apple",
+    "ba:itemname_banana",
+    "ba:itemname_carrot",
+    "ba:itemname_lettuce",
+    "ba:itemname_pear",
+    "ba:itemname_tomato"
+   ]
+  },
+  "ba:itemname_woodensaladbar": {
+   "type": 64,
+   "wholesale": 0.0,
+   "market": 0.0,
+   "ratio": 0.0,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": [
+    "ba:itemname_salad"
+   ]
+  },
+  "ba:itemname_yeast": {
+   "type": 2,
+   "wholesale": 0.01,
+   "market": 0.01,
+   "ratio": 0.01,
+   "demanded": false,
+   "rivalOnly": false,
+   "shows": []
+  },
+  "ba:itemname_youngnovel": {
+   "type": 2,
+   "wholesale": 5.5,
+   "market": 14.0,
+   "ratio": 0.85,
+   "demanded": true,
+   "rivalOnly": false,
+   "shows": []
+  }
+ },
+ "types": {
+  "ba:businesstype_liquorstore": {
+   "simulator": "SelfServiceBusinessSimulator",
+   "customerType": 2,
+   "course": 5,
+   "building": "ba:buildingtype_retail",
+   "sources": [
+    "ba:businessproductsource_importer"
+   ],
+   "requirements": [
+    "AnyPrimaryProduct",
+    "PointsOfSale",
+    "StackOfShoppingBaskets"
+   ],
+   "tags": [
+    "ba:businesstag_allowplayercreation",
+    "ba:businesstag_allowtheft",
+    "ba:businesstag_customersneedpaperbags",
+    "ba:businesstag_customersneedshoppingcontainer",
+    "ba:businesstag_generatesrevenue"
+   ],
+   "products": {
+    "ba:itemname_bottleofwine": 1.0,
+    "ba:itemname_beer": 1.0,
+    "ba:itemname_whisky": 1.0,
+    "ba:itemname_cigar": 1.0,
+    "ba:itemname_cigarette": 1.0,
+    "ba:itemname_margarita": 0.7,
+    "ba:itemname_martini": 0.7,
+    "ba:itemname_sodacan": 0.85,
+    "ba:itemname_energydrink": 0.85
+   }
+  },
+  "ba:businesstype_fastfoodrestaurant": {
+   "simulator": "FullServiceBusinessSimulator",
+   "customerType": 1,
+   "course": 0,
+   "building": "ba:buildingtype_retail",
+   "sources": [
+    "ba:businessproductsource_wholesaler"
+   ],
+   "requirements": [
+    "AnyPrimaryProduct",
+    "CashRegister"
+   ],
+   "tags": [
+    "ba:businesstag_allowplayercreation",
+    "ba:businesstag_customersneedpaperbags",
+    "ba:businesstag_generatesrevenue"
+   ],
+   "products": {
+    "ba:itemname_burger": 1.0,
+    "ba:itemname_frenchfries": 1.0,
+    "ba:itemname_hotdog": 1.0,
+    "ba:itemname_pizza": 1.0,
+    "ba:itemname_salad": 1.0,
+    "ba:itemname_sodacan": 1.0,
+    "ba:itemname_icecream": 1.0,
+    "ba:itemname_apple": 0.7,
+    "ba:itemname_banana": 0.4,
+    "ba:itemname_kabob": 1.0
+   }
+  },
+  "ba:businesstype_coffeeshop": {
+   "simulator": "FullServiceBusinessSimulator",
+   "customerType": 1,
+   "course": 0,
+   "building": "ba:buildingtype_retail",
+   "sources": [
+    "ba:businessproductsource_wholesaler"
+   ],
+   "requirements": [
+    "AnyPrimaryProduct",
+    "CashRegister"
+   ],
+   "tags": [
+    "ba:businesstag_allowplayercreation",
+    "ba:businesstag_customersneedpaperbags",
+    "ba:businesstag_generatesrevenue"
+   ],
+   "products": {
+    "ba:itemname_cupofcoffee": 1.0,
+    "ba:itemname_cupoftea": 1.0,
+    "ba:itemname_croissant": 1.0,
+    "ba:itemname_cupcake": 1.0,
+    "ba:itemname_donut": 1.0,
+    "ba:itemname_sodacan": 0.95,
+    "ba:itemname_icecream": 0.9,
+    "ba:itemname_salad": 0.3,
+    "ba:itemname_apple": 0.3,
+    "ba:itemname_banana": 0.3
+   }
+  }
+ }
+}

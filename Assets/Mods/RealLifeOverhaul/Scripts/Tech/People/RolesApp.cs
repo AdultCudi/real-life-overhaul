@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using UI.Smartphone;
 using UnityEngine;
@@ -15,8 +14,6 @@ namespace RealLifeOverhaul.Tech
         };
         // the Guide's pages the tabs point to: professionals for the Team tab, the jobs board for the rest
         private const string PeopleGuide = "reallife_meta_title_tech_people", JobsGuide = "reallife_meta_title_tech_jobs";
-
-        public static IModLogger Logger;
 
         private readonly TechDirector _director;
         private readonly List<TableRow> _rows = new List<TableRow>(64);

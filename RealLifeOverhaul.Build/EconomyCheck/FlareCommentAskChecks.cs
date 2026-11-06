@@ -225,7 +225,7 @@ internal static partial class Program
     private static void CommentAsksSources()
     {
         string director = TextsSource("Social/Flare/FlareDirector.Comments.cs"), flare = TextsSource("Social/Flare/FlareDirector.cs"), app = TextsSource("Social/Flare/FlareApp.cs"),
-            hub = TextsSource("Texts/TextsHub.cs");
+            hub = TextsSource("Texts/TextsHub.cs") + TextsSource("Texts/TextsHub.Look.cs");
         Check(director.Contains("AskComments(first, now, true, true);") && director.Contains("AskComments(p, now, pass == 0, false);")
               && director.IndexOf("AskComments(first, now, true, true);", StringComparison.Ordinal) < director.IndexOf("if (now == _commentsLooked && !_commentsFreed)", StringComparison.Ordinal),
             "Flare comment asks sources: the open thread's due comments are asked first, ahead of the walk; the walk asks the due comments before those still to come");
@@ -234,7 +234,7 @@ internal static partial class Program
             "Flare comment asks sources: a request back frees the next ask on the director's second, and words that come show at once in an open thread");
         Check(director.Contains("_commentAsks.Ended(asked, words != null);") && !director.Contains("_commentsAsked.Add("),
             "Flare comment asks sources: a request back without words is asked again (no longer once a session)");
-        Check(!director.Contains("void Update") && !director.Contains("LateUpdate") && hub.Contains("Over(i, !w.ViaService && BudgetMiss(w.Job), TextShownWhy.Slow);"),
+        Check(!director.Contains("void Update") && !director.Contains("LateUpdate") && hub.Contains("Over(i, !w.ViaService && BudgetMiss(w.Job), Late(w.Job));"),
             "Flare comment asks sources: nothing per frame; the hub counts a miss through BudgetMiss");
     }
 }

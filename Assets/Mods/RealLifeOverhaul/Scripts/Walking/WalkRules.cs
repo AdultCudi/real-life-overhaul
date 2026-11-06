@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Walking
         GiveBack,  // the game's own speed for its pace back, through the game's own call
     }
 
-    /// <summary>Why a press of the walk key did nothing. The key then does nothing at all, and says nothing.</summary>
+    /// <summary>Why a press of the walk key did nothing, silently.</summary>
     public enum WalkRefusal
     {
         None,
@@ -39,20 +39,9 @@ namespace RealLifeOverhaul.Walking
     }
 
     /// <summary>
-    /// Walking on a key, in plain numbers, so that NavCheck (WalkCheck.cs) checks the very rules the director walks by.
-    ///
-    /// The game picks the player's pace every frame (PlayerController.Update calls ThirdPersonCharacter.ToggleRunning) and
-    /// writes its speed into the navigation agent only when the pace it picks changes (SetWalkingSpeed). Walking puts the
-    /// game's own walking speed into the agent over the game's run or jog and leaves the pace itself alone, so the game's
-    /// own choice still stands: the moment it changes its pace (Toggle Running held or let go, a door, a vehicle left) it
-    /// writes its own speed again, and walking looks and puts the walk back. The legs follow by themselves: the game's
-    /// animator plays its walk at the speed the player moves at (Move: "Forward" is the speed, the cycle's rate is read
-    /// from the same figures), the walk its own people use (<see cref="AnimRate"/>).
-    ///
-    /// A speed walking did not put there and the game did not either (a job of the game's, another mod's pace in a time
-    /// skip) is never written over, and only a speed walking put there is given back.
-    ///
-    /// Comparisons and a clamp; nothing is allocated.
+    /// Walking's rules, game-free for NavCheck. The game writes its pace's speed into the agent only when the pace changes;
+    /// walking writes the game's walk over a run or jog and leaves the pace alone, so the game's choices stand. A speed
+    /// neither wrote (a job's, another mod's) is never touched. No allocation.
     /// </summary>
     public static class WalkRules
     {
@@ -68,17 +57,13 @@ namespace RealLifeOverhaul.Walking
             return !walking;
         }
 
-        /// <summary>
-        /// Walking after a save is loaded or a new game starts: never. The game keeps its pace on the player's body, which
-        /// every load builds anew at its own pace, and its auto-run likewise lasts a session; walking does the same and
-        /// writes nothing into the save.
-        /// </summary>
+        /// <summary>Walking after a load: never, as the game's own pace and auto-run last a session; nothing is saved.</summary>
         public static bool AfterLoad()
         {
             return false;
         }
 
-        /// <summary>Whether a press of the key may switch walking now, and if not, why. The first reason that holds.</summary>
+        /// <summary>Why a press may not switch walking now: the first reason that holds, or None.</summary>
         public static WalkRefusal CanToggle(bool optionOn, bool loaded, bool window, bool vehicle, bool busy)
         {
             if (!optionOn)
@@ -100,10 +85,7 @@ namespace RealLifeOverhaul.Walking
             return busy ? WalkRefusal.Busy : WalkRefusal.None;
         }
 
-        /// <summary>
-        /// The speed walking puts on: the game's own walk, kept to a walk; 0 if the game's figures leave no walk slower than
-        /// its jog (then walking does nothing).
-        /// </summary>
+        /// <summary>The game's walk, clamped to a walk; 0 if that is not slower than its jog and run (walking does nothing).</summary>
         public static float WalkSpeed(WalkFigures f)
         {
             float walk = Math.Max(SlowestWalk, Math.Min(FastestWalk, f.Walk));
@@ -125,11 +107,9 @@ namespace RealLifeOverhaul.Walking
         }
 
         /// <summary>
-        /// What to do with the player's speed. <paramref name="agent"/> is the speed in the navigation agent now;
-        /// <paramref name="onFoot"/>, <paramref name="busy"/> and <paramref name="runHeld"/> (the game's Toggle Running
-        /// key held: the game's own pace while it is held) are asked only when it looks. <paramref name="again"/>: what
-        /// stops the walk lasts a while and may end without the speed changing (a seat left, the key let go on a pace the
-        /// game does not change), so look again shortly, not only when the speed changes.
+        /// What to do with the agent's speed <paramref name="agent"/>; <paramref name="runHeld"/> is the game's Toggle
+        /// Running held. <paramref name="again"/>: what stops the walk may end without the speed changing (a seat left),
+        /// so look again shortly.
         /// </summary>
         public static WalkStep Decide(bool walking, bool onFoot, bool busy, bool runHeld, WalkPace pace, float agent, WalkFigures f, out bool again)
         {
@@ -156,10 +136,7 @@ namespace RealLifeOverhaul.Walking
             return Near(agent, GameSpeed(pace, f)) ? WalkStep.Hold : WalkStep.Leave;
         }
 
-        /// <summary>
-        /// The walk cycle's rate at a speed, as the game's ThirdPersonCharacter.Move works it out for the animator's
-        /// "MotionTime": between the walk and the brisk walk, between that and the jog, and from the jog to the run.
-        /// </summary>
+        /// <summary>The walk cycle's rate at a speed, as ThirdPersonCharacter.Move works out the animator's "MotionTime".</summary>
         public static float AnimRate(float speed, WalkFigures f)
         {
             float forward = Math.Min(speed, MostForward);
@@ -174,7 +151,7 @@ namespace RealLifeOverhaul.Walking
             return Lerp(f.AnimJog, f.AnimRun, InverseLerp(f.Jog, f.Run, forward));
         }
 
-        /// <summary>Whether a speed plays the game's walk: the walk end of its animator's blend, below the brisk walk and the jog.</summary>
+        /// <summary>Whether a speed plays the walk end of the animator's blend: below the brisk walk and the jog.</summary>
         public static bool IsWalk(float speed, WalkFigures f)
         {
             return speed > 0f && speed < f.WalkFast && speed < f.Jog;

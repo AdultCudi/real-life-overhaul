@@ -3,15 +3,15 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Planner
 {
-    // Free of the game and of the engine, like PlannerModel.cs: checked outside the game by PlannerCheck.
+    // Game-free: PlannerCheck compiles this file as it is.
 
-    /// <summary>The filter over the Planner's tabs: four groups of the kinds of entry ("everything" is no filter).</summary>
+    /// <summary>The filter over the Planner's tabs: four groups of the kinds of entry.</summary>
     public enum PlannerGroup
     {
-        Work = 0,       // work and study: shifts, working days, interviews, classes, exams
+        Work = 0,       // shifts, working days, interviews, classes, exams
         Money = 1,      // bills, bonds, dividends, loans, taxes
-        Life = 2,       // family and life: family, friends, court, licences, travel, the city, health, the player's own entries
-        Business = 3,   // the player's businesses
+        Life = 2,       // every other kind, the player's own entries too
+        Business = 3,
         Count = 4
     }
 
@@ -23,43 +23,34 @@ namespace RealLifeOverhaul.Planner
         Weekly = 2      // on the weekday of its first day
     }
 
-    /// <summary>
-    /// The Planner's sums: which group a kind of entry is in, how long the way to a place is, when to leave, the free
-    /// time in a day, when one of the player's own entries comes back, and what money falls due. No allocation: the
-    /// app works these out when it is opened or clicked, never per frame.
-    /// </summary>
+    /// <summary>The Planner's sums, worked out when the app is opened or clicked, never per frame; no allocation.</summary>
     public static class PlannerRules
     {
-        // The way about the city, by the same figures as the cleaners' rounds (Economy/Services/ServicesCatalogue). The
-        // Planner has no route of its own: a route is a search spread over frames (Navigation/NavDirector), too dear for
-        // every entry, so the way is the straight line between the two doors, made longer by the streets.
-        public const int WalkPerMinute = 350;    // hundredths of a metre a game minute on foot: 3.5 m in a second of play (a game minute is a second at normal speed: GameManager.RunMainGameTick)
-        public const int DrivePerMinute = 800;   // hundredths of a metre a game minute by car or taxi: 8 m in a second of play, what traffic makes over the streets with their junctions
-        public const int StreetFactor = 130;     // per cent: the way along the streets against the straight line between two doors
-        public const int SetOffMinutes = 5;      // game minutes to get out of the door and in at the other: the car parked, the taxi waved down
-        public const float HereMetres = 40f;     // nearer than this the player is there already: no way to go
+        // A route is a search spread over frames, too dear for every entry: the way is the straight line between the
+        // doors, made longer by the streets, at the cleaners' rounds' paces. A game minute is a second of play.
+        public const int WalkPerMinute = 350;    // hundredths of a metre a game minute on foot
+        public const int DrivePerMinute = 800;   // hundredths of a metre a game minute by car or taxi, junctions included
+        public const int StreetFactor = 130;     // per cent of the straight line
+        public const int SetOffMinutes = 5;      // game minutes: out of the door and in at the other
+        public const float HereMetres = 40f;     // metres: nearer is there already
 
-        // The day at a glance.
-        public const int WakeHour = 7;           // free time is counted from this hour of the day...
+        public const int WakeHour = 7;           // free time is counted from this hour...
         public const int SleepHour = 23;         // ...to this one
-        public const int FreeLeast = 30;         // game minutes: a shorter gap between two entries is no free time
-        public const int MostGaps = 3;           // the day's box names this many stretches of free time
+        public const int FreeLeast = 30;         // game minutes: a shorter gap is no free time
+        public const int MostGaps = 3;           // stretches of free time the day's box names
 
-        public const int TabToday = 0, TabUpcoming = 1, TabWeek = 2;   // the app's tabs, in their order
+        public const int TabToday = 0, TabUpcoming = 1, TabWeek = 2;
 
         public const int MorningHour = 5;     // the morning line comes on waking, or from 05:00 for a player who is up...
         public const int MorningLast = 12;    // ...and not from noon on: a save loaded in the afternoon has had its morning
 
-        /// <summary>
-        /// True if the morning line is due: the player awake, from <see cref="MorningHour"/> until <see cref="MorningLast"/>,
-        /// not yet sent today (<paramref name="told"/>: the day it was last sent, kept in the save, so a reload does not send it again).
-        /// </summary>
+        /// <summary>Whether the morning line is due; <paramref name="told"/> is the saved day it was last sent.</summary>
         public static bool MorningDue(int day, int hour, bool asleep, int told)
         {
             return !asleep && hour >= MorningHour && hour < MorningLast && told != day;
         }
 
-        /// <summary>The entries of a day still to do (upcoming or under way) that the morning line counts.</summary>
+        /// <summary>The entries of a day upcoming or under way.</summary>
         public static int MorningCount(List<PlannerEntry> items, int day)
         {
             int n = 0;
@@ -71,11 +62,7 @@ namespace RealLifeOverhaul.Planner
             return n;
         }
 
-        /// <summary>
-        /// The morning line's key for a day: how many entries (one or more), whether the first has a time, and whether
-        /// there is a time to leave by (<paramref name="leave"/>: false when the place is not known, is where the player
-        /// is, or the time has passed). Null for an empty day: nothing is sent.
-        /// </summary>
+        /// <summary>The morning line's key; <paramref name="leave"/>: there is a time to leave by. Null for an empty day.</summary>
         public static string MorningKey(int count, bool timed, bool leave)
         {
             if (count <= 0)
@@ -86,7 +73,7 @@ namespace RealLifeOverhaul.Planner
             return !timed ? "reallife_planner_morning_all_day" + one : "reallife_planner_morning" + one + (leave ? string.Empty : "_here");
         }
 
-        /// <summary>Whether an entry is listed on a tab: Today the day's, Upcoming the days after, Week seven days from today.</summary>
+        /// <summary>Today lists the day's entries, Upcoming the days after, Week seven days from today.</summary>
         public static bool OnTab(PlannerEntry e, int tab, int today)
         {
             switch (tab)
@@ -97,11 +84,7 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
-        /// <summary>
-        /// How many entries a tab lists under its filter (<paramref name="group"/>, a PlannerGroup, -1 for all), as the
-        /// table shows them: a group with nothing on the tab, or a tab with entries of one group only, lists everything
-        /// (GameUi.TableModel lets the filter go then). One pass over the looked-at entries, when the tables are filled.
-        /// </summary>
+        /// <summary>Entries a tab lists under a filter (-1 all); as in GameUi.TableModel, an empty or only group lets it go.</summary>
         public static int TabCount(List<PlannerEntry> items, int tab, int today, int group)
         {
             int all = 0, ofGroup = 0, held = 0;
@@ -117,7 +100,7 @@ namespace RealLifeOverhaul.Planner
                 ofGroup += g == group ? 1 : 0;
                 held |= 1 << g;
             }
-            bool kinds = (held & (held - 1)) != 0;   // (two groups or more)
+            bool kinds = (held & (held - 1)) != 0;   // two groups or more
             return group >= 0 && ofGroup > 0 && kinds ? ofGroup : all;
         }
 
@@ -132,37 +115,29 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
-        // ---------------------------------------------------------------- the way
-
-        /// <summary>The straight line between two points of the city's ground, in metres.</summary>
         public static float Metres(float ax, float az, float bx, float bz)
         {
             float dx = bx - ax, dz = bz - az;
             return (float)Math.Sqrt(dx * dx + dz * dz);
         }
 
-        /// <summary>
-        /// Game minutes from one door to another this far apart at a pace (hundredths of a metre a game minute):
-        /// along the streets, and the minutes to set off. 0 if the two are the same place or there is no pace.
-        /// </summary>
+        /// <summary>Game minutes between two doors at a pace (hundredths of a metre a game minute); 0 if here or no pace.</summary>
         public static int TravelMinutes(float metres, int pace)
         {
             if (pace <= 0 || !(metres > HereMetres))
             {
-                return 0;   // (a NaN is no distance either)
+                return 0;   // a NaN too
             }
-            double way = (double)metres * StreetFactor;   // hundredths of a metre along the streets (metres, times the per cent)
+            double way = (double)metres * StreetFactor;   // hundredths of a metre along the streets
             double minutes = Math.Ceiling(way / pace);
             return minutes > 100000 ? 100000 + SetOffMinutes : (int)minutes + SetOffMinutes;
         }
 
-        /// <summary>The last moment to set off and be there when an entry begins (or by its deadline), in game minutes.</summary>
+        /// <summary>The last moment to set off and be there when an entry begins, in game minutes.</summary>
         public static int LeaveBy(PlannerEntry entry, int travelMinutes)
         {
             return entry.Begins - Math.Max(0, travelMinutes);
         }
-
-        // ---------------------------------------------------------------- the player's own entries
 
         /// <summary>Whether an entry first on one day, repeated so, falls on another day.</summary>
         public static bool Occurs(PlannerRepeat repeat, int firstDay, int day)
@@ -179,7 +154,7 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
-        /// <summary>The first day on or after 'fromDay' an entry falls on; -1 if it never does again (one that was once).</summary>
+        /// <summary>The first day on or after 'fromDay' an entry falls on; -1 if never again.</summary>
         public static int NextOccurrence(PlannerRepeat repeat, int firstDay, int fromDay)
         {
             if (fromDay <= firstDay)
@@ -194,9 +169,7 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
-        // ---------------------------------------------------------------- the day at a glance
-
-        /// <summary>The first entry of a day that is still to come or on now and has an hour: what the day's box leads with. Null if none.</summary>
+        /// <summary>The first entry of a day with an hour, still to come or on now; null if none.</summary>
         public static PlannerEntry FirstOf(List<PlannerEntry> items, int day)
         {
             for (int i = 0; i < items.Count; i++)
@@ -211,11 +184,8 @@ namespace RealLifeOverhaul.Planner
         }
 
         /// <summary>
-        /// The free time of a day between its entries, from a minute of the day ('fromMinute', at least WakeHour) to
-        /// SleepHour: busy is every entry with an hour the player has to attend or wrote down, still to do, and one of the
-        /// day before that runs past midnight. The first MostGaps stretches of at least FreeLeast minutes go into
-        /// starts and ends (minutes of the day); 'total' is all of it. Returns how many stretches were written. The
-        /// list must be in time order (PlannerLogic.Arrange).
+        /// A day's free time from 'fromMinute' to SleepHour around the entries to attend or written down, yesterday's
+        /// past midnight too; the list in time order. Writes the first MostGaps stretches, returns how many.
         /// </summary>
         public static int FreeTime(List<PlannerEntry> items, int day, int fromMinute, int[] starts, int[] ends, out int total)
         {
@@ -233,7 +203,7 @@ namespace RealLifeOverhaul.Planner
                 int begin = e.Begins - dayStart, end = e.Ends - dayStart;
                 if (end <= cursor)
                 {
-                    continue;   // (yesterday's that ended before midnight, or one inside time already busy)
+                    continue;   // yesterday's that ended before midnight, or inside busy time
                 }
                 if (begin - cursor >= FreeLeast)
                 {
@@ -263,7 +233,7 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
-        /// <summary>The money that falls due on the days fromDay..toDay and is not yet dealt with, as the sources give it (PlannerEntry.Owes).</summary>
+        /// <summary>The money due on the days fromDay..toDay and not yet dealt with.</summary>
         public static float OwedOn(List<PlannerEntry> items, int fromDay, int toDay)
         {
             float owed = 0f;
@@ -279,10 +249,7 @@ namespace RealLifeOverhaul.Planner
         }
     }
 
-    /// <summary>
-    /// The Week tab's seven columns, one for each day from the first: each day's entries in time order. Its lists are
-    /// made once and used again; it is filled when the tab is shown or its entries change.
-    /// </summary>
+    /// <summary>The Week tab's seven columns of entries in time order; filled when the tab is shown or changes.</summary>
     public sealed class WeekGrid
     {
         public const int Days = 7;
@@ -319,7 +286,6 @@ namespace RealLifeOverhaul.Planner
             return true;
         }
 
-        /// <summary>Each column in time order, whatever order the entries came in.</summary>
         public void Finish()
         {
             for (int d = 0; d < Days; d++)

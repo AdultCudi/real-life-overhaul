@@ -63,6 +63,8 @@ namespace RealLifeOverhaul.Meta
         public bool HasDefault;
         public int Default;
         public string LabelKey;        // from the options page; null until it was seen there
+        public string[] ChoiceKeys;    // a drop-down's choices, by their texts' keys (from the options page)
+        public string ValueLabelKey;   // a slider's format, with {value}, or null for the plain number
         public FieldInfo Field;        // its static field in Settings, when it has one
         public Feature Owner;
     }
@@ -71,8 +73,8 @@ namespace RealLifeOverhaul.Meta
     public static class SettingsTable
     {
         /// <summary>What a slider shows beside itself: the number, or the number as a per cent. The game shows nothing for a slider without one.</summary>
-        public const string SliderValue = "reallife_opt_value";
-        public const string SliderPercent = "reallife_opt_value_percent";
+        public const string SliderValue = OptionValueRules.SliderValue;
+        public const string SliderPercent = OptionValueRules.SliderPercent;
 
         private static readonly Dictionary<string, OptionInfo> ById = new Dictionary<string, OptionInfo>();
         private static readonly List<OptionInfo> Ordered = new List<OptionInfo>();
@@ -145,6 +147,7 @@ namespace RealLifeOverhaul.Meta
             if (option is SliderOption slider)
             {
                 info.Type = OptionType.Slider;
+                info.ValueLabelKey = slider.ValueLabelKey;
                 info.Min = slider.Min;
                 info.Max = slider.Max;
                 info.HasRange = true;
@@ -152,6 +155,7 @@ namespace RealLifeOverhaul.Meta
             else if (option is DropdownOption dropdown)
             {
                 info.Type = OptionType.Choice;
+                info.ChoiceKeys = dropdown.ChoiceKeys;
                 info.Min = 0;
                 info.Max = dropdown.ChoiceKeys.Length - 1;
                 info.HasRange = true;

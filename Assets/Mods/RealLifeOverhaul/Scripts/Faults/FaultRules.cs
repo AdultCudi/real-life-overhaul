@@ -4,32 +4,12 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Faults
 {
     /// <summary>
-    /// The city's faults by rule, game-free (checked offline: EconomyCheck, FaultChecks.cs). Faults are NOT made from a
-    /// seed of the save, the day or the district: each game hour the city's runner rolls them with a real source of chance
-    /// (<see cref="IFaultDice"/>; live, FaultDice), weighted by the city as it is that hour, so that no two games, not even
-    /// two from the same save, break in the same places or at the same times. What has broken is kept in the save; what
-    /// breaks next is never fixed in advance.
-    ///
-    ///   how likely   per game hour, for each kind, a chance in a thousand (<see cref="Chance"/>): street lamps fail more
-    ///                where the council's upkeep is short, for a day after a storm, and at dusk; potholes open for a day
-    ///                after rain and more after a frost, more at the rush hours; litter heaps up where cleaning was cut, at
-    ///                night; unsafe places where upkeep is short and after a storm. A hot spot is not rolled by the hour: a
-    ///                crime reported in the street may make one there (<see cref="Crime"/>).
-    ///   where        the district by weight (<see cref="Weight"/>): a lamp by upkeep and by how long since one was mended
-    ///                there, a pothole by upkeep and traffic, litter by traffic and night life, an unsafe place by upkeep.
-    ///   how many     a few to a dozen at once by the option (<see cref="Most"/>), each kind a share of that.
-    ///   seen         the city's people report a fault by how plain it is and how long it has been there (<see cref="Seen"/>);
-    ///                a dark lamp only after dark.
-    ///   reports      a report matches a real fault of its kind where it was made (<see cref="Match"/>): a crew goes and
-    ///                the fault is gone when it is done. A report of nothing is answered so, and a player's reports of
-    ///                nothing add up in the week: a warning at the second, at the third no crew for their reports for
-    ///                <see cref="BarDays"/> days (<see cref="Nothing"/>).
-    ///   what they do a dark lamp scales street crime near it at night (<see cref="DarkCrime"/>); a pothole wears a
-    ///                car's tyres and jolts it, more at speed (<see cref="TyreWear"/>, <see cref="Jolt"/>), and slows
-    ///                traffic a little there; litter costs customers near it (<see cref="LitterFootfall"/>); an unsafe
-    ///                place trips a passer-by now and then (<see cref="TripChance"/>), never fatally.
-    ///
-    /// COST: a roll is a pass over a dozen faults and a dozen districts, once a game hour; nothing per frame.
+    /// The city's faults by rule, game-free and checked offline. Each game hour the city's runner rolls new faults with a
+    /// real source of chance (<see cref="IFaultDice"/>), never a seed of the save, weighted by the city that hour: no two
+    /// games break alike, even from the same save. How likely (<see cref="Chance"/>), where (<see cref="Weight"/>), how
+    /// many (<see cref="Most"/>), what the city's people see (<see cref="Seen"/>), what a report matches
+    /// (<see cref="Match"/>, <see cref="Nothing"/>) and what a fault does in the street are all here.
+    /// Cost: a pass over a dozen faults and districts once a game hour; nothing per frame.
     /// </summary>
     public static class FaultRules
     {
@@ -83,7 +63,7 @@ namespace RealLifeOverhaul.Faults
             return Math.Max(1, MostOf(option) * KindShare[(int)kind] / 100);
         }
 
-        /// <summary>Whether a storm, rain or frost still counts: the file remembers each for a day after it.</summary>
+        /// <summary>The hour's storm, rain or frost remembered for <see cref="WeatherMemory"/> after it.</summary>
         public static void Weather(FaultFile file, FaultFacts facts)
         {
             if (facts.Storm)
@@ -125,10 +105,7 @@ namespace RealLifeOverhaul.Faults
             return (int)(sum / facts.Districts.Count);
         }
 
-        /// <summary>
-        /// The chance in a thousand that a new fault of a kind appears somewhere in the city this hour, by the city's state
-        /// (none for a hot spot: those come of crimes). Capped at 900.
-        /// </summary>
+        /// <summary>The chance in a thousand of a new fault of a kind this hour, capped at 900; none for a hot spot (those come of crimes).</summary>
         public static int Chance(FaultKind kind, FaultFacts facts, FaultFile file)
         {
             long c = BasePerMille[(int)kind];
@@ -217,10 +194,7 @@ namespace RealLifeOverhaul.Faults
             return facts.Districts.Count - 1;
         }
 
-        /// <summary>
-        /// One hour's roll: the faults wanted, into the list (cleared first), each kind under its own most and all under the
-        /// city's. The weather of the hour is remembered first. Returns how many are wanted. Hot spots are not rolled here.
-        /// </summary>
+        /// <summary>One hour's roll: the faults wanted, into the list, each kind under its own most and all under the city's.</summary>
         public static int Roll(FaultFile file, FaultFacts facts, IFaultDice dice, List<FaultWant> into)
         {
             into.Clear();
@@ -261,10 +235,7 @@ namespace RealLifeOverhaul.Faults
             return f;
         }
 
-        /// <summary>
-        /// A crime reported in the street at a point: one more of a hot spot near it, or now and then a new hot spot (under
-        /// the kind's most and the city's). Returns the new one, or null (one more of an old one, or none).
-        /// </summary>
+        /// <summary>A crime reported in the street: one more of a hot spot near it, or now and then a new one, returned (else null).</summary>
         public static Fault Crime(FaultFile file, int option, string district, string address, float x, float y, float z, long now, IFaultDice dice)
         {
             if (string.IsNullOrEmpty(district))
@@ -292,9 +263,8 @@ namespace RealLifeOverhaul.Faults
         }
 
         /// <summary>
-        /// The hour's turn: faults whose crew has done its work go (and are remembered as mended), hot spots with no crime
-        /// for <see cref="HotspotDays"/> days end, the city's own sweepers take an old heap, and a case that took a fault and
-        /// was never done lets it go. The ids gone, into the list (not cleared). True if anything changed.
+        /// The hour's turn: faults whose crew is done go, quiet hot spots end, the sweepers take an old heap, and a case
+        /// never done lets its fault go. The ids gone are added to the list. True if anything changed.
         /// </summary>
         public static bool Turn(FaultFile file, long now, int litterPolicy, List<int> gone)
         {
@@ -348,8 +318,6 @@ namespace RealLifeOverhaul.Faults
             }
         }
 
-        // ---------------------------------------------------------------- reports
-
         /// <summary>The fault kind a Flare report is about (FlareReport's number: 0 a road, 1 a lamp, 2 crime, 3 litter, 4 an unsafe place); false for the others.</summary>
         public static bool KindOf(int report, out FaultKind kind)
         {
@@ -378,9 +346,8 @@ namespace RealLifeOverhaul.Faults
         }
 
         /// <summary>
-        /// The real fault a report is about, or null: of its kind (one a crew has in hand already is still there, so a
-        /// report of it is true); with a point (the report was made where the player stands) the nearest within
-        /// <see cref="MatchMetres"/>, else one in the district reported (the longest standing).
+        /// The real fault of its kind a report is about, or null: with a point, the nearest within <see cref="MatchMetres"/>;
+        /// else the longest standing in the district. One a crew has in hand still counts.
         /// </summary>
         public static Fault Match(FaultFile file, FaultKind kind, string district, bool point, float x, float z)
         {
@@ -417,10 +384,7 @@ namespace RealLifeOverhaul.Faults
             return s != null && day < s.BarredUntil;
         }
 
-        /// <summary>
-        /// A player's report of nothing, counted over the week: Nothing at first, Warned at <see cref="WarnAt"/>, Barred from
-        /// <see cref="BarAt"/> (their reports bring no crew for <see cref="BarDays"/> days, and the count starts again).
-        /// </summary>
+        /// <summary>A player's report of nothing, counted over the week: Warned at <see cref="WarnAt"/>, Barred at <see cref="BarAt"/>.</summary>
         public static FaultVerdict Nothing(FaultFile file, string reporter, int day)
         {
             FaultStrike s = file.Strike(reporter, true);
@@ -454,7 +418,7 @@ namespace RealLifeOverhaul.Faults
             return f != null && !f.Fixing && f.FixAt < 0;
         }
 
-        /// <summary>A case takes a fault: a crew is on its way. A cleaning round or patrols end it after their time; works when they are handed over.</summary>
+        /// <summary>A case takes a fault. A cleaning round or patrols end it after their time; works when handed over.</summary>
         public static void Taken(Fault f, int caseId, long now, bool works)
         {
             f.Case = caseId;
@@ -466,9 +430,8 @@ namespace RealLifeOverhaul.Faults
         }
 
         /// <summary>
-        /// The faults the city's people report this hour, into the list (cleared first): each not yet taken by a crew, by how
-        /// plain it is and how long it has stood (four times as likely by <see cref="SeenAgeDays"/> days); a dark lamp only
-        /// after dark. Each one reported counts once more in its <see cref="Fault.Reports"/>.
+        /// The faults the city's people report this hour, into the list: each not taken by a crew, more likely the longer it
+        /// stands; a dark lamp only after dark.
         /// </summary>
         public static int Seen(FaultFile file, long now, IFaultDice dice, List<Fault> into)
         {
@@ -492,8 +455,6 @@ namespace RealLifeOverhaul.Faults
             }
             return into.Count;
         }
-
-        // ---------------------------------------------------------------- what they do
 
         /// <summary>True if a dark lamp stands within <paramref name="within"/> metres of a point.</summary>
         public static bool DarkAt(FaultFile file, float x, float z, float within)
@@ -527,7 +488,7 @@ namespace RealLifeOverhaul.Faults
             return n;
         }
 
-        /// <summary>Litter in any district: true if the district has a heap.</summary>
+        /// <summary>True if the district has a heap of litter.</summary>
         public static bool LitterIn(FaultFile file, string district)
         {
             for (int i = 0; district != null && i < file.Faults.Count; i++)
@@ -579,8 +540,6 @@ namespace RealLifeOverhaul.Faults
         {
             return cleanliness >= CleanFrom;
         }
-
-        // ---------------------------------------------------------------- small helpers
 
         public static int Clamp(int v, int lo, int hi)
         {

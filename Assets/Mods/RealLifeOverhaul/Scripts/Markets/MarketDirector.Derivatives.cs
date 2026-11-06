@@ -89,6 +89,13 @@ namespace RealLifeOverhaul.Markets
                 return;   // the game's recipes are not loaded yet: next second
             }
             _materialsKnown = true;
+            float multiplier = Math.Max(0.01f, MaterialGame.Multiplier());
+            for (int i = 0; i < DerivCatalogue.BuildingNames.Length; i++)
+            {
+                // The exchange's own building materials, for the city's builders: the construction game's merchants price off them.
+                _materialNames.Add(DerivCatalogue.BuildingNames[i]);
+                _materialBases.Add(Math.Max(1L, (long)Math.Round(DerivCatalogue.BuildingBaseMicros[i] * (double)multiplier)));
+            }
             int added = _engine.KnowMaterials(_materialNames, _materialBases, _following);
             if (added > 0 || Verbose)
             {
@@ -119,6 +126,22 @@ namespace RealLifeOverhaul.Markets
                 _byNameCount = all.Count;
             }
             return _byName.TryGetValue(itemName, out RawMaterial m) && m.Base > 0 ? m.Factor : double.NaN;
+        }
+
+        /// <summary>
+        /// A material's move on the exchange against its own price at the city's price level (the last close's draw alone), for
+        /// a buyer whose list prices already follow the price level (the construction game's merchants); NaN while the
+        /// exchange does not price it.
+        /// </summary>
+        public double MaterialMove(string itemName)
+        {
+            double factor = MaterialFactor(itemName);
+            if (double.IsNaN(factor))
+            {
+                return double.NaN;
+            }
+            RawMaterial m = _byName.TryGetValue(itemName, out RawMaterial found) ? found : null;
+            return m != null && m.Level > 0 ? factor * 1000.0 / m.Level : double.NaN;
         }
 
         // ---------------------------------------------------------------- the Futures tab's questions

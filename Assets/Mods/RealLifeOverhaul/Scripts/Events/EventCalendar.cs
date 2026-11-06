@@ -3,6 +3,7 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Events
 {
+    /// <summary>The kinds of street event; None on a day with nothing on.</summary>
     public enum EventKind { None, Market, FarmersMarket, Parade, Protest, FunRun, FilmShoot, Fireworks }
 
     /// <summary>One street event on the calendar: what, on which day, between which hours.</summary>
@@ -15,21 +16,16 @@ namespace RealLifeOverhaul.Events
     }
 
     /// <summary>
-    /// The city's calendar. The game counts days and has a year of so many of them (60 unless
-    /// the save says otherwise) but no months and no dates, so the fixed days are placed by how
-    /// far through the year they fall: the last night of the year is New Year's Eve, and the
-    /// Fourth of July is the day 50.7 % of the way through it. Every Saturday has a farmers'
-    /// market. Other days have an event or not by a roll that depends only on the day and on a
-    /// number kept in the save's modData (so two saves have different calendars, the same save
-    /// always the same one, and tomorrow can be announced today). Nothing here is ever looked up
-    /// more than once a game hour.
+    /// The city's calendar. The game has a year of so many days (60 unless the save says otherwise) but no dates, so fixed
+    /// days fall by how far through the year they are: New Year's Eve is the last day, the Fourth of July 50.7% of the way
+    /// through. Saturdays have a farmers' market; other days roll on the day and a number kept in the save's modData, so
+    /// the same save always has the same calendar and tomorrow can be announced today.
     /// </summary>
     public static class EventCalendar
     {
         /// <summary>This save's own number, from modData; 0 until it has been read.</summary>
         internal static int Salt;
 
-        /// <summary>The year in days (the one calendar: GameCalendar).</summary>
         public static int DaysPerYear => GameCalendar.DaysPerYear;
 
         /// <summary>The day of the year, 1 to DaysPerYear.</summary>
@@ -61,7 +57,6 @@ namespace RealLifeOverhaul.Events
             }
         }
 
-        /// <summary>What is on that day, if anything.</summary>
         public static PlannedEvent For(int day)
         {
             var plan = new PlannedEvent { Kind = EventKind.None, Day = day };
@@ -83,7 +78,7 @@ namespace RealLifeOverhaul.Events
                 plan.To = 13;
                 return plan;
             }
-            if (Roll(day, 3) >= Settings.StreetEventFrequency * 0.08f * CivicPolicy.EventScale)   // the city's events policy: 1 unless a council has changed it
+            if (Roll(day, 3) >= Settings.StreetEventFrequency * 0.08f * CivicPolicy.EventScale)   // 1 unless a council changed the events policy
             {
                 return plan;
             }
@@ -155,10 +150,7 @@ namespace RealLifeOverhaul.Events
             }
         }
 
-        /// <summary>
-        /// Whether a kind of event goes without its notifications (what is on, its start and its end): protests while their
-        /// own switch is off. The event, the street it closes and its line from the City Bulletin are the same either way.
-        /// </summary>
+        /// <summary>True for a kind whose notices go untold (protests with their switch off); the event and its Bulletin line are the same.</summary>
         public static bool Quiet(EventKind kind) => kind == EventKind.Protest && !Settings.StreetProtestNotes;
     }
 }

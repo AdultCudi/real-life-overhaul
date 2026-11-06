@@ -116,15 +116,48 @@ namespace RealLifeOverhaul.Tech
         public const int PointsPerFix = 2;                     // points of fixing a bug takes (a tester's point fixes one)
         public const int DebtPerFeature = 35;                  // thousandths of debt a feature adds when juniors build it alone
         public const int DebtPerPoint = 4;                     // thousandths a point of paying down takes out
+        public const int ProductBoostMost = 400;               // thousandths more feature points that product people can add at the most
+        public const int ProductBoostGain = 3000;              // ...reached as product points x this over all the build and product points
+        public const int DesignAppealMost = 200;               // thousandths a product's appeal that designers can lift it by at the most: their points over the engineers', one to one
+        public const int SellingBoostMost = 2000;              // thousandths more customers won a day from business and enterprise buyers that selling can add at the most
+        public const int SellingBoostPerPoint = 50;            // ...a point of the sellers' work points adds this many thousandths
+        public const int OfferSellingMost = 2000;              // thousandths more contract offers a day that selling can add at the most
+        public const int OfferSellingPerPoint = 60;            // ...a point of the sellers' work points adds this many
+        public const int SupportChurnMost = 1000;              // thousandths more churn that having no support at all adds: customers leave twice as fast
+        public const int ReliabilityBase = 150;                // thousandths of a service kept up with nobody keeping it running
+        public const int ReliabilityEach = 250;                // ...most that one site reliability or DevOps engineer adds
+        public const int ReliabilityMost = 950;                // ...and the most a firm reaches
+        public const int ReliabilityPerPoint = 3;              // ...thousandths an engineer adds for each point of their two specialisms' average (to ReliabilityEach)
+        public const int SecurityBase = 200;                   // thousandths of security posture with no security staff
+        public const int SecurityEach = 250;                   // ...most one analyst adds
+        public const int SecurityOfficer = 150;                // ...a data protection officer adds
+        public const int SecurityCert = 50;                    // ...an analyst with the security practitioner or privacy certificate adds
+        public const int SecurityMost = 950;                   // ...and the most a firm reaches
+        public const int SecurityPerPoint = 3;                 // ...thousandths an analyst adds for each point of their first specialism (to SecurityEach)
         public const int SoftwarePerSeat = 300;                // tools and licences a day per professional at a tech firm, cents
-        public const int ProductsMost = 16;                    // products across the player's firms
+        public const int ProductsMost = 36;                    // products being built or on sale across the player's firms (it was 16 for all firms together)
+        public const int ProductsPerFirm = 12;                 // ...and at any one firm, so a third firm is not locked out by the first two
+        public const int WithdrawnKept = 12;                   // withdrawn products kept in the list; the oldest go when more are withdrawn
+        public const int ProductsStored = ProductsMost + WithdrawnKept;   // the most the save reads back, live and withdrawn together
+
+        /// <summary>
+        /// How hard each kind of firm leans on its office's connection (NetSpeedRules), by FirmKind: an AI lab moves training
+        /// data and a game studio its builds and assets, while a consultancy and a design studio do much of theirs at the
+        /// client's or on paper.
+        /// </summary>
+        public static readonly int[] NetLean =
+        {
+            NetSpeedRules.Usual, NetSpeedRules.Heavy, NetSpeedRules.Light, NetSpeedRules.Usual, NetSpeedRules.Heaviest, NetSpeedRules.Usual, NetSpeedRules.Light
+        };
 
         // Games
         public static readonly int[] GameScope = { 600, 1800, 4500 };        // work points: a small game, a mid-sized one, a big one
         public static readonly int[] GamePrice = { 999, 2499, 5999 };        // cents
         public const int GamePlayers = 300000;                               // people who might buy a game
         public const int GameHalfLife = 25;                                  // days for a game's daily sales to halve
-        public const int GameLaunchShare = 2;                                // millionths of the players a day at launch per point of appeal (thousandths)
+        public const int GameLaunchShare = 600;                              // billionths of the players a day at launch per thousandth of appeal (it was 2000 while every game sat at the floor)
+        public static readonly int[] GameFeatures = { 4, 6, 8 };             // features a finished game counts for against its rival (RivalFeaturesAtStart), by size: a big one matches it
+        public const int GameBugRoom = 90;                                   // thousandths of a bug a game holds for each work point built into it (about a service's features)
         public const int HypePerMarketingDay = 2;                            // thousandths of hype a day of marketing before launch adds per reach step
 
         // Contracts

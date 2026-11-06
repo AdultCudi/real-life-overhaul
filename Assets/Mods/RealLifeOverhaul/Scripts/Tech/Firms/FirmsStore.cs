@@ -33,7 +33,7 @@ namespace RealLifeOverhaul.Tech
                     days.Append(m.Days[i].ToString(System.Globalization.CultureInfo.InvariantCulture));
                 }
                 w.Record().Place(m.Place).Add(m.Kind).Add(m.Founded).Add(m.Focus).Add(m.Debt).Add(m.Reputation).Add(m.RegisteredUntil).Add(m.Breaches).Add(m.Outages).Add(m.RnD).Add(m.ReliefDay)
-                    .Add(m.Revenue30).Add(days.ToString());
+                    .Add(m.Revenue30).Add(days.ToString()).Add(m.OwnDay).Add(m.OwnMinutes).Add(m.OwnPrevDay).Add(m.OwnPrevMinutes);
             }
             w.Part('p');
             foreach (Product p in f.Products)
@@ -74,6 +74,11 @@ namespace RealLifeOverhaul.Tech
                 {
                     m.Days[i] = long.TryParse(days[i], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out long v) ? v : 0;
                 }
+                // the owner's minutes at a desk, appended last: a save from before them has none, and reads as no day counted
+                m.OwnDay = x.Int(-1);
+                m.OwnMinutes = Math.Max(0, x.Int());
+                m.OwnPrevDay = x.Int(-1);
+                m.OwnPrevMinutes = Math.Max(0, x.Int());
                 if (f.Firms.Count < 32)
                 {
                     f.Firms.Add(m);
@@ -88,7 +93,7 @@ namespace RealLifeOverhaul.Tech
                     Share = x.Int(100), Launched = x.Int(), Hype = x.Int(), Scope = x.Int(), Revenue = x.Long(), RivalFeatures = x.Int(), RivalTier = TalentCatalogue.Clamp(x.Int(1), 0, 2),
                     LastRelease = x.Int(), Carry = x.Long(), Compute = x.Long(), Train = x.Int(2)
                 };
-                if (f.Products.Count < FirmsCatalogue.ProductsMost * 2)
+                if (f.Products.Count < FirmsCatalogue.ProductsStored * 4)   // every record up to a sane size: the withdrawn are trimmed below, so a live one late in the list is not lost
                 {
                     f.Products.Add(p);
                 }
@@ -106,6 +111,7 @@ namespace RealLifeOverhaul.Tech
                     f.Contracts.Add(c);
                 }
             }
+            FirmsRules.TrimWithdrawn(f);   // a list an older version let grow keeps its newest withdrawn products only (up to ProductsStored in all)
             return f;
         }
     }

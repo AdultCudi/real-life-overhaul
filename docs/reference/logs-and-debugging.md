@@ -52,8 +52,9 @@ If the mod is switched on twice (the Workshop item and a copy in `ModsLocal`), t
 On the mod's options page, under **Troubleshooting**, **Diagnostics**, switch on **Developer diagnostics**. Switch on **Show test tools** too if you want the test buttons. In code the switch is `Meta.Dev`, and `Meta.Dev.Verbose` is true while it is on.
 
 "Show test tools" and "Developer diagnostics" are off as shipped.
-With diagnostics off the mod writes only warnings and errors to `Player.log` (every logger in the mod goes through the one switch, `Meta.Dev.Gated`), and the four diagnostic keys (F7, Shift+F7, F8, F9) do nothing.
+With diagnostics off the mod writes only warnings and errors to `Player.log` (every logger in the mod goes through the one switch, `Meta.Dev.Gated`), and the three diagnostic keys (F7, Shift+F7, F9) do nothing.
 To work on the mod, switch both on under Diagnostics on the options page.
+With both on, the first test there, **City expansion: run every check**, runs every automatic check of the city expansion by itself and sums it up ([The test run](test-run.md)).
 
 The switch drops the line, not the work of making it: the text handed to `Info` is put together before the logger sees it.
 That is fine for a line written when something happens (a scene starts, a bus is sent).
@@ -119,6 +120,7 @@ all, the most under Transport: TransitDirector.Update (6 KB a second), ...; on f
 | handlers put back on the game's events | `Core/EventHold`: times a handler had to be put on one of the game's event fields, and times a changed field was looked into | a few after a load, then 0. Sixty a minute is a holder putting itself back every second |
 | searches of the whole scene (while playing) | `Core/SceneFinds`: every `FindObjectsByType` and `Resources.FindObjectsOfTypeAll` the mod makes | each is a frame of about 110 ms in this game. "While playing" must be 0: what a search finds is found behind the loading screen (`ScenePrewarm`) |
 | the mod's own scripts | `Core/HotSpots`: every Update, LateUpdate and FixedUpdate of the mod's and its handlers of the game's events (a new hour or day, a door, the city map, a character's change of look), each named "Feature: Class.Method"; their time a frame on average and in the worst frame, and the three that took the most | well under a millisecond a frame on average. A name whose worst is tens of milliseconds is a stutter of the mod's, and the name says where |
+| BizMan: opens, switches and tab changes | `BizPace/BizPaceWatch`: BizMan's business view switched on (an open), another business picked in it (a switch) or another tab (a tab change), each counted with what the mod's handlers added, the worst, the owner's budget (2 ms to an open, 1 ms to the others) and the slowest handler; absent when BizMan was not used in the minute. Each episode is a line of its own, "BizMan check (open at ...)" | the worst under its budget. A name here is the handler to look at; Options > Tests > Check BizMan's speed walks every business and tab and says PASS or FAIL |
 | the heap grew under them | what the mod's own scripts allocated: counted exactly in every frame where the runtime counts each thread's allocations (`GC.GetAllocatedBytesForCurrentThread`, found out when the record starts), else read from the heap's size one frame in eight; beside it what the heap grew by in all | the mod's share of "grown by". The three names under which it grew the most are where to look first |
 
 A second line a minute says what grew since the first minute of the record, so that a leak names itself (`Diagnostics/ObjectKinds`):
@@ -147,7 +149,7 @@ One line for a frame longer than 80 ms (12 a minute at most; the rest are in the
 ```
 Session: a frame of 231 ms; none of the mod's large pieces of work was under way; where it went: coroutines and timers
 204 ms, rendering 14 ms, the rest 13 ms; the collector: no collection (41 so far), at work 0.0 ms, heap 731 MB before and
-733 MB after; the game: its screen was black or fading (its own walk into or out of a building: not seen as a stutter),
+733 MB after; the game: its screen was black (its own walk into or out of a building: not seen as a stutter),
 the player came out of a building in it, not saving, no scene loaded or unloaded; the mod's own scripts in it: 0.6 ms
 (Transport: TransitDirector.Update 0.3 ms, People: ActorPool.Update 0.1 ms, Core: GoingPublicWatch.Update 0.1 ms); the
 mod's navigation obstacles changed in the second before it and in it: 0; the mod's last pieces of work: "people: a
@@ -163,13 +165,22 @@ How to read it:
 
 - **the mod's own scripts in it** is the time all of the mod's Updates, LateUpdates, FixedUpdates and event handlers took in that frame (`Core/HotSpots`), with the three that took the most.
   Time under "scripts' Update" that is not here is the game's or another mod's.
+  So is "coroutines and timers" of hundreds of milliseconds with the screen clear and the mod's own scripts at a few.
+  Seen in a beta 6 log (28 Oct 2026): the first time each traffic car of the Koenigsegg Jesko car mod comes onto the road in a session, that mod reads the car's paint textures back from the graphics card and recolours them on the main thread.
+  That is a frame of 530 to 600 ms with 28 to 30 MB more on the heap, and its own "KoenigseggJesko lighting vehicle=..." lines come a few frames before it.
+  Frames of 150 to 175 ms in the same step with 4 to 6 MB more on the heap fit the same mod recolouring a car that comes back in another colour.
 - **the collector** says whether a collection finished between the record's two looks, how long the engine's collector worked in that frame, and the heap on both sides of it.
-- **the game** says whether its black screen was up, whether the player had just gone through a door, whether it was saving (`SaveGameManager.SavingGameInProgress`) and whether a scene had just been loaded or unloaded.
-- **the mod's last pieces of work** are the last three named with `SessionWatch.Mark`, with how long each took where the place that named it also called `SessionWatch.Done`, and when it was, seen from the long frame.
+- **the game** says whether its black screen was up ("black": drawn at full strength as the frame began, not seen; "fading, the picture showing through": its fade out or back in, 0.2 s each way at a door, seen, and counted as seen in the minute's line), whether the player had just gone through a door, whether it was saving (`SaveGameManager.SavingGameInProgress`) and whether a scene had just been loaded or unloaded.
+- **the mod's last pieces of work** are the last three named with `SessionWatch.Mark` up to the end of the long frame, with how long each took where the place that named it also called `SessionWatch.Done`, and when it was, seen from the long frame.
+  Pieces named after it, in the frame that follows before the line is written, never made it long: they are counted, "(3 begun after it left out)", not named.
+  After a long frame of more than a quarter of a second near bus stops there are nearly always some, because the bus stops' tick that fell due puts out up to six places at once.
+  The ring (`Core/WorkRings`, `MarkRing`) holds sixteen so that they do not push out what came before.
+  The first time it happens in a run a "Session check (work named for a long frame)" line says PASS, and it says FAIL every time they did push it out.
+  Until beta 6 the ring held three and named them "just after it", so the Koenigsegg Jesko's stalls above read as the bus stops'.
 
 The test "Test: write the session record's lines now" (Options, Tests, under Performance) writes both lines at once, so every part can be read without waiting for a stutter.
 
-"The mod was at" is the last piece of work named with `SessionWatch.Mark("...")` in the three frames before.
+"The mod was at" is the costliest piece of work named and closed in the long frame, else the last one named with `SessionWatch.Mark("...")` in it or the two frames before it; never one named after it.
 `Mark` is a handful of writes into a fixed ring with a constant text and one read of the clock (the same cost with diagnostics on or off).
 
 It is called where the mod does something large in one go: a character made or given a look (`ActorPool.Dress`, `CityPeople.Dress`, the casts), a living-city site set up, a bus stop, a precinct front or a two-wheeler stand put out, an accident, a crime, a fire or a street event starting, the game saving (the mod's own share of the save is timed and written as its own `Session:` line), the performance tweaks listing the loaded materials.
@@ -177,7 +188,89 @@ It is called where the mod does something large in one go: a character made or g
 Nearly all of them name it with `using var piece = SessionWatch.Piece("...")`, which is `Mark` and, at the end of the block, `Done`, so the line has its time beside it.
 New code that builds something in one frame names it the same way; `Mark` is never called per frame and never with a text put together for the call.
 
-What the lines cannot say: which of the game's scripts, or another mod's, a long frame was spent in; how long the mod's own coroutines took (they run under "coroutines and timers" and are not timed one by one); and anything about the graphics card.
+With the step timing on, the frame is cut where the engine itself cuts it (just after it updates the time, `Diagnostics/FrameSteps`), so the parts add up to the frame: the named groups, "waiting for the last frame to be shown", "the rest" of the engine's steps, and "outside the engine's steps".
+The line then says what the system saw of the same frame (`Diagnostics/MachineClock`) and, where the build offers them, the engine's own figures for the graphics card, and ends with "so:" and the cause the figures point to (`Diagnostics/FrameRules`):
+
+```
+...; where it went: scripts' Update 1 ms, rendering 5 ms, waiting for the last frame to be shown 362 ms, the rest 2 ms,
+outside the engine's steps 1 ms; the processor: the main thread ran 16 ms of it, the game 47 ms over all its threads,
+the machine's 24 processors 97% busy (other programs 91%); page faults in it: 310; the engine's own figures: not offered
+by this build; so: the game waited for the last frame to be shown while other programs held the processor (...).
+```
+
+How to tell the causes apart:
+
+- **The graphics card or the display:** the time is under "waiting for the last frame to be shown", the main thread ran little of it and the other programs' share is small. Where the engine gives the graphics card's time, a large one says the card itself was slow; a small one says the render thread or the display.
+- **Another program:** the main thread ran little of the frame while other programs held most of the machine's processors (a build, a game, a scan). The time can be under the wait (the render thread kept waiting) or outside the steps.
+- **The engine's own work, or a script's:** the main thread ran most of the frame, and the steps above say where.
+- **Outside the engine's steps with the processor free:** the window's messages, the system or the driver.
+- **Tens of thousands of page faults:** memory was being brought in, paged back from the disk or touched for the first time (a large allocation, a texture coming in).
+
+The thread's and the system's times are counted at the system's clock tick (about 15.6 ms): good for a long frame and the minute's sums, not for one short frame.
+
+The line a minute says the same of the minute: the minute's waits for the last frame to be shown and its time outside the engine's steps (the sum and the worst frame), the share of the minute the main thread ran, the other programs' share of the processor, the page faults, and the causes of its frames over 33 ms counted by the same rules as the long-frame line. Where the build offers the engine's own frame timing (`FrameTimingManager`), it ends with the graphics card's longest frame of the minute in milliseconds; where it does not, it says "the engine's own frame timing: not offered by this build".
+
+What the graphics card's figures are (`Diagnostics/SessionWatch.Timing`): on the long-frame line, the engine's own time for the card and for the render thread, the worst of the last few frames it has figures for (they come a few frames late); on the minute's line, the card's longest frame. They say how long the card took, not what it spent the time on.
+
+### The game's midnight
+
+The game runs every feature's day in the one frame it turns the day in (`GameManager.NewDay` calls the game's hour and day events), and then asks the engine to unload unused assets, which runs as "loading" in the next frame or two. With the record on, a line follows every midnight, whether or not the frame was long, naming every part of the mod's in that frame (a part inside another, such as `Event: EconomyDirector.OnDay` and `Economy: EconomyDirector.OnDay`, counts under both names and once in the total):
+
+```
+Session check (the game's midnight, day 10): the mod's scripts took 4.2 ms of the frame the game turned the day in (61 ms
+in all); by part (a part inside another counts under both): Event: EconomyDirector.OnDay 2.1 ms, ...; the day's code
+left for the frames after: 2 step(s) (Core/DaySpread), 96 log line(s) (Core/DayLines); the day's code
+compiled ahead: yes (wanted: under 20 ms once it is): PASS
+```
+
+The steps are the work of the midnight that the game does not read in that frame, played in the frames after it (`Core/DaySpread`, `Core/DayPump`); the log lines are the Info lines the day's handlers wrote, held and written a few a frame (`Core/DayLines`), in order. The list of what stays in the frame, and why, is [RLO-PERF-021](../standards/performance.md).
+
+The day's code is compiled ahead a slice a frame, some twenty seconds after each load (`Core/DayWarm`, `Core/CodeWarm`): Mono compiles a method the first time it is called, and before this the first midnight of a session compiled every feature's day in that one frame (148.7 ms of the mod's at the first midnight of a session on 25 Oct 2026, ten to twenty times less at every midnight after). Its line, once it is done:
+
+```
+Day warm check (in play, a slice a frame): the mod's code for the game's midnight compiled ahead: 4618 of the mod's
+method(s) read, 7888 compiled, 85 refused (...), 282 with no code of their own; 610 ms over 505 frame(s), the most in a
+frame 13.1 ms (wanted: a slice of 1 ms, a long method alone in its frame): PASS.
+```
+
+Options > Tests, Performance, "Prepare the code for the game's midnight now" does the rest at once and writes the same line. A frame of several hundred milliseconds of "loading" right after midnight, with tens of thousands of page faults and a few milliseconds of the mod's, is the game's own `Resources.UnloadUnusedAssets()` at the end of `GameManager.NewDay`: Player.log has the engine's line for it just before ("Unloading N unused Assets ... Total: 934.9 ms (FindLiveObjects ... MarkObjects ...)"). Its time grows with the number of loaded objects and the managed heap; the mod does not start it.
+
+### The city map
+
+The city map pauses the game, so the minute's line leaves its frames out. With the record on, the map's frames are counted on their own, a frame of the map over 80 ms has a line of its own ("on the city map" in its place words), and once the map's camera is back down one line says what the map cost:
+
+```
+Session: the city map was open 12.4 s: 731 frames, average 16.9 ms, worst 41 ms, over 33 ms: 2, over 50 ms: 0; the mod's
+own scripts 0.21 ms a frame on average and 1.9 ms at most (mostly Core: Driver.LateUpdate 1.2 ms); the frame it opened
+in took 96 ms, the mod's own scripts 7.4 ms of it (Core: MapPlaces.OnMap 3.1 ms, ...); the frame it shut in took 58 ms,
+...; its camera's way back down 61 frames, the longest 22 ms; frames of the map over 80 ms: 1 (a line each, up to 12).
+```
+
+Then the map check (RLO-PERF-022): every part of the mod's that changed something for the map is asked once a frame until none holds anything, which must be within 2 s of play coming back. Its line follows some 120 frames of play later:
+
+```
+Map check (after closing): the map was open 12.4 s; far squares: 36 of 58 out (231804 renderers, 231804 as the map
+opened), 36 of the 36 out before it out again, in 14 frame(s) after its camera was back; the mod's far things: as in the
+street, ...; draw distances: the options' again on the player's camera; ...; the player's camera as before the map (its
+layers, far plane and draw distances); every part back 0.21 s (14 frames) after play came back; frames of play 10.4 ms on
+average in the 120 after it, 10.6 ms in the minute before; the mod's own scripts 0.32 ms a frame after it, 0.30 before
+(wanted: every part back within 2 s, nothing left, the player's camera as before): restored, 0 lingering: PASS
+```
+
+A FAIL names the part still holding something and what it holds, or says the player's camera is not as before the map (its layers, far plane or draw distances). A map opened again before the last one's camera was back down is set against the camera before the first opening (the game stops its shutting coroutine, so the draw distances are still the ones set for the way down). The parts and their looks are listed in StandardCheck/MapChecks.cs; the looks are in `Core/MapParts`.
+
+As a city's part of the mod unloads, one more check is written once the menu's scene comes in (RLO-PERF-023): `Culling check (unload): 0 dead cullables in the game's culling lists (N listed) ...: PASS`. A dead entry there is a lamp, tree, bench, sign or people's zone the mod destroyed and left in the game's culling lists, which makes the game throw every frame the moment it builds its culling group again.
+
+What the lines cannot say: which of the game's scripts, or another mod's, a long frame was spent in; how long the mod's own coroutines took (they run under "coroutines and timers" and are not timed one by one); what the graphics card spent its time on (which pass, which shader); and anything about the card at all on a build without the engine's frame timing.
+
+## Clicks and moving furniture
+
+`Diagnostics/ClickWatch` writes a line for a click, with Developer diagnostics on, at most two a second. It reads the game and changes nothing.
+
+- `Click check:` for a left click: the interface under the pointer, what the ray met, the game's target, and whether walking was blocked, the player was indoors, in a vehicle, in a menu, on the map or paused.
+- `Move check (right click):` for a right click on a piece of furniture. It says whether the game lifts it to move it. If not, it gives the first reason the game's own right click finds, in the game's order (`Diagnostics/FurnitureRules`). Only "in use", "part of the building" and a piece fixed in a flat come with a notice of the game's. The rest do nothing at all, an activity under way or a panel open among them. For "in use" it says what makes it so: somebody seated on it, a piece on it in use, something under each of its places to sit, a seat at the table kept, or its own in-use mark. Each line also says whether the building lists the piece, and whether the piece's record is the building's own.
+- `Move check (place click):` for a left click while a piece is being placed. It says whether the game puts it down there. If not, it says why: a piece of the interface selected, the pointer over the interface, no floor under the pointer, outside a house's plot, blocked floor, or it does not fit. When it does not fit, it names what stands in the way and whose it is: the game's, this mod's, or another mod's by its assembly.
+- `Move check (ended):` when a move ends: where the piece is, and whether the building's own record of it, which the save keeps, says the same. `FAIL` there means the move would not be kept, or the piece would be gone after a load. Moves in the interior designer are left out: it keeps a moved piece's place only once its own animation has played.
 
 ## Log lines by feature
 
@@ -187,6 +280,7 @@ Each feature describes its own lines where it describes the work that writes the
 | --- | --- | --- |
 | `Game build:`, `Game contract:` | the guard | [After a game update](../contributing/after-a-game-update.md) |
 | `Session` | the session record | [The session record](#the-session-record), above |
+| `Click check:`, `Move check (...)` | clicks and moving furniture | [Clicks and moving furniture](#clicks-and-moving-furniture), above |
 | `Jobs:`, `Jobs check (...)`, `Careers:` | jobs and employers | [Jobs](../features/jobs.md): gig offers, the cleaner, the drinks cart, a shift across a save |
 | `Transit check (...)`, `Transit:` | buses and the subway | [Transport](../features/transport.md#buses): "Lines to judge a run by" |
 | `Taxi check (...)` | the taxi by phone | [Taxi by phone](../features/taxi.md) |

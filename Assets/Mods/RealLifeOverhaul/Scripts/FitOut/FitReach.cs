@@ -5,10 +5,9 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul.FitOut
 {
     /// <summary>
-    /// The player's way on the game's navigation mesh to a desk (the places by its chair from <see cref="DeskReach"/>):
-    /// asked as the game itself asks before it walks the player to something it was clicked on (PlayerController.ExistsRoute:
-    /// a whole path, with the player's own filter). The cost: a few path searches within one room, once as a floor stands
-    /// or a station is chosen, and once when a desk is clicked; nothing per frame.
+    /// The player's way on the navigation mesh to a desk, asked as the game asks before it walks the player to something
+    /// clicked (a whole path, the player's filter). Cost: a few path searches in one room, as a floor stands or a desk is
+    /// clicked; nothing per frame.
     /// </summary>
     internal static class FitReach
     {
@@ -21,7 +20,7 @@ namespace RealLifeOverhaul.FitOut
             NavMeshQueryFilter filter = PlayerController.navMeshQueryFilter;
             if (filter.areaMask == 0)
             {
-                filter = NavMeshHelper.NpcNavMeshFilter;   // (no player yet: the game's walkers' own, the same floor)
+                filter = NavMeshHelper.NpcNavMeshFilter;   // no player yet: the walkers' own, the same floor
             }
             return filter;
         }
@@ -75,11 +74,7 @@ namespace RealLifeOverhaul.FitOut
             return metres;
         }
 
-        /// <summary>
-        /// Where the player stands to sit at a seat drawn up to a desk, walked to from <paramref name="from"/>: the first of
-        /// the places by the chair (<see cref="DeskReach.Spot"/>) on the floor at <paramref name="floorY"/> the player can
-        /// reach. False if none can be.
-        /// </summary>
+        /// <summary>The first place by the chair (<see cref="DeskReach.Spot"/>) the player can reach from <paramref name="from"/>; false if none.</summary>
         public static bool StandBy(Transform seat, Transform desk, Vector3 from, float floorY, out Vector3 stand)
         {
             stand = Vector3.zero;

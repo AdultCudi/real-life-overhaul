@@ -9,28 +9,21 @@ namespace RealLifeOverhaul.Offices
         public string Street;
         public int Number;
         public string District;
-        public bool Office;   // an office building as the game made it (true), or a shop whose structure the game shares with its offices
-        public bool Free;     // standing empty and to let, nobody's, no business in it, no other feature's: the player could rent it now
+        public bool Office;   // an office building as the game made it, or a shop whose structure the game shares with its offices
+        public bool Free;     // empty and to let, nobody's and no other feature's: the player could rent it now
         public bool Held;     // a shop that is an office now (or held an office business at load) and somebody has: it stays an office
     }
 
     /// <summary>
-    /// Which of the city's empty shops are offices while the mod runs. In every district where the game has office
-    /// buildings, the player can always choose between at least <see cref="DistrictFloor"/> offices to let, and between
-    /// at least <see cref="CityFloor"/> across the city: the game's own empty offices that no feature of the mod claims
-    /// count first, and as many empty shops as are short become offices, never more than half the district's shops of
-    /// that kind (<see cref="Cap"/>), so that the shops' own market keeps its choice too.
-    ///
-    /// Which shops: each shop's place in a ranking by a hash of its address (<see cref="Rank"/>, no dice, nothing kept), so
-    /// the same city gives the same shops on every machine, whatever order the buildings come in. A shop that is an
-    /// office and somebody has (<see cref="ConversionRow.Held"/>) stays one and counts against the district's cap; one
-    /// standing empty that is no longer needed (the game's own offices came free) is a shop again. Game-free: checked in
-    /// NavCheck (OfficeConversionCheck.cs).
+    /// Which of the city's empty shops are offices while the mod runs: at least <see cref="DistrictFloor"/> offices to let
+    /// in each district with offices and <see cref="CityFloor"/> in the city, the game's own free offices first, never more
+    /// than <see cref="Cap"/> of a district's shops. Shops are picked by a hash of their address (<see cref="Rank"/>), so
+    /// every machine picks the same; a held one stays an office. Game-free: checked in NavCheck.
     /// </summary>
     public static class ConversionRules
     {
         public const int DistrictFloor = 2;   // offices to let in a district with offices: a choice, not a single one
-        public const int CityFloor = 8;       // offices to let in the city: five office districts give ten already; this holds when a district has no shop to spare
+        public const int CityFloor = 8;       // offices to let in the city; holds when a district has no shop to spare
 
         /// <summary>The most shops of a district that may be offices at once: half of them, and at least the floor.</summary>
         public static int Cap(int shops) => Math.Max(DistrictFloor, shops / 2);
@@ -55,6 +48,43 @@ namespace RealLifeOverhaul.Offices
             return h;
         }
 
+        /// <summary>
+        /// Whether a building's type reads the same in every copy of the building the game keeps: the city scene's (what the map card,
+        /// the filters and the marker read) and the game's own list (what BizMan, the rent, the businesses that may start and the
+        /// customers read by address). Null when every copy reads <paramref name="wanted"/>; otherwise what differs. A missing copy
+        /// (null) is not a copy: a building the game's list does not hold has one place to read.
+        /// </summary>
+        public static string Disagreement(string wanted, string sceneType, string gameType)
+        {
+            if (!string.Equals(sceneType, wanted, StringComparison.Ordinal))
+            {
+                return "the city's copy reads " + (sceneType ?? "(none)") + ", not " + wanted;
+            }
+            if (gameType != null && !string.Equals(gameType, wanted, StringComparison.Ordinal))
+            {
+                return "the game's list reads " + gameType + ", not " + wanted + " (the map says one thing and BizMan another)";
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// The first business type a building type offers whose own suitable building type is another, or a type the game does not
+        /// know: null when every offered business suits the type. <paramref name="suitableOf"/> gives a business type's suitable
+        /// building type, null for none.
+        /// </summary>
+        public static string WrongOffer(string buildingType, IList<string> offered, Func<string, string> suitableOf)
+        {
+            for (int i = 0; offered != null && i < offered.Count; i++)
+            {
+                string suits = suitableOf != null ? suitableOf(offered[i]) : null;
+                if (!string.Equals(suits, buildingType, StringComparison.Ordinal))
+                {
+                    return offered[i] + " (suits " + (suits ?? "nothing") + ")";
+                }
+            }
+            return null;
+        }
+
         /// <summary>The districts with offices, most offices first (ties by name): the order the city's floor is filled in.</summary>
         public static List<string> Districts(IList<ConversionRow> rows)
         {
@@ -76,10 +106,7 @@ namespace RealLifeOverhaul.Offices
             return names;
         }
 
-        /// <summary>
-        /// into[i] is true for every shop that is to be an office now (false for the game's offices). Returns the offices
-        /// the player can choose between across the city's office districts once it is done.
-        /// </summary>
+        /// <summary>Sets into[i] for each shop to be an office now; returns the offices to let across the office districts.</summary>
         public static int Decide(IList<ConversionRow> rows, bool[] into)
         {
             int count = rows != null ? rows.Count : 0;
@@ -109,7 +136,7 @@ namespace RealLifeOverhaul.Offices
                 ConversionRow r = rows[i];
                 if (r.District == null || !at.TryGetValue(r.District, out int k))
                 {
-                    continue;   // (a district without offices keeps its shops)
+                    continue;   // a district without offices keeps its shops
                 }
                 if (r.Office)
                 {

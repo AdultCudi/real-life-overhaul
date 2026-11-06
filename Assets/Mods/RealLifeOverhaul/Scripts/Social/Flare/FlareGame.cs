@@ -258,7 +258,7 @@ namespace RealLifeOverhaul.Flare
         public static string Hype(BuildingRegistration reg)
         {
             List<string> products = reg != null ? reg.cachedAvailableProducts : null;
-            string district = reg != null ? reg.Neighborhood : null;
+            string district = GameRegistrations.District(reg);
             if (products == null || string.IsNullOrEmpty(district) || SaveGameManager.Current == null || SaveGameManager.Current.marketEvents == null)
             {
                 return null;
@@ -278,7 +278,6 @@ namespace RealLifeOverhaul.Flare
         }
 
         private static readonly List<EmployeeInstance> Staffed = new List<EmployeeInstance>(16);
-        private const string GlobalDistrict = "ba:neighborhood_global";
 
         /// <summary>The city's districts by the game's own names (not its "everywhere"), into the list given.</summary>
         public static void Districts(List<string> into)
@@ -286,14 +285,7 @@ namespace RealLifeOverhaul.Flare
             into.Clear();
             try
             {
-                var all = NeighborhoodHelper.Neighborhoods;
-                for (int i = 0; all != null && i < all.Count; i++)
-                {
-                    if (!string.IsNullOrEmpty(all[i]) && all[i] != GlobalDistrict)
-                    {
-                        into.Add(all[i]);
-                    }
-                }
+                CityCheck.NewYorkDistricts(NeighborhoodHelper.Neighborhoods, into);   // Flare's people are New York's, wherever the player is
             }
             catch (Exception)
             {
@@ -366,8 +358,8 @@ namespace RealLifeOverhaul.Flare
                 FlareShopSeen seen = f.Shop(place);
                 into.Add(new FlareShop
                 {
-                    Place = place, Name = Name(all[i]), Niche = FlareCast.NicheOf(all[i].businessTypeName), District = all[i].Neighborhood,
-                    OpenedDay = seen != null ? seen.FirstDay : f.StartDay
+                    Place = place, Name = Name(all[i]), Niche = FlareCast.NicheOf(all[i].businessTypeName), District = GameRegistrations.District(all[i]),
+                    OpenedDay = FlareRules.OpenedOn(FoundingGame.Of(all[i]), seen != null ? seen.FirstDay : f.StartDay)
                 });
             }
         }

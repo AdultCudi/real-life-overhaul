@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.Street
     public sealed partial class StreetDirector
     {
         private const string TestName = "Street talk";
-        private const float TestReach = 8f;   // metres: the test talks to the nearest person this near (walking, standing or seated), whichever way the player faces
+        private const float TestReach = 8f;   // metres: the test talks to the nearest person this near, whichever way the player faces
 
         private bool TestReady()
         {
@@ -39,6 +39,25 @@ namespace RealLifeOverhaul.Street
             {
                 return;
             }
+            TestBegin(false);
+        }
+
+        /// <summary>
+        /// Options-page test: the nearest passer-by stops with time to talk, and the blue button asks their age. Its answer
+        /// writes the "Street talk check (age)" line.
+        /// </summary>
+        public void TestAge()
+        {
+            if (!TestReady())
+            {
+                return;
+            }
+            TestBegin(true);
+        }
+
+        // The nearest person within TestReach, whichever way the player faces, stopped for a talk (or the notice that nobody is).
+        private void TestBegin(bool age)
+        {
             PlayerController player = StreetGame.Player;
             List<Pedestrian> walkers = PerfGame.Pedestrians;
             BaseHuman best = null;
@@ -79,14 +98,14 @@ namespace RealLifeOverhaul.Street
                     bestKind = kind;
                 }
             }
-            if (best == null || !Begin(best, bestWalker, bestKind, Time.unscaledTime))
+            if (best == null || !Begin(best, bestWalker, bestKind, Time.unscaledTime, age))
             {
                 StreetGame.Notice(NotificationType.Warning, "reallife_street_test_nobody", null, 8f);
                 Logger?.Info("Street talk: test, nobody within " + TestReach + " m to talk to.");
             }
         }
 
-        /// <summary>Options-page test: everybody forgets today's talks with the player (a rude word too).</summary>
+        /// <summary>Options-page test: everybody forgets today's talks with the player, a rude word too.</summary>
         public void TestForget()
         {
             if (!TestReady())
@@ -99,7 +118,7 @@ namespace RealLifeOverhaul.Street
             Logger?.Info("Street talk: test, " + n + " people forgot today's talks.");
         }
 
-        /// <summary>Everything of street talk off the street (the save is being prepared for the mod's removal): whoever was stopped walks on.</summary>
+        /// <summary>Takes street talk off the street for the mod's removal: whoever was stopped walks on.</summary>
         public void StopAll()
         {
             Stop("taken off the street");

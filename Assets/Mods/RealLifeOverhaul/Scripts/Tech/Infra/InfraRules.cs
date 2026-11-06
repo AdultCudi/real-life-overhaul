@@ -175,11 +175,13 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The cooling water it uses in a day, thousandths of a cubic metre.</summary>
         public static long Water(DataCentre d) => Power(d) / 1000 * InfraCatalogue.WaterPerMwh / 1000;
 
+        /// <summary>The count the Guide's Staff and roles reference states: one technician for so many racks, one at the least once there are any.</summary>
+        public static readonly Staffing.StaffRate TechnicianRate = new Staffing.StaffRate(InfraCatalogue.RacksPerTechnician, 1);
+
         /// <summary>The technicians it needs: one for so many racks, one at the least once it has any.</summary>
         public static int TechniciansNeeded(DataCentre d)
         {
-            int racks = d.Racks + d.GpuRacks;
-            return racks <= 0 ? 0 : Math.Max(1, (racks + InfraCatalogue.RacksPerTechnician - 1) / InfraCatalogue.RacksPerTechnician);
+            return TechnicianRate.Need(d.Racks + d.GpuRacks);
         }
 
         /// <summary>Whether a data centre goes down today, by its tier and how short of technicians and crews it is; always with power or connection cut.</summary>
@@ -197,7 +199,7 @@ namespace RealLifeOverhaul.Tech
             long chance = InfraCatalogue.OutageChance[TalentCatalogue.Clamp(d.Tier, 0, InfraCatalogue.Tiers - 1)] * 1000L;
             if (d.Technicians < need)
             {
-                chance = chance * (1000 + (need - d.Technicians) * 3000L / need) / 1000;
+                chance = chance * (1000 + (need - d.Technicians) * (long)InfraCatalogue.OutageShortExtra / need) / 1000;
             }
             chance = chance * EndScaleRules.Outages(cover) / 1000;
             return TechRandom.Hash(seed, TechRandom.Of(d.Place), day, 5) % 1000000u < chance;
@@ -337,6 +339,9 @@ namespace RealLifeOverhaul.Tech
                    | (cash >= HyperCash(share) ? 0 : 8);
         }
 
+        /// <summary>Whether a hyperscaler's people are there: a chief technology officer and so many infrastructure people of staff level or above.</summary>
+        public static bool HasChiefs(bool cto, int staffInfra) => cto && staffInfra >= InfraCatalogue.HyperStaffInfra;
+
         /// <summary>The cloud's regions: the districts its data centres stand in.</summary>
         public static int Regions(IList<DataCentre> centres)
         {
@@ -368,6 +373,48 @@ namespace RealLifeOverhaul.Tech
 
         /// <summary>A model's customers' use of AI compute a day, units.</summary>
         public static int Inference(Product p) => (int)Math.Min(int.MaxValue, (p.Users + p.Free / 20) * InfraCatalogue.InferencePerCustomer / 1000);
+
+        /// <summary>Why a warehouse cannot be fitted out now: <see cref="FitFree"/>, already a data centre, or the most there may be.</summary>
+        public const int FitFree = 0, FitAlready = 1, FitMost = 2;
+
+        /// <summary>The one rule both ways to a fit-out answer by (the Infra tab, and the question when a warehouse is taken); the cash is asked last, at the payment.</summary>
+        public static int FitBlock(int centres, bool already)
+        {
+            return already ? FitAlready : centres >= InfraCatalogue.CentresMost ? FitMost : FitFree;
+        }
+
+        /// <summary>What the city does not give a warehouse yet, a bit each: 1 power, 2 water, 4 the business connection. It may be fitted out without; it goes down until they come.</summary>
+        public static int SupplyMissing(bool power, bool water, bool net)
+        {
+            return (power ? 0 : 1) | (water ? 0 : 2) | (net ? 0 : 4);
+        }
+
+        /// <summary>
+        /// The warehouses the player has taken since the last look (in <paramref name="now"/>, not in <paramref name="known"/>), in
+        /// the order the game lists them; each is then known, so it is asked about once. The first look only learns them.
+        /// </summary>
+        public static int Taken(ICollection<string> known, IList<string> now, bool first, List<string> into)
+        {
+            into.Clear();
+            for (int i = 0; now != null && i < now.Count; i++)
+            {
+                if (!known.Contains(now[i]))
+                {
+                    known.Add(now[i]);
+                    if (!first)
+                    {
+                        into.Add(now[i]);
+                    }
+                }
+            }
+            return into.Count;
+        }
+
+        /// <summary>The technicians a data centre lacks for its racks; one at the least, for a search briefed before the racks come.</summary>
+        public static int CrewLacking(DataCentre d)
+        {
+            return Math.Max(1, TechniciansNeeded(d) - Math.Max(0, d.Technicians));
+        }
 
         /// <summary>A day's takings rolled into a data centre's last thirty days.</summary>
         public static void Roll(DataCentre d, int day, long takings)

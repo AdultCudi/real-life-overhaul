@@ -77,7 +77,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 for (int i = 0; i < all.Count; i++)
                 {
                     Building building = all[i];
-                    BuildingRegistration reg = building != null && building.SpecialService == null ? BuildingHelper.GetBuildingRegistration(building.Address) : null;
+                    BuildingRegistration reg = building != null && building.SpecialService == null && !GameDlc.Gated(building) ? BuildingHelper.GetBuildingRegistration(building.Address) : null;
                     if (reg == null || reg.RentedByPlayer || reg.businessTypeName != type || !reg.HasEstablishedBusiness || Taken(state, Place(reg)))
                     {
                         continue;
@@ -126,7 +126,7 @@ namespace RealLifeOverhaul.Economy.Brands
         // chain (a beaten rival takes its chain's shops with it).
         private static AiBusinessDefault Default(string type, BuildingRegistration reg)
         {
-            if (reg == null || reg.BuildingCached == null)
+            if (GameRegistrations.BuildingOf(reg) == null)
             {
                 return null;
             }

@@ -443,7 +443,7 @@ internal static partial class Program
         string fame = MemberText(ModSource(@"Fame\FameDirector.City.cs"), "private void Requested(FameRequest r)");
         Check(CodeAt(fame, "if (Settings.StandingRequestNotes)") > 0 && CodeAt(fame, "\"reallife_fame_note_request\"") > CodeAt(fame, "if (Settings.StandingRequestNotes)"),
             "switches: the city's request is told only with its switch on; it is on the Standing page either way (made before it is told)");
-        string own = MemberText(ModSource(@"Careers\CareersDirector.Own.cs"), "private void OfferContract(int day, int salt, bool force)");
+        string own = MemberText(ModSource(@"Careers\CareersDirector.Own.cs"), "private Contract OfferContract(int day, int salt, bool force)");
         Check(CodeAt(own, "w.Contracts.Add(c2);") > 0 && CodeAt(own, "if (Settings.CareersOwnOfferNotes)") > CodeAt(own, "w.Contracts.Add(c2);")
               && CodeAt(own, "\"reallife_own_note_offer\"") > CodeAt(own, "if (Settings.CareersOwnOfferNotes)"),
             "switches: a client's contract is offered on the Own work tab first, and told only with its switch on");
@@ -455,7 +455,7 @@ internal static partial class Program
         Check(CodeAt(grade, "bool told = !up || Settings.EconomyGradeUpNotes;") > 0 && CodeAt(grade, "if (told)") > 0 && CodeAt(grade, "Badge();") > CodeAt(grade, "if (told)"),
             "switches: a better credit grade may go untold, a worse one is always told, and the app's badge follows either way");
         string calendar = ModSource(@"Events\EventCalendar.cs");
-        string director = ModSource(@"Events\EventDirector.cs");
+        string director = ModSource(@"Events\EventDirector.cs") + ModSource(@"Events\EventDirector.Tests.cs");
         string scene = ModSource(@"Events\StreetEventScene.cs");
         Check(calendar.Contains("public static bool Quiet(EventKind kind) => kind == EventKind.Protest && !Settings.StreetProtestNotes;")
               && Occurs(director, "EventCalendar.Quiet(") == 3 && Occurs(scene, "if (!EventCalendar.Quiet(_kind))") == 2,
@@ -515,7 +515,7 @@ internal static partial class Program
                 string text = langs[l][key];
                 all &= text.Length > 5 && (l == 0 || text != langs[0][key]) && !text.Contains("!") && !text.Contains("—") && !text.Contains("–") && !text.Contains(" - ");
             }
-            Check(all && codes.Length == ModLanguages.All.Length,
+            Check(all && codes.Length == ModLanguages.PerFeature.Length,
                 "morning news: " + key + " is in every language, each its own, with the English names in curly brackets, no dash and no exclamation mark");
         }
         Dictionary<string, string> en = langs[0];

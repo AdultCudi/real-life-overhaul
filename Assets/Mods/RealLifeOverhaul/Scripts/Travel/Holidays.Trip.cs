@@ -167,11 +167,11 @@ namespace RealLifeOverhaul
             {
                 happened = TravelState.Deal(pool, companion, () => Random.value);
             }
-            int before = Mathf.RoundToInt(SaveGameManager.Current.Money);
+            float before = SaveGameManager.Current.Money;
             TravelEffects.Apply(happened);
             if (happened != null)
             {
-                int paid = before - Mathf.RoundToInt(SaveGameManager.Current.Money);
+                int paid = WholeMoney.Round(before - SaveGameManager.Current.Money);
                 if (paid > 0)
                 {
                     TravelState.AwaySpent += paid;
@@ -450,8 +450,8 @@ namespace RealLifeOverhaul
                         "total", TravelText.Money(during), "daily", TravelText.Money(during / daysDuring),
                         "before", TravelText.Money(daysBefore > 0 ? before / daysBefore : 0f)));
                 }
-                int money = Mathf.RoundToInt(SaveGameManager.Current.Money);
-                text.Append(' ').Append(TravelText.T("reallife_travel_summary_balance", "amount", TravelText.Money(money - TravelState.AwayMoneyAtStart)));
+                int money = WholeMoney.Round(SaveGameManager.Current.Money);
+                text.Append(' ').Append(TravelText.T("reallife_travel_summary_balance", "amount", TravelText.Money((float)((long)money - TravelState.AwayMoneyAtStart))));
             }
             catch (Exception e)
             {

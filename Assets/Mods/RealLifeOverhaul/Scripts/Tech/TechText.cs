@@ -30,7 +30,7 @@ namespace RealLifeOverhaul.Tech
                 case Idle.NetNone: return T("reallife_tech_idle_net_none", "days", TechBridges.NetDaysNow().ToString(Inv));
                 case Idle.NetInstalling: return T("reallife_tech_idle_net_installing", "day", f.NetWhen.ToString(Inv));
                 case Idle.NetOutage: return T("reallife_tech_idle_net_outage", "time", (f.NetWhen % 24).ToString("00", Inv) + ":00");
-                case Idle.NoPower: return T("reallife_tech_idle_no_power");
+                case Idle.NoPower: return T(TechBridges.Try(TechBridges.UtilitiesByPhone) ? "reallife_tech_idle_no_power_app" : "reallife_tech_idle_no_power");
                 case Idle.Shut: return T("reallife_tech_idle_shut");
                 case Idle.NoHours: return T("reallife_tech_idle_no_hours");
                 case Idle.NoStations: return T("reallife_tech_idle_no_stations");
@@ -65,6 +65,9 @@ namespace RealLifeOverhaul.Tech
         public static string Share(int ppm) => (ppm / 10000f).ToString(ppm < 10000 ? "0.##" : "0.#", Inv) + "%";
 
         public static string Whole(long n) => n.ToString("N0", Inv);
+
+        /// <summary>Game minutes as hours and minutes, in the words the study's time uses ("3h 05m").</summary>
+        public static string Minutes(int minutes) => T("reallife_study_hours_minutes", "hours", (minutes / 60).ToString(Inv), "minutes", (minutes % 60).ToString("00", Inv));
 
         public static string Role(int role) => T(Mod + "_talent_role_" + TalentCatalogue.Role(role).Key);
 

@@ -11,17 +11,17 @@ Fires and the fire service, weather that matters (grip, crime, sight, street lif
 
 | File | What it is |
 | --- | --- |
-| `EventDirector` | the one scene that is on (a fire or a street event), yielding to accidents and crimes; calendar announcements, the City Bulletin contact, 911, the test buttons, one line in modData |
-| `FireScene` | one fire from first smoke to the engine leaving (car, bin, shopfront); HoseHold (hands on the nozzle); FireDamage (the player's own business: closure and repair bill) |
-| `EventRoad` | the adapter over Scripts/Traffic (public surface only): lanes, the stretch to close, bringing a pooled vehicle; EngineLivery and FireEngine |
-| `FireEffects` | flames, smoke, steam, water jet and firelight: seven pooled particle systems copied from the game's smoke; Fireworks (four pooled mesh-particle systems) |
+| `EventDirector` | the one scene that is on (a fire or a street event), yielding to accidents and crimes; calendar announcements, the City Bulletin contact, 911, one line in modData; the test buttons in EventDirector.Tests |
+| `FireScene` | one fire from first smoke to the engine leaving (car, bin, shopfront), the fire service's part in FireScene.Response; HoseHold (hands on the nozzle); FireDamage (the player's own business: closure and repair bill) |
+| `EventRoad` | the adapter over Scripts/Traffic (public surface only): lanes, the stretch to close, bringing a pooled vehicle; beside it EngineLivery (with BarFlash and EventPropsBar) and FireEngine |
+| `FireEffects` | flames, smoke, steam, water jet and firelight: seven pooled particle systems copied from the game's smoke; beside it Fireworks (four pooled mesh-particle systems) |
 | `Hose` | sixteen pooled segments laid along the ground from the engine to the nozzle, clear of vehicles and street furniture |
 | `EventPeople` | the event pool of eight (a second CityPeople): people on a closed carriageway, things worn on a bone, a staff in the hand, walking in and off |
 | `EventProps` | the props by id: the modelled one if the bundle has it, else a plain-shape stand-in to the wish-list's size and pivot |
 | `FireOutfit` | turnout gear from the game's garments by name |
 | `Weather` | the static factors other features read (accidents, crime, sight, street life, grip, traffic speed); WeatherEffects applies tyres, traffic pace, energy, forecast |
 | `EventCalendar` | what is on which day: fixed days placed by how far through the year they fall, the rest by a roll that depends on the day and the save |
-| `StreetEventScene` | market, farmers' market, parade, protest, fun run, film shoot, fireworks: one class, one closed stretch of road |
+| `StreetEventScene` | market, farmers' market, parade, protest, fun run, film shoot, fireworks: one class in three parts (the scene, .Setup, .Player), one closed stretch of road; IEventScene is what the director runs |
 
 ## How it talks to other features
 
@@ -51,10 +51,13 @@ The lane beside it is closed through a `SceneCordon` of the director's own.
 
 Twenty seconds after the flames, or at once on a 911 call, a fire engine is sent: a pooled truck dressed by `EngineLivery`, driven by `EmergencyDriver` to `SceneCordon.Stand` 12 m short of the fire in its lane.
 
+Held up on the way (a stopped bus, a wreck, a queue) it does not wait for the scene's 85 s (`Traffic/MakeWayRules`): it looks a lane over after a moment and two lanes over after 2.5 s, standing traffic in its way is moved on (`MakeWay`), a bus of the mod's own makes way for it, and held up for 9 s with 120 m or less of its route left it stands where it is and its crew walks the rest, the fire put out as ever.
+Each hold is one `Emergency way` line in the log, and Options > Tests has a bin fire with a stopped bus in the engine's lane (`Fire check (stopped bus)`: PASS or FAIL).
+
 With the modelled `fire_engine` in the bundle a Delivery Truck wears it: the body is made to that truck (the same 7.43 m, the same axles), so it wears the body with its wheels on the truck's own.
 Any other truck, or a van, and every truck without the bundle, is repainted red with a light bar instead.
 
-Three firefighters get out one a second: the first takes the nozzle to 3.6 to 5.5 m from the fire, the hose is laid behind them and the jet arcs on to the fire.
+Three firefighters get out one a second: the first takes the nozzle to 3.6 to 5.5 m from the fire, the hose is laid behind them and the jet arcs on to the fire. A spare rolled hose (`hose_coil`) lies 0.8 m off the engine's side towards the fire, behind the rear axle, where nobody works and the hose is not laid: stood once as the engine parks, on clear ground only, and given back as the crew pack up and on every way the fire ends.
 
 The second works the pump panel (on the modelled engine: 0.50 m off the panel of the fire's side, square to it, which is where `pump_panel` has its hands; the first gets out at the front door, the third at the crew door).
 The third stands between the fire and the street.
@@ -88,13 +91,16 @@ The game has rain and nothing else: no snow, fog, wind, temperature or forecast.
 | heat wave | a summer day, by the day's roll | | x1.3 | | x0.85 | | |
 | cold snap | a winter day, by the day's roll | | x0.85 | | x0.8 | | |
 | ice | one cold-snap day in three | x1.4 | | | x0.7 | x0.75 | x0.9 |
+| snow in patches, covered | the snow on the roads, from [Seasons](seasons.md) (`Weather.SnowNow`), on top of the rest | x1.2, x1.45 | | covered x0.9 | x0.9, x0.8 | x0.88, x0.72 | x0.93, x0.85 |
+
+The street life factor thins the city life's sites (`StreetLifeRules.Sites`, asked in `CityLifeDirector.Wanted`): at least one site while it is above 0, none in a storm.
 
 Seasons are quarters of the game's year (`gameVariables.daysPerYear`, 60 by default), starting in midwinter.
 
 `WeatherEffects` applies grip to the driven car's `LateralFrictionGrip` and `LongitudinalFrictionGrip` (the values `Driving/CarTuning` reads; recorded per wheel and written back exactly).
-It narrows each pooled traffic vehicle's `minPossibleSpeed`/`maxPossibleSpeed` (the traffic system has no speed factor; it takes effect as cars are put on the road; originals written back).
+It narrows each pooled traffic vehicle's `minPossibleSpeed`/`maxPossibleSpeed` (the traffic system has no speed factor; it takes effect as cars are put on the road; originals written back). The pool is made once, when the traffic system starts (GleyTrafficSystem's TrafficVehicles.Initialize), and never grows: an idle car is in it too, so a car that sets off later already has the weather's range. On a Going Public guest the traffic is the host's cars, so nothing is narrowed there, and what was is put back the moment the machine becomes a guest.
 
-It spends 1 to 2 energy an hour out of doors in heat (11 to 19 h) and cold (never below 15; `Weather.Wardrobe`, if anybody sets it, says whether a coat is worn).
+It spends 1 to 2 energy an hour out of doors in heat (11 to 19 h) and cold (never below 15; `Weather.Wardrobe`, set by `Wiring.LifeLinks` to `CharacterCatalogue.WearingWarmTop`, says whether a warm top is worn: none is spent in it in the cold).
 It gives the morning forecast (toast and City Bulletin) and a warning when the weather turns.
 While the player sleeps its toasts are held for the morning summary (`Core/MorningNews`): the director runs on game time, which the game's sleep pauses, so they would all come in the minute the player wakes.
 
@@ -128,7 +134,7 @@ Footfall for nearby businesses is not changed: the game rebuilds a business's pr
 - `Traffic/TrafficAccidents.Tick` (read-only to this work, so not made): the roll becomes `Random.value < Settings.AccidentFrequency * 0.02f * Events.Weather.AccidentFactor`, and its start condition gains `&& !Events.EventDirector.IsActive`.
 - `Traffic/TrafficAccidents`, where a severe crash is staged: `Events.EventDirector.CrashFire(wreck)` sets that wreck alight for 50 s (flames, smoke, firelight; no engine).
 - `Traffic/PursuitSight` and `Crime/PoliceAttention`: multiply their sight distances by `Events.Weather.SightFactor`.
-- A wardrobe feature: `Events.Weather.Wardrobe = <IWardrobe>`.
+- Made already: `Wiring.LifeLinks` sets `Events.Weather.Wardrobe` (a warm top of the game's own or the mod's bomber, `Seasons/WarmthRules`).
 - Made already: `Crime/CrimeDirector` (`* Events.Weather.CrimeFactor`, `&& !Events.EventDirector.IsActive`), `CityLife/CityLifeDirector` (`&& !Events.Weather.TakeCover`), `Phone/PhoneContacts` (the 911 dialog offers "Report a fire" and calls `Events.EventDirector.Report911()`).
 
 ## Asset wish-list

@@ -22,6 +22,7 @@ internal static partial class Program
         MoodBuffStash();
         MoodBuffCatalogue();
         MoodBuffSources();
+        MoodDefinitions();
         Check(FixLineEverywhere("no longer grow to hundreds of days each time a save is loaded", "não crescem mais para centenas de dias",
                                 "不再在每次加载存档时增长到几百天", "wachsen nicht mehr bei jedem Laden eines Spielstands auf Hunderte Tage an",
                                 "ne grandissent plus jusqu'à des centaines de jours", "ya no crecen hasta cientos de días",
@@ -312,5 +313,134 @@ internal static partial class Program
         Check(noCap == 0 && created == 1, "mood buffs: no mood of the mod is registered without a cap, and moods are made in one place (" + noCap + " uncapped, " + created + " made)");
         Check(additive == 0 && gameAdds == 1 && MemberText(state, "public static void AddModifier(string type, int hours = -1)").Contains("HappinessHelper.AddModifier(type, hours);"),
             "mood buffs: the mod adds moods only through ModState.AddModifier and never with additive hours, so a repeated mood refreshes instead of piling up");
+    }
+
+    // ---------------------------------------------------------------- every mood has a definition before the city is built
+
+    // A player's save (a "Recover Midnight" autosave) held a mood of the mod in the game's own mood list. The game rebuilds its
+    // register of mood types each time it reads a save, which drops the mod's, and PlayerController.Awake then looks up every
+    // listed mood while the city is built, before the mod's city load: it threw on the one it could not find (HappinessHelper.
+    // ConvertTemporalBoostsToRegularBoosts), and showering, sleeping and cooking could not finish. Now the definitions go back at the
+    // main menu's unload, an entry the game cannot read is taken out, and no save is written with the mod's moods in the list.
+    private static void MoodDefinitions()
+    {
+        // The rule for an entry of the game's list, with a register that holds only what a load would give it.
+        var register = new HashSet<string>(StringComparer.Ordinal) { "ba:happinessmodifier_cheat", "reallife_happinessmodifier_sick" };
+        Func<string, bool> defined = register.Contains;
+        Check(!MoodRules.Unreadable("reallife_happinessmodifier_sick", defined) && !MoodRules.Unreadable("ba:happinessmodifier_cheat", defined),
+            "mood definitions: an entry whose type the register holds is readable");
+        Check(MoodRules.Unreadable("reallife_happinessmodifier_civic_clean", defined) && MoodRules.Unreadable(null, defined) && MoodRules.Unreadable("", defined)
+              && MoodRules.Unreadable("anything", null),
+            "mood definitions: an entry with no definition (the report's civic_clean before its definition was back), no type, or no register to ask is unreadable");
+        register.Add("reallife_happinessmodifier_civic_clean");
+        Check(!MoodRules.Unreadable("reallife_happinessmodifier_civic_clean", defined), "mood definitions: the same entry is readable once its definition is in the register");
+
+        // The stash a save that failed to load the mod's state leaves: the list's moods and those already waiting, each type once.
+        string merged = MoodRules.MergeStash(new List<string> { "a=5", "b=7" }, "b=2;c=9;;x;a=1");
+        Check(merged == "a=5;b=7;c=9", "mood definitions: moods taken out of the list while the mod's state is unread keep their hours and the waiting ones stay, each type once (" + merged + ")");
+        Check(MoodRules.MergeStash(new List<string>(), null) == string.Empty && MoodRules.MergeStash(new List<string>(), "a=3") == "a=3"
+              && MoodRules.MergeStash(new List<string> { "a=3" }, "") == "a=3", "mood definitions: an empty stash and an empty list merge to what the other holds");
+
+        // Every id the mod can name is a constant of one of the three catalogues and is in that catalogue's table, which the load registers.
+        string state = ModSource(@"Core\ModState.cs"), family = ModSource(@"Family\FamilyModifiers.cs"), travel = ModSource(@"Travel\TravelEffects.cs");
+        var declared = new List<string>();
+        int inTables = 0;
+        foreach ((string code, string tableStart) in new[] { (state, "ModifierDefs ="), (family, "Defs ="), (travel, "Modifiers =") })
+        {
+            int at = code.IndexOf(tableStart, StringComparison.Ordinal);
+            int end = at < 0 ? -1 : code.IndexOf("};", at, StringComparison.Ordinal);
+            string table = end < 0 ? string.Empty : code.Substring(at, end - at);
+            foreach (Match m in Regex.Matches(code, "public const string (\\w+) = \"(reallife_happinessmodifier_\\w+)\";"))
+            {
+                declared.Add(m.Groups[2].Value);
+                bool listed = Regex.IsMatch(table, @"\(" + m.Groups[1].Value + @",");
+                inTables += listed ? 1 : 0;
+                if (!listed)
+                {
+                    Console.WriteLine("   mood definitions: " + m.Groups[2].Value + " is declared but not in its catalogue's table, so no load would define it");
+                }
+            }
+        }
+        Check(declared.Count == 52 && inTables == declared.Count && new HashSet<string>(declared, StringComparer.Ordinal).Count == declared.Count,
+            "mood definitions: every one of the mod's " + declared.Count + " mood ids is in a catalogue table that the load registers, each once (" + inTables + " listed)");
+
+        // No other source names a mood id of its own: a mood nobody registers cannot be added.
+        var stray = new List<string>();
+        var known = new HashSet<string>(declared, StringComparer.Ordinal);
+        foreach (string path in Directory.GetFiles(MoodScripts(), "*.cs", SearchOption.AllDirectories))
+        {
+            string text = File.ReadAllText(path);
+            foreach (Match m in Regex.Matches(text, "\"(reallife_happinessmodifier_\\w+)\""))
+            {
+                if (!known.Contains(m.Groups[1].Value))
+                {
+                    stray.Add(IoPath.GetFileName(path) + ": " + m.Groups[1].Value);
+                }
+            }
+        }
+        Check(stray.Count == 0, "mood definitions: no source names a mood id that is not in a catalogue" + (stray.Count > 0 ? " (" + string.Join("; ", stray) + ")" : string.Empty));
+
+        // The wiring, read from the source: definitions back before the city, the list cleaned, the save hook joined before the load.
+        string before = MemberText(state, "public static void BeforeCity()");
+        Check(before.Contains("RegisterModifiers();") && before.IndexOf("RegisterModifiers();", StringComparison.Ordinal) < before.IndexOf("MoodRules.Unreadable(", StringComparison.Ordinal)
+              && before.Contains("list.RemoveAt(i);") && before.Contains("Meta.Dev.Always(Logger,"),
+            "mood definitions: before the city is built the definitions go into the register first, then an unreadable entry leaves the list, with a line in Player.log");
+        string entry = ModSource(@"Core\ModStateEntry.cs");
+        Check(entry.Contains("[ModEntryMainMenu]") && entry.Contains("ModState.BeforeCity();") && entry.Contains("[assembly: RegisterModClass(typeof(ModStateEntry))]")
+              && MemberText(entry, "public Task OnUnloadAsync()").Contains("catch (Exception e)"),
+            "mood definitions: the main menu's entry runs the step at its unload (after the save is read, before the city's scenes), behind the guard");
+        string save = MemberText(state, "public static List<HappinessModifierData> BeforeSave()");
+        int strip = save.IndexOf("save.happinessModifiers.RemoveAt(i);", StringComparison.Ordinal), unread = save.IndexOf("if (!Loaded)", StringComparison.Ordinal);
+        Check(strip > 0 && unread > strip && save.Contains("MoodRules.MergeStash(parts, held)") && !save.Contains("if (!Loaded || save == null)"),
+            "mood definitions: a save takes the mod's moods out of the game's list whether or not the mod's state is read");
+        string life = ModSource(@"Life\LifeEvents.cs");
+        int hook = life.IndexOf("SaveHook.KeepEssential(_onSave ?? (_onSave = OnSaveGame));", StringComparison.Ordinal), load = life.IndexOf("ModState.Load();", StringComparison.Ordinal);
+        Check(hook > 0 && load > hook, "mood definitions: the save hook that takes the moods out is joined before the mod's state is loaded, so a load that fails halfway still has it");
+        string mod = ModSource(@"Core\RealLifeOverhaulMod.cs"), features = ModSource(@"Meta\FeatureList.cs"), test = ModSource(@"Core\MoodsTest.cs");
+        Check(mod.Contains("AddButton(\"reallife_moods_test\", MoodsTest.Run)") && features.Contains(".Test(\"reallife_test_event\", \"reallife_moods_test\")")
+              && test.Contains("ModState.MissingFromRegister(names, out int total)") && test.Contains("ModState.UnreadableInList(out int entries)")
+              && test.Contains("\"Moods check (all): \"") && test.Contains("PASS") && test.Contains("FAIL"),
+            "mood definitions: Options > Tests has a check that every mood of the mod resolves and the open save's list reads, with PASS or FAIL in Player.log");
+
+        // The texts of the test in the three always complete languages, and the fix line in all eleven, with each fix mark.
+        string folder = LocalesFolder();
+        bool texts = true;
+        foreach (string code in new[] { "en", "pt", "zh-cn" })
+        {
+            Dictionary<string, string> words = LoadWords(IoPath.Combine(folder, code + ".json"));
+            foreach (string key in new[] { "reallife_moods_test", "reallife_moods_test_pass", "reallife_moods_test_fail", "reallife_moods_test_none" })
+            {
+                texts &= words != null && words.TryGetValue(key, out string value) && value.Length > 0 && value.Length <= 240;
+            }
+        }
+        Check(texts, "mood definitions: the test's label and its three notices are in en, pt and zh-cn, none over 240 characters");
+        string[] pieces =
+        {
+            "pressing confirm in the shower, sleep and cooking panels then did nothing",
+            "apertar confirmar nos painéis de banho, sono e cozinha",
+            "在洗澡、睡觉和做饭面板里点击确认就没有任何反应",
+            "das Bestätigen in den Panels für Duschen, Schlafen und Kochen nichts mehr",
+            "confirmer dans les panneaux de douche, de sommeil et de cuisine ne faisait plus rien",
+            "pulsar confirmar en los paneles de ducha, sueño y cocina ya no hacía nada",
+            "нажатие «Подтвердить» в панелях душа, сна и готовки ничего не делало",
+            "bevestigen in de vensters voor douchen, slapen en koken deed daarna niets meer",
+            "duş, uyku ve yemek panellerinde onayla düğmesine basmak hiçbir şey yapmıyordu",
+            "potwierdzenie w panelach prysznica, snu i gotowania nic nie robiło",
+            "샤워, 수면, 요리 패널에서 확인을 눌러도 아무 일도 일어나지 않았습니다"
+        };
+        bool line = ModLanguages.All.Length == pieces.Length;
+        for (int l = 0; line && l < pieces.Length; l++)
+        {
+            Dictionary<string, string> words = LoadWords(IoPath.Combine(folder, ModLanguages.All[l] + ".json"));
+            bool found = false;
+            foreach (KeyValuePair<string, string> row in words ?? new Dictionary<string, string>())
+            {
+                int piece = row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && !row.Key.EndsWith("_title", StringComparison.Ordinal)
+                    ? row.Value.IndexOf(pieces[l], StringComparison.Ordinal) : -1;
+                found |= piece > 0 && row.Value.LastIndexOf(FixMarks[ModLanguages.All[l]], piece, StringComparison.Ordinal) >= 0 && !row.Value.Contains("  ");
+            }
+            line &= found;
+        }
+        Check(line, "mood definitions: What's new has the moods' fix line, with its fix mark and no double space, in some row of all eleven languages");
     }
 }

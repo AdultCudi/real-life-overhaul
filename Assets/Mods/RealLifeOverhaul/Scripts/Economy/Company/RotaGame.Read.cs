@@ -227,7 +227,7 @@ namespace RealLifeOverhaul.Economy
             {
                 EmployeeInstance e = sheet.Workers[w];
                 // The game's wage at today's prices, as the city's cost of living pays it, and any agreed raise on top.
-                problem.Worker[w].Wage = Mathf.Max(0, CompanyCatalogue.Share(Mathf.RoundToInt(e.hourlyWage * 100f), Prices.Level) + (raise != null ? raise(e.id) : 0));
+                problem.Worker[w].Wage = PaidWage.Cents(PaidWage.Base(e.hourlyWage), Prices.Level, raise != null ? raise(e.id) : 0);
                 for (int s = 0; s < stations; s++)
                 {
                     problem.Can[w * stations + s] = HowWell(e, sheet.Stations[s].ItemCached);
@@ -322,7 +322,12 @@ namespace RealLifeOverhaul.Economy
                 {
                     return 0;
                 }
-                float demand = ProductMarketHelper.GetNeighborhoodDemand(product, reg.Neighborhood).demand / 100f;
+                string district = GameRegistrations.District(reg);
+                if (district == null)
+                {
+                    return 0;   // no building, so no district's demand to ask the game for
+                }
+                float demand = ProductMarketHelper.GetNeighborhoodDemand(product, district).demand / 100f;
                 return Mathf.Max(0, Mathf.CeilToInt(initial * GetCustomerSatisfactionMultiplier() * GetPromotionMultiplier() * GetDayAndHourMultiplier(hour, day) * demand - 0.2f));
             }
 
@@ -399,11 +404,12 @@ namespace RealLifeOverhaul.Economy
         private static void ReadRoom(RotaSheet sheet, BuildingRegistration reg)
         {
             RotaShop shop = sheet.Shop;
-            if (!shop.HasCustomers || reg.BuildingCached == null)
+            Building found = GameRegistrations.BuildingOf(reg);
+            if (!shop.HasCustomers || found == null)
             {
                 return;
             }
-            int building = BuildingSizeHelper.GetData(reg).GetCustomerCapacity(reg.BuildingCached.BuildingType, reg.BuildingCached.BuildingVersion);
+            int building = BuildingSizeHelper.GetData(reg).GetCustomerCapacity(found.BuildingType, found.BuildingVersion);
             for (int g = 0; g < shop.Groups; g++)
             {
                 shop.GroupRoom[g] = GroupLimits[g] != null && building > 0 ? building : 0;
@@ -516,7 +522,8 @@ namespace RealLifeOverhaul.Economy
         // (CustomerEntriesCalculatorRetail.AddProductsToCustomersEntriesList).
         private static float Taken(Item item, string product, BusinessType type, BuildingRegistration reg, float content)
         {
-            float demand = item.isADemandedProduct ? ProductMarketHelper.GetNeighborhoodDemand(product, reg.Neighborhood).demand : 100f;
+            string district = item.isADemandedProduct ? GameRegistrations.District(reg) : null;
+            float demand = district != null ? ProductMarketHelper.GetNeighborhoodDemand(product, district).demand : 100f;
             float amount = type.maxAmountPerProduct > 1f ? (type.IsPrimaryProduct(product) ? (1f + type.maxAmountPerProduct) * 0.5f : 1f) : type.maxAmountPerProduct;
             return (item.productSalesRatio == 0f ? 1f : item.productSalesRatio) * (demand / 100f) * content * type.GetProductImpact(product) * amount;
         }

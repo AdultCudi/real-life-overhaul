@@ -11,22 +11,17 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Photos
 {
     /// <summary>
-    /// The photo shown whole, over the whole of the app: dark, the photo fitted with its shape kept, a thin top bar (back,
-    /// the game's day and hour it was taken, the kind and the real time, its place in the album), round arrows either side,
-    /// a strip of up to nine neighbours (the one shown framed), and a bar of icon buttons: Flare (while Flare runs),
-    /// Wallpaper, Favourite, Delete. Shown at once on a tap: the photo's small copy stands in until the whole photo is read
-    /// (on a worker) and decoded (once, on the main thread: PhotosGame.Load).
-    ///
-    /// COST: nothing per frame but the three keys GalleryKeys reads while it shows. A step writes a few texts and asks for one
-    /// photo; the texture shown before is destroyed when the next comes or the viewer closes.
+    /// The viewer part: one photo shown whole, its small copy standing in until the whole photo is read and decoded, with
+    /// a strip of neighbours and the share, wallpaper, favourite and delete buttons. Nothing per frame but the three keys
+    /// GalleryKeys reads while it shows.
     /// </summary>
     internal sealed partial class GalleryApp
     {
-        private const float TopBar = 128f;      // canvas units of the viewer's top bar
-        private const float BottomBar = 156f;   // ...of its bar of buttons
-        private const float FilmCell = 92f;     // ...of a neighbour in the strip
+        private const float TopBar = 128f;      // canvas units
+        private const float BottomBar = 156f;   // canvas units
+        private const float FilmCell = 92f;     // canvas units
         private const float FilmGap = 10f;
-        private const float ActWidth = 210f;    // ...of a button of the bar (room for "Papel de parede")
+        private const float ActWidth = 210f;    // canvas units, room for "Papel de parede"
         private const float ActGap = 16f;
         private const int Acts = 4;             // Flare, Wallpaper, Favourite, Delete
         private const int ActShare = 0, ActWallpaper = 1, ActFavourite = 2, ActDelete = 3;
@@ -42,9 +37,9 @@ namespace RealLifeOverhaul.Photos
         private float _areaX, _areaY, _areaW, _areaH, _viewW, _viewH;
         private Texture2D _wholeTexture;
         private string _wholeName;
-        private int _wholeLoad;                // counts the whole photo's loads: only the latest one's texture is kept, any other destroyed
+        private int _wholeLoad;                // counts the whole photo's loads: only the latest one's texture is kept
 
-        // A neighbour in the strip under the photo: its frame (lit for the one shown) and its small copy.
+        // A neighbour in the strip under the photo.
         private sealed class Film
         {
             public Image Frame;
@@ -53,14 +48,11 @@ namespace RealLifeOverhaul.Photos
             public int Index = -1;
         }
 
-        // A button of the bar: an icon over a word.
         private sealed class Act
         {
             public Image Hit, Icon;
             public TextMeshProUGUI Label;
         }
-
-        // ---------------------------------------------------------------- building
 
         private void BuildViewer()
         {
@@ -123,7 +115,6 @@ namespace RealLifeOverhaul.Photos
             FlareKit.Show(_viewer, false);
         }
 
-        // A glyph, white, square, at a place inside its button.
         private static Image Glyph(Transform parent, FlareGlyph glyph, float x, float y, float size)
         {
             Image icon = FlareKit.Box(parent, "Icon", GalleryLook.ViewerText);
@@ -162,8 +153,6 @@ namespace RealLifeOverhaul.Photos
             FlareKit.Place(_keysHint.rectTransform, Margin + 8f, barTop + 50f, Mathf.Max(0f, hintRoom), 56f);
             FlareKit.Show(_keysHint, hintRoom >= 420f);
         }
-
-        // ---------------------------------------------------------------- writing it
 
         private void WriteViewer()
         {
@@ -205,7 +194,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // The small copy shown in the photo's place until the whole photo comes (nothing but "Opening the photo" without one).
+        // Until the whole photo comes; without a small copy, only "Opening the photo".
         private void StandIn(Texture small)
         {
             _photo.texture = small;
@@ -244,7 +233,7 @@ namespace RealLifeOverhaul.Photos
             _acts[ActShare].Label.color = GalleryLook.ViewerText;
         }
 
-        // The strip of neighbours: up to four either side, the one shown framed in the accent; their small copies asked for.
+        // Up to four neighbours either side, the one shown framed in the accent.
         private void WriteFilm()
         {
             int first = GalleryRules.Film(_nav.Index, _shown.Count, out int last);
@@ -272,7 +261,6 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // The neighbours whose small copy is not made yet, asked for (with the grid's).
         private void WantFilm()
         {
             if (_viewer == null || !_nav.Viewing)
@@ -296,7 +284,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // A small copy made: in the strip, and in the photo's place if the whole photo has not come yet.
+        // In the strip, and in the photo's place if the whole photo has not come yet.
         private void FilmCame(string name, Texture2D made)
         {
             if (_viewer == null || !_nav.Viewing)
@@ -340,9 +328,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // ---------------------------------------------------------------- moving
-
-        /// <summary>The viewer's keys, a frame's look while a photo is shown whole (GalleryKeys): false once it no longer is.</summary>
+        /// <summary>Read each frame by GalleryKeys while a photo is shown whole; false once it no longer is.</summary>
         internal bool ReadKeys()
         {
             if (!_built || !_nav.Viewing || !Showing)
@@ -351,7 +337,7 @@ namespace RealLifeOverhaul.Photos
             }
             if (GameConfirm.IsOpen)
             {
-                return true;   // (the question box has the keys)
+                return true;   // the question box has the keys
             }
             if (PhotosGame.TakeCancel())
             {
@@ -385,7 +371,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // Back to the grid where it was, the album read again (a favourite may have changed), the photo last shown in view.
+        // The album is read again, as a favourite may have changed, and the photo last shown scrolled into view.
         private void Back()
         {
             string name = _nav.Viewing && _nav.Index >= 0 && _nav.Index < _shown.Count ? _shown[_nav.Index].Name : null;
@@ -394,10 +380,8 @@ namespace RealLifeOverhaul.Photos
             Reveal(GalleryRules.IndexOf(_shown, name));
         }
 
-        // ---------------------------------------------------------------- the whole photo
-
-        // A load's answer: kept only if it is the latest load asked for (the same photo viewed again before an earlier load
-        // ended gives two answers; the earlier is destroyed, never left unowned), and the texture shown before it let go.
+        // Kept only if it is the latest load asked for: the same photo viewed again before a load ended gives two answers,
+        // and the earlier is destroyed, never left unowned.
         private void Came(Texture2D texture, string name, int opening, int load)
         {
             if (load != _wholeLoad || opening != _opening || name != _wholeName || !_nav.Viewing || !Showing)
@@ -425,7 +409,6 @@ namespace RealLifeOverhaul.Photos
             PlaceWhole();
         }
 
-        // The photo (or its stand-in) as large as its place allows, its shape kept, in the middle.
         private void PlaceWhole()
         {
             Texture t = _photo.texture;
@@ -440,7 +423,7 @@ namespace RealLifeOverhaul.Photos
 
         private void DropWhole()
         {
-            _wholeLoad++;   // (a load under way for the photo let go is destroyed when it comes)
+            _wholeLoad++;   // a load under way is destroyed when it comes
             PhotosGame.Destroy(_wholeTexture);
             _wholeTexture = null;
             _wholeName = null;
@@ -449,8 +432,6 @@ namespace RealLifeOverhaul.Photos
                 _photo.texture = null;
             }
         }
-
-        // ---------------------------------------------------------------- what can be done with a photo
 
         private void Pressed(int act)
         {

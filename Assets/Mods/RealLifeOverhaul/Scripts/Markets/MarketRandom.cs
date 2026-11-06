@@ -14,7 +14,8 @@ namespace RealLifeOverhaul.Markets
             Listing = 20, ListingPick = 21, ResultsShock = 22, OpenShock = 23, OpenTail = 24, Start = 25, Recovery = 26, Bidder = 28,
             Mood = 29, OpenMood = 30, Crisis = 31, CrisisTerms = 32,
             Meeting = 33, Activist = 34, OwnBid = 35, Book = 36,   // a player's company: its meetings, investors, a bid, its book
-            MaterialGroupShock = 37, MaterialShock = 38, MaterialStart = 39;   // the raw materials exchange: a group's and a material's close, a first price
+            MaterialGroupShock = 37, MaterialShock = 38, MaterialStart = 39,   // the raw materials exchange: a group's and a material's close, a first price
+            BuilderNews = 40;   // a listed builder's own news at a close (BuilderMarket.Drawn)
 
         // The mood's draws are keyed by step and 0 for the market, MoodSector + sector, or MoodOwn + company id.
         public const int MoodSector = 1000, MoodOwn = 2000;

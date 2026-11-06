@@ -14,6 +14,7 @@ namespace RealLifeOverhaul.Tech
         public const int RackKw = 8, GpuRackKw = 32;  // kW drawn
         public const int WaterPerMwh = 1800;          // thousandths of a cubic metre of cooling water for each megawatt hour
         public const int RacksPerTechnician = 20;     // racks one technician keeps running
+        public const int OutageShortExtra = 3000;     // thousandths more outages a day with no technician at all: a short crew adds this in proportion to what it lacks
         public const int CentresMost = 12;            // data centres
         public const int NetNeeded = 1000;            // Mbps of a business connection a data centre needs
 
@@ -43,6 +44,8 @@ namespace RealLifeOverhaul.Tech
         public const int HyperRegions = 3;            // districts with a data centre of the cloud's
         public const int HyperRacks = 300;            // racks across the data centres
         public const long HyperCash = 500000000;      // cents
+        public const int HyperStaffLevel = TalentCatalogue.Staff;   // ...the level they must have reached
+        public const int HyperStaffInfra = 2;         // infrastructure people of staff level or above that a hyperscaler needs, beside a chief technology officer
         public const int HyperDemand = 3000;          // thousandths: a hyperscaler sells to the city's large companies too
 
         // AI models

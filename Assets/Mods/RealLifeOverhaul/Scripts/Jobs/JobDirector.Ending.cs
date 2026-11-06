@@ -139,7 +139,7 @@ namespace RealLifeOverhaul
                 {
                     return;   // a test or a fault never counts for or against the player
                 }
-                if ((job.Shift.Units > 0 || failed) && JobCatalogue.IndexOf(def.Id) >= 0)   // the two career-only kinds keep no strikes: the employer keeps marks
+                if ((job.Shift.Units > 0 || failed) && JobCatalogue.RecordOf(def.Id) >= 0)   // the two career-only kinds keep no strikes: the employer keeps marks
                 {
                     if (JobState.ShiftEnded(def, failed, TimeHelper.CurrentDay))
                     {

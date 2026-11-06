@@ -1060,7 +1060,7 @@ internal static partial class Program
                 all &= text.Length > 10 && (l == 0 || text != langs[0][key]) && !text.Contains("!") && !text.Contains("—") && !text.Contains("–") && !text.Contains(" - ")
                        && (key != "reallife_family_no_argue_cause" || text.Contains("{name}"));
             }
-            Check(all && codes.Length == ModLanguages.All.Length, "hard times: " + key + " is in every language, each its own, the partner's name kept, no dash and no exclamation mark");
+            Check(all && codes.Length == ModLanguages.PerFeature.Length, "hard times: " + key + " is in every language, each its own, the partner's name kept, no dash and no exclamation mark");
         }
         Check(langs[0]["reallife_family_no_argue_cause"].Length <= 240, "hard times: the test's notice is within 240 characters");
     }

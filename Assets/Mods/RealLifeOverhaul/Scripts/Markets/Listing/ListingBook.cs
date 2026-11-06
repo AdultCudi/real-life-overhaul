@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Markets
 {
@@ -35,6 +36,21 @@ namespace RealLifeOverhaul.Markets
 
         public const int NeedYears = 0, NeedQuarters = 1, NeedTurnover = 2, NeedProfit = 3, NeedProfitable = 4, NeedAudit = 5, NeedCount = 6;
 
+        /// <summary>
+        /// The hand-over deadline after a day. In a Going Public session nothing can be handed over (the businesses are the
+        /// session's), so a day spent there does not count against the days the buyer is given.
+        /// </summary>
+        public static int HandOverDeadline(int by, bool session)
+        {
+            return session ? by + 1 : by;
+        }
+
+        /// <summary>Whether businesses still to be handed over are now paid for instead: the deadline is past, and not in a session.</summary>
+        public static bool HandOverLate(int pending, int day, int by, bool session)
+        {
+            return pending > 0 && !session && day > by;
+        }
+
         /// <summary>One statement day into its quarter of the books; the last twelve quarters are kept.</summary>
         public static void AddDay(ListingFile f, int statementDay, long revenue, long profit, int year)
         {
@@ -65,6 +81,23 @@ namespace RealLifeOverhaul.Markets
             q.Days++;
             f.Books[at] = q;
             f.BooksDay = Math.Max(f.BooksDay, statementDay);
+        }
+
+        /// <summary>
+        /// The earliest start day among the days of the player's businesses still running (none known, 0 or less, are left out); 0 when there is none. The oldest
+        /// one decides the years on the page, whatever is founded after it.
+        /// </summary>
+        public static int EarliestDay(IList<int> days)
+        {
+            int first = 0;
+            for (int i = 0; days != null && i < days.Count; i++)
+            {
+                if (days[i] > 0 && (first == 0 || days[i] < first))
+                {
+                    first = days[i];
+                }
+            }
+            return first;
         }
 
         /// <summary>The last complete quarters before the day's, up to so many; how many made a profit.</summary>

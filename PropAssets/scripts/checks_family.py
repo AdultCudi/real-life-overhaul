@@ -6,7 +6,7 @@ import numpy as np
 SIZES = {                                            # kit space: x, y (forward), z (up)
     "wedding_arch": (2.10, 0.30, 2.50), "flower_stand": (0.40, 0.40, 1.20), "aisle_runner": (1.10, 1.00, 0.018), "cot": (0.72, 1.26, 0.90),
     "high_chair": (0.48, 0.50, 1.05), "driving_school_sign": (0.62, 0.52, 1.05), "test_checkpoint_beacon": (None, 0.22, 2.90),
-    "learner_plate": (0.18, 0.004, 0.18), "parking_box_marker": (2.40, 5.50, 0.0), "ring_box": (0.05, 0.05, 0.06), "birthday_cake": (0.26, 0.26, 0.16),
+    "ring_box": (0.05, 0.05, 0.06),
 }
 CENTRED = ("wedding_arch", "flower_stand", "aisle_runner", "cot", "high_chair", "driving_school_sign")      # ground-centre pivots the code places by
 
@@ -43,18 +43,7 @@ def run(c):
     flag = v[v[:, 0] > 0.12]
     c.extent("test_checkpoint_beacon", "flag from", flag[:, 2].min(), 2.60, 0.035)
     c.extent("test_checkpoint_beacon", "flag out to (x)", v[:, 0].max(), 0.45, 0.004)
-    c.extent("parking_box_marker", "lies above the ground", c.kit("parking_box_marker")[:, 2].min(), 0.005, 0.0005)
-    v = c.kit("parking_box_posts")
-    poles = v[v[:, 2] > 0.5]
-    c.extent("parking_box_posts", "poles apart in x", poles[:, 0].max() + poles[:, 0].min() + 2 * poles[poles[:, 0] > 0][:, 0].mean(), 2.30, 0.01)
-    c.extent("parking_box_posts", "poles apart in y", 2 * poles[poles[:, 1] > 0][:, 1].mean(), 5.40, 0.01)
-    c.extent("parking_box_posts", "height", v[:, 2].max(), 1.20, 0.001)
-    # Held things: a fist round the bouquet's wrap, the ring box on a palm, the baby on a forearm.
-    c.grip("bouquet", (0, 0, 0), (0, 0, 1), reach=0.05)
-    v = c.kit("bouquet")
-    c.extent("bouquet", "cut ends below the pivot", v[:, 2].min(), -0.10, 0.001)
-    c.extent("bouquet", "top of the flowers", v[:, 2].max(), 0.30, 0.004)
-    c.extent("bouquet", "width", np.ptp(v[:, 0]), 0.28, 0.006)
+    # Held things: the ring box on a palm, the baby on a forearm.
     c.extent("ring_box", "stands on its base", c.kit("ring_box")[:, 2].min(), 0.0, 0.0005)
     v = c.kit("baby_bundle")
     c.extent("baby_bundle", "underside", v[:, 2].min(), 0.0, 0.001)

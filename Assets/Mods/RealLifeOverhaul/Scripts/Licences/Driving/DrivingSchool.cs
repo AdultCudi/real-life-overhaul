@@ -22,7 +22,10 @@ namespace RealLifeOverhaul
         TestVan,
         Taxi,
         Renew,
-        Motorcycle     // the ride assessment at the desk
+        Motorcycle,    // the ride assessment at the desk
+        TheoryHeavy,   // the heavy goods paper
+        LessonHeavy,   // in the school's truck
+        TestHeavy
     }
 
     /// <summary>The driving school's rules: what each service costs, and when it can be had, at the desk or on the phone.</summary>
@@ -30,13 +33,49 @@ namespace RealLifeOverhaul
     {
         public const int OpensAt = 7;
         public const int ClosesAt = 20;
-        public const int Classes = 4;       // LicenceClass: car, commercial, taxi, motorcycle
 
-        public static readonly SchoolService[] Order =
+        /// <summary>An hour of the school's day as the game writes the time.</summary>
+        public static string Hour(int hour)
+        {
+            return (hour % 24).GetFormattedTime(0f);
+        }
+
+        /// <summary>The words of a reason <see cref="Available"/> gave: the school's hours, where it names them, are filled in from the constants above.</summary>
+        public static string ReasonText(string reasonKey)
+        {
+            return Licences.T(reasonKey, "from", Hour(OpensAt), "to", Hour(ClosesAt));
+        }
+        public const int Classes = 5;       // LicenceClass: car, commercial, taxi, motorcycle, heavy
+
+        private static readonly SchoolService[] WithHeavy =
+        {
+            SchoolService.Card, SchoolService.Theory, SchoolService.LessonCar, SchoolService.TestCar,
+            SchoolService.LessonVan, SchoolService.TestVan, SchoolService.TheoryHeavy, SchoolService.LessonHeavy, SchoolService.TestHeavy,
+            SchoolService.Motorcycle, SchoolService.Taxi, SchoolService.Renew
+        };
+
+        private static readonly SchoolService[] WithoutHeavy =
         {
             SchoolService.Card, SchoolService.Theory, SchoolService.LessonCar, SchoolService.TestCar,
             SchoolService.LessonVan, SchoolService.TestVan, SchoolService.Motorcycle, SchoolService.Taxi, SchoolService.Renew
         };
+
+        /// <summary>The services in the order the desk and the phone offer them; the heavy class's only while its option is on.</summary>
+        public static SchoolService[] Order => Settings.HeavyLicence ? WithHeavy : WithoutHeavy;
+
+        /// <summary>The heavy class's step a service is, if it is one.</summary>
+        public static bool HeavyStep(SchoolService service, out HeavyRules.Step step)
+        {
+            step = service == SchoolService.TheoryHeavy ? HeavyRules.Step.Theory : service == SchoolService.LessonHeavy ? HeavyRules.Step.Lesson : HeavyRules.Step.Test;
+            return service == SchoolService.TheoryHeavy || service == SchoolService.LessonHeavy || service == SchoolService.TestHeavy;
+        }
+
+        /// <summary>True for a lesson or a driven test: the services that take the school's car out on the road.</summary>
+        public static bool Drives(SchoolService service)
+        {
+            return service == SchoolService.LessonCar || service == SchoolService.TestCar || service == SchoolService.LessonVan || service == SchoolService.TestVan
+                   || service == SchoolService.LessonHeavy || service == SchoolService.TestHeavy;
+        }
 
         public static int Fee(SchoolService service)
         {
@@ -50,6 +89,9 @@ namespace RealLifeOverhaul
                 case SchoolService.Taxi: return LicenceLaw.TaxiFee;
                 case SchoolService.Motorcycle: return LicenceLaw.MotorcycleFee;
                 case SchoolService.Renew: return LicenceLaw.RenewalFee * Mathf.Max(1, Renewable(TimeHelper.CurrentDay));
+                case SchoolService.TheoryHeavy: return HeavyRules.Fee(HeavyRules.Step.Theory, LicenceState.Heavy);
+                case SchoolService.LessonHeavy: return HeavyRules.Fee(HeavyRules.Step.Lesson, LicenceState.Heavy);
+                case SchoolService.TestHeavy: return HeavyRules.Fee(HeavyRules.Step.Test, LicenceState.Heavy);
                 default: return 0;
             }
         }
@@ -99,6 +141,12 @@ namespace RealLifeOverhaul
             {
                 reasonKey = "reallife_school_no_suspended";
             }
+            else if (HeavyStep(service, out HeavyRules.Step step))
+            {
+                LicenceStanding heavy = LicenceState.Standing(LicenceClass.Heavy, day);
+                reasonKey = !Settings.HeavyLicence ? "reallife_school_closed"
+                    : HeavyRules.Refusal(step, van == LicenceStanding.Valid, Holds(heavy), heavy == LicenceStanding.Valid, LicenceState.Heavy, day);
+            }
             else
             {
                 switch (service)
@@ -147,6 +195,10 @@ namespace RealLifeOverhaul
                         break;
                 }
             }
+            if (reasonKey == null && Drives(service))
+            {
+                reasonKey = LessonRules.Refusal(GoingPublic.TrafficMirrored, true);   // a guest's traffic is the host's: said in the list, before the fee is asked for
+            }
             if (reasonKey == null && !Licences.Affords(Fee(service)))
             {
                 reasonKey = "reallife_school_no_money";
@@ -171,6 +223,9 @@ namespace RealLifeOverhaul
                 case SchoolService.TestVan: return "reallife_school_pitch_test_van";
                 case SchoolService.Taxi: return "reallife_school_pitch_taxi";
                 case SchoolService.Renew: return "reallife_school_pitch_renew";
+                case SchoolService.TheoryHeavy: return "reallife_school_pitch_theory_heavy";
+                case SchoolService.LessonHeavy: return "reallife_school_pitch_lesson_heavy";
+                case SchoolService.TestHeavy: return "reallife_school_pitch_test_heavy";
                 default: return "reallife_school_pitch_card";
             }
         }
@@ -183,6 +238,10 @@ namespace RealLifeOverhaul
             for (int i = 0; i < Classes; i++)
             {
                 var kind = (LicenceClass)i;
+                if (!OnCard(kind))
+                {
+                    continue;
+                }
                 text.Append(Licences.ClassName(kind)).Append(": ").Append(CardLine(kind, day)).Append('\n');
             }
             int points = LicenceState.PointsOn(day);
@@ -194,6 +253,12 @@ namespace RealLifeOverhaul
             }
             text.Append('\n').Append(Licences.T("reallife_lic_card_today", "day", day.ToString()));
             return text.ToString();
+        }
+
+        /// <summary>Whether a class has a line on the card: the heavy class only while its option is on or once held.</summary>
+        public static bool OnCard(LicenceClass kind)
+        {
+            return kind != LicenceClass.Heavy || Settings.HeavyLicence || LicenceState.Of(kind).Held;
         }
 
         /// <summary>A licence's line on the card: its standing and dates, or never held.</summary>
@@ -251,12 +316,14 @@ namespace RealLifeOverhaul
         private const int PerTick = 30;
         internal const float Aside = 4.3f;       // metres along the wall from the door, clear of a job board and the university's door
         private const float FromWall = 0.55f;    // metres
+        private const float SignCullRadius = 2f; // metres round a sign's foot: all of it (Performance/ModCulling)
         internal const float Reach = 1.7f;       // metres from a desk's front that count as at it
         private const string SchoolType = "ba:businesstype_school";
 
         private readonly Transform _parent;
         private readonly IModLogger _logger;
         private readonly List<Transform> _signs = new List<Transform>(Most);
+        private readonly List<CullEntry> _culls = new List<CullEntry>(Most);   // the signs, not drawn beyond the game's far band
         private readonly List<Vector3> _fronts = new List<Vector3>(Most);
         private readonly List<string> _addresses = new List<string>(Most);
         private readonly List<CityBuildingController> _buildings = new List<CityBuildingController>(Most);
@@ -342,6 +409,11 @@ namespace RealLifeOverhaul
 
         public void Dispose()
         {
+            for (int i = 0; i < _culls.Count; i++)
+            {
+                ModCulling.Remove(_culls[i]);
+            }
+            _culls.Clear();
             for (int i = 0; i < _signs.Count; i++)
             {
                 if (_signs[i] != null)
@@ -359,7 +431,7 @@ namespace RealLifeOverhaul
         private void Search()
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] buildings = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] buildings = GameDlc.Open(city);
             if (buildings == null || !Shapes.Available)
             {
                 return;
@@ -407,6 +479,7 @@ namespace RealLifeOverhaul
                 }
                 sign.SetPositionAndRotation(at, Quaternion.LookRotation(outward, Vector3.up));
                 _signs.Add(sign);
+                _culls.Add(ModCulling.Add(CullRules.Kind.BuildingSign, sign, at, SignCullRadius));
                 _fronts.Add(stand + outward * 0.6f);
                 _addresses.Add(building.building.Address.ToFormattedString());
                 _buildings.Add(building);
@@ -493,7 +566,7 @@ namespace RealLifeOverhaul
             }
             else
             {
-                status = reason.GetLocalization();
+                status = DrivingSchool.ReasonText(reason);
             }
             var entry = new DialogEntry
             {

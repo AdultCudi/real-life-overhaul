@@ -58,6 +58,8 @@ Everything is in `Scripts/Business`: `BusinessCatalogue` (every kind, every numb
 - *Footfall*: the game computes customers from `0.5 + 0.75 x promotion / 100`.
   The mod recomputes the game's own figure (`BusinessHelper.UpdatePromotion`), sets `promotion.total` to the value that gives the wanted percent (`BusinessCatalogue.PromotionFor`), and has the game redraw the customers still to come today (`CustomerEntriesHelper.UpdateCustomerEntriesForPlayerBusiness`, which the game itself calls when a business opens or closes).
   It is put back on top each game hour and redrawn after midnight.
+  The game also writes its own figure over the mod's whenever the items of a player's business change, a shelf is stocked or marketing is set, and no event follows all of them; so once a second the figures written are compared with the ones standing (`BusinessGame.Wiped`, `BusinessDirector.KeepFigures`), and a business whose figure was put back is written again with every part (the interior's, the city's, the rest) and its customers still to come are drawn again.
+  The Interior tab's customers page shares the list by the figure it was drawn with (`CustomerDraw.DrawnWith`) and gives each part its own size as far as that figure carries it (`InteriorRules.Split`); the rest of the mod is its own sum, never a remainder.
 
   The game recomputes the figure daily, on entering the building and when marketing changes, so a save loaded without the mod heals by itself the next day.
   The player sees it: the promotion figure on the business's page moves.
@@ -124,5 +126,5 @@ Wish-list for the asset pipelines (the two clips are already asked for by id bef
 | clip `collector_lean` | leaning in, one hand flat on a counter, the other gesturing low, 5 s loop | **delivered, deliberately not played by `BusinessVisit`**: it is made for a counter 0.975 m up with its near edge 0.32 to 0.36 m ahead and reads as a man bent over nothing anywhere else. A visit is played 1.7 m from wherever the player stands, and the game's shop furniture says nothing of a counter top's height or edge, so no such place can be found. The collector (and the man of a sting) talks with `talk_a` and, once the desk is open on his issue, waits with `arms_crossed`; the game's `IDontThinkSo` gesture only without the clip bundle. One line in `BusinessVisit` (`TalkClip`) if a measured counter ever exists |
 | clip `inspect_look` | clipboard in the left hand, looking up at a ceiling and down at a floor, 6 s loop | the inspector between spots (today `clipboard_write`) |
 
-| prop `window_boarded` | a plywood sheet 1.2 x 1.5 m to stand against a shopfront | (needs placement code) after the vandalism, for the hours the shop is shut |
-| prop `closed_notice` | an A3 notice on a stand, "CLOSED BY ORDER" | (needs placement code) a business closed by an inspector |
+| prop `window_boarded` | a plywood sheet 1.2 x 1.5 m to stand against a shopfront | taken out of the props bundle on 26 Oct 2026 as nothing placed it; a feature that wants it models it anew in the second bundle (PropAssets/README.md, "Adding a prop from Blender") |
+| prop `closed_notice` | an A3 notice on a stand, "CLOSED BY ORDER" | taken out of the props bundle on 26 Oct 2026 as nothing placed it; a feature that wants it models it anew in the second bundle (PropAssets/README.md, "Adding a prop from Blender") |

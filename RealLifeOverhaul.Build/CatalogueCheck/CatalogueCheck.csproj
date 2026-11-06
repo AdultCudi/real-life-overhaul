@@ -17,6 +17,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Crime\CrimeDeck.cs" Link="Mod\CrimeDeck.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Crime\CrimeCatalogue.cs" Link="Mod\CrimeCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\Prices.cs" Link="Mod\Prices.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\LineNeeds.cs" Link="Mod\LineNeeds.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WholeMoney.cs" Link="Mod\WholeMoney.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\JobCatalogue.cs" Link="Mod\JobCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\CareerCatalogue.cs" Link="Mod\CareerCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\CareerOfficeRules.cs" Link="Mod\CareerOfficeRules.cs" />
@@ -27,6 +29,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\OptionsPlan.cs" Link="Mod\OptionsPlan.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\SettingsRules.cs" Link="Mod\SettingsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Phone\Contacts\ContactCatalogue.cs" Link="Mod\ContactCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Phone\Contacts\FixedPeople.cs" Link="Mod\FixedPeople.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Phone\Contacts\ContactGroups.cs" Link="Mod\ContactGroups.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\People\PersonLook.cs" Link="Mod\PersonLook.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\NoticeKinds.cs" Link="Mod\NoticeKinds.cs" />
     <Compile Include="..\Shared\ModLanguages.cs" Link="Shared\ModLanguages.cs" />

@@ -1,14 +1,12 @@
+using System;
+
 namespace RealLifeOverhaul
 {
     public static partial class Wiring
     {
         /// <summary>
-        /// The recorded car sounds with the Garage:
-        ///
-        ///   CarSoundBridges.Parts       what a car's build fits that changes its sound (its exhaust and its turbo): the cart
-        ///                               while it is on the turntable, the build it carries otherwise, and stock with the
-        ///                               Garage or its performance parts switched off;
-        ///   CarSoundBridges.Turntable   the car in the custom shop while the shop is open.
+        /// The recorded car sounds with the Garage: the exhaust and turbo a car's build fits (the cart while it is on the
+        /// turntable, stock with the Garage's tuning off), and the car in the open custom shop.
         /// </summary>
         public static class CarSoundLinks
         {
@@ -26,33 +24,49 @@ namespace RealLifeOverhaul
 
             private static VehicleController Turntable()
             {
-                GarageShop shop = GarageDirector.Instance != null ? GarageDirector.Instance.Shop : null;
-                return shop != null && shop.IsOpen ? shop.Car : null;
+                try
+                {
+                    GarageShop shop = GarageDirector.Instance != null ? GarageDirector.Instance.Shop : null;
+                    return shop != null && shop.IsOpen ? shop.Car : null;
+                }
+                catch (Exception e)
+                {
+                    Fault("CarSoundLinks.Turntable", e);
+                    return null;
+                }
             }
 
             private static int PartsOf(VehicleController vehicle)
             {
-                if (vehicle == null || vehicle.vehicleInstance == null)
+                try
                 {
+                    if (vehicle == null || vehicle.vehicleInstance == null)
+                    {
+                        return 0;
+                    }
+                    GarageBuild build;
+                    if (Turntable() == vehicle)
+                    {
+                        GarageCar shown = GarageCar.Of(vehicle, false);
+                        build = shown != null ? shown.Shown : null;   // the cart, as it is shown on the car: heard before it is paid for
+                    }
+                    else
+                    {
+                        build = Settings.Garage && Settings.GarageTuning ? GarageState.Of(vehicle.vehicleInstance.id) : null;
+                    }
+                    if (build == null)
+                    {
+                        return 0;
+                    }
+                    PartDef exhaust = GarageCatalogue.Part(build.Parts[(int)PartSlot.Exhaust]);
+                    PartDef turbo = GarageCatalogue.Part(build.Parts[(int)PartSlot.Turbo]);
+                    return CarSoundBridges.Pack(exhaust != null ? exhaust.Loud : 0, turbo != null ? turbo.Boost : 0);
+                }
+                catch (Exception e)
+                {
+                    Fault("CarSoundLinks.PartsOf", e);
                     return 0;
                 }
-                GarageBuild build;
-                if (Turntable() == vehicle)
-                {
-                    GarageCar shown = GarageCar.Of(vehicle, false);
-                    build = shown != null ? shown.Shown : null;   // the cart, as it is shown on the car: heard before it is paid for
-                }
-                else
-                {
-                    build = Settings.Garage && Settings.GarageTuning ? GarageState.Of(vehicle.vehicleInstance.id) : null;
-                }
-                if (build == null)
-                {
-                    return 0;
-                }
-                PartDef exhaust = GarageCatalogue.Part(build.Parts[(int)PartSlot.Exhaust]);
-                PartDef turbo = GarageCatalogue.Part(build.Parts[(int)PartSlot.Turbo]);
-                return CarSoundBridges.Pack(exhaust != null ? exhaust.Loud : 0, turbo != null ? turbo.Boost : 0);
             }
         }
     }

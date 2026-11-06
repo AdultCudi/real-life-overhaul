@@ -216,7 +216,8 @@ namespace RealLifeOverhaul.Flare
                     List<BuildingRegistration> shops = FlareGame.Businesses();
                     if (shops.Count > 0)
                     {
-                        OpenHire(FlareGame.Place(shops[0]), FlareGame.Name(shops[0]), id);
+                        // A profile belongs to no business: the sheet offers each of the player's to hire for, the first chosen.
+                        OpenHire(FlareGame.Place(shops[0]), FlareGame.Name(shops[0]), id, shops.Count > 1);
                     }
                     break;
             }

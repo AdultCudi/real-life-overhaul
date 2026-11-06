@@ -212,7 +212,7 @@ internal static partial class Program
             "class count: every sitting handed out goes through Hold, which books it with its activity (" + assigned + " assignment of _sitting)");
         Check(MethodText(director, "internal string Offer(Sitting sitting)").Contains("Hold(sitting, skip);")
               && MethodText(prompt, "internal string DeskSitting(int course, SittingKind kind, IPlayerActivity holder, out Sitting sitting)").Contains("Hold(sitting, holder);")
-              && school.Contains("_director.DeskSitting(_offer.Course, _offer.Kind, this, out Sitting sitting)")
+              && school.Contains("_director.DeskSitting(_offer.Course, _offer.Kind, this, out sitting)")
               && MethodText(play, "private string StartAtComputer(ComputerController computer, Sitting sitting, string what)").Contains("Hold(sitting, activity);")
               && day.Contains("Hold(sitting, holder);") && desk.Contains("_director.DeskBegin(late, this, out Sitting sitting)"),
             "class count: the in-place panel, the school's and the university's desks, the computer at home and the work desk each hand their sitting out with themselves as its activity");
@@ -258,7 +258,7 @@ internal static partial class Program
               && keys.Contains("PlayerAction.SecondaryInteract, b.interactable)") && keys.Contains("first ? PlayerAction.Confirm : PlayerAction.SecondaryInteract, _offer.Can"),
             "class keys: at a school desk, while a class or exam is due, the class's button is on the Start key and the game's course on the secondary key; otherwise as before");
         string now = MethodText(prompt, "private SchoolDesk.DeskOffer DeskOfferNow()");
-        Check(now.Contains("offer.Due = ClassPlayRules.ClassOnStart(_study.Courses, Save.Day, CareersGame.MinuteOfDay);")
+        Check(now.Contains("offer.Due = offer.Can && ClassPlayRules.ClassOnStart(_study.Courses, Save.Day, CareersGame.MinuteOfDay);")
               && MethodText(play, "private bool TakeBegin(int course, SchoolDesk.DeskOffer offer)").Contains("offer.Due = true;"),
             "class keys: the desk's offer is due by the one rule, and a class begun for the player from the Campus app is on the Start key");
         string own = MethodText(play, "internal string OpenDesk(EducationDoorController door, int room, bool begin)");

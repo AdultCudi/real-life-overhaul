@@ -8,23 +8,15 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A theft the game has just booked in one of the player's own shops, acted out while they
-    /// are inside. The game's simulation stays the only thing that takes stock and writes the
-    /// loss: this scene is started by the director when it sees the shop's stolen value go up,
-    /// and plays a thief (one of the mod's own people, so no customer and no sale is touched)
-    /// concealing goods at a shelf and making for the door.
-    ///   - Shelf covered by a camera: the player is told at once and the thief is marked.
-    ///   - A guard on the floor: he goes after some thieves by himself.
-    ///   - Neither: the player only knows if they were close and looking.
-    /// Walking up and pressing the interaction key confronts the thief (drops it and runs, pays
-    /// up, or bolts); a 911 call puts an officer at the door. A thief who is stopped takes the
-    /// booked amount off the shop's stolen value again, never below zero and never after the
-    /// day's books have closed. One who gets out costs exactly what the game had already booked.
+    /// A theft the game has just booked in the player's own shop, acted out by one of the mod's people while the player is
+    /// inside; the game alone takes the stock and books the loss. A camera on the shelf or a close look tells the player,
+    /// and a guard may give chase. Confronted, the thief drops it, pays or bolts; a 911 call puts an officer at the door.
+    /// A thief stopped takes the amount off the shop's stolen value again, within the same day's books.
     /// </summary>
     internal sealed class OwnShopTheftScene : CrimeScene
     {
         private const int Concealing = 0, Leaving = 1, Stopped = 2;
-        private const float ConfrontReach = 3f;
+        private const float ConfrontReach = 3f;   // metres
 
         private BuildingRegistration _shop;
         private SecurityGuardEmployee _guard;   // ours to steer only while _guardHeld
@@ -45,7 +37,7 @@ namespace RealLifeOverhaul
         public override bool Indoors => true;
         public override bool ShowsMarker => _noticed;
         public override Vector3 Focus => First.Present ? First.Position : Scene;
-        public override bool Interactive => Step <= Leaving && !_confronted;   // whether or not anyone has told the player: sharp eyes count
+        public override bool Interactive => Step <= Leaving && !_confronted;   // told or not: sharp eyes count
         protected override float MaxTime => 90f;
 
         protected override bool Stage(in CrimeSetup setup, float now)
@@ -59,7 +51,7 @@ namespace RealLifeOverhaul
                 return false;
             }
             _amount = setup.Amount;
-            _day = setup.Forced ? -1 : TimeHelper.CurrentDay;   // a staged test books nothing, so it takes nothing off the books either
+            _day = setup.Forced ? -1 : TimeHelper.CurrentDay;   // a test booked nothing, so takes nothing off the books
             _guard = null;
             _guardHeld = false;
             _prompted = false;
@@ -71,7 +63,6 @@ namespace RealLifeOverhaul
             First.Stand(shelf);
             First.Repeat(Reach, 1.6f, 2.6f);
 
-            // Who knows about it.
             _noticed = false;
             if (covered)
             {
@@ -113,15 +104,14 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            _confronted = true;   // one confrontation: what they do about it is settled now
+            _confronted = true;   // once: what the thief does is settled now
             _noticed = true;
             FreeGuard();
             First.Quiet();
             float roll = Random.value;
             if (_copWanted || Cop.Present)
             {
-                // The police are on their way and the player is standing over them: they stay put.
-                First.Stand(player);
+                First.Stand(player);   // the police are coming and the player stands over them
                 First.Surrender();
                 Crime.Show(NotificationType.Success, "reallife_crime_shoptheft_held", 7f);
                 _heldByPlayer = true;
@@ -129,7 +119,6 @@ namespace RealLifeOverhaul
             }
             else if (roll < 0.45f)
             {
-                // Everything on the floor, and out of the door at a run.
                 Recover("dropped");
                 First.Gesture(Despair);
                 First.Go(_outside, Pace.Run, _outside, 20f);
@@ -205,7 +194,6 @@ namespace RealLifeOverhaul
                             Pursue(Cop, First, Pace.Jog, now);   // to the thief the player is holding
                             break;
                         }
-                        // Cuffed and led out through the door. The goods stay.
                         Recover("arrested");
                         if (Reported)
                         {
@@ -218,8 +206,7 @@ namespace RealLifeOverhaul
                     {
                         if ((First.Position - player).sqrMagnitude > 6f * 6f || now >= StepEnd)
                         {
-                            // Nobody standing over them any more: they take their chance.
-                            _heldByPlayer = false;
+                            _heldByPlayer = false;   // nobody stands over them now: they take their chance
                             First.Quiet();
                             First.Go(_outside, Pace.Run, _outside, 20f);
                             Go(Leaving, now, 20f);
@@ -228,8 +215,7 @@ namespace RealLifeOverhaul
                     }
                     if (First.Settled || now >= StepEnd)
                     {
-                        // Out of the door. The loss stands as the game booked it.
-                        if (_noticed)
+                        if (_noticed)   // out of the door: the loss stands as the game booked it
                         {
                             ConcludeAmount("escaped", _amount, NotificationType.Error);
                         }
@@ -242,8 +228,7 @@ namespace RealLifeOverhaul
                     break;
 
                 case Stopped:
-                    // Sent on their way, lighter than they hoped: gone at the door.
-                    if (!First.Present || now >= StepEnd)
+                    if (!First.Present || now >= StepEnd)   // sent on their way: gone at the door
                     {
                         if (First.Present && !Within(First, _outside, 2.5f))
                         {
@@ -270,7 +255,7 @@ namespace RealLifeOverhaul
             return (who.Position - point).sqrMagnitude < metres * metres;
         }
 
-        // The goods are back: the amount comes off the shop's stolen value, if these are still the same day's books.
+        // The goods are back: off the shop's stolen value again, while these are still the same day's books.
         private void Recover(string ending)
         {
             FreeGuard();
@@ -283,9 +268,7 @@ namespace RealLifeOverhaul
             _noticed = true;
         }
 
-        // ---------------------------------------------------------------- the shop's own guard
-
-        // His patrol is switched off and he is sent after the thief; FreeGuard switches it back on.
+        // The guard's own patrol is switched off while the mod sends them after the thief; FreeGuard turns it back on.
         private void HoldGuard()
         {
             try
@@ -322,7 +305,7 @@ namespace RealLifeOverhaul
             Vector3 thief = First.Position;
             if ((_guard.employeeTpc.transform.position - thief).sqrMagnitude < 2.2f * 2.2f)
             {
-                Vector3 guardAt = _guard.employeeTpc.transform.position;   // (Recover lets the guard go)
+                Vector3 guardAt = _guard.employeeTpc.transform.position;   // read first: Recover lets the guard go
                 Recover("guard");
                 First.Stand(guardAt);
                 First.Surrender();
@@ -348,7 +331,7 @@ namespace RealLifeOverhaul
             }
             try
             {
-                guard.enabled = true;   // his own patrol picks up from wherever he is standing
+                guard.enabled = true;   // the guard's own patrol picks up from where they stand
             }
             catch (Exception e)
             {

@@ -3,12 +3,8 @@ using System;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Whether a loaded assembly's name is that of a mod this one knows (<see cref="OtherMods"/>). Some authors put
-    /// the version into the assembly's name ("Immersion-1.2.0-test8"), so the name is matched by how it begins: the
-    /// known name itself, or the known name and then something that is not a letter. "Immersion" is not
-    /// "ImmersionTools".
-    ///
-    /// Plain text arithmetic: no game types, nothing allocated. Checked offline (NavCheck).
+    /// Whether a loaded assembly's name is that of a known mod. Some carry their version in it ("Immersion-1.2.0-test8"),
+    /// so the name matches by its start, followed by the end or a non-letter: "Immersion" is not "ImmersionTools".
     /// </summary>
     public static class OtherModName
     {

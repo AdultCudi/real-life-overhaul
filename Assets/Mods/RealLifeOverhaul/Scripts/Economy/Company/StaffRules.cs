@@ -28,6 +28,22 @@ namespace RealLifeOverhaul.Economy
         AskWithdrawn = 3    // no longer underpaid: the request is dropped
     }
 
+    /// <summary>What a raise for several picked employees comes to (<see cref="StaffRules.Plan"/>); pay in hundredths.</summary>
+    public struct PickedPlan
+    {
+        public int Picked;          // employees picked in the game's list
+        public int Raised;          // ...given the raise
+        public int Rested;          // ...left out: a raise of theirs is in its rest
+        public int Waiting;         // ...left out: a rival's offer to answer first, or a departure set
+        public int AtRate;          // ...left out: up to the going rate, and paid it already
+        public int Unknown;         // ...left out: not at one of the player's businesses
+        public int Raise;           // what the raise adds an hour in all
+        public long Before, After;          // the picked employees' pay an hour in all
+        public long DayBefore, DayAfter;    // ...and for a working day of each
+
+        public int Left => Rested + Waiting + AtRate + Unknown;
+    }
+
     /// <summary>
     /// Staff as an economy: the going rate, raises, a rival's offer, a strike, overtime and sick pay. Game-free.
     /// The game's wage is never changed: what is agreed here is <see cref="StaffFile.Raise"/>, paid on top of it.
@@ -143,6 +159,113 @@ namespace RealLifeOverhaul.Economy
             f.AskDay = f.AskTo = 0;
             f.UnderDays = 0;
             f.AskRest = day + CompanyCatalogue.RaiseRestDays;
+        }
+
+        /// <summary>The choices of a raise for several picked employees: up to the going rate, then the shares, then the amounts.</summary>
+        public static int PickedChoices => 1 + CompanyCatalogue.PickedRaisePercents.Length + CompanyCatalogue.PickedRaiseAmounts.Length;
+
+        /// <summary>A choice's share of the pay, per cent; 0 for a choice that is not a share.</summary>
+        public static int PickedPercent(int choice)
+        {
+            int i = choice - 1;
+            return i >= 0 && i < CompanyCatalogue.PickedRaisePercents.Length ? CompanyCatalogue.PickedRaisePercents[i] : 0;
+        }
+
+        /// <summary>A choice's amount, hundredths an hour; 0 for a choice that is not an amount.</summary>
+        public static int PickedAmount(int choice)
+        {
+            int i = choice - 1 - CompanyCatalogue.PickedRaisePercents.Length;
+            return i >= 0 && i < CompanyCatalogue.PickedRaiseAmounts.Length ? CompanyCatalogue.PickedRaiseAmounts[i] : 0;
+        }
+
+        /// <summary>
+        /// The raise a choice gives one employee, hundredths an hour: up to the going rate (nothing for somebody at it or over),
+        /// a share of what they are paid with the agreed raise, at least a cent, or the amount. 0 for a choice there is not.
+        /// </summary>
+        public static int PickedRaise(StaffFile f, int choice)
+        {
+            if (choice == 0)
+            {
+                return Math.Max(0, f.Going - f.Paid);
+            }
+            int percent = PickedPercent(choice);
+            if (percent > 0)
+            {
+                return Math.Max(1, (int)(((long)Math.Max(0, f.Paid) * percent + 50) / 100));
+            }
+            return PickedAmount(choice);
+        }
+
+        /// <summary>
+        /// Whether a picked employee may be given a raise today, by the rule of one raise: a request of theirs waiting is answered
+        /// by it; otherwise one raise in the rest's time. A rival's offer to answer, or a departure set, is answered on its own.
+        /// </summary>
+        public static bool CanPick(StaffFile f, int day)
+        {
+            return f.PoachDay == 0 && f.LeaveDay == 0 && (f.AskDay > 0 || day >= f.AskRest);
+        }
+
+        /// <summary>
+        /// A raise given to one of several picked employees, as <see cref="Answer"/> gives one: the agreed raise grows, the standing
+        /// moves as for an agreed request (as for one offered less, when it falls short of a request of theirs), a waiting request
+        /// is settled and the rest begins.
+        /// </summary>
+        public static void GivePicked(StaffFile f, int raise, int day)
+        {
+            if (raise <= 0)
+            {
+                return;
+            }
+            bool shortOfAsk = f.AskDay > 0 && f.Paid + raise < f.AskTo;
+            f.Raise += raise;
+            MoveStanding(f, shortOfAsk ? CompanyCatalogue.StandLess : CompanyCatalogue.StandAgree);
+            f.AskDay = f.AskTo = 0;
+            f.UnderDays = 0;
+            f.AskRest = day + CompanyCatalogue.RaiseRestDays;
+        }
+
+        /// <summary>
+        /// What a raise for several picked employees comes to before it is given: who it reaches, who is left out and why, and
+        /// their pay an hour and a working day in all, before and after, hundredths. A null file is somebody the company does
+        /// not know (not at one of the player's businesses).
+        /// </summary>
+        public static PickedPlan Plan(IList<StaffFile> picked, int choice, int day)
+        {
+            var plan = new PickedPlan();
+            for (int i = 0; picked != null && i < picked.Count; i++)
+            {
+                StaffFile f = picked[i];
+                plan.Picked++;
+                if (f == null)
+                {
+                    plan.Unknown++;
+                    continue;
+                }
+                int raise = CanPick(f, day) ? PickedRaise(f, choice) : 0;
+                if (f.PoachDay > 0 || f.LeaveDay > 0)
+                {
+                    plan.Waiting++;
+                }
+                else if (!CanPick(f, day))
+                {
+                    plan.Rested++;
+                }
+                else if (raise <= 0)
+                {
+                    plan.AtRate++;
+                }
+                else
+                {
+                    plan.Raised++;
+                    plan.Raise += raise;
+                }
+                long hours = Math.Max(0, f.DayHours);
+                plan.Before += f.Paid;
+                plan.After += f.Paid + Math.Max(0, raise);
+                plan.DayBefore += (long)f.Paid * hours / 100;
+                plan.DayAfter += (long)(f.Paid + Math.Max(0, raise)) * hours / 100;
+            }
+            return plan;
         }
 
         /// <summary>

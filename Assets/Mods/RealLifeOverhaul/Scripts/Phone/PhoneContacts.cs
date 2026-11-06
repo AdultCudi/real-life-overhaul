@@ -1,19 +1,14 @@
 ﻿using System;
-using System.Collections.Generic;
 using BAModAPI;
-using Extensions;
 using Dialogs;
 using Entities;
+using Extensions;
 using Localizor;
 using UI.Smartphone.Apps.Contacts;
-using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// Adds callable phone contacts. In the base game most contacts are text-only; these each
-    /// get a call button and their own conversation.
-    /// </summary>
+    /// <summary>The mod's callable contacts: each has a call button and a conversation of its own.</summary>
     public static class PhoneContacts
     {
         private const string EmergencyId = "reallife-911";
@@ -24,6 +19,42 @@ namespace RealLifeOverhaul
         public static IModLogger Logger;
         public static Contact Friend { get; private set; }
         public static Contact Mom { get; private set; }
+
+        /// <summary>
+        /// Set by Wiring/FamilyLinks: today's family dinner at Mom's by name while her table is set (null otherwise), and going
+        /// over, which gives the call's last line. Mom's own call offers it, as her text says, whichever dialog her contact opens
+        /// (this one's, or the social life's PersonDialog).
+        /// </summary>
+        public static Func<string> MomsDinner;
+        public static Func<DialogEntry> GoToMoms;
+
+        /// <summary>Today's dinner at Mom's by name while her table is set, else null; never throws.</summary>
+        internal static string MomsDinnerNow()
+        {
+            try
+            {
+                return MomsDinner?.Invoke();
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                return null;
+            }
+        }
+
+        /// <summary>Mom asks whether the player is coming over now: "Go to Mom's", or the rest of the call.</summary>
+        internal static DialogEntry DinnerAsk(string dinner, Func<DialogEntry> notYet, Action hangUp)
+        {
+            return new DialogEntry
+            {
+                messageData = "reallife_mom_dinner_ask".Localize(new { text = dinner }),
+                ConfirmTextOverride = "reallife_family_do_moms_yes".Localize(),
+                OnConfirm = () => GoToMoms != null ? GoToMoms() : Closing("reallife_mom_bye"),   // (unset only while family life is unwired, when no dinner is offered)
+                SecondOptionTextOverride = "reallife_mom_dinner_later",
+                OnSecondOption = notYet,
+                OnCancel = hangUp
+            };
+        }
 
         public static void Setup()
         {
@@ -78,6 +109,7 @@ namespace RealLifeOverhaul
         }
     }
 
+    /// <summary>The emergency number: report what is happening nearby, or ask for an ambulance.</summary>
     public class EmergencyDialog : Dialog
     {
         public EmergencyDialog()
@@ -113,7 +145,7 @@ namespace RealLifeOverhaul
         {
             if (Events.EventDirector.FireBurning)
             {
-                // A fire (Scripts/Events): the engine is sent at once; a second call is only noted.
+                // The engine is sent at once; a second call is only noted.
                 return PhoneContacts.Closing(Events.EventDirector.Report911() ? "reallife_911_dispatched_fire" : "reallife_911_noted");
             }
             ReportKind kind = CrimeDirector.Reportable();
@@ -163,6 +195,7 @@ namespace RealLifeOverhaul
         }
     }
 
+    /// <summary>The doctor: a paid treatment while the player is sick.</summary>
     public class DoctorCallDialog : Dialog
     {
         public DoctorCallDialog()
@@ -184,15 +217,17 @@ namespace RealLifeOverhaul
 
         private static DialogEntry Treat()
         {
-            if (!GameManager.ChangeMoneySafe(-LifeEvents.DoctorFee, new TransactionInfo("reallife_transaction_doctor"), null, null, force: false, showNotification: true))
+            if (!RealLifeOverhaul.Economy.BizBooks.Book(-LifeEvents.DoctorFee, new TransactionInfo("reallife_transaction_doctor"), null, null, force: false, showNotification: true))
             {
-                return null;
+                // The game keeps the entry on a null (DialogController.ConfirmCurrentEntry): the call ends with a word instead.
+                return PhoneContacts.Closing("reallife_doctor_call_no_money", new { amount = ((float)LifeEvents.DoctorFee).ToCurrencyFormat() });
             }
             LifeEvents.Instance?.Cure("reallife_event_recovered");
             return PhoneContacts.Closing("reallife_doctor_treated");
         }
     }
 
+    /// <summary>The friend: one chat a day gives a lift to happiness.</summary>
     public class FriendDialog : Dialog
     {
         public FriendDialog()
@@ -218,17 +253,29 @@ namespace RealLifeOverhaul
         }
     }
 
+    /// <summary>Mom: one chat a day gives a lift to happiness; on a family dinner day, first of all whether the player is coming over.</summary>
     public class MomDialog : Dialog
     {
         public MomDialog()
         {
             npcNameKey = "reallife-mom";
-            if (ModState.LastMomCallDay == TimeHelper.CurrentDay)
+            string dinner = PhoneContacts.MomsDinnerNow();
+            if (dinner != null)
             {
-                DialogController.current.ShowEntry(Guard.Entry(PhoneContacts.Closing("reallife_mom_again")));
+                DialogController.current.ShowEntry(Guard.Entry(PhoneContacts.DinnerAsk(dinner, Greeting, PhoneContacts.HangUp)));
                 return;
             }
-            DialogController.current.ShowEntry(Guard.Entry(new DialogEntry
+            DialogController.current.ShowEntry(Guard.Entry(Greeting()));
+        }
+
+        // The day's chat, or a goodbye once it was had.
+        private static DialogEntry Greeting()
+        {
+            if (ModState.LastMomCallDay == TimeHelper.CurrentDay)
+            {
+                return PhoneContacts.Closing("reallife_mom_again");
+            }
+            return new DialogEntry
             {
                 messageData = "reallife_mom_greeting".Localize(),
                 ConfirmTextOverride = "reallife_mom_chat".Localize(),
@@ -239,7 +286,7 @@ namespace RealLifeOverhaul
                     return PhoneContacts.Closing(ModState.IsSick ? "reallife_mom_bye_sick" : "reallife_mom_bye");
                 },
                 OnCancel = PhoneContacts.HangUp
-            }));
+            };
         }
     }
 }

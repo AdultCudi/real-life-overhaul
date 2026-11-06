@@ -9,7 +9,8 @@ namespace RealLifeOverhaul.Markets
 {
     /// <summary>
     /// The market's tape on disk, a file per playthrough in the game's data folder (RealLifeOverhaul/Market/&lt;id&gt;.tape),
-    /// outside every save: lines added as the market goes, the whole written again when the game saves. The writes go to one
+    /// outside every save: lines added as the market goes, the whole written again when the game saves if anything changed
+    /// since the last (from the lines the tape keeps, <see cref="MarketTape.Lines"/>). The writes go to one
     /// writer on the thread pool in order, since a file write with a virus guard looking would stall a frame; a day's
     /// secret is on disk within milliseconds. Before a read and as the market stops, what is on its way is written first.
     /// The whole is swapped in so a crash never leaves no tape (<see cref="MarketTapeSwap"/>), and a read puts back one left
@@ -24,6 +25,7 @@ namespace RealLifeOverhaul.Markets
         {
             public string Path;
             public string Text;
+            public string[] Lines;  // the whole tape's lines, for a whole
             public string First;    // what a new file begins with
             public bool Whole;      // the whole tape again, in place of what is there
         }
@@ -78,9 +80,10 @@ namespace RealLifeOverhaul.Markets
             Enqueue(new Job { Path = _namedPath, Text = lines, First = _namedFirst });
         }
 
-        public static void Rewrite(ulong id, string whole)
+        /// <summary>The whole tape, as its <paramref name="lines"/>, in place of what is there.</summary>
+        public static void Rewrite(ulong id, string[] lines)
         {
-            Enqueue(new Job { Path = PathOf(id), Text = whole, Whole = true });
+            Enqueue(new Job { Path = PathOf(id), Lines = lines, Whole = true });
         }
 
         /// <summary>Waits, two seconds at the most, until every write given so far is on disk.</summary>
@@ -132,7 +135,7 @@ namespace RealLifeOverhaul.Markets
                     Directory.CreateDirectory(Path.GetDirectoryName(job.Path));
                     if (job.Whole)
                     {
-                        MarketTapeSwap.Write(job.Path, job.Text);
+                        MarketTapeSwap.Write(job.Path, job.Lines);
                     }
                     else
                     {

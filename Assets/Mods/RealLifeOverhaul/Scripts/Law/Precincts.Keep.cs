@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Law
         private void Move(Precinct precinct)
         {
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] buildings = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] buildings = GameDlc.Open(city);
             if (buildings == null)
             {
                 return;

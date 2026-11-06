@@ -7,38 +7,27 @@ using BAModAPI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// This mod's own messages through Going Public's connection, the way its add-ons send theirs (Friend Trade, message
-    /// 249, ForeignTradeMultiplayer/GoingPublicAdapter; Extras, message 250, BampExtras/LocationNet). Going Public has no
-    /// call to register a message: an add-on puts a Harmony prefix on its two receivers, MPServer.OnReceive(MPLink peer,
-    /// byte[] bytes) on the host and MPClient.OnReceive(byte[] bytes) on a guest, takes the frames that are its own and
-    /// returns false for them (Going Public's own switch would only log "unknown message type"), and sends with Going
-    /// Public's own envelope: MPClient.SendEnvelope(envelope) to the host, MPLink.Send(envelope) to one guest. Every
-    /// send is on the reliable, ordered channel of Going Public's transport (Steam's reliable lane, cut into fragments
-    /// when large; LiteNetLib's ReliableOrdered).
-    ///
-    /// This mod's frames are envelopes of type <see cref="SharedCityWire.MessageType"/> with the message as the
-    /// envelope's attachment (MessageEnvelope.Attachment: Going Public's binary frame "BZA", the type in its fifth
-    /// byte). They are told apart from every other frame by their first six bytes, without reading the envelope.
-    ///
-    /// Everything of Going Public's is found by reflection when it is switched on (Core/GoingPublic), never referenced
-    /// when this is built; so is Harmony, which Going Public brings (the game has none). A missing piece, or a type
-    /// number Going Public has taken for itself, leaves the link off with one line in the log: this mod then plays the
-    /// city alone in a session, as before.
-    ///
-    /// THREADS. Going Public's receivers run on its transport's thread (LiteNetLib polls on one of its own). The
-    /// prefixes only copy this mod's bytes into a queue under a lock; <see cref="Drain"/> hands them out on the game's
-    /// thread, from <see cref="GoingPublicWatch"/>, and costs one field read a frame while nothing has come.
+    /// This mod's own messages through Going Public's connection, the way its add-ons send theirs (Friend Trade,
+    /// message 249; Extras, 250). Going Public has no call to register a message, so a Harmony prefix on its receivers
+    /// (MPServer.OnReceive on the host, MPClient.OnReceive on a guest) takes this mod's frames and returns false for
+    /// them; sends go in Going Public's own envelope (MPClient.SendEnvelope to the host, MPLink.Send to a guest), on its
+    /// reliable, ordered channel. A frame is an envelope of type <see cref="SharedCityWire.MessageType"/> with the message
+    /// as its attachment (the binary frame "BZA"), told apart by its first six bytes.
+    /// Going Public and its Harmony are found by reflection, never referenced; a missing piece or a taken type number
+    /// leaves the link off with one log line, and each player's city goes on alone.
+    /// THREADS: the receivers run on the transport's thread and only queue the bytes under a lock; <see cref="Drain"/>
+    /// hands them out on the game's thread. COST: one field read a frame while nothing has come.
     /// </summary>
     public static class GoingPublicLink
     {
         private const string HarmonyId = "reallifeoverhaul.sharedcity";
-        private const int QueueMost = 64;
+        private const int QueueMost = 64;   // messages kept waiting; more are dropped and counted
 
         public static IModLogger Logger;
 
         private struct Inbound
         {
-            public object Peer;    // the host's MPLink of the guest it came from; null on a guest (it came from the host)
+            public object Peer;    // the host's MPLink of the guest it came from; null on a guest
             public byte[] Bytes;
         }
 
@@ -56,16 +45,14 @@ namespace RealLifeOverhaul
         private static FieldInfo _peerNames;
         private static int _dropped;
 
-        /// <summary>True once the link is in place: this mod's messages can be sent and are taken in.</summary>
         public static bool Ready { get; private set; }
 
         /// <summary>Why the link is not in place, for the log and the self-check; null while it is.</summary>
         public static string Why { get; private set; } = "Going Public is not switched on";
 
         /// <summary>
-        /// This machine's own player in the session: Going Public's player id, the name the others see and the one it
-        /// writes as the owner of a player's business (BuildingRegistration.businessOwnerRivalId). Empty while the link is
-        /// not in place. A reflected property read: asked on a post or a message, never per frame.
+        /// This machine's player id in the session, also the owner Going Public writes on a player's business
+        /// (businessOwnerRivalId); empty without the link. A reflected read: never per frame.
         /// </summary>
         public static string MyId
         {
@@ -98,7 +85,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>True while something has come in and waits for <see cref="Drain"/>. A field read.</summary>
+        /// <summary>True while something waits for <see cref="Drain"/>. A field read.</summary>
         public static bool Waiting => _waiting;
 
         /// <summary>Puts the link in place, once, with Going Public's assembly. Logs why not if it cannot.</summary>
@@ -201,9 +188,7 @@ namespace RealLifeOverhaul
             Logger?.Warn("Other mods: the shared city cannot use Going Public's connection: " + why + ". In a session each player's city goes on as their own.");
         }
 
-        // ---------------------------------------------------------------- receiving (Going Public's thread)
-
-        /// <summary>Harmony prefix on MPServer.OnReceive: this mod's frames are taken, every other goes on to Going Public.</summary>
+        /// <summary>Harmony prefix on MPServer.OnReceive, on Going Public's thread: takes this mod's frames, passes the rest on.</summary>
         public static bool HostReceive(object peer, byte[] bytes)
         {
             if (!Ours(bytes))
@@ -256,11 +241,11 @@ namespace RealLifeOverhaul
             }
             catch (Exception)
             {
-                // a frame that is not what it says is dropped: Going Public's thread is never troubled with it
+                // a frame that is not what it says is dropped, never troubling Going Public's thread
             }
         }
 
-        /// <summary>On the game's thread: everything that has come, to the handler, in the order it came.</summary>
+        /// <summary>On the game's thread: hands everything that has come to the handler, in order.</summary>
         public static void Drain(Action<object, byte[]> handle)
         {
             while (true)
@@ -291,8 +276,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- sending (the game's thread)
-
         private static object Envelope(byte[] message)
         {
             object env = Activator.CreateInstance(_envelope);
@@ -303,7 +286,7 @@ namespace RealLifeOverhaul
             return env;
         }
 
-        /// <summary>A guest's message to the host. False if it could not go (no link, the connection is not up).</summary>
+        /// <summary>A guest's message to the host; false if it could not go.</summary>
         public static bool ToHost(byte[] message)
         {
             if (!Ready || message == null)
@@ -340,7 +323,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>True while the host's link to a guest is up.</summary>
         public static bool Alive(object peer)
         {
             try
@@ -353,7 +335,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The player a host's link belongs to (Going Public's player id), or empty for a link that has not said hello to Going Public.</summary>
+        /// <summary>The player id a host's link belongs to; empty for a link that has not said hello to Going Public.</summary>
         public static string PlayerOf(object peer)
         {
             try

@@ -1,5 +1,6 @@
 using System;
 using System.Globalization;
+using System.Reflection;
 using System.Text;
 using Localizor;
 
@@ -18,10 +19,10 @@ namespace RealLifeOverhaul.Meta
     public static class Changelog
     {
         /// <summary>The version this table was last brought up to; used when the assembly carries no version of its own.</summary>
-        public const string Latest = "0.45.0";
+        public const string Latest = "0.63.10";
 
         /// <summary>Order of a row for work merged after the last numbered version: above the newest numbered row, below the next one.</summary>
-        public const int Unnumbered = 45005;   // Latest's order + 5: it moves up with Latest
+        public const int Unnumbered = 63105;   // Latest's order + 5: it moves up with Latest
 
         public sealed class Entry
         {
@@ -40,6 +41,46 @@ namespace RealLifeOverhaul.Meta
         public static readonly Entry[] All =
         {
             new Entry(Unnumbered, "reallife_changes_next_title", "reallife_changes_next"),
+            new Entry(63100, "reallife_changes_063_10_title", "reallife_changes_063_10"),
+            new Entry(63090, "reallife_changes_063_9_title", "reallife_changes_063_9"),
+            new Entry(63080, "reallife_changes_063_8_title", "reallife_changes_063_8"),
+            new Entry(63070, "reallife_changes_063_7_title", "reallife_changes_063_7"),
+            new Entry(63060, "reallife_changes_063_6_title", "reallife_changes_063_6"),
+            new Entry(63050, "reallife_changes_063_5_title", "reallife_changes_063_5"),
+            new Entry(63040, "reallife_changes_063_4_title", "reallife_changes_063_4"),
+            new Entry(63030, "reallife_changes_063_3_title", "reallife_changes_063_3"),
+            new Entry(63020, "reallife_changes_063_2_title", "reallife_changes_063_2"),
+            new Entry(63010, "reallife_changes_063_1_title", "reallife_changes_063_1"),
+            new Entry(63000, "reallife_changes_063_0_title", "reallife_changes_063_0"),
+            new Entry(62000, "reallife_changes_062_0_title", "reallife_changes_062_0"),
+            new Entry(61030, "reallife_changes_061_3_title", "reallife_changes_061_3"),
+            new Entry(61020, "reallife_changes_061_2_title", "reallife_changes_061_2"),
+            new Entry(61010, "reallife_changes_061_1_title", "reallife_changes_061_1"),
+            new Entry(61000, "reallife_changes_061_0_title", "reallife_changes_061_0"),
+            new Entry(60020, "reallife_changes_060_2_title", "reallife_changes_060_2"),
+            new Entry(60010, "reallife_changes_060_1_title", "reallife_changes_060_1"),
+            new Entry(60000, "reallife_changes_060_0_title", "reallife_changes_060_0"),
+            new Entry(59000, "reallife_changes_059_0_title", "reallife_changes_059_0"),
+            new Entry(58000, "reallife_changes_058_0_title", "reallife_changes_058_0"),
+            new Entry(57020, "reallife_changes_057_2_title", "reallife_changes_057_2"),
+            new Entry(57010, "reallife_changes_057_1_title", "reallife_changes_057_1"),
+            new Entry(57000, "reallife_changes_057_0_title", "reallife_changes_057_0"),
+            new Entry(56020, "reallife_changes_056_2_title", "reallife_changes_056_2"),
+            new Entry(56010, "reallife_changes_056_1_title", "reallife_changes_056_1"),
+            new Entry(56000, "reallife_changes_056_0_title", "reallife_changes_056_0"),
+            new Entry(55000, "reallife_changes_055_0_title", "reallife_changes_055_0"),
+            new Entry(54000, "reallife_changes_054_0_title", "reallife_changes_054_0"),
+            new Entry(53010, "reallife_changes_053_1_title", "reallife_changes_053_1"),
+            new Entry(53000, "reallife_changes_053_0_title", "reallife_changes_053_0"),
+            new Entry(52010, "reallife_changes_052_1_title", "reallife_changes_052_1"),
+            new Entry(52000, "reallife_changes_052_0_title", "reallife_changes_052_0"),
+            new Entry(51000, "reallife_changes_051_0_title", "reallife_changes_051_0"),
+            new Entry(50000, "reallife_changes_050_0_title", "reallife_changes_050_0"),
+            new Entry(49000, "reallife_changes_049_0_title", "reallife_changes_049_0"),
+            new Entry(48000, "reallife_changes_048_0_title", "reallife_changes_048_0"),
+            new Entry(47010, "reallife_changes_047_1_title", "reallife_changes_047_1"),
+            new Entry(47000, "reallife_changes_047_0_title", "reallife_changes_047_0"),
+            new Entry(46000, "reallife_changes_046_0_title", "reallife_changes_046_0"),
             new Entry(45000, "reallife_changes_045_0_title", "reallife_changes_045_0"),
             new Entry(44000, "reallife_changes_044_0_title", "reallife_changes_044_0"),
             new Entry(43000, "reallife_changes_043_0_title", "reallife_changes_043_0"),
@@ -223,6 +264,42 @@ namespace RealLifeOverhaul.Meta
                 return _version;
             }
         }
+
+        private static string _betaTag;
+        private static bool _betaRead;
+
+        /// <summary>
+        /// The tag of a beta build ("beta.1"), or null for a public one. A beta is built with -p:BetaTag=beta.1 (steam_beta.py), which
+        /// puts "0.61.0-beta.1" in the DLL's informational version; the numeric <see cref="Version"/> stays 0.61.0, so saves, the
+        /// version compare and the network see the number alone. Read once, from the assembly.
+        /// </summary>
+        public static string BetaTag
+        {
+            get
+            {
+                if (!_betaRead)
+                {
+                    _betaRead = true;
+                    try
+                    {
+                        object[] found = typeof(Changelog).Assembly.GetCustomAttributes(typeof(AssemblyInformationalVersionAttribute), false);
+                        string info = found.Length > 0 ? ((AssemblyInformationalVersionAttribute)found[0]).InformationalVersion : null;
+                        _betaTag = BetaRules.TagOf(info);
+                    }
+                    catch (Exception)
+                    {
+                        // No tag: a public build.
+                    }
+                }
+                return _betaTag;
+            }
+        }
+
+        /// <summary>True in the beta copy of the mod (the unlisted Workshop item for testers).</summary>
+        public static bool IsBeta => BetaTag != null;
+
+        /// <summary>The version as the player and a bug report read it: "0.61.0-beta.1" in a beta, <see cref="Version"/> otherwise.</summary>
+        public static string Shown => IsBeta ? Version + "-" + BetaTag : Version;
 
         /// <summary>Compares two versions number by number; a missing part counts as 0.</summary>
         public static int Compare(string a, string b)

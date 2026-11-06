@@ -8,7 +8,9 @@
     <Nullable>disable</Nullable>
     <DebugType>none</DebugType>
     <GenerateAssemblyInfo>true</GenerateAssemblyInfo>
-    <Version>0.45.0</Version>
+    <Version>0.63.10</Version>
+    <!-- A beta build (steam_beta.py passes -p:BetaTag=beta.1) reads "0.61.0-beta.1" in the DLL; Meta/Changelog.cs shows it. A public build has no BetaTag and is as before. -->
+    <InformationalVersion Condition="'$(BetaTag)' != ''">$(Version)-$(BetaTag)</InformationalVersion>
     <AppendTargetFrameworkToOutputPath>false</AppendTargetFrameworkToOutputPath>
     <EnableDefaultCompileItems>false</EnableDefaultCompileItems>
     <!-- Single source of truth: the mod lives in the Unity SDK project; this project only compiles it from the command line. -->
@@ -26,6 +28,7 @@
     <Reference Include="$(GameManaged)\DayNightCycle.dll" Private="false" />
     <Reference Include="$(GameManaged)\HGExtensions.dll" Private="false" />
     <Reference Include="$(GameManaged)\Newtonsoft.Json.dll" Private="false" />
+    <Reference Include="$(GameManaged)\OdinSerializer.dll" Private="false" />
     <Reference Include="$(GameManaged)\HGPlugins.dll" Private="false" />
     <Reference Include="$(GameManaged)\ExternalPlugins.dll" Private="false" />
     <Reference Include="$(GameManaged)\Cinemachine.dll" Private="false" />
@@ -54,7 +57,7 @@
   </Target>
 
   <!-- What is installed is the whole package, as the game's Mod Creator uploads it: exactly one DLL in the mod's root
-       folder (the game requires that), the locales, the three asset bundles, the recorded car sounds with their sources
+       folder (the game requires that), the locales, the asset bundles, the recorded car sounds with their sources
        file, and the Workshop thumbnail. The uploader
        takes the first .png/.jpg/.jpeg in the root as the thumbnail, so there must be no other picture there.
        The folder is made the package and nothing else: whatever it holds that the package does not ship (an old

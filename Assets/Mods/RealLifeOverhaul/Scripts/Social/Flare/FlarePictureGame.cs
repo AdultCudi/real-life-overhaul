@@ -194,7 +194,7 @@ namespace RealLifeOverhaul.Flare
                         continue;
                     }
                     Vector3 at = door.position;
-                    into.Add(new FlareFrontSpot { Place = FlareGame.Place(reg), District = reg.Neighborhood, Niche = (int)FlareCast.NicheOf(reg.businessTypeName), X = at.x, Z = at.z });
+                    into.Add(new FlareFrontSpot { Place = FlareGame.Place(reg), District = GameRegistrations.District(reg), Niche = (int)FlareCast.NicheOf(reg.businessTypeName), X = at.x, Z = at.z });
                 }
                 return true;
             }

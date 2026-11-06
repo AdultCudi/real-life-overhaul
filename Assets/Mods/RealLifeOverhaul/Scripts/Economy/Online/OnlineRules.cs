@@ -103,8 +103,24 @@ namespace RealLifeOverhaul.Economy
             return 1000 * 1000 / (1000 + OnlineCatalogue.CrowdStep * (Math.Max(1, shops) - 1));
         }
 
+        /// <summary>
+        /// The most orders a site takes in a day: its quality's bound at the building's connection (NetSpeedRules at the
+        /// shops' lean), none with no connection, the quality's own bound with nothing known or in the grace.
+        /// </summary>
+        public static int Most(int quality, int mbps)
+        {
+            long most = OnlineCatalogue.OrdersMost[OnlineCatalogue.Quality(quality)];
+            return (int)(most * NetSpeedRules.Factor(mbps, OnlineCatalogue.NetLean) / 1000);
+        }
+
         /// <summary>Orders a day in thousandths: the quality's figure by every factor, never over the bound.</summary>
         public static int PerDay(int quality, bool inHouse, int lines, int need, int price, int promise, int stars, int ads, int campaign, int cycle, int season, int shops)
+        {
+            return PerDay(quality, inHouse, lines, need, price, promise, stars, ads, campaign, cycle, season, shops, NetSpeedRules.Unknown);
+        }
+
+        /// <summary>The same with the building's connection setting the bound (<see cref="Most"/>).</summary>
+        public static int PerDay(int quality, bool inHouse, int lines, int need, int price, int promise, int stars, int ads, int campaign, int cycle, int season, int shops, int mbps)
         {
             int q = OnlineCatalogue.Quality(quality);
             long v = OnlineCatalogue.OrdersADay[q] * 1000L;
@@ -118,7 +134,7 @@ namespace RealLifeOverhaul.Economy
             v = v * OnlineCatalogue.CycleFactor[OnlineCatalogue.Clamp(cycle, 0, 3)] / 1000;
             v = v * OnlineCatalogue.SeasonFactor[OnlineCatalogue.Clamp(season, 0, 3)] / 1000;
             v = v * Crowd(shops) / 1000;
-            return (int)Math.Min(v, OnlineCatalogue.OrdersMost[q] * 1000L);
+            return (int)Math.Min(v, Most(quality, mbps) * 1000L);
         }
 
         /// <summary>Works out a site's price factors, district shares and orders a day from what was read into <paramref name="site"/>.</summary>
@@ -163,7 +179,7 @@ namespace RealLifeOverhaul.Economy
             site.Cycle = cycle;
             site.Season = season;
             site.Crowd = shops;
-            site.PerDay = shop.Offline || on == 0 ? 0 : PerDay(shop.Quality, shop.InHouse, on, site.Need, site.Price, shop.Promise, shop.Stars, site.Ads, campaign, cycle, season, shops);
+            site.PerDay = shop.Offline || on == 0 ? 0 : PerDay(shop.Quality, shop.InHouse, on, site.Need, site.Price, shop.Promise, shop.Stars, site.Ads, campaign, cycle, season, shops, site.Mbps);
         }
 
         public static WebOrder NewOrder()
@@ -206,14 +222,17 @@ namespace RealLifeOverhaul.Economy
             return expected / 1000 + (Roll(seed, key, hour, 1, 1000) < expected % 1000 ? 1 : 0);
         }
 
-        /// <summary>The hour's orders come in, up to the day's bound; while the site holds all it can, they are turned away.</summary>
+        /// <summary>
+        /// The hour's orders come in, up to the day's bound at the building's connection; none in an hour the connection is
+        /// down; while the site holds all it can, they are turned away.
+        /// </summary>
         public static int Arrive(OnlineState s, WebShop shop, Site site, int hour)
         {
-            if (site.PerDay <= 0 || shop.Offline)
+            if (site.PerDay <= 0 || shop.Offline || site.Down)
             {
                 return 0;
             }
-            int key = Key(shop.Place), most = OnlineCatalogue.OrdersMost[OnlineCatalogue.Quality(shop.Quality)];
+            int key = Key(shop.Place), most = Most(shop.Quality, site.Mbps);
             int n = Expected(s.Seed, key, site.PerDay, hour), came = 0;
             for (int k = 0; k < n && shop.Today.Orders < most; k++)
             {

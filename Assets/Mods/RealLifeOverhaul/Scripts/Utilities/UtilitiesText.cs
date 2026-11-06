@@ -5,7 +5,7 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Utilities
 {
-    /// <summary>The utilities' words: money as the game writes it, a text with its names filled, a label and its value, a toast.</summary>
+    /// <summary>The utilities' words: money as the game writes it, texts with their names filled, a label and value, a notice.</summary>
     public static class UtilitiesText
     {
         public static string Money(float amount)
@@ -46,7 +46,7 @@ namespace RealLifeOverhaul.Utilities
 
         public static void Toast(NotificationType type, string text, float seconds = 8f)
         {
-            // The game localises what it is given by key; a line already built goes through a key whose text is only {text}.
+            // the game localises by key: a line already built goes through a key whose text is only {text}
             Notifications.Show(type, "reallife_util_toast", new Dictionary<string, string>(1) { { "text", text } }, seconds);
         }
 
@@ -88,6 +88,24 @@ namespace RealLifeOverhaul.Utilities
             return text.ToString();
         }
 
+        /// <summary>
+        /// The speed tiers for the Guide at a lean, from the same table the work goes by (NetSpeedRules): "under 50 Mbps:
+        /// 70%, 50 Mbps: 80%" and so on, each from the least speed it counts at.
+        /// </summary>
+        public static string SpeedTiers(int lean)
+        {
+            var text = new System.Text.StringBuilder(160);
+            int[] floors = NetSpeedRules.Floors;
+            for (int t = 0; t < floors.Length; t++)
+            {
+                string share = Percent(NetSpeedRules.Factor(floors[t], lean)) + "%";
+                text.Append(t == 0 ? string.Empty : ", ");
+                text.Append(t == 0 && floors.Length > 1 ? T("reallife_guide_net_under", "mbps", floors[1].ToString(), "share", share)
+                    : T("reallife_guide_net_from", "mbps", floors[t].ToString(), "share", share));
+            }
+            return text.ToString();
+        }
+
         /// <summary>An hour of the day as the game writes it (10:00).</summary>
         public static string Hour(int hour)
         {
@@ -99,7 +117,6 @@ namespace RealLifeOverhaul.Utilities
             return T("reallife_util_day", "day", day.ToString(System.Globalization.CultureInfo.InvariantCulture));
         }
 
-        /// <summary>Where an account stands, in a few words.</summary>
         public static string State(Account a, int day)
         {
             if (a == null)

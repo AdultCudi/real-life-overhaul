@@ -58,6 +58,13 @@ namespace RealLifeOverhaul
         {
             Instance = this;
             _brakes = gameObject.AddComponent<DriverBrakes>();
+            ScenePrewarm.Add("traffic: the hold lines for the player's car being made", PrewarmLines);
+        }
+
+        // Behind the loading screen (ScenePrewarm): the two hold lines made where no frame is seen (DriverGame.MakeAll).
+        private bool PrewarmLines()
+        {
+            return _game.MakeAll(transform);
         }
 
         private void OnDisable()

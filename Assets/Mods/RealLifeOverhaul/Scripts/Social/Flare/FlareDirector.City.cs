@@ -109,9 +109,11 @@ namespace RealLifeOverhaul.Flare
             FlareRules.Prune(_file);
         }
 
-        // On the hour: the morning paper's headlines on the City Ledger's account, and shares sold soon after a viral post.
+        // On the hour: the city's reviews of the hour's visits, the morning paper's headlines on the City Ledger's account,
+        // and shares sold soon after a viral post.
         private void CityHour(int day, int hour)
         {
+            ReviewsAt(day, hour);   // FlareDirector.Live
             if (hour >= 7 && _file.LedgerDay != day && FlareBridges.Headlines != null && !Following)
             {
                 _file.LedgerDay = day;

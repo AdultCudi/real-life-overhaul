@@ -1,24 +1,15 @@
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The seats of the start line (Core/StartLine): every director whose one-second timer reads its file from the save
-    /// and lays out its part of the city on its first tick after a save loads, in the one order they start in.
-    ///
-    /// Why a line: their timers are all started in the same frame, behind the loading screen, as the city's objects are
-    /// made (Core/RealLifeOverhaulMod), so each of their ticks lands in one frame with all the others, and the first one
-    /// after the load is every first load at once: some 205 ms of a frame of 1381 ms just as the loading screen went
-    /// (under "coroutines and timers"). On the line each first load has a frame of its own.
-    ///
-    /// The order is the order the directors were made in and their timers ran in until now (the economy's followers in
-    /// the order they joined its second), so every director still finds what it read of another at its start already
-    /// there. <see cref="After"/> lists what each one reads of the others when it starts; the offline check (NavCheck,
-    /// StartCheck.cs) fails if a seat comes before one it reads, or if the order here and the order the directors are
-    /// made in part.
+    /// The seats of the start line (<see cref="StartLine"/>): every director that reads its file and lays out its part of
+    /// the city on its first tick after a load. Their timers all start in one frame, so the first ticks would land
+    /// together (some 205 ms). The order is the order the directors are made in, so each finds what it reads of another
+    /// already there; <see cref="After"/> lists what each reads.
     /// </summary>
     public static class StartSeats
     {
         public const int Credit = 0;        // Economy/Banking/EconomyDirector: the credit file and the banks' terms
-        public const int Banks = 1;         // Economy/Banking/BankApps/BanksDirector, a follower of the credit side's second (as are the eight after it)
+        public const int Banks = 1;         // Economy/Banking/BankApps/BanksDirector: a follower of the credit side's second, as are the eight after it
         public const int CityEconomy = 2;   // Economy/City/CityEconomyDirector
         public const int Dealer = 3;        // Economy/Dealer/DealerDirector
         public const int Online = 4;        // Economy/Online/OnlineDirector
@@ -37,7 +28,10 @@ namespace RealLifeOverhaul
         public const int Flare = 17;        // Social/Flare/FlareDirector
         public const int Fame = 18;         // Fame/FameDirector
         public const int Permadeath = 19;   // Permadeath/PermadeathDirector
-        public const int Count = 20;
+        public const int Law = 20;          // Law/LawDirector: the record, the precincts chosen and the nearest front put out (58 ms in the owner's session of 25 Oct 2026)
+        public const int Garage = 21;       // Garage/GarageDirector: the builds and the two-wheelers' places found (40 ms)
+        public const int Outlook = 22;      // Outlook/OutlookDirector: the Economy app, on a timer of its own (it reads the city's economy and the stock market, so it starts after them)
+        public const int Count = 23;
 
         /// <summary>What each seat is, for the log's line (constant texts).</summary>
         public static readonly string[] Names =
@@ -45,17 +39,10 @@ namespace RealLifeOverhaul
             "the credit rating", "the bank apps", "the city's economy", "the car dealership", "online shops", "the cleaning service and selling a business",
             "running a business", "property", "the player's own bank", "brands and franchises", "investors", "the stock market", "the City Ledger",
             "the tech sector", "education and careers", "empty shops as offices", "the tech sector's buildings", "Flare", "Standing", "Permadeath",
+            "the police and the record", "the Garage", "the Economy app",
         };
 
-        /// <summary>
-        /// For each seat, the seats whose state it reads when it starts, so must have started before it: the followers read the
-        /// credit side (Running), the prices and the market read the city's economy (Prices.Level, CityEconomy.State), the
-        /// stock market takes over Ventures' old market (MarketBridges.Old), the paper's first edition reads the market and the
-        /// economy (LedgerBridges), careers read the tech sector's roles, the tech buildings its infrastructure (TechDirector.Infra)
-        /// and the university's building (TechBridges.OthersPicked), Flare's new account the businesses, brands and career, and
-        /// Standing's first round the followers, staff, holdings and brands (FameBridges). A seat that waits for another itself
-        /// (the offices for the headquarters: Conversions.OthersPicked) needs no place after it.
-        /// </summary>
+        /// <summary>For each seat, the seats whose state it reads when it starts, so must start before it.</summary>
         public static readonly int[][] After =
         {
             new int[0],                                   // Credit
@@ -78,19 +65,17 @@ namespace RealLifeOverhaul
             new[] { Company, Brands, Careers },           // Flare
             new[] { Company, Estate, Brands, Flare },     // Fame
             new int[0],                                   // Permadeath
+            new int[0],                                   // Law
+            new int[0],                                   // Garage
+            new[] { CityEconomy, Markets },               // Outlook
         };
     }
 
     /// <summary>
-    /// The rule of the start line: at most one first load a frame, the lowest seat that is waiting first. A director whose
-    /// first tick after a load has come asks for its seat in every frame (<see cref="Holds"/>) until it is given it, then
-    /// does its tick and never asks again until the next city. A seat is never given in the frame it is first asked for, so
-    /// that every director whose tick lands in that frame has asked before the first is chosen; a seat that has stopped
-    /// asking (its director gone, or no longer starting) holds nobody up after one frame.
-    ///
-    /// Nothing here depends on time or on the machine: given the frames the seats ask in, the frames they are given are
-    /// the same everywhere. Arrays made once; a question is a few comparisons and, while seats wait, one look along the
-    /// seats before it. No Unity or game types: checked offline (NavCheck, StartCheck.cs).
+    /// The rule of the start line: at most one first load a frame, the lowest waiting seat first. A seat is never given in
+    /// the frame it is first asked for, so every director whose tick lands there has asked; one that stops asking holds
+    /// nobody up after a frame. The same frames asked give the same frames given on every machine. Game-free; a few
+    /// comparisons a question.
     /// </summary>
     public sealed class StartQueue
     {
@@ -110,16 +95,12 @@ namespace RealLifeOverhaul
             Begin();
         }
 
-        /// <summary>The number of seats.</summary>
-        public int Seats => _first.Length;
 
-        /// <summary>Seats given since the line began.</summary>
         public int GivenCount => _givenCount;
 
         /// <summary>The frame the last seat was given in; <see cref="int.MinValue"/> while none has been.</summary>
         public int LastGiven => _lastGiven;
 
-        /// <summary>A new city: every seat waits for its first load again.</summary>
         public void Begin()
         {
             for (int i = 0; i < _first.Length; i++)
@@ -132,10 +113,7 @@ namespace RealLifeOverhaul
             _givenCount = 0;
         }
 
-        /// <summary>
-        /// True while the seat's first load must wait in this frame; false once it is given (then for good, until
-        /// <see cref="Begin"/>), and for a seat that is not one. Asked once a frame by a director whose first load has come.
-        /// </summary>
+        /// <summary>True while the seat's first load must wait this frame; false once given, until <see cref="Begin"/>.</summary>
         public bool Holds(int seat, int frame)
         {
             if (seat < 0 || seat >= _first.Length || _given[seat] != Never)

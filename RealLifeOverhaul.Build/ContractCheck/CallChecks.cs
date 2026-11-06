@@ -81,6 +81,7 @@ internal static partial class Program
     private static readonly Dictionary<string, string> HandedByHand = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         { "RealLifeOverhaul.FrameSteps.Install", "the frame's timestamps in the engine's own loop: a clock read and an addition, only while diagnostics are on" },
+        { "RealLifeOverhaul.MapParts.Add", "the map check's looks, kept in the mod's own list and asked only by MapParts.Lingering, each in a try of its own whose catch names it in the check's line and asks it no more (Core/MapParts)" },
         { "RealLifeOverhaul.PerfLoop.Marker", "the benchmark's timestamps in the engine's own loop: a clock read and an addition, only while a benchmark runs" },
         { "RealLifeOverhaul.GameUi.WorldPanel.Watch", "the panel's step aside, once a frame while it is shown: one try round all of it (Core/GameUi/WorldPanel.Beside)" },
         { "RealLifeOverhaul.GameConfirm.Direct", "the question box's answers: its callers hand it answers made by Guard.Wrap (Core/GameConfirm)" },
@@ -90,6 +91,10 @@ internal static partial class Program
         { "RealLifeOverhaul.Meta.OptionsLayout.Dispose", "(the same answer taken off again)" },
         { "RealLifeOverhaul.Meta.OptionsLayout.SearchBox.Build", "the options page's search box: each of its three listeners one try round all of it, its catch the box's own (Meta/OptionsLayout.Search)" },
         { "RealLifeOverhaul.Meta.BugReportGame.Listen", "the engine's log listener for 'Report a bug': one try round all of it whose catch drops the line, since the guard's catch writes to the log and would call it again (Meta/BugReportGame.Heard)" },
+        { "RealLifeOverhaul.DistrictSave.DistrictSaveDirector.Arm", "the engine's log listener for the game's line that a save's file is written, the moment the district's records go back: one try round all of it whose catch drops the line, since the guard's catch writes to the log and would call it again (DistrictSave/DistrictSaveDirector.OnLog)" },
+        { "RealLifeOverhaul.TrafficMend.Listen", "the engine's log listener that counts the traffic's failed density passes: one try round all of it whose catch drops the line, since the guard's catch writes to the log and would call it again (Traffic/TrafficMend.OnLog)" },
+        { "RealLifeOverhaul.TestRun.RunDirector.Listen", "the engine's log listener of the city expansion's test run, only while a run is under way: one try round all of it whose catch drops the line, since the guard's catch writes to the log and would call it again (TestRun/RunDirector.OnLog)" },
+        { "RealLifeOverhaul.TestRun.RunDirector.Unlisten", "(the same listener taken off again at the run's end)" },
     };
 
     // A type of a signature as 'assembly|full name' (the mod's own: '|full name', or '@delegate|full name' for a delegate type of its own).

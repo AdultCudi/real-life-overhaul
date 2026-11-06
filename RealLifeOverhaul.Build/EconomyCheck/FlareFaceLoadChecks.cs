@@ -48,8 +48,8 @@ internal static partial class Program
         f.Net.Dms.Add(new FlareDm { Id = 2, With = "c:124", Mine = true, Text = "hello" });
         var people = new List<FlarePerson>
         {
-            new FlarePerson { Index = 0, First = "Mom", Female = FixedLooks.MomFemale, Age = FixedLooks.MomAge, LookSeed = FixedLooks.MomSeed },
-            new FlarePerson { Index = 1, First = "Alex", Female = FixedLooks.AlexFemale, Age = FixedLooks.AlexAge, LookSeed = FixedLooks.AlexSeed },
+            new FlarePerson { Index = 0, First = "Mom", Female = FixedPeople.MomFemale, Age = FixedPeople.MomAge, LookSeed = FixedPeople.MomSeed },
+            new FlarePerson { Index = 1, First = "Alex", Female = FixedPeople.AlexFemale, Age = FixedPeople.AlexAge, LookSeed = FixedPeople.AlexSeed },
             new FlarePerson { Index = 5, First = "Sam", Female = true, Age = 29, LookSeed = 4455, Partner = true }
         };
         return new FlareAvatarFacts { File = f, People = people, CitySeed = FlareLiveRules.CitySeed(f), MyBusinesses = new List<string>() };
@@ -76,7 +76,7 @@ internal static partial class Program
         int n = FlareFaceAheadRules.Likely(facts, 30, FlareFaceAheadRules.LoadMost, plans);
         FlareAvatarPlan partner = FlareAvatarRules.Plan("p5", facts), mom = FlareAvatarRules.Plan("f0", facts), alex = FlareAvatarRules.Plan("f1", facts);
         Check(n == plans.Count && n > 0 && plans[0].Picture == partner.Picture && plans[1].Picture == mom.Picture && plans[2].Picture == alex.Picture
-              && mom.Seed == FixedLooks.MomSeed && alex.Seed == FixedLooks.AlexSeed,
+              && mom.Seed == FixedPeople.MomSeed && alex.Seed == FixedPeople.AlexSeed,
             "Flare faces at load: the partner first, then the people met (Mom and Alex among them, each with their one look)");
         FlareAvatarPlan one = FlareAvatarRules.Plan("i:1", facts), gone = FlareAvatarRules.Plan("i:2", facts), three = FlareAvatarRules.Plan("i:3", facts);
         Check(plans[3].Picture == one.Picture && plans[4].Picture == three.Picture && !HasFace(plans, gone),
@@ -415,7 +415,7 @@ internal static partial class Program
         {
             unchanged &= data.TryGetValue(pair.Key, out string v) && v == pair.Value;
         }
-        Check(same && unchanged && met[0].Seed == FixedLooks.MomSeed && met[1].Seed == FixedLooks.AlexSeed,
+        Check(same && unchanged && met[0].Seed == FixedPeople.MomSeed && met[1].Seed == FixedPeople.AlexSeed,
             "Flare faces at load: the people met are read from the save as the social life will read them (Mom and Alex with their one look), the save untouched");
         data["reallife:social_people"] = data["reallife:social_people"].Substring(0, data["reallife:social_people"].Length / 2);
         SocialState.PeekMet(data, met);
@@ -444,15 +444,14 @@ internal static partial class Program
         string painter = ReviewSource("Social/Flare/FlareFacePainter.cs"), hold = ReviewSource("Core/LoadHold.cs"), mod = ReviewSource("Core/RealLifeOverhaulMod.cs"),
             director = ReviewSource("Social/Flare/FlareDirector.cs"), photos = ReviewSource("Social/Flare/FlareDirector.Photos.cs"), avatars = ReviewSource("Social/Flare/FlareAvatars.cs"),
             rules = ReviewSource("Social/Flare/FlareFaceAheadRules.cs"), turn = ReviewSource("Phone/Contacts/PortraitTurn.cs");
-        string now = FlareMethod(painter, "private static Moment Now()");
-        int held = now.IndexOf("LoadHold.Holding", StringComparison.Ordinal), loading = now.IndexOf("LoadScene.isLoading", StringComparison.Ordinal),
-            black = now.IndexOf("UI.UiFader.isFading", StringComparison.Ordinal), app = now.IndexOf("AppShowing", StringComparison.Ordinal);
-        Check(held >= 0 && loading > held && black > loading && app > black && !now.Contains("timeScale") && !now.Contains("SceneFinds.Hidden"),
-            "Flare faces: a face is drawn only behind the loading screen held for it, behind the game's black screen, or with Flare open (never in a pause or a load not held for it)");
+        string now = FlareMethod(painter, "private static FaceMoment Now()");
+        Check(now.Contains("FlareFaceMoment.Of(LoadHold.Holding, _loadOn && !_loadStop, LoadScene.isLoading, fading, fading && SceneFinds.Covered, AppShowing, _wanted > 0)")
+              && !now.Contains("timeScale") && !now.Contains("SceneFinds.Hidden"),
+            "Flare faces: a face is drawn only behind the loading screen held for it, behind the game's black screen at full strength, or with Flare open (never in a pause, a fade or a load not held for it; the moments are NavCheck's face pace)");
         string on = FlareMethod(painter, "private void OnUpdate()");
-        int moment = on.IndexOf("Moment moment = Now()", StringComparison.Ordinal), none = on.IndexOf("moment == Moment.None", StringComparison.Ordinal),
+        int moment = on.IndexOf("FaceMoment moment = Now()", StringComparison.Ordinal), none = on.IndexOf("moment == FaceMoment.None", StringComparison.Ordinal),
             budget = on.IndexOf("FlareFaceAheadRules.Another(", StringComparison.Ordinal), draw = on.IndexOf("Draw(now, moment)", StringComparison.Ordinal),
-            appOnly = on.IndexOf("at < 0 && moment == Moment.App", StringComparison.Ordinal);
+            appOnly = on.IndexOf("at < 0 && moment == FaceMoment.App", StringComparison.Ordinal);
         Check(moment >= 0 && none > moment && budget > none && appOnly > budget && draw > appOnly && Count(painter, "Draw(now, moment)") == 1
               && Count(painter, "PortraitTurn.Face(") == 1 && Count(painter, "PortraitTurn.Character(") == 1 && FlareMethod(painter, "private void Draw(").Contains("PortraitTurn.Face("),
             "Flare faces: the camera is asked in one place, only after the moment is known, behind the load's budget, and with the app open only for a face in view");

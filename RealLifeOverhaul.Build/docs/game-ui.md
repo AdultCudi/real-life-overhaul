@@ -45,6 +45,19 @@ for a panel the game does not know by name. When the game opens one of its own a
 off like any other; the panel's `PhoneAppRoot` then takes the mod's dot away. The badge is the copy's own
 (`SmartphoneAppButton.UpdateBadgeCount`), as Contacts uses it.
 
+The phone takes apps once `FullMenu.Start` has made the game's buttons, at the load, whether the menu shows or not
+(`PhoneApp.PhoneUp`). `Install` itself only checks the name against the names of both phones' buttons (read in one
+search per load, `PhoneNames`) and puts the app in a line (`InstallQueue`); the full menu's `PhoneAppQueue` puts one on a
+frame, its buttons made asleep in a waiting room under the full menu (off both phones) and the pagers held
+(`PhoneGridPager.Holding`), and after the line's last moves them all into their grids, shown as they join, and has each
+pager lay its grid out once. A button never waits hidden inside a grid: other mods' pagers see a button when it joins
+the grid, not when it is switched on (BizSuite's on its own word, AlunaPhonePages when the grid's names change, and it
+leaves out for good any button hidden there when it takes over), so 0.62.0, which made them hidden in the grid and
+switched them on after the last, left a player's phone with every app showing and no pages. The test Check the phone's
+pages takes every button off and puts it back as a load does, then writes "Phone check (pages): ...". The app it hands back counts as installed at once; opening it before its turn puts
+it on there and then. With Developer diagnostics on, "Phone apps check (paced install): ..." gives the frames and the
+slowest install.
+
 Proven: every member named above, and both templates' structure. Inferred: that a copy made after `Awake`/`Start`
 lays out as the ninth child (it is an ordinary child of a layout group).
 
@@ -88,9 +101,23 @@ too (it listens to `SmartphoneUI.OnUpdatedBadgeCount`). Every child the layout p
 
 Other mods page this grid as well (studied, not copied: BizSuite's `PhoneAppsPager` puts a component on the grid and
 shows or hides every child but the template; AlunaPhonePages pages every child that has a `SmartphoneAppButton`,
-and re-reads the grid when its child count changes). Two pagers would undo each other, so this one **steps aside
-for good** as soon as it sees a component on the grid from an assembly that is neither the game's nor the mod's, or
-finds a button it had hidden shown again. It then shows everything it hid and logs one line. For that to work the
+and re-reads the grid when its child count changes; both put a script of their own on the grid). Two pagers would
+undo each other, so this one **steps aside for good** for a pager (`PagerAsideRules`): one of those two scripts on the
+grid, or a hand that shows a button of the game's or the mod's that it had hidden on another page. It then shows
+everything it hid and logs one line saying what it saw. Other mods that only add a button or size the phone are no
+pagers. Hotelier & Restaurateur (Workshop 3828430270, known from a player's Player.log, not studied) puts its own button
+on the HUD phone and grows the phone to fit every button showing, two columns and rows of 225 beyond the game's four
+("Phone grown by 227 for 9 apps in 2 columns (4 rows shown before)"); it pages nothing. Its button joins the pages like
+any other mod's, and shown again by its own mod while on another page it joins them again rather than stepping this
+pager aside (before 2 Nov 2026 it stepped aside, every button showed, and the phone grew 3377 for 37 apps, off the top of the
+screen). A page turn hides the last page's buttons before it shows the next page's, so a mod counting the buttons
+showing never sees more than the seven of a page. A mod that shows its button again on every frame (more than
+`FightRun` passes each under a second apart) would cost a pass a frame, so it is left the grid. A script of another
+mod on the grid is no pager by itself. Stood aside on the HUD phone, a phone another mod made taller than the screen is
+kept within it: each part from the grid up to the phone's canvas, read with its height as built when the pager came and
+watched (`PhoneFrameWatch`), gives back what it gained as far as it runs past the screen's top or bottom, told once in
+Player.log. The test Check the phone's pages also shows a stand-in for another mod's button again on a page not
+showing and wants it paged off again with no step aside. For that to work the
 mod's button stays what those pagers look for: a real `SmartphoneAppButton`, a direct child of the grid, with no
 "Template" in its name. The More apps button is not in the grid, so those pagers never see it; when this pager
 steps aside it takes the button away.
@@ -272,6 +299,14 @@ OverlayUI [VerticalLayoutGroup (padding 30/30/55/40, spacing 20), ContentSizeFit
   `OverlayUI.Show(overlay)` and `OverlayUI.Hide(overlay)` are public and static.
 - `OverlayUI.Update` puts the box at `WorldToScreenPoint(GetTargetPosition())` every frame. Give it a point in front
   of the camera: a point behind it comes out mirrored.
+- The game's cameras look down from far off (`PedestrianCam`: on foot 35 m from the player, indoors 13 m with a lens of
+  49, turned only round the player; indoors that is the floor from about 5 m behind the player to 10 m ahead), and
+  indoors the game hides its guiders (`GuidersManager.ShouldGuidersBeHidden`), so a box over a place further off is
+  drawn off the screen and nothing says where to go; the box stands up from its point (pivot 0.5, 0), so one over a
+  place 5 m ahead is already mostly above the top. A `WorldPanel` with `KeepInView` (every job's panel) is handed the
+  point at the picture's edge toward such a place, low enough for the whole box, worked out in the camera's own space so
+  a place behind the lens is not mirrored (`GameUi/PanelEdgeRules.cs`, the rule; `GameUi/WorldPanel.View.cs`, the part
+  that asks the camera; a few dot products a frame while the box is up).
 - Each button's text gets the suffix `PlayerAction.AsSuffix()` (" [F]": the player's own binding), and
   `GameManager` sends Interact, SecondaryInteract, SpecialInteract and Confirm to
   `OverlayUI.OnPlayerActionPressed`, which resets the action and runs the button's `onClick` (in a vehicle
@@ -493,6 +528,10 @@ PlayerActivityUI [PlayerActivityUI, DraggableWindow, VerticalLayoutGroup, Conten
   `PlayerActivityUI.Show(activity)` opens it paused; the panel's `Update` reads the state every frame:
   MovingTowardsActivity (it hides itself and lets the clock run), Started (it makes it Running), Running (it calls
   `Perform(minutes)` as game minutes pass), Finished (it closes).
+- Its buttons (`SetButton`) get the `ButtonInfo`'s key alone: neither its `arguments` nor its `interactable` is read,
+  so a key with a `{placeholder}` shows the placeholder, and a button is never dimmed and its key always runs it. Give
+  an activity's button a key with no placeholder, and leave out a button that cannot be pressed now, as the game's
+  own `StudyActivity` does once its course is done (`Careers/SchoolDesk.GetButtons`). Labels do read their arguments.
 - `GameManager` sends Confirm, Interact, SecondaryInteract, Sell and SpecialInteract to it while it is open, and
   `CancelButtonHandler` sends Cancel: a button on any of those is run by its key. SpecialInteract is the time
   machine while the activity has one; SecondaryInteract is the fast-forward switch while it has one and the player
@@ -723,7 +762,8 @@ what was typed read as digits and checked against the least and the most.
 
 ## 24. Lists in the table, one page in the box (the Finance app's Accounts and Borrow)
 
-The white box (`InfoBox`, section 2) is a vertical layout with no scroll view: what does not fit is cut off. The
+The white box (`InfoBox`, section 2) is a card of a header, a scrolling body and a foot (section 36), so a page of any length is
+reached by the wheel; the table beside it is the game's scroller and takes any number of rows. The
 table beside it is the game's scroller and takes any number of rows. So a tab that has a list of things with actions
 puts the list in the table and shows in the box only the row that is picked:
 
@@ -778,7 +818,7 @@ Proven: all of it, from the game's code. Not seen in a running game.
 
 ## 27. A page inside a tab, and what the game computes about prices, customers and districts
 
-**A page that is no tab** (the Finance app's "The city"). The white box does not scroll and the tab bar's width is
+**A page that is no tab** (the Finance app's "The city"). The white box's body scrolls but the tab bar's width is
 not known, so a sixth subject is a page of an existing tab, opened by a button in that tab's box: the same table and
 box are written again with other rows and other column titles (`AppShell.SetColumns` again, section 20), and
 `AppShell.ShowTab(-1)` leaves every tab clickable and unmarked, so the tab the page belongs to takes the player back.
@@ -877,6 +917,10 @@ offer less, refuse. A row has no fourth, so a page with three answers puts its B
 
 **A switch in the box** is `InfoBox.Switch` (MyEmployees' own switch row); where the game's row could not be had it
 returns false and the page shows a button that does the same.
+`InfoBox.Toggle` is the Mod settings app's switch in the box: the game's settings menu switch row (`OptionRows.SwitchRow`,
+`switch-off@2x` and `switch-on@2x`) with a name and a short line under it in the box's words and colours, the control's
+column the switch's own width. It is made the first time a page asks and kept as the box's other parts are; where the
+menu cannot be copied it returns false and the page uses `InfoBox.Switch` (the managers' task switches do so).
 
 **What the game keeps, and where a mod can read it without patching**
 
@@ -1169,26 +1213,60 @@ Proven: the game's members and objects named, from the decompiled game and the s
 script:HelpSystem`, `script:ModOptionsToggleControl`, `name:ResetWindows`). Not seen running: the window inside the full
 menu, the drop-down's list over it, the rows' heights with long descriptions.
 
-## 36. The box's own look (`InfoBox.Look.cs`, `InfoBox.Parts.cs`, `LookRules`)
+## 36. The box's own look (`InfoBox.Frame.cs`, `InfoBox.Look.cs`, `InfoBox.Parts.cs`, `LookRules`, `LeftPaneRules`)
 
 The white box writes every app's page in one look of the mod's own, made from the game's box itself when it is taken:
 its line of text, its title, its headline's font and grey, its rule's grey, the round sprite and green of its
 satisfaction bar, the tick of its switch, and the game's red, orange and green (`GlobalReferences.colors`).
 
-- **A header:** the title with the app's colour in a short bar over it (`LookRules.Accent`, the deeper colour of the
-  app's icon), a muted line under it (`Subtitle`) and status chips at its right (`Chip`, in a `CellTone`).
-- **Sections:** a heading in small capitals over a hairline (`Section`); what follows stands in from it until the next
-  section, a row of buttons or the foot. `Headline` is a section.
-- **Rows:** a muted label at the left and the value at the right (`Row`, `RowWords`, `RowPair`), in one text: the
-  value is set on the label's line by a line height of nought and aligned right. A row whose two parts do not fit
-  one line has its value under its label (`LookRules.Stack`). An old "Label <b>value</b>" line is read as a row.
-- **Meters and needs:** a row with a short bar of the game's round sprite under its figure (`Meter`); a line with the
-  game's tick, or a red dot (`Check`).
-- **Notes and the foot:** smaller muted sentences (`Note`); the Guide's page under a hairline (`GuideLink`).
+**Why it was rebuilt (the left pane, 26 Oct 2026).** The game's white box is a fixed card with a `VerticalLayoutGroup` of
+no scroll. Given more than it holds, that layout takes every child's height down from its preferred towards its minimum,
+and a text's minimum is nothing: so each page that was too long for the card had every text squeezed, section heads were
+drawn over the text above them, wrapped lines over the next row, and the foot ran into the buttons. A page that fitted
+showed none of it. The fault was the card's, not any app's, and it was in all of them (130 source files write a page).
 
-Each part is one copy of a template, and as many texts as the game's box would use for the same page: a heading is two
-objects where the game's headline is seven. With Developer diagnostics on, each page writes its parts and time to
-Player.log ("Info box check"). ContractCheck fails the gate on a label and value written as one bare line.
+**The frame (`InfoBox.Frame.cs`)**, all Unity layout with no position or height of the mod's own:
+- the **head** (title, subtitle, chips) and the **foot** (the rows of buttons that close the page, then the Guide's page) ask for
+  the height their parts ask for; the **body** between them has a flexible height and none preferred, so the card's layout
+  never squeezes the head or the foot;
+- the body is a `ScrollRect` (the game's own table's step, movement and scroll bar, copied) over a masked viewport
+  that catches the wheel, whose content is a vertical layout under a `ContentSizeFitter`: as tall as its parts ask, so a page
+  of any length in any language overlaps nothing and scrolls;
+- the rows of buttons after the page's last heavy part stand in the foot (`LeftPaneRules.FootRows`), two to a line and
+  full width for an odd one (`ButtonRules`); a row in the middle of a page stays where it is;
+- the scroll goes to the top for another page (another title) and is kept for the same page written again (a press that
+  changed a figure), `LeftPaneRules.KeepOffset`.
+
+**The parts (`InfoBox.Look.cs`, `InfoBox.Parts.cs`)**:
+- **A header:** the title in a horizontal layout with its chips, so a long title wraps in the room the chips leave it, under a
+  short bar of the app's colour (`LookRules.Accent`); chips wider than 42% of the line go on a line under the title; a muted
+  line under it (`Subtitle`); chips in a `CellTone` (`Chip`).
+- **Sections:** a card in a tint of the rule's grey with its heading in small capitals over a hairline (`Section`); what
+  follows stands in the card until the next section, a row of buttons or the foot. `Headline` is a section.
+- **Facts:** the label at the left in grey and the value at the right (`Row`, `RowWords`, `RowPair`), two texts of one size
+  in a horizontal layout so that they share a baseline. The label is given the width its words measure
+  (`LeftPaneRules.LabelWidth`, from the text's own preferred width, so it holds for any language), the value takes the rest,
+  right aligned, wrapping under itself. A pair of facts is two such halves, or two facts one under the other when either does not
+  fit its half. An old "Label <b>value</b>" line is read as a fact.
+- **List entries (`Entry`):** a rung of a ladder: its name and figure on one line, what it asks under them in small muted
+  words; the current one on a tint of the app's colour with a mark at its left. The career app's professions use it.
+- **Meters and needs:** a fact with a bar of the game's round sprite under it, the card's whole width (`Meter`); a line with
+  the game's tick, or a red dot (`Check`).
+- **Notes and the foot:** smaller muted sentences (`Note`); the Guide's page in the foot under a hairline (`GuideLink`).
+
+Each part is one copy of a template, kept asleep between pages and reused (`InfoBox.Keep.cs`, a section card laid aside after
+its parts). Nothing runs a frame: a page is written on a click, and Unity lays it out once. With Developer diagnostics on, each
+page writes its parts and time to Player.log ("Info box check").
+
+**Checks.** ContractCheck (`LeftPaneChecks.cs`, `LookChecks.cs`): the rules above on made-up widths (the label's width always
+leaves the value its room; the foot takes the right rows; the scroll's place; when two boxes cross); and the sources: the
+frame is Unity's layout, the code that writes a page sets no position, size, offset or margin, no caller reaches into a part's
+transform or puts a label and a value on one line by mark-up, every caller writes with the card's own parts. In the game,
+Options > Tests > "Check the apps' left panes" (`Meta/LeftPaneTest.cs`, `LeftPaneFixture.cs`) opens every app of the mod on the
+phone and measures its card (`InfoBox.Audit`): no text taller than its place, no two texts' boxes crossing, nothing past the
+edge, the scroll reaching the page's end, for the page the app wrote, for Career's profession with the most rungs and Campus'
+longest courses, and for a page of every kind of part in the longest words of each of the mod's nine languages; one log line a
+page ("Left pane check (app, page): PASS"), and a last line that says PASS only if every page did.
 
 ## 37. Folders and a dock on the phone's home screen (`PhoneLayoutRules`, `PhoneFolders`, `PhoneGridPager`)
 
@@ -1218,3 +1296,63 @@ menu, every app a button. A folder of the mod's is made of the game's own parts 
   which opens the subway's list window (`DeskList`, section 10) with the places to go.
 
 See [the phone](../../docs/features/phone.md) for what the player sees and what is checked.
+
+## 38. Lines of the mod's in the game's objectives window (`GameUi.TaskGroup`; the construction objectives)
+
+`UIs.Instance.tasksUI` (`UI.Tasks.TasksUI`, `Canvases/Tasks`, the panel of section 10) holds groups under its
+`groupTemplate`'s parent: the business alerts (`bizman_alerts`, made in its `Start`), a job's mission group
+(`MissionTasksUI.CreateTasksGroup`, first in order), the workout plan (`WorkoutPlanUI`) and each side quest
+(`SideQuestUI`). Every one is made by the public `SetUpTasksGroup(headerKey)`, a copy of the template with
+`Headline/Label`'s key set, and filled with copies of the public `taskEntryTemplate`: a `Button` on the entry, `Label`
+(TMP 30 with its `TextLocalizationComponent`), `Checkmark` (a `Toggle`), `DestinationButton` (a `Button`) and
+`CloseButton`. The game's own entries set the label's colour to `GlobalReferences.colors.yellow` or `.red` for its
+medium and high priorities, hide the destination button when there is no address and wire it to the Set destination
+sequence of section 5. After a change the owner calls `ScheduleUpdateObjectivesHeight()`: the game sizes the window,
+folds it away while no group has a shown entry (`HasVisibleObjectiveEntries`, which skips entries named as its
+templates and `Headline`) and opens it again when one has. The whole window's alpha follows the full menu
+(`GlobalEvents.onFullMenuToggle` -> `ChangeVisibility`, also off in a mini game), and it goes with the HUD in the time
+machine and with "hide the interface".
+
+`TaskGroup` makes one group by that call, its entries by instancing the template (named `reallife_task_N`, never a
+template's name), hides `Checkmark` and `CloseButton` (as the game's own time entry does), rewires the entry's button
+and its destination button to the owner's presses (`UiClone.Rewire`), and folds on a press of its headline (a `Button`
+added to `Headline` if it has none, its label the raycast target). Words go through `UiClone.Words`; a line whose words
+did not change is not written again. No line hides the group; the feature off destroys it. A load destroys the window
+with the scene: the next write makes the group again. Nothing runs a frame.
+
+Proven: every member named here (decompiled `TasksUI.cs`, `MissionTasksUI.cs`, `SideQuestUI.cs`, `WorkoutPlanUI.cs`).
+Inferred: how a long line wraps in the entry and how the added headline button takes a press.
+
+## 39. A toolbar over the map, the game's tooltips, and a tour (`Construction/BuildModeKit`, `BuildModeBar`, `BuildModeTip`, `BuildModeTour`)
+
+Build mode's interface over the city map is made of the interior designer's own parts (`UIs.interiorDesignerUI`,
+`Canvases/InteriorDesignerUI`, a canvas of order 3 scaled to 3840 by 2160): its toolbar's `Topbar/Section` (the box, sprite
+`Box-Darker-Small-125` at 0.949, a horizontal layout and a content size fitter), one of its tool buttons (a `Button` with the
+game's `ButtonEffects`, its child `SelectedBackground` in `Button-Blue` and its `Icon` of 64), a `Divider`
+(`Square-With-Padding-8`) and a label of its panels (`ActionPanels/QueuePanel/NoPointOfSaleItemsLabel`, TextMeshPro 32 in
+the game's font). `BuildModeKit` copies them asleep and takes every script of the game's off them but `ButtonEffects` and
+the text component (the designer's `ToolButton`, `ActionKeyTooltip` and `ConfigurableControlsHintsToggler` are in
+`BigAmbitions.InteriorDesigner.dll` and other assemblies, so `UiClone.StripGameScripts`, which takes the main assembly's,
+would leave them). The icons are the designer's toolbar's (read from it: `Icon-Palette`, `Icon-Coin`,
+`Icon-CopyOutline-64`, `Icon-Close`, `Icon-Walls`...) or others by name through `GameSprites`. A coloured box is the game's
+`white-rounded-box` (else `round-corner-no-drop`) tinted, never the colour picker's `white-round`: that sprite is packed
+tight, 50 of its 232 pixels each side cut away as see-through, so a box of it draws smaller than its rectangle (a row
+116 high drew as a thin line, a 60 square as a dot; `UnityEngine.Sprites.DataUtility.GetPadding` says it, and the interface
+test fails on any sliced picture with such a margin). A plain fill is `1pixelwhite`. Buttons that must read as buttons on
+the dark box get a face inside a thin edge (`BuildModeKit.Frame`). The hint bar stands under the game's top bar and
+everything hung under it, measured at each writing (`BuildModeGame.Hud`), clear of the objectives panel; the game's FPS,
+address and neighbourhood labels at the foot (PlayerHUD's) are switched off while build mode is open and given back. The parts stand on the help's canvas (order 20, over the HUD and under
+the question box and the tooltips, both 21).
+
+The game's tooltip (`Tooltip.TooltipSystem`, its own canvas of order 21, following the pointer) shows for any
+`TooltipTarget` a tenth of a second after the pointer rests on it, and a disabled button still gets the pointer, so a
+greyed tool's tooltip can say why. `BuildModeTip` is a `TooltipTarget` whose `ShowTooltip` writes a header (a text that is
+not a key is written as it is, `TooltipSystem.SetHeader`) and a line in final words. The same system can be driven
+without a target (`TooltipSystem.Show`, `AddHeader`, `AddSplitter`, `AddLabel`, `Hide`): build mode says the square under
+the pointer that way, written only when the square changes, taken away as the pointer goes onto the interface.
+
+Proven: every object, size, sprite and member named here (the scene data, `uitree.py name:InteriorDesignerUI 5`; decompiled
+`TooltipSystem.cs`, `TooltipTarget.cs`, `BasicTooltip.cs`; `ilspycmd -t BigAmbitions.InteriorDesigner.ToolButton`). Inferred:
+how the copies look at the foot of the map, the tooltip beside the pointer over the map, and the layout's sizes in a
+language with longer words.
+

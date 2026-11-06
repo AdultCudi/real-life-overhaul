@@ -10,40 +10,20 @@ using UnityEngine.Rendering;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The modelled street props: cones, barriers, tape, the stretcher, police and paramedic
-    /// equipment (the list, with sizes and pivots, is in PropAssets/README.md).
-    ///
-    /// They live in one asset bundle next to the mod's DLL (Bundles/reallife_props) that holds
-    /// static meshes, one shared texture atlas (colour and mask map) and a catalogue; no
-    /// materials, shaders, colliders or scripts. The bundle is read once per game session, in
-    /// the background, and stays in memory. Every prop is one mesh drawn with one of two
-    /// materials made here from the game's lit shader, both on the same atlas and both
-    /// instanced: "lit", and "glow" for what should still read at night (tape, cones, flare,
-    /// reflective lettering), which lights itself faintly in its own colours. Nothing here runs
-    /// per frame, and nothing is made per prop or per scene.
-    ///
-    /// Whoever builds a prop asks <see cref="TryGet"/> and falls back to its own plain shape
-    /// when that says no: while the bundle is still loading, if it is missing, or if it has no
-    /// such prop (logged once).
-    ///
-    /// PROPS NEWER THAN THE BUNDLE. Building the bundle takes Unity; a prop remade since it was last built can ship as
-    /// the asset pipeline's own interchange files instead (Bundles/props_newer: a catalogue and a mesh file per prop,
-    /// already in Unity's space, written by PropAssets/scripts/newer_props.py from the same build the bundle is made
-    /// from). They are read in the background while the bundle loads, made into meshes as the bundle's builder makes
-    /// them, and used in place of the bundle's own of the same id, with the bundle's atlas. All of them or none: a
-    /// remade prop can depend on another (the city bus's body on its roof). build_bundle.ps1 removes the folder once the
-    /// bundle has them.
-    ///
-    /// ONLY FOR THE BUNDLE THEY WERE MADE FOR. Their UVs point into the atlas of the bundle beside them when they were
-    /// written: with any other bundle they draw with the wrong parts of its atlas (a city bus in fuel price boards
-    /// and fire engine lettering, from a folder an install had copied over and left behind). So newer_props.py writes the
-    /// SHA-256 of the bundle file into their catalogue ("bundle"), and they are used only beside a bundle file of that
-    /// hash. A folder without the stamp, or with another's, is left alone and said once in the log; the bundle's own
-    /// props are used. The hash is taken on the background thread that reads the folder, and only when there is one.
+    /// The modelled props (PropAssets/README.md), from the asset bundles beside the DLL (PropAssets/sets.json): each
+    /// holds static meshes, its own atlas and a catalogue, and all are read once a session in the background, behind the
+    /// loading screen. A prop is drawn with one of two instanced materials made here from the game's lit shader on its
+    /// own bundle's atlas: "lit", and "glow" for what should still read at night. Callers ask <see cref="TryGet"/> by id,
+    /// whichever bundle holds it, and fall back to a plain shape. The first bundle must be there; a later one missing
+    /// (an older install) leaves its props out with one warning. Props remade since the first bundle was built may ship
+    /// in Bundles/props_newer (newer_props.py), used all or none, and only beside the bundle whose SHA-256 their
+    /// catalogue names: their UVs point into its atlas. Nothing per frame, nothing made per prop or per scene.
     /// </summary>
     public static class PropLibrary
     {
-        private const string BundlePath = "Bundles/reallife_props";
+        // In the order of PropAssets/sets.json, which StandardCheck holds this list to (RLO-PERF-016). Where two hold the
+        // same id, the earlier one's is used; the build allows no such pair.
+        private static readonly string[] BundlePaths = { "Bundles/reallife_props", "Bundles/reallife_props_2", "Bundles/reallife_props_site" };
         private const string NewerPath = "Bundles/props_newer";
         private const string CatalogueName = "catalogue";
         private const string BaseTexture = "props_base";
@@ -51,7 +31,7 @@ namespace RealLifeOverhaul
         private const string LitShader = "HDRP/Lit";
         private const string GlowKind = "glow";
         private const int SupportedVersion = 1;
-        private const float Glow = 1.5f;             // how strongly the glow material shows in the dark, in the units Shapes.Paint uses
+        private const float Glow = 1.5f;             // how strongly the glow material shows in the dark, in Shapes.Paint's units
         private const float PlainSmoothness = 0.3f;  // used only if the game's build of the shader has no mask-map variant
 
         private static readonly int BaseColorId = Shader.PropertyToID("_BaseColor");
@@ -62,14 +42,12 @@ namespace RealLifeOverhaul
         private static readonly int EmissiveColorId = Shader.PropertyToID("_EmissiveColor");
         private static readonly int AlbedoAffectEmissiveId = Shader.PropertyToID("_AlbedoAffectEmissive");
 
-        // ---------------------------------------------------------------- the catalogue as written by the asset pipeline
-
 #pragma warning disable 0649   // filled in from the catalogue file
         private sealed class CatalogueFile
         {
             public int version;
             public ItemFile[] items;
-            public string bundle;   // props_newer only: the SHA-256 of the bundle file they were made for (newer_props.py)
+            public string bundle;   // props_newer only: the SHA-256 of the bundle file they were made for
         }
 
         private sealed class ItemFile
@@ -78,6 +56,22 @@ namespace RealLifeOverhaul
             public string mesh;
             public string material;
             public float[] size;
+            [Newtonsoft.Json.JsonProperty("parts")]
+            public PartFile[] Parts;   // a building: what each submesh is drawn with; null for a prop of one material
+        }
+
+        private sealed class PartFile
+        {
+            [Newtonsoft.Json.JsonProperty("game")]
+            public string Game;        // null: the bundle's atlas; else a kind of the game's own material (CampusLookRules.GameNames)
+            [Newtonsoft.Json.JsonProperty("fallback")]
+            public float[] Fallback;   // sRGB stand-in colour for when the game has no such material
+            [Newtonsoft.Json.JsonProperty("metallic")]
+            public float Metallic;
+            [Newtonsoft.Json.JsonProperty("smoothness")]
+            public float Smoothness;
+            [Newtonsoft.Json.JsonProperty("triangles")]
+            public int Triangles;
         }
         private sealed class MeshFile
         {
@@ -89,7 +83,7 @@ namespace RealLifeOverhaul
         }
 #pragma warning restore 0649
 
-        // The props newer than the bundle, as read from their files in the background.
+        // The props newer than the bundle, read in the background.
         private sealed class Newer
         {
             public readonly List<ItemFile> Items = new List<ItemFile>(4);
@@ -102,6 +96,33 @@ namespace RealLifeOverhaul
             public Mesh Mesh;
             public bool Glows;
             public Vector3 Size;
+            public Bundle From;   // whose atlas it is drawn with
+            public PropPart[] Parts;   // a building's submeshes, in order (null for a prop of one material); the first is drawn with the atlas
+        }
+
+        // One bundle: its atlas and the two materials made on it, and a later bundle's props until the first is in.
+        private sealed class Bundle
+        {
+            public int Index;
+            public string Name;
+            public Texture2D Base;
+            public Texture2D Mask;
+            public Material Lit;
+            public Material Glow;
+            public bool Settled;               // read, failed or not installed: nothing more will come from it
+            public string Unfit;               // why its props cannot be drawn with its atlas (PropFitRules.Problem); null if they can
+            public ItemFile[] Pending;
+            public Dictionary<string, Mesh> Meshes;
+        }
+
+        /// <summary>One submesh of a building prop: the bundle's atlas (<see cref="Game"/> null), or a kind of the game's own material.</summary>
+        public sealed class PropPart
+        {
+            public string Game;
+            public Color Fallback;     // what a plain stand-in is coloured when the game has no such material
+            public float Metallic;
+            public float Smoothness;
+            public int Triangles;
         }
 
         private enum State { NotStarted, Loading, Ready, Failed }
@@ -110,23 +131,28 @@ namespace RealLifeOverhaul
 
         private static readonly Dictionary<string, Prop> Props = new Dictionary<string, Prop>(48);
         private static readonly HashSet<string> MissingLogged = new HashSet<string>();
-        private static readonly Dictionary<int, Material> Tints = new Dictionary<int, Material>(8);   // by 0xBBGGRR: see Tinted
-        private static readonly Dictionary<string, Texture2D> Pictures = new Dictionary<string, Texture2D>(4);   // the bundle's other textures (road paint: see Texture)
+        private static readonly Dictionary<int, Material> Tints = new Dictionary<int, Material>(8);   // by 0xIIBBGGRR, II the bundle: see Tinted
+        private static readonly Dictionary<string, Texture2D> Pictures = new Dictionary<string, Texture2D>(4);   // the bundles' other textures (road paint: see Texture)
         private static State _state = State.NotStarted;
-        private static Texture2D _base;
-        private static Texture2D _mask;
-        private static Material _lit;
-        private static Material _glow;
+        private static Bundle[] _bundles = new Bundle[0];
         private static bool _shaderMissing;
         private static Task<Newer> _newer;
 
-        /// <summary>True once the bundle has loaded (asynchronously, once); false while loading or if it failed.</summary>
+        /// <summary>True once the bundles have loaded (a later one missing or unreadable counts as done); false while loading or if the first failed.</summary>
         public static bool Ready => _state == State.Ready;
 
-        /// <summary>True once the load has ended, loaded or failed: what is built from the bundle now is what it will be.</summary>
+        /// <summary>True while the bundles are still being read in the background.</summary>
+        public static bool Loading => _state == State.Loading;
+
+        /// <summary>
+        /// Why some or all of the modelled props are not there, in a sentence, or null if all are: the first bundle failed, a later one is
+        /// missing, or the material its props are drawn with could not be made. The welcome notice and the self-check lines read it.
+        /// </summary>
+        public static string Trouble { get; private set; }
+
+        /// <summary>True once the load has ended either way: what is built from the bundles now is what it will be.</summary>
         public static bool Settled => _state == State.Ready || _state == State.Failed;
 
-        /// <summary>Starts the one-off asynchronous load. Safe to call repeatedly.</summary>
         public static void Load(ModContext context)
         {
             if (_state != State.NotStarted || context == null)
@@ -135,7 +161,12 @@ namespace RealLifeOverhaul
             }
             try
             {
-                string path = Path.Combine(context.ModRootPath, BundlePath);
+                _bundles = new Bundle[BundlePaths.Length];
+                for (int i = 0; i < BundlePaths.Length; i++)
+                {
+                    _bundles[i] = new Bundle { Index = i, Name = Path.GetFileName(BundlePaths[i]) };
+                }
+                string path = Path.Combine(context.ModRootPath, BundlePaths[0]);
                 if (!File.Exists(path))
                 {
                     Fail("the asset bundle is not installed (" + path + ")");
@@ -147,8 +178,18 @@ namespace RealLifeOverhaul
                 {
                     _newer = Task.Run(() => ReadNewer(newer, path));
                 }
-                AssetBundleCreateRequest opening = AssetBundle.LoadFromFileAsync(path);
-                opening.completed += Guard.Way<AsyncOperation>(_ => Opened(opening));
+                for (int i = 0; i < BundlePaths.Length; i++)
+                {
+                    string file = Path.Combine(context.ModRootPath, BundlePaths[i]);
+                    if (i > 0 && !File.Exists(file))
+                    {
+                        Later(i, "is not installed (an older copy of the mod?)");
+                        continue;
+                    }
+                    int index = i;
+                    AssetBundleCreateRequest opening = AssetBundle.LoadFromFileAsync(file);
+                    opening.completed += Guard.Way<AsyncOperation>(_ => Opened(opening, index));
+                }
             }
             catch (Exception e)
             {
@@ -156,19 +197,13 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// One of the bundle's textures that is not the props' own atlas, by name (the road paint that RoadPaint lays:
-        /// "decal_bus_stop", "decal_dash"). Null while the bundle is loading, or if it has none of that name.
-        /// </summary>
+        /// <summary>One of the bundles' other textures by name (road paint: "decal_dash"); null while loading or if none.</summary>
         public static Texture2D Texture(string name)
         {
             return _state == State.Ready && name != null && Pictures.TryGetValue(name, out Texture2D picture) ? picture : null;
         }
 
-        /// <summary>
-        /// The shared mesh and ready-made shared material for a prop id ("cone", "barrier", ...).
-        /// False if the bundle is not ready or has no such prop: the caller then falls back to its primitive.
-        /// </summary>
+        /// <summary>The shared mesh and material for a prop id, from whichever bundle holds it; false if not ready or no such prop (logged once).</summary>
         public static bool TryGet(string id, out Mesh mesh, out Material material)
         {
             mesh = null;
@@ -181,43 +216,85 @@ namespace RealLifeOverhaul
             {
                 if (MissingLogged.Add(id))
                 {
-                    Logger?.Warn("Props: '" + id + "' is not in the asset bundle; its plain shape is used.");
+                    Logger?.Warn("Props: '" + id + "' is not in the asset bundles; its plain shape is used.");
                 }
                 return false;
             }
-            material = Material(prop.Glows);
+            material = Material(prop.Glows, prop.From);
             if (material == null)
             {
+                if (prop.From.Unfit != null && MissingLogged.Add(id))
+                {
+                    Logger?.Warn(PropFitRules.Line(id + " of " + prop.From.Name, prop.Glows ? "RealLifeOverhaul Props (glow)" : "RealLifeOverhaul Props", prop.From.Unfit, false));
+                }
                 return false;
             }
             mesh = prop.Mesh;
             return true;
         }
 
+        /// <summary>Why this prop is not drawn as modelled right now (for a self-check line), or null if it is, or is only not asked for yet.</summary>
+        public static string Why(string id)
+        {
+            switch (_state)
+            {
+                case State.Failed:
+                    return Trouble ?? "the props bundle failed";
+                case State.Ready:
+                    if (!Props.TryGetValue(id ?? string.Empty, out Prop prop))
+                    {
+                        return "'" + id + "' is not in the bundles (a copy of the mod older than this piece)";
+                    }
+                    return prop.From.Unfit;
+                default:
+                    return null;   // not read yet: the dressing is made again when it is (BusStopLookRules.Remodel)
+            }
+        }
+
         /// <summary>
-        /// Whether the bundle is loaded and has this prop. Says nothing in the log (unlike <see cref="TryGet"/>),
-        /// so a caller that tries one id and then another can ask freely.
+        /// A building prop (PropAssets/README.md, "Buildings"): its shared mesh, whose submeshes are drawn each with one of the
+        /// returned parts' materials, the first with <paramref name="atlas"/>, the others with the game's own (a kind each:
+        /// the caller finds them). False if not ready, no such prop, or it is a prop of one material. Never logs.
         /// </summary>
+        public static bool TryGetBuilding(string id, out Mesh mesh, out Material atlas, out PropPart[] parts)
+        {
+            mesh = null;
+            atlas = null;
+            parts = null;
+            if (_state != State.Ready || id == null || !Props.TryGetValue(id, out Prop prop) || prop.Parts == null)
+            {
+                return false;
+            }
+            atlas = Material(prop.Glows, prop.From);
+            if (atlas == null)
+            {
+                return false;
+            }
+            mesh = prop.Mesh;
+            parts = prop.Parts;
+            return true;
+        }
+
+        /// <summary>Whether the bundles are loaded and one has this prop; unlike <see cref="TryGet"/>, never logs.</summary>
         public static bool Has(string id)
         {
             return _state == State.Ready && id != null && Props.ContainsKey(id);
         }
 
-        /// <summary>
-        /// The lit atlas material with its colour multiplied by a tint: for a part modelled on a neutral
-        /// swatch that takes its colour from code (a bicycle's frame, a motorbike's tank). ONE shared,
-        /// instanced material per colour, made the first time that colour is asked for and kept until
-        /// <see cref="Dispose"/>; never one per object. Null when the atlas material cannot be made.
-        /// </summary>
-        public static Material Tinted(Color tint)
+        /// <summary>The lit material of a prop's own atlas, tinted: one shared per atlas and colour until <see cref="Dispose"/>; null if it cannot be made.</summary>
+        public static Material Tinted(string id, Color tint)
         {
-            Material lit = _state == State.Ready ? Material(false) : null;
+            if (_state != State.Ready || id == null || !Props.TryGetValue(id, out Prop prop))
+            {
+                return null;
+            }
+            Material lit = Material(false, prop.From);
             if (lit == null)
             {
                 return null;
             }
             Color32 packed = tint;
-            int key = packed.r | packed.g << 8 | packed.b << 16;
+            int key = packed.r | packed.g << 8 | packed.b << 16 | prop.From.Index << 24;
             if (!Tints.TryGetValue(key, out Material made) || made == null)
             {
                 made = new Material(lit) { name = "RealLifeOverhaul Props (tinted)" };
@@ -228,26 +305,27 @@ namespace RealLifeOverhaul
             return made;
         }
 
-        /// <summary>Size of the prop's bounds in metres, for placement. Zero if unknown.</summary>
+        /// <summary>Size of the prop's bounds in metres; zero if unknown.</summary>
         public static Vector3 SizeOf(string id)
         {
             return _state == State.Ready && id != null && Props.TryGetValue(id, out Prop prop) ? prop.Size : Vector3.zero;
         }
 
-        /// <summary>
-        /// Destroys what it created. Called when the city scene ends. That is the two materials;
-        /// the bundle's meshes and textures stay loaded for the session and the materials are
-        /// made again the next time a prop is asked for.
-        /// </summary>
+        /// <summary>Destroys the materials when the city ends; the bundles stay loaded for the session.</summary>
         public static void Dispose()
         {
-            if (_lit != null)
+            foreach (Bundle bundle in _bundles)
             {
-                UnityEngine.Object.Destroy(_lit);
-            }
-            if (_glow != null)
-            {
-                UnityEngine.Object.Destroy(_glow);
+                if (bundle.Lit != null)
+                {
+                    UnityEngine.Object.Destroy(bundle.Lit);
+                }
+                if (bundle.Glow != null)
+                {
+                    UnityEngine.Object.Destroy(bundle.Glow);
+                }
+                bundle.Lit = null;
+                bundle.Glow = null;
             }
             foreach (Material tinted in Tints.Values)
             {
@@ -257,17 +335,13 @@ namespace RealLifeOverhaul
                 }
             }
             Tints.Clear();
-            _lit = null;
-            _glow = null;
         }
 
-        // ---------------------------------------------------------------- materials
-
-        // One material per kind, made the first time a prop of that kind is asked for.
-        private static Material Material(bool glows)
+        // One material per kind and atlas, made when first asked for.
+        private static Material Material(bool glows, Bundle from)
         {
-            Material made = glows ? _glow : _lit;
-            if (made != null || _shaderMissing)
+            Material made = glows ? from.Glow : from.Lit;
+            if (made != null || _shaderMissing || from.Unfit != null)
             {
                 return made;
             }
@@ -275,62 +349,73 @@ namespace RealLifeOverhaul
             if (shader == null)
             {
                 _shaderMissing = true;
-                Logger?.Warn("Props: the game's lit shader was not found; plain shapes are used.");
+                Trouble = Trouble ?? PropFitRules.Problem(0, 0, false, false, false);
+                Logger?.Warn("Props: the game's lit shader was not found; plain shapes are used. " + PropFitRules.Cause(false) + ".");
                 return null;
             }
-            made = new Material(shader) { name = glows ? "RealLifeOverhaul Props (glow)" : "RealLifeOverhaul Props", renderQueue = Shapes.TakesDecalsQueue };   // (Tinted's copies keep it)
+            string unfit = PropFitRules.Problem(from.Base != null ? from.Base.width : 0, from.Base != null ? from.Base.height : 0, true, shader.isSupported,
+                                                 shader.FindPropertyIndex("_BaseColorMap") >= 0);
+            if (unfit != null)
+            {
+                // Drawn anyway it would be a white shape: the plain shapes, in their own colours, are better.
+                from.Unfit = unfit;
+                Trouble = Trouble ?? "the props of " + from.Name + " cannot be drawn: " + unfit;
+                Logger?.Warn(PropFitRules.Line(from.Name, glows ? "RealLifeOverhaul Props (glow)" : "RealLifeOverhaul Props", unfit, false));
+                return null;
+            }
+            string name = (glows ? "RealLifeOverhaul Props (glow)" : "RealLifeOverhaul Props") + (from.Index > 0 ? " " + from.Name : string.Empty);
+            made = new Material(shader) { name = name, renderQueue = Shapes.TakesDecalsQueue };   // Tinted's copies keep it
             made.SetColor(BaseColorId, Color.white);
-            made.SetTexture(BaseColorMapId, _base);
+            made.SetTexture(BaseColorMapId, from.Base);
             made.SetFloat(MetallicId, 0f);
             made.SetFloat(SmoothnessId, PlainSmoothness);
-            if (_mask != null)
+            if (from.Mask != null)
             {
-                made.SetTexture(MaskMapId, _mask);
+                made.SetTexture(MaskMapId, from.Mask);
                 made.EnableKeyword("_MASKMAP");
             }
             if (glows)
             {
-                // Lights itself in its own colours: white bands and lettering show, black rubber stays black.
+                // Lit in its own colours: white bands show, black rubber stays black.
                 made.SetFloat(AlbedoAffectEmissiveId, 1f);
                 made.SetColor(EmissiveColorId, Color.white * Glow);
             }
             made.enableInstancing = true;
             if (glows)
             {
-                _glow = made;
+                from.Glow = made;
             }
             else
             {
-                _lit = made;
+                from.Lit = made;
             }
             return made;
         }
 
-        // ---------------------------------------------------------------- loading
-
-        private static void Opened(AssetBundleCreateRequest opening)
+        private static void Opened(AssetBundleCreateRequest opening, int index)
         {
             try
             {
                 AssetBundle bundle = opening.assetBundle;
                 if (bundle == null)
                 {
-                    Fail("the asset bundle could not be read (built for another Unity version?)");
+                    Unread(index, "could not be read (built for another Unity version?)", null);
                     return;
                 }
                 AssetBundleRequest reading = bundle.LoadAllAssetsAsync();
-                reading.completed += Guard.Way<AsyncOperation>(_ => Loaded(reading));
+                reading.completed += Guard.Way<AsyncOperation>(_ => Loaded(reading, index));
             }
             catch (Exception e)
             {
-                Fail("the asset bundle could not be read", e);
+                Unread(index, "could not be read", e);
             }
         }
 
-        private static void Loaded(AssetBundleRequest reading)
+        private static void Loaded(AssetBundleRequest reading, int index)
         {
             try
             {
+                Bundle into = _bundles[index];
                 var meshes = new Dictionary<string, Mesh>(48);
                 TextAsset catalogueText = null;
                 foreach (UnityEngine.Object asset in reading.allAssets)
@@ -343,11 +428,11 @@ namespace RealLifeOverhaul
                     {
                         if (texture.name == BaseTexture)
                         {
-                            _base = texture;
+                            into.Base = texture;
                         }
                         else if (texture.name == MaskTexture)
                         {
-                            _mask = texture;
+                            into.Mask = texture;
                         }
                         else
                         {
@@ -359,49 +444,152 @@ namespace RealLifeOverhaul
                         catalogueText = text;
                     }
                 }
-                if (catalogueText == null || _base == null)
-                {
-                    Fail("the asset bundle has no " + (catalogueText == null ? "catalogue" : "texture atlas"));
-                    return;
-                }
-                // Not JsonUtility: Unity's serializer does not know classes from an assembly loaded at run time,
-                // and silently leaves their arrays empty.
-                CatalogueFile catalogue = Newtonsoft.Json.JsonConvert.DeserializeObject<CatalogueFile>(catalogueText.text);
+                // Not JsonUtility: it leaves the arrays of a class from an assembly loaded at run time empty.
+                CatalogueFile catalogue = catalogueText != null ? Newtonsoft.Json.JsonConvert.DeserializeObject<CatalogueFile>(catalogueText.text) : null;
                 if (catalogue == null || catalogue.version != SupportedVersion || catalogue.items == null)
                 {
-                    Fail("the prop catalogue is version " + (catalogue != null ? catalogue.version : 0) + " with "
-                         + (catalogue != null && catalogue.items != null ? catalogue.items.Length : 0) + " items; this build reads version " + SupportedVersion);
+                    Unread(index, "has a prop catalogue of version " + (catalogue != null ? catalogue.version : 0) + " with "
+                                  + (catalogue != null && catalogue.items != null ? catalogue.items.Length : 0) + " items; this build reads version " + SupportedVersion, null);
                     return;
                 }
-                int triangles = 0;
-                foreach (ItemFile file in catalogue.items)
+                if (into.Base == null && catalogue.items.Length > 0)
                 {
-                    if (string.IsNullOrEmpty(file.id) || string.IsNullOrEmpty(file.mesh) || !meshes.TryGetValue(file.mesh, out Mesh mesh))
-                    {
-                        Logger?.Warn("Props: '" + file.id + "' is left out, its mesh is not in the bundle.");
-                        continue;
-                    }
-                    Props[file.id] = new Prop
-                    {
-                        Mesh = mesh,
-                        Glows = file.material == GlowKind,
-                        Size = file.size != null && file.size.Length == 3 ? new Vector3(file.size[0], file.size[1], file.size[2]) : mesh.bounds.size
-                    };
-                    triangles += (int)mesh.GetIndexCount(0) / 3;
+                    Unread(index, "has no texture atlas", null);
+                    return;
                 }
-                _state = State.Ready;
-                Logger?.Info("Props: " + Props.Count + " loaded from the asset bundle (" + triangles + " triangles in all, one " + _base.width + " x " + _base.height
-                             + " atlas" + (_mask != null ? " with a mask map" : "") + (Pictures.Count > 0 ? ", and " + Pictures.Count + " picture(s) of road paint" : "") + ").");
-                UseNewer();
+                into.Pending = catalogue.items;
+                into.Meshes = meshes;
+                into.Settled = true;
+                TryReady();
             }
             catch (Exception e)
             {
-                Fail("the prop catalogue could not be read", e);
+                Unread(index, "has a prop catalogue that could not be read", e);
             }
         }
 
-        // Off the main thread: the newer props' catalogue and mesh files, read and checked, nothing of Unity's touched. Only
-        // for the bundle file they were made for: its SHA-256 is their catalogue's stamp.
+        // A bundle that could not be used: the first switches props off, a later one only leaves its own out.
+        private static void Unread(int index, string problem, Exception error)
+        {
+            if (index == 0)
+            {
+                Fail("the asset bundle " + problem, error);
+                return;
+            }
+            if (error != null)
+            {
+                Logger?.Error(error);
+            }
+            Later(index, problem);
+        }
+
+        private static void Later(int index, string problem)
+        {
+            Logger?.Warn("Props: " + BundlePaths[index] + " " + problem + "; the props in it are left out and their plain shapes are used. " + PropFitRules.Cause(true) + ".");
+            Trouble = Trouble ?? "the props in " + BundlePaths[index] + " " + problem;
+            _bundles[index].Settled = true;
+            TryReady();
+        }
+
+        // Once every bundle has settled, their props in the order of the bundles, then the newer props: a later bundle
+        // whose read ends first still never stands in front of an earlier one.
+        private static void TryReady()
+        {
+            if (_state != State.Loading)
+            {
+                return;
+            }
+            foreach (Bundle bundle in _bundles)
+            {
+                if (!bundle.Settled)
+                {
+                    return;
+                }
+            }
+            var said = new System.Text.StringBuilder(160);
+            var counted = new HashSet<Mesh>();      // an alias shares its mesh: counted once
+            int triangles = 0;
+            foreach (Bundle bundle in _bundles)
+            {
+                if (bundle.Pending == null)
+                {
+                    continue;
+                }
+                int added = 0;
+                foreach (ItemFile file in bundle.Pending)
+                {
+                    if (string.IsNullOrEmpty(file.id) || string.IsNullOrEmpty(file.mesh) || !bundle.Meshes.TryGetValue(file.mesh, out Mesh mesh))
+                    {
+                        Logger?.Warn("Props: '" + file.id + "' is left out, its mesh is not in " + bundle.Name + ".");
+                        continue;
+                    }
+                    if (Props.TryGetValue(file.id, out Prop held) && held.From != bundle)
+                    {
+                        Logger?.Warn("Props: '" + file.id + "' of " + bundle.Name + " is left out, " + held.From.Name + " has it.");
+                        continue;
+                    }
+                    Props[file.id] = MakeProp(file, mesh, bundle);
+                    triangles += counted.Add(mesh) ? Triangles(mesh) : 0;
+                    added++;
+                }
+                said.Append(said.Length > 0 ? ", " : string.Empty).Append(bundle.Name).Append(' ').Append(added)
+                    .Append(bundle.Base != null ? " on a " + bundle.Base.width + " x " + bundle.Base.height + " atlas" + (bundle.Mask != null ? " with a mask map" : string.Empty) : " (no atlas)");
+                bundle.Pending = null;
+                bundle.Meshes = null;
+            }
+            _state = State.Ready;
+            Logger?.Info("Props: " + Props.Count + " loaded from the asset bundles (" + said + "; " + triangles + " triangles in all"
+                         + (Pictures.Count > 0 ? ", and " + Pictures.Count + " picture(s) of road paint" : "") + ").");
+            UseNewer();
+        }
+
+        private static Prop MakeProp(ItemFile file, Mesh mesh, Bundle from)
+        {
+            return new Prop
+            {
+                Mesh = mesh,
+                Glows = file.material == GlowKind,
+                Size = file.size != null && file.size.Length == 3 ? new Vector3(file.size[0], file.size[1], file.size[2]) : mesh.bounds.size,
+                From = from,
+                Parts = PartsOf(file, mesh)
+            };
+        }
+
+        // A building's parts, one to a submesh; null for a prop of one material or a row that does not match its mesh (then drawn as one).
+        private static PropPart[] PartsOf(ItemFile file, Mesh mesh)
+        {
+            if (file.Parts == null || file.Parts.Length < 2 || file.Parts.Length != mesh.subMeshCount)
+            {
+                return null;
+            }
+            var parts = new PropPart[file.Parts.Length];
+            for (int i = 0; i < parts.Length; i++)
+            {
+                PartFile p = file.Parts[i];
+                float[] c = p.Fallback;
+                parts[i] = new PropPart
+                {
+                    Game = string.IsNullOrEmpty(p.Game) ? null : p.Game,
+                    Fallback = c != null && c.Length == 3 ? new Color(c[0], c[1], c[2], 1f) : new Color(0.5f, 0.5f, 0.5f, 1f),
+                    Metallic = p.Metallic,
+                    Smoothness = p.Smoothness,
+                    Triangles = p.Triangles
+                };
+            }
+            return parts;
+        }
+
+        private static int Triangles(Mesh mesh)
+        {
+            int count = 0;
+            for (int i = 0; i < mesh.subMeshCount; i++)
+            {
+                count += (int)mesh.GetIndexCount(i) / 3;
+            }
+            return count;
+        }
+
+        // Off the main thread, nothing of Unity's touched: the newer props' files, read and checked.
         private static Newer ReadNewer(string folder, string bundlePath)
         {
             var newer = new Newer();
@@ -455,7 +643,7 @@ namespace RealLifeOverhaul
             return newer;
         }
 
-        // The SHA-256 of a file, in lower-case hex (as newer_props.py writes it).
+        // The SHA-256 of a file in lower-case hex, as newer_props.py writes it.
         private static string FileHash(string path)
         {
             using (FileStream stream = File.OpenRead(path))
@@ -477,7 +665,7 @@ namespace RealLifeOverhaul
             return hash.Length > 12 ? hash.Substring(0, 12) : hash;
         }
 
-        // What is wrong with a mesh file, or null: the checks of the bundle's builder (PropBundleBuilder.BuildMesh).
+        // What is wrong with a mesh file, or null: the checks of PropBundleBuilder.BuildMesh.
         private static string Wrong(MeshFile file)
         {
             if (file == null || file.vertices == null || file.vertices.Length < 9 || file.vertices.Length % 3 != 0)
@@ -503,7 +691,7 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        // On the main thread, once the bundle is in: the newer props in place of the bundle's own, all of them or none.
+        // On the main thread once the bundle is in: the newer props in place of the bundle's own, all or none.
         private static void UseNewer()
         {
             if (_newer == null)
@@ -513,7 +701,7 @@ namespace RealLifeOverhaul
             Newer newer;
             try
             {
-                newer = _newer.Result;   // (read long before the bundle has loaded; at worst this waits for it here, once)
+                newer = _newer.Result;   // read long before the bundle loads; at worst this waits once
             }
             catch (Exception e)
             {
@@ -552,12 +740,7 @@ namespace RealLifeOverhaul
             {
                 Mesh mesh = made[file.mesh];
                 replaced += Props.ContainsKey(file.id) ? 1 : 0;
-                Props[file.id] = new Prop
-                {
-                    Mesh = mesh,
-                    Glows = file.material == GlowKind,
-                    Size = file.size != null && file.size.Length == 3 ? new Vector3(file.size[0], file.size[1], file.size[2]) : mesh.bounds.size
-                };
+                Props[file.id] = MakeProp(file, mesh, _bundles[0]);   // the newer props draw with the first bundle's atlas
                 MissingLogged.Remove(file.id);
                 names.Add(file.id);
             }
@@ -565,7 +748,7 @@ namespace RealLifeOverhaul
                          + " of them in place of the bundle's own; they draw with its atlas.");
         }
 
-        // A mesh as the bundle's builder makes one (PropBundleBuilder.BuildMesh): the file is in Unity's space already.
+        // A mesh as PropBundleBuilder.BuildMesh makes one; the file is in Unity's space already.
         private static Mesh Build(MeshFile file, string name)
         {
             int count = file.vertices.Length / 3;
@@ -593,7 +776,8 @@ namespace RealLifeOverhaul
         private static void Fail(string problem, Exception error = null)
         {
             _state = State.Failed;
-            Logger?.Warn("Props: switched off, " + problem + ". Plain shapes are used instead.");
+            Trouble = problem;
+            Logger?.Warn("Props: switched off, " + problem + ". Plain shapes are used instead. " + PropFitRules.Cause(true) + ".");
             if (error != null)
             {
                 Logger?.Error(error);

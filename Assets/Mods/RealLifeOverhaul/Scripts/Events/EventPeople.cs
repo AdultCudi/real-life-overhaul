@@ -6,28 +6,19 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul.Events
 {
     /// <summary>
-    /// The people of fires and street events: a pool of eight of its own (a second instance of
-    /// the living city's pool class, so they are hidden when out of view, knocked down by the
-    /// player's car like anybody else, and never taken from the accident pool or from the
-    /// living city). Nobody is made until the first scene needs them, and then one at a time.
-    ///
-    /// What this adds to that pool:
-    /// - people who may stand and walk on a closed carriageway (the navigation mesh the player
-    ///   walks on) as well as on the pavement; they still only ever move by their agent;
-    /// - things worn on a bone (helmet, air pack, a runner's number), fitted to the character
-    ///   as it stands rather than by a table of offsets;
-    /// - a staff carried in the hand (placard, banner) at the grip of the stop-paddle clip;
-    /// - walking in from out of view and walking off out of view.
-    /// Everything put on a person here comes off again in <see cref="Release"/>, which is the
-    /// only way a person goes back.
+    /// The people of fires and street events: a pool of eight of their own, a second <see cref="CityPeople"/>, made one at
+    /// a time once a scene needs them. It adds people who stand and walk on a closed carriageway, things worn on a bone
+    /// (helmet, air pack, a runner's number) fitted as the character stands, a staff carried in the hand, and walking in
+    /// and off out of view. Everything put on a person comes off again in <see cref="Release"/>, the only way back.
     /// </summary>
     internal sealed class EventPeople
     {
-        private const float ArriveNear = 26f;
+        private const float ArriveNear = 26f;   // metres from their goal that people walk in from
         private const float ArriveFar = 50f;
-        private const float DepartNear = 40f;
+        private const float DepartNear = 40f;   // metres away that people walk off to
         private const float DepartFar = 75f;
-        /// <summary>The clip a staff is held with: the wished-for one once the bundle has it, the stop paddle's until then.</summary>
+
+        /// <summary>The clip a staff is held with: placard_hold once the bundle has it, the stop paddle's until then.</summary>
         public static string StaffClip => ClipLibrary.Has("placard_hold") ? "placard_hold" : "paddle_hold";
 
         /// <summary>A clip from the wish-list if the bundle has it by now, else the one that stands in for it.</summary>
@@ -40,14 +31,13 @@ namespace RealLifeOverhaul.Events
         {
             public CityPerson Who;
             public Transform Prop;
-            public HeldTool Held;   // null for something worn (the person's own Bring holds that)
+            public HeldTool Held;   // null for something worn, which the person's own Bring holds
         }
 
         private readonly CityPeople _pool;
         private readonly EventProps _props;
         private readonly List<Extra> _extras = new List<Extra>(12);
         private readonly List<CityPerson> _leaving = new List<CityPerson>(8);
-        private readonly List<CityPerson> _out = new List<CityPerson>(CityPeople.MaxPeople);
 
         public EventPeople(GameObject host, EventProps props)
         {
@@ -60,7 +50,6 @@ namespace RealLifeOverhaul.Events
         public int Free => _pool.Free;
         public EventProps Props => _props;
 
-        /// <summary>Makes one more character if the pool is not full. True while there is more to make.</summary>
         public bool Warm(Vector3 near)
         {
             return _pool.Warm(near + Vector3.down * 40f);
@@ -74,11 +63,7 @@ namespace RealLifeOverhaul.Events
             }
         }
 
-        /// <summary>
-        /// Somebody at a spot, facing a point. On the road if asked (the spot must be on the
-        /// carriageway's navigation mesh), else on the pavement. Null if nobody is free or the
-        /// spot will not take them.
-        /// </summary>
+        /// <summary>Somebody at a spot, facing a point, on the road or the pavement; null if nobody is free or fits there.</summary>
         public CityPerson Put(CityLook look, Vector3 spot, Vector3 face, bool road, bool fresh = true)
         {
             Vector3 first = spot;
@@ -102,14 +87,10 @@ namespace RealLifeOverhaul.Events
             }
             person.Turn(face);
             person.Stand();
-            _out.Add(person);
             return person;
         }
 
-        /// <summary>
-        /// One more person, put on the pavement out of view a short walk away and already walking
-        /// to a place (which may be on a closed road). Null if nobody is free or there is no way in.
-        /// </summary>
+        /// <summary>One more person put out of view a short walk away, walking to a place that may be on a closed road; null if not possible.</summary>
         public CityPerson WalkIn(CityLook look, Vector3 goal, bool road, bool jog = false)
         {
             for (int attempt = 0; attempt < 3; attempt++)
@@ -125,7 +106,7 @@ namespace RealLifeOverhaul.Events
                 }
                 if (FireOutfit.Wearing(person))
                 {
-                    _pool.Release(person);   // still in turnout gear from the last fire: not somebody to walk in as a passer-by
+                    _pool.Release(person);   // still in turnout gear from the last fire
                     person = _pool.Take(look, from, goal, true);
                     if (person == null)
                     {
@@ -135,7 +116,6 @@ namespace RealLifeOverhaul.Events
                 }
                 if ((!road || ToRoad(person, from)) && Reaches(person, goal) && person.WalkTo(goal, jog))
                 {
-                    _out.Add(person);
                     return person;
                 }
                 _pool.Release(person);
@@ -152,7 +132,7 @@ namespace RealLifeOverhaul.Events
             }
             if (DropStaff(person))
             {
-                person.StopOver(0.2f);   // the arm that held the staff comes down; anything else carried (a cup) stays in the hand
+                person.StopOver(0.2f);   // the staff's arm comes down; a cup in the other hand stays
             }
             _leaving.Add(person);
             if (CitySpots.PavementRing(person.Position, DepartNear, DepartFar, true, out Vector3 away) || CitySpots.PavementRing(person.Position, DepartNear, DepartFar, false, out away))
@@ -161,12 +141,6 @@ namespace RealLifeOverhaul.Events
             }
         }
 
-        public bool Leaving(CityPerson person)
-        {
-            return _leaving.Contains(person);
-        }
-
-        /// <summary>How many are still on their way off.</summary>
         public int LeavingCount => _leaving.Count;
 
         /// <summary>Once a second: takes back whoever has walked out of view (or was lost), and whoever a car knocked down.</summary>
@@ -209,7 +183,6 @@ namespace RealLifeOverhaul.Events
                 }
             }
             _leaving.Remove(person);
-            _out.Remove(person);
             _pool.Release(person);
         }
 
@@ -219,14 +192,11 @@ namespace RealLifeOverhaul.Events
             {
                 Strip(i);
             }
-            _out.Clear();
             _leaving.Clear();
             _pool.ReleaseAll();
         }
 
-        // ---------------------------------------------------------------- the carriageway
-
-        /// <summary>Moves somebody who has just been taken from the pool on to the navigation mesh the player walks on, at a spot.</summary>
+        // Moves somebody just taken from the pool on to the navigation mesh the player walks on, at a spot.
         private static bool ToRoad(CityPerson person, Vector3 spot)
         {
             NavMeshAgent agent = person.Character.navmeshAgent;
@@ -245,13 +215,7 @@ namespace RealLifeOverhaul.Events
             return agent.isOnNavMesh && agent.CalculatePath(goal, Path) && Path.status == NavMeshPathStatus.PathComplete;
         }
 
-        // ---------------------------------------------------------------- worn and carried
-
-        /// <summary>
-        /// Something worn on a bone, fitted to the character as it stands now: the prop's pivot is put
-        /// a given way above and in front of the bone, upright and facing the way the character faces.
-        /// A person can wear two things. False (and nothing changed) if it cannot be had.
-        /// </summary>
+        /// <summary>Something worn on a bone, fitted as the character stands so far above and ahead of it; two at most a person.</summary>
         public bool Wear(CityPerson person, string id, HumanBodyBones bone, float up, float forward)
         {
             if (person == null || person.Lost)
@@ -261,7 +225,7 @@ namespace RealLifeOverhaul.Events
             Animator animator = person.Character.animator;
             if (animator != null && animator.isActiveAndEnabled)
             {
-                animator.Update(0f);   // somebody just taken from the pool still has the pose they were put away in: measured standing, as the game's idle has them
+                animator.Update(0f);   // fresh from the pool they still have the pose they were put away in
             }
             Transform at = animator != null ? animator.GetBoneTransform(bone) : null;
             Transform prop = at != null ? _props.Take(id) : null;
@@ -281,11 +245,7 @@ namespace RealLifeOverhaul.Events
             return true;
         }
 
-        /// <summary>
-        /// A staff (placard, banner) in the right hand at the grip the stop-paddle clip was made
-        /// with: the staff stands upright beside them whatever that hand bone's own axes are. The
-        /// caller plays <see cref="StaffClip"/> (whole, standing) or lays it over the walk (right arm).
-        /// </summary>
+        /// <summary>A staff (placard, banner) in the right hand at <see cref="StaffClip"/>'s grip, for the caller to play standing or walking.</summary>
         public bool CarryStaff(CityPerson person, string id)
         {
             if (person == null || person.Lost || !ClipLibrary.TryGet(StaffClip, out CityClip clip) || !clip.HasTool)
@@ -309,8 +269,8 @@ namespace RealLifeOverhaul.Events
             return true;
         }
 
-        /// <summary>Takes the staff out of their hand. True if they had one.</summary>
-        public bool DropStaff(CityPerson person)
+        // Takes the staff out of their hand; true if they had one.
+        private bool DropStaff(CityPerson person)
         {
             bool had = false;
             for (int i = _extras.Count - 1; i >= 0; i--)
@@ -338,7 +298,7 @@ namespace RealLifeOverhaul.Events
             }
             if (extra.Prop != null)
             {
-                _pool.Fallen.Remove(extra.Prop);   // if a car knocked them down the pool listed it as dropped: it is back on the shelf now
+                _pool.Fallen.Remove(extra.Prop);   // listed as dropped if a car knocked them down
                 extra.Prop.SetParent(null, true);
                 _props.Return(extra.Prop);
             }

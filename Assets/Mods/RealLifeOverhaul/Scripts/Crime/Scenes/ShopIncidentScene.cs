@@ -1,26 +1,17 @@
 using Helpers;
 using UI.Notification;
 using UnityEngine;
-using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Trouble in a shop the player is standing in, played by the mod's own people so that no
-    /// customer, employee or sale is touched (customers only get a startled face over their
-    /// heads). Two kinds:
-    ///   a shoplifter (somebody else's shop): conceals something and makes for the door; gets
-    ///     out, is met at the door by the store detective, turns out to have simply forgotten
-    ///     to pay, or runs into the player, who was standing in the way;
-    ///   a hold-up (any shop with customers): a robber comes in, holds the room for a few
-    ///     seconds and runs; police meet them outside, or arrive too late, or the robber's
-    ///     nerve goes first. In the player's own shop a hold-up that succeeds costs a small,
-    ///     capped amount from the till, and only if crimes against the player are switched on.
+    /// Trouble in the shop the player stands in, played by the mod's own people (customers only look startled). A
+    /// shoplifter in somebody else's shop makes for the door: gets out, is met there, only forgot to pay, or runs into the
+    /// player. A robber holds the room up and runs: met outside, too late, or losing their nerve; in the player's own shop
+    /// a success empties the till (Crime.RobTill), with crimes against you on.
     /// </summary>
     internal sealed class ShopIncidentScene : CrimeScene
     {
-        internal const float HoldUpShare = 0.04f;
-        internal const int HoldUpLeast = 40, HoldUpMost = 500;   // at the start's prices (Crime.Rob takes them at today's)
         private const int Entering = 0, Busy = 1, Running = 2, AtDoor = 3, Floored = 4, Out = 5;
 
         private readonly string _id;
@@ -52,7 +43,6 @@ namespace RealLifeOverhaul
             }
             if (_holdUp)
             {
-                // In through the door and straight to the middle of the floor.
                 if (!ShopFloor.RandomSpot(out Vector3 floor) || !First.Enter(_door, ActorLook.Civilian, 2f, onRoad: false))
                 {
                     return false;
@@ -133,12 +123,10 @@ namespace RealLifeOverhaul
                         bool met = Is("caught_at_door") || Is("caught_outside");
                         if (met)
                         {
-                            // Whoever is waiting for them is already in the doorway.
-                            Cop.Enter(_door, ActorLook.Officer, 2f, onRoad: false);
+                            Cop.Enter(_door, ActorLook.Officer, 2f, onRoad: false);   // already in the doorway
                             Cop.Stand(First.Position);
                         }
-                        // Whoever the staff are shouting after hurries for the door, as the line just shown says: the one who
-                        // only forgot to pay at a trot, the thief flat out.
+                        // For the door: one who only forgot to pay at a trot, the thief flat out.
                         First.Go(_door, Is("false_alarm") ? Pace.Jog : Pace.Run, _outside, 30f);
                         Go(Running, now, 31f);
                     }
@@ -150,7 +138,6 @@ namespace RealLifeOverhaul
                         End();
                         break;
                     }
-                    // Somebody standing squarely in a running thief's way.
                     if (!_holdUp && !Is("false_alarm") && !PlayerHelper.IsUsingVehicle && (First.Position - player).sqrMagnitude < 1.5f * 1.5f)
                     {
                         _fall.Begin(First, player, now, 3f);
@@ -166,7 +153,7 @@ namespace RealLifeOverhaul
                 case Floored:
                     if (_fall.Tick(now))
                     {
-                        // Flat on the floor at the player's feet. An officer is fetched from the street to take them.
+                        // On the floor at the player's feet: an officer is fetched from the street.
                         if (First.Present && Cop.Enter(_door, ActorLook.Officer, 2f, onRoad: false))
                         {
                             Arrest(First, now, null, byPlayer: true);
@@ -202,8 +189,7 @@ namespace RealLifeOverhaul
         {
             if (Cop.Present)
             {
-                // Met in the doorway: cuffed, and led out.
-                Arrest(First, now);
+                Arrest(First, now);   // met in the doorway
                 return;
             }
             if (Is("false_alarm"))
@@ -215,11 +201,10 @@ namespace RealLifeOverhaul
                 return;
             }
 
-            // Through the door and gone.
             First.WalkOff(_outside, Pace.Run, 15f);
             if (_holdUp && _ownShop && Settings.CrimeAgainstPlayer && !Is("bungled"))
             {
-                int taken = Crime.Rob(HoldUpShare, HoldUpLeast, HoldUpMost, "reallife_transaction_robbery");
+                int taken = Crime.RobTill(ShopFloor.OwnRegistration);
                 if (taken > 0)
                 {
                     ModState.AddModifier(ModState.Robbed);

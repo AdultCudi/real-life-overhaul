@@ -30,14 +30,43 @@ namespace RealLifeOverhaul.Economy
         public int VoidDays;            // days empty in a row
         public readonly List<RentApplicant> Applicants = new List<RentApplicant>(EstateCatalogue.ApplicantsMost);
 
+        // A landlord's duties (EstateRules.Duties.cs), saved in part l; all nothing while the option is off.
+        public int Happy = -1;          // the tenant's satisfaction, 0 to 1000; -1 until it is first judged
+        public int Call;                // an open repair call's kind, 1 to CallKinds; 0 for none
+        public int CallDay;             // the day it was reported
+        public int CallCost;            // the contractor's quote
+        public int CallAnswer;          // CallAnswer
+        public int CallDue;             // a contractor's day, or the last day the player's own job waits
+        public int Moans;               // complaints in this lease
+        public bool Reminded;           // reminded of the arrears in this spell of them
+        public bool PlanAsked;          // a payment plan was offered in this spell (taken or not)
+        public bool OnPlan;             // paying the arrears off by instalments, the rent paid as well
+        public int PlanEach;            // an instalment
+        public int QuitDay;             // the day an unhappy tenant has said they go; 0 for none
+
         public bool Let => Tenant >= 0;
-        public bool Paying => Tenant >= 0 && Arrears == 0;
+        public bool Paying => Tenant >= 0 && (Arrears == 0 || OnPlan);
 
         /// <summary>Nobody is in: every figure of the lease is nothing.</summary>
         public void Vacant()
         {
             Tenant = -1;
             Record = Rent = Deposit = Until = Arrears = ArrearsDays = NoticeEnd = CourtDay = 0;
+            Happy = -1;
+            Call = CallDay = CallCost = CallAnswer = CallDue = Moans = PlanEach = QuitDay = 0;
+            Reminded = PlanAsked = OnPlan = false;
+        }
+
+        /// <summary>The arrears are paid: what belonged to that spell of them is over.</summary>
+        public void Cleared()
+        {
+            Arrears = ArrearsDays = PlanEach = 0;
+            Reminded = PlanAsked = OnPlan = false;
+        }
+
+        public void CallClosed()
+        {
+            Call = CallDay = CallCost = CallAnswer = CallDue = 0;
         }
     }
 
@@ -81,6 +110,13 @@ namespace RealLifeOverhaul.Economy
         public bool SaleFails;          // settled when the sale was agreed, found out on the day
 
         public int RentYear, CostYear;  // since EstateState.YearFrom
+
+        // A landlord's duties, saved in part m.
+        public int Manager;             // EstateManager
+        public int InspectDay;          // the city's next inspection; 0 while none is due
+        public int OrderDay;            // the day an improvement order must be met; 0 for none
+        public int Strikes;             // inspections failed in a row
+        public int CallsYear, FeesYear, FinesYear;   // of CostYear: repair calls, an agent's or a manager's fees, the city's fines
         public int TopUpDay;            // the last night the rental income option was settled; not saved
         public int NextApplicant = 1;   // applicants are numbered across the building's units
 

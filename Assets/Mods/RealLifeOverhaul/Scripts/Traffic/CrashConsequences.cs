@@ -18,8 +18,10 @@ namespace RealLifeOverhaul
         private static readonly FeatureGuard FrameGuard = Guard.For("traffic", "CrashConsequences", typeof(CrashConsequences));
 
         internal const float LiabilityLeast = 150f, LiabilityMost = 3000f;   // damages to another car, at the start's prices
+        /// <summary>The most one pursuit's damages can come to, at today's prices: forty of the largest crashes. A bound on the sum the pursuit keeps, never reached in play.</summary>
+        internal static int PursuitOwedMost => Prices.At(120000);
         // Impact speeds in m/s along the contact's normal (CarContacts: only the car hitting something, never the road or a kerb).
-        private const float LiabilitySpeed = 7f;    // ~25 km/h
+        internal const float LiabilitySpeed = 7f;    // ~25 km/h
         private const float InjurySpeed = 10f;      // ~36 km/h
         private const float SeriousSpeed = 14f;     // ~50 km/h: may put the player in hospital
         private const float HospitalSpeed = 17f;    // ~61 km/h: always does
@@ -111,8 +113,9 @@ namespace RealLifeOverhaul
             // The reckless car (Traffic/Reckless): a collision with it is its driver's fault, and the player owes nothing for it.
             bool theirFault = hitTraffic && RecklessDrivers.AtFault(struck);
             News.Report(NewsKind.PlayerCrash, Helpers.PlayerHelper.GetPosition());
-            Logger?.Info(System.FormattableString.Invariant(
-                $"Crash: impact {speed:F1} m/s, hitTraffic={hitTraffic}{(theirFault ? ", with the reckless car: not the player's fault, no liability" : string.Empty)}"));
+            string fault = theirFault ? ", with the reckless car: not the player's fault, no liability" : string.Empty;
+            string hit = CarContacts.Describe(collision, contact);   // (what was hit, so a report says which solid it was)
+            Logger?.Info(System.FormattableString.Invariant($"Crash: impact {speed:F1} m/s, hitTraffic={hitTraffic}{fault}; hit {hit}"));
 
             if (theirFault)
             {
@@ -120,7 +123,8 @@ namespace RealLifeOverhaul
             }
             else if (hitTraffic)
             {
-                int liability = Mathf.RoundToInt(Prices.At(Mathf.Clamp(speed * speed * 2.5f, LiabilityLeast, LiabilityMost)) / 10f) * 10;   // (at today's prices)
+                // At today's prices; a speed that is no number is the least.
+                int liability = WholeMoney.Round(VehicleCostRules.Liability(speed, 2.5f, LiabilityLeast, LiabilityMost, Prices.Level) / 10f) * 10;
 
                 // With police on, the player first gets the chance to stop: the bill comes then, or the police do.
                 PolicePursuit pursuit = PolicePursuit.Instance;
@@ -163,7 +167,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            GameManager.ChangeMoneySafe(-liability, new TransactionInfo("reallife_transaction_accident_liability"), null, null, force: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(-liability, new TransactionInfo("reallife_transaction_accident_liability"), null, null, force: true);
             Justice.CrashVictim(liability, 0, 0);   // now and then the other driver sues (Scripts/Justice)
             var data = new Dictionary<string, string> { { "amount", ((float)liability).ToCurrencyFormat() } };
             Notifications.Show(NotificationType.Error, notificationKey, data, 8f);

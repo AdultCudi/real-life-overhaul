@@ -19,6 +19,8 @@ namespace RealLifeOverhaul.Tech
         public const string AdKey = "reallife_transaction_tech_recruitment_ad";
         public const string ChecksKey = "reallife_transaction_tech_recruitment_checks";
         public const string SearchKey = "reallife_transaction_tech_recruitment_search";
+        public const string BuyoutKey = "reallife_transaction_tech_recruitment_buyout";        // the player buys out a hire's notice
+        public const string BuyoutPaidKey = "reallife_transaction_tech_recruitment_buyout_paid";   // a rival buys out the notice of one of the player's staff
         private const string FullTime = "ba:jobdemand_fulltime";
 
         public static IModLogger Logger;
@@ -32,7 +34,7 @@ namespace RealLifeOverhaul.Tech
             List<BuildingRegistration> all = Save != null ? Save.BuildingRegistrations : null;
             for (int i = 0; all != null && i < all.Count; i++)
             {
-                string n = all[i] != null ? all[i].Neighborhood : null;
+                string n = GameRegistrations.District(all[i]);   // null for one whose building the city lacks: skipped, not a fault
                 if (!string.IsNullOrEmpty(n) && !into.Contains(n) && n != "ba:neighborhood_global")
                 {
                     into.Add(n);
@@ -139,14 +141,17 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>A name and a sex for a new seeker, the game's own way (one no employee of the player's has).</summary>
-        public static void Name(Seeker s)
+        /// <summary>
+        /// A name and a sex for a new seeker, the game's own way, and one nobody in <paramref name="taken"/> has: the game's own check
+        /// knows only the staff hired when it was first asked, so a seeker kept in the save, the mod's payroll or a candidate
+        /// waiting could be given a name over again (the director's NameSet lists all of them). The name goes into the set.
+        /// </summary>
+        public static void Name(Seeker s, HashSet<string> taken)
         {
             try
             {
-                (Gender gender, string name) = RecruitmentHelper.GetRandomGenderAndName();
-                s.P.Name = name;
-                s.P.Female = gender == Gender.Female;
+                s.P.Name = StaffNamesGame.Fresh(taken, out bool female);
+                s.P.Female = female;
             }
             catch (Exception)
             {
@@ -205,12 +210,83 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        /// <summary>A candidate the hire failed for is taken out of the staff app and the game's index, as the game's own discard does. Nothing if they were hired after all.</summary>
+        public static void Discard(EmployeeInstance candidate)
+        {
+            try
+            {
+                if (candidate != null && candidate.IsCandidate)
+                {
+                    EmployeeHelper.DiscardCandidate(candidate);
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+        }
+
+        /// <summary>
+        /// After a hire: the new employee is on the save's list and assigned to the business, the two things the game's own
+        /// staff app and shifts need to find them. An assignment the game left empty is put right. One line in the log.
+        /// </summary>
+        public static bool Arrived(EmployeeInstance e, BuildingRegistration business, string name, int day)
+        {
+            try
+            {
+                bool listed = Save != null && Save.EmployeeInstances != null && Save.EmployeeInstances.Contains(e);
+                bool assigned = e.assignedAddress != null && business != null && e.assignedAddress.Equals(business.Address);
+                if (listed && !assigned && business != null)
+                {
+                    e.assignedAddress = business.Address;
+                    assigned = true;
+                }
+                Logger?.Info("Tech check (start, " + name + ", day " + day + "): " + (listed ? "on the staff list" : "NOT on the staff list") + ", "
+                             + (assigned ? "assigned to the business" : "not assigned") + ": " + (listed && assigned ? "PASS" : "FAIL"));
+                return listed && assigned;
+            }
+            catch (Exception ex)
+            {
+                Logger?.Error(ex);
+                return false;
+            }
+        }
+
         public static string Id(EmployeeInstance e) => e != null ? e.id : string.Empty;
+
+        /// <summary>The player's headquarters, the first the game lists (the same on every machine), or null with none: it briefs a data centre's crew search.</summary>
+        public static BuildingRegistration Headquarters()
+        {
+            List<BuildingRegistration> all = Save != null ? Save.BuildingRegistrations : null;
+            for (int i = 0; all != null && i < all.Count; i++)
+            {
+                BuildingRegistration reg = all[i];
+                if (reg != null && reg.RentedByPlayer && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.businessTypeName == HiringCatalogue.Headquarters && GameRegistrations.Found(reg))
+                {
+                    return reg;
+                }
+            }
+            return null;
+        }
 
         /// <summary>A recruiting cost of a business, cents: deductible, refused if the cash does not cover it.</summary>
         public static bool Pay(int cents, string key, BuildingRegistration at, string name)
         {
             return TalentGame.Cost(cents, key, at, name, false, false);
+        }
+
+        /// <summary>
+        /// Money a rival pays the business to let one of its staff go early, cents. Booked under a recruiting cost's key, positive, so the game's
+        /// statement counts it against the business's recruiting costs as a refund is, not as takings: it is no sale.
+        /// </summary>
+        public static void Receive(int cents, string key, BuildingRegistration at, string name)
+        {
+            if (cents <= 0 || Save == null)
+            {
+                return;
+            }
+            var info = new TransactionInfo(key, new Dictionary<string, string>(2) { { "name", name ?? string.Empty } });
+            RealLifeOverhaul.Economy.BizBooks.Book(cents / 100f, info, null, at != null ? at.Address : null, true);
         }
     }
 }

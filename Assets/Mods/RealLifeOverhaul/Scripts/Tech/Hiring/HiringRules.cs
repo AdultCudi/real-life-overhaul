@@ -105,10 +105,13 @@ namespace RealLifeOverhaul.Tech
             int honest = TechRandom.Mille(seed, n, 8);
             s.Claim = honest < 450 ? 0 : TechRandom.Range(seed, n, 9, 0, 1, HiringCatalogue.ClaimMost);
             s.Refs = TalentCatalogue.Clamp(1 + (s.Fit / 250) + (s.Claim > 8 ? -1 : 0) + TechRandom.Range(seed, n, 10, 0, 0, 1), 1, 5);
-            s.Notice = s.Employed ? 7 + level * 5 : 0;
+            s.Notice = s.Employed ? NoticeFor(level) : 0;
             s.Ask = AskOf(seed, s, rate, shortage);
             return s;
         }
+
+        /// <summary>The days of notice someone in work gives their employer at a level: a week, and five days more a level.</summary>
+        public static int NoticeFor(int level) => 7 + level * 5;
 
         /// <summary>What a seeker asks, cents an hour: the going rate, more in work, less out of it, and a little either side.</summary>
         public static int AskOf(int seed, Seeker s, RateOf rate, int shortage)
@@ -184,7 +187,7 @@ namespace RealLifeOverhaul.Tech
                 f.RivalAds.Add(new RivalAd
                 {
                     Rival = rivals != null && rivals.Count > 0 ? rivals[TechRandom.Range(f.Seed, n, 21, 0, 0, rivals.Count - 1)] : HiringCatalogue.RivalFirms[0],
-                    Family = Pick(HiringCatalogue.FamilyShare, TechRandom.Mille(f.Seed, n, 22)),
+                    Family = Pick(Staffing.StaffIndex.RivalFamilyShares, TechRandom.Mille(f.Seed, n, 22)),
                     Level = Pick(HiringCatalogue.LevelShare, TechRandom.Mille(f.Seed, n, 23)),
                     To = day + HiringCatalogue.RivalAdDays,
                     PayBp = TechRandom.Range(f.Seed, n, 24, 0, 0, 1500)
@@ -489,6 +492,81 @@ namespace RealLifeOverhaul.Tech
             return ApplyStage.Declined;
         }
 
+        public const int Buyable = 0, BuyoutNotAccepted = 1, BuyoutNotEmployed = 2, BuyoutTooSoon = 3;
+
+        /// <summary>The day a hire whose notice is bought out starts: tomorrow, the soonest any hire starts.</summary>
+        public static int BuyoutStart(int day) => day + HiringCatalogue.StartLeast;
+
+        /// <summary>The days a buy out saves: from the day the notice would have ended to the day they go instead; none if that is not sooner.</summary>
+        public static int BuyoutDays(int end, int instead) => Math.Max(0, end - instead);
+
+        /// <summary>The pay for so many days of notice at a rate, cents: a week's hours over its seven days, since notice runs in calendar days.</summary>
+        public static long NoticePay(int days, int centsHour)
+        {
+            long dayCents = Math.Min((long)Math.Max(0, days) * Math.Max(0, centsHour), long.MaxValue / TalentCatalogue.WeekHours);   // held so the hours cannot overflow
+            return dayCents * TalentCatalogue.WeekHours / 7;
+        }
+
+        /// <summary>What buying out so many days of notice costs, cents: their pay for those days by <see cref="HiringCatalogue.BuyoutBp"/>. The same rule for the player and the rivals.</summary>
+        public static int BuyoutPrice(int days, int centsHour)
+        {
+            long pay = Math.Min(NoticePay(days, centsHour), int.MaxValue);   // the price is at least the pay, so a pay past the cap is a price past it
+            return (int)Math.Min(int.MaxValue, pay * HiringCatalogue.BuyoutBp / 10000);
+        }
+
+        /// <summary>
+        /// Whether an applicant's notice can be bought out today: <see cref="Buyable"/>, or why not. Only someone who has accepted and is in
+        /// work has a notice, and only a start later than tomorrow leaves days to save.
+        /// </summary>
+        public static int CanBuyOut(Applicant a, Seeker s, int day)
+        {
+            if (a == null || s == null || a.Stage != (int)ApplyStage.Accepted)
+            {
+                return BuyoutNotAccepted;
+            }
+            if (!s.Employed)
+            {
+                return BuyoutNotEmployed;
+            }
+            return a.Start > BuyoutStart(day) ? Buyable : BuyoutTooSoon;
+        }
+
+        /// <summary>The price of buying out an applicant's notice today, cents, at the pay agreed; 0 when it cannot be bought out.</summary>
+        public static int BuyoutQuote(Applicant a, Seeker s, int day)
+        {
+            return CanBuyOut(a, s, day) == Buyable ? BuyoutPrice(BuyoutDays(a.Start, BuyoutStart(day)), a.Offer) : 0;
+        }
+
+        /// <summary>An applicant's notice bought out: they start tomorrow. Returns the days saved; 0, with nothing changed, when it cannot be.</summary>
+        public static int BuyOut(Applicant a, Seeker s, int day)
+        {
+            if (CanBuyOut(a, s, day) != Buyable)
+            {
+                return 0;
+            }
+            int saved = BuyoutDays(a.Start, BuyoutStart(day));
+            a.Start = BuyoutStart(day);
+            return saved;
+        }
+
+        /// <summary>The day a poached professional handed in their notice: their answer set the rest before the rival's next approach (TalentRules.Answer), so it needs no field of its own.</summary>
+        public static int NoticeServed(Profile p) => p.PoachDay - TalentCatalogue.PoachRestDays;
+
+        /// <summary>
+        /// Whether the rival a professional of the player's is leaving for buys out the rest of their notice today, as the player may for a
+        /// hire: once, the day after the notice was handed in, with days still to save, by a seeded roll that comes up more often the more
+        /// senior they are (<see cref="HiringCatalogue.RivalBuyoutChance"/>). The same answer on every machine and after a reload.
+        /// </summary>
+        public static bool RivalBuysOut(int seed, Profile p, int day)
+        {
+            if (p == null || p.Leaving != (int)LeaveKind.Poached || p.NoticeEnd <= day || day != NoticeServed(p) + 1)
+            {
+                return false;
+            }
+            int chance = HiringCatalogue.RivalBuyoutChance[TalentCatalogue.Clamp(p.Level, 0, HiringCatalogue.RivalBuyoutChance.Length - 1)];
+            return TechRandom.Mille(seed, TechRandom.Of(p.Id), day, 67) < chance;
+        }
+
         /// <summary>Offers waiting a day are answered; stale applications lapse, and a counter left unanswered is taken as a no.</summary>
         public static void Answers(HiringFile f, int day, int esteem, Func<Family, int> shortage, List<MarketNote> notes)
         {
@@ -571,7 +649,7 @@ namespace RealLifeOverhaul.Tech
         {
             int made = 0;
             RoleDef r = TalentCatalogue.Role(search.Role);
-            int most = HiringCatalogue.SeekersMost + HiringCatalogue.SearchCandidates * HiringCatalogue.SearchesMost;
+            int most = HiringCatalogue.SeekersMost + HiringCatalogue.SearchSeekersMost;
             for (int k = 0; k < HiringCatalogue.SearchCandidates && f.Seekers.Count < most; k++)
             {
                 int id = f.Next();
@@ -583,7 +661,97 @@ namespace RealLifeOverhaul.Tech
                 s.Employed = true;
                 s.Passive = true;
                 s.Claim = 0;
-                s.Notice = 7 + level * 5;
+                s.Notice = NoticeFor(level);
+                s.Until = day + HiringCatalogue.ApplicantDays;
+                s.Ask = AskOf(f.Seed, s, rate, shortage);
+                f.Seekers.Add(s);
+                f.Applicants.Add(new Applicant { Id = f.Next(), Seeker = s.Id, Ad = search.Id, Day = day, Stage = (int)ApplyStage.Shortlisted, Interest = 600, Refs = true });
+                search.Came++;
+                made++;
+            }
+            return made;
+        }
+
+        /// <summary>Whether a role looks after a data centre's racks on site, as a crew search finds them.</summary>
+        public static bool CrewRole(int role) => Array.IndexOf(HiringCatalogue.CrewRoles, role) >= 0;
+
+        /// <summary>True for a business type the game gives no desks and no shifts: a warehouse, which a data centre is. Nobody of the game's can be seated there.</summary>
+        public static bool NoShifts(string businessType) => businessType == HiringCatalogue.NoShifts;
+
+        /// <summary>
+        /// Whether a business seats a role. A business with shifts seats every role; one with none (a data centre) seats only the family that
+        /// looks after racks, who are on the payroll there. A data engineer, a designer or a software engineer belong at a firm's desks.
+        /// </summary>
+        public static bool Seats(bool shifts, RoleDef role) => shifts || (role != null && role.Family == Family.Infrastructure);
+
+        /// <summary>
+        /// Whether a hire is on the mod's own payroll rather than the game's employee: a role the game has no job for, a job from home, a data
+        /// centre's crew by a search, or anyone hired where the game has no shifts to give them (who would never be given work).
+        /// </summary>
+        public static bool OnPayroll(RoleDef role, int work, bool crewSearch, bool shifts) => !role.InGame || work == (int)Arrangement.Remote || crewSearch || !shifts;
+
+        /// <summary>
+        /// True for a professional who is the game's own employee at a business with no shifts: on its staff list, but never given a desk,
+        /// a shift or a walk to work. The game's own unassigning ends it and leaves them waiting in its staff list for a place.
+        /// </summary>
+        public static bool Stranded(bool shifts, bool gameEmployee) => !shifts && gameEmployee;
+
+        /// <summary>The level a crew search finds for a role: junior to staff, inside the role's own range.</summary>
+        public static int CrewLevel(int role, int level)
+        {
+            RoleDef r = TalentCatalogue.Role(role);
+            int least = Math.Max(r.LeastLevel, HiringCatalogue.CrewLeastLevel), most = Math.Min(r.MostLevel, HiringCatalogue.CrewMostLevel);
+            return TalentCatalogue.Clamp(level, least, Math.Max(least, most));
+        }
+
+        /// <summary>A crew search's fee for one hire, cents: a share of a year's pay at the going rate, larger the more senior.</summary>
+        public static int CrewFeeEach(int goingCents, int level)
+        {
+            int bp = HiringCatalogue.CrewFeeBp[TalentCatalogue.Clamp(level, 0, HiringCatalogue.CrewFeeBp.Length - 1)];
+            return (int)Math.Min(int.MaxValue, (long)Math.Max(0, goingCents) * TalentCatalogue.YearHours * bp / 10000);
+        }
+
+        /// <summary>What a crew search takes when it is briefed: a third of the fee, rounded up, so it covers a third of the hires' shares to the cent.</summary>
+        public static int CrewRetainer(int fee) => (int)(((long)Math.Max(0, fee) + 2) / 3);
+
+        /// <summary>The candidates a crew search brings for so many technicians: half as many again, one more at the least, within its cap.</summary>
+        public static int CrewCandidates(int crew)
+        {
+            int c = TalentCatalogue.Clamp(crew, 1, HiringCatalogue.CrewMost);
+            return Math.Min(HiringCatalogue.CrewCandidatesMost, c + Math.Max(1, c / 2));
+        }
+
+        /// <summary>
+        /// What a crew search is owed now, cents: its fee a hire for each started, less what is paid (the retainer counts towards
+        /// the first). Each hire past the brief pays its share too; nothing more while nobody has started.
+        /// </summary>
+        public static int CrewDue(JobAd search)
+        {
+            if (search == null || search.Crew <= 0)
+            {
+                return 0;
+            }
+            long earned = (long)search.Fee * Math.Max(0, search.Hired) / search.Crew;
+            return (int)Math.Max(0, Math.Min(int.MaxValue, earned - search.FeePaid));
+        }
+
+        /// <summary>
+        /// A crew search delivers: candidates for the role at its level, vetted (no claim past the truth, references taken), each
+        /// shortlisted for the brief. Seeded by the save's seed and the ids, so the same on every machine.
+        /// </summary>
+        public static int DeliverCrew(HiringFile f, JobAd search, int day, RateOf rate, int shortage, IList<string> districts)
+        {
+            int made = 0, want = CrewCandidates(search.Crew);
+            int most = HiringCatalogue.SeekersMost + HiringCatalogue.SearchSeekersMost;
+            for (int k = 0; k < want && f.Seekers.Count < most; k++)
+            {
+                int id = f.Next();
+                string district = districts != null && districts.Count > 0 ? districts[TechRandom.Range(f.Seed, id, 44, 0, 0, districts.Count - 1)] : string.Empty;
+                Seeker s = NewSeeker(f.Seed, id, day, false, search.Role, CrewLevel(search.Role, search.Level), rate, shortage, district);
+                int bandMiddle = (TalentCatalogue.LevelSkillLeast[s.P.Level] + TalentCatalogue.LevelSkillMost[s.P.Level]) / 2;
+                s.P.Main = Math.Max(s.P.Main, bandMiddle * 1000);
+                s.Passive = true;
+                s.Claim = 0;
                 s.Until = day + HiringCatalogue.ApplicantDays;
                 s.Ask = AskOf(f.Seed, s, rate, shortage);
                 f.Seekers.Add(s);

@@ -487,7 +487,7 @@ namespace RealLifeOverhaul
         }
 
         // Taxis, private drivers and scripted routes are left alone, and an ambulance never crashes or runs.
-        private static bool IsUsable(VehicleComponent car)
+        internal static bool IsUsable(VehicleComponent car)
         {
             return car != null && car.gameObject.activeInHierarchy && car.presetPath == null
                    && !TrafficTools.IsAmbulance(car) && !TrafficTools.SpokenFor(car)

@@ -167,7 +167,7 @@ namespace RealLifeOverhaul
                 }
                 if (site.Dressing != null)
                 {
-                    UnityEngine.Object.Destroy(site.Dressing.gameObject);
+                    SceneryTrees.Destroy(site.Dressing.gameObject);
                     site.Dressing = null;
                 }
                 _taken.Remove(site.Building.building);
@@ -226,7 +226,7 @@ namespace RealLifeOverhaul
                 HotelSite site = _sites[i];
                 if (site.Dressing != null)
                 {
-                    UnityEngine.Object.Destroy(site.Dressing.gameObject);
+                    SceneryTrees.Destroy(site.Dressing.gameObject);
                 }
             }
             _sites.Clear();
@@ -243,8 +243,8 @@ namespace RealLifeOverhaul
             for (int i = 0; i < all.Count; i++)
             {
                 Building b = all[i];
-                if (b == null || b.BuildingType != Residential || b.Neighbourhood != slot.Neighbourhood || GameMembers.Fenced(b)
-                    || (int)b.requiredDLC != 0 || b.IsHamptonsHouse() || _taken.Contains(b) || string.IsNullOrEmpty(b.BuildingSize)
+                if (b == null || b.BuildingType != Residential || b.Neighbourhood != slot.Neighbourhood || b.SpecialService != null || GameMembers.Fenced(b)
+                    || GameDlc.Gated(b) || b.IsHamptonsHouse() || _taken.Contains(b) || string.IsNullOrEmpty(b.BuildingSize)
                     || SpecialBuildings.Holds(b.StreetName, b.StreetNumber))   // another feature's building
                 {
                     continue;
@@ -304,7 +304,7 @@ namespace RealLifeOverhaul
                 if (bar > 0 && int.TryParse(anchor.Substring(bar + 1), out int number))
                 {
                     CityBuildingController controller = city.FindCityBuildingController(new Address(anchor.Substring(0, bar), number));
-                    if (controller != null && controller.building != null && Door(controller, out _))
+                    if (controller != null && controller.building != null && !GameDlc.Gated(controller) && Door(controller, out _))
                     {
                         return controller;
                     }

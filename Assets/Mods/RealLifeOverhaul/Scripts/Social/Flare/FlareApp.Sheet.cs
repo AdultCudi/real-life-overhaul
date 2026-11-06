@@ -24,6 +24,7 @@ namespace RealLifeOverhaul.Flare
         private int _sheetKind;
         private readonly FlareCompose _compose = new FlareCompose();
         private string _hirePlace, _hireName;
+        private bool _hirePick;   // the sheet offers the player's businesses to choose between (opened from an influencer's profile)
         private int _hireDeal, _hireWho = -1;
         private readonly List<FlareInfluencer> _active = new List<FlareInfluencer>(FlareCast.Level);
         private readonly List<string> _suggest = new List<string>(8);
@@ -163,7 +164,7 @@ namespace RealLifeOverhaul.Flare
             ShowSheet();
         }
 
-        private void OpenHire(string place, string name, int influencer)
+        private void OpenHire(string place, string name, int influencer, bool pick = false)
         {
             if (!_built || _director.File == null)
             {
@@ -173,6 +174,7 @@ namespace RealLifeOverhaul.Flare
             _hireName = name;
             _hireDeal = 0;
             _hireWho = influencer;
+            _hirePick = pick;
             _sheetKind = SheetHire;
             ShowSheet();
         }
@@ -255,8 +257,25 @@ namespace RealLifeOverhaul.Flare
             FlareKit.Show(_camera, false);
             FlareKit.Show(_selfie, false);
             FlareKit.Show(_latest, false);
-            float y = Label(FlareText.T("reallife_flare_hire_deal"), 0f, width);
-            float x = 0f;
+            float y = 0f, x = 0f;
+            if (_hirePick)
+            {
+                y = Label(FlareText.T("reallife_flare_hire_business"), y, width);
+                List<BuildingRegistration> shops = FlareGame.Businesses();
+                for (int i = 0; i < shops.Count; i++)
+                {
+                    string place = FlareGame.Place(shops[i]), name = FlareGame.Name(shops[i]);
+                    Chip(name, _hirePlace == place, () =>
+                    {
+                        _hirePlace = place;
+                        _hireName = name;
+                        WriteSheet();
+                    }, ref x, ref y, width);
+                }
+                y += ChipHeight + 16f;
+                x = 0f;
+            }
+            y = Label(FlareText.T("reallife_flare_hire_deal"), y, width);
             for (int k = 0; k < FlareText.DealKeys.Length; k++)
             {
                 int n = k;

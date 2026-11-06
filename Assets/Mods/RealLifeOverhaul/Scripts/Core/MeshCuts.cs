@@ -3,13 +3,9 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Notes when something of the mod's asked the game to cut the navigation mesh (a carving obstacle made, switched
-    /// on or off, or moved). The engine does the cut about half a second later, in a frame in which the mod itself is
-    /// doing nothing, so the session record could not name it; with this it can, and it can say how many obstacles
-    /// were changed in the second before a long frame. Everything of the mod's that carves tells this class, so the
-    /// record's count is the whole of the mod's share (the game's own 3,000-odd obstacles stand still and are not
-    /// counted). A note is a handful of writes into a fixed ring; nothing is read except once per long frame and once
-    /// a minute.
+    /// Notes when the mod changed a carving obstacle of the navigation mesh. The engine cuts about half a second later,
+    /// in a frame where the mod does nothing, so the session record needs this to name it. Everything of the mod's that
+    /// carves tells this class. COST: a handful of writes into a fixed ring a note; read once a long frame and a minute.
     /// </summary>
     public static class MeshCuts
     {
@@ -21,10 +17,10 @@ namespace RealLifeOverhaul
 
         public static float At { get; private set; } = -100f;
 
-        /// <summary>Obstacles changed since the mod started: the session record's line a minute shows the minute's share.</summary>
+        /// <summary>Obstacles changed since the mod started.</summary>
         public static int Total => Ring.Total;
 
-        /// <summary>A constant text only; <paramref name="obstacles"/> is how many carving obstacles the one change touched.</summary>
+        /// <summary><paramref name="what"/> is a constant text; <paramref name="obstacles"/>, how many obstacles the change touched.</summary>
         public static void Note(string what, int obstacles = 1)
         {
             if (obstacles <= 0)
@@ -36,7 +32,7 @@ namespace RealLifeOverhaul
             Ring.Note(At, obstacles);
         }
 
-        /// <summary>How many obstacles were changed between two times (unscaled seconds, both ends counted).</summary>
+        /// <summary>How many obstacles were changed between two unscaled times, both ends counted.</summary>
         public static int Between(float from, float to) => Ring.Between(from, to);
     }
 }

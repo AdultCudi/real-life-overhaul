@@ -154,7 +154,10 @@ namespace RealLifeOverhaul.Economy
             List<Loan> loans = Save.Loans;
             for (int i = 0; i < loans.Count; i++)
             {
-                _debts.Add(new DebtItem { Owed = Mathf.CeilToInt(loans[i].remainingAmount), DailyInterest = loans[i].dailyInterest, DailyPayment = loans[i].dailyPayment });
+                _debts.Add(new DebtItem
+                {
+                    Owed = WholeMoney.Round(System.Math.Ceiling((double)loans[i].remainingAmount)), DailyInterest = loans[i].dailyInterest, DailyPayment = loans[i].dailyPayment
+                });
             }
             for (int i = 0; i < _file.Accounts.Count; i++)
             {

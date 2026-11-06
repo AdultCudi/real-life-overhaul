@@ -27,6 +27,16 @@ namespace RealLifeOverhaul
         /// <summary>Whether a home has power, and water, now (Utilities, through Wiring/UtilityLinks); null: always.</summary>
         public static Func<BuildingRegistration, bool> HasPower, HasWater;
 
+        /// <summary>True while the utilities have no office to visit, so a cut is put right in the Utilities app (Wiring/UtilityLinks); null: never.</summary>
+        public static Func<bool> UtilitiesByPhone;
+
+        /// <summary>A cut's notice: the one that sends the player to the office, or its twin ("_app") that sends them to the app while there is none.</summary>
+        public static string CutKey(string key)
+        {
+            Func<bool> phone = UtilitiesByPhone;
+            return phone != null && phone() ? key + "_app" : key;
+        }
+
         public static bool Dark(BuildingRegistration home)
         {
             Func<BuildingRegistration, bool> has = HasPower;
@@ -73,7 +83,7 @@ namespace RealLifeOverhaul
                 List<BuildingRegistration> all = SaveGameManager.Current.BuildingRegistrations;
                 for (int i = 0; all != null && i < all.Count; i++)
                 {
-                    if (all[i] != null && GoingPublic.Mine(all[i]) && all[i].GetBuildingType() == Residential)
+                    if (all[i] != null && GoingPublic.Mine(all[i]) && GameRegistrations.BuildingType(all[i]) == Residential)
                     {
                         _home = all[i];
                         break;
@@ -102,10 +112,24 @@ namespace RealLifeOverhaul
             return HomeState.Tidy;
         }
 
+        /// <summary>
+        /// One home's tidiness in particular (0..100): its own floor where it has one, else home life's one figure. Household
+        /// staff may work at a home other than the one <see cref="Read"/> counts, so what they did is read from theirs.
+        /// </summary>
+        public static float ReadOf(BuildingRegistration home)
+        {
+            return UsesFloor(home) ? Mathf.Clamp(home.GetCleanliness(), 0f, 100f) : HomeState.Tidy;
+        }
+
         /// <summary>Tidier (positive) or messier (negative) by so many points of a hundred.</summary>
         public static void Change(float points)
         {
-            BuildingRegistration home = Home();
+            Change(Home(), points);
+        }
+
+        /// <summary>The same for one home of the player's in particular (the one household staff work at); null: the figure alone.</summary>
+        public static void Change(BuildingRegistration home, float points)
+        {
             if (!UsesFloor(home))
             {
                 HomeState.Tidy = HomeState.Clamp(HomeState.Tidy + points, 0f, 100f);

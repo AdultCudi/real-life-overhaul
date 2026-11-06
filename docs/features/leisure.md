@@ -280,7 +280,7 @@ Each of the three components catches what its `Update` throws, logs once, puts b
 All drop in by id with no code change (`LeisureProps.Take` prefers `PropLibrary`; `ClipLibrary.Has` gates each clip), except where a line says what to change.
 **Delivered and played:** `cast_rod`, `fish_wait`, `reel_in`, `fish_land`, `drink_bar`, `chess_move_player`, and the props `fishing_rod`, `fishing_float`, `fishing_line`, `drink_glass`, `clothes_rack`.
 
-**Delivered, not played yet:** `throw_ball`, `cocktail_glass`, `beer_bottle` and `shopping_bag`; and `browse_rack` and `try_on_turn`, played at the rack until it opened the game's clothes screen (which pauses the game and shows the preview, not the player).
+**Delivered, not played yet:** `throw_ball`; and `browse_rack` and `try_on_turn`, played at the rack until it opened the game's clothes screen (which pauses the game and shows the preview, not the player).
 
 | clip | length | loop | what it is |
 |---|---|---|---|
@@ -301,9 +301,9 @@ All drop in by id with no code change (`LeisureProps.Take` prefers `PropLibrary`
 | `fishing_rod` | 0.07 x 0.10 x 2.10 | the butt of the handle; **the rod runs along +Z**, reel under it at z 0.40 | stand-in exists (three round lengths and a reel) |
 | `fishing_float` | 0.045 x 0.11 x 0.045 | the waterline (red above, white below) | stand-in exists |
 | `fishing_line` | unit length along +Z | one end | scaled along Z to the span each frame; stand-in exists (a 4 mm thread) |
-| `drink_glass` | 0.075 x 0.12 x 0.075 | ground centre | held at the `coffee_cup` grip; stand-in exists. Also wanted: `beer_bottle` (0.065 x 0.23), `cocktail_glass` (0.11 x 0.16) |
+| `drink_glass` | 0.075 x 0.12 x 0.075 | ground centre | held at the `coffee_cup` grip; stand-in exists. `beer_bottle` and `cocktail_glass` were taken out of the props bundle on 26 Oct 2026 as nothing placed it; a feature that wants it models it anew in the second bundle (PropAssets/README.md, "Adding a prop from Blender") |
 | `clothes_rack` | 1.44 x 1.76 x 0.56 | ground centre; rail along X at 1.55 m, **browsed from +Z**; a small sign on top | stand-in exists (rail, two feet, seven hanging blocks of colour, a green sign) |
-| `shopping_bag` | 0.32 x 0.38 x 0.12 | top centre of the handles | not used yet: for carrying out what was bought |
+| `shopping_bag` | | | was taken out of the props bundle on 26 Oct 2026 as nothing placed it; a feature that wants it models it anew in the second bundle (PropAssets/README.md, "Adding a prop from Blender") |
 | `basketball`, `pool_cue`, `dartboard` | | | only if the city ever gets a court or a bar |
 | `radio` | | | not needed: the car radio is the game's |
 

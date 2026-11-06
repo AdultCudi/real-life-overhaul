@@ -101,7 +101,7 @@ namespace RealLifeOverhaul.Family
                 if (c.School > 0 && c.Age - c.LastReport >= 0.34f)
                 {
                     c.LastReport = c.Age;
-                    float standing = c.Closeness + (c.School == 2 ? 12f : 0f) + c.Pocket * 2f;
+                    float standing = c.Closeness + SchoolStanding(c) + c.Pocket * 2f;
                     string grade = Reports[standing >= 80f ? 0 : standing >= 60f ? 1 : standing >= 40f ? 2 : 3];
                     FamilyText.Message(FamilyPhone.FamilyContact, grade, fill);
                 }
@@ -119,7 +119,7 @@ namespace RealLifeOverhaul.Family
                 if (c.School > 0 && c.Age - c.LastEvening >= 1f && FamilyState.FindErrand(Errands.ParentsEvening) == null)
                 {
                     c.LastEvening = c.Age;
-                    Errands.Add(Errands.ParentsEvening, day + 3, 16, 20, i);
+                    AtSchool(Errands.Add(Errands.ParentsEvening, day + 3, 16, 20, i), c);
                     FamilyText.Message(FamilyPhone.FamilyContact, "reallife_family_parents_evening_invite", fill.On(FamilyText.When(day + 3)));
                 }
             }
@@ -153,7 +153,7 @@ namespace RealLifeOverhaul.Family
                 FamilyText.Toast(NotificationType.Success, "reallife_family_birthday_quiet", fill);
                 return;
             }
-            Relatives.MomGift(40, "reallife_family_mom_birthday", fill);
+            Relatives.MomGift(Prices.At(40), "reallife_family_mom_birthday", fill);
             FamilyDirector director = FamilyDirector.Instance;
             director.Ask("reallife_family_birthday_header", "reallife_family_birthday_body", fill, "reallife_family_birthday_party", "reallife_family_birthday_cake",
                 () => director.Ask("reallife_family_birthday_header", "reallife_family_birthday_where", fill.Cost(FamilyBalance.PartyHomePrice).With(FamilyText.Money(FamilyBalance.PartyVenuePrice)),

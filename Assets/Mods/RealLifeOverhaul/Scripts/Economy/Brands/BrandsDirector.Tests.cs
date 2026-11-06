@@ -176,7 +176,8 @@ namespace RealLifeOverhaul.Economy.Brands
                 }
                 if (_state.Franchises.Count >= BrandCatalogue.FranchisesMost)
                 {
-                    TestRefusals.TellKey(Logger, "Brands sign", "reallife_brand_answer_full");
+                    Logger?.Info("Brands sign test: not started (reallife_brand_answer_full).");
+                    Say(NotificationType.Warning, "reallife_brand_answer_full", BrandsText.RefusalData());   // its words carry the limit
                     return;
                 }
                 BrandsGame.Districts(_districts);

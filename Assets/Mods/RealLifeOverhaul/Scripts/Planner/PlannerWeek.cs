@@ -7,47 +7,37 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Planner
 {
     /// <summary>
-    /// The Week tab: seven columns, one for each day from today, where the table stands on the other tabs. Each column
-    /// is a heading for its day and the day's entries in time order, every one of them a copy of the game's own table
-    /// row (MyEmployees' row, as PlannerApp.PrepareRow leaves it, with only its background, its click and one text):
-    /// the game's grey rounded row, its hover and its click sound, its pale colour when chosen. A click on a heading
-    /// shows that day in the white box, a click on an entry shows the entry.
-    ///
-    /// Every row is made once, asleep, when the app is built (seven headings and nine rows a day); showing the tab or a
-    /// change of its entries only writes their words and colours and switches them on or off. Nothing runs per frame.
+    /// The Week tab: seven columns of a heading and the day's entries, each a copy of the game's table row with its
+    /// look, hover and click. Every row is made once, asleep, with the app; a change only writes words and colours.
     /// </summary>
     public sealed class PlannerWeek
     {
-        public const int Shown = 8;               // entries a column shows; the row after them says how many more there are
-        private const float HeadHeight = 100f;    // the height of a row of the game's phone tables (PlannerTable)
-        private const float RowHeight = 112f;     // three lines of the smaller words below
-        private const float FontSize = 26f;       // the game's table rows write 30: a column is a seventh of the table
-        private const float Spacing = 12f;        // between two rows of a column
-        private const float ColumnGap = 15f;      // between two columns: what the game's scroller leaves between rows
+        public const int Shown = 8;               // entries a column shows; the row after says how many more
+        private const float HeadHeight = 100f;    // pixels: a row of the game's phone tables
+        private const float RowHeight = 112f;     // pixels: three lines of the smaller words
+        private const float FontSize = 26f;       // the game's rows write 30; a column is a seventh of the table
+        private const float Spacing = 12f;        // pixels between two rows
+        private const float ColumnGap = 15f;      // pixels: what the game's scroller leaves between rows
 
         private sealed class Chip
         {
             public GameObject Object;
             public Image Background;
             public TMP_Text Words;
-            public PlannerEntry Entry;   // null for a heading, the row of how many more, or an empty day
+            public PlannerEntry Entry;   // null for a heading, "how many more" or an empty day
         }
 
         private GameObject _root;
         private readonly Chip[] _heads = new Chip[WeekGrid.Days];
         private readonly Chip[,] _chips = new Chip[WeekGrid.Days, Shown + 1];
         private readonly int[] _days = new int[WeekGrid.Days];
-        private Color _plainBackground = new Color(0.349f, 0.412f, 0.459f, 0.635f);   // the game's row (EmployeeCellView's Background), read from the copy below
+        private Color _plainBackground = new Color(0.349f, 0.412f, 0.459f, 0.635f);   // the game's row, read again from a copy
 
-        /// <summary>Told the day of a heading (or the row of how many more) that was clicked.</summary>
+        /// <summary>Told the day of a heading, "how many more" or an empty day clicked.</summary>
         public Action<int> DayClicked;
-        /// <summary>Told the entry that was clicked.</summary>
         public Action<PlannerEntry> EntryClicked;
 
-        /// <summary>
-        /// The grid beside the app's table (the same place and size), asleep until shown, made of copies of a row of the
-        /// table. Null, with one line in Player.log, if the row is not as PlannerApp.PrepareRow leaves it.
-        /// </summary>
+        /// <summary>The grid in the table's place, asleep; null, logged, if the row is not as PlannerApp.PrepareRow leaves it.</summary>
         public static PlannerWeek Make(GameObject row, Transform list)
         {
             if (row == null || list == null || list.parent == null || row.transform.Find("When") == null || row.transform.Find("Background") == null)
@@ -66,7 +56,7 @@ namespace RealLifeOverhaul.Planner
             rect.anchorMax = at.anchorMax;
             rect.pivot = at.pivot;
             rect.anchoredPosition = at.anchoredPosition;
-            rect.sizeDelta = new Vector2(at.sizeDelta.x - 30f, at.sizeDelta.y);   // the table's rows stop short of its scroll bar too
+            rect.sizeDelta = new Vector2(at.sizeDelta.x - 30f, at.sizeDelta.y);   // short of the scroll bar, as the table's rows
             var columns = root.GetComponent<HorizontalLayoutGroup>();
             columns.spacing = ColumnGap;
             columns.childControlWidth = columns.childControlHeight = true;
@@ -96,7 +86,7 @@ namespace RealLifeOverhaul.Planner
             return week;
         }
 
-        // A copy of the table's row with only its background, its click and its first text, which holds the words.
+        // only the row's background, its click and its first text
         private Chip Copy(GameObject row, Transform column, float height, Action click)
         {
             GameObject copy = UnityEngine.Object.Instantiate(row, column, false);
@@ -135,8 +125,6 @@ namespace RealLifeOverhaul.Planner
             return chip;
         }
 
-        public bool Showing => _root != null && _root.activeSelf;
-
         public void Show(bool shown)
         {
             if (_root != null && _root.activeSelf != shown)
@@ -147,10 +135,7 @@ namespace RealLifeOverhaul.Planner
 
         private void Day(int column)
         {
-            if (DayClicked != null)
-            {
-                DayClicked(_days[column]);
-            }
+            DayClicked?.Invoke(_days[column]);
         }
 
         private void Clicked(int column, int place)
@@ -162,16 +147,11 @@ namespace RealLifeOverhaul.Planner
             }
             else
             {
-                Day(column);   // the row of how many more, or an empty day: the day itself
+                Day(column);
             }
         }
 
-        // ---------------------------------------------------------------- writing it
-
-        /// <summary>
-        /// Writes the seven columns from the grid: each day's heading, its first entries and how many more. The day
-        /// chosen and the entry chosen are drawn as the game draws the chosen row of a table.
-        /// </summary>
+        /// <summary>Writes the columns from the grid; the chosen day or entry is drawn as the game's chosen row.</summary>
         public void Fill(WeekGrid grid, int today, PlannerEntry chosen, int chosenDay)
         {
             var references = InstanceBehavior<GlobalReferences>.Instance;
@@ -208,7 +188,7 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
-        // "WORK 09:00 Missed" over the title: the kind's short word in its tone, the hour, the state where it matters.
+        // "WORK 09:00 Missed" over the title
         private static string Words(PlannerEntry e, bool chosen, GlobalReferences references)
         {
             string tag = PlannerText.T(PlannerText.TagKey(e.Category)).ToUpperInvariant();
@@ -223,8 +203,7 @@ namespace RealLifeOverhaul.Planner
             return first + "\n" + (e.Title ?? string.Empty);
         }
 
-        // Words in one of the mod's tones: the game's own yellow, red and green (GlobalReferences.colors), as the tables write
-        // them; on the chosen (pale) row its yellow is orange, as the game's tables have it (BaTableCellView.VisualizeSelected).
+        // the game's own colours; on the pale chosen row its yellow is orange, as in its tables
         private static string Tinted(string words, CellTone tone, bool chosen, GlobalReferences references)
         {
             if (tone == CellTone.Plain || references == null)

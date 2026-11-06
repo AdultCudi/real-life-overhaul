@@ -15,6 +15,7 @@ namespace RealLifeOverhaul
     public static class TaxiPhone
     {
         public const string ContactId = "reallife-taxi";
+        public const string OptionKey = "reallife_transport_taxi";   // the option's label on the options page (RealLifeOverhaulMod), which the refusal names
         private const string DialogTypeName = "reallife_taxi_calldialogtype";
 
         private static Contact _contact;
@@ -80,7 +81,7 @@ namespace RealLifeOverhaul
             TaxiDirector director = TaxiDirector.Instance;
             if (director == null)
             {
-                return PhoneContacts.Closing("reallife_taxi_refuse_off");
+                return Off();
             }
             if (TaxiDirector.Out)
             {
@@ -143,8 +144,14 @@ namespace RealLifeOverhaul
                 case TaxiRules.Refusal.Indoors: return PhoneContacts.Closing("reallife_taxi_refuse_indoors");
                 case TaxiRules.Refusal.NoRoad: return PhoneContacts.Closing("reallife_taxi_refuse_road", new { metres = TaxiRules.RoadWithin.ToString("F0") });
                 case TaxiRules.Refusal.NoTaxi: return PhoneContacts.Closing("reallife_taxi_refuse_none");
-                default: return PhoneContacts.Closing(failed ? "reallife_taxi_refuse_failed" : "reallife_taxi_refuse_off");
+                default: return failed ? PhoneContacts.Closing("reallife_taxi_refuse_failed") : Off();
             }
+        }
+
+        // The option is named by its own text on the options page, so the two can never part.
+        private static DialogEntry Off()
+        {
+            return PhoneContacts.Closing("reallife_taxi_refuse_off", new { option = TaxiPhone.OptionKey.Localize() });
         }
     }
 }

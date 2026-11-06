@@ -94,7 +94,7 @@ internal static partial class Program
 
     private static void TextsCacheSources()
     {
-        string server = TextsSource(@"Texts\TextServer.cs").Replace("\r\n", "\n");
+        string server = (TextsSource(@"Texts\TextServer.cs") + TextsSource(@"Texts\TextServer.Start.cs") + TextsSource(@"Texts\TextServer.Process.cs")).Replace("\r\n", "\n");
         int offline = server.IndexOf("Offline(info);\n", StringComparison.Ordinal), own = server.IndexOf("string steam = OwnShaderCache(info);", StringComparison.Ordinal),
             start = server.IndexOf("_process = Process.Start(info);", StringComparison.Ordinal);
         Check(offline > 0 && own > offline && start > own && Regex.Matches(server, @"OwnShaderCache\(info\)").Count == 1,

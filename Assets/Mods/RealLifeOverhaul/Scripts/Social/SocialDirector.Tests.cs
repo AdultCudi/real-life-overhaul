@@ -51,7 +51,7 @@ namespace RealLifeOverhaul
                 return chosen;
             }
             SocialPerson best = null;
-            for (int i = 0; i < SocialRules.CastSize; i++)
+            for (int i = 0; i < SocialState.Count; i++)
             {
                 SocialPerson p = SocialState.Get(i);
                 if (p != null && p.Met && !p.IsFamily && (best == null || p.Closeness > best.Closeness))
@@ -79,6 +79,37 @@ namespace RealLifeOverhaul
             {
                 TestRefusals.Tell(Logger, "Meet somebody", scene.Refusal, 0, scene.RefusalDetail);
             }
+        }
+
+        /// <summary>
+        /// The old friend (Mom if the old friend is not known) brings the next person to be met over, here and now, as an
+        /// introduction does (for the networking life's test). The person's index, or -1 when it cannot start, said why.
+        /// </summary>
+        public int TestIntroduction()
+        {
+            const string test = "An introduction";
+            if (!TestReady(test, true))
+            {
+                return -1;
+            }
+            SocialPerson friend = SocialState.ByOrigin(SocialOrigin.OldFriend);
+            if (friend == null || !friend.Met)
+            {
+                friend = SocialState.ByOrigin(SocialOrigin.Family);
+            }
+            SocialPerson stranger = NextStranger();
+            if (stranger == null || friend == null)
+            {
+                TestRefusals.Tell(Logger, test, TestRefusal.AllMet);
+                return -1;
+            }
+            var scene = new MeetScene(MeetScene.Kind.Introduction, stranger, friend);
+            if (!Begin(scene))
+            {
+                TestRefusals.Tell(Logger, test, scene.Refusal, 0, scene.RefusalDetail);
+                return -1;
+            }
+            return stranger.Index;
         }
 
         /// <summary>At the player's own shop if one is within 25 m.</summary>
@@ -145,7 +176,7 @@ namespace RealLifeOverhaul
             SocialPerson person = null;
             string noPack = null;
             bool chatted = false;
-            for (int i = -1; i < SocialRules.CastSize && person == null; i++)
+            for (int i = -1; i < SocialState.Count && person == null; i++)
             {
                 SocialPerson p = SocialState.Get(i < 0 ? SocialState.TestPerson : i);
                 if (p == null || !p.Met || p.IsFamily)
@@ -237,7 +268,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            SocialState.TestPerson = (SocialState.TestPerson + 1) % SocialRules.CastSize;
+            SocialState.TestPerson = (SocialState.TestPerson + 1) % Mathf.Max(1, SocialState.Count);
             TellPerson(SocialState.Get(SocialState.TestPerson));
         }
 

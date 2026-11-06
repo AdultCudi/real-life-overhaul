@@ -19,7 +19,7 @@ internal static partial class Program
     private static readonly Dictionary<string, string> GameLanguageNames = new Dictionary<string, string>(StringComparer.Ordinal)
     {
         { "en", "English" }, { "pt", "Portuguese (BR)" }, { "zh-cn", "Chinese (Simplified)" }, { "de", "German" }, { "fr", "French" },
-        { "es", "Spanish" }, { "ru", "Russian" }, { "nl", "Dutch" }, { "tr", "Turkish" }
+        { "es", "Spanish" }, { "ru", "Russian" }, { "nl", "Dutch" }, { "tr", "Turkish" }, { "pl", "Polish" }, { "ko", "Korean" }
     };
 
     private static void Languages(string managed, string root)
@@ -90,6 +90,14 @@ internal static partial class Program
         Match required = Regex.Match(text, @"REQUIRED = \(([^)]*)\)");
         Check(required.Success && required.Groups[1].Value.Replace(" ", string.Empty) == "'" + string.Join("','", ModLanguages.All, 0, ModLanguages.Required) + "'",
             "languages: locales.py's REQUIRED are not the first " + ModLanguages.Required + " of ModLanguages.All");
+        Match firstBatch = Regex.Match(text, @"^FIRST_BATCH = \(([^)]*)\)", RegexOptions.Multiline);
+        Check(firstBatch.Success && firstBatch.Groups[1].Value.Replace(" ", string.Empty).TrimEnd(',') == (ModLanguages.FirstBatch.Length == 0 ? string.Empty : "'" + string.Join("','", ModLanguages.FirstBatch) + "'"),
+            "languages: locales.py's FIRST_BATCH are not ModLanguages.FirstBatch (" + string.Join(", ", ModLanguages.FirstBatch) + ")");
+        foreach (string code in ModLanguages.FirstBatch)
+        {
+            Check(Array.IndexOf(ModLanguages.All, code) >= ModLanguages.PerFeature.Length && File.Exists(Path.Combine(modLocales, code + ".json")),
+                "languages: " + code + " is in its first batch, so it is one of the languages after the first nine and its file is there");
+        }
     }
 
     // Localizor's settings as the game loads them (Resources/LocalizorSettings, in resources.assets): after the object's

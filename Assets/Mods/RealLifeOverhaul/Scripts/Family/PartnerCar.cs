@@ -255,7 +255,7 @@ namespace RealLifeOverhaul.Family
             GasStationTrigger bay = null;
             float near = float.MaxValue;
             var hit = new Collider[1];
-            foreach (CityBuildingController shop in city.cityBuildingControllers)
+            foreach (CityBuildingController shop in GameDlc.Open(city))
             {
                 if (shop == null || shop.building == null || shop.building.BuildingType != "ba:buildingtype_special" || shop.entranceDoors == null || shop.entranceDoors.Length == 0
                     || !(shop.building.SpecialService?.settings is Buildings.GasStationSettings gs) || gs.truckOnly != truck)

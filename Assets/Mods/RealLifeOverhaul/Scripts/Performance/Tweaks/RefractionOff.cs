@@ -5,25 +5,9 @@ using UnityEngine.Rendering.HighDefinition;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// With refraction enabled in its frame settings the render pipeline builds, every frame, a blurred pyramid
-    /// of the whole picture after the opaque objects are drawn, for see-through materials that bend what is
-    /// behind them. The third benchmark measured it at 0.34 ms of the main thread's frame (both pairs agreed).
-    /// Nothing outdoors uses it: of the shaders the game ships (181 in its data files, 57 in its asset bundles),
-    /// none has a compiled variant that refracts or distorts (the pyramid's texture is referenced by none of
-    /// them), and exactly one reads the pyramid at all: SH_PixelatedEffect, the censoring block the game puts on a character sitting on a toilet
-    /// (PixelatedCube, created only by ToiletController). So this switches refraction and distortion off for the
-    /// player's camera while the player is outdoors, and hands them back the moment a building is entered. As
-    /// a second check it looks through the loaded materials when it comes on: if one has refraction or
-    /// distortion switched on after all, it does nothing and says which.
-    ///
-    /// That look is over every material in memory (some 6,600 to 7,000 in a city), so it is
-    /// never done in one frame: the list is taken behind the loading screen (Prewarm; it was taken in play, the frame
-    /// the tweak came on, and logged FAIL) and gone through on a fast timer, about a third of a millisecond a tick
-    /// (<see cref="WorkSlice"/>), and refraction stays as the game has it until the look is finished. A scene that is
-    /// loaded later asks for one more look, taken behind the next black screen, pause or loading screen at least a few
-    /// seconds after the last scene has arrived (never a search of memory in play); a scene that is unloaded for none.
-    ///
-    /// Per frame: nothing (the timer is the director's). A tick while looking: about 0.3 ms; otherwise a building test.
+    /// Refraction and distortion off for the player's camera outdoors (the blur pyramid costs 0.34 ms a frame, and only the
+    /// censoring block at a toilet reads it), handed back at a door, once a sliced look through every loaded material finds
+    /// none that refracts. No cost a frame: the director's timer, about 0.3 ms a tick while looking.
     /// </summary>
     public sealed class RefractionOff : PerfTweak
     {
@@ -33,25 +17,24 @@ namespace RealLifeOverhaul
         private static readonly int DistortionEnable = Shader.PropertyToID("_DistortionEnable");
         private static readonly int SurfaceType = Shader.PropertyToID("_SurfaceType");
 
-        private const double SliceMs = 0.3;     // milliseconds of a tick a look under way may take (some 300 materials)
-        private const int LookEvery = 16;       // materials between two looks at the clock
-        private const float SliceEvery = 0.05f;
-        private const float LookAfter = 4f;     // seconds after the last scene arrived before the materials are looked through again
-        private const float HiddenEvery = 0.25f; // seconds between two looks at whether the screen is black, while a look waits for it
+        private const double SliceMs = 0.3;   // milliseconds of a tick a look may take (some 300 materials)
+        private const int LookEvery = 16;   // materials between two looks at the clock
+        private const float SliceEvery = 0.05f;   // seconds between slices
+        private const float LookAfter = 4f;   // seconds after the last scene arrived before the materials are looked through again
+        private const float HiddenEvery = 0.25f;   // seconds between looks at whether the screen is black, while a look waits
         private const string Listing = "performance: listing the loaded materials (refraction check)";
 
         private readonly List<string> _found = new List<string>(6);
-        private Material[] _looking;            // the list being gone through; null when no look is under way
+        private Material[] _looking;   // null when no look is under way
         private int _cursor;
-        private bool _looked;                   // one whole look has been finished since the tweak came on
-        private bool _again;                    // a scene has been loaded since the last look began
+        private bool _looked;   // a whole look finished since the tweak came on
+        private bool _again;   // a scene loaded since the last look began
         private float _againAt;
         private bool _hooked, _off;
         private int _materials;
         private string _users = string.Empty;
 
-        // The list taken behind the loading screen (Prewarm), for the look when the tweak comes on: good for the city it was
-        // taken in (its PerfDirector) while no scene has arrived since.
+        // the list taken behind the loading screen, good for its city while no scene has arrived since
         private Material[] _kept;
         private PerfDirector _keptFor;
         private int _keptArrivals;
@@ -73,10 +56,10 @@ namespace RealLifeOverhaul
             }
             else
             {
-                _again = true;   // switched on in play with no list taken behind the loading screen: taken behind the next black screen
+                _again = true;   // on in play with no list taken behind the loading screen: taken behind the next black screen
                 _againAt = Time.unscaledTime;
             }
-            _onBuilding = _onBuilding ?? Guard.Wrap<Address>(OnBuilding);   // (a fault here never reaches the game's own handlers: Core/Guard)
+            _onBuilding = _onBuilding ?? Guard.Wrap<Address>(OnBuilding);   // through the guard: a fault never reaches the game's handlers
             GlobalEvents.onEnterBuilding += _onBuilding;
             GlobalEvents.onExitBuilding += _onBuilding;
             _hooked = true;
@@ -87,12 +70,11 @@ namespace RealLifeOverhaul
         {
             if (loaded && _users.Length == 0)
             {
-                _again = true;   // a scene brought new materials: one more look, once the scenes have stopped arriving
+                _again = true;   // a scene brought new materials: one more look once scenes stop arriving
                 _againAt = Time.unscaledTime + LookAfter;
             }
         }
 
-        // The list taken behind the loading screen is this city's, and no scene has arrived since.
         private bool Kept => _kept != null && _keptFor != null && ReferenceEquals(_keptFor, PerfDirector.Instance) && _keptArrivals == PerfTweaks.Arrivals;
 
         protected override void Prewarm()
@@ -102,8 +84,7 @@ namespace RealLifeOverhaul
             _keptArrivals = PerfTweaks.Arrivals;
         }
 
-        // Every material in memory, used or not. Taking the list is one engine call (made behind the loading screen where it
-        // can be); going through it is done in slices.
+        // every material in memory, used or not: one engine call, behind a screen where it can be, gone through in slices
         private void Begin()
         {
             _looking = Kept ? _kept : SceneFinds.InMemory<Material>(Listing);
@@ -130,7 +111,8 @@ namespace RealLifeOverhaul
                 {
                     uses |= material.IsKeywordEnabled(Keywords[k]);
                 }
-                uses |= material.HasProperty(DistortionEnable) && material.GetFloat(DistortionEnable) > 0.5f && material.HasProperty(SurfaceType) && material.GetFloat(SurfaceType) > 0.5f;
+                uses |= material.HasProperty(DistortionEnable) && material.GetFloat(DistortionEnable) > 0.5f
+                        && material.HasProperty(SurfaceType) && material.GetFloat(SurfaceType) > 0.5f;
                 if (uses && _found.Count < 6)
                 {
                     _found.Add(material.name + " [" + material.shader.name + "]");
@@ -149,7 +131,7 @@ namespace RealLifeOverhaul
 
         private System.Action<Address> _onBuilding;
 
-        // On the timer too: the building flag is the game's, and this follows it whatever changed it.
+        // on the timer too: the building flag is the game's, followed whatever changed it
         protected override void Tick(float now)
         {
             if (_looking != null)
@@ -157,14 +139,14 @@ namespace RealLifeOverhaul
                 Look();
                 if (_looking != null)
                 {
-                    return;   // more to go through on the next slice
+                    return;   // more on the next slice
                 }
             }
             else if (_again && now >= _againAt && _users.Length == 0)
             {
                 if (SceneFinds.Hidden)
                 {
-                    Begin();   // the list of everything in memory only where a long frame is not seen
+                    Begin();   // everything in memory listed only where a long frame is not seen
                     return;
                 }
             }
@@ -177,7 +159,7 @@ namespace RealLifeOverhaul
 
         private void Reconcile()
         {
-            // Not before the first look is finished: until then nobody has said that nothing refracts.
+            // not before the first look is finished: until then nobody has said nothing refracts
             bool want = _looked && _users.Length == 0 && !BuildingManager.IsInsideBuilding;
             if (want == _off)
             {
@@ -216,19 +198,14 @@ namespace RealLifeOverhaul
         public override string Describe() => _users.Length > 0
             ? "left alone: these materials refract or distort: " + _users
             : !_looked ? "looking through the loaded materials (" + _cursor + " of " + _materials + ")"
-            : (_off ? "refraction and distortion off for the player's camera" : "handed back (inside a building)") + "; " + _materials + " materials looked through, none refracts or distorts";
+            : (_off ? "refraction and distortion off for the player's camera" : "handed back (inside a building)") + "; " + _materials
+              + " materials looked through, none refracts or distorts";
     }
 
-    /// <summary>
-    /// A measurement, not an option: 3,134 obstacles cut holes in the navigation mesh, none of them moving, and
-    /// the navigation steps take 0.9 to 1.2 ms a frame for 47 agents. If the engine spends part of that looking
-    /// at every obstacle each frame to see whether it has moved, the ones nobody can walk near are pure cost.
-    /// For the row this stops the obstacles more than 300 m from the player cutting the mesh (everyone on foot
-    /// is within 100 m of the player) and puts them back; the navigation column says what that is worth.
-    /// </summary>
+    /// <summary>A benchmark row: navigation obstacles beyond 300 m stop cutting the mesh (everyone on foot is within 100 m).</summary>
     public sealed class FarObstacleTrial : PerfTweak
     {
-        private const float Metres = 300f;
+        private const float Metres = 300f;   // metres from the player
 
         private readonly List<UnityEngine.AI.NavMeshObstacle> _stopped = new List<UnityEngine.AI.NavMeshObstacle>(4096);
 

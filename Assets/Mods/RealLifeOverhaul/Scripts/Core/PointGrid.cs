@@ -4,17 +4,10 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// A grid over a fixed set of points (the city's lane points), for "which points lie within r of here" in a few cells
-    /// instead of a pass over every point. <see cref="Candidates"/> gives every point whose square of 2r round the place holds
-    /// it, in the points' own order (ascending index): a caller that then runs the very loop a pass over every point would run,
-    /// over these alone, gets exactly the same answer, with any filter it hands asked of the same points in the same order,
-    /// because every point it leaves out lies at r or more on the ground (x, z), so at r or more in space, where that loop
-    /// skips it before its filter (Traffic/TrafficTools.ClosestWaypoint, against the traffic system's GetClosestWaypoint).
-    ///
-    /// Made once per city (some 19,000 points: two passes and three int arrays, about 0.5 ms), behind the loading screen.
-    /// A question costs the cells it covers and a sort of what they hold (a few hundred numbers for 40 m); the list it fills
-    /// is the caller's, kept, so nothing is allocated once it has grown. No Unity or game types: checked offline (NavCheck,
-    /// PointGridCheck.cs).
+    /// A grid over a fixed set of points (the city's lane points) for "which points lie within r of here". The
+    /// candidates come in ascending index, and every point left out lies at r or more on the ground, so a caller's loop
+    /// over them gives the same answer as over every point. Made once per city (about 0.5 ms for 19,000 points); a
+    /// question costs the cells it covers and a sort, into the caller's kept list. Game-free.
     /// </summary>
     public sealed class PointGrid
     {
@@ -24,13 +17,9 @@ namespace RealLifeOverhaul
         private readonly int[] _starts;     // cell c holds _items[_starts[c] .. _starts[c + 1]), each cell's points in ascending order
         private readonly int[] _items;
 
-        /// <summary>The number of points the grid was made over.</summary>
         public int Count { get; }
 
-        /// <summary>
-        /// Makes the grid over points given by their ground coordinates (x, z), in their own order. <paramref name="cell"/> is
-        /// the width of a cell in metres (more than zero).
-        /// </summary>
+        /// <summary>Makes the grid over points by their ground coordinates; <paramref name="cell"/> in metres, above 0.</summary>
         public PointGrid(float[] xs, float[] zs, float cell)
         {
             if (xs == null || zs == null || xs.Length != zs.Length)
@@ -76,7 +65,7 @@ namespace RealLifeOverhaul
             Array.Copy(_starts, next, next.Length);
             for (int i = 0; i < Count; i++)
             {
-                _items[next[cells[i]]++] = i;   // (in ascending order within each cell)
+                _items[next[cells[i]]++] = i;   // ascending within each cell
             }
         }
 
@@ -93,9 +82,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Fills <paramref name="into"/> (cleared first) with every point in the cells that the square of half-width
-        /// <paramref name="reach"/> round (x, z) touches, in ascending order: a superset of the points within
-        /// <paramref name="reach"/> on the ground. Nothing is allocated once the list has grown to hold them.
+        /// Fills <paramref name="into"/> with every point in the cells the square of half-width <paramref name="reach"/>
+        /// round (x, z) touches, ascending: a superset of the points within reach on the ground.
         /// </summary>
         public void Candidates(float x, float z, float reach, List<int> into)
         {

@@ -5,14 +5,12 @@ using System.Text;
 namespace RealLifeOverhaul.Faults
 {
     /// <summary>
-    /// What the city's faults keep in a save, so that a load shows the same dark lamps, holes and heaps (what breaks next
-    /// is rolled afresh: FaultRules). One line under its own key, records separated by '^':
+    /// What the city's faults keep in a save: one line under its own key, records separated by '^':
     ///
     ///     v=1^n=next|lastRoll|wetUntil|stormUntil|frostUntil^f=(a fault, as FaultShare.Line)^s=reporter|count|day|barredUntil|warnedDay^m=kind|district|day
     ///
-    /// New fields go at the end of a record; a record with more fields than this version knows reads the ones it knows.
-    /// A line of a later version, or one that cannot be read, gives no faults and is kept in the save as it was read
-    /// (Core/SaveLines) until the faults write their own again. Game-free. Cost: nothing unless a save is loaded or written.
+    /// New fields go at the end of a record. A line that cannot be read gives no faults and is kept as it was
+    /// (Core/SaveLines). Game-free.
     /// </summary>
     public static class FaultStore
     {
@@ -45,7 +43,7 @@ namespace RealLifeOverhaul.Faults
             return t.ToString();
         }
 
-        /// <summary>Reads a line into a new file. Null if it is of another version or cannot be read; an empty line gives an empty file.</summary>
+        /// <summary>A line into a new file; null if of another version or unreadable. An empty line gives an empty file.</summary>
         public static FaultFile Read(string text)
         {
             var file = new FaultFile();

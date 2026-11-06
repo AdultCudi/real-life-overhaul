@@ -38,7 +38,8 @@ namespace RealLifeOverhaul.Tech
                 row.Set(6, TechText.Mille(p.Burnout), p.Burnout, p.Burnout >= TalentCatalogue.BurnoutSick ? TableRow.Red : p.Burnout >= 500 ? TableRow.Yellow : TableRow.Plain);
                 row.Set(7, person.Business.Length > 0 ? person.Business : TechText.T("reallife_roles_row_unassigned"));
                 bool waits = p.RaiseAsk > 0 || TalentRules.OfferOpen(p, day) || TalentRules.CanPromote(p, day, year, person.MainPoints);
-                row.Set(8, State(person, day, year), waits || p.NoticeEnd > 0 ? TableRow.Yellow : TableRow.Plain);
+                Seat seat = SeatOf(person);
+                row.Set(8, State(person, day, year, seat), waits || p.NoticeEnd > 0 || seat != Seat.Fine ? TableRow.Yellow : TableRow.Plain);
                 row.Kind = KindOf(businesses, person.Business);
                 row.Kind2 = waits ? RolesColumns.Waiting : p.NoticeEnd > 0 ? RolesColumns.Leaving : p.OnCourse(day) ? RolesColumns.Learning : RolesColumns.Settled;
                 waiting += waits ? 1 : 0;
@@ -87,7 +88,7 @@ namespace RealLifeOverhaul.Tech
             return kind;
         }
 
-        private static string State(Person person, int day, int year)
+        private static string State(Person person, int day, int year, Seat seat)
         {
             Profile p = person.File;
             if (TalentRules.OfferOpen(p, day))
@@ -114,7 +115,23 @@ namespace RealLifeOverhaul.Tech
             {
                 return TechText.T("reallife_roles_state_sick");
             }
+            if (seat != Seat.Fine)
+            {
+                return TechText.T(seat == Seat.NoDesk ? "reallife_roles_state_no_desk" : "reallife_roles_state_no_shift");
+            }
             return TechText.T("reallife_roles_state_fine");
+        }
+
+        // Whether a professional of the game's has a desk to sit at and a shift at one: read from the business's items and schedule when a page is written.
+        private enum Seat { Fine, NoDesk, NoShift }
+
+        private static Seat SeatOf(Person person)
+        {
+            if (person.Game == null || person.At == null || !TalentGame.Shifts(person.At) || TalentGame.StationShift(person.Game, person.At))
+            {
+                return Seat.Fine;
+            }
+            return SeatGame.DesksFor(person.Game, person.At) > 0 ? Seat.NoShift : Seat.NoDesk;
         }
 
         private void WriteFile(InfoBox box, Person person, int day, int year)
@@ -137,11 +154,19 @@ namespace RealLifeOverhaul.Tech
             }
             box.Line(TechText.Fill("reallife_roles_file_role", "role", TechText.Role(p.Role), "level", TechText.Level(p.Level), "main", TechText.Percent(person.MainPoints),
                 "payroll", person.Game == null ? TechText.T("reallife_roles_file_payroll") : string.Empty));
+            Seat seat = SeatOf(person);
+            if (seat != Seat.Fine)
+            {
+                box.Line(TechText.Fill(seat == Seat.NoDesk ? "reallife_roles_file_no_desk" : "reallife_roles_file_no_shift", "name", person.Name, "business", person.Business));
+            }
             box.Line(TechText.Fill("reallife_roles_file_skills", "a", TechText.Skill(r.SkillA), "a_score", TechText.Score(p.A), "b", TechText.Skill(r.SkillB), "b_score", TechText.Score(p.B)));
             box.Line(TechText.Fill("reallife_roles_file_background", "years", TechText.Years(p.YearsDays + (day - p.Joined) * 365 / System.Math.Max(60, year)), "school", TechText.School(p.School),
                 "certs", TechText.Certs(p)));
             box.Line(TechText.Fill("reallife_roles_file_feel", "morale", TechText.Mille(p.Morale), "burnout", TechText.Mille(p.Burnout), "work", TechText.Work(p.Work)));
-            box.Line(TechText.Fill("reallife_roles_file_pay", "paid", TechText.Rate(p.GameWage), "going", TechText.Rate(p.Going)));
+            // The game's payroll is charged at the city's prices, so both figures are named at them; the mod's own payroll is charged as written.
+            int paid = person.Game != null ? TalentGame.PaidCents(person.Game) : p.GameWage;
+            int going = person.Game != null ? PaidWage.Cents(p.Going, Prices.Level, 0) : p.Going;
+            box.Line(TechText.Fill("reallife_roles_file_pay", "paid", TechText.Rate(paid), "going", TechText.Rate(going)));
             box.Line(p.Rating > 0
                 ? TechText.Fill("reallife_roles_file_review", "rating", p.Rating.ToString(), "day", p.ReviewDay.ToString())
                 : TechText.T("reallife_roles_file_review_none", "day", p.ReviewDay.ToString()));

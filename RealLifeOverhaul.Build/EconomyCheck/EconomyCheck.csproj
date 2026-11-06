@@ -31,7 +31,8 @@
        (OwnBankChecks.cs) the player's own bank: the rival banks' rates, the city's savers and borrowers, defaults, arrears, the regulator's ratio, a run, the fund, a sale and the save's line, and (DealerChecks.cs) the car dealership: a car's worth, the lot, the market,
        haggling and the trade auction, customers and their offers, the dealership's finance and warranties, the books and the save's line, and a month of a reference dealership, and
        (ShowroomFloorChecks.cs) the Car Showroom's floor: the visitors an hour shows, the bays and their save line, the camera's limits and the texts, and
-       (CartQueueChecks.cs) the pavement drinks cart's queue: a customer who cannot get to the cart, or is no longer its own, leaves the queue at once, is no walk-off and is replaced, and
+       (CartQueueChecks.cs) the pavement drinks cart's queue: a customer who cannot get to the cart, or is no longer its own, leaves the queue at once, is no walk-off and is replaced, and (CartSoundChecks.cs) the drinks cart heard: the order cue, its one reminder and the till by their rules, the gig calling them where the order starts, waits and is paid, the option and the texts, and
+       (TaxiComfortChecks.cs) ride fares' easier passengers: the two tables, a rough ride under each and the gig reading only the table, and (RivalFirstChecks.cs) when the first rival tycoon comes forward by the option, and
        (RivalChecks.cs, RivalReviewChecks.cs) the rival tycoons: their holdings, growth by the player's thresholds, the pace of their moves, each move's bounds, the counters and a takeover, the same moves from a seed, the save's line and the texts, and
        (EndScaleChecks.cs) the end game at scale: each late venture's costs, upkeep, crews and income by size, its payback, an old save phased in, the option off and its texts, and (OfficeChecks.cs) running for office: who may stand and when, the law on donors, the vote model by district, the campaign's doings, the council's odds, the city's budget, approval, recall and the save's lines, and (PhotoChecks.cs) the Camera and the Gallery: a photo's name and folder, the cap,
        deleted saves, the order from a folder, the photo and its small copy handed to Flare, the camera's rules and the restore of what it borrows, and (GalleryChecks.cs)
@@ -50,8 +51,26 @@
   </PropertyGroup>
 
   <ItemGroup>
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\CompanyDirector.CompanionOwnership.cs" Link="Mod\CompanyDirector.CompanionOwnership.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CompanionTransactions.cs" Link="Mod\CompanionTransactions.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CompanionPromotion.cs" Link="Mod\CompanionPromotion.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityCompanion.cs" Link="Mod\CityCompanion.cs" />
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CompanionOwnership.cs" Link="Mod\CompanionOwnership.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CompanionBridges.cs" Link="Mod\CompanionBridges.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Business\BusinessCompanion.cs" Link="Mod\BusinessCompanion.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Interiors\InteriorCompanion.cs" Link="Mod\InteriorCompanion.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CompanionSnapshot.cs" Link="Mod\CompanionSnapshot.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CompanionModule.cs" Link="Mod\CompanionModule.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\EducationCompanion.cs" Link="Mod\EducationCompanion.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CompanionValues.cs" Link="Mod\CompanionValues.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\UtilitiesCompanion.cs" Link="Mod\UtilitiesCompanion.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\UtilitiesDirector.Companion.cs" Link="Mod\UtilitiesDirector.Companion.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\CompanyCompanion.cs" Link="Mod\CompanyCompanion.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Accounts\CreditCompanion.cs" Link="Mod\CreditCompanion.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\ChoreRules.cs" Link="Mod\ChoreRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\HeldTextRules.cs" Link="Mod\HeldTextRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\DinnerRules.cs" Link="Mod\DinnerRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Terms\CreditCatalogue.cs" Link="Mod\CreditCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Rating\CreditFile.cs" Link="Mod\CreditFile.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Rating\CreditScoring.cs" Link="Mod\CreditScoring.cs" />
@@ -69,23 +88,62 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Loans\LoanHolds.cs" Link="Mod\LoanHolds.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Debt\SharkRules.cs" Link="Mod\SharkRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Banking\Debt\Relief.cs" Link="Mod\Relief.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\BizLines.cs" Link="Mod\BizLines.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\MacroCatalogue.cs" Link="Mod\MacroCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityModel.cs" Link="Mod\CityModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityStore.cs" Link="Mod\CityStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\City\CityEconomy.cs" Link="Mod\CityEconomy.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookCatalogue.cs" Link="Mod\Outlook\OutlookCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookBook.cs" Link="Mod\Outlook\OutlookBook.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookStore.cs" Link="Mod\Outlook\OutlookStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookReadings.cs" Link="Mod\Outlook\OutlookReadings.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookRules.cs" Link="Mod\Outlook\OutlookRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookInsights.cs" Link="Mod\Outlook\OutlookInsights.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookScale.cs" Link="Mod\Outlook\OutlookScale.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookTheme.cs" Link="Mod\Outlook\OutlookTheme.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Outlook\OutlookWords.cs" Link="Mod\Outlook\OutlookWords.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CalendarRules.cs" Link="Mod\CalendarRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Calendar\CalendarList.cs" Link="Mod\CalendarList.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Hustles\HustleCatalogue.cs" Link="Mod\HustleCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Hustles\HustleState.cs" Link="Mod\HustleState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Hustles\HustleStore.cs" Link="Mod\HustleStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Hustles\HustleRules.cs" Link="Mod\HustleRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\CityLife\StreetLifeRules.cs" Link="Mod\StreetLifeRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Hustles\PickupRules.cs" Link="Mod\PickupRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Calendar\MonthViewRules.cs" Link="Mod\MonthViewRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Seasons\SeasonRules.cs" Link="Mod\SeasonRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Seasons\SeasonLookRules.cs" Link="Mod\SeasonLookRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Seasons\SnowCoverRules.cs" Link="Mod\SnowCoverRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meals\MealsRules.cs" Link="Mod\MealsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meals\MealsText.cs" Link="Mod\MealsText.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Networking\NetworkFile.cs" Link="Mod\NetworkFile.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Networking\NetworkRules.cs" Link="Mod\NetworkRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Networking\NetworkStore.cs" Link="Mod\NetworkStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Networking\NetworkCatalogue.cs" Link="Mod\NetworkCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Diagnostics\FurnitureRules.cs" Link="Mod\FurnitureRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\Prices.cs" Link="Mod\Prices.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\PaidWage.cs" Link="Mod\PaidWage.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\LineNeeds.cs" Link="Mod\LineNeeds.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WholeMoney.cs" Link="Mod\WholeMoney.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Life\LifeMoneyRules.cs" Link="Mod\LifeMoneyRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\VehicleCostRules.cs" Link="Mod\VehicleCostRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WageRules.cs" Link="Mod\WageRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\DayRollRules.cs" Link="Mod\DayRollRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\FoundingRules.cs" Link="Mod\FoundingRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\FoundingStore.cs" Link="Mod\FoundingStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\MoodRules.cs" Link="Mod\MoodRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\RivalOfferRules.cs" Link="Mod\RivalOfferRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\StaffLeaveRules.cs" Link="Mod\StaffLeaveRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\MorningNewsRules.cs" Link="Mod\MorningNewsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\OptionKeysRules.cs" Link="Mod\OptionKeysRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\WakeRules.cs" Link="Mod\WakeRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\GuideMarkRules.cs" Link="Mod\GuideMarkRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\TextBoxRules.cs" Link="Mod\TextBoxRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\EndScale.cs" Link="Mod\EndScale.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\SaveLines.cs" Link="Mod\SaveLines.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Justice\JusticeLaw.cs" Link="Mod\JusticeLaw.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Crime\CrimeRules.cs" Link="Mod\CrimeRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Law\ReleaseRules.cs" Link="Mod\ReleaseRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Justice\JusticeState.cs" Link="Mod\JusticeState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Justice\JusticeState.Save.cs" Link="Mod\JusticeState.Save.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Travel\TravelCatalogue.cs" Link="Mod\TravelCatalogue.cs" />
@@ -96,6 +154,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\UtilitiesStore.cs" Link="Mod\UtilitiesStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\InternetCatalogue.cs" Link="Mod\InternetCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\InternetRules.cs" Link="Mod\InternetRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\NetSpeedRules.cs" Link="Mod\NetSpeedRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\BroadbandCatalogue.cs" Link="Mod\BroadbandCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Utilities\BroadbandRules.cs" Link="Mod\BroadbandRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\VenturesCatalogue.cs" Link="Mod\VenturesCatalogue.cs" />
@@ -127,6 +186,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateRules.cs" Link="Mod\EstateRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateRules.Letting.cs" Link="Mod\EstateRules.Letting.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateRules.Sold.cs" Link="Mod\EstateRules.Sold.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\EstateRules.Duties.cs" Link="Mod\EstateRules.Duties.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\AgencyRules.cs" Link="Mod\AgencyRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\HotelRules.cs" Link="Mod\HotelRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Estate\HireRules.cs" Link="Mod\HireRules.cs" />
@@ -151,6 +211,16 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\BrandStore.cs" Link="Mod\BrandStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Brands\KeptPrices.cs" Link="Mod\KeptPrices.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\SpecialNameBook.cs" Link="Mod\SpecialNameBook.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\HeldUnitsRules.cs" Link="Mod\HeldUnitsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\NewBuildingsRules.cs" Link="Mod\NewBuildingsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\GateRules.cs" Link="Mod\GateRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\ServiceDeskRules.cs" Link="Mod\ServiceDeskRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\FloorMeasure.cs" Link="Mod\FloorMeasure.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\FloorMeasure.Desk.cs" Link="Mod\FloorMeasure.Desk.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\NewBuildingsText.cs" Link="Mod\NewBuildingsText.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\NewBuildingsTestPlot.cs" Link="Mod\NewBuildingsTestPlot.cs" />
+    <!-- Uptown's streets, among the mod's own streets (NewBuildingsRules' MadeStreets). -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LayoutStreets.cs" Link="Mod\LayoutStreets.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CityReserves.cs" Link="Mod\CityReserves.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\OfficeSupply.cs" Link="Mod\OfficeSupply.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareModel.cs" Link="Mod\FlareModel.cs" />
@@ -163,6 +233,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareLiveRules.cs" Link="Mod\FlareLiveRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareLiveRules.CityOffice.cs" Link="Mod\FlareLiveRules.CityOffice.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareLiveRules.Feed.cs" Link="Mod\FlareLiveRules.Feed.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareLiveRules.Reviews.cs" Link="Mod\FlareLiveRules.Reviews.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareLiveStore.cs" Link="Mod\FlareLiveStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareNetShare.cs" Link="Mod\FlareNetShare.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareOutbox.cs" Link="Mod\FlareOutbox.cs" />
@@ -174,9 +245,13 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Fame\FameRules.cs" Link="Mod\FameRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Fame\FameStore.cs" Link="Mod\FameStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Fame\FamePress.cs" Link="Mod\FamePress.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Fame\FameJoin.cs" Link="Mod\FameJoin.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Fame\FameCity.cs" Link="Mod\FameCity.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\TableModel.cs" Link="Mod\TableModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\TableRow.cs" Link="Mod\TableRow.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\GameUi\TableSpec.cs" Link="Mod\TableSpec.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Finance\CashCategory.cs" Link="Mod\CashCategory.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Finance\DayRules.cs" Link="Mod\DayRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialModel.cs" Link="Mod\SocialModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialRules.cs" Link="Mod\SocialRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\PartnerWorkRules.cs" Link="Mod\PartnerWorkRules.cs" />
@@ -191,11 +266,22 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialComposerRules.Words.cs" Link="Mod\SocialComposerRules.Words.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialState.cs" Link="Mod\SocialState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialCatalogue.cs" Link="Mod\SocialCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialFollowRules.cs" Link="Mod\SocialFollowRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\SocialFollowCatalogue.cs" Link="Mod\SocialFollowCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Wiring\Wiring.TextsMemoryFacts.cs" Link="Mod\Wiring.TextsMemoryFacts.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Life\LifeEventCatalogue*.cs" Link="Mod\%(Filename)%(Extension)" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Phone\Contacts\ContactCatalogue.cs" Link="Mod\ContactCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Phone\Contacts\FixedPeople.cs" Link="Mod\FixedPeople.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Phone\Contacts\ContactGroups.cs" Link="Mod\ContactGroups.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\People\PersonLook.cs" Link="Mod\PersonLook.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Roommates\RoommateRules.cs" Link="Mod\RoommateRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Roommates\RoommateState.cs" Link="Mod\RoommateState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Roommates\RoommateStore.cs" Link="Mod\RoommateStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\HomeBalance.cs" Link="Mod\HomeBalance.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\HomeState.cs" Link="Mod\HomeState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Household\HouseholdRules.cs" Link="Mod\HouseholdRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Household\HouseholdState.cs" Link="Mod\HouseholdState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Household\HouseholdStore.cs" Link="Mod\HouseholdStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLedger.cs" Link="Mod\RotaLedger.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLadder.cs" Link="Mod\RotaLadder.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaStock.cs" Link="Mod\RotaStock.cs" />
@@ -205,6 +291,13 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ManagerRules.cs" Link="Mod\ManagerRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ManagerState.cs" Link="Mod\ManagerState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ManagerStore.cs" Link="Mod\ManagerStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ManagerDirectoryRules.cs" Link="Mod\ManagerDirectoryRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ExecutiveHiring.cs" Link="Mod\ExecutiveHiring.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\PolicyRules.cs" Link="Mod\PolicyRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\EscalationRules.cs" Link="Mod\EscalationRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\HierarchyRules.cs" Link="Mod\HierarchyRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\HierarchyState.cs" Link="Mod\HierarchyState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\HierarchyStore.cs" Link="Mod\HierarchyStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaFit.cs" Link="Mod\RotaFit.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Business\BusinessCatalogue.cs" Link="Mod\BusinessCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Business\BusinessState.cs" Link="Mod\BusinessState.cs" />
@@ -244,6 +337,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Listing\ListingRules.cs" Link="Mod\ListingRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Listing\ListingBook.cs" Link="Mod\ListingBook.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Listing\ListingVotes.cs" Link="Mod\ListingVotes.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Listing\ListingSector.cs" Link="Mod\ListingSector.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketSetup.cs" Link="Mod\MarketSetup.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketCarryOver.cs" Link="Mod\MarketCarryOver.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketCodec.cs" Link="Mod\MarketCodec.cs" />
@@ -257,12 +351,17 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Derivatives\DerivRules.cs" Link="Mod\DerivRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Derivatives\DerivStore.cs" Link="Mod\DerivStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Derivatives.cs" Link="Mod\MarketEngine.Derivatives.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\BuilderMarket.cs" Link="Mod\BuilderMarket.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Builders.cs" Link="Mod\MarketEngine.Builders.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Hedge.cs" Link="Mod\MarketEngine.Hedge.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Derivatives\HedgeRules.cs" Link="Mod\HedgeRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerEdition.cs" Link="Mod\LedgerEdition.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerState.cs" Link="Mod\LedgerState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerCatalogue.cs" Link="Mod\LedgerCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerRules.cs" Link="Mod\LedgerRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerStore.cs" Link="Mod\LedgerStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerShare.cs" Link="Mod\LedgerShare.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\LedgerStories.cs" Link="Mod\LedgerStories.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\NewsstandCatalogue.cs" Link="Mod\NewsstandCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\NewsstandState.cs" Link="Mod\NewsstandState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ledger\NewsstandRules.cs" Link="Mod\NewsstandRules.cs" />
@@ -276,22 +375,29 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextCard.cs" Link="Mod\TextCard.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextFaces.cs" Link="Mod\TextFaces.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextIntents.cs" Link="Mod\TextIntents.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextIntents.Three.cs" Link="Mod\TextIntents.Three.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextIntents.Street.cs" Link="Mod\TextIntents.Street.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextWords.cs" Link="Mod\TextWords.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextCheck.cs" Link="Mod\TextCheck.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextQueue.cs" Link="Mod\TextQueue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextJson.cs" Link="Mod\TextJson.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextServer.cs" Link="Mod\TextServer.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextServer.Start.cs" Link="Mod\TextServer.Start.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextServer.Process.cs" Link="Mod\TextServer.Process.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextCores.cs" Link="Mod\TextCores.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextPacks.cs" Link="Mod\TextPacks.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextSpeed.cs" Link="Mod\TextSpeed.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextsStore.cs" Link="Mod\TextsStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextsShare.cs" Link="Mod\TextsShare.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextsHub.cs" Link="Mod\TextsHub.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextsHub.Look.cs" Link="Mod\TextsHub.Look.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextRequest.cs" Link="Mod\TextRequest.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextsMapRules.cs" Link="Mod\TextsMapRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextRuntime.cs" Link="Mod\TextRuntime.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextHang.cs" Link="Mod\TextHang.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextJsonTree.cs" Link="Mod\TextJsonTree.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextProviders.cs" Link="Mod\TextProviders.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextPlayer2.cs" Link="Mod\TextPlayer2.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextServiceRules.cs" Link="Mod\TextServiceRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextWeb.cs" Link="Mod\TextWeb.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Texts\TextKeys.cs" Link="Mod\TextKeys.cs" />
@@ -315,11 +421,14 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareTextsMap.Comments.cs" Link="Mod\FlareTextsMap.Comments.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareTextsMap.Checks.cs" Link="Mod\FlareTextsMap.Checks.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareTextsAsked.cs" Link="Mod\FlareTextsAsked.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareWordsHold.cs" Link="Mod\FlareWordsHold.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareCommentRules.cs" Link="Mod\FlareCommentRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareInviteRules.cs" Link="Mod\FlareInviteRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Social\Flare\FlareInviteRules.Reading.cs" Link="Mod\FlareInviteRules.Reading.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Street\StreetModel.cs" Link="Mod\StreetModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Street\StreetRules.cs" Link="Mod\StreetRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Street\StreetRules.Choices.cs" Link="Mod\StreetRules.Choices.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Street\StreetMemory.cs" Link="Mod\StreetMemory.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Street\StreetOffer.cs" Link="Mod\StreetOffer.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Street\StreetSay.cs" Link="Mod\StreetSay.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Street\StreetLines.cs" Link="Mod\StreetLines.cs" />
@@ -350,6 +459,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\TalentRules.cs" Link="Mod\TalentRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\TalentStore.cs" Link="Mod\TalentStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\PlaceRules.cs" Link="Mod\PlaceRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\StaffNameRules.cs" Link="Mod\StaffNameRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Hiring\HiringCatalogue.cs" Link="Mod\HiringCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Hiring\HiringModel.cs" Link="Mod\HiringModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Hiring\HiringRules.cs" Link="Mod\HiringRules.cs" />
@@ -359,7 +469,14 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\FirmsRules.cs" Link="Mod\FirmsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\FirmsRules.Contracts.cs" Link="Mod\FirmsRules.Contracts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\FirmsStore.cs" Link="Mod\FirmsStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\OwnDeskRules.cs" Link="Mod\OwnDeskRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\SeatRules.cs" Link="Mod\SeatRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\CompetitorRules.cs" Link="Mod\CompetitorRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\BizPace\BizPaceRules.cs" Link="Mod\BizPaceRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\WorkSlice.cs" Link="Mod\WorkSlice.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\DaySpread.cs" Link="Mod\DaySpread.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Ventures\LookRound.cs" Link="Mod\LookRound.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Offices\ConversionRules.cs" Link="Mod\ConversionRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Firms\MoveRules.cs" Link="Mod\MoveRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\VentureCatalogue.cs" Link="Mod\VentureCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\VentureModel.cs" Link="Mod\VentureModel.cs" />
@@ -369,6 +486,14 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\InfraCatalogue.cs" Link="Mod\InfraCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\InfraModel.cs" Link="Mod\InfraModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\InfraRules.cs" Link="Mod\InfraRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Staffing\StaffPlace.cs" Link="Mod\Staffing\StaffPlace.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Staffing\StaffEffects.cs" Link="Mod\Staffing\StaffEffects.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Staffing\StaffTable.cs" Link="Mod\Staffing\StaffTable.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Staffing\StaffTable.Tech.cs" Link="Mod\Staffing\StaffTable.Tech.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Staffing\StaffTable.Work.cs" Link="Mod\Staffing\StaffTable.Work.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Staffing\StaffTable.Roles.cs" Link="Mod\Staffing\StaffTable.Roles.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Staffing\StaffIndex.cs" Link="Mod\Staffing\StaffIndex.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Staffing\StaffPages.cs" Link="Mod\Staffing\StaffPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\InfraStore.cs" Link="Mod\InfraStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\StudyCatalogue.cs" Link="Mod\StudyCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\StudyRules.cs" Link="Mod\StudyRules.cs" />
@@ -377,6 +502,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\StudyRules.Clash.cs" Link="Mod\StudyRules.Clash.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\JobCatalogue.cs" Link="Mod\JobCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\CampusRules.cs" Link="Mod\CampusRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Floors\FloorsRules.cs" Link="Mod\FloorsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Floors\FloorLoan.cs" Link="Mod\FloorLoan.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\EducationRules.cs" Link="Mod\EducationRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\ClassPlayRules.cs" Link="Mod\ClassPlayRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Study\SittingRules.cs" Link="Mod\SittingRules.cs" />
@@ -384,21 +511,39 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\CareersStore.cs" Link="Mod\CareersStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\ProCatalogue.cs" Link="Mod\ProCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\ProRules.cs" Link="Mod\ProRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\AgencyRules.cs" Link="Mod\AgencyRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\DeskRules.cs" Link="Mod\DeskRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\InterviewRules.cs" Link="Mod\InterviewRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\Kinds\CartQueueRules.cs" Link="Mod\CartQueueRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\Kinds\CartSoundRules.cs" Link="Mod\CartSoundRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\ReportedRepair.cs" Link="Mod\ReportedRepair.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Seasons\WarmthRules.cs" Link="Mod\WarmthRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\OptionValueRules.cs" Link="Mod\OptionValueRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\Kinds\TaxiComfortRules.cs" Link="Mod\TaxiComfortRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\ClockRules.cs" Link="Mod\ClockRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\ProPath.cs" Link="Mod\ProPath.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\WorkModel.cs" Link="Mod\WorkModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\OpenHoursRules.cs" Link="Mod\OpenHoursRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\ClosureRules.cs" Link="Mod\ClosureRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\WorkStore.cs" Link="Mod\WorkStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\LifeRules.cs" Link="Mod\LifeRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\OwnRules.cs" Link="Mod\OwnRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Ladder\LadderRanks.cs" Link="Mod\LadderRanks.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Ladder\LadderFile.cs" Link="Mod\LadderFile.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Ladder\CareerLadderRules.cs" Link="Mod\CareerLadderRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Ladder\CareerLadderRules.Day.cs" Link="Mod\CareerLadderRules.Day.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Ladder\CareerLadderRules.Tasks.cs" Link="Mod\CareerLadderRules.Tasks.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Ladder\CareerLadderRules.Proof.cs" Link="Mod\CareerLadderRules.Proof.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Ladder\LadderStore.cs" Link="Mod\LadderStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Districts\DistrictRules.cs" Link="Mod\DistrictRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Interiors\InteriorRules.cs" Link="Mod\InteriorRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Interiors\InteriorRules.Effects.cs" Link="Mod\InteriorRules.Effects.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Interiors\InteriorStore.cs" Link="Mod\InteriorStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusBay.cs" Link="Mod\BusBay.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusPath.cs" Link="Mod\BusPath.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusInside.cs" Link="Mod\BusInside.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\RideRules.cs" Link="Mod\RideRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Traffic\MakeWayRules.cs" Link="Mod\MakeWayRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\BusDetour.cs" Link="Mod\BusDetour.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\TransitPlan.cs" Link="Mod\TransitPlan.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\TransitPlan.Journeys.cs" Link="Mod\TransitPlan.Journeys.cs" />
@@ -408,12 +553,21 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBank.cs" Link="Mod\OwnBank.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankRules.cs" Link="Mod\OwnBankRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankRules.Day.cs" Link="Mod\OwnBankRules.Day.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankRules.Daily.cs" Link="Mod\OwnBankRules.Daily.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankFund.cs" Link="Mod\OwnBankFund.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalCatalogue.cs" Link="Mod\RivalCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalModel.cs" Link="Mod\RivalModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalRules.cs" Link="Mod\RivalRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalRules.Moves.cs" Link="Mod\RivalRules.Moves.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalRules.Counters.cs" Link="Mod\RivalRules.Counters.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Rivals\RivalStore.cs" Link="Mod\RivalStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\OwnBankStore.cs" Link="Mod\OwnBankStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\Branch\BranchCatalogue.cs" Link="Mod\BranchCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\Branch\BankBranch.cs" Link="Mod\BankBranch.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\Branch\BranchRules.cs" Link="Mod\BranchRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\Branch\OwnBankRules.Branch.cs" Link="Mod\OwnBankRules.Branch.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\Tiers\BankTiers.cs" Link="Mod\BankTiers.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\OwnBank\Tiers\OwnBankRules.Tiers.cs" Link="Mod\OwnBankRules.Tiers.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerCatalogue.cs" Link="Mod\DealerCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerState.cs" Link="Mod\DealerState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\DealerRules.cs" Link="Mod\DealerRules.cs" />
@@ -431,6 +585,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Designs\DesignPlan.cs" Link="Mod\DesignPlan.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Designs\DesignFiles.cs" Link="Mod\DesignFiles.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Designs\DesignsText.cs" Link="Mod\DesignsText.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Shops\ShopsCatalogue.cs" Link="Mod\ShopsCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Shops\ShopsRules.cs" Link="Mod\ShopsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Shops\ShopsText.cs" Link="Mod\ShopsText.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\RedrawRules.cs" Link="Mod\RedrawRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\LookupRules.cs" Link="Mod\LookupRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Finance\CashTable.cs" Link="Mod\CashTable.cs" />
@@ -445,8 +602,123 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Photos\CameraHold.cs" Link="Mod\CameraHold.cs" />
     <Compile Include="..\Shared\ModLanguages.cs" Link="Shared\ModLanguages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\BugReportRules.cs" Link="Mod\BugReportRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\BetaRules.cs" Link="Mod\BetaRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\HardTimesRules.cs" Link="Mod\HardTimesRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Family\TalkRules.cs" Link="Mod\TalkRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CityDistricts.cs" Link="Mod\CityDistricts.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Core\CityRules.cs" Link="Mod\CityRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\FeatureCities.cs" Link="Mod\FeatureCities.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\DistrictSave\DistrictPlaces.cs" Link="Mod\DistrictPlaces.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\DistrictSave\DistrictSaveRules.cs" Link="Mod\DistrictSaveRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\DistrictSave\DistrictSaveStore.cs" Link="Mod\DistrictSaveStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\DistrictSave\DistrictSaveDeflate.cs" Link="Mod\DistrictSaveDeflate.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\DistrictSave\DistrictSaveZip.cs" Link="Mod\DistrictSaveZip.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\DistrictValues.cs" Link="Mod\DistrictValues.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\DistrictSplit.cs" Link="Mod\DistrictSplit.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\DistrictCensus.cs" Link="Mod\DistrictCensus.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\SplitRules.cs" Link="Mod\SplitRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\BuildingsRules.cs" Link="Mod\BuildingsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\FrontageRules.cs" Link="Mod\FrontageRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LookRules.cs" Link="Mod\LookRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\SouthRules.cs" Link="Mod\SouthRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\SideRules.cs" Link="Mod\SideRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LookSides.cs" Link="Mod\LookSides.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LookCensus.cs" Link="Mod\LookCensus.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\SpecialsRules.cs" Link="Mod\SpecialsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\BigPlacesRules.cs" Link="Mod\BigPlacesRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\MouthRules.cs" Link="Mod\MouthRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\StreetsRules.cs" Link="Mod\StreetsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Transport\TransitPlan.Routes.cs" Link="Mod\TransitPlan.Routes.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\OfficesRules.cs" Link="Mod\OfficesRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\MixRules.cs" Link="Mod\MixRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LifeStore.cs" Link="Mod\LifeStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LifeText.cs" Link="Mod\LifeText.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\CareerCatalogue.cs" Link="Mod\CareerCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\CareerOfficeRules.cs" Link="Mod\CareerOfficeRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\BuildTrades\TradeCatalogue.cs" Link="Mod\TradeCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\BuildTrades\TradeRules.cs" Link="Mod\TradeRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\BuildTrades\DesignRules.cs" Link="Mod\DesignRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\BuildTrades\TenderRules.cs" Link="Mod\TenderRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\BuildTrades\DesignBook.cs" Link="Mod\DesignBook.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildCatalogue.cs" Link="Mod\Construction\BuildCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildRandom.cs" Link="Mod\Construction\BuildRandom.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\LandRules.cs" Link="Mod\Construction\LandRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\DevelopmentRules.cs" Link="Mod\Construction\DevelopmentRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\PlansRules.cs" Link="Mod\Construction\PlansRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\PlanningRules.cs" Link="Mod\Construction\PlanningRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\SiteRules.cs" Link="Mod\Construction\SiteRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\MoneyRules.cs" Link="Mod\Construction\MoneyRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\TenderRules.cs" Link="Mod\Construction\TenderRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\FirmRules.cs" Link="Mod\Construction\FirmRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildState.cs" Link="Mod\Construction\BuildState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildStore.cs" Link="Mod\Construction\BuildStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\ExposureRules.cs" Link="Mod\Construction\ExposureRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\ShowFlatRules.cs" Link="Mod\Construction\ShowFlatRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\RefitRules.cs" Link="Mod\Construction\RefitRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\RedevelopRules.cs" Link="Mod\Construction\RedevelopRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\CommissionRules.cs" Link="Mod\Construction\CommissionRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\FrontDeskRules.cs" Link="Mod\Construction\FrontDeskRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\TrackRules.cs" Link="Mod\Construction\TrackRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\CellRules.cs" Link="Mod\Construction\CellRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\ZoneRules.cs" Link="Mod\Construction\ZoneRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\GrowRules.cs" Link="Mod\Construction\GrowRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\PlotJoinRules.cs" Link="Mod\Construction\PlotJoinRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildState.Grow.cs" Link="Mod\Construction\BuildState.Grow.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\LandMarketRules.cs" Link="Mod\Construction\LandMarketRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildState.Market.cs" Link="Mod\Construction\BuildState.Market.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildStore.Market.cs" Link="Mod\Construction\BuildStore.Market.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildStore.Grow.cs" Link="Mod\Construction\BuildStore.Grow.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\CarParkRules.cs" Link="Mod\Construction\CarParkRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\CarParkLayout.cs" Link="Mod\Construction\CarParkLayout.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildState.Park.cs" Link="Mod\Construction\BuildState.Park.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildStore.Park.cs" Link="Mod\Construction\BuildStore.Park.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildModeRules.cs" Link="Mod\Construction\BuildModeRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildModeHintRules.cs" Link="Mod\Construction\BuildModeHintRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildModeCityRules.cs" Link="Mod\Construction\BuildModeCityRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildModeCatalogue.cs" Link="Mod\Construction\BuildModeCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\StreetNameRules.cs" Link="Mod\Construction\StreetNameRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\CompleteRules.cs" Link="Mod\CompleteRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\DemandRules.cs" Link="Mod\DemandRules.cs" />
+    <!-- A building handed over stands at once, and the opening day is not missed (StandChecks.cs). -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\OpeningRules.cs" Link="Mod\Construction\OpeningRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\StandRules.cs" Link="Mod\StandRules.cs" />
+    <!-- A building the construction game finishes registers with the city map's filters when it stands and leaves them when it goes (MapChecks.cs). -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\NewBuildings\MapRules.cs" Link="Mod\MapRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Designs\ShowFlatDesigns.cs" Link="Mod\ShowFlatDesigns.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\WrapRules.cs" Link="Mod\WrapRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\PlotRules.cs" Link="Mod\PlotRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\SiteRefusals.cs" Link="Mod\SiteRefusals.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\ParkSiteRules.cs" Link="Mod\ParkSiteRules.cs" />
+    <!-- Uptown's landmarks (LandmarksChecks.cs): their rules and their line, on the plan of Uptown's lots. -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\LayoutRules.cs" Link="Mod\LayoutRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\SpacesRules.cs" Link="Mod\SpacesRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\UptownLots.cs" Link="Mod\UptownLots.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Landmarks\LandmarkRules.cs" Link="Mod\Landmarks\LandmarkRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Landmarks\LandmarkStore.cs" Link="Mod\Landmarks\LandmarkStore.cs" />
+    <!-- Birchwood School and the city's schools (SchoolChecks.cs): the campus on its block, the market's rules, the line, and "What is this ground?". -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schools\SchoolState.cs" Link="Mod\Schools\SchoolState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schools\SchoolRules.cs" Link="Mod\Schools\SchoolRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schools\SchoolStore.cs" Link="Mod\Schools\SchoolStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schools\SchoolGrounds.cs" Link="Mod\Schools\SchoolGrounds.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schools\SchoolGrounds.Dressing.cs" Link="Mod\Schools\SchoolGrounds.Dressing.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schools\CampusLookRules.cs" Link="Mod\Schools\CampusLookRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Corners\CornerRules.cs" Link="Mod\Corners\CornerRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\GroundSurvey.cs" Link="Mod\GroundSurvey.cs" />
+    <!-- No ground of a block left unexplained (BuildGroundChecks.cs): what holds the ground no square covers, and the check over every block, game-free. -->
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Uptown\HeldGroundRules.cs" Link="Mod\HeldGroundRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildGroundRules.cs" Link="Mod\Construction\BuildGroundRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Civic\CouncilZoning.cs" Link="Mod\CouncilZoning.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\RingRules.cs" Link="Mod\Construction\RingRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BillRules.cs" Link="Mod\Construction\BillRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\AwardRules.cs" Link="Mod\Construction\AwardRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildState.City.cs" Link="Mod\Construction\BuildState.City.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildStore.City.cs" Link="Mod\Construction\BuildStore.City.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Justice\JusticeState.Claims.cs" Link="Mod\JusticeState.Claims.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\TestRun\RunRules.cs" Link="Mod\TestRun\RunRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\TestRun\RunPlan.cs" Link="Mod\TestRun\RunPlan.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\TestRun\RunText.cs" Link="Mod\TestRun\RunText.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Licences\HeavyRules.cs" Link="Mod\HeavyRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Licences\Driving\LessonRules.cs" Link="Mod\LessonRules.cs" />
   </ItemGroup>
 
   <ItemGroup>

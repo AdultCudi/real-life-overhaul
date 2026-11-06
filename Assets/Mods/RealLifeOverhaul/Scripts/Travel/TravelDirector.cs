@@ -73,6 +73,7 @@ namespace RealLifeOverhaul
             TravelState.Reset();
             TravelEffects.Register(Logger);   // before ModState reads the save
             Hotels = new Hotels(transform, Logger);
+            ScenePrewarm.Add("travel: the hotel doorman made", Hotels.PrewarmDoorman);
             Stay = new HotelStay(this);
             Holidays = new Holidays(this);
             Pressed = OnPressed;
@@ -600,7 +601,7 @@ namespace RealLifeOverhaul
             List<BuildingRegistration> all = SaveGameManager.Current.BuildingRegistrations;
             for (int i = 0; all != null && i < all.Count; i++)
             {
-                if (all[i] != null && GoingPublic.Mine(all[i]) && all[i].GetBuildingType() == "ba:buildingtype_residential")
+                if (all[i] != null && GoingPublic.Mine(all[i]) && GameRegistrations.BuildingType(all[i]) == "ba:buildingtype_residential")
                 {
                     return true;
                 }

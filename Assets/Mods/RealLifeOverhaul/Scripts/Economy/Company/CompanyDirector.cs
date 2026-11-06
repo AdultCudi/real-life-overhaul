@@ -80,6 +80,7 @@ namespace RealLifeOverhaul.Economy
         private void Awake()
         {
             Instance = this;
+            GameSprites.Want(AppGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
             _second = EachSecond;
             _onSave = OnSave;
             _onHour = OnHour;
@@ -100,6 +101,7 @@ namespace RealLifeOverhaul.Economy
                 RemoveApp();
                 return;   // another city's director has started since: the state and the figures are its own
             }
+            PickedRaiseGame.Keep(false);   // the game's lists outlive the city: the action goes with the director that answers it
             // The city is unloading: nothing is written to the save here, only when the game saves.
             try
             {
@@ -142,6 +144,7 @@ namespace RealLifeOverhaul.Economy
             mask |= Settings.EconomyCompanyHide ? 1 << (int)CompanyPart.Count : 0;   // cash off the books: no part of its own
             mask |= RotaOn ? 1 << ((int)CompanyPart.Count + 1) : 0;                  // the rota planner: no part either
             mask |= ManagersOn ? 1 << ((int)CompanyPart.Count + 2) : 0;              // nor the managers
+            mask |= HierarchyOn ? 1 << ((int)CompanyPart.Count + 3) : 0;             // nor their hierarchy: its regions are read again when it is switched
             return mask;
         }
 
@@ -168,6 +171,10 @@ namespace RealLifeOverhaul.Economy
         partial void ManagerStop();
         partial void ManagerHour(int day, int hour);
         partial void ManagerDay(int day);
+        partial void HierarchyLoad(GameInstance save);
+        partial void HierarchySave(GameInstance save);
+        partial void HierarchyDay(int day);
+        partial void HierarchyHour(int day, int hour);
 
         private void PartDay(CompanyPart part, int day)
         {
@@ -224,6 +231,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     StandDown(!Settings.EconomyCompany ? "the option is off" : "the credit side is not running", true, true, false);
                 }
+                PickedRaiseGame.Keep(false);
                 return;
             }
             if (!_running)
@@ -231,6 +239,7 @@ namespace RealLifeOverhaul.Economy
                 StartUp();
             }
             SaveHook.Keep(_onSave);
+            PickedRaiseGame.Keep(On(CompanyPart.Staff));   // "Give a raise" among My Employees' actions while raises can be given
             if (_app == null && !_gaveUp)
             {
                 Install();
@@ -302,6 +311,7 @@ namespace RealLifeOverhaul.Economy
             RotaLoad(save);
             RotaRead();
             ManagerLoad(save);
+            HierarchyLoad(save);   // after the managers: a save from before the policy keeps their own limits as their stores' rules
             BuildAlerts(today);
             Logger?.Info("Company: " + (fresh ? "opened for this save" : "state loaded (version " + version + ")") + " on day " + today + ". "
                          + _shops.Count + " business(es)"
@@ -409,8 +419,11 @@ namespace RealLifeOverhaul.Economy
 
         private void Install()
         {
+            if (!PhoneApp.PhoneUp)
+            {
+                return;   // the game's phone is not built yet: asked again next time, nothing made for it
+            }
             var view = new CompanyApp(this);
-            GameSprites.Want(AppGlyphs);
             bool tryAgain;
             _app = PhoneApp.Install(new PhoneAppDef
             {
@@ -646,6 +659,7 @@ namespace RealLifeOverhaul.Economy
             _state = null;
             _beforeTests = null;
             ManagerForget();
+            HierarchyForget();
         }
     }
 }

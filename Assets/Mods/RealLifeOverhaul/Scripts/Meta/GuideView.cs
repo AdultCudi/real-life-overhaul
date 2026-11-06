@@ -204,6 +204,7 @@ namespace RealLifeOverhaul.Meta
     {
         public const int Topic = 0, Heading = 1, Bullet = 2, Plain = 3;
         private const float TextWidth = 1500f;
+        private const float GroupHeight = 80f;      // the heading row that names a group of pages in the list
         private const float CharsPerLine = 86f;     // a conservative guess at a line of the cell: a row too tall is only blank space, one too short cuts the words
 
         private readonly List<GuideRow> _rows = new List<GuideRow>(64);
@@ -364,8 +365,14 @@ namespace RealLifeOverhaul.Meta
         {
             _tab = 0;
             _rows.Clear();
+            string group = null;
             for (int i = 0; i < _topics.Count; i++)
             {
+                if (_topics[i].Group != null && _topics[i].Group != group)
+                {
+                    group = _topics[i].Group;
+                    _rows.Add(new GuideRow { Look = Heading, Text = group.GetLocalization(), Height = GroupHeight });
+                }
                 _rows.Add(new GuideRow { Id = _topics[i].Id, Look = Topic, Text = _topics[i].Title, Height = 100f });
             }
             _shell.ShowTab(0);
@@ -464,11 +471,19 @@ namespace RealLifeOverhaul.Meta
                 box.Note("reallife_guide_reading_hint".GetLocalization());
                 Transform row = box.ButtonRow();
                 InfoBox.Button(row, InfoBox.Positive, "reallife_guide_back", () => ShowTab(0));
+                if (_topic.Id == "staff")
+                {
+                    InfoBox.Button(row, InfoBox.Additional, "reallife_staff_open_button", () => StaffApp.Open(null));
+                }
             }
             else
             {
                 box.Title("reallife_guide_app_title".GetLocalization());
-                box.Subtitle("reallife_guide_version".GetLocalization().Replace("{version}", Changelog.Version));
+                box.Subtitle("reallife_guide_version".GetLocalization().Replace("{version}", Changelog.Shown));
+                if (Changelog.IsBeta)
+                {
+                    box.Note("reallife_beta_guide_note".GetLocalization());
+                }
                 box.Note("reallife_guide_list_hint".GetLocalization());
                 Transform row = box.ButtonRow();
                 InfoBox.Button(row, InfoBox.Positive, "reallife_guide_whatsnew_title", () => Want("whatsnew"));

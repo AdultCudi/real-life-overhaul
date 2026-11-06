@@ -6,17 +6,11 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Somebody who comes into the player's own shop about an issue while the player is standing in
-    /// it: the racket's collector, an inspector with a clipboard, and the collector once more with
-    /// the police a step behind him. Played by the street scenes' own people (ActorPool, through
-    /// ActorRole), who come in at the shop's real door, walk on the shop's navigation mesh, stand
-    /// only where the mesh says a person can, and leave by the door. No customer, employee, shelf
-    /// or sale is touched. The arrest is Crime/ArrestSequence, the one every scene uses.
-    ///
-    /// One at a time, ticked four times a second by the director only while it is on, never longer
-    /// than <see cref="MostSeconds"/>, and ended at once (everybody back in the pool) when the
-    /// player leaves the shop, a crime scene starts, or anything unexpected happens. If nobody can
-    /// be had from the pool, there is no visit and the issue goes on by phone as it would have.
+    /// Somebody who comes into the player's shop about an issue while the player is there: the collector, an inspector, or
+    /// the collector with the police behind him. Played by the street's own people (ActorPool), in at the real door, on the
+    /// shop's navigation mesh, touching no customer, employee or sale. One at a time, ticked four times a second by the
+    /// director only while on, at most <see cref="MostSeconds"/>, and ended at once when the player leaves or a crime scene
+    /// starts. With nobody free in the pool there is no visit and the issue goes on by phone.
     /// </summary>
     internal sealed class BusinessVisit
     {
@@ -24,17 +18,13 @@ namespace RealLifeOverhaul
 
         private enum Step { None, Arriving, Looking, Looking2, ToPlayer, Talking, Waiting, Police, Arrest, Leaving }
 
-        private const float MostSeconds = 110f;
-        private const float TalkDistance = 1.7f;
+        private const float MostSeconds = 110f;   // seconds
+        private const float TalkDistance = 1.7f;  // metres from the player
 
-        // What the collector (and the man of a sting) does with his hands while he speaks, and while he waits for the answer.
-        // NOT collector_lean: that clip leans on a counter 0.975 m up whose near edge is 0.32 to 0.36 m ahead, with whoever
-        // he speaks to 1.1 m beyond it, and reads as a man bent forward with a hand in the air anywhere else
-        // (CityAssets/README.md). A visit is played where the player happens to stand, 1.7 m from them on open floor, and the
-        // game's shop furniture says nothing of a counter top's height or edge: no such place can be found, so the clips
-        // that read standing free are used. Should a shop ever offer a measured counter, it is one line here.
+        // Clips that read standing free. Not collector_lean: it leans on a counter of a measured height and edge, and the
+        // game's shop furniture gives neither, so anywhere else it reads as a man bent forward with a hand in the air.
         private const string TalkClip = "talk_a";          // talking with the hands, to somebody in front
-        private const string WaitClip = "arms_crossed";    // standing square with folded arms: waiting to be paid
+        private const string WaitClip = "arms_crossed";    // folded arms: waiting to be paid
 
         private static readonly string[] CollectorLines = { "reallife_biz_visit_collector_1", "reallife_biz_visit_collector_2", "reallife_biz_visit_collector_3" };
         private static readonly string[] InspectorLines = { "reallife_biz_visit_inspector_1", "reallife_biz_visit_inspector_2", "reallife_biz_visit_inspector_3" };
@@ -57,13 +47,10 @@ namespace RealLifeOverhaul
 
         public bool Active => _step != Step.None;
 
-        /// <summary>The issue the visitor has come about, once they are standing with the player and want an answer; null otherwise.</summary>
+        /// <summary>The issue the visitor wants an answer to, once standing with the player; null otherwise.</summary>
         public BusinessIssue Asking => _step == Step.Waiting ? _issue : null;
 
-        /// <summary>
-        /// Starts a visit in the shop the player is standing in. False (with nothing on the floor) if it
-        /// cannot be played here and now.
-        /// </summary>
+        /// <summary>Starts a visit in the shop the player is in; false, with nothing on the floor, if it cannot be played here.</summary>
         public bool Begin(Kind kind, BusinessIssue issue, float now)
         {
             End();
@@ -87,7 +74,7 @@ namespace RealLifeOverhaul
             if (kind == Kind.Inspector && ShopFloor.RandomSpot(out Vector3 floor))
             {
                 _visitor.Go(floor, Pace.Walk, floor + Crime.RandomHeading(), 25f);
-                _visitor.Work(ClipLibrary.Has("inspect_look") ? "inspect_look" : "clipboard_write");   // worn whenever they stand: looking the place over, writing it down
+                _visitor.Work(ClipLibrary.Has("inspect_look") ? "inspect_look" : "clipboard_write");   // worn whenever they stand
                 Go(Step.Arriving, now, 26f);
             }
             else
@@ -120,7 +107,7 @@ namespace RealLifeOverhaul
             if (controller == null || !BuildingManager.IsInsideBuilding || InstanceBehavior<BuildingManager>.Instance != _building
                 || now >= _deadline || CrimeDirector.IsActive)
             {
-                End();   // the player has left the shop (or something else has the floor): nobody is left standing in it
+                End();   // the player has left, or something else has the floor
                 return;
             }
             Vector3 player = controller.transform.position;
@@ -168,7 +155,7 @@ namespace RealLifeOverhaul
                         _visitor.Stand(player);
                         Notifications.Show(_kind == Kind.Inspector ? NotificationType.Info : NotificationType.Warning,
                             JobText.Pick(_kind == Kind.Collector ? CollectorLines : _kind == Kind.Inspector ? InspectorLines : StingLines, ref _line), null, 8f);
-                        // They are talking to somebody who is standing in front of them: the gesture has someone to be made at.
+                        // only a gesture with somebody in front to make it at
                         bool close = (player - _visitor.Position).sqrMagnitude < 9f;
                         if (close && _kind != Kind.Inspector)
                         {
@@ -187,7 +174,7 @@ namespace RealLifeOverhaul
                     break;
 
                 case Step.Waiting:
-                    // The director opens the desk on this issue as soon as no screen is in the way; then he waits for the answer.
+                    // the director opens the desk on the issue once no screen is in the way
                     if (now >= _stepEnd || _opened)
                     {
                         Go(Step.Talking, now, _opened ? 30f : 1f);
@@ -215,7 +202,7 @@ namespace RealLifeOverhaul
                         }
                         else
                         {
-                            // Nobody to play the officer: he is taken at the door instead, and that is said.
+                            // nobody to play the officer: he is taken at the door instead
                             _told = true;
                             Notifications.Show(NotificationType.Success, "reallife_biz_visit_police_outside", null, 9f);
                             Leave(now);
@@ -247,7 +234,7 @@ namespace RealLifeOverhaul
         {
             if (!_opened && _step != Step.None && _kind == Kind.Collector && _visitor.Settled && ClipLibrary.Has(WaitClip))
             {
-                _visitor.Work(WaitClip);   // he has said his piece: arms folded until he has his answer
+                _visitor.Work(WaitClip);
             }
             _opened = true;
         }
@@ -265,7 +252,7 @@ namespace RealLifeOverhaul
             bool was = _step != Step.None;
             if (was && _kind == Kind.Sting && !_told)
             {
-                // Cut short (the player left, the floor was needed): he is taken all the same, and that is said.
+                // cut short: he is taken all the same
                 _told = true;
                 Notifications.Show(NotificationType.Success, "reallife_biz_visit_police_outside", null, 10f);
             }

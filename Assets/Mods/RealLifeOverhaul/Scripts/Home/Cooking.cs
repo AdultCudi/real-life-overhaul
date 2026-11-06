@@ -29,6 +29,7 @@ namespace RealLifeOverhaul
         public int Minutes;
         public int Fill;             // what one portion fills, of the game's 100
         public string NameKey;       // the dish's name, or what the leftovers were
+        public bool Pack;            // taken with the player (the cooking list's serve row): packed, not eaten at the cooker
 
         public bool Reheat => Dish == null;
         public bool Cooker => Dish == null || Dish.Cooker;

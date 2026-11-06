@@ -133,8 +133,14 @@ internal static partial class Program
                 lacking.Add(codes[l]);
                 continue;
             }
+            // A page taken out of a later language's file, to be translated again, reads in English until it is (the Guide's Flare page was changed).
+            bool guideOut = l >= RealLifeOverhaul.ModLanguages.Required && !LoadWords(System.IO.Path.Combine(LocalesFolder(), codes[l] + ".json")).ContainsKey("reallife_guide_flare");
             foreach (string key in new[] { "reallife_opt_tip_flare_theme", "reallife_guide_flare" })
             {
+                if (guideOut && key == "reallife_guide_flare")
+                {
+                    continue;
+                }
                 string text = langs[l].TryGetValue(key, out string t) ? t : string.Empty;
                 if (!ThemeQuoted(text, lightWord) || !ThemeQuoted(text, darkWord))
                 {

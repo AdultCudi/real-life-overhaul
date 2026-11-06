@@ -15,8 +15,11 @@ namespace RealLifeOverhaul.Tech
 
         private void InstallRoles()
         {
+            if (!PhoneApp.PhoneUp)
+            {
+                return;   // the game's phone is not built yet: asked again next time, nothing made for it
+            }
             var view = new RolesApp(this);
-            GameSprites.Want(RolesGlyphs);
             _rolesApp = PhoneApp.Install(new PhoneAppDef
             {
                 Id = RolesAppId,
@@ -53,6 +56,13 @@ namespace RealLifeOverhaul.Tech
                 }
             }
             return null;
+        }
+
+        /// <summary>Open Roles on the page that briefs a search firm for a data centre's crew, that centre chosen.</summary>
+        internal void BriefCrew(string centre)
+        {
+            _rolesView?.WantCrew(centre);
+            OpenRoles(TabSearch, RolesApp.NewCrewRow);
         }
 
         public void OpenRoles(int tab, string pick)

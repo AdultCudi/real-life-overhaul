@@ -30,6 +30,7 @@ namespace RealLifeOverhaul.Ledger
 
         private readonly LedgerDirector _director;
         private readonly List<Transform> _props = new List<Transform>(LedgerCatalogue.KiosksWanted);
+        private readonly List<CullEntry> _culls = new List<CullEntry>(LedgerCatalogue.KiosksWanted);   // not drawn beyond the far band (Performance/ModCulling)
         private readonly List<SolidFootprint> _solid = new List<SolidFootprint>(LedgerCatalogue.KiosksWanted);
         private readonly List<Vector3> _fronts = new List<Vector3>(LedgerCatalogue.KiosksWanted);
         private readonly List<Vector3> _outward = new List<Vector3>(LedgerCatalogue.KiosksWanted);
@@ -319,7 +320,7 @@ namespace RealLifeOverhaul.Ledger
             }
             _candidates.Clear();
             _distances.Clear();
-            CityBuildingController[] all = city.cityBuildingControllers;
+            CityBuildingController[] all = GameDlc.Open(city);
             float nearest = LedgerCatalogue.KioskNearest * LedgerCatalogue.KioskNearest, furthest = LedgerCatalogue.KioskFurthest * LedgerCatalogue.KioskFurthest;
             for (int i = 0; i < all.Length; i++)
             {
@@ -495,6 +496,7 @@ namespace RealLifeOverhaul.Ledger
             var solid = new SolidFootprint();
             solid.Fit(made.transform, HalfWidth, HalfDepth, CounterOut);
             _props.Add(made.transform);
+            _culls.Add(ModCulling.Add(CullRules.Kind.NewsKiosk, made.transform, made.transform.position, HalfWidth + HalfDepth));
             _solid.Add(solid);
             _outward.Add(outward);
             _fronts.Add(made.transform.position + outward * CounterOut);
@@ -508,6 +510,8 @@ namespace RealLifeOverhaul.Ledger
 
         private void RemoveAt(int i)
         {
+            ModCulling.Remove(_culls[i]);
+            _culls.RemoveAt(i);
             _solid[i].Clear();
             if (_props[i] != null)
             {
@@ -533,7 +537,7 @@ namespace RealLifeOverhaul.Ledger
             TestBack();
             _candidates.Clear();
             _distances.Clear();
-            CityBuildingController[] all = city.cityBuildingControllers;
+            CityBuildingController[] all = GameDlc.Open(city);
             for (int i = 0; i < all.Length; i++)
             {
                 CityBuildingController b = all[i];

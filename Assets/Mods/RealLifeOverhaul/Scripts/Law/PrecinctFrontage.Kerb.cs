@@ -205,6 +205,7 @@ namespace RealLifeOverhaul.Law
             car.SetActive(false);   // moved while off, so the navigation mesh is cut once, in the right place
             car.transform.SetPositionAndRotation(at, facing);
             car.SetActive(true);
+            ModCulling.Refresh(_cull);   // parked while the front is not drawn: not drawn either
             MeshCuts.Note("a precinct's parked car");
             _carOut[slot] = true;
             _carAt[slot] = at;

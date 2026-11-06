@@ -23,7 +23,7 @@ namespace RealLifeOverhaul
             {
                 return "reallife_civic_donate_cap";
             }
-            if (!GameManager.ChangeMoneySafe(-step, new TransactionInfo("reallife_transaction_civic_donation"), null, null, force: false, showNotification: true))
+            if (!RealLifeOverhaul.Economy.BizBooks.Book(-step, new TransactionInfo("reallife_transaction_civic_donation"), null, null, force: false, showNotification: true))
             {
                 return "reallife_civic_donate_broke";
             }

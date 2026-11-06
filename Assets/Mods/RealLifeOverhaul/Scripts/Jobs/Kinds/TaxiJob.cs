@@ -11,7 +11,8 @@ namespace RealLifeOverhaul
     /// Ride-hail in the player's own car or a hired van, with a roof sign: a passenger waves from the pavement, gets in at a
     /// rear door when the car stops beside them and gets out at the other address. The fare is by distance, the tip by how the
     /// ride felt (hard braking, bumps, speeding, police, crashes) and how quick it was; a hard stop is judged by what each car
-    /// can do (<see cref="Tolerated"/>). Nothing is done on foot, so no panel and no clock.
+    /// can do (<see cref="Tolerated"/>), and what a passenger minds and what it costs by <see cref="TaxiComfortRules"/>'s table for the
+    /// "easier passengers" option, picked once a fare. Nothing is done on foot, so no panel and no clock.
     /// </summary>
     public sealed partial class TaxiJob : Job
     {
@@ -31,14 +32,12 @@ namespace RealLifeOverhaul
         private const float AwayAllow = 25f;            // seconds the driver may leave a passenger sitting in the car
         private const float HarshG = 9.5f;              // m/s2 of braking or swerving held over two ticks: an emergency stop, and the most it is ever set to
         private const float HarshLeast = 4.5f;          // ...and the least: nobody minds less than this
-        private const float BumpOver = 5.5f;            // m/s2 more in a single tick is a jolt: a kerb, a nudge
         private const float Grip = 9f;                  // m/s2 the tyres hold on a dry road
         private const float Tolerated = 0.7f;           // the share of what the car can do that a passenger puts up with
         private const float WheelRadius = 0.33f;        // metres
         private const float LaunchSpeed = 5f;           // m/s at which the engine's pull is taken
         private const string SignProp = "taxi_sign";
         private const float DoorExact = 0.35f;          // metres from the place the getting-in clip is made for within which it is played
-        private const float SpeedingAbove = 26f;        // m/s: about 94 km/h, with a passenger aboard
         public const int MissesAllowed = 2;             // missed fares that end the shift
 
         private static readonly string[] Greetings =
@@ -90,7 +89,12 @@ namespace RealLifeOverhaul
         private float _pickupBy;         // when the waiting passenger gives up, whatever happens at the door
 
         private float _harsh = HarshG;      // for the car of this ride
-        private float _bump = HarshG + BumpOver;
+        private float _bump = HarshG + TaxiComfortRules.Normal.BumpOver;
+        private TaxiComfortTable _table = TaxiComfortRules.Normal;   // what this fare's passenger minds: the option as the ride began
+
+        /// <summary>The table the fare being driven is judged by, for the test button; null with no passenger aboard.</summary>
+        internal TaxiComfortTable Table => _step == Step.Riding ? _table : null;
+
         private bool _hired;                // the shift is driven in a hired van
         private Transform _sign;            // on the roof of the car being worked with
         private CarController _signOn;
@@ -345,6 +349,7 @@ namespace RealLifeOverhaul
             _lastVelocity = Ctx.Velocity;
             _stoppedSince = -1f;
             _tried = false;
+            _table = TaxiComfortRules.For(Settings.JobTaxiEasy);   // (switched midway, the option counts from the next fare: a ride is judged by one rule)
             Tune(_car);
             Go(Step.Riding, now, 0f);
             Show(JobText.T("reallife_job_taxi_obj_drive", "place", _drop.Name));
@@ -385,14 +390,14 @@ namespace RealLifeOverhaul
             // How hard the car is thrown about, whichever way: braking, swerving, a bump.
             float g = (Ctx.Velocity - _lastVelocity).magnitude / dt;
             bool harsh = g > _harsh;
-            if (((harsh && _wasHarsh) || g > _bump) && now - _lastJolt > 3f)
+            if (((harsh && _wasHarsh) || g > _bump) && now - _lastJolt > _table.JoltGap)
             {
-                Jolt(8f, Braking, now);
+                Jolt(_table.JoltCost, Braking, now);
             }
             _wasHarsh = harsh;
-            if (Ctx.Speed > SpeedingAbove)
+            if (Ctx.Speed > _table.SpeedingAbove)
             {
-                _comfort -= 4f * dt;
+                _comfort -= _table.SpeedingCost * dt;
                 if (!_speedingSaid)
                 {
                     _speedingSaid = true;
@@ -447,7 +452,7 @@ namespace RealLifeOverhaul
                 slip.Bonus = Mathf.RoundToInt(fare * 0.05f);   // quick as well as smooth
             }
             slip.Tips = Mathf.RoundToInt(fare * tip * Ctx.TipFactor);
-            slip.Penalty = Mathf.RoundToInt(fare * (_crashes * JobCatalogue.CrashCut + _stops * JobCatalogue.PoliceStopCut + (comfort < 30 ? 0.3f : 0f)));
+            slip.Penalty = Mathf.RoundToInt(fare * (_crashes * JobCatalogue.CrashCut + _stops * JobCatalogue.PoliceStopCut + TaxiComfortRules.LowShare(comfort, _table)));
             UnitDone(_fares + 1, fare);   // the shift's big tipper, if the offer drew one: a share of the fare
             Ctx.Pay(this, slip, "reallife_job_taxi_slip");
 
@@ -536,7 +541,7 @@ namespace RealLifeOverhaul
             if (_step == Step.Riding)
             {
                 _crashes++;
-                Jolt(speed > 8f ? 40f : 22f, Crashes, Time.time);
+                Jolt(TaxiComfortRules.Crash(speed, _table), Crashes, Time.time);
             }
         }
 
@@ -545,7 +550,7 @@ namespace RealLifeOverhaul
             if (_step == Step.Riding)
             {
                 _stops++;
-                Jolt(20f, Police, Time.time);
+                Jolt(_table.PoliceCost, Police, Time.time);
             }
         }
 

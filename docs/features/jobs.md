@@ -32,7 +32,7 @@ Gigs the player takes from the **Gig Line** contact or a help-wanted board (flye
 | `JobProps` | the jobs' props, pooled (modelled, or the prop that stands in, or a plain shape); HeldProp: one in a hand at its clip's grip |
 | `JobCarry` | a box in the player's arms with the game's own carry |
 | `JobRental` | a van hired for the day: the game's own job van, made and removed the game's own way |
-| `Kinds/` | the jobs: FlyerJob, CourierJob, TaxiJob, CleanerJob, StockerJob, VendorJob, BuskerJob; and the two an employer's rank gives: DispatchJob (the planning desk), LeadJob (a shift in charge) |
+| `Kinds/` | the jobs: FlyerJob, CourierJob, TaxiJob, CleanerJob, StockerJob, VendorJob, BuskerJob; the two an employer's rank gives: DispatchJob (the planning desk), LeadJob (a shift in charge); and the building trades' (TradeJob at a works site, DesignJob and TenderJob at the architects' practice: [Building trades](trades.md)) |
 | `CareerCatalogue` | employers, ranks, rotas and every figure of the career ladder (game-free) |
 | `CareerState` | per-save employer, rank, rota, marks, review figures, employment history: one line in modData (game-free) |
 | `CareerDirector` | where each employer is (a help-wanted board), its boss by the board, the rota, clocking on, payslip, reviews, booked sets |
@@ -41,12 +41,17 @@ Gigs the player takes from the **Gig Line** contact or a help-wanted board (flye
 | `CareerLinks` | the optional doors to other features: acquaintances (offered), law record and sick notes (asked for) |
 | `DispatchList` | the dispatcher's planning board: the game's list window, written only when a parcel is placed or taken back |
 
+## The building trades
+
+Fifteen more jobs are the building trades (`JobCatalogue.Trades`, [Building trades](trades.md)): taken at a works site's notice (Work here) or at the architects' practice's desk, never on the Gig Line, so the day's busy and shut gigs stay the seven above; each keeps its level, strikes and day's amount in `JobState` with the gigs (`JobCatalogue.Recorded`, saved by id). An office trade (`JobNeed.Office`) is the one job taken indoors: `Free` lets it start while `JobDirector.AtOffice` says the player is on the practice's floor, and its job works inside that building only. A trade's shift is varied by its site and its own game, so it is drawn at the table's figures (`GigOffer.Table`), not by `GigOffers.Draw`. `Job.Frame` is called every frame after the tick for the one thing that must follow the frame, a trade's marker on the game's bar; every other job leaves it empty. The shift card stays up beside a job's own list window (`TravelList.AnyOpen`), the dispatcher's board as well as a design's plans.
+
 ## How it talks to other features
 
 - Other features may read `JobDirector.ActiveJobId`, `LastJobId` and `EarnedToday` at any time. A shift also moves the player's mood (`ModState`); see [The hired van](#the-hired-van) below.
 - The employer ladder's optional doors are in `Jobs/CareerLinks.cs`, filled in by [`Wiring/LifeLinks.cs`](../reference/wiring.md) (the record on a CV, a doctor's sick note).
 - Shared pieces other features use: `ShiftCard` (the copied job panel), `ShiftSkip` (the rest of a shift left to the game's clock), `JobStand` and `JobUniform`.
 - A shift in progress at a save is settled on load: see [A shift across a save](#a-shift-across-a-save-jobsave-payslip).
+- The hired van is lent to the Marketplace's junk runs and moves while no gig is on (`JobDirector.HireVan`, `ReturnVan`, through `Wiring/Wiring.HustleLinks.cs`): see [Legal hustles](hustles.md). Its visits are worked on `ShiftSkip`.
 - To add a job, see [Adding a job](../contributing/adding-things.md#adding-a-job).
 
 The game has its own work: employer jobs (stand at a station in someone's shop while time is skipped, paid by the hour), the delivery van (a company van, a hand truck, boxes of stock to three shops, 100 a drop) and food delivery (accepted at a restaurant's till, 25 plus 0.05 a metre).
@@ -69,6 +74,10 @@ Every figure is in `JobCatalogue`, set against what the game itself pays (read f
 Pay is multiplied by 1 + 0.08 per level above the first (a level every 40 flyers, 30 patches, 20 boxes, 30 customers, 20 songs, 15 parcels, 12 fares; four levels) and by the "Job pay" option.
 Deductions only ever reduce what a job pays; a slip never goes below zero.
 Three failed shifts in a job and it lets the player go for three days; a good shift takes a strike off.
+
+A ride-hail fare's comfort starts at 100 and is judged by a table of `Kinds/TaxiComfortRules`, picked once as the passenger gets in. As always (the option "Ride fares: easier passengers" off): a hard stop, swerve or bump costs 8, at most once every 3 seconds, a hard stop is the car's own (`TaxiJob.Tune`), a bump 5.5 m/s2 more in a tick, speeding above 26 m/s costs 4 a second. Easier passengers: 4, once every 6 seconds, 1.35 times the car's hard stop (never past the 9.5 m/s2 of an emergency stop), a bump 8 m/s2 more, speeding 1.5 a second. Crashes (40, or 22 at 8 m/s or less), police stops (20), the tip by comfort and the slip's cut of 30 % under 30 comfort are the same in both. Options > Tests, "Ride fares: the passengers' table in effect", writes both tables and the one in effect to Player.log with PASS or FAIL. `EconomyCheck` TaxiComfortChecks checks the tables, a rough minute under each and that the gig reads only the table.
+
+The drinks cart is heard with the game's own sounds, as its counters make them (`Kinds/VendorJob.Sounds`, rules in `Kinds/CartSoundRules`): the customer's voice for their gender (NpcMaleProducerInteraction or NpcFemaleProducerInteraction, as the barman plays it) when they reach the counter and their order's clock starts, the same voice once more when a third of the patience is left and no drink has been tried, and PurchaseSuccess at the cart when a drink is paid for. Nothing while the game is paused, while the clock works the shift or once it is over. The game's presets are looked at once for each sound manager, so a missing or empty one is skipped with one log line a shift. The option "Drinks cart sounds" (on) switches all three off. With developer diagnostics on, each shift ends with a "vendor check (cart sounds)" line: cues played against customers who reached the counter, reminders and tills, PASS when every one wanted was played. `EconomyCheck` CartSoundChecks checks the rules and that the gig calls them where the order starts, waits and is paid.
 
 Work spends energy and trains a skill through the game's own systems, and never takes energy below 12.
 
@@ -268,8 +277,8 @@ Shared by all:
 `WorldPanel` gained `Follow`/`FollowLift` so that the box stays on a person who walks.
 
 - **Flyers.** Canvasser uniform; the panel follows the passer-by in reach with "Offer a flyer", and stands over the player with "Let time pass" when nobody is in reach (10 game minutes a flyer, 85%, no busy bonus, no bundle bonus).
-- **Cleaner.** Cleaner uniform; "Go in" over the door, "Mop it up" and "Let time pass" over each spill in reach (30 game minutes a spill, 85%).
-- **Shelf stocker.** No uniform (the game has no shop assistant's outfit); "Pick up" and "Let time pass" over the pile, "Go in" over the door, "Put on the shelf" over the shelf (40 game minutes a box, 85%).
+- **Cleaner.** Cleaner uniform; "Go in" over the door, "Mop it up" and "Let time pass" over each spill in reach, and over the nearest spill however far it is, kept on the screen as the stocker's shelf is (30 game minutes a spill, 85%).
+- **Shelf stocker.** No uniform (the game has no shop assistant's outfit); "Pick up" and "Let time pass" over the pile, "Go in" over the door. "Shelf to stock" appears over the chosen shelf as soon as the box is carried in; "Put on the shelf" is enabled only within 1.3 metres, checked again when pressed (40 game minutes a box, 85%). Like every job panel, it is kept on the screen: while the shelf is out of the picture (the game's indoor camera sees about 5 metres behind the player to 10 ahead, and hides its guider indoors) the panel waits at the screen's edge toward it (`WorldPanel.KeepInView`, `GameUi/PanelEdgeRules.cs`). With Developer diagnostics on, one line a shelf says whether its panel is up over the shelf, at the edge, or refused (`Jobs check (stocker shelf)`). Stepping outside clears the shelf marker before the street guider is used.
 - **Busker.** `JobStand` on the pitch (the guitar pose when the clip bundle has the strumming clip).
   The three songs, "Strum" and "More" (which has "Step away" and "Let time pass") are the panel's buttons.
   30 game minutes a song at 85% of `BuskerJob.AverageTip`, the song's own tip formula for the crowd and hour now, the middle song and `AveragePlay` of the strums in time; no uniform.
@@ -362,6 +371,17 @@ The key is registered and the three sentences have their blanks.
 Log lines: `Jobs check (saved shift): '<job>' is on at the save: paid so far N for U unit(s), owed M for V ...: PASS` (diagnostics on), `Jobs check (saved shift): settled '<job>' saved on day D: paid M for V unit(s) owed ...: PASS` (always), `Careers: a shift at <employer> that was on at a save was settled: ...`.
 
 Not checked in the game: any of it; in particular that the game's save event reaches the hook during each kind of shift (the cleaner's own hook shows it does for one), and what the figures are at a real midnight autosave.
+
+## Heavy loads
+
+With a heavy goods licence ([Driving licences](licences.md#the-heavy-goods-licence)) the Gig Line's courier page has "Got anything heavier?": the same round as a heavy load, freight in a heavy truck, each drop and the distance paid 1.8 times a parcel's (`HeavyRules.LoadPay`), with 1.35 times the time on the clock (`LoadTime`).
+The truck is the player's own heavy truck within 60 m (`JobDirector.NearestHeavy`), else one hired for the day (`JobRental` with `heavy`: 260, less a van's fee already paid that day).
+Any courier round, an employer's too, that is driven in a heavy truck by a licensed driver is a heavy load.
+Nothing is drawn: the pay follows the offer as every gig's does.
+
+The hired truck is the game's Freight Truck made as the driving school makes its car (`DeliveryVehicleInstance`, `VehicleHelper.CreateAndSpawnVehicle`); it has no clean-up of the game's, so `JobRental.Save` takes it off the save's vehicle list for each serialisation and puts it back a frame later, and it goes back by the game's own delete once the player is out of it.
+A save loaded without the mod has no truck in it; the hire's line keeps its id, so a copy that reached a save is taken back after a load.
+With "Heavy trucks need a heavy goods licence" off there are no heavy loads.
 
 ## The hired van
 

@@ -28,8 +28,11 @@ namespace RealLifeOverhaul.Economy
             "reallife_estate_filter_paying", "reallife_estate_filter_behind", "reallife_estate_filter_notice", "reallife_estate_filter_empty", "reallife_estate_filter_applicants"
         };
 
-        public const int WorksOn = 0, WorksNeeded = 1, WorksNone = 2;
-        private static readonly string[] WorkStates = { "reallife_estate_filter_works_on", "reallife_estate_filter_works_needed", "reallife_estate_filter_works_none" };
+        public const int WorksOn = 0, WorksNeeded = 1, WorksNone = 2, WorksCall = 3;
+        private static readonly string[] WorkStates =
+        {
+            "reallife_estate_filter_works_on", "reallife_estate_filter_works_needed", "reallife_estate_filter_works_none", "reallife_estate_filter_calls"
+        };
 
         public const int IsLetting = 0, IsSale = 1;
         private static readonly string[] InstructionKinds = { "reallife_estate_filter_lettings", "reallife_estate_filter_sales" };
@@ -68,7 +71,7 @@ namespace RealLifeOverhaul.Economy
             .Order(3, false)
             .Empty("reallife_estate_empty_mine");
 
-        /// <summary>Tenants: 0 building, 1 tenant or applicant, 2 rent a day, 3 owed, 4 record, 5 lease or application until, 6 state.</summary>
+        /// <summary>Tenants: 0 building, 1 tenant or applicant, 2 rent a day, 3 owed, 4 record, 5 lease or application until, 6 state, 7 satisfaction.</summary>
         public static readonly TableSpec Tenants = new TableSpec("Property", "Tenants")
             .Column("reallife_estate_col_building", 440f, TableSort.Text, flexible: true)
             .Column("reallife_estate_col_who", 420f, TableSort.Text)
@@ -76,12 +79,13 @@ namespace RealLifeOverhaul.Economy
             .Column("reallife_estate_col_owed", 220f, TableSort.Money, sums: true)
             .Column("reallife_estate_col_record", 180f, TableSort.Number)
             .Column("reallife_estate_col_day", 180f, TableSort.Date)
-            .Column("reallife_estate_col_state", 340f, TableSort.Text, right: true)
+            .Column("reallife_estate_col_state", 340f, TableSort.Text)
+            .Column("reallife_estate_col_happy", 220f, TableSort.Number, right: true)
             .Filter("reallife_estate_filter_all_states", TenantStates)
             .Order(3, false)
             .Empty("reallife_estate_empty_tenants");
 
-        /// <summary>Works: 0 building, 1 condition, 2 level, 3 use, 4 what a repair to new costs, 5 works under way, 6 until.</summary>
+        /// <summary>Works: 0 building or unit, 1 condition, 2 level, 3 use, 4 what a repair to new costs, or a call's quote, 5 works under way or the fault, 6 until, or reported.</summary>
         public static readonly TableSpec Works = new TableSpec("Property", "Works")
             .Column("reallife_estate_col_building", 460f, TableSort.Text, flexible: true)
             .Column("reallife_estate_col_condition", 220f, TableSort.Number)

@@ -42,7 +42,7 @@ namespace RealLifeOverhaul.Economy
                 SaleBreakdown b = _director.Value(reg);
                 TableRow row = Pick("sell:" + place, l != null ? ServicesTables.Listed : ServicesTables.Unlisted, ref selected, out isPicked);
                 row.Set(0, ServicesGame.Name(reg));
-                row.Set(1, ServicesText.District(reg.Neighborhood));
+                row.Set(1, ServicesText.District(GameRegistrations.District(reg)));
                 row.Set(2, ServicesText.Money(b.Value), b.Value);
                 if (l != null)
                 {

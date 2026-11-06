@@ -98,7 +98,8 @@ namespace RealLifeOverhaul.Markets
             _engine.TradeSink = _tradeSink;
             state.Following = true;   // the player's own company is set aside meanwhile (MarketShare.Adopt)
             _hostFrontier = frontier;
-            MarketTapeFile.Rewrite(state.Id, tape.Whole());
+            MarketTapeFile.Rewrite(state.Id, tape.Lines());
+            _tapeSaved = tape.Changes;
             _frontierWritten = tape.Frontier;
             _following = true;
             _checks.Clear();

@@ -147,11 +147,23 @@ namespace RealLifeOverhaul
 
         public bool Seated => _player != null;
 
-        /// <summary>Sits the player down; false, with nothing changed, if they cannot be seated now.</summary>
-        public bool Sit(PlayerController player, Transform seat)
+        /// <summary>Where the player stood before they were seated, and which way they faced; false when they are not seated.</summary>
+        public bool StoodAt(out Vector3 at, out Quaternion facing)
+        {
+            at = _stoodAt;
+            facing = _stoodFacing;
+            return _player != null;
+        }
+
+        /// <summary>
+        /// Sits the player down; false, with nothing changed, if they cannot be seated now. With <paramref name="bagAllowed"/>
+        /// a shopping bag may stay in the hand, as the game's own seats allow (SeatController.CanSit).
+        /// </summary>
+        public bool Sit(PlayerController player, Transform seat, bool bagAllowed = false)
         {
             if (_player != null || player == null || seat == null || player.Character == null || player.Character.navmeshAgent == null
-                || !player.Character.navmeshAgent.enabled || PlayerHelper.IsUsingVehicle || PlayerHelper.IsHoldingItem || RagdollSystem.Holds(player.Character))
+                || !player.Character.navmeshAgent.enabled || PlayerHelper.IsUsingVehicle || (PlayerHelper.IsHoldingItem && !(bagAllowed && PlayerHelper.IsHoldingBag))
+                || RagdollSystem.Holds(player.Character))
             {
                 return false;
             }

@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.Texts
         All = 63
     }
 
-    /// <summary>One thing of the player's a person remembers: its kind and code, the game day it happened, the name or sum it names, and who told them.</summary>
+    /// <summary>One thing of the player's a person remembers.</summary>
     public struct TextFact
     {
         public TextMemoryKinds Kind;   // one of the six, never several
@@ -38,28 +38,15 @@ namespace RealLifeOverhaul.Texts
     }
 
     /// <summary>
-    /// What people remember of the player, as RLO Texts puts it on a card (data v6). The game decides and records every
-    /// fact (TextsDirector.Remember, from street talk, texts, calls, Flare messages, the staff, the social life's own
-    /// memories and the player's life events); the model never writes one. A card carries a few of them as "memory:" lines,
-    /// chosen here, the same way every time for the same facts:
-    ///
-    ///   who may    an intent says which kinds its speaker may remember and how many lines (TextIntent.MemoryKinds,
-    ///              MemoryMost): none for what everybody reads (a post, a comment, the paper) or a shared card
-    ///   fresh      each kind is remembered for so many days (<see cref="Lifetime"/>), then left out
-    ///   relevant   a fact that bears on the intent comes first (directions on a card about the way, a loan on one about
-    ///              money: <see cref="Related"/>); then the kind's weight (<see cref="Weight"/>), the newer before the older,
-    ///              and the code and its name in order, so that nothing depends on the order they were recorded in
-    ///   not twice  one fact of each kind and code (the newest); none that the card's own news already says (its subject)
-    ///   the line   "memory: " and the fact in the card's English words, with how long ago (<see cref="Line"/>)
-    ///
-    /// Game-free (EconomyCheck, TextsMemoryChecks.cs). COST: a pass over a person's few facts and a sort of a handful, a card.
+    /// What people remember of the player, as a card of data v6 carries it: facts the game records, chosen the same way for
+    /// the same facts. Game-free. COST: a pass over a person's few facts and a sort of a handful, a card.
     /// </summary>
     public static class TextMemoryRules
     {
         public const int CardMost = 3;         // memory lines a card carries at most
         public const int PeopleMost = 400;     // people remembered at most: past this the one met with longest ago goes
         public const int FactsMost = 8;        // facts a person keeps at most: past this the least of them goes
-        public const int StrangerDays = 1;     // days a stranger in the street is remembered (they are somebody else the next day: Street/StreetStranger)
+        public const int StrangerDays = 1;     // days a stranger in the street is remembered: they are somebody else the next day
         public const int RelatedBonus = 40;    // what bearing on the intent adds to a fact's weight
         public const int AgeMost = 30;         // the most a fact's age takes off its weight
 
@@ -97,7 +84,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>The name of a kind as the contract writes it ("met", "talked", "tone", "favour", "knows", "event").</summary>
+        /// <summary>The name of a kind as the contract writes it.</summary>
         public static string Name(TextMemoryKinds kind)
         {
             switch (kind)
@@ -125,13 +112,7 @@ namespace RealLifeOverhaul.Texts
             return TextMemoryKinds.None;
         }
 
-        // ---------------------------------------------------------------- the lines
-
-        /// <summary>
-        /// Every code of every kind with its line in the card's English words; "{value}" is the fact's name or sum, and a line
-        /// marked with a trailing '*' takes no "how long ago" (a standing fact). Codes whose line needs a value say so by
-        /// naming it; with no value such a fact is not put on a card. The contract lists them all (SPEC_v6.json).
-        /// </summary>
+        /// <summary>Every code of every kind with its line; a trailing '*' marks a standing fact, which takes no "how long ago".</summary>
         public static readonly string[][] Codes =
         {
             // met
@@ -201,7 +182,7 @@ namespace RealLifeOverhaul.Texts
             new[] { "event", "breakin", "{value} was broken into" }
         };
 
-        /// <summary>The line of a kind and code ("met you in the street"), or null for an unknown one; '*' still on a standing fact's.</summary>
+        /// <summary>The line of a kind and code, '*' and all; null for an unknown one.</summary>
         public static string Template(TextMemoryKinds kind, string code)
         {
             string name = Name(kind);
@@ -215,7 +196,7 @@ namespace RealLifeOverhaul.Texts
             return null;
         }
 
-        /// <summary>"today", "yesterday", "3 days ago", "a few weeks ago" or "months ago": how long ago a day is, from today.</summary>
+        /// <summary>How long ago a day is, from today, in the card's words.</summary>
         public static string Ago(int days)
         {
             if (days <= 0)
@@ -233,11 +214,7 @@ namespace RealLifeOverhaul.Texts
             return days < 60 ? "a few weeks ago" : "months ago";
         }
 
-        /// <summary>
-        /// A fact as its memory line's words, without "memory: ": its code's line with its value, an event as heard ("heard you
-        /// crashed your car", "heard from Dana that you crashed your car"), and how long ago unless it is a standing fact.
-        /// Null for an unknown code, or a code that names a value it does not have.
-        /// </summary>
+        /// <summary>A fact as its memory line's words; null for an unknown code, or one that names a value it does not have.</summary>
         public static string Line(TextFact f, int today)
         {
             string template = Template(f.Kind, f.Code);
@@ -262,13 +239,7 @@ namespace RealLifeOverhaul.Texts
             return standing ? text : text + ", " + Ago(today - f.Day);
         }
 
-        // ---------------------------------------------------------------- choosing a card's lines
-
-        /// <summary>
-        /// The memory lines for a card, in order, into <paramref name="lines"/> (cleared first): of the facts its intent's
-        /// speaker may remember, fresh, not its own subject, the most relevant first, one of each kind and code, at most the
-        /// intent's most. <paramref name="subject"/> is the event the card's own news tells (null for none).
-        /// </summary>
+        /// <summary>The memory lines for a card: fresh facts its speaker may remember, not its <paramref name="subject"/>, the most relevant first.</summary>
         public static int Select(List<TextFact> facts, TextIntent intent, int today, string subject, List<string> lines)
         {
             lines.Clear();
@@ -285,7 +256,7 @@ namespace RealLifeOverhaul.Texts
                 if ((intent.MemoryKinds & f.Kind) == 0 || age < 0 || age > Lifetime(f.Kind) || Line(f, today) == null
                     || (f.Kind == TextMemoryKinds.Event && subject != null && f.Code.StartsWith(subject, StringComparison.Ordinal)))
                 {
-                    continue;   // (an event the card's own news tells: "court" is either verdict)
+                    continue;   // an event the card's own news tells: "court" is either verdict
                 }
                 int same = Same(f);
                 int score = Weight(f.Kind) + (Related(intent.Key, f) ? RelatedBonus : 0) - Math.Min(AgeMost, age / 2);
@@ -301,7 +272,7 @@ namespace RealLifeOverhaul.Texts
                 Picked.Add(f);
                 Scores.Add(score);
             }
-            // A small sort by insertion: a handful of facts, and no delegate made.
+            // An insertion sort: a handful of facts, and no delegate made.
             for (int i = 1; i < Picked.Count; i++)
             {
                 TextFact f = Picked[i];
@@ -363,11 +334,7 @@ namespace RealLifeOverhaul.Texts
             return c != 0 ? c < 0 : string.CompareOrdinal(a.From ?? string.Empty, b.From ?? string.Empty) < 0;
         }
 
-        /// <summary>
-        /// Whether a fact bears on an intent: the way given on a card about the way, a loan on a card about money, numbers on
-        /// one about numbers, what they know of the business on one about it, the outings and how they went on a plan's. A
-        /// fixed table by the intent's key, the same on every machine.
-        /// </summary>
+        /// <summary>Whether a fact bears on an intent, by a fixed table of the intent's key.</summary>
         public static bool Related(string intent, TextFact f)
         {
             if (intent == null)
@@ -424,15 +391,7 @@ namespace RealLifeOverhaul.Texts
 
         private static bool Starts(string intent, string prefix) => intent.StartsWith(prefix, StringComparison.Ordinal);
 
-        // ---------------------------------------------------------------- whose memory
-
-        /// <summary>
-        /// Whether a key is one a person's memory may be kept under: a person of the player's own game, the same in a save
-        /// played alone or in a Going Public session ("s:3" a person of the social life by their place in it, "sp:" a
-        /// stranger by their seed, "e:" one of the player's staff by the game's id, "c:" a city person of Flare by their
-        /// number, "boss:" a manager by the employer, "r:" the roommate, "mom", "inlaws", "lender"). Never a key of the
-        /// session's own numbers ("fn:", "lp:"), which name what everybody reads.
-        /// </summary>
+        /// <summary>Whether a memory may be kept under a key: a person of the player's own game, never a session's number ("fn:", "lp:").</summary>
         public static bool KeyOk(string key)
         {
             if (string.IsNullOrEmpty(key) || key.Length > 80 || key.IndexOf('|') >= 0 || key.IndexOf('^') >= 0)
@@ -455,7 +414,7 @@ namespace RealLifeOverhaul.Texts
                 {
                     if (key[i] < '0' || key[i] > '9')
                     {
-                        return false;   // ("f12", "p3": a friend or the partner as Flare's messages name them; never "fn:")
+                        return false;   // "f12", "p3": a friend or the partner as Flare's messages name them; never "fn:"
                     }
                 }
             }
@@ -465,7 +424,6 @@ namespace RealLifeOverhaul.Texts
         /// <summary>True for a stranger's key: remembered only for <see cref="StrangerDays"/> past their last fact.</summary>
         public static bool Stranger(string key) => key != null && key.StartsWith("sp:", StringComparison.Ordinal);
 
-        /// <summary>Whether a fact is still kept on this day (the kind's lifetime, a stranger's day).</summary>
         public static bool Kept(string key, TextFact f, int today)
         {
             int age = today - f.Day;

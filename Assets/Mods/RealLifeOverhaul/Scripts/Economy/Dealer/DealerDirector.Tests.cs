@@ -136,7 +136,8 @@ namespace RealLifeOverhaul.Economy.Dealership
                     y.Deals[d].Made = now;
                     y.Deals[d].Expires = now + DealerCatalogue.DealHours;   // the hours were worked as the morning's: the offers stand from now
                 }
-                TestDone(TestHours + " hours of customers at '" + y.Name + "': " + visitors + " visitor(s), " + offers + " offer(s) waiting for an answer", TabOffers, null);
+                TestDone(TestHours + " hours of customers at '" + y.Name + "': " + visitors + " visitor(s), " + offers + " offer(s) waiting for an answer"
+                         + (y.Fixed ? ", each at the asking price (fixed prices)" : string.Empty), TabOffers, null);
             });
         }
 

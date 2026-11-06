@@ -20,6 +20,7 @@ namespace RealLifeOverhaul.Leisure
     public static class LeisureState
     {
         public const int Outfits = 3;
+        internal const float DrinkWearMinutes = 90f;   // game minutes a drink takes to wear off
 
         private const string KeyBest = "reallife:leisure_best";
         private const string KeyPlays = "reallife:leisure_plays";
@@ -214,7 +215,7 @@ namespace RealLifeOverhaul.Leisure
             {
                 return 0f;
             }
-            float left = Drinks - UnityEngine.Mathf.Max(0f, nowMinutes - DrinkTime) / 90f;
+            float left = Drinks - UnityEngine.Mathf.Max(0f, nowMinutes - DrinkTime) / DrinkWearMinutes;
             return left > 0f ? left : 0f;
         }
 

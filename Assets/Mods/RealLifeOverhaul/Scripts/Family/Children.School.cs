@@ -50,7 +50,7 @@ namespace RealLifeOverhaul.Family
             director.Pass("reallife_family_passage_parents_evening", 1, null, () =>
             {
                 c.Closeness = Mathf.Min(100f, c.Closeness + 3f);
-                float standing = c.Closeness + (c.School == 2 ? 12f : 0f);
+                float standing = c.Closeness + SchoolStanding(c);
                 FamilyText.Good(Evenings[standing >= 78f ? 0 : standing >= 55f ? 1 : 2], Args.Us.Kid(c.Name));
             });
         }

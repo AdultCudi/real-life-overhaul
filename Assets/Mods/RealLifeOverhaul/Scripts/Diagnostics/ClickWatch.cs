@@ -11,12 +11,12 @@ using UnityEngine.EventSystems;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// With "Developer diagnostics" on: one line in the log for a left click in the city, saying what the click met.
-    /// It answers "I clicked a building and nothing happened": whether an interface element lay under the pointer
-    /// (the game then ignores the world), what the ray into the world hit first, what the game had as its target,
-    /// and whether the player's walking was blocked. With diagnostics off it does one flag test a frame and nothing more.
+    /// With "Developer diagnostics" on, one log line for a left click saying what it met, for "I clicked a building and
+    /// nothing happened": the interface under the pointer, what the ray hit, the game's target, whether walking was
+    /// blocked; and the lines for moving furniture (ClickWatch.Moves). Off, one flag test a frame; on, a few input reads
+    /// and one field read a frame.
     /// </summary>
-    public sealed class ClickWatch : MonoBehaviour
+    public sealed partial class ClickWatch : MonoBehaviour
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("diagnostics", "ClickWatch", typeof(ClickWatch));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
 
@@ -49,14 +49,32 @@ namespace RealLifeOverhaul
 
         private void OnUpdate()
         {
-            if (!Meta.Dev.Verbose || !Input.GetMouseButtonUp(0) || Time.unscaledTime < _next)
+            if (!Meta.Dev.Verbose)
             {
                 return;
             }
-            _next = Time.unscaledTime + 0.5f;
             try
             {
-                Write();
+                WatchMove();
+                if (Input.GetMouseButtonDown(0))
+                {
+                    _pressedAt = Input.mousePosition;
+                }
+                bool left = Input.GetMouseButtonUp(0);
+                if ((!left && !Input.GetMouseButtonUp(1)) || Time.unscaledTime < _next)
+                {
+                    return;
+                }
+                _next = Time.unscaledTime + 0.5f;
+                if (left)
+                {
+                    Write();
+                    WritePlace();
+                }
+                else
+                {
+                    WriteMove();
+                }
             }
             catch (Exception e)
             {

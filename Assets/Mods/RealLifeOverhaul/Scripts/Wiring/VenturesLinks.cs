@@ -1,36 +1,24 @@
 using System;
-using System.Collections.Generic;
-using BigAmbitions.DayNightCycle;
-using Helpers;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Economy.Ventures;
 using RealLifeOverhaul.Planner;
-using UnityEngine;
 
 namespace RealLifeOverhaul
 {
     public static partial class Wiring
     {
         /// <summary>
-        /// Investors with the rest of the mod (Economy/Ventures/VenturesBridges). Ventures calls no other feature and
-        /// none calls it: what they have to do with each other is here, and every answer is read from what a feature
-        /// already keeps in public. (The stock market is the city's own now: Wiring/MarketLinks.)
-        ///
-        ///   Climate      the city's economy: its boom, steady and slowdown, and the bank rate
-        ///   JobsHeld     Jobs/CareerState: the employers on the CV, the present one included
-        ///   Held         custody, prison, a hearing, a driving test or lesson, the police, a bus ride
-        ///   the Planner  a source of its own (<see cref="VenturesSource"/>)
-        ///
+        /// Investors (VenturesBridges) with the city's economy, the employers on the CV, whether the player is held, and the
+        /// Planner.
         /// </summary>
         public static class VenturesLinks
         {
-            private const int NewsDays = 1;
             private static readonly VenturesSource Source = new VenturesSource();
 
             internal static void Connect()
             {
-                // The city's economy: its boom is the market's boom, its slowdown and its recession the market's slowdown; the
-                // bank rate is the steady rate with the central bank's points on it. Steady and unmoved when that phase is off.
+                // A slowdown and a recession are both the market's slowdown; the bank rate is the steady rate with the
+                // central bank's points on it.
                 VenturesBridges.Climate = new ClimateFrom(
                     () => CityEconomy.State == CycleState.Boom ? 1 : CityEconomy.State == CycleState.Steady ? 0 : -1,
                     () => SteadyClimate.Rate + CityEconomy.BasePoints);
@@ -41,7 +29,7 @@ namespace RealLifeOverhaul
 
             internal static void Disconnect()
             {
-                VenturesBridges.Reset();   // (the Planner's director goes with the city, and its sources with it)
+                VenturesBridges.Reset();   // the Planner's director goes with the city, and its sources with it
             }
 
             private static int JobsHeld()
@@ -71,16 +59,14 @@ namespace RealLifeOverhaul
             }
 
             /// <summary>
-            /// The Ventures rows of the Planner: an offer waiting for an answer on the day it lapses, money promised
-            /// on the last day its business can be opened, a deal's target day, the last day to answer a demand, and
-            /// what a sum called back takes tomorrow. It reads the file and changes nothing. Ids: 1 to 5 with the
-            /// offer's, the promise's or the deal's number (6 was the old market's dividend day: no longer used).
+            /// The Ventures rows of the Planner: an offer's lapse, a promise's last day, a deal's target, a demand's answer and
+            /// a call's payment tomorrow. Read only. Ids 1 to 5 with the offer's, promise's or deal's number; 6 is not used.
             /// </summary>
             private sealed class VenturesSource : IPlannerSource
             {
                 public string Id => "ventures";
 
-                // with Investors off the file is open only while deals, promises or offers carry on, and their days are still due
+                // with Investors off the file stays open while deals, promises or offers carry on, and their days are still due
                 public bool Available => VenturesDirector.Instance != null && VenturesDirector.Instance.File != null && SaveGameManager.Current != null;
 
                 public void Collect(int fromDay, int toDay, PlannerList into)

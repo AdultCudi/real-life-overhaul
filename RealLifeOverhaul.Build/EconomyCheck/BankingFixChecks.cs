@@ -301,7 +301,14 @@ internal static partial class Program
         var silent = new List<string>();
         for (int l = 0; l < languages.Count; l++)
         {
-            string guide = languages[l].words.TryGetValue("reallife_guide_economy", out string g) ? g : string.Empty;
+            if (!languages[l].words.TryGetValue("reallife_guide_economy", out string guide))
+            {
+                if (l >= 3)
+                {
+                    continue;   // a later language without the page reads the English, held above, until it is translated again
+                }
+                guide = string.Empty;
+            }
             string car = guide.Split('\n').FirstOrDefault(line => line.Contains("{econ_approval_days}")) ?? string.Empty;
             if (car.IndexOf(interest[l], StringComparison.Ordinal) < 0)
             {

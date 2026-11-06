@@ -115,12 +115,9 @@ namespace RealLifeOverhaul.Economy
                 _tab = _wanted;
                 _wanted = -1;
             }
-            _city = _wantCity && _tab == Finance.Overview;
-            _wantCity = false;
             _standing = _wantStanding && _tab == Finance.Overview && StandingOn() != null;
             _wantStanding = false;
             _standingPick = _standing ? null : _standingPick;   // a notification opens the page afresh, as the rivals' does
-            _city &= !_standing;
             OpenedRivals();
             _ready = _director.AppOpened();
             Refresh();
@@ -133,10 +130,9 @@ namespace RealLifeOverhaul.Economy
 
         private void ShowTab(int tab)
         {
-            if (tab != _tab || _city || _standing || _rivals)
+            if (tab != _tab || _standing || _rivals)
             {
                 _tab = tab;
-                _city = false;
                 _standing = false;
                 _standingPick = null;
                 _rivals = false;
@@ -168,10 +164,9 @@ namespace RealLifeOverhaul.Economy
                 _rows.Clear();
                 _cashRows = false;
             }
-            bool city = _city && _tab == Finance.Overview && CityState() != null;
             StandingPage standing = _standing && _tab == Finance.Overview ? StandingOn() : null;
             StandingPage rivals = _rivals && _tab == Finance.Overview ? RivalsOn() : null;
-            _shell.ShowTab(city || standing != null || rivals != null ? -1 : _tab);   // no tab lit on these pages, so Overview's leads back
+            _shell.ShowTab(standing != null || rivals != null ? -1 : _tab);   // no tab lit on these pages, so Overview's leads back
             InfoBox box = _shell.Box;
             box.Clear();
             string selected = null;
@@ -202,10 +197,6 @@ namespace RealLifeOverhaul.Economy
                         {
                             WriteStanding(box, standing);
                             selected = _standingPick;
-                        }
-                        else if (city)
-                        {
-                            WriteCity(box);
                         }
                         else
                         {
@@ -270,7 +261,7 @@ namespace RealLifeOverhaul.Economy
                 _table.ClearSelection();
                 return;
             }
-            if (_tab == Finance.Credit && !_city)
+            if (_tab == Finance.Credit)
             {
                 _factor = row.Index;
                 Refresh();

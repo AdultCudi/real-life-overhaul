@@ -5,11 +5,8 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The driven car's handling with the custom shop's parts:
-        ///
-        ///   DrivingBridges.LiftParts, LayParts   the Garage's springs, dampers, bars, weight, brakes and tyres are taken off a
-        ///                                        car before its handling changes and put back on top after, so they always
-        ///                                        act on the handling, never under it (Driving/CarHandling, Garage/GarageCar)
+        /// The driven car's handling with the custom shop's parts: they come off before the handling changes and go back on
+        /// top after, so they always act on it, never under it.
         /// </summary>
         public static class DrivingLinks
         {

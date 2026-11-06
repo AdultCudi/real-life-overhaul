@@ -135,11 +135,15 @@ namespace RealLifeOverhaul.Family
             FamilyState.DropErrand(Errands.Wedding);
             FamilyState.DropErrand(Errands.Flowers);
             FamilyPlaces.Unguide();
-            if (!s.LivesIn && FamilyPlaces.Home() != null)
+            // Married people share a home, if it has the room that moving in asks of any home (HomeLife.MoveIn); otherwise they stay
+            // where they live and the story says so. They can still be asked to move in once there is room.
+            BuildingRegistration home = FamilyPlaces.Home();
+            bool noRoom = !s.LivesIn && home != null && !FamilyPlaces.HasRoom(home, 0);
+            if (!s.LivesIn && home != null && !noRoom)
             {
-                s.LivesIn = true;   // married people share a home
+                s.LivesIn = true;
                 s.MovedInDay = TimeHelper.CurrentDay;
-                FamilyPlaces.MakeHome(FamilyPlaces.Home());
+                FamilyPlaces.MakeHome(home);
             }
             FamilyState.Harmony(15f);
             FamilyState.Remember("reallife_family_memory_married", Partner.Name);
@@ -156,6 +160,7 @@ namespace RealLifeOverhaul.Family
                            + " " + FamilyText.T(music ? "reallife_family_reception_music" : "reallife_family_reception_no_music", Args.Us)
                            + " " + FamilyText.T(catering ? "reallife_family_reception_catering" : "reallife_family_reception_no_catering", Args.Us)
                            + (flowers ? " " + FamilyText.T("reallife_family_reception_flowers", Args.Us) : string.Empty)
+                           + (noRoom ? " " + FamilyText.T("reallife_family_married_no_room", Args.Us) : string.Empty)
                            + (free ? string.Empty
                                : "\n" + FamilyText.T("reallife_family_reception_money", new Args { Amount = FamilyText.Money(total), Text = FamilyText.Money(gifts), N = guests.ToString() }));
             FamilyDirector director = FamilyDirector.Instance;

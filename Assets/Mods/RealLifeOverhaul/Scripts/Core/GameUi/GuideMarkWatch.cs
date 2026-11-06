@@ -3,24 +3,19 @@ using UnityEngine;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The watch over the mod's marks on the game's destination guider (<see cref="GuideMark"/>): once a second of real
-    /// time it takes off a mark whose owner was destroyed without taking it off, was stopped by the guard, or let its
-    /// latest time pass, and forgets one that has lost the guider to another feature or the game
-    /// (<see cref="GuideMarkBook.Sweep"/>). An owner whose updates stop (its faults, its feature switched off) can no
-    /// longer leave its marker on screen. Every mark goes when a city starts (one left from before) and when it unloads.
-    ///
-    /// The cost: one time comparison a frame; once a second, nothing while no mark is up, a few compares a mark up
-    /// otherwise.
+    /// The watch over the mod's guide marks: once a second of real time it takes off a mark whose owner is gone, stopped or
+    /// past its time (<see cref="GuideMarkBook.Sweep"/>), and every mark when a city starts or unloads. Costs one time
+    /// comparison a frame.
     /// </summary>
     public sealed class GuideMarkWatch : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For(null, "GuideMarkWatch", typeof(GuideMarkWatch));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "GuideMarkWatch", typeof(GuideMarkWatch));   // its Update
 
         private float _next;
 
         private void Awake()
         {
-            Drop("a city is starting");   // (a mark left from the city before: its owner and the guider it was on are gone)
+            Drop("a city is starting");   // a mark left from the city before: its owner and guider are gone
         }
 
         private static readonly int HotUpdate = HotSpots.Slot("Core: GuideMarkWatch.Update");
@@ -29,7 +24,7 @@ namespace RealLifeOverhaul.GameUi
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // its feature was switched off after its faults
                 return;
             }
             try

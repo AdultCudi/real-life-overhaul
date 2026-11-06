@@ -3,10 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using BAModAPI;
 using Extensions;
-using BigAmbitions.DayNightCycle;
-using Entities;
 using Helpers;
-using Localizor;
 using PlayerActivity;
 using UI;
 using UI.Load;
@@ -17,14 +14,14 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Random life events (rolled here, dealt from LifeEventCatalogue by LifeEventDeck), the
-    /// sickness mechanic and the shared hospital trip. Also owns loading/saving of ModState,
-    /// because it is the component that knows when a savegame is ready.
+    /// Random life events (rolled here, dealt by <see cref="LifeEventDeck"/>), sickness and the shared hospital trip. Also
+    /// loads ModState and keeps the save hook, as the component that knows when a save is ready.
+    /// Cost: per frame a few comparisons; the roll once a game hour, the hook check every two seconds.
     /// </summary>
     public class LifeEvents : MonoBehaviour
     {
         private const string SickEnergyDrain = "reallife_sick";
-        private const float WakingHoursPerWeek = 112f;
+        private const float WakingHoursPerWeek = 112f;   // hours: sixteen a day
         public static int DoctorFee => Prices.At(150);
         public static int AmbulanceFee => Prices.At(400);
 
@@ -53,6 +50,7 @@ namespace RealLifeOverhaul
         }
 
         private static readonly int HotUpdate = HotSpots.Slot("Life: LifeEvents.Update");
+
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
@@ -62,12 +60,23 @@ namespace RealLifeOverhaul
                 return;
             }
 
+            // The game clears its event hub on every load. Kept whatever is off: the mod's moods must leave the save. Joined before
+            // the load below, so that a load that fails halfway (and stops this component) still has the moods it put into the
+            // game's list taken out at every save: a save that holds one cannot be loaded again.
+            if (Time.unscaledTime >= _nextHookCheck)
+            {
+                _nextHookCheck = Time.unscaledTime + 2f;
+                SaveHook.KeepEssential(_onSave ?? (_onSave = OnSaveGame));
+            }
+
             if (!ModState.Loaded)
             {
                 try
                 {
                     ModState.Load();
+                    LifeMoneyRepair.OnLoad();   // a charge a purse past an int once made is paid back, once (LifeMoneyRules)
                     PhoneContacts.Setup();
+                    ContactGroupsGame.Install();   // after every contact the mod adds at a load is made: the groups of the Contacts app
                 }
                 catch (Exception e)
                 {
@@ -76,13 +85,6 @@ namespace RealLifeOverhaul
                     return;
                 }
                 _lastHour = TimeHelper.CurrentHour;
-            }
-
-            // The game clears its event hub on every load, so keep our save hook attached.
-            if (Time.unscaledTime >= _nextHookCheck)
-            {
-                _nextHookCheck = Time.unscaledTime + 2f;
-                SaveHook.KeepEssential(_onSave ?? (_onSave = OnSaveGame));   // the mod's one relay in the game's save event (Core/SaveHook): nothing is allocated while that event has not changed; run whatever is off, for the mod's moods must leave the save
             }
 
             if (TimeHelper.CurrentHour != _lastHour)
@@ -99,17 +101,17 @@ namespace RealLifeOverhaul
                 catch (Exception e)
                 {
                     Logger?.Error(e);
-                    // On a game that lacks something the hour names it would fail every hour: the hour's work stops for the
-                    // session, while the save hook and the mod's state above go on.
+                    // A game that lacks something the hour names would fail every hour: the hour's work stops for the
+                    // session, the save hook and the mod's state go on.
                     _hoursOff = Guard.StandsDown(e, "life events and the end of a sickness on the hour");
                 }
             }
         }
 
-        private bool _hoursOff;    // the whole hour's work stood down (Core/GameMembers)
-        private bool _eventsOff;   // the events' roll stood down, the sickness's end on the hour goes on
+        private bool _hoursOff;    // the whole hour's work stood down
+        private bool _eventsOff;   // the events' roll stood down; the sickness's end on the hour goes on
 
-        private System.Action _onSave;   // made once: Core/SaveHook compares it, it is never built again
+        private Action _onSave;    // made once: SaveHook compares it
 
         private void OnSaveGame()
         {
@@ -118,7 +120,7 @@ namespace RealLifeOverhaul
                 List<HappinessModifierData> removed = ModState.BeforeSave();
                 if (removed.Count > 0)
                 {
-                    StartCoroutine(RestoreAfterSave(removed));   // (not behind a feature's guard: the moods of every feature go back after the save whatever is off)
+                    StartCoroutine(RestoreAfterSave(removed));   // not behind a feature's guard: every feature's moods go back whatever is off
                 }
             }
             catch (Exception e)
@@ -155,7 +157,7 @@ namespace RealLifeOverhaul
             }
             catch (Exception e) when (Guard.StandsDown(e, "life events"))
             {
-                _eventsOff = true;   // (a game that lacks something an event names would fail at every hour)
+                _eventsOff = true;   // a game that lacks something an event names would fail every hour
             }
         }
 
@@ -189,7 +191,41 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Deals the next event from the catalogue; LifeEventDeck keeps a save from seeing one twice.
+        /// <summary>
+        /// Options-menu test button: the fridge's repair bill (hm12) at once if a home of the player's has a fridge, else a
+        /// notice that it cannot come (Core/LineNeeds), so the fix can be seen both ways without waiting for the roll.
+        /// </summary>
+        public void TriggerFridgeBill()
+        {
+            if (!ModState.Loaded)
+            {
+                return;
+            }
+            try
+            {
+                LifeEvent bill = null;
+                foreach (LifeEvent e in LifeEventCatalogue.All)
+                {
+                    bill = e.Id == FridgeBill ? e : bill;
+                }
+                if (bill == null || !LineNeeds.Fits(bill.Key))
+                {
+                    Logger?.Info("Life events test: the fridge's repair bill was not fired: no home of the player's has a fridge (Core/LineNeeds).");
+                    Notify(NotificationType.Warning, "reallife_test_event_fridge_no");
+                    return;
+                }
+                Logger?.Info("Life events test: the fridge's repair bill fired: a home of the player's has a fridge.");
+                LifeEventRunner.Run(bill);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+        }
+
+        private const string FridgeBill = "hm12";   // the life event a player was billed by for a fridge they did not own
+
+        // LifeEventDeck keeps a save from seeing one twice.
         private void FireRandomEvent()
         {
             LifeContext context = LifeEventRunner.ReadContext();
@@ -201,6 +237,12 @@ namespace RealLifeOverhaul
             }
             ModState.LastEventId = picked.Id;
             Logger?.Info($"Life event: {picked.Id} ({ModState.SeenEvents.Count}/{LifeEventCatalogue.All.Length} seen)");
+            LineNeed needs = LineNeeds.Of(picked.Key);
+            if (needs != LineNeed.None && Meta.Dev.Verbose)
+            {
+                Logger?.Info("Line needs check (life event " + picked.Id + "): its words need " + needs + ", read from the game as "
+                             + (LineNeeds.Holds(needs) ? "so: PASS." : "not so: FAIL."));
+            }
             LifeEventRunner.Run(picked);
         }
 
@@ -212,10 +254,10 @@ namespace RealLifeOverhaul
 
         internal static void ChangeMoney(int amount, string transactionKey)
         {
-            GameManager.ChangeMoneySafe(amount, new TransactionInfo(transactionKey), null, null, force: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(amount, new TransactionInfo(transactionKey), null, null, force: true);
         }
 
-        /// <param name="notificationKey">What to say; null when whoever calls says it themselves (Home/HomeHealth names the illness).</param>
+        /// <param name="notificationKey">Null when the caller says it itself (Home/HomeHealth names the illness).</param>
         public void MakeSick(int hours, string notificationKey = "reallife_event_sick")
         {
             ModState.SickUntil = TimeHelper.NowInMinutes() + hours * 60f;
@@ -246,7 +288,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Being sick tires the player out faster. The game doesn't save energy drains, so this is re-applied on load.
+        // Being sick tires the player faster. The game does not save energy drains, so this is applied again on load.
         private void SetSickDrain(bool active)
         {
             if (active == _sickDrainActive)
@@ -257,14 +299,11 @@ namespace RealLifeOverhaul
             EnergyHelper.RemoveEnergySpender(SickEnergyDrain);
             if (active)
             {
-                EnergyHelper.AddEnergySpender(SickEnergyDrain, 0.03f);
+                EnergyHelper.AddEnergySpender(SickEnergyDrain, 0.03f);   // energy a game minute
             }
         }
 
-        /// <summary>
-        /// Ambulance trip: leaves the vehicle if needed, charges the ambulance fee and runs the
-        /// game's own hospital stay (which bills its own fee and skips to the next morning).
-        /// </summary>
+        /// <summary>The ambulance: out of the vehicle, the fee charged, then the game's own hospital stay with its own bill.</summary>
         public void SendToHospital()
         {
             StartCoroutine(Guard.Routine(HospitalRoutine()));
@@ -274,12 +313,12 @@ namespace RealLifeOverhaul
         {
             var gm = InstanceBehavior<GameManager>.Instance;
 
-            // Remember the car being driven, so it can be brought to the hospital afterwards: the player's own only (in a
-            // Going Public session the car may be another player's, and that one is left where it stopped).
+            // The car being driven is brought to the hospital afterwards: the player's own only, never another Going
+            // Public player's.
             VehicleInstance leftBehind = VehicleTow.LeftBehind(gm.selectedVehicle);
 
-            // After a crash the screen goes dark straight away: the game's own hospital sequence makes the
-            // player climb out and collapse in the road, which looks wrong, so it plays unseen.
+            // After a crash the screen goes dark at once: the game's hospital sequence has the player climb out and
+            // collapse in the road, which plays unseen.
             bool faded = false;
             if (gm.selectedVehicle != null)
             {
@@ -299,9 +338,8 @@ namespace RealLifeOverhaul
                 gm.selectedVehicle.ExitVehicle();
                 yield return new WaitForSecondsRealtime(0.5f);
 
-                // The game tracks "driving" in two places. Leaving the car clears the saved active vehicle,
-                // but the selected vehicle is only cleared when its HUD panel closes; if it is still set
-                // when the hospital loads, the game brings the car inside with the player and duplicates it.
+                // Leaving the car clears the saved active vehicle, but the selected one only when its HUD panel closes;
+                // still set when the hospital loads, the game brings the car inside and duplicates it.
                 var hud = InstanceBehavior<UIs>.Instance;
                 if (gm.selectedVehicle != null && !PlayerHelper.IsUsingVehicle && hud != null && hud.playerHUD != null && hud.playerHUD.itemPanelUI != null)
                 {
@@ -309,7 +347,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // When called from the phone, the ambulance arrives once the player has put the phone away.
+            // Called from the phone, the ambulance arrives once the phone is put away.
             waited = 0f;
             float patience = faded ? 6f : 60f;   // never hold a black screen for long
             while ((PlayerHelper.IsUsingVehicle || !IsSafeForEvent()) && waited < patience)
@@ -340,22 +378,24 @@ namespace RealLifeOverhaul
             ModState.RemoveModifier(ModState.Injured);
             Cure(null);
 
-            // The game leaves the player inside the hospital; discharge them onto the street instead.
+            // The game leaves the player inside the hospital: out onto the street instead.
             var uis = InstanceBehavior<UIs>.Instance;
             while (uis != null && uis.hospitalizationNotification != null && uis.hospitalizationNotification.IsVisible)
             {
                 yield return null;
             }
-            if (BuildingManager.IsInsideBuilding)
+            // Read once, as the custody trip does: the game's instance is looked for again (a whole-scene search) when it is gone.
+            var buildings = InstanceBehavior<BuildingManager>.Instance;
+            if (BuildingManager.IsInsideBuilding && buildings != null)
             {
-                InstanceBehavior<BuildingManager>.Instance.ExitFromBuilding(0);
+                buildings.ExitFromBuilding(0);
             }
 
             // Once the player is back on the street, their car is waiting in a space nearby.
             if (leftBehind != null)
             {
                 float exitWait = 0f;
-                while ((BuildingManager.IsInsideBuilding || InstanceBehavior<BuildingManager>.Instance.exitingBuilding) && exitWait < 10f)
+                while ((BuildingManager.IsInsideBuilding || (buildings != null && buildings.exitingBuilding)) && exitWait < 10f)
                 {
                     exitWait += Time.unscaledDeltaTime;
                     yield return null;

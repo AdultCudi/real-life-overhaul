@@ -45,18 +45,10 @@ namespace RealLifeOverhaul.Districts
     }
 
     /// <summary>
-    /// The district view's scales: which of five bands a district's figure falls in, the band's colour and the range
-    /// the legend gives for it. Plain arithmetic, no game types; checked offline (EconomyCheck, DistrictChecks).
-    ///
-    /// Two kinds of scale:
-    ///   fixed      the figure means the same in every city: an income level (100 is the city's middle), crimes in
-    ///              four weeks, an opinion (50 is where every district starts), the share of the player's places
-    ///              supplied, the number of providers. Its four edges are below.
-    ///   the city's own  money and counts, which grow with prices and differ from one city to the next: rents, values,
-    ///              street traffic, businesses, parking. The five bands split the range from the district lowest on
-    ///              it to the highest into five equal steps, so the legend reads "the lowest in the city" to "the
-    ///              highest". With every district alike, all are in the middle band.
-    /// A district with no figure (none of the player's places there, nothing reported) is <see cref="None"/>: grey.
+    /// The district view's scales: which of five bands a figure falls in, its colour and the key's range for it. Game-free,
+    /// checked offline. A fixed scale means the same in every city (income level, crimes, opinion, supply, providers);
+    /// the city's own (money and counts) splits the range from the lowest district to the highest into five equal
+    /// steps. A district with no figure is <see cref="None"/>: grey.
     /// </summary>
     public static class DistrictRules
     {
@@ -128,10 +120,8 @@ namespace RealLifeOverhaul.Districts
         }
 
         /// <summary>
-        /// The four edges of the city's own range from its lowest and highest figure: five equal steps, each edge rounded
-        /// up, so the lowest figure is always in the bottom band and the highest in the top one. A range narrower than five
-        /// has edges that repeat: the bands between them are empty (<see cref="HasRange"/>). With least equal to most there
-        /// is no range: null.
+        /// The four edges of the city's own range: five equal steps, rounded up, so the lowest figure is in the bottom band
+        /// and the highest in the top. A narrow range repeats edges (<see cref="HasRange"/>); no range gives null.
         /// </summary>
         public static int[] RelativeEdges(long least, long most)
         {
@@ -158,10 +148,7 @@ namespace RealLifeOverhaul.Districts
             return !from.HasValue || !to.HasValue || to.Value >= from.Value;
         }
 
-        /// <summary>
-        /// The band of each district's figure (<see cref="None"/> where it has none), on the layer's own scale. For a
-        /// layer on the city's range the edges used are given back (null when every figure is the same: all middle).
-        /// </summary>
+        /// <summary>Each district's band on the layer's scale (<see cref="None"/> without a figure), and the edges used (null: all alike).</summary>
         public static int[] BandAll(DistrictLayer layer, long[] values, bool[] known, out int[] edges)
         {
             int count = values != null ? values.Length : 0;
@@ -193,8 +180,6 @@ namespace RealLifeOverhaul.Districts
             from = band <= 0 || edges == null ? (int?)null : edges[Math.Min(band, edges.Length) - 1];
             to = edges == null || band >= edges.Length ? (int?)null : edges[Math.Max(band, 0)] - 1;
         }
-
-        // ---------------------------------------------------------------- colours
 
         // Low to high. The good-bad ramp runs red, orange, yellow, light green, green; the neutral one light blue to deep blue.
         private static readonly Tint[] GoodRamp =
@@ -228,9 +213,8 @@ namespace RealLifeOverhaul.Districts
     }
 
     /// <summary>
-    /// The crimes reported in each district, newest last: a day and a district each, at most
-    /// <see cref="DistrictRules.LogMost"/>, older than the view looks back thrown away. It is the view's only line in the
-    /// save ("reallife:district_log"): "1;day:district;day:district...". A line that cannot be read gives an empty log.
+    /// The crimes reported in each district, newest last, at most <see cref="DistrictRules.LogMost"/>. The view's one
+    /// line in the save: "1;day:district;day:district...". A line that cannot be read gives an empty log.
     /// </summary>
     public sealed class DistrictLog
     {

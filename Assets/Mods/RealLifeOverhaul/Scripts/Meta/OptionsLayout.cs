@@ -144,7 +144,7 @@ namespace RealLifeOverhaul.Meta
             try
             {
                 MetaLog.Sink = context.Logger;
-                _modId = context.ModId;
+                _modId = OptionKeysRules.FixedId;   // what the page is registered under, whatever the game calls this copy
                 Build(original);
                 if (!_hooked)
                 {
@@ -316,6 +316,7 @@ namespace RealLifeOverhaul.Meta
             built.Add(new ButtonOption("reallife_meta_welcome_button", () => Welcome.Open(true)));
             built.Add(new ButtonOption("reallife_guard_button", () => OptionsNotice.Tell("reallife_guard_button", Guard.Status())));   // what a game update switched off
             Features.Find("diagnostics")?.AddTest(LayoutTestKey, TestLayout);
+            Features.Find("diagnostics")?.AddTest(OptionKeys.TestKey, OptionKeys.Test);
 
             var rows = new List<PlanRow>(built.Count);
             foreach (ModOption option in built)
@@ -563,9 +564,9 @@ namespace RealLifeOverhaul.Meta
         // A test stages something in the city. Without one (the main menu) its button says so, where it would do nothing.
         private static Action InCity(TestAction test)
         {
-            if (test.LabelKey == LayoutTestKey)
+            if (test.LabelKey == LayoutTestKey || test.LabelKey == OptionKeys.TestKey)
             {
-                return test.Run;   // the layout is the page's own and can be written from anywhere
+                return test.Run;   // the layout and where the options are kept are the page's own and can be told from anywhere
             }
             Action run = test.Run;
             return () =>

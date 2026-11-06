@@ -43,6 +43,10 @@ namespace RealLifeOverhaul
                 reasonKey = "reallife_career_no_references";
                 value = who.References.ToString();
             }
+            else if (CareerLinks.Lacks(who.Ranks[0]) != null)
+            {
+                reasonKey = CareerLinks.Lacks(who.Ranks[0]);   // a building trade's qualification (Scripts/BuildTrades)
+            }
             return reasonKey == null;
         }
 
@@ -122,10 +126,13 @@ namespace RealLifeOverhaul
             _logger?.Info("Careers: dismissed by " + employer.Id + " (" + key + ").");
         }
 
-        /// <summary>Whether the review can be held here: face to face at the office, or by phone for an employer with no office in this city.</summary>
+        /// <summary>
+        /// Whether the review can be held here: face to face at the employer's board while that stands (the boss waits on the pavement
+        /// beside it), or by phone for an employer with no board standing in this city, whatever the reason.
+        /// </summary>
         public bool CanReview(bool inPerson)
         {
-            return CareerState.Employed && CareerState.ReviewDue && (inPerson || DepotOf(CareerState.EmployerIndex) < 0);
+            return CareerState.Employed && CareerState.ReviewDue && CareerOfficeRules.CanReview(WhereOf(CareerState.EmployerIndex), inPerson);
         }
 
         /// <summary>Holds the review. The numbers read out are the ones the outcome was decided from.</summary>
@@ -138,7 +145,16 @@ namespace RealLifeOverhaul
             crashes = CareerState.Crashes;
             stops = CareerState.Stops;
             Employer employer = CareerState.Employer;
-            ReviewOutcome outcome = CareerState.Review(!CareerState.OnNotice, out score);
+            // A rank that asks a qualification (the building trades') is not given to a player without it, whatever the score.
+            CareerRank next = CareerState.Rank + 1 < employer.Ranks.Length ? employer.Ranks[CareerState.Rank + 1] : null;
+            string lacks = next != null ? CareerLinks.Lacks(next) : null;
+            ReviewOutcome outcome = CareerState.Review(!CareerState.OnNotice && lacks == null, out score);
+            if (lacks != null && outcome != ReviewOutcome.Warning && outcome != ReviewOutcome.Dismissed && score >= CareerCatalogue.PromoteScore)
+            {
+                var held = new Dictionary<string, string>(2) { { "title", JobText.T(next.TitleKey) }, { "needs", JobText.T(lacks) } };
+                Notifications.Show(NotificationType.Info, "reallife_career_review_held", held, 12f);
+                _logger?.Info("Careers: review at " + employer.Id + " would have promoted to '" + next.TitleKey + "', held back: " + lacks + ".");
+            }
             _logger?.Info("Careers: review at " + employer.Id + ": score " + score.ToString("F0") + " (on time " + onTime + "/" + due + ", tips " + tips
                           + ", complaints " + complaints + ", crashes " + crashes + ", stops " + stops + ") -> " + outcome + ".");
             switch (outcome)

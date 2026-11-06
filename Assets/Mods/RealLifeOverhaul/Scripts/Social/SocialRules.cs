@@ -1,4 +1,5 @@
 using System;
+using System.Globalization;
 
 namespace RealLifeOverhaul
 {
@@ -8,7 +9,12 @@ namespace RealLifeOverhaul
     /// <summary>The relationship model's rules: what each thing is worth in points of 0 to 100, when a stage is reached and lost, neglect.</summary>
     public static class SocialRules
     {
-        public const int CastSize = 8;
+        public const int BaseCast = 8;                // people a save starts with: Mom, Alex and one for each of six places
+        public const int MaxCast = 400;               // people a save can ever know; past it nobody new comes
+        public const int MeetGapDays = 1;             // game days at least between two new faces
+        public const int CircleSize = 12;             // the closest people who get in touch of their own accord
+        public const int CircleNewDays = 14;          // game days somebody new stays keen, however many are closer
+        public const int DriftLoseDays = 60;          // game days without a word before a drifted acquaintance can go by themselves, once the cast is full
 
         public const float CallFamiliarity = 3f, CallAffection = 2f, CallTrust = 0.5f;
         public const float WarmReply = 1.5f, BluntReply = -2f;
@@ -50,6 +56,7 @@ namespace RealLifeOverhaul
         public const int PartnerDays = 14, PartnerDates = 4;
         public const float MoveInTrust = 85f;
         public const int MoveInDays = 21;
+        public const int AskOutGapDays = 5;   // days after being asked out before they hear it again, so a no is not asked round at once
         public const float BreakUpAffection = 35f, BreakUpTrust = 25f;
         public const float Slack = 10f;               // a stage is kept until this far below what earned it
         public const float DriftFamiliarity = 8f;
@@ -148,6 +155,36 @@ namespace RealLifeOverhaul
         {
             return person.Stage == SocialStage.Dating && person.Affection >= PartnerAffection && person.Trust >= PartnerTrust
                    && day - person.StageDay >= PartnerDays && person.Dates >= PartnerDates;
+        }
+
+        /// <summary>
+        /// Days before they will hear being asked out again, 0 when they will. A step is never taken off the menu for it: the player
+        /// is told when to ask again, so a refusal never makes the option vanish without a word.
+        /// </summary>
+        public static int AskOutWait(SocialPerson person, int day)
+        {
+            int latest = int.MinValue;
+            for (int i = 0; i < person.Memories.Count; i++)
+            {
+                if (person.Memories[i].Code == MemoryCode.AskedOut && person.Memories[i].Day > latest)
+                {
+                    latest = person.Memories[i].Day;
+                }
+            }
+            // A memory dated after today (a save set back) still waits the gap at most.
+            return latest == int.MinValue ? 0 : Math.Min(AskOutGapDays, Math.Max(0, AskOutGapDays - (day - latest)));
+        }
+
+        /// <summary>Days of dating still wanted before "official" can be asked, 0 when they have been enough.</summary>
+        public static int CommitWait(SocialPerson person, int day)
+        {
+            return Math.Max(0, PartnerDays - (day - person.StageDay));
+        }
+
+        /// <summary>Days as partners still wanted before moving in can be asked, 0 when they have been enough.</summary>
+        public static int MoveInWait(SocialPerson person, int day)
+        {
+            return Math.Max(0, MoveInDays - (day - person.StageDay));
         }
 
         public static bool WouldMoveIn(SocialPerson person, int day)
@@ -369,6 +406,157 @@ namespace RealLifeOverhaul
         /// Their own invitation always stands.
         /// </summary>
         public static bool MoodSaysNo(int mood, bool theirIdea, float roll) => !theirIdea && mood <= -2 && roll < PlanMoodNo;
+
+        /// <summary>
+        /// The closeness a person needs to be among the <see cref="CircleSize"/> closest people met; 0 while no more than that
+        /// many are met, so everybody is. <paramref name="scratch"/> holds at least CircleSize. One pass; nothing allocated.
+        /// </summary>
+        public static int CircleBar(SocialPerson[] people, int count, int[] scratch)
+        {
+            int held = 0;
+            for (int i = 0; i < count; i++)
+            {
+                SocialPerson p = people[i];
+                if (p == null || !p.Met)
+                {
+                    continue;
+                }
+                int closeness = p.Closeness;
+                if (held == CircleSize && closeness <= scratch[CircleSize - 1])
+                {
+                    continue;
+                }
+                int at = held < CircleSize ? held++ : CircleSize - 1;   // a new place, or the least close one's
+                while (at > 0 && scratch[at - 1] < closeness)
+                {
+                    scratch[at] = scratch[at - 1];
+                    at--;
+                }
+                scratch[at] = closeness;
+            }
+            return held < CircleSize ? 0 : scratch[CircleSize - 1];
+        }
+
+        /// <summary>
+        /// Whether somebody met gets in touch of their own accord: family, a partner, anyone met in the last
+        /// <see cref="CircleNewDays"/> days, and the closest (<see cref="CircleBar"/>). With a big cast the rest stay quiet
+        /// until the player calls them.
+        /// </summary>
+        public static bool InCircle(SocialPerson person, int day, int bar)
+        {
+            return person.Met && (person.IsFamily || person.Together || day - person.MetDay <= CircleNewDays || person.Closeness >= bar);
+        }
+
+        /// <summary>The chance an hour that one of the circle texts or asks something: as many as <see cref="CircleSize"/> count.</summary>
+        public static float TextChance(int circle) => 0.09f + 0.02f * Math.Max(0, Math.Min(circle, CircleSize));
+
+        /// <summary>The name of the call dialog type of the person in slot <paramref name="index"/>, as the game's hash is made from.</summary>
+        public static string DialogTypeName(int index) => "reallife_socialp" + index.ToString(CultureInfo.InvariantCulture) + "_calldialogtype";
+
+        /// <summary>The seed of everything rolled for the person in slot <paramref name="index"/> past the first eight: theirs alone.</summary>
+        public static int SlotSeed(int castSeed, int index)
+        {
+            unchecked
+            {
+                uint h = (uint)castSeed * 2654435761u ^ (uint)index * 2246822519u;
+                h ^= h >> 15;
+                h *= 2246822519u;
+                h ^= h >> 13;
+                return (int)(h & 0x7FFFFFFF) | 1;
+            }
+        }
+
+        /// <summary>
+        /// The seed of whoever takes the slot of somebody the player lost touch with: from the one who leaves, so the slot never
+        /// rolls the same face again, and the same on every machine for the same cast.
+        /// </summary>
+        public static int ReplaceSeed(int castSeed, int index, int goneSeed)
+        {
+            return SlotSeed(unchecked(castSeed ^ (goneSeed * 16777619)), index);
+        }
+
+        /// <summary>
+        /// Whether the player can lose touch with somebody, and if not the first reason: family and the old friend stay, a
+        /// partner ends it with a talk (<see cref="BrokenUp"/>), and nobody another part of their life still needs goes: who
+        /// lives with the player or is asked to, a plan with them, money between them, a Flare influencer's account.
+        /// </summary>
+        public static LoseBlock LoseBlockOf(SocialPerson person, bool planWith, bool livesWith, bool onFlare)
+        {
+            if (person == null || !person.Met)
+            {
+                return LoseBlock.NotKnown;
+            }
+            if (person.IsFamily)
+            {
+                return LoseBlock.Family;
+            }
+            if (person.Origin == SocialOrigin.OldFriend)
+            {
+                return LoseBlock.OldFriend;   // the phone's own friend contact, which the mod had before the social life
+            }
+            if (person.Together)
+            {
+                return LoseBlock.Together;
+            }
+            if (livesWith || person.MovedIn)
+            {
+                return LoseBlock.LivesWith;
+            }
+            if (planWith)
+            {
+                return LoseBlock.Plan;
+            }
+            if (person.Debt > 0 || person.Loan > 0)
+            {
+                return LoseBlock.Money;
+            }
+            return onFlare ? LoseBlock.Flare : LoseBlock.None;
+        }
+
+        /// <summary>
+        /// Whether somebody may be let go by themselves to make room once every slot of the cast is taken: an acquaintance
+        /// who drifted away and has had no word for <see cref="DriftLoseDays"/> days. The others wait for the player.
+        /// </summary>
+        public static bool DriftedAway(SocialPerson person, int day)
+        {
+            return person != null && person.Met && person.Drifted && person.Stage == SocialStage.Acquaintance && day - person.LastContactDay >= DriftLoseDays;
+        }
+
+        /// <summary>
+        /// Of the people who may be let go by themselves (<see cref="DriftedAway"/>, and nothing holding them, as
+        /// <paramref name="held"/> says), the one longest without a word, the lowest slot on a tie; -1 for nobody. One pass.
+        /// </summary>
+        public static int LongestDrifted(SocialPerson[] people, int count, int day, Func<SocialPerson, bool> held)
+        {
+            int best = -1;
+            for (int i = 0; i < count; i++)
+            {
+                SocialPerson p = people[i];
+                if (DriftedAway(p, day) && (held == null || !held(p)) && (best < 0 || p.LastContactDay < people[best].LastContactDay))
+                {
+                    best = i;
+                }
+            }
+            return best;
+        }
+
+        /// <summary>
+        /// The newest acquaintance the player could lose touch with, by the day they were met and then the slot; -1 for
+        /// nobody. For the test button. One pass.
+        /// </summary>
+        public static int NewestLoseable(SocialPerson[] people, int count, Func<SocialPerson, LoseBlock> block)
+        {
+            int best = -1;
+            for (int i = 0; i < count; i++)
+            {
+                SocialPerson p = people[i];
+                if (p != null && p.Met && p.Stage == SocialStage.Acquaintance && block(p) == LoseBlock.None && (best < 0 || p.MetDay >= people[best].MetDay))
+                {
+                    best = i;
+                }
+            }
+            return best;
+        }
     }
 
     /// <summary>What something done together is worth, in points of 0 to 100 (<see cref="SocialRules.Chat"/>).</summary>

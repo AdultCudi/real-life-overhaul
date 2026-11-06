@@ -1,29 +1,33 @@
 using System;
 using System.Collections.Generic;
 using Localizor;
+using UnityEngine;
 
 namespace RealLifeOverhaul.Nav
 {
-    /// <summary>
-    /// What the minimap and the GPS ask of the rest of the mod, each with an answer of its own when nobody has
-    /// filled it in (Wiring/NavLinks.cs does, once per city load).
-    /// </summary>
+    /// <summary>What the minimap and the GPS ask of the rest of the mod, filled in by Wiring/NavLinks.cs; each has a default.</summary>
     public static class NavBridges
     {
-        /// <summary>True while a scene of the mod's has the screen (custody, a bus ride, photo mode): the minimap is hidden. Default: never.</summary>
+        /// <summary>True while a scene of the mod's has the screen, such as custody or photo mode: the minimap hides. Default: never.</summary>
         public static Func<bool> HudHeld;
 
-        /// <summary>Makes the nearest police station the game's destination; false if there is none. Default: none (the test says so).</summary>
+        /// <summary>Makes the nearest police station the game's destination; false if there is none. Default: none.</summary>
         public static Func<bool> GuideToStation;
 
-        /// <summary>
-        /// Adds places that move to the minimap's marks, each time they are gathered (every two seconds while the minimap
-        /// shows): a vehicle on its way to the player. Whoever fills it in adds to the list and nothing else. Default: none.
-        /// </summary>
+        /// <summary>Adds places that move, such as a vehicle on its way, each time the marks are gathered. Default: none.</summary>
         public static Action<List<NavMark>> MoreMarks;
+
+        /// <summary>Adds the box (the game's own shadow and map look) of each building the mod stands in the city, drawn on the base beside the game's. Default: none.</summary>
+        public static Action<List<MeshRenderer>> MoreBuildings;
+
+        /// <summary>Changes whenever the buildings <see cref="MoreBuildings"/> gives do: the base is drawn again. Default: never.</summary>
+        public static Func<int> MoreBuildingsStamp;
+
+        /// <summary>True for a building of the game's list that the mod made: left out when the city is measured, so the kept file is the game's city alone. Default: none.</summary>
+        public static Func<CityBuildingController, bool> NotMeasured;
     }
 
-    /// <summary>The feature's words: a line of en.json with its {placeholders} filled in. Called when a line changes, never per frame.</summary>
+    /// <summary>The feature's words with their {placeholders} filled in; called when a line changes, never per frame.</summary>
     public static class NavText
     {
         public static string T(string key)

@@ -47,7 +47,7 @@ namespace RealLifeOverhaul.Markets
                     Made.Add(r.output.item);
                 }
             }
-            float multiplier = SaveGameManager.Current != null && SaveGameManager.Current.gameVariables != null ? SaveGameManager.Current.gameVariables.marketPriceMultiplier : 1f;
+            float multiplier = Multiplier();
             foreach (Recipe r in recipes)
             {
                 if (r == null || r.ingredients == null)
@@ -76,6 +76,13 @@ namespace RealLifeOverhaul.Markets
                 }
             }
             return names.Count;
+        }
+
+        /// <summary>The save's price multiplier, which every material's own price carries (the exchange's building materials too).</summary>
+        public static float Multiplier()
+        {
+            GameInstance save = SaveGameManager.Current;
+            return save != null && save.gameVariables != null ? save.gameVariables.marketPriceMultiplier : 1f;
         }
 
         /// <summary>A material's name in the game's language.</summary>
@@ -112,7 +119,7 @@ namespace RealLifeOverhaul.Markets
             {
                 return false;
             }
-            return reg.GetBuildingType() == WarehouseType || reg.businessTypeName == FactoryType;
+            return GameRegistrations.BuildingType(reg) == WarehouseType || reg.businessTypeName == FactoryType;
         }
 
         /// <summary>A place's key as a contract keeps it: its street and number.</summary>
@@ -170,7 +177,7 @@ namespace RealLifeOverhaul.Markets
             var data = new Dictionary<string, string>(2) { { "name", Name(itemName) }, { "businessName", place } };
             var info = new TransactionInfo(DerivMoney.Goods, data);
             info.SetTaxDeductibleName(TaxName);
-            GameManager.ChangeMoneySafe(-charged, info, null, reg.Address, true);
+            RealLifeOverhaul.Economy.BizBooks.Book(-charged, info, null, reg.Address, true);
             return delivered;
         }
 

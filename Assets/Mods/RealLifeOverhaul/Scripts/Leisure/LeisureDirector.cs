@@ -161,6 +161,10 @@ namespace RealLifeOverhaul.Leisure
                     _nextSlow = unscaled + 1f;
                     Slow(unscaled);
                 }
+                else if (_corner.Pending)
+                {
+                    _corner.Step();   // the chess table's opponent and onlooker, a frame each after the table
+                }
                 if (_activity == null || Time.timeScale <= 0f || PhotoMode.Active)
                 {
                     return;

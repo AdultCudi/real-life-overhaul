@@ -183,7 +183,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            bool given = GameManager.ChangeMoneySafe(fare, new TransactionInfo("reallife_transaction_bus_fare_back"), null, null, force: true, showNotification: true);
+            bool given = RealLifeOverhaul.Economy.BizBooks.Book(fare, new TransactionInfo("reallife_transaction_bus_fare_back"), null, null, force: true, showNotification: true);
             Notifications.Show(NotificationType.Info, "reallife_transit_fare_back", new Dictionary<string, string>(1) { { "fare", TransitText.Money(fare) } }, 6f);
             Logger?.Info("Transit check (fare back): " + why + ": the fare of " + fare.ToString("F2", CultureInfo.InvariantCulture) + " is given back: "
                 + (given ? "PASS" : "FAIL (the game would not pay it)") + ".");

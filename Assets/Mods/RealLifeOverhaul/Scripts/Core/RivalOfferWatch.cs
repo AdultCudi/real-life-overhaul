@@ -7,15 +7,9 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// In the game's Contacts app, on the app's own object (so it runs only while the app shows): when the app picks a
-    /// chat, that chat's rival offers are judged by Core/RivalOfferGuard before the game draws its messages. The game
-    /// draws a chat a frame after picking it: ContactsApp.ShowContactConversation sets the chat at once and draws its
-    /// messages in a coroutine that first waits a frame, and such a coroutine goes on after every Update of its frame.
-    /// So a chat never shows buttons the guard would take, from an older save or from a way of leaving none of its
-    /// other looks hears of.
-    ///
-    /// Cost: one reference comparison a frame while the Contacts app shows, nothing while it is closed; a chat's
-    /// messages (twenty at most) when one is picked.
+    /// On the game's Contacts app: a chat the app picks has its rival offers judged by <see cref="RivalOfferGuard"/>
+    /// before the game draws its messages, a frame later (ShowContactConversation draws in a coroutine). Cost: one
+    /// reference comparison a frame while the app shows, nothing while closed.
     /// </summary>
     public sealed class RivalOfferWatch : MonoBehaviour
     {
@@ -25,8 +19,8 @@ namespace RealLifeOverhaul
         private Contact _seen;   // the chat last judged; null once the app has closed
 
         /// <summary>
-        /// Puts the watch on this city's Contacts app, once; null while the app is not there yet. A chat the app
-        /// already shows is judged at once, and drawn again if it loses buttons.
+        /// Puts the watch on this city's Contacts app; null while the app is not there yet. A chat already shown is
+        /// judged at once.
         /// </summary>
         internal static RivalOfferWatch Install()
         {
@@ -57,13 +51,13 @@ namespace RealLifeOverhaul
 
         private static readonly int HotUpdate = HotSpots.Slot("Core: RivalOfferWatch.Update");
 
-        // Only while the Contacts app shows: whether it has picked another chat.
+        // Only while the Contacts app shows.
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
@@ -86,7 +80,7 @@ namespace RealLifeOverhaul
             _seen = chat;
             if (chat != null)
             {
-                RivalOfferGuard.Picked(chat, false);   // before the game draws it, a frame on
+                RivalOfferGuard.Picked(chat, false);
             }
         }
 

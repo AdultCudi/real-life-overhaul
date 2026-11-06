@@ -9,45 +9,12 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// THE ONE PLACE this mod's camera decides to stand aside, for the game's own camera moments and for another author's
-    /// camera mod, and to come back. Every camera path of the mod follows the frame's <see cref="Orders"/>: the
-    /// figures on the game's on-foot cameras (<see cref="ThirdPersonCamera"/>), the chase camera (<see cref="ChaseCamera"/>),
-    /// mouse look in either, and the bridges kept in sight (<see cref="BridgeHold"/>). What the orders are is a rule of
-    /// plain values (<see cref="CameraYieldRules"/>, checked offline); this file only reads the game's signals for it.
-    ///
-    /// THE GAME'S MOMENTS are told by the game's own signals, never by a list of moments: which camera of its own list it
-    /// has asked for (priority 1: CameraHelper.CameraTransition), whether a screen that needs the pointer is up, whether it
-    /// holds the player in a conversation (DialogController.current: a person's talk, the bank's and the casino's tables,
-    /// every one of its dialogs, whose answers are clicked), and whether the player is dead. Any
-    /// camera of the game's other than those of ordinary play (on foot, indoors, a car, the map) is a moment: placing an
-    /// item and the interior designer, a building's preview, the subway, the minigames, the game's free camera, the casino
-    /// boat, a car's preview, and whatever camera the game adds later.
-    ///
-    /// ANOTHER AUTHOR'S CAMERA MOD: two scripts that both steer the camera give a picture that shakes, and two that both
-    /// lock the pointer give a pointer that cannot be used; so while anything that is neither the game nor this mod drives
-    /// the camera, this mod's camera does nothing at all (<see cref="StoodDown"/>).
-    ///
-    /// How another driver is noticed, without knowing its name (<see cref="Observe"/>, once a frame):
-    ///  - the game steers its camera through Cinemachine and gives its own virtual cameras (the fourteen it lists in
-    ///    GameManager's start-up, CameraHelper.Init) the priority 1 or 0 and no other (CameraHelper.CameraTransition).
-    ///    A live virtual camera with a higher priority that is not one of this mod's is therefore another mod's. That
-    ///    is how a camera mod that plays by the engine's rules shows;
-    ///  - the engine writes the camera's place at the end of each frame (CinemachineBrain) and nothing of the game's
-    ///    writes it afterwards. If at the start of the next frame the camera is not where the engine put it, something
-    ///    wrote it in between. That is how a camera mod that moves the camera directly shows.
-    /// Neither is believed for one frame: <see cref="CameraWatch"/> counts frames running, in both directions.
-    /// What is known by name (<see cref="OtherMods"/>) only gives the name for the sentence and shortens the count.
-    ///
-    /// Nothing is looked at while a screen is open (the city map, a menu): camera mods stand aside for those
-    /// themselves, and that is not them stopping. Nor during a moment of the game's: the player's funeral, which the game
-    /// films with a timeline's cameras that are not on its list, and a car's preview, filmed by the showcase's own camera.
-    ///
-    /// The cost, per frame: the screen test, the main camera's reference, two properties of the engine's camera brain
-    /// (the live camera, whether it is blending), one reference comparison, and, while nothing foreign is live, the
-    /// camera's position and rotation against the brain's (two subtractions and a dot product); for the orders, the
-    /// priorities of at most seven of the game's cameras, two of its flags and the options, once a frame whoever asks
-    /// first. Nothing is allocated; a virtual camera is judged once, when it becomes the live one. The notice, the log
-    /// lines and the options page's sentence are made on the change only.
+    /// The one place this mod's camera decides to stand aside, for the game's camera moments and for another author's
+    /// camera mod, and to come back; the rule is <see cref="CameraYieldRules"/>'s, and this reads the game's signals for it.
+    /// Another camera mod is noticed without its name (<see cref="Observe"/>): a live virtual camera above the game's
+    /// priorities that is not this mod's, or a camera not where the engine's brain put it. <see cref="CameraWatch"/>
+    /// counts either over frames. Cost per frame: the screen test, two properties of the brain, a reference comparison and
+    /// a position and rotation compared; for the orders, at most seven priorities. Nothing allocated.
     /// </summary>
     public static class CameraYield
     {
@@ -55,9 +22,9 @@ namespace RealLifeOverhaul
         private const string Unnamed = "reallife_camera_other_unnamed";
         private const string TestName = "reallife_camera_test_pretend_name";
         private const string Section = "reallife_camera_other_section";
-        private const int GamePriority = 1;           // the highest priority the game gives a virtual camera of its own (CameraHelper.CameraTransition)
-        private const float ApartSqr = 0.05f * 0.05f; // metres, squared: further than this from where the engine put it, the camera was moved by something else
-        private const float Turned = 0.99996f;        // the dot product of two rotations half a degree apart: under it, the camera was turned by something else
+        private const int GamePriority = 1;           // the highest priority the game gives a virtual camera of its own
+        private const float ApartSqr = 0.05f * 0.05f; // metres, squared: further than this from where the engine put it, something else moved it
+        private const float Turned = 0.99996f;        // the dot product of two rotations half a degree apart
         private const string OwnPrefix = "RealLifeOverhaul";   // every object of this mod's begins so
 
         public static IModLogger Logger;
@@ -65,23 +32,20 @@ namespace RealLifeOverhaul
         private static CameraWatch _watch;
         private static Camera _camera;
         private static CinemachineBrain _brain;
-        private static ICinemachineCamera _judged;   // the live virtual camera last looked at...
-        private static bool _judgedForeign;          // ...and what was made of it
+        private static ICinemachineCamera _judged;   // the live virtual camera last looked at
+        private static bool _judgedForeign;          // and what was made of it
         private static string _holder;
         private static bool _told;                   // the notice has been shown in this session of the game
-        private static bool _confirm;                // the stand-down is checked in the frame after it was asked for
+        private static bool _confirm;                // the stand-down is checked in the frame after
         private static bool _pretend;
         private static int _decided = -1;          // the frame the orders were last made in
         private static CameraOrders _orders;
-        private static GameView _view = GameView.OnFoot;   // the game's camera mode in the last frame decided, for the log line on a change
+        private static GameView _view = GameView.OnFoot;   // the last frame's, for the log line on a change
 
-        /// <summary>True while another mod has the camera and this mod's camera does nothing. One load: fit for every frame.</summary>
+        /// <summary>True while another mod has the camera and this mod's camera does nothing. A field read.</summary>
         public static bool StoodDown => _watch.StoodDown;
 
-        /// <summary>The mod that has the camera, as its author names it; "another mod" if it is not one this mod knows. Null while none has.</summary>
-        public static string Holder => _watch.StoodDown ? _holder : null;
-
-        /// <summary>For the options page: the sentence that says why the camera's options do nothing, or null while they work.</summary>
+        /// <summary>For the options page: why the camera's options do nothing, or null while they work.</summary>
         public static string Sentence()
         {
             return _watch.StoodDown ? Section.GetLocalization().Replace("{mod}", _holder ?? Unnamed.GetLocalization()) : null;
@@ -103,10 +67,7 @@ namespace RealLifeOverhaul
             _view = GameView.OnFoot;
         }
 
-        /// <summary>
-        /// The frame's orders for every camera path of this mod (<see cref="CameraYieldRules.Decide"/>), made from the game's
-        /// signals once a frame, by whoever asks first. All off while there is no game manager or player.
-        /// </summary>
+        /// <summary>The frame's orders, made from the game's signals once a frame by whoever asks first; all off with no player.</summary>
         public static CameraOrders Orders
         {
             get
@@ -121,7 +82,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The game's own camera mode in this frame (made with the <see cref="Orders"/>).</summary>
+        /// <summary>The game's own camera mode in this frame.</summary>
         public static GameView View
         {
             get
@@ -164,7 +125,7 @@ namespace RealLifeOverhaul
             return CameraYieldRules.Decide(signals);
         }
 
-        // The game's camera mode: the camera of its own list it has asked for (priority 1), as far as this mod's camera cares.
+        // The camera of the game's own list it has asked for (priority 1).
         private static GameView ViewOf(GameManager gm)
         {
             if (Asked(gm.pedestrianCamera))
@@ -199,12 +160,11 @@ namespace RealLifeOverhaul
                 _confirm = false;
                 Confirm();
             }
-            // The game's camera mode read here and not through the orders: they are made after this frame's count below, so
-            // that another mod's camera is stood aside for in the frame it is seen, not one later.
+            // Read here, not through the orders, which come after this count: another mod is stood aside for in the frame it shows.
             GameManager gm = InstanceBehavior<GameManager>.Instance;
             if (ThirdPersonCamera.IsUiOpen() || GameMembers.PlayerDead || (gm != null && ViewOf(gm) == GameView.Moment))
             {
-                return;   // (a moment of the game's may film with a camera outside its own list: the funeral, CemeteryFuneralSetup; a car's preview, ShowcaseVehicleController)
+                return;   // a moment may film with a camera off the game's list (the funeral, a car's preview)
             }
             bool foreign = _pretend;
             if (!foreign)
@@ -243,7 +203,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A live virtual camera above every priority the game uses, and not one of this mod's own (the chase camera, the custom shop's).
+        // A live virtual camera above every priority the game uses, and not one of this mod's own.
         private static bool Foreign(ICinemachineCamera live)
         {
             if (live == null || live.Priority <= GamePriority)
@@ -254,14 +214,13 @@ namespace RealLifeOverhaul
             return made == null || !made.name.StartsWith(OwnPrefix, StringComparison.Ordinal);
         }
 
-        // The player drives: a camera taken now with no camera mod switched on is Empire Motors' view from the driver's seat.
+        // A camera taken while driving with no camera mod on is Empire Motors' view from the driver's seat.
         private static bool Driving()
         {
             GameManager gm = InstanceBehavior<GameManager>.Instance;
             return gm != null && gm.selectedVehicle != null && gm.selectedVehicle.controlledByPlayer;
         }
 
-        // The frame in which the camera is given up, or taken back.
         private static void Changed()
         {
             try
@@ -271,7 +230,8 @@ namespace RealLifeOverhaul
                     OtherMod known = OtherMods.Of(OtherModKind.Camera) ?? (EmpireMotors.On && Driving() ? OtherMods.EmpireMotors : null);
                     _holder = _pretend ? TestName.GetLocalization() : known != null ? known.Name : Unnamed.GetLocalization();
                     _confirm = true;
-                    Logger?.Warn("Camera: another mod drives the camera (" + _holder + (_judgedForeign && _judged != null ? ", through its own camera '" + _judged.Name + "'" : _pretend ? string.Empty : ", by moving the game's camera itself")
+                    Logger?.Warn("Camera: another mod drives the camera (" + _holder
+                                 + (_judgedForeign && _judged != null ? ", through its own camera '" + _judged.Name + "'" : _pretend ? string.Empty : ", by moving the game's camera itself")
                                  + "). This mod's camera, mouse look and chase camera stand aside until it stops.");
                     if (!_told)
                     {
@@ -301,11 +261,12 @@ namespace RealLifeOverhaul
             bool clear = !ThirdPersonCamera.Steering && !ThirdPersonCamera.IsLooking && !ChaseCamera.Live && !ChaseCamera.IsLooking;
             Logger?.Info("Camera check: another mod drives the camera (" + _holder + "): "
                          + (clear ? "stood down: PASS"
-                             : "FAIL (still on: " + (ThirdPersonCamera.Steering ? "the on-foot camera's figures " : string.Empty) + (ThirdPersonCamera.IsLooking || ChaseCamera.IsLooking ? "mouse look " : string.Empty)
+                             : "FAIL (still on: " + (ThirdPersonCamera.Steering ? "the on-foot camera's figures " : string.Empty)
+                               + (ThirdPersonCamera.IsLooking || ChaseCamera.IsLooking ? "mouse look " : string.Empty)
                                + (ChaseCamera.Live ? "the chase camera" : string.Empty) + ")") + ".");
         }
 
-        /// <summary>The notice that says who has the camera. Shown by itself once a session; again when the player presses the camera key and nothing happens.</summary>
+        /// <summary>The notice of who has the camera: once a session by itself, again when the camera key does nothing.</summary>
         public static void Tell()
         {
             if (_watch.StoodDown)
@@ -314,11 +275,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// "Test: pretend another mod has the camera": from the next frame every frame counts as one in which
-        /// something else drove the camera, so the stand-down runs exactly as it would, and can be seen without
-        /// installing anything. Pressed again, the pretence ends and the camera comes back after the usual wait.
-        /// </summary>
+        /// <summary>Test: every frame counts as foreign until pressed again, so the stand-down runs as it would.</summary>
         public static void TestPretend()
         {
             try

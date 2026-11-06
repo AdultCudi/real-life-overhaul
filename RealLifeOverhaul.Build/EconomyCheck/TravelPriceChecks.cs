@@ -65,6 +65,8 @@ namespace RealLifeOverhaul
     // The mod's GameCalendar reads the save; TravelCatalogue's seasons read a year of 365 days here.
     internal static class GameCalendar
     {
+        public static int DaysPerYear => 365;
+        public static int MonthDays => CalendarRules.MonthDays(DaysPerYear);
         public static int SeasonFromSpring(int day) => CalendarRules.SeasonFromSpring(day, 365);
     }
 }

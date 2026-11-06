@@ -4,11 +4,7 @@ using RealLifeOverhaul.Meta;
 
 namespace RealLifeOverhaul.Texts
 {
-    /// <summary>
-    /// The feature's entry in the mod's feature list, and the figures its Guide page prints: every {name} in its text is
-    /// filled from the rules here, so the page can never say anything RLO Texts does not do. Called once, when the feature
-    /// list is built (Meta/FeatureList); each figure is worked out when the page is opened.
-    /// </summary>
+    /// <summary>The feature's entry in the feature list, and its Guide page's figures from the rules.</summary>
     public static class TextsGuide
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -35,6 +31,19 @@ namespace RealLifeOverhaul.Texts
                 .Fact("texts_memory_facts", () => TextMemoryRules.FactsMost.ToString(Inv))
                 .Fact("texts_big_share", () => TextsCityRules.BigShare.ToString(Inv))
                 .Fact("texts_large_slow", () => TextSpeed.LargeSlow.ToString("0.0", Inv))
+                .Fact("texts_timeout_gpu", () => TextServer.TimeOutGpu.ToString("0", Inv))
+                .Fact("texts_gpu_threads", () => TextSpeed.GpuThreads.ToString(Inv))
+                .Fact("texts_game_cores", () => TextSpeed.GameKeeps.ToString(Inv))
+                .Fact("texts_ahead_notice", () => TextSpeed.AheadSeconds.ToString("0", Inv))
+                .Fact("texts_large_mb", () => (TextSpeed.LargeBytes / (1024 * 1024) * 2 + TextPacks.SpareMiB).ToString("N0", Inv))
+                .Fact("texts_restarts", () => TextHang.RestartsMost.ToString(Inv))
+                .Fact("texts_languages", () => TextLanguages.All.Length.ToString(Inv))
+                .Fact("texts_gossip_from", () => TextsCityRules.GossipFrom.ToString(Inv))
+                .Fact("texts_gossip_to", () => TextsCityRules.GossipTo.ToString(Inv))
+                .Fact("texts_staff_from", () => TextsCityRules.StaffFrom.ToString("00", Inv) + ":00")
+                .Fact("texts_staff_to", () => TextsCityRules.StaffTo.ToString("00", Inv) + ":00")
+                .Fact("texts_sick_from", () => TextsCityRules.SickFrom.ToString("00", Inv) + ":00")
+                .Fact("texts_sick_to", () => TextsCityRules.SickTo.ToString("00", Inv) + ":00")
                 .Cleanup(() => TextsDirector.Words.Clear())
                 .ResetData(() =>
                 {
@@ -46,16 +55,17 @@ namespace RealLifeOverhaul.Texts
                 .About("reallife_guide_textsai_about").Help("reallife_guide_textsai")
                 .Owns(Settings.TextsServiceId)
                 .Rows(TextsOptions.OwnAiButtons)
+                .Test("reallife_textsai_p2_test", TextsDirector.TestPlayer2)
                 .Fact("textsai_timeout", () => TextServiceRules.TimeOut.ToString("0", Inv))
                 .Fact("textsai_in_flight", () => TextService.Workers.ToString(Inv))
-                .Fact("textsai_per_minute", () => TextService.PerMinute.ToString(Inv));
+                .Fact("textsai_per_minute", () => TextService.PerMinute.ToString(Inv))
+                .Fact("textsai_spoken", () => TextsHub.SpokenMost.ToString("0.0", Inv));
         }
     }
 
-    /// <summary>RLO Texts' place on the options page, under the mod's own namespace so that it is one line there.</summary>
+    /// <summary>RLO Texts' blocks on the options page, as extensions so each is one line there.</summary>
     public static class TextsOptions
     {
-        /// <summary>The "RLO Texts" block of the options page: the switch, where it runs, the threads, each use, the status and the sample.</summary>
         public static ModOptions AddTexts(this ModOptions options)
         {
             return options
@@ -85,11 +95,7 @@ namespace RealLifeOverhaul.Texts
             "reallife_textsai_test", "reallife_textsai_status", "reallife_textsai_usage"
         };
 
-        /// <summary>
-        /// The "Your own AI" block: which AI service the cards go to (off unless the player chooses one), its key or the
-        /// ChatGPT sign-in, the model, a local program's address, forgetting the key or signing out, the test, the status and
-        /// ChatGPT's usage page.
-        /// </summary>
+        /// <summary>The "Your own AI" block: the service the cards go to, off unless the player chooses one, and its buttons.</summary>
         public static ModOptions AddOwnAi(this ModOptions options)
         {
             return options

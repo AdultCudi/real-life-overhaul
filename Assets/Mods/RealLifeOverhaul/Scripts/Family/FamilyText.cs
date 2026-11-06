@@ -19,6 +19,8 @@ namespace RealLifeOverhaul.Family
         public string Day;       // {day}
         public string Text;      // {text}: a line built elsewhere
         public string N;         // {n}: a number
+        public string From;      // {from}: an hour, as the game writes the time
+        public string To;        // {to}: an hour, as the game writes the time
 
         /// <summary>With the partner's name filled in.</summary>
         public static Args Us => new Args { Name = Partner.Name };
@@ -29,6 +31,7 @@ namespace RealLifeOverhaul.Family
         public Args On(string day) { Day = day; return this; }
         public Args With(string text) { Text = text; return this; }
         public Args Count(int n) { N = n.ToString(); return this; }
+        public Args Hours(int from, int to) { From = FamilyText.Hour(from); To = FamilyText.Hour(to); return this; }
     }
 
     /// <summary>A key and what fills it, as a line for a toast, a phone message, a conversation or the HUD. Called on events only.</summary>
@@ -57,7 +60,14 @@ namespace RealLifeOverhaul.Family
             }
             return text.Replace("{name}", a.Name ?? string.Empty).Replace("{child}", a.Child ?? string.Empty)
                 .Replace("{amount}", a.Amount ?? string.Empty).Replace("{place}", a.Place ?? string.Empty)
-                .Replace("{day}", a.Day ?? string.Empty).Replace("{text}", a.Text ?? string.Empty).Replace("{n}", a.N ?? string.Empty);
+                .Replace("{day}", a.Day ?? string.Empty).Replace("{text}", a.Text ?? string.Empty).Replace("{n}", a.N ?? string.Empty)
+                .Replace("{from}", a.From ?? string.Empty).Replace("{to}", a.To ?? string.Empty);
+        }
+
+        /// <summary>An hour of the day as the game writes the time (its 12 or 24 hour setting).</summary>
+        public static string Hour(int hour)
+        {
+            return (hour % 24).GetFormattedTime(0f);
         }
 
         public static LanguageChangeEventDataHolder Say(string key, in Args a)
@@ -71,6 +81,8 @@ namespace RealLifeOverhaul.Family
                 day = a.Day ?? string.Empty,
                 text = a.Text ?? string.Empty,
                 n = a.N ?? string.Empty,
+                from = a.From ?? string.Empty,
+                to = a.To ?? string.Empty,
                 key = JobKeys.Label
             });
         }
@@ -89,15 +101,26 @@ namespace RealLifeOverhaul.Family
         // A new dictionary each time: the game keeps hold of it for as long as the toast or the message is listed.
         public static Dictionary<string, string> Data(in Args a)
         {
-            return new Dictionary<string, string>(7)
+            var data = new Dictionary<string, string>(9)
             {
                 { "name", a.Name ?? string.Empty }, { "child", a.Child ?? string.Empty }, { "amount", a.Amount ?? string.Empty },
                 { "place", a.Place ?? string.Empty }, { "day", a.Day ?? string.Empty }, { "text", a.Text ?? string.Empty }, { "n", a.N ?? string.Empty }
             };
+            if (a.From != null)
+            {
+                data["from"] = a.From;   // only a line with hours carries them, so every other message's data is as it was
+                data["to"] = a.To ?? string.Empty;
+            }
+            return data;
         }
 
+        /// <summary>A notice; nothing for no line (a pool none of whose lines fits the player: <see cref="Pick"/>).</summary>
         public static void Toast(NotificationType type, string key, in Args a, float seconds = 9f)
         {
+            if (key == null)
+            {
+                return;
+            }
             Notifications.Show(type, key, Data(a), seconds);
         }
 
@@ -135,6 +158,10 @@ namespace RealLifeOverhaul.Family
         /// </summary>
         public static void Message(Contact contact, string key, in Args a, bool notify = true)
         {
+            if (key == null)
+            {
+                return;   // a pool with no line that fits the player (Pick)
+            }
             if (contact == null)
             {
                 Toast(NotificationType.Info, key, a);
@@ -212,17 +239,23 @@ namespace RealLifeOverhaul.Family
             }
         }
 
-        /// <summary>One of several lines for the same moment, never the one said last time.</summary>
+        /// <summary>
+        /// One of several lines for the same moment, never the one said last time, and never one whose words take for granted
+        /// what the player has not got (Core/LineNeeds: a fridge, a flat, a landlord); null when none of them fits.
+        /// </summary>
         public static string Pick(string[] keys, ref int last)
         {
-            int index = Random.Range(0, keys.Length);
-            if (index == last && keys.Length > 1)
+            int index = LineNeeds.Pick(keys, last, Random01);
+            if (index < 0)
             {
-                index = (index + 1 + Random.Range(0, keys.Length - 1)) % keys.Length;
+                return null;
             }
             last = index;
             return keys[index];
         }
+
+        /// <summary>The game's dice, 0 to 1, made once: Core/LineNeeds is handed it at every pick.</summary>
+        internal static readonly System.Func<float> Random01 = () => Random.value;
 
         /// <summary>"today", "tomorrow", "Saturday, in 4 days".</summary>
         public static string When(int day)

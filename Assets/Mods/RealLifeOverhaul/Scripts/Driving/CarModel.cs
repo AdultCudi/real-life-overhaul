@@ -55,12 +55,84 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// A car in a straight line, the way the game's vehicle physics moves it: engine power over a curve,
-    /// gears, a clutch that slips from rest, tyres that can only push so hard, rolling resistance and air
-    /// drag. <see cref="Solve"/> finds the engine power, gearing and drag with which a car reaches 100 km/h
-    /// in a given time and tops out at a given speed (power against drag in top gear, no cap);
-    /// <see cref="Run"/> drives it. Game-free and allocation-free once the setup exists; run once per car,
-    /// never per frame.
+    /// <see cref="CarModel.Solve"/> cut into steps, for the frames the driven car's tuning is spread over (Driving/CarTuning):
+    /// <see cref="Begin"/>, then <see cref="Step"/> until it says no more. A step designs the gearing for one power and
+    /// drives it (<see cref="CarModel.Run"/>, under a tenth of a millisecond offline); there are 24 of them, two for a car
+    /// no power gets to 100 km/h. <see cref="Solved"/>, <see cref="Result"/> and the setup are then what Solve gives, bit
+    /// for bit (NavCheck runs both). The car and the setup are the caller's and must not change while a search is under
+    /// way. Nothing allocated (but the setup's ratios the first time its number of gears changes, as in Solve).
+    /// </summary>
+    public sealed class CarSolve
+    {
+        /// <summary>
+        /// Milliseconds of a car's sums (the handling's design, then this search) a frame may take while they are under way,
+        /// a step more at most (Driving/CarTuning): the slowest step offline is about a third of a millisecond, some three
+        /// times that under the game's Mono, so no frame of them comes near 2 ms.
+        /// </summary>
+        public const double SliceMs = 0.5;
+
+        internal CarPhysics Car;
+        internal CarSetup Setup;
+        internal CarKind Kind;
+        internal float Seconds, TopKmh, SolveAt, Low, High, Best;
+        internal bool Eased, TyreLimited;
+        internal int Halvings = -1;   // -1: the first step is next
+        private bool _busy;
+
+        /// <summary>True once a search is over and some power gets the car to 100 km/h (Solve's own answer).</summary>
+        public bool Solved { get; internal set; }
+
+        /// <summary>The run of the setup found, once the search is over.</summary>
+        public CarRun Result;
+
+        /// <summary>True while steps are left.</summary>
+        public bool Busy => _busy;
+
+        /// <summary>Steps taken since <see cref="Begin"/>.</summary>
+        public int Steps { get; private set; }
+
+        /// <summary>A search as <see cref="CarModel.Solve"/> makes it, its first step not yet taken.</summary>
+        public void Begin(CarPhysics car, CarKind kind, float seconds, float topKmh, bool easedThrottle, CarSetup setup)
+        {
+            Car = car;
+            Kind = kind;
+            Seconds = seconds;
+            TopKmh = topKmh;
+            Eased = easedThrottle;
+            Setup = setup;
+            Halvings = -1;
+            Solved = false;
+            Result = default;
+            Steps = 0;
+            _busy = true;
+        }
+
+        /// <summary>One step; true while steps are left after it.</summary>
+        public bool Step()
+        {
+            if (!_busy)
+            {
+                return false;
+            }
+            Steps++;
+            _busy = CarModel.SolveStep(this);
+            return _busy;
+        }
+
+        /// <summary>The search dropped where it stands: the setup it wrote so far is not to be read.</summary>
+        public void Cancel()
+        {
+            _busy = false;
+            Car = null;
+            Setup = null;
+        }
+    }
+
+    /// <summary>
+    /// A car in a straight line as the game's vehicle physics moves it: power over a curve, gears, a clutch that slips from
+    /// rest, tyres that push only so hard, rolling resistance and drag. <see cref="Solve"/> finds the power, gearing and
+    /// drag that meet a target, spread over frames by <see cref="CarSolve"/>'s steps; <see cref="Run"/> drives it.
+    /// Game-free and allocation-free; run once per car.
     /// </summary>
     public static class CarModel
     {
@@ -76,16 +148,13 @@ namespace RealLifeOverhaul
         private const float MaxPowerPerKg = 0.6f;      // kW per kg: more than any road car, the ceiling of the search
         private const float ClutchLocksAbove = 3f;      // m/s: the game's clutch stops slipping here
 
-        /// <summary>
-        /// The eased pedal: slow at first, quicker as it goes down (0 to 1 in <see cref="ThrottleRise"/>),
-        /// and straight back up when released. Never past what is asked, so an analogue trigger keeps its feel.
-        /// </summary>
+        /// <summary>The eased pedal: slow at first and quicker as it goes down, 0 to 1 in <see cref="ThrottleRise"/>; straight back up when released.</summary>
         public static float Pedal(float current, float asked, float dt)
         {
             if (asked > current)
             {
-                // Straight past the gearbox's dead zone: below it the box takes the pedal for released and drops
-                // back to neutral, which in reverse (where the pedals swap) would never let the car pull away.
+            // Straight past the gearbox's dead zone: below it the box drops to neutral, which in reverse (pedals swapped)
+            // would never let the car pull away.
                 if (current < PedalDeadZone && asked > PedalDeadZone)
                 {
                     current = PedalDeadZone;
@@ -106,47 +175,68 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Finds the setup for a target. Power is searched (more power is never slower); for each power
-        /// the gearing and drag follow from the top speed: top gear turns the engine at 95 % of its limit
-        /// there, and drag is whatever makes the engine's power at that speed just hold it. False if no
-        /// power gets this car to 100 km/h at all (then nothing should be done to it).
+        /// Finds the setup for a target: power is searched (more is never slower), and for each the gearing and drag follow
+        /// from the top speed, top gear at 95 % of the limit there. False if no power gets this car to 100 km/h at all.
         /// </summary>
         public static bool Solve(CarPhysics car, CarKind kind, float seconds, float topKmh, bool easedThrottle, CarSetup setup, out CarRun run)
         {
-            // The time to 100 km/h only means something for a car that goes well past it. With the top speed
-            // turned down below that, the power is found as if it topped out at 125, and then geared and
-            // dragged down to what was asked: the car pulls as it would have, and stops sooner.
-            float solveAt = topKmh < SolveAtLeastKmh ? SolveAtLeastKmh : topKmh;
-            float low = 5f;
-            float high = car.Mass * MaxPowerPerKg;
-            Design(car, kind, solveAt, high, setup);
-            float best = Run(car, setup, easedThrottle).To100;
-            bool tyreLimited = best < 0f || best > seconds;
-            if (tyreLimited && best > 0f)
+            CarSolve whole = Whole;
+            whole.Begin(car, kind, seconds, topKmh, easedThrottle, setup);
+            while (whole.Step())
             {
-                seconds = best * 1.02f;   // no power does it: the least power that comes within 2 % of the best the tyres allow
             }
-            if (best > 0f)
+            run = whole.Result;
+            return whole.Solved;
+        }
+
+        private static readonly CarSolve Whole = new CarSolve();   // Solve's own: a search under way in steps keeps its own
+
+        internal const int Halvings = 22;   // of the power's range: 22 halvings find it to a few watts
+
+        // One step of a search: the power at the top of the range first, then each halving, then the setup for the power
+        // found; false once that last is done. The steps of the search Solve makes at once.
+        internal static bool SolveStep(CarSolve s)
+        {
+            CarPhysics car = s.Car;
+            CarSetup setup = s.Setup;
+            if (s.Halvings < 0)
             {
-                for (int i = 0; i < 22; i++)
+                // A top speed turned down below 125 km/h is solved as 125, then geared and dragged down: the car pulls as it
+                // would have, and stops sooner.
+                s.SolveAt = s.TopKmh < SolveAtLeastKmh ? SolveAtLeastKmh : s.TopKmh;
+                s.Low = 5f;
+                s.High = car.Mass * MaxPowerPerKg;
+                Design(car, s.Kind, s.SolveAt, s.High, setup);
+                s.Best = Run(car, setup, s.Eased).To100;
+                s.TyreLimited = s.Best < 0f || s.Best > s.Seconds;
+                if (s.TyreLimited && s.Best > 0f)
                 {
-                    float middle = (low + high) * 0.5f;
-                    Design(car, kind, solveAt, middle, setup);
-                    float time = Run(car, setup, easedThrottle).To100;
-                    if (time < 0f || time > seconds)
-                    {
-                        low = middle;
-                    }
-                    else
-                    {
-                        high = middle;
-                    }
+                    s.Seconds = s.Best * 1.02f;   // no power does it: the least power that comes within 2 % of the best the tyres allow
                 }
+                s.Halvings = s.Best > 0f ? 0 : Halvings;
+                return true;
             }
-            Design(car, kind, topKmh, high, setup);
-            setup.TyreLimited = tyreLimited;
-            run = Run(car, setup, easedThrottle);
-            return best > 0f;
+            if (s.Halvings < Halvings)
+            {
+                float middle = (s.Low + s.High) * 0.5f;
+                Design(car, s.Kind, s.SolveAt, middle, setup);
+                float time = Run(car, setup, s.Eased).To100;
+                if (time < 0f || time > s.Seconds)
+                {
+                    s.Low = middle;
+                }
+                else
+                {
+                    s.High = middle;
+                }
+                s.Halvings++;
+                return true;
+            }
+            Design(car, s.Kind, s.TopKmh, s.High, setup);
+            setup.TyreLimited = s.TyreLimited;
+            s.Result = Run(car, setup, s.Eased);
+            s.Solved = s.Best > 0f;
+            return false;
         }
 
         /// <summary>Gearing, drag and shift points for a car of this power and top speed.</summary>
@@ -165,8 +255,7 @@ namespace RealLifeOverhaul
             float push = powerKw * car.Boost * car.Power(TopGearRevs) * 1000f / top - car.RollingForce;
             setup.Drag = push > 0f ? push / (top * top) : 0f;
 
-            // First gear runs out at about a fifth of top speed (45 to 58 km/h), but is never so short that
-            // the engine's best torque spins the tyres.
+            // First gear runs out at about a fifth of top speed, but never so short that the best torque spins the tyres.
             float firstEnds = top * 0.2f;
             firstEnds = firstEnds < 12.5f ? 12.5f : firstEnds > 16.1f ? 16.1f : firstEnds;
             float firstRatio = engineAtTop * car.WheelRadius / firstEnds;
@@ -310,8 +399,8 @@ namespace RealLifeOverhaul
             return force > car.TractionForce ? car.TractionForce : force;
         }
 
-        // The engine's best torque at full throttle, in newton metres, from where the clutch bites to the limit.
-        private static float PeakTorque(CarPhysics car, float powerKw)
+        /// <summary>The engine's best torque at full throttle, in newton metres, from where the clutch bites to the limit.</summary>
+        public static float PeakTorque(CarPhysics car, float powerKw)
         {
             float best = 0f;
             float from = car.LaunchRpm / car.RevLimitRpm;
@@ -326,6 +415,17 @@ namespace RealLifeOverhaul
                 best = torque > best ? torque : best;
             }
             return best * powerKw * car.Boost * 1000f;
+        }
+
+        /// <summary>The engine's best power at full throttle and full boost, in kilowatts, as the game's own engine reckons its peak.</summary>
+        public static float PeakPower(CarPhysics car, float powerKw)
+        {
+            float best = 0f;
+            for (int i = 0; i < CarPhysics.CurveSamples; i++)
+            {
+                best = car.Curve[i] > best ? car.Curve[i] : best;
+            }
+            return best * powerKw * car.Boost;
         }
 
         private static float Pow(float value, float power)

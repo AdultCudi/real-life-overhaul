@@ -107,9 +107,16 @@ namespace RealLifeOverhaul.Tech
             return best;
         }
 
-        /// <summary>A round closes: new shares at the pre-money's price, a staff pool at the seed round; the stage moves on.</summary>
+        /// <summary>
+        /// A round closes: new shares at the pre-money's price, a staff pool at the seed round; the stage moves on. The player's
+        /// shares before it are kept, so their one follow-on of it can bring them back to that share and no further.
+        /// </summary>
         public static void Round(Startup s, long pre, IList<Holder> investors, int day)
         {
+            s.BeforeMine = PlayerShares(s);
+            s.BeforeTotal = s.Total;
+            s.RoundDay = day;
+            s.Followed = false;
             long total = Math.Max(1, s.Total);
             long raised = 0;
             for (int i = 0; i < investors.Count; i++)
@@ -312,10 +319,7 @@ namespace RealLifeOverhaul.Tech
             long size = RoundSize(next);
             if (lead >= 0)
             {
-                var vc = new Holder { Kind = (int)HolderKind.Vc, Who = lead, Invested = size, ProRata = true, Board = !VentureCatalogue.Firms[lead].Angels };
-                Round(s, pre, new[] { vc }, day);
-                notes?.Add(new VentureNote { Kind = NoteRaised, Startup = s.Id, Amount = size });
-                FollowOn(s, notes);
+                Led(s, lead, pre, size, day, notes);
                 return;
             }
             s.FailedRaises++;
@@ -330,11 +334,34 @@ namespace RealLifeOverhaul.Tech
                 s.Stage = stage;   // a down round raises money but is no new stage
                 s.Burn = VentureCatalogue.BurnByStage[stage];
                 notes?.Add(new VentureNote { Kind = NoteDown, Startup = s.Id, Amount = size / 2 });
+                FollowOn(s, notes);
                 return;
             }
             s.State = (int)StartupState.Running;
             s.LastRound = day;
             s.Ask = null;
+        }
+
+        /// <summary>A round a venture firm leads for all of it: the round closes, and a player with pro rata rights is offered their follow-on.</summary>
+        public static void Led(Startup s, int lead, long pre, long size, int day, List<VentureNote> notes)
+        {
+            var vc = new Holder { Kind = (int)HolderKind.Vc, Who = lead, Invested = size, ProRata = true, Board = !VentureCatalogue.Firms[lead].Angels };
+            Round(s, pre, new[] { vc }, day);
+            notes?.Add(new VentureNote { Kind = NoteRaised, Startup = s.Id, Amount = size });
+            FollowOn(s, notes);
+        }
+
+        /// <summary>A firm that leads rounds at the stage, the first in the list; -1 if none does.</summary>
+        public static int AnyLead(int stage)
+        {
+            for (int i = 0; i < VentureCatalogue.Firms.Length; i++)
+            {
+                if (stage >= VentureCatalogue.Firms[i].Least && stage <= VentureCatalogue.Firms[i].Most)
+                {
+                    return i;
+                }
+            }
+            return -1;
         }
 
         private static int InsiderVc(Startup s)
@@ -352,14 +379,34 @@ namespace RealLifeOverhaul.Tech
         // After a round: a player who holds pro rata rights is offered their share of it.
         private static void FollowOn(Startup s, List<VentureNote> notes)
         {
+            if (FollowOnAmount(s) > 0)
+            {
+                notes?.Add(new VentureNote { Kind = NoteFollowOn, Startup = s.Id });
+            }
+        }
+
+        /// <summary>The shares the player holds in a startup, as an angel and from the fund.</summary>
+        public static long PlayerShares(Startup s)
+        {
+            long mine = 0;
+            for (int i = 0; i < s.Holders.Count; i++)
+            {
+                mine += s.Holders[i].Players ? s.Holders[i].Shares : 0;
+            }
+            return mine;
+        }
+
+        /// <summary>True if one of the player's lines holds pro rata rights.</summary>
+        public static bool HasProRata(Startup s)
+        {
             for (int i = 0; i < s.Holders.Count; i++)
             {
                 if (s.Holders[i].Players && s.Holders[i].ProRata)
                 {
-                    notes?.Add(new VentureNote { Kind = NoteFollowOn, Startup = s.Id });
-                    return;
+                    return true;
                 }
             }
+            return false;
         }
 
         /// <summary>All the money put into a startup, cents.</summary>
@@ -470,27 +517,44 @@ namespace RealLifeOverhaul.Tech
             return yes;
         }
 
-        /// <summary>A follow-on: the player keeps their share of the last round by putting in their part of it. Cents asked.</summary>
+        /// <summary>
+        /// A follow-on, cents asked: the player's part of the last round, at its price, that brings them back to the share they held
+        /// just before it, never more. 0 once taken, with no pro rata rights, for a round the player held nothing before, for a round
+        /// that left them at or above that share (a round they joined), and for a round closed before the save kept the share.
+        /// </summary>
         public static long FollowOnAmount(Startup s)
         {
-            long total = Math.Max(1, s.Total), mine = 0, last = 0;
-            for (int i = 0; i < s.Holders.Count; i++)
+            long others = s.BeforeTotal - s.BeforeMine;
+            if (s.Followed || s.BeforeMine <= 0 || others <= 0 || !HasProRata(s))
             {
-                if (s.Holders[i].Players)
-                {
-                    mine += s.Holders[i].Shares;
-                }
-                if (s.Holders[i].Round == s.Stage && !s.Holders[i].Players)
-                {
-                    last += s.Holders[i].Invested;
-                }
+                return 0;
             }
-            return (long)((double)last * mine / total);
+            long total = Math.Max(1, s.Total);
+            // the new shares x that make (mine + x) / (total + x) the share before: x = (before mine * total - mine * before total) / others
+            double shares = ((double)s.BeforeMine * total - (double)PlayerShares(s) * s.BeforeTotal) / others;
+            if (shares < 1)
+            {
+                return 0;
+            }
+            return (long)(shares * Math.Max(1, s.Post) / total);
         }
 
-        /// <summary>The player's follow-on: new shares at the last round's price, which dilutes the others a little.</summary>
-        public static void TakeFollowOn(Startup s, int kind, long amount)
+        /// <summary>True while the player may take the follow-on of the last round: within its days, not yet taken, and something to take.</summary>
+        public static bool FollowOnOpen(Startup s, int day)
         {
+            return s.Alive && s.RoundDay >= 0 && day >= s.RoundDay && day - s.RoundDay <= VentureCatalogue.ProRataDays && FollowOnAmount(s) > 0;
+        }
+
+        /// <summary>
+        /// The player's follow-on: new shares at the last round's price per share (the value after it over its shares), the money
+        /// added to the value as the round grew by it. Once a round; refused above <see cref="FollowOnAmount"/>. True if taken.
+        /// </summary>
+        public static bool TakeFollowOn(Startup s, int kind, long amount)
+        {
+            if (amount <= 0 || amount > FollowOnAmount(s))
+            {
+                return false;
+            }
             long total = Math.Max(1, s.Total);
             long price = Math.Max(1, s.Post);
             var h = new Holder { Kind = kind, Invested = amount, Round = s.Stage, ProRata = true };
@@ -499,6 +563,8 @@ namespace RealLifeOverhaul.Tech
             s.Holders.Add(h);
             s.Cash += amount;
             s.Post += amount;
+            s.Followed = true;
+            return true;
         }
 
         /// <summary>What a startup's deck says its revenue is: the truth, stretched by its claim.</summary>

@@ -58,6 +58,9 @@ namespace RealLifeOverhaul.Economy
     /// </summary>
     internal static partial class EstateGame
     {
+        /// <summary>Owner deduction labels whose mixed costs have no single portable recurrence rule.</summary>
+        internal static string[] CompanionUnclassifiedTaxLabels() => new[] { DeductKey.GetLocalization() };
+
         public const string RentKey = "ba:transaction_rentrevenue";       // the game's own, with the address
         public const string SoldKey = "ba:transaction_buildingsold";      // the game's own: a mortgage's lender looks for it
         public const string WorksKey = "reallife_transaction_estate_works";
@@ -77,6 +80,9 @@ namespace RealLifeOverhaul.Economy
         public const string HireCostsKey = "reallife_transaction_estate_hire_costs";
         public const string HireClaimKey = "reallife_transaction_estate_hire_claim";
         public const string TradingTaxKey = "reallife_transaction_estate_trading_tax";
+        public const string RepairsKey = "reallife_transaction_estate_repairs";   // a tenant's repair call, by a contractor or the player's materials
+        public const string ManagerKey = "reallife_transaction_estate_manager";   // a letting agent's or a property manager's fee
+        public const string FineKey = "reallife_transaction_estate_fine";         // the city's fine after a failed inspection
         private const string DeductKey = "reallife_estate_deduct";
         private const string CustomerService = "ba:skill_customerservice";
         private const string OfficeType = "ba:buildingtype_office";
@@ -141,7 +147,7 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; i < all.Count; i++)
             {
                 Building b = all[i];
-                if (b == null || string.IsNullOrEmpty(b.StreetName))
+                if (b == null || string.IsNullOrEmpty(b.StreetName) || GameDlc.Gated(b))
                 {
                     continue;
                 }
@@ -450,7 +456,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return false;
             }
-            GameManager.ChangeMoneySafe(price, AtAddress(SoldKey, address), null, null, true);
+            RealLifeOverhaul.Economy.BizBooks.Book(price, AtAddress(SoldKey, address), null, null, true);
             Release(save, e, null);
             return true;
         }
@@ -464,9 +470,10 @@ namespace RealLifeOverhaul.Economy
             Address address = e.address;
             BuildingRegistration reg = BuildingHelper.GetBuildingRegistration(address);
             Building building = BuildingHelper.GetBuilding(address);
-            if (reg != null)
+            string district = GameRegistrations.District(reg);
+            if (district != null)   // a registration with no building is left as it is
             {
-                reg.buildingOwnerRivalId = !string.IsNullOrEmpty(rival) ? rival : RivalsHelper.GetRandomRivalForBuilding(reg.Neighborhood);
+                reg.buildingOwnerRivalId = !string.IsNullOrEmpty(rival) ? rival : RivalsHelper.GetRandomRivalForBuilding(district);
                 if (reg.RentedByPlayer && building != null)
                 {
                     reg.RentPerDay = building.GetBuildingDailyMarketRent();
@@ -503,7 +510,7 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 BuildingRegistration reg = all[i];
-                if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.GetBuildingType() == OfficeType)
+                if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && GameRegistrations.BuildingType(reg) == OfficeType)
                 {
                     into.Add(reg);
                 }
@@ -579,14 +586,14 @@ namespace RealLifeOverhaul.Economy
             {
                 info.SetTaxDeductibleName(DeductKey.GetLocalization());
             }
-            return GameManager.ChangeMoneySafe(-amount, info, null, place != null ? AddressOf(place) : null, force);
+            return RealLifeOverhaul.Economy.BizBooks.Book(-amount, info, null, place != null ? AddressOf(place) : null, force);
         }
 
         public static void Give(int amount, string key, string name, string place)
         {
             if (amount > 0 && Save != null)
             {
-                GameManager.ChangeMoneySafe(amount, Info(key, name), null, place != null ? AddressOf(place) : null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, Info(key, name), null, place != null ? AddressOf(place) : null, true);
             }
         }
 
@@ -599,7 +606,7 @@ namespace RealLifeOverhaul.Economy
             Address address = AddressOf(h.Place);
             if (amount != 0 && Save != null && address != null)
             {
-                GameManager.ChangeMoneySafe(amount, AtAddress(RentKey, address), null, address, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, AtAddress(RentKey, address), null, address, true);
             }
         }
 

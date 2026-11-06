@@ -430,9 +430,13 @@ namespace RealLifeOverhaul.Careers
         /// <summary>Days of notice a rank gives: a week, two from the third rung, four at the top.</summary>
         public static int NoticeDays(ProRank r, int rank) => r.Exec ? 28 : rank >= 2 ? 14 : 7;
 
-        /// <summary>What a job's reference says: poor after a dismissal or walking out, fair after short or patchy service, good otherwise.</summary>
+        /// <summary>What a job's reference says: poor after a dismissal or walking out, fair after short or patchy service, good otherwise, and always good when the employer closed.</summary>
         public static int Reference(Job j, int day, LeaveReason why)
         {
+            if (why == LeaveReason.EmployerClosed)
+            {
+                return 3;   // not the player's doing, however short the service: the employer's own word at its closing
+            }
             if (why == LeaveReason.Dismissed || why == LeaveReason.WalkedOut || why == LeaveReason.Misconduct)
             {
                 return 1;

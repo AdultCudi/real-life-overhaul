@@ -27,7 +27,7 @@ namespace RealLifeOverhaul
     /// <summary>Keeps the player on the spot with one of the game's navigation blockers.</summary>
     internal static class LicenceHold
     {
-        private const NavigationBlocker Blocker = (NavigationBlocker)7301;   // our own value, so nobody else's is ever lifted
+        private const NavigationBlocker Blocker = (NavigationBlocker)7304;   // our own value, so nobody else's is ever lifted (each hold of the mod's has a value no other uses: TextBoxChecks)
 
         private static PlayerController _held;
 

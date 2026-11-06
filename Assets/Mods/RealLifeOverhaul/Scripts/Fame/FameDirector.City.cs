@@ -172,7 +172,7 @@ namespace RealLifeOverhaul.Fame
         {
             bool investors = _scene.Kind == FameInviteKind.Investors;
             string title = FameText.InviteName(_scene.Kind);
-            string place = FameText.T(investors ? "reallife_fame_event_place_0" : "reallife_fame_event_place_1");
+            string place = FameText.T(investors ? "reallife_fame_call_place_0" : "reallife_fame_call_place_1");
             string speaker = FameText.T(investors ? "reallife_fame_event_host_0" : "reallife_fame_event_host_1");
             if ((_eventDone & 3) == 3)
             {
@@ -180,7 +180,7 @@ namespace RealLifeOverhaul.Fame
                     _ => SceneOver(true));
                 return;
             }
-            string body = _eventSaid != null ? _eventSaid + "\n" + FameText.T("reallife_fame_event_more") : FameText.T(investors ? "reallife_fame_event_open_0" : "reallife_fame_event_open_1");
+            string body = _eventSaid != null ? _eventSaid + "\n" + FameText.T("reallife_fame_event_more") : FameText.T(investors ? "reallife_fame_call_open_0" : "reallife_fame_call_open_1");
             var names = new List<string>(3);
             var hints = new List<string>(3);
             var picks = new List<int>(3);

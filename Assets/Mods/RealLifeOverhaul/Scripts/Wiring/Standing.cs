@@ -7,13 +7,9 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The player's record and standing, asked in one place. Two features keep a part of it:
-        /// Scripts/Law the police record (tickets, stays in a cell, getting away) and both
-        /// reputations, Scripts/Justice what a court convicted them of, Scripts/Fame how well the city
-        /// knows them and what it thinks of them as an owner. Everybody else (city
-        /// hall, employers, friends, a licensing desk) asks here and never the two directly, so
-        /// "a record" means the same thing everywhere. Read when something happens, never per
-        /// frame: the longest answer walks the forty lines of the police record once.
+        /// The player's record and standing, asked in one place so "a record" means the same everywhere: Law's police
+        /// record and reputations, Justice's convictions, Fame's recognition and integrity. Read on events; the longest
+        /// answer walks the forty lines of the police record once.
         /// </summary>
         public static class Standing
         {
@@ -37,10 +33,7 @@ namespace RealLifeOverhaul
             /// <summary>A case is open against the player.</summary>
             public static bool Charged => JusticeState.Loaded && JusticeState.OpenCount > 0;
 
-            /// <summary>
-            /// A criminal record somebody would mind: a conviction, a stay in a cell, or being
-            /// wanted for driving off after hurting somebody. A ticket is not one.
-            /// </summary>
+            /// <summary>A conviction, a stay in a cell, or wanted for driving off after hurting somebody; a ticket is not one.</summary>
             public static bool HasRecord => Convictions > 0 || Arrested(int.MaxValue);
 
             /// <summary>Held in a cell, or wanted, within the last so many game days.</summary>

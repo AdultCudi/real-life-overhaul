@@ -42,6 +42,16 @@ namespace RealLifeOverhaul.Markets
                 case MarketNewsKind.Split:
                     Queue(NotificationType.Info, "reallife_mkt_note_split", "name", name, "ratio", news.A.ToString(), "day", news.B.ToString());
                     break;
+                case MarketNewsKind.Builder:
+                {
+                    // A builder the player holds or watches: the market's own sentence for it, as the paper prints it.
+                    string key = MarketText.NewsKey(news, s, out string[] data);
+                    if (key.Length > 0)
+                    {
+                        Queue(news.B >= 0 ? NotificationType.Info : NotificationType.Warning, key, data);
+                    }
+                    break;
+                }
             }
         }
 
@@ -57,12 +67,12 @@ namespace RealLifeOverhaul.Markets
                 // A dividend put back: what it bought, a part with the reason, or why it could not; the rest stays in the cash.
                 if (qty <= 0)
                 {
-                    Queue(NotificationType.Warning, "reallife_mkt_inv_note_back_refused", "name", stock.Name, "why", MarketText.Why(order.Why));
+                    Queue(NotificationType.Warning, "reallife_mkt_inv_note_back_refused", "name", stock.Name, "why", MarketText.Why(order.Why, stock));
                 }
                 else if (order.Why != OrderWhy.None)
                 {
                     Queue(NotificationType.Info, "reallife_mkt_inv_note_back_part", "name", stock.Name, "count", qty.ToString("N0"), "price", MarketText.Price(cents), "why",
-                        MarketText.Why(order.Why));
+                        MarketText.Why(order.Why, stock));
                 }
                 else
                 {
@@ -72,7 +82,7 @@ namespace RealLifeOverhaul.Markets
             }
             if (qty <= 0)
             {
-                Queue(NotificationType.Error, "reallife_mkt_note_refused", "name", stock.Name, "why", MarketText.Why(order.Why));
+                Queue(NotificationType.Error, "reallife_mkt_note_refused", "name", stock.Name, "why", MarketText.Why(order.Why, stock));
                 return;
             }
             if (order.Forced)

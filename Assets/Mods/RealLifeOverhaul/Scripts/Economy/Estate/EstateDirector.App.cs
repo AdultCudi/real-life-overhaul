@@ -104,6 +104,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     EstateHolding h = _state.Holdings[i];
                     waiting += h.ApplicantCount + (h.Offer > 0 ? 1 : 0) + EstateRules.UnitsToAnswer(h, day);
+                    waiting += Duties && h.Managed && h.Manager != (int)EstateManager.Manager ? EstateRules.CallsWaiting(h) : 0;
                 }
                 for (int i = 0; i < _state.Agency.Open.Count; i++)
                 {

@@ -401,7 +401,7 @@ namespace RealLifeOverhaul
                 for (int i = 0; i < registrations.Count; i++)
                 {
                     BuildingRegistration registration = registrations[i];
-                    if (registration == null || !GoingPublic.Mine(registration))
+                    if (registration == null || !GoingPublic.Mine(registration) || !GameRegistrations.Found(registration))
                     {
                         continue;
                     }
@@ -510,7 +510,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            GameManager.ChangeMoneySafe(amount, new TransactionInfo(transactionKey), null, null, force: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(amount, new TransactionInfo(transactionKey), null, null, force: true);
         }
     }
 }

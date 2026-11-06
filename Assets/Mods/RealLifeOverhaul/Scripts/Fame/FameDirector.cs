@@ -314,7 +314,7 @@ namespace RealLifeOverhaul.Fame
             }
             _insideDone = true;
             string name = FameGame.Name(reg);
-            FameDistrict d = _file.District(reg.Neighborhood);
+            FameDistrict d = _file.District(GameRegistrations.District(reg));
             int known = d != null ? d.Known : FameRules.DistrictKnown(_file.Recognition, 1, 0);
             if (Settings.StandingStreet && FameRules.ShopMay(_file, day, known))
             {

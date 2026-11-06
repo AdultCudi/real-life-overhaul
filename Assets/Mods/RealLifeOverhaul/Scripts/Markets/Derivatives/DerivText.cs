@@ -25,8 +25,14 @@ namespace RealLifeOverhaul.Markets
 
         public static string Why(DerivWhy why)
         {
+            return MarketText.T(WhyKey(why));
+        }
+
+        /// <summary>The sentence's key of why a contract cannot be bought, for a page of another feature's to say.</summary>
+        public static string WhyKey(DerivWhy why)
+        {
             int i = (int)why;
-            return MarketText.T(i >= 0 && i < WhyKeys.Length ? WhyKeys[i] : WhyKeys[0]);
+            return i >= 0 && i < WhyKeys.Length ? WhyKeys[i] : WhyKeys[0];
         }
 
         public static string Kind(ContractKind kind)

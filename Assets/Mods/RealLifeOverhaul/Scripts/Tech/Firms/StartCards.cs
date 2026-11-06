@@ -3,6 +3,7 @@ using System.Globalization;
 using System.Reflection;
 using System.Text;
 using Localizor.LanguageChangeEvent;
+using RealLifeOverhaul.BizPace;
 using RealLifeOverhaul.GameUi;
 using TMPro;
 using UI.Smartphone.Apps.BizMan.StartBusiness;
@@ -83,9 +84,12 @@ namespace RealLifeOverhaul.Tech
             _said = null;
         }
 
+        private static readonly int BizWrite = HotSpots.Slot("Tech: StartCards.Write");
+
         /// <summary>Goes over the cards once, just after the game made them, those it is letting go this frame too.</summary>
         internal static void Write(Transform holder)
         {
+            using var timed = BizPaceWatch.Time(BizWrite);   // a step of BizMan's start screen opening (BizPace)
             TechDirector director = TechDirector.Instance;
             FieldInfo typeField = GameContract.StartCardType.Field, labelField = GameContract.StartCardLabel.Field;
             FieldInfo amountField = GameContract.StartCardAmount.Field;

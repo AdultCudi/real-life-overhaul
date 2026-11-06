@@ -1,5 +1,4 @@
 using System.Collections.Generic;
-using BAModAPI;
 using RealLifeOverhaul.GameUi;
 using RealLifeOverhaul.Tech;
 using UI.Notification;
@@ -16,10 +15,9 @@ namespace RealLifeOverhaul.Careers
 
         private static readonly string[] TabKeys =
         {
-            "reallife_campus_tab_courses", "reallife_campus_tab_studying", "reallife_campus_tab_results", "reallife_campus_tab_skills", "reallife_campus_tab_family"
+            "reallife_campus_tab_courses", "reallife_campus_tab_studying", "reallife_campus_tab_results", "reallife_campus_tab_skills", "reallife_campus_tab_family",
+            "reallife_schools_tab"
         };
-
-        public static IModLogger Logger;
 
         private readonly CareersDirector _director;
         private readonly List<TableRow> _rows = new List<TableRow>(64);
@@ -151,6 +149,7 @@ namespace RealLifeOverhaul.Careers
                         case CareersDirector.TabResults: table = WriteResults(box, f); break;
                         case CareersDirector.TabSkills: table = WriteSkills(box, f, day); break;
                         case CareersDirector.TabFamily: table = WriteFamily(box); break;
+                        case TabSchools: table = WriteSchools(box); break;
                         default: table = WriteCourses(box, f); break;
                     }
                 }

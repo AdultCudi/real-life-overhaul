@@ -12,7 +12,8 @@ namespace RealLifeOverhaul.Careers
         Declined = 4,     // the player said no
         Rejected = 5,     // the employer said no
         Lapsed = 6,       // nobody answered in time, or the interview was missed
-        Withdrawn = 7
+        Withdrawn = 7,
+        Closed = 8        // the employer closed, was bought or lost its building before the answer, the interview, the offer or the start
     }
 
     /// <summary>How a vacancy reached the player: the saved number of <see cref="Opening.Via"/>.</summary>
@@ -28,7 +29,8 @@ namespace RealLifeOverhaul.Careers
     /// <summary>Why a job ended: the saved number of <see cref="Job.Leaving"/> and <see cref="Spell.Leaving"/>.</summary>
     public enum LeaveReason
     {
-        None = 0, Resigned = 1, Dismissed = 2, Redundant = 3, Poached = 4, Retired = 5, WalkedOut = 6, SpunOut = 7, Misconduct = 8
+        None = 0, Resigned = 1, Dismissed = 2, Redundant = 3, Poached = 4, Retired = 5, WalkedOut = 6, SpunOut = 7, Misconduct = 8,
+        EmployerClosed = 9   // the employer closed, was bought or lost its building: a lay-off with pay and a good reference, never a quit or a sacking
     }
 
     /// <summary>A vacancy: one post at one employer. Game-free.</summary>
@@ -46,10 +48,32 @@ namespace RealLifeOverhaul.Careers
         public int From, To;                  // the days it is open
         public int Via;
         public int Family = -1, Level = -1;   // the jobs board's ad it is, if it is one
+        public string Lead = string.Empty;    // who of the people the player knows passed it on (Network's job lead); empty for none
+        public int Shift;                     // its working week fitted to the workplace's opening hours (OpenHoursRules.Pack); 0 not fitted yet: the profession's own
+
+        private Profession _fitted;           // the profession on that week, made again only when the week changes
+        private int _fittedOf;
 
         public bool Open(int day) => day >= From && day <= To;
 
-        public Profession Def => ProCatalogue.Find(Prof);
+        /// <summary>The profession as this post works it: on its own fitted week, so every rule that reads a working day's hours reads the post's.</summary>
+        public Profession Def
+        {
+            get
+            {
+                Profession p = ProCatalogue.Find(Prof);
+                if (p == null || Shift == 0 || Shift == OpenHoursRules.Pack(p.Days, p.Hour, p.Hours))
+                {
+                    return p;
+                }
+                if (_fitted == null || _fittedOf != Shift || _fitted.Id != p.Id)
+                {
+                    _fitted = p.WithShift(OpenHoursRules.DaysOf(Shift), OpenHoursRules.HourOf(Shift), OpenHoursRules.HoursOf(Shift));
+                    _fittedOf = Shift;
+                }
+                return _fitted;
+            }
+        }
 
         public void CopyTo(Opening o)
         {
@@ -68,6 +92,8 @@ namespace RealLifeOverhaul.Careers
             o.Via = Via;
             o.Family = Family;
             o.Level = Level;
+            o.Lead = Lead;
+            o.Shift = Shift;
         }
 
         /// <summary>True for the same post at the same place.</summary>
@@ -132,6 +158,7 @@ namespace RealLifeOverhaul.Careers
         public int Bonus;             // whole money of a bonus awarded and not yet paid
         public int AskDay = -1000;    // the last time the player asked for a rise between reviews
         public int OffUntil;          // signed off for burnout until this day: its working days are excused
+        public int ShutDay = -1;      // a working day the workplace was shut at its start: excused, never a warning
 
         public Profession Def => Post.Def;
 
@@ -180,6 +207,8 @@ namespace RealLifeOverhaul.Careers
         public bool RestraintTested; // the former employer has looked at what the player did
         public int ColleaguesUntil, ColleaguesCount, ColleaguesProf = -1, ColleaguesLevel;   // former colleagues waiting to join the player's firm
         public int PracticeAfter = -1;   // a practice of this profession to open when the notice ends
+        public int LaidOffDay;        // the day an employer's closing let the player go (ClosureRules); 0 never
+        public string LaidOffFrom = string.Empty;   // ...and that employer's name as the vacancies kept it
 
         public const int OpeningsMost = 40, ApplicationsMost = 24, HistoryMost = 16;
 
@@ -197,16 +226,26 @@ namespace RealLifeOverhaul.Careers
             return null;
         }
 
+        /// <summary>
+        /// The application to a post: its live one, else the newest. A post applied to again after a withdrawal has two, and
+        /// the oldest first sent every interview, offer and withdrawal to the withdrawn one (a player's report of 25 Oct).
+        /// </summary>
         public Application ApplicationOf(int id)
         {
-            for (int i = 0; i < Applications.Count; i++)
+            Application newest = null;
+            for (int i = Applications.Count - 1; i >= 0; i--)
             {
-                if (Applications[i].Post.Id == id)
+                if (Applications[i].Post.Id != id)
+                {
+                    continue;
+                }
+                if (Applications[i].Live)
                 {
                     return Applications[i];
                 }
+                newest = newest ?? Applications[i];
             }
-            return null;
+            return newest;
         }
 
         /// <summary>A live application for the same post, or null.</summary>

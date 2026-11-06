@@ -16,7 +16,7 @@ namespace RealLifeOverhaul
     /// <summary>Jobs' director: paying a slip, and a shift carried across a save.</summary>
     public partial class JobDirector
     {
-        private const float EnergyFloor = 12f;       // work never takes the player below this (the game faints them at zero)
+        internal const float EnergyFloor = 12f;       // work never takes the player below this (the game faints them at zero)
         private const float WorstEnergyMultiplier = 1.9f;   // the most the game multiplies energy spent by (low mood, hunger)
         private const string SalaryCategory = "ba:transactioncategory_salaryincome";
         private readonly StringBuilder _text = new StringBuilder(256);
@@ -43,7 +43,7 @@ namespace RealLifeOverhaul
             int total = slip.Total;
             if (total > 0)
             {
-                GameManager.ChangeMoneySafe(total, new TransactionInfo(def.TransactionKey, SalaryCategory), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(total, new TransactionInfo(def.TransactionKey, SalaryCategory), null, null, force: true);
             }
             if (slip.Units <= 0)
             {
@@ -187,7 +187,7 @@ namespace RealLifeOverhaul
                 {
                     _career.SettleSaved(def, saved, sum);   // the basic wage for the hours clocked, and the shift on the rota's count
                 }
-                else if (sum.Worked && JobCatalogue.IndexOf(def.Id) >= 0)
+                else if (sum.Worked && JobCatalogue.RecordOf(def.Id) >= 0)
                 {
                     JobState.ShiftCut(def);   // a shift worked; the strikes stay as they were
                 }

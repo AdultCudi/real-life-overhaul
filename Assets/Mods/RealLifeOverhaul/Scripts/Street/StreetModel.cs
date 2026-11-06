@@ -3,7 +3,7 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Street
 {
-    /// <summary>What the player can say to somebody in the street: the choices of the conversation, in the order they are offered.</summary>
+    /// <summary>What the player can say to somebody in the street, in the order the choices are offered.</summary>
     public enum StreetAsk
     {
         SmallTalk,    // the weather, the evening, the street
@@ -26,6 +26,7 @@ namespace RealLifeOverhaul.Street
         Work,         // after they said what they do: whether they like it (or, retired, whether they miss it)
         Thanks,       // after they showed the way or said what is good around here
         Bye,          // goodbye, as a choice of the round (the game's cancel key says it too)
+        Age,          // how old they are, asked as what they do is (after Bye, so no older choice's place or seed moves)
         Count
     }
 
@@ -56,6 +57,8 @@ namespace RealLifeOverhaul.Street
         EventGoing, EventNot,
         WorkLikes, WorkMixed, WorkRetired,
         Welcome, GreetBack,
+        NumberFull,   // they would give it, but the player's life has no room for anybody new (StreetRules.Number)
+        AgeGive, AgePlayful, AgeCool, AgeAgain,   // their age: plainly, after a tease, curtly to a question they find forward, or again
         Count
     }
 
@@ -65,11 +68,7 @@ namespace RealLifeOverhaul.Street
     /// <summary>A place a stranger can be asked the way to: the businesses of the city by their kind.</summary>
     public enum StreetPlace { Coffee, Food, Drinks, Grocery, Clothes, Gym, Cinema, Bank, Count }
 
-    /// <summary>
-    /// Somebody in the street, as the game knows them for the session: worked out from their own seed (the save, the day and
-    /// the game's own figure for this person: its look stays the same for the whole session), so the same person is the same
-    /// all day, and their sex and age are the ones the game gave the figure the player sees. Game-free.
-    /// </summary>
+    /// <summary>Somebody in the street, worked out from a seed of the save, the day and the game's figure. Game-free.</summary>
     public sealed class StreetStranger
     {
         public int Key;            // the figure the game shows (its instance): one look, one person, for the session
@@ -107,9 +106,10 @@ namespace RealLifeOverhaul.Street
         public bool Flirted, Joked, Complimented;
         public int Cast = -1;      // their place in the social life once met
         public bool Told;          // the player told them their name today (they may use it)
+        public bool AgeTold;       // they said how old they are today: never asked again that day
         public readonly List<string> Lines = new List<string>(StreetLines.SaidMost);   // the written lines they said today, newest last: none is said twice
 
-        /// <summary>A written line they said: remembered for the day (the oldest let go past <see cref="StreetLines.SaidMost"/>).</summary>
+        /// <summary>Remembers a written line for the day, letting the oldest go past <see cref="StreetLines.SaidMost"/>.</summary>
         public void Said(string key)
         {
             if (Lines.Count >= StreetLines.SaidMost)
@@ -120,10 +120,7 @@ namespace RealLifeOverhaul.Street
         }
     }
 
-    /// <summary>
-    /// What the game knows at the moment somebody is spoken to, read from the game (StreetGame) when a conversation starts or
-    /// a turn needs it: the hour, the weather, how the city sees the player, what is around. Game-free; kept and refilled.
-    /// </summary>
+    /// <summary>What the game knows when somebody is spoken to (filled by StreetGame). Game-free; kept and refilled.</summary>
     public sealed class StreetFacts
     {
         public int Day, Hour, Minute;
@@ -199,7 +196,7 @@ namespace RealLifeOverhaul.Street
         public bool Shared;              // they said what they do (asking whether they like it follows)
         internal readonly int[] Ranks = new int[(int)StreetAsk.Count];   // each choice's place in the round being built (StreetRules.Choices)
 
-        /// <summary>What a turn did to the rapport; a good exchange earns a turn back (StreetRules.EarnedMost at most).</summary>
+        /// <summary>Adds a turn's rapport; a good exchange earns a turn back, up to StreetRules.EarnedMost.</summary>
         public void Gain(int rapport)
         {
             Rapport += rapport;

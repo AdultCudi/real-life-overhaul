@@ -26,7 +26,7 @@ call, and for the sheets of CityAssets and scenes.py).
 
 PAINT. What is painted in the bike's colour (frame tubes, mudguards, tank, tail, fairing) is a part of its own in
 the parts build: <bike>_frame_paint and <bike>_fork_paint, at the frame's and the fork's pivots, mapped onto the
-neutral swatch garage_white. BikeBody draws those two with PropLibrary.Tinted(colour): the atlas material with its
+neutral swatch garage_white. BikeBody draws those two with PropLibrary.Tinted(id, colour): the atlas material with its
 base colour multiplied by BikeDef.Colour or the owner's choice, one shared material a colour. In the whole bike the
 same faces are on the colour's own swatch (garage_teal, garage_red, garage_navy: BikeDef.Colour is those to the digit).
 """
@@ -36,7 +36,7 @@ import os
 import numpy as np
 from mathutils import Vector
 
-from life_props import cup, flat, pipe, ribbon, rod, smooth, sticker
+from life_props import cup, flat, pipe, rod, smooth, sticker
 from prop_kit import Paint, Prop, box, ellipse, fillet, grid, lathe, loft, moved, prism, region, rounded_rect, tube
 
 TAU = 2 * math.pi
@@ -47,6 +47,8 @@ NEUTRAL = "garage_white"                              # what the paint parts are
 CRANK = 0.17                                          # BikeCatalogue.CrankLength
 PEDAL_OUT = 0.13                                      # BikeCatalogue.PedalOut
 PEDAL = (0.09, 0.075, 0.03)                           # the stand-in's is 0.09 x 0.075 x 0.022
+# Parts that come out the same on two bikes: built once, the other id drawn with the same mesh (props.py, ALIASES).
+ALIASES = {"bicycle_road_pedal": "bicycle_city_pedal"}
 
 CITY = {"axles": (-0.52, 0.58), "wheel": 0.34, "seat": (-0.30, 0.93), "grip": (0.26, 0.16, 1.14), "crank": (-0.08, 0.29), "head": ((0.36, 1.00), (0.44, 0.70))}
 ROAD = {"axles": (-0.49, 0.55), "wheel": 0.34, "seat": (-0.29, 0.95), "grip": (0.13, 0.42, 1.00), "crank": (-0.07, 0.28), "head": ((0.36, 0.99), (0.43, 0.72))}
@@ -231,7 +233,7 @@ class Bike:
         for key in ("frame_paint", "fork_paint"):
             repaint(self.made[key], self.colour, NEUTRAL)
         fork = "the top of the steering axis, which is (0, %.2f, %.2f) on the frame; the axis runs from there towards (0, %+.2f, %+.2f)" % (*top, bottom[0] - top[0], bottom[1] - top[1])
-        tint = "; on the neutral swatch %s, drawn with PropLibrary.Tinted(colour)" % NEUTRAL
+        tint = "; on the neutral swatch %s, drawn with PropLibrary.Tinted(id, colour)" % NEUTRAL
         words = {
             "frame": ("the vehicle's origin (the ground under its middle); front to +Y", "what is fixed to the frame and not in the bike's colour"),
             "frame_paint": ("the vehicle's origin, as the frame", "what of the frame is painted in the bike's colour" + tint),
@@ -246,7 +248,7 @@ class Bike:
         parts = []
         for key, prop in self.made.items():
             prop.pivot, prop.note = words[key]
-            if len(prop.bm.faces):
+            if len(prop.bm.faces) and prop.name not in ALIASES:
                 parts.append(prop)
         return parts
 
@@ -841,39 +843,6 @@ def helmet():
 CYCLE = (0.106, 0.140, 0.140, -0.022, -0.004)        # half width, half depth, height of the dome, the rim's height, its middle's shift forward
 
 
-def bicycle_helmet():
-    a, b, c, z0, y0 = CYCLE
-    inside = (HEAD[0] + 0.008, HEAD[1] + 0.008)
-    p = Prop("bicycle_helmet", "lit", pivot="as helmet: the Head bone (the base of the skull); front to +Y",
-             note="NOT ASKED FOR BY CODE. Vented cycling helmet sitting on top of the head: from 0.089 m above the pivot to 0.231 m above it, a short peak, ten vents, straps to "
-                  "buckles under the ears; the inside of its rim is %.3f x %.3f m half sizes and it is hollow to 0.208 m above the pivot" % inside)
-    count = 14
-    rings = [helmet_ring(a * math.cos(math.radians(f)), b * math.cos(math.radians(f)), z0 + c * math.sin(math.radians(f)), y0, count) for f in (0.0, 22.0, 44.0, 63.0, 79.0)]
-    p.add(loft(rings, cap_end=True), Paint("garage_teal", grade=False), sharp=40)
-    liner = [rings[0], helmet_ring(*inside, z0 - 0.002, 0.0, count), helmet_ring(*inside, 0.020, 0.0, count), helmet_ring(0.066, 0.084, 0.070, 0.0, count), helmet_ring(0.030, 0.040, 0.095, 0.0, count)]
-    p.add(loft(liner, flip=True), Paint("gloss_black", grade=False), sharp=50)
-    p.add(loft([liner[-1]], cap_end=True, flip=True), flat("gloss_black"))
-
-    def dome(x, y, lift=0.0):
-        return (x, y, z0 + lift + c * math.sqrt(max(0.0, 1.0 - (x / a) ** 2 - ((y - y0) / b) ** 2)))
-    for x in (-0.060, -0.030, 0.0, 0.030, 0.060):                            # the vents: dark slots fore and aft
-        reach = b * math.sqrt(1.0 - (x / a) ** 2) * 0.86
-        for start, end in ((0.030, y0 + reach), (y0 - reach, -0.040)):
-            p.add(grid(lambda u, v, x=x, s=start, e=end: dome(x + (u - 0.5) * 0.017, s + (e - s) * v, 0.003), 1, 3), Paint("gloss_black", grade=False), sharp=180)
-
-    def peak(u, v):
-        t = math.radians(30.0 + 120.0 * u)
-        out = 1.0 + 0.30 * v * math.sin(math.radians(180.0 * u)) ** 0.7
-        return (math.cos(t) * a * out, y0 + math.sin(t) * b * out, z0 + 0.012 - 0.010 * v)
-    p.add(grid(peak, 4, 1, both_sides=True), Paint("gloss_black", grade=False), sharp=180)
-    for side in (-1, 1):                                                     # the straps: a V from the rim to a buckle under the ear
-        buckle = (side * (HEAD[0] + 0.005), 0.004, -0.095)
-        for y in (0.052, -0.060):
-            p.add(ribbon([(side * (inside[0] + 0.002), y, z0), buckle], lambda q, s=side: (s, 0, 0), 0.014, 0.002), flat("nylon_black"), sharp=60)
-        p.add(box(0.005, 0.022, 0.018), flat("gloss_black"), at=buckle)
-    return lifted(p)
-
-
 # ---------------------------------------------------------------------------------------------- wheel faces
 # One unit across (the code scales them, uniformly, to a wheel's diameter): the hub's centre is the origin, the face
 # looks along +X, the lip is the full diameter, and a barrel runs back to x -0.25 to fill the inside of the game's tyre.
@@ -1010,18 +979,6 @@ def car_spoiler():
     return p
 
 
-def car_spoiler_lip():
-    p = Prop("car_spoiler_lip", "lit", pivot="the centre of its underside (it sits on a boot lid); front edge to +Y",
-             note="NOT ASKED FOR BY CODE (it has one spoiler, the wing). Boot-lid lip spoiler 1.40 m wide, 0.18 m deep, rising from nothing at the front to a 0.06 m "
-                  "kicked-up edge at the back; gloss black")
-    rings = []
-    for x, scale, back in ((-0.700, 0.45, 0.030), (-0.675, 0.80, 0.012), (-0.560, 1.0, 0.0), (0.0, 1.0, -0.004), (0.560, 1.0, 0.0), (0.675, 0.80, 0.012), (0.700, 0.45, 0.030)):
-        section = ((0.090, 0.0), (0.090, 0.006), (0.030, 0.016), (-0.050, 0.038), (-0.086, 0.060), (-0.090, 0.060), (-0.090, 0.0))
-        rings.append([(x, y - (back if y > 0 else 0.0), z * scale) for y, z in section])
-    p.add(loft(rings, cap_start=True, cap_end=True), Paint("gloss_black", grade=False), sharp=35)
-    return p
-
-
 def car_roof_bar():
     p = Prop("car_roof_bar", "lit", pivot="on the roof under the middle of the bar, at the height its feet stand on; the bar lies along X",
              note="ONE roof bar (GarageCar fits two): 1.20 m long (X scaled by (the roof's half width + 0.04) / 0.60), 0.11 m high above the pivot, 0.06 m deep: an aluminium "
@@ -1100,44 +1057,21 @@ def bike_dock():
     return p
 
 
-def bike_dock_kiosk():
-    p = Prop("bike_dock_kiosk", "glow", pivot="ground centre; it faces +Y",
-             note="bike-share payment terminal 0.50 m wide, 1.70 m high, 0.30 m deep: a lit screen 1.20 to 1.42 m up, a card reader beside it, a map of the docks below, "
-                  "'BIKES' across the top in 0.12 m letters on both faces")
-    p.add(prism(rounded_rect(0.500, 0.300, 0.04, 1), 0.0, 0.050, bevel=0.010), "steel_dark")
-    body = [[(x, y, z) for x, y in rounded_rect(w, d, 0.035, 1)] for w, d, z in ((0.420, 0.200, 0.048), (0.420, 0.200, 1.500), (0.400, 0.180, 1.535))]
-    p.add(loft(body, cap_end=True), Paint("garage_bay"), sharp=40)
-    header = Paint("garage_bay", grade=False).planar("garage_kiosk_header", (0, 1, 0), (-1, 0, 0), (0, 0, 0), (0.480, 0.160)).planar("garage_kiosk_header", (0, -1, 0), (1, 0, 0), (0, 0, 0), (0.480, 0.160))
-    p.add(box(0.500, 0.110, 0.168, bevel=0.006), header, at=(0, 0, 1.616))
-    # The sloping console with the screen, and the card reader.
-    p.add(box(0.360, 0.060, 0.300, bevel=0.012), flat("steel_dark"), at=(0, 0.090, 1.300), rot=(10, 0, 0))
-    screen = Paint("gloss_black", grade=False).planar("garage_kiosk_screen", (0, 1, 0), (-1, 0, 0), (0, 0, 0), (0.250, 0.205))
-    p.add(box(0.250, 0.010, 0.205), screen, at=(-0.040, 0.124, 1.318), rot=(10, 0, 0))
-    p.add(box(0.070, 0.030, 0.110, bevel=0.008), flat("gloss_black"), at=(0.135, 0.120, 1.290), rot=(10, 0, 0))
-    p.add(box(0.050, 0.006, 0.008), flat("plastic_green"), at=(0.135, 0.137, 1.318), rot=(10, 0, 0))
-    sticker(p, "garage_kiosk_map", (0.0, 0.100, 0.800), (0, 1, 0), (-1, 0, 0), (0.330, 0.450), lift=0.002)
-    for z in (0.560, 1.040):
-        p.add(box(0.360, 0.010, 0.016), flat("aluminium"), at=(0, 0.103, z))
-    for x in (-0.176, 0.176):
-        p.add(box(0.016, 0.010, 0.496), flat("aluminium"), at=(x, 0.103, 0.800))
-    return p
-
-
 # ---------------------------------------------------------------------------------------------- the list
 
 # A bike's maker gives the whole bike and then its parts (each within the whole bike's budget).
 PROPS = [
     (bicycle_city, 2450), (bicycle_road, 2450), (motorbike_standard, 3800), (motorbike_sport, 3500),
-    (helmet, 540), (bicycle_helmet, 420),
+    (helmet, 540),
     (wheel_5spoke, 1200), (wheel_mesh, 1300), (wheel_steel, 1200),
-    (car_spoiler, 330), (car_spoiler_lip, 140), (car_roof_bar, 220), (car_bull_bar, 700),
-    (bike_dock, 980), (bike_dock_kiosk, 320),
+    (car_spoiler, 330), (car_roof_bar, 220), (car_bull_bar, 700),
+    (bike_dock, 980),
 ]
 
 RIDER = {"people": (((0.7, -1.25), 0),)}             # a standing person beside the back wheel (beside the middle they would hide it)
 SIDES = {
     "bicycle_city": RIDER, "bicycle_road": RIDER, "motorbike_standard": {"people": (((0.8, -1.45), 0),)}, "motorbike_sport": {"people": (((0.8, -1.45), 0),)},
-    "bike_dock": {"people": (((-1.6, 0.3), 0),)}, "bike_dock_kiosk": {"people": (((0.7, 0.4), 180),)},
+    "bike_dock": {"people": (((-1.6, 0.3), 0),)},
     # a car's roof 1.2 m wide, a nose (its front 0.07 m behind the hoop), a boot deck
     "car_roof_bar": {"references": (((1.12, 1.60, 0.02), (0, 0, -0.010)),)},
     "car_bull_bar": {"references": (((1.90, 0.40, 0.75), (0, -0.270, 0.275)),)},

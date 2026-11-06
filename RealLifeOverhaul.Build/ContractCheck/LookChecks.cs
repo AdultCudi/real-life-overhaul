@@ -14,12 +14,12 @@ using RealLifeOverhaul.GameUi;
 // full a meter is, which days of a week run on, and each app's accent. And the sources: no app writes a label and a
 // value as one bare line any more (a Pair inside a Line, or ": <b>" put together by hand), every app's page that has a
 // title uses the box's own parts, every one of the box's own words is in all three languages, and the rules of a
-// whole page cost next to nothing.
+// whole page cost next to nothing. (How a fact's label and value share a line, and the card's frame, are LeftPaneChecks.)
 internal static partial class Program
 {
     private static readonly Regex LineOfPair = new Regex(@"\.Line\((?:[^;]*?)\bPair\(", RegexOptions.Compiled);
     private static readonly Regex LineByHand = new Regex(@"\.Line\([^;]*\+\s*"":\s*<b>""", RegexOptions.Compiled);
-    private static readonly Regex NewParts = new Regex(@"\b(?:box|b)\.(?:Section|SectionWords|Row|RowWords|RowPair|Meter|MeterWords|Check|Note|Chip|Subtitle|GuideLink)\(", RegexOptions.Compiled);
+    private static readonly Regex NewParts = new Regex(@"\b(?:box|b)\.(?:Section|SectionWords|Row|RowWords|RowPair|RowPairWords|Entry|Meter|MeterWords|Check|Note|Chip|Subtitle|GuideLink)\(", RegexOptions.Compiled);
     private static readonly Regex BoxKey = new Regex(@"""(reallife_ibox_[a-z0-9_]+)""", RegexOptions.Compiled);
 
     private static void LookChecks(string scripts, string locales)
@@ -39,17 +39,6 @@ internal static partial class Program
         Check(LookRules.Units("Pay") == 3 && LookRules.Units(string.Empty) == 0 && LookRules.Units(null) == 0, "a word of Latin letters is as wide as its letters, nothing nothing");
         Check(LookRules.Units("薪酬") == 4 && LookRules.Units("第 11 天") == 8, "a Chinese character counts two letters, a space and a figure one");
         Check(LookRules.Units("<b>$20.00</b>") == 6 && LookRules.Units("<color=#596975>Pay</color>") == 3, "mark-up counts nothing");
-        Check(LookRules.Capacity(761f, LookRules.BodySize) == 48, "a row of the phone's box holds 48 letters of the body's size (" + LookRules.Capacity(761f, LookRules.BodySize) + ")");
-        Check(LookRules.Capacity(0f, 28f) == 0 && LookRules.Capacity(float.NaN, 28f) == 0 && LookRules.Capacity(500f, 0f) == 0, "a box of no width holds nothing, and no NaN is read as a width");
-        int cap = LookRules.Capacity(761f, LookRules.BodySize);
-        Check(!LookRules.Stack("Pay", "$20.00 an hour", cap), "a short label and value stand on one line");
-        Check(LookRules.Stack("Satisfaction (the game's own figure, not changed here)", "64 of 100", cap), "a long label puts its value under it");
-        Check(LookRules.Stack("Hours", "Mon, Tue, Wed, Thu, Fri, Sat, Sun, 06:00 to 14:00, and on the evening shift", cap), "a long value goes under its label");
-        Check(LookRules.Stack("Needs", "one\ntwo", cap), "a value of two lines goes under its label");
-        Check(!LookRules.Stack("a very long label that would never fit beside anything at all, not in any box", "x", 0), "a box of no known width keeps label and value side by side");
-        Check(LookRules.Stack("获得录用的几率最高的职位要求和条件说明", "约 45% 的录用机会", cap) && !LookRules.Stack("薪酬", "每小时$20.00", cap), "Chinese labels and values are measured as their square characters are set");
-        float chip = LookRules.ChipWidth("Applied"), longer = LookRules.ChipWidth("Not qualified");
-        Check(chip > 36f && longer > chip && LookRules.ChipWidth(null) == 36f, "a chip is as wide as its padding and its word, a longer word wider");
     }
 
     private static void LookPairs()
@@ -98,7 +87,7 @@ internal static partial class Program
         return (0.2126 * ((rgb >> 16) & 0xFF) + 0.7152 * ((rgb >> 8) & 0xFF) + 0.0722 * (rgb & 0xFF)) / 255.0;
     }
 
-    // A big page's rules: forty rows read, measured and stacked, two thousand times over (a page is written on a click).
+    // A big page's rules: forty rows read and fitted, two thousand times over (a page is written on a click).
     private static void LookTiming()
     {
         string[] lines =
@@ -106,7 +95,7 @@ internal static partial class Program
             "Balance: <b>$12,480</b>", "Daily payment: <b>$142</b>", "Overall: <b>68</b> of 100", "Pays $20.00 an hour, Mon to Fri, 06:00 to 14:00.",
             "薪酬：<b>每小时$20.00</b>", "Satisfaction (the game's own figure, not changed here): <b>64</b>", "Credit grade <b>Good</b>", "Vacancies open to you <b>3</b>"
         };
-        int cap = LookRules.Capacity(761f, LookRules.BodySize), rows = 0;
+        int rows = 0;
         var clock = Stopwatch.StartNew();
         for (int page = 0; page < 2000; page++)
         {
@@ -115,7 +104,7 @@ internal static partial class Program
                 string label, value;
                 if (LookRules.SplitPair(lines[i % lines.Length], out label, out value))
                 {
-                    rows += LookRules.Stack(label, value, cap) ? 2 : 1;
+                    rows += LeftPaneRules.OneLine(LookRules.Units(label) * 15f, LookRules.Units(value) * 15f, LeftPaneRules.DefaultRoom, LeftPaneRules.RowGap) ? 1 : 2;
                 }
             }
         }

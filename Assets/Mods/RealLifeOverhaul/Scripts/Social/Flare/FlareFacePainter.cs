@@ -24,15 +24,6 @@ namespace RealLifeOverhaul.Flare
         private const int WantedMost = 64;           // faces asked for by cards in view waiting at most; one past it is asked again when its card is bound again
         private const int SourceMost = 256 * 256 * 4; // bytes: the largest face the game gives, 256 square, ARGB32 at most
 
-        /// <summary>When a face may be drawn now (<see cref="Now"/>).</summary>
-        private enum Moment
-        {
-            None = 0,     // not now
-            Load = 1,     // behind the loading screen held for the faces: every face waiting, no rest
-            Black = 2,    // behind the game's black screen: every face waiting, a quarter of a second apart
-            App = 3       // Flare open: the faces cards in view ask for, two seconds apart
-        }
-
         private struct Job
         {
             public FlareAvatarPlan Plan;
@@ -340,22 +331,14 @@ namespace RealLifeOverhaul.Flare
             _instance.enabled = true;
         }
 
-        /// <summary>When a face may be drawn now: behind the held loading screen, a black screen, or with Flare open for the faces in view.</summary>
-        private static Moment Now()
+        /// <summary>
+        /// When a face may be drawn now: behind the held loading screen, the black screen at full strength (never its fades,
+        /// the picture showing through), or with Flare open for the faces in view (FlareFaceMoment).
+        /// </summary>
+        private static FaceMoment Now()
         {
-            if (LoadHold.Holding)
-            {
-                return _loadOn && !_loadStop ? Moment.Load : Moment.None;
-            }
-            if (LoadScene.isLoading)
-            {
-                return Moment.None;   // a load not held for the faces: the city's portrait camera may not be there
-            }
-            if (UI.UiFader.isFading)
-            {
-                return Moment.Black;
-            }
-            return AppShowing && _wanted > 0 ? Moment.App : Moment.None;
+            bool fading = UI.UiFader.isFading;
+            return FlareFaceMoment.Of(LoadHold.Holding, _loadOn && !_loadStop, LoadScene.isLoading, fading, fading && SceneFinds.Covered, AppShowing, _wanted > 0);
         }
 
         private void Awake()
@@ -389,10 +372,7 @@ namespace RealLifeOverhaul.Flare
             {
                 if (_rendering && now - _since > PortraitTurn.Timeout)
                 {
-                    FlareDirector.Logger?.Warn("Flare: the game's portrait camera did not answer for a face in " + PortraitTurn.Timeout + " s; its initials stay until the app asks again.");
-                    PortraitTurn.Give(this, now, _rest);
-                    _busy = _rendering = false;
-                    Missed?.Invoke(_job.Picture);
+                    TimedOut(now);
                 }
                 return;
             }
@@ -401,12 +381,12 @@ namespace RealLifeOverhaul.Flare
                 enabled = false;   // nothing to draw: no cost at all until a face is wanted
                 return;
             }
-            Moment moment = Now();
-            if (moment == Moment.None || !PortraitTurn.Free(now))
+            FaceMoment moment = Now();
+            if (moment == FaceMoment.None || !PortraitTurn.Free(now))
             {
                 return;   // two comparisons a frame while faces wait for their moment
             }
-            if (moment == Moment.Load && !FlareFaceAheadRules.Another(LoadHold.Spent, _loadMs, _loadDrawn, FlareFaceAheadRules.LoadBudgetMs))
+            if (moment == FaceMoment.Load && !FlareFaceAheadRules.Another(LoadHold.Spent, _loadMs, _loadDrawn, FlareFaceAheadRules.LoadBudgetMs))
             {
                 _loadStop = true;   // the time left would not hold another face: the rest wait for the black screens
                 return;
@@ -416,7 +396,7 @@ namespace RealLifeOverhaul.Flare
             {
                 at = Waiting[i].Wanted ? i : at;
             }
-            if (at < 0 && moment == Moment.App)
+            if (at < 0 && moment == FaceMoment.App)
             {
                 return;   // with the app open only the faces in view
             }
@@ -429,11 +409,20 @@ namespace RealLifeOverhaul.Flare
             Queued.Remove(_job.Picture);
             _wanted -= _job.Wanted ? 1 : 0;
             _ahead -= _job.Wanted ? 0 : 1;
-            _rest = moment == Moment.Load ? PortraitTurn.LoadPaceSeconds : moment == Moment.Black ? PortraitTurn.HiddenPaceSeconds : PortraitTurn.PaceSeconds;
+            _rest = moment == FaceMoment.Load ? PortraitTurn.LoadPaceSeconds : moment == FaceMoment.Black ? PortraitTurn.HiddenPaceSeconds : PortraitTurn.PaceSeconds;
             Draw(now, moment);
         }
 
-        private void Draw(float now, Moment moment)
+        // Its log line in a method of its own: the frame's path builds no text (RLO-PERF-014).
+        private void TimedOut(float now)
+        {
+            FlareDirector.Logger?.Warn("Flare: the game's portrait camera did not answer for a face in " + PortraitTurn.Timeout + " s; its initials stay until the app asks again.");
+            PortraitTurn.Give(this, now, _rest);
+            _busy = _rendering = false;
+            Missed?.Invoke(_job.Picture);
+        }
+
+        private void Draw(float now, FaceMoment moment)
         {
             if (File.Exists(_job.File))
             {
@@ -487,11 +476,13 @@ namespace RealLifeOverhaul.Flare
                 _loadStop |= _job.Load;
                 return;
             }
-            if (Meta.Dev.Verbose && moment != Moment.Load)
+            if (Meta.Dev.Verbose && moment != FaceMoment.Load)
             {
+                // Read again after the render: a face behind the black screen is a pass only if nothing showed through.
+                bool unseen = moment != FaceMoment.Black || SceneFinds.Black;
                 FlareDirector.Logger?.Info("Flare check (faces): a face asked of the game's portrait camera in " + _mainMs.ToString("0.0", CultureInfo.InvariantCulture)
-                                           + " ms of the main thread (" + (moment == Moment.Black ? "behind a black screen" : "the app open") + ", wanted under "
-                                           + PortraitTurn.Timeout + " s a face); " + Report() + ": PASS");
+                                           + " ms of the main thread (" + (moment == FaceMoment.Black ? "behind the black screen at full strength" : "the app open") + ", wanted under "
+                                           + PortraitTurn.Timeout + " s a face); " + Report() + (unseen ? ": PASS" : ": FAIL (the picture showed through the fade)"));
             }
         }
 

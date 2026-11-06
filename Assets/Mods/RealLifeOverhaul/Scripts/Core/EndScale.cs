@@ -3,39 +3,31 @@ using System;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The end game at scale: the late ventures (data centres, the cloud and the hyperscaler; the broadband company; the
-    /// player's own bank) cost and earn at the size of the real thing, with upkeep, crews of staff by kind and income that
-    /// grows with what is built. Each venture keeps its figures of before and its figures at scale in its own catalogue,
-    /// and asks these rules for the mix of the two at a share: 0 gives the figures of before exactly (the option off), 1000
-    /// the figures at scale. A save that already held a venture when the scale first met it moves from one to the other
-    /// over <see cref="PhaseDays"/> days, so that nothing it owns is ruined overnight; a venture started at scale is at
-    /// scale at once. Crews are hired by the venture itself, a share of what it needs a day, so a fast build is short of
-    /// people for a few weeks and works worse meanwhile. What is bought (racks, a fit-out, a network, a licence) is at
-    /// the full scale's price whenever the option is on; only the running costs and income come in over the weeks. What
-    /// the scale adds to a day that the cash cannot meet is owed and carried to the next day, and the crews it could not
-    /// pay leave in proportion. Game-free (checked by EconomyCheck, EndScaleChecks). Cost: nothing per frame; a few
-    /// integer sums when a venture's day is worked out.
+    /// The end game at scale: the late ventures (data centres and the cloud, broadband, the player's own bank) cost and
+    /// earn at real size. Each mixes its figures of before and at scale by a share, 0 (the option off) to
+    /// <see cref="Full"/>; a save that already held a venture comes to scale over <see cref="PhaseDays"/>. Purchases are
+    /// at full scale whenever the option is on. Crews are hired a share a day; what the cash cannot meet is carried over,
+    /// and unpaid crews leave in proportion. Game-free, checked by EconomyCheck. COST: nothing per frame.
     /// </summary>
     public static class EndScaleRules
     {
         public const int Full = 1000;              // the share at scale; 0 is the figures of before
         public const int PhaseDays = 28;           // days an old save takes to come to scale: four game weeks
-        public const int Unset = int.MinValue;     // a venture's day of coming to scale before it is known (an older save, or one never on)
+        public const int Unset = int.MinValue;     // a venture's day of coming to scale, not yet known
         public const int WorkingLeast = 500;       // thousandths a venture with none of a crew it needs still does
         public const int OutageMost = 3000;        // thousandths: a venture with none of a crew fails three times as often
         public const int HireLeast = 1;            // people a crew takes on a day at the least while it is short
-        // The aim, held by EconomyCheck (EndScaleChecks). Data centres and the cloud earn and spend by the day, so their aim
-        // is in game days, whatever the year's length; the broadband company and the bank bill and lend by the save's own
-        // months and years, so theirs is in the save's own years.
+        // The payback aim, held by EconomyCheck: in game days for what earns by the day, in the save's years for what
+        // bills and lends by its months.
         public const int PaybackDaysLeast = 120;   // a data centre or cloud well run at scale earns back what was put in after this many game days...
         public const int PaybackDaysMost = 360;    // ...and before this many
         public const int PaybackYearsLeast = 2;    // a broadband network or a bank: after this many of the save's years...
         public const int PaybackYearsMost = 6;     // ...and before this many
 
-        /// <summary>The share what is bought is priced at: the full scale whenever the option is on, so nothing bought during the weeks of coming to scale is cheap.</summary>
+        /// <summary>The share purchases are priced at: full whenever the option is on, so nothing bought while phasing in is cheap.</summary>
         public static int Buying(bool on) => on ? Full : 0;
 
-        /// <summary>Whole money from the game's float money, never negative, and safe beyond an int: worked out here, not left to the runtime's cast.</summary>
+        /// <summary>Whole money from the game's float money: never negative, capped rather than left to the runtime's cast.</summary>
         public static long Whole(double money)
         {
             if (!(money > 0))
@@ -45,10 +37,7 @@ namespace RealLifeOverhaul
             return money >= long.MaxValue / 4 ? long.MaxValue / 4 : (long)Math.Floor(money);
         }
 
-        /// <summary>
-        /// The crew left after a day whose scale costs were not all paid: the unpaid share of them (thousandths of what was
-        /// due) leaves, rounded up, so that cover and output fall as long as the costs stay unpaid.
-        /// </summary>
+        /// <summary>The crew left after a day with costs unpaid: the unpaid share (thousandths) leaves, rounded up.</summary>
         public static int Leave(int have, int unpaidPerMille)
         {
             int h = Math.Max(0, have), u = Clamp(unpaidPerMille);
@@ -74,10 +63,9 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The day a venture's coming to scale counts from. Known: as it was, whether the option is on or off (switching it
-        /// off and on again neither restarts the weeks nor tells the notice twice). On, and not known yet: today if the
-        /// venture already holds something (it is phased in), else so long ago that it is at scale at once. Off and not
-        /// known: still not known.
+        /// The day a venture's coming to scale counts from. Once known it stays, so switching the option off and on
+        /// neither restarts the weeks nor tells the notice twice. Set only with the option on: today if the venture holds
+        /// something, else far enough back to be at scale at once.
         /// </summary>
         public static int From(bool on, int from, int today, bool holds)
         {
@@ -88,7 +76,7 @@ namespace RealLifeOverhaul
             return holds ? today : today - PhaseDays;
         }
 
-        /// <summary>The share a venture is at on a day: 0 with the option off or the day unknown, then a step a day to the whole over <see cref="PhaseDays"/>.</summary>
+        /// <summary>The share on a day: 0 with the option off or the day unknown, then rising to full over <see cref="PhaseDays"/>.</summary>
         public static int Share(bool on, int from, int today)
         {
             if (!on || from == Unset)
@@ -105,7 +93,7 @@ namespace RealLifeOverhaul
             return before == Unset && after == today;
         }
 
-        /// <summary>The people a crew needs at a share: the need at scale, a part of it while the share is partial (rounded up).</summary>
+        /// <summary>The people a crew needs at a share of the need at scale, rounded up.</summary>
         public static int Need(int atScale, int share)
         {
             int s = Clamp(share);
@@ -118,7 +106,7 @@ namespace RealLifeOverhaul
             return things <= 0 || each <= 0 ? 0 : (int)Math.Min(int.MaxValue / 4, (things + each - 1) / each);
         }
 
-        /// <summary>A crew after a day: short of its need, it takes on a part of the need (one at the least); over it, it lets the rest go at once.</summary>
+        /// <summary>A crew after a day: short, it takes on a part of the need (one at least); over, it lets the rest go at once.</summary>
         public static int Hire(int have, int need, int pacePerMille)
         {
             int h = Math.Max(0, have), n = Math.Max(0, need);
@@ -130,20 +118,20 @@ namespace RealLifeOverhaul
             return Math.Min(n, h + step);
         }
 
-        /// <summary>How far a crew covers its need, thousandths: all of it when nothing is needed.</summary>
+        /// <summary>How far a crew covers its need, thousandths; full when nothing is needed.</summary>
         public static int Cover(int have, int need)
         {
             return need <= 0 ? Full : (int)Math.Min(Full, Math.Max(0L, (long)have) * Full / need);
         }
 
-        /// <summary>What a venture does at a cover of its crews, thousandths: half at none, all of it when they are all there.</summary>
+        /// <summary>What a venture does at a cover of its crews, thousandths: half at none, all at full.</summary>
         public static int Working(int cover)
         {
             int c = Clamp(cover);
             return WorkingLeast + (Full - WorkingLeast) * c / Full;
         }
 
-        /// <summary>How much more often a venture fails at a cover of its crews, thousandths: as usual when they are all there, three times at none.</summary>
+        /// <summary>How often a venture fails at a cover of its crews, thousandths of usual: as usual at full, three times at none.</summary>
         public static int Outages(int cover)
         {
             int c = Clamp(cover);
@@ -151,9 +139,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// The part of a cost at scale that is charged today: never more than the room left (the cash over what the day's
-        /// other costs took), so that what the scale adds never takes the money below nothing in one step. The room is
-        /// what is left after it.
+        /// The part of a cost at scale charged today: never more than the <paramref name="room"/> left in the cash,
+        /// which is lowered by it, so the scale never takes the money below 0 in one step.
         /// </summary>
         public static long Take(ref long room, long cost)
         {

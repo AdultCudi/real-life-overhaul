@@ -12,6 +12,9 @@ namespace RealLifeOverhaul.Tech
     /// </summary>
     internal static class InfraGame
     {
+        /// <summary>Owner deduction labels whose mixed costs have no single portable recurrence rule.</summary>
+        internal static string[] CompanionUnclassifiedTaxLabels() => new[] { "reallife_tech_deduct".GetLocalization(), WriteDownDeduct.GetLocalization() };
+
         public const string Warehouse = "ba:businesstype_warehouse";
         public const string WarehouseBuilding = "ba:buildingtype_warehouse";
         public const string TakingsKey = "reallife_transaction_tech_cloud_takings";
@@ -36,11 +39,18 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 BuildingRegistration reg = all[i];
-                if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.GetBuildingType() == WarehouseBuilding)
+                if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && GameRegistrations.BuildingType(reg) == WarehouseBuilding)
                 {
                     into.Add(reg);
                 }
             }
+        }
+
+        /// <summary>True if the building at the address is a warehouse: the only kind a change of record can make a data centre's, or take one from.</summary>
+        public static bool IsWarehouse(Address address)
+        {
+            Building b = address != null ? BuildingHelper.GetBuilding(address) : null;
+            return b != null && BizPace.BizPaceRules.KeepsFor(b.BuildingType, WarehouseBuilding);
         }
 
         public static int Sqm(BuildingRegistration reg)
@@ -49,7 +59,7 @@ namespace RealLifeOverhaul.Tech
             return b != null ? Mathf.Max(0, b.totalSqm) : 0;
         }
 
-        public static string District(BuildingRegistration reg) => reg != null && reg.Neighborhood != null ? reg.Neighborhood : string.Empty;
+        public static string District(BuildingRegistration reg) => GameRegistrations.District(reg) ?? string.Empty;
 
         /// <summary>A charge the player chose (racks, fitting out, a licence), cents: refused if the cash does not cover it.</summary>
         public static bool Pay(long cents, string key, BuildingRegistration at, string name, bool deductible)
@@ -63,7 +73,7 @@ namespace RealLifeOverhaul.Tech
             {
                 info.SetTaxDeductibleName("reallife_tech_deduct".GetLocalization());
             }
-            return Save != null && GameManager.ChangeMoneySafe(-cents / 100f, info, null, at != null ? at.Address : null, false);
+            return Save != null && RealLifeOverhaul.Economy.BizBooks.Book(-cents / 100f, info, null, at != null ? at.Address : null, false);
         }
 
         /// <summary>The racks' writing down for the game's tax: a deductible expense with no money moving.</summary>

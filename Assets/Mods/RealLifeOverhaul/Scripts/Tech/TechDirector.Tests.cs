@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UI.Notification;
 
 namespace RealLifeOverhaul.Tech
@@ -113,7 +115,7 @@ namespace RealLifeOverhaul.Tech
             {
                 Seeker s = HiringRules.NewSeeker(_hiring.Seed, _hiring.Next(), Save.Day, false, ad.Role, ad.Level, _rate,
                     ShortageOf(TalentCatalogue.Role(ad.Role).Family), _districts.Count > 0 ? _districts[0] : string.Empty);
-                HiringGame.Name(s);
+                HiringGame.Name(s, NameSet());
                 _hiring.Seekers.Add(s);
                 _hiring.Applicants.Add(new Applicant { Id = _hiring.Next(), Seeker = s.Id, Ad = ad.Id, Day = Save.Day, Interest = HiringRules.Interest(s, ad) });
                 ad.Came++;
@@ -153,7 +155,7 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; i < _hiring.Ads.Count; i++)
             {
                 JobAd ad = _hiring.Ads[i];
-                if (ad.Search && ad.Came == 0)
+                if (ad.Search && !ad.CrewSearch && ad.Came == 0)
                 {
                     ad.Due = Save.Day;
                     HiringRules.Deliver(_hiring, ad, Save.Day, _rate, ShortageOf(TalentCatalogue.Role(ad.Role).Family), _districts);
@@ -164,6 +166,237 @@ namespace RealLifeOverhaul.Tech
                 }
             }
             Notifications.ShowError("reallife_hire_test_no_search");
+        }
+
+        /// <summary>
+        /// Test: the newest accepted hire who has not started is made one whose notice can be bought out, in work with their level's notice
+        /// counted from today, as a search firm's candidate is. Their page on the Applicants tab, opened by the notice, then offers the buy
+        /// out at its price. Says why not when nobody has accepted.
+        /// </summary>
+        public void TestBuyout()
+        {
+            if (!_hiringOn || Save == null)
+            {
+                Notifications.ShowError("reallife_hire_test_off");
+                return;
+            }
+            Applicant a = null;
+            for (int i = _hiring.Applicants.Count - 1; i >= 0 && a == null; i--)
+            {
+                a = _hiring.Applicants[i].Stage == (int)ApplyStage.Accepted ? _hiring.Applicants[i] : null;
+            }
+            Seeker s = a != null ? _hiring.SeekerOf(a.Seeker) : null;
+            if (s == null)
+            {
+                Notifications.ShowError("reallife_hire_test_no_accepted");
+                return;
+            }
+            s.Employed = true;
+            s.Notice = Math.Max(s.Notice, HiringRules.NoticeFor(s.P.Level));
+            a.Start = Math.Max(a.Start, Save.Day + s.Notice);
+            int price = HiringRules.BuyoutQuote(a, s, Save.Day);
+            Logger?.Info("Tech check (notice buy out test, " + s.P.Name + "): starts on day " + a.Start + ", " + HiringRules.BuyoutDays(a.Start, HiringRules.BuyoutStart(Save.Day))
+                         + " day(s) to save for " + price + " cents: " + (price > 0 && BuyoutRefusal(a, s) == null ? "PASS" : "FAIL"));
+            Tell(NotificationType.Info, "reallife_hire_test_buyout_ready", Data("name", s.P.Name, "day", a.Start.ToString(), "amount", TechText.Cents(price)), TabApplicants,
+                RolesApp.ApplicantRow + a.Id);
+            Changed();
+        }
+
+        /// <summary>
+        /// Test: the most senior professional working their notice for a rival has it bought out by that rival now, by the day's own rule
+        /// and price: the player is paid and they go. Says how to get there when nobody is working such a notice.
+        /// </summary>
+        public void TestRivalBuyout()
+        {
+            if (!_hiringOn || !_peopleOn || Save == null)
+            {
+                Notifications.ShowError("reallife_hire_test_off");
+                return;
+            }
+            ReadPeople(Save.Day);
+            Person best = null;
+            for (int i = 0; i < _people.Count; i++)
+            {
+                Profile f = _people[i].File;
+                if (f.Leaving == (int)LeaveKind.Poached && f.NoticeEnd > Save.Day && (best == null || f.Level > best.File.Level))
+                {
+                    best = _people[i];
+                }
+            }
+            if (best == null)
+            {
+                Notifications.ShowError("reallife_talent_test_buyout_none");
+                return;
+            }
+            if (!RivalBuyout(best, Save.Day))
+            {
+                Notifications.ShowError("reallife_talent_test_buyout_unpaid");
+                return;
+            }
+            Go(best, Save.Day);
+            ReadPeople(Save.Day);
+            Changed();
+        }
+
+        /// <summary>
+        /// Test: the oldest data centre crew search not yet delivered delivers now, by the day's own rule. PASS when it brings the
+        /// candidates its brief asks for, of its role, junior to staff level, shortlisted for it, and nothing is charged.
+        /// </summary>
+        public void TestCrewSearch()
+        {
+            if (!_hiringOn || Save == null)
+            {
+                Notifications.ShowError("reallife_hire_test_off");
+                return;
+            }
+            for (int i = 0; i < _hiring.Ads.Count; i++)
+            {
+                JobAd ad = _hiring.Ads[i];
+                if (!ad.CrewSearch || ad.Came > 0)
+                {
+                    continue;
+                }
+                int paid = ad.FeePaid, before = _hiring.Applicants.Count;
+                ad.Due = Save.Day;
+                int found = HiringRules.DeliverCrew(_hiring, ad, Save.Day, _rate, ShortageOf(TalentCatalogue.Role(ad.Role).Family), _districts);
+                NameSeekers();
+                int fit = 0;
+                for (int k = before; k < _hiring.Applicants.Count; k++)
+                {
+                    Applicant a = _hiring.Applicants[k];
+                    Seeker s = _hiring.SeekerOf(a.Seeker);
+                    fit += a.Ad == ad.Id && a.Stage == (int)ApplyStage.Shortlisted && s != null && s.P.Role == ad.Role && s.P.Level >= HiringCatalogue.CrewLeastLevel
+                           && s.P.Level <= HiringCatalogue.CrewMostLevel && s.Passive ? 1 : 0;
+                }
+                bool ok = found == HiringRules.CrewCandidates(ad.Crew) && fit == found && ad.FeePaid == paid && ad.Hired == 0;
+                Logger?.Info("Tech check (a crew search for " + ad.Crew + " at " + ad.Place + "): " + found + " candidate(s) of " + HiringRules.CrewCandidates(ad.Crew) + " wanted, "
+                             + fit + " of the role and level shortlisted for it, nothing more charged (" + paid + " to " + ad.FeePaid + " cents): " + (ok ? "PASS" : "FAIL"));
+                Notifications.Show(ok ? NotificationType.Success : NotificationType.Error, ok ? "reallife_crew_test_pass" : "reallife_crew_test_fail", null, 10f);
+                Changed();
+                return;
+            }
+            Notifications.ShowError("reallife_crew_test_none");
+        }
+
+        /// <summary>
+        /// Test: the player's data engineers, read now. PASS when the rule holds (a place with no desks seats only the rack crew) and
+        /// every data engineer is where work is done: on the payroll at a business of the game's with shifts, or the game's employee
+        /// at one with a shift at a placed desk. Any the game's hiring left at a data centre are taken off it first, the way the day does.
+        /// The log line says how many, how many have a desk shift, how many worked yesterday and who is short.
+        /// </summary>
+        public void TestDataEngineers()
+        {
+            if (!_peopleOn || Save == null)
+            {
+                Notifications.ShowError("reallife_talent_test_off");
+                return;
+            }
+            ReadPeople(Save.Day);
+            int moved = Unseat(Save.Day, false);
+            int total = 0, payroll = 0, desked = 0, worked = 0;
+            string short1 = null, why = null;
+            int lacking = 0;
+            for (int i = 0; i < _people.Count; i++)
+            {
+                Person p = _people[i];
+                if (p.File.Role != TalentCatalogue.DataEngineer)
+                {
+                    continue;
+                }
+                total++;
+                worked += p.HoursYesterday > 0 ? 1 : 0;
+                bool placed = p.At != null && TalentGame.Shifts(p.At);
+                bool fit;
+                if (p.Game == null)
+                {
+                    fit = placed;
+                    payroll += fit ? 1 : 0;
+                }
+                else
+                {
+                    fit = placed && TalentGame.StationShift(p.Game, p.At);
+                    desked += fit ? 1 : 0;
+                }
+                lacking += fit ? 0 : 1;
+                if (!fit && short1 == null)
+                {
+                    short1 = p.Name;
+                    why = p.At == null ? "at no business" : !placed ? "at " + TalentGame.NameOf(p.At) + ", which has no desks" : "with no shift at a desk at " + TalentGame.NameOf(p.At);
+                }
+            }
+            if (total == 0)
+            {
+                Notifications.ShowError("reallife_dataeng_test_none");
+                return;
+            }
+            RoleDef engineer = TalentCatalogue.Role(TalentCatalogue.DataEngineer);
+            bool rule = HiringRules.Seats(true, engineer) && !HiringRules.Seats(false, engineer) && HiringRules.Seats(false, TalentCatalogue.Role(TalentCatalogue.Technician))
+                        && HiringRules.OnPayroll(TalentCatalogue.Role(TalentCatalogue.Technician), (int)Arrangement.OnSite, false, false)
+                        && !HiringRules.OnPayroll(engineer, (int)Arrangement.OnSite, false, true);
+            bool ok = rule && short1 == null;
+            string line = "Tech check (data engineers): " + total + " of the player's, " + payroll + " on the payroll at a business with shifts, " + desked + " the game's own with a shift at a desk, "
+                          + worked + " worked yesterday, " + moved + " taken off a data centre; the rule (no desks, only the rack crew) " + (rule ? "holds" : "BROKEN")
+                          + (short1 != null ? "; " + short1 + " is " + why : string.Empty) + ": " + (ok ? "PASS" : "FAIL");
+            if (ok)
+            {
+                Logger?.Info(line);
+            }
+            else
+            {
+                Logger?.Warn(line);
+            }
+            Notifications.Show(ok ? NotificationType.Success : NotificationType.Error, ok ? "reallife_dataeng_test_pass" : "reallife_dataeng_test_fail",
+                Data("count", total.ToString(), "short", lacking.ToString()), 10f);
+            Changed();
+        }
+
+        /// <summary>
+        /// "Tech firms: connection speed and work": the curve through the firms' rules for every kind of firm (a slower line
+        /// never works more, the usual plan works at the usual pace, a day's points scale by exactly the share and selling is
+        /// left alone), and the player's first firm worked out now as its morning is, against its office's plan read afresh.
+        /// </summary>
+        public void TestNet()
+        {
+            if (!_firmsOn || Save == null)
+            {
+                Notifications.ShowError("reallife_tech_test_off");
+                return;
+            }
+            bool curve = true;
+            for (int kind = 0; kind < (int)FirmKind.Count; kind++)
+            {
+                int last = 0;
+                for (int t = 0; t < NetSpeedRules.Floors.Length; t++)
+                {
+                    int net = FirmsRules.Connection(kind, NetSpeedRules.Floors[t]);
+                    var c = new Crew { Engineering = 1000, Design = 500, Web = 200, Testing = 300, Selling = 77, Support = 3 };
+                    FirmsRules.Connected(ref c, net);
+                    curve &= net >= last && net >= NetSpeedRules.Least && net <= NetSpeedRules.Most && c.Engineering == net && c.Design == 500 * net / 1000
+                             && c.Web == 200 * net / 1000 && c.Testing == 300 * net / 1000 && c.Selling == 77 && c.Support == 3;
+                    last = net;
+                }
+                curve &= FirmsRules.Connection(kind, NetSpeedRules.Floors[NetSpeedRules.UsualTier]) == 1000 && FirmsRules.Connection(kind, 0) == 1000
+                         && FirmsRules.Connection(kind, NetSpeedRules.Unknown) == 1000 && FirmsRules.Connection(kind, NetSpeedRules.Grace) == 1000;
+            }
+            bool live = true;
+            Dictionary<string, string> data = null;
+            string firmLine = "no firm of the player's";
+            if (_firms.Count > 0)
+            {
+                Crews();   // the morning's own step, so what it read is what is checked
+                FirmPlace firm = _firms[0];
+                int mbps = TechBridges.PlanMbpsAt(firm.Reg), net = FirmsRules.Connection(firm.File.Kind, mbps);
+                live = firm.Mbps == mbps && firm.Net == net;
+                firmLine = firm.File.Name + " (kind " + firm.File.Kind + "): the plan reads " + mbps + " Mbps, the day's step read " + firm.Mbps + " Mbps and works at " + firm.Net
+                           + " thousandths, " + net + " wanted";
+                data = Data("name", firm.File.Name, "mbps", mbps > 0 ? mbps.ToString() : "-", "work", TechText.Mille(firm.Net));
+            }
+            bool ok = curve && live;
+            Logger?.Info("Tech check (connection speed and work): every kind of firm along the tiers " + (curve ? "slower never more, the usual plan at 1000, points scaled exactly"
+                         : "NOT as the curve says") + "; " + firmLine + ": " + (ok ? "PASS" : "FAIL"));
+            Notifications.Show(ok ? NotificationType.Success : NotificationType.Error, !ok ? "reallife_tech_test_net_fail" : data != null ? "reallife_tech_test_net_pass"
+                : "reallife_tech_test_net_pass_none", data, 10f);
+            Changed();
         }
 
         private Product TestLive()
@@ -342,6 +575,38 @@ namespace RealLifeOverhaul.Tech
             Notifications.ShowError("reallife_vc_test_no_holding");
         }
 
+        /// <summary>
+        /// The first startup the player holds raises its next round now, a venture firm leading all of it, so the follow-on it offers
+        /// can be seen at once: taken once, then gone for that round.
+        /// </summary>
+        public void TestRound()
+        {
+            if (!TestVentures())
+            {
+                return;
+            }
+            for (int i = 0; i < _venture.Startups.Count; i++)
+            {
+                Startup s = _venture.Startups[i];
+                int next = s.Stage + 1;
+                int lead = VentureRules.AnyLead(next);
+                if (s.Alive && Holds(s) && s.Stage < (int)RoundStage.Growth && lead >= 0)
+                {
+                    int mood = VentureRules.Mood(HiringGame.Cycle);
+                    long pre = System.Math.Max(s.Post, VentureRules.PreMoney(s.Mrr, VentureRules.Growth(s, mood, HypeNow), mood, next));
+                    _ventureNotes.Clear();
+                    VentureRules.Led(s, lead, pre, VentureRules.RoundSize(next), Save.Day, _ventureNotes);
+                    for (int n = 0; n < _ventureNotes.Count; n++)
+                    {
+                        Heard(_ventureNotes[n], Save.Day);
+                    }
+                    ChangedTech();
+                    return;
+                }
+            }
+            Notifications.ShowError("reallife_vc_test_no_holding");
+        }
+
         /// <summary>The board of the first firm of the player's with investors looks at its target now.</summary>
         public void TestBoard()
         {
@@ -395,6 +660,75 @@ namespace RealLifeOverhaul.Tech
             TechBridges.Stock?.Invoke(107, -30);
             TellTech(NotificationType.Info, "reallife_infra_note_price_war", Data("name", c.Name, "price", TechText.Mille(c.RivalPrice)), TabInfra, TechApp.CloudRow);
             ChangedTech();
+        }
+
+        private const string TestStreet = "Test Street (Real Life Overhaul)";   // no street of the city's has this name, so no building is found for it
+
+        /// <summary>
+        /// A registration whose building the city lacks (as a player's save held, left by another mod) is put in the save's
+        /// list for the length of this call and taken out again before the game runs another frame: the tech hiring's
+        /// districts and the walks of the player's businesses, offices of tech firms and warehouses read past it.
+        /// PASS when none throws and none takes it in. Refused in a Going Public session, where the list is shared.
+        /// </summary>
+        public void TestOrphanRegistration()
+        {
+            GameInstance save = Save;
+            if (save == null || save.BuildingRegistrations == null || GoingPublic.InSession)
+            {
+                Notifications.ShowError("reallife_hire_test_orphan_off");
+                return;
+            }
+            var orphan = new BuildingRegistration
+            {
+                // a tech firm, so every walk below reaches its test of the building
+                StreetName = TestStreet, StreetNumber = 1, RentedByPlayer = true, BusinessName = TestStreet, businessTypeName = FirmsGame.WebAgency
+            };
+            var districts = new List<string>(16);
+            var regs = new List<BuildingRegistration>(32);
+            string failed = null;
+            int taken = 0;
+            save.BuildingRegistrations.Add(orphan);
+            try
+            {
+                failed = Walk("the tech hiring's districts", () => HiringGame.Districts(districts)) ?? failed;
+                failed = Walk("the player's businesses", () => taken += Holds(regs, orphan, Economy.Books.Businesses)) ?? failed;
+                failed = Walk("the tech firms", () => taken += Holds(regs, orphan, FirmsGame.Firms)) ?? failed;
+                failed = Walk("the businesses with professionals", () => taken += Holds(regs, orphan, TalentGame.Businesses)) ?? failed;
+                failed = Walk("the warehouses for data centres", () => taken += Holds(regs, orphan, InfraGame.Warehouses)) ?? failed;
+            }
+            finally
+            {
+                save.BuildingRegistrations.Remove(orphan);   // taken out on every path: the game never sees it
+            }
+            bool ok = failed == null && taken == 0 && GameRegistrations.WasTold(orphan);
+            Logger?.Info("Buildings check (a registration with no building, at " + TestStreet + "): " + districts.Count + " district(s) read for hiring; "
+                         + (failed != null ? failed + " threw" : "no walk threw") + "; " + taken + " walk(s) took it in; the warning " + (GameRegistrations.WasTold(orphan) ? "given" : "not given")
+                         + "; the save's list as before: " + (ok ? "PASS" : "FAIL"));
+            Notifications.Show(ok ? NotificationType.Success : NotificationType.Error, ok ? "reallife_hire_test_orphan_pass" : "reallife_hire_test_orphan_fail", null, 10f);
+        }
+
+        // One walk of the test: its name if it threw, else null. The fault is logged; nothing is switched off for a test.
+        private static string Walk(string name, Action walk)
+        {
+            try
+            {
+                walk();
+                return null;
+            }
+            catch (Exception e)
+            {
+                Logger?.Warn("Buildings check: " + name + " threw on a registration with no building: " + e);
+                return name;
+            }
+        }
+
+        // 1 if the walk put the registration with no building in its list, else 0.
+        private static int Holds(List<BuildingRegistration> into, BuildingRegistration orphan, Action<List<BuildingRegistration>> walk)
+        {
+            walk(into);
+            int n = into.Contains(orphan) ? 1 : 0;
+            into.Clear();
+            return n;
         }
     }
 }

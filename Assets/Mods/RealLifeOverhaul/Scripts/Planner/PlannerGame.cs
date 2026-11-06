@@ -2,21 +2,15 @@ using System;
 using System.Collections.Generic;
 using Helpers;
 using PlayerActivity;
-using Streets;
 using UI;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Planner
 {
-    /// <summary>
-    /// What the Planner reads of the game for the way about the city: where the player is, the door of an address, and
-    /// whether the player has a car of their own. Only read, never changed. Asked when the app writes a page or the
-    /// Planner looks with its texts (opening, a click, a reminder), never per frame: each is a lookup in one of the
-    /// game's own tables or a walk over the player's few vehicles.
-    /// </summary>
+    /// <summary>The game's state the Planner reads for the way about the city: lookups asked with the texts, never per frame.</summary>
     public static class PlannerGame
     {
-        /// <summary>Where the player is in the city: indoors, the door they went in by (the game's own answer, PlayerHelper.GetCityPosition).</summary>
+        /// <summary>Where the player is in the city; indoors, the door they went in by (PlayerHelper.GetCityPosition).</summary>
         public static bool Player(out float x, out float z)
         {
             x = z = 0f;
@@ -33,16 +27,15 @@ namespace RealLifeOverhaul.Planner
             }
             catch (Exception)
             {
-                return false;   // (no player yet: a load under way)
+                return false;   // no player yet: a load under way
             }
         }
 
-        /// <summary>The straight line from the player to an entry's place, in metres; false if either is not known.</summary>
+        /// <summary>The straight line from the player to an entry's place, in metres.</summary>
         public static bool MetresTo(PlannerEntry entry, out float metres)
         {
             metres = 0f;
-            float x, z;
-            if (entry == null || !entry.Placed || !Player(out x, out z))
+            if (entry == null || !entry.Placed || !Player(out float x, out float z))
             {
                 return false;
             }
@@ -50,7 +43,7 @@ namespace RealLifeOverhaul.Planner
             return true;
         }
 
-        /// <summary>Whether the player is asleep: the game's own sleep is the activity under way (asked at most once a game minute, for the morning line).</summary>
+        /// <summary>Whether the game's own sleep is the activity under way.</summary>
         public static bool Asleep()
         {
             try
@@ -66,11 +59,11 @@ namespace RealLifeOverhaul.Planner
             }
             catch (Exception)
             {
-                return false;   // (the game's panel is not there to ask: awake)
+                return false;   // no panel to ask: awake
             }
         }
 
-        /// <summary>The door of a building by its address, as the game finds it (CityManager.FindCityBuildingController, a table lookup); false if the city has no such building.</summary>
+        /// <summary>The door of a building by its address (CityManager.FindCityBuildingController); false if there is none.</summary>
         public static bool Door(string street, int number, out float x, out float z)
         {
             x = z = 0f;
@@ -98,10 +91,7 @@ namespace RealLifeOverhaul.Planner
             }
         }
 
-        /// <summary>
-        /// Whether the player goes by car: at the wheel now, or with a car of their own in the city (in a Going Public
-        /// session only the player's own count, GoingPublic.MineVehicle). Otherwise the way is reckoned on foot.
-        /// </summary>
+        /// <summary>At the wheel now, or with a car of their own in the city (in Going Public only the player's own).</summary>
         public static bool ByCar()
         {
             try
@@ -126,7 +116,7 @@ namespace RealLifeOverhaul.Planner
             }
             catch (Exception)
             {
-                // (the game's vehicles are not there to ask: on foot)
+                // no vehicles to ask: on foot
             }
             return false;
         }

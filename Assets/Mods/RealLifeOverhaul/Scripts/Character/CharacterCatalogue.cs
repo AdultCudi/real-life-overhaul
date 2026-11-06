@@ -338,7 +338,7 @@ namespace RealLifeOverhaul
 
         public static IModLogger Logger;
 
-        private static string _modId;
+        private static bool _loaded;   // read once at start: before that the page's dropdowns are not written
         private static readonly string[] PaletteKeys = new string[Palette.Length];
         private static readonly bool[] HasSlots = new bool[KindCount];
         private static readonly string[] GameVariant = new string[KindCount];
@@ -438,9 +438,9 @@ namespace RealLifeOverhaul
         // ---------------------------------------------------------------- whose picks: nobody's, the creator's, a save's
 
         /// <summary>Called once at game start: there is no character yet, so there are no picks. What the options page last showed is not a pick.</summary>
-        public static void Load(string modId)
+        public static void Load()
         {
-            _modId = modId;
+            _loaded = true;
             foreach (Slot slot in Slots)
             {
                 if (slot.Paired)
@@ -578,7 +578,7 @@ namespace RealLifeOverhaul
         // PlayerPrefs is where the game's options page reads what a dropdown shows (the key format is the game's).
         private static void Mirror(Slot slot)
         {
-            if (_modId == null)
+            if (!_loaded)
             {
                 return;
             }
@@ -597,7 +597,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        private static string PrefsKey(string optionId) => "m:" + _modId + ":" + optionId;
+        private static string PrefsKey(string optionId) => OptionKeysRules.Key(optionId);
 
         // ---------------------------------------------------------------- what is picked
 
@@ -622,6 +622,28 @@ namespace RealLifeOverhaul
                 }
             }
             return null;
+        }
+
+        /// <summary>
+        /// Whether the player's top is a warm one: the mod's look when it is drawn (the bomber), else the game's own piece by its
+        /// name (<see cref="Seasons.WarmthRules"/>). Read by the cold's energy cost once an hour; nothing is allocated.
+        /// </summary>
+        public static bool WearingWarmTop()
+        {
+            PlayerController player = PlayerHelper.PlayerController;
+            AppearanceSetter look = player != null && player.Character != null ? player.Character.appearanceSetter : null;
+            if (look == null || look.data == null)
+            {
+                return false;
+            }
+            string picked = Selected(LookKind.Top, look.data.gender);
+            if (picked != null && Shows(LookKind.Top, look.data))
+            {
+                return Seasons.WarmthRules.IsWarmTop(picked);
+            }
+            Read(look.data, AppearanceElementType.Torso, out string variant, out string _);
+            AppearanceElementVariant piece = Find(look, AppearanceElementType.Torso, variant);
+            return piece != null && Seasons.WarmthRules.IsWarmTop(piece.gameObject.name);
         }
 
         /// <summary>What a new character may start in: the everyday tier. Everything else is bought (Leisure's rack).</summary>

@@ -14,7 +14,7 @@ namespace RealLifeOverhaul
     /// </summary>
     public sealed class JogRun
     {
-        private const int Checkpoints = 6;
+        internal const int Checkpoints = 6;
         private const float Reach = 4.5f;              // metres from a checkpoint that count as reaching it
         private const float StreetRadius = 55f;        // metres
         private const float ParkRadius = 34f;          // metres

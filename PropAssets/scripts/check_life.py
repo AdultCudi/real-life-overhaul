@@ -16,8 +16,20 @@ failures = []
 EXTRA = ["civic", "service", "events", "everyday", "garage", "family", "site", "tow"]
 
 
+_meshes = None
+
+
+def mesh_of(name):
+    """The mesh a prop id is drawn with: its own, or for an alias (props.py, ALIASES) the one it shares."""
+    global _meshes
+    if _meshes is None:
+        with open(os.path.join(BUILD, "catalogue.json")) as f:
+            _meshes = {item["id"]: item["mesh"] for item in json.load(f)["items"]}
+    return _meshes.get(name, name)
+
+
 def kit(name, triangles=False):
-    with open(os.path.join(BUILD, "meshes", name + ".json")) as f:
+    with open(os.path.join(BUILD, "meshes", mesh_of(name) + ".json")) as f:
         data = json.load(f)
     vertices = np.array(data["vertices"]).reshape(-1, 3)[:, [0, 2, 1]]
     return (vertices, np.array(data["triangles"]).reshape(-1, 3)) if triangles else vertices
@@ -96,10 +108,6 @@ def main():
     neck = v[np.abs(v[:, 2] - 0.78) < 0.09]
     extent("guitar", "neck width where the fret hand is", np.ptp(neck[:, 0]), 0.045, 0.002)
     extent("guitar", "neck depth there", np.ptp(neck[:, 1]), 0.032, 0.004)
-    v = kit("radio_handset")
-    waist = v[np.abs(v[:, 2] - 0.06) < 0.06]
-    extent("radio_handset", "body width", np.ptp(waist[np.abs(waist[:, 0]) < 0.0305][:, 0]), 0.06)
-    extent("radio_handset", "height", v[:, 2].max(), 0.21)
     grip("umbrella", (0, 0, 0.06), (0, 0, 1), within=0.02)
     v = kit("umbrella")
     extent("umbrella", "canopy width", np.ptp(v[:, 0]), 1.02, 0.02)

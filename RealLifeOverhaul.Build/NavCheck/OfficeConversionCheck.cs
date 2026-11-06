@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.IO;
 using RealLifeOverhaul.Offices;
 
 // The game-free parts of the empty shops made offices (Offices/ConversionRules.cs, ConversionStore.cs): how many in each
@@ -198,6 +199,55 @@ internal static partial class Program
         Check(ConversionStore.Read(null, read) && read.Count == 0 && ConversionStore.Read("v=1", read) && read.Count == 0, "offices: no line, or one with no places, gives none");
         Check(!ConversionStore.Read("v=2^ba:street_a#1", read) && read.Count == 0, "offices: a line of a later version gives no places (and is left as it was)");
         Check(!ConversionStore.Read("v=1^nonumber", read) && read.Count == 0, "offices: a damaged line gives no places");
+
+        // The player's report (20 and 22 4th Avenue): the map said office and BizMan offered shops. The game keeps two copies of a
+        // building (the city scene's and its list's); a type written to one alone is two types. Both must read the one wanted.
+        const string Off = "ba:buildingtype_office", Shop = "ba:buildingtype_retail";
+        Check(ConversionRules.Disagreement(Off, Off, Off) == null && ConversionRules.Disagreement(Off, Off, null) == null,
+            "offices: a building whose copies all read office agrees, and a building the game's list does not hold has one place to read");
+        Check(ConversionRules.Disagreement(Off, Off, Shop) != null && ConversionRules.Disagreement(Off, Off, Shop).Contains(Shop),
+            "offices: the map's copy reading office and the game's list still reading shop is caught, with what the list reads (the report's 20 and 22 4th Avenue)");
+        Check(ConversionRules.Disagreement(Off, Shop, Off) != null && ConversionRules.Disagreement(Off, null, Off) != null && ConversionRules.Disagreement(null, null, null) == null,
+            "offices: the city's copy reading shop is caught, so is a missing one, and a type nobody wants against no copies agrees");
+
+        // Every business the game offers in a type is one made for it (BuildingTypeData.availableBusinessTypes against each business's suitable type).
+        var suits = new Dictionary<string, string>(StringComparer.Ordinal)
+        {
+            ["ba:businesstype_florist"] = Shop, ["ba:businesstype_cafeteria"] = Shop, ["ba:businesstype_supermarket"] = Shop,
+            ["ba:businesstype_techfirm"] = Off, ["ba:businesstype_lawfirm"] = Off,
+        };
+        Func<string, string> suitable = name => suits.TryGetValue(name, out string t) ? t : null;
+        Check(ConversionRules.WrongOffer(Off, new[] { "ba:businesstype_techfirm", "ba:businesstype_lawfirm" }, suitable) == null
+              && ConversionRules.WrongOffer(Shop, new[] { "ba:businesstype_florist", "ba:businesstype_cafeteria", "ba:businesstype_supermarket" }, suitable) == null
+              && ConversionRules.WrongOffer(Off, new string[0], suitable) == null && ConversionRules.WrongOffer(Off, null, suitable) == null,
+            "offices: an office offering offices, a shop offering shops, and a type that offers nothing, are right");
+        string flagged = ConversionRules.WrongOffer(Off, new[] { "ba:businesstype_techfirm", "ba:businesstype_florist", "ba:businesstype_cafeteria" }, suitable);
+        Check(flagged != null && flagged.StartsWith("ba:businesstype_florist", StringComparison.Ordinal) && flagged.Contains(Shop),
+            "offices: an office that offers a florist is named at the first wrong business, with the type that business suits (" + flagged + ")");
+        Check(ConversionRules.WrongOffer(Shop, new[] { "ba:businesstype_unknown" }, suitable) != null && ConversionRules.WrongOffer(Shop, new[] { "ba:businesstype_techfirm" }, null) != null,
+            "offices: an offered business the game has no type for is wrong, and so is every one when nothing says what suits what");
+
+        // The sources: a type is written to a copy of a building in one place of the conversion, to both copies and put back to both.
+        string scripts = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
+        string game = Source(scripts, @"Offices\ConversionGame.cs");
+        string setType = Body(game, "public static void SetType(");
+        int writes = 0;
+        foreach (string file in Directory.GetFiles(Path.Combine(scripts, "Offices"), "*.cs"))
+        {
+            string code = Source(scripts, @"Offices\" + Path.GetFileName(file));
+            for (int at = code.IndexOf(".BuildingType = ", StringComparison.Ordinal); at >= 0; at = code.IndexOf(".BuildingType = ", at + 1, StringComparison.Ordinal))
+            {
+                writes++;
+            }
+        }
+        Check(setType.Contains("game.BuildingType = type") && setType.Contains("scene.BuildingType = type") && writes == 2,
+            "offices: the conversion writes a building's type in one place, SetType, to the game's list's copy and the city scene's (" + writes + " writes in Scripts/Offices)");
+        string conversions = Source(scripts, @"Offices\Conversions.cs");
+        string restore = Body(conversions, "private static void Restore(");
+        string choose = Body(conversions, "private void Choose(");
+        Check(restore.Contains("SetType(m.B, m.G, m.C, m.Was)") && choose.Contains("SetType(m.B, m.G, c, ConversionGame.Office)") && choose.Contains("ConversionGame.Disagreement(m.B, m.G, ConversionGame.Office)")
+              && conversions.Contains("GameCopies.Contains(building)"),
+            "offices: a shop made an office is made in both copies and checked at once, put back in both even when the scene's is gone, and asked for by either copy");
 
         // The cost: the choice over the game's whole city, made on a change only.
         var watch = Stopwatch.StartNew();

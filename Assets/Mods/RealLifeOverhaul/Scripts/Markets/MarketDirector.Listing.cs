@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+using System;
 
 namespace RealLifeOverhaul.Markets
 {
@@ -28,7 +28,11 @@ namespace RealLifeOverhaul.Markets
             return ListingBook.Worth(f, _engine.State.Me, Save.Day, Year, _engine.State.Env, Facts().Debt);
         }
 
-        // The company's name and trade to begin with, until the prospectus gives it its own.
+        private readonly long[] _takings = new long[MarketInputs.Trades.Length];   // the player's takings by trade over the last quarter (Takings)
+        private int _classifiedDay = -1;
+
+        // The company's name to begin with, until the prospectus gives it its own; its sector follows what it earns in until
+        // the prospectus is out, once a day at most.
         private void Named(ListingFile f)
         {
             if (string.IsNullOrEmpty(f.Name))
@@ -36,28 +40,42 @@ namespace RealLifeOverhaul.Markets
                 f.Name = MarketBridges.Name != null ? MarketBridges.Name() ?? string.Empty : string.Empty;
                 f.Ticker = ListingRules.TickerOf(f.Name);
             }
-            if (f.Trade < 0 && MarketBridges.Trade != null)
+            if (f.Stage <= ListingStage.Audited && Save.Day != _classifiedDay)
             {
-                f.Trade = MarketBridges.Trade();
-                f.Sector = (int)SectorFor(f.Trade);
+                _classifiedDay = Save.Day;
+                Classify(f);
             }
         }
 
-        // The sector of the first listed company in the trade, else business services.
-        private MarketSector SectorFor(int trade)
+        // The sector and trade the last quarter's takings are most in; as they were when it earned nothing.
+        private void Classify(ListingFile f)
         {
-            if (trade >= 0 && trade < MarketInputs.Trades.Length)
+            if (!Takings(Save.Day, out int _))
             {
-                List<Stock> stocks = _engine.State.Stocks;
-                for (int i = 0; i < stocks.Count; i++)
+                return;
+            }
+            int sector = ListingSector.Leading(_takings, out int trade);
+            if (sector >= 0)
+            {
+                f.Sector = sector;
+                f.Trade = trade;
+            }
+        }
+
+        // The player's takings by trade over the last quarter's statement days into _takings; false when there are none.
+        private bool Takings(int day, out int days)
+        {
+            days = Math.Max(7, Year / 4);
+            Array.Clear(_takings, 0, _takings.Length);
+            MarketBridges.TradeTakings?.Invoke(day - days, day, _takings);
+            for (int t = 0; t < _takings.Length; t++)
+            {
+                if (_takings[t] > 0)
                 {
-                    if (stocks[i].Listed && stocks[i].Own == null && stocks[i].Def.Trade == MarketInputs.Trades[trade])
-                    {
-                        return stocks[i].Sector;
-                    }
+                    return true;
                 }
             }
-            return MarketSector.Services;
+            return false;
         }
 
         public long Retainer()

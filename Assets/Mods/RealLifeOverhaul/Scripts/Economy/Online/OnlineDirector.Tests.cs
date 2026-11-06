@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using UI.Notification;
 
@@ -309,6 +310,95 @@ namespace RealLifeOverhaul.Economy
                          + " cancelled or given up, " + arrived + " at the door of which " + late + " late, " + open + " still open; the books were paid in and the game's cash moved by "
                          + (Save.Money - cash).ToString("0.00", CultureInfo.InvariantCulture), TabShops, "shop:" + _places[0].Shop.Place);
             });
+        }
+
+        /// <summary>
+        /// "Web shop: connection and orders a day": the first site's day worked out now, its connection read as the hour
+        /// reads it, then a day of far more orders than any bound drawn on a copy of the site at each tier of speed: the
+        /// day stops at the bound that speed allows, none come with no connection or in an outage. Nothing is kept: the
+        /// copy's orders are given back and the seed, the order numbers and the site's day are as they were.
+        /// </summary>
+        public void TestNet()
+        {
+            const string test = "Online connection";
+            if (!TestReady(test))
+            {
+                return;
+            }
+            TestGuard("connection", () =>
+            {
+                WebPlace place = TestSite(test);
+                if (place == null)
+                {
+                    return;
+                }
+                WebShop shop = place.Shop;
+                Site site = place.Site;
+                bool sells = false;
+                for (int l = 0; l < Math.Min(shop.Lines.Count, site.Lines); l++)
+                {
+                    sells |= site.Factor[l] > 0;
+                }
+                if (!sells || site.Districts <= 0)
+                {
+                    TestRefusals.TellKey(Logger, test, "reallife_online_test_nothing_on");
+                    return;
+                }
+                int mbps = PlanMbps(place.Reg), seed = _state.Seed, number = _state.NextOrder, perDay = site.PerDay, had = site.Mbps;
+                bool down = site.Down, read = site.Mbps == mbps, bounds = true;
+                var said = new System.Text.StringBuilder(96);
+                _state.Seed = seed ^ TestSalt;
+                try
+                {
+                    for (int t = -1; t <= NetSpeedRules.Floors.Length; t++)
+                    {
+                        // -1: no connection; the tiers; past them: an outage on the usual plan
+                        int speed = t < 0 ? 0 : t < NetSpeedRules.Floors.Length ? NetSpeedRules.Floors[t] : NetSpeedRules.Floors[NetSpeedRules.UsualTier];
+                        bool outage = t == NetSpeedRules.Floors.Length;
+                        int came = TestDay(shop, site, speed, outage), most = outage ? 0 : Math.Min(OnlineRules.Most(shop.Quality, speed), OnlineCatalogue.OpenMost);
+                        bounds &= came == most;
+                        said.Append(outage ? "outage" : speed + " Mbps").Append(' ').Append(came).Append('/').Append(most).Append(", ");
+                    }
+                }
+                finally
+                {
+                    _state.Seed = seed;
+                    _state.NextOrder = number;
+                    site.PerDay = perDay;
+                    site.Mbps = had;
+                    site.Down = down;
+                }
+                bool ok = read && bounds;
+                int now = OnlineRules.Most(shop.Quality, site.Mbps);
+                Logger?.Warn("Online test (connection, " + shop.Name + "): the building's plan reads " + mbps + " Mbps and the site's day read " + had
+                             + "; orders a day drawn at each speed, came/bound: "
+                             + said + "now a bound of " + now + ": " + (ok ? "PASS" : "FAIL"));
+                Notifications.Show(ok ? NotificationType.Success : NotificationType.Error, ok ? "reallife_online_test_net_pass" : "reallife_online_test_net_fail",
+                    new Dictionary<string, string> { { "name", shop.Name }, { "most", now.ToString() } }, 10f);
+                Changed();
+            });
+        }
+
+        // A whole day's orders far over any bound, drawn on a copy of the site's shop at a speed; how many came.
+        private int TestDay(WebShop shop, Site site, int speed, bool outage)
+        {
+            var copy = new WebShop { Place = shop.Place, Name = shop.Name, Quality = shop.Quality, Promise = shop.Promise, Stars = shop.Stars };
+            copy.Lines.AddRange(shop.Lines);
+            copy.Today.Clear(Save.Day);
+            site.Mbps = speed;
+            site.Down = outage;
+            site.PerDay = OnlineCatalogue.OrdersMost[OnlineCatalogue.Qualities - 1] * 1000 * 4;
+            int came = 0, first = Save.Day * 24;
+            for (int h = 0; h < 24; h++)
+            {
+                came += OnlineRules.Arrive(_state, copy, site, first + h);
+            }
+            for (int i = 0; i < copy.Orders.Count; i++)
+            {
+                OnlineRules.Recycle(copy.Orders[i]);
+            }
+            copy.Orders.Clear();
+            return came;
         }
 
         /// <summary>"Test: put online shops back": the state from before the first test returns; stock and money that moved stay moved.</summary>

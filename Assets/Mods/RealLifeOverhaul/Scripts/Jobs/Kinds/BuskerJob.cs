@@ -450,7 +450,7 @@ namespace RealLifeOverhaul
                 Ctx.Say("reallife_job_busker_done", 7f);
                 Conclude();
             }
-            else if (_songs >= SongsBeforeMoveOn && Settings.Police && Random.value < MoveOnChance)
+            else if (_songs >= SongsBeforeMoveOn && JobCatalogue.OfficersAbout(Settings.Police, Settings.PolicePresence) && Random.value < MoveOnChance)
             {
                 Ctx.Say("reallife_job_busker_moved_on", 9f);
                 Conclude();

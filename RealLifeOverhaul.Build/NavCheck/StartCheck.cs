@@ -292,8 +292,15 @@ internal static partial class Program
             ("Flare", @"Social\Flare\FlareDirector.cs", true, "Guard.Add<Flare.FlareDirector>(_root)"),
             ("Fame", @"Fame\FameDirector.cs", true, "Guard.Add<Fame.FameDirector>(_root)"),
             ("Permadeath", @"Permadeath\PermadeathDirector.cs", true, "Guard.Add<PermadeathDirector>(_root)"),
+            ("Outlook", @"Outlook\OutlookDirector.cs", true, "Guard.Add<Outlook.OutlookDirector>(_root)"),
         };
-        Check(table.Length == StartSeats.Count, "start line: every seat is in the check's table");
+        // seat field, file, what the wiring adds: directors whose first load is in an Update of their own, on a timer
+        var frames = new (string Seat, string File, string Add)[]
+        {
+            ("Law", @"Law\LawDirector.cs", "Guard.Add<Law.LawDirector>(_root)"),
+            ("Garage", @"Garage\GarageDirector.cs", "Guard.Add<GarageDirector>(_root)"),
+        };
+        Check(table.Length + frames.Length == StartSeats.Count, "start line: every seat is in the check's table");
         string mod = Source(scripts, @"Core\RealLifeOverhaulMod.cs");
         int lastOwn = -1, lastFollower = -1, seatOwn = -1, seatFollower = -1;
         bool ownOrder = true, followerOrder = true, wired = true, held = true, named = true;
@@ -334,6 +341,23 @@ internal static partial class Program
                 }
             }
         }
+        // A director on a frame timer asks for its seat every frame until its first load, and then runs that load at once.
+        foreach (var row in frames)
+        {
+            string code = Source(scripts, row.File);
+            wired &= mod.IndexOf(row.Add, StringComparison.Ordinal) >= 0;
+            string update = Body(code, "private void OnUpdate()");
+            int ask = update.IndexOf("StartLine.Holds(StartSeats." + row.Seat + ")", StringComparison.Ordinal);
+            int now = ask >= 0 ? update.IndexOf(" = 0f;", ask, StringComparison.Ordinal) : -1;   // (the source without its comments)
+            bool waits = ask >= 0 && now > ask;
+            bool timed = Body(code, "private void Update()").Contains("HotSpots.Time(HotUpdate)");
+            held &= waits;
+            named &= timed;
+            if (!waits || !timed)
+            {
+                missing.Add(row.Seat);
+            }
+        }
         string missed = missing.Count > 0 ? " (not: " + string.Join(", ", missing) + ")" : string.Empty;
         Check(wired, "start line: every seat's director is made by the mod's start");
         Check(ownOrder, "start line: the directors with a timer of their own have their seats in the order they are made in, so they start in the order their timers ran in before");
@@ -360,25 +384,31 @@ internal static partial class Program
     // The session record's word for the screen in a long frame, and the frames it counts as seen.
     private static void Screens()
     {
-        Check(FrameRules.Screen(false, false, false, false) == FrameScreen.Clear, "screen: nothing up is a clear screen");
-        Check(FrameRules.Screen(true, false, false, false) == FrameScreen.Black && FrameRules.Screen(false, true, false, false) == FrameScreen.Black,
-            "screen: the game's black screen up at either look is black");
-        Check(FrameRules.Screen(false, false, true, false) == FrameScreen.Loading && FrameRules.Screen(false, false, false, true) == FrameScreen.Loading,
+        Check(FrameRules.Screen(false, false, false, false, false) == FrameScreen.Clear, "screen: nothing up is a clear screen");
+        Check(FrameRules.Screen(true, true, true, false, false) == FrameScreen.Black && FrameRules.Screen(false, true, true, false, false) == FrameScreen.Black,
+            "screen: the game's black screen drawn at full strength as the frame began is black (also when its fade back in ended in the frame)");
+        Check(FrameRules.Screen(true, false, false, false, false) == FrameScreen.Fading && FrameRules.Screen(false, true, false, false, false) == FrameScreen.Fading
+              && FrameRules.Screen(true, true, false, false, false) == FrameScreen.Fading,
+            "screen: the game's black screen fading out or back in at either look, not full as the frame began, is fading (up to 0.47.0 it was counted as black)");
+        Check(!FrameRules.Unseen(FrameScreen.Fading) && !FrameRules.Unseen(FrameScreen.Clear) && FrameRules.Unseen(FrameScreen.Black) && FrameRules.Unseen(FrameScreen.Loading),
+            "screen: a long frame in a fade is one the player saw; behind the black screen at full strength or the loading screen it is not");
+        Check(FrameRules.Screen(false, false, false, true, false) == FrameScreen.Loading && FrameRules.Screen(false, false, false, false, true) == FrameScreen.Loading,
             "screen: the loading screen there at either look (up, or fading out after the save loaded) is the loading screen");
-        Check(FrameRules.Screen(true, true, true, true) == FrameScreen.Loading, "screen: the loading screen is named before the black screen behind it");
+        Check(FrameRules.Screen(true, true, true, true, true) == FrameScreen.Loading, "screen: the loading screen is named before the black screen behind it");
         string loading = FrameRules.ScreenWords(FrameScreen.Loading);
         Check(loading.StartsWith("its screen was black or fading", StringComparison.Ordinal) && loading.Contains("loading screen") && loading.Contains("not seen as a stutter"),
             "screen: the long-frame line says the screen was black or fading because of the loading screen");
         Check(FrameRules.ScreenWords(FrameScreen.Clear) == "its screen was clear"
-              && FrameRules.ScreenWords(FrameScreen.Black) == "its screen was black or fading (its own walk into or out of a building: not seen as a stutter)",
-            "screen: the words for a clear screen and the black screen are as before");
+              && FrameRules.ScreenWords(FrameScreen.Black) == "its screen was black (its own walk into or out of a building: not seen as a stutter)"
+              && FrameRules.ScreenWords(FrameScreen.Fading) == "its screen was fading, the picture showing through (its own walk into or out of a building: seen as a stutter)",
+            "screen: the words for a clear screen, the black screen and its fade");
 
         string scripts = Path.GetFullPath(Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
         string watch = Source(scripts, @"Diagnostics\SessionWatch.cs");
         string update = Body(watch, "private void OnUpdate()");
-        Check(update.Contains("FrameRules.Screen(faded, _fadedLastFrame, loading, _loadingLastFrame)") && update.Contains("hidden = screen != FrameScreen.Clear")
-              && update.Contains("_longHidden += hidden"),
-            "screen: the session record counts a long frame with the loading screen there as one the player did not see");
+        Check(update.Contains("FrameRules.Screen(faded, _fadedLastFrame, _coveredLastFrame, loading, _loadingLastFrame)") && update.Contains("hidden = FrameRules.Unseen(screen)")
+              && update.Contains("_longHidden += hidden") && update.Contains("bool covered = faded && SceneFinds.Covered") && update.Contains("_coveredLastFrame = covered"),
+            "screen: the session record counts a long frame with the loading screen there, or the black screen at full strength as it began, as one the player did not see, and one in a fade as seen");
         Check(watch.Contains("InstanceBehavior<UI.Load.LoadingScreen>.IsInitialized") && Body(watch, "private bool LoadingThere()").Contains("catch"),
             "screen: the loading screen is read from the game's register of its singletons (no search), in a method of its own that a build without it cannot break");
         Check(Body(watch, "private void Long(").Contains("FrameRules.ScreenWords(screen)"), "screen: the long-frame line takes its words from the rule");

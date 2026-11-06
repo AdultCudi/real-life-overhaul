@@ -29,6 +29,7 @@ namespace RealLifeOverhaul.Flare
         public const float PaceLeast = 20f;           // real seconds between two photos at least
         public const float PaceMost = 160f;           // ...and at most, after slow ones
         public const double SlowMs = 20.0;            // milliseconds of the main thread a photo's renders may take before the next waits longer
+        public const double FrameMs = 10.0;           // ...and one frame of them: the two renders go a frame each, half of SlowMs each
         public const string Folder = "Flare";         // in the save's photos' folder
         public const string Prefix = "Bank_";
         public const string LegacyPrefix = "City_";   // the old one-photo-a-post files, deleted when Flare starts

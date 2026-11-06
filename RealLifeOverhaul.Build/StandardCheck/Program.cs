@@ -61,10 +61,13 @@ internal static partial class Program
         ArchitectureChecks();
         PerformanceChecks();
         AssetChecks();
+        PropSetChecks();
         MultiplayerChecks();
         TestingChecks();
         TextChecks();
+        GuideChecks();
         CommentChecks();
+        LoggerChecks();
         GitChecks();
 
         if (write)

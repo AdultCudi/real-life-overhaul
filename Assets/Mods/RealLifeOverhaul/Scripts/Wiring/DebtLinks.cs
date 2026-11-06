@@ -9,24 +9,9 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The credit desk with the rest of the mod (Economy/EconomyBridges): what a lender, a collector and the
-        /// private lender need from features the economy never calls itself.
-        ///
-        ///   FileClaim      a lender's civil claim for a debt becomes one of Justice's own civil suits
-        ///   ClaimOpen      (Justice/DebtClaims): answered in the Legal file, judged by Justice, collected as its debts are;
-        ///   WithdrawClaim  a judgment shows on the credit rating through <see cref="EconomyLinks"/>, as every civil judgment does
-        ///   Held           the one question the private lender asks before anything happens in the street: the game's own
-        ///                  dialogs, time skips, hospital and pause (LifeEvents), a panel or a test of the mod's (Scenes),
-        ///                  a large scene in the street, the police, prison, a bus ride
-        ///   Assault        the injury the mod's muggings give (LifeEvents.Injure), never enough to make a tired player faint.
-        ///                  Crime has no public way to stage a scene against the player outside its own deck and its test
-        ///                  button, so nobody walks up: the consequences are applied and said
-        ///   InView         whether the camera looks at a point from near (People/StreetSpots), so a vehicle is never taken in sight
-        ///   KerbSpot       a free stretch of kerb for the test tools' car, found the way the driving school finds one
-        ///   ContactIcon    a contact's picture, from the game's own assets, as every contact of the mod's (Phone/Contacts/ContactPictures)
-        ///
-        /// A business damaged by the private lender is a repair bill and nothing else: the business-pressure feature
-        /// has no public way to raise an incident from outside (its issues are dealt from its own deck).
+        /// The credit desk and the private lender (EconomyBridges): a lender's claim as one of Justice's civil suits,
+        /// whether the player is held, a mugging's injury (Crime cannot stage one against the player, so the consequences
+        /// are applied and told), what the camera sees, a free stretch of kerb and a contact's picture.
         /// </summary>
         public static class DebtLinks
         {
@@ -48,7 +33,7 @@ namespace RealLifeOverhaul
 
             internal static void Disconnect()
             {
-                // EconomyLinks.Disconnect puts every bridge of the economy back to its default.
+                // EconomyLinks.Disconnect puts every bridge of the economy back.
             }
 
             private static bool Held()
@@ -73,7 +58,7 @@ namespace RealLifeOverhaul
                     {
                         return false;
                     }
-                    // With Permadeath on, the first beating is a near miss and a later one may end the life (Permadeath/PermadeathRules).
+                    // With Permadeath on, the first beating is a near miss and a later one may end the life.
                     Permadeath.Verdict fate = Permadeath.Mortality.Judge(Permadeath.DeathCause.Assault);
                     if (fate == Permadeath.Verdict.Death && Permadeath.Mortality.Die(Permadeath.DeathCause.Assault))
                     {
@@ -97,7 +82,7 @@ namespace RealLifeOverhaul
             {
                 try
                 {
-                    ContactPictures.Add(id);   // the catalogue's picture (Phone/Contacts): the colour asked for is the old disc's, not used
+                    ContactPictures.Add(id);   // the catalogue's picture; the colour is not used
                 }
                 catch (Exception e)
                 {
@@ -105,7 +90,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // A stretch of lane near a point with nothing standing in it: the kerb side first, then the lane itself (Licences/Driving/TestCar does the same).
+            // A stretch of lane near a point with nothing in it, the kerb side first, as the driving school's TestCar finds one.
             private static bool KerbSpot(Vector3 near, out Vector3 spot, out Quaternion heading)
             {
                 spot = default(Vector3);
@@ -153,18 +138,20 @@ namespace RealLifeOverhaul
                             {
                                 spot = at;
                                 heading = along;
-                                Route.Clear();
                                 return true;
                             }
                         }
                     }
-                    Route.Clear();
                     return false;
                 }
                 catch (Exception e)
                 {
                     Fault("DebtLinks.KerbSpot", e);
                     return false;
+                }
+                finally
+                {
+                    Route.Clear();   // no waypoint of the city kept past the look, a fault or not
                 }
             }
         }

@@ -1,6 +1,6 @@
 namespace RealLifeOverhaul.Walking
 {
-    /// <summary>The locale keys of walking, written out whole so that the text checks find them. Read only when something is shown.</summary>
+    /// <summary>The locale keys of walking, written out whole so the text checks find them.</summary>
     public static class WalkText
     {
         public const string On = "reallife_walk_on";                     // a press: walking ({key} is the walk key)

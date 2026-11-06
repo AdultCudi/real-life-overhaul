@@ -72,6 +72,7 @@ namespace RealLifeOverhaul
         public bool Appealed;
         public float LawyerQuality; // as at the hearing: the appeal is argued by the same counsel
         public int Postponed;       // times the date was moved because the player could not have come
+        public int Damages;         // a getaway's damages the case took from the later bill: paid with a conviction, dropped otherwise
 
         public bool Open => Stage != CaseStage.Closed;
 
@@ -240,6 +241,7 @@ namespace RealLifeOverhaul
             Debts.Clear();
             Record.Clear();
             Suits.Clear();
+            Claims.Clear();
             NextNumber = 1;
             Day = ProbationUntil = SuspendedUntil = CommunityHours = CommunityDue = LastConvictionDay = LastSuitDay = 0;
             JailHoursPending = HearNow = Compensated = 0;
@@ -454,9 +456,10 @@ namespace RealLifeOverhaul
             return count;
         }
 
-        /// <summary>Drops the oldest closed cases so the save's line stays short.</summary>
+        /// <summary>Drops the oldest closed cases (and claims of the player's long decided) so the save's line stays short.</summary>
         public static void Trim()
         {
+            TrimClaims();
             int closed = 0;
             for (int i = Cases.Count - 1; i >= 0; i--)
             {

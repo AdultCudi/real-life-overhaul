@@ -106,7 +106,7 @@ namespace RealLifeOverhaul
                 return true;
             }
             var info = new TransactionInfo(transaction);
-            if (GameManager.ChangeMoneySafe(-fare, info, null, null, force: false, showNotification: true))
+            if (RealLifeOverhaul.Economy.BizBooks.Book(-fare, info, null, null, force: false, showNotification: true))
             {
                 return true;
             }
@@ -120,7 +120,7 @@ namespace RealLifeOverhaul
             {
                 return true;
             }
-            if (!GameManager.ChangeMoneySafe(-DayPass, new TransactionInfo("reallife_transaction_transit_pass"), null, null, force: false, showNotification: true))
+            if (!RealLifeOverhaul.Economy.BizBooks.Book(-DayPass, new TransactionInfo("reallife_transaction_transit_pass"), null, null, force: false, showNotification: true))
             {
                 Notifications.ShowInsufficientMoney();
                 return false;

@@ -81,7 +81,7 @@ They are a model of the physics, not a measurement: the options button "Measure 
   Top speed is never taken past 350 km/h; with a top speed turned down below 125 km/h the power is found as if for 125 and the car is then geared and dragged down to what was asked.
 - **Gearing**: top gear turns the engine at 95 % of its limit at top speed; first gear runs out at a fifth of top speed (45 to 58 km/h), never so short that the engine's best torque spins the tyres; the gears between are evenly spaced.
 
-  Driven gently the box changes up at 45 to 58 % of the rev limit by kind, with the pedal down at 95 %; a change takes 0.12 s (sports) to 0.45 s (trucks).
+  Driven gently the box changes up at 45 to 58 % of the rev limit by kind, with the pedal down at 95 %; a change takes 0.12 s (sports) to 0.45 s (trucks), less with the custom shop's gear change parts (see [Garage](garage.md#performance-parts)).
 
 - **The eased throttle** ("Smooth throttle"): the car's own input handler calls `CarTuning.EasePedal` once a frame, which moves the pedal towards what the key asks: 0 to full in 0.7 s, slowly at first, and back in 0.15 s.
   A tap gives a gentle pull-away; an analogue trigger keeps its own feel.

@@ -103,6 +103,8 @@ namespace RealLifeOverhaul.Economy.Dealership
         public bool Warranty = true;        // ...and warranties
         public int VisitorCarry;            // thousandths of a visitor carried from hour to hour
         public bool Extras = true;          // ...and extras with a car
+        public bool Fixed;                  // fixed prices: every buyer offers the asking price, nobody haggles, and fewer make an offer
+        public int FixedOffers, FixedSold, FixedAtAsking;   // today's offers and sales with fixed prices, for the day's check line; not saved
         public int Rep;                     // its reputation with buyers (0 to DealerCatalogue.RepMost)
         public int Done;                    // a bit for each of its missions done
         public int Event = -1;              // the event it runs (DealerCatalogue's kinds); -1 none

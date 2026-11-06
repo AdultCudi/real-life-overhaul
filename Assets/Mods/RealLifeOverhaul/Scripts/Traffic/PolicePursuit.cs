@@ -20,7 +20,7 @@ namespace RealLifeOverhaul
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("traffic", "PolicePursuit", typeof(PolicePursuit));
 
-        private const float StopWindow = 12f;           // seconds to stop after the crash
+        internal const float StopWindow = 12f;           // seconds to stop after the crash
         private const float StopRadius = 40f;           // ...within this far of it
         private const float StoppedSpeedSqr = 1f;       // (m/s) squared
         private const float CrumbSpacing = 6f;          // metres between recorded trail points
@@ -123,7 +123,7 @@ namespace RealLifeOverhaul
             }
             if (_state != State.Idle)
             {
-                _owed += liability;
+                _owed = WholeMoney.Add(_owed, liability, CrashConsequences.PursuitOwedMost);   // one pursuit's damages are held to a sane sum, never wrapped round
                 return true;
             }
 
@@ -186,7 +186,7 @@ namespace RealLifeOverhaul
             }
             try
             {
-                GameManager.ChangeMoneySafe(-fine, new TransactionInfo("reallife_transaction_fine"), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(-fine, new TransactionInfo("reallife_transaction_fine"), null, null, force: true);
                 Weigh(killed > 0);
                 var data = new Dictionary<string, string> { { "amount", ((float)fine).ToCurrencyFormat() } };
                 if (stopped)
@@ -495,9 +495,9 @@ namespace RealLifeOverhaul
             int total = _owed + fine;
             if (_owed > 0)
             {
-                GameManager.ChangeMoneySafe(-_owed, new TransactionInfo("reallife_transaction_accident_liability"), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(-_owed, new TransactionInfo("reallife_transaction_accident_liability"), null, null, force: true);
             }
-            GameManager.ChangeMoneySafe(-fine, new TransactionInfo("reallife_transaction_fine"), null, null, force: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(-fine, new TransactionInfo("reallife_transaction_fine"), null, null, force: true);
             var data = new Dictionary<string, string> { { "amount", ((float)total).ToCurrencyFormat() } };
             if (_killed > 0)
             {
@@ -584,23 +584,37 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The bill for a crash the player got away from, a few game hours later (also Crime/PoliceAttention's). False if nothing is owed.</summary>
+        /// <summary>
+        /// The bill for a crash the player got away from, a few game hours later (also Crime/PoliceAttention's). False if
+        /// nothing is owed. With people hurt the plate goes to court: the case takes the whole bill, so it is never charged
+        /// beside a court's sentence or after a dismissal. Only when no case opens (justice off, no room) is it billed here.
+        /// </summary>
         internal static bool BillLater(int owed, int people, bool killed, int runningFine)
         {
             if ((owed <= 0 && people <= 0) || !ModState.Loaded || SaveGameManager.Current == null)
             {
                 return false;
             }
-            // As when caught: for people hurt, their fines stand in for the usual one.
-            int later = owed + (people > 0 ? people : runningFine);
             if (people > 0)
             {
                 Weigh(killed);   // they know what they did, whether or not anyone caught them
-                Justice.Summon(JusticeReports.Escaped(killed));   // the plate was seen: a summons follows (Scripts/Justice)
             }
-            ModState.AddPendingFine(later, TimeHelper.NowInMinutes() + Random.Range(3f, 10f) * 60f);
-            Logger?.Info("Pursuit: escaped; " + later + " will be charged later.");
+            SummonOrBill(owed, people, killed, runningFine);
             return true;
+        }
+
+        /// <summary>The plate was seen: with people hurt a summons, which takes the whole bill; else, or with no case opened, the bill. Also the justice test's.</summary>
+        internal static JusticeCase SummonOrBill(int owed, int people, bool killed, int runningFine)
+        {
+            // As when caught: for people hurt, their fines stand in for the usual one.
+            int fine = people > 0 ? people : runningFine;
+            JusticeCase heard = people > 0 ? Justice.Summon(JusticeReports.Escaped(killed, owed)) : null;
+            int later = JusticeLaw.LaterBill(owed, fine, heard != null);
+            ModState.AddPendingFine(later, TimeHelper.NowInMinutes() + Random.Range(3f, 10f) * 60f);
+            Logger?.Info(heard != null
+                ? "Pursuit: escaped; case " + heard.Number + " takes the " + fine + " fine and " + Mathf.Max(0, owed) + " of damages, so nothing is billed later."
+                : "Pursuit: escaped; " + later + " will be charged later.");
+            return heard;
         }
 
         private void Reset()
@@ -634,7 +648,7 @@ namespace RealLifeOverhaul
             ModState.ClearPendingFine();
             try
             {
-                GameManager.ChangeMoneySafe(-amount, new TransactionInfo("reallife_transaction_fine"), null, null, force: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo("reallife_transaction_fine"), null, null, force: true);
                 var data = new Dictionary<string, string> { { "amount", ((float)amount).ToCurrencyFormat() } };
                 Notifications.Show(NotificationType.Error, "reallife_pursuit_fine_later", data, 10f);
                 Logger?.Info($"Pursuit: fine of {amount} for an earlier hit-and-run charged.");

@@ -46,6 +46,7 @@ namespace RealLifeOverhaul
 
         // Stand-ins, brakes, watched cars.
         public const int Proxies = 16;               // stand-ins the cars' sensors read, at the most
+        public const double StandInMakeMs = 1.0;     // ms one stand-in may take to make, on a look of its own (all sixteen in one frame were 37 ms)
         public const float ProxyRadius = 0.6f;       // metres: a little more than the strip's margin, so that whoever is in the strip is in the sensor
         public const float ProxyHeight = 1.8f;       // metres
         public const int Brakes = 8;                 // cars braked for somebody at once

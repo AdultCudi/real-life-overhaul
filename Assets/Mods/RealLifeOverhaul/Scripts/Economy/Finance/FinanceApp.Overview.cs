@@ -84,9 +84,9 @@ namespace RealLifeOverhaul.Economy
             box.Row("reallife_econ_over_worth", FinanceText.Money(Books.NetWorth()));
             box.Note(FinanceText.T("reallife_econ_over_worth_parts", "investments", FinanceText.Money(wealth.totalInvestments), "assets", FinanceText.Money(wealth.totalAssets)));
             Transform buttons = box.ButtonRow();
-            if (cityOn)
+            if (cityOn && EconomyAppOn())
             {
-                InfoBox.Button(buttons, InfoBox.Positive, "reallife_macro_open", ShowCity);
+                InfoBox.Button(buttons, InfoBox.Positive, "reallife_econapp_finance_open", OpenEconomyApp);
             }
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_econ_open_econoview", OpenEconoView);
             if (StandingOn() != null)

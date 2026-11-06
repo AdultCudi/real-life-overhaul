@@ -46,11 +46,11 @@ namespace RealLifeOverhaul.Ledger
             string home = d.HomeName;
             if (home == null)
             {
-                return Closing("reallife_ledger_desk_no_home");
+                return Closing(LedgerCatalogue.NoHomeKey(Settings.LedgerKiosks));
             }
             return new DialogEntry
             {
-                messageData = "reallife_ledger_desk_offer".Localize(Data("address", home, "price", price, "copy", LedgerText.Money(d.CopyPrice),
+                messageData = LedgerCatalogue.OfferKey(Settings.LedgerKiosks).Localize(Data("address", home, "price", price, "copy", LedgerText.Money(d.CopyPrice),
                     "open", LedgerText.Hour(LedgerCatalogue.KioskOpenHour), "close", LedgerText.Hour(LedgerCatalogue.KioskCloseHour))),
                 ConfirmTextOverride = "reallife_ledger_desk_subscribe".Localize(),
                 OnConfirm = Subscribe,

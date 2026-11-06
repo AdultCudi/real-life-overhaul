@@ -1,12 +1,14 @@
 using System;
 using System.Collections.Generic;
 using RealLifeOverhaul;
+using RealLifeOverhaul.Floors;
 using RealLifeOverhaul.Tech;
 
 // The tech companies' towers (Tech/Sites/HqTowers.cs): which of the city's office buildings house the twelve companies, a
 // floor each, the same on every machine; never a building taken, never one twice; the buildings the companies held one
-// each are back on the market (Core/SpecialNameBook.cs refuses only the towers); the floors offered at a door and the lift;
-// and the player's desk kept on the floor of the company they work for, wherever its tower moves.
+// each are back on the market (Core/SpecialNameBook.cs refuses only the towers); the floors offered at a door and the lift
+// (the floors core's rule, Floors/FloorsRules.Page); and the player's desk kept on the floor of the company they work for,
+// wherever its tower moves.
 internal static partial class Program
 {
     private static readonly string[] Firms = { "Codeharbour Software", "Skyvault Systems", "Abacus Lane Software", "Shopfront Online", "Pixel Harbour Games", "Tallyrow Analytics",
@@ -151,15 +153,15 @@ internal static partial class Program
         Check(HqTowers.DoorFloor(4, 3) == 3 && HqTowers.DoorFloor(4, 0) == 1 && HqTowers.DoorFloor(4, 9) == 1 && HqTowers.DoorFloor(0, 2) == 0,
             "towers: the game's own door takes the player to their employer's floor, else the first");
         int[] slots = new int[4];
-        HqTowers.Page(4, 0, 0, slots);
+        FloorsRules.Page(4, 0, 0, slots);
         bool door = slots[0] == 1 && slots[1] == 2 && slots[2] == 3 && slots[3] == 4;
-        HqTowers.Page(4, 2, 0, slots);
+        FloorsRules.Page(4, 2, 0, slots);
         bool lift = slots[0] == 1 && slots[1] == 3 && slots[2] == 4 && slots[3] == 0;
         Check(door && lift, "towers: the door offers the four floors, the lift on floor 2 the three others");
         var seen = new HashSet<int>();
         for (int page = 0; page < 4; page++)
         {
-            HqTowers.Page(12, 0, page, slots);
+            FloorsRules.Page(12, 0, page, slots);
             for (int s = 0; s < 3; s++)
             {
                 seen.Add(slots[s]);

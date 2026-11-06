@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BigAmbitions.DayNightCycle;
 using BigAmbitions.Rivals;
 using Buildings;
 using Helpers;
@@ -8,15 +9,6 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Careers
 {
-    /// <summary>One employer of the city as the vacancies are made from it: a business, an office, a public building.</summary>
-    public sealed class EmployerRef
-    {
-        public string Name = string.Empty, Street = string.Empty, Type = string.Empty, Rival = string.Empty;
-        public int Number;
-        public EmployerKind Kind;
-        public long Professions;   // the professions its type employs (ProCatalogue.EmployedBy), read once a day
-    }
-
     /// <summary>What the working life reads of the city: its employers, a rival's name and whether the player is at work; lists made once a game day.</summary>
     internal static class WorkGame
     {
@@ -39,13 +31,15 @@ namespace RealLifeOverhaul.Careers
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 BuildingRegistration reg = all[i];
-                if (reg == null || !reg.HasValidAddress || reg.RentedByPlayer)
+                if (reg == null || !reg.HasValidAddress || reg.RentedByPlayer || !GameRegistrations.Found(reg) || GameDlc.Gated(reg))
                 {
                     continue;   // (the player's own, and in a session another player's, which Going Public shows as rented by the player: never an employer)
                 }
                 string type = reg.businessTypeName ?? string.Empty;
+                // Every office of the city, in the save's order: a cap here once kept the first 64, Manhattan's alone, so no
+                // office further down the list (Uptown's, appended after the game's own) was ever a firm's.
                 bool office = SafeType(reg) == Office;
-                if (office && offices.Count < 64)
+                if (office)
                 {
                     offices.Add(Ref(reg, EmployerKind.TechFirm));
                 }
@@ -57,11 +51,106 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        /// <summary>
+        /// The employer at an address as <see cref="Employers"/> would list it (a new object, kept by the caller), or null where
+        /// no business that employs a profession stands, or the business is the player's (in a session, another player's).
+        /// One pass over the save's buildings: for a test, never a frame.
+        /// </summary>
+        public static EmployerRef EmployerAt(string street, int number)
+        {
+            List<BuildingRegistration> all = Save != null ? Save.BuildingRegistrations : null;
+            for (int i = 0; all != null && !string.IsNullOrEmpty(street) && i < all.Count; i++)
+            {
+                BuildingRegistration reg = all[i];
+                if (reg == null || reg.StreetName != street || reg.StreetNumber != number)
+                {
+                    continue;
+                }
+                string type = reg.businessTypeName ?? string.Empty;
+                if (reg.RentedByPlayer || !reg.HasEstablishedBusiness || !ProCatalogue.AnyEmploys(type) || GameDlc.Gated(reg))
+                {
+                    return null;
+                }
+                bool rival = !string.IsNullOrEmpty(reg.businessOwnerRivalId);
+                return new EmployerRef
+                {
+                    Name = TalentGame.NameOf(reg), Street = street, Number = number, Type = type, Rival = rival ? reg.businessOwnerRivalId : string.Empty,
+                    Kind = rival ? EmployerKind.Rival : EmployerKind.City, Professions = ProCatalogue.EmployedBy(type)
+                };
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// What the city says of the premises at an address now (<see cref="ClosureRules.Employs"/> judges the post by it), found in the
+        /// save's own list because the game's lookup (BuildingHelper.GetBuildingRegistration) makes a registration for a building that
+        /// has none and throws for one that is gone. False where nothing can be told yet: no save, no city, no registrations, or a
+        /// registration whose building the city does not have now (a district of the mod's own not standing at this load). A pass over the
+        /// save's registrations, asked once a game hour for each post.
+        /// </summary>
+        public static bool PremisesAt(string street, int number, out Premises at)
+        {
+            at = new Premises { Name = string.Empty, Rival = string.Empty };
+            List<BuildingRegistration> all = Save != null ? Save.BuildingRegistrations : null;
+            if (all == null || all.Count == 0 || string.IsNullOrEmpty(street) || InstanceBehavior<CityManager>.Instance == null)
+            {
+                return false;
+            }
+            if (TestShut != null && TestShut.Street == street && TestShut.Number == number)
+            {
+                at.Stands = true;   // a test's closed business (Options > Tests): the building stands and no business trades in it
+                return true;
+            }
+            for (int i = 0; i < all.Count; i++)
+            {
+                BuildingRegistration reg = all[i];
+                if (reg == null || reg.StreetNumber != number || reg.StreetName != street)
+                {
+                    continue;
+                }
+                if (!GameRegistrations.Found(reg))
+                {
+                    return false;
+                }
+                string type = reg.businessTypeName ?? string.Empty;
+                at.Stands = true;
+                at.Trades = !reg.RentedByPlayer && reg.HasEstablishedBusiness && type.Length > 0 && type != "ba:businesstype_empty";
+                at.Name = at.Trades ? TalentGame.NameOf(reg) : string.Empty;
+                at.Rival = at.Trades ? reg.businessOwnerRivalId ?? string.Empty : string.Empty;
+                return true;
+            }
+            at.Stands = BuildingHelper.GetBuilding(new Address(street, number)) != null;   // no registration: it stands only if the city still has the building (a demolition lets its records go)
+            return true;
+        }
+
+        /// <summary>
+        /// The day the game recorded a business closing (a market event of its own, kept some two months) whose business is the one
+        /// named, inside the days given; -1 for none. Names match the business's, or the rival's for a post the jobs board offered.
+        /// One walk over a short list, at a load.
+        /// </summary>
+        public static int ClosedOn(string name, int from, int to)
+        {
+            List<Entities.MarketEvent> events = Save != null ? Save.marketEvents : null;
+            int found = -1;
+            for (int i = 0; events != null && !string.IsNullOrEmpty(name) && i < events.Count; i++)
+            {
+                Entities.MarketEvent e = events[i];
+                if (e != null && e.type == Entities.MarketEventType.BusinessClosed && e.startDay >= from && e.startDay <= to && (e.businessName == name || e.rivalName == name))
+                {
+                    found = Math.Max(found, e.startDay);
+                }
+            }
+            return found;
+        }
+
+        /// <summary>A place a test has closed in the Careers tests (Options > Tests): <see cref="PremisesAt"/> reads it as shut. Null for none.</summary>
+        public static EmployerRef TestShut;
+
         private static string SafeType(BuildingRegistration reg)
         {
             try
             {
-                return reg.GetBuildingType();
+                return GameRegistrations.BuildingType(reg) ?? string.Empty;
             }
             catch (Exception)
             {
@@ -100,7 +189,7 @@ namespace RealLifeOverhaul.Careers
             _publicOf = city;
             Public.Clear();
             Doors.Clear();
-            CityBuildingController[] all = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] all = GameDlc.Open(city);
             for (int i = 0; all != null && i < all.Length && Public.Count < 8; i++)
             {
                 Building b = all[i] != null ? all[i].building : null;
@@ -175,10 +264,104 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
-        /// <summary>The address the game writes for a place.</summary>
+        /// <summary>
+        /// The address the game writes for a place; in a district of the mod's own (Uptown), its name after it, as the game
+        /// names its districts (by the district's id in the locales), since the mod's streets do not say which district they
+        /// are in. A dictionary look in the game's buildings.
+        /// </summary>
         public static string Address(string street, int number)
         {
-            return CivicCity.AddressText(street, number);
+            string at = CivicCity.AddressText(street, number);
+            string district = ModDistrict(street, number);
+            return district == null ? at : CareersText.T(DistrictKey, "address", at, "district", district);
+        }
+
+        private const string DistrictKey = "reallife_work_place_district";   // "{address}, {district}"
+
+        // The name of the mod's own district a place of the mod's streets stands in, or null (the game's own places read as before).
+        private static string ModDistrict(string street, int number)
+        {
+            if (!DistrictSave.DistrictSaveRules.IsModId(street))
+            {
+                return null;
+            }
+            try
+            {
+                Building b = BuildingHelper.GetBuilding(new Address(street, number));
+                string district = b != null ? b.Neighbourhood : null;
+                return DistrictSave.DistrictSaveRules.IsModId(district) ? CareersText.T(district) : null;
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        /// <summary>
+        /// The week's opening hours of the place at an address, into seven masks, Monday first (OpenHoursRules): the game's own
+        /// schedule, which its door keeps (BuildingHelper.CanEnterBuilding). False where the door is not the schedule's: no
+        /// address, a building the mod holds (walked into as the mod's own), or no hours kept for it. Asked once a day for each post.
+        /// </summary>
+        public static bool OpenWeek(string street, int number, int[] into)
+        {
+            for (int i = 0; i < 7; i++)
+            {
+                into[i] = 0;
+            }
+            try
+            {
+                BuildingRegistration reg = Registration(street, number);
+                List<ScheduleDay> days = reg != null ? reg.scheduleDays : null;
+                for (int w = 0; days != null && w < 7; w++)
+                {
+                    DayOfWeekOrdered weekday = TimeHelper.GetDayOfWeek(w + 1);   // day 1 of a game is a Monday
+                    for (int d = 0; d < days.Count; d++)
+                    {
+                        ScheduleDay s = days[d];
+                        if (s == null || s.day != weekday || !s.isOpen || s.openingHourSlots == null)
+                        {
+                            continue;
+                        }
+                        for (int h = 0; h < 24; h++)
+                        {
+                            into[w] |= s.IsOpenAtHour(h) ? 1 << h : 0;
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+                for (int i = 0; i < 7; i++)
+                {
+                    into[i] = 0;   // a building the game has no data for: its hours are not known
+                }
+            }
+            return OpenHoursRules.Known(into);
+        }
+
+        /// <summary>True if the game has the place at an address shut now, a temporary closing included, where its door keeps hours (<see cref="OpenWeek"/>).</summary>
+        public static bool ShutNow(string street, int number)
+        {
+            try
+            {
+                BuildingRegistration reg = Registration(street, number);
+                return reg != null && reg.scheduleDays != null && !BusinessHelper.IsBusinessOpen(reg);
+            }
+            catch (Exception)
+            {
+                return false;
+            }
+        }
+
+        // The registration whose schedule a post's door keeps; null for none, or a building the mod holds.
+        private static BuildingRegistration Registration(string street, int number)
+        {
+            if (string.IsNullOrEmpty(street) || SpecialBuildings.Filed(street, number))
+            {
+                return null;
+            }
+            BuildingRegistration reg = BuildingHelper.GetBuildingRegistration(new Address(street, number));
+            return reg != null && !reg.RentedByPlayer ? reg : null;
         }
 
         /// <summary>True if the player is at work: inside the post's building or by its door (any hospital or the school for a post without an address).</summary>

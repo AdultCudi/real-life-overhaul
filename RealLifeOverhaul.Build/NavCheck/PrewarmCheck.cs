@@ -140,8 +140,11 @@ internal static partial class Program
         // The contacts' pictures: no array per picture, logos kept as files, painted by a time budget.
         Check(!Body(Source(scripts, @"Phone\Contacts\ContactPictures.cs"), "internal static void Fill(").Contains("new Color32["), "contacts: a picture's colour is written into its own texture, no 256 KB array each");
         string painter = Source(scripts, @"Phone\Contacts\ContactPainter.cs");
-        Check(!painter.Contains("new Color32[") && painter.Contains("KeepLogo(p, ") && Body(painter, "private void OnUpdate()").Contains("slice.More(heavy)"),
-            "contacts: no picture array, logos kept as files, painting held to a slice of a frame");
+        string painterUpdate = Body(painter, "private void OnUpdate()");
+        Check(!painter.Contains("new Color32[") && painter.Contains("KeepLogo(p, ") && painterUpdate.Contains("_fetch = Ask(p);") && Body(painter, "private static Task<Fetch> Ask(").Contains("_io.ContinueWith(_ => Read(ask)") && !painterUpdate.Contains("File.")
+              && painterUpdate.IndexOf("Use(f);", StringComparison.Ordinal) is int used && used > 0 && painterUpdate.IndexOf("return;", used, StringComparison.Ordinal) > used
+              && painterUpdate.IndexOf("return;", used, StringComparison.Ordinal) < painterUpdate.IndexOf("Wanted.Count == 0", StringComparison.Ordinal),
+            "contacts: no picture array, logos kept as files, every file read on the worker, one picture a frame");
 
         // The performance tweaks: one switched a frame, what they look at taken behind the loading screen, never searched in play.
         string sync = Body(Source(scripts, @"Performance\PerfDirector.cs"), "private void Sync(");
@@ -155,8 +158,19 @@ internal static partial class Program
               && !Body(lamps, "protected override void Restore()").Contains("PerfGame.IsOn("), "performance: the lamps are listed behind the loading screen, and held lamps are told lit by their lights, with no reflection");
         Check(Body(Source(scripts, @"Performance\Tweaks\SkyThrottle.cs"), "protected override void Tick(").Contains("SceneFinds.Hidden"), "performance: the skies of a scene that arrives in play are searched for only behind a black screen");
         string far = Source(scripts, @"Performance\Tweaks\FarDistricts.cs");
-        Check(Body(far, "protected override void Tick(").Contains("_stale && SceneFinds.Hidden") && Body(far, "private void Survey()").Contains("WorkSlice.Of(")
-              && Body(far, "private void OnMapToggled(").Contains("GiveBackForMap()"), "performance: the far districts gather only behind a screen, sort by the clock, and give back only the map's layers when it opens");
+        Check(Body(far, "protected override void Tick(").Contains("_stale && SceneFinds.Hidden") && Body(far, "private void Survey()").Contains("WorkSlice.Of("),
+              "performance: the far districts gather only behind a screen and sort by the clock");
+        // RLO-PERF-022: for the city map only the map's layers come back, a square in the frame the map's camera first sees it
+        // (before it culls), never the whole city as it opens; after it the very renderers lent are taken out again, a slice
+        // every frame from the moment its camera is back.
+        string farMap = Source(scripts, @"Performance\Tweaks\FarDistricts.Map.cs");
+        string lendForMap = Body(farMap, "private void LendForMap(");
+        string opened = Body(farMap, "private void OnMapToggled(");
+        Check(Body(far, "private void OnCameraRendering(").Contains("LendInView(camera)") && Body(farMap, "private void LendInView(").Contains("GeometryUtility.TestPlanesAABB(")
+              && lendForMap.Contains("Show(cell.Taken)") && !lendForMap.Contains("TakenOff") && !opened.Contains("Show(") && !opened.Contains("GiveBack")
+              && Body(farMap, "private void HoldAgain(").Contains("slice.More()")
+              && far.Contains("_again ? AgainEvery") && far.Contains("GlobalEvents.onCityMapClosed += _onMapClosed"),
+            "performance: for the city map the far districts give back only the map's layers, a square as the map's camera first sees it, and take them out again a slice every frame once its camera is back");
 
         // The police's road map is built behind the loading screen (the streets' piece builds it), never on the first drive.
         Check(Body(Source(scripts, @"Traffic\Solid\SolidStreets.cs"), "public static bool Prewarm()").Contains("RoadMap.Ensure()"), "prewarm: the police's road map is built behind the loading screen");

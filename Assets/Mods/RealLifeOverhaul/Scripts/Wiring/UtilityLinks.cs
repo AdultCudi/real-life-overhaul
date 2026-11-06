@@ -8,31 +8,16 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// Power and water (Scripts/Utilities) with the rest of the mod:
-        ///
-        ///   Grade        the credit rating (Economy): the deposit a new account asks for
-        ///   Household    who lives at the player's home besides them (Family: a partner who moved in, children at
-        ///                home; the roommate at the home they share): the home's power and water
-        ///   CloseFor     a business closed for want of power, water or a connection (Business, the game's own switch),
-        ///                as the utilities' own closure: asked again each hour, it lasts while the want does, whether or
-        ///                not business events are on
-        ///   Release      ...and ended as soon as the business has what it lacked
-        ///   UtilitiesOn  their off switch, read by the closures' keeper (BusinessDirector): off, or stopped by a fault,
-        ///                every business they closed opens again
-        ///   Record       why, in the Business desk's messages (BusinessDesk.Text), to read back after the notification
-        ///   Life         the electricity company's events need a power account of the player's (LifeAccounts.Power)
-        ///   Home         a home without water has dry taps, one without power dark screens and no cooker (HomeTidy)
-        ///   shares       the partner's share and the roommate's are of the rent and the home's power and water
-        ///   Finance      power and water owed are among "what you owe" (EconomyLinks.AddDebts)
-        ///   the Planner  a source of its own: a bill's due day, the day an unpaid one is cut, the end of a temporary
-        ///                supply, the morning an account connects
+        /// Power and water (UtilitiesBridges) with the credit grade, the household, business closures (the utilities' own,
+        /// lasting while the want does, all lifted when they are off or stopped by a fault), the home's taps and screens,
+        /// the bills' shares, "what you owe" in the Finance app and the Planner.
         /// </summary>
         public static class UtilityLinks
         {
             internal static void Connect()
             {
-                // City Utilities' building, 13 7th Street, held for it from the start while it is on (Core/CityReserves).
-                SpecialBuildings.Reserve(CityReserves.UtilitiesId, CityReserves.UtilitiesStreet, CityReserves.UtilitiesNumber, () => Settings.Utilities);
+                // City Utilities' building, held for it from the start while it is on.
+                SpecialBuildings.Reserve(CityReserves.UtilitiesId, CityReserves.UtilitiesStreet, CityReserves.UtilitiesNumber, () => Settings.Utilities, SpecialKind.Civic);
                 TravelBridges.UtilitiesPicked = () => !Settings.Utilities || UtilitiesDirector.Failed
                     || (UtilitiesDirector.Instance != null && UtilitiesDirector.Instance.Office != null && UtilitiesDirector.Instance.Office.Searched);
                 UtilitiesBridges.Grade = () => (int)Economy.CreditLedger.Grade;
@@ -41,9 +26,13 @@ namespace RealLifeOverhaul
                 UtilitiesBridges.Release = reg => BusinessDirector.Instance?.Release(reg, ClosureSource.Utilities);
                 BusinessDirector.UtilitiesOn = () => Settings.Utilities && !UtilitiesDirector.Failed;
                 UtilitiesBridges.Record = (key, data) => BusinessDesk.Text(key, data, notify: false);
+                UtilitiesBridges.FirmWork = FirmWork;
+                UtilitiesBridges.ShopMost = ShopMost;
+                UtilitiesBridges.Shops = Shops;
                 LifeAccounts.Power = () => UtilitiesDirector.HasPowerAccount;
                 HomeTidy.HasPower = reg => UtilitiesDirector.Supplied(reg, Service.Power);
                 HomeTidy.HasWater = reg => UtilitiesDirector.Supplied(reg, Service.Water);
+                HomeTidy.UtilitiesByPhone = () => UtilitiesDirector.Instance != null && UtilitiesDirector.Instance.State != null && UtilitiesDirector.Instance.ByPhone;
                 Family.HomeLife.Bills = UtilitiesDirector.DayCost;
                 Roommates.RoommateGame.Bills = UtilitiesDirector.DayCost;
                 PlannerDirector.Instance?.AddSource(Source);
@@ -58,8 +47,77 @@ namespace RealLifeOverhaul
                 LifeAccounts.Power = null;
                 HomeTidy.HasPower = null;
                 HomeTidy.HasWater = null;
+                HomeTidy.UtilitiesByPhone = null;
                 Family.HomeLife.Bills = null;
                 Roommates.RoommateGame.Bills = null;
+            }
+
+            /// <summary>
+            /// The one read of a building's internet speed for the work over it (NetSpeedRules), for the tech firms and the
+            /// online shops alike: unknown with the utilities or the speed switch off, so both run exactly as before speed
+            /// counted. An hour of 0 or more counts an outage then; -1 asks for the plan, outages aside.
+            /// </summary>
+            internal static int Speed(BuildingRegistration reg, int hour, bool shop)
+            {
+                try
+                {
+                    UtilitiesDirector d = UtilitiesDirector.Instance;
+                    if (!Settings.Utilities || !Settings.UtilitiesNetSpeed || UtilitiesDirector.Failed || d == null || d.State == null || reg == null)
+                    {
+                        return NetSpeedRules.Unknown;
+                    }
+                    return d.Speed(reg, hour, shop);
+                }
+                catch (Exception e)
+                {
+                    Fault("UtilityLinks.Speed", e);
+                    return NetSpeedRules.Unknown;
+                }
+            }
+
+            // The work the player's tech firm at a place would do at a speed, for the plan picker; -1 with none there.
+            private static int FirmWork(BuildingRegistration reg, int mbps)
+            {
+                try
+                {
+                    Tech.TechDirector tech = Tech.TechDirector.Instance;
+                    Tech.FirmPlace firm = tech != null && tech.Firms != null && reg != null ? tech.FirmOf(Tech.TalentGame.Place(reg)) : null;
+                    return firm != null ? Tech.FirmsRules.Connection(firm.File.Kind, mbps) : -1;
+                }
+                catch (Exception e)
+                {
+                    Fault("UtilityLinks.FirmWork", e);
+                    return -1;
+                }
+            }
+
+            // The orders a day the player's online shop at a place could take at a speed, for the plan picker; -1 with none there.
+            private static int ShopMost(BuildingRegistration reg, int mbps)
+            {
+                try
+                {
+                    Economy.OnlineDirector online = Economy.OnlineDirector.Instance;
+                    return online != null && Settings.Economy && Settings.EconomyOnline ? online.MostAt(reg, mbps) : -1;
+                }
+                catch (Exception e)
+                {
+                    Fault("UtilityLinks.ShopMost", e);
+                    return -1;
+                }
+            }
+
+            private static bool Shops(List<BuildingRegistration> into)
+            {
+                try
+                {
+                    Economy.OnlineDirector online = Economy.OnlineDirector.Instance;
+                    return online != null && Settings.Economy && Settings.EconomyOnline && online.Buildings(into);
+                }
+                catch (Exception e)
+                {
+                    Fault("UtilityLinks.Shops", e);
+                    return false;
+                }
             }
 
             private static readonly UtilitiesSource Source = new UtilitiesSource();
@@ -114,7 +172,8 @@ namespace RealLifeOverhaul
                         int key = Key(a);
                         if (a.Owed > 0 && a.DueDay >= fromDay && a.DueDay <= toDay)
                         {
-                            Entry(into, 1, key, a.DueDay, a, d, "reallife_util_plan_due_title", "reallife_util_plan_due_what", a.AutoDebit ? "reallife_util_plan_due_auto" : "reallife_util_plan_due_missed");
+                            Entry(into, 1, key, a.DueDay, a, d, "reallife_util_plan_due_title", "reallife_util_plan_due_what",
+                                a.AutoDebit ? "reallife_util_plan_due_auto" : "reallife_util_plan_due_missed");
                         }
                         int cut = a.DueDay + UtilitiesCatalogue.CutAfterDays;
                         if (a.Owed > 0 && a.DueDay > 0 && a.State != SupplyState.Cut && a.State != SupplyState.Closed && cut >= fromDay && cut <= toDay)
@@ -123,7 +182,7 @@ namespace RealLifeOverhaul
                         }
                         if (a.State == SupplyState.Temporary && a.TemporaryUntil >= fromDay && a.TemporaryUntil <= toDay)
                         {
-                            Entry(into, 3, key, a.TemporaryUntil, a, d, "reallife_util_plan_temporary_title", "reallife_util_plan_temporary_what", null);
+                            Entry(into, 3, key, a.TemporaryUntil, a, d, "reallife_util_plan_temporary_title", UtilitiesRules.Where("reallife_util_plan_temporary_what", d.ByPhone), null);
                         }
                         if (a.State == SupplyState.Pending && a.ConnectDay >= fromDay && a.ConnectDay <= toDay)
                         {
@@ -163,7 +222,7 @@ namespace RealLifeOverhaul
                     }
                 }
 
-                // The same number for the same account in every session (it is kept with a reminder).
+                // The same number for the same account in every session: it is kept with a reminder.
                 private static int Key(Account a)
                 {
                     unchecked
@@ -183,22 +242,30 @@ namespace RealLifeOverhaul
             // roommate at the home the two share.
             private static int Household(BuildingRegistration reg)
             {
-                if (reg == null)
+                try
                 {
+                    if (reg == null)
+                    {
+                        return 0;
+                    }
+                    int people = 0;
+                    if (ReferenceEquals(reg, FirstHome()))
+                    {
+                        people += (Family.FamilyApi.LivesTogether ? 1 : 0) + Family.FamilyApi.Children;
+                    }
+                    Roommates.RoommateDirector roommates = Roommates.RoommateDirector.Instance;
+                    Roommates.RoommateState state = roommates != null ? roommates.State : null;
+                    if (state != null && state.Living && reg.StreetName == state.HomeStreet && reg.StreetNumber == state.HomeNumber)
+                    {
+                        people++;
+                    }
+                    return people;
+                }
+                catch (Exception e)
+                {
+                    Fault("UtilityLinks.Household", e);
                     return 0;
                 }
-                int people = 0;
-                if (ReferenceEquals(reg, FirstHome()))
-                {
-                    people += (Family.FamilyApi.LivesTogether ? 1 : 0) + Family.FamilyApi.Children;
-                }
-                Roommates.RoommateDirector roommates = Roommates.RoommateDirector.Instance;
-                Roommates.RoommateState state = roommates != null ? roommates.State : null;
-                if (state != null && state.Living && reg.StreetName == state.HomeStreet && reg.StreetNumber == state.HomeNumber)
-                {
-                    people++;
-                }
-                return people;
             }
 
             private static BuildingRegistration FirstHome()
@@ -212,7 +279,7 @@ namespace RealLifeOverhaul
                 {
                     if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress)
                     {
-                        Buildings.Building building = Helpers.BuildingHelper.GetBuilding(reg.Address);
+                        Buildings.Building building = GameRegistrations.BuildingOf(reg);
                         if (building != null && building.BuildingType == "ba:buildingtype_residential")
                         {
                             return reg;

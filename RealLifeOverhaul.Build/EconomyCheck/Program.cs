@@ -61,6 +61,54 @@ internal static partial class Program
 
     private static int Main(string[] args)
     {
+        if (args.Length >= 1 && args[0] == "--companion")
+        {
+            CompanionChecks(args.Length == 2 ? args[1] : null);
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--bizpace")
+        {
+            BizPaceAll();   // BizMan's open, switch and tab change alone (BizPaceChecks.cs): RLO_BIZPACE_REPORT=1 prints the figures
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--dayspread")
+        {
+            DaySpreadAll();   // the game's midnight spread over frames alone (DaySpreadChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--heavy-licence")
+        {
+            HeavyLicence();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--crest-motors")
+        {
+            CrestMotors();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--dealer-floor")
+        {
+            UptownDealerFloor();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--stocker")
+        {
+            StockerFixes();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--estate-duties")
+        {
+            EstateDuties();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--client-hours")
         {
             ClientHours();
@@ -74,15 +122,359 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--texts-fallback")
+        {
+            TextsFallback();        // (RLO Texts' budget, queue and what was shown, while working on them: TextsFallbackChecks.cs)
+            TextsShownSix();
+            TextsQueue();
+            TextsBudget();
+            TextsHubs();
+            FlareCommentsAsked();
+            FlareWordsHolds();
+            TextsSpoken();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--derivatives")
         {
             Derivatives();   // (the raw materials exchange, futures and options alone, while working on them: DerivChecks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--branch")
+        {
+            Branches();   // (the bank branches' checks alone, while working on them: BranchChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--bank-levels")
+        {
+            BankLevels();   // (the bank's levels and the owner's pay alone, while working on them: BankTierChecks.cs)
+            BankPayFixes();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--managers")
+        {
+            Managers();   // (the managers' checks alone, the directory's among them, while working on them: ManagerChecks.cs, ManagerDirectoryChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--new-buildings")
+        {
+            NewBuildingsChecks();   // (the mod's own buildings alone, while working on them: NewBuildingsChecks.cs)
+            SpecialServiceChecks();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--outlook")
+        {
+            OutlookApp();   // (the Economy app's checks alone, while working on them: OutlookChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--own-home")
+        {
+            OwnHomes();   // (a building of the player's own staying theirs alone, while working on it: OwnHomeChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--landmarks")
+        {
+            LandmarksChecks();   // (Uptown's landmarks alone, while working on them: LandmarksChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--schools")
+        {
+            SchoolChecks();   // (Birchwood School and the city's schools alone, while working on them: SchoolChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--uptown-notice")
+        {
+            UptownNoticeChecks();   // (the whole-building diagnostic is never a notice, while working on it: UptownNoticeChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--uptown-fill")
+        {
+            UptownLifeChecks();   // (Uptown's life and its filled band alone, while working on them: UptownLifeChecks.cs, UptownFillChecks.cs, UptownPlaceChecks.cs, UptownBigChecks.cs)
+            UptownSpecialsChecks();
+            UptownBigChecks();
+            GateChecks();
+            LandmarksChecks();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--gates")
+        {
+            GateChecks();   // (the vehicle entrances of the copied buildings alone, while working on them: GateChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--uptown-look")
+        {
+            UptownLookChecks();   // (the looks of Uptown's buildings alone, while working on them: UptownLookChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--civic-build")
+        {
+            CivicBuild();   // (the city around the construction company alone, while working on it: CivicBuildChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--builders")
+        {
+            Builders();   // (the construction game alone, while working on it: BuildersChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--desk-screens")
+        {
+            DeskScreens();   // (the screens at a computer desk alone: DeskScreenChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--desk")
+        {
+            BuilderDesk();   // (the front desks alone, while working on them: BuilderDeskChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--map")
+        {
+            MapFilterChecks();   // (the city map's filters and a building that stands or goes, while working on them: MapChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--stand")
+        {
+            StandNowChecks();   // (a building handed over stands at once, and the opening day alone, while working on them: StandChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--corners")
+        {
+            CornerChecks();   // (the corner buildings alone, while working on them: CornerChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--ledgerstories")
+        {
+            LedgerStoriesChecks();   // (the City Ledger's milestone and rival stories alone, while working on them: LedgerStoriesChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--community-service")
+        {
+            CommunityServiceChecks();   // (community service not cut short or broken into, while working on it: CommunityServiceChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--plotjoin")
+        {
+            PlotJoinChecks();   // (leftover plots alone, while working on them: PlotJoinChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--growth")
+        {
+            GrowChecks();   // (buildings that grow alone, while working on them: GrowChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--land-market")
+        {
+            LandMarketChecks();   // (the land market alone, while working on it: LandMarketChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--profit-day")
+        {
+            ProfitDayChecks();   // (stock bought and the day's result alone: ProfitDayChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--parking")
+        {
+            ParkChecks();   // (car parks alone, while working on them: ParkChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--bare-ground")
+        {
+            BuildGroundChecks();   // (the build mode grid's bare ground alone, while working on it: BuildGroundChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--build-mode")
+        {
+            BuildModeChecks();   // (build mode alone, while working on it: BuildModeChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--track")
+        {
+            Track();   // (Show on map and the construction objectives alone, while working on them: TrackChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--hire")
+        {
+            Hire();   // (a builder hired by the player alone, while working on it: HireChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--markets-build")
+        {
+            MarketsBuild();   // (the city's builders on the market and a project's hedge alone, while working on them: MarketsBuildChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--social-fixes")
+        {
+            SocialSteps();   // (the social steps asked too early and the age a stranger is told, alone: SocialStepChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--redevelop")
+        {
+            Redevelop();   // (redevelopment alone, while working on it: RedevelopChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--show-flats")
+        {
+            ShowFlats();   // (show flats and renovations alone, while working on them: ShowFlatsChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--test-run")
+        {
+            TestRunChecks();   // (the city expansion's test run alone, while working on it: TestRunChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--build-trades")
+        {
+            BuildTrades();   // (the building trades alone, while working on them: BuildTradesChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+
+        if (args.Length == 1 && args[0] == "--staff-centres")
+        {
+            StaffCentres();   // (a raise for several picked, a warehouse taken as a data centre, a data centre's crew by a search firm, alone)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--hierarchy")
+        {
+            Hierarchy();   // (the company's hierarchy alone, while working on it: HierarchyChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--hustles")
+        {
+            Hustles();   // (the Marketplace and freelance visits alone, while working on them: HustleChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--meals")
+        {
+            Meals();   // (meals and music alone, while working on them: MealsChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--networking")
+        {
+            Networking();   // (networking alone, while working on it: NetworkChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+
+        if (args.Length == 1 && args[0] == "--household")
+        {
+            Household();   // (household staff alone, while working on them: HouseholdChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--furniture")
+        {
+            Meals();            // (moving furniture and the seat a meal is taken to, alone, while working on them: FurnitureMoveChecks.cs, MealsChecks.cs)
+            FurnitureMoves();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--texts-history")
+        {
+            CallBack();       // (a call back's and RLO Texts' shared history's checks alone, while working on them: CallBackChecks.cs, TextsHistoryChecks.cs)
+            TextsHistory();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--one-person")
+        {
+            OnePerson();   // (one face for one person alone, while working on it: OnePersonChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--lose-touch")
+        {
+            LoseTouch();   // (losing touch alone, while working on it: LoseTouchChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--more-people")
+        {
+            MorePeople();   // (more people to meet alone, while working on it: MorePeopleChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--loadpaths")
+        {
+            LoadPaths();   // (the load paths' checks alone, while working on them: LoadPathChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--exercise")
+        {
+            ExerciseFixes();   // (the test buttons that wait for the menu, and the Not now texts, alone: ExerciseFixChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--seasons")
+        {
+            Seasons();   // (the seasons' checks alone, while working on them: SeasonChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+
+        if (args.Length == 1 && args[0] == "--shops")
+        {
+            Shops();     // (the new kinds of shop and their designs alone, while working on them: ShopChecks.cs, DesignChecks.cs)
+            Designs();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--designs")
         {
             Designs();   // (the ready-made designs' checks alone, while working on them: DesignChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--clean-fixes")
+        {
+            RagdollLifeFixes();   // (the clean-up's fixes alone, while working on them: RagdollFixChecks.cs and the rest named in Main)
+            BusinessInteriorFixes();
+            PhoneWorldFixes();
+            DiagnosticsFixes();
+            CalendarFixes();
+            TextsStreetFixes();
+            WiringFixes();
+            CoreFixes();
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -99,6 +491,7 @@ internal static partial class Program
             return WriteTextsSpec(args[1]);   // (RLO Texts' contract of data v6 and its fixtures, written from the mod: TextsSpecWriter.cs)
         }
         ModApi();
+        CompanionChecks(null);
         Catalogue();
         Start();
         CleanHistory();
@@ -133,6 +526,15 @@ internal static partial class Program
         Company();
         Rota();
         Managers();   // the managers of the player's places: their decisions inside the limits, mistakes, undo and the save (ManagerChecks.cs)
+        Hierarchy();  // the company's policy over the managers, its scopes, the escalations, who holds them and the save (HierarchyChecks.cs)
+        StaffCentres();   // a raise for several picked in MyEmployees, a warehouse taken as a data centre, a data centre's crew by a search firm (PickedRaiseChecks.cs, CentreCrewChecks.cs)
+        DataEngineers();   // data engineers hired for a data centre: who a place with no desks seats, the starts, the day's repair, the test and the texts (DataEngineerChecks.cs)
+        TechSeats();   // every role at every kind of tech firm has a workstation the firm can furnish; the desks, the pages and the texts (SeatChecks.cs)
+        AiModels();   // Your own AI and the model names: each default held to the documentation, an unknown model told to the player (AiModelChecks.cs)
+        StaffReference();   // the Staff and roles reference: generated from the code's tables, its figures held to the code, its texts and its search (StaffChecks.cs)
+        FontFix();   // What's new tells of the font stutter fix in all nine languages (FontFixChecks.cs)
+        MapTreesFix();   // What's new tells of the city map fix in all eleven languages; the guard and its test are wired (MapTreeChecks.cs)
+        MomCall();   // the family dinner call: the ring answered from its notice and the phone, the dinner offered by Mom's call and Family, one table of dates (MomCallChecks.cs)
         Estate();
         Online();
         Services();
@@ -142,6 +544,7 @@ internal static partial class Program
         Banks();
         Calendar();
         Utilities();
+        UtilitiesPhone();   // no office to visit: the app takes the desk's work by phone, each office text has its twin for the app, and the office comes back (UtilitiesPhoneChecks.cs)
         SpecialNames();
         StudyPrompts();
         OutageExcuses();   // what the home's internet down for an outage excuses: an online class, a day from home, a video interview (OutageExcuseChecks.cs)
@@ -154,6 +557,7 @@ internal static partial class Program
         CityReserveChecks();   // the two largest offices kept for the player, the courthouse at the moving company, the moves told once (CityReserveChecks.cs)   // the university's permanent building, its reservation, the older game's rule and the fallback (CampusHomeChecks.cs)
         Internet();
         Broadband();
+        NetSpeed();     // internet speed: the one curve, a tech firm's work and an online shop's orders a day by the line (NetSpeedChecks.cs)
         Empire();
         Dealer();
         ShowroomFloor();
@@ -162,10 +566,12 @@ internal static partial class Program
         Invest();       // a large investor's tools: holdings by kind, worked orders, dividends put back, rollovers and ladders (InvestChecks.cs)
         Listing();
         Ledger();
+        LedgerStoriesChecks();   // the City Ledger's milestone and rival stories: kinds, the ladder, the record, the most valuable, a rival taken over, the save, the real market, sources, texts (LedgerStoriesChecks.cs)
         Newsstand();
         Flare();
         FlareLive();   // Flare as a living network: the feed, the City Office, the reactions, the filter, pictures, Going Public, the save, the texts (FlareLiveChecks.cs)
         FlareReview();   // the review round of Flare as a living network (FlareReviewChecks.cs)
+        FlareClosedReviews();   // the city's reviews come of visits: none of a business the game has closed then, asked again at the hour, a review that went up kept (FlareClosedReviewChecks.cs)
         Faults();   // the city's real faults: weighting, limits, reports, escalation, the city's people, the save, Going Public, the source of chance, texts (FaultChecks.cs)
         Texts();    // RLO Texts: the card byte for byte with the training's, the map, the checker, the queue, the budget, speed, the hub, the save, Going Public, packs, the real runner (TextsChecks.cs)
         TextsService();   // Your own AI: the services, each request and answer, faults and rests, the runner, the hub's fallback, Going Public, Sign in with ChatGPT end to end, the web client, the sealed keys, no secret in a log or a save (TextsServiceChecks.cs)
@@ -173,6 +579,7 @@ internal static partial class Program
         TextsSix();   // RLO Texts' contract of data v6: the fixtures are the mod's cards now, built by the mod and rendered from the spec alone, its shape, seven languages, older packs untouched (TextsSixChecks.cs)
         TextsLanguagesSix();   // RLO Texts in every language of the mod: the seven, a pack's languages, the length and tokens by script, the checker in each, the hub, Going Public's shared text (TextsLanguageChecks.cs)
         TextsDecodingSix();    // RLO Texts' requests of data v6: the grammars read and tried, the tokens, the name kept out, the bodies, the hub's job (TextsDecodingChecks.cs)
+        TextsFallback();       // the written lines for a whole session: the budget a share of the machine's time, spoken lines kept room, what the queue held never a miss, a calm minute back up, the session replayed (TextsFallbackChecks.cs)
         TextsShownSix();       // what RLO Texts showed: the model's words against the written lines and why, by pack and intent, the hourly line, the hub counting every way (TextsShownChecks.cs)
         TextsMemorySix();      // what people remember: the lines, a card's choice the same in any order, whose keys, the save, caps and pruning, the topics (TextsMemoryChecks.cs)
         TextsCitySix();        // the city's new talk: the staff, life events, who texts, gossip, reviews, every written line, the save, RLO Texts Large, the sources (TextsCityChecks.cs)
@@ -180,17 +587,21 @@ internal static partial class Program
         FlareDmTexts();   // a message's answer worded by RLO Texts: its speaker by the account's key, asked again after the model restarts (FlareDmTextsChecks.cs)
         ComposerChecks();   // a call's composer: the two answers without a pack, typed words worth the warm answer a day as before, the model's words read by no rule, cleaned (ComposerChecks.cs)
         TypedReadingChecks();   // what an answer typed on a call says, in every language, and what it gets back: never a sorry to good news (TypedReadingChecks.cs)
+        CallBack();     // a call back opens on what the person just texted about: every feature's texts, the day and the next, once, the save, the flow, the table, the texts (CallBackChecks.cs)
+        TextsHistory(); // RLO Texts' shared history: memories and the last text on the card in the packs' own shape, the budget, the day after an outing, the player's news without a pack (TextsHistoryChecks.cs)
         TextsStart();   // RLO Texts' start ends by its limits for certain: each stage timed, a watchdog, against a pretend server that never answers (TextsStartChecks.cs)
         TextsHang();   // RLO Texts' server that stops answering: a probe tells a hang from a slow machine, a hung or stopped server started again three times a session at most (TextsHangChecks.cs)
         TextsSpeedFix();   // RLO Texts on a GPU at normal priority with two threads, on the processor below normal; the start's lines say what each reply took (TextsSpeedChecks.cs)
         TextsCacheFix();   // RLO Texts' server without Steam's shader cache variables, so the GPU driver keeps its shaders; the first reply's limit and the cache's state (TextsCacheChecks.cs)
         FlareNoLimit();  // posting on Flare without a limit: all made and shown, what moves bounded, Going Public queued and none dropped, the save, the texts (FlareNoLimitChecks.cs)
+        FlareSawPost();   // a city person's "saw your post" only after a real post of the player's, within three days; a hello that claims none for the tests (FlareSawPostChecks.cs)
         FlareInvites();   // invitations in Flare messages: reading, the decision, timing, booked once, the answer's words and card, three languages, sources (FlareInviteChecks.cs)
         StreetTalk();   // talking to anybody in the street: who, whether they stop, the choices, numbers and invitations, word of mouth, the words read, the lines, timing, sources (StreetTalkChecks.cs)
         StreetOffers();   // who in the street is offered a talk: reach, angle, the nearest in front, the time in front without reset, the grace, the kinds of people, give-back, the check lines (StreetOfferChecks.cs)
         StreetTextsV5();   // RLO Texts data v5 in street talk: v5's cards for a data 5 pack, v4's exact cards for a data 4 one, the moment, the name only when told, thanks, the packs' licences (StreetTextsV5Checks.cs)
         StreetConversation();   // street talk that feels alive: the order by the moment and the person, no repeats, follow-ups, patience, warmth, the panel and Esc, the turn's log line, the card's three lines, written lines once a day (StreetChatChecks.cs)
         FlareComments();   // the comments under posts that are not the player's: never more than the count, in time, the same after a save and on a guest, the cards, the texts, the cost (FlareCommentChecks.cs)
+        FlareWordsHolds();      // Flare with a model present: an item shows only with its words, held until they come; the written line only for a real failure, counted (FlareWordsHoldChecks.cs)
         FlareCommentsAsked();   // every comment the count promises written and shown: each asked again after a miss, the open thread first, the budget not locked by what the queue held back, the times, the post's own words (FlareCommentAskChecks.cs)
         FlareCrowd();    // Flare's city of four hundred and its influencers with no fixed most, Mom's and Alex's one look (FlareCrowdChecks.cs)
         StreetLook();   // somebody met in the street keeps the look the game gave them, through a save; a city person met on Flare their face; a card's age the face's (StreetLookChecks.cs)
@@ -198,9 +609,23 @@ internal static partial class Program
         FlareThemeSwitch();   // Flare's light and dark switch: the look by setting and hour, a press always the other look, its words, written and saved as the Settings app does, every open part painted again (FlareThemeChecks.cs)
         Shared();
         Fame();
+        CrimeFixes();   // a hold-up empties the till, rewards at today's prices, a release in a session names no hours, no Crime.Pay dropped (CrimeFixChecks.cs)
+        CityEventFixes();   // the spare hose by the engine, a guest's traffic left alone by the weather, arrivals past one who never came (CityEventFixChecks.cs)
+        RagdollLifeFixes();   // a kneeling medic struck as one standing and kneeling again if not, the memorial's ids with commas, the building manager tested (RagdollFixChecks.cs)
+        BusinessInteriorFixes();   // a smear's room tested with its own dip, an office's stations with no item list, a refresh that says why not, the wear test as play (BusinessFixChecks.cs)
+        PhoneWorldFixes();   // the level of detail put back only if it was set, the doctor's refused payment ends the call with a word (PhoneFixChecks.cs)
+        DiagnosticsFixes();   // the logs page on the graphics card's figures, no count of civic props nobody reads (DiagnosticsFixChecks.cs)
+        CalendarFixes();   // a failed calendar source leaves nothing behind, every app made only once the phone can take it (CalendarFixChecks.cs)
+        WiringFixes();   // every Wiring adapter behind a try with a Wiring fault, the pairing before asked inside one, the financial analyst named, lists let go after a fault (WiringFixChecks.cs)
+        CoreFixes();   // the phone dump gone, the shown buildings compared as a set, the tab copies taken back, the pictures found behind the loading screen, the bar marker by share, the font not looked for again (CoreFixChecks.cs)
+        TextsStreetFixes();   // a raise thanked though first seen on another text's look, never "X and X", web requests let go, the packs said found by a barrier, a Done that asks again safe in the hub's look (TextsFixChecks.cs)
         LogNumbers();   // no number in a log line written in the machine's culture: decimals and groupings invariant (LogNumberChecks.cs)
         JusticeSaveRoundTrip();   // Justice's save line: names with %XXXX escapes come back as written, one at the very end too (JusticeSaveChecks.cs)
+        CameraBills();   // a getaway's camera bill taken by its court case: nothing beside a summons, nothing after a dismissal, damages with a conviction (CameraBillChecks.cs)
         TravelPrices();   // travel's extras, dinners, splurges, events and loyalty night at today's prices, and what the room shows is what it charges (TravelPriceChecks.cs)
+        InsureAll();   // Insure all in the Garage contact: one way to buy a policy, every uninsured car or none, the summary only with two cars and one uninsured, its words (InsureAllChecks.cs)
+        DealerFixedPrices();   // fixed prices at a Car Showroom: saved per showroom, every offer at the asking price, fewer offers sized so a fair price sells, the app and words (DealerFixedChecks.cs)
+        MoneyBugs();   // finance minimums at today's prices, the taxi and franchise refusals, kiosk words by the option, one licence charge, a catch at today's prices (MoneyBugChecks.cs)
         Leftovers();   // every object a feature lists for clean-up is made, every text of leisure and photo mode is read (LeftoverChecks.cs)
         Endings();
         Infra2();
@@ -210,13 +635,21 @@ internal static partial class Program
         LetGo();        // a building let go: the utilities' accounts and bills, business pressure's closures, an underground car park never supplied (LetGoChecks.cs)
         SoldBack();     // a building sold and put back as the player's for nothing goes back to its buyer, a purchase since stays the player's (SoldBackChecks.cs)
         Hiring();
+        Buyout();       // buying out a notice: the price, who can be bought out, the rival's seeded once-only choice, the sources and texts (BuyoutChecks.cs)
         Tech();
+        ListSector();   // a listed company's sector from what it earns now: the mix, the review, the load, the save (ListSectorChecks.cs)
+        OwnDesk();      // working at a desk of one's own tech firm: the minutes by the day, the crew's points, the professions, the save, the sources and texts (OwnDeskChecks.cs)
+        DeskSeat();     // every seat at a desk or station is one pair: held or given back at once, begun before it holds, stood up on every end; the test and texts (DeskSeatChecks.cs)
+        DeskScreens();  // the screens at a computer desk lit while somebody is seated there to work and dark when they stand up, for the player and the staff the mod seats (DeskScreenChecks.cs)
         Careers();
         WorkPace();     // place keys, the professions a type employs and the save's writer, as they were (WorkPaceChecks.cs)
         LifePace();     // utility accounts and Flare's shops seen from their indexes, as the passes found them (LifePaceChecks.cs)
         Apps();         // the apps' clicks: a table written as it scrolls, the Ledger's pages kept, a photo's small copy made a row at a time (AppsChecks.cs)
         CartQueue();
+        CartSound();    // the drinks cart heard: the order cue, its one reminder, the till, the option and the texts (CartSoundChecks.cs)
+        BugsMisc();     // the Guide audit's smaller bugs: the police report, the coat, a preset's value, the save report, a hand-over in a session, the school's hours, the cart (BugsMiscChecks.cs)
         VendorCartFixes();   // the drinks cart off crossings, its pitch checked after the cut, a customer who cannot reach it replaced (VendorCartFixChecks.cs)
+        StockerFixes();      // the shelf to stock shown as soon as a box is carried in, its marker cleared on the way out (StockerFixChecks.cs)
         Work();
         Desks();
         SetOff();       // a class's desk, the work desk and the computer at home: set off as the game's activities, stood up whatever fails, the keys (SetOffChecks.cs)
@@ -228,41 +661,74 @@ internal static partial class Program
         Districts();
         Interiors();
         Designs();      // the ready-made designs: the firms' folders, the names, the showroom's lot, and the plan from the game's own design files (DesignChecks.cs)
+        Shops();        // the new kinds of shop: the catalogue against the game's goods and furniture, hours, help pages, icons, texts, wiring (ShopChecks.cs)
         BusRide();
         PlayerBank();
+        Branches();     // the bank branches: an hour's customers, visits in the bank's books, the reach over many branches, a branch that pays, the save, the option off (BranchChecks.cs)
+        BankLevels();   // the bank's levels and the owner's pay: each level's limits binding, moving up, an older save's bank fitted, the pay's split, the balance figures (BankTierChecks.cs)
+        BankPayFixes(); // the own bank's name on its lines and a fixed pay paid in full: the report's national bank reproduced, what holds it back, the save, the texts (BankPayFixChecks.cs)
         Office();
         CivicFixes();   // the player's own canvasser's leaflet, the bridges to Standing and the court, the donation cap (CivicFixChecks.cs)
+        Construction();   // the rebuild and plot kinds in the save, in the host's line and in the texts (ConstructionChecks.cs)
         SaveLinesKept();
         Morning();
         EndScale();     // the end game at scale: each venture's costs, upkeep, staff and income by size, the payback, old saves phased in, the option off (EndScaleChecks.cs)
         BugReports();   // "Report a bug": report.txt, the user folder taken out, a log's tail, the mod's lines, nothing sent (BugReportChecks.cs)
         Rivals();       // the rival tycoons: growth, pace, bounds, counters, a takeover, a seed, the save and the texts (RivalChecks.cs)
         Wages();        // wages the mod raises: the report's 30 days reproduced, the cap, one rise a period, the repair on load, every write bounded (WageChecks.cs)
+        StaffWageChecks();   // one wage everywhere: what every page and the game's own screens show is what a day charges (StaffWageChecks.cs)
         BrandRec();     // three gyms' recognition over 20 days, tenths shown, mornings missed, a quit influencer's paid posts, paid posts counted and saved (BrandRecChecks.cs)
         DayRoll();      // the game's night kept whole: the report's growing payroll and stuck brand reproduced, unknown goods taken out of the market, hours a stopped night left put right (DayRollChecks.cs)
+        Founding();     // the start days of the player's businesses kept across a moving company's move: the report's 0.3 years reproduced, a moved business keeping its age, an unknown one not day 0, estimates, the save line, every feature asking the one place (FoundingChecks.cs)
         Photos();       // the Camera and the Gallery: names, the cap, deleted saves, the order from a folder, the photo and its small copy to Flare, the camera's rules, the restore, the sources, the texts (PhotoChecks.cs)
         Gallery();      // the Gallery: the photo that would not open, one tap, albums, days, rows in view, before and after, favourites, texts (GalleryChecks.cs)
         GuideMarks();   // the mod's marks on the game's destination guider: whose a marker is, Hide whatever was believed, the watch by time, owner and scene, unloading, the accident's own end (GuideMarkChecks.cs)
+        TextBoxes();    // issue 22: a call's or a talk's text box closed however it ends (the phone shut, Esc, hung up, left, a door, a load, its own time), the panel's handle back after a call, the holds' own values (TextBoxChecks.cs)
         BugBooks();     // "Report a bug" with the staff and the money: each wage against the game's own with its hours, a day of each rota, yesterday's and today's money by kind and place (BugBooksChecks.cs)
+        Beta();         // the beta channel: the tag a beta build carries in its version, none in a public build (BetaChecks.cs)
         CardFix();      // the credit card: paid off by hand inside a debt arrangement and the arrangement ended once, one miss a statement, the overdue minimum carried (CardFixChecks.cs)
         EconomyFixes(); // brands, services, the dealership and property: money paid short or twice, figures stale or a day out, state never put back (EconomyFixChecks.cs)
         CompanyFixes(); // running a business: a campaign's report, the day's books, cover, licences, a strike's overtime, a rival's offer, the strike's day (CompanyFixChecks.cs)
         RotaFixes();    // the staff rota planner: a choice kept, a job never stuck, raises in the stamp, a confirmed plan as confirmed, the goods, the ladder, the page (RotaFixChecks.cs)
         EconomyFixes2(); // the own bank, the city, the web shops, investors and the Finance app: days run while off, money paid short or twice, sums at the start's prices, state lost (EconomyFix2Checks.cs)
+        ShortCash();    // the overdraft pays whatever leaves the cash under nothing, the import payment is in the books, the bank's profit a day (OverdraftChecks.cs)
         BankingFixes(); // the player's banking: the student loan kept, an approval's interest once and on what is financed, a card paid early, a quest loan, loans priced again, the lender's fee (BankingFixChecks.cs)
         SocialFixes();  // the social life: a loan's few more days, a report placed indoors, a missed call's favour, one trainer a cast, an outing put forward kept (SocialFixChecks.cs)
+        SocialSteps();  // a step asked too early says how many days to wait and stays; the age a stranger is told matches the face (SocialStepChecks.cs)
         PeopleAge();    // the People page: each person's age, a year more at each birthday, in every language; the Guide names People as a contact (PeopleAgeChecks.cs)
+        MorePeople();   // more people to meet: the first eight kept, every place bringing somebody new up to 400, the later people's own record, the circle (MorePeopleChecks.cs)
+        LoseTouch();    // losing touch: who can go and why not, the slot given to somebody new, a full cast making room, Flare letting go (LoseTouchChecks.cs)
+        OnePerson();    // one face for one person: Alex and Mom fixed, a roommate's copy following the record, an old save mended once, every scene reading it (OnePersonChecks.cs)
         CinemaFixes();  // a film with a friend: rested as in the game's own cinema seat, given back on every way out (CinemaFixChecks.cs)
         PartnerTalk();    // the partner: Social's calls, texts and outings count as talking for family life (PartnerTalkChecks.cs)
+        ExerciseFixes();
         MealFixes();    // a completed meal fills once by the game's food and records bought food through the bridge
         ClientHours();  // cleaning and stocking: a client open for the walk and the work, one closing calls the job off, the clock paid up to closing (ClientHoursChecks.cs)
         TechFixes();    // the tech sector: a board that cannot hire, a pitch whose meeting never opened, the utilities asked safely, an interview cut short (TechFixChecks.cs)
         TechMoves();    // a tech firm moved by the moving company: its data follows whole, a save left behind is put back, nothing followed with a doubt (TechMoveChecks.cs)
+        BizPaceAll();   // what the mod adds to BizMan's open, switch and tab change: the rules, the book, the registration filter and the start screen's walk timed on a large save, the sources, the texts (BizPaceChecks.cs)
+        DaySpreadAll(); // the game's midnight spread over frames: a step queued is played in a later frame, a slice a frame equals the job at once, the save and the next day finish it, the weekly look of the investors (DaySpreadChecks.cs)
+        BizIncome();    // BizMan's income: every money line through BizBooks.Book, every key of the mod's businesses in one list of BizLines, the day's refresh, the self-check line (BizIncomeChecks.cs)
+        DayResults();   // the day-end panel and the top bar show the game's profit or loss with the mod's money, transfers left out: the counting rules, the self-check line, the option and the texts (DayResultChecks.cs)
+        BizManLink();   // the Company app's Open in BizMan: on every business's page, the game's BizMan.Open for the player's own business, the notice, the texts (BizManLinkChecks.cs)
         MarketFixes();  // the stock market: a guest's trade lines culture-free, the index steady as companies join over the cap, the tape swapped safely, the chart's guard (MarketFixChecks.cs)
         CareersFixes(); // education and careers: stood down once the guard has switched it off, no sitting on a disabled host, a lost course never read back (CareersFixChecks.cs)
+        MeetingPlaces(); // a review is held where the player can go: a board that stands, named with the shop it is outside and the way in, else the phone (MeetingPlaceChecks.cs)
+        DriveMap();     // the driving test that cannot start (examiner never aboard, time stopped, a car that will not go) and the employers found on the map and in the Career app (DriveMapChecks.cs)
+        InterviewPlaces(); // an interview where it is held: in at the door behind the black screen and out again, at the home's computer, every end (InterviewPlaceChecks.cs)
+        HomeworkCounts(); // homework counts across sittings: minutes carried, finished over two, saved and loaded, the early-stop notice and hint (HomeworkCountChecks.cs)
         ClassCounts();  // a class, homework or exam being sat is never lost: settled once by its own record, the hourly pass asks the book, the clock's minutes, the school desk's keys (ClassCountChecks.cs)
+        DeskStarts();   // a classroom door, a school desk and the Campus app begin a class or exam by one rule; no button the game's panel cannot fill or dim (DeskStartChecks.cs)
+        HiddenPanels(); // in a Going Public session, which hides the game's activity panel and presses Start for the player, a desk's class or exam begins (HiddenPanelChecks.cs)
+        Layoff();       // an employer that closes, is bought, loses its building or moves: the job ends as a lay off with pay and a good reference, or follows it (LayoffChecks.cs)
+        ShiftOpen();    // every job's week inside its workplace's opening hours, a save's put right at load, a day shut at its start excused, the rota's shut clients (ShiftOpenChecks.cs)
+        Ladder();       // the management ladder at a city company: the ranks' powers, the company seeded, every task decided by the rank that may, promotion with its tools, the save (LadderChecks.cs)
+        AgencyDesk();   // a seat at a recruitment office's desk always offers the jobs board (never the Basic HR course) or recruitment (the course first), the game's dialogue taken while the working life is on (AgencyDeskChecks.cs)
+        OptionKeysFix(); // the options kept under the mod's own id for every copy: the older copies' values brought over once, the running copy's first, the sources, the texts (OptionKeysChecks.cs)
         HomeFixes();    // home life: the roommate's talk test with no character, the door to social life nobody read, rain and sleep in a hotel room (HomeFixChecks.cs)
         LifeFixes();    // life events: news of the player's home, building, neighbours and landlord only to a player with a home (LifeFixChecks.cs)
+        LineNeedRule(); // random lines only when what they take for granted is the player's: a fridge, a flat, a landlord, a car; every random line's English read for it (LineNeedChecks.cs)
+        VehicleCosts(); // vehicle costs: a purse past an int took 2.1 billion as a life event's loss; money into an int, a car's costs on their worst input, the wrong charge paid back (VehicleCostChecks.cs)
         TravelFixes();  // travel: the hotel room refused while the game was paused (TravelFixChecks.cs)
         ChessFixes();   // street chess: the whole setup clear of crossings in both placement paths (ChessFixChecks.cs)
         LedgerFixes();  // the City Ledger: a kiosk copy never charged when the page cannot open, the subscription's lines (LedgerFixChecks.cs)
@@ -274,13 +740,61 @@ internal static partial class Program
         FamilyHomeFixes();  // the partner at home: night texts kept for the morning, cooking and watching together, moving about, the chat face to face (FamilyHomeChecks.cs)
         FamilyChores();  // household chores asked when really so and counted when really done (FamilyChoreChecks.cs)
         FamilyHeldTexts();  // the family texts kept for the morning, kept in the save too (FamilyHeldTextChecks.cs)
+        VentureFollowOns();  // a startup's follow-on once a round, back to the share before it and no more, kept in the save, older saves as they were (VentureFollowOnChecks.cs)
         MetaFixes();    // the options page and Report a bug: Import without its backup, a report never left busy, the pages' search and dispatcher lines (MetaFixChecks.cs)
         MoodBuffs();    // the mod's moods: a cap from each catalogue entry, a load puts saved moods back as saved (never through Going Public's scaled add), a save past the cap trimmed once (MoodBuffChecks.cs)
         LaterLanguages(); // Dutch and Turkish: listed wherever the other languages are, as complete as the other translations, What's new numbered and marked (LaterLanguageChecks.cs)
         RivalOffers();  // a rival's offer whose employee has left loses its buttons, every way of leaving, an older save (RivalOfferChecks.cs)
+        HeadhunterAndProducts(); // names no two people share (a list of everyone in use, doubled names mended), a hire the game refuses, a start that fails said; product limits 12 a firm and 36 together, withdrawn kept 12, said in the app and the Guide (HeadhunterChecks.cs)
         StaffLeaving(); // an employee the mod lets go leaves once, with one wage and one notice; one rival's offer to an employee at a time (StaffLeaveChecks.cs)
         HardTimesTriggers(); // a difficult moment at home comes of what is going on: each one's causes, nothing when all is well, a cause gone, the options, the save, the same state (HardTimesChecks.cs)
         MorningNotices(); // the morning line only from a sleep the game ended, with its hours; the city's news of the night packed into it; four notices' switches (MorningNewsChecks.cs)
+        Hustles();      // the Marketplace: listings, worth, haggling, repairs, buyers, visits and their stars, helpers, the save, a year of it, the texts (HustleChecks.cs)
+        CalendarApp();  // the Calendar: the months of every year length, the grid, each schedule's days against its feature's own rule, an empty month, the sources, the texts (CalendarAppChecks.cs)
+        Meals();        // meals and music: the seat a meal is taken to, how long it is eaten, the dance's lift and its cap, every way out, the texts (MealsChecks.cs)
+        HeldUnitsChecks(); // the game leaves the mod's buildings alone: claims counted per address, the ignore list's one rule, the night's lists, every way out, nothing saved (HeldUnitsChecks.cs)
+        CityReady();    // DLC and update readiness: the city check's table, New York's districts and their order, every table by district with one it does not know (CityReadyChecks.cs)
+        FloorsCore();   // the floors of the mod's buildings: floors a building holds, spare floors and a building taken for places, the panel's pages, every way in and out given back, the sources, the words (FloorsChecks.cs)
+        BuildTrades();  // the building trades: the trades and what each asks, the courses and ladders, the bar, the match, the inspection and its bribe, the design game and its score, the tender, the book, the sources, the texts (BuildTradesChecks.cs)
+        NewBuildingsChecks(); // the mod's own buildings: the design picked and where it stands, the lot taken, what refuses one, nothing of them saved, none destroyed in a session, the texts (NewBuildingsChecks.cs)
+        SpecialServiceChecks(); // a made building with one of the game's special services: the special type only with one, the registration as the game fills one, the lists in and out, a branch's contact (SpecialServiceChecks.cs)
+        Builders();     // the construction game: the catalogue, the land, the plans and planning, a site, the money, tenders and rivals, the developers, the frame, the store's line, the sources and wiring, the texts (BuildersChecks.cs)
+        Hire();         // a builder of the city's hired by the player: the quotes, the contract's money, the penalty, the pace, the line, the sources, the texts (HireChecks.cs)
+        BuilderDesk();  // the front desks: what the desk talks about first, the front desk picked, the office's visitors, the one quote and hire, the click, the tests, the texts (BuilderDeskChecks.cs)
+        BuildModeChecks();   // build mode: the zoning cells on the real plan, sites, prices, rows, the state machine, colours, warnings, demand and the market, whole buildings, the store, the sources, the texts (BuildModeChecks.cs)
+        BuildGroundChecks();   // no ground of a block left unexplained: every spot a square, a held ground or the plan's margin, every column a building, for sale or held, each rule made to fail once (BuildGroundChecks.cs)
+        GrowChecks();   // buildings that grow: zoning per square and its tools, the council's zoning, the developer's pick, the steady pace on the real plan, the tiers, tenants, condition, the store, the sources, the texts (GrowChecks.cs)
+        PlotJoinChecks();   // leftover plots: the fit rule that leaves a single space, the join the Place tool offers, the city's growth leaving no stretch nothing fills, the sources, the texts (PlotJoinChecks.cs)
+        CornerChecks();   // the corner buildings: the corner site rule on the real plan, the four turns, the fit and the ground beneath, the signs, the bundle, the records, the sources, the texts (CornerChecks.cs)
+        ParkChecks();   // car parks: the layout of bays on every size of site, the works and their cost, where one may stand, the price band, how full by the hour, leases, the city's builders, the store, the sources, the texts (ParkChecks.cs)
+        LandMarketChecks();   // the land market: the city's price, a rival's ask and its answer, the limits, the rivals' own trading and its cadence, the save's part, the sources, the texts (LandMarketChecks.cs)
+        OutlookApp();   // the Economy app: its history and the line in the save, a change and its tone, the verdict, the districts' ranking, each piece of advice and its sentence, the charts' scaling and smoothing, the colours' contrast, the texts (OutlookChecks.cs)
+        Track();        // Show on map and the construction objectives: what is under way, each line's words, the order, the cap, the claim kept, the one way to the destination, the game's objectives window, the texts (TrackChecks.cs)
+        MapFilterChecks();   // a building the construction game finishes registers with the city map's filters when it stands and leaves them when it goes: the rows, the steps, the list, the sources, the text (MapChecks.cs)
+        StandNowChecks();   // a building handed over stands at once, and the opening day is not missed: when it stands, the one declaration, the record set up once, the sources, the texts (StandChecks.cs)
+        OwnHomes();     // a building the player puts up on their own land stays theirs: a block on sale until its last flat is sold, then its residents', the growth leaving the player's alone, the sources, the texts (OwnHomeChecks.cs)
+        ShowFlats();    // show flats and renovations: viewings, buyers and prices, a refit's hours, grade and quote, the fittings' decor, the lines, the game's residential designs, the sources, the texts (ShowFlatsChecks.cs)
+        Redevelop();    // redevelopment: refurnishing with the game's designs and its price, an AI business's new layout, the lines, the sources, the texts (RedevelopChecks.cs)
+        DistrictSaveChecks();   // the district save: whose a place is, what each record does, put back where it stood, the store's line, nothing at all for a game with none (DistrictSaveChecks.cs)
+        DistrictSaveZipChecks();   // the district save's payload in pieces: the same records and the same bytes back as the old line, on any workers, a bad piece caught (DistrictSaveZipChecks.cs)
+        UptownNoticeChecks();   // the whole-building diagnostic is never a notice, and an older line still loads (UptownNoticeChecks.cs)
+        UptownLifeChecks();   // Uptown as a district of the game: its values, its map quad, its lots, its line, the district save, every table by district (UptownLifeChecks.cs)
+        UptownSpecialsChecks();   // Uptown's special places: the table on the plan, its refusals, the importer's goods, the save's records, the sources, the texts (UptownSpecialsChecks.cs)
+        UptownBigChecks();    // Uptown's wholesale store and gas station: their lots, their ground and where each stands, the whole designs, the mouths, the sources, the texts (UptownBigChecks.cs)
+        GateChecks();         // the vehicle entrances of the copied buildings: the game's garage doors and car parks, which a copy keeps, where each looks out, the mouths kept clear, the sources, the texts (GateChecks.cs)
+        MarketsBuild();   // the city's builders on the market and a project's hedge: who is listed, the news and its moves, two machines alike, the building materials, the hedge's rules and money, a project's exposure, the books, the sources, the texts (MarketsBuildChecks.cs)
+        LandmarksChecks();    // Uptown's landmarks: their sites, a span of lots, the timetable, the lift, the season, the stadium, the line, the sources, the texts (LandmarksChecks.cs)
+        SchoolChecks();       // Birchwood School and the city's schools: the campus on its block, the market, the owner's rule for NPCs, the days, the lift, the line, the sources, the texts (SchoolChecks.cs)
+        TestRunChecks();   // the city expansion's test run: its order, its registry and every check in it, the lines it reads, the lots it gives, its carry-over, the summary, the texts (TestRunChecks.cs)
+        CivicBuild();   // the city around the construction company: the building code, the one council's zoning, rigged tenders, unpaid bills, the building of the year, the lines, the sources, the texts (CivicBuildChecks.cs)
+        Seasons();      // the seasons: the goods' table, the season of a day, the snow of a winter day and how much lies, the cost, the sources, the texts (SeasonChecks.cs)
+        LoadPaths();    // load-path parity: nothing tells Continue from Load, the entry points, a game static that is null at a session's first city (LoadPathChecks.cs)
+        RivalFirst();   // when the first rival tycoon comes forward, by the option: the steps, the tiers, a season at each, every reader, the texts (RivalFirstChecks.cs)
+        TaxiComfort();  // ride fares' easier passengers: the two tables, the arithmetic, a rough ride under each, the gig reading only the table, the texts (TaxiComfortChecks.cs)
+        FurnitureMoves(); // moving furniture: the game's own reason a right click or a place click is refused, whose a thing in the way is, the lines only reading (FurnitureMoveChecks.cs)
+        Networking();   // networking: who holds a position (an introduction more often), each position's two favours once, when they are ready, the save, a job lead's name, the texts (NetworkChecks.cs)
+        Household();    // household staff: the kinds and their hours, wages from the going rate, the cook's dishes, candidates, unpaid visits, the save, money only through the game's call, the texts (HouseholdChecks.cs)
+        HeavyLicence(); // the heavy goods licence: which trucks need it, the school's steps and waits, its save part, heavy loads on the courier round, the sources and texts (HeavyLicenceChecks.cs)
         Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
         return _failed == 0 ? 0 : 1;
     }

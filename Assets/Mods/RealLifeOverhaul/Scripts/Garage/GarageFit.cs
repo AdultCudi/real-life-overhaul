@@ -3,9 +3,8 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// One car body as measured: where its roof, boot deck and nose are, in the vehicle's own space
-    /// (metres, origin on the ground under the middle, +Z forwards). Measured from the game's own meshes
-    /// by GarageAssets/scripts/extract_fit.py (every triangle of the body, not its bounding box).
+    /// One car body as GarageAssets/scripts/extract_fit.py measured it: where its roof, boot deck and nose are, in the
+    /// vehicle's own space (metres, origin on the ground under the middle, +Z forwards).
     /// </summary>
     public readonly struct CarFit
     {
@@ -40,10 +39,8 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// Which fitted parts go on which car, and where. A part is offered only on a body it sits on
-    /// cleanly: a wing needs a boot deck that is nearly flat and well below the roof, bars need a roof
-    /// long enough to carry them, a bull bar is for SUVs, pickups and vans. A vehicle type that is not
-    /// in the table (another mod's car, the Mersaidi Dash whose prefab is built differently) gets none.
+    /// Which fitted parts go on which car, and where: a part is offered only on a body it sits on cleanly. A vehicle
+    /// type not in the table (another mod's car, the Mersaidi Dash, whose prefab is built differently) gets none.
     /// </summary>
     public static class GarageFit
     {
@@ -73,8 +70,8 @@ namespace RealLifeOverhaul
         };
 
         public const float MaxDeckSlope = 25f;     // degrees: steeper than this is a rear window or a rounded tail, not a deck
-        public const float MinDeckBelowRoof = 0.25f;
-        public const float MinRoofLength = 0.90f;
+        public const float MinDeckBelowRoof = 0.25f; // m
+        public const float MinRoofLength = 0.90f;    // m
 
         public static bool TryGet(string vehicleTypeName, out CarFit fit)
         {
@@ -110,11 +107,7 @@ namespace RealLifeOverhaul
                    && BarTop(fit) - (fit.NoseLow + 0.05f) >= 0.35f && fit.NoseHalfWidth >= 0.45f;
         }
 
-        /// <summary>
-        /// How high a bull bar stands on this nose: to just under the bonnet's edge, but no more than 0.22 m above
-        /// the upright part of the nose (on a van the front leans back above that, and a taller bar would stand
-        /// out in front of nothing), and never more than 0.75 m tall.
-        /// </summary>
+        /// <summary>A bull bar's top: under the bonnet's edge, at most 0.22 m over the upright nose and 0.75 m tall.</summary>
         public static float BarTop(in CarFit fit)
         {
             float top = fit.BonnetHeight - 0.05f;

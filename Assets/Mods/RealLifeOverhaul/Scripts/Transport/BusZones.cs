@@ -350,6 +350,8 @@ namespace RealLifeOverhaul
             return plain;
         }
 
+        private static readonly int HotStep = HotSpots.Slot("Transport: BusZones.Step");
+
         /// <summary>Makes the zones still to be made, a slice at a time, and keeps them made. From the director's timer.</summary>
         public static void Step()
         {
@@ -357,6 +359,8 @@ namespace RealLifeOverhaul
             {
                 return;
             }
+            using var hotSpot = HotSpots.Time(HotStep);
+            RelayOne();
             float now = Time.unscaledTime;
             if (!_queued)
             {
@@ -488,6 +492,7 @@ namespace RealLifeOverhaul
             {
                 return true;
             }
+            using var piece = SessionWatch.Piece("transit: a bus zone made (parking cut, furniture and parked cars cleared)");
             try
             {
                 Vector3 right = Vector3.Cross(Vector3.up, stop.Along);
@@ -578,6 +583,8 @@ namespace RealLifeOverhaul
             Verdicts.Clear();
             Hidden.Clear();
             Pending.Clear();
+            Relay.Clear();   // every lane was laid out again above, as the game had it
+            RelayAt.Clear();
             _queued = false;
             _putBack = 0;
             for (int i = 0; i < TransitMap.Stops.Count; i++)

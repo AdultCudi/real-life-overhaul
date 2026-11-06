@@ -9,21 +9,14 @@ namespace RealLifeOverhaul.Texts
     /// <summary>What a sign-in's tokens say, once checked.</summary>
     public sealed class TextTokens
     {
-        public string Access, Refresh, Id, Scope, ClientId, Subject, Email;
+        public string Access, Refresh, Id, Scope, Subject, Email;
         public long ExpiresAt;            // Unix seconds the access token ends
     }
 
     /// <summary>
-    /// The rules of Sign in with ChatGPT, as OpenAI documents it for open-source apps run on the player's own PC
-    /// (developers.openai.com/siwc, "ChatGPT plan usage", October 2026), game-free (EconomyCheck, TextsServiceChecks.cs):
-    /// the first sign-in registers the app with client_id dynamic_agent_client, the app's name and a host id of this PC
-    /// (an opaque urn:uuid, never the player's), and the callback gives the app's own client id, kept for every later
-    /// sign-in; authorization code with PKCE (S256), a state and a nonce fresh for each try; a loopback callback on
-    /// 127.0.0.1; the code exchanged with the verifier; the ID token's signature checked against OpenAI's published keys
-    /// (RS256), with its issuer, audience, expiry and nonce; the grant must hold chatgpt.tokens.use.direct before a card
-    /// is ever sent. The access token lasts an hour and is refreshed near its end with the rotating refresh token;
-    /// signing out revokes the refresh token. The tokens are the player's and stay in <see cref="TextKeys"/>.
-    /// COST: nothing per frame; a few strings at a sign-in or a refresh.
+    /// The rules of Sign in with ChatGPT as OpenAI documents it for open-source apps (developers.openai.com/siwc): app
+    /// registration, PKCE, a loopback callback, the ID token checked, and the plan's scope required. Game-free.
+    /// COST: a few strings at a sign-in or a refresh.
     /// </summary>
     public static class TextChatGpt
     {
@@ -40,7 +33,7 @@ namespace RealLifeOverhaul.Texts
         public const long Skew = 120;                                   // seconds of difference between this PC's clock and OpenAI's allowed
         public const string UsageUrl = "https://chatgpt.com/settings/usage";   // where a player manages the plan's use in apps
 
-        // The kept names in TextKeys.
+        // Names kept in TextKeys.
         public const string KClient = "chatgpt.client", KHost = "chatgpt.host", KId = "chatgpt.id", KAccess = "chatgpt.access", KRefresh = "chatgpt.refresh",
             KExpires = "chatgpt.expires", KEmail = "chatgpt.email", KSubject = "chatgpt.subject", KScope = "chatgpt.scope", KWelcomed = "chatgpt.welcomed";
 
@@ -67,13 +60,10 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>The callback's address on this PC (127.0.0.1, never localhost).</summary>
+        /// <summary>The callback's address on this PC: 127.0.0.1, never localhost.</summary>
         public static string Redirect(int port) => "http://127.0.0.1:" + port.ToString(CultureInfo.InvariantCulture) + CallbackPath;
 
-        /// <summary>
-        /// The address the browser opens. <paramref name="clientId"/> null: a first sign-in, which registers the app by
-        /// its name; else the kept client id, with the kept ID token as a hint. Never logged (the hint is the player's).
-        /// </summary>
+        /// <summary>The address the browser opens, never logged; a null <paramref name="clientId"/> is a first sign-in, which registers the app.</summary>
         public static string AuthorizeUrl(string auth, string clientId, string appName, string hostId, string idTokenHint, string redirect,
             string state, string nonce, string verifier)
         {
@@ -121,11 +111,7 @@ namespace RealLifeOverhaul.Texts
 
         private static string Unescape(string s) => Uri.UnescapeDataString(s.Replace('+', ' '));
 
-        /// <summary>
-        /// The callback's verdict: null when it may be exchanged, else why not. The state must be the one sent; an error is
-        /// the end (access_denied: the player said no); a first sign-in must name the app's new client id, and a later one
-        /// may name none or only the kept one.
-        /// </summary>
+        /// <summary>The callback's verdict: null when it may be exchanged, else why not.</summary>
         public static string Callback(Dictionary<string, string> q, string state, string keptClient, out string clientId)
         {
             clientId = null;
@@ -159,25 +145,22 @@ namespace RealLifeOverhaul.Texts
             return null;
         }
 
-        /// <summary>The form of the code's exchange (authorization_code with the PKCE verifier and the resource).</summary>
+        /// <summary>The form of the code's exchange, with the PKCE verifier and the resource.</summary>
         public static string ExchangeForm(string clientId, string code, string verifier, string redirect) =>
             "grant_type=authorization_code&client_id=" + Uri.EscapeDataString(clientId) + "&code=" + Uri.EscapeDataString(code)
             + "&code_verifier=" + Uri.EscapeDataString(verifier) + "&redirect_uri=" + Uri.EscapeDataString(redirect)
             + "&resource=" + Uri.EscapeDataString(TextProviders.OpenAiApi);
 
-        /// <summary>The form of a refresh: the kept client id and refresh token, the scope left out so the grant stays as it is.</summary>
+        /// <summary>The form of a refresh, the scope left out so the grant stays as it is.</summary>
         public static string RefreshForm(string clientId, string refresh) =>
             "grant_type=refresh_token&client_id=" + Uri.EscapeDataString(clientId) + "&refresh_token=" + Uri.EscapeDataString(refresh)
             + "&resource=" + Uri.EscapeDataString(TextProviders.OpenAiApi);
 
-        /// <summary>The form of signing out: the refresh token revoked for the kept client id.</summary>
+        /// <summary>The form of signing out: the refresh token revoked.</summary>
         public static string RevokeForm(string clientId, string refresh) =>
             "token=" + Uri.EscapeDataString(refresh) + "&token_type_hint=refresh_token&client_id=" + Uri.EscapeDataString(clientId);
 
-        /// <summary>
-        /// The tokens of a token answer, or null with why. <paramref name="now"/> in Unix seconds. A refresh's answer
-        /// carries no ID token: <paramref name="needId"/> false.
-        /// </summary>
+        /// <summary>The tokens of a token answer, or null with why; <paramref name="now"/> in Unix seconds.</summary>
         public static TextTokens Tokens(string body, long now, bool needId, out string why)
         {
             object root = TextJsonTree.Read(body);
@@ -203,7 +186,7 @@ namespace RealLifeOverhaul.Texts
             return t;
         }
 
-        /// <summary>True for a refresh refused for good (the player disconnected the app, or the token ended): sign in again.</summary>
+        /// <summary>True for a refresh refused for good: the player must sign in again.</summary>
         public static bool Gone(string error)
         {
             switch (error)
@@ -221,7 +204,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>True when the grant holds the plan's use (its scope lists chatgpt.tokens.use.direct).</summary>
+        /// <summary>True when the grant's scope holds the plan's use.</summary>
         public static bool Plan(string scope)
         {
             if (string.IsNullOrEmpty(scope))
@@ -238,13 +221,7 @@ namespace RealLifeOverhaul.Texts
             return false;
         }
 
-        // ---------------------------------------------------------------- the ID token
-
-        /// <summary>
-        /// The ID token checked: signed with RS256 by one of <paramref name="keysJson"/> (OpenAI's published keys), issued by
-        /// <paramref name="issuer"/> for <paramref name="clientId"/>, not ended (Unix seconds, with <see cref="Skew"/>), and
-        /// with the nonce sent. Null when it passes, with its subject and email; else why not.
-        /// </summary>
+        /// <summary>The ID token checked against OpenAI's keys, issuer, audience, expiry and nonce: null when it passes, else why not.</summary>
         public static string CheckId(string idToken, string keysJson, string issuer, string clientId, string nonce, long now, out string subject, out string email)
         {
             subject = email = null;
@@ -322,13 +299,11 @@ namespace RealLifeOverhaul.Texts
                 }
                 catch (CryptographicException)
                 {
-                    // (a key this runtime cannot use: the next)
+                    // a key this runtime cannot use: try the next
                 }
             }
             return false;
         }
-
-        // ---------------------------------------------------------------- base64url
 
         public static string Url64(byte[] bytes) => Convert.ToBase64String(bytes).TrimEnd('=').Replace('+', '-').Replace('/', '_');
 

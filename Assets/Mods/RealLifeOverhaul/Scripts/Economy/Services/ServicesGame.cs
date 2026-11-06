@@ -53,7 +53,7 @@ namespace RealLifeOverhaul.Economy
         public BuildingRegistration Base;    // the building they are assigned to; null if none
         public int X, Z;                     // its door
         public int Skill, Mood;              // 0 to 100 each
-        public int Wage;                     // hundredths an hour
+        public int Wage;                     // hundredths an hour, as paid: the city's prices and any agreed raise (Core/PaidWage)
         public int WeekHours;                // the hours a week the game has them down for
         public int TodayFrom = -1, TodayTo;  // their cleaning shifts today, first to last minute; -1: none
         public bool Present;                 // not off sick today (or replaced)
@@ -65,6 +65,9 @@ namespace RealLifeOverhaul.Economy
     /// </summary>
     internal static partial class ServicesGame
     {
+        /// <summary>Owner deduction labels whose mixed costs have no single portable recurrence rule.</summary>
+        internal static string[] CompanionUnclassifiedTaxLabels() => new[] { DeductKey.GetLocalization() };
+
         public const string VanKey = "reallife_transaction_svc_van";
         public const string FeeKey = "reallife_transaction_svc_fee";
         public const string PenaltyKey = "reallife_transaction_svc_penalty";
@@ -79,7 +82,7 @@ namespace RealLifeOverhaul.Economy
 
         private static GameInstance Save => SaveGameManager.Current;
 
-        public static int Cash => Save != null ? Mathf.FloorToInt(Mathf.Max(0f, Save.Money)) : 0;
+        public static int Cash => Save != null ? WholeMoney.Floor(Save.Money) : 0;
 
         /// <summary>The minute of the day by the game's clock.</summary>
         public static int Now => Save != null ? Save.Hour * 60 + Mathf.Clamp(Mathf.FloorToInt(Save.Minute), 0, 59) : 0;
@@ -168,7 +171,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     return false;
                 }
-                Building building = reg.BuildingCached;
+                Building building = GameRegistrations.BuildingOf(reg);
                 return building != null && BuildingTypeHelper.GetData(building).NeedsCleaning;
             }
             catch (Exception)
@@ -229,7 +232,7 @@ namespace RealLifeOverhaul.Economy
                 return;
             }
             c.Name = Name(reg);
-            c.District = reg.Neighborhood ?? string.Empty;
+            c.District = GameRegistrations.District(reg) ?? string.Empty;
             if (Door(reg, out int x, out int z))
             {
                 c.X = x;
@@ -418,7 +421,7 @@ namespace RealLifeOverhaul.Economy
             m.Name = e.characterData.name ?? "?";
             m.Skill = Mathf.RoundToInt(Mathf.Clamp(e.GetSkillValue(ServicesCatalogue.CleaningSkill), 0f, 100f));
             m.Mood = Mathf.RoundToInt(Mathf.Clamp(e.satisfaction, 0f, 100f));
-            m.Wage = Mathf.RoundToInt(e.hourlyWage * 100f);
+            m.Wage = PaidWage.Now(e.hourlyWage, e.id);
             m.WeekHours = Mathf.Max(0, e.assignedWeeklyHours);
             m.Present = e.IsEmployeeAvailable();
             m.Base = e.IsAssignedToAnyBusiness() ? BuildingHelper.GetBuildingRegistration(e.assignedAddress) : null;
@@ -506,11 +509,11 @@ namespace RealLifeOverhaul.Economy
                 BuildingRegistration reg = all[i];
                 try
                 {
-                    if (reg == null || reg.RentedByPlayer || !reg.HasValidAddress || !reg.HasEstablishedBusiness || reg.businessTypeName == EmptyType)
+                    if (reg == null || reg.RentedByPlayer || !reg.HasValidAddress || !reg.HasEstablishedBusiness || reg.businessTypeName == EmptyType || GameDlc.Gated(reg))
                     {
                         continue;
                     }
-                    Building building = reg.BuildingCached;
+                    Building building = GameRegistrations.BuildingOf(reg);
                     if (building == null || building.SpecialService != null || !BuildingTypeHelper.GetData(building).NeedsCleaning)
                     {
                         continue;
@@ -548,14 +551,14 @@ namespace RealLifeOverhaul.Economy
             {
                 info.SetTaxDeductibleName(DeductKey.GetLocalization());
             }
-            return GameManager.ChangeMoneySafe(-amount, info, day, address, force);
+            return RealLifeOverhaul.Economy.BizBooks.Book(-amount, info, day, address, force);
         }
 
         public static void Give(int amount, string key, string name, Address address, int? day)
         {
             if (amount > 0 && Save != null)
             {
-                GameManager.ChangeMoneySafe(amount, Info(key, name), day, address, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, Info(key, name), day, address, true);
             }
         }
 

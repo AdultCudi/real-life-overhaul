@@ -363,7 +363,7 @@ internal static partial class Program
         string refusals = director.Substring(Math.Max(0, director.IndexOf("RefusalKeys =", StringComparison.Ordinal)));
         refusals = refusals.Substring(0, Math.Max(0, refusals.IndexOf("};", StringComparison.Ordinal)));
         bool every = refusals.Length > 0;
-        foreach (string key in new[] { "\"reallife_school_no_money\"", "\"reallife_lic_no_busy\"", "\"reallife_lic_no_on_foot\"", "\"reallife_lic_no_roads\"", "TestRouteRules.NoSpotKey", "TestRouteRules.NoRouteKey", "TestRouteRules.ClosedKey" })
+        foreach (string key in new[] { "\"reallife_school_no_money\"", "\"reallife_lic_no_busy\"", "\"reallife_lic_no_on_foot\"", "LessonRules.NoRoadsKey", "LessonRules.GuestKey", "TestRouteRules.NoSpotKey", "TestRouteRules.NoRouteKey", "TestRouteRules.ClosedKey" })
         {
             every &= refusals.Contains(key);
         }

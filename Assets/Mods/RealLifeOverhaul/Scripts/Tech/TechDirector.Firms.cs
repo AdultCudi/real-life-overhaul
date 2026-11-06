@@ -16,6 +16,11 @@ namespace RealLifeOverhaul.Tech
         public int People;
         public int Hours;             // the hours its people worked yesterday
         public long Today;            // takings booked today, cents
+        public int Mbps = NetSpeedRules.Unknown;   // the office's plan speed read for the day's work (TechBridges.PlanMbps)
+        public int Net = 1000;        // thousandths of the day's work points its connection gives (FirmsRules.Connection)
+        public int OwnMinutes;        // the owner's minutes at a desk here yesterday (OwnDeskRules), as the day's crew read them
+        public int OwnPoints;         // ...the points they gave the crew, before its connection
+        public int OwnRole = -1;      // ...and the role they worked as; -1 when they did not work here or could not count
     }
 
     /// <summary>The firms part: each of the player's tech businesses is a firm, worked through each game day after the people's.</summary>
@@ -63,6 +68,7 @@ namespace RealLifeOverhaul.Tech
             {
                 return;
             }
+            DeskDown();
             if (keep && Save != null && _firmsFile != null)
             {
                 WriteFirms(Save.modData);
@@ -146,7 +152,7 @@ namespace RealLifeOverhaul.Tech
             {
                 FirmPlace firm = _firms[f];
                 var c = new Crew();
-                int security = 200, reliability = 150, seniors = 0, hours = 0;
+                int security = FirmsCatalogue.SecurityBase, reliability = FirmsCatalogue.ReliabilityBase, seniors = 0, hours = 0;
                 long faultWeighted = 0;
                 firm.People = 0;
                 for (int i = 0; i < _people.Count; i++)
@@ -163,54 +169,27 @@ namespace RealLifeOverhaul.Tech
                     hours += h;
                     int points = TalentRules.Output(p, person.MainPoints, Save.Day) * FirmsCatalogue.PointsPerDay * h / TalentCatalogue.DayHours / 1000;
                     RoleDef r = p.Def;
-                    switch (r.Family)
+                    if (FirmsRules.Join(ref c, r, points, h, p.Level >= TalentCatalogue.Senior, TalentRules.Faults(p, person.MainPoints), ref seniors, ref faultWeighted))
                     {
-                        case Family.Engineering:
-                        case Family.Data:
-                        case Family.Security:
-                        case Family.Infrastructure:
-                            if (r.Id == TalentCatalogue.QaTester)
-                            {
-                                c.Testing += points;
-                            }
-                            else
-                            {
-                                c.Engineering += points;
-                                seniors += p.Level >= TalentCatalogue.Senior ? points : 0;
-                                faultWeighted += (long)TalentRules.Faults(p, person.MainPoints) * Math.Max(1, points);
-                            }
-                            c.Wages += (long)p.GameWage * h;
-                            break;
-                        case Family.Design:
-                            c.Design += points;
-                            c.Web += r.Id == TalentCatalogue.WebDesigner ? points : 0;
-                            c.Wages += (long)p.GameWage * h;
-                            break;
-                        case Family.Product:
-                            c.Product += points;
-                            c.Wages += (long)p.GameWage * h;
-                            break;
-                        case Family.Commercial:
-                            c.Selling += points;
-                            break;
-                        case Family.Support:
-                            c.Support += h > 0 ? 1 : 0;
-                            break;
+                        c.Wages += (long)p.GameWage * h;
                     }
                     if (r.Family == Family.Security && h > 0)
                     {
-                        security += r.Id == TalentCatalogue.DataProtection ? 150 : Math.Min(250, p.A / 1000 * 3);
-                        security += p.Has(2) || p.Has(9) ? 50 : 0;   // security practitioner, privacy professional
+                        security += r.Id == TalentCatalogue.DataProtection ? FirmsCatalogue.SecurityOfficer : Math.Min(FirmsCatalogue.SecurityEach, p.A / 1000 * FirmsCatalogue.SecurityPerPoint);
+                        security += p.Has(2) || p.Has(9) ? FirmsCatalogue.SecurityCert : 0;   // security practitioner, privacy professional
                     }
                     if ((r.Id == TalentCatalogue.Sre || r.Id == TalentCatalogue.DevOps) && h > 0)
                     {
-                        reliability += Math.Min(250, (p.A + p.B) / 2000 * 3);
+                        reliability += Math.Min(FirmsCatalogue.ReliabilityEach, (p.A + p.B) / 2000 * FirmsCatalogue.ReliabilityPerPoint);
                     }
                 }
-                c.Security = Math.Min(950, security);
-                c.Reliability = Math.Min(950, reliability);
-                c.SeniorShare = c.Engineering > 0 ? seniors * 1000 / c.Engineering : 0;
-                c.Faults = c.Engineering > 0 ? (int)(faultWeighted / Math.Max(1, c.Engineering)) : 150;
+                var own = new Crew();
+                OwnShare(firm, ref own, ref seniors, ref faultWeighted);
+                int engineering = c.Engineering + own.Engineering;
+                c.Security = Math.Min(FirmsCatalogue.SecurityMost, security);
+                c.Reliability = Math.Min(FirmsCatalogue.ReliabilityMost, reliability);
+                c.SeniorShare = engineering > 0 ? seniors * 1000 / engineering : 0;
+                c.Faults = engineering > 0 ? (int)(faultWeighted / Math.Max(1, engineering)) : 150;
                 firm.Hours = hours;
                 firm.Spare = FirmsGame.Spare(firm.Reg, hours);
                 if (firm.Spare < 1000)
@@ -220,6 +199,11 @@ namespace RealLifeOverhaul.Tech
                     c.Web = c.Web * firm.Spare / 1000;
                     c.Testing = c.Testing * firm.Spare / 1000;
                 }
+                OwnDeskRules.Add(ref c, in own);   // after the share sold to a game office's customers: the owner sells them no hours
+                // read once with the day's crew, so the page and the day's work go by the same plan
+                firm.Mbps = TechBridges.PlanMbpsAt(firm.Reg);
+                firm.Net = FirmsRules.Connection(firm.File.Kind, firm.Mbps);
+                FirmsRules.Connected(ref c, firm.Net);
                 firm.Crew = c;
             }
         }
@@ -233,6 +217,7 @@ namespace RealLifeOverhaul.Tech
             float started = Time.realtimeSinceStartup;
             ReadFirms(day);
             Crews();
+            OwnShareChecked(day);
             _taken.Clear();
             _behind.Clear();
             int cycle = HiringGame.Cycle;

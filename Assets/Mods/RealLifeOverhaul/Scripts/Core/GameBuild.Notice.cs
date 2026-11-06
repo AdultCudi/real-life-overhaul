@@ -9,20 +9,11 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The game's part of the build check (Core/GameBuild.cs is the game-free part, which ContractCheck compiles), and
-    /// the one notice of what this game lacks, in the game's own question box:
-    ///   at game start   (from Core/Guard, once the game contract is resolved and the mod's code checked against this
-    ///                   game) the running game's build is read (GameVersion.GetCurrent().buildNumber, as the game's main
-    ///                   menu reads it for "Loaded Big Ambitions (Build N)"), and one line goes to Player.log when it is not
-    ///                   the build this version is made for: a warning for an older game, and for a newer one
-    ///   the main menu   for an older game, the notice once its start screen is up and nothing of the game's is on it: the
-    ///                   mod needs the current game, how to update it in Steam, and the parts of the mod that are off or
-    ///                   work without what this game lacks until then
-    ///   a save loaded   once a session, when the city is ready (from Meta/MetaCity): the same for an older game; for any
-    ///                   other on which a part of the mod is off, that it waits for the mod to be updated, and which parts
-    /// The words are the player's language (reallife_build_old_*, reallife_guard_notice_*). Nothing of it runs once the
-    /// notice has been shown, or at all while the game is the build the mod is made for and nothing is off; the wait in
-    /// the main menu is a half-second timer.
+    /// The game-touching part of the build check, and the one notice of what this game lacks, in the game's question
+    /// box: a Player.log line at game start; for an older game, the notice in the main menu once its start screen is
+    /// free; else once a session in a city when a part of the mod is off.
+    /// COST: nothing once the notice has shown, or while the build is right and nothing is off; a half-second timer
+    /// while it waits in the main menu.
     /// </summary>
     public static partial class GameBuild
     {
@@ -35,12 +26,12 @@ namespace RealLifeOverhaul
         private const string NewerKey = "reallife_guard_notice_update";
         private const string OffKey = "reallife_guard_notice_parts";
         private const string OkKey = "reallife_opt_ok";
-        private const string TextKey = "reallife_opt_text";   // "{text}": the notice put together here, shown as it is
+        private const string TextKey = "reallife_opt_text";   // "{text}": the notice put together here
 
         private static int _running = -1;
         private static bool _started, _menuShown, _cityShown;
 
-        /// <summary>The running game's build (GameVersion.buildNumber), read once; 0 when it could not be read.</summary>
+        /// <summary>The running game's build, read once; 0 when it could not be read.</summary>
         public static int Running
         {
             get
@@ -60,8 +51,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The game's own version object, as MainMenuController reads it: named only here, so that a game without it
-        // only leaves the build unknown.
+        // Named only here, so a game without it only leaves the build unknown.
         [MethodImpl(MethodImplOptions.NoInlining)]
         private static int ReadRunning()
         {
@@ -69,10 +59,7 @@ namespace RealLifeOverhaul
             return current != null ? current.buildNumber : 0;
         }
 
-        /// <summary>
-        /// Once at game start, from Core/Guard after the game contract: the line in Player.log, and for an older game the
-        /// notice in the main menu as soon as its start screen is free.
-        /// </summary>
+        /// <summary>Once at game start, from Core/Guard after the contract: the log line, and for an older game the menu's notice.</summary>
         public static void Start(IModLogger logger)
         {
             Logger = logger;
@@ -104,25 +91,21 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>
-        /// True while the notice is still to be shown in a city this session: an older game, or any game on which a part
-        /// of the mod is off because this game lacks what it stands on (Core/Guard), and not shown in one yet.
-        /// </summary>
+        /// <summary>True while the notice is still due in a city this session: an older game, or a part of the mod off.</summary>
         public static bool CityDue => !_cityShown && (Of(Running) == BuildKind.Older || Guard.PartsOff);
 
-        /// <summary>For a bug report (Core/Guard.Report): whether the notice has been shown this session, in the main menu or a city.</summary>
+        /// <summary>For a bug report: whether the notice has shown this session.</summary>
         public static bool NoticeShown => _menuShown || _cityShown;
 
         /// <summary>From Meta/MetaCity once the city is ready and quiet: the notice, once a session.</summary>
         public static void ShowInCity()
         {
             _cityShown = true;
-            _menuShown = true;   // (back in the main menu it is not shown again)
+            _menuShown = true;   // not shown again back in the main menu
             Show("a save was loaded");
         }
 
-        // The main menu's notice: once its start screen is up with nothing of the game's over it (its welcome, the
-        // question of data, the system's requirements), and before any save is loaded; a save loaded first gets it there.
+        // Once the start screen is up with nothing of the game's over it; a save loaded first gets it in the city.
         private static IEnumerator InMenu()
         {
             var wait = new WaitForSecondsRealtime(0.5f);
@@ -162,7 +145,7 @@ namespace RealLifeOverhaul
             return SaveGameManager.Current != null || LoadScene.isLoading;
         }
 
-        // The main menu's start screen is up: on a game where that cannot be read, true (the wait has been had).
+        // True also where it cannot be read: the wait has been had.
         private static bool StartScreen()
         {
             if (GameContract.MenuStartView.Missing)
@@ -187,10 +170,7 @@ namespace RealLifeOverhaul
             return menu != null && menu.startView != null && menu.startView.activeInHierarchy;
         }
 
-        /// <summary>
-        /// Options > Tests: the notice as a game older than the mod shows it (as on Build 3675, the build a player had), on the
-        /// game the mod is made for, wherever the player is: with the parts the contract would name on such a game.
-        /// </summary>
+        /// <summary>Options > Tests: the notice as Build 3675 would show it, with the parts the contract would name there.</summary>
         public static void TestNotice()
         {
             try
@@ -207,7 +187,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The notice's words for an older game: this version, the build it is made for and the game's build.
         private static string Older(int build)
         {
             return BodyKey.GetLocalization().Replace("{version}", Meta.Changelog.Version).Replace("{made}", MadeFor.ToString()).Replace("{build}", build.ToString());

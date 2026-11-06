@@ -1,7 +1,6 @@
 using System;
 using System.Collections;
 using BAModAPI;
-using Streets;
 using RealLifeOverhaul.Tech;
 using UI.Load;
 using UnityEngine;
@@ -9,31 +8,17 @@ using UnityEngine;
 namespace RealLifeOverhaul.FitOut
 {
     /// <summary>
-    /// The fit-out of the mod's buildings (Scripts/FitOut): the host of every fitted-out floor's building, a little each
-    /// frame (<see cref="FitView"/>: the tech companies' headquarters behind their lobbies, Tech/Sites/TechSites; the bare
-    /// back of a police station, Law/StationInterior.Fill.cs; a data centre's floor round its server hall,
-    /// Tech/Sites/ServerRoomView), and the fit-out of the mod's other named buildings when the player is inside one that
-    /// stands empty: should one be walked into, the courthouse (a city office's desks, filing, waiting seats). City
-    /// Utilities is not among them: it is at the door of a residential building (Utilities/UtilitiesOffice), which the game
-    /// lets nobody into. The university is not among them: inside it is the game's own furnished school
-    /// (Careers/CampusInterior), and its registration while the player is there holds the school's business.
-    ///
-    /// Only a building the mod names as its own (Core/SpecialBuildings), with its feature on, and standing empty: nobody
-    /// rents or owns it, not the player, not another player in a Going Public session, not a rival, and nothing of the
-    /// game's is in it. What the other features stand in such a building is kept: the room is measured once the game
-    /// has put it together, on the walkable floor (which what they stand is cut out of) and round anything of the
-    /// game's, and nothing of this is put where they are.
-    ///
-    /// The cost: no Update. A one-second timer on the real clock (which building the player is in: a reference compare and
-    /// the building's place key, kept per building by TalentGame.Place; the people of a floor that stands), timed as
-    /// "FitOut: FitOutDirector.Slow", and on going into a building a few frames' look at one flag; the room is measured only
-    /// behind the game's black screen at the door; the building itself is FitView's, a few milliseconds a frame while it
-    /// goes up.
+    /// The host of every fitted-out floor (<see cref="FitView"/>: tech headquarters, a police station's back rooms, a data
+    /// centre's floor), and the fit-out of the mod's other named buildings that stand empty when the player is inside: the
+    /// courthouse. Only a building the mod names as its own, with its feature on, that nobody rents or owns (no player of a
+    /// Going Public session, no rival) and with nothing of the game's in it; what other features stand there is kept.
+    /// The cost: no Update; a one-second timer on the real clock, a few frames' look at one flag after a door, the room
+    /// measured only behind the black screen, and FitView's few milliseconds a frame while a floor goes up.
     /// Nothing is saved.
     /// </summary>
     public sealed class FitOutDirector : MonoBehaviour
     {
-        private const int TriesMost = 3;
+        private const int TriesMost = 3;   // measures of one building a visit
         private static readonly int HotEntered = HotSpots.Slot("FitOut: FitOutDirector.Entered");
         private static readonly int HotSlow = HotSpots.Slot("FitOut: FitOutDirector.Slow");
 
@@ -55,7 +40,7 @@ namespace RealLifeOverhaul.FitOut
             Instance = this;
             _view = new FitView(Logger);
             _view.Built += v => Logger?.Info("Fit-out: " + v.Said + ".");
-            _onEnter = Guard.Wrap<Address>(_ => Entered());   // (a fault here never reaches the game's own handlers: Core/Guard)
+            _onEnter = Guard.Wrap<Address>(_ => Entered());
             StartCoroutine(Guard.Routine(Tick()));
         }
 
@@ -87,8 +72,7 @@ namespace RealLifeOverhaul.FitOut
             }
         }
 
-        // The player has just gone in: the room is looked at as soon as the game has put it together, under its black
-        // screen, not at the next second. A few frames' look at one flag, then once.
+        // Just gone in: the room is looked at as soon as the game has put it together, under its black screen.
         private void Entered()
         {
             using var hotSpot = HotSpots.Time(HotEntered);
@@ -136,7 +120,7 @@ namespace RealLifeOverhaul.FitOut
 
         private void Slow()
         {
-            using var hotSpot = HotSpots.Time(HotSlow);   // the second's look, and the one just after a door (Core/HotSpots)
+            using var hotSpot = HotSpots.Time(HotSlow);
             EventHold.Keep(ref GlobalEvents.onEnterBuilding, _onEnter, ref _enterSeen);
             BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
             bool inside = SaveGameManager.Current != null && !LoadScene.isLoading && ModState.Loaded && !Meta.SaveTools.Dormant
@@ -160,11 +144,11 @@ namespace RealLifeOverhaul.FitOut
                 _view.Tick(now);
                 if (!Wanted(reg, out _, out _))
                 {
-                    _view.End();   // (the option switched off, or the building let)
+                    _view.End();   // the option switched off, or the building let
                 }
                 return;
             }
-            // (measured only behind the black screen at the door: a few thousand samples of the walkable floor are a long frame)
+            // only behind the black screen: a few thousand samples of the walkable floor are a long frame
             if (_tries >= TriesMost || !SceneFinds.Hidden || !Wanted(reg, out FitKind kind, out string name))
             {
                 return;
@@ -173,7 +157,7 @@ namespace RealLifeOverhaul.FitOut
             Begin(manager, reg, kind, name);
         }
 
-        // The mod's own building the player is in, if its floor is to be fitted out: its kind and its name for the log.
+        // The mod's building the player is in, if its floor is to be fitted out: its kind, and its name for the log.
         private static bool Wanted(BuildingRegistration reg, out FitKind kind, out string name)
         {
             kind = FitKind.CivicOffice;
@@ -191,11 +175,11 @@ namespace RealLifeOverhaul.FitOut
                     name = "the courthouse";
                     return JusticeSettings.Enabled && JusticeSettings.Courthouse;
                 default:
-                    return false;   // (the headquarters and the police stations fit out their own; the university is the game's school; the hotels are never walked into)
+                    return false;   // the headquarters and police stations fit out their own; the others are the game's or never entered
             }
         }
 
-        // Standing empty: nobody rents or owns it (the player, another player in a session, a rival), nothing of the game's is in it.
+        // Nobody rents or owns it (the player, another player in a session, a rival), and nothing of the game's is in it.
         private static bool Empty(BuildingRegistration reg)
         {
             return reg != null && reg.AvailableForRent && !reg.RentedByPlayer && !reg.BuildingOwnedByPlayer && string.IsNullOrEmpty(reg.businessOwnerRivalId)
@@ -224,7 +208,7 @@ namespace RealLifeOverhaul.FitOut
             _request.Floor = floor;
             _request.Door = door;
             _request.Inward = inward;
-            // A city office is furnished by the plan's own rooms, on the walls and floors of an office design of the game's for the unit.
+            // the plan's own rooms, on the walls and floors of one of the game's office designs for the unit
             _request.LookKinds.Add("LawFirm");
             _request.LookKinds.Add("Headquarters");
             _view.Begin(_request, this);

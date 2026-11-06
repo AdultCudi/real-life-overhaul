@@ -320,7 +320,8 @@ namespace RealLifeOverhaul.Flare
                 case "answer_collab": return "reallife_flare_dm_answer_collab";
                 case "answer_office": return "reallife_flare_dm_answer_office";
                 case "answer_chat": return "reallife_flare_dm_answer_chat";
-                default: return "reallife_flare_dm_chat";
+                case "chat": return "reallife_flare_dm_chat";   // only after a post of the player's (FlareLiveRules.PostedBefore)
+                default: return "reallife_flare_dm_hello";      // claims no post
             }
         }
 

@@ -6,7 +6,7 @@ The mod's own words, as the code and these pages use them.
 | --- | --- |
 | black screen | The game's fade at a door or a time skip. Work hidden behind it is not seen as a stutter. |
 | bridge | A small optional door one feature offers or asks of another, with a default that works alone. Bridges are in each feature's `*Bridges.cs` and are filled in by [Wiring](wiring.md). |
-| bundle | One of the three asset bundles in `Assets/Mods/RealLifeOverhaul/Bundles`: the characters' looks, the props and the animation clips. Each is built by its own pipeline. |
+| bundle | One of the asset bundles in `Assets/Mods/RealLifeOverhaul/Bundles`: the characters' looks, the props (two bundles, `PropAssets/sets.json`) and the animation clips. Each is built by its own pipeline. |
 | clip | One of the mod's own Humanoid animations, from `Bundles/reallife_anim`, played through `ActivityAnimator`. The list is in [`CityAssets/README.md`](../../CityAssets/README.md). |
 | contract | The game contract (`Core/GameContract.cs`): every piece of the game the mod reaches by name, checked as the game starts and by ContractCheck. See [After a game update](../contributing/after-a-game-update.md). |
 | cordon | The tape, barriers and closed road round an accident (`Traffic/SceneCordon`). |
@@ -29,7 +29,7 @@ The mod's own words, as the code and these pages use them.
 | pool | A shared set of characters made once and reused: the street scenes' twelve (`People/ActorPool`), the living city's eight (`CityLife/CityPeople`), and the pools of events and civic life. |
 | presence | A character out only to be seen (an officer on the beat), whom any scene may take back at once. |
 | preset | Relaxed, Standard, Realistic or Hardcore: a set of option values. Standard is always an option's default. |
-| prop | One of the mod's modelled objects, from `Bundles/reallife_props`, asked for by id from `Core/PropLibrary`. The list is in [`PropAssets/README.md`](../../PropAssets/README.md). |
+| prop | One of the mod's modelled objects, from `Bundles/reallife_props` or `Bundles/reallife_props_2`, asked for by id from `Core/PropLibrary`, which looks in both. The list is in [`PropAssets/README.md`](../../PropAssets/README.md). |
 | role | One person's part in a street scene (`People/ActorRole`), safe to use when the pool gave nobody. |
 | scene | One of the large things staged round the player: an accident, a crime, a fire or street event, a rally. One at a time ([`Wiring.Scenes`](wiring.md#one-street-scene-at-a-time-wiringscenes)). |
 | self-check | A log line written once per event that says what was measured against what was wanted, then `PASS` or `FAIL`. |

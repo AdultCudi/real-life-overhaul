@@ -29,6 +29,7 @@ internal static partial class Program
         FlareInfluencersChecks();
         FlareCityChecks();
         FlareBusyChecks();
+        BugsFlareChecks();   // the Guide audit's faults in Flare, RLO Texts, the Calendar and the Marketplace (BugsFlareChecks.cs)
         FlareReplyLikeChecks();
         FlareCommentLikeChecks();
         FlarePictureChecks();

@@ -30,7 +30,10 @@ namespace RealLifeOverhaul.Economy.Dealership
                 .Fact("dealer_no_pay", () => Whole(DealerCatalogue.NoPayDays))
                 .Fact("dealer_visitors", () => Share(DealerCatalogue.VisitorShare))
                 .Fact("dealer_serve", () => Whole(DealerCatalogue.ServePerStaff))
+                .Fact("dealer_skill_least", () => Share(DealerCatalogue.SkillLeast))
+                .Fact("dealer_skill_most", () => Share(DealerCatalogue.SkillMost))
                 .Fact("dealer_floor", () => Share(DealerCatalogue.StaffFloor))
+                .Fact("dealer_fixed_offers", () => Share(DealerCatalogue.FixedOffers))
                 .Fact("dealer_deal_hours", () => Whole(DealerCatalogue.DealHours))
                 .Fact("dealer_counters", () => Whole(DealerCatalogue.CountersMost))
                 .Fact("dealer_trade", () => Share(DealerCatalogue.TradeShare))
@@ -62,7 +65,16 @@ namespace RealLifeOverhaul.Economy.Dealership
                 .Fact("dealer_delivery_most", () => Whole(DealerCatalogue.DeliveryDaysMost))
                 .Fact("dealer_delivery_hour", () => Hour(DealerCatalogue.DeliveryHour))
                 .Fact("dealer_report_days", () => Whole(DealerCatalogue.ReportDays))
-                .Fact("dealer_average_days", () => Whole(DealerCatalogue.AverageDays));
+                .Fact("dealer_average_days", () => Whole(DealerCatalogue.AverageDays))
+                .Fact("dealer_showrooms", () => Whole(DealerCatalogue.YardsMost))
+                .Fact("dealer_deliveries_most", () => Whole(DealerCatalogue.DeliveriesMost))
+                .Fact("dealer_ask_least", () => Share(DealerCatalogue.AskLeast))
+                .Fact("dealer_ask_most", () => Share(DealerCatalogue.AskMost))
+                .Fact("dealer_floor_least", () => Share(DealerCatalogue.StaffFloorLeast))
+                .Fact("dealer_floor_most", () => Share(DealerCatalogue.StaffFloorMost))
+                .Fact("dealer_offers_most", () => Whole(DealerCatalogue.DealsMost))
+                .Fact("dealer_plans_most", () => Whole(DealerCatalogue.PlansMost))
+                .Fact("dealer_covers_most", () => Whole(DealerCatalogue.CoversMost));
         }
 
         private static string Events()

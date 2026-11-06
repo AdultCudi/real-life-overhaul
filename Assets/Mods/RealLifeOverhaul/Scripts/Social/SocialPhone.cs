@@ -18,12 +18,9 @@ namespace RealLifeOverhaul
         private const string MomId = "reallife-mom";
         private const string FriendId = "reallife-friend";
 
-        // One per person: the game's factory makes a dialog by its type, and each must know who it is.
-        private static readonly string[] DialogTypes =
-        {
-            "reallife_socialp0_calldialogtype", "reallife_socialp1_calldialogtype", "reallife_socialp2_calldialogtype", "reallife_socialp3_calldialogtype",
-            "reallife_socialp4_calldialogtype", "reallife_socialp5_calldialogtype", "reallife_socialp6_calldialogtype", "reallife_socialp7_calldialogtype"
-        };
+        // One call dialog type per person, "reallife_socialp<index>_calldialogtype": the game's factory makes a dialog by its
+        // type, and each must know who it is. Hashed once a slot; 0 until then (the game's hash is never under 2001).
+        private static readonly int[] DialogTypes = new int[SocialRules.MaxCast];
 
         /// <summary>The index of whoever is ringing the player now, or -1, for the dialog the call opens.</summary>
         public static int Incoming = -1;
@@ -34,6 +31,18 @@ namespace RealLifeOverhaul
         /// <summary>Set by Wiring/FamilyLinks: whether this person's call offers "Family matters" (the partner's: time apart, the in-laws), and what it opens.</summary>
         public static Func<SocialPerson, bool> HasFamilyMatters;
         public static Func<DialogEntry> FamilyMatters;
+
+        /// <summary>
+        /// Set by Wiring/FamilyLinks: whether family life keeps this person's moving in (they are its partner), and moving them in:
+        /// null when they did, else the key of what they say instead. Without it Social only marks them as moved in.
+        /// </summary>
+        public static Func<SocialPerson, bool> FamilyKeepsMoveIn;
+        public static Func<string> FamilyMoveIn;
+
+        /// <summary>Set by Wiring/NetworkLinks: the call's button for a favour this person would do now (null for none), what it opens, and the People page's lines about their position.</summary>
+        public static Func<SocialPerson, string> NetworkLabel;
+        public static Func<SocialPerson, DialogEntry> NetworkAsk;
+        public static Func<SocialPerson, string> NetworkLine;
 
         public static string IdOf(SocialPerson person)
         {
@@ -57,14 +66,14 @@ namespace RealLifeOverhaul
                 }
                 else
                 {
-                    for (int i = 0; i < SocialRules.CastSize; i++)
+                    for (int i = 0; i < SocialState.Count; i++)
                     {
                         SocialPerson person = SocialState.Get(i);
                         if (person == null)
                         {
                             continue;
                         }
-                        ContactPictures.Person(IdOf(person), person.Female, person.Age, person.Seed);   // their own face, as SocialCast dresses them
+                        Picture(person);
                         if (person.Met)
                         {
                             Add(person, person.Origin > SocialOrigin.OldFriend);
@@ -88,6 +97,12 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>Their own face on the contact, as SocialCast dresses them: for everybody of the cast, met or not.</summary>
+        public static void Picture(SocialPerson person)
+        {
+            ContactPictures.Person(IdOf(person), person.Female, person.Age, person.Seed);
+        }
+
         /// <summary>The contact of somebody who has been met, made again if the player deleted it. Null for a stranger.</summary>
         public static Contact ContactOf(SocialPerson person)
         {
@@ -98,11 +113,126 @@ namespace RealLifeOverhaul
             return Add(person, false);
         }
 
+        /// <summary>
+        /// A person's thread as the game keeps it (Contact.messagesQueue, its twenty newest), oldest first, as a call back reads
+        /// it (SocialFollowRules): each message's written line's key (RLO Texts' words: the key they stand for), values, game
+        /// minute and whether the player wrote it. Every text of theirs is here, whichever feature sent it. Never makes the
+        /// contact: one the player deleted has no thread. COST: a pass over the save's contacts and one thread; the list's
+        /// slots and nothing else (the queue's own enumerator is a struct).
+        /// </summary>
+        public static void Thread(SocialPerson person, List<SocialThreadLine> into)
+        {
+            into.Clear();
+            Contact contact = Existing(person);
+            Queue<TextMessage> messages = contact != null ? contact.messagesQueue : null;
+            if (messages == null)
+            {
+                return;
+            }
+            foreach (TextMessage m in messages)
+            {
+                if (m != null && m.timestamp != null)
+                {
+                    into.Add(new SocialThreadLine(SocialFollowRules.KeyOf(m.messageKey, m.messageData), m.messageData, (int)m.timestamp.GetTotalMinutes(), m.isFromPlayer));
+                }
+            }
+        }
+
+        private static readonly List<SocialThreadLine> Scratch = new List<SocialThreadLine>(Contact.MaxMessages);
+
+        /// <summary>
+        /// The game day of the newest text a person sent, from any feature (the family's and life's texts are not the social
+        /// life's own, so its LastTextDay does not have them); -1 for none. COST: as <see cref="Thread"/>.
+        /// </summary>
+        public static int LastTextDay(SocialPerson person)
+        {
+            Thread(person, Scratch);
+            int day = -1;
+            for (int i = Scratch.Count - 1; i >= 0; i--)
+            {
+                if (!Scratch[i].Player && Scratch[i].Key != null)
+                {
+                    day = SocialFollowRules.DayOf(Scratch[i].Minute);
+                    break;
+                }
+            }
+            Scratch.Clear();
+            return day;
+        }
+
+        // The contact of somebody met as the save has it, never made anew (ContactOf makes one again): by its id and the
+        // description the social life gives it, else the first of that id (the game keeps no description in a save).
+        private static Contact Existing(SocialPerson person)
+        {
+            GameInstance save = SaveGameManager.Current;
+            if (person == null || !person.Met || save == null || save.Contacts == null)
+            {
+                return null;
+            }
+            string id = IdOf(person), description = SocialCatalogue.OriginDesc[(int)person.Origin];
+            Contact first = null;
+            List<Contact> all = save.Contacts;
+            for (int i = 0; i < all.Count; i++)
+            {
+                Contact c = all[i];
+                if (c == null || c.id != id)
+                {
+                    continue;
+                }
+                if (c.description == description)
+                {
+                    return c;
+                }
+                first = first ?? c;
+            }
+            return first;
+        }
+
+        /// <summary>
+        /// Their contact and its thread taken off the phone, as the game's own delete does (ContactsApp.RemoveContact, without its
+        /// question: the player answered the mod's), and the Contacts app's list drawn again if it is open. How many went.
+        /// COST: a pass over the save's contacts; once, when the player loses touch with somebody.
+        /// </summary>
+        public static int Remove(SocialPerson person)
+        {
+            GameInstance save = SaveGameManager.Current;
+            int removed = 0;
+            for (Contact c = Existing(person); c != null && removed < 4; c = Existing(person))
+            {
+                ContactsApp.RemoveContextRelatedDataFromMessages(c);
+                save.Contacts.Remove(c);
+                removed++;
+            }
+            if (removed == 0)
+            {
+                return 0;
+            }
+            if (save.PlayerDefaults != null && save.PlayerDefaults.contactsLastName == IdOf(person))
+            {
+                save.PlayerDefaults.contactsLastName = null;   // the Contacts app opens on its list, not on a contact that is gone
+            }
+            var uis = InstanceBehavior<UI.UIs>.Instance;
+            if (uis != null && uis.smartphoneUI != null)
+            {
+                uis.smartphoneUI.UpdateBadgeCount(AppName.Contacts, playSound: false);
+            }
+            ContactsApp.onContactRemoved?.Invoke();
+            ContactsApp app = uis != null && uis.fullMenu != null ? uis.fullMenu.contactsApp : null;
+            if (app != null && app.isActiveAndEnabled)
+            {
+                app.LoadContactsList(ContactCategorySelection.SelectedCategory, false);
+            }
+            return removed;
+        }
+
+        /// <summary>Whether the save has no contact of theirs: for the lose touch test. A pass over the save's contacts.</summary>
+        public static bool ContactGone(SocialPerson person) => Existing(person) == null;
+
         /// <summary>Callable, with the first message of their thread if it is empty.</summary>
         public static Contact Add(SocialPerson person, bool welcome)
         {
             Contact contact = Contact.GetContact(IdOf(person), ContactCategoryName.General, SocialCatalogue.OriginDesc[(int)person.Origin], null, false, true);
-            var dialogType = (CallDialogType)ModEnumHash.GetSafeHash(DialogTypes[person.Index]);
+            var dialogType = (CallDialogType)DialogType(person.Index);
             contact.callDialogTypeOverride = dialogType;
             int index = person.Index;
             CallDialogFactory.RegisterDialog(dialogType, Guard.Maker(() => new PersonDialog(index)));
@@ -111,6 +241,16 @@ namespace RealLifeOverhaul
                 contact.SendMessage(new TextMessage(SocialCatalogue.OriginWelcome[(int)person.Origin], SocialLife.Data(person)), notify: false);
             }
             return contact;
+        }
+
+        // The first eight's are the types every version has registered, so a contact's call opens the same dialog.
+        private static int DialogType(int index)
+        {
+            if (DialogTypes[index] == 0)
+            {
+                DialogTypes[index] = ModEnumHash.GetSafeHash(SocialRules.DialogTypeName(index));
+            }
+            return DialogTypes[index];
         }
 
         /// <summary>A payment, a subscription stopped: with the game's notification.</summary>

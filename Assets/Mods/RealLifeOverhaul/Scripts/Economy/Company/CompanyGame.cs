@@ -124,8 +124,16 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        /// <summary>The player's professionals into a list, from the professions; false while they are off (the seats then wait).</summary>
+        public static Func<List<ProfessionalHand>, bool> Professionals;
+
+        /// <summary>For a test: a professional of a role and level joins the professions' own payroll at a place; false if they could not.</summary>
+        public static Func<string, int, int, bool> HireProfessional;
+
         public static void Reset()
         {
+            Professionals = null;
+            HireProfessional = null;
             Comfort = null;
             Footfall = null;
             Promoted = null;
@@ -174,7 +182,7 @@ namespace RealLifeOverhaul.Economy
     /// Everything running a business reads from or does to the game. It writes money only, as transactions, never a
     /// wage, a schedule or a business's figure. Runs at the start, the hour that opens a day, the day and the app's opening.
     /// </summary>
-    internal static class CompanyGame
+    internal static partial class CompanyGame
     {
         public const string RaiseKey = "reallife_transaction_co_raise";
         public const string SickKey = "reallife_transaction_co_sick";
@@ -193,12 +201,13 @@ namespace RealLifeOverhaul.Economy
         public const string LicenceKey = "reallife_transaction_co_licence";
         public const string LicenceFineKey = "reallife_transaction_co_licence_fine";
         public const string ManagerKey = "reallife_transaction_co_manager";
+        public const string ExecutiveKey = "reallife_transaction_co_executive";   // an executive's allowance on top of their professional's pay
 
         // The game's business types by what they sell, as the end of their names ("ba:businesstype_...").
-        private static readonly string[] FoodTypes = { "fastfoodrestaurant", "coffeeshop", "supermarket", "fruitandvegetablestore" };
+        private static readonly string[] FoodTypes = { "fastfoodrestaurant", "coffeeshop", "supermarket", "fruitandvegetablestore", "icecreamparlour", "teabar" };   // the last two: Scripts/Shops
         private static readonly string[] AlcoholTypes = { "liquorstore", "nightclub" };
         private static readonly string[] WellOffTypes = { "jewelrystore", "electronicsstore", "cardealership", "furniturestore", "clothingstore", "nightclub" };
-        private static readonly string[] PriceTypes = { "supermarket", "fastfoodrestaurant", "fruitandvegetablestore", "liquorstore", "gasstation", "giftshop" };
+        private static readonly string[] PriceTypes = { "supermarket", "fastfoodrestaurant", "fruitandvegetablestore", "liquorstore", "gasstation", "giftshop", "tobacconist" };
         private const string DeliveryDriver = "ba:skill_deliverydriver";
         private const int DriverHours = 570;    // hundredths: the fixed day the game pays a delivery driver (EmployeeInstance.PayWage)
 
@@ -207,7 +216,7 @@ namespace RealLifeOverhaul.Economy
 
         private static GameInstance Save => SaveGameManager.Current;
 
-        public static int Cash => Save != null ? Mathf.FloorToInt(Mathf.Max(0f, Save.Money)) : 0;
+        public static int Cash => Save != null ? WholeMoney.Floor(Save.Money) : 0;
 
         public static int DaysPerYear
         {
@@ -276,16 +285,8 @@ namespace RealLifeOverhaul.Economy
                 shop.File = file;
                 shop.Reg = reg;
                 shop.Name = string.IsNullOrEmpty(reg.BusinessName) ? "?" : reg.BusinessName;
-                try
-                {
-                    shop.Address = reg.Address;
-                    shop.District = reg.Neighborhood;
-                }
-                catch (Exception)
-                {
-                    shop.Address = null;    // a building that cannot be read is in no district
-                    shop.District = null;
-                }
+                shop.Address = reg.Address;
+                shop.District = GameRegistrations.District(reg);
                 shop.Income = Mathf.RoundToInt(CityEconomy.DistrictIncome(shop.District));
                 shop.Needs = LicenceRules.Needs(Is(type, FoodTypes), Is(type, AlcoholTypes), OpensLate(reg));
                 shop.Taste = Is(type, WellOffTypes) ? 1 : Is(type, PriceTypes) ? -1 : 0;
@@ -545,7 +546,8 @@ namespace RealLifeOverhaul.Economy
                 f.Seen = true;
                 f.Place = shop.File.Place;
                 f.Name = e.characterData.name ?? "?";
-                f.Wage = CompanyCatalogue.Share(Mathf.RoundToInt(e.hourlyWage * 100f), index);   // at today's prices, as the city's cost of living pays it
+                f.Base = PaidWage.Base(e.hourlyWage);
+                f.Wage = PaidWage.Cents(f.Base, index, 0);   // at today's prices, as the city's cost of living pays it
                 f.Skill = Mathf.RoundToInt(skill.value);
                 f.Mood = Mathf.RoundToInt(Mathf.Clamp(e.satisfaction, 0f, 100f));
                 f.Sick = e.isAbsent;
@@ -666,14 +668,39 @@ namespace RealLifeOverhaul.Economy
                 // Words, not a key, as the game names its own: the tax notice reads the same in a save the mod has left.
                 info.SetTaxDeductibleName(CompanyText.CostKeys[deductible].GetLocalization());
             }
-            return GameManager.ChangeMoneySafe(-amount, info, day, shop != null ? shop.Address : null, force);
+            return RealLifeOverhaul.Economy.BizBooks.Book(-amount, info, day, shop != null ? shop.Address : null, force);
         }
 
         public static void Give(int amount, string key, string name, CompanyShop shop, int? day)
         {
             if (amount > 0 && Save != null)
             {
-                GameManager.ChangeMoneySafe(amount, Info(key, name), day, shop != null ? shop.Address : null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, Info(key, name), day, shop != null ? shop.Address : null, true);
+            }
+        }
+
+        /// <summary>
+        /// Opens the game's BizMan on a business's own page, as the game's own buttons do (MyEmployees.ManageSchedule,
+        /// UniformLockerController: BizMan.Open with the business's address, BizMan picking its first tab). Only a business of
+        /// the player's own (GoingPublic.Mine); nothing is sent or written. False, with nothing opened, if it cannot be.
+        /// Runs on a click only.
+        /// </summary>
+        public static bool OpenBizMan(BuildingRegistration reg)
+        {
+            try
+            {
+                global::UI.UIs ui = InstanceBehavior<global::UI.UIs>.Instance;
+                if (reg == null || !reg.RentedByPlayer || reg.Address == null || ui == null || ui.fullMenu == null || ui.fullMenu.bizMan == null || !GoingPublic.Mine(reg))
+                {
+                    return false;
+                }
+                ui.fullMenu.bizMan.Open(reg.Address);
+                return true;
+            }
+            catch (Exception e)
+            {
+                CompanyApp.Logger?.Error(e);
+                return false;
             }
         }
 

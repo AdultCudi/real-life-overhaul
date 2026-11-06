@@ -51,6 +51,9 @@ namespace RealLifeOverhaul
     /// <summary>What civic life asks of features outside this folder: delegates with defaults that work without them, set by Wiring/CivicLinks.</summary>
     public static class CivicBridges
     {
+        /// <summary>The building trades' "Work here" at a site's notice (BuildTrades/SiteWork), by the site's id; default: none, and no button.</summary>
+        public static Func<int, Entities.DialogEntry> SiteWork;
+
         public static Func<bool> CriminalRecord;   // default: nobody has one
         public static Func<int> Reputation;        // the player's standing, -100 to 100; default: 0
 

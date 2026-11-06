@@ -8,43 +8,21 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// What strangers say in the street, worded by RLO Texts. The game has decided the line (StreetRules: its kind, and with
-        /// it the outcome); here the card is built from the person (StreetStranger: name, age, job, home, traits, today's mood
-        /// leaned the way it went, how they talk), the hour, what the conversation knows (the place and its street, the way,
-        /// the plan booked, the candidate...) and what the player just said, and asked at the queue's first priority with a
-        /// deadline of <see cref="Street.StreetRules.Hold"/> seconds. Two cards are tried in turn:
-        ///
-        ///   data v4   street talk's own intents (TextIntents.Street.cs: street.greet, .brush, .directions and the rest, a branch
-        ///             per outcome), asked only of a pack trained on them (TextsHub.Data); for a data 5 pack v5's cards: v4's
-        ///             with the moment (rain, rush hour, night, the weekend, morning, evening, today's event) and whether
-        ///             the stranger knows the player's name, and the lines written until then (their day, the street event,
-        ///             their work, thanks, hello again)
-        ///   data v3   what fits until then: a city person answering what was said (citizen.dm.answer, the mood steering the
-        ///             tone) for a greeting, small talk, a compliment, a joke, a flirt, the player's own words and a goodbye; the
-        ///             invitation's answer (citizen.dm.invite_yes, _maybe, _no, with v3's reasons)
-        ///
-        /// Anything else, or no pack, a v2 pack, words that fail the checker or speak of chat (Flare, messages, following, a
-        /// handle), or a game in another language: the written line, at once or when the hold is over. The opening line is
-        /// guessed while the player looks at somebody and taken at the press; on a machine where a reply takes more than half
-        /// the hold (<see cref="AheadShare"/>), the answer to the blue button is asked as soon as it is shown and taken at the
-        /// click. The card carries the last three lines of the conversation (the player's, theirs, the player's), the player's
-        /// actual words last. The words are tidied for speech before they are shown (StreetCards.Spoken): a stranger never
-        /// calls the player by a name they were not told, a sentence starts with a capital, and a line another stranger said
-        /// lately is not said again (StreetCards.Echoes). With the player's own AI service up, a line asked at the click waits
-        /// for it a little longer than the hold (TextsHub.SpokenWait: the conversation opens and answers by the request's own
-        /// wait, StreetChat.Waits), the person talks with their hands once its first words come (StreetChat.Speaking), and a
-        /// guess or a line asked ahead that the service is still writing at the click is waited for, never asked again
-        /// (TextsHub.Adopt); a service still late leaves the end of the wait to the pack, then the written line. How each
-        /// line's words came (the AI service's, the pack's), or why the written line was used, goes back on the conversation
-        /// (StreetChat.Heard) for the turn's log line. Nothing is kept, nothing is shared.
-        /// COST: nothing per frame; a card and a request per line, on a press or a click.
+        /// What strangers say in the street, worded by RLO Texts. The game has decided the line and its outcome; the card is
+        /// built from the stranger, the hour, what the conversation knows and the player's last words, and asked at the
+        /// queue's first priority for <see cref="Street.StreetRules.Hold"/> seconds: street talk's own cards of data 4 and
+        /// 5 first, else data 3's answer and invitation cards. Otherwise, or with words that fail the checks (chat, a name
+        /// not told, a line said lately), the written line is used. The opening line is guessed while the player looks at
+        /// somebody; on a slow machine (<see cref="AheadShare"/>) the blue button's answer is asked as it is shown. With
+        /// the player's own AI service, a guess still being written is waited for, never asked again. Nothing is kept or
+        /// shared. Nothing per frame: a request per line, on a press or a click.
         /// </summary>
         public static class StreetTexts
         {
             public const double AheadShare = 0.5;   // the blue button's answer is asked ahead when a reply is expected to take more than this share of the hold
             private const int HistoryMost = 3;      // lines of the conversation on a v4 card: the player's, theirs, the player's last
 
-            private static readonly StreetCards.Echoes Lately = new StreetCards.Echoes();   // the model's last lines across strangers (none said twice in a row of them)
+            private static readonly StreetCards.Echoes Lately = new StreetCards.Echoes();   // the model's last lines across strangers, none said twice
 
             internal static void Connect()
             {
@@ -67,7 +45,7 @@ namespace RealLifeOverhaul
                 Lately.Clear();
             }
 
-            // A line the stranger said, however its words came: what they will remember of it (data v6), after the line's own card.
+            // A line the stranger said, however its words came: what they will remember of it, after the line's own card.
             private static void Remembered(StreetChat c, StreetLine line, Dictionary<string, string> data)
             {
                 try
@@ -79,8 +57,6 @@ namespace RealLifeOverhaul
                     Fault("RLO Texts, what a stranger remembers", e);
                 }
             }
-
-            // ---------------------------------------------------------------- asking
 
             private static bool Ask(StreetChat c, StreetLine line, Dictionary<string, string> data, string player, Action<string> done)
             {
@@ -96,14 +72,14 @@ namespace RealLifeOverhaul
                         string intent = StreetCards.ByData(line, TextsDirector.Words.Data, true, out string _, out int _);
                         if (intent != null)
                         {
-                            TextsDirector.Words.NotAsked(TextUse.People, false, intent);   // (counted: the written line, and why)
+                            TextsDirector.Words.NotAsked(TextUse.People, false, intent);   // counted: the written line, and why
                         }
                         return false;
                     }
                     TextRequest asked = null;
                     bool waited = false;
                     Action<string> back = words => Came(c, asked, waited, words, done);
-                    string guessed = c.WaitFor;   // (a guess of this line the AI service is still writing: waited for, never asked again)
+                    string guessed = c.WaitFor;   // a guess of this line the AI service is still writing: waited for, never asked again
                     c.WaitFor = null;
                     TextRequest r = RequestV4(c, line, data, back, false);
                     asked = r;
@@ -131,8 +107,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // A guess of this line still being written by the AI service, waited for as the line itself; tried once (a guess of
-            // another card is let go by the hub).
+            // A guess of this line still being written by the AI service, waited for as the line itself; tried once.
             private static bool Adopted(ref string guessed, TextRequest r)
             {
                 string key = guessed;
@@ -140,8 +115,8 @@ namespace RealLifeOverhaul
                 return key != null && TextsDirector.Words.Adopt(key, r, TextClock.Now);
             }
 
-            // The words back: made fit to be said, and how they came (or why not) put on the conversation for its log line: whose
-            // words they are (the AI service's or the pack's), the card and the time, and why the service's were not used.
+            // The words back, made fit to be said; whose they are, the card and the time (or why not) go on the conversation
+            // for its log line.
             private static void Came(StreetChat c, TextRequest r, bool waited, string words, Action<string> done)
             {
                 string why = null;
@@ -176,7 +151,7 @@ namespace RealLifeOverhaul
                 return said;
             }
 
-            // Whether the stranger knows the player's name: told in this talk or earlier today, or a face they know as famous or infamous.
+            // Told in this talk or earlier today, or a face they know as famous or infamous.
             private static bool KnowsName(StreetChat c) => StreetCards.KnowsName(c.Approach.Famed, c.Done[(int)StreetAsk.Name], c.Memo != null && c.Memo.Told);
 
             private static string Card(TextRequest r) => r == null ? "the model" : r.Intent + (r.Branch != null ? " " + r.Branch : string.Empty);
@@ -190,7 +165,7 @@ namespace RealLifeOverhaul
                 {
                     if (c == null || !TextsDirector.Words.Wants(TextUse.People, false) || TextsDirector.Words.Expect < Street.StreetRules.Hold * AheadShare)
                     {
-                        return;   // (fast enough: asked at the click, within the hold; nothing spent on a guess)
+                        return;   // fast enough to ask at the click, within the hold
                     }
                     TextRequest r = RequestV4(c, line, data, words => { }, true, player);
                     if (r != null)
@@ -259,14 +234,14 @@ namespace RealLifeOverhaul
 
             private static string GuessKey(StreetChat c) => "stg:" + c.Who.Key;
 
-            // A guess at the click: its words if they are written and fit to be said, with whose they are for the log line. A
-            // guess the player's AI service is still writing is left for the line's own ask to wait for (TextsHub.Adopt).
+            // A guess at the click: its words if written and fit to be said. One the AI service is still writing is left for
+            // the line's own ask to wait for.
             private static string Taken(StreetChat c, string key, string how)
             {
                 TextsHub hub = TextsDirector.Words;
                 if (hub.Writing(key))
                 {
-                    c.WaitFor = key;   // (Ask waits for it as the line: never asked again)
+                    c.WaitFor = key;   // Ask waits for it as the line: never asked again
                     return null;
                 }
                 string words = hub.TakeGuess(key, out TextSource from);
@@ -285,12 +260,12 @@ namespace RealLifeOverhaul
                 {
                     Use = TextUse.People, Intent = intent, Branch = branch, Key = guess ? GuessKey(c) : "st:" + c.Who.Key + ":" + c.Turns, Speaker = "st:" + c.Who.Key,
                     Priority = TextPriority.Now, Seconds = guess ? Street.StreetRules.GuessSeconds : Street.StreetRules.Hold, Guess = guess, Day = TextsGame.Day, Done = done,
-                    Spoken = !guess, Started = guess ? null : c.Speaking   // (said to the player's face: with their AI service up the line may wait for it, and they are seen about to speak)
+                    Spoken = !guess, Started = guess ? null : c.Speaking   // said to the player's face: the line may wait for their AI service
                 };
             }
 
-            // The v4 card (v5's for a data 5 pack): the friend face with a stranger's role, the values of the line, the moment and
-            // whether they know the player's name (data v5's optional facts, left out of a data 4 pack's cards), the player's last words.
+            // The v4 card (v5's for a data 5 pack): a stranger's role, the line's values, the moment and whether they know the
+            // player's name (v5's optional facts), the player's last words.
             private static TextRequest RequestV4(StreetChat c, StreetLine line, Dictionary<string, string> data, Action<string> done, bool guess, string next = null)
             {
                 bool warm = data == null || !data.TryGetValue("t_thanks", out string thanks) || thanks != "cool";
@@ -328,7 +303,7 @@ namespace RealLifeOverhaul
                 Copy(data, r.Slots, "t_time", "time");
                 if (line == StreetLine.AreaNews)
                 {
-                    Copy(data, r.Slots, "district", "district");   // (the day's trouble: where it was)
+                    Copy(data, r.Slots, "district", "district");   // the day's trouble: where it was
                 }
                 Copy(data, r.Slots, "t_weather", "weather");
                 if (TextsGame.Clock(out int weekday, out int hour))
@@ -346,11 +321,11 @@ namespace RealLifeOverhaul
                 }
                 else if (six)
                 {
-                    r.Slots.Set("known", "no");   // (data v6: always said, so the model knows not to use it; the request bans it too)
+                    r.Slots.Set("known", "no");   // data v6 always says it, so the model knows not to use the name
                 }
                 if (six)
                 {
-                    Copy(data, r.Slots, "t_what", "what");     // (the card's English words, whatever the game's language: TextWords)
+                    Copy(data, r.Slots, "t_what", "what");     // the card's English words, whatever the game's language
                     Copy(data, r.Slots, "t_way", "way");
                     Copy(data, r.Slots, "t_walk", "walk");
                     Copy(data, r.Slots, "t_event", "event");
@@ -393,9 +368,9 @@ namespace RealLifeOverhaul
                 return r;
             }
 
-            // The thread: the last few lines of this conversation, oldest first, the player's last; with the player's next words
-            // (a line asked ahead of the click) those come last. Three lines on v4's cards: tried offline on the 2B v4 model
-            // against the player's last words alone (as trained), the answers keep to the conversation and repeat less.
+            // The last few lines of the conversation, oldest first, with the player's next words last for a line asked ahead.
+            // Three lines on v4's cards: tried offline, the answers keep to the conversation and repeat less than with the
+            // player's last words alone.
             private static void History(StreetChat c, TextRequest r, int most, string next)
             {
                 int extra = next != null ? 1 : 0;

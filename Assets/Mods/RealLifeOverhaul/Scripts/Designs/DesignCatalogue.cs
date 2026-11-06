@@ -1,4 +1,6 @@
+using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Economy.Dealership;
+using RealLifeOverhaul.Shops;
 
 namespace RealLifeOverhaul.Designs
 {
@@ -6,7 +8,9 @@ namespace RealLifeOverhaul.Designs
     public enum DesignWay
     {
         Copy,       // the game's own designs of a business that works as this one does, whole
-        Showroom    // the game's own designs with the middle of the floor cleared for the Car Showroom's lot
+        Showroom,   // the game's own designs with the middle of the floor cleared for the Car Showroom's lot
+        Branch,     // the game's own shop designs cut to a bank's furniture: a till on a counter, seats to wait on
+        Stock       // the game's own designs of the shop it works as, without the shelves for goods it does not sell (Scripts/Shops)
     }
 
     /// <summary>Where the game keeps a kind of design it ships.</summary>
@@ -47,32 +51,28 @@ namespace RealLifeOverhaul.Designs
     }
 
     /// <summary>
-    /// The ready-made designs of the mod's business types (Scripts/Designs), game-free so that the offline checks read the
-    /// same table: which of the game's designs each type's are made from, what a Car Showroom keeps of one, and the numbers
-    /// that bound them. The installation firm lists a business's designs from a folder of the game's named after its
-    /// business type, and a type of the mod's has none there; its designs are put there, one file each, as the game's own.
-    /// The layout price and the installation fee stay the game's (the furniture at its market price, the floor area at the
-    /// firm's rate): nothing here sets a price. Nothing runs here.
+    /// The mod's business types' ready-made designs, game-free for the checks: their sources, what a showroom or branch
+    /// keeps, and the bounds. The firm lists a type's designs from a folder named after it. Prices stay the game's.
     /// </summary>
     public static class DesignCatalogue
     {
-        public const int RulesVersion = 1;          // raised whenever what a design is made of changes: every design is made again
+        public const int RulesVersion = 3;          // raise when what a design is made of changes: every design is made again
         public const string Office = "ba:buildingtype_office";
         public const string Retail = "ba:buildingtype_retail";
-        public const string Installer = "InteriorDesigns";   // the game's folder of the installation firms' designs, under StreamingAssets
-        public const string Layouts = "BusinessLayouts";     // the game's folder of its own businesses' layouts, under StreamingAssets
-        public const string Manifest = "reallife_designs.txt";   // in the installers' folder: every file the mod put there, and from what
+        public const string Installer = "InteriorDesigns";   // under StreamingAssets: the installation firms' designs
+        public const string Layouts = "BusinessLayouts";     // under StreamingAssets: the game's own businesses' layouts
+        public const string Manifest = "reallife_designs.txt";   // in the installers' folder: every file the mod put there
         public const string Extension = ".json";
 
-        // The Car Showroom: what is kept clear for its lot (Economy/Dealer: DealerRules.Layout lays the cars out on the floor).
+        // The Car Showroom's lot, as DealerRules.Layout lays the cars out.
         public const int Slack = 30;                // centimetres the game's floor may be wider, narrower or further along than its designs reach
         public const int Clear = 40;                // centimetres kept clear round every car's place, for the visitors walking round it
         public const int FloorTop = 200;            // centimetres up: an item higher than this hangs on a wall or the ceiling, above the cars
         public const int Origin = 100;              // centimetres: an item this close to the world's origin is a design's stray, not in the room
         public const int ShowroomMost = 4;          // designs a Car Showroom is offered for a size at most
-        public const int ShowroomLeast = 6;         // pieces of furniture (not lamps) a showroom's design keeps at least, or it is not offered
+        public const int ShowroomLeast = 6;         // pieces of furniture, lamps aside, a showroom design keeps at least to be offered
 
-        /// <summary>The game's own dealerships' layouts a showroom design is made from: those whose name ends in one of the game's styles.</summary>
+        /// <summary>The styles the game's dealership layouts' names end in; those layouts are offered under them.</summary>
         public static readonly string[] DealerStyles = { "Cheap", "Luxury" };
 
         public static readonly DesignKind[] Kinds =
@@ -83,18 +83,20 @@ namespace RealLifeOverhaul.Designs
             new DesignKind("reallife:businesstype_cybersecurity", Office, DesignWay.Copy, Offered("WebDevelopmentAgency")),
             new DesignKind("reallife:businesstype_ailab", Office, DesignWay.Copy, Offered("WebDevelopmentAgency")),
             new DesignKind("reallife:businesstype_academy", Office, DesignWay.Copy, Offered("travelagency"), Offered("eventplanningagency"), Offered("LawFirm")),
+            new DesignKind(BranchCatalogue.TypeName, Retail, DesignWay.Branch,
+                Offered("JewelryStore"), Offered("Hairdresser"), Offered("ElectronicsStore"), Offered("Bookstore"), Offered("LiquorStore"), Offered("GiftShop"),
+                Offered("Florist"), Offered("ClothingStore"), Offered("CoffeeShop"), Offered("Gym"), Offered("FruitAndVegetableStore"), Offered("Supermarket")),
+            new DesignKind("reallife:businesstype_construction", Office, DesignWay.Copy, Offered("GraphicDesigner"), Offered("LawFirm")),
+            new DesignKind(ShopsCatalogue.IceCream, Retail, DesignWay.Stock, Offered("CoffeeShop"), Offered("FastFoodRestaurant")),
+            new DesignKind(ShopsCatalogue.TeaBar, Retail, DesignWay.Stock, Offered("CoffeeShop")),
+            new DesignKind(ShopsCatalogue.Tobacconist, Retail, DesignWay.Stock, Offered("LiquorStore")),
             new DesignKind(DealerCatalogue.TypeName, Retail, DesignWay.Showroom,
                 new Donor(DonorRoot.Layouts, "CarDealership"), Offered("JewelryStore"), Offered("ElectronicsStore"), Offered("LiquorStore"), Offered("Bookstore"),
                 Offered("ClothingStore"), Offered("GiftShop"), Offered("Florist"), Offered("Hairdresser"), Offered("CoffeeShop"), Offered("FruitAndVegetableStore"),
                 Offered("FastFoodRestaurant"), Offered("Nightclub"), Offered("Supermarket"), Offered("Gym"))
         };
 
-        /// <summary>
-        /// What a Car Showroom keeps of a design, by the game's item name without its "ba:itemname_": the sales counter and its
-        /// till, seats, tables, desks and what stands on them, plants, pictures, screens, carpets, lamps, the washrooms and the
-        /// staff's things. Shelves, display tables and cases, baskets and the game's own cars on show are left out: a showroom
-        /// sells the cars on its lot. Every one is furniture the installation firms put in for the game's own designs.
-        /// </summary>
+        /// <summary>What a Car Showroom keeps, by item name without "ba:itemname_": no shelves, cases or cars on show, as it sells its lot's.</summary>
         public static readonly string[] ShowroomKeeps =
         {
             "cashregister", "counter1", "counter2", "countercorner", "countercorneroutermodern", "moderncounter", "countermarble01",
@@ -124,9 +126,43 @@ namespace RealLifeOverhaul.Designs
             "securitysign", "jobboard", "exitsign", "wallradiator", "trashbin", "smallcabinet"
         };
 
-        public const string Till = "cashregister";       // the game's point of sale: the showroom's salesperson waits by it (Economy/Dealer/Floor)
-        public const string Toilet = "toiletstall";      // the washrooms
-        public const string LampMark = "ceilinglamp";    // a ceiling lamp, which is not counted as furniture
+        /// <summary>What a bank branch keeps besides what a showroom keeps: queue barriers, glass counters, seats, the paper holder.</summary>
+        public static readonly string[] BranchExtras =
+        {
+            "glassbarrier", "beltbarrier", "ropebarrier", "counterwithglass", "counterwithglasscornerleft", "eameschair",
+            "bench01", "paperholder"
+        };
+
+        /// <summary>Seats to wait on: a branch design with one is offered first.</summary>
+        public static readonly string[] BranchSeats =
+        {
+            "waitingroomchairs", "bench01", "armchair1", "armchair2", "cornersofa01", "cornersofa02left", "cornersofa02right", "modularsofa1l", "modularsofa1m",
+            "modularsofa1r", "sofawithblanket", "valenciachair", "eameschair", "multipurposechair"
+        };
+
+        public const int BranchMost = 4;            // designs a bank branch is offered for a size at most
+        public const int ShopMost = 6;              // designs a new kind of shop is offered for a size at most
+
+        /// <summary>
+        /// Every piece of the game's furniture that shows goods to customers (its ShowcaseShelf items), without "ba:itemname_":
+        /// a new kind of shop's design keeps only those of them that show its own goods (ShopKind.Shelves).
+        /// </summary>
+        public static readonly string[] ShopShelves =
+        {
+            "bakeryshowcase", "clothingrack", "clothingrackangled", "cocktailbarbeershelf", "cocktailbardrinkscounter", "concessionsdisplaycase",
+            "drinksfridge", "drinksshelf", "fruitpallet", "hairdressershelf", "hotdoggrill", "icecreamcounter", "industrialcoffeemachine",
+            "industrialfreezer", "industrialfridge", "industrialfryermachine", "industrialgrill", "jewelryfloorshowcase", "largebookshelf",
+            "largedrinksfridge", "pizzaoven", "productdisplaystandtiered", "productdisplaytable", "productpanel", "roundedshelf", "saladbar",
+            "singlebookshelf", "slushimachine", "smallindustrialfreezer", "tobaccoshelf1", "tobaccoshelf2", "tobaccoshelf3", "wineshelf",
+            "woodencocktailbarbeershelf", "woodencocktailbardrinkscounter", "woodenproductcrate", "woodensaladbar"
+        };
+
+        /// <summary>The game's points of sale a shop's customers pay at, without "ba:itemname_".</summary>
+        public static readonly string[] ShopTills = { "cashregister", "checkoutcounterleft", "checkoutcounterright" };
+
+        public const string Till = "cashregister";       // the showroom's salesperson waits by it
+        public const string Toilet = "toiletstall";
+        public const string LampMark = "ceilinglamp";    // not counted as furniture
 
         public const string ItemPrefix = "ba:itemname_";
 

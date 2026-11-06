@@ -145,7 +145,7 @@ namespace RealLifeOverhaul.Economy
             string bank = GameLoans.BankName(loan);
             // a dictionary each: the game keeps a transaction's data for as long as it lists the transaction
             var info = new TransactionInfo(LoanPayOff, new Dictionary<string, string> { { "businessName", bank } });
-            if (!GameManager.ChangeMoneySafe(-amount, info, null, null, false, true))
+            if (!RealLifeOverhaul.Economy.BizBooks.Book(-amount, info, null, null, false, true))
             {
                 return ProductAnswer.NoCash;
             }

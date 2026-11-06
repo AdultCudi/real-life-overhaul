@@ -540,10 +540,10 @@ namespace RealLifeOverhaul
             int perYear = SocialPlaces.DaysPerYear;
             SocialPerson chosen = null;
             bool birthday = false;
-            int from = Random.Range(0, SocialRules.CastSize);
-            for (int i = 0; i < SocialRules.CastSize; i++)
+            int from = Random.Range(0, SocialState.Count);
+            for (int i = 0; i < SocialState.Count; i++)
             {
-                SocialPerson p = SocialState.Get((from + i) % SocialRules.CastSize);
+                SocialPerson p = SocialState.Get((from + i) % SocialState.Count);
                 if (p == null || !p.Met || p.IsFamily)
                 {
                     continue;

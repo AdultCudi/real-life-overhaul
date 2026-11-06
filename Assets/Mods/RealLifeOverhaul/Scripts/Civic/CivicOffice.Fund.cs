@@ -19,7 +19,7 @@ namespace RealLifeOverhaul
                 return "reallife_civic_office_no_run";
             }
             int step = Prices.At(OfficeRules.OwnStep);
-            if (!GameManager.ChangeMoneySafe(-step, new TransactionInfo("reallife_transaction_civic_office_own"), null, null, force: false, showNotification: true))
+            if (!RealLifeOverhaul.Economy.BizBooks.Book(-step, new TransactionInfo("reallife_transaction_civic_office_own"), null, null, force: false, showNotification: true))
             {
                 return "reallife_civic_office_no_money";
             }

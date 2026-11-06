@@ -139,7 +139,7 @@ namespace RealLifeOverhaul.Flare
             }
             m.Data += FlareInviteRules.BookedMark;
             Logger?.Info("Flare: " + m.Name + " said yes; the plan is booked: " + b.Kind + " at " + b.Place + ", minute " + b.At + ".");
-            Tell(NotificationType.Info, "reallife_flare_note_invite_booked", _openMessages, "name", m.Name, "outing", FlareInviteRules.Value(m.Data, "outing"),
+            Notice(NotificationType.Info, "reallife_flare_note_invite_booked", _openMessages, "name", m.Name, "outing", FlareInviteRules.Value(m.Data, "outing"),
                 "place", b.Place, "time", FlareInviteRules.Value(m.Data, "time"));
         }
 
@@ -170,7 +170,7 @@ namespace RealLifeOverhaul.Flare
                 int number = Save.Day % _citizens.Count;
                 string with = "c" + number;
                 _testInvitee = number;
-                FlareLiveRules.Dm(_file.Net, with, AccountName(with), Now, false, null, "reallife_flare_dm_chat", null);
+                FlareLiveRules.Dm(_file.Net, with, AccountName(with), Now, false, null, FlareText.DmKey(FlareLiveRules.Opener(_file, Now)), null);
                 Recount();
                 Tell(NotificationType.Info, "reallife_flare_test_invitee_done", _openMessages, "name", AccountName(with));
                 Logger?.Info("Flare: test: " + AccountName(with) + " wrote to the player and counts as somebody talked with; invite them out in a message.");

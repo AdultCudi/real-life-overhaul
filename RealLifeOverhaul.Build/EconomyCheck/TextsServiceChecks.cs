@@ -45,27 +45,28 @@ internal static partial class Program
         ServiceTexts();
         ServiceSources();
         ServiceTiming();
+        Player2Checks();
     }
 
     // ---------------------------------------------------------------- the table
 
     private static void ServiceTable()
     {
-        bool order = TextProviders.Count == 12;
+        bool order = TextProviders.Count == 13;
         for (int i = 0; i < TextProviders.Count; i++)
         {
             order &= (int)TextProviders.Of(i).Id == i;
         }
-        Check(order && TextProviders.Of(99).Id == TextProvider.Off && TextProviders.Of(-1).Id == TextProvider.Off && TextProviders.ChoiceKeys().Length == 12,
-            "your own AI, services: twelve entries in the list's order (Off first), a number past them reads as Off");
+        Check(order && TextProviders.Of(99).Id == TextProvider.Off && TextProviders.Of(-1).Id == TextProvider.Off && TextProviders.ChoiceKeys().Length == 13,
+            "your own AI, services: thirteen entries in the list's order (Off first), a number past them reads as Off");
         bool bases = true, models = true;
         for (int i = 1; i < TextProviders.Count; i++)
         {
             TextProviderInfo p = TextProviders.Of(i);
             bases &= p.Access == TextAccess.Local ? p.Base.StartsWith("http://127.0.0.1:", StringComparison.Ordinal) : p.Base.StartsWith("https://", StringComparison.Ordinal);
-            models &= p.Access == TextAccess.Key ? !string.IsNullOrEmpty(p.Model) : p.Model == null;
+            models &= p.Access == TextAccess.Key || p.Access == TextAccess.App ? !string.IsNullOrEmpty(p.Model) : p.Model == null;
         }
-        Check(bases && models, "your own AI, services: every service is reached over https but the two programs on this PC (127.0.0.1); a keyed one has a model of its own, the sign-in and the local ones take the first they list");
+        Check(bases && models, "your own AI, services: every service is reached over https but the two programs on this PC (127.0.0.1); a keyed one has a model of its own, the sign-in and the local ones take the first they list, Player2 names none (its name is only for the log)");
         TextProviderInfo ollama = TextProviders.Of(TextProvider.Ollama), groq = TextProviders.Of(TextProvider.Groq);
         Check(TextProviders.Base(ollama, null) == ollama.Base && TextProviders.Base(ollama, "http://localhost:11435/v1/") == "http://localhost:11435/v1"
               && TextProviders.Base(ollama, "http://192.168.1.5:11434/v1") == null && TextProviders.Base(ollama, "https://example.com/v1") == null
@@ -1029,7 +1030,7 @@ internal static partial class Program
         Check(Regex.IsMatch(service, @"if \(_serviceIndex == index && _serviceVersion == _version\)\s*\{\s*Watch\(\);\s*return;")
               && director.Contains("RunService();") && director.Contains("if (_pack == null && _service == null)"),
             "your own AI: the director's look costs two comparisons while the service is as the options say; nothing of it per frame");
-        var gameFree = new[] { "TextJsonTree.cs", "TextProviders.cs", "TextServiceRules.cs", "TextWeb.cs", "TextKeys.cs", "TextChatGpt.cs", "TextSignIn.cs", "TextService.cs" };
+        var gameFree = new[] { "TextJsonTree.cs", "TextProviders.cs", "TextServiceRules.cs", "TextWeb.cs", "TextKeys.cs", "TextChatGpt.cs", "TextSignIn.cs", "TextService.cs", "TextPlayer2.cs" };
         var problems = new List<string>();
         foreach (string file in gameFree)
         {

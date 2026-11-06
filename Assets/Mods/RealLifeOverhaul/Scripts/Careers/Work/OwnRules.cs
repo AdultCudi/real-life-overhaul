@@ -162,5 +162,54 @@ namespace RealLifeOverhaul.Careers
 
         /// <summary>Minutes of a contract still to work.</summary>
         public static int Left(Contract c) => Math.Max(0, c.Hours * 60 - c.Minutes);
+
+        /// <summary>
+        /// The profession the player works as at a desk of their own business of a type (Tech's OwnDesk): of those the type
+        /// employs, one whose rank they could come in at now (ProRules.BestRank) has a role that adds to a firm's crew
+        /// (FirmsRules.Counts); the highest level, the catalogue's first on a tie. -1, and <paramref name="rank"/> -1, for none.
+        /// </summary>
+        public static int FirmProfession(StudyFile f, string type, int day, int year, out int rank)
+        {
+            rank = -1;
+            int best = -1, bestLevel = -1;
+            if (f == null || f.Work == null || string.IsNullOrEmpty(type))
+            {
+                return -1;
+            }
+            for (int i = 0; i < ProCatalogue.All.Length; i++)
+            {
+                Profession p = ProCatalogue.All[i];
+                if (!ProCatalogue.EmploysKept(p, type))
+                {
+                    continue;
+                }
+                int r = ProRules.BestRank(f, p, ProRules.Experience(f.Work, p.Id, day, year));
+                if (r < 0 || !CountsAtFirm(p.Ranks[r]) || p.Ranks[r].Level <= bestLevel)
+                {
+                    continue;
+                }
+                best = p.Id;
+                bestLevel = p.Ranks[r].Level;
+                rank = r;
+            }
+            return best;
+        }
+
+        /// <summary>The professions a business type employs whose first rank adds to a firm's crew: those the player can work as at a desk there, once qualified.</summary>
+        public static void FirmProfessions(string type, List<int> into)
+        {
+            into.Clear();
+            for (int i = 0; i < ProCatalogue.All.Length && !string.IsNullOrEmpty(type); i++)
+            {
+                Profession p = ProCatalogue.All[i];
+                if (ProCatalogue.EmploysKept(p, type) && CountsAtFirm(p.Ranks[0]))
+                {
+                    into.Add(p.Id);
+                }
+            }
+        }
+
+        // A rank whose role adds to a firm's crew (a role of the professions' that FirmsRules.Join counts).
+        private static bool CountsAtFirm(ProRank r) => r.Role >= 0 && r.Role < TalentCatalogue.RoleCount && FirmsRules.Counts(TalentCatalogue.Role(r.Role));
     }
 }

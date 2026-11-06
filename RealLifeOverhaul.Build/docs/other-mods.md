@@ -47,6 +47,7 @@ name) and which holds the named type. `OtherMods.Look(logger)` does the walk and
 | Empire Motors: Mustang GT, Empire Motors: BMW G82 (its car add-ons) | `EmpireMustangGT`, `empirebmwg82` | `EmpireMustangGTMod`, `EmpireBMWG82Mod` | Each registers one car (`ModdingAPI.RegisterModVehicleType`) with its lights and a dashboard; the BMW puts itself on Empire Motors' desk. No Harmony. | Logged only; car tuning has a row for each car by its type name (`Driving/CarCatalogue`). |
 | Meaningful Interiors (Workshop 3815057157) | `MeaningfulInteriors` | `MeaningfulInteriors.MeaningfulInteriorsMod` | Sets each neighbourhood's `NeighborhoodData.minimumInteriorScore` (the game's own minimum for walls and floors, checked by `InteriorDesignCustomerDemand`), keeps it there each game hour and puts the game's back on unload; adds products to customers' baskets by editing the coming customers' orders in `CustomerEntriesHelper`'s list; its own Interiors tab in BizMan. No Harmony. | `Scripts/Interiors`: the district standard's footfall and complaints and the basket stay off; the rest of the feature keeps running. See "Meaningful Interiors and Meaningful Ambience" below. |
 | Meaningful Ambience (Workshop 3810641423) | `MeaningfulAmbience` | `MeaningfulAmbience.MeaningfulAmbienceMod` | A decor score from the placed items (its own list of item names); each game hour it adds customers to the hour under way in `CustomerEntriesHelper`'s list, up to the building's limit; office clients up to the free workstations; its own Ambience tab in BizMan. No Harmony. | `Scripts/Interiors`: the decor's footfall stays off; `Core/CustomerDraw` keeps the hour under way when the mod has the day's customers drawn again. See below. |
+| Alcware - Seasons (0.4.1 beta) | `AlcwareSeasons` | `AlcwareSeasons.SeasonsMod` | Seasons of its own: snow that builds up on roads and pavements and melts, summer thunderstorms with its own lightning and thunder sound, autumn leaves falling, pedestrians and customers in warmer clothes, a season and day counter under the top bar's date, a season length option, seasonal products. | `Scripts/Seasons`: both would change the same things, so the seasons stand down for it (what sells, snow, sky, rain, trees, leaves, coats), with one notice and one log line, unless "Keep these seasons with Alcware - Seasons" is on. |
 
 ## How a foreign camera is seen without a name (`Camera/CameraYield`)
 
@@ -97,6 +98,12 @@ Read in its decompiled code (`evidence/othermods/GoingPublic`), never run. What 
   not a `StudyActivity` (`Careers/CareersDirector.OpenDesk`, `ClassPlayRules.WayToDesk`). A click on a desk of the school
   stays Going Public's; the school's class is offered where the player stands inside it, and a classroom door of the
   university opens the room's own panel (see [Careers](../../docs/features/careers.md)).
+- **The game's activity panel is hidden in a session.** A prefix on `PlayerActivityUI.HidePanel` keeps the panel invisible
+  and unclickable for every activity, and Going Public's own dock (`MPRestSync.UpdateSeated`, every half second) reads the
+  activity's first four buttons that can be pressed and presses, for the player, the first whose name holds "start"; one
+  holding "stop" or "cancel" is its stand up. So every button that begins an activity of this mod's is named Start...
+  (`ClassPlayRules.SessionPick` says which is pressed, and EconomyCheck's HiddenPanelChecks reads every one in the source),
+  and a desk with nothing to begin in a session opens no panel at all but says why in a notice (`ClassPlayRules.ShowsDesk`).
 - **Closing a business.** `BuildingRegistration.TemporarilyClose` has a postfix that sends the player's own shop's state to
   everyone at once, and a prefix that routes a merged company's shop to its owner. This mod closes only the player's own
   (through `Mine`), so its closures reach the others.

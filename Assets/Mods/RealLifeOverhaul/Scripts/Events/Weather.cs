@@ -17,6 +17,7 @@ namespace RealLifeOverhaul.Events
     /// <summary>A spell of weather that lasts the day. The game shows none of these; they are felt, forecast and warned of.</summary>
     public enum Spell { None, HeatWave, ColdSnap, Ice }
 
+    /// <summary>The season of a day of the game's year.</summary>
     public enum Season { Winter, Spring, Summer, Autumn }
 
     /// <summary>Asked, if anybody has set it, whether the player is dressed for the cold. Null means nobody knows: half the chill is felt.</summary>
@@ -26,20 +27,9 @@ namespace RealLifeOverhaul.Events
     }
 
     /// <summary>
-    /// Weather that matters. The game already draws its weather (rain, wet roads, puddles, the
-    /// murk before a shower); nothing here changes how any of it looks. This turns what the game
-    /// has, and a spell of heat or cold rolled for the day from the season, into a handful of
-    /// numbers the rest of the mod reads:
-    ///
-    ///     Events.Weather.AccidentFactor       multiply the chance of a traffic accident by it
-    ///     Events.Weather.CrimeFactor          ...of street crime (tempers in the heat)
-    ///     Events.Weather.SightFactor          multiply how far the police and witnesses see by it
-    ///     Events.Weather.StreetLifeFactor     how much of the pavement's life is out; Events.Weather.TakeCover in a storm
-    ///     Events.Weather.GripFactor           the player's tyres (applied by WeatherEffects)
-    ///     Events.Weather.TrafficSpeedFactor   how fast traffic chooses to go (applied by WeatherEffects)
-    ///
-    /// Every one is a plain static float, 1 in fair weather and with the option off, written
-    /// only when the weather changes (looked at once a second: two flags and the hour).
+    /// Weather that matters, without changing how the game draws it: the game's weather and a spell of heat or cold rolled for
+    /// the day become factors the rest of the mod multiplies by, 1 in fair weather and with the option off; GripFactor and
+    /// TrafficSpeedFactor are applied by <see cref="WeatherEffects"/>. Written only when the weather changes, read once a second.
     /// </summary>
     public static class Weather
     {
@@ -57,6 +47,15 @@ namespace RealLifeOverhaul.Events
         public static Spell Spell { get; private set; }
         public static Season Season { get; private set; }
 
+        /// <summary>Snow on the roads: 0 none, 1 in patches, 2 covered (Seasons/SeasonRules.Step).</summary>
+        public static int Snow { get; private set; }
+
+        /// <summary>True when the last change was the snow's alone: the sky's warning is not given again for it.</summary>
+        public static bool SnowOnlyChanged { get; private set; }
+
+        /// <summary>The snow on the roads now, from the seasons (wired in Scripts/Wiring); null while nobody says: none.</summary>
+        public static Func<int> SnowNow;
+
         /// <summary>Set by whoever knows what the player wears (optional).</summary>
         public static IWardrobe Wardrobe;
 
@@ -66,14 +65,10 @@ namespace RealLifeOverhaul.Events
         private static FieldInfo _intensityField;
         private static bool _intensitySearched;
 
-        /// <summary>The season a day falls in: the year starts in midwinter, as the calendar's does (GameCalendar, CalendarRules.Season).</summary>
+        /// <summary>The season a day falls in; the year starts in midwinter (GameCalendar).</summary>
         public static Season SeasonOf(int day) => GameCalendar.SeasonOf(day);
 
-        /// <summary>
-        /// The spell rolled for a day: the same answer every time it is asked, so nothing is saved
-        /// and tomorrow's can be forecast. Heat only in summer, cold only in winter (ice on a cold
-        /// day in one of three); how often is the option's slider.
-        /// </summary>
+        /// <summary>The day's spell, the same whenever asked so tomorrow's can be forecast: heat in summer, cold or ice in winter.</summary>
         public static Spell SpellOf(int day)
         {
             if (!Settings.WeatherMatters)
@@ -97,7 +92,7 @@ namespace RealLifeOverhaul.Events
         internal static void Force(Sky sky, Spell spell)
         {
             Forced = true;
-            Set(sky, spell, SeasonOf(TimeHelper.CurrentDay));
+            Set(sky, spell, SeasonOf(TimeHelper.CurrentDay), Snow);
         }
 
         internal static void Release()
@@ -109,7 +104,7 @@ namespace RealLifeOverhaul.Events
         internal static void Reset()
         {
             Forced = false;
-            Set(Sky.Dry, Spell.None, Season.Spring);
+            Set(Sky.Dry, Spell.None, Season.Spring, 0);
         }
 
         /// <summary>Reads the game's weather and today's spell. True if anything changed.</summary>
@@ -121,7 +116,7 @@ namespace RealLifeOverhaul.Events
             }
             if (!Settings.WeatherMatters)
             {
-                return Set(Sky.Dry, Spell.None, Season);
+                return Set(Sky.Dry, Spell.None, Season, 0);
             }
             Sky sky = Sky.Dry;
             if (RainHelper.isRaining)
@@ -129,15 +124,17 @@ namespace RealLifeOverhaul.Events
                 sky = !RainHelper.AreRainDropsFalling ? Sky.Mist : Intensity() >= 0.8f ? Sky.Storm : Sky.Rain;
             }
             int day = TimeHelper.CurrentDay;
-            return Set(sky, SpellOf(day), SeasonOf(day));
+            return Set(sky, SpellOf(day), SeasonOf(day), SnowNow != null ? SnowNow() : 0);
         }
 
-        private static bool Set(Sky sky, Spell spell, Season season)
+        private static bool Set(Sky sky, Spell spell, Season season, int snow)
         {
-            if (sky == Sky && spell == Spell && season == Season)
+            if (sky == Sky && spell == Spell && season == Season && snow == Snow)
             {
                 return false;
             }
+            SnowOnlyChanged = sky == Sky && spell == Spell && season == Season;
+            Snow = snow;
             Sky = sky;
             Spell = spell;
             Season = season;
@@ -153,6 +150,12 @@ namespace RealLifeOverhaul.Events
                 case Spell.HeatWave: crime *= 1.3f; life *= 0.85f; break;
                 case Spell.ColdSnap: crime *= 0.85f; life *= 0.8f; break;
                 case Spell.Ice: accident *= 1.4f; grip *= 0.75f; speed *= 0.9f; life *= 0.7f; break;
+            }
+            // Snow on top of whatever else: drivers take it slowly and fewer people are out.
+            switch (snow)
+            {
+                case 1: accident *= 1.2f; grip *= 0.88f; speed *= 0.93f; life *= 0.9f; break;
+                case 2: accident *= 1.45f; grip *= 0.72f; speed *= 0.85f; life *= 0.8f; sight *= 0.9f; break;
             }
             AccidentFactor = accident;
             CrimeFactor = crime;
@@ -170,7 +173,7 @@ namespace RealLifeOverhaul.Events
             if (!_intensitySearched)
             {
                 _intensitySearched = true;
-                _intensityField = GameContract.RainIntensity.Field;   // (resolved once: Core/GameContract)
+                _intensityField = GameContract.RainIntensity.Field;
                 if (_intensityField == null || _intensityField.FieldType != typeof(float))
                 {
                     _intensityField = null;
@@ -190,16 +193,13 @@ namespace RealLifeOverhaul.Events
     }
 
     /// <summary>
-    /// Puts the weather's numbers to work where no other feature does: the player's tyres, how
-    /// fast traffic chooses to drive, energy lost in the heat and the cold, the forecast and the
-    /// warnings. Stepped by the director once a second; on most of those steps it compares two
-    /// flags and returns. Everything it changes on a game object is recorded and put back
-    /// exactly (when the weather clears, the player changes car, the option goes off, the city
-    /// unloads).
+    /// Puts the weather's factors to work where no other feature does: the player's tyres, traffic's pace, energy in the
+    /// heat and cold, the forecast and the warnings. Once a second from the director, mostly two comparisons; everything
+    /// it changes on a game object is recorded and put back exactly.
     /// </summary>
     internal sealed class WeatherEffects
     {
-        private const float EnergyFloor = 15f;
+        private const float EnergyFloor = 15f;   // energy the weather never takes the player below
 
         private static readonly string[] ForecastFair =
         {
@@ -220,15 +220,10 @@ namespace RealLifeOverhaul.Events
         private float _speedApplied = 1f;
 
         private int _lastHour = -1;
-        private int _lastForecastDay = -1;
         private bool _gripFailed;
         private bool _speedFailed;
 
-        public int LastForecastDay
-        {
-            get => _lastForecastDay;
-            set => _lastForecastDay = value;
-        }
+        public int LastForecastDay { get; set; } = -1;
 
         /// <summary>Once a second while a save is loaded.</summary>
         public void Tick(EventDirector director)
@@ -250,9 +245,13 @@ namespace RealLifeOverhaul.Events
         /// <summary>The weather's numbers have just changed: said once, and traffic's pace follows.</summary>
         public void Changed()
         {
-            Announce();
+            if (!Weather.SnowOnlyChanged)
+            {
+                Announce();   // the seasons say the snow's own news
+            }
             ApplySpeed();
-            EventDirector.Logger?.Info(FormattableString.Invariant($"Weather: {Weather.Sky}, {Weather.Spell}, {Weather.Season}: accidents x{Weather.AccidentFactor:F2}, crime x{Weather.CrimeFactor:F2}, sight x{Weather.SightFactor:F2}, ")
+            EventDirector.Logger?.Info(FormattableString.Invariant($"Weather: {Weather.Sky}, {Weather.Spell}, {Weather.Season}, snow {Weather.Snow}: accidents x{Weather.AccidentFactor:F2}, ")
+                                       + FormattableString.Invariant($"crime x{Weather.CrimeFactor:F2}, sight x{Weather.SightFactor:F2}, ")
                                        + FormattableString.Invariant($"street life x{Weather.StreetLifeFactor:F2}, grip x{Weather.GripFactor:F2}, traffic speed x{Weather.TrafficSpeedFactor:F2}."));
         }
 
@@ -262,8 +261,6 @@ namespace RealLifeOverhaul.Events
             RestoreTyres();
             RestoreSpeed();
         }
-
-        // ---------------------------------------------------------------- the player's tyres
 
         private void Tyres()
         {
@@ -336,13 +333,13 @@ namespace RealLifeOverhaul.Events
             _gripApplied = 1f;
         }
 
-        // ---------------------------------------------------------------- traffic's pace
-
         // The traffic system has no speed factor; each pooled vehicle draws its top speed from its own range when it is
         // put on the road. That range is narrowed here, so the cars that set off in the wet do so more carefully.
         private void ApplySpeed()
         {
-            float wanted = Weather.TrafficSpeedFactor;
+            // A guest's traffic is the host's cars, placed from the host's figures: never changed here, and put back the
+            // moment the machine becomes a guest.
+            float wanted = GoingPublic.TrafficMirrored ? 1f : Weather.TrafficSpeedFactor;
             if (_speedFailed || Mathf.Approximately(wanted, _speedApplied))
             {
                 return;
@@ -398,8 +395,6 @@ namespace RealLifeOverhaul.Events
             _speedApplied = 1f;
         }
 
-        // ---------------------------------------------------------------- once an hour
-
         private void Hourly(EventDirector director, int hour)
         {
             if (!Settings.WeatherMatters || SaveGameManager.Current == null)
@@ -407,9 +402,9 @@ namespace RealLifeOverhaul.Events
                 return;
             }
             int day = TimeHelper.CurrentDay;
-            if (hour >= 7 && hour <= 9 && _lastForecastDay != day)
+            if (hour >= 7 && hour <= 9 && LastForecastDay != day)
             {
-                _lastForecastDay = day;
+                LastForecastDay = day;
                 Forecast(director, day);
             }
             // Out of doors in the heat of the day, or in the cold at any hour, costs a little energy; never the last of it.
@@ -432,8 +427,7 @@ namespace RealLifeOverhaul.Events
             }
             if (Weather.Sky == Sky.Storm && Random.value < 0.12f)
             {
-                // A power cut is only news: the game has no safe way to switch a district's shops off. Held for the morning line
-                // while the player sleeps (Core/MorningNews), as is the weather's every notice.
+                // A power cut is only news: the game has no safe way to switch a district's shops off.
                 MorningNews.Show(NotificationType.Warning, Random.value < 0.5f ? "reallife_weather_power_cut_a" : "reallife_weather_power_cut_b", null, 9f);
             }
         }
@@ -448,7 +442,7 @@ namespace RealLifeOverhaul.Events
             director.Bulletin(key, null);
         }
 
-        // A fair day's line: one for the season on the first fair morning of three, a general one otherwise.
+        // A fair day's line: the season's on every third day, a general one otherwise.
         private static string SeasonLine(Season season, int day)
         {
             int pick = day % 3;

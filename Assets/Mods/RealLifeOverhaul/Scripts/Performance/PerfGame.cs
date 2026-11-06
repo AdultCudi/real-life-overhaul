@@ -10,32 +10,21 @@ using UnityEngine.Rendering.HighDefinition;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// What the performance tools need to know about Big Ambitions itself: where the player is, and the
-    /// game's own collections (traffic, pedestrians, street lamps, trees). Everything private to the game is
-    /// reached through fields looked up once; a field the game no longer has makes the caller say so, not fail.
-    /// </summary>
+    /// <summary>What the performance tools read of the game; private fields through Core/GameContract.</summary>
     internal static class PerfGame
     {
-
-        private static readonly FieldInfo LampLights = GameContract.LampLights.Field;   // (the game's private fields, resolved once: Core/GameContract)
+        private static readonly FieldInfo LampLights = GameContract.LampLights.Field;
         private static readonly FieldInfo LampData = GameContract.LampData.Field;
         private static readonly FieldInfo LampGlow = GameContract.LampGlow.Field;
         private static readonly FieldInfo LampIsOn = GameContract.LampIsOn.Field;
 
-        // The game's own list of every street lamp (and tree, bench, sign and spawner) it culls by distance: each StreetLamp
-        // puts itself on it in its Start (StreetLamp.cs: CullingManager.generalCullingGroupController.RegisterCullable)
-        // and takes itself off in OnDestroy.
+        // the game's list of what it culls by distance: every StreetLamp registers itself in its Start, off in OnDestroy
         private static readonly FieldInfo Cullables = GameContract.CullList.Field;
 
         /// <summary>False if this version of the game keeps a street lamp's lights, or its list of lamps, somewhere else.</summary>
         public static bool KnowsLamps => LampLights != null && LampData != null && LampGlow != null && LampIsOn != null && Cullables != null;
 
-        /// <summary>
-        /// Fills <paramref name="lamps"/> (cleared first) with the street lamps of the loaded city whose object is active:
-        /// what a search of the whole scene for them would find (a frame of some 85 ms), read instead from the game's own
-        /// culling list. Cost: one pass over that list (a few thousand entries, one type test each), nothing allocated.
-        /// </summary>
+        /// <summary>The loaded city's active street lamps, from the game's culling list rather than a scene search; no allocation.</summary>
         public static void Lamps(List<StreetLamp> lamps)
         {
             lamps.Clear();
@@ -133,8 +122,10 @@ namespace RealLifeOverhaul
                     }
                 }
                 TrafficComponent traffic = InstanceBehavior<CityManager>.Instance != null ? InstanceBehavior<CityManager>.Instance.trafficComponent : null;
-                text.AppendLine("  traffic: pool of " + cars.Count + " vehicles (the traffic system reads every pooled wheel each frame and each physics step, driving or not), driving now " + driving
-                                + ", with a headlight on " + lit + (traffic != null ? ", spawned beyond " + PerfText.F1(traffic.minDistanceToAdd) + " m, removed beyond " + PerfText.F1(traffic.distanceToRemove) + " m" : string.Empty));
+                text.AppendLine("  traffic: pool of " + cars.Count + " vehicles (the traffic system reads every pooled wheel each frame and each physics step, driving or not), driving now "
+                                + driving + ", with a headlight on " + lit
+                                + (traffic != null
+                                    ? ", spawned beyond " + PerfText.F1(traffic.minDistanceToAdd) + " m, removed beyond " + PerfText.F1(traffic.distanceToRemove) + " m" : string.Empty));
             }
             else
             {
@@ -207,7 +198,8 @@ namespace RealLifeOverhaul
                         strayLights += enabled;
                     }
                 }
-                text.AppendLine("  street lamps " + lamps.Length + "  switched on by the game (within 200 m of the player, at night) " + on + "  of their lights casting shadows (within 60 m) " + shadowed);
+                text.AppendLine("  street lamps " + lamps.Length + "  switched on by the game (within 200 m of the player, at night) " + on
+                                + "  of their lights casting shadows (within 60 m) " + shadowed);
                 text.AppendLine("  street lamps the game has OFF whose Light components are nevertheless enabled: " + stray + " lamps, " + strayLights + " lights"
                                 + (stray > 0 ? "  <- lamps never switched on since loading are never switched off either" : string.Empty));
             }

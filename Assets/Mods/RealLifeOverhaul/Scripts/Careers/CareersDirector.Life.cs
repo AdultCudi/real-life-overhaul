@@ -85,19 +85,28 @@ namespace RealLifeOverhaul.Careers
             {
                 j.Overtime += minutes;
             }
-            int before = j.Burnout;
-            j.Burnout = Math.Min(1000, j.Burnout + LifeRules.BurnoutFor(j.WeekMinutes - minutes, minutes));
-            if (before <= LifeRules.BurnoutMood && j.Burnout > LifeRules.BurnoutMood)
-            {
-                CareersGame.Mood(ModState.Burnout);
-                Tell2(NotificationType.Warning, "reallife_life_note_burnout", Data("hours", LifeRules.LongWeekHours.ToString()), TabJob, null);
-            }
+            Burn(j, j.WeekMinutes - minutes, minutes);
             if ((BossKind)j.Boss == BossKind.Mentor)
             {
                 int a, b;
                 j.Def.SkillsOf(j.Post.Rank, out a, out b);
                 int hours = Math.Max(1, minutes / 60);
                 StudyRules.Learn(_study, a, StudyCatalogue.WorkLearn * hours * (100 - StudyRules.Points(_study, a)) / 100 * LifeRules.MentorLearn / 1000, day);
+            }
+        }
+
+        /// <summary>
+        /// Burnout from minutes worked on top of a week's: the job's own day, or hours at a desk of the player's own firm
+        /// (CareersDirector.OwnDesk), so a long week builds it whichever work filled it; the mood and a word once it is felt.
+        /// </summary>
+        private void Burn(Job j, int weekBefore, int minutes)
+        {
+            int before = j.Burnout;
+            j.Burnout = Math.Min(1000, j.Burnout + LifeRules.BurnoutFor(weekBefore, minutes));
+            if (before <= LifeRules.BurnoutMood && j.Burnout > LifeRules.BurnoutMood)
+            {
+                CareersGame.Mood(ModState.Burnout);
+                Tell2(NotificationType.Warning, "reallife_life_note_burnout", Data("hours", LifeRules.LongWeekHours.ToString()), TabJob, null);
             }
         }
 
@@ -109,6 +118,7 @@ namespace RealLifeOverhaul.Careers
             }
             long own, employer;
             LifeRules.Pension(cents, (EmployerKind)j.Post.Kind, out own, out employer);
+            employer += cents * LadderPension() / 10000;   // the insurance asked for on the ladder
             if (own > 0)
             {
                 CareersGame.Take(own / 100f, PensionKey, CareersText.Employer(j.Post.Employer));
@@ -175,7 +185,8 @@ namespace RealLifeOverhaul.Careers
         private void Review(Job j, int day)
         {
             Profession p = j.Def;
-            int score = LifeRules.ReviewScore(j, ProRules.Points(_study, p, j.Post.Rank), ProRules.Need(_study, p, j.Post.Rank), (BossKind)j.Boss);
+            int score = TalentCatalogue.Clamp(LifeRules.ReviewScore(j, ProRules.Points(_study, p, j.Post.Rank), ProRules.Need(_study, p, j.Post.Rank), (BossKind)j.Boss)
+                                              + LadderReviewBonus(), 0, 100);   // at a city company the performance score counts too
             int rating = LifeRules.Rating(score);
             j.Rating = rating;
             j.ReviewDay = day;
@@ -192,7 +203,8 @@ namespace RealLifeOverhaul.Careers
             {
                 CareersGame.Pay(bonus, BonusKey, SalaryCategory, employer);
             }
-            bool promoted = LifeRules.CanPromote(_study, j, rating, day, Year);
+            bool ladderUp = LadderReview(rating, day);
+            bool promoted = !ladderUp && !LadderManages() && LifeRules.CanPromote(_study, j, rating, day, Year);   // a manager rises on the ladder, not the profession's ranks
             j.Due = j.Worked = j.Late = j.Absent = 0;
             j.Overtime = 0;
             j.Favour /= 2;
@@ -209,7 +221,7 @@ namespace RealLifeOverhaul.Careers
                 Data("rating", rating.ToString(), "rise", rise > 0 ? CareersText.T("reallife_life_rise", "percent", Bp(rise)) : CareersText.T("reallife_life_no_rise"),
                     "bonus", CareersText.Money(bonus)), TabJob, null);
             Logger?.Info("Careers: review at " + j.Post.Employer + " on day " + day + ": score " + score + ", rating " + rating + ", rise " + rise + " bp, bonus " + bonus
-                         + (promoted ? ", promoted." : "."));
+                         + (promoted ? ", promoted." : ladderUp ? ", promoted on the management ladder." : "."));
             if (j.LowRuns >= LifeRules.LowRunsToGo)
             {
                 Tell2(NotificationType.Error, "reallife_life_note_dismissed_reviews", Data("employer", employer), TabCv, null);
@@ -219,6 +231,10 @@ namespace RealLifeOverhaul.Careers
             if (promoted)
             {
                 Promote(j, day);
+            }
+            else if (ladderUp)
+            {
+                LadderPromote(j, day);
             }
         }
 

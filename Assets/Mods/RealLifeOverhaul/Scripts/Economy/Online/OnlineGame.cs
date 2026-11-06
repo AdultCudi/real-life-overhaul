@@ -24,12 +24,20 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Told of every deductible cost in cents as it is paid. Default: nobody (the game's own tax still deducts it).</summary>
         public static Action<int> Cost;
 
+        /// <summary>
+        /// The building's internet speed for the orders over it, Mbps (NetSpeedRules), at an hour (0 or more counts an
+        /// outage then) or for its plan (-1): 0 with no working connection, NetSpeedRules.Grace or Unknown to take orders as
+        /// before speed counted. Default: unknown.
+        /// </summary>
+        public static Func<BuildingRegistration, int, int> Mbps;
+
         public static void Reset()
         {
             Campaign = null;
             Season = null;
             Road = null;
             Cost = null;
+            Mbps = null;
         }
     }
 
@@ -54,6 +62,9 @@ namespace RealLifeOverhaul.Economy
     /// </summary>
     internal static partial class OnlineGame
     {
+        /// <summary>Owner deduction labels whose mixed costs have no single portable recurrence rule.</summary>
+        internal static string[] CompanionUnclassifiedTaxLabels() => new[] { DeductKey.GetLocalization() };
+
         public const string TakingsKey = "reallife_transaction_online_takings";
         public const string RefundsKey = "reallife_transaction_online_refunds";
         public const string CourierKey = "reallife_transaction_online_courier";
@@ -92,7 +103,7 @@ namespace RealLifeOverhaul.Economy
 
         private static bool IsWarehouse(BuildingRegistration reg)
         {
-            return reg is Warehouse && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.businessTypeName == WarehouseType;
+            return reg is Warehouse && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.businessTypeName == WarehouseType && GameRegistrations.Found(reg);
         }
 
         /// <summary>The businesses that take money and the warehouses the player runs. One pass over the save's buildings.</summary>
@@ -243,7 +254,7 @@ namespace RealLifeOverhaul.Economy
                 Counts.Add(0);
             }
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] buildings = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] buildings = GameDlc.Open(city);
             for (int i = 0; buildings != null && i < buildings.Length; i++)
             {
                 CityBuildingController b = buildings[i];
@@ -386,7 +397,7 @@ namespace RealLifeOverhaul.Economy
         {
             if (cents > 0 && Save != null)
             {
-                GameManager.ChangeMoneySafe(cents / 100f, Info(key, place), day, place != null ? place.Address : null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(cents / 100f, Info(key, place), day, place != null ? place.Address : null, true);
             }
         }
 
@@ -406,7 +417,7 @@ namespace RealLifeOverhaul.Economy
             {
                 info.SetTaxDeductibleName(DeductKey.GetLocalization());
             }
-            bool taken = GameManager.ChangeMoneySafe(-cents / 100f, info, day, place != null ? place.Address : null, force);
+            bool taken = RealLifeOverhaul.Economy.BizBooks.Book(-cents / 100f, info, day, place != null ? place.Address : null, force);
             if (taken && deductible && OnlineBridges.Cost != null)
             {
                 OnlineBridges.Cost(cents);

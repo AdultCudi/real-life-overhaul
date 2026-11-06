@@ -61,6 +61,18 @@ namespace RealLifeOverhaul
             };
         }
 
+        // The review's text, in the wording for where it is held now (the board outside a shop, or the phone), and filled in.
+        private static string ReviewText(CareerDirector career, string key)
+        {
+            var data = new Dictionary<string, string>(2);
+            string text = career.ReviewKey(key, CareerState.EmployerIndex, data).GetLocalization();
+            foreach (KeyValuePair<string, string> field in data)
+            {
+                text = text.Replace("{" + field.Key + "}", field.Value);
+            }
+            return text;
+        }
+
         private static DialogEntry Start(int at)
         {
             if (Career == null || !CareerDirector.On || !CareerState.Loaded)
@@ -179,8 +191,7 @@ namespace RealLifeOverhaul
             float rate = JobDirector.PayScale();   // the wage as it will be paid, owners' cut included
             string note = CareerState.ReviewDue
                 ? (career.CanReview(inPerson) ? "reallife_career_note_review_here".GetLocalization()
-                    : CareerOfficeRules.Key("reallife_career_note_review", career.OfficeAddress(CareerState.EmployerIndex)).GetLocalization()
-                        .Replace("{address}", career.OfficeAddress(CareerState.EmployerIndex) ?? string.Empty))
+                    : ReviewText(career, "reallife_career_note_review"))   // the board outside its shop, where the boss waits; or the phone
                 : CareerState.OnNotice
                     ? "reallife_career_note_notice".GetLocalization().Replace("{left}", CareerState.NoticeShiftsLeft.ToString())
                     : string.Empty;
@@ -235,7 +246,8 @@ namespace RealLifeOverhaul
                 : PhoneContacts.Closing(reason ?? "reallife_job_no_now", new
                 {
                     time = CareerClock.Span(CareerState.RotaHour),
-                    address = career.OfficeAddress(CareerState.EmployerIndex) ?? string.Empty
+                    address = career.OfficeAddress(CareerState.EmployerIndex) ?? string.Empty,
+                    place = career.OfficePlace(CareerState.EmployerIndex) ?? string.Empty
                 });
         }
 
@@ -293,7 +305,12 @@ namespace RealLifeOverhaul
             }
             return new DialogEntry
             {
-                messageData = "reallife_career_office_page".Localize(new { employer = CareerState.Employer.NameKey.GetLocalization(), address }),
+                messageData = career.OfficeKey("reallife_career_office_page", CareerState.EmployerIndex, null).Localize(new
+                {
+                    employer = CareerState.Employer.NameKey.GetLocalization(),
+                    address,
+                    place = career.OfficePlace(CareerState.EmployerIndex) ?? string.Empty
+                }),
                 ConfirmTextOverride = "reallife_career_office_show".Localize(),
                 OnConfirm = G(() => ShowOffice(CareerState.EmployerIndex)),
                 SecondOptionTextOverride = "reallife_career_more",
@@ -311,9 +328,10 @@ namespace RealLifeOverhaul
                 return PhoneContacts.Closing("reallife_career_office_none");
             }
             string name = CareerCatalogue.All[employer].NameKey.GetLocalization();
+            string place = career.OfficePlace(employer) ?? string.Empty;   // (the shop a board stands outside; the office is the board)
             return career.ShowOffice(employer)
-                ? PhoneContacts.Closing("reallife_career_office_shown", new { employer = name, address })
-                : PhoneContacts.Closing("reallife_career_office_busy", new { employer = name, address });
+                ? PhoneContacts.Closing(career.OfficeKey("reallife_career_office_shown", employer, null), new { employer = name, address, place })
+                : PhoneContacts.Closing(career.OfficeKey("reallife_career_office_busy", employer, null), new { employer = name, address, place });
         }
 
         // Last page of "something else": a job with another employer, and leaving the one the player has.
@@ -578,7 +596,7 @@ namespace RealLifeOverhaul
 
             Text.Length = 0;
             string level = "reallife_career_cv_level".GetLocalization();
-            JobDef[] jobs = JobCatalogue.All;
+            JobDef[] jobs = JobCatalogue.Recorded;   // the gigs and the building trades worked
             for (int i = 0; i < jobs.Length; i++)
             {
                 if (JobState.Of(jobs[i]).Units > 0)

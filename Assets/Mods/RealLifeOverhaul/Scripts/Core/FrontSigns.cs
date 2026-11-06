@@ -11,39 +11,21 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The fronts of the mod's buildings (Core/SpecialBuildings: the tech companies' headquarters, City Utilities, the
-    /// courthouse, the university, the police stations, the hotels) on the game's own sign holders. The game holds such a
-    /// building as to let (the mod refuses it in the interface only, ClaimedOffers), so its own call
-    /// (CityBuildingController.UpdateSign) puts "For rent" on the building's wide sign (BuildingSignController) and its
-    /// square logo sign (BuildingLogoSignController). What each shows instead is FrontSignRules.Look's:
-    ///   named   a company's or an institution's own sign, the game's way: the game's logo maker (BusinessLogoGenerator,
-    ///           as for a business of the player's) draws its name and a logo shape of the game's in its colours, and the
-    ///           game's wide sign is configured as for a business (ConfigureSign: its sign type, its neon and bulbs, so it
-    ///           lights up after dark by the game's own switch) and given that logo, as is the square sign;
-    ///   off     the game's signs switched off, as the game has them on a building with no business: the building's own
-    ///           board (the utilities office's, the courthouse's, the university's) or dressing (a police station's
-    ///           fascia, a hotel's board) is its one sign;
-    ///   game    the game's own call again: the claim has moved off it, its feature is off, a player rents or owns it.
-    ///
-    /// Nothing of this is written into the save: the registration is never touched (a registration of the mod's own,
-    /// never in the save's list, is what the game's sign is configured from), the logos are kept in the game's temporary
-    /// folder, outside the save, and every sign is the game's object with the game's materials. A save opened without
-    /// the mod shows the game's own signs, drawn by the game at load. In a Going Public session every machine has the
-    /// same claims and so the same fronts; a building any player rents or owns is the player's on every machine and is
-    /// never touched; nothing is sent.
-    ///
-    /// The cost: once a second (SpecialNames' look), for each of the thirty-odd buildings in the book, a few flag reads
-    /// and, for a sign shown by the mod, a texture comparison per sign holder (the game rewrites a building's signs when
-    /// its registration changes: put back within a second). The book read again, and each building's sign holders found
-    /// once in its own hierarchy, only when the book changes. A logo is made once and kept for the next session.
+    /// The fronts of the mod's buildings (<see cref="SpecialBuildings"/>) on the game's own sign holders. The game holds
+    /// them as to let, so its CityBuildingController.UpdateSign puts "For rent" on their signs; each shows instead what
+    /// FrontSignRules.Look says: a name and logo drawn by the game's logo maker on a sign configured as a business's
+    /// (lit after dark by the game's own switch), the game's signs off, or the game's own signs again.
+    /// Nothing is saved: the sign is configured from a registration of the mod's own, never in the save, and logos are
+    /// kept in the game's temporary folder. Every Going Public machine has the same claims; nothing is sent.
+    /// COST: once a second, a few flag reads per building in the book and a texture comparison per sign shown (the game
+    /// rewrites a building's signs when its registration changes); sign holders are found only when the book changes.
     /// </summary>
     internal static class FrontSigns
     {
         private const string Folder = "RealLifeOverhaul/Signs1";   // under the game's temporary folder; the number changes if the logos' look does
         private const string NoBusiness = "ba:businesstype_empty";
-        private const BindingFlags Hidden = BindingFlags.NonPublic | BindingFlags.Instance;
 
-        private static readonly int BaseColorMap = Shader.PropertyToID("_BaseColorMap");   // the face texture of the game's signs (BuildingSignController)
+        private static readonly int BaseColorMap = Shader.PropertyToID("_BaseColorMap");   // the face texture of the game's signs
         private static readonly string WideFile = LogoSize.WideSign + ".jpg";
         private static readonly string SquareFile = LogoSize.SquareSign + ".jpg";
 
@@ -54,11 +36,11 @@ namespace RealLifeOverhaul
             public BuildingSignController[] Wide;
             public BuildingLogoSignController[] Square;
             public Renderer[] SquareFaces;
-            public bool[] WideOn;                      // which of them the mod has put its sign on (the others are off)
+            public bool[] WideOn;                      // which the mod has put its sign on; the others are off
             public bool[] SquareOn;
-            public FrontLook Shown = FrontLook.Game;   // what the building shows now
-            public Logo Logo;                          // the logo it shows, while named
-            public Logo Wanted;                        // the logo it is to show, worked out when the book changes
+            public FrontLook Shown = FrontLook.Game;
+            public Logo Logo;                          // shown, while named
+            public Logo Wanted;                        // to be shown, worked out when the book changes
             public bool Named;                         // Wanted has been worked out
             public bool Seen;
         }
@@ -87,13 +69,9 @@ namespace RealLifeOverhaul
         private static int _stamp = int.MinValue;
         private static bool _failed;
 
-        /// <summary>The mod's buildings looked after just now (for the city map's look, ClaimedMap).</summary>
         internal static int Count => Fronts.Count;
 
-        /// <summary>
-        /// Once a second (SpecialNames): the book read again if it changed, then each building's front made what it is to
-        /// be, or put back if the game has rewritten it.
-        /// </summary>
+        /// <summary>Called once a second by SpecialNames: reads the book if it changed, then sets or puts back each front.</summary>
         internal static void Keep()
         {
             if (_failed)
@@ -109,7 +87,7 @@ namespace RealLifeOverhaul
                 }
                 if (!ReferenceEquals(city, _city))
                 {
-                    Fronts.Clear();   // a city just loaded: the game has drawn its own signs on all of it
+                    Fronts.Clear();   // a city just loaded, with the game's own signs
                     _city = city;
                     _stamp = int.MinValue;
                 }
@@ -136,7 +114,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The city is going: nothing is put back (the game draws every sign anew with the next city), the logos are kept.</summary>
+        /// <summary>The city is unloading: nothing is put back (the next city draws its own signs); the logos are kept.</summary>
         internal static void Forget()
         {
             Fronts.Clear();
@@ -145,8 +123,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// A feature that switched a building's signs off for a while (a police station's fascia) gives them back: the game's
-        /// own call, then the mod's front again at once where the building is one of the mod's.
+        /// A feature that switched a building's signs off for a while gives them back: the game's own call, then the
+        /// mod's front again at once where it has one.
         /// </summary>
         internal static void Refresh(CityBuildingController building)
         {
@@ -157,16 +135,15 @@ namespace RealLifeOverhaul
             building.UpdateSign();
             if (!_failed && Fronts.TryGetValue(building, out Front front) && front.Shown != FrontLook.Game)
             {
-                front.Shown = FrontLook.Game;   // (the game's call has just drawn its own)
+                front.Shown = FrontLook.Game;   // the game's call has just drawn its own
                 front.Logo = null;
                 Look(front);
             }
         }
 
         /// <summary>
-        /// After the game's city map has looked at one building (CityMapFilters.ApplyFilters, through ClaimedMap): a building
-        /// of the mod's that the game lit only because it is to let or for sale is put out at once, before the frame is
-        /// drawn. One dictionary look for every other building.
+        /// After the city map has looked at a building (through <see cref="ClaimedMap"/>): one of the mod's that the game
+        /// lit only as to let or for sale is put out before the frame is drawn. A dictionary look for any other.
         /// </summary>
         internal static void Unlit(CityBuildingController building)
         {
@@ -178,7 +155,7 @@ namespace RealLifeOverhaul
             PointOfInterest poi = building.poi;
             if (reg == null || poi == null || poi.Permanent || !poi.gameObject.activeSelf)
             {
-                return;   // not lit (a building the game marks always is the player's, never refused)
+                return;   // not lit; a building the game always marks is the player's
             }
             bool players = reg.RentedByPlayer || reg.BuildingOwnedByPlayer;
             bool business = !string.IsNullOrEmpty(reg.businessTypeName) && reg.businessTypeName != NoBusiness;
@@ -189,9 +166,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- the book
-
-        // The buildings of the book as they are now: one that has left it is given back to the game's own signs.
+        // A building that has left the book is given back to the game's own signs.
         private static void Read(CityManager city)
         {
             foreach (Front front in Fronts.Values)
@@ -214,7 +189,7 @@ namespace RealLifeOverhaul
                 }
                 front.Entry = entry;
                 front.Seen = true;
-                front.Named = false;   // (its name and logo worked out again: the language may have changed)
+                front.Named = false;   // worked out again: the language may have changed
             }
             Entries.Clear();
             Gone.Clear();
@@ -256,8 +231,6 @@ namespace RealLifeOverhaul
             Fronts.Clear();
         }
 
-        // ---------------------------------------------------------------- one building
-
         private static void Look(Front front)
         {
             CityBuildingController building = front.Building;
@@ -280,7 +253,7 @@ namespace RealLifeOverhaul
                 logo = front.Wanted;
                 if (logo != null && logo.Wide == null && !logo.Failed)
                 {
-                    Make(logo);   // (until it is made the game's signs are off: never "For rent")
+                    Make(logo);   // until it is made the signs are off: never "For rent"
                 }
                 if (logo == null || logo.Wide == null)
                 {
@@ -294,7 +267,7 @@ namespace RealLifeOverhaul
             }
             else if (want != FrontLook.Game && !Holds(front))
             {
-                Show(front, want, logo);   // the game has rewritten its signs (its registration changed): put back
+                Show(front, want, logo);   // the game has rewritten its signs
             }
         }
 
@@ -307,7 +280,7 @@ namespace RealLifeOverhaul
                 bool players = reg == null || reg.RentedByPlayer || reg.BuildingOwnedByPlayer;
                 if (front.Shown != FrontLook.Game && !players)
                 {
-                    building.UpdateSign();   // the game's own signs (a building that became a player's has had them drawn by the game already)
+                    building.UpdateSign();   // a building that became a player's has them from the game already
                 }
                 if (front.Shown != FrontLook.Game)
                 {
@@ -460,7 +433,7 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // One of the game's wide signs configured as for a business of the name (its sign type, neon and bulbs), with the logo on its face.
+        // A wide sign configured as a business's (sign type, neon and bulbs), with the logo on its face.
         private static bool Name(BuildingSignController sign, Logo logo)
         {
             if (sign.signMeshRenderer == null)
@@ -477,7 +450,7 @@ namespace RealLifeOverhaul
                 sign.gameObject.SetActive(true);
             }
             sign.ConfigureSign(stand);
-            Material[] faces = sign.signMeshRenderer.materials;   // (the game's own way to its face: BuildingSignController.SetSignTexture)
+            Material[] faces = sign.signMeshRenderer.materials;   // as BuildingSignController.SetSignTexture reaches its face
             if (faces.Length < 2 || faces[1] == null || !faces[1].HasProperty(BaseColorMap))
             {
                 sign.gameObject.SetActive(false);
@@ -487,8 +460,8 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // The registration the game's sign is configured from: the mod's own, never in the save's list. Its name is empty, so
-        // the game looks up no logo by name; it is not to let and nobody's, so the sign is a business's.
+        // The mod's own registration, never in the save. An empty name: the game looks up no logo by name; not to let
+        // and nobody's: the sign is a business's.
         private static BuildingRegistration Stand()
         {
             if (_stand == null)
@@ -501,12 +474,11 @@ namespace RealLifeOverhaul
             return _stand;
         }
 
-        // The sign type for a wide sign: of the types it has with lights, the style's in turn (FrontSignRules.SignType).
         private static int Type(BuildingSignController sign, int preferred)
         {
             if (_types == null)
             {
-                _types = GameContract.SignTypes.Field;   // (resolved once as the mod starts: Core/GameContract)
+                _types = GameContract.SignTypes.Field;
             }
             var types = _types != null ? _types.GetValue(sign) as WideSignTypes : null;
             WideSignType[] all = types != null ? types.signTypes : null;
@@ -551,10 +523,7 @@ namespace RealLifeOverhaul
             return _block ?? (_block = new MaterialPropertyBlock());
         }
 
-        // ---------------------------------------------------------------- the logos
-
-        // The logo of a name in a style: made once by the game's own logo maker, into a folder of the mod's under the game's
-        // temporary folder (never the save's folder), and kept there for the next session.
+        // Made once by the game's logo maker into the game's temporary folder, and kept for the next session.
         private static Logo LogoFor(string name, FrontStyle style)
         {
             uint mark = FrontSignRules.Mark(name, style);
@@ -578,7 +547,7 @@ namespace RealLifeOverhaul
         {
             if (logo.Asked || BusinessLogoGenerator.Instance == null)
             {
-                return;   // (being made, or the game's logo maker is not there yet: asked again in a second)
+                return;   // being made, or the logo maker is not there yet: asked again in a second
             }
             logo.Asked = true;
             FrontStyle s = logo.Style;
@@ -590,9 +559,8 @@ namespace RealLifeOverhaul
                 fontColor = new Color(s.TextR, s.TextG, s.TextB),
                 logoColor = new Color(s.MarkR, s.MarkG, s.MarkB)
             };
-            // Not a player's business: the game keeps none of what it draws for this name in its own cache, and writes the
-            // pictures only into the folder given (BusinessLogoGenerator.GenerateBusinessLogo).
-            BusinessLogoGenerator.Create(logo.Name, settings, logo.Path, false, Guard.Listener(() => Made(logo)));   // (the game calls it when the picture is made: Core/Guard)
+            // Not a player's business: the game caches nothing of it and writes only into the folder given.
+            BusinessLogoGenerator.Create(logo.Name, settings, logo.Path, false, Guard.Listener(() => Made(logo)));
         }
 
         private static void Made(Logo logo)
@@ -625,7 +593,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
-            Texture2D w = LogoHelper.GetLogoShapeTexture(wide);    // the game's own loader of a picture file
+            Texture2D w = LogoHelper.GetLogoShapeTexture(wide);
             Texture2D q = LogoHelper.GetLogoShapeTexture(square);
             Pack(w);
             Pack(q);
@@ -633,7 +601,7 @@ namespace RealLifeOverhaul
             logo.Square = q;
         }
 
-        // As the game packs the logos it loads (LogoHelper.TryToCompress): where the size allows.
+        // As LogoHelper.TryToCompress packs the logos the game loads.
         private static void Pack(Texture2D texture)
         {
             if (texture != null && texture.width % 16 == 0 && texture.height % 16 == 0)

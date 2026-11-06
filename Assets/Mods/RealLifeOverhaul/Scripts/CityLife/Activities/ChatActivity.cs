@@ -3,14 +3,10 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// Two people who have stopped to talk: facing each other a pace apart, one talking with
-    /// their hands while the other listens, nods and shrugs, then the other way round. Both are
-    /// always animating, and always at each other. Two are placed or neither is.
-    /// </summary>
+    /// <summary>Two people stopped to talk a pace apart, one talking with their hands while the other listens; two are placed or neither is.</summary>
     public sealed class ChatActivity : CityActivity
     {
-        private const float Apart = 1.05f;
+        private const float Apart = 1.05f;   // metres
 
         private Vector3 _first;
         private Vector3 _second;

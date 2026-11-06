@@ -34,7 +34,7 @@ The rules are game-free and checked by EconomyCheck (`UtilitiesCatalogue`, `Util
 - **A cut.** A business without power closes (Business's own switch, `UtilitiesBridges.CloseFor`, hour by hour), as one without water does where it needs water (food and drink, salons, gyms).
   At home the shower and the sink give nothing without water, screens and the mod's cooking nothing without power (`HomeTidy.HasPower`, `HasWater`), and a mood modifier stands for each (`ModState.NoPower`, `NoWater`); hygiene and its colds follow by themselves.
 - **The office.** The largest office building of the city that no other feature has made its own (not the courthouse), with a lettered sign by its door; the desk is the game's own list (`DeskList`, `UtilitiesDesk`): pay a bill, apply for an account or a reconnection, the accounts that connect tomorrow.
-  It lights up on the city map.
+  It lights up on the city map. Its building, and 13 7th Street while it is reserved for it, are held from the game's own letting ([the game's own letting](../reference/map-places.md#the-games-own-letting-leaves-them-alone)).
 - **The app.** Every account with where it stands, the month so far, what is owed and when, and auto debit; the white box has the picked account's use, bills and deposit, the auto debit switch and "Pay now".
 
 - **The internet.** Four rival providers (`InternetCatalogue`: cable for the whole city but The Hamptons, fibre in three districts only, fixed wireless and a copper line everywhere), each with its plans, reliability and a price that walks month by month within bounds (a promotion now and then: `InternetRules.NextPromo`).
@@ -44,6 +44,14 @@ The rules are game-free and checked by EconomyCheck (`UtilitiesCatalogue`, `Util
 
   Outages are drawn from the save's own seed, the day and the provider (`InternetRules.Draw`), so a reload changes nothing; a day with one is not charged, and a business plan is repaired in half the time.
   Web design and software companies and the headquarters (`InternetCatalogue.Needs`) cannot open without a connection that works.
+
+- **Speed.** One game-free table (`Core/NetSpeedRules.cs`) says what a plan's speed does to the work over it, its tiers where the providers' plans fall: under 50 Mbps 70% of the usual pace, 50 Mbps 80%, 100 Mbps 90%, 300 Mbps (the usual business plan) 100%, 1000 Mbps 105%, 2000 Mbps 108%.
+  A lean stretches it: a game studio half as much again, an AI lab and an online shop twice as much, a consultancy or a graphic designer half as much, always within 30% and 120%.
+  A tech firm's day's building, design, web and testing points go by its office's plan, read once with the day's crew (`FirmsRules.Connection`, `TechBridges.PlanMbps`); with no working plan the firm is closed by the hour as before, so the share reads 100%.
+  An online shop's day's bound on orders goes by its building's plan (`OnlineRules.Most`, `OnlineBridges.Mbps`), read with the day's orders and again each hour, which also stops the hour's orders in an outage; with no working connection it takes none.
+  Shops without a connection when speed first counts in a save join the grace (`InternetRules.AddGrace`; the save keeps the day as `SpeedMet`, after the providers' months).
+  Both read the speed through one function (`Wiring/UtilityLinks.Speed`), unknown with the utilities or the option Internet speed matters (`utilities_net_speed`) off, and then everything runs exactly as before.
+  The Tech app's firm page, the Web shop app's site page and the Utilities app's plan picker show the figures from the same rules (`UtilitiesBridges.FirmWork`, `ShopMost`).
 
 - **Your own broadband company** (`BroadbandCatalogue`, `BroadbandRules`, `BroadbandCompany`).
   Late in a game and very costly: the city's operator's licence (with a headquarters: its office, and where it bills from), then a fibre network dug district by district, each a fortune and two of the game's months.

@@ -41,16 +41,37 @@ namespace RealLifeOverhaul.Tech
                 .Fact("talent_course_days", () => Whole(TalentCatalogue.CourseDays))
                 .Fact("talent_course_gain", () => Whole(TalentCatalogue.CourseGain))
                 .Fact("talent_exam_pass", () => Whole(TalentCatalogue.ExamPassBase) + "%")
+                .Fact("talent_rise_days", () => Whole(WageRules.PeriodDays))
+                .Fact("talent_wage_cap", () => (WageRules.CapBp / 10000f).ToString("0.#", Inv))
+                .Fact("talent_degree_days", () => Whole(TalentCatalogue.Scaled(TalentCatalogue.DegreeDays, GameCalendar.DaysPerYear)))
+                .Fact("talent_degree_gain", () => Whole(TalentCatalogue.DegreeGain))
                 .Fact("talent_certs", Certs);
         }
 
         public static void AddSectorFacts(Feature f)
         {
             f.Fact("tech_segments", Segments)
+                .Fact("tech_design_boost", () => Mille(FirmsCatalogue.DesignAppealMost))
+                .Fact("tech_product_boost", () => Mille(FirmsCatalogue.ProductBoostMost))
+                .Fact("tech_selling_boost", () => Mille(FirmsCatalogue.SellingBoostMost))
+                .Fact("tech_support_consumer", () => SupportFor(Segment.Consumer))
+                .Fact("tech_support_business", () => SupportFor(Segment.Business))
+                .Fact("tech_support_enterprise", () => SupportFor(Segment.Enterprise))
+                .Fact("tech_features_share", () => Mille(FirmsCatalogue.FocusSplit[(int)Focus.Balanced][0]))
+                .Fact("tech_features_share_top", () => Mille(FirmsCatalogue.FocusSplit[(int)Focus.Features][0]))
+                .Fact("tech_licence_sellers", () => Whole(FirmsCatalogue.LicenceSellersMost / 1000))
+                .Fact("tech_game_small", () => Whole(FirmsCatalogue.GameScope[0]))
+                .Fact("infra_outage_low", () => Mille(InfraCatalogue.OutageChance[0]))
+                .Fact("infra_outage_high", () => Mille(InfraCatalogue.OutageChance[InfraCatalogue.Tiers - 1]))
+                .Fact("infra_short_most", () => Whole((1000 + InfraCatalogue.OutageShortExtra) / 1000))
                 .Fact("tech_paying", () => Mille(FirmsCatalogue.ConsumerPaying))
                 .Fact("tech_feature_base", () => Whole(FirmsCatalogue.FeatureBase))
                 .Fact("tech_feature_step", () => Whole(FirmsCatalogue.FeatureStep))
                 .Fact("tech_launch_features", () => Whole(FirmsCatalogue.LaunchFeatures))
+                .Fact("tech_features_most", () => Whole(FirmsCatalogue.FeaturesMost))
+                .Fact("tech_products_firm", () => Whole(FirmsCatalogue.ProductsPerFirm))
+                .Fact("tech_products_most", () => Whole(FirmsCatalogue.ProductsMost))
+                .Fact("tech_products_kept", () => Whole(FirmsCatalogue.WithdrawnKept))
                 .Fact("tech_points", () => Whole(FirmsCatalogue.PointsPerDay))
                 .Fact("tech_net_days", () => Whole(TechBridges.NetDaysNow()))
                 .Fact("tech_tiers", () => Mille(FirmsCatalogue.PriceTiers[0]) + ", " + Mille(FirmsCatalogue.PriceTiers[1]) + " " + TechText.T("reallife_guide_tech_or") + " "
@@ -110,6 +131,12 @@ namespace RealLifeOverhaul.Tech
                 .Fact("infra_rented", () => Mille(InfraCatalogue.RentedGpuShare));
         }
 
+        // How many customers of a segment one support person looks after: the tickets they answer a day over those a customer sends.
+        private static string SupportFor(Segment segment)
+        {
+            return (FirmsCatalogue.TicketsPerPerson * 1000 / FirmsCatalogue.Tickets[(int)segment]).ToString("N0", Inv);
+        }
+
         private static string Segments()
         {
             var text = new StringBuilder();
@@ -138,6 +165,7 @@ namespace RealLifeOverhaul.Tech
             f.Fact("vc_firms", Firms)
                 .Fact("vc_rounds", Rounds)
                 .Fact("vc_most", () => Whole(VentureCatalogue.StartupsMost))
+                .Fact("vc_questions", () => Whole(VentureCatalogue.MeetingQuestions))
                 .Fact("vc_raise_when", () => Whole(VentureCatalogue.RaiseWhenMonths))
                 .Fact("vc_raised_months", () => Whole(VentureCatalogue.RunwayMonthsRaised))
                 .Fact("vc_pool", () => Mille(VentureCatalogue.OptionPool))
@@ -220,12 +248,20 @@ namespace RealLifeOverhaul.Tech
                 .Fact("hire_rival_offer", () => Bp(HiringCatalogue.RivalOfferBp))
                 .Fact("hire_offer_days", () => Whole(HiringCatalogue.OfferDays))
                 .Fact("hire_lapse", () => Whole(HiringCatalogue.ApplicantDays))
+                .Fact("hire_buyout", () => Factor(HiringCatalogue.BuyoutBp))
                 .Fact("hire_search_fee", () => Bp(HiringCatalogue.SearchFeeBp))
                 .Fact("hire_search_retainer", () => Whole(HiringCatalogue.SearchRetainerShare / 10) + "%")
                 .Fact("hire_search_count", () => Whole(HiringCatalogue.SearchCandidates))
                 .Fact("hire_search_least", () => Whole(HiringCatalogue.SearchDaysLeast))
                 .Fact("hire_search_most", () => Whole(HiringCatalogue.SearchDaysMost))
                 .Fact("hire_search_level", () => TechText.Level(HiringCatalogue.SearchLeastLevel))
+                .Fact("crew_fee_least", () => Bp(HiringCatalogue.CrewFeeBp[0]))
+                .Fact("crew_fee_most", () => Bp(HiringCatalogue.CrewFeeBp[HiringCatalogue.CrewFeeBp.Length - 1]))
+                .Fact("crew_days_least", () => Whole(HiringCatalogue.CrewDaysLeast))
+                .Fact("crew_days_most", () => Whole(HiringCatalogue.CrewDaysMost))
+                .Fact("crew_most", () => Whole(HiringCatalogue.CrewMost))
+                .Fact("crew_searches", () => Whole(HiringCatalogue.CrewSearchesMost))
+                .Fact("hire_searches_most", () => Whole(HiringCatalogue.SearchesMost))
                 .Fact("hire_rivals", () => Whole(HiringCatalogue.RivalAdsByCycle[1]));
         }
 
@@ -276,5 +312,8 @@ namespace RealLifeOverhaul.Tech
         internal static string Whole(int value) => value.ToString(Inv);
 
         internal static string Bp(int bp) => (bp / 100f).ToString("0.#", Inv) + "%";
+
+        /// <summary>Basis points as a multiple: "1.5".</summary>
+        internal static string Factor(int bp) => (bp / 10000f).ToString("0.#", Inv);
     }
 }

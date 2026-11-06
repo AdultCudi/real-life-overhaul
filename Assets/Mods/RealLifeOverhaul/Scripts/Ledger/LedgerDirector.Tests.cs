@@ -84,6 +84,50 @@ namespace RealLifeOverhaul.Ledger
                          + " pieces); Newsstand is open on the City Ledger.");
         }
 
+        /// <summary>
+        /// Test button: today's paper written again with a rival's takeover story and a milestone story (the player's listed
+        /// company, else the city's most valuable), and opened. Nothing of the rivals, the market or the record changes; a
+        /// notice says why the milestone is not the player's, or why there is none.
+        /// </summary>
+        public void TestStories()
+        {
+            const string Test = "City Ledger stories";
+            if (!Ready(Test))
+            {
+                return;
+            }
+            if (!Settings.LedgerStories)
+            {
+                TestRefusals.Tell(Logger, Test, TestRefusal.FeatureOff);
+                return;
+            }
+            if (SharedCity.Follows(LedgerShare.Part))
+            {
+                TestRefusals.TellKey(Logger, Test, "reallife_ledger_test_stories_guest", "a guest reads the host's paper");
+                return;
+            }
+            GameInstance save = Save;
+            LedgerPiece rival = TestStoriesReady(save.Day, out LedgerPiece mark, out bool own, out string name);
+            Print(save.Day, Mathf.Max(save.Hour, LedgerCatalogue.DeliveryHour + 1), _state.Edition != null && _state.Edition.Day == save.Day);
+            if (!Read(LedgerPage.FromTest))
+            {
+                TestRefusals.TellKey(Logger, Test, "reallife_ledger_test_no_page", "the page is not in the menu yet");
+                return;
+            }
+            if (mark == null)
+            {
+                Notifications.Show(NotificationType.Info, "reallife_ledger_test_stories_no_market", null, 8f);
+            }
+            else if (!own)
+            {
+                string first = LedgerText.Large(LedgerStories.Ladder[0]);
+                Notifications.Show(NotificationType.Info, "reallife_ledger_test_stories_city", LedgerText.Data("name", name, "mark", first), 8f);
+            }
+            Logger?.Info(Test + " test: the edition of day " + _state.Edition.Day + " is open with " + (rival != null ? "a rival's takeover (" + rival.Key + ")" : "no rival's story")
+                         + " and " + (mark != null ? "a milestone of " + name + (own ? ", the player's company" : ", a city company") + " (" + mark.Key + ")" : "no milestone (no market here)")
+                         + "; the rivals, the market and the record are unchanged.");
+        }
+
         public void TestKiosk()
         {
             const string Test = "Place a newspaper kiosk";

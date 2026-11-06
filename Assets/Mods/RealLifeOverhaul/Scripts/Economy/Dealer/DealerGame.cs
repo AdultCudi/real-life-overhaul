@@ -17,6 +17,9 @@ namespace RealLifeOverhaul.Economy.Dealership
     /// </summary>
     internal static class DealerGame
     {
+        /// <summary>Owner deduction labels whose mixed costs have no single portable recurrence rule.</summary>
+        internal static string[] CompanionUnclassifiedTaxLabels() => new[] { DeductKey.GetLocalization() };
+
         private const string CustomerService = "ba:skill_customerservice";
         private const string DeductKey = "reallife_dealer_deduct";
         private const float FloorLift = 0.08f;   // metres over the floor a car is put down at
@@ -26,7 +29,7 @@ namespace RealLifeOverhaul.Economy.Dealership
 
         private static GameInstance Save => SaveGameManager.Current;
 
-        public static int Cash => Save != null ? Mathf.FloorToInt(Mathf.Max(0f, Save.Money)) : 0;
+        public static int Cash => Save != null ? WholeMoney.Floor(Save.Money) : 0;
 
         public static int DaysPerYear
         {
@@ -51,7 +54,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         // A showroom of the player's own (not another Going Public player's) that is open for business.
         private static bool Mine(BuildingRegistration reg)
         {
-            return DealerType.Is(reg) && GoingPublic.Mine(reg) && reg.HasEstablishedBusiness && reg.HasValidAddress;
+            return DealerType.Is(reg) && GoingPublic.Mine(reg) && reg.HasEstablishedBusiness && reg.HasValidAddress && GameRegistrations.Found(reg);
         }
 
         /// <summary>The player's dealerships. One pass over the save's buildings.</summary>
@@ -424,7 +427,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         {
             if (amount > 0 && Save != null)
             {
-                GameManager.ChangeMoneySafe(amount, data != null ? new TransactionInfo(type, data) : new TransactionInfo(type), null, reg != null ? reg.Address : null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, data != null ? new TransactionInfo(type, data) : new TransactionInfo(type), null, reg != null ? reg.Address : null, true);
             }
         }
 
@@ -441,7 +444,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             TransactionInfo info = data != null ? new TransactionInfo(type, data) : new TransactionInfo(type);
             info.SetTaxDeductibleName(DeductKey.GetLocalization());
-            return GameManager.ChangeMoneySafe(-amount, info, null, reg != null ? reg.Address : null, force);
+            return RealLifeOverhaul.Economy.BizBooks.Book(-amount, info, null, reg != null ? reg.Address : null, force);
         }
 
         /// <summary>The data of a car bought, as the game writes a vehicle bought (its name), and of one sold (what was sold).</summary>

@@ -31,6 +31,21 @@ internal static partial class Program
         return f;
     }
 
+    // A frame of the given span whose steps were timed whole (nothing outside them, no wait for the last frame to be shown).
+    private static FrameFigures Sampled(double span, double outside, double thread, double others)
+    {
+        FrameFigures f = FrameFigures.Unknown(span);
+        f.StepsMs = span - outside;
+        f.WaitMs = 1.0;
+        f.ThreadMs = thread;
+        f.ProcessMs = thread >= 0.0 ? thread * 3.0 : -1.0;
+        f.Busy = others >= 0.0 ? Math.Min(1.0, others + 0.05) : -1.0;
+        f.Others = others;
+        f.Faults = 0;
+        f.Processors = 12;
+        return f;
+    }
+
     private static void FrameCauses()
     {
         Check(FrameRules.Cause(Stutter(362.0, 1.0, 16.0, 0.05)) == FrameCause.Display, "frames: a long wait for the last frame to be shown, the main thread idle and the machine free, is the graphics card or the display");
@@ -41,15 +56,22 @@ internal static partial class Program
         Check(FrameRules.Cause(Stutter(2.0, 1.0, 360.0, 0.9)) == FrameCause.Work, "frames: a main thread that ran most of the frame is its own work, whatever else ran");
         Check(FrameRules.Cause(Stutter(150.0, 1.0, 230.0, 0.1)) == FrameCause.Work, "frames: the thread's own time is weighed before the wait");
         Check(FrameRules.Cause(Stutter(100.0, 100.0, 100.0, 0.1)) == FrameCause.Spread, "frames: nothing at half the frame or more is spread over the steps");
+        // A player's log, 27 Oct 2026: ThirdPersonCamera.Update was timed at 185 ms in a frame of 205 ms whose Update step took 186 ms, with the main thread
+        // 16 ms on the processor, no collection, nothing outside the steps, and other programs at 9%. The camera's body is a dozen reads: the thread was blocked.
+        Check(FrameRules.Cause(Sampled(205.0, 0.0, 16.0, 0.09)) == FrameCause.Waited, "frames: a main thread that hardly ran inside the engine's steps, with no program holding the processor, was blocked and is not blamed on a script");
+        Check(FrameRules.Cause(Sampled(256.0, 0.0, 47.0, 0.13)) == FrameCause.Waited, "frames: 47 ms of a frame of 256 on the processor (three ticks of its clock) is a wait too");
+        Check(FrameRules.Cause(Sampled(149.0, 0.0, 125.0, 0.01)) == FrameCause.Work, "frames: the frame of 149 ms with the law's and the garage's first work in it, 125 ms of it on the processor, is the mod's real work");
+        Check(FrameRules.Cause(Sampled(205.0, 0.0, 16.0, 0.9)) == FrameCause.OtherProgram, "frames: the same blocked thread while other programs held the processor is that program");
+        Check(FrameRules.Cause(Sampled(205.0, 0.0, -1.0, 0.09)) == FrameCause.Spread, "frames: with the thread's time unknown a blocked thread is not guessed at");
         Check(FrameRules.Cause(FrameFigures.Unknown(378.0)) == FrameCause.Spread, "frames: with nothing measured, no cause is guessed");
         Check(FrameRules.Cause(Stutter(362.0, 1.0, -1.0, -1.0)) == FrameCause.Display, "frames: without the system's figures a long wait is still a wait");
         Check(FrameRules.Cause(FrameFigures.Unknown(0.0)) == FrameCause.Spread, "frames: a frame of no length has no cause");
         FrameFigures f = Stutter(362.0, 1.0, 16.0, 0.05);
         Check(Math.Abs(f.StepsMs + f.OutsideMs - f.SpanMs) < 1e-9 && FrameFigures.Unknown(10.0).OutsideMs < 0.0, "frames: the steps and the time outside them add up to the frame; untimed steps leave it unknown");
         bool distinct = true;
-        for (int a = 0; a < 6; a++)
+        for (int a = 0; a < 7; a++)
         {
-            for (int b = a + 1; b < 6; b++)
+            for (int b = a + 1; b < 7; b++)
             {
                 distinct &= FrameRules.Short((FrameCause)a) != FrameRules.Short((FrameCause)b);
             }
@@ -94,10 +116,13 @@ internal static partial class Program
         Check(missing.Contains("the main thread's time not available (this system has no GetThreadTimes)") && missing.Contains("the machine's load not available (this system has no GetSystemTimes)")
               && missing.Contains("page faults in it: not available (this system has no K32GetProcessMemoryInfo)"), "frames: a measure the system lacks is said to be not available" + Gave(missing));
         bool plain = Plain(starved) && Plain(work) && Plain(card) && Plain(missing);
-        for (int c = 0; c < 6; c++)
+        for (int c = 0; c < 7; c++)
         {
             plain &= Plain(FrameRules.Short((FrameCause)c));
         }
+        string blocked = Words(Sampled(205.0, 0.0, 16.0, 0.09));
+        Check(blocked.Contains("the main thread ran 16 ms of it") && blocked.Contains("so: the main thread was blocked, not working") && blocked.Contains("not its work"), "frames: a blocked thread's line says the script's time is the wait" + Gave(blocked));
+        plain &= Plain(blocked);
         Check(plain, "frames: the line's words have no dashes and no exclamation marks");
     }
 

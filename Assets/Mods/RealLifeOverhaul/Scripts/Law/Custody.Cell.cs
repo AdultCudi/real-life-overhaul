@@ -266,8 +266,7 @@ namespace RealLifeOverhaul.Law
             Settle(court, served);
             if (announce && SaveGameManager.Current != null)
             {
-                Announce(court ? (_bailed ? "reallife_law_court_released_bail" : "reallife_law_court_released")
-                    : _bailed ? "reallife_law_released_bail" : "reallife_law_released", precinct, served, state);
+                Announce(ReleaseRules.Key(court, _bailed, false, ServedAtOnce), precinct, served, state);
             }
             Logger?.Info($"Law: released after {served} h ({(_bailed ? "bail" : "served")}).");
             Check(court, "let out at the door of " + (precinct != null ? precinct.Name : "no precinct") + " after " + served + " h of " + state.Hours, true);
@@ -307,8 +306,7 @@ namespace RealLifeOverhaul.Law
             Settle(court, served);
             if (announce && SaveGameManager.Current != null)
             {
-                Announce(court ? (_bailed ? "reallife_law_court_released_desk_bail" : "reallife_law_court_released_desk")
-                    : _bailed ? "reallife_law_released_desk_bail" : "reallife_law_released_desk", precinct, served, state);
+                Announce(ReleaseRules.Key(court, _bailed, true, ServedAtOnce), precinct, served, state);
             }
             Logger?.Info($"Law: released at the front desk after {served} h ({(_bailed ? "bail" : "served")}).");
             Check(court, "signed out at the front desk of " + (precinct != null ? precinct.Name : "no precinct") + " after " + served + " h of " + state.Hours
@@ -335,11 +333,14 @@ namespace RealLifeOverhaul.Law
             }
         }
 
+        // A Going Public session served the term at once (Cell): no time passed in the cell.
+        private bool ServedAtOnce => GoingPublic.ClockShared && !_bailed;
+
         // Hours served: in a Going Public session the whole term, as it was served at once (Cell).
         private int Served(CustodyState state)
         {
             int served = Mathf.Clamp(Mathf.RoundToInt((TimeHelper.NowInMinutes() - state.StartedAt) / 60f), 0, LawBook.MostHours);
-            if (GoingPublic.ClockShared && !_bailed)
+            if (ServedAtOnce)
             {
                 served = Mathf.Clamp(state.Hours, 0, LawBook.MostHours);
             }

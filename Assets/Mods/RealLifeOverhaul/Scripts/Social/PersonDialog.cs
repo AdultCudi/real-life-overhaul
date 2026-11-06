@@ -10,12 +10,14 @@ namespace RealLifeOverhaul
 {
     /// <summary>
     /// A call to or from somebody the player knows: a chat, plans, what they asked, and the other things to say. A chat's
-    /// topic is answered with one of two answers, or with the player's own typed words (PersonDialog.Composer).
+    /// topic is answered with one of two answers, or with the player's own typed words (PersonDialog.Composer). A call to
+    /// somebody who just texted opens on what they wrote about, as its first topic (PersonDialog.CallBack). A call placed to
+    /// somebody whose ring is on is their call answered (SocialDirector.TakeRing). Mom's, on a family dinner day while her
+    /// table is set, opens on whether the player is coming over, and "Something else" offers it too (PhoneContacts.MomsDinner).
     /// </summary>
     public sealed partial class PersonDialog : Dialog
     {
         private static int GiftPrice => Prices.At(60);
-        private const int AskOutGapDays = 5;
 
         /// <summary>
         /// A test's topic for the first chat of the next call with this person (SocialDirector.TestComposer); the next call to
@@ -34,7 +36,8 @@ namespace RealLifeOverhaul
             _testTopic = TestTopicFor == index ? TestTopic : -1;
             TestTopic = TestTopicFor = -1;
             _p = SocialState.Get(index);
-            bool incoming = SocialPhone.Incoming == index;
+            // Answered from the ring's panel or notice (Incoming), or by calling them from the phone while it rings.
+            bool incoming = SocialPhone.Incoming == index || SocialDirector.TakeRing(index);
             SocialPhone.Incoming = -1;
             if (_p == null || !_p.Met || !Settings.Social)
             {
@@ -42,32 +45,40 @@ namespace RealLifeOverhaul
                 return;
             }
             npcNameKey = SocialPhone.IdOf(_p);
-            if (!incoming && _p.Asleep(SocialLife.Hour))
+            // Mom's text on a dinner day says to ring her: her call asks first whether the player is coming over now, and she
+            // stays up for it.
+            string dinner = _p.IsFamily ? PhoneContacts.MomsDinnerNow() : null;
+            if (!incoming && dinner == null && _p.Asleep(SocialLife.Hour))
             {
                 Show(Close(SocialLines.Pick(SocialCatalogue.Voicemail)));
                 return;
             }
             SocialOffer offer = SocialState.Offer;
             SocialPlan plan = SocialState.Plan;
+            Func<DialogEntry> open;
             if (incoming)
             {
-                DialogEntry entry = Line(SocialLines.Pick(SocialCatalogue.RingOpen));
-                entry.ConfirmTextOverride = "reallife_social_btn_whats_up".Localize();
-                entry.OnConfirm = () => offer.Active && offer.Person == _p.Index ? Asked() : Chat();
-                Show(entry);
+                open = () =>
+                {
+                    DialogEntry entry = Line(SocialLines.Pick(SocialCatalogue.RingOpen));
+                    entry.ConfirmTextOverride = "reallife_social_btn_whats_up".Localize();
+                    entry.OnConfirm = () => offer.Active && offer.Person == _p.Index ? Asked() : Chat();
+                    return entry;
+                };
             }
             else if (offer.Active && offer.Person == _p.Index)
             {
-                Show(Asked());
+                open = Asked;
             }
             else if (plan.Active && plan.Person == _p.Index)
             {
-                Show(Planned());
+                open = Planned;
             }
             else
             {
-                Show(Root());
+                open = Root;
             }
+            Show(dinner != null ? PhoneContacts.DinnerAsk(dinner, open, PhoneContacts.HangUp) : open());
         }
 
         private static void Show(DialogEntry entry)
@@ -93,6 +104,11 @@ namespace RealLifeOverhaul
 
         private DialogEntry Root()
         {
+            DialogEntry callBack = CallBack();
+            if (callBack != null)
+            {
+                return callBack;   // (what they just texted about, as the call's first topic: PersonDialog.CallBack)
+            }
             string[] pool = _p.Drifted ? SocialCatalogue.CallDrifted
                 : _p.LastCallDay == SocialLife.Day ? SocialCatalogue.CallAgain
                 : _p.IsFamily ? SocialCatalogue.CallMom
@@ -170,6 +186,15 @@ namespace RealLifeOverhaul
             _typing = null;
             _actions.Clear();
             int day = SocialLife.Day;
+            if (_p.IsFamily && PhoneContacts.MomsDinnerNow() != null)
+            {
+                _actions.Add("dinner");   // first: her table is set today, and only today
+            }
+            string favour = SocialPhone.NetworkLabel != null && SocialPhone.NetworkAsk != null ? SocialPhone.NetworkLabel(_p) : null;
+            if (favour != null)
+            {
+                _actions.Add("network");   // they texted to say they could help
+            }
             _actions.Add("plans");
             if (SocialTalk.BirthdayIn(_p) == 0 && _p.BirthdayYear != Year(day))
             {
@@ -179,7 +204,7 @@ namespace RealLifeOverhaul
             {
                 _actions.Add("repay");
             }
-            if (_p.Compatible && !_p.Together && _p.Stage >= SocialStage.Friend && SocialState.Partner == null && !AskedLately(day))
+            if (_p.Compatible && !_p.Together && _p.Stage >= SocialStage.Friend && SocialState.Partner == null)
             {
                 _actions.Add("askout");
             }
@@ -199,7 +224,7 @@ namespace RealLifeOverhaul
             {
                 _actions.Add("borrow");
             }
-            if (_p.Stage >= SocialStage.Friend && SocialDirector.NextStranger() != null)
+            if (_p.Stage >= SocialStage.Friend && SocialDirector.AnyStranger())
             {
                 _actions.Add("introduce");
             }
@@ -237,9 +262,17 @@ namespace RealLifeOverhaul
                     entry.ConfirmTextOverride = "reallife_social_btn_introduce".Localize();
                     entry.OnConfirm = Introduce;
                     break;
+                case "network":
+                    entry.ConfirmTextOverride = favour.Localize();
+                    entry.OnConfirm = () => SocialPhone.NetworkAsk(_p);
+                    break;
                 case "family":
                     entry.ConfirmTextOverride = "reallife_social_btn_family".Localize();
                     entry.OnConfirm = SocialPhone.FamilyMatters;
+                    break;
+                case "dinner":
+                    entry.ConfirmTextOverride = "reallife_family_do_moms_yes".Localize();
+                    entry.OnConfirm = () => PhoneContacts.GoToMoms != null ? PhoneContacts.GoToMoms() : Close("reallife_social_call_off");
                     break;
                 default:
                     entry.ConfirmTextOverride = "reallife_social_btn_plans".Localize();
@@ -257,18 +290,6 @@ namespace RealLifeOverhaul
         private static int Year(int day)
         {
             return (Mathf.Max(1, day) - 1) / SocialPlaces.DaysPerYear;
-        }
-
-        private bool AskedLately(int day)
-        {
-            for (int i = 0; i < _p.Memories.Count; i++)
-            {
-                if (_p.Memories[i].Code == MemoryCode.AskedOut && day - _p.Memories[i].Day < AskOutGapDays)
-                {
-                    return true;
-                }
-            }
-            return false;
         }
 
         // The one they would like first, then the rest in order; only what can be done from here, at an hour they are free
@@ -598,7 +619,7 @@ namespace RealLifeOverhaul
             {
                 amount *= 0.5f;
             }
-            return Mathf.RoundToInt(amount / 25f) * 25;
+            return Mathf.RoundToInt(Prices.At(amount) / 25f) * 25;
         }
 
         private DialogEntry Borrow()
@@ -632,10 +653,22 @@ namespace RealLifeOverhaul
             return Close(SocialLines.Pick(SocialCatalogue.BorrowYes), data);
         }
 
+        // Said as a number of days to wait, one day or more; the key is the "_one" text for a day.
+        private DialogEntry Wait(string key, int days)
+        {
+            return Close(days == 1 ? key + "_one" : key, SocialLife.Data(_p, "days", days.ToString()));
+        }
+
         private DialogEntry AskOut()
         {
-            SocialLife.Remember(_p, MemoryCode.AskedOut);
             SocialLife.Contacted(_p);
+            int wait = SocialRules.AskOutWait(_p, SocialLife.Day);
+            if (wait > 0)
+            {
+                // Asked again too soon: nothing is lost and nothing is remembered, and the answer says when to ask.
+                return Wait("reallife_social_askout_wait", wait);
+            }
+            SocialLife.Remember(_p, MemoryCode.AskedOut);
             if (SocialRules.WouldDate(_p) && SocialState.Partner == null)
             {
                 SocialLife.SetStage(_p, SocialStage.Dating);
@@ -650,7 +683,8 @@ namespace RealLifeOverhaul
             SocialLife.Contacted(_p);
             if (!SocialRules.WouldCommit(_p, SocialLife.Day))
             {
-                return Close("reallife_social_official_no");
+                int wait = SocialRules.CommitWait(_p, SocialLife.Day);
+                return wait > 0 ? Wait("reallife_social_official_wait", wait) : Close("reallife_social_official_no");
             }
             SocialLife.Remember(_p, MemoryCode.Official);
             SocialLife.SetStage(_p, SocialStage.Partner);
@@ -662,10 +696,24 @@ namespace RealLifeOverhaul
             SocialLife.Contacted(_p);
             if (!SocialRules.WouldMoveIn(_p, SocialLife.Day))
             {
-                return Close("reallife_social_movein_no");
+                int wait = SocialRules.MoveInWait(_p, SocialLife.Day);
+                return wait > 0 ? Wait("reallife_social_movein_wait", wait) : Close("reallife_social_movein_no");
             }
-            _p.MovedIn = true;
-            SocialLife.Remember(_p, MemoryCode.MovedIn);
+            if (SocialPhone.FamilyKeepsMoveIn != null && SocialPhone.FamilyMoveIn != null && SocialPhone.FamilyKeepsMoveIn(_p))
+            {
+                // Family life keeps where its partner lives (room, the home, the bed, the rent share): it moves them in, and tells
+                // Social through FamilyEvent.MovedIn, which marks them and writes the memory.
+                string why = SocialPhone.FamilyMoveIn();
+                if (why != null)
+                {
+                    return Close(why);
+                }
+            }
+            else
+            {
+                _p.MovedIn = true;
+                SocialLife.Remember(_p, MemoryCode.MovedIn);
+            }
             ModState.AddModifier(ModState.MoodUpBig);
             return Close("reallife_social_movein_yes");
         }

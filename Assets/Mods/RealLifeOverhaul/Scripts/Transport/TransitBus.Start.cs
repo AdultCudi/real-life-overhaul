@@ -76,7 +76,8 @@ namespace RealLifeOverhaul
             State = Phase.Approaching;
             Lost = false;
             _since = Time.time;
-            _holdUntil = 0f;
+            _startHold.Clear();
+            _holdCutTold = false;
             Held0 = 0f;
             AtLights = 0f;
             _tickAt = Time.time;
@@ -262,6 +263,15 @@ namespace RealLifeOverhaul
             Vector3 middle = point.position + (along.sqrMagnitude > 0.0001f ? along.normalized : Vector3.forward) * _middleAhead;
             bool seen = TransitSight.Seen(middle, along, BodyLength * 0.5f + 0.5f);
             return unseen ? !seen : seen && !TransitSight.Near(point.position, 90f);
+        }
+
+        /// <summary>
+        /// Makes the bus's body now, switched off: the loading screen pays for it (TransitDirector.PrewarmDressings), so that the first
+        /// <see cref="Send"/> in play builds nothing. A bus built in a tick took some 20 ms in a player's log (27 Oct 2026). False if the game has no shader to draw it with.
+        /// </summary>
+        public bool Prepare()
+        {
+            return Bus() != null;
         }
 
         private BusVehicle Bus()

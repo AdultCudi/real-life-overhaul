@@ -13,6 +13,14 @@ namespace RealLifeOverhaul.Ledger
         public const int KioskOpenHour = 6, KioskCloseHour = 20;   // hours of the day
 
         public const int KiosksWanted = 2;
+
+        /// <summary>
+        /// The desk's and the front page's words for the kiosks: the sentence about them only while the option has them, so
+        /// the paper never advertises a kiosk that is not there.
+        /// </summary>
+        public static string OfferKey(bool kiosks) => kiosks ? P + "_ledger_desk_offer" : P + "_ledger_desk_offer_plain";
+        public static string NoHomeKey(bool kiosks) => kiosks ? P + "_ledger_desk_no_home" : P + "_ledger_desk_no_home_plain";
+        public static string AdBodyKey(bool kiosks) => kiosks ? P + "_ledger_ad_body" : P + "_ledger_ad_body_plain";
         public const float KioskNearest = 30f;      // metres from the home's door: not on its doorstep
         public const float KioskFurthest = 320f;    // metres: within a few minutes' walk
         public const float KioskApart = 90f;        // metres between two kiosks
@@ -100,6 +108,15 @@ namespace RealLifeOverhaul.Ledger
             K("_macro_news_rival", LedgerSection.Business, 45, "rival"),
             K("_macro_news", LedgerSection.Economy, 40),
 
+            // business: a rival tycoon taken over (LedgerStories), a lead for the front page above all but a death in the
+            // street; a takeover by a listed company, heavy when it took a player's company
+            K("_ledger_beaten_1", LedgerSection.Business, 96, "beaten_1"),
+            K("_ledger_beaten_2", LedgerSection.Business, 96, "beaten_2"),
+            K("_ledger_beaten_3", LedgerSection.Business, 96, "beaten_3"),
+            K("_ledger_beaten_plain", LedgerSection.Business, 96, "beaten_plain"),
+            K("_ledger_bought_own", LedgerSection.Business, 90, "bought_own"),
+            K("_ledger_bought_city", LedgerSection.Business, 64, "bought_city"),
+
             // business: the player's own shops and their staff
             K("_co_news_strike", LedgerSection.Business, 72, "strike"),
             K("_ob_news_closed", LedgerSection.Business, 90),
@@ -113,10 +130,21 @@ namespace RealLifeOverhaul.Ledger
             K("_news_shop_good", LedgerSection.Business, 25),
             K("_news_shop_none", LedgerSection.Business, 10),
 
+            // the markets' milestones (LedgerStories): a player's company leads the markets page, at a billion or as the most
+            // valuable it leads the front page; the city's companies lead the markets page on a quiet day
+            K("_ledger_top_first", LedgerSection.Markets, 95, "top_first"),
+            K("_ledger_mile_big", LedgerSection.Markets, 94, "mile_big"),
+            K("_ledger_top_again", LedgerSection.Markets, 88, "top_again"),
+            K("_ledger_mile_own", LedgerSection.Markets, 85, "mile_own"),
+            K("_ledger_top_lost", LedgerSection.Markets, 84, "top_lost"),
+            K("_ledger_top_city", LedgerSection.Markets, 72, "top_city"),
+            K("_ledger_mile_city", LedgerSection.Markets, 62, "mile_city"),
+
             // the markets (MarketText), a player's own company's first
             K("_mkt_news_own_meeting_revolt", LedgerSection.Markets, 80, "own_revolt"),
             K("_mkt_news_own_meeting", LedgerSection.Markets, 35),
             K("_mkt_news_own_audit", LedgerSection.Markets, 75, "own_audit"),
+            K("_mkt_news_own_sector", LedgerSection.Markets, 50, "own_sector"),
             K("_mkt_news_own_activist", LedgerSection.Markets, 70, "own_activist"),
             K("_mkt_news_own_private", LedgerSection.Markets, 65, "own_private"),
             K("_mkt_news_own_pulled", LedgerSection.Markets, 60, "own_pulled"),
@@ -136,6 +164,9 @@ namespace RealLifeOverhaul.Ledger
             K("_mkt_news_taken_over", LedgerSection.Markets, 78, "taken_over"),
             K("_mkt_news_craze_burst", LedgerSection.Markets, 76, "craze_burst"),
             K("_mkt_news_craze", LedgerSection.Markets, 66, "craze"),
+            K("_mkt_news_builder_rigged", LedgerSection.Markets, 70),
+            K("_mkt_news_builder_bribery", LedgerSection.Markets, 66),
+            K("_mkt_news_builder", LedgerSection.Markets, 46),
             K("_mkt_news_crisis", LedgerSection.Markets, 74, "crisis"),
             K("_mkt_news_windfall", LedgerSection.Markets, 60, "windfall"),
             K("_mkt_news_rate_up", LedgerSection.Markets, 70, "market_rate"),

@@ -159,6 +159,7 @@ namespace RealLifeOverhaul.Leisure
 
         internal static int DrinkPrice(int drink) => Prices.At(DrinkPrices[drink]);
         private static readonly float[] Units = { 0.8f, 1.2f, 0f };
+        internal static float UnitsOf(int drink) => Units[drink];
         private static readonly string[] NameKeys = { "reallife_leisure_drink_beer", "reallife_leisure_drink_cocktail", "reallife_leisure_drink_soft" };
 
         // drink_bar (CityAssets): a bar top 1.05 m up, the glass 0.35 m ahead and 0.06 m right of the drinker, whose

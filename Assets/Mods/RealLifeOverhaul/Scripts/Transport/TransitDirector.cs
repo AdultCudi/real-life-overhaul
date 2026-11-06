@@ -166,11 +166,13 @@ namespace RealLifeOverhaul
             BusZones.Logger = Logger;
             TransitBus.Logger = Logger;
             RoadPaint.Logger = Logger;
+            BusStopDressing.Logger = Logger;
             TransitMap.Reset();
             TransitState.Reset();
             ScenePrewarm.AddLate("transit: the bus routes laid between the subway stations", TransitMap.Prewarm);
             ScenePrewarm.AddLate("transit: the bus stops' dressings built for the routes (props, lettering, boxes and paint)", PrewarmDressings);
             ScenePrewarm.Add("transit: the game's road paint found for the bus bays (everything in memory gone through)", RoadPaint.Prewarm);
+            ScenePrewarm.Add("transit: the people who wait at the stops and get off the bus being made", PrewarmPeople);
             _root = new GameObject("RealLifeOverhaul Transit").transform;
             _root.SetParent(transform, false);
             _bus = new TransitBus(_root.gameObject);
@@ -542,19 +544,33 @@ namespace RealLifeOverhaul
                     built++;
                 }
             }
+            // The buses' bodies: the three the director keeps, and a spare for each bus that may be driving off at once (AwayMost), so that no
+            // bus is built in play (one built in a tick was the 9.3 ms worst tick of a player's log, 28 Oct 2026, with one spare kept).
+            _bus.Prepare();
+            _next.Prepare();
+            _seenOff.Prepare();
+            while (_spare.Count < AwayMost && _made == 0)
+            {
+                var spare = new TransitBus(_root.gameObject);
+                spare.Prepare();
+                _spare.Add(spare);
+            }
             if (Meta.Dev.Verbose)
             {
                 double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
                 Logger?.Info("Transit check (dressings): " + built + " built behind the loading screen for about " + want + " places of " + TransitMap.Lines.Count
-                             + " lines, in " + ms.ToString("F1", CultureInfo.InvariantCulture) + " ms (wanted: none built in play): PASS.");
+                             + " lines, and the buses' bodies, in " + ms.ToString("F1", CultureInfo.InvariantCulture) + " ms (wanted: none built in play): PASS.");
             }
             return true;
         }
 
         // Puts up the nearest places not yet up, once a second and on every tick while the last pass ran out of its slice
         // (about a millisecond in play; all of them behind a black screen). True if places were left for the next tick.
+        private static readonly int HotDressNear = HotSpots.Slot("Transport: TransitDirector.DressNear");
+
         private bool DressNear(Vector3 at)
         {
+            using var hotSpot = HotSpots.Time(HotDressNear);
             bool hidden = SceneFinds.Hidden;
             WorkSlice slice = hidden ? WorkSlice.Whole : WorkSlice.Of(PutsSliceMs, 1);
             for (int pass = 0; pass < PutsATick; pass++)

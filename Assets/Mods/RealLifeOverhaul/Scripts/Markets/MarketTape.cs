@@ -14,6 +14,10 @@ namespace RealLifeOverhaul.Markets
     ///     V day n,n,n,...         the city on that day (MarketEnv in a fixed order)
     ///     E day phase kind a b    something that happened, applied after that phase
     ///     F day phase             the frontier; the last of these counts
+    /// Each line of the compacted whole is kept as made, in its place (the days in order, the events as they came), so a
+    /// save hands the writer the lines as they stand (<see cref="Lines"/>) instead of writing every day again; the text is
+    /// the same as <see cref="Whole"/>'s to the byte. Cost: a line made once when its day or event is added, a save one
+    /// array of the lines.
     /// </summary>
     public sealed class MarketTape
     {
@@ -26,12 +30,21 @@ namespace RealLifeOverhaul.Markets
         private readonly StringBuilder _pending = new StringBuilder(256);
         private readonly StringBuilder _whole = new StringBuilder(4096);   // the whole tape as written at a save, kept for the next
         private readonly List<int> _days = new List<int>(64);              // its days in order
+        private readonly StringBuilder _line = new StringBuilder(256);     // one line being made
+        private readonly List<int> _secretDays = new List<int>(64);        // the whole's lines as they stand: the secrets' days in order...
+        private readonly List<string> _secretLines = new List<string>(64);
+        private readonly List<int> _envDays = new List<int>(64);           // ...the city's days in order...
+        private readonly List<string> _envLines = new List<string>(64);
+        private readonly List<string> _eventLines = new List<string>(32);  // ...and the events in the order they came, as _events
 
         public ulong Id { get; private set; }
         public int FrontierDay { get; private set; }
         public int FrontierPhase { get; private set; }
         public long Frontier => MarketState.Time(FrontierDay, FrontierPhase);
         public int Days => _secrets.Count;
+
+        /// <summary>Counts every change to the tape and every line given to its file: unchanged since a save, the file is still that save's whole.</summary>
+        public long Changes { get; private set; }
 
         /// <summary>Lines written since the last <see cref="TakePending"/>, to be appended to the file.</summary>
         public bool HasPending => _pending.Length > 0;
@@ -53,7 +66,7 @@ namespace RealLifeOverhaul.Markets
                 return;
             }
             _secrets[day] = secret;
-            AppendSecret(_pending, day, secret);
+            KeepSecret(day, secret);
         }
 
         public bool Env(int day, out MarketEnv env)
@@ -68,7 +81,7 @@ namespace RealLifeOverhaul.Markets
                 return;
             }
             _envs[day] = env;
-            AppendEnv(_pending, day, env);
+            KeepEnv(day, env);
         }
 
         /// <summary>The events recorded for a moment, applied after the phase, into a list.</summary>
@@ -97,13 +110,13 @@ namespace RealLifeOverhaul.Markets
                 return;
             }
             _secrets[day] = secret;
-            AppendSecret(_pending, day, secret);
+            KeepSecret(day, secret);
         }
 
         public void SetEnv(int day, in MarketEnv env)
         {
             _envs[day] = env;
-            AppendEnv(_pending, day, env);
+            KeepEnv(day, env);
         }
 
         /// <summary>Every event from a moment on, forgotten: what a guest played alone after it last followed is not the host's.</summary>
@@ -118,6 +131,8 @@ namespace RealLifeOverhaul.Markets
                     _traded.Add(_events[i].Day);
                 }
             }
+            KeepEventLines();
+            Changes++;
         }
 
         /// <summary>The tape from a day on, as file lines: what a guest needs to play the host's market from that day.</summary>
@@ -159,7 +174,12 @@ namespace RealLifeOverhaul.Markets
             {
                 _traded.Add(e.Day);
             }
-            AppendEvent(_pending, e);
+            _line.Length = 0;
+            AppendEvent(_line, e);
+            string line = _line.ToString();
+            _eventLines.Add(line);
+            _pending.Append(line);
+            Changes++;
         }
 
         /// <summary>Only ever forwards.</summary>
@@ -171,6 +191,7 @@ namespace RealLifeOverhaul.Markets
             }
             FrontierDay = day;
             FrontierPhase = phase;
+            Changes++;
             if (write)
             {
                 WriteFrontier();
@@ -180,6 +201,7 @@ namespace RealLifeOverhaul.Markets
         public void WriteFrontier()
         {
             AppendFrontier(_pending);
+            Changes++;
         }
 
         public string TakePending()
@@ -219,6 +241,101 @@ namespace RealLifeOverhaul.Markets
             AppendFrontier(t);
             _pending.Length = 0;
             return t.ToString();
+        }
+
+        /// <summary>
+        /// The whole tape as a file, as <see cref="Whole"/> writes it to the byte, in the lines kept as they were made: the
+        /// header, the secrets and the city by day, the events, the frontier. What is pending is in it, as in the whole.
+        /// </summary>
+        public string[] Lines()
+        {
+            var lines = new string[2 + _secretLines.Count + _envLines.Count + _eventLines.Count];
+            int at = 0;
+            _line.Length = 0;
+            lines[at++] = _line.Append("T1 ").Append(Id.ToString("X16", Inv)).Append('\n').ToString();
+            _secretLines.CopyTo(lines, at);
+            at += _secretLines.Count;
+            _envLines.CopyTo(lines, at);
+            at += _envLines.Count;
+            _eventLines.CopyTo(lines, at);
+            at += _eventLines.Count;
+            _line.Length = 0;
+            AppendFrontier(_line);
+            lines[at] = _line.ToString();
+            _pending.Length = 0;
+            return lines;
+        }
+
+        // A day's secret's line, kept in its day's place and given to the file.
+        private void KeepSecret(int day, ulong secret)
+        {
+            _line.Length = 0;
+            AppendSecret(_line, day, secret);
+            string line = _line.ToString();
+            Place(_secretDays, _secretLines, day, line);
+            _pending.Append(line);
+            Changes++;
+        }
+
+        private void KeepEnv(int day, in MarketEnv env)
+        {
+            _line.Length = 0;
+            AppendEnv(_line, day, env);
+            string line = _line.ToString();
+            Place(_envDays, _envLines, day, line);
+            _pending.Append(line);
+            Changes++;
+        }
+
+        // A day's line in its place: in place of the day's line there, or put in among the days in order (at the end, as a rule).
+        private static void Place(List<int> days, List<string> lines, int day, string line)
+        {
+            int at = days.Count == 0 || days[days.Count - 1] < day ? ~days.Count : days.BinarySearch(day);
+            if (at >= 0)
+            {
+                lines[at] = line;
+                return;
+            }
+            days.Insert(~at, day);
+            lines.Insert(~at, line);
+        }
+
+        // The events' lines made again from the events: after some are forgotten.
+        private void KeepEventLines()
+        {
+            _eventLines.Clear();
+            for (int i = 0; i < _events.Count; i++)
+            {
+                _line.Length = 0;
+                AppendEvent(_line, _events[i]);
+                _eventLines.Add(_line.ToString());
+            }
+        }
+
+        // Every kept line made from what was read: once, at a load.
+        private void KeepAllLines()
+        {
+            _secretDays.Clear();
+            _secretLines.Clear();
+            _secretDays.AddRange(_secrets.Keys);
+            _secretDays.Sort();
+            for (int i = 0; i < _secretDays.Count; i++)
+            {
+                _line.Length = 0;
+                AppendSecret(_line, _secretDays[i], _secrets[_secretDays[i]]);
+                _secretLines.Add(_line.ToString());
+            }
+            _envDays.Clear();
+            _envLines.Clear();
+            _envDays.AddRange(_envs.Keys);
+            _envDays.Sort();
+            for (int i = 0; i < _envDays.Count; i++)
+            {
+                _line.Length = 0;
+                AppendEnv(_line, _envDays[i], _envs[_envDays[i]]);
+                _envLines.Add(_line.ToString());
+            }
+            KeepEventLines();
         }
 
         /// <summary>A tape read back from its file; a tape of another id, or none, is an empty tape of this id.</summary>
@@ -289,6 +406,7 @@ namespace RealLifeOverhaul.Markets
                     // a damaged line is passed over
                 }
             }
+            tape.KeepAllLines();
             return tape;
         }
 

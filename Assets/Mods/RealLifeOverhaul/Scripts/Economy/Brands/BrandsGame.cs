@@ -45,6 +45,9 @@ namespace RealLifeOverhaul.Economy.Brands
     /// </summary>
     internal static partial class BrandsGame
     {
+        /// <summary>Owner deduction labels whose mixed costs have no single portable recurrence rule.</summary>
+        internal static string[] CompanionUnclassifiedTaxLabels() => new[] { DeductibleKey.GetLocalization() };
+
         public const string RoyaltyKey = "reallife_transaction_brand_royalty";
         public const string LevyKey = "reallife_transaction_brand_levy";
         public const string SupportKey = "reallife_transaction_brand_support";
@@ -76,7 +79,7 @@ namespace RealLifeOverhaul.Economy.Brands
 
         private static GameInstance Save => SaveGameManager.Current;
 
-        public static int Cash => Save != null ? Mathf.FloorToInt(Mathf.Max(0f, Save.Money)) : 0;
+        public static int Cash => Save != null ? WholeMoney.Floor(Save.Money) : 0;
 
         public static int DaysPerYear
         {
@@ -165,7 +168,7 @@ namespace RealLifeOverhaul.Economy.Brands
             {
                 foreach (KeyValuePair<string, List<Building>> pair in BuildingHelper.AllNeighbourhoodBuildings)
                 {
-                    if (!string.IsNullOrEmpty(pair.Key) && pair.Key != GlobalDistrict && pair.Value != null && pair.Value.Count > 0)
+                    if (!string.IsNullOrEmpty(pair.Key) && pair.Key != GlobalDistrict && pair.Value != null && pair.Value.Count > 0 && CityCheck.Here(pair.Key))
                     {
                         into.Add(pair.Key);
                     }
@@ -194,7 +197,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 for (int i = 0; i < all.Count; i++)
                 {
                     Building building = all[i];
-                    if (building == null || building.BuildingType != kind || building.SpecialService != null || RivalsHelper.IgnoredAddresses.Contains(building.Address)
+                    if (building == null || building.BuildingType != kind || building.SpecialService != null || GameDlc.Gated(building) || RivalsHelper.IgnoredAddresses.Contains(building.Address)
                         || SpecialBuildings.Holds(building.StreetName, building.StreetNumber))   // one of the mod's buildings, or the university's: off the market
                     {
                         continue;
@@ -308,7 +311,7 @@ namespace RealLifeOverhaul.Economy.Brands
                 {
                     return false;
                 }
-                uis.textInputUi.Show("reallife_brand_name_placeholder", "reallife_brand_name_confirm", done, null, initial ?? string.Empty, false, BrandCatalogue.NameMost);
+                GameUi.TextBox.Ask("reallife_brand_name_placeholder", "reallife_brand_name_confirm", done, null, initial ?? string.Empty, false, BrandCatalogue.NameMost);
                 return true;
             }
             catch (Exception e)
@@ -334,14 +337,14 @@ namespace RealLifeOverhaul.Economy.Brands
             {
                 info.SetTaxDeductibleName(DeductibleKey.GetLocalization());
             }
-            return GameManager.ChangeMoneySafe(-amount, info, null, null, force);
+            return RealLifeOverhaul.Economy.BizBooks.Book(-amount, info, null, null, force);
         }
 
         public static void Give(int amount, string key, string name)
         {
             if (amount > 0 && Save != null)
             {
-                GameManager.ChangeMoneySafe(amount, Info(key, name), null, null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, Info(key, name), null, null, true);
             }
         }
 

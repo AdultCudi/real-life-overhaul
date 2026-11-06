@@ -30,14 +30,25 @@ namespace RealLifeOverhaul
                 return;
             }
             _card.Title(JobText.T(ctx.Shift != null ? ctx.Shift.Rank.TitleKey : def.NameKey));
-            string offer = GigWords.List(ctx.Offer);   // the client, the day, the street and the weather, once
-            _card.Line(0, ctx.Shift != null
-                ? JobText.T("reallife_job_card_employer", "employer", JobText.T(ctx.Shift.Employer.NameKey), "time", CareerClock.Span(CareerState.RotaHour))
-                : offer != null ? JobText.T("reallife_job_card_gig_offer", "offer", offer) : JobText.T("reallife_job_card_gig"), _white);
+            _card.Line(0, FirstLine(ctx), _white);
             for (int line = 1; line < ShiftCard.Lines; line++)
             {
                 _card.Line(line, string.Empty, _white);   // what the last shift left on the card
             }
+        }
+
+        /// <summary>
+        /// Line 0 of every job's card: the employer and the hour of an employer's shift, else the gig with the day's offer in words
+        /// (the client, the day, the street and the weather, once). A job that makes its own card calls this too.
+        /// </summary>
+        public static string FirstLine(JobContext ctx)
+        {
+            if (ctx.Shift != null)
+            {
+                return JobText.T("reallife_job_card_employer", "employer", JobText.T(ctx.Shift.Employer.NameKey), "time", CareerClock.Span(CareerState.RotaHour));
+            }
+            string offer = GigWords.List(ctx.Offer);
+            return offer != null ? JobText.T("reallife_job_card_gig_offer", "offer", offer) : JobText.T("reallife_job_card_gig");
         }
 
         /// <summary>True when the game's panel was copied and the figures are being shown.</summary>

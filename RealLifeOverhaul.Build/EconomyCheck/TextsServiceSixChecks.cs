@@ -5,7 +5,7 @@ using RealLifeOverhaul.Texts;
 // Your own AI beside RLO Texts' data v6: the service is given the newest card finished as a pack's would be, in the game's
 // language (its lang line, the speaker's memory), and its words are checked in that language; after a miss of the
 // service, a pack of data v6 that writes the language gets its own card, its system turn, grammar and language. And the
-// mod's languages: Dutch and Turkish, whose texts are the mod's own and which no pack writes, keep their written lines
+// mod's languages: Dutch, Turkish, Polish and Korean, whose texts are the mod's own and which no pack writes, keep their written lines
 // (TextLanguages.Unwritten), and every language of the mod is one of the two kinds. The service in each of the seven
 // languages is in TextsServiceLanguageChecks.cs.
 internal static partial class Program
@@ -19,11 +19,12 @@ internal static partial class Program
 
     private static void ServiceSixLanguages()
     {
-        string[] claimed = TextLanguages.Parse("en,pt,zh-cn,de,fr,es,ru,nl,tr");
-        Check(TextLanguages.Of("nl") == "nl" && TextLanguages.Of("TR") == "tr" && TextLanguages.Of("ja") == TextLanguages.English && TextLanguages.Of("pt") == "pt"
-              && !TextLanguages.Known("nl") && !TextLanguages.Known("tr") && claimed.Length == TextLanguages.All.Length
-              && !TextLanguages.Has(claimed, TextLanguages.Of("nl")) && !TextLanguages.Has(claimed, TextLanguages.Of("tr")) && TextLanguages.Has(claimed, TextLanguages.Of("ja")),
-            "texts v6, the languages: a game in Dutch or Turkish (the mod's own texts) is never a pack's language, not even for a pack that claims it, so its written lines stay; a language the mod has no texts in reads English, as the mod does");
+        string[] claimed = TextLanguages.Parse("en,pt,zh-cn,de,fr,es,ru,nl,tr,pl,ko");
+        Check(TextLanguages.Of("nl") == "nl" && TextLanguages.Of("TR") == "tr" && TextLanguages.Of("PL") == "pl" && TextLanguages.Of("ko") == "ko" && TextLanguages.Of("ja") == TextLanguages.English && TextLanguages.Of("pt") == "pt"
+              && !TextLanguages.Known("nl") && !TextLanguages.Known("tr") && !TextLanguages.Known("pl") && !TextLanguages.Known("ko") && claimed.Length == TextLanguages.All.Length
+              && !TextLanguages.Has(claimed, TextLanguages.Of("nl")) && !TextLanguages.Has(claimed, TextLanguages.Of("tr"))
+              && !TextLanguages.Has(claimed, TextLanguages.Of("pl")) && !TextLanguages.Has(claimed, TextLanguages.Of("ko")) && TextLanguages.Has(claimed, TextLanguages.Of("ja")),
+            "texts v6, the languages: a game in Dutch, Turkish, Polish or Korean (the mod's own texts) is never a pack's language, not even for a pack that claims it, so its written lines stay; a language the mod has no texts in reads English, as the mod does");
         var odd = new List<string>();
         foreach (string code in RealLifeOverhaul.ModLanguages.All)
         {

@@ -72,6 +72,18 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        /// <summary>The page of someone whose employer closed: who it was, that nothing is held against them and employers answer them first, and a button to the open roles.</summary>
+        private void LaidOffNote(InfoBox box, WorkFile w, int day)
+        {
+            string employer = CareersText.Employer(w.LaidOffFrom);
+            box.Chip(CareersText.T("reallife_career_laid_off", "employer", employer), CellTone.Red);
+            if (ClosureRules.Priority(w, day))
+            {
+                box.Line(CareersText.T("reallife_career_laid_off_priority", "day", CareersText.Day(w.LaidOffDay + ClosureRules.PriorityDays)), CellTone.Green);
+            }
+            InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_career_button_open_roles", () => ShowTab(CareersDirector.TabJobs));
+        }
+
         private void NoJobMore(InfoBox box, WorkFile w, int day)
         {
             box.Section("reallife_ibox_sec_money");

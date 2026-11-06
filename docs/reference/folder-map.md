@@ -10,9 +10,11 @@ This is the mod, and the single source of truth: the Unity project and the comma
 | --- | --- |
 | `ModManifest.asset` | id, version, what the Mod Builder packages (it names no asset bundle: the bundles are built by the three asset pipelines) |
 | `RealLifeOverhaul.asmdef` | assembly definition and references |
-| `Locales/en.json` | every player-facing string, flat keys prefixed reallife_; beside it `pt.json`, `zh-cn.json`, `de.json`, `fr.json`, `es.json`, `ru.json`, `nl.json` and `tr.json`, see [Texts and translation](../contributing/texts-and-translation.md) |
+| `Locales/en.json` | every player-facing string, flat keys prefixed reallife_; beside it `pt.json`, `zh-cn.json`, `de.json`, `fr.json`, `es.json`, `ru.json`, `nl.json`, `tr.json`, `pl.json` and `ko.json`, see [Texts and translation](../contributing/texts-and-translation.md) |
 | `Bundles/reallife_character` | meshes and textures for the player's new looks (built by `CharacterAssets`) |
-| `Bundles/reallife_props` | the modelled street props and their texture atlas (built by `PropAssets`) |
+| `Bundles/reallife_props` | the modelled street props and their texture atlas (built by `PropAssets`; closed: it takes no new prop) |
+| `Bundles/reallife_props_2` | the props added since, modelled in Blender (Birchwood School's three buildings and the seven corner buildings), with an atlas of their own (built by `PropAssets` from `PropAssets/models`) |
+| `Bundles/reallife_props_site` | the building sites' props and Uptown's stadium, with an atlas of their own (built by `PropAssets`, the set `site`; closed) |
 | `Bundles/reallife_anim` | the mod's own Humanoid animation clips and how each tool sits in the hand (built by `CityAssets`) |
 | `Scripts/` | the code, one folder per feature |
 | `thumbnail.jpg` | the Workshop picture, installed with the mod |
@@ -36,6 +38,7 @@ Entry points, settings, per-save state, shared HUD, the modelled props (PropLibr
 | `GameCalendar.cs`, `CalendarRules.cs`, `Prices.cs` | the calendar and the price level ([The calendar and the price level](calendar-and-prices.md)) |
 | `GoingPublic.cs`, `GoingPublicLink.cs`, `SharedCity.cs`, `SharedCityWire.cs` | a Going Public session, whose things are whose, and what the host shares |
 | `SpecialBuildings.cs` | the buildings the mod claims as its own |
+| `HeldUnits.cs`, `HeldUnitsGame.cs`, `HeldUnitsRules.cs` | every address the mod holds, kept out of the game's own letting ([map places](map-places.md#the-games-own-letting-leaves-them-alone)) |
 | `PropLibrary.cs`, `Shapes.cs` | the modelled props by id, and the plain shapes they fall back to |
 | `RoadData.cs`, `RoadGraph.cs`, `RouteSearch.cs` | the road data found once per city, and the shared road search |
 | `TestRefusal.cs` | why a test button could not do what was asked |
@@ -50,6 +53,7 @@ The front door's list links every folder's feature page. These folders have no f
 - `Life`: random life events (catalogue, no-repeat deck, runner), sickness, hospital.
 - `Phone`: callable contacts and their conversations.
 - `Diagnostics` and `Performance`: on [Performance](performance.md#the-measuring-folders).
+- `TestRun`: the city expansion's test run, one button that runs every automatic check of it: on [The test run](test-run.md).
 - `Tech`, `Ledger`, `Fame`, `Photos`, `Rivals`, `Street`, `Texts`, `Faults`, `FitOut`, `Offices`, `EndScale`, and in `Economy` the folders `Banking`, `Brands`, `Dealer`, `Estate`, `Online` and `Services`.
 
 ## Outside the mod's folder
@@ -70,7 +74,7 @@ The built bundles are committed, so a code-only build needs neither Unity nor Bl
 | `PropAssets/` | asset pipeline for the street props |
 | `PropAssets/scripts/` | Blender scripts: paint the atlas, model every prop, render previews |
 | `PropAssets/UnityProject/` | small Unity project that only turns build/ into the asset bundle |
-| `PropAssets/build.ps1` | everything: atlas, props, previews, Bundles/reallife_props, load check |
+| `PropAssets/build.ps1` | everything, one bundle of `PropAssets/sets.json` after another: atlas, props, previews, Bundles/reallife_props and Bundles/reallife_props_2, load check, `PropAssets/contents` |
 | `CityAssets/` | asset pipeline for the animation clips |
 | `CityAssets/scripts/` | Blender scripts: the authoring rig, THE CLIPS, contact sheets, FBX |
 | `CityAssets/UnityProject/` | small Unity project: Humanoid import, the bundle, and the tests that prove the clips play |
@@ -96,7 +100,7 @@ The command-line build and checks.
 | `EconomyCheck/` | checks the economy's game-free parts: the rating, the terms, the fee, the credit file and its line in the save, the loans (see [the economy pages](../features/README.md#economy)), and every other feature's game-free rules |
 | `ContractCheck/` | checks the mod against a version of the game on disk: the game contract, the compiled references, the game's keys (see [After a game update](../contributing/after-a-game-update.md)) |
 | `StandardCheck/` | the rules of the engineering standard (`docs/standards`) that a program can check, against its `baseline.txt` (see [Checks](../contributing/checks.md)) |
-| `Shared/ModLanguages.cs` | the mod's nine languages by the game's codes (en, pt, zh-cn, de, fr, es, ru, nl, tr), linked into the checkers; de, fr, es, ru, nl and tr may lack keys, which the game reads in English (its fallback language) |
+| `Shared/ModLanguages.cs` | the mod's languages by the game's codes (en, pt, zh-cn, de, fr, es, ru, nl, tr, then pl and ko, which are listed in `FirstBatch` until their translation is merged), linked into the checkers; every language but en, pt and zh-cn may lack keys, which the game reads in English (its fallback language) |
 | `Workshop/locales.py` | the locale check of every language that is there (the gate's "LOCALES OK") |
 | `Workshop/` | the Workshop page's texts, [the style sheet](../../RealLifeOverhaul.Build/Workshop/STYLE.md), `check.pl` and the upload steps (`UPLOAD.md`) |
 | `Installer/` | the installer for players without the Workshop: `build-installer.ps1` and `RealLifeOverhaul.iss` |

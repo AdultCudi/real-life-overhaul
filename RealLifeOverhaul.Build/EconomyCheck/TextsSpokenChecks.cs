@@ -281,7 +281,7 @@ internal static partial class Program
 
     private static void SpokenSources()
     {
-        string texts = TextsSource(@"Wiring\StreetTexts.cs"), talk = TextsSource(@"Street\StreetDirector.Talk.cs"), game = TextsSource(@"Street\StreetGame.cs");
+        string texts = TextsSource(@"Wiring\StreetTexts.cs"), talk = TextsSource(@"Street\StreetDirector.Talk.cs"), game = TextsSource(@"Street\StreetGame.cs") + TextsSource(@"Street\StreetHold.cs");
         string calls = TextsSource(@"Wiring\Wiring.TextsCalls.cs"), runner = TextsSource(@"Texts\TextService.cs"), web = TextsSource(@"Texts\TextWeb.cs");
         Check(texts.Contains("Spoken = !guess, Started = guess ? null : c.Speaking") && talk.Contains("_openBy = now + (float)Math.Max(StreetRules.Hold, chat.Waits)")
               && texts.Contains("c.Waits = r.Waits;") && texts.Contains("Adopted(ref guessed, r)") && texts.Contains("if (hub.Writing(key))") && calls.Contains("Spoken = true"),

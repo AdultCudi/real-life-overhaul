@@ -150,6 +150,40 @@ namespace RealLifeOverhaul.Economy
             return claim;
         }
 
+        /// <summary>
+        /// The newest theft claim of the last <paramref name="days"/> days that is still to be paid (put in or not), or null.
+        /// A police report is about the newest break-in, so it is that claim's.
+        /// </summary>
+        public static Claim NewestTheft(List<Claim> claims, int day, int days)
+        {
+            Claim newest = null;
+            for (int i = 0; claims != null && i < claims.Count; i++)
+            {
+                Claim c = claims[i];
+                if (c.Kind == (int)CoverKind.Theft && (c.Stage == ClaimStage.Open || c.Stage == ClaimStage.Filed) && day - c.Day <= days
+                    && (newest == null || c.Id > newest.Id))
+                {
+                    newest = c;
+                }
+            }
+            return newest;
+        }
+
+        /// <summary>
+        /// A police report is the paper an insurer asks for after a break-in: with its number the theft claim pays the loss in
+        /// full, the excess too. True if the claim changed (a report never lowers a payout, and a second one changes nothing).
+        /// </summary>
+        public static bool Reported(Claim c)
+        {
+            if (c == null || c.Kind != (int)CoverKind.Theft || (c.Stage != ClaimStage.Open && c.Stage != ClaimStage.Filed) || c.Excess <= 0)
+            {
+                return false;
+            }
+            c.Excess = 0;
+            c.Payout = Math.Min(Math.Max(0, c.Loss), CompanyCatalogue.CoverMost[c.Kind]);
+            return true;
+        }
+
         // Room for one more: the oldest finished claim goes, else the oldest of all.
         private static void Trim(List<Claim> claims)
         {

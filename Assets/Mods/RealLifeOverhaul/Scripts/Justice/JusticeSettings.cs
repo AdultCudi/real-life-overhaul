@@ -31,17 +31,17 @@ namespace RealLifeOverhaul
         public static bool Aftermath = true;      // appeals, record sealing, compensation for a wrongful arrest
         public static bool Phone = true;          // the Legal contact and file on the phone
 
-        public static void Load(string modId)
+        public static void Load()
         {
-            Enabled = Bool(modId, EnabledId, Enabled);
-            Lawyers = Bool(modId, LawyersId, Lawyers);
-            Courthouse = Bool(modId, CourthouseId, Courthouse);
-            NoPrison = Bool(modId, NoPrisonId, NoPrison);
-            PrisonCap = JusticeLaw.ClampCap(UnityEngine.PlayerPrefs.GetInt(Key(modId, PrisonCapId), PrisonCap));
-            Community = Bool(modId, CommunityId, Community);
-            Civil = Bool(modId, CivilId, Civil);
-            Aftermath = Bool(modId, AftermathId, Aftermath);
-            Phone = Bool(modId, PhoneId, Phone);
+            Enabled = Bool(EnabledId, Enabled);
+            Lawyers = Bool(LawyersId, Lawyers);
+            Courthouse = Bool(CourthouseId, Courthouse);
+            NoPrison = Bool(NoPrisonId, NoPrison);
+            PrisonCap = JusticeLaw.ClampCap(UnityEngine.PlayerPrefs.GetInt(OptionKeysRules.Key(PrisonCapId), PrisonCap));
+            Community = Bool(CommunityId, Community);
+            Civil = Bool(CivilId, Civil);
+            Aftermath = Bool(AftermathId, Aftermath);
+            Phone = Bool(PhoneId, Phone);
         }
 
         public static ModOptions AddJustice(this ModOptions options)
@@ -62,6 +62,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_justice_test_case_serious", () => JusticeDirector.Instance?.TestCase(1))
                 .AddButton("reallife_justice_test_case_grave", () => JusticeDirector.Instance?.TestCase(2))
                 .AddButton("reallife_justice_test_case_weak", () => JusticeDirector.Instance?.TestCase(3))
+                .AddButton("reallife_justice_test_camera", () => JusticeDirector.Instance?.TestCameraDismissed())
                 .AddButton("reallife_justice_test_court_date", () => JusticeDirector.Instance?.TestCourtDate())
                 .AddButton("reallife_justice_test_hearing", () => JusticeDirector.Instance?.TestHearing())
                 .AddButton("reallife_justice_test_prison_short", () => JusticeDirector.Instance?.TestPrison(JusticeLaw.PrisonCapMin))
@@ -73,10 +74,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_justice_test_clear", () => JusticeDirector.Instance?.TestClear());
         }
 
-        // The key the game saves mod options under (as in Core/Settings).
-        private static string Key(string modId, string id) => "m:" + modId + ":" + id;
-
-        private static bool Bool(string modId, string id, bool fallback) => UnityEngine.PlayerPrefs.GetInt(Key(modId, id), fallback ? 1 : 0) != 0;
+        private static bool Bool(string id, bool fallback) => UnityEngine.PlayerPrefs.GetInt(OptionKeysRules.Key(id), fallback ? 1 : 0) != 0;
     }
 
     /// <summary>Why a justice test button, or a shift of community service, did not start.</summary>

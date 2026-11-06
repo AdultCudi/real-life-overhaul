@@ -1,4 +1,5 @@
 using System.IO;
+using System.Text;
 
 namespace RealLifeOverhaul.Markets
 {
@@ -29,6 +30,31 @@ namespace RealLifeOverhaul.Markets
             File.Move(fresh, path);
             File.Delete(old);
         }
+
+        /// <summary>As <see cref="Write(string, string)"/>, the text given as its lines in order (each with its own end), never joined in memory.</summary>
+        public static void Write(string path, string[] lines)
+        {
+            string fresh = NewOf(path), old = OldOf(path);
+            using (var writer = new StreamWriter(fresh, false, NoMark))
+            {
+                for (int i = 0; i < lines.Length; i++)
+                {
+                    writer.Write(lines[i]);
+                }
+            }
+            if (File.Exists(old))
+            {
+                File.Delete(old);
+            }
+            if (File.Exists(path))
+            {
+                File.Move(path, old);
+            }
+            File.Move(fresh, path);
+            File.Delete(old);
+        }
+
+        private static readonly Encoding NoMark = new UTF8Encoding(false);   // as File.WriteAllText writes: UTF-8, no byte order mark
 
         /// <summary>
         /// After a crash mid-write, puts the whole tape back at <paramref name="path"/>. With the tape there, a ".new" beside

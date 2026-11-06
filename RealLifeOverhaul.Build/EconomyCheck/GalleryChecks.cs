@@ -88,14 +88,14 @@ internal static partial class Program
         Check(Regex.IsMatch(build, @"for \(int i = 0; i < layout\.childCount; i\+\+\)\s*\{\s*layout\.GetChild\(i\)\.gameObject\.SetActive\(false\);")
               && build.Contains("_root = FlareKit.Rect(layout, \"Gallery\");") && !gallery.Contains("GallerySheet"),
             "gallery root cause: the Gallery draws its own screens in the game's frame, as Flare does, on a part of its own that is on (no copy of a switched-off part)");
-        string tapped = Between(gallery, "private void Tapped(Slot slot)", "// The grid scrolled");
+        string tapped = Between(gallery, "private void Tapped(Slot slot)", "private void Reveal(int index)");
         Check(gallery.Contains("FlareKit.Click(slot.Back, () => Tapped(slot));") && tapped.Contains("_nav.Tap(slot.Index, _shown.Count)") && tapped.Contains("WriteViewer();")
               && !tapped.Contains("Refresh(") && !tapped.Contains(".Open("),
             "gallery root cause: a tap on a photo shows it whole at once, without writing the app again or opening it");
         Check(Regex.Matches(gallery, @"_app\.Open\(\)").Count == 1 && Between(gallery, "public void Open(bool latest)", "public void Changed()").Contains("_app.Open();"),
             "gallery root cause: the app is opened from one place only (the Camera's buttons and the test), never from a click inside it");
         string mode = Read(@"Photos\CameraMode.cs");
-        Check(Between(mode, "private void Gallery()", "// ----").Contains("OpenLatestPhoto()"), "gallery: the viewfinder's small photo opens the newest photo whole, not the grid");
+        Check(Between(mode, "private void Gallery()", "private void Shoot()").Contains("OpenLatestPhoto()"), "gallery: the viewfinder's small photo opens the newest photo whole, not the grid");
     }
 
     // Every copy the mod makes of the game's ListBackground, anywhere in the mod, is switched on: the game keeps it switched
@@ -410,14 +410,14 @@ internal static partial class Program
         Check(parts.Contains("[DefaultExecutionOrder(-31000)]") && keys.Contains("HotSpots.Time(HotUpdate)") && keys.Contains("enabled = false;")
               && Regex.IsMatch(gallery, @"_keys\.enabled = on;") && Between(gallery, "internal bool ReadKeys()", "private void Step(int delta)").Contains("PhotosGame.TakeCancel()"),
             "gallery look: the viewer's keys are read only while a photo is shown whole, the cancel key taken before the game's own handling");
-        string read = Between(gallery, "private IEnumerator ReadSmall(int opening)", "// A small copy made:");
+        string read = Between(gallery, "private IEnumerator ReadSmall(int opening)", "private void ThumbCame(");
         Check(read.Contains("Task.Run(") && read.Contains("watch.Elapsed.TotalMilliseconds >= GalleryRules.UploadBudgetMs") && read.Contains("yield return null;"),
             "gallery look: small copies are read on a worker and made textures within a budget of a frame");
-        Check(Regex.IsMatch(director, @"public bool ToggleFavourite\(string name\)") && Regex.IsMatch(Between(director, "private void WriteFavourites()", "// ----"), @"Task\.Run\(\(\) => writes\.Run\(ticket, \(\) => PhotoStore\.SetFavourites\(folder, copy\)\)\)")
+        Check(Regex.IsMatch(director, @"public bool ToggleFavourite\(string name\)") && Regex.IsMatch(Between(director, "private void WriteFavourites()", "public static bool CanSetWallpaper"), @"Task\.Run\(\(\) => writes\.Run\(ticket, \(\) => PhotoStore\.SetFavourites\(folder, copy\)\)\)")
               && Regex.Matches(director, @"GalleryRules\.PruneListed\(_favourites, _photos, _listedWhole\)").Count == 2,
             "gallery look: favourites are written on a worker, the last change winning, and a deleted photo's mark goes on deletion and on reading the folder");
-        string forget = Between(gallery, "private void ForgetThumbs()", "// The parts made for a panel");
-        Check(forget.Contains("PhotosGame.Destroy(kept.Value)") && Between(gallery, "private void Trim()", "// Every small copy let go").Contains("PhotosGame.Destroy(_thumbs[_drop[i]])")
+        string forget = Between(gallery, "private void ForgetThumbs()", "private void ForgetParts()");
+        Check(forget.Contains("PhotosGame.Destroy(kept.Value)") && Between(gallery, "private void Trim()", "private void ForgetThumbs()").Contains("PhotosGame.Destroy(_thumbs[_drop[i]])")
               && Between(gallery, "private void Forget()", "\n        }").Contains("DropWhole()"),
             "gallery look: every small copy and the whole photo are destroyed when let go or when the app closes");
     }
@@ -440,7 +440,7 @@ internal static partial class Program
 
         // 2. A whole photo no longer wanted (another photo shown, the app closed) is read but never decoded.
         string game = Read(@"Photos\PhotosGame.cs"), gallery = GalleryText();
-        string load = Between(game, "public static IEnumerator Load(", "// THE ONE DECODE");
+        string load = Between(game, "public static IEnumerator Load(", "private static Texture2D Decode(");
         int asked = load.IndexOf("if (wanted != null && !wanted())", StringComparison.Ordinal), decoded = load.IndexOf("texture = Decode(bytes);", StringComparison.Ordinal);
         Check(load.Contains("Func<bool> wanted = null") && asked > 0 && decoded > asked && load.IndexOf("work.IsCompleted", StringComparison.Ordinal) < asked
               && gallery.Contains("() => load == _wholeLoad && Showing)"),
@@ -449,11 +449,11 @@ internal static partial class Program
         // 3. The viewfinder's ask for the newest photo lasts only while the app opens.
         Check(GalleryRules.LatestWanted(10f, 10f) && GalleryRules.LatestWanted(10f, 11.9f) && !GalleryRules.LatestWanted(10f, 12.1f) && !GalleryRules.LatestWanted(-1f, 5f)
               && !GalleryRules.LatestWanted(10f, 9f), "gallery review: the ask for the newest photo is kept two seconds, then forgotten");
-        Check(Between(gallery, "private void Closed()", "// ----").Contains("_latestAskedAt = -1f;") && gallery.Contains("GalleryRules.LatestWanted(_latestAskedAt, Time.unscaledTime)")
+        Check(Between(gallery, "private void Closed()", "private void Refresh(bool top)").Contains("_latestAskedAt = -1f;") && gallery.Contains("GalleryRules.LatestWanted(_latestAskedAt, Time.unscaledTime)")
               && !gallery.Contains("_wantLatest"), "gallery review: closing the app forgets the ask, and it is honoured only while fresh");
 
         // 4. A day heading scrolled into view sets words made with the rows; nothing is made while scrolling.
-        string bind = Between(gallery, "private void BindDay(DayCell cell, int r)", "// Each day heading's words");
+        string bind = Between(gallery, "private void BindDay(DayCell cell, int r)", "private void WriteHeadings()");
         Check(bind.Contains("_headings[r]") && bind.Contains("_headCounts[r]") && !bind.Contains("PhotosText.") && Between(gallery, "private void WriteGrid(bool top)", "private void Scrolled(").Contains("WriteHeadings();"),
             "gallery review: a day heading's words are made when the rows are worked out, never while scrolling");
     }

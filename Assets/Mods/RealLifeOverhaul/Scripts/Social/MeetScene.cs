@@ -260,7 +260,7 @@ namespace RealLifeOverhaul
             bool brought = _kind == Kind.Introduction && _b != null && !_b.Lost;   // the friend is here to make the introduction
             var talk = new SceneTalk
             {
-                Person = _who, Introducer = brought ? _friend : null,
+                Person = _who, Introducer = brought ? _friend : null, Via = _kind == Kind.Introduction ? _friend : null,
                 Mode = _kind == Kind.DropBy ? SceneTalk.DropBy : brought ? SceneTalk.Introduction : SceneTalk.Meet
             };
             if (_kind == Kind.DropBy)
@@ -303,7 +303,7 @@ namespace RealLifeOverhaul
             }
             else if (talk != null && talk.Swapped)
             {
-                SocialLife.Meet(_who, talk.Warm);
+                SocialLife.Meet(_who, talk.Warm, _kind == Kind.Introduction ? _friend : null);
                 D.Cast.Emoji(_a, CharacterEmojiName.CommonGreenHappy, 3f);
                 if (_friend != null)
                 {

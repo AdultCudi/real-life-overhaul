@@ -361,7 +361,7 @@ namespace RealLifeOverhaul
             bool easy = Settings.CarEasy;
             Vector3 velocity = _body != null ? _body.velocity : Vector3.zero;
             float speed = Mathf.Sqrt(velocity.x * velocity.x + velocity.z * velocity.z);
-            float km = speed * DriveTick / 1000f;
+            float km = VehicleCostRules.Km(speed, DriveTick);   // a speed from broken physics or a long hitch is not driving
             float damage = _car.vehicleInstance != null ? _car.vehicleInstance.damage : 0f;
             Pothole(speed, easy);
 
@@ -378,7 +378,7 @@ namespace RealLifeOverhaul
                 // The game's own repair shows as the damage figure dropping.
                 if (_record.LastDamage >= 0f && damage < _record.LastDamage - 0.03f)
                 {
-                    Repaired((_record.LastDamage - damage) * _price * 0.5f);
+                    Repaired(VehicleCostRules.Repair(_record.LastDamage - damage, _price));
                 }
                 _record.LastDamage = damage;
 
@@ -539,17 +539,22 @@ namespace RealLifeOverhaul
         private void Repaired(float bill)
         {
             bool insured = _record.InsuredUntil >= TimeHelper.CurrentDay;
-            float payout = insured ? CarRules.Payout(bill) : 0f;
+            bool reported = insured && CarGarage.Waives(TimeHelper.CurrentDay);   // a police report on the break-in or the accident: no excess
+            float payout = insured ? CarRules.Payout(bill, reported) : 0f;
             Logger?.Info("Car ownership: a repair of about " + bill.ToString("F0") + " noticed; " + (insured ? "the insurer pays " + payout.ToString("F0") : "the car is not insured") + ".");
             if (payout < 1f)
             {
                 return;
             }
-            GameManager.ChangeMoneySafe(payout, new TransactionInfo("reallife_transaction_insurance_payout"), null, null, force: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(payout, new TransactionInfo("reallife_transaction_insurance_payout"), null, null, force: true);
+            if (reported)
+            {
+                CarGarage.Spend();
+            }
             _record.Claims++;
             _record.LastClaimDay = TimeHelper.CurrentDay;
             Notifications.Show(NotificationType.Success, "reallife_car_insurance_paid",
-                new Dictionary<string, string>(2) { { "amount", TransitText.Money(payout) }, { "excess", TransitText.Money(CarRules.Excess) } }, 10f);
+                new Dictionary<string, string>(2) { { "amount", TransitText.Money(payout) }, { "excess", TransitText.Money(reported ? 0f : CarRules.Excess) } }, 10f);
         }
 
         private string Note(bool easy)
@@ -595,9 +600,10 @@ namespace RealLifeOverhaul
                 }
                 if (record.InsuredUntil > 0 && today > record.InsuredUntil && !first)
                 {
-                    float premium = Mathf.Round(CarRules.Premium(instance.VehicleType.price, record.Claims) * (1f + GarageBridges.InsuranceOf(instance.id)));   // a modified car costs more
+                    // One policy renews however many days have gone by (no back premiums).
+                    float premium = CarPhone.PremiumOf(instance, record);   // as the Garage page shows it and CarPhone.Insure charges it
                     var data = new Dictionary<string, string>(2) { { "car", name }, { "amount", TransitText.Money(premium) } };
-                    if (GameManager.ChangeMoneySafe(-premium, new TransactionInfo("reallife_transaction_car_insurance"), null, null, force: false))
+                    if (RealLifeOverhaul.Economy.BizBooks.Book(-premium, new TransactionInfo("reallife_transaction_car_insurance"), null, null, force: false))
                     {
                         record.InsuredUntil = today + CarRules.PolicyDays - 1;
                         Notifications.Show(NotificationType.Info, "reallife_car_insurance_renewed", data, 9f);

@@ -3,18 +3,13 @@ using RealLifeOverhaul.Street;
 
 namespace RealLifeOverhaul.Texts
 {
-    /// <summary>
-    /// The words of what a person remembers talking with the player about (data v6's "talked" memory lines), as the game
-    /// records them: a text's topic by its intent, a line of street talk's topic and how it went, and an outing's words.
-    /// The contract lists every value (SPEC_v6.json: memory.values). Game-free (EconomyCheck, TextsMemoryChecks.cs);
-    /// recorded by Wiring/Wiring.TextsMemory. COST: a switch.
-    /// </summary>
+    /// <summary>The words of what a person remembers talking with the player about, for "talked" memory lines. Game-free. COST: a switch.</summary>
     public static class TextMemoryTopics
     {
-        /// <summary>The words of an outing with somebody of the social life, by the kind the social life keeps (coffee, a meal, drinks...).</summary>
+        /// <summary>The words of an outing with somebody of the social life, by the kind the social life keeps.</summary>
         public static readonly string[] Outings = { "coffee", "dinner", "drinks", "a film", "a walk", "a drive", "the gym", "a look round your business" };
 
-        /// <summary>What a text's card was about, in the words of a memory's line ("your crash", "money"); null for one not worth remembering.</summary>
+        /// <summary>What a text's card was about, in a memory line's words; null for one not worth remembering.</summary>
         public static string Text(string intent)
         {
             if (intent == null)
@@ -98,7 +93,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>What a line of street talk was about, in a memory's words; null for one that is not a topic (a greeting, a brush off).</summary>
+        /// <summary>What a line of street talk was about, in a memory's words; null for one that is no topic.</summary>
         public static string Street(StreetLine line)
         {
             switch (line)

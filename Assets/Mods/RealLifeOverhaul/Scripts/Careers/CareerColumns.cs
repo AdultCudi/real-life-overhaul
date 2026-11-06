@@ -73,6 +73,20 @@ namespace RealLifeOverhaul.Careers
             .Filter("reallife_own_all_contracts", ContractKinds)
             .Empty("reallife_own_empty_contracts");
 
+        public const int LadderTasks = 0, LadderStaff = 1, LadderStores = 2;
+        private static readonly string[] LadderKinds = { "reallife_ladder_kind_tasks", "reallife_ladder_kind_staff", "reallife_ladder_kind_stores" };
+
+        /// <summary>Management: 0 what, 1 where, 2 who, 3 detail, 4 a figure or the day, 5 state; tasks, staff and stores by the filter.</summary>
+        public static readonly TableSpec Ladder = new TableSpec("Career", "Ladder")
+            .Column("reallife_career_col_what", 360f, TableSort.Text, flexible: true)
+            .Column("reallife_career_col_where", 330f, TableSort.Text)
+            .Column("reallife_ladder_col_who", 260f, TableSort.Text)
+            .Column("reallife_career_col_detail", 220f, TableSort.Number)
+            .Column("reallife_ladder_col_figure", 180f, TableSort.Number)
+            .Column("reallife_career_col_state", 220f, TableSort.Text, right: true)
+            .Filter("reallife_ladder_all", LadderKinds)
+            .Empty("reallife_ladder_empty");
+
         public const int CvJobs = 0, CvQualifications = 1;
         private static readonly string[] CvKinds = { "reallife_career_kind_jobs", "reallife_career_kind_qualifications" };
 

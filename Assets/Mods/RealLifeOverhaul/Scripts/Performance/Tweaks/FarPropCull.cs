@@ -1,14 +1,10 @@
 using System.Collections.Generic;
+using System.Text;
 using UnityEngine;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// Per-layer draw distances on the player's camera, shared by the tweaks that want them: each asks for a
-    /// distance for some layers, the camera gets the shortest asked for per layer, and when nobody asks any more
-    /// it has back exactly the distances (and the spherical flag) it had. While the city map is open the game's
-    /// own values are in force.
-    /// </summary>
+    /// <summary>Per-layer draw distances on the player's camera: the shortest asked, its own back once nobody asks.</summary>
     internal static class PerfCullDistances
     {
         private static readonly List<LayerCull> Users = new List<LayerCull>(4);
@@ -27,6 +23,7 @@ namespace RealLifeOverhaul
             {
                 Users.Add(user);
             }
+            MapParts.Add("draw distances", MapLookCall);   // asked after the map shut, with Developer diagnostics on (Diagnostics/SessionWatch.Map)
             Hook(true);
             Reconcile();
         }
@@ -62,9 +59,42 @@ namespace RealLifeOverhaul
 
         private static void OnMapToggled(bool open) => Reconcile();
 
-        // The game's events get these: a fault here never reaches the game's own handlers of the map (Core/Guard).
+        // through the guard: a fault never reaches the game's own map handlers
         private static readonly System.Action<bool> MapToggled = Guard.Wrap<bool>(OnMapToggled);
         private static readonly System.Action MapClosed = Guard.Wrap(Reconcile);
+        private static readonly MapParts.Look MapLookCall = MapLook;   // made once
+
+        // The map check after the map shut (Diagnostics/SessionWatch.Map): the options' draw distances on the player's camera
+        // again (the map draws with the camera's own). Asked with no line: references only; with a line its 32 values are
+        // compared too (the engine hands out a copy: once a map).
+        private static int MapLook(StringBuilder line)
+        {
+            if (Users.Count == 0)
+            {
+                line?.Append("draw distances: no option asks for any");
+                return 0;
+            }
+            Camera camera = GameManager.GetMainCamera();
+            bool applied = _camera != null && camera == _camera && camera.layerCullSpherical;
+            if (line == null)
+            {
+                return applied ? 0 : 1;
+            }
+            line.Append("draw distances: ");
+            if (!applied)
+            {
+                line.Append("not the options' again (").Append(_camera == null ? "none applied" : camera != _camera ? "another camera" : "flat").Append(')');
+                return 1;
+            }
+            float[] now = camera.layerCullDistances;
+            int differ = 0;
+            for (int layer = 0; layer < now.Length && layer < Mine.Length; layer++)
+            {
+                differ += Mathf.Approximately(now[layer], Mine[layer]) ? 0 : 1;
+            }
+            line.Append(differ == 0 ? "the options' again on the player's camera" : "the options' only in part, layers that differ: ").Append(differ == 0 ? string.Empty : differ.ToString());
+            return differ == 0 ? 0 : 1;
+        }
 
         /// <summary>Brings the camera in line: also follows the game to a new main camera and a changed far plane.</summary>
         public static void Reconcile()
@@ -106,28 +136,21 @@ namespace RealLifeOverhaul
             if (changed || !camera.layerCullSpherical)
             {
                 camera.layerCullDistances = Mine;
-                camera.layerCullSpherical = true;   // by distance from the camera, so turning the view brings nothing in or out at its edges
+                camera.layerCullSpherical = true;   // by distance from the camera: turning the view brings nothing in or out at its edges
             }
         }
     }
 
     /// <summary>
-    /// A draw distance for some of the camera's layers. Two of these exist:
-    ///
-    /// view_radius: the far plane is a flat wall 300 m ahead, so at the sides of a wide picture the camera draws
-    /// things up to 470 m away: 1,180 of the 4,487 renderers drawn in the third measurement were beyond 300 m,
-    /// every one of them something that disappears when the player turns to look straight at it. This draws the
-    /// layers of things (not the buildings, roads and ground) only within 300 m of the camera in every direction:
-    /// the same distance the game already uses straight ahead.
-    ///
-    /// far_props: street furniture, usable items and parked vehicles only within 200 m. A visible trade (at
-    /// 200 m a parked car is twenty pixels wide), offered for those who want it; the fog hides most of it.
+    /// A draw distance for some layers. view_radius: the flat far plane lets a wide picture draw things 470 m away at its
+    /// sides, so things (not buildings, roads or ground) are held to 300 m all round. far_props: street furniture, items
+    /// and parked cars within 200 m, a visible trade.
     /// </summary>
     public sealed class LayerCull : PerfTweak
     {
         private readonly string _id, _label;
         private readonly string[] _layers;
-        private readonly float _metres;   // 0 = the camera's far plane
+        private readonly float _metres;   // metres; 0 = the camera's far plane
         private readonly int[] _indices;
 
         public LayerCull(string id, string label, float metres, params string[] layers)
@@ -160,7 +183,7 @@ namespace RealLifeOverhaul
         {
             for (int i = 0; i < _layers.Length; i++)
             {
-                _indices[i] = LayerMask.NameToLayer(_layers[i]);   // -1 for a layer this version of the game does not have: matches nothing
+                _indices[i] = LayerMask.NameToLayer(_layers[i]);   // -1 for a layer this game lacks: matches nothing
             }
             PerfCullDistances.Add(this);
         }
@@ -170,7 +193,8 @@ namespace RealLifeOverhaul
         protected override void Restore() => PerfCullDistances.Remove(this);
 
         public override string Describe() => PerfCullDistances.Applied
-            ? _layers.Length + " layers drawn only within " + (_metres > 0f ? _metres : PerfCullDistances.FarPlane) + " m of the camera in every direction (far plane " + PerfCullDistances.FarPlane + " m)"
+            ? _layers.Length + " layers drawn only within " + (_metres > 0f ? _metres : PerfCullDistances.FarPlane) + " m of the camera in every direction (far plane "
+              + PerfCullDistances.FarPlane + " m)"
             : "waiting (no camera, or the city map is open)";
     }
 }

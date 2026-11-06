@@ -105,6 +105,11 @@ namespace RealLifeOverhaul
         public const float DebtMost = 24f;              // hours
         public const int LateFrom = 1;                  // going to bed between these hours is "too late"
         public const int LateTo = 6;
+        public const int DayNoiseFrom = 8;              // a sleep begun from this hour to DayNoiseTo is broken by the day's noise
+        public const int DayNoiseTo = 18;
+        public const int SleepGood = 7;                 // hours: a night this long helps
+        public const int SleepFair = 6;                 // under this a night costs, and from this an illness is shortened
+        public const int SleepPoor = 5;                 // under this a night costs a lot
 
         // Fitness, 0..100.
         public const float FitWorkout = 9f;             // per hour on a machine, before the day's diminishing returns
@@ -247,6 +252,7 @@ namespace RealLifeOverhaul
         public const int ReheatMinutes = 8;
         public const int LeftoverSaturation = 35;       // what a portion put by fills when its own fill is not known
         public const int LeftoversMost = 8;             // portions
+        public const int TakeoutMost = 2;               // portions packed to take: what one bag holds, carried until eaten at a seat
         public const float BurntYield = 0.6f;           // of the fill, for a burnt dish
 
         /// <summary>What is left of a need or a risk with "easy needs" on.</summary>

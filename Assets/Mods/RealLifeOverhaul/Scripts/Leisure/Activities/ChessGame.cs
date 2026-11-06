@@ -7,11 +7,13 @@ namespace RealLifeOverhaul.Leisure
 {
     /// <summary>
     /// The chess player on the pavement: the mod's table, an opponent and maybe an onlooker from the living city's
-    /// pool, put out of view by day in the dry, and never while the living city has its own chess table out.
+    /// pool, put out of view by day in the dry, and never while the living city has its own chess table out. The table,
+    /// the opponent and the onlooker go out a frame each (<see cref="Step"/>): all three in one frame were 3.2 ms (the
+    /// own-spikes scan of 28 Oct 2026). Cost: one flag a frame while nothing is pending, a look once a second outdoors.
     /// </summary>
     public sealed class ChessCorner
     {
-        private const int FromHour = 9, ToHour = 20;
+        internal const int FromHour = 9, ToHour = 20;
 
         private const string WatchClip = "watch_nod";
         private const string CheerClip = "cheer_once";
@@ -22,6 +24,13 @@ namespace RealLifeOverhaul.Leisure
         private Transform _table;
         private float _nextTry;
         private float _cheerEnds;                  // while the onlooker cheers, when it ends; 0 otherwise
+        private bool _turnLogged;                  // the opponent found turned off the board has been written to the log, once a table
+        private int _pending;                      // what goes out in the next frame: 1 the opponent, 2 the onlooker; 0 nothing
+        private Vector3 _theirs, _along;           // the opponent's stool and the table's long axis, for the frames after the table
+        private Vector3 _setFrom;                  // where the player stood when the table was found, for the log line
+
+        /// <summary>True while the opponent or the onlooker is still to go out, a frame after the table.</summary>
+        public bool Pending => _pending != 0;
 
         public bool Out => _table != null;
         public Vector3 Table { get; private set; }
@@ -55,6 +64,11 @@ namespace RealLifeOverhaul.Leisure
                           && TimeHelper.CurrentHour >= FromHour && TimeHelper.CurrentHour < ToHour;
             if (Out)
             {
+                if (Pending)
+                {
+                    return;   // the opponent and onlooker are on their way, a frame each
+                }
+                KeepFacing();
                 if (_cheerEnds > 0f && Time.time >= _cheerEnds)
                 {
                     _cheerEnds = 0f;
@@ -137,25 +151,92 @@ namespace RealLifeOverhaul.Leisure
                 solid.size = new Vector3(0.8f, 1f, 0.8f);
                 solid.carving = false;
             }
-            CityPerson person = city.People.Take(CityLook.Civilian, theirs, table);
-            if (person == null || !person.Work("chess_sit", city.Props, 0f))
-            {
-                if (person != null)
-                {
-                    city.People.Release(person);
-                }
-                city.Props.Return(prop);
-                why = TestRefusal.PoolBusy;
-                return false;
-            }
             _table = prop;
-            _opponent = person;
-            Watch(city, table, along);
+            _opponent = null;
+            _watcher = null;
+            _turnLogged = false;
             Table = table;
             Stool = mine;
-            LeisureDirector.Logger?.Info("Leisure: a chess player set up at " + table.ToString("F0") + ", " + Mathf.RoundToInt(Mathf.Sqrt(CitySpots.Flat(table - player)))
-                                         + " m away.");
+            _theirs = theirs;
+            _along = along;
+            _setFrom = player;
+            _pending = 1;   // the opponent in the next frame, the onlooker in the one after (Step)
             return true;
+        }
+
+        /// <summary>
+        /// Each frame while <see cref="Pending"/>: the opponent seated a frame after the table, the onlooker a frame after
+        /// that, as PutOut did all at once. An opponent who cannot be had takes the table in, as PutOut refused before.
+        /// </summary>
+        public void Step()
+        {
+            CityLifeDirector city = CityLifeDirector.Instance;
+            if (city == null || _table == null)
+            {
+                TakeIn();
+                return;
+            }
+            long began = System.Diagnostics.Stopwatch.GetTimestamp();
+            Vector3 table = Table;
+            if (_pending == 1)
+            {
+                CityPerson person = city.People.Take(CityLook.Civilian, _theirs, table);
+                if (person == null || !person.Work("chess_sit", city.Props, 0f))
+                {
+                    if (person != null)
+                    {
+                        city.People.Release(person);
+                    }
+                    LeisureDirector.Logger?.Info("Leisure: the chess table at " + table.ToString("F0") + " is taken in: the living city could not spare an opponent.");
+                    TakeIn();
+                    return;
+                }
+                person.AtTable(table);   // facing the board's centre from their stool, and kept so (CityPerson.AtTable)
+                _opponent = person;
+                _pending = 2;
+                LeisureDirector.Logger?.Info("Leisure: a chess player set up at " + table.ToString("F0") + ", " + Mathf.RoundToInt(Mathf.Sqrt(CitySpots.Flat(table - _setFrom)))
+                                             + " m away.");
+                float off = person.KeepAtTable(false);
+                LeisureDirector.Logger?.Info("Chess check (facing): the opponent on the far stool faces the board's centre " + off.ToString("F0") + " degrees off (wanted "
+                                             + TableSeat.FacedWithin.ToString("F0") + " or less): " + (TableSeat.Faces(off) ? "PASS" : "FAIL") + ".");
+                Said(began, "the opponent");
+                return;
+            }
+            Watch(city, table, _along);
+            _pending = 0;
+            Said(began, "the onlooker");
+        }
+
+        // The self-check of a frame of the setting up, against SpreadWatch's budget for the mod's spread work.
+        private static void Said(long began, string what)
+        {
+            if (!Meta.Dev.Verbose)
+            {
+                return;
+            }
+            double ms = (System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+            LeisureDirector.Logger?.Info("Chess check (set up a frame a piece): " + what + " in a frame of its own, " + ms.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
+                                         + " ms (wanted under " + SpreadWatch.WantedMs.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + " ms): "
+                                         + SpreadWatch.Verdict(ms));
+        }
+
+        // Once a second while the table is out, a game on or not: the opponent faces the board's centre, turned back to it if
+        // anything turned them; the first time that was needed goes in the log.
+        private void KeepFacing()
+        {
+            if (!OpponentThere)
+            {
+                return;
+            }
+            bool seen = CitySpots.InView(_opponent.Position);
+            float off = _opponent.KeepAtTable(seen);
+            if (!TableSeat.Faces(off) && !_turnLogged)
+            {
+                _turnLogged = true;
+                LeisureDirector.Logger?.Info("Chess check (facing): the opponent was found " + off.ToString("F0") + " degrees off the board's centre (wanted "
+                                             + TableSeat.FacedWithin.ToString("F0") + " or less), " + (seen ? "in view" : "out of view")
+                                             + ": turned back to it (said once a table): FAIL.");
+            }
         }
 
         // An onlooker at one side of the table, if the pool can spare a third and the pavement there is clear.
@@ -215,6 +296,7 @@ namespace RealLifeOverhaul.Leisure
             _watcher = null;
             _cheerEnds = 0f;
             _table = null;
+            _pending = 0;
         }
     }
 
@@ -225,8 +307,9 @@ namespace RealLifeOverhaul.Leisure
     public sealed class ChessGame : LeisureActivity
     {
         public static int Stake => Prices.At(10);
-        private const int Moves = 5;
-        private const float ThinkSeconds = 22f;
+        internal const int Moves = 5;
+        internal const float ThinkSeconds = 22f;
+        internal const int WinPoints = 7, StakeBackPoints = 5;   // of Moves x 2: double the stake back, the stake back
         private const float ReplySeconds = 3.6f;
 
         private sealed class Position
@@ -489,14 +572,14 @@ namespace RealLifeOverhaul.Leisure
             Ctx.Body.Rest(0.5f);   // up off the stool before the hold is let go
             Score = _points;
             string outcome;
-            if (_points >= 7)
+            if (_points >= WinPoints)
             {
                 LeisureMoney.Give(Stake * 2, "reallife_transaction_chess_win");
                 outcome = T("reallife_leisure_chess_won", "amount", JobText.Money(Stake));
                 Mood = ModState.MoodUp;
                 _corner.Cheer();
             }
-            else if (_points >= 5)
+            else if (_points >= StakeBackPoints)
             {
                 LeisureMoney.Give(Stake, "reallife_transaction_chess_win");
                 outcome = T("reallife_leisure_chess_drawn");

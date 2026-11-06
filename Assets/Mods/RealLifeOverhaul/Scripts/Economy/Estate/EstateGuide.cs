@@ -1,3 +1,4 @@
+using System;
 using System.Globalization;
 using RealLifeOverhaul.Meta;
 
@@ -53,6 +54,16 @@ namespace RealLifeOverhaul.Economy
                 .Fact("est_commission_let", () => EstateText.Share(EstateCatalogue.CommissionLet))
                 .Fact("est_hotel_years", () => (EstateCatalogue.HotelMultiple / 1000f).ToString("0.#", Inv))
                 .Fact("est_hotel_occupancy", () => EstateText.Share(EstateCatalogue.Occupancy))
+                .Fact("est_sale_hours", () => Whole(EstateCatalogue.SaleHours))
+                .Fact("est_sale_sqm", () => Whole(EstateCatalogue.SaleSqmPerHour))
+                .Fact("est_let_hours", () => Whole(EstateCatalogue.LetHours))
+                .Fact("est_let_sqm", () => Whole(EstateCatalogue.LetSqmPerHour))
+                .Fact("est_rep_done", () => Whole(EstateCatalogue.RepCompleted))
+                .Fact("est_rep_lapsed", () => Whole(-EstateCatalogue.RepLapsed))
+                .Fact("est_clean_basic", () => EstateText.Level(EstateCatalogue.CleanTarget[0]))
+                .Fact("est_clean_standard", () => EstateText.Level(EstateCatalogue.CleanTarget[1]))
+                .Fact("est_clean_excellent", () => EstateText.Level(EstateCatalogue.CleanTarget[2]))
+                .Fact("est_rating_staff", () => EstateText.Share(EstateCatalogue.RatingStaff))
                 .Fact("est_lease_days", () => Whole(EstateCatalogue.LeaseDepositDays))
                 .Fact("est_rate_low", () => EstateText.Share(EstateCatalogue.RateLeast))
                 .Fact("est_rate_high", () => EstateText.Share(EstateCatalogue.RateMost))
@@ -74,7 +85,47 @@ namespace RealLifeOverhaul.Economy
                 .Fact("est_return_let_poor", () => EstateText.Yield(Let(EstateCatalogue.IncomeLeast)))
                 .Fact("est_return_let_rich", () => EstateText.Yield(Let(EstateCatalogue.IncomeMost)))
                 .Fact("est_return_hire", () => EstateText.Yield(Hire()))
-                .Fact("est_return_shop", () => EstateText.Yield(EstateBalance.ShopYearlyBp(1)));
+                .Fact("est_return_shop", () => EstateText.Yield(EstateBalance.ShopYearlyBp(1)))
+                .Fact("est_lease_least", () => Whole(EstateCatalogue.TermLeast))
+                .Fact("est_lease_most", () => Whole(EstateCatalogue.TermLeast + EstateCatalogue.TermStep * (EstateCatalogue.TermSteps - 1)))
+                .Fact("est_hotel_sell", () => EstateText.Share(EstateCatalogue.HotelSellShare))
+                .Fact("est_holdings", () => Whole(EstateCatalogue.HoldingsMost));
+        }
+
+        /// <summary>The figures the Guide's page "A landlord's duties" prints.</summary>
+        public static void AddDutyFacts(Feature f)
+        {
+            f.Fact("duty_grace", () => Whole(EstateCatalogue.CallGraceDays))
+                .Fact("duty_call_least", () => EstateText.Share(Month(EstateRules.CallChance(1000))))
+                .Fact("duty_call_poor", () => EstateText.Share(Month(EstateRules.CallChance(EstateCatalogue.ConditionPoor))))
+                .Fact("duty_call_share", () => EstateText.Share(EstateCatalogue.CallShare))
+                .Fact("duty_diy", () => EstateText.Share(EstateCatalogue.DiyShare))
+                .Fact("duty_diy_days", () => Whole(EstateCatalogue.DiyDays))
+                .Fact("duty_lapse", () => Whole(EstateCatalogue.CallLapseDays))
+                .Fact("duty_complain", () => EstateText.Level(EstateCatalogue.ComplainBelow))
+                .Fact("duty_quit", () => EstateText.Level(EstateCatalogue.QuitBelow))
+                .Fact("duty_stay", () => EstateText.Level(EstateCatalogue.QuitBelow + EstateCatalogue.StayAbove))
+                .Fact("duty_quit_days", () => Whole(EstateCatalogue.QuitDays))
+                .Fact("duty_renew_low", () => EstateText.Share(EstateRules.RenewChance(EstateCatalogue.HappyPoor)))
+                .Fact("duty_renew_high", () => EstateText.Share(EstateRules.RenewChance(EstateCatalogue.HappyGood + 150)))
+                .Fact("duty_to_city", () => Whole(EstateCatalogue.ComplaintsToCity))
+                .Fact("duty_city_days", () => Whole(EstateCatalogue.CityCallDays))
+                .Fact("duty_inspect", () => Whole(EstateCatalogue.InspectEvery))
+                .Fact("duty_pass", () => EstateText.Level(EstateCatalogue.InspectPass))
+                .Fact("duty_old", () => Whole(EstateCatalogue.InspectCallOld))
+                .Fact("duty_fine", () => Guide.Money(EstateRules.InspectFine(1, Prices.Level)))
+                .Fact("duty_fine_again", () => Guide.Money(EstateRules.InspectFine(EstateCatalogue.StrikesBarred, Prices.Level)))
+                .Fact("duty_order", () => Whole(EstateCatalogue.OrderDays))
+                .Fact("duty_reinspect", () => Whole(EstateCatalogue.ReinspectDays))
+                .Fact("duty_plan_low", () => Whole(EstateCatalogue.PlanDaysLeast))
+                .Fact("duty_plan_high", () => Whole(EstateCatalogue.PlanDaysMost))
+                .Fact("duty_plan_poor", () => EstateText.Share(EstateRules.PlanAcceptChance(EstateCatalogue.RecordLeast)))
+                .Fact("duty_plan_good", () => EstateText.Share(EstateRules.PlanAcceptChance(EstateCatalogue.RecordMost)))
+                .Fact("duty_agent_days", () => Whole(EstateCatalogue.AgentLetDays))
+                .Fact("duty_manager", () => EstateText.Share(EstateCatalogue.ManagerShare))
+                .Fact("duty_more", () => EstateText.Share(EstateCatalogue.ManagedApplicants - 1000))
+                .Fact("duty_record", () => Whole(EstateCatalogue.ManagerRecordLeast))
+                .Fact("duty_city_come", () => Whole(EstateCatalogue.CityDays));
         }
 
         // A shop building let in a steady economy, averaged over the seeds.
@@ -96,6 +147,12 @@ namespace RealLifeOverhaul.Economy
                 sum += EstateBalance.HireYearlyBp(25000, 1, Seeds[s]);
             }
             return (int)(sum / Seeds.Length);
+        }
+
+        // The chance in thousandths of at least one fault in thirty days at a chance a day.
+        private static int Month(int perDay)
+        {
+            return (int)Math.Round(1000.0 * (1.0 - Math.Pow(1.0 - perDay / 1000.0, 30)));
         }
 
         private static string Whole(int value)

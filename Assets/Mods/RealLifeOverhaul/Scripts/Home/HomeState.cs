@@ -54,6 +54,9 @@ namespace RealLifeOverhaul
         public static int Leftovers;        // cooked portions put by
         public static int LeftoverDish;     // which dish they are (Dish.Number); 0: not known
         public static int LeftoverFill;     // what one of them fills when reheated; 0: HomeBalance.LeftoverSaturation
+        public static int Takeout;          // portions packed to take, carried with the player until eaten at a seat (Meals)
+        public static int TakeoutDish;      // which dish they are (Dish.Number); 0: not known
+        public static int TakeoutFill;      // what one of them fills; 0: HomeBalance.LeftoverSaturation
         public static int CoffeesToday;
         public static float StressHighHours; // hours on end with stress at the top
         public static int LastWorkoutDay;
@@ -97,6 +100,9 @@ namespace RealLifeOverhaul
             Leftovers = 0;
             LeftoverDish = 0;
             LeftoverFill = 0;
+            Takeout = 0;
+            TakeoutDish = 0;
+            TakeoutFill = 0;
             CoffeesToday = 0;
             StressHighHours = 0f;
             LastWorkoutDay = 0;
@@ -241,6 +247,10 @@ namespace RealLifeOverhaul
             {
                 Leftovers = 0;
             }
+            if (Takeout < 0 || Takeout > HomeBalance.TakeoutMost)
+            {
+                Takeout = Takeout < 0 ? 0 : HomeBalance.TakeoutMost;
+            }
         }
 
         public static void Save(Dictionary<string, string> data)
@@ -283,6 +293,9 @@ namespace RealLifeOverhaul
             Put(text, "md", MorningDay);
             Put(text, "fw", FitnessWeekAgo);
             Put(text, "tr", TrendDay);
+            Put(text, "tko", Takeout);   // appended under h1: a build without takeout reads past names it does not know
+            Put(text, "tkd", TakeoutDish);
+            Put(text, "tkf", TakeoutFill);
             text.Append(";diet=");
             for (int i = 0; i < Diet.Length; i++)
             {
@@ -331,6 +344,9 @@ namespace RealLifeOverhaul
                 case "md": MorningDay = (int)v; break;
                 case "fw": FitnessWeekAgo = v; break;
                 case "tr": TrendDay = (int)v; break;
+                case "tko": Takeout = (int)v; break;
+                case "tkd": TakeoutDish = (int)v; break;
+                case "tkf": TakeoutFill = (int)v; break;
             }
         }
 
@@ -354,6 +370,66 @@ namespace RealLifeOverhaul
             LeftoverDish = dish;
             Leftovers = had + kept;
             return kept;
+        }
+
+        /// <summary>
+        /// Packs cooked portions to take, as far as the player can carry; returns how many. Like the leftovers they are one
+        /// lot (the last dish, the average fill), so a portion is never two things at once.
+        /// </summary>
+        public static int Pack(int portions, int dish, int fill)
+        {
+            int had = Takeout < 0 ? 0 : Takeout;
+            int room = HomeBalance.TakeoutMost - had;
+            int kept = portions < room ? portions : room;
+            if (kept <= 0)
+            {
+                return 0;
+            }
+            int hadFill = TakeoutFill > 0 ? TakeoutFill : HomeBalance.LeftoverSaturation;
+            int portionFill = fill > 0 ? fill : HomeBalance.LeftoverSaturation;
+            TakeoutFill = (had * hadFill + kept * portionFill) / (had + kept);
+            TakeoutDish = dish;
+            Takeout = had + kept;
+            return kept;
+        }
+
+        /// <summary>One packed portion taken out to be eaten: its fill, or 0 when none is carried.</summary>
+        public static int TakeOne()
+        {
+            if (Takeout <= 0)
+            {
+                Takeout = 0;
+                return 0;
+            }
+            int fill = TakeoutFill > 0 ? TakeoutFill : HomeBalance.LeftoverSaturation;
+            Takeout--;
+            if (Takeout == 0)
+            {
+                TakeoutDish = 0;
+                TakeoutFill = 0;
+            }
+            return fill;
+        }
+
+        /// <summary>
+        /// The packed portions put by with the leftovers (the option switched off): as many as the fridge has room for; the
+        /// rest stay packed, so nothing is lost. Returns how many went in.
+        /// </summary>
+        public static int Unpack()
+        {
+            if (Takeout <= 0)
+            {
+                return 0;
+            }
+            int put = PutBy(Takeout, TakeoutDish, TakeoutFill > 0 ? TakeoutFill : HomeBalance.LeftoverSaturation);
+            Takeout -= put;
+            if (Takeout <= 0)
+            {
+                Takeout = 0;
+                TakeoutDish = 0;
+                TakeoutFill = 0;
+            }
+            return put;
         }
 
         public static float Clamp(float value, float low, float high)

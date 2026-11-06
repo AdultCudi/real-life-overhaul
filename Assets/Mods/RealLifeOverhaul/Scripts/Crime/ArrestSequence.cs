@@ -5,44 +5,21 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// An arrest, the same wherever it happens. The suspect stands with their hands up (the
-    /// hands_up and hands_up_hold clips, kept up until the cuffs are on; the gesture that stood
-    /// in for them where they cannot be had); the
-    /// officer closes in; the suspect is turned away and cuffed (hands behind the back from then
-    /// on, walking included: the cuffed_stand and cuffed_walk clips, or CuffPose where they cannot
-    /// be had). The cuffing itself is the pair of clips made for it where they can be had: the
-    /// officer walks to the place they are measured from, 0.9 m straight behind the suspect and
-    /// facing the same way, and the two are started together (arrest_cuffed straight out of the
-    /// raised hands and on into cuffed_stand; officer_cuff whole-body, its last pose held until
-    /// the suspect is walked off). At their click the officer's handcuffs leave the hand and
-    /// CuffPose's pair is on the wrists: one pair is ever seen. Anywhere else (no clips, the
-    /// officer could not get to that place, the suspect's hands were never up in the clip) it is
-    /// the reach and the cut to the cuffed stance it always was. The officer walks them to the kerb, a pace behind
-    /// with a hand on their arm; a patrol car is called and pulls up (ResponseUnit, lights on);
-    /// the suspect goes in the back (cuffed_car_enter at the rear door where they could walk to
-    /// the place that clip is made for; otherwise gone, with the sound of the door), the officer
-    /// gets in, and the car drives away.
-    /// Where a patrol car is already standing at the scene with its crew (a traffic stop, a
-    /// hit-and-run driver caught: BeginAtCar), nothing is called: the suspect is walked to that
-    /// car and put in the back, the officer gets in, and its owner drives it away.
-    /// With a car of the sequence's own, a second officer gets out of it at the kerb and stands by
-    /// while the suspect is put in, if the pool has one to spare.
-    /// If no patrol car can be had (the option is off, no road, no free car) the officer walks
-    /// the cuffed suspect away down the street, and neither leaves the street while the camera
-    /// is on them. Indoors there is no car: they go out through the shop door.
-    /// Owned and ticked by a scene; the two people are the scene's own roles, and the patrol
-    /// car is the one all scenes share (CrimeDirector.Patrol). Clear undoes everything.
+    /// An arrest, the same wherever it happens: hands up, cuffed from behind, walked to a patrol car called up (or one
+    /// already there) and driven away; with no car, walked off out of sight, and indoors out through the door. The mod's
+    /// clips play the cuffing and getting in wherever the two can stand where the clips are made for; otherwise a reach and
+    /// a cut. Owned and ticked by a scene; Clear undoes everything.
     /// </summary>
     internal sealed class ArrestSequence
     {
-        private const float RepathInterval = 0.4f;
-        private const float CarReach = 38f;      // a patrol car that stopped further away than this is not walked to
-        private const float CarWait = 32f;
-        private const int WalkAwayLegs = 3;
-        private const float PlaceWait = 4.5f;     // seconds the officer is given to get behind the suspect, and the suspect to have turned away
-        private const float Squared = 0.97f;      // cosine of how far off the line (14 degrees) someone may still be turned when a clip for two starts
-        private const float DoorExact = 0.2f;     // metres from where the getting-in clip is made for at which it is still played (as the taxi's passenger)
-        private const float DoorTurn = 1.2f;      // seconds given to turn square to the door before it is played anyway
+        private const float RepathInterval = 0.4f;   // seconds
+        private const float CarReach = 38f;       // metres: a patrol car that stopped further away is not walked to
+        private const float CarWait = 32f;        // seconds
+        private const int WalkAwayLegs = 3;       // at most this many stretches of pavement, then gone even in view
+        private const float PlaceWait = 4.5f;     // seconds for the officer to get behind and the suspect to turn away
+        private const float Squared = 0.97f;      // cosine of 14 degrees: turned near enough for a clip for two
+        private const float DoorExact = 0.2f;     // metres from the getting-in clip's place at which it is still played
+        private const float DoorTurn = 1.2f;      // seconds to turn square to the door before it is played anyway
 
         private enum Step { None, Closing, Placing, Cuffing, ToKerb, AwaitCar, Boarding, OfficerBoards, WalkAway, Done }
 
@@ -55,30 +32,29 @@ namespace RealLifeOverhaul
         private Vector3 _exit;       // indoors: the point beyond the shop door
         private bool _indoors;
         private bool _carComing;
-        private VehicleComponent _car;   // a patrol car that was already there and is somebody else's to drive away; null for the shared one
+        private VehicleComponent _car;   // a patrol car already there, somebody else's to drive away; null for the shared one
         private Vector3 _cellDoor;       // beside that car, where the suspect gets in
-        private readonly ActorRole _partner = new ActorRole();   // the second officer of the sequence's own car
+        private readonly ActorRole _partner = new ActorRole();   // the second officer of the shared car
         private int _legs;
-        private Vector3 _behind;         // where officer_cuff is made for: 0.9 m straight behind the suspect
-        private float _click = -1f;      // when the cuffs go on in the pair of clips; negative when that is not being played
-        private bool _led;               // the suspect is in arrest_cuffed / cuffed_stand as a stance of the role's
+        private Vector3 _behind;         // where officer_cuff is made for
+        private float _click = -1f;      // when the cuffs go on in the pair of clips; negative when not played
+        private bool _led;               // the suspect is in arrest_cuffed and cuffed_stand as the role's stance
         private bool _officerHolds;      // the officer is held on officer_cuff's last pose
         private bool _doorClip;          // the suspect is walking to where cuffed_car_enter is made for
-        private bool _doorRight;         // ...at a door on the car's right-hand side
+        private bool _doorRight;
         private Vector3 _doorStand;
         private Vector3 _doorInwards;
         private float _doorFrom = -1f;   // when they came to stand there
-        private float _seated = -1f;     // when the getting-in clip has them in the seat; negative while it is not playing
+        private float _seated = -1f;     // when the getting-in clip has them seated; negative while not playing
 
         public bool Active => _step != Step.None && _step != Step.Done;
 
         /// <summary>True once it is over, one way or the other: they have driven off, or walked out of sight.</summary>
         public bool Finished => _step == Step.Done;
 
-        /// <summary>True from the moment the cuffs are on: the point of no return, and when a scene should say how it ended.</summary>
+        /// <summary>True from the moment the cuffs are on: the point of no return, and when a scene says how it ended.</summary>
         public bool Cuffed { get; private set; }
 
-        /// <summary>True if it is ending in a patrol car and not on foot.</summary>
         public bool ByCar { get; private set; }
 
         public void Begin(ActorRole suspect, ActorRole officer, float now)
@@ -86,10 +62,7 @@ namespace RealLifeOverhaul
             Start(suspect, officer, now, false, default, null);
         }
 
-        /// <summary>
-        /// The same beside a patrol car that is already standing there, parked, with this officer
-        /// out of it: into the back of that one. When Finished, its owner drives it away.
-        /// </summary>
+        /// <summary>The same into the back of a patrol car parked there with this officer out of it; its owner drives it away.</summary>
         public void BeginAtCar(ActorRole suspect, ActorRole officer, VehicleComponent patrol, float now)
         {
             Start(suspect, officer, now, false, default, patrol);
@@ -119,7 +92,7 @@ namespace RealLifeOverhaul
             ByCar = false;
             if (!suspect.HandsRaised)
             {
-                suspect.Quiet();   // (someone a scene already has standing with their hands up keeps them up: they are not lowered to be raised again)
+                suspect.Quiet();   // hands already up in the clip stay up rather than being lowered and raised again
                 suspect.Drop();
             }
             suspect.Stand(officer.Present ? officer.Position : suspect.Position);
@@ -127,11 +100,10 @@ namespace RealLifeOverhaul
             _step = Step.Closing;
             _stepEnd = now + 10f;
             _nextRepath = 0f;
-            // Sent for at once, so that with luck it is pulling up as the cuffs go on.
             _car = car;
             if (car != null)
             {
-                // The back door on the kerb side if there is ground there, else the other; the officer's own door after.
+                // The back door on the kerb side if there is ground there, else the other; then the officer's own door.
                 bool right = StreetSpots.BesideCar(car, StreetSpots.Right, 1f, out _cellDoor);
                 bool left = StreetSpots.BesideCar(car, StreetSpots.Left, 1f, out _kerb);
                 if (!right && !left)
@@ -149,7 +121,7 @@ namespace RealLifeOverhaul
                 _carComing = false;
                 return;
             }
-            _carComing = !indoors && Settings.Police && CallCar(suspect.Position);
+            _carComing = !indoors && Settings.Police && CallCar(suspect.Position);   // at once: with luck it pulls up as the cuffs go on
         }
 
         public void Tick(float now, Vector3 player)
@@ -159,10 +131,10 @@ namespace RealLifeOverhaul
                 return;
             }
             _partner.Tick(now);
-            // (Once they are being put in the car, the suspect being gone is the arrest going as it should.)
+            // Gone while being put in the car is the arrest going as it should; gone before is nobody to arrest.
             if (!_suspect.Present && _step != Step.Boarding && _step != Step.OfficerBoards)
             {
-                Finish();   // taken from us (run over, the street unloaded): there is nobody to arrest
+                Finish();
                 return;
             }
             switch (_step)
@@ -170,15 +142,13 @@ namespace RealLifeOverhaul
                 case Step.Closing:
                     if (!_officer.Present || now >= _stepEnd || Near(_officer, _suspect, 1.9f))
                     {
-                        // Turned to face away, and the cuffs go on.
                         Vector3 away = _suspect.Position * 2f - (_officer.Present ? _officer.Position : player);
                         if (!_suspect.HandsRaised)
                         {
-                            _suspect.Quiet();   // the stand-in gesture stops here; hands held up in the clip stay up until the cuffs are on
+                            _suspect.Quiet();   // hands up in the clip stay up until the cuffs are on
                         }
                         _suspect.Stand(away);
-                        // With the pair of clips made for it the officer first walks to where they are measured from: straight
-                        // behind, 0.9 m off. (Only out of hands that are up in the clip: arrest_cuffed begins in that pose.)
+                        // For the pair of clips the officer first walks to their place: only from hands up in the clip.
                         Vector3 back = _officer.Present ? _officer.Position - _suspect.Position : default;
                         back.y = 0f;
                         if (_suspect.HandsRaised && back.sqrMagnitude > 0.04f && ClipLibrary.Has(SceneClips.ArrestCuffed) && ClipLibrary.Has(SceneClips.CuffedStand))
@@ -202,7 +172,7 @@ namespace RealLifeOverhaul
                 case Step.Placing:
                     if (_officer.Present && now < _stepEnd && !(_officer.Settled && TurnedFrom(_suspect, _behind)))
                     {
-                        break;   // still walking round, or the suspect has not turned their back yet
+                        break;
                     }
                     PutCuffsOn(now);
                     break;
@@ -217,11 +187,10 @@ namespace RealLifeOverhaul
                         break;
                     }
                     Click();
-                    _suspect.Quiet();   // hands down from beside the head, and behind the back (they are there already after arrest_cuffed)
-                    // Hands behind the back in the clips made for it, standing and walking (at the pace the walk was made
-                    // for); CuffPose sets the arms by hand whenever no such clip is on them.
+                    _suspect.Quiet();
+                    // Hands behind the back in the clips, at the pace the walk was made for; CuffPose holds them otherwise.
                     _suspect.Gait(SceneClips.CuffedWalk, SceneClips.WalkPace, SceneClips.CuffedStand);
-                    LetGo();   // the hand comes off the shoulder as they are walked off
+                    LetGo();
                     if (_indoors)
                     {
                         _suspect.WalkOff(_exit, Pace.Walk, 30f);
@@ -230,7 +199,6 @@ namespace RealLifeOverhaul
                     }
                     else if (_car != null)
                     {
-                        // The patrol car is right there: straight to its back door.
                         ByCar = true;
                         ToDoor(_car, _cellDoor, now);
                     }
@@ -276,8 +244,7 @@ namespace RealLifeOverhaul
                         _partner.Exit();
                         if (_car == null)
                         {
-                            // Away with the lights on; the game takes the car off the road in its own time.
-                            ReleaseCar();
+                            ReleaseCar();   // away with the lights on; the game takes it off the road in its own time
                         }
                         Finish();
                     }
@@ -288,7 +255,6 @@ namespace RealLifeOverhaul
                     break;
             }
 
-            // In the car: cuffs off the character before the pool has it back, then the officer goes round to the front.
             if (_step == Step.Boarding && !_suspect.Present)
             {
                 _officer.Board(_kerb, Pace.Walk, 8f);
@@ -302,7 +268,6 @@ namespace RealLifeOverhaul
             if (_suspect != null)
             {
                 Uncuff();
-
             }
             if (_step != Step.None && _step != Step.Done && _car == null)
             {
@@ -321,12 +286,10 @@ namespace RealLifeOverhaul
             if (_suspect != null)
             {
                 Uncuff();
-
             }
             _step = Step.Done;
         }
 
-        // Cuffs off: the clips first (they walk and stand as the game has them again), then the hand-set arms and the handcuffs.
         private void Uncuff()
         {
             if (Cuffed)
@@ -336,7 +299,7 @@ namespace RealLifeOverhaul
             if (_led)
             {
                 _led = false;
-                _suspect.Drop();   // the cuffed stance the role was given with arrest_cuffed
+                _suspect.Drop();
             }
             LetGo();
             _click = -1f;
@@ -345,9 +308,7 @@ namespace RealLifeOverhaul
             CuffPose.Remove(_suspect.Character);
         }
 
-        // ---------------------------------------------------------------- the cuffs going on
-
-        // The reach and the cut to the cuffed stance: what an arrest was before the pair of clips, and still is wherever they cannot be played.
+        // The reach and the cut to the cuffed stance, wherever the pair of clips cannot be played.
         private void Reach(float now)
         {
             _officer.Stand(_suspect.Position);
@@ -355,8 +316,7 @@ namespace RealLifeOverhaul
             Go(Step.Cuffing, now, 2.2f);
         }
 
-        // The officer is as near the place behind the suspect as the walk brought them. The pair of clips from exactly
-        // there, started in the same tick (they are the same length with the same click); the old reach from anywhere else.
+        // The pair of clips from exactly their place, started in the same tick; the reach from anywhere else.
         private void PutCuffsOn(float now)
         {
             Vector3 off = _officer.Present ? _officer.Position - _behind : default;
@@ -373,11 +333,11 @@ namespace RealLifeOverhaul
                 return;
             }
             _led = true;
-            _officer.PlaceAt(_behind, _suspect.Position);   // the last centimetres, under the cross-fade into the step in
+            _officer.PlaceAt(_behind, _suspect.Position);   // the last centimetres, under the cross-fade
             _officerHolds = _officer.Act(SceneClips.OfficerCuff, ClipEnd.Hold);
             if (!_officerHolds)
             {
-                _officer.Gesture(CrimeSceneGestures.Reach);   // (too heavily built for a clip with a tool, or no handcuffs in the prop bundle)
+                _officer.Gesture(CrimeSceneGestures.Reach);   // too heavily built for a clip with a tool, or no handcuffs prop
             }
             _click = now + Mathf.Clamp(cuffing.Mark(SceneClips.CuffClick, cuffing.Length * 0.6f), 0.1f, Mathf.Max(0.1f, cuffing.Length));
             Crime.Logger?.Info(System.FormattableString.Invariant($"Crime: cuffed in the pair of clips, the officer {off.magnitude:F2} m from the place they are made for")
@@ -385,7 +345,7 @@ namespace RealLifeOverhaul
             Go(Step.Cuffing, now, cuffing.Length);
         }
 
-        // The cuffs are on: the pair on the wrists is shown and the one in the officer's hand is put away, so one pair is ever seen.
+        // The cuffs are on: the pair in the officer's hand is put away as the pair on the wrists shows.
         private void Click()
         {
             _click = -1f;
@@ -401,7 +361,6 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The officer's hand off the suspect's shoulder: officer_cuff is held on its last pose only while they stand so.
         private void LetGo()
         {
             if (_officerHolds)
@@ -415,7 +374,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // True once somebody standing has their back to a point (the officer behind them), near enough for a clip made for two.
+        // True once somebody standing has their back to a point, near enough for a clip made for two.
         private static bool TurnedFrom(ActorRole who, Vector3 point)
         {
             ThirdPersonCharacter body = who.Character;
@@ -430,11 +389,7 @@ namespace RealLifeOverhaul
             return away.sqrMagnitude > 0.0001f && facing.sqrMagnitude > 0.0001f && Vector3.Dot(away.normalized, facing.normalized) >= Squared;
         }
 
-        // ---------------------------------------------------------------- into the back of the car
-
-        // To the back door. With the clip for getting in cuffed, and a way there, they walk to where it is made for
-        // (square to the rear door, the feet 0.75 m out from the middle of the seat) and get in in it; otherwise to the
-        // ground beside the car as before, and gone with the sound of the door.
+        // To where the getting-in clip is made for, given the clip and a whole route; else beside the car, gone with the door.
         private void ToDoor(VehicleComponent car, Vector3 beside, float now)
         {
             _doorClip = false;
@@ -489,7 +444,7 @@ namespace RealLifeOverhaul
             bool there = off.sqrMagnitude <= DoorExact * DoorExact;
             if (there && now - _doorFrom < DoorTurn && !TurnedFrom(_suspect, _doorStand - _doorInwards * 3f))
             {
-                return;   // still turning to the door
+                return;   // still turning
             }
             string clip = _doorRight ? SceneClips.CuffedCarEnter : SceneClips.CuffedCarEnterLeft;
             ActorPool.PlayDoorSound(_suspect.Position);
@@ -536,8 +491,6 @@ namespace RealLifeOverhaul
             _officer.Go(Crime.Short(_suspect.Position, _officer.Position, 0.8f), Pace.Walk, _suspect.Position, 8f);
         }
 
-        // ---------------------------------------------------------------- the patrol car
-
         private static bool CallCar(Vector3 scene)
         {
             ResponseUnit car = CrimeDirector.Patrol;
@@ -547,13 +500,10 @@ namespace RealLifeOverhaul
             }
             if (car.InUse)
             {
-                // Already here for this scene (it chased the suspect): close enough is good enough.
+                // Already here (it chased the suspect): close enough is good enough.
                 return !car.IsLost && car.Car != null && (car.Car.transform.position - scene).sqrMagnitude < CarReach * CarReach;
             }
-            // It pulls up as the accident units do: in its lane, on a plain stretch of road, never in a junction
-            // or on a crossing. Its route ends on that road point and it stops there; the officer walks the
-            // suspect to the kerb beside it. Only where the scene has no such stretch nearby does it stop
-            // wherever it gets within reach.
+            // In its lane on a plain stretch, as the accident units stop; with none near, wherever it gets within reach.
             Waypoint anchor = TrafficTools.ClosestWaypoint(scene, 45f, PlainLane);
             bool plain = anchor != null;
             if (!plain)
@@ -587,11 +537,7 @@ namespace RealLifeOverhaul
 
         private static void ReleaseCar()
         {
-            ResponseUnit car = CrimeDirector.Patrol;
-            if (car != null)
-            {
-                car.Release(TrafficTools.Ready, remove: false, quiet: true);
-            }
+            CrimeDirector.Patrol?.Release(TrafficTools.Ready, remove: false, quiet: true);
         }
 
         // Where they wait: the pavement nearest the road the car is coming along.
@@ -624,14 +570,12 @@ namespace RealLifeOverhaul
                 return;
             }
 
-            // It has pulled up (or got as close as it could). To the kerb beside it, and in.
-            car.Park();
+            car.Park();   // pulled up, or as close as it could get
             Vector3 at = car.Car.transform.position;
             if ((at - _suspect.Position).sqrMagnitude < CarReach * CarReach && StreetSpots.OnPavement(at, 9f, out Vector3 beside))
             {
                 _kerb = beside;
                 ToDoor(car.Car, beside, now);
-                // The driver of the patrol car gets out at the kerb and stands by while the suspect is put in.
                 Vector3 along = car.Car.transform.forward;
                 if (StreetSpots.OnPavement(beside + along * 1.8f, 1.5f, out Vector3 watch) && (watch - beside).sqrMagnitude > 1f
                     && _partner.Enter(watch, ActorLook.Officer, 1.5f, onRoad: false))
@@ -648,9 +592,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- on foot
-
-        // One more stretch of pavement away from the player. They only leave the street where the camera is not on them.
+        // One more stretch of pavement away from the player; they leave the street only out of view.
         private void NextLeg(float now, Vector3 player)
         {
             _legs++;

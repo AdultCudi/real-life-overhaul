@@ -1,0 +1,184 @@
+{
+ "bundle": "reallife_props_site",
+ "set": "site",
+ "sha256": "3658568d63f51fff7a4558c6bb698029ac6852186238e7c36646510fc2065584",
+ "bytes": 535280,
+ "triangles": 6350,
+ "triangle_limit": 12000,
+ "atlas": {
+  "width": 1024,
+  "height": 512,
+  "used": 69
+ },
+ "textures": [
+  "props_base",
+  "props_mask"
+ ],
+ "props": [
+  {
+   "id": "tower_crane_mast",
+   "mesh": "tower_crane_mast",
+   "triangles": 600,
+   "material": "lit",
+   "size": [
+    6.0,
+    40.0476,
+    6.0
+   ]
+  },
+  {
+   "id": "tower_crane_jib",
+   "mesh": "tower_crane_jib",
+   "triangles": 868,
+   "material": "lit",
+   "size": [
+    3.96,
+    22.4032,
+    40.0607
+   ]
+  },
+  {
+   "id": "site_cabin",
+   "mesh": "site_cabin",
+   "triangles": 232,
+   "material": "lit",
+   "size": [
+    6.06,
+    2.6,
+    2.93
+   ]
+  },
+  {
+   "id": "site_toilet",
+   "mesh": "site_toilet",
+   "triangles": 124,
+   "material": "lit",
+   "size": [
+    1.18,
+    2.28,
+    1.305
+   ]
+  },
+  {
+   "id": "site_stack_blocks",
+   "mesh": "site_stack_blocks",
+   "triangles": 336,
+   "material": "lit",
+   "size": [
+    1.2,
+    1.04,
+    1.0
+   ]
+  },
+  {
+   "id": "site_stack_timber",
+   "mesh": "site_stack_timber",
+   "triangles": 168,
+   "material": "lit",
+   "size": [
+    1.0,
+    0.57,
+    3.6
+   ]
+  },
+  {
+   "id": "site_stack_rebar",
+   "mesh": "site_stack_rebar",
+   "triangles": 300,
+   "material": "lit",
+   "size": [
+    1.0,
+    0.32,
+    4.0
+   ]
+  },
+  {
+   "id": "site_earthworks",
+   "mesh": "site_earthworks",
+   "triangles": 800,
+   "material": "lit",
+   "size": [
+    10.0,
+    0.374,
+    10.0
+   ]
+  },
+  {
+   "id": "hammer",
+   "mesh": "hammer",
+   "triangles": 120,
+   "material": "lit",
+   "size": [
+    0.1641,
+    0.3365,
+    0.033
+   ]
+  },
+  {
+   "id": "stadium_stand",
+   "mesh": "stadium_stand",
+   "triangles": 1332,
+   "material": "lit",
+   "size": [
+    10.0,
+    15.0394,
+    12.05
+   ]
+  },
+  {
+   "id": "stadium_end",
+   "mesh": "stadium_end",
+   "triangles": 984,
+   "material": "lit",
+   "size": [
+    10.0,
+    7.6,
+    9.05
+   ]
+  },
+  {
+   "id": "stadium_corner",
+   "mesh": "stadium_corner",
+   "triangles": 236,
+   "material": "lit",
+   "size": [
+    8.8,
+    9.5,
+    11.8
+   ]
+  },
+  {
+   "id": "stadium_floodlight",
+   "mesh": "stadium_floodlight",
+   "triangles": 104,
+   "material": "lit",
+   "size": [
+    5.6,
+    33.9488,
+    1.9724
+   ]
+  },
+  {
+   "id": "stadium_lamps",
+   "mesh": "stadium_lamps",
+   "triangles": 144,
+   "material": "glow",
+   "size": [
+    5.4,
+    2.8431,
+    1.1815
+   ]
+  },
+  {
+   "id": "stadium_pitch",
+   "mesh": "stadium_pitch",
+   "triangles": 2,
+   "material": "lit",
+   "size": [
+    52.0,
+    0.0,
+    48.0
+   ]
+  }
+ ]
+}

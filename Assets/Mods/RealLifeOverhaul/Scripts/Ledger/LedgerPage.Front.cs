@@ -354,7 +354,7 @@ namespace RealLifeOverhaul.Ledger
             float bw = 0.7f * w, size = 0.026f * u;
             _fAd.fontSize = size;
             string words = "<size=170%><b><smallcaps><cspace=0.1em>" + Plain(LedgerText.T("reallife_ledger_ad_head")) + "</cspace></smallcaps></b></size>" + VT
-                           + Plain(LedgerText.Fill("reallife_ledger_ad_body", "price", LedgerText.Money(_director.WeekPrice)));
+                           + Plain(LedgerText.Fill(LedgerCatalogue.AdBodyKey(Settings.LedgerKiosks), "price", LedgerText.Money(_director.WeekPrice)));
             float th = Tall(_fAd, words, bw - 0.08f * u);
             float bh = Mathf.Max(th + 0.05f * u, h - 0.03f * u);
             float bx = x + (w - bw) * 0.5f, by = y + Mathf.Max(0f, h - bh) * 0.5f;

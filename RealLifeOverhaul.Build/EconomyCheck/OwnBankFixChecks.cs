@@ -56,7 +56,7 @@ internal static partial class Program
             Check(OwnBankRules.MostOut(b, c.Level) == 0 && b.FoundedLeast == OwnBankRules.LeastAt(0) * (1000 + closures * OwnBankCatalogue.AgainCapital) / 1000,
                 "own bank fix: on the day a bank is founded after " + closures + " closure(s) no dividend can be taken (" + OwnBankRules.MostOut(b, c.Level) + ")");
         }
-        Check(MemberText(EconomySource(@"OwnBank\OwnBankDirector.cs"), "public bool Found(").Contains("_bank.FoundedLeast = OwnBankRules.LeastAt(share, _bank.Closures)"),
+        Check(MemberText(EconomySource(@"OwnBank\OwnBankDirector.cs"), "public bool Found(").Contains("_bank.FoundedLeast = OwnBankRules.TierLeastAt(BankTiers.Community, share, _bank.Closures)"),
             "own bank fix: the bank keeps the capital it was founded with, closures and all");
     }
 
@@ -95,7 +95,7 @@ internal static partial class Program
               && app.Contains("_director.Found(name, licence, capital, out string why)") && app.Contains("_director.Sell(value, out string why)"),
             "own bank fix: founding and selling go ahead only at the sums the player confirmed");
         int pay = found.IndexOf("OwnBankGame.Pay(capital", System.StringComparison.Ordinal);
-        Check(pay > 0 && found.IndexOf("OwnBankGame.Give(licence, OwnBankCatalogue.LicenceKey, hq, GameBooks.Licensing)", pay, System.StringComparison.Ordinal) > pay
+        Check(pay > 0 && found.IndexOf("OwnBankGame.Give(licence, OwnBankCatalogue.LicenceKey, hq, named, GameBooks.Licensing)", pay, System.StringComparison.Ordinal) > pay
               && found.IndexOf("|| !OwnBankGame.Pay(capital", System.StringComparison.Ordinal) < 0,
             "own bank fix: a capital payment the game refuses gives the licence back");
     }
@@ -113,7 +113,7 @@ internal static partial class Program
         string[] fields = line.Substring(head + 3, end - head - 3).Split('|');
         string older = line.Substring(0, head + 3) + string.Join("|", fields, 0, 33) + line.Substring(end);
         OwnBank old = OwnBankStore.Read(older, out _);
-        Check(fields.Length == 35 && old != null && old.WatchTold == int.MinValue && !old.Still, "own bank fix: a line written before both fields reads as never told and not stood still");
+        Check(fields.Length >= 35 && old != null && old.WatchTold == int.MinValue && !old.Still, "own bank fix: a line written before both fields reads as never told and not stood still");
         Check(EconomySource(@"OwnBank\OwnBankDirector.cs").IndexOf("_watchTold", System.StringComparison.Ordinal) < 0, "own bank fix: the director keeps no watch day of its own");
 
         OwnBank t = NewBank(c, 3);

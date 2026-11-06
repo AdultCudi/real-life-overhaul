@@ -11,7 +11,7 @@ namespace RealLifeOverhaul
     /// Everything the city's drivers ask of the game: each pooled car measured once (its body, its nose, how far its sensor
     /// reaches past it), the lane point a car is driving to and the way its indicator says it turns, the player's car with the
     /// game's own parking room behind it, and the hold lines: two trigger boxes tagged "AiVehicleHalt" on the layer of the
-    /// game's own parking room, which the traffic system holds its cars for by itself. Nothing on a car or a lane point is
+    /// game's own parking room, which the traffic system holds its cars for by itself, made behind the loading screen. Nothing on a car or a lane point is
     /// ever written. Cost: nothing per frame; a few cars measured a look until all are known.
     /// </summary>
     internal sealed class DriverGame
@@ -221,6 +221,9 @@ namespace RealLifeOverhaul
         private readonly BoxCollider[] _lineBox = new BoxCollider[2];
         private readonly bool[] _lineOut = new bool[2];
         private bool _linesMade;
+        private bool _linesLayered;         // their layer set, as the first went out
+        private bool _linesHidden;          // made behind the loading screen; and in how many ms (the self-check line)
+        private double _linesMs;
         private bool _linesFailed;
         private int _lineLayer = -1;
 
@@ -245,8 +248,19 @@ namespace RealLifeOverhaul
             return _lineLayer;
         }
 
-        // The two, made once. False (and the lines are the mod's own braking alone) if the game refuses the tag or has no such layer.
-        private bool MakeLines(Transform parent)
+        /// <summary>
+        /// Behind the loading screen (ScenePrewarm): the two hold lines made where no frame is seen, switched off. Their layer is
+        /// chosen when the first is put out, as it always was (the parking room of the car the player drives then). Made in the
+        /// look that first wanted one they were 9 ms (the own-spike scan, 28 Oct 2026).
+        /// </summary>
+        public bool MakeAll(Transform parent)
+        {
+            MakeLines(parent, true);
+            return true;
+        }
+
+        // The two, made once. False (and the lines are the mod's own braking alone) if the game refuses the tag.
+        private bool MakeLines(Transform parent, bool hidden)
         {
             if (_linesMade)
             {
@@ -256,20 +270,15 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
+            long began = System.Diagnostics.Stopwatch.GetTimestamp();
             try
             {
-                int layer = LineLayer();
-                if (layer < 0)
-                {
-                    throw new InvalidOperationException("the game has no layer for the player's cars any more");
-                }
                 for (int i = 0; i < _line.Length; i++)
                 {
                     var line = new GameObject("RealLifeOverhaul Hold Line " + (i + 1));
                     _line[i] = line;
                     line.transform.SetParent(parent, false);   // (a parent: some of the game's triggers ask whose child a collider is)
                     line.transform.position = new Vector3(0f, ParkedAt, 0f);
-                    line.layer = layer;
                     line.tag = HaltTag;   // throws if the game has no such tag any more
                     Rigidbody body = line.AddComponent<Rigidbody>();
                     body.isKinematic = true;
@@ -282,23 +291,53 @@ namespace RealLifeOverhaul
                     line.SetActive(false);
                 }
                 _linesMade = true;
-                Logger?.Info($"City drivers: {_line.Length} hold lines made on layer '{LayerMask.LayerToName(_lineLayer)}' (triggers tagged '{HaltTag}', as the game's own "
-                             + "parking room is): made once, switched off until needed.");
+                _linesHidden = hidden;
+                _linesMs = (System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
                 return true;
             }
             catch (Exception e)
             {
-                Logger?.Warn("City drivers: the hold lines could not be made (" + e.Message + "); a car is held for the player by the mod's own braking alone.");
-                DestroyLines();
-                _linesFailed = true;
+                LinesFailed(e.Message);
                 return false;
             }
+        }
+
+        // The lines' layer, set once as the first goes out: the game's own parking room's, else "Vehicles". False if there is none.
+        private bool Layered()
+        {
+            if (_linesLayered)
+            {
+                return true;
+            }
+            int layer = LineLayer();
+            if (layer < 0)
+            {
+                LinesFailed("the game has no layer for the player's cars any more");
+                return false;
+            }
+            for (int i = 0; i < _line.Length; i++)
+            {
+                _line[i].layer = layer;
+            }
+            _linesLayered = true;
+            Logger?.Info($"City drivers: {_line.Length} hold lines made on layer '{LayerMask.LayerToName(_lineLayer)}' (triggers tagged '{HaltTag}', as the game's own "
+                         + "parking room is): made once, switched off until needed.");
+            Logger?.Info(FormattableString.Invariant($"Traffic check (hold lines made out of play): made {(_linesHidden ? "behind the loading screen" : "in the look that first wanted one")} ")
+                         + FormattableString.Invariant($"in {_linesMs:F2} ms (wanted: none made in play): ") + (_linesHidden ? "PASS" : "FAIL") + ".");
+            return true;
+        }
+
+        private void LinesFailed(string why)
+        {
+            Logger?.Warn("City drivers: the hold lines could not be made (" + why + "); a car is held for the player by the mod's own braking alone.");
+            DestroyLines();
+            _linesFailed = true;
         }
 
         /// <summary>Puts a hold line across a lane: its middle on the road, the way the lane runs, as wide as the lane. False if lines cannot be used.</summary>
         public bool PlaceLine(int slot, Vector3 middle, Vector3 forward, float width, Transform parent)
         {
-            if (!MakeLines(parent))
+            if (!MakeLines(parent, false) || !Layered())
             {
                 return false;
             }
@@ -354,6 +393,7 @@ namespace RealLifeOverhaul
                 _lineOut[i] = false;
             }
             _linesMade = false;
+            _linesLayered = false;
         }
 
         // ---------------------------------------------------------------- lanes

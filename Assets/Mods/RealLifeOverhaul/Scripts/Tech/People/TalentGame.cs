@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
+using BigAmbitions.Items;
 using Entities;
 using Helpers;
 using Localizor;
@@ -15,6 +16,9 @@ namespace RealLifeOverhaul.Tech
     /// </summary>
     internal static class TalentGame
     {
+        /// <summary>Owner deduction labels whose mixed costs have no single portable recurrence rule.</summary>
+        internal static string[] CompanionUnclassifiedTaxLabels() => new[] { DeductKey.GetLocalization() };
+
         public const string WagesKey = "reallife_transaction_tech_wages";
         public const string SeveranceKey = "reallife_transaction_tech_severance_wage";
         public const string TrainingKey = "reallife_transaction_tech_training";
@@ -47,7 +51,7 @@ namespace RealLifeOverhaul.Tech
                     return true;
                 }
                 BuildingRegistration reg = e.assignedAddress != null ? BuildingHelper.GetBuildingRegistration(e.assignedAddress) : null;
-                return reg != null && reg.GetBuildingType() == Office;
+                return reg != null && GameRegistrations.BuildingType(reg) == Office;
             }
             catch (Exception)
             {
@@ -109,6 +113,9 @@ namespace RealLifeOverhaul.Tech
         public static int WeekHours(EmployeeInstance e) => Math.Max(0, e.workedHoursThisWeek);
 
         public static int WageCents(EmployeeInstance e) => Mathf.RoundToInt(e.hourlyWage * 100f);
+
+        /// <summary>What the player is charged an hour for somebody on the game's payroll, cents: the city's prices and any raise (Core/PaidWage).</summary>
+        public static int PaidCents(EmployeeInstance e) => PaidWage.Now(e.hourlyWage, e.id);
 
         public static BuildingRegistration Business(EmployeeInstance e)
         {
@@ -181,6 +188,54 @@ namespace RealLifeOverhaul.Tech
 
         public static string TypeOf(BuildingRegistration reg) => reg != null ? reg.businessTypeName ?? string.Empty : string.Empty;
 
+        /// <summary>False for a business the game gives no desks and no shifts (a warehouse, so a data centre): nobody of the game's is ever seated there.</summary>
+        public static bool Shifts(BuildingRegistration reg) => !HiringRules.NoShifts(TypeOf(reg));
+
+        /// <summary>True if the employee has a shift at a placed station (not cleaning) in the business's schedule: the game's own desk and shift that work needs.</summary>
+        public static bool StationShift(EmployeeInstance e, BuildingRegistration reg)
+        {
+            try
+            {
+                List<ScheduleDay> days = e != null && reg != null ? reg.scheduleDays : null;
+                Dictionary<string, ItemInstance> placed = reg != null ? reg.itemInstances : null;
+                for (int d = 0; days != null && placed != null && d < days.Count; d++)
+                {
+                    List<WorkShift> shifts = days[d] != null ? days[d].workShifts : null;
+                    for (int s = 0; shifts != null && s < shifts.Count; s++)
+                    {
+                        WorkShift w = shifts[s];
+                        if (w != null && w.employeeId == e.id && w.type != WorkShiftType.Cleaning && !string.IsNullOrEmpty(w.itemInstanceId) && placed.ContainsKey(w.itemInstanceId))
+                        {
+                            return true;
+                        }
+                    }
+                }
+            }
+            catch (Exception)
+            {
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// A professional the game's own hiring left at a business with no shifts is taken off it the game's own way (its unassigning: off
+        /// every shift, the address cleared, the game's idle task for the player to place them), so they wait in its staff list for a
+        /// desk instead of standing at a door they can never work at. False, with nothing changed, if the game refused.
+        /// </summary>
+        public static bool Unseat(EmployeeInstance e)
+        {
+            try
+            {
+                EmployeeHelper.UnassignEmployeeFromAllWorkshifts(e);
+                return e.assignedAddress == null;
+            }
+            catch (Exception ex)
+            {
+                Logger?.Error(ex);
+                return false;
+            }
+        }
+
         /// <summary>The player's businesses that can employ professionals: every named business but an empty one. One pass over the buildings.</summary>
         public static void Businesses(List<BuildingRegistration> into)
         {
@@ -190,7 +245,7 @@ namespace RealLifeOverhaul.Tech
             {
                 BuildingRegistration reg = all[i];
                 if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.HasEstablishedBusiness && !string.IsNullOrEmpty(reg.businessTypeName)
-                    && reg.businessTypeName != "ba:businesstype_empty")
+                    && reg.businessTypeName != "ba:businesstype_empty" && GameRegistrations.Found(reg))
                 {
                     into.Add(reg);
                 }
@@ -323,7 +378,7 @@ namespace RealLifeOverhaul.Tech
                 ? new TransactionInfo(key, Salaries, new Dictionary<string, string>(2) { { "name", name ?? string.Empty } })
                 : new TransactionInfo(key, new Dictionary<string, string>(2) { { "name", name ?? string.Empty } });
             info.SetTaxDeductibleName(DeductKey.GetLocalization());
-            return GameManager.ChangeMoneySafe(-cents / 100f, info, null, at != null ? at.Address : null, force);
+            return RealLifeOverhaul.Economy.BizBooks.Book(-cents / 100f, info, null, at != null ? at.Address : null, force);
         }
     }
 }

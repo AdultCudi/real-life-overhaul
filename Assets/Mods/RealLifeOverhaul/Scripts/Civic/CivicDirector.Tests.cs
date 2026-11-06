@@ -159,7 +159,7 @@ namespace RealLifeOverhaul
                 if (_sites.DressNow(site, day))
                 {
                     _worldOut = true;
-                    CivicText.Toast(NotificationType.Success, "reallife_civic_test_site", "project", CivicWorks.ProjectName(site), "address", CivicCity.AddressText(site.Street, site.Number), 9f);
+                    CivicText.Toast(NotificationType.Success, "reallife_civic_test_site", "project", CivicWorks.ProjectName(site), "address", CivicWorks.PlaceText(site), 9f);
                     return;
                 }
                 if (started)
@@ -316,9 +316,14 @@ namespace RealLifeOverhaul
             }
             try
             {
-                if (_scenes.Active || !OfficeScenes.Free())
+                if (_scenes.Active)
                 {
                     TestRefusals.Tell(Logger, "Civic office scene", TestRefusal.ScreenBusy);
+                    return;
+                }
+                if (!OfficeScenes.Free())
+                {
+                    TestWait.Run(Logger, "Civic office scene", OfficeScenes.Free, TestScene);   // the options menu is what is in the way
                     return;
                 }
                 int day = TimeHelper.CurrentDay;

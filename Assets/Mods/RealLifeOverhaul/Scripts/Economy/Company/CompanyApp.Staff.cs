@@ -108,6 +108,7 @@ namespace RealLifeOverhaul.Economy
                 box.Note(CompanyText.T("reallife_co_staff_sick_what", "share", CompanyText.Share(CompanyCatalogue.SickShare[state.SickPolicy]),
                     "standing", CompanyText.Percent(CompanyCatalogue.SickStanding[state.SickPolicy]).TrimEnd('%')));
                 box.Note(CompanyText.T("reallife_co_staff_market"));
+                box.Note(CompanyText.T("reallife_co_staff_picked"));   // several at once go through the game's own list, where people are picked
                 Guide(box);
             }
         }
@@ -181,11 +182,21 @@ namespace RealLifeOverhaul.Economy
                 box.Note(CompanyText.T("reallife_wage_rested_line", "day", f.AskRest.ToString()));   // one raise in the rest's time
             }
             box.Section("reallife_ibox_sec_pay");
-            box.Row("reallife_co_emp_wage", CompanyText.Wage(f.Wage));
-            if (f.Raise > 0)
+            // The parts are named only when they differ from the game's own figure, which is all the game's screens ever showed.
+            int city = f.Wage - f.Base;
+            if (city != 0 || f.Raise > 0)
             {
-                box.Row("reallife_co_emp_raise", CompanyText.Wage(f.Raise));
+                box.Row("reallife_wage_row_game", CompanyText.Wage(f.Base));
+                if (city != 0)
+                {
+                    box.Row("reallife_wage_row_city", CompanyText.SignedWage(city));
+                }
+                if (f.Raise > 0)
+                {
+                    box.Row("reallife_co_emp_raise", CompanyText.Wage(f.Raise));
+                }
             }
+            box.Row("reallife_wage_row_paid", CompanyText.Wage(f.Paid));
             box.Row("reallife_co_emp_going", CompanyText.Wage(f.Going), f.Going > f.Paid ? CellTone.Yellow : CellTone.Plain);
             box.Section("reallife_ibox_sec_feeling");
             box.Meter("reallife_co_emp_standing", f.Standing / 100f, f.Standing.ToString(),

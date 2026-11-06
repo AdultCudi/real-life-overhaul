@@ -11,40 +11,25 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
-    /// The table of an app, whatever it lists: the game's own (BaTable) over the game's scroller, which makes only
-    /// the rows in view and reuses them. An app hands over its rows and the table's specification; the order, the
-    /// filter and the totals are the model's (TableView, TableModel), and this class shows the rows in that order,
-    /// with one line at the foot for the totals (as EconoView's income statement ends in its total) and one sentence
-    /// where a filter leaves nothing (as EconoView says "no loans" in the list's place).
-    ///
-    /// A list of thousands (every movement of money of a month) is shown from a source instead (ITableSource, Show with a
-    /// source): the table orders, filters and sums it by its figures and kinds, and a row's words are written only when
-    /// the scroller brings it into view (TableRow.Ready, from DataCellView.SetData), so a tab of 30,000 movements makes
-    /// some fifteen rows of words. The rows standing for a source's rows are the table's own, kept and used again.
-    ///
-    /// The header names are not fields of TableRow, so the game's own sort by reflection takes no part.
+    /// An app's table: the game's BaTable over its scroller, which makes only the rows in view, in the model's order
+    /// (TableView, TableModel), with a totals line and a sentence where a filter leaves nothing. A source's rows are written
+    /// only as they come into view. Costs nothing a frame of its own.
     /// </summary>
     public sealed class DataTable : BaTable<DataCellView, TableRow>
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For(null, "DataTable", typeof(DataTable));   // the game's calls of it (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "DataTable", typeof(DataTable));   // the game's calls of it
 
-        /// <summary>How the totals line writes an amount: the app's own way of writing money.</summary>
+        /// <summary>How the totals line writes money.</summary>
         public Func<double, string> Money = amount => ((float)amount).ToShortCurrencyFormat();
-        /// <summary>
-        /// The filter took the selected row out and left nothing to select in its place: the app closes what it was
-        /// showing of that row. (Where a row is left, the first is selected as a click would: onRowSelected.)
-        /// </summary>
+        /// <summary>A filter took the selected row out and left none to select: the app closes what it showed of it.</summary>
         public Action SelectionLost;
 
-        /// <summary>
-        /// The player picked a kind in a filter and the selection needed nothing done: an app whose box says
-        /// something about the rows shown (a category's share) writes itself again.
-        /// </summary>
+        /// <summary>A kind was picked and the selection needed nothing done: an app whose box speaks of the rows shown writes itself again.</summary>
         public Action Filtered;
 
         private readonly List<TableRow> _shown = new List<TableRow>(48);
         private readonly TableRow _total = new TableRow(), _empty = new TableRow();
-        private readonly List<TableRow> _standing = new List<TableRow>(64);   // the rows a source's rows stand in, kept and used again
+        private readonly List<TableRow> _standing = new List<TableRow>(64);   // the rows a source's rows stand in, kept and reused
         private readonly List<TableRow> _rowsOf = new List<TableRow>(64);     // those of the source shown now, in its order
         private List<TableRow> _source;
         private ITableSource _from;   // the source the rows are written from, or null for rows the app wrote
@@ -53,17 +38,13 @@ namespace RealLifeOverhaul.GameUi
         private int _layout;
 
         public TableSpec Spec => _view != null ? _view.Model.Spec : null;
-        /// <summary>Changes when another table is shown: a row lays its cells out again when it differs from what it last saw.</summary>
+        /// <summary>Changes when another table is shown: a row lays its cells out again when it differs.</summary>
         public int Layout => _layout;
 
-        /// <summary>The colour of the selected row, the game's own (read from its row by the frame).</summary>
+        /// <summary>The game's colour of the selected row, read from its row by the frame.</summary>
         public Color RowSelected { get; private set; }
 
-        /// <summary>
-        /// The table of an app, on its frame: the game's row made into plain cells, the game's scroller, and the
-        /// frame's header cells and filter. Null, with one line in Player.log, if the game's row is not as expected.
-        /// Called while the frame still sleeps (in the app's Build).
-        /// </summary>
+        /// <summary>The app's table on its frame, made while the frame sleeps (Build); null, with one log line, if the game's row is not as expected.</summary>
         public static DataTable On(AppShell shell, string app)
         {
             if (shell == null || !AppShell.PrepareRow(shell.RowPrefab, TableSpec.MaxColumns, app))
@@ -90,7 +71,7 @@ namespace RealLifeOverhaul.GameUi
 
         public override float GetCellViewSize(EnhancedScroller scroller, int dataIndex)
         {
-            return 100f;   // what every table of the game's phone uses
+            return 100f;   // every table of the game's phone uses it
         }
 
         protected override string GetDataId(TableRow model)
@@ -109,11 +90,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        /// <summary>
-        /// Shows these rows as the table the specification describes, with the row of that id selected. The first
-        /// time the app opens this runs before the scroller has woken up: the rows are kept and Start shows them.
-        /// The same table written again (a figure changed, a row was clicked) stays where the player scrolled to.
-        /// </summary>
+        /// <summary>Shows the rows with the row of that id selected; the same table written again keeps the player's scroll.</summary>
         public void Show(TableSpec spec, List<TableRow> rows, string selectedId)
         {
             bool same = ReferenceEquals(spec, Spec) && ReferenceEquals(rows, _source) && _from == null;
@@ -123,16 +100,11 @@ namespace RealLifeOverhaul.GameUi
             }
             _source = rows;
             _from = null;
-            _view.Begin(spec, rows);   // (a line of words and a pinned row come first, unless the table neither sorts nor filters: TableModel.Begin)
+            _view.Begin(spec, rows);   // a line of words and a pinned row first, unless the table neither sorts nor filters
             Shown(selectedId, same);
         }
 
-        /// <summary>
-        /// Shows a table whose rows are written only as they come into view (a list of thousands: GameUi.ITableSource), as
-        /// the table the specification describes. Its order, filter and totals are those of the rows written in full; a
-        /// row's words are made when the scroller shows it, a column's words when the table is ordered by it. The same
-        /// source shown again stays where the player scrolled to. Its rows are kept by the table and used again.
-        /// </summary>
+        /// <summary>Shows a table whose rows are written as they come into view (<see cref="ITableSource"/>); the same source again keeps the scroll.</summary>
         public void Show(TableSpec spec, ITableSource source, string selectedId)
         {
             bool same = ReferenceEquals(spec, Spec) && ReferenceEquals(source, _from);
@@ -143,7 +115,7 @@ namespace RealLifeOverhaul.GameUi
             int count = source.Count;
             while (_standing.Count < count)
             {
-                _standing.Add(new TableRow());   // (once for the longest list this table has shown: some 70 bytes a row)
+                _standing.Add(new TableRow());   // once for the longest list shown: some 70 bytes a row
             }
             _rowsOf.Clear();
             for (int r = 0; r < count; r++)
@@ -166,7 +138,7 @@ namespace RealLifeOverhaul.GameUi
             Reload(jump, same);
         }
 
-        // A row's id: a row written from a source is written first (only a search for a selected row asks this of rows not shown).
+        // A row from a source is written first (only a search for a selected row asks this of rows not shown).
         private static string IdOf(TableRow row)
         {
             row.Ready();
@@ -176,12 +148,6 @@ namespace RealLifeOverhaul.GameUi
         public void ClearSelection()
         {
             SelectRow(null, null);
-        }
-
-        /// <summary>The next Show brings the selected row into view: a row picked from elsewhere (a search, another tab) is scrolled to.</summary>
-        public void RevealNext()
-        {
-            _jump = true;
         }
 
         // The rows in the model's order, then the sentence for a filter that left nothing, or the totals.
@@ -258,9 +224,8 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The player clicked a header or picked a kind. The selected row stays selected if it still shows, and the
-        // table scrolls to it; if the filter took it out, the first row is selected instead, exactly as a click on
-        // it would be (the app shows that row in its box); with nothing left, the app is told the selection is gone.
+        // A header clicked or a kind picked. The selected row stays selected if it still shows and is scrolled to; if the
+        // filter took it out the first row is selected as a click would; with nothing left the app hears the selection is gone.
         private void Reshow(bool filter)
         {
             if (_source == null)
@@ -308,14 +273,12 @@ namespace RealLifeOverhaul.GameUi
     }
 
     /// <summary>
-    /// A row: the game's MyEmployees row made into plain cells of text (AppShell.PrepareRow), written from a
-    /// TableRow. Which cells show and how wide they are is the table's specification, so one row serves every tab
-    /// of an app. The game colours the selected row and leaves its own red and yellow alone
-    /// (BaTableCellView.VisualizeSelected), so a cell's emphasis is written in exactly the game's colours.
+    /// A row: the game's MyEmployees row made plain text cells (AppShell.PrepareRow), written from a TableRow; one row
+    /// serves every tab, coloured in the game's own colours. Costs nothing a frame of its own.
     /// </summary>
     public sealed class DataCellView : BaTableCellView<TableRow>
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For(null, "DataCellView", typeof(DataCellView));   // the game's calls of it (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "DataCellView", typeof(DataCellView));   // the game's calls of it
 
         private readonly TMP_Text[] _cells = new TMP_Text[TableSpec.MaxColumns];
         private readonly LayoutElement[] _widths = new LayoutElement[TableSpec.MaxColumns];
@@ -331,7 +294,7 @@ namespace RealLifeOverhaul.GameUi
             base.Awake();
         }
 
-        // Found by name each time a row is made: a copy does not have to carry references for this to work.
+        // By name each time a row is made: a copy needs carry no references.
         private void Bind()
         {
             if (_bound)
@@ -374,7 +337,7 @@ namespace RealLifeOverhaul.GameUi
                         selectedBackgroundColor = _table.RowSelected;
                     }
                 }
-                row.Ready();   // (a row of a source is written when it first comes into view)
+                row.Ready();   // a source's row is written when it first comes into view
                 _row = row;
                 TableSpec spec = _table != null ? _table.Spec : null;
                 int shown = row.Info || spec == null ? 1 : Mathf.Min(spec.Count, _count);
@@ -399,7 +362,7 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // The cells this table uses, each as wide as its column's header; a line of words has the whole row.
+        // The cells this table uses, each as wide as its header; a line of words has the whole row.
         private void LayOut(TableSpec spec, int shown, bool info)
         {
             for (int i = 0; i < _count; i++)
@@ -430,6 +393,10 @@ namespace RealLifeOverhaul.GameUi
 
         public override void ResetVisuals()
         {
+            if (FrameGuard.Off)
+            {
+                return;
+            }
             try
             {
                 Look(false);

@@ -45,7 +45,8 @@ internal static partial class Program
             }
             if (c.Kind == CourseKind.Certificate)
             {
-                certs &= c.Cert >= 0 && c.Cert < TalentCatalogue.CertCount && StudyCatalogue.OfCert(c.Cert) == c;
+                // The architect's licence (the building trades') is a licence of the player's alone: no profession's staff sit it.
+                certs &= c.Id == StudyCatalogue.ArchitectLicence ? c.Cert < 0 : c.Cert >= 0 && c.Cert < TalentCatalogue.CertCount && StudyCatalogue.OfCert(c.Cert) == c;
             }
             else
             {
@@ -62,7 +63,7 @@ internal static partial class Program
         Check(gains, "study: every course adds to both skills, the first the most, and has a fee");
         Check(times, "study: every timetabled course has days, an hour between 07:00 and 22:00 and classes; the rest are certificates studied at home");
         Check(needs, "study: what a course needs is another course of the table");
-        Check(certs, "study: each certificate is one of the professions' twelve, and only they are");
+        Check(certs, "study: each certificate is one of the professions' twelve, and only they are, but the architect's licence, the player's alone");
         Check(schools, "study: a diploma or a degree counts as schooling for an employer");
         Check(places, "study: short courses and diplomas are at the school or online");
         int certificates = 0;

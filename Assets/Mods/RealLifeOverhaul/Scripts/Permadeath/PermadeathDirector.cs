@@ -11,37 +11,23 @@ using Random = UnityEngine.Random;
 namespace RealLifeOverhaul.Permadeath
 {
     /// <summary>
-    /// Permadeath: an ending the player can choose, off unless switched on, kept for each save. Once a second it looks at
-    /// the save: a save read for the first time takes its state (Permadeath/PermadeathState), the options page is told
-    /// what holds for it, the businesses it runs are remembered once a game day, and a save that has ended is not played:
-    /// its obituary is shown and the game goes back to the main menu.
-    ///
-    ///   a dangerous moment   the feature where it happens asks <see cref="Mortality"/>, which judges it here
-    ///                        (Permadeath/PermadeathRules): nothing, a near miss that says so, or a death
-    ///   a death              the game's own "the player is dead" and walking blocked, the game's fade, the death written
-    ///                        into the save and the game's own save made at once (quitting cannot undo it; the character
-    ///                        is kept in the machine's memorial too, for older saves), the City Ledger's front page in
-    ///                        memory (Wiring/PermadeathLinks), and the main menu when it is put down
-    ///   an ended save        the same page, read from the save's record, and the main menu
-    ///
-    ///   going without food   with it on, the game's hunger bar is looked at once a second: from a day at its bottom
-    ///                        a warning on the hour, three in all, with a low mood and then a faster drain of energy;
-    ///                        anything eaten ends it; past the third a rare death, only at a moment the game can take it
-    ///
-    /// Per frame: one flag test, and while the obituary is up the cancel key (the game reads no keys of its own then).
-    /// Once a second: two reference comparisons, a day comparison and the hunger bar; once a game hour while the bar is
-    /// at its bottom, the rules of going without food; once a game day, one walk over the businesses.
+    /// Permadeath: an ending the player can choose, off unless switched on, kept per save. Dangerous moments are judged
+    /// here through <see cref="Mortality"/>; a death is written into the save and saved at once (and kept in the
+    /// machine's memorial for older saves), its obituary shown on the City Ledger's page, then the main menu. A save that
+    /// has ended shows the same page and is not played. With it on, the hunger bar is watched for going without food.
+    /// Cost: per frame one flag test (the cancel key while the obituary is up); once a second a few comparisons and the
+    /// hunger bar; once a game day one walk over the businesses.
     /// </summary>
     public sealed partial class PermadeathDirector : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("permadeath", "PermadeathDirector", typeof(PermadeathDirector));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("permadeath", "PermadeathDirector", typeof(PermadeathDirector));
 
         public static IModLogger Logger;
         public static PermadeathDirector Instance { get; private set; }
 
         private static readonly string[] IllKeys = { "reallife_pd_ill_1", "reallife_pd_ill_2", "reallife_pd_ill_3" };
         private static readonly string[] StarveKeys = { "reallife_pd_starve_1", "reallife_pd_starve_2", "reallife_pd_starve_3" };
-        private const int StarveCatchUpMost = 48;   // game hours caught up at most in one look (the game run on fast)
+        private const int StarveCatchUpMost = 48;   // game hours caught up at most in one look, with the clock run on fast
 
         private readonly LifeStory _story = new LifeStory();     // the life being printed
         private readonly List<string> _keys = new List<string>(8);
@@ -49,7 +35,7 @@ namespace RealLifeOverhaul.Permadeath
         private GameInstance _save;
         private int _day = -1;
         private bool _ending;       // a death, a rehearsal or an ended save's obituary is under way
-        private bool _elsewhere;    // this save is an older one of a character who has died since (the memorial says so)
+        private bool _elsewhere;    // an older save of a character who has died since, by the memorial
         private bool _pageUp;       // the obituary is on screen: the cancel key puts it down
         private bool _closed;
         private bool _asking;       // the question that comes before switching it on is up
@@ -80,8 +66,8 @@ namespace RealLifeOverhaul.Permadeath
             }
             catch (Exception e)
             {
-                // What follows must be done whatever this did: on a game lacking something Hold names it failed, and the
-                // switch below was left on for the next game begun (Core/GameMembers).
+                // What follows must run whatever this did, or on a game lacking something Hold names the switch below is
+                // left on for the next game begun.
                 if (!Guard.DoesWithout(e, "letting the player walk again as the city closes"))
                 {
                     Logger?.Error(e);
@@ -97,19 +83,20 @@ namespace RealLifeOverhaul.Permadeath
         }
 
         private static readonly int HotUpdate = HotSpots.Slot("Permadeath: PermadeathDirector.Update");
+
         private void Update()
         {
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
             {
                 OnUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -139,7 +126,7 @@ namespace RealLifeOverhaul.Permadeath
                 }
                 while (StartLine.Holds(StartSeats.Permadeath))
                 {
-                    yield return null;   // its first load after a save loads waits for a frame of its own (Core/StartLine)
+                    yield return null;   // its first look after a load waits for a frame of its own
                 }
                 try
                 {
@@ -149,15 +136,17 @@ namespace RealLifeOverhaul.Permadeath
                 {
                     _broken = true;
                     Logger?.Error(e);
-                    Logger?.Warn("Permadeath: switched off for this session after the error above. Nothing can end the character's life until the game is loaded again; the save's state is untouched.");
+                    Logger?.Warn("Permadeath: switched off for this session after the error above. "
+                                 + "Nothing can end the character's life until the game is loaded again; the save's state is untouched.");
                 }
             }
         }
 
         private static readonly int HotTick = HotSpots.Slot("Permadeath: PermadeathDirector.Tick");
+
         private void Slow()
         {
-            using var hotSpot = HotSpots.Time(HotTick);   // the timer's tick (Core/HotSpots)
+            using var hotSpot = HotSpots.Time(HotTick);
             GameInstance save = PermadeathGame.Save;
             if (save == null || GameManager.isCitySceneBeingUnloaded || LoadScene.isLoading || !ModState.Loaded)
             {
@@ -185,10 +174,8 @@ namespace RealLifeOverhaul.Permadeath
             Hunger();
         }
 
-        // ---------------------------------------------------------------- going without food
-
-        // Once a second: the bar read; something eaten ends the danger; at its bottom, once a game hour (the hours missed
-        // caught up, one warning at most a look), the rules. Off, dead, or with the game's energy off, nothing is kept.
+        // Once a second: something eaten ends the danger; at the bar's bottom the rules are asked once a game hour (hours
+        // missed caught up, at most one warning a look). Off, dead, or with the game's energy off, nothing is kept.
         private void Hunger()
         {
             if (!PermadeathState.Armed || PermadeathState.Dead || PermadeathGame.NoEnergy)
@@ -257,12 +244,13 @@ namespace RealLifeOverhaul.Permadeath
             if (!safe && PermadeathRules.Allowed(m) && PermadeathState.StarveTold >= PermadeathRules.IllStages - 1
                 && PermadeathRules.StarveStage((now - PermadeathState.EmptySince) / 60f) >= PermadeathRules.IllStages)
             {
-                Logger?.Info("Permadeath: going without food, an hour of the fatal stretch while the game was busy (asleep, a dialog, a ride, in hospital): not judged.");
+                Logger?.Info("Permadeath: going without food, an hour of the fatal stretch while the game was busy "
+                             + "(asleep, a dialog, a ride, in hospital): not judged.");
             }
             PermadeathGame.Weak(PermadeathRules.Allowed(m) ? PermadeathState.StarveTold : 0);
         }
 
-        /// <summary>For the test button: the bar at its bottom, as if for so many hours, the warnings not yet shown.</summary>
+        /// <summary>For the test button: the bar at its bottom as if for so many hours, no warnings shown yet.</summary>
         internal void StarvedFor(float hours)
         {
             PermadeathGame.Starve();
@@ -270,6 +258,15 @@ namespace RealLifeOverhaul.Permadeath
             PermadeathState.Empty(PermadeathGame.NowMinutes - hours * 60f);
             _lastHunger = 0f;
             _starveHour = -1;
+        }
+
+        private static Dictionary<string, string> Data(GameInstance save)
+        {
+            if (save.modData == null)
+            {
+                save.modData = new Dictionary<string, string>();
+            }
+            return save.modData;
         }
 
         // A save read for the first time this session: its state, what a switch moved in the main menu does to it, and
@@ -283,11 +280,7 @@ namespace RealLifeOverhaul.Permadeath
             _lastHunger = -1f;
             _starveHour = -1;
             PermadeathGame.ClearWeak();
-            if (save.modData == null)
-            {
-                save.modData = new Dictionary<string, string>();
-            }
-            PermadeathState.Read(save.modData);
+            PermadeathState.Read(Data(save));
             bool armNext = PermadeathState.ArmNext;
             PermadeathState.ArmNext = false;   // taken by this save, whatever it is
             if (PermadeathState.Fresh)
@@ -301,13 +294,15 @@ namespace RealLifeOverhaul.Permadeath
             }
             if (!PermadeathState.Dead && PermadeathState.Armed && PermadeathGame.Memorial.Find(PermadeathGame.CharacterId, _story))
             {
-                _elsewhere = true;   // an older save of a character who has died since, from a time it was on
+                _elsewhere = true;
             }
             Sync(false);
-            Logger?.Info("Permadeath: save read; " + (PermadeathState.Dead ? "the character has died (" + PermadeathState.Record.Cause + ", day " + PermadeathState.Record.Day + "): the save is read, not played"
+            Logger?.Info("Permadeath: save read; "
+                         + (PermadeathState.Dead ? "the character has died (" + PermadeathState.Record.Cause + ", day " + PermadeathState.Record.Day + "): the save is read, not played"
                          : _elsewhere ? "an older save of a character who has died since: it is read, not played"
                          : PermadeathState.Armed ? "on since day " + PermadeathState.ArmedDay + ", near misses had: " + PermadeathState.Warned
-                         : "off") + (PermadeathState.Fresh ? " (first time with this feature" + (armNext ? ", switched on in the main menu" : string.Empty) + ")" : string.Empty) + ".");
+                         : "off")
+                         + (PermadeathState.Fresh ? " (first time with this feature" + (armNext ? ", switched on in the main menu" : string.Empty) + ")" : string.Empty) + ".");
         }
 
         private void OnSave()
@@ -317,11 +312,7 @@ namespace RealLifeOverhaul.Permadeath
                 GameInstance save = PermadeathGame.Save;
                 if (save != null && ReferenceEquals(save, _save) && PermadeathState.Loaded)
                 {
-                    if (save.modData == null)
-                    {
-                        save.modData = new Dictionary<string, string>();
-                    }
-                    PermadeathState.Write(save.modData);
+                    PermadeathState.Write(Data(save));
                 }
             }
             catch (Exception e)
@@ -330,7 +321,7 @@ namespace RealLifeOverhaul.Permadeath
             }
         }
 
-        // Once a game day: the businesses the save runs now are remembered, so that one closed or sold still counts.
+        // Once a game day: the businesses the save runs are remembered, so one closed or sold still counts.
         private void Chronicle()
         {
             Action<List<string>, List<string>> look = PermadeathBridges.Businesses;
@@ -348,28 +339,22 @@ namespace RealLifeOverhaul.Permadeath
         }
 
         /// <summary>
-        /// The save's data of the mod was removed (Meta's save tools): what is held of it is forgotten and read afresh on the
-        /// next second, off. A death is the one thing not forgotten: it is written back at once, and the save stays ended.
+        /// The mod's data was removed from the save: what is held is forgotten and read afresh, off, on the next second.
+        /// A death is not forgotten: it is written back at once.
         /// </summary>
         public void Forget()
         {
             GameInstance save = PermadeathGame.Save;
             if (PermadeathState.Dead && save != null && ReferenceEquals(save, _save))
             {
-                if (save.modData == null)
-                {
-                    save.modData = new Dictionary<string, string>();
-                }
-                PermadeathState.Write(save.modData);
+                PermadeathState.Write(Data(save));
                 return;
             }
             PermadeathState.Reset();
             _save = null;
         }
 
-        // ---------------------------------------------------------------- the switch
-
-        /// <summary>The options page's switch was moved (or the page was drawn, which says what it holds): it speaks for the save loaded, or in the main menu for the next game begun.</summary>
+        /// <summary>The options switch was moved or drawn: it speaks for the save loaded, or in the main menu for the next game begun.</summary>
         public static void OptionChanged(bool on)
         {
             PermadeathDirector director = Instance;
@@ -386,7 +371,7 @@ namespace RealLifeOverhaul.Permadeath
             bool shown = PermadeathState.Armed || PermadeathState.Dead;
             if (on == shown)
             {
-                return;   // the page drawing itself with what holds already
+                return;   // the page drawing what holds already
             }
             if (PermadeathState.Dead)
             {
@@ -410,7 +395,7 @@ namespace RealLifeOverhaul.Permadeath
             Ask();
         }
 
-        // Switching it on is asked first, in the game's own red question: the switch is moved back if the answer is no.
+        // Switching on is asked first in the game's red question; the switch is moved back on a no.
         private void Ask()
         {
             if (_asking)
@@ -436,7 +421,7 @@ namespace RealLifeOverhaul.Permadeath
             }, "reallife_pd_ask_yes", "reallife_pd_ask_no", allowConfirmationSkip: false, isNegative: true);
         }
 
-        // The options page shows what holds for this save; drawn again when it did not.
+        // The options page shows what holds for this save, drawn again when it did not.
         private void Sync(bool redraw)
         {
             bool changed = Settings.SetPermadeath(PermadeathState.Armed || PermadeathState.Dead);
@@ -455,8 +440,6 @@ namespace RealLifeOverhaul.Permadeath
             }
         }
 
-        // ---------------------------------------------------------------- a dangerous moment (through Mortality)
-
         internal Verdict Judge(DeathCause cause, float measure)
         {
             if (_broken || _ending)
@@ -469,7 +452,8 @@ namespace RealLifeOverhaul.Permadeath
             Verdict v = PermadeathRules.Judge(cause, measure, warned, m, roll);
             if (m.Armed && PermadeathRules.Fatal(cause, measure))
             {
-                Logger?.Info("Permadeath check (" + cause + ", measure " + measure.ToString("F1", CultureInfo.InvariantCulture) + "): allowed " + PermadeathRules.Allowed(m) + " (session " + m.InSession + ", mission or tutorial " + m.MissionOrTutorial
+                Logger?.Info("Permadeath check (" + cause + ", measure " + measure.ToString("F1", CultureInfo.InvariantCulture) + "): allowed " + PermadeathRules.Allowed(m)
+                             + " (session " + m.InSession + ", mission or tutorial " + m.MissionOrTutorial
                              + ", busy " + m.Busy + "), warned " + warned + ", odds " + PermadeathRules.Odds(cause, measure).ToString("P0", CultureInfo.InvariantCulture) + ", roll "
                              + roll.ToString("F2", CultureInfo.InvariantCulture) + ": " + v + ".");
             }
@@ -509,14 +493,14 @@ namespace RealLifeOverhaul.Permadeath
             return true;
         }
 
-        /// <summary>One hour of a flu, from Home's health (HomeHealth.Hourly). True while it no longer clears up by itself.</summary>
+        /// <summary>One hour of a flu, from HomeHealth.Hourly. True while it no longer clears up by itself.</summary>
         internal bool FluHour(bool flu, float began, bool treated)
         {
             if (!flu || treated)
             {
                 if (PermadeathState.IllSince >= 0f)
                 {
-                    PermadeathState.NoFlu();   // treated, or over: its warnings are over too
+                    PermadeathState.NoFlu();
                 }
                 return false;
             }
@@ -540,7 +524,8 @@ namespace RealLifeOverhaul.Permadeath
             {
                 if (LifeEvents.IsSafeForEvent())
                 {
-                    Logger?.Info("Permadeath check (the flu, " + hours.ToString("F0") + " hours untreated, all three warnings shown): roll " + roll.ToString("F3", CultureInfo.InvariantCulture) + " under " + PermadeathRules.IllPerHour.ToString("F4", CultureInfo.InvariantCulture) + ": the end.");
+                    Logger?.Info("Permadeath check (the flu, " + hours.ToString("F0") + " hours untreated, all three warnings shown): roll "
+                                 + roll.ToString("F3", CultureInfo.InvariantCulture) + " under " + PermadeathRules.IllPerHour.ToString("F4", CultureInfo.InvariantCulture) + ": the end.");
                     Die(DeathCause.Illness);
                 }
                 else
@@ -553,239 +538,5 @@ namespace RealLifeOverhaul.Permadeath
 
         /// <summary>True while a mugger's demand should say what refusing can cost.</summary>
         internal bool Warns => !_broken && !_ending && PermadeathRules.Allowed(PermadeathGame.Now(false));
-
-        // ---------------------------------------------------------------- the end
-
-        // The life as it stands now, for the obituary: the game's figures, the street, the businesses, then the rest of the mod's records.
-        private void Gather(LifeStory s, DeathCause cause)
-        {
-            s.Clear();
-            PermadeathGame.Fill(s);
-            s.Cause = cause;
-            s.Place = cause == DeathCause.Illness || cause == DeathCause.Starvation || cause == DeathCause.Test || cause == DeathCause.None ? string.Empty : PermadeathGame.Street();
-            _keys.Clear();
-            _names.Clear();
-            try
-            {
-                PermadeathBridges.Businesses?.Invoke(_keys, _names);
-            }
-            catch (Exception e)
-            {
-                Logger?.Error(e);
-            }
-            for (int i = 0; i < _keys.Count; i++)
-            {
-                PermadeathState.See(_keys[i]);
-            }
-            for (int i = 0; i < _names.Count; i++)
-            {
-                LifeStory.Keep(s.Businesses, _names[i], LifeStory.BusinessesMost);
-            }
-            s.Owned = _keys.Count;
-            s.Founded = Mathf.Max(s.Founded, Mathf.Max(PermadeathState.Seen.Count, s.Owned));
-            try
-            {
-                PermadeathBridges.Story?.Invoke(s);
-            }
-            catch (Exception e)
-            {
-                Logger?.Error(e);
-            }
-        }
-
-        // A death (real) or the options page's rehearsal (not real: nothing is saved and the character lives on).
-        private IEnumerator Dying(DeathCause cause, bool real)
-        {
-            _ending = true;
-            PermadeathGame.CloseQuestion();
-            try
-            {
-                Gather(_story, cause);
-            }
-            catch (Exception e)
-            {
-                Logger?.Error(e);   // the page is written from what could be read
-            }
-            GameInstance save = PermadeathGame.Save;
-            if (real)
-            {
-                // Written down before anything is shown: in the save's data, and on this machine for the older saves.
-                PermadeathState.Dead = true;
-                PermadeathState.Armed = true;
-                PermadeathState.Record.CopyFrom(_story);
-                PermadeathGame.Memorial.Keep(PermadeathGame.CharacterId, _story);
-                if (save != null)
-                {
-                    if (save.modData == null)
-                    {
-                        save.modData = new Dictionary<string, string>();
-                    }
-                    PermadeathState.Write(save.modData);
-                }
-                Sync(false);
-                Logger?.Info("Permadeath: " + (_story.Name.Length > 0 ? _story.Name : "the character") + " has died (" + cause + ") on day " + _story.Day + ", aged " + _story.Age + ".");
-            }
-            // Walking is held at once; the game's own "the player is dead" only once the screen is black, so that a fall
-            // (Ragdoll/PlayerKnockdown) or a crash is seen into the fade rather than cut off at its first frame.
-            PermadeathGame.Hold(true, false);
-            yield return Safe(PermadeathGame.Fade(1.6f, "reallife_pd_blackout"));
-            if (real)
-            {
-                PermadeathGame.Hold(true, true);
-                yield return SaveIt();
-            }
-            yield return Safe(PermadeathGame.OutOfVehicle());
-            yield return Print(_story, !real);
-            if (real)
-            {
-                yield return Safe(PermadeathGame.Fade(0.6f, null));
-                Logger?.Info("Permadeath: the obituary was put down; back to the main menu. The save's files are kept.");
-                PermadeathGame.MainMenu();
-                yield break;
-            }
-            PermadeathGame.Hold(false, false);
-            Notifications.Show(NotificationType.Info, "reallife_pd_test_over", null, 10f);
-            _ending = false;
-        }
-
-        // The game's own save, at once: tried again a few times if the game will not save this second.
-        private IEnumerator SaveIt()
-        {
-            for (int attempt = 1; attempt <= 5; attempt++)
-            {
-                bool saved = false;
-                try
-                {
-                    saved = PermadeathGame.SaveNow();
-                }
-                catch (Exception e)
-                {
-                    Logger?.Error(e);
-                }
-                if (saved)
-                {
-                    float until = Time.realtimeSinceStartup + 30f;
-                    while (PermadeathGame.Saving && Time.realtimeSinceStartup < until)
-                    {
-                        yield return null;
-                    }
-                    Logger?.Info("Permadeath check (the death is saved): the game's save " + (PermadeathGame.Saving ? "is still being written after 30 s: FAIL" : "is on disk at attempt " + attempt + ": PASS") + ".");
-                    yield break;
-                }
-                yield return new WaitForSecondsRealtime(1f);
-            }
-            Logger?.Warn("Permadeath: the game would not save (five tries). The death is kept on this machine, so this character's saves from a time Permadeath was on are read as ended.");
-        }
-
-        // A save that has ended: its obituary, then the main menu. Nothing of it is played.
-        private IEnumerator Ended()
-        {
-            _ending = true;
-            PermadeathGame.CloseQuestion();
-            PermadeathGame.Hold(true, true);
-            LifeStory story = _story;
-            if (!_elsewhere)
-            {
-                if (PermadeathState.Record.Name.Length > 0)
-                {
-                    story.CopyFrom(PermadeathState.Record);
-                }
-                else
-                {
-                    Gather(story, PermadeathState.Record.Cause);   // dead with no record that could be read: written from what the save says now
-                }
-            }
-            Logger?.Info("Permadeath: this save has ended" + (_elsewhere ? " (the character died in another save since)" : string.Empty) + "; its obituary, then the main menu.");
-            yield return Safe(PermadeathGame.Fade(0.5f, "reallife_pd_ended"));
-            yield return Safe(PermadeathGame.OutOfVehicle());
-            yield return Print(story, false);
-            yield return Safe(PermadeathGame.Fade(0.6f, null));
-            PermadeathGame.MainMenu();
-        }
-
-        // A step of the game's (a fade, leaving a car) that faults is logged and passed over: the ending goes on to its end
-        // whatever happens, so that nobody is left behind a black screen.
-        private static IEnumerator Safe(IEnumerator step)
-        {
-            while (true)
-            {
-                object current;
-                try
-                {
-                    if (step == null || !step.MoveNext())
-                    {
-                        yield break;
-                    }
-                    current = step.Current;
-                }
-                catch (Exception e)
-                {
-                    Logger?.Error(e);
-                    yield break;
-                }
-                yield return current;
-            }
-        }
-
-        // The obituary on the City Ledger's page (or, if that cannot be had, as a message), until it is put down.
-        private IEnumerator Print(LifeStory story, bool test)
-        {
-            ObituaryPage page = PermadeathText.Page(story, test);
-            _closed = false;
-            bool shown = false;
-            float until = Time.realtimeSinceStartup + 10f;
-            while (Time.realtimeSinceStartup < until)
-            {
-                // The game's menu will not open over a question of its own (it closes the question instead): none is left up.
-                PermadeathGame.CloseQuestion();
-                bool asked = false;
-                try
-                {
-                    asked = PermadeathBridges.ShowObituary != null && PermadeathBridges.ShowObituary(page, _onClosed);
-                }
-                catch (Exception e)
-                {
-                    Logger?.Error(e);
-                }
-                if (asked)
-                {
-                    float open = Time.realtimeSinceStartup + 2f;
-                    while (!PermadeathGame.MenuOpen && Time.realtimeSinceStartup < open)
-                    {
-                        yield return null;
-                    }
-                    if (PermadeathGame.MenuOpen)
-                    {
-                        shown = true;
-                        break;
-                    }
-                }
-                yield return new WaitForSecondsRealtime(0.5f);
-            }
-            if (!shown)
-            {
-                Logger?.Warn("Permadeath: the City Ledger's page could not be had; the obituary is shown as a message.");
-                Meta.MetaUi.Message(page.Header, page.Plain(), new KeyValuePair<string, Action>("reallife_meta_ok", _onClosed));
-            }
-            else
-            {
-                Logger?.Info("Permadeath check (the obituary): on the City Ledger's page, " + page.Texts.Count + " sections, " + (page.BoxLines.Count > 0 ? page.BoxLines[0].Count : 0) + " figures: PASS.");
-            }
-            _pageUp = shown;
-            if (UI.UiFader.isFading)
-            {
-                yield return Safe(PermadeathGame.UnFade(0.8f));
-            }
-            while (!_closed)
-            {
-                yield return null;
-            }
-            _pageUp = false;
-        }
-
-        private void PageClosed()
-        {
-            _closed = true;
-        }
     }
 }

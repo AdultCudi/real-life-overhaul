@@ -171,6 +171,22 @@ namespace RealLifeOverhaul.Law
                     _nextLook = Time.unscaledTime + 0.25f;
                     Look();
                 }
+                if (_precincts.Choosing)
+                {
+                    ChooseOn();
+                }
+                if (_precincts.Placing)
+                {
+                    _precincts.Frame();
+                }
+                if (!LawState.Loaded && ModState.Loaded)
+                {
+                    if (StartLine.Holds(StartSeats.Law))
+                    {
+                        return;   // the first load waits for a frame of its own (Core/StartLine)
+                    }
+                    _nextTick = 0f;   // its seat: the first load in this very frame, alone
+                }
                 if (Time.unscaledTime < _nextTick)
                 {
                     return;
@@ -299,6 +315,17 @@ namespace RealLifeOverhaul.Law
             {
                 Furnish(owed);
             }
+        }
+
+        // The precincts being chosen (Precincts.Choose, a slice of about 2 ms): the tick began it, and every frame out of doors carries it on,
+        // so that it is done in a second or so and never in one long frame. One compare a frame while nothing is being chosen.
+        private void ChooseOn()
+        {
+            if (BuildingManager.IsInsideBuilding || !_precincts.Choose())
+            {
+                return;
+            }
+            StationInterior.SearchDesigns(_precincts);   // as the tick does when it is the one that finishes
         }
 
         private void Look()
@@ -725,7 +752,7 @@ namespace RealLifeOverhaul.Law
             _lastThanks = line;
             if (Reputation.Public >= Reputation.LovedFrom)
             {
-                int tip = Random.Range(1, 5) * 5;
+                int tip = Prices.At(Random.Range(1, 5) * 5);   // 5 to 20 at the start's prices
                 Crime.Give(tip, "reallife_transaction_thanks");
                 Crime.ShowAmount(NotificationType.Success, "reallife_law_thanks_tip", tip, 8f);
             }

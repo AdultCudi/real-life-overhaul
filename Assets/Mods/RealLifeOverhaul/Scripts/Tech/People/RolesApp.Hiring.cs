@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using Localizor;
 using RealLifeOverhaul.GameUi;
 using UnityEngine;
 
@@ -127,8 +128,14 @@ namespace RealLifeOverhaul.Tech
             int cost = Prices.At(HiringRules.AdCost(days, _adBoost));
             box.Line(TechText.Fill("reallife_hire_new_cost", "cost", TechText.Money(cost), "least", TechText.Rate(least), "most", TechText.Rate(most),
                 "skill", skill > 0 ? TechText.Percent(skill) : TechText.T("reallife_talent_none")));
+            box.Line(TechText.T(SeatRules.Needs(r) == Workstation.Desk ? "reallife_hire_seat_desk" : "reallife_hire_seat_payroll"));   // which workstation the role sits at
+            bool seats = HiringRules.Seats(TalentGame.Shifts(_places[_adPlace]), r);
+            if (!seats)
+            {
+                box.Line(TechText.T(TechDirector.SeatRefusal));   // a data centre has no desks: the Post button is left off
+            }
             Transform buttons = box.ButtonRow();
-            if (open < HiringCatalogue.AdsMost)
+            if (open < HiringCatalogue.AdsMost && seats)
             {
                 string place = TalentGame.Place(_places[_adPlace]);
                 int role = r.Id, level = _adLevel, work = _adWork;
@@ -283,8 +290,37 @@ namespace RealLifeOverhaul.Tech
                 InfoBox.Button(first, InfoBox.Positive, "reallife_hire_button_take_counter", () => Do(() => _director.TakeCounter(id)));
                 InfoBox.Button(first, InfoBox.Negative, "reallife_hire_button_walk_away", () => Do(() => _director.WalkAway(id)));
             }
+            else if (a.At == ApplyStage.Accepted)
+            {
+                WriteBuyout(box, a, s, day);
+            }
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "common_close", ClosePick);
             Meta.Guide.Point(box, JobsGuide);
+        }
+
+        // An accepted hire still working their notice elsewhere: the notice can be bought out so they start tomorrow, asked through the
+        // game's question box with the days saved, the price and the new start day. Someone out of work waiting a day or two is told
+        // there is no notice to buy; a start that is tomorrow already shows nothing.
+        private void WriteBuyout(InfoBox box, Applicant a, Seeker s, int day)
+        {
+            string refusal = _director.BuyoutRefusal(a, s);
+            int start = HiringRules.BuyoutStart(day);
+            if (refusal == "reallife_hire_buyout_not_employed" && a.Start > start)
+            {
+                box.Line(TechText.T(refusal, "name", s.P.Name));
+                return;
+            }
+            if (refusal != null)
+            {
+                return;
+            }
+            int id = a.Id;
+            string name = s.P.Name, amount = TechText.Cents(HiringRules.BuyoutQuote(a, s, day)), days = HiringRules.BuyoutDays(a.Start, start).ToString(), when = start.ToString();
+            box.Line(TechText.Fill("reallife_hire_buyout_line", "amount", amount, "day", when, "days", days));
+            InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_hire_button_buyout", () => GameConfirm.Show(
+                "reallife_hire_buyout_title".Localize(new { name }),
+                "reallife_hire_buyout_body".Localize(new { amount, day = when, days, factor = TechGuide.Factor(HiringCatalogue.BuyoutBp) }),
+                () => UiClone.Safe(() => Do(() => _director.BuyOutNotice(id))), null, null, null, true, false));
         }
 
         private TableSpec WriteMarket(InfoBox box, int day)
@@ -414,6 +450,9 @@ namespace RealLifeOverhaul.Tech
             TableRow add = Row(NewSearchRow);
             add.Pinned = true;
             add.Set(0, TechText.T("reallife_hire_row_new_search"));
+            TableRow crew = Row(NewCrewRow);
+            crew.Pinned = true;
+            crew.Set(0, TechText.T("reallife_crew_row_new"));
             JobAd picked = null;
             string id = Picked(_picked, SearchRow);
             for (int i = 0; i < f.Ads.Count; i++)
@@ -425,7 +464,7 @@ namespace RealLifeOverhaul.Tech
                 }
                 BuildingRegistration at = TalentGame.Find(ad.Place);
                 TableRow row = Row(SearchRow + ad.Id);
-                row.Set(0, TechText.Role(ad.Role));
+                row.Set(0, ad.CrewSearch ? TechText.T("reallife_crew_row", "role", TechText.Role(ad.Role), "count", ad.Crew.ToString()) : TechText.Role(ad.Role));
                 row.Set(1, TechText.Level(ad.Level), ad.Level);
                 row.Set(2, at != null ? TalentGame.NameOf(at) : "-");
                 row.Set(3, TechText.Cents(ad.Fee), ad.Fee / 100.0);
@@ -438,6 +477,14 @@ namespace RealLifeOverhaul.Tech
             if (_picked == NewSearchRow)
             {
                 WriteNewSearch(box);
+            }
+            else if (_picked == NewCrewRow)
+            {
+                WriteNewCrew(box);
+            }
+            else if (picked != null && picked.CrewSearch)
+            {
+                WriteCrewSearch(box, picked);
             }
             else if (picked != null)
             {
@@ -489,8 +536,14 @@ namespace RealLifeOverhaul.Tech
             int fee, retainer;
             _director.SearchQuote(r.Id, _searchLevel, out fee, out retainer);
             box.Line(TechText.Fill("reallife_hire_new_search_cost", "fee", TechText.Cents(fee), "retainer", TechText.Cents(retainer), "count", HiringCatalogue.SearchCandidates.ToString()));
+            box.Line(TechText.T(SeatRules.Needs(r) == Workstation.Desk ? "reallife_hire_seat_desk" : "reallife_hire_seat_payroll"));   // which workstation the role sits at
+            bool seats = HiringRules.Seats(TalentGame.Shifts(_places[_adPlace]), r);
+            if (!seats)
+            {
+                box.Line(TechText.T(TechDirector.SeatRefusal));   // a data centre has no desks: the Brief button is left off
+            }
             Transform buttons = box.ButtonRow();
-            if (r.MostLevel >= HiringCatalogue.SearchLeastLevel)
+            if (r.MostLevel >= HiringCatalogue.SearchLeastLevel && seats)
             {
                 string place = TalentGame.Place(_places[_adPlace]);
                 int role = r.Id, level = _searchLevel;

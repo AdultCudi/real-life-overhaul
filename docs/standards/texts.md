@@ -7,7 +7,7 @@ Every word a player reads comes from the locale files in `Assets/Mods/RealLifeOv
 | `en.json` | English, the source | 19,748 | Every key |
 | `pt.json` | Brazilian Portuguese | 19,748 | Every key of `en.json` |
 | `zh-cn.json` | Simplified Chinese | 19,748 | Every key of `en.json` |
-| `de.json`, `fr.json`, `es.json`, `ru.json`, `nl.json`, `tr.json` | German, French, Spanish, Russian, Dutch, Turkish | 19,748 | May lack keys; the game then reads the English |
+| `de.json`, `fr.json`, `es.json`, `ru.json`, `nl.json`, `tr.json`, `pl.json`, `ko.json` | German, French, Spanish, Russian, Dutch, Turkish, Polish, Korean | 19,748 | May lack keys; the game then reads the English |
 
 ### RLO-TXT-001: Every player text is a locale key
 
@@ -27,7 +27,7 @@ Checked by: StandardCheck (against the `en.json` your branch started from), `loc
 
 ### RLO-TXT-003: English, Portuguese and Chinese in the same change
 
-**MUST.** Write the `pt` and `zh-cn` text of every new or changed English text in the same change. **MUST NOT** add keys to `de.json`, `fr.json`, `es.json`, `ru.json`, `nl.json` or `tr.json` by hand; they are translated in batches. If you change an English text's `{placeholders}`, tags or lines, mend the key in those six files too, or take it out of them.
+**MUST.** Write the `pt` and `zh-cn` text of every new or changed English text in the same change. **MUST NOT** add keys to `de.json`, `fr.json`, `es.json`, `ru.json`, `nl.json`, `tr.json`, `pl.json` or `ko.json` by hand; they are translated in batches. If you change an English text's `{placeholders}`, tags or lines, mend the key in those eight files too, or take it out of them.
 
 Why: the two are required languages, and a key missing from either fails `locales.py`.
 
@@ -114,3 +114,19 @@ Checked by: `locales.py` (the markers), review.
 Why: the Guide pages are the one source for every copy of the help, and a `{fact}` cannot go stale.
 
 Checked by: review.
+
+### RLO-TXT-013: The Guide names only what exists
+
+**MUST** write every app, tab, button, option and page that a Guide page names in bold (`<b>Name</b>`), exactly as it reads in the game: a text of the mod in `en.json`, or a name the game owns, listed in `StandardCheck/guide-game-names.txt`. A menu path writes each step in bold (`<b>Phone</b> > <b>Finance</b> > <b>Standing</b>`).
+
+Why: a button that was renamed or moved leaves a Guide page sending the player to a place that is not there.
+
+Checked by: StandardCheck.
+
+### RLO-TXT-014: Every feature page has a Guide page
+
+**MUST** give every page of `docs/features` a line in `StandardCheck/guide-coverage.txt`: the Guide texts that explain the feature to players, or `-` and the reason it is not for players (how the save is kept, how floors are shared).
+
+Why: a feature the Guide does not mention is a feature players do not find, and the list is how a new one is noticed.
+
+Checked by: StandardCheck.

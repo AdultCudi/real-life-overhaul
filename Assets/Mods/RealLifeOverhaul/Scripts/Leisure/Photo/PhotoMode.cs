@@ -456,7 +456,9 @@ namespace RealLifeOverhaul.Leisure
             }
         }
 
-        // The free camera stays within 150 m of the player, as far as the city is drawn round them.
+        internal const float Range = 150f;   // metres: the free camera stays this near the player, as far as the city is drawn round them
+
+        // The free camera stays within Range of the player.
         private void Fly(float delta)
         {
             Transform view = _camera.transform;
@@ -466,9 +468,9 @@ namespace RealLifeOverhaul.Leisure
             Vector3 position = view.position + move * speed;
             Vector3 home = PlayerHelper.PlayerController != null ? PlayerHelper.PlayerController.transform.position : _startPosition;
             Vector3 away = position - home;
-            if (away.sqrMagnitude > 150f * 150f)
+            if (away.sqrMagnitude > Range * Range)
             {
-                position = home + away.normalized * 150f;
+                position = home + away.normalized * Range;
             }
             view.SetPositionAndRotation(position, look);
             _camera.fieldOfView = _fov;

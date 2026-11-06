@@ -3,17 +3,15 @@ using System;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// What business pressure tells whoever outside it wants to know (running a business, through
-    /// Wiring/CompanyLinks): that one of its issues has closed at a business, and that one of its inspections has
-    /// fined a business. Each issue and each fine is business pressure's own and is not changed by anybody who
-    /// listens. Nothing here runs on a timer. A listener that throws is not allowed to stop the others or the issue.
+    /// What business pressure tells other features (Wiring/CompanyLinks): an issue closed, an inspection fined. A listener
+    /// that throws stops neither the others nor the issue.
     /// </summary>
     public static class BusinessEvents
     {
-        /// <summary>An issue has closed: its kind (BusinessCatalogue), the business's place (BusinessState.PlaceKey) and the locale key of how it ended.</summary>
+        /// <summary>An issue has closed: its kind, the business's place and the locale key of how it ended.</summary>
         public static event Action<string, string, string> Closed;
 
-        /// <summary>An inspection has fined a business: the issue's kind, the business's place and the amount that was paid.</summary>
+        /// <summary>An inspection has fined a business: the kind, the place and the amount paid.</summary>
         public static event Action<string, string, int> Fined;
 
         internal static void RaiseClosed(string kind, string place, string outcome)

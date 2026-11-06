@@ -196,8 +196,6 @@ namespace RealLifeOverhaul
                 return false;
             }
             using var piece = SessionWatch.Piece("game UI: the needs bars being copied from the game's top bar");
-            GameSprites.Want(Pictures);       // (one look through the game's pictures for all of them)
-            GameSprites.Want(PicturesElse);
             Transform holder = UiClone.Dormant(bar, "RealLifeOverhaul Needs Holder");
             GameObject tab = null;
             try
@@ -346,6 +344,13 @@ namespace RealLifeOverhaul
             {
                 image.raycastTarget = false;
             }
+        }
+
+        /// <summary>The game's pictures this asks for, named before the one look behind the loading screen (GameSprites.Prewarm).</summary>
+        internal static void WantPictures()
+        {
+            GameSprites.Want(Pictures);
+            GameSprites.Want(PicturesElse);
         }
     }
 }

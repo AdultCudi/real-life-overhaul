@@ -206,6 +206,10 @@ namespace RealLifeOverhaul.Economy
                     {
                         return RotaUnwritten(job, place, "the plan is no longer one that can be written");   // one that takes a hire, or no longer there
                     }
+                    if (job.Kind == JobManager && !ManagerRotaJudged(job.Place, sheet))
+                    {
+                        return true;   // a manager's week is written only whole, and only while the rota is theirs: nothing is touched
+                    }
                     return RotaWrite(job, place, sheet, rung != null ? rung.Plan : sheet.Ladder.Fill, rung)
                            || RotaUnwritten(job, place, "the plan no longer fits the stations and people there");
             }

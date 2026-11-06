@@ -2,7 +2,7 @@
 
 ## In a sentence
 
-The city's stock market in the **Stocks** app: the player's own businesses listed as a company with shareholders, orders that wait (stop loss, take profit, limits), trading bots the player can hire, and the raw materials exchange with its futures and options.
+The city's stock market in the **Stocks** app: the player's own businesses listed as a company with shareholders, orders that wait (stop loss, take profit, limits), trading bots the player can hire, the raw materials exchange with its futures and options, and the city's builders listed with a project's materials hedged.
 
 ## Where the code is
 
@@ -15,6 +15,7 @@ The city's stock market in the **Stocks** app: the player's own businesses liste
 - The market calls no other feature and none calls it: `Wiring/MarketLinks.cs` reads the city on a market day, the events that move prices, the game's rivals, the banks and the Planner's rows.
 - `Wiring/ListingLinks.cs` gives the listed company the player's books, its businesses and a sale's hand-over.
 - `Wiring/MarketLinks.cs` and `Wiring/CityLinks.cs` give the raw materials exchange the city's own prices of its goods and the city's economy the exchange's prices to write as the importers' ([Futures and options](#futures-and-options-scriptsmarketsderivatives)).
+- `Wiring/Wiring.MarketsBuildLinks.cs` gives the market the construction game's news of its rival builders and the construction game a project's hedge ([The city's builders and hedging a project](#the-citys-builders-and-hedging-a-project-buildermarket-hedgerules)).
 
 ## Your company on the market (`Scripts/Markets/Listing`)
 
@@ -49,7 +50,7 @@ The first five are game-free and compiled by EconomyCheck (`ListingChecks.cs`), 
 
 ### The rules in short (every figure is in the catalogue and printed by the Guide)
 
-- **To come to the market**: two years since the first business, four complete quarters of books, takings and profit over them above a least (at today's prices), a profit in three of them, and a clean audit (tax unpaid past its day, late returns, takings kept off the books, a bankruptcy or debt arrangement qualify it; a bribe that came out is disclosed).
+- **To come to the market**: two years since the first business (the oldest of yours still running, counted from the day it started, which the mod keeps in the save as `reallife:founding` because the game's moving company leaves a moved business without it: `Core/FoundingGame`; a business moved before the mod kept it counts from the first day of the game's statements for the building it left), four complete quarters of books, takings and profit over them above a least (at today's prices), a profit in three of them, and a clean audit (tax unpaid past its day, late returns, takings kept off the books, a bankruptcy or debt arrangement qualify it; a bribe that came out is disclosed).
 
   Advisers' retainer, the audit's fee, the underwriters and the exchange as the catalogue says.
 
@@ -68,21 +69,31 @@ The first five are game-free and compiled by EconomyCheck (`ListingChecks.cs`), 
   Buy-backs (10% a year), new shares (20% a year at 5% under the bid) and taking private (25% over the price and never under the year's highest close, with half the shares) need the board.
   A business sold while listed puts the other holders' part of its price into the reserve.
 
+  The founder is paid no dividend on their own shares: each day the other holders' part of the profit is taken from the founder's cash into the reserve (`ListingRules.ToReserve`, `Others` = shares less the founder's), so the founder keeps their own stake's part of the profit as cash, at any stake, and dividends go to the other holders (`MarketEngine.Dividends`, paid on a position, never on `OwnListing.Founder`).
+  Under half the shares the founder no longer carries every vote (`ListingVotes.BoardCarries`), under 30% a bid can win; the least the founder may hold is nothing, but a sale is at most 10% of the company a game year after the half-year lock-up. The prospectus offers 10% to 60% of the company (`ListingCatalogue.FloatSteps`).
+  The most of any other company one holder may have is the option "The most of a company you may hold" (`MarketCatalogue.HoldingCapBp`: 10% by default, 25%, 50% or no limit), and of a rival tycoon's holding the 25% that is free float (`HoldingFloatBp`). Nothing happens at 50%: the market has no control rule for the player's shares in another company. A rival is taken over through its business (`MarketDirector.TakeOverHolding`), not by shares.
+
 - **Meetings**: the yearly one after the year's last results (pay, a payout when the reserve is held back, the chair), an investor's after their demand; the founder's shares for the board, the others by their year, with a drawn turnout.
   Half the shares or more carries every vote.
 
   A bid comes while the price is well under the worth, wins only under 30% held and if the holders take it; then the businesses pass to the buyer through Economy/Services' own hand-over of a sale (`ServicesDirector.HandOver`), a few an hour as the game lets them go, what is left after seven days paid for.
 
+- **The sector** (`ListingSector`): the one the company earns most in now, never its first business's for good.
+  On the way to the market it follows the last quarter's takings by trade (`MarketBridges.TradeTakings`, every business of the player's) until the prospectus is out.
+  Listed, each market morning adds yesterday's takings by trade (the day's `MarketEnv.TradeOf`, already on the tape) to a mix that forgets over about a quarter, and at each quarter's turn a review moves it: at once when it earned nothing in its sector since the last review, else when another sector leads by 10% of the takings at two reviews in a row, so a company split near evenly never flickers.
+  A trade's sector is the catalogue's first company in it; the tech sector's five firms count as web development (software).
+  A move keeps the sector indices level, remakes the company's profile for the new sector with its own margin and debt, and is news (`OwnSector`): a notice and a City Ledger line. A company listed before this is moved by its last quarter's books at the load, once.
+
 ### The save
 
-The market's own line (`reallife:markets`): a player's company is a record of `k` with its own fields after the rest (founder, name, ticker, sector, usual debt, the `OwnListing` figures, the founder's deals, its trade); the way to the market and the books are part `l`, a company set aside part `u`.
+The market's own line (`reallife:markets`): a player's company is a record of `k` with its own fields after the rest (founder, name, ticker, sector, usual debt, the `OwnListing` figures, the founder's deals, its trade, then its takings by trade with a review's lead, empty for a company not followed); the way to the market and the books are part `l`, a company set aside part `u`.
 Neither part is in the city's line a host sends.
 
 A line without them reads as before, and a market with no player's company writes exactly what it did.
 
 ### Tests (options page, the stock market's tests)
 
-"Put a test company of mine on the market" (no requirement, nothing paid or raised; a test company's books if the save has too few, read again from the statements once it is gone), "My company's results the next market morning", "My company's yearly meeting at today's close", "An investor buys in to press my company's board", "A bid for my company" (a test's company hands nothing over), "Take my test company off the market".
+"Put a test company of mine on the market" (no requirement, nothing paid or raised; a test company's books if the save has too few, read again from the statements once it is gone), "My company's results the next market morning", "My company's yearly meeting at today's close", "An investor buys in to press my company's board", "A bid for my company" (a test's company hands nothing over), "Take my test company off the market", "Check my company's sector" (the last quarter's books now, as an older save's load does; not in a Going Public session).
 
 ### Log lines
 
@@ -90,6 +101,8 @@ A line without them reads as before, and a market with no player's company write
 - `Listing: the prospectus of Harbour Lights Group (HLG) on day 152: 248333 new shares (2500 bp) beside the founder's 745000, ...`
 - `Listing check (asked): Deal 1000 for Harbour Lights Group at 160/30, quoted 6731 (673 cents a share): put on the tape for the next moment: PASS`
 - `Listing: the year's fees for Harbour Lights Group: the exchange 5000, the audit 10000; findings 0.`
+- `Listing check (sector): from Restaurants to Specialists (Harbour Lights Group on the market; the last 15 days' takings by trade: clothing 300000 (Stores), jewelry 450000 (Specialists); next review on day 226): PASS`
+- `Listing: Harbour Lights Group's business is followed from now; by the last 15 days' takings it moves from Restaurants to Specialists.`
 - `Listing: Harbour Lights Group was taken over at 840 cents a share by a private buyer; its 6 business(es) pass to the buyer by day 212.`
 - `Selling a business: handed over to a private buyer in a takeover: ...`
 
@@ -364,3 +377,73 @@ A line without them reads with no exchange and no contracts; a market with neith
 ### Not verified (the game could not be run)
 
 That nine tabs fit the Stocks app's bar and a ticket (five selectors, three lines and a button) the white box; the notifications on screen; the transactions' names in Finance and EconoView; that `ItemHelper.DeliverCargoToBuilding` puts a future's goods on a factory's pallets as it does a warehouse's; that the importers charge the exchange's price from the close (read from the game's code: `ImportProduct.Price`); how the prices feel over a long game.
+
+## The city's builders and hedging a project (`BuilderMarket`, `HedgeRules`)
+
+The construction game's rival builders on the stock market, moved by what they do in it; the exchange's own building materials; and a project's materials hedged with futures from the Construction app (option "Builders on the market and hedging materials", id `markets_builders`, under the stock market's header, on by default).
+
+No Update and no Harmony patch: the builder news waits in a list of 32 at most and goes onto the tape once a second (`MarketDirector.BuildersSecond`), the engine plays it at the next moment and draws a builder's own news at the close, and the Construction app writes its page when it is opened.
+
+### Who is listed
+
+| Rival builder (Civic's contractors, in their order) | On the market |
+| --- | --- |
+| Dunmore and Pike Civil | Dunmore and Pike Civil (DPC, 147), mid |
+| Hartwell Groundworks | Hartwell Groundworks (HWG, 149), small |
+| Calloway Brothers Scaffolding | private, a family firm |
+| Ostrander Building Co. | Ostrander Building Co. (OBC, 146), mid |
+| Tri-Street Utilities | Tri-Street Utilities (TSU, 148), small |
+| Mercer Shopfitters | private |
+| Ironbridge Contracting | Ironbridge Civil Works (IBW, 32): its contracting arm, so the sector never has two companies of the name |
+| Fenwick and Daughters | private, a family firm |
+
+The four new rows (`BuilderMarket.OwnRows`) are catalogue companies of the construction sector like any other: quarterly dividends, results, the bots, options on shares. They join a market only while the option is on (`MarketSetup.Open` and `Join`); once listed they stay. Gorsebank Construction is the construction company's trade (`MarketInputs.Trades`' newest, "construction").
+
+### What moves them (`BuilderMarket`, `MarketEngine.Builders.cs`)
+
+| News | From | Its move |
+| --- | --- | --- |
+| A tender won | `ConstructionDirector.Award`, weight 1 the city's works, 2 a business's building or refit, 3 a public building, 4 one of Uptown's landmarks (the largest) | the winner's mood up 160 bp a weight times 7/8, every other listed builder's down 160/8 a weight: they add up to nothing, as the market expects each to win its share; the player's company winning takes the 20 a weight off them all |
+| Works handed over | `SiteHanded` of a rival's tender site, against the days it bid (`RivalHanded`) | on time 40 bp a weight, late minus 120 a weight |
+| A building finished in the district | `FinishDevelopment` | its builder 50 bp, every other listed builder 6 |
+| A bribe come out, a strike | drawn at the close from the day's secret (`MarketRandom.BuilderNews`), 5% and 10% a year a listed builder, only in a market that lists the builders' own rows | minus 350 bp and 6% of its usual margin for good; minus 150 bp |
+| A tender ring found out, a building of the year | the city's inquiry finding a ring (`ConstructionDirector.Rings`' `RingFound`, each listed member, as the City Ledger's `reallife_bld_paper_ring_found` story names them); the building of the year's builder (`ConstructionDirector.Award`) | minus 450 bp and 10% of its margin; plus 220 bp and 2% |
+
+A move's size is scaled by the company's size (60% large, 150% small) and held to 600 bp. The mood fades as the market's moods do; a margin's move is priced at once, as a crisis's. Each named move is a piece of market news (`MarketNewsKind.Builder`: A the kind, B the move in bp, C the weight), a notification for a builder the player holds or watches, and a piece in the City Ledger's markets section.
+
+### Building materials on the exchange
+
+The game's recipes have no cement, steel, bricks or timber, so the exchange has its own (`DerivCatalogue.BuildingNames`, each name its word's key), in a group of their own (`MaterialGroup.Building`: 2.8% a day, half-life 16 market days): cement and steel a tonne (450 and 1600 at the start's prices), bricks a thousand (1100), timber a cubic metre (560), the save's price multiplier on each, moving with the city's price level as every material does. A merchant's lorry load is a round number of them. Glass is the game's own. They are settled in cash, never delivered, and trade without the city's economy (which writes the game's goods only).
+
+The construction game's merchants price their loads by them (`BuildCatalogue.ExchangeItem`). `MarketDirector.MaterialMove` gives the construction game a material's move against its own price at the price level: a load's list price already follows the price level (`PlansRules.LoadPrice`), so the level is no longer counted twice, as it was with `MaterialFactor`.
+
+### Hedging a project (`HedgeRules`, `MarketEngine.Hedge.cs`, `MarketDirector.Hedge.cs`)
+
+A project ready to build or building has **Materials and hedge** in the Construction app (`ConstructionApp.Hedge.cs`): what it will still buy of each material from its stages (`Construction/ExposureRules`: the stage under way what it lacks and has not ordered, at once; each later stage's loads on the day its stage begins by the project's schedule; the usual merchant's price, the speciality's saving, the exchange's moves), and the futures that would hedge it.
+
+**Hedge** buys a long future for each material and Friday: a purchase on a day is hedged to the last Friday on offer before it (that close's price is what the merchants charge the week after), one before the first is too near, one past the last is hedged to the last; units are the purchase's money at today's prices over the material's price today, so the future's gain or loss is the purchase's dearer or cheaper price (EconomyCheck holds the money to the future's price whatever the price does). Every rule of a future holds: in a session, caught up and not held after a load, the margin and commission, 40 contracts at once and 100,000 units on one material (the legs are held to the room), the broker's calls. A project with futures still open is not hedged again; once they have settled, what is left can be.
+
+The project keeps its futures' ids and what each had made (`ProjectFile.Hedges`, `HedgeEnded`, the construction line), looked at each day and when its page is written; at the handover a notice says what the hedge saved or cost, and the finished page keeps it.
+
+### A company of the player's with a construction business
+
+A construction company's money is the player's own (`ConstructionGame.Take`), not its office's statement, which holds only its wages and rent; so the listed company's books (`ListingLinks.Statements`) add the construction company's own takings and costs by day (`BuildState.Books`, kept 400 days, counted by `TakeIn` and `PayOut` wherever the company's `Earned` and `Spent` were), and a construction company's works count towards the construction sector in the listed company's sector (`ListingSector`).
+
+### Going Public
+
+The builders' news is the tape's own event kind (`MarketInputs.EventBuilder`, A the builder, B the kind and weight): the host's construction game tells it, every machine plays it at the same moment from the host's tape, and a guest's own is dropped by its engine as every guest's event is. A builder's own news is drawn from the day's secret and only where the builders' own rows are listed, which the host's market decides. The building materials are in part `m` of the city's line. Nothing new is sent; each player's hedge is their own futures (part `q`) and their own project. The test entries refuse in a session.
+
+### Tests (options page, the stock market's tests)
+
+"A rival builder wins a public building's tender now", "A bribery scandal at a rival builder now", "Put the builders' share prices back as before the tests"; "Hedge the test project's materials with futures now" (a block of homes ready to build, the test tools' own, hedged by contracts marked as theirs at any hour), "The test project ends now: what its hedge saved or cost" (its futures settled at today's prices), "Put the hedge tests back: futures undone, test project gone" (every test contract closed and its money given back, to the broker's rounding); "Check how a company with a construction business is listed". Each is a public static method and writes one `Builders on the market check (...)`, `Hedging check (...)` or `Listing check (...)` line. All seven are in the city expansion's test run (`.Check(...)` in `BuildersGuide`, where the player stands, before the load), the two put backs last of them.
+
+### Log lines
+
+- `Builders on the market check (a rival builder wins a tender now): Ostrander Building Co. (OBC) 28.00 to 29.18 (+4.21%, wanted up), 4 of the 4 other listed builder(s) down, its news in the market's: PASS`
+- `Stock market: a hedge of 7 of 7 future(s) bought for 1712000 of purchases to come, margin 361000, commission 1712.`
+- `Construction: project 12's hedge saved 4310.`
+- `Hedging check (the test project's end): 7 of 7 future(s) settled at today's prices; the hedge cost 2210, 0 still open: PASS`
+
+### Not verified (the game could not be run)
+
+The Materials and hedge page's length in the white box (five materials, up to five futures' lines, a quote and two notes), the notifications on screen, the builders' news in the City Ledger, the units' words, a hedge's futures on the Futures tab, the transactions in Finance; how often the construction game gives the market news in a long game, and how the builders' prices feel with it.

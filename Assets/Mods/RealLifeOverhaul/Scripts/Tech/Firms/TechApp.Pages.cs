@@ -59,7 +59,7 @@ namespace RealLifeOverhaul.Tech
             }
             if (picked != null && newFor != null)
             {
-                WriteNewProduct(box, picked);
+                WriteNewProduct(box, f, picked);
             }
             else if (picked != null)
             {
@@ -100,6 +100,32 @@ namespace RealLifeOverhaul.Tech
             _director.PathMore(box);
         }
 
+        // The office's connection and what it does to the firm's work, as the morning's work read it (or as it reads now,
+        // before the first morning since loading), and the plan that would lift it; nothing with speed not counted.
+        private static void NetLine(InfoBox box, FirmPlace firm)
+        {
+            int mbps = firm.Mbps != NetSpeedRules.Unknown ? firm.Mbps : TechBridges.PlanMbpsAt(firm.Reg), kind = firm.File.Kind;
+            if (mbps == NetSpeedRules.Unknown)
+            {
+                return;
+            }
+            if (mbps == NetSpeedRules.Grace)
+            {
+                box.Line(TechText.T("reallife_tech_firm_net_grace"));
+                return;
+            }
+            int next = NetSpeedRules.NextFloor(mbps);
+            if (mbps == 0)
+            {
+                box.Line(TechText.T("reallife_tech_firm_net_none", "mbps", next.ToString(), "work", TechText.Mille(FirmsRules.Connection(kind, next))), CellTone.Yellow);
+                return;
+            }
+            int work = FirmsRules.Connection(kind, mbps);
+            string lift = next > 0 ? TechText.T("reallife_tech_firm_net_lift", "mbps", next.ToString(), "work", TechText.Mille(FirmsRules.Connection(kind, next)))
+                : TechText.T("reallife_tech_firm_net_top");
+            box.Line(TechText.Fill("reallife_tech_firm_net", "mbps", mbps.ToString(), "work", TechText.Mille(work), "lift", lift), work < 1000 ? CellTone.Yellow : CellTone.Plain);
+        }
+
         internal static void Step(InfoBox box, bool done, string key, string needs)
         {
             box.Line(TechText.T(key) + " " + (done ? TechText.T("reallife_tech_path_done") : needs ?? TechText.T("reallife_tech_path_not_yet")));
@@ -124,6 +150,12 @@ namespace RealLifeOverhaul.Tech
             box.Line(TechText.Fill("reallife_tech_firm_crew", "people", firm.People.ToString(), "engineering", c.Engineering.ToString(), "testing", c.Testing.ToString(), "design", c.Design.ToString(),
                 "product", c.Product.ToString(), "selling", c.Selling.ToString(), "support", c.Support.ToString(),
                 "spare", firm.Spare < 1000 ? TechText.T("reallife_tech_firm_spare", "share", TechText.Mille(firm.Spare)) : string.Empty));
+            NetLine(box, firm);
+            _director.OwnDeskLine(box, firm);
+            if (FirmsCatalogue.MakesProducts[m.Kind] != 0)
+            {
+                box.Line(RoomLine(f, place));
+            }
             box.Section("reallife_ibox_sec_risk");
             box.Line(TechText.Fill("reallife_tech_firm_risks", "security", TechText.Mille(c.Security), "reliability", TechText.Mille(c.Reliability), "debt", TechText.Mille(m.Debt),
                 "reputation", TechText.Mille(m.Reputation), "outages", m.Outages.ToString(), "breaches", m.Breaches.ToString()));
@@ -170,6 +202,13 @@ namespace RealLifeOverhaul.Tech
             IReadOnlyList<Person> people = _director.People;
             var who = new StringBuilder(96);
             int shown = 0, more = 0, hours = 0;
+            int own = OwnDeskRules.HoursFor(firm.OwnMinutes, firm.OwnRole, kind, firm.File.K);
+            if (own > 0)
+            {
+                hours += own;   // the owner at a desk of theirs, first
+                who.Append(TechText.T("reallife_tech_work_person", "name", TechText.T("reallife_tech_work_you"), "hours", own.ToString()));
+                shown++;
+            }
             for (int i = 0; i < people.Count; i++)
             {
                 Person person = people[i];
@@ -282,7 +321,14 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        private void WriteNewProduct(InfoBox box, FirmPlace firm)
+        // The two limits on products being built or on sale, with where this firm and all the firms stand.
+        private static string RoomLine(FirmsFile f, string place)
+        {
+            return TechText.Fill("reallife_tech_products_room", "firm", FirmsRules.LiveCount(f, place).ToString(), "firm_most", FirmsCatalogue.ProductsPerFirm.ToString(),
+                "all", FirmsRules.LiveCount(f, null).ToString(), "all_most", FirmsCatalogue.ProductsMost.ToString());
+        }
+
+        private void WriteNewProduct(InfoBox box, FirmsFile f, FirmPlace firm)
         {
             Firm m = firm.File;
             string place = m.Place;
@@ -295,6 +341,12 @@ namespace RealLifeOverhaul.Tech
                 }
             }
             box.Title(TechText.T("reallife_tech_new_title", "firm", m.Name));
+            int room = FirmsRules.Room(f, place);
+            box.Line(RoomLine(f, place), room == FirmsRules.RoomYes ? CellTone.Plain : CellTone.Yellow);
+            if (room != FirmsRules.RoomYes)
+            {
+                box.Line(TechText.T(room == FirmsRules.RoomFirmFull ? "reallife_tech_new_full_firm" : "reallife_tech_new_full_all"));
+            }
             Makers(_makers);
             int maker = _makers.IndexOf(firm);
             if (_makers.Count > 1 && maker >= 0 && box.HasSelector)
@@ -331,15 +383,18 @@ namespace RealLifeOverhaul.Tech
             }
             Transform buttons = box.ButtonRow();
             int segment = _newSegment, scope = _newScope;
-            InfoBox.Button(buttons, InfoBox.Positive, "reallife_tech_button_start", () => Do(() =>
+            if (room == FirmsRules.RoomYes)
             {
-                Product made = _director.NewProduct(place, kind, (Segment)segment, scope);
-                if (made != null)
+                InfoBox.Button(buttons, InfoBox.Positive, "reallife_tech_button_start", () => Do(() =>
                 {
-                    _tab = TechDirector.TabProducts;
-                    _picked = ProductRow + made.Id;
-                }
-            }));
+                    Product made = _director.NewProduct(place, kind, (Segment)segment, scope);
+                    if (made != null)
+                    {
+                        _tab = TechDirector.TabProducts;
+                        _picked = ProductRow + made.Id;
+                    }
+                }));
+            }
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
             box.Line(Need(kind));
             box.Line(TechText.T(Mod + "_tech_new_about_" + kind.ToString().ToLowerInvariant()));
@@ -373,7 +428,7 @@ namespace RealLifeOverhaul.Tech
             FirmPlace starting = newFor != null ? _director.FirmOf(newFor) : null;
             if (starting != null)
             {
-                WriteNewProduct(box, starting);
+                WriteNewProduct(box, f, starting);
             }
             else if (picked != null)
             {
@@ -394,6 +449,8 @@ namespace RealLifeOverhaul.Tech
                         Refresh();
                     });
                     box.Line(TechText.T(f.Products.Count == 0 ? "reallife_tech_products_none" : "reallife_tech_products_start"));
+                    box.Line(TechText.Fill("reallife_tech_products_room_all", "all", FirmsRules.LiveCount(f, null).ToString(), "all_most", FirmsCatalogue.ProductsMost.ToString(),
+                        "firm_most", FirmsCatalogue.ProductsPerFirm.ToString(), "kept", FirmsCatalogue.WithdrawnKept.ToString()));
                 }
                 else
                 {
@@ -438,6 +495,10 @@ namespace RealLifeOverhaul.Tech
             {
                 box.Line(TechText.Fill("reallife_tech_product_build", "features", p.Features.ToString(), "rival", FirmsCatalogue.RivalName(rival), "theirs", p.RivalFeatures.ToString(),
                     "next", (FirmsRules.FeatureCost(p.Features) - p.Progress).ToString()));
+                if (p.Features >= FirmsCatalogue.FeaturesMost)
+                {
+                    box.Line(TechText.Fill("reallife_tech_product_features_full", "most", FirmsCatalogue.FeaturesMost.ToString()), CellTone.Yellow);
+                }
                 box.Line(TechText.Fill("reallife_tech_product_sales", "customers", TechText.Whole(p.Users), "free", TechText.Whole(p.Free),
                     "monthly", TechText.Cents(Level(FirmsRules.MonthlyRevenue(p))),
                     "support", FirmsRules.SupportNeeded(p).ToString(), "have", firm != null ? firm.Crew.Support.ToString() : "0"));

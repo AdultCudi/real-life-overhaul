@@ -2,12 +2,7 @@ using System;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// A break-in at one of the player's businesses, for whoever outside street crime wants to know (business
-    /// insurance, through Wiring/CompanyLinks). The loss itself is the break-in's own and is not changed by anybody
-    /// who listens: this only says, once, where it was, what the stock taken was worth and what the repair cost.
-    /// Nothing here runs on a timer. A listener that throws is not allowed to stop the others or the break-in.
-    /// </summary>
+    /// <summary>A break-in at the player's business, told once to each listener (insurance, districts); one that throws stops no other.</summary>
     public static class BreakIns
     {
         /// <summary>A break-in has happened: the business, the value of the stock taken and the repair bill.</summary>
@@ -28,7 +23,7 @@ namespace RealLifeOverhaul
                 }
                 catch (Exception e)
                 {
-                    Crime.Logger?.Error(e);
+                    Crime.Fault(e);
                 }
             }
         }

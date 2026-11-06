@@ -35,6 +35,11 @@ namespace RealLifeOverhaul.Careers
             _workOn = true;
             _employersDay = -1;
             WorkFile w = _study.Work;
+            KeepShifts(Save.Day, true);   // a save from before the weeks were fitted, or a place whose hours changed while it was away
+            LadderKeep(Save.Day);         // the company of a job at one of the city's businesses, there for the Career app at once
+            Guard.Step("the recruitment desk's two ways", AgencyDesk.Take);   // sitting at a recruitment office's desk offers the jobs board or recruitment
+            MendSpells(Save.Day);           // a job that ended in a quit or a sacking after the employer had closed reads as the redundancy it was
+            EmployerKeep(Save.Day, true);   // a job whose employer is gone (a save from before this look, or a business closed while the mod was away) ends as a lay-off
             Logger?.Info("Careers: the working life " + (w.LastDay < 0 ? "opened" : "loaded") + " on day " + Save.Day + ": " + w.Openings.Count + " vacancies, " + w.Applications.Count
                          + " application(s), " + (w.Job != null ? "a job at " + w.Job.Post.Employer : "no job") + ".");
         }
@@ -52,6 +57,7 @@ namespace RealLifeOverhaul.Careers
             }
             DeskRelease("the working life stopped");
             DeskGame.Remove();
+            Guard.Step("the recruitment desk's two ways", AgencyDesk.Give);   // the game's own dialogue again
             _employers.Clear();
             _offices.Clear();
             if (!unloading && _careerApp != null)
@@ -67,6 +73,7 @@ namespace RealLifeOverhaul.Careers
             WorkFile w = _study.Work;
             int minute = hour * 60;
             AgencyEnds(w, day, hour);
+            EmployerKeep(day, false);   // before the day is settled: a closed employer's day is never a missed one
             Job j = w.Job;
             if (j != null)
             {
@@ -76,6 +83,7 @@ namespace RealLifeOverhaul.Careers
                     SettleDay(j, day);
                 }
                 DeskHour(j, day, hour);
+                ShutAtStart(j, day, hour);
                 if (ProRules.WorkDay(p, day) && p.Hour == hour + 1 && day >= j.Hired && j.SettledDay < day && _workReminded != day)
                 {
                     _workReminded = day;
@@ -127,6 +135,7 @@ namespace RealLifeOverhaul.Careers
             WorkFile w = _study.Work;
             int last = w.LastDay;
             w.LastDay = day;
+            EmployerKeep(day, false);   // (the hour's look has seen it already; a morning with no hour event, a load across days, is caught here)
             Job j = w.Job;
             if (j != null)
             {
@@ -139,8 +148,10 @@ namespace RealLifeOverhaul.Careers
                     EndJob((LeaveReason)Math.Max(1, j.Leaving), day, true);
                 }
             }
+            KeepShifts(day, false);   // after the days gone by are settled on the week they were worked on
             Applications(day);
-            Vacancies(day);
+            VacanciesLater(day);   // the job board's renewal: nothing the game reads, made in the frames after (Core/DaySpread)
+            LadderDay(day);   // before the review, which reads the performance score
             WorkDayMore(day);
             if (OwnOn)
             {
@@ -172,6 +183,18 @@ namespace RealLifeOverhaul.Careers
             if (Excused(day) || j.OffUntil >= day)
             {
                 ProRules.Excuse(j);
+                return;
+            }
+            if (ShutExcused(j, day))
+            {
+                // the door was shut at the day's start: never the player's absence
+                ProRules.Excuse(j);
+                if (j.ShutDay != day)
+                {
+                    j.ShutDay = day;
+                    Tell2(NotificationType.Info, "reallife_work_note_shut", Data("employer", CareersText.Employer(j.Post.Employer), "day", CareersText.Day(day)), TabJob, null);
+                }
+                Logger?.Info("Careers: the working day " + day + " at " + j.Post.Employer + " was not worked; its place was shut at the start, so it is excused.");
                 return;
             }
             if (OutageExcused(j, day, from, to))
@@ -269,7 +292,7 @@ namespace RealLifeOverhaul.Careers
                         if (ProRules.Screened(a.Score, ProRules.Luck(StudySeed, a.Post.Id, 1, ProRules.ScreenLuck)))
                         {
                             a.Stage = (int)ApplyStep.Interview;
-                            a.InterviewDay = Weekday(day + ProRules.InterviewAfterDays);
+                            a.InterviewDay = Weekday(day + ClosureRules.InterviewAfter(w, day));
                             a.InterviewHour = TechRandom.Range(StudySeed, 8402, a.Post.Id, 0, ProRules.InterviewHourLeast, ProRules.InterviewHourMost);
                             a.Lapse = a.InterviewDay;
                             Tell2(NotificationType.Success, "reallife_work_note_invited", Data("employer", employer, "title", title, "day", CareersText.Day(a.InterviewDay)),
@@ -440,6 +463,7 @@ namespace RealLifeOverhaul.Careers
             LearnAtWork(a, hours, day);
             LearnAtWork(b, hours, day);
             WorkedMore(j, s, minutes, day);
+            LadderWorked(j, minutes, day);
             if (ProRules.DayOver(p, day, day, CareersGame.MinuteOfDay) && j.SettledDay < day)
             {
                 SettleDay(j, day);
@@ -449,7 +473,7 @@ namespace RealLifeOverhaul.Careers
         // A skill learnt from hours of work, less the more of it the player has.
         private void LearnAtWork(int skill, int hours, int day)
         {
-            StudyRules.Learn(_study, skill, StudyCatalogue.WorkLearn * hours * (100 - StudyRules.Points(_study, skill)) / 100, day);
+            StudyRules.Learn(_study, skill, StudyCatalogue.WorkLearn * hours * (100 - StudyRules.Points(_study, skill)) / 100 * LadderLearn() / 1000, day);
         }
 
         /// <summary>The pay for minutes worked, with the student loan's repayment taken from it.</summary>
@@ -534,8 +558,11 @@ namespace RealLifeOverhaul.Careers
 
         private void InstallCareer()
         {
+            if (!PhoneApp.PhoneUp)
+            {
+                return;   // the game's phone is not built yet: asked again next time, nothing made for it
+            }
             var view = new CareerApp(this);
-            GameSprites.Want(CareerGlyphs);
             bool tryAgain;
             _careerApp = PhoneApp.Install(new PhoneAppDef
             {

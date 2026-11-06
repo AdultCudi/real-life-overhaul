@@ -153,6 +153,7 @@ namespace RealLifeOverhaul.Ledger
             }
             _sentPiecesDay = day;
             _scratch.Clear();
+            StoriesGuest(day, _scratch);   // first: its rival taken over leads what it sends
             if (paperDay == day)
             {
                 LedgerBridges.Paper?.Invoke(_scratch);

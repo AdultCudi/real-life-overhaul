@@ -39,6 +39,12 @@ namespace RealLifeOverhaul.Ledger
             return ((double)amount).ToShortCurrencyFormat();
         }
 
+        /// <summary>A large sum shortened as the game shortens it ("$1.2B"): a company's worth, a takeover's price.</summary>
+        public static string Large(double amount)
+        {
+            return amount.ToShortCurrencyFormat(true);
+        }
+
         /// <summary>A share price in cents as the share prices print it: the figure, without the money's sign.</summary>
         public static string Figure(int cents)
         {

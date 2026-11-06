@@ -49,9 +49,9 @@ internal static partial class Program
         f.Districts.Add("ba:neighborhood_hamptons");
         for (int i = 0; i < 12; i++)
         {
-            f.Shops.Add(new FlareBiz { Place = "Main~" + (10 + i), Name = "Shop " + i, District = f.Districts[i % 3], Niche = (FlareNiche)(i % 7), Stars = 30 + i * 5 });
+            f.Shops.Add(new FlareBiz { Place = "Main~" + (10 + i), Name = "Shop " + i, District = f.Districts[i % 3], Niche = (FlareNiche)(i % 7), Stars = 30 + i * 5, Open = FlareLiveRules.AllHours });
         }
-        f.Mine.Add(new FlareBiz { Place = "Elm~1", Name = "My Cafe", District = "ba:neighborhood_midtown", Niche = FlareNiche.Food, Stars = 80, Mine = true });
+        f.Mine.Add(new FlareBiz { Place = "Elm~1", Name = "My Cafe", District = "ba:neighborhood_midtown", Niche = FlareNiche.Food, Stars = 80, Mine = true, Open = FlareLiveRules.AllHours });
         return f;
     }
 

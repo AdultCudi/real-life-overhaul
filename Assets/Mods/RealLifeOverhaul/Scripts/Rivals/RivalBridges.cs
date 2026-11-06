@@ -3,13 +3,13 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Rivals
 {
-    /// <summary>A rival's holding as the stock market has it now: listed here, its shares, the player's, the most one holder may have, its price in cents.</summary>
+    /// <summary>A rival's holding as the market has it: listed here, its shares, the player's, the most one holder may have, its price in cents.</summary>
     public delegate bool HoldingLook(int stockId, out long shares, out long held, out long most, out int midCents);
 
-    /// <summary>A rival's offer to the player's most skilled employee: who it went to and where they work. False when there is nobody to offer it to.</summary>
+    /// <summary>A rival's offer to the player's most skilled employee: who and where; false with nobody to offer it to.</summary>
     public delegate bool RivalOffer(string rival, int premiumPermille, out string name, out string business);
 
-    /// <summary>The City Ledger's page of the rich list, as words: the paper prints it as a front page of its own.</summary>
+    /// <summary>The City Ledger's front page of the rich list, as words.</summary>
     public sealed class RichListPage
     {
         public int Day;
@@ -23,18 +23,17 @@ namespace RealLifeOverhaul.Rivals
     }
 
     /// <summary>
-    /// What the rival tycoons ask of the rest of the mod, set by the wiring (Wiring/RivalLinks). The rivals call no other
-    /// feature: every move goes through the feature that owns what it touches, by one of these, and each one left unset
-    /// simply makes that kind of move come to nothing (it is never tried). Reset when the wiring is taken down.
+    /// What the rival tycoons ask of the rest of the mod, set by Wiring/RivalLinks: every move goes through the feature
+    /// that owns what it touches, and a bridge left unset makes its kind of move come to nothing.
     /// </summary>
     public static class RivalBridges
     {
         // ---- what the city is
-        /// <summary>The player's net worth as the Finance app shows it (Economy/Finance, Books.NetWorth). Default: the game's own figure (RivalGame).</summary>
+        /// <summary>The player's net worth as the Finance app shows it. Default: the game's own figure.</summary>
         public static Func<long> Worth;
         /// <summary>The city's cycle: 0 boom, 1 steady, 2 slowdown, 3 recession (Economy/City). Default: steady.</summary>
         public static Func<int> Cycle;
-        /// <summary>The playthrough's id the stock market keeps, for a new file's seed. Default: none (the day and the money are used).</summary>
+        /// <summary>The playthrough's id the stock market keeps, for a new file's seed. Default: none (the money is used).</summary>
         public static Func<ulong> Playthrough;
 
         // ---- the stock market (Markets)
@@ -46,7 +45,7 @@ namespace RealLifeOverhaul.Rivals
         public static Func<int> CompanyDays;
         /// <summary>The market's year in days (60 to 365, as the save was started).</summary>
         public static Func<int> YearDays;
-        /// <summary>A holding comes to the market now (its stock id), sized by its tycoon's fortune (dollars); true if it is listed (or was already).</summary>
+        /// <summary>A holding (stock id) listed now, sized by its tycoon's fortune in dollars; true if listed, or already was.</summary>
         public static Func<int, long, bool> ListHolding;
         /// <summary>A holding with no tycoon in play leaves the market at its price, the player's shares paid out at it. True if it did.</summary>
         public static Func<int, bool> DelistHolding;
@@ -55,7 +54,7 @@ namespace RealLifeOverhaul.Rivals
         public static Func<int, bool> Stake;
         /// <summary>A rival's holding (its stock id) bids for the player's company. True if the bid stands.</summary>
         public static Func<int, bool> Bid;
-        /// <summary>The player takes a holding over (its stock id, the cost): the cost taken from their cash, the holding off the market. True if done.</summary>
+        /// <summary>The player takes a holding (stock id) over for the cost: paid from cash, the holding off the market. True if done.</summary>
         public static Func<int, long, bool> TakeOver;
         /// <summary>Opens the Stocks app on a company (its stock id).</summary>
         public static Action<int> OpenStock;

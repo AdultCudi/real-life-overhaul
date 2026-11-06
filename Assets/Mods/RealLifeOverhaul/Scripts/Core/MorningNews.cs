@@ -5,22 +5,10 @@ using UI.Notification;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The city's news held while the player sleeps, so that it comes with the morning line as one notification (two if
-    /// it is long) and not as a pile in the minute they wake (why it piles up: <see cref="MorningNewsRules"/>).
-    ///
-    /// Who sends through it: the weather's warnings, forecast and power cuts (Events/Weather), what is on today and
-    /// tomorrow (Events/EventDirector), the city government's and the works' notices (Civic/CivicText) and the morning's
-    /// papers (Ledger/LedgerDirector.Online). None of them carries a click. Home/HomeDirector opens the hold when the
-    /// player lies down (<see cref="Hold"/>) and, once the moment after the wake is over, Home/HomeReport takes what was
-    /// held into the morning line (<see cref="Take"/>); when no morning line goes out, each is shown as it came
-    /// (<see cref="Release"/>). With the morning summary or its news switched off nothing is held, and every notice is
-    /// shown at once, as before.
-    ///
-    /// GOING PUBLIC. Only this machine's notifications: nothing is sent, and a guest's copies of the host's city
-    /// notices are held on the guest's own machine like any other.
-    ///
-    /// Cost: nothing per frame (no Update). A notice held is one entry of a list of at most
-    /// <see cref="MorningNewsRules.MostHeld"/>; its words are looked up once, when the morning line goes out.
+    /// The city's news held while the player sleeps, so it comes with the morning line instead of as a pile on waking.
+    /// HomeDirector opens the hold (<see cref="Hold"/>); HomeReport takes it into the morning line (<see cref="Take"/>)
+    /// or shows each as it came (<see cref="Release"/>). Going Public: this machine's notifications only, nothing is
+    /// sent. Nothing per frame; at most <see cref="MorningNewsRules.MostHeld"/> notices are held.
     /// </summary>
     public static class MorningNews
     {
@@ -38,18 +26,17 @@ namespace RealLifeOverhaul
         private static readonly List<Notice> Held = new List<Notice>(MorningNewsRules.MostHeld);
         private static readonly List<string> HeldSame = new List<string>(MorningNewsRules.MostHeld);
 
-        /// <summary>True from the player lying down until the morning line takes the news or lets it go. A field read.</summary>
+        /// <summary>True from the player lying down until the morning line takes the news or lets it go.</summary>
         public static bool Holding { get; private set; }
 
-        /// <summary>How many notices are held now. A field read.</summary>
         public static int Count => Held.Count;
 
         /// <summary>Whether a sleep's news is held at all: home life, sleep, the morning summary and its news all on.</summary>
         public static bool Wanted => Settings.HomeLife && Settings.HomeSleep && Settings.HomeMorning && Settings.HomeMorningNews;
 
         /// <summary>
-        /// A notice of the city's news: shown at once, as <see cref="Notifications.Show"/> would, or held for the morning
-        /// line while the player sleeps. One with the duplicate id of a held one takes its place.
+        /// Shows a notice at once, or holds it for the morning line while the player sleeps; one with the duplicate id
+        /// of a held one takes its place.
         /// </summary>
         public static void Show(NotificationType type, string key, Dictionary<string, string> data, float seconds, string same = null, bool track = true)
         {
@@ -74,13 +61,13 @@ namespace RealLifeOverhaul
             HeldSame.Add(same);
         }
 
-        /// <summary>Home: the player has lain down. Holds nothing unless <see cref="Wanted"/>.</summary>
+        /// <summary>The player has lain down; holds nothing unless <see cref="Wanted"/>.</summary>
         public static void Hold()
         {
             Holding = Wanted;
         }
 
-        /// <summary>Home: what was held, in the order it came, added to <paramref name="into"/>; the hold is over. Returns how many.</summary>
+        /// <summary>Adds what was held, in order, to <paramref name="into"/> and ends the hold; returns how many.</summary>
         public static int Take(List<Notice> into)
         {
             int count = Held.Count;
@@ -89,7 +76,7 @@ namespace RealLifeOverhaul
             return count;
         }
 
-        /// <summary>Home: no morning line goes out, or home life stops: each held notice is shown as it came; the hold is over.</summary>
+        /// <summary>No morning line goes out: shows each held notice as it came and ends the hold.</summary>
         public static void Release()
         {
             int count = Held.Count;
@@ -106,13 +93,12 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The city is unloading: what was held goes with it, unshown.</summary>
+        /// <summary>The city is unloading: what was held goes unshown.</summary>
         public static void Drop()
         {
             Clear();
         }
 
-        /// <summary>A notice shown as its sender would have shown it, with the game's sound.</summary>
         public static void ShowAsCame(Notice notice)
         {
             Notifications.Show(notice.Type, notice.Key, notice.Data, notice.Seconds, notice.Same, null, true, notice.Track);
@@ -136,7 +122,6 @@ namespace RealLifeOverhaul
         public static int Weight(NotificationType type) =>
             type == NotificationType.Error ? 3 : type == NotificationType.Warning ? 2 : type == NotificationType.Info ? 1 : 0;
 
-        /// <summary>The kind of a weight.</summary>
         public static NotificationType OfWeight(int weight) =>
             weight >= 3 ? NotificationType.Error : weight == 2 ? NotificationType.Warning : weight == 1 ? NotificationType.Info : NotificationType.Success;
 

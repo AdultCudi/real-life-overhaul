@@ -7,11 +7,7 @@ using Random = UnityEngine.Random;
 
 namespace RealLifeOverhaul
 {
-    /// <summary>
-    /// Finding cars for scenes: one of the game's parked cars to stand beside (looked at, never
-    /// touched), or a traffic car to take over. Emergency and working vehicles are never picked.
-    /// Everything here is asked once when a scene starts.
-    /// </summary>
+    /// <summary>Cars for scenes, asked once at the start: a parked car to stand beside (never touched), or ordinary traffic to take.</summary>
     internal static class CrimeCars
     {
         private static readonly Collider[] Hits = new Collider[24];
@@ -39,16 +35,14 @@ namespace RealLifeOverhaul
             forward = body.forward;
             forward.y = 0f;
             forward = forward.sqrMagnitude < 0.01f ? Vector3.forward : forward.normalized;
-            // The narrower of the two ground extents is near enough the width for standing beside it.
             Vector3 size = picked.bounds.size;
             halfWidth = Mathf.Clamp(Mathf.Min(size.x, size.z) * 0.5f, 0.8f, 1.3f);
             return true;
         }
 
         /// <summary>
-        /// An ordinary private car in traffic between two distances from the player, moving
-        /// (or, with <paramref name="stopped"/>, standing at a light), or null. Starts at a
-        /// random car so the same one is not always picked.
+        /// An ordinary car in traffic between two distances from the player, moving (or, with <paramref name="stopped"/>,
+        /// standing at a light), or null. The search starts at a random car.
         /// </summary>
         public static VehicleComponent FindTrafficCar(Vector3 player, float minDistance, float maxDistance, bool stopped)
         {
@@ -79,11 +73,7 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        /// <summary>
-        /// On the road as plain traffic, a car and not a truck, nobody's taxi or private driver (TrafficTools.SpokenFor), held by
-        /// nobody of the mod's, and not a vehicle with a job to do (the names are StreetRules.IsOrdinaryCarName's). The
-        /// reckless drivers pick by it too.
-        /// </summary>
+        /// <summary>Plain traffic: a car nobody holds, drives or works (StreetRules.IsOrdinaryCarName). The reckless drivers pick by it too.</summary>
         internal static bool IsOrdinary(VehicleComponent car)
         {
             if (car == null || !car.gameObject.activeInHierarchy || car.presetPath != null || car.prefab == null

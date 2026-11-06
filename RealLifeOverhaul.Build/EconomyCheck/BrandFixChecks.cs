@@ -91,7 +91,7 @@ internal static partial class Program
     {
         string guide = EconomySource(@"Brands\BrandsGuide.cs"), deals = EconomySource(@"Brands\BrandsApp.Deals.cs"), shops = EconomySource(@"Brands\BrandsApp.Shops.cs");
         string actions = EconomySource(@"Brands\BrandsDirector.Actions.cs"), tests = EconomySource(@"Brands\BrandsDirector.Tests.cs"), game = EconomySource(@"Brands\BrandsGame.Franchises.cs");
-        Check(guide.Length > 0 && !guide.Contains("Prices.Level") && Occurs(guide, "PriceRules.Start") == 4, "brand fix: every sum on the Guide's page is at a price index of 100, as the page says");
+        Check(guide.Length > 0 && !guide.Contains("Prices.Level") && Occurs(guide, "PriceRules.Start") == 8, "brand fix: every sum on the Guide's page is at a price index of 100, as the page says");
         string close = MemberText(game, "public static void Close(");
         Check(close.Contains("int born = FranchiseRules.BornBack(f);") && close.Contains("born >= 0") && !close.Contains("creationDay = f.Born"),
             "brand fix: a converted shop's start day is given back only when the save knows it");

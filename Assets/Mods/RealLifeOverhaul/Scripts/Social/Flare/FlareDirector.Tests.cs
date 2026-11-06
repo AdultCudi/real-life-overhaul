@@ -270,6 +270,44 @@ namespace RealLifeOverhaul.Flare
             });
         }
 
+        /// <summary>
+        /// Test: one of the city's people reviews the player's first business for a visit now, as the hour's reviews are asked
+        /// about: it goes up while the game has the business open, and is taken back while it is closed (temporarily, or
+        /// outside its opening hours).
+        /// </summary>
+        public void TestReviewNow()
+        {
+            if (!TestReady("Flare review now"))
+            {
+                return;
+            }
+            Guarded(() =>
+            {
+                var shops = FlareGame.Businesses();
+                if (shops.Count == 0)
+                {
+                    Tell(NotificationType.Warning, "reallife_flare_test_review_none", null);
+                    return;
+                }
+                FlareBiz b = FlareLiveGame.Biz(shops[0], true);
+                int id = _file.NextId++;
+                var p = new FlarePost
+                {
+                    Id = id, Day = Save.Day, Hour = Save.Hour, Minute = FlareGame.MinuteOfDay % 60, Author = FlareAuthor.Citizen,
+                    Who = FlareLiveRules.PickCitizen(FlareLiveRules.CitySeed(_file), id, 541), Source = FlareSource.Review, Arg = FlareLiveRules.Stars(b.Stars, 500),
+                    Place = b.Place, Name = b.Name, District = b.District, Topic = FlareLiveRules.NicheTag(b.Niche), Seed = FlareRules.Roll(_file.Seed, id, 17) * 1000,
+                    Reach = 200, Likes = FlareRules.Roll(_file.Seed, id, 3) % 20
+                };
+                _file.Posts.Add(p);
+                ReviewUp(p);
+                bool up = _file.Post(id) == p;
+                Tell(up ? NotificationType.Info : NotificationType.Warning, up ? "reallife_flare_test_review_up" : "reallife_flare_test_review_back", up ? () => OpenPost(id) : (Action)null,
+                     "business", b.Name);
+                Recount();
+                Changed();
+            });
+        }
+
         /// <summary>Test: the reactions to the player's posts of today come in now, as if eight hours had passed.</summary>
         public void TestReactions()
         {
@@ -330,7 +368,7 @@ namespace RealLifeOverhaul.Flare
             Guarded(() =>
             {
                 string with = "c" + (Save.Day % FlareLiveRules.Citizens);
-                FlareLiveRules.Dm(_file.Net, with, AccountName(with), Now, false, null, "reallife_flare_dm_chat", null);
+                FlareLiveRules.Dm(_file.Net, with, AccountName(with), Now, false, null, FlareText.DmKey(FlareLiveRules.Opener(_file, Now)), null);
                 Recount();
                 Tell(NotificationType.Info, "reallife_flare_note_dm", _openMessages, "name", AccountName(with));
                 Changed();

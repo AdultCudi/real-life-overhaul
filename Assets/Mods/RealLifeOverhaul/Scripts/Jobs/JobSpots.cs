@@ -28,7 +28,7 @@ namespace RealLifeOverhaul
         {
             spot = default;
             CityManager city = InstanceBehavior<CityManager>.Instance;
-            CityBuildingController[] buildings = city != null ? city.cityBuildingControllers : null;
+            CityBuildingController[] buildings = GameDlc.Open(city);
             if (buildings == null || buildings.Length == 0)
             {
                 return false;
@@ -89,6 +89,14 @@ namespace RealLifeOverhaul
                 front = further;
             }
             return StreetSpots.OutOfVehicles(ref front);
+        }
+
+        /// <summary>The first entrance door of a building that has a transform: where it is, for those who stand at it. False if it has none.</summary>
+        public static bool DoorOf(CityBuildingController building, out Vector3 door)
+        {
+            BuildingEntranceDoorRef(building, out Transform t);
+            door = t != null ? t.position : default;
+            return t != null;
         }
 
         private static void BuildingEntranceDoorRef(CityBuildingController building, out Transform door)

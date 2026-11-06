@@ -31,7 +31,7 @@ internal static partial class Program
               && put.Substring(leisureCheck, leisureProp - leisureCheck).Contains("return false;"),
             "chess fix: Leisure refuses an overlapping candidate before creating props or people");
 
-        string city = ModSource(@"CityLife\Activities\StandingScenes.cs");
+        string city = ModSource(@"CityLife\Activities\ChessActivity.cs");
         string find = MemberText(city, "public override bool Find(CitySite site)");
         int cityCheck = find.IndexOf("|| !CitySpots.ChessClear(_table, along)", StringComparison.Ordinal);
         int accepted = find.IndexOf("Centre = _table;", StringComparison.Ordinal);

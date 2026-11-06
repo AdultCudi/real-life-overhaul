@@ -12,14 +12,16 @@ namespace RealLifeOverhaul
         Starved = 3,       // it waited for the last frame to be shown while other programs held the processor
         OtherProgram = 4,  // it did not run, and other programs held the processor
         Outside = 5,       // the time was outside the engine's steps, with the processor free
+        Waited = 6,        // the main thread hardly ran inside the engine's steps and nothing else held the processor: blocked, not working
     }
 
     /// <summary>What the game showed during a frame, as the session record tells a stutter the player saw from one they did not.</summary>
     public enum FrameScreen
     {
         Clear = 0,     // the game was being played and seen
-        Black = 1,     // the game's own black screen (UI.UiFader) was up, or coming or going: a walk into or out of a building, sleep
+        Black = 1,     // the game's own black screen (UI.UiFader) was drawn at full strength as the frame began: a walk into or out of a building, sleep
         Loading = 2,   // the game's loading screen (UI.Load.LoadingScreen) was up, or still fading out after the save had loaded
+        Fading = 3,    // the game's own black screen was fading out or back in, the picture showing through it: seen (its fades at a door take 0.2 s each way)
     }
 
     /// <summary>The figures of one frame, as the session record has them (Diagnostics/FrameSteps, Diagnostics/MachineClock). A figure below zero is not known.</summary>
@@ -50,16 +52,15 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The game-free part of a long frame's line (Diagnostics/SessionWatch): which of the causes the figures point to, and
-    /// the words for the processor, the page faults and that cause. Pure arithmetic over a dozen numbers; nothing is
-    /// allocated except the line's text, which is only put together for a line that is written. Checked offline (NavCheck,
-    /// FrameCheck.cs).
+    /// The game-free part of a long frame's line: the cause the figures point to, and the words for the processor, the
+    /// page faults and the cause. Arithmetic over a dozen numbers, checked offline; only a written line is allocated.
     /// </summary>
     public static class FrameRules
     {
         public const double ThreadWorked = 0.6;   // share of the frame the main thread must have run for the frame to be its own work
         public const double MostOf = 0.5;          // share of the frame the wait, or the time outside the steps, must be to be the cause
         public const double OthersHeld = 0.6;      // share of the machine's processors other programs must have held to be the cause
+        public const double Idle = 0.2;            // share of the frame under which the main thread's own time says it was blocked, not working (its clock ticks every 15.6 ms)
         public const long Paging = 20000;          // page faults in one frame from which the line says memory was being brought in (some 80 MB of 4 KB pages)
 
         /// <summary>The cause the figures point to. Unknown figures are left out of the reasoning, never guessed.</summary>
@@ -88,6 +89,10 @@ namespace RealLifeOverhaul
             {
                 return FrameCause.Outside;
             }
+            if (f.ThreadMs >= 0.0 && f.StepsMs >= 0.0 && f.ThreadMs < Idle * span)
+            {
+                return FrameCause.Waited;   // a script's time in such a frame is the wait it was caught in, not its own work
+            }
             return FrameCause.Spread;
         }
 
@@ -101,14 +106,12 @@ namespace RealLifeOverhaul
                 case FrameCause.Starved: return "such waits while other programs held the processor";
                 case FrameCause.OtherProgram: return "other programs holding the processor";
                 case FrameCause.Outside: return "time outside the engine's steps";
+                case FrameCause.Waited: return "the main thread blocked inside the engine's steps";
                 default: return "spread over the engine's steps";
             }
         }
 
-        /// <summary>
-        /// "; the processor: ...; page faults in it: ...; the engine's own figures: ...; so: ..." for a long frame's line.
-        /// What a measure cannot say (an older Windows, Wine, a build without the engine's frame timing) is said in its place.
-        /// </summary>
+        /// <summary>"; the processor: ...; page faults in it: ...; the engine's own figures: ...; so: ...", a missing measure said in its place.</summary>
         public static void Describe(StringBuilder line, in FrameFigures f, string threadMissing, string machineMissing, string faultsMissing, string timingMissing)
         {
             line.Append("; the processor: ");
@@ -180,6 +183,10 @@ namespace RealLifeOverhaul
                 case FrameCause.Outside:
                     line.Append("the time was outside the engine's steps with the processor free (the window's messages, the system or the graphics driver held the game)");
                     break;
+                case FrameCause.Waited:
+                    line.Append("the main thread was blocked, not working: it hardly ran inside the steps above and no other program held the processor "
+                                + "(a wait on the graphics driver, the disk or another thread), so the time a script is given in this frame is the wait it was caught in, not its work");
+                    break;
                 default:
                     line.Append("it was spread over the engine's steps above");
                     break;
@@ -187,13 +194,22 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// What the screen was during a frame, from what the session record read at its start and at the start of the frame
-        /// after it (either is enough: the screen was up, or coming or going, in that frame). The loading screen is named before
-        /// the black screen: it is the one in front. A frame that was not clear was not seen as a stutter.
+        /// What the screen was during a frame, from the looks at its start and at the next frame's: the loading screen at
+        /// either look; else black if the black screen was at full strength as it began; else fading (seen) if it faded at
+        /// either look. Only <see cref="Unseen"/> screens hide a stutter.
         /// </summary>
-        public static FrameScreen Screen(bool faded, bool fadedBefore, bool loading, bool loadingBefore)
+        public static FrameScreen Screen(bool faded, bool fadedBefore, bool coveredBefore, bool loading, bool loadingBefore)
         {
-            return loading || loadingBefore ? FrameScreen.Loading : faded || fadedBefore ? FrameScreen.Black : FrameScreen.Clear;
+            return loading || loadingBefore ? FrameScreen.Loading
+                : coveredBefore ? FrameScreen.Black
+                : faded || fadedBefore ? FrameScreen.Fading
+                : FrameScreen.Clear;
+        }
+
+        /// <summary>True for a screen on which a long frame is not seen as a stutter: the loading screen, or the black screen at full strength.</summary>
+        public static bool Unseen(FrameScreen screen)
+        {
+            return screen == FrameScreen.Loading || screen == FrameScreen.Black;
         }
 
         /// <summary>The words of the long-frame line for the screen (constant texts).</summary>
@@ -204,7 +220,9 @@ namespace RealLifeOverhaul
                 case FrameScreen.Loading:
                     return "its screen was black or fading (its loading screen, up or fading out after the save had loaded: not seen as a stutter)";
                 case FrameScreen.Black:
-                    return "its screen was black or fading (its own walk into or out of a building: not seen as a stutter)";
+                    return "its screen was black (its own walk into or out of a building: not seen as a stutter)";
+                case FrameScreen.Fading:
+                    return "its screen was fading, the picture showing through (its own walk into or out of a building: seen as a stutter)";
                 default:
                     return "its screen was clear";
             }

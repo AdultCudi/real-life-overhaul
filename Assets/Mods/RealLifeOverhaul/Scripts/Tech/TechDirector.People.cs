@@ -60,13 +60,15 @@ namespace RealLifeOverhaul.Tech
             }
             _talent = file;
             _peopleOn = true;
+            SeatGame.Apply();   // the game's desks take the customer service, sales and support roles of the firms (SeatRules)
             _moveAsked.Clear();
             _movesBooked = MovesGame.Booked();
             FollowMoves();
+            int mended = MendNames(save.Day, false);   // staff of one name, as a save from before the repair holds them: before they are read
             int made = ReadPeople(save.Day);
             MendWages();
             Logger?.Info("Tech: professionals " + (fresh ? "opened for this save" : "loaded (version " + version + ")") + " on day " + save.Day + ": " + _people.Count + " professional(s)"
-                         + (made > 0 ? ", " + made + " seen for the first time" : string.Empty) + ".");
+                         + (made > 0 ? ", " + made + " seen for the first time" : string.Empty) + (mended > 0 ? ", " + mended + " second bearer(s) of a name renamed" : string.Empty) + ".");
         }
 
         private void StopPeople(bool keep, bool unloading)
@@ -84,6 +86,7 @@ namespace RealLifeOverhaul.Tech
                 WritePeople(Save.modData);
             }
             _peopleOn = false;
+            SeatGame.Remove();   // the game's desks are its own again
             _people.Clear();
             _ids.Clear();
             _fileOf.Clear();
@@ -297,11 +300,12 @@ namespace RealLifeOverhaul.Tech
                 return 0;
             }
             int joined = 0;
+            HashSet<string> names = NameSet();
             for (int i = 0; i < count && _talent.People.Count < TalentStore.PeopleMost; i++)
             {
                 Profile p = TalentRules.Make(Seed, day * 53 + i * 7 + 3, role, Math.Max(0, level - (i == 0 ? 0 : 1)), day);
                 p.Id = "pro:" + _talent.NextPro++;
-                p.Name = VentureGame.Founder();
+                p.Name = VentureGame.Founder(names);
                 p.Place = place;
                 p.Work = (int)Arrangement.Hybrid;
                 p.Wage = Math.Max(TalentCatalogue.RateLeast, TalentRules.Going(TalentGame.GameRate(p.Def.GameSkill, p.Main / 1000), p.Def, Shortage(p.Def.Family), 0));
@@ -411,6 +415,44 @@ namespace RealLifeOverhaul.Tech
             return d == 6 || d == 0;
         }
 
+        /// <summary>
+        /// The professionals the game's own hiring left at a business with no desks or shifts (a data centre: a data engineer hired there by
+        /// a search firm before the rule that stops it) are taken off it the game's own way and wait in its staff list for a place; the
+        /// player is told once, with who. One pass over the people, on the day. Returns how many.
+        /// </summary>
+        internal int Unseat(int day, bool tell)
+        {
+            int n = 0;
+            string first = null, where = null;
+            for (int i = 0; i < _people.Count; i++)
+            {
+                Person person = _people[i];
+                if (person.Game == null || person.At == null || !HiringRules.Stranded(TalentGame.Shifts(person.At), true))
+                {
+                    continue;
+                }
+                string name = person.Name, at = TalentGame.NameOf(person.At);
+                if (TalentGame.Unseat(person.Game))
+                {
+                    Logger?.Warn("Tech: " + name + " (" + person.File.Def.Key + ") was the game's employee at " + at
+                                 + ", which has no desks or shifts, and never started work there; taken off it, waiting in the staff list for a place.");
+                    first = first ?? name;
+                    where = where ?? at;
+                    n++;
+                }
+            }
+            if (n > 0)
+            {
+                ReadPeople(day);   // their place is no longer the warehouse's
+                if (tell)
+                {
+                    Tell(NotificationType.Warning, "reallife_hire_note_unseated", Data("name", first, "business", where, "count", n.ToString()), TabTeam, null);
+                }
+                Changed();
+            }
+            return n;
+        }
+
         private void PeopleDay(int day)
         {
             if (_talent.LastDay >= day)
@@ -418,9 +460,11 @@ namespace RealLifeOverhaul.Tech
                 return;
             }
             float started = Time.realtimeSinceStartup;
+            int renamed = MendNames(day, true);
             int made = ReadPeople(day);
+            Unseat(day, true);
             Mentors(day);
-            int reviews = 0, sick = 0, left = 0, approached = 0, courses = 0, payroll = 0;
+            int reviews = 0, sick = 0, left = 0, approached = 0, courses = 0, payroll = 0, boughtOut = 0;
             int esteem = TechBridges.EsteemNow(), year = Year;
             for (int i = 0; i < _people.Count; i++)
             {
@@ -510,6 +554,10 @@ namespace RealLifeOverhaul.Tech
                         Data("name", person.Name, "rival", p.PoachBy, "percent", (p.PoachBp / 100).ToString(), "days", TalentCatalogue.PoachAnswerDays.ToString()),
                         TabTeam, Row(p));
                 }
+                if (_hiringOn && HiringRules.RivalBuysOut(Seed, p, day))
+                {
+                    boughtOut += RivalBuyout(person, day) ? 1 : 0;   // they go today, below
+                }
                 if (p.NoticeEnd > 0 && day >= p.NoticeEnd)
                 {
                     Go(person, day);
@@ -522,7 +570,9 @@ namespace RealLifeOverhaul.Tech
             {
                 Logger?.Info("Tech check (professionals, day " + day + "): " + _people.Count + " professional(s)" + (made > 0 ? ", " + made + " new" : string.Empty)
                     + ", " + reviews + " review(s), " + sick + " off sick, "
-                             + approached + " approached by a rival, " + courses + " course(s) or exam(s) ended, " + left + " gone, " + payroll + " paid by the mod; "
+                             + approached + " approached by a rival, " + boughtOut + " notice(s) bought out by one, " + courses + " course(s) or exam(s) ended, "
+                             + left + " gone, " + payroll + " paid by the mod; "
+                             + (renamed > 0 ? renamed + " name(s) shared and renamed, " : string.Empty)
                              + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms: PASS");
             }
         }
@@ -591,6 +641,27 @@ namespace RealLifeOverhaul.Tech
             }
             _talent.People.Remove(p);
             Tell(NotificationType.Info, "reallife_talent_note_left", Data("name", person.Name), TabTeam, null);
+        }
+
+        /// <summary>
+        /// The rival a professional is leaving for buys out the rest of their notice, as the player may for a hire of theirs: by the same
+        /// price, at the pay they have now, paid to the business they leave, and they go today. Once, the day after the notice was handed
+        /// in (HiringRules.RivalBuysOut), and they are gone the same day, so never twice. False if there was nothing to pay.
+        /// </summary>
+        private bool RivalBuyout(Person person, int day)
+        {
+            Profile p = person.File;
+            int end = p.NoticeEnd;
+            int price = HiringRules.BuyoutPrice(HiringRules.BuyoutDays(end, day), p.GameWage);
+            if (price <= 0)
+            {
+                return false;
+            }
+            HiringGame.Receive(price, HiringGame.BuyoutPaidKey, person.At, person.Name);
+            p.NoticeEnd = day;
+            Tell(NotificationType.Info, "reallife_talent_note_buyout", Data("name", person.Name, "rival", p.PoachBy, "amount", TechText.Cents(price)), TabTeam, null);
+            BuyoutCheck(person.Name + " for " + p.PoachBy, day, end, p.NoticeEnd, day, price, p.GameWage);
+            return true;
         }
 
         /// <summary>A rise in basis points, settling any request; at most one rise or promotion in WageRules' period.</summary>

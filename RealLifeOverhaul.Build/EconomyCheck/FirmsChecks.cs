@@ -12,6 +12,7 @@ internal static partial class Program
         FirmsSell();
         FirmsLaunchSales();
         FirmsGames();
+        GameAppeal();
         FirmsRisks();
         FirmsContracts();
         FirmsTenders();

@@ -5,48 +5,31 @@ using System.Text;
 
 namespace RealLifeOverhaul.Photos
 {
-    /// <summary>One photo of the Gallery, as its file name says it: when it was taken (the real clock and the game's), and whether it is a selfie.</summary>
+    /// <summary>One photo of the Gallery, as its file name says it.</summary>
     public sealed class PhotoEntry
     {
         public string Name;     // the file's name, with ".jpg"
         public long Stamp;      // when it was taken, real time, as yyyyMMddHHmmss
         public int Number;      // 1, or the second, third... photo of the same second
         public int Day;         // the game's day it was taken on (0: not known)
-        public int Hour;        // ...and its hour
+        public int Hour;        // the game's hour it was taken at
         public bool Selfie;
     }
 
     /// <summary>
-    /// The rules of the Camera's photos on disk, in plain numbers and names: where a save's photos are, what a photo is
-    /// called, the order photos are taken in, the cap a save keeps and the oldest offered for deletion when it is full, and
-    /// what becomes of the photos of a save the player has deleted. No Unity or game type and no file is touched here, so
-    /// every rule is run as it is by the offline checks (EconomyCheck, PhotoChecks.cs); PhotoStore does the files with these.
-    ///
-    /// THE FOLDERS. persistentDataPath/RealLifeOverhaul/Photos/(the save's folder)/: each photo a JPG of about 1080 lines,
-    /// its small copy (Core/PhotoThumbs' format, 256 pixels wide) in "Thumbs" beside it, where Flare reads it
-    /// (PhotoThumbs.FileOf), and three small text files: "save.txt" (the save's own id, written with the first photo),
-    /// "wallpaper.txt" (the photo set as the phone's wallpaper) and, only once the save is found deleted, "gone.txt" (the
-    /// day it was first found so). A save is the game's character: every save file of one playthrough (its own saves, the
-    /// game's autosaves, a "save as") shares its id (GameInstance.characterId) and so its photos. Nothing is in the save.
-    ///
-    /// A PHOTO'S NAME. "Photo_" or "Selfie_", the real date and time, the game's day and hour, and a number for a second
-    /// photo in the same second: Photo_20261015_143005_D34_14.jpg, Selfie_20261015_143005_D34_14_2.jpg. The name is the
-    /// Gallery's order (newest first), so copying the folder elsewhere keeps it.
-    ///
-    /// THE CAP. A save keeps <see cref="Cap"/> photos at most. Never deleted without the player: opening the camera with
-    /// the Gallery full asks first (the game's question box) whether the oldest <see cref="OfferAtOnce"/> may go, never the
-    /// one that is the wallpaper; a No keeps every photo and the camera stays shut.
-    ///
-    /// A DELETED SAVE. Once a game, behind the main menu or the first load, a worker looks at each save's photos: the
-    /// save's folder of the game gone (no save file of that id in any of the game's version folders), its photos are
-    /// marked with the day; still gone <see cref="GraceDays"/> days later, they are deleted with one line in Player.log;
-    /// the save back meanwhile (restored from a backup or the cloud), the mark is taken off.
+    /// The game-free rules of the photos on disk, checked offline; <see cref="PhotoStore"/> does the files. A save's
+    /// folder under persistentDataPath/RealLifeOverhaul/Photos holds the JPGs, their small copies in Thumbs (where
+    /// Flare reads them), save.txt, wallpaper.txt and, once the save is found deleted, gone.txt. Every save file of a
+    /// playthrough shares the character id, and so its photos. Names sort in the Gallery's order:
+    /// Photo_20261015_143005_D34_14.jpg. Nothing is deleted without the player: at <see cref="Cap"/> the camera asks to
+    /// let the oldest go, and a deleted save's photos go <see cref="GraceDays"/> days after it is found gone, unless it
+    /// comes back.
     /// </summary>
     public static class PhotoStoreRules
     {
-        public const int Cap = 300;               // photos a save keeps at most: some 150 MB of 1080-line photos
-        public const int OfferAtOnce = 10;        // photos offered for deletion when the Gallery is full: room for a session's shooting
-        public const int GraceDays = 30;          // real days the photos of a deleted save are kept after it is first found gone
+        public const int Cap = 300;               // photos a save keeps at most: some 150 MB
+        public const int OfferAtOnce = 10;        // photos offered for deletion when the Gallery is full
+        public const int GraceDays = 30;          // real days a deleted save's photos are kept after it is first found gone
         public const string Extension = ".jpg";
         public const string PhotoPrefix = "Photo_";
         public const string SelfiePrefix = "Selfie_";
@@ -56,17 +39,12 @@ namespace RealLifeOverhaul.Photos
         public const string GoneFile = "gone.txt";
         public const string Unsaved = "unsaved";             // the folder of a save with no id (a new game not saved yet)
         public const int NameMost = 80;                      // characters of a save's folder's name at most
-
-        // ---------------------------------------------------------------- the folders
-
         public const int HashLength = 9;                     // "_" and eight hex digits: the mark of a name that was changed
 
         /// <summary>
-        /// A save's folder's name, one for each id and never one for two: an id of letters, digits, '-', '+' and '=' alone (the
-        /// game's Base64 ids) is its folder's name as it is; any other (a space, a '/', an accent, a '_' of an older save named
-        /// after its character, or one longer than <see cref="NameMost"/>) has those characters made '_', is cut to leave room,
-        /// and ends in '_' and eight hex digits of the whole id (so "A B" and "A_B" are two folders, and no id kept as it is
-        /// can end so, having no '_'). "unsaved" for none, and "unsaved_" and the digits for an id of nothing plain.
+        /// A save's folder's name, one for each id and never one for two. A game id (letters, digits, '-', '+', '=') is used as
+        /// it is; any other has its other characters made '_', is cut to fit, and ends in '_' and a hash of the whole id, which
+        /// a plain id cannot (it has no '_'). "unsaved" for none, "unsaved_" and the hash for an id with nothing plain.
         /// </summary>
         public static string FolderName(string saveId)
         {
@@ -102,9 +80,9 @@ namespace RealLifeOverhaul.Photos
         }
 
         /// <summary>
-        /// The name an earlier build of the Camera gave a save's folder (every character not plain made '_', cut to
-        /// <see cref="NameMost"/>), or null where it is the name <see cref="FolderName"/> gives now. A folder of that name whose
-        /// "save.txt" holds the very id is that save's photos, moved to the new name (PhotoStore.Adopt).
+        /// The folder name an earlier build gave (other characters made '_' with no hash, cut at <see cref="NameMost"/>), or
+        /// null where it equals <see cref="FolderName"/>. <see cref="PhotoStore.Adopt"/> moves such a folder whose save.txt
+        /// holds the same id.
         /// </summary>
         public static string EarlierFolderName(string saveId)
         {
@@ -130,11 +108,7 @@ namespace RealLifeOverhaul.Photos
             return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z') || (c >= '0' && c <= '9') || c == '-' || c == '+' || c == '=';
         }
 
-        /// <summary>
-        /// Whether two paths name one folder, whatever their separators: the engine's persistentDataPath has '/', and the
-        /// game's Mono turns every '/' into '\' in what Path gives back (its CleanPath), which .NET on Windows does not. A
-        /// trailing separator and the case of the letters (Windows names files without it) do not count.
-        /// </summary>
+        /// <summary>Whether two paths name one folder, whatever the case, a trailing separator or the separators (Mono writes them apart).</summary>
         public static bool SameFolder(string a, string b)
         {
             if (a == null || b == null)
@@ -180,9 +154,7 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // ---------------------------------------------------------------- a photo's name
-
-        /// <summary>A photo's name: its kind, the real moment, the game's day and hour, and a number past 1 for another of the same second.</summary>
+        /// <summary>A photo's name; a <paramref name="number"/> past 1 is for another photo of the same second.</summary>
         public static string NameFor(DateTime taken, bool selfie, int day, int hour, int number)
         {
             var name = new StringBuilder(48);
@@ -197,7 +169,7 @@ namespace RealLifeOverhaul.Photos
             return name.Append(Extension).ToString();
         }
 
-        /// <summary>A photo's name read back; false for a file that is not one of the Camera's (it is left alone and not listed).</summary>
+        /// <summary>A photo's name read back; false for a file that is not the Camera's, which is left alone.</summary>
         public static bool Parse(string name, PhotoEntry into)
         {
             if (string.IsNullOrEmpty(name) || into == null || !name.EndsWith(Extension, StringComparison.OrdinalIgnoreCase))
@@ -246,16 +218,13 @@ namespace RealLifeOverhaul.Photos
             return true;
         }
 
-        /// <summary>The real moment a photo was taken, from its stamp.</summary>
         public static DateTime Taken(PhotoEntry photo)
         {
             DateTime.TryParseExact(photo.Stamp.ToString("00000000000000", CultureInfo.InvariantCulture), "yyyyMMddHHmmss", CultureInfo.InvariantCulture, DateTimeStyles.None, out DateTime at);
             return at;
         }
 
-        // ---------------------------------------------------------------- the order
-
-        /// <summary>The order photos were taken in, newest first (the Gallery groups them by the game's day after: GalleryRules.ByDay); within one second the later number first; then by name, so that it is one order whatever the folder gave.</summary>
+        /// <summary>Newest first, the later number first within a second, then by name, so one order whatever the folder gave.</summary>
         public static int Newest(PhotoEntry a, PhotoEntry b)
         {
             if (a.Stamp != b.Stamp)
@@ -271,30 +240,24 @@ namespace RealLifeOverhaul.Photos
 
         private static readonly Comparison<PhotoEntry> NewestFirst = Newest;
 
-        /// <summary>Puts a list in the order the photos were taken, newest first.</summary>
+        /// <summary>Newest first.</summary>
         public static void Order(List<PhotoEntry> photos)
         {
             photos.Sort(NewestFirst);
         }
 
-        // ---------------------------------------------------------------- the cap
-
-        /// <summary>True when a save has as many photos as it keeps: no photo more until some go.</summary>
         public static bool Full(int count)
         {
             return count >= Cap;
         }
 
-        /// <summary>How many photos are offered for deletion when the camera is opened: none below the cap; at it, enough for <see cref="OfferAtOnce"/> more.</summary>
+        /// <summary>How many photos opening the camera offers for deletion: none below the cap, else room for <see cref="OfferAtOnce"/>.</summary>
         public static int ToOffer(int count)
         {
             return count < Cap ? 0 : count - Cap + OfferAtOnce;
         }
 
-        /// <summary>
-        /// The oldest photos offered for deletion, oldest first, into a list (emptied first): <paramref name="count"/> of them
-        /// from the end of a list in the Gallery's order, never the photo named <paramref name="keep"/> (the wallpaper).
-        /// </summary>
+        /// <summary>The oldest <paramref name="count"/> photos, oldest first, into a list emptied first; never <paramref name="keep"/>.</summary>
         public static void Oldest(List<PhotoEntry> ordered, int count, string keep, List<PhotoEntry> into)
         {
             into.Clear();
@@ -307,8 +270,6 @@ namespace RealLifeOverhaul.Photos
             }
         }
 
-        // ---------------------------------------------------------------- a deleted save
-
         /// <summary>What becomes of a save's photos when the photos are looked over.</summary>
         public enum Sweep
         {
@@ -318,10 +279,7 @@ namespace RealLifeOverhaul.Photos
             Delete     // gone for GraceDays: its photos are deleted
         }
 
-        /// <summary>
-        /// A save's photos looked over: whether its save is there, whether they are marked and since when (null for a mark that
-        /// cannot be read, which is written again as today), and today.
-        /// </summary>
+        /// <summary>A save's photos looked over; a <paramref name="markedOn"/> of null, a mark not read, is written again as today.</summary>
         public static Sweep SweepOf(bool savePresent, bool marked, DateTime? markedOn, DateTime today)
         {
             if (savePresent)
@@ -330,7 +288,7 @@ namespace RealLifeOverhaul.Photos
             }
             if (!marked || !markedOn.HasValue || markedOn.Value.Date > today.Date)
             {
-                return Sweep.Mark;   // (a mark in the future is a clock that was wrong: counted again from today)
+                return Sweep.Mark;   // a mark in the future is a clock that was wrong: counted again from today
             }
             return (today.Date - markedOn.Value.Date).TotalDays >= GraceDays ? Sweep.Delete : Sweep.Keep;
         }
@@ -345,7 +303,6 @@ namespace RealLifeOverhaul.Photos
             return null;
         }
 
-        /// <summary>A day as a mark writes it.</summary>
         public static string MarkText(DateTime day)
         {
             return day.ToString("yyyy-MM-dd", CultureInfo.InvariantCulture);

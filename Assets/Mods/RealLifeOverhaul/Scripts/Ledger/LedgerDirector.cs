@@ -403,12 +403,15 @@ namespace RealLifeOverhaul.Ledger
             GuestPiecesInto(e, day);
             LedgerBridges.Market?.Invoke(e, since);
             LedgerBridges.Economy?.Invoke(e);
+            StoriesInto(e, since, day, fresh);
             e.Pieces.RemoveAll(p => p == null);
+            int stories = LedgerStories.Count(e.Pieces);
             if (e.Pieces.Count > LedgerCatalogue.PiecesMost)
             {
                 e.Pieces.Sort((a, b) => b.Weight.CompareTo(a.Weight));
                 e.Pieces.RemoveRange(LedgerCatalogue.PiecesMost, e.Pieces.Count - LedgerCatalogue.PiecesMost);
             }
+            StoriesCheck(e, stories);
             KeepEarlier(_state.Edition, day);   // the edition it replaces, to be read again on the phone
             _state.Edition = e;
             LedgerBridges.TextsEdition?.Invoke(e);   // RLO Texts asks for the briefs' words now, ahead of the reading
@@ -467,7 +470,7 @@ namespace RealLifeOverhaul.Ledger
             {
                 return false;
             }
-            GameManager.ChangeMoneySafe(-amount, new TransactionInfo(transaction), null, null, force: true);
+            RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo(transaction), null, null, force: true);
             return true;
         }
 
@@ -501,7 +504,7 @@ namespace RealLifeOverhaul.Ledger
                 List<BuildingRegistration> all = Save != null ? Save.BuildingRegistrations : null;
                 for (int i = 0; all != null && i < all.Count; i++)
                 {
-                    if (all[i] != null && GoingPublic.Mine(all[i]) && all[i].GetBuildingType() == Residential)
+                    if (all[i] != null && GoingPublic.Mine(all[i]) && GameRegistrations.BuildingType(all[i]) == Residential)
                     {
                         _homeReg = all[i];
                         break;

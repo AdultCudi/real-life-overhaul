@@ -9,20 +9,8 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The player's own bank (Economy/OwnBank) with the rest of the mod. The bank calls no other feature and none calls
-        /// it but here:
-        ///
-        ///   Integrity   the player's integrity as an owner (Standing): the city's trust in the bank, and so its savers
-        ///   Policy      the council's levers (Civic): business tax, grants, the wage floor and rents move defaults
-        ///   Courts      the justice system takes a lender's claims (Justice: DebtClaims.Available): more of a loan written
-        ///               off comes back through the courts, later and for their costs
-        ///   Quotes      the Stocks app's listed companies (Markets) as the bank's fund sees them, once a day
-        ///   Moved       a fine or a bank closed costs the player integrity (Standing), as a breach in the papers does a little
-        ///   the paper   the bank's pieces in the City Ledger the morning after (News.Extra, after the company's)
-        ///
-        /// The bank's takings and its rows among its headquarters' goods are in the game's statement through
-        /// Wiring/EconomyLinks (EconomyBridges.Takings, CostRow). Each is read once a day or when the bank's page is open,
-        /// never per frame.
+        /// The player's own bank with Standing (its savers' trust, integrity lost to a fine), the council's levers, the
+        /// courts, the Stocks app's quotes for its fund and the City Ledger. Read once a day or while its page is open.
         /// </summary>
         public static class OwnBankLinks
         {
@@ -73,7 +61,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // The market's listed companies, and those gone from it with what each share was paid out at. Strings are the stock's own (nothing is built).
+            // The listed companies, and those gone with what each share was paid out at; the strings are the stock's own.
             private static bool Quotes(List<FundQuote> into)
             {
                 into.Clear();

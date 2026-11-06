@@ -280,9 +280,21 @@ internal static partial class Program
         {
             renders++;
         }
-        string render = FlareMethod(camera, "private static bool Render("), take = FlareMethod(camera, "public static IEnumerator Take(");
-        Check(renders == 1 && render.Contains("_camera.Render()") && render.Contains("AsyncGPUReadback.Request(") && !camera.Contains("ReadPixels") && take.Contains("Render(from, at, target") && take.Contains("yield return null"),
-            "Flare city photos: the city is rendered in one place, read back without waiting for the graphics card, the pose a frame before");
+        string render = FlareMethod(camera, "private static bool RenderOne("), take = FlareMethod(camera, "public static IEnumerator Take(");
+        int between = take.IndexOf("if (pass > 0)", StringComparison.Ordinal), one = take.IndexOf("RenderOne(target)", StringComparison.Ordinal);
+        Check(renders == 1 && render.Contains("_camera.Render()") && !render.Contains("for (") && take.Contains("AsyncGPUReadback.Request(") && !camera.Contains("ReadPixels")
+              && take.Contains("Ready(from, at)") && take.Contains("pass < Renders") && between >= 0 && one > between
+              && take.IndexOf("yield return null", between, StringComparison.Ordinal) is int paused && paused > between && paused < one && take.Contains("yield return null"),
+            "Flare city photos: the city is rendered in one place, one render a frame (the two in one frame were 11 to 38 ms), read back without waiting for the graphics card, the pose a frame before");
+        string ready = FlareMethod(camera, "private static bool Ready("), settled = FlareMethod(camera, "private static void Settled()");
+        Check(ready.Contains("_ownHistory = _data.hasPersistentHistory;") && ready.IndexOf("_data.hasPersistentHistory = true;", StringComparison.Ordinal) > ready.IndexOf("mainData.CopyTo(_data);", StringComparison.Ordinal)
+              && settled.Contains("_data.hasPersistentHistory = _ownHistory;") && settled.Contains("Object.Destroy(_exposureHost)") && settled.Contains("CodeAssets.DropProfile(_profile)")
+              && FlareMethod(camera, "public static void Clear()").Contains("Settled();") && take.Contains("Settled();")
+              && FlareMethod(camera, "private static bool RenderOne(").Contains("_exposureHost.SetActive(false);"),
+            "Flare city photos: the camera's history (the settled exposure) is held across only the frame between its renders and given back after the last or a stopped photo; the exposure's volume is out of the game's volumes between them");
+        Check(FlareCityPhotoRules.FrameMs * 2 == FlareCityPhotoRules.SlowMs && FlareMethod(photos, "private IEnumerator PhotoTake").Contains("result.WorstFrameMs < FlareCityPhotoRules.FrameMs")
+              && FlareMethod(photos, "private IEnumerator PhotoTake").Contains("FlareCityPhotoRules.NextPace(_photoPace, result.RenderMs)"),
+            "Flare city photos: the self-check holds each frame's render to half the photo's budget, and the pace still follows the photo's whole cost as before");
         string second = FlareMethod(photos, "private void PhotosSecond()");
         int paced = second.IndexOf("t < _photoNext", StringComparison.Ordinal), started = second.IndexOf("PhotoTake(", StringComparison.Ordinal);
         Check(paced >= 0 && started > paced && second.Contains("_photoToday >= FlareCityPhotoRules.DayMost") && second.Contains("_photoBusy") && FlareMethod(photos, "private IEnumerator PhotoTake").Contains("FlareCityPhotoRules.NextPace(")

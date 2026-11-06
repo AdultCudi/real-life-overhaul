@@ -72,7 +72,7 @@ namespace RealLifeOverhaul.Economy
         private object _toldDialogue;  // the bank dialogue already told why nobody lends
         private Action _onSave, _onHour, _onDay, _hourSeen, _daySeen;
         private Action<string> _onGameEvent, _gameEventSeen;
-        private Action _deskSlow, _deskKeep, _deskSave, _deskRefused;   // kept, so that calling the desk each second allocates nothing
+        private Action _deskSlow, _deskKeep, _deskSave, _deskRefused, _deskShort, _deskHour;   // kept, so that calling the desk each second, or at each money change, allocates nothing
         private Action<CreditGrade, CreditGrade> _onGrade;
         private Action<CreditEvent, int, int> _onPosted;
 
@@ -124,11 +124,14 @@ namespace RealLifeOverhaul.Economy
         private void Awake()
         {
             Instance = this;
+            GameSprites.Want(FinanceApp.AppGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
             _desk = new CreditDesk(this);
             _deskSlow = _desk.Slow;
             _deskKeep = _desk.KeepHolds;
             _deskSave = _desk.BeforeSave;
             _deskRefused = _desk.Refused;
+            _deskShort = _desk.CoverShort;
+            _deskHour = _desk.CoverHour;
             _onSave = OnSave;
             _onHour = Guard.Wrap(Ticks, OnHour);
             _onDay = Guard.Wrap(Ticks, OnDay);
@@ -243,6 +246,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return;   // LifeEvents makes the save's modData ready first
             }
+            KeepDayResult();
             if (!Settings.Economy)
             {
                 if (_running)
@@ -342,6 +346,7 @@ namespace RealLifeOverhaul.Economy
                              + (banks == 0 ? "looked for again for " + FindTries + " s" : ok ? "PASS" : "FAIL"));
             }
             Badge();
+            ShowDayResultAtStart();
         }
 
         // The banks get their own terms back and the app leaves the phone. Only 'keep' (a stop in the middle of play, when the

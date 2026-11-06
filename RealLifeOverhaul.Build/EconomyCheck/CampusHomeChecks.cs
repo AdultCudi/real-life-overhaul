@@ -157,9 +157,15 @@ internal static partial class Program
     // The game's own data (StreamingAssets/BusinessLayouts): no office business of the game's has a layout of the home's
     // size, so neither the city's competition nor a rival can open a business there. A layout of size C2 is allowed only
     // for the shops the game's AI opens (retail buildings) and three named businesses that are no AI's.
+    private static string GameManagedFolder()
+    {
+        string managed = Environment.GetEnvironmentVariable("BA_MANAGED");
+        return string.IsNullOrWhiteSpace(managed) ? @"G:\Steam\steamapps\common\Big Ambitions\Big Ambitions_Data\Managed" : managed;
+    }
+
     private static void HomeLayouts()
     {
-        string root = @"G:\Steam\steamapps\common\Big Ambitions\Big Ambitions_Data\StreamingAssets\BusinessLayouts";
+        string root = System.IO.Path.Combine(DesignGameFiles, "BusinessLayouts");
         if (!Directory.Exists(root))
         {
             Check(false, "university home: the game's business layouts are at " + root);
@@ -277,7 +283,7 @@ internal static partial class Program
         Check(floors.Contains("CampusRules.TellAway(") && list.Contains("CareersStore.CampusToldKey"), "university home: told once through the save's mark, and the mark is listed among the feature's save keys");
         Check(building.Contains("filed != null && filed != CampusRules.BookId)") && !building.Contains("&& (filed == null || filed == CampusRules.BookId)"),
             "university home: another feature filed in the building is a reason of its own, not a building missing from the city");
-        Check(precincts.Contains("SpecialNameBook.GivesWay(SpecialBuildings.Players(found), SpecialBuildings.HolderOf(found), \"police_\")") && precincts.Contains("|| (!had && gaveWay.Contains(district.Key))"),
+        Check(precincts.Contains("SpecialNameBook.GivesWay(SpecialBuildings.Players(found), SpecialBuildings.HolderOf(found), \"police_\")") && precincts.Contains("|| (!had && pass.GaveWay.Contains(district.Key))"),
             "university home: a district whose saved station gave way (to the university or a player) has its new station named in the precincts-moved notice");
         string desks = Read(@"Licences\Driving\DrivingSchool.cs");
         float aside = CampusConst(desks, "Aside"), deskReach = CampusConst(desks, "Reach");

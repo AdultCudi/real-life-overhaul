@@ -128,7 +128,7 @@ namespace RealLifeOverhaul.Economy
     /// (never saved; each item's own price kept, so a restore is exact), and transactions of the mod's own adjusting the
     /// day's rent, wages, takings and the game's shops and services. Runs on events, nothing per frame.
     /// </summary>
-    internal static class CityGame
+    internal static partial class CityGame
     {
         public const string RentKey = "reallife_transaction_macro_rent";
         public const string WagesKey = "reallife_transaction_macro_wages";
@@ -182,7 +182,7 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; all != null && i < all.Length; i++)
             {
                 NeighborhoodData data = all[i];
-                if (data == null || string.IsNullOrEmpty(data.neighbourhood) || data.neighbourhood == Global)
+                if (data == null || string.IsNullOrEmpty(data.neighbourhood) || data.neighbourhood == Global || !CityCheck.Here(data.neighbourhood))
                 {
                     continue;
                 }
@@ -407,15 +407,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     shop = new CityShop();
                 }
-                string district;
-                try
-                {
-                    district = reg.Neighborhood;
-                }
-                catch (Exception)
-                {
-                    district = null;   // its building cannot be read: no district, the cycle's part alone
-                }
+                string district = GameRegistrations.District(reg);
                 shop.Reg = reg;
                 shop.District = state.District(district);
                 shop.Cycle = cycle;
@@ -529,11 +521,10 @@ namespace RealLifeOverhaul.Economy
                 {
                     continue;
                 }
-                float bears = good.Market * (index + (Monopoly(price.itemName, district) ? MacroCatalogue.MonopolyAllowance / 1000f : 0f));
-                sum += price.price / bears;
+                sum += CityModel.PriceRatioTerm(price.price, good.Market, index, Monopoly(price.itemName, district));
                 count++;
             }
-            return count == 0 ? 0 : (int)Math.Round(sum / count * 1000.0);
+            return CityModel.MeanPriceRatio(sum, count);
         }
 
         /// <summary>The game's own rent, wages, takings and shops and services of a day (its daily run dates them on the day that has ended).</summary>
@@ -624,7 +615,7 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>Cash in hand, whole and never under nothing.</summary>
-        public static int Cash => SaveGameManager.Current != null ? Mathf.FloorToInt(Mathf.Max(0f, SaveGameManager.Current.Money)) : 0;
+        public static int Cash => SaveGameManager.Current != null ? WholeMoney.Floor(SaveGameManager.Current.Money) : 0;
 
         /// <summary>
         /// One adjustment, dated on the day it is for: positive is paid, negative taken. A charge is deducted as the charges
@@ -644,7 +635,7 @@ namespace RealLifeOverhaul.Economy
             {
                 info.SetTaxDeductibleName(key);
             }
-            bool booked = GameManager.ChangeMoneySafe(amount, info, day, address, amount > 0);
+            bool booked = RealLifeOverhaul.Economy.BizBooks.Book(amount, info, day, address, amount > 0);
             if (booked && amount > 0 && !string.IsNullOrEmpty(deducted))
             {
                 LowerDeduction(deducted, amount);   // the game counts charges alone (TaxHelper.TrackTransaction)

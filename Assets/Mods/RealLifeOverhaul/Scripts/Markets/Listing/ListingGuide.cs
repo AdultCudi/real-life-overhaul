@@ -17,7 +17,8 @@ namespace RealLifeOverhaul.Markets
                 .Group("reallife_mkt_header")
                 .About("reallife_guide_markets_listing_about").Help("reallife_guide_markets_listing")
                 .Owns(Settings.MarketsListingId)
-                .Test("reallife_lst_test_list", "reallife_lst_test_results", "reallife_lst_test_meeting", "reallife_lst_test_activist", "reallife_lst_test_bid", "reallife_lst_test_off")
+                .Test("reallife_lst_test_list", "reallife_lst_test_results", "reallife_lst_test_meeting", "reallife_lst_test_activist", "reallife_lst_test_bid", "reallife_lst_test_off",
+                    "reallife_lst_test_sector")
                 .Fact("lst_years", () => Whole(ListingCatalogue.BooksYears))
                 .Fact("lst_quarters", () => Whole(ListingCatalogue.QuartersLeast))
                 .Fact("lst_turnover", () => Guide.Money(Prices.At((float)ListingCatalogue.TurnoverLeastAtStart)))
@@ -61,7 +62,12 @@ namespace RealLifeOverhaul.Markets
                 .Fact("lst_bid_most", () => Guide.Percent((float)ListingCatalogue.OwnTakeoverPremiumMost))
                 .Fact("lst_handover_days", () => Whole(ListingCatalogue.HandOverDays))
                 .Fact("lst_dividend_tax", () => Bp(ListingCatalogue.DividendTaxBp))
-                .Fact("lst_dividend_tax_step", () => Bp(ListingCatalogue.DividendTaxStepBp));
+                .Fact("lst_dividend_tax_step", () => Bp(ListingCatalogue.DividendTaxStepBp))
+                .Fact("lst_exchange_least", () => Guide.Money(Prices.At((float)ListingCatalogue.ListingFeeLeastAtStart)))
+                .Fact("lst_yearly_least", () => Guide.Money(Prices.At((float)ListingCatalogue.YearlyFeeLeastAtStart)))
+                .Fact("lst_bid_days_least", () => Whole(ListingCatalogue.OwnTakeoverDaysLeast))
+                .Fact("lst_bid_days_most", () => Whole(ListingCatalogue.OwnTakeoverDaysMost))
+                .Fact("lst_sale_days", () => Whole(ListingCatalogue.SaleBidDays));
         }
 
         private static int Year()

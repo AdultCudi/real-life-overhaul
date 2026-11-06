@@ -1,6 +1,6 @@
 # Texts and translation
 
-Every word the player reads is a locale key. This page says where the texts live, how to add one, how they are written, and how the nine languages fit together.
+Every word the player reads is a locale key. This page says where the texts live, how to add one, how they are written, and how the eleven languages fit together.
 
 ## Where texts live
 
@@ -11,10 +11,10 @@ Every word the player reads is a locale key. This page says where the texts live
 | `en.json` | English, the source | yes |
 | `pt.json` | Brazilian Portuguese | yes |
 | `zh-cn.json` | Simplified Chinese | yes |
-| `de.json`, `fr.json`, `es.json`, `ru.json`, `nl.json`, `tr.json` | German, French, Spanish, Russian, Dutch, Turkish | may lack keys |
+| `de.json`, `fr.json`, `es.json`, `ru.json`, `nl.json`, `tr.json`, `pl.json`, `ko.json` | German, French, Spanish, Russian, Dutch, Turkish, Polish, Korean | may lack keys |
 
 - Each file is flat JSON, one `"reallife_...": "text"` pair a line. The files are UTF-8 with a BOM and CRLF line endings: keep both.
-- The game reads a key a language lacks in English, its fallback language. So a new key in en, pt and zh-cn is enough; German, French, Spanish, Russian, Dutch and Turkish are translated in batches.
+- The game reads a key a language lacks in English, its fallback language. So a new key in en, pt and zh-cn is enough; German, French, Spanish, Russian, Dutch, Turkish, Polish and Korean are translated in batches.
 - Code reads a text by its key, through the feature's `*Text.cs` (for example `JobText.T`), which fills its `{placeholders}`.
 
 ## Add a text
@@ -22,7 +22,7 @@ Every word the player reads is a locale key. This page says where the texts live
 1. Add the key at the end of `en.json`, `pt.json` and `zh-cn.json`, in the same order, in the same commit. Edit the files with a script or an editor that keeps the BOM and the line endings.
 2. Name it after its feature: `reallife_<feature>_<what>`. Never rename or reorder existing keys. Remove a key only when nothing reads it any more.
 3. Write the Portuguese and Chinese yourself if you can. If you cannot, say so in the pull request and the maintainer has them translated.
-4. If you change an English text's `{placeholders}`, tags or line breaks, mend the key in `de.json`, `fr.json`, `es.json`, `ru.json`, `nl.json` and `tr.json` too, or take it out of them (it then reads in English until it is translated again).
+4. If you change an English text's `{placeholders}`, tags or line breaks, mend the key in `de.json`, `fr.json`, `es.json`, `ru.json`, `nl.json`, `tr.json`, `pl.json` and `ko.json` too, or take it out of them (it then reads in English until it is translated again).
 5. Run the locale check: `python RealLifeOverhaul.Build/Workshop/locales.py` must end with `LOCALES OK`. CatalogueCheck checks that every key the code names exists.
 6. Add a line to What's new: the end of `reallife_changes_next` in all three files. A fix starts `Fixed: ` in English, `Corrigido: ` in Portuguese and `已修复：` in Chinese; a feature's line has no prefix. If the row says `Nothing yet.` (`Nada ainda.`, `还没有。`), replace it.
 

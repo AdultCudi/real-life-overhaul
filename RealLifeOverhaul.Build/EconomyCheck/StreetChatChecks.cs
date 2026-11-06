@@ -397,7 +397,7 @@ internal static partial class Program
 
     private static void StreetChatSources()
     {
-        string talk = TextsSource(@"Street\StreetDirector.Talk.cs"), game = TextsSource(@"Street\StreetGame.cs"), wiring = TextsSource(@"Wiring\StreetTexts.cs");
+        string talk = TextsSource(@"Street\StreetDirector.Talk.cs") + TextsSource(@"Street\StreetDirector.Outcomes.cs"), game = TextsSource(@"Street\StreetGame.cs"), wiring = TextsSource(@"Wiring\StreetTexts.cs");
         Check(talk.Contains("entry.ConfirmTextOverride = Label(ask).Localize(data);") && talk.Contains("entry.SecondOptionTextOverride = \"reallife_social_btn_else\";")
               && talk.Contains("entry.CancelTextOverride = type ? StreetLines.Asks[(int)StreetAsk.Say] : StreetLines.Asks[(int)StreetAsk.Bye];")
               && talk.Contains("entry.OnCancel = type ? _onSayOrBye : _onGoodbye;") && StreetLines.Asks[(int)StreetAsk.Say] == "reallife_street_ask_say"

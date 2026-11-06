@@ -45,10 +45,14 @@ namespace RealLifeOverhaul.Economy
 
     /// <summary>
     /// Everything the player's bank reads from or does to the game. Its money moves as the game's transactions at the
-    /// headquarters, the day's profit then kept in the bank, so the player's cash nets to nothing. Nothing runs per frame.
+    /// headquarters, the day's profit then kept in the bank, so the player's cash nets to the owner's pay alone (nothing
+    /// unless they chose a pay). Nothing runs per frame.
     /// </summary>
     public static class OwnBankGame
     {
+        /// <summary>Owner deduction labels whose mixed costs have no single portable recurrence rule.</summary>
+        internal static string[] CompanionUnclassifiedTaxLabels() => new[] { DeductKey.GetLocalization() };
+
         private const string HeadquartersType = "ba:businesstype_headquarters";
         private const string DeductKey = "reallife_ob_deduct";
 
@@ -73,7 +77,7 @@ namespace RealLifeOverhaul.Economy
             for (int i = 0; save != null && save.BuildingRegistrations != null && i < save.BuildingRegistrations.Count; i++)
             {
                 BuildingRegistration reg = save.BuildingRegistrations[i];
-                if (reg != null && reg.HasValidAddress && reg.businessTypeName == HeadquartersType && GoingPublic.Mine(reg))
+                if (reg != null && reg.HasValidAddress && reg.businessTypeName == HeadquartersType && GoingPublic.Mine(reg) && GameRegistrations.Found(reg))
                 {
                     return reg;
                 }
@@ -85,6 +89,15 @@ namespace RealLifeOverhaul.Economy
         public static string Name(BuildingRegistration reg)
         {
             return reg == null ? string.Empty : string.IsNullOrEmpty(reg.BusinessName) ? reg.Address.ToFormattedString() : reg.BusinessName;
+        }
+
+        /// <summary>
+        /// What a bank transaction names: the bank by the name the player gave it. The headquarters' name only stands in for a
+        /// bank without one, as every line is booked at its address and EconoView files it under the headquarters anyway.
+        /// </summary>
+        public static string Place(string bank, BuildingRegistration hq)
+        {
+            return string.IsNullOrEmpty(bank) ? Name(hq) : bank;
         }
 
         public static BankCity City()
@@ -111,55 +124,63 @@ namespace RealLifeOverhaul.Economy
                 Wages = lever != null ? lever(Lever.Wages) : 0,
                 Rent = lever != null ? lever(Lever.Rent) : 0,
                 Courts = OwnBankBridges.Courts != null && OwnBankBridges.Courts(),
-                Scale = OwnBankDirector.Instance != null ? OwnBankDirector.Instance.ScaleNow() : 0
+                Scale = OwnBankDirector.Instance != null ? OwnBankDirector.Instance.ScaleNow() : 0,
+                Reach = OwnBankDirector.Instance != null ? OwnBankDirector.Instance.Reach() : 0
             };
         }
 
-        /// <summary>A day booked at the headquarters on the day it is for: takings, costs, and the profit kept or the loss met.</summary>
-        public static void BookDay(BankDay d, BuildingRegistration hq, int day)
+        /// <summary>
+        /// A day booked at the headquarters on the day it is for: takings, costs, the profit kept or the loss met, and the
+        /// owner's pay out of the profit into the player's cash, as a dividend is.
+        /// </summary>
+        public static void BookDay(BankDay d, BuildingRegistration hq, string bank, int day)
         {
             long profit = d.Profit;
-            Book(d.Income, OwnBankCatalogue.TakingsKey, hq, null, day, false, false);
+            Book(d.Income, OwnBankCatalogue.TakingsKey, hq, bank, null, day, false, false);
             if (profit < 0)
             {
-                Book(-profit, OwnBankCatalogue.CoveredKey, hq, null, day, false, false);
+                Book(-profit, OwnBankCatalogue.CoveredKey, hq, bank, null, day, false, false);
             }
-            Book(-d.Savers, OwnBankCatalogue.SaversKey, hq, null, day, true, true);
-            Book(-(d.Lost + d.Court + d.FundLost + d.Fees), OwnBankCatalogue.LossesKey, hq, null, day, true, true);
-            Book(-d.Staff, OwnBankCatalogue.WagesKey, hq, GameBooks.Salaries, day, true, true);
-            Book(-d.Systems, OwnBankCatalogue.SystemsKey, hq, null, day, true, true);
-            Book(-d.Fine, OwnBankCatalogue.FineKey, hq, null, day, false, true);
+            Book(-d.Savers, OwnBankCatalogue.SaversKey, hq, bank, null, day, true, true);
+            Book(-(d.Lost + d.Court + d.FundLost + d.Fees), OwnBankCatalogue.LossesKey, hq, bank, null, day, true, true);
+            Book(-d.Staff, OwnBankCatalogue.WagesKey, hq, bank, GameBooks.Salaries, day, true, true);
+            Book(-d.Systems, OwnBankCatalogue.SystemsKey, hq, bank, null, day, true, true);
+            Book(-d.Fine, OwnBankCatalogue.FineKey, hq, bank, null, day, false, true);
             if (profit > 0)
             {
-                Book(-profit, OwnBankCatalogue.KeptKey, hq, null, day, false, true);
+                Book(-profit, OwnBankCatalogue.KeptKey, hq, bank, null, day, false, true);
+            }
+            if (d.Pay > 0)
+            {
+                Book(d.Pay, OwnBankCatalogue.PayKey, hq, bank, null, day, false, false);
             }
         }
 
         /// <summary>Money from the player's cash for the bank (the licence, capital put in), only if the cash covers it. False if not.</summary>
-        public static bool Pay(long cents, string key, BuildingRegistration hq, string category)
+        public static bool Pay(long cents, string key, BuildingRegistration hq, string bank, string category)
         {
-            return cents <= 0 || (cents <= Cash && Book(-cents, key, hq, category, null, false, false));
+            return cents <= 0 || (cents <= Cash && Book(-cents, key, hq, bank, category, null, false, false));
         }
 
         /// <summary>Money into the player's cash from the bank: a dividend, a sale, what a winding up left; a payment given back in its category.</summary>
-        public static void Give(long cents, string key, BuildingRegistration hq, string category = null)
+        public static void Give(long cents, string key, BuildingRegistration hq, string bank, string category = null)
         {
-            Book(cents, key, hq, category, null, false, false);
+            Book(cents, key, hq, bank, category, null, false, false);
         }
 
-        private static bool Book(long cents, string key, BuildingRegistration hq, string category, int? day, bool deductible, bool force)
+        private static bool Book(long cents, string key, BuildingRegistration hq, string bank, string category, int? day, bool deductible, bool force)
         {
             if (cents == 0 || Save == null)
             {
                 return true;
             }
-            var data = new Dictionary<string, string>(1) { { "place", Name(hq) } };   // one each: the game keeps a transaction's data while it lists it
+            var data = new Dictionary<string, string>(1) { { "place", Place(bank, hq) } };   // one each: the game keeps a transaction's data while it lists it
             TransactionInfo info = category != null ? new TransactionInfo(key, category, data) : new TransactionInfo(key, data);
             if (deductible && cents < 0)
             {
                 info.SetTaxDeductibleName(DeductKey.GetLocalization());
             }
-            return GameManager.ChangeMoneySafe(cents / 100f, info, day, hq != null ? hq.Address : null, force && cents < 0, false);
+            return RealLifeOverhaul.Economy.BizBooks.Book(cents / 100f, info, day, hq != null ? hq.Address : null, force && cents < 0, false);
         }
     }
 }

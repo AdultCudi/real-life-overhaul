@@ -78,10 +78,7 @@ The adjustments carry no category of the game's, so its daily statements, its ta
 
 ## What the player sees
 
-- **Finance, Overview**: "Bank rate: banks' own +1.25", "Prices: 104.2, up 0.8% this month", "The economy: slowdown, month 2", and a button "The city".
-- **Finance, The city** (a page of the Overview, not a sixth tab): in the box the rate, the next decision (or what was announced for tomorrow), prices, inflation, the economy, what rents, wages and takings come to against the game's figures, what is carried.
-
-  In the table the districts (income, the month's change), the six kinds of goods (today's price against the usual, what runs or starts tomorrow, "you stock it"), each business (district, customers, prices over or suiting the district) and each building owned (the game's value and today's).
+- **Finance, Overview**: "Bank rate: banks' own +1.25", "Prices: 104.2, up 0.8% this month", "The economy: Slowing (slowdown, month 2)", and a button "Open the Economy app". The page "The city" the Finance app used to have (the rate, the next decision, prices, inflation, the economy, rents, wages and takings against the game's figures, the districts, the kinds of goods, each business and each building) moved into the [Economy app](economy-app.md) on 27 Oct 2026, with charts and a history, and the city's notices open it on its Prices and rates tab.
 
 - **The paper** (`News.Extra`): two pieces a day at most, in this order: a shortage or a glut from tomorrow, a rival, the rate decision (the day before it takes effect, with its reason), a change of state, the month's prices, a district that moved 2 points or more.
 - **The Planner** (rows of the Finance source): the rate decision on the day it takes effect, once announced; a shortage or a glut from tomorrow in goods the player's businesses stock.
@@ -204,6 +201,17 @@ The goods sold are scaled row by row so that they still add up; where the game b
 The mod's own takings go there too: online orders less refunds (`OnlineGame` putting each product's sales among the rows itself), the estate agency's commissions at its office, and the broadband company's bills at the headquarters (`EconomyBridges.Takings`, with its network as a row among the goods, `EconomyBridges.CostRow`).
 
 Every sum is made afresh from what the save keeps and never from the statement itself, so that a second refresh counts nothing twice and loses nothing entered between the two.
+
+**BizMan's income, for every business the mod runs (`Economy/BizBooks.cs`, `Economy/BizLines.cs`).**
+BizMan's list shows each business's average daily income, and the Finance app its pages: both read this statement, which the game builds from its own tills.
+Every money line of the mod goes through the one call `BizBooks.Book` (the game's `GameManager.ChangeMoneySafe` is named nowhere else; EconomyCheck reads every source for it), so it is booked once: one bank line, one deduction for the tax, one balance.
+`BizLines` holds every transaction key of the businesses the mod runs on its own (the tech firms and data centres, the broadband company, the player's bank, the construction company, the academies, a fire's repair and a hold-up at a shop) in exactly one list: takings (sales in the statement), a running cost (a row among the goods, its own row if a feature gave it one, else the running costs row, and never twice when the game's salaries, rent, marketing or licences line holds it already), or capital (racks, startups' money, land, a property's sale, loans: no income and no running cost, so not in the statement and not taxed as sales).
+`GameBooks.Refresh` reads that table, and each business's order book for the day carries what the mod's lines took there as its revenue.
+The construction company's money is booked at its office. The sale of a built property or of land is capital: the game's tax would tax the gross sale with no cost of the land and the build against it.
+An academy's fees and a builder's contract pay count as sales for the game's tax from this version, as a shop's do.
+Older saves need no backfill: a day already past keeps its statement, and each new day is counted.
+The self-check, with Developer diagnostics: `BizMan check (income, day N): X of X businesses run by the mod add their takings and costs to BizMan: PASS`, or FAIL naming the business (no statement for the day, or a key in no list). A key of those features that no list holds is also said once, as it is booked.
+Rival firms in the Competitors pages book no money through the player's path (their figures are the sector model's); nothing there to feed.
 
 A rented home's rent as its daily rent and the city's line on it, and the day's own figures (loans, health insurance, the headhunter, parking, salary income, and the wages of no business with the city's line on them).
 So the game's taxes (sales of the period from the statements, deductions as booked), its bank (`PlayerHelper.CalculateDailyIncome`) and EconoView see the city's lines.

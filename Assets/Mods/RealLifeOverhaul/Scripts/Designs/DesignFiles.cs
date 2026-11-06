@@ -8,9 +8,9 @@ namespace RealLifeOverhaul.Designs
     /// <summary>What the last putting in place or taking away of the designs came to.</summary>
     public sealed class DesignsReport
     {
-        public bool On;                      // they were put in place (false: taken away)
+        public bool On;                      // put in place; false: taken away
         public bool Failed;                  // the game's folder could not be read or written
-        public bool Unchanged;               // what was there was still what would be made: nothing was written
+        public bool Unchanged;               // already as they would be made: nothing written
         public int Designs;                  // designs in place now
         public int Types;                    // business types with at least one
         public int Written, Removed, Skipped;
@@ -19,21 +19,16 @@ namespace RealLifeOverhaul.Designs
     }
 
     /// <summary>
-    /// The designs put in the game's installers' folder and taken out of it, game-free (System.IO, and the reading and the
-    /// cutting of a design handed in), so that the offline checks run exactly this on a copy of the game's files. Only files on
-    /// the mod's own list (DesignManifest) are ever written over or taken away: a file of the game's or another mod's is left
-    /// as it is, and its design is not offered. The list first names everything a job may write, so a job cut short leaves
-    /// nothing the mod does not know of. Called on a worker thread, one job at a time; nothing of it runs in a frame.
+    /// The designs put in and taken out of the installers' folder, System.IO only so the offline checks run this on a copy
+    /// of the game's files. Only files on the mod's list (DesignManifest) are overwritten or deleted, and the list names
+    /// everything a job may write before it writes, so a job cut short leaves nothing unknown. On a worker thread.
     /// </summary>
     public static class DesignFiles
     {
-        /// <summary>Writes a Car Showroom's cut of a source to a target, as the game's format wants it; false if it could not.</summary>
+        /// <summary>Writes a cut of a source to a target in the game's format; false if it could not.</summary>
         public delegate bool CutWriter(string source, ShowroomCut cut, string target, string type, string name);
 
-        /// <summary>
-        /// The designs made from the game's files under <paramref name="root"/> (its StreamingAssets) and put in its installers'
-        /// folder, unless they are there already as they would be made (the list's stamp and every file's length).
-        /// </summary>
+        /// <summary>Makes and puts the designs in place under <paramref name="root"/>, unless the list's stamp and lengths say they are there.</summary>
         public static DesignsReport Put(string root, Func<string, List<DesignItem>> read, CutWriter write)
         {
             var watch = Stopwatch.StartNew();
@@ -122,7 +117,7 @@ namespace RealLifeOverhaul.Designs
             return report;
         }
 
-        /// <summary>Every design on the mod's list, and nothing else, taken out of the game's installers' folder; then the list.</summary>
+        /// <summary>Deletes every design on the mod's list, and nothing else, then the list.</summary>
         public static DesignsReport Take(string root)
         {
             var watch = Stopwatch.StartNew();
@@ -160,7 +155,7 @@ namespace RealLifeOverhaul.Designs
             return report;
         }
 
-        /// <summary>The list of the mod's files in the installers' folder under <paramref name="root"/>; an empty one if there is none.</summary>
+        /// <summary>The mod's list under <paramref name="root"/>; empty if there is none.</summary>
         public static DesignManifest List(string root)
         {
             string listPath = Path.Combine(root, DesignCatalogue.Installer, DesignCatalogue.Manifest);
@@ -196,7 +191,7 @@ namespace RealLifeOverhaul.Designs
             report.Types = types.Count;
         }
 
-        // A design of the mod's list taken away, and its type's folder with it once empty. True if it was there.
+        // Deletes a listed design, and its folder once empty. True if it was there.
         private static bool Delete(string installer, string path)
         {
             if (!DesignRules.Ours(path))

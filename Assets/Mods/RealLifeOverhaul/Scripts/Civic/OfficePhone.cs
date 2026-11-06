@@ -220,7 +220,7 @@ namespace RealLifeOverhaul
             PolicyDef policy = CivicCatalogue.All[index];
             bool mine = office.InPlatform(index);
             int next = index + 1;
-            string text = Fill(mine ? "reallife_civic_office_plank_in" : "reallife_civic_office_plank_out", "policy", T(policy.Name), "effect", CivicText.Effect(policy),
+            string text = Fill(mine ? "reallife_civic_office_plank_in" : "reallife_civic_office_plank_out", "policy", T(policy.Name), "effect", CivicText.Full(policy),
                 "issue", T(CivicCatalogue.IssueNames[(int)policy.Issue]), "planks", office.State.Me.Planks.ToString());
             return CityHallPhone.Page(text, mine ? "reallife_civic_office_button_plank_out" : "reallife_civic_office_button_plank_in", () =>
             {
@@ -540,9 +540,8 @@ namespace RealLifeOverhaul
             {
                 return CityHallPhone.Page(T(why), "reallife_civic_button_back", () => OfficeMenu(0));
             }
-            for (int step = 0; step < CivicCatalogue.All.Length; step++)
+            for (int index = Mathf.Max(0, from); index < CivicCatalogue.All.Length; index++)
             {
-                int index = (from + step) % CivicCatalogue.All.Length;
                 PolicyDef policy = CivicCatalogue.All[index];
                 if (gov.Settled(policy.Lever, policy.Dir) || office.OnAgenda(index))
                 {
@@ -550,7 +549,7 @@ namespace RealLifeOverhaul
                 }
                 int next = index + 1;
                 bool conflicted = office.Conflicted(index);
-                string text = Fill("reallife_civic_office_table_page", "policy", T(policy.Name), "effect", CivicText.Effect(policy), "room", room.ToString());
+                string text = Fill("reallife_civic_office_table_page", "policy", T(policy.Name), "effect", CivicText.Full(policy), "room", room.ToString());
                 if (conflicted)
                 {
                     text += "\n" + T("reallife_civic_office_table_conflict");
@@ -567,7 +566,50 @@ namespace RealLifeOverhaul
                     return CityHallPhone.Page(T(office.Table(index, true, Day)), "reallife_civic_button_back", () => OfficeMenu(0));
                 }, "reallife_civic_button_next_policy", () => TablePage(next));
             }
-            return CityHallPhone.Page(T("reallife_civic_office_table_none"), "reallife_civic_button_back", () => OfficeMenu(0));
+            return ZoningPage(0);
+        }
+
+        // After the policies, the new district's zoning: for each class of its lots, each use that could be allowed there, or
+        // that the council allowed before and could stop allowing; then round to the policies.
+        private static DialogEntry ZoningPage(int from)
+        {
+            CivicOffice office = Office;
+            if (office == null)
+            {
+                return Gone();
+            }
+            int matters = ZoningBridges.DistrictLives() ? ZoningBridges.Classes * ZoningBridges.Uses * 2 : 0;
+            for (int k = Mathf.Max(0, from); k < matters; k++)
+            {
+                int lotClass = k / (ZoningBridges.Uses * 2), use = k / 2 % ZoningBridges.Uses;
+                bool add = k % 2 == 0;
+                if (!office.MayRezone(lotClass, use, add, ZoningBridges.FirstZones(lotClass)))
+                {
+                    continue;
+                }
+                int next = k + 1;
+                var m = new OfficeMotion { Kind = OfficeMotion.KindZoning, Class = lotClass, Use = use, Add = add };
+                bool conflicted = office.Conflicted(m);
+                string text = Fill("reallife_civic_office_zoning_page", "matter", CivicOffice.MotionWords(m), "lots", ZoningBridges.Class(lotClass),
+                    "zones", ZoningBridges.UsesWords(ZoningBridges.Zones(lotClass)));
+                if (conflicted)
+                {
+                    text += "\n" + T("reallife_civic_office_table_conflict");
+                }
+                bool mayor = office.State.Holds == OfficeRace.Mayor;
+                return CityHallPhone.Page(text, "reallife_civic_office_button_table_this", () =>
+                {
+                    if (conflicted && mayor)
+                    {
+                        return CityHallPhone.Page(T("reallife_civic_office_table_declare_page"), "reallife_civic_office_button_declare_table",
+                            () => CityHallPhone.Page(T(office.TableZoning(lotClass, use, add, true, Day)), "reallife_civic_button_back", () => OfficeMenu(0)),
+                            "reallife_civic_office_button_table_quietly",
+                            () => CityHallPhone.Page(T(office.TableZoning(lotClass, use, add, false, Day)), "reallife_civic_button_back", () => OfficeMenu(0)));
+                    }
+                    return CityHallPhone.Page(T(office.TableZoning(lotClass, use, add, true, Day)), "reallife_civic_button_back", () => OfficeMenu(0));
+                }, "reallife_civic_office_button_next_matter", () => ZoningPage(next));
+            }
+            return CityHallPhone.Page(T("reallife_civic_office_table_none"), "reallife_civic_button_back", () => OfficeMenu(0), "reallife_civic_button_next_policy", () => TablePage(0));
         }
 
         // A mayor's budget, a department a page: a step up or down; then to the council.
@@ -621,7 +663,7 @@ namespace RealLifeOverhaul
                     continue;
                 }
                 int next = index + 1;
-                return CityHallPhone.Page(Fill("reallife_civic_office_order_page", "policy", T(policy.Name), "effect", CivicText.Effect(policy), "days", OfficeRules.OrderEvery.ToString()),
+                return CityHallPhone.Page(Fill("reallife_civic_office_order_page", "policy", T(policy.Name), "effect", CivicText.Full(policy), "days", OfficeRules.OrderEvery.ToString()),
                     "reallife_civic_office_button_order", () => CityHallPhone.Page(T(office.Order(index, Day)), "reallife_civic_button_next_option", more),
                     "reallife_civic_button_next_policy", () => OrderPage(next, more));
             }

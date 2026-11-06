@@ -247,7 +247,7 @@ namespace RealLifeOverhaul.Family
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 BuildingRegistration r = all[i];
-                homes += r != null && GoingPublic.Mine(r) && r.GetBuildingType() == Residential ? 1 : 0;
+                homes += r != null && GoingPublic.Mine(r) && GameRegistrations.BuildingType(r) == Residential ? 1 : 0;
             }
             return homes;
         }

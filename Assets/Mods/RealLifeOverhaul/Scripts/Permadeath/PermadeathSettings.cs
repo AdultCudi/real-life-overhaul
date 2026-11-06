@@ -5,10 +5,8 @@ using RealLifeOverhaul.Meta;
 namespace RealLifeOverhaul.Permadeath
 {
     /// <summary>
-    /// The feature's entry in the mod's feature list, and the figures its Guide page prints: every {name} in its text is
-    /// filled from <see cref="PermadeathRules"/> here, so the page can never say anything the rules do not do. No preset
-    /// sets the switch (it has no Preset rule): it is the player's, in each save. Called once, when the feature list is
-    /// built (Meta/FeatureList); each figure is worked out when the page is opened.
+    /// The feature's entry in the feature list, with the Guide's figures filled from <see cref="PermadeathRules"/> when the
+    /// page opens, so the page never says what the rules do not do. No preset sets the switch: it is the player's, per save.
     /// </summary>
     public static class PermadeathGuide
     {
@@ -20,7 +18,7 @@ namespace RealLifeOverhaul.Permadeath
                 .Group("reallife_pd_header")
                 .About("reallife_guide_permadeath_about").Help("reallife_guide_permadeath")
                 .Owns(Settings.PermadeathId)
-                // In a session another player's world is never ended, and the page says so (Core/GoingPublic).
+                // In a session another player's world is never ended, and the page says so.
                 .StandsAside(GoingPublic.PermadeathSentence, Settings.PermadeathId)
                 .Data(PermadeathState.Key, PermadeathState.RecordKey, PermadeathState.SeenKey)
                 .Test("reallife_pd_test_obituary", "reallife_pd_test_rehearsal", "reallife_pd_test_die", "reallife_pd_test_flu", "reallife_pd_test_starve", "reallife_pd_test_near_miss")
@@ -44,7 +42,7 @@ namespace RealLifeOverhaul.Permadeath
                 .Fact("pd_starve_last", () => Hours(PermadeathRules.StarveWarnLast))
                 .Fact("pd_starve_fatal", () => Hours(PermadeathRules.StarveFatalFrom))
                 .Fact("pd_starve_day", () => Guide.Percent(PermadeathRules.StarvePerDay))
-                .ResetData(() => PermadeathDirector.Instance?.Forget());   // a death is never forgotten (Permadeath/PermadeathDirector.Forget)
+                .ResetData(() => PermadeathDirector.Instance?.Forget());   // a death is never forgotten
         }
 
         private static string Kmh(float metresPerSecond)
@@ -68,10 +66,10 @@ namespace RealLifeOverhaul.Permadeath
         }
     }
 
-    /// <summary>Permadeath's place on the options page, under the mod's own namespace so that it is one line there.</summary>
+    /// <summary>Permadeath's place on the options page.</summary>
     public static class PermadeathOptions
     {
-        /// <summary>The "Permadeath" block of the options page: its one switch (off by default, kept per save) and the test buttons.</summary>
+        /// <summary>The switch (off by default, kept per save) and the test buttons.</summary>
         public static ModOptions AddPermadeath(this ModOptions options)
         {
             return options

@@ -1,6 +1,8 @@
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
+using BAModAPI;
+using Helpers;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -55,24 +57,34 @@ namespace RealLifeOverhaul
 
         public static float Clamp(float price, float share, float least, float most)
         {
-            return Mathf.Round(Mathf.Clamp(price * share, least, most) / 5f) * 5f;
+            return Mathf.Round(VehicleCostRules.Bill(VehicleCostRules.Price(price) * share, least, most) / 5f) * 5f;   // a price that is no number is the least, never a charge of NaN
         }
 
         // The car's list price is at the start's prices; Prices.At brings it to today's.
         public static float Service(float price) => Prices.At(Clamp(price, ServiceShare, ServiceLeast, ServiceMost));
         public static float TyreSet(float price) => Prices.At(Clamp(price, TyresShare, TyresLeast, TyresMost));
         public static float BrakeSet(float price) => Prices.At(Clamp(price, BrakesShare, BrakesLeast, BrakesMost));
-        public static float Registration(float price) => Prices.At(Mathf.Round(Mathf.Min(RegistrationMost, RegistrationBase + price * RegistrationShare) / 5f) * 5f);
+        public static float Registration(float price) => Prices.At(Mathf.Round(Mathf.Min(RegistrationMost, RegistrationBase + VehicleCostRules.Price(price) * RegistrationShare) / 5f) * 5f);
         public static float RegistrationLateFee => Prices.At(RegistrationLate);
 
         public static float Premium(float price, int claims)
         {
-            return Prices.At(Mathf.Round(Mathf.Clamp(price * PremiumShare, PremiumLeast, PremiumMost) * PolicyDays / PremiumDays * (1f + PremiumPerClaim * Mathf.Clamp(claims, 0, 6)) / 5f) * 5f);
+            float share = VehicleCostRules.Bill(VehicleCostRules.Price(price) * PremiumShare, PremiumLeast, PremiumMost);
+            return Prices.At(Mathf.Round(share * PolicyDays / PremiumDays * (1f + PremiumPerClaim * Mathf.Clamp(claims, 0, 6)) / 5f) * 5f);
         }
 
-        public static float Payout(float bill)
+        /// <summary>
+        /// The premium as charged: the policy's, dearer for a car modified at the custom shop (<paramref name="tuning"/>, 0 for
+        /// stock), and never more than the car is worth (VehicleCostRules.OneCharge): a premium is a share of the price.
+        /// </summary>
+        public static float PremiumOf(float price, int claims, float tuning)
         {
-            return Mathf.Max(0f, Mathf.Round((bill - Excess) * Cover));
+            return VehicleCostRules.OneCharge(Premium(price, claims) * (1f + Mathf.Clamp(VehicleCostRules.Finite(tuning, 0f), 0f, 4f)), price, Prices.Level);
+        }
+
+        public static float Payout(float bill, bool reported = false)
+        {
+            return ReportedRepair.Payout(bill, Excess, Cover, reported);
         }
 
         public static float ServiceEvery(CarKind kind)   // kilometres
@@ -138,16 +150,38 @@ namespace RealLifeOverhaul
     public static class CarGarage
     {
         private const string Key = "reallife:garage";
+        private const string ReportKey = "reallife:carreport";   // the day a police report was handed over for the car, 0 for none
 
         private static readonly Dictionary<string, CarRecord> Records = new Dictionary<string, CarRecord>(8);
         private static readonly List<string> Scratch = new List<string>(8);
 
         public static bool Loaded { get; private set; }
 
+        /// <summary>The day a police report on a car break-in or an accident was handed over and has not been used yet; 0 for none.</summary>
+        public static int ReportedDay { get; private set; }
+
         public static void Reset()
         {
             Records.Clear();
+            ReportedDay = 0;
             Loaded = false;
+        }
+
+        /// <summary>A police report was handed over at a front desk: the insurer takes it with the next repair it pays for.</summary>
+        public static void Reported(int day)
+        {
+            ReportedDay = Mathf.Max(0, day);
+        }
+
+        /// <summary>True if a report is in hand for a repair paid today. <see cref="Spend"/> uses it up.</summary>
+        public static bool Waives(int today)
+        {
+            return ReportedRepair.Fresh(ReportedDay, today, Law.Bridges.ReportDays);
+        }
+
+        public static void Spend()
+        {
+            ReportedDay = 0;
         }
 
         /// <summary>The record of a car, made the first time it is asked for.</summary>
@@ -173,6 +207,7 @@ namespace RealLifeOverhaul
         public static void Load(Dictionary<string, string> data)
         {
             Records.Clear();
+            int mended = 0;
             if (data != null && data.TryGetValue(Key, out string text) && !string.IsNullOrEmpty(text))
             {
                 foreach (string row in text.Split(';'))
@@ -188,10 +223,49 @@ namespace RealLifeOverhaul
                         InsuredUntil = I(f[5]), Claims = I(f[6]), LastClaimDay = I(f[7]), RegisteredDay = I(f[8]), Breakdowns = I(f[9]),
                         Broken = f[10] == "1", GraceKm = F(f[11])
                     };
+                    mended += Mend(record);
                     Records[record.Id] = record;
                 }
             }
+            if (mended > 0)
+            {
+                Logger?.Info("Car ownership: " + mended + " value(s) in the saved car records were not numbers or were out of range (an old or damaged save); each was put back within its bounds.");
+            }
+            ReportedDay = data != null && data.TryGetValue(ReportKey, out string reported) ? I(reported) : 0;
             Loaded = true;
+        }
+
+        public static IModLogger Logger;
+
+        /// <summary>
+        /// Puts a loaded record's numbers within their bounds (VehicleCostRules): the kilometres, the service reading, the grip
+        /// of the tyres and brakes, the claims and every day. Returns how many values it changed. An old save's record
+        /// that held a number that is none, or a huge one, would otherwise price a service, a breakdown or a premium from it.
+        /// </summary>
+        public static int Mend(CarRecord r)
+        {
+            int today = TimeHelper.CurrentDay, year = GameCalendar.DaysPerYear, changed = 0;
+            float km = VehicleCostRules.MendKm(r.Km), serviced = Mathf.Min(VehicleCostRules.MendKm(r.ServicedKm), km), grace = VehicleCostRules.MendKm(r.GraceKm);
+            changed += km != r.Km || serviced != r.ServicedKm || grace != r.GraceKm ? 1 : 0;
+            r.Km = km;
+            r.ServicedKm = serviced;
+            r.GraceKm = grace;
+            float tyres = VehicleCostRules.MendFraction(r.Tyres), brakes = VehicleCostRules.MendFraction(r.Brakes);
+            changed += tyres != r.Tyres || brakes != r.Brakes ? 1 : 0;
+            r.Tyres = tyres;
+            r.Brakes = brakes;
+            int claims = Mathf.Clamp(r.Claims, 0, 6), breakdowns = Mathf.Max(0, r.Breakdowns);
+            changed += claims != r.Claims || breakdowns != r.Breakdowns ? 1 : 0;
+            r.Claims = claims;
+            r.Breakdowns = breakdowns;
+            int insured = VehicleCostRules.MendDay(r.InsuredUntil, today, year), claim = VehicleCostRules.MendDay(r.LastClaimDay, today, year);
+            int registered = VehicleCostRules.MendDay(r.RegisteredDay, today, year), reminded = VehicleCostRules.MendDay(r.RemindedDay, today, year);
+            changed += insured != r.InsuredUntil || claim != r.LastClaimDay || registered != r.RegisteredDay || reminded != r.RemindedDay ? 1 : 0;
+            r.InsuredUntil = insured;
+            r.LastClaimDay = claim;
+            r.RegisteredDay = registered == 0 && r.RegisteredDay != 0 ? today : registered;   // a registration in the far future is read as renewed today
+            r.RemindedDay = reminded;
+            return changed;
         }
 
         public static void Save(Dictionary<string, string> data, List<VehicleInstance> owned, List<VehicleInstance> lent)
@@ -213,6 +287,14 @@ namespace RealLifeOverhaul
                     .Append(r.Breakdowns).Append('~').Append(r.Broken ? '1' : '0').Append('~').Append(S(r.GraceKm));
             }
             data[Key] = text.ToString();
+            if (ReportedDay > 0)
+            {
+                data[ReportKey] = ReportedDay.ToString(CultureInfo.InvariantCulture);
+            }
+            else
+            {
+                data.Remove(ReportKey);
+            }
         }
 
         /// <summary>Drops the records of cars the save no longer has; returns how many.</summary>

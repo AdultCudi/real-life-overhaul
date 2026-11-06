@@ -3,23 +3,20 @@ using BigAmbitions.InputSystem;
 using Helpers;
 using UI.Load;
 using UI.Notification;
-using UnityEngine;
 using UnityEngine.AI;
 
 namespace RealLifeOverhaul.Walking
 {
     /// <summary>
-    /// The only place walking touches the game: the local player's body and its navigation agent, the game's figures on
-    /// foot, and what says the player cannot walk now. Each read is a small method of its own (Mono compiles a method that
-    /// names a game member as a whole). Only <see cref="Speed"/> runs every frame, and only while walking: one engine call.
-    /// Everything else runs on a press of the key or when the speed has changed.
+    /// The only place walking touches the game, one small method per read (Mono compiles a method naming a game member
+    /// whole). Only <see cref="Speed"/> runs every frame, and only while walking; the rest on a press or a speed change.
     /// </summary>
     internal static class WalkGame
     {
-        private const string NoticeId = "RealLifeOverhaul walking";   // one notice of walking on screen at a time: a new press replaces it
-        private const float NoticeSeconds = 3f;            // s: long enough to read four words, short enough to leave the screen clear
+        private const string NoticeId = "RealLifeOverhaul walking";   // one notice on screen at a time: a new press replaces it
+        private const float NoticeSeconds = 3f;            // s
 
-        /// <summary>The local player's body, or null outside a city. Another player's in a Going Public session is never this.</summary>
+        /// <summary>The local player's body, never another player's; null outside a city.</summary>
         public static ThirdPersonCharacter Player()
         {
             GameManager gm = InstanceBehavior<GameManager>.Instance;
@@ -31,7 +28,6 @@ namespace RealLifeOverhaul.Walking
             return body != null ? body.navmeshAgent : null;
         }
 
-        /// <summary>The speed in the agent now: what the game's walking and clicking move the player at.</summary>
         public static float Speed(NavMeshAgent agent)
         {
             return agent.speed;
@@ -42,7 +38,7 @@ namespace RealLifeOverhaul.Walking
             agent.speed = speed;
         }
 
-        /// <summary>The game's own speed for the pace it has chosen, written by its own call as it writes it on a change.</summary>
+        /// <summary>The game's own speed for its pace, written by its own call.</summary>
         public static void GiveBack(ThirdPersonCharacter body)
         {
             body.SetWalkingSpeed(body.walkingSpeed);
@@ -60,7 +56,7 @@ namespace RealLifeOverhaul.Walking
             }
         }
 
-        /// <summary>The game's figures on foot, as its GlobalReferences has them; all zero outside a city (walking then does nothing).</summary>
+        /// <summary>The game's figures on foot; all zero outside a city (walking then does nothing).</summary>
         public static WalkFigures Figures()
         {
             GlobalReferences g = InstanceBehavior<GlobalReferences>.Instance;
@@ -76,29 +72,26 @@ namespace RealLifeOverhaul.Walking
             };
         }
 
-        /// <summary>A save is loading, or none is: the player's body is about to go, or is not there.</summary>
+        /// <summary>A save is loading or none is loaded: the player's body is going or not there.</summary>
         public static bool Loading()
         {
             return LoadScene.isLoading || !ModState.Loaded;
         }
 
-        /// <summary>Typing in a box, a menu, the phone, the map, or any panel of the game's or the mod's over the world.</summary>
+        /// <summary>Typing in a box, a menu, the phone, the map, or any panel over the world.</summary>
         public static bool WindowOpen()
         {
             return ThirdPersonCamera.IsUiOpen() || GameManager.IsAnyMiniGameActive();
         }
 
-        /// <summary>Driving, or on a two-wheeler, a hand truck or in any seat of a vehicle: walking's pace is a pace on foot.</summary>
+        /// <summary>Driving, or on a two-wheeler, a hand truck or any seat of a vehicle.</summary>
         public static bool InVehicle()
         {
             GameManager gm = InstanceBehavior<GameManager>.Instance;
             return gm == null || gm.selectedVehicle != null || PlayerHelper.IsUsingVehicle;
         }
 
-        /// <summary>
-        /// Sitting, working, studying, any activity of the game's (its own pace then, as its ToggleRunning stands aside
-        /// too), or anything holding the player still: a seat, a desk or a panel of the mod's, a scene of the game's.
-        /// </summary>
+        /// <summary>Any activity of the game's (its ToggleRunning stands aside then too), or anything holding the player still.</summary>
         public static bool Busy()
         {
             GameManager gm = InstanceBehavior<GameManager>.Instance;
@@ -107,13 +100,13 @@ namespace RealLifeOverhaul.Walking
                    || (uis != null && uis.playerActivityUI != null && uis.playerActivityUI.GetCurrentActivity != null);
         }
 
-        /// <summary>The game's Toggle Running key held (Left Shift unless the player changed it): the game's own pace while it is.</summary>
+        /// <summary>The game's Toggle Running key held (Left Shift by default).</summary>
         public static bool RunHeld()
         {
             return PlayerAction.ToggleRunning.Pressing();
         }
 
-        /// <summary>A short notice of the game's, kept out of the save and quiet: one at a time.</summary>
+        /// <summary>A short, quiet notice kept out of the save; one at a time.</summary>
         public static void Notice(string key, Dictionary<string, string> data)
         {
             Notifications.Show(NotificationType.Info, key, data, NoticeSeconds, NoticeId, null, notificationSound: false, trackOnSaveGame: false);

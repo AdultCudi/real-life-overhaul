@@ -4,18 +4,13 @@ using System.Text.RegularExpressions;
 
 namespace RealLifeOverhaul.Texts
 {
-    /// <summary>
-    /// The checker of data v6, in the card's language (see the class's summary in TextCheck.cs for every rule): what the
-    /// request already made impossible (TextDecoding's grammar: one line, no "!", no dash, a capital at a sentence's start)
-    /// is checked again here, since the checker has the last word. Game-free. COST: one pass over a line, a few short
-    /// regular expressions.
-    /// </summary>
+    /// <summary>The checker of data v6, in the card's language, which has the last word over the grammar. Game-free. COST: a pass over a line.</summary>
     public static partial class TextCheck
     {
         public const int StrangeLeast = 2;     // words of another language a line must have, with none of its own, to be refused as written in it
         public const int StrangeFrom = 4;      // ...counted only on lines of this many words or more
 
-        // The common little words of each Latin-script language that the others do not share (a line in one has a few).
+        // Common little words of each Latin-script language, the language's code first.
         private static readonly string[][] Little =
         {
             new[] { "en", "the", "and", "you", "is", "are", "that", "this", "with", "for", "was", "have", "what", "your", "but", "just", "it", "of", "to", "i", "my",
@@ -34,7 +29,7 @@ namespace RealLifeOverhaul.Texts
         private static readonly List<string> LineWords = new List<string>(48);
         private static readonly System.Text.StringBuilder Piece = new System.Text.StringBuilder(32);
 
-        // The speaker naming itself a machine, in each language but English (whose is SelfMachine): "I am an AI", "as an AI".
+        // The speaker naming itself a machine in each language but English (SelfMachine), in SelfMachineLangs' order.
         private static readonly Regex[] SelfMachineIn =
         {
             new Regex(@"\b(?:(?:eu\s+)?sou|como)\s+(?:uma?\s+)?(?:i\.?a\.?|intelig[eê]ncia\s+artificial|rob[oô]|bot|chatbot|assistente(?:\s+virtual)?|modelo\s+de\s+linguagem)\b",
@@ -67,11 +62,7 @@ namespace RealLifeOverhaul.Texts
             return sets;
         }
 
-        /// <summary>
-        /// The verdict on tidied words for a card of data v6 in a language (<paramref name="lang"/>: the card's). <paramref name="cut"/>:
-        /// the reply stopped at its most tokens. <paramref name="untold"/>: the player's name, when the card says the speaker
-        /// does not know it (null otherwise). <paramref name="lowercase"/>: the speaker's style is lower case (no capitals asked).
-        /// </summary>
+        /// <summary>The verdict on tidied words of data v6; <paramref name="untold"/> is the player's name when the speaker does not know it.</summary>
         public static TextVerdict JudgeSix(string words, TextIntent intent, TextSheet card, string cardText, IReadOnlyList<string> recent, string lang, bool cut,
             string untold, bool lowercase, int filterStrength = 1)
         {
@@ -148,11 +139,7 @@ namespace RealLifeOverhaul.Texts
             return TextVerdict.Ok;
         }
 
-        /// <summary>
-        /// A guest's check of the host's words of data v6 in their language (a line of the shared part says it): tidy, one
-        /// line, the length by the language, no dash, no "!", none of Flare's list, the language's own, no machine. Unknown
-        /// intent: refused.
-        /// </summary>
+        /// <summary>A guest's check of the host's words of data v6, without the card; an unknown intent is refused.</summary>
         public static TextVerdict JudgeSharedSix(string words, TextIntent intent, string lang, int filterStrength = 1)
         {
             if (intent == null || string.IsNullOrEmpty(words) || Tidy(words, lang) != words)
@@ -186,7 +173,7 @@ namespace RealLifeOverhaul.Texts
             return MachineIn(words, null, lang) ? TextVerdict.Machine : TextVerdict.Ok;
         }
 
-        // A line break of any kind: the two of every system and Unicode's own.
+        // A line break of any kind, Unicode's own included.
         private static bool Breaks(string words)
         {
             for (int i = 0; i < words.Length; i++)
@@ -200,11 +187,7 @@ namespace RealLifeOverhaul.Texts
             return false;
         }
 
-        /// <summary>
-        /// Whether a line is in its language: no letter of a script the language does not write (Latin names aside), the
-        /// language's own script there for Russian and Chinese, and a line of a Latin-script language not written in
-        /// another one (of four words or more, none of its own little words and two or more of one other's).
-        /// </summary>
+        /// <summary>Whether a line is in its language: by its script, and for a Latin script by its little words.</summary>
         public static bool InLanguage(string words, string lang)
         {
             TextScript script = TextLanguages.Script(lang);
@@ -252,7 +235,7 @@ namespace RealLifeOverhaul.Texts
             return true;
         }
 
-        // The line's words in lower case, letters and apostrophes, into LineWords.
+        // The line's words in lower case into LineWords.
         private static void LittleWords(string words)
         {
             LineWords.Clear();
@@ -272,7 +255,7 @@ namespace RealLifeOverhaul.Texts
             }
         }
 
-        /// <summary>True when every sentence starts with a capital: the line's first letter, and the first after ". ", "? " or "… " (opening quotes, brackets and marks passed over).</summary>
+        /// <summary>True when every sentence starts with a capital, opening quotes and marks passed over.</summary>
         public static bool Capitals(string words)
         {
             bool start = true;
@@ -299,11 +282,7 @@ namespace RealLifeOverhaul.Texts
             return true;
         }
 
-        /// <summary>
-        /// True when English's articles fit the word after them: "a" before a consonant, "an" before a vowel, the sound
-        /// heard rather than the letter written for the words the table knows ("a one-off", "a euro", "an hour", "an
-        /// honest"). A word after "a" beginning with u, a figure, or a capitalised short form ("an MBA") is let be.
-        /// </summary>
+        /// <summary>True when English's "a" and "an" fit the word after them, by its sound for the words known ("a euro", "an hour").</summary>
         public static bool Articles(string words)
         {
             int start = 0;
@@ -334,7 +313,7 @@ namespace RealLifeOverhaul.Texts
             char first = word[0];
             if (!char.IsLetter(first) || (word.Length >= 2 && char.IsUpper(word[0]) && char.IsUpper(word[1])))
             {
-                return true;   // (a figure, a symbol, a short form in capitals: let be)
+                return true;   // a figure, a symbol, a short form in capitals: let be
             }
             string w = word.ToLowerInvariant();
             bool vowel = w[0] == 'a' || w[0] == 'e' || w[0] == 'i' || w[0] == 'o';
@@ -347,7 +326,7 @@ namespace RealLifeOverhaul.Texts
                    || w.StartsWith("honour", StringComparison.Ordinal) || w.StartsWith("honor", StringComparison.Ordinal) || w.StartsWith("heir", StringComparison.Ordinal);
         }
 
-        /// <summary>True when the words name the player (<paramref name="name"/>, a whole word, any case); false with no name to keep out.</summary>
+        /// <summary>True when the words name the player as a whole word, any case; false with no name to keep out.</summary>
         public static bool Names(string words, string name)
         {
             if (string.IsNullOrEmpty(name) || name.Length < 2 || string.IsNullOrEmpty(words))
@@ -369,7 +348,7 @@ namespace RealLifeOverhaul.Texts
             return false;
         }
 
-        /// <summary>The speaker calling itself a machine in the card's language (and in English, which a slip may write in any).</summary>
+        /// <summary>True if the speaker calls itself a machine in the card's language, or in English, which a slip may write in any.</summary>
         public static bool MachineIn(string words, string cardText, string lang)
         {
             if (Machine(words, cardText))
@@ -386,7 +365,7 @@ namespace RealLifeOverhaul.Texts
             return false;
         }
 
-        /// <summary>The same, or nearly, in a language: words compared, or for Chinese, which has no spaces, each pair of characters.</summary>
+        /// <summary>The same, or nearly, in a language; Chinese, which has no spaces, by its pairs of characters.</summary>
         public static bool Near(string a, string b, string lang)
         {
             if (TextLanguages.Script(lang) != TextScript.Han)
@@ -421,7 +400,7 @@ namespace RealLifeOverhaul.Texts
             return shared * 100 >= Math.Max(WordsA.Count, WordsB.Count) * NearShare;
         }
 
-        // A Chinese line's pairs of characters (and its Latin words whole) into a set.
+        // A Chinese line's pairs of characters, and its Latin words whole, into a set.
         private static int Pairs(string text, HashSet<string> into)
         {
             into.Clear();
@@ -442,7 +421,7 @@ namespace RealLifeOverhaul.Texts
                     }
                     else if (i == 0 || !TextLanguages.Wide(text[i - 1]) || !char.IsLetter(text[i - 1]))
                     {
-                        into.Add(text.Substring(i, 1));   // (a character alone)
+                        into.Add(text.Substring(i, 1));   // a character alone
                     }
                     continue;
                 }

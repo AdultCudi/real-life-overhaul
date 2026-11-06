@@ -43,11 +43,19 @@ namespace RealLifeOverhaul.Fame
                 box.Title(FameText.InviteName(v.Kind));
                 box.Chip(FameText.InviteState(v.State));
                 box.Section("reallife_ibox_sec_now");
+                box.Row("reallife_fame_label_when", FameText.Fill("reallife_fame_when", "day", FameText.N(v.Day), "time", FameText.Hour(v.Hour)));
+                box.Row("reallife_fame_label_where", FameText.T("reallife_fame_where_call"));
                 if (v.State == FameInviteState.Accepted)
                 {
                     box.Line(FameText.T("reallife_fame_invite_accepted"));
+                    box.Line(FameText.Fill("reallife_fame_invite_call", "time", FameText.Hour(v.Hour), "end", FameText.Hour((v.Hour + 2) % 24)));
+                    if (FamePress.Joinable(v, FameGame.Day, FameGame.MinuteOfDay / 60))
+                    {
+                        UnityEngine.Transform join = box.ButtonRow();
+                        int joinId = v.Id;
+                        InfoBox.Button(join, InfoBox.Positive, "reallife_fame_join", () => { director.JoinInvite(joinId); pick(null); });
+                    }
                 }
-                box.Row("reallife_fame_label_when", FameText.Fill("reallife_fame_when", "day", FameText.N(v.Day), "time", FameText.Hour(v.Hour)));
                 if (v.State == FameInviteState.Offered)
                 {
                     box.Line(FameText.Fill("reallife_fame_invite_answer", "day", FameText.N(v.AnswerBy)));

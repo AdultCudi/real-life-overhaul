@@ -18,18 +18,18 @@ namespace RealLifeOverhaul.Economy.Ventures
         /// <summary>The day transactions are dated on (the day that ended, during the day's run, as the game dates its own); null for now.</summary>
         public int? BookDay;
 
-        public int Cash => SaveGameManager.Current != null ? Mathf.FloorToInt(Mathf.Max(0f, SaveGameManager.Current.Money)) : 0;
+        public int Cash => SaveGameManager.Current != null ? WholeMoney.Floor(SaveGameManager.Current.Money) : 0;
 
         public bool Take(int amount, string why, string name)
         {
-            return amount <= 0 || (SaveGameManager.Current != null && GameManager.ChangeMoneySafe(-amount, Info(why, name), BookDay, null, false));
+            return amount <= 0 || (SaveGameManager.Current != null && RealLifeOverhaul.Economy.BizBooks.Book(-amount, Info(why, name), BookDay, null, false));
         }
 
         public void Give(int amount, string why, string name)
         {
             if (amount > 0 && SaveGameManager.Current != null)
             {
-                GameManager.ChangeMoneySafe(amount, Info(why, name), BookDay, null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(amount, Info(why, name), BookDay, null, true);
             }
         }
 
@@ -71,11 +71,14 @@ namespace RealLifeOverhaul.Economy.Ventures
             return r == null ? string.Empty : r.GetDisplayName();
         }
 
-        /// <summary>Days the player has had a business; one older than the game remembers counts from day one.</summary>
+        /// <summary>
+        /// Days the player has had a business, from the day it started whatever buildings it has moved through (Core/FoundingGame);
+        /// one older than anything remembered counts from day one.
+        /// </summary>
         private static int Age(BuildingRegistration r)
         {
             GameInstance save = Save;
-            return save == null || r == null ? 0 : Mathf.Max(0, save.Day - Mathf.Max(1, r.creationDay));
+            return save == null || r == null ? 0 : Mathf.Max(0, save.Day - Mathf.Max(1, FoundingGame.Of(r)));
         }
 
         /// <summary>A business's last fourteen days from its statements, means over the days on record; Exists false if the player does not run it.</summary>
@@ -155,7 +158,7 @@ namespace RealLifeOverhaul.Economy.Ventures
                 f.AgeDays = b.AgeDays;
                 f.Staff = StaffAt(r);
             }
-            f.Cash = Mathf.FloorToInt(Mathf.Max(0f, save.Money));
+            f.Cash = WholeMoney.Floor(save.Money);
             CreditFile credit = CreditLedger.Ready ? CreditLedger.File : null;
             float owed = 0f;
             for (int i = 0; save.Loans != null && i < save.Loans.Count; i++)
@@ -172,9 +175,9 @@ namespace RealLifeOverhaul.Economy.Ventures
             {
                 owed += Debts[i].Owed;
             }
-            f.Owed = Mathf.RoundToInt(owed);
+            f.Owed = WholeMoney.Round(owed);
             Obligations due = Books.Tomorrow(credit);
-            f.Payments = Mathf.RoundToInt(due.Loans + due.Accounts);
+            f.Payments = WholeMoney.Round(due.Loans + due.Accounts);
             if (credit != null)
             {
                 CreditLedger.Touch();

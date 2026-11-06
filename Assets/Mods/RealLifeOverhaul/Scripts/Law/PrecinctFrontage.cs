@@ -12,7 +12,8 @@ namespace RealLifeOverhaul.Law
     /// What makes a designated building look like a police station from the street: one set of pieces, built once and moved
     /// to the precinct the player is near, each measured against the building first and left off, named in the log, where
     /// it does not fit. Nothing is put out or taken in where the camera looks, except under a dark screen. Called once a
-    /// second by <see cref="Precincts"/>; nothing here runs by itself.
+    /// second by <see cref="Precincts"/>; nothing here runs by itself. Dressed within 260 m and taken in beyond 330 m: in
+    /// between, beyond the game's far band, it is not drawn (Performance/ModCulling).
     /// </summary>
     internal sealed partial class PrecinctFrontage
     {
@@ -22,6 +23,7 @@ namespace RealLifeOverhaul.Law
         private const int Bollards = 6;
         private const float RayOut = 1.4f;           // metres out from the door's plane the wall rays start
         private const float FlatWithin = 0.06f;      // metres the rays of one flat patch agree to
+        private const float CullRadius = 50f;        // metres round the door: the pieces and the patrol cars parked within 48 m of it
 
         // Metres along the wall from the door, and up it, tried in turn.
         private static readonly float[] SignAside = { 2.3f, 3.3f, 1.7f, 4.2f };
@@ -58,6 +60,7 @@ namespace RealLifeOverhaul.Law
         private readonly float[] _depths = new float[12];
 
         private Transform _sign;
+        private CullEntry _cull;                     // the pieces and cars, not drawn beyond the far band (Performance/ModCulling)
         private TextMeshPro _signName;
         private Transform _fascia;
         private Transform _fasciaBoard;
@@ -86,6 +89,7 @@ namespace RealLifeOverhaul.Law
         private bool _wallKnown;
         private float _wall;             // how far out from the door's plane the wall face is
         private bool _statics;           // the wall and kerb pieces are out
+        private int _step = -1;          // the next of the pieces being put out a frame at a time, or -1 (PlaceStatics)
         private bool _signOut;
         private Vector3 _signAt;
         private Vector3 _signAcross;
@@ -101,7 +105,8 @@ namespace RealLifeOverhaul.Law
 
         public PrecinctFrontage(Transform root, IModLogger logger)
         {
-            _root = root;
+            _root = new GameObject("RealLifeOverhaul Precinct Front").transform;   // its own holder: only the front is ever culled
+            _root.SetParent(root, false);
             _logger = logger;
         }
 
@@ -138,6 +143,7 @@ namespace RealLifeOverhaul.Law
             _frontFound = Precincts.Front(precinct, out _front, out _out);
             _measured = false;
             _statics = false;
+            _step = -1;
             _waits = 0;
             _nextOfficers = 0f;
             _nextCars = 0f;
@@ -185,9 +191,13 @@ namespace RealLifeOverhaul.Law
                 {
                     return;
                 }
-                if (force || !StreetSpots.IsInView(_doorGround))
+                if (_step >= 0 && !force)
                 {
-                    PlaceStatics();
+                    // Under way, a piece a frame (Frame).
+                }
+                else if (force || !StreetSpots.IsInView(_doorGround))
+                {
+                    PlaceStatics(force);
                 }
             }
             else
@@ -239,6 +249,8 @@ namespace RealLifeOverhaul.Law
                     Off(_bollards[i]);
                 }
                 RestoreSigns();
+                ModCulling.Remove(_cull);
+                _cull = null;
             }
             catch (Exception e)
             {
@@ -246,6 +258,7 @@ namespace RealLifeOverhaul.Law
             }
             _signOut = false;
             _statics = false;
+            _step = -1;
             _measured = false;
             _dressed = null;
             _frontFound = false;
@@ -259,7 +272,7 @@ namespace RealLifeOverhaul.Law
             {
                 if (_cars[i] != null)
                 {
-                    UnityEngine.Object.Destroy(_cars[i]);
+                    SceneryTrees.Destroy(_cars[i]);
                     _cars[i] = null;
                 }
             }
@@ -281,7 +294,7 @@ namespace RealLifeOverhaul.Law
             }
             if (_doorText != null)
             {
-                UnityEngine.Object.Destroy(_doorText.gameObject);
+                SceneryTrees.Destroy(_doorText.gameObject);
                 _doorText = null;
             }
             _signName = null;
@@ -295,6 +308,7 @@ namespace RealLifeOverhaul.Law
             _built = false;
             _builtModelled = false;
             _nightKnown = false;
+            _step = -1;
         }
 
         private static void Off(Transform piece)
@@ -309,7 +323,7 @@ namespace RealLifeOverhaul.Law
         {
             if (piece != null)
             {
-                UnityEngine.Object.Destroy(piece.gameObject);
+                SceneryTrees.Destroy(piece.gameObject);
                 piece = null;
             }
         }

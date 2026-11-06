@@ -197,8 +197,10 @@ namespace RealLifeOverhaul.Roommates
         {
             SocialPerson p = c.Person;
             t.Append(Esc(p.Name)).Append('|');
+            // The friend they are, in field 14 only among the first eight (what an older version reads, as no friend past them) and
+            // in full in field 15.
             Join(t, p.Female ? 1 : 0, p.Age, p.Seed, p.Job, (int)p.Traits, Tenths(p.Familiarity), Tenths(p.Affection), Tenths(p.Trust), (int)c.Traits, (int)c.Known,
-                c.SharePct, c.Answers, c.Told ? 1 : 0, c.Friend);
+                c.SharePct, c.Answers, c.Told ? 1 : 0, c.Friend < SocialRules.BaseCast ? c.Friend : -1, c.Friend);
         }
 
         private static Flatmate Person(string[] f)
@@ -226,7 +228,8 @@ namespace RealLifeOverhaul.Roommates
             var c = new Flatmate
             {
                 Person = p, Traits = traits, Known = (RoomTrait)(Int(f, 10) & 16383) & traits, SharePct = Bound(Int(f, 11), 5, 70), Answers = Math.Max(0, Int(f, 12)),
-                Told = Int(f, 13) != 0, Friend = f.Length > 14 ? Bound(Int(f, 14), -1, SocialRules.CastSize - 1) : -1
+                Told = Int(f, 13) != 0,
+                Friend = f.Length > 15 ? Bound(Int(f, 15), -1, SocialRules.MaxCast - 1) : f.Length > 14 ? Bound(Int(f, 14), -1, SocialRules.BaseCast - 1) : -1
             };
             p.Index = c.Friend;
             return c;

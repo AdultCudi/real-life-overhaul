@@ -27,7 +27,7 @@ namespace RealLifeOverhaul.Tech
             {
                 return true;
             }
-            return Save != null && GameManager.ChangeMoneySafe(-cents / 100f, Info(key, name), null, at != null ? at.Address : null, force);
+            return Save != null && RealLifeOverhaul.Economy.BizBooks.Book(-cents / 100f, Info(key, name), null, at != null ? at.Address : null, force);
         }
 
         /// <summary>Money into the player's cash, cents.</summary>
@@ -35,7 +35,7 @@ namespace RealLifeOverhaul.Tech
         {
             if (cents > 0 && Save != null)
             {
-                GameManager.ChangeMoneySafe(cents / 100f, Info(key, name), null, at != null ? at.Address : null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(cents / 100f, Info(key, name), null, at != null ? at.Address : null, true);
             }
         }
 
@@ -44,11 +44,11 @@ namespace RealLifeOverhaul.Tech
             return new TransactionInfo(key, new Dictionary<string, string>(2) { { "name", name ?? string.Empty } });
         }
 
-        /// <summary>A founder's name, the game's own way.</summary>
-        public static string Founder()
+        /// <summary>A founder's name, the game's own way and one nobody in <paramref name="taken"/> has.</summary>
+        public static string Founder(System.Collections.Generic.HashSet<string> taken)
         {
             var s = new Seeker();
-            HiringGame.Name(s);
+            HiringGame.Name(s, taken);
             return s.P.Name;
         }
     }

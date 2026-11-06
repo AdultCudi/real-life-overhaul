@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Tech
             {
                 BuildingRegistration reg = all[i];
                 if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.HasEstablishedBusiness && !string.IsNullOrEmpty(reg.businessTypeName)
-                    && reg.businessTypeName != Empty)
+                    && reg.businessTypeName != Empty && GameRegistrations.Found(reg))
                 {
                     into.Add(new BusinessNow { Place = TalentGame.Place(reg), Kind = FirmsGame.KindOf(reg.businessTypeName), Name = reg.BusinessName ?? string.Empty });
                 }
@@ -59,7 +59,7 @@ namespace RealLifeOverhaul.Tech
                 for (int i = 0; all != null && i < all.Count; i++)
                 {
                     BuildingRegistration reg = all[i];
-                    if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress)
+                    if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && GameRegistrations.Found(reg))   // its Address is null without a building
                     {
                         Put(reg.Address.ToFormattedString(), TalentGame.Place(reg));
                     }

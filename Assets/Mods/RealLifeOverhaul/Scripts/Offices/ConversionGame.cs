@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using BigAmbitions.Rivals;
 using Blueprints;
 using Buildings;
 using Helpers;
@@ -10,41 +9,15 @@ using UI;
 namespace RealLifeOverhaul.Offices
 {
     /// <summary>
-    /// Everything the conversion reads from or does to the game, in one place.
-    ///
-    /// WHAT A BUILDING'S TYPE GOVERNS (read in the decompiled game): Building.BuildingType is a field of the city's
-    /// building asset (Buildings/Building.cs), loaded once at the game's start and never written into a save (a save
-    /// keeps a registration by its address, BuildingRegistration.BuildingCached is not saved). Everything asks it when
-    /// it needs it: the businesses that can start there (BuildingTypeData.availableBusinessTypes, read by BizMan's start
-    /// screen, StartBusinessUI.Load, and its settings, BizManSettings.RefreshData, the mod's tech firm types among them
-    /// since they are registered for offices), the city map's filters and the "to let" layer (CityMapFilters, its
-    /// visible building types against Building.BuildingType), the building's map marker and colour
-    /// (BuildingRegistration.GetPOIIcon, CityBuildingController.UpdatePoi), the BizMan list (BusinessCellView), the rent
-    /// and the value (Building.GetMarketPricePerSqm and GetBuildingDailyMarketRent by the type's multipliers; the rent is
-    /// written into the registration when it is rented, BuildingRegistration.RentPerDay), the deposit
-    /// (BuildingTypeData.daysToCalculateDeposit), the customers a business gets (CustomerEntriesCalculatorFactory picks
-    /// the office calculator by the building's type), and the game's own competition (CompetitionHelper, empty
-    /// buildings by type). What it does not govern: the interior, which is loaded by size and version alone
-    /// (BuildingManager: BuildingSizeResolver.LoadBuildingAsync(new BuildingSizeInfo(building))), and the layouts and
-    /// interior designs, which are by business type and size.
-    ///
-    /// WHICH SHOPS CAN BE OFFICES: those whose size and version the game's own data lists for both shops and offices
-    /// (BuildingSizeData.buildingVersions[].supportedBuildingTypes: today size C version 1 and size D version 2). The
-    /// game's own office buildings of those sizes stand on that very structure, so an office business there has the
-    /// game's office layouts and designs and nothing has to be fitted. No warehouse size lists offices, a warehouse's
-    /// registration is a warehouse of its own (BuildingHelper.GetBuildingRegistration makes a Warehouse) and its floor
-    /// is a loading bay: warehouses stay warehouses.
-    ///
-    /// WRITTEN, each put back when the city goes, the option is off or the save is prepared for removal:
-    ///   Building.BuildingType          office, for the shops chosen; the asset outlives a load, so it is put back
-    ///                                  before another save is loaded
-    ///   RivalsHelper.IgnoredAddresses  the game's own list of addresses its rivals leave alone (CompetitionHelper's
-    ///                                  empty buildings, RivalDefenseHelper): a converted shop is on it while it stands
-    ///                                  empty, so the game's competition does not put a business of its own there.
-    ///                                  Only one with no rival as its landlord, so the game's rival refresh
-    ///                                  (RivalsHelper.RefreshRivals) has nothing to clear on it
-    /// and the building's map marker is drawn again (CityBuildingController.UpdatePoi) and the map's filters applied
-    /// again (CityMapFilters.ApplyFilters), once for every change.
+    /// Everything the conversion reads from or does to the game. A building's type is a field of the building's definition,
+    /// never saved, that everything asks (the businesses that may start there, the map, the rent, the customers, the
+    /// competition), while the interior goes by size and version alone; a shop whose size and version the game lists for
+    /// offices too stands on an office's structure. The game keeps two copies of each definition: the city scene's (the
+    /// CityBuildingController's, which the map card, the filters and the marker read) and the Addressables list's
+    /// (BuildingHelper.GetBuilding, which BizMan, the registration and the businesses that may start read). Written in both, and
+    /// put back in both on every way out, even after the scene's is gone: the shops' BuildingType. What
+    /// keeps the game's own letting off a converted shop is the held addresses' (Core/HeldUnits), as for every building
+    /// the mod holds.
     /// </summary>
     internal static class ConversionGame
     {
@@ -52,15 +25,15 @@ namespace RealLifeOverhaul.Offices
         public const string Retail = "ba:buildingtype_retail";
         private const string Empty = "ba:businesstype_empty";
 
-        /// <summary>A building the player can walk into and that is the city's own: no special service, no fence, no DLC, a door.</summary>
+        /// <summary>A building the player can walk into that is the city's own: no special service, fence or DLC, and a door.</summary>
         public static bool Usable(CityBuildingController c)
         {
             Building b = c != null ? c.building : null;
-            return b != null && b.SpecialService == null && !GameMembers.Fenced(b) && (int)b.requiredDLC == 0 && !b.IsHamptonsHouse()
+            return b != null && b.SpecialService == null && !GameMembers.Fenced(b) && !GameDlc.Gated(b) && !b.IsHamptonsHouse()
                    && c.entranceDoors != null && c.entranceDoors.Length > 0 && b.totalSqm > 0 && !string.IsNullOrEmpty(b.StreetName);
         }
 
-        /// <summary>A shop whose size and version the game's own data lets be an office too (the game's offices of that size stand on the same structure).</summary>
+        /// <summary>A shop whose size and version the game's own data lets be an office too.</summary>
         public static bool SharedStructure(Building b, List<BuildingSizeInfo> officeSizes)
         {
             for (int i = 0; officeSizes != null && i < officeSizes.Count; i++)
@@ -77,16 +50,13 @@ namespace RealLifeOverhaul.Offices
         /// <summary>The sizes and versions the game's data lists for offices; the game's own list, not a copy.</summary>
         public static List<BuildingSizeInfo> OfficeSizes() => BuildingSizeHelper.GetBuildingVersionsByBuildingType(Office);
 
-        /// <summary>Standing empty: nobody rents or owns it (the player, another player in a session, a rival), nothing of the game's is in it.</summary>
+        /// <summary>Standing empty: nobody rents or owns it (the player, another player, a rival) and nothing of the game's is in it.</summary>
         public static bool Vacant(BuildingRegistration reg)
         {
             return reg != null && reg.AvailableForRent && !reg.RentedByPlayer && !reg.BuildingOwnedByPlayer && string.IsNullOrEmpty(reg.businessOwnerRivalId)
                    && (string.IsNullOrEmpty(reg.businessTypeName) || reg.businessTypeName == Empty) && reg.Layout == null
                    && (reg.itemInstances == null || reg.itemInstances.Count == 0);
         }
-
-        /// <summary>No rival is the building's landlord.</summary>
-        public static bool NoLandlord(BuildingRegistration reg) => reg != null && string.IsNullOrEmpty(reg.buildingOwnerRivalId);
 
         /// <summary>A business of a type the game puts in offices (the mod's tech firms' included).</summary>
         public static bool OfficeBusiness(BuildingRegistration reg)
@@ -105,6 +75,20 @@ namespace RealLifeOverhaul.Offices
             return reg != null && (GoingPublic.Mine(reg) || reg.BuildingOwnedByPlayer || (forSale != null && reg.Address != null && forSale.Contains(reg.Address)));
         }
 
+        /// <summary>True if the building is listed for sale now (the game's list, GameInstance.buildingsForSale): one pass, no closure made.</summary>
+        public static bool OnSale(GameInstance save, Address address)
+        {
+            List<BuildingForSale> all = save != null ? save.buildingsForSale : null;
+            for (int i = 0; address != null && all != null && i < all.Count; i++)
+            {
+                if (all[i] != null && all[i].address == address)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         /// <summary>The buildings listed for sale now (the game's list, GameInstance.buildingsForSale), into a set.</summary>
         public static void ForSale(GameInstance save, HashSet<Address> into)
         {
@@ -119,38 +103,105 @@ namespace RealLifeOverhaul.Offices
             }
         }
 
-        /// <summary>The building's type set, and its marker drawn again (not while the city is going).</summary>
-        public static void SetType(Building b, CityBuildingController c, string type)
+        /// <summary>
+        /// The building as the game's own list holds it (BuildingHelper.GetBuilding, the Addressables copy every lookup by address
+        /// reads: BizMan, the registration's BuildingCached, the businesses that may start, the rent, the customers, the competition);
+        /// null when it is the very object the city scene holds, or the list has none. The city scene's CityBuildingController.building
+        /// is another copy of the same definition (the scene's own assets, 884 of them, beside the 885 of the Addressables group), so a
+        /// type written to one alone makes the map card say one thing and BizMan another.
+        /// </summary>
+        public static Building GameCopy(Building scene)
         {
-            if (b == null || string.IsNullOrEmpty(type))
+            if (scene == null || scene.Address == null)
+            {
+                return null;
+            }
+            Building game = BuildingHelper.GetBuilding(scene.Address);
+            return game != null && !ReferenceEquals(game, scene) ? game : null;
+        }
+
+        /// <summary>
+        /// A building's type set in every copy the game keeps (the city scene's and the game's list), and its marker drawn again (not
+        /// while the city is going). Either copy may be gone: the scene's with the scene, which is why <paramref name="game"/> is kept
+        /// by the caller and put back on its own.
+        /// </summary>
+        public static void SetType(Building scene, Building game, CityBuildingController c, string type)
+        {
+            if (string.IsNullOrEmpty(type))
             {
                 return;
             }
-            b.BuildingType = type;
-            if (!GameManager.isCitySceneBeingUnloaded && c != null && c.buildingRegistration != null)
+            if (game != null)
+            {
+                game.BuildingType = type;
+            }
+            if (scene != null)
+            {
+                scene.BuildingType = type;
+            }
+            if (scene != null && !GameManager.isCitySceneBeingUnloaded && c != null && c.buildingRegistration != null)
             {
                 c.UpdatePoi();
             }
         }
 
-        /// <summary>On or off the game's list of addresses its rivals leave alone. Returns whether it is on it now.</summary>
-        public static bool Ignore(Address address, bool on)
+        /// <summary>
+        /// Null when a building's type reads <paramref name="type"/> in each copy the game keeps and in what the registration reads by
+        /// address; otherwise what differs (<see cref="ConversionRules.Disagreement"/>).
+        /// </summary>
+        public static string Disagreement(Building scene, Building game, string type)
         {
-            List<Address> list = RivalsHelper.IgnoredAddresses;
-            if (address == null || list == null)
+            string byAddress = scene != null && scene.Address != null ? BuildingHelper.GetBuilding(scene.Address)?.BuildingType : null;
+            return ConversionRules.Disagreement(type, scene != null ? scene.BuildingType : null, game != null ? game.BuildingType : byAddress);
+        }
+
+        /// <summary>
+        /// Null when every business the game offers to start in a building of this type is one the game made for the type; otherwise
+        /// the first that is not, with its own type. The list is the game's (BuildingTypeData.availableBusinessTypes, with the mod's
+        /// business types registered by their suitable building type), read once a check, never a frame.
+        /// </summary>
+        public static string WrongOffer(string buildingType)
+        {
+            BuildingTypeData data = BuildingTypeHelper.GetData(buildingType);
+            return data == null ? "no building type " + buildingType : ConversionRules.WrongOffer(buildingType, data.availableBusinessTypes, SuitableOf);
+        }
+
+        /// <summary>
+        /// <see cref="WrongOffer"/> for every building type the city's buildings have (the game's list, BuildingHelper.allBuildings), each
+        /// type once: null when none offers a business made for another type. <paramref name="types"/> is how many types were looked at.
+        /// </summary>
+        public static string WrongOfferInCity(out int types)
+        {
+            var seen = new HashSet<string>(StringComparer.Ordinal);
+            string wrong = null;
+            List<Building> all = BuildingHelper.allBuildings;
+            for (int i = 0; all != null && i < all.Count; i++)
+            {
+                string type = all[i] != null ? all[i].BuildingType : null;
+                if (!string.IsNullOrEmpty(type) && seen.Add(type))
+                {
+                    wrong = wrong ?? WrongOffer(type);
+                }
+            }
+            types = seen.Count;
+            return wrong;
+        }
+
+        private static string SuitableOf(string businessType)
+        {
+            BusinessType type = BusinessTypeHelper.GetData(businessType);
+            return type != null ? type.suitableBuildingType : null;
+        }
+
+        /// <summary>A business of a type made for shops or another kind of building, not for offices: it cannot stay in an office.</summary>
+        public static bool OtherBusiness(BuildingRegistration reg)
+        {
+            if (reg == null || string.IsNullOrEmpty(reg.businessTypeName) || reg.businessTypeName == Empty)
             {
                 return false;
             }
-            int at = list.IndexOf(address);
-            if (on && at < 0)
-            {
-                list.Add(address);
-            }
-            else if (!on && at >= 0)
-            {
-                list.RemoveAt(at);
-            }
-            return on;
+            BusinessType type = BusinessTypeHelper.GetData(reg.businessTypeName);
+            return type != null && type.suitableBuildingType != Office;
         }
 
         /// <summary>The map's filters applied again, as the game does after a building is rented.</summary>
@@ -178,7 +229,7 @@ namespace RealLifeOverhaul.Offices
             }
             catch (Exception)
             {
-                return CityReserves.PlayerOfficeAddress(i, null);   // (outside the game: the Guide's page made offline)
+                return CityReserves.PlayerOfficeAddress(i, null);   // outside the game: the Guide's page made offline
             }
         }
 
@@ -192,7 +243,7 @@ namespace RealLifeOverhaul.Offices
             }
             catch (Exception)
             {
-                return CityReserves.UtilitiesAddress(null);   // (outside the game: the Guide's page made offline)
+                return CityReserves.UtilitiesAddress(null);   // outside the game: the Guide's page made offline
             }
         }
 

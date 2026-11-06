@@ -83,7 +83,7 @@ namespace RealLifeOverhaul.Careers
         {
             w.Record().Add(e.Course).Add(e.Mode).Add(e.Start).Add(e.Seen).Add(e.Done).Add(e.SettledDay).Add(e.Homework).Add(e.Fee).Add(e.Instalments).Add(e.Loan).Add(e.OnLoan)
                 .Add(e.Grant).Add(e.Stage).Add(e.ExamFrom).Add(e.ExamTo).Add(e.Retakes).Add(e.Score).Add(e.Grade).Add(e.Ended).Add(e.Graduated).Add(e.FeeLate).Add(e.StartTold)
-                .Add(e.Excused).Add(e.ExcusedDay);
+                .Add(e.Excused).Add(e.ExcusedDay).Add(e.HomeworkMinutes);
         }
 
         public static StudyFile Read(string text, out int version)
@@ -172,7 +172,8 @@ namespace RealLifeOverhaul.Careers
                 FeeLate = x.Bool(),
                 StartTold = x.Int(),   // (a save from before it: 0, nothing told)
                 Excused = Math.Max(0, x.Int()),   // (a save from before it: none excused)
-                ExcusedDay = x.Int(-1)
+                ExcusedDay = x.Int(-1),
+                HomeworkMinutes = Math.Max(0, Math.Min(StudyRules.HomeworkFull - 1, x.Int()))   // (a save from before it: none sat)
             };
             e.Excused = Math.Min(e.Excused, e.Seen);
             return e.Def != null ? e : null;

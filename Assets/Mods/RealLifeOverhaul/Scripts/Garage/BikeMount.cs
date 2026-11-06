@@ -17,38 +17,18 @@ using NwhVehicle = NWH.VehiclePhysics2.VehicleController;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// One of the game's electric scooters turned into a bicycle or a motorbike. Everything that makes a
-    /// scooter rideable stays the game's: its controller, its two-wheel physics (the lean, the steering),
-    /// getting on and off, the hands on the bars, the camera, the save. This component gives it another
-    /// body (the scooter's own renderers are switched to not draw, never removed), another name wherever the
-    /// game names the thing pointed at (its own per-object header, as it names a chauffeur's car), other
-    /// numbers, and a rider who sits it: a riding clip of the mod's own chosen by what they are doing
-    /// (pedalling, freewheeling, stopped with a foot down; riding or stopped on a motorbike), or without the
-    /// clip bundle the game's riding pose moved to the saddle; a bicycle's feet are put on the pedals after the
-    /// animation.
-    ///
-    /// THE BODY THE WORLD MEETS (<see cref="BikeRules.Frame"/>, <see cref="BikeRules.Bars"/>). The scooter's own box
-    /// (0.32 by 1.06 m, under its deck) is made the frame's, wheel to wheel, and a second box of the bars and the
-    /// rider's knees is added while ridden, on the layer the game gives a ridden scooter (Vehicles: walls, poles,
-    /// parked and moving cars, the player's own car). Its obstacle on the walkers' navigation is made as long.
-    ///
-    /// HOW IT GOES. A motorbike: power, gearing and drag from the same model the cars use. A bicycle: the scooter's
-    /// drivetrain is let go and the rider pushes it (<see cref="BikeRules.Pedal"/>, once a physics step), against
-    /// air drag that sets its cruising speed. Both lean with their speed (<see cref="BikeRules.LeanMost"/>).
-    ///
-    /// Every value changed is recorded and <see cref="Detach"/> puts the scooter back exactly. The body's centre of mass and
-    /// inertia are the game's, kept and written back only while the body is free to turn (<see cref="BikeRules.KeepMass"/>):
-    /// the game holds a scooter nobody is on frozen, and a frozen body reads an inertia of nothing.
-    /// Costs nothing while parked: the per-frame and per-step work runs only while it is ridden (a force, a few
-    /// comparisons and the legs' two bone turns each), and allocates nothing.
+    /// One of the game's electric scooters made a bicycle or a motorbike: what makes it rideable stays the game's, and
+    /// this gives it another body, name, numbers, the boxes the world meets and a rider who sits it. Every value changed
+    /// is recorded and <see cref="Detach"/> puts the scooter back exactly. No cost while parked; while ridden, a force a
+    /// physics step and a few comparisons and two leg turns a frame, nothing allocated.
     /// </summary>
     [DefaultExecutionOrder(5000)]   // after the game has posed the rider, before the mod redraws the player (Character/PlayerDouble)
-    public sealed class BikeMount : MonoBehaviour
+    public sealed partial class BikeMount : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("garage", "BikeMount", typeof(BikeMount));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("garage", "BikeMount", typeof(BikeMount));   // its LateUpdate and FixedUpdate
 
         private const float CadencePerMetre = 1.41f;   // radians of crank per metre: 75 turns a minute at 20 km/h
-        private const float AnkleAbovePedal = 0.10f;
+        private const float AnkleAbovePedal = 0.10f;   // metres
         private const float BicycleRolling = 6f;       // N m per wheel: a bicycle coasts; the scooter's own tyres stop it in a few metres
         private const float LegsFade = 0.3f;           // seconds for the feet to leave the pedals for the clip's own legs, and back
         private const float CrankHome = 5f;            // radians a second: the cranks brought round to "right pedal forward" when stopped
@@ -59,7 +39,7 @@ namespace RealLifeOverhaul
 
         private static readonly CarSetup Setup = new CarSetup();
         private static readonly HashSet<int> Logged = new HashSet<int>();
-        private static AnimationCurve _leanMostCurve, _leanRateCurve;   // shared by every two-wheeler, made once
+        private static AnimationCurve _leanMostCurve, _leanRateCurve;   // shared by every two-wheeler
 
         private ScooterController _scooter;
         private NwhVehicle _nwh;
@@ -93,9 +73,9 @@ namespace RealLifeOverhaul
         private NavMeshObstacle _obstacle;
         private Vector3 _obstacleCentreWas, _obstacleSizeWas;
         private bool _massKept;
-        private Vector3 _massCentre, _inertia;          // the body's centre of mass and inertia as the game set them (VariableCenterOfMass)
+        private Vector3 _massCentre, _inertia;          // as the game set them (VariableCenterOfMass)
         private Quaternion _inertiaTurn;
-        private Action<VehicleController> _onExit;      // the game's own getting off (GlobalEvents.onExitVehicle), made once
+        private Action<VehicleController> _onExit;      // on GlobalEvents.onExitVehicle, made once
         private bool _exitHooked;
 
         // while ridden
@@ -110,15 +90,15 @@ namespace RealLifeOverhaul
         private Transform _head;
         private Transform _thighL, _shinL, _footL, _thighR, _shinR, _footR;
         private GameObject _helmet;
-        private Quaternion _headSquare = Quaternion.identity;   // from the Head bone's own axes to the character's (helmet: visor +Z, crown +Y)
+        private Quaternion _headSquare = Quaternion.identity;   // from the Head bone's axes to the character's (helmet: visor +Z, crown +Y)
         private bool _headKnown;
         private WheelUAPI _front;
-        private ActivityAnimator _seated;   // the mod's own riding clip on the rider, when the clip bundle has one
-        private AnimationClip _rideClip, _coastClip, _standClip;   // by what the rider is doing; coast and stand may be missing
+        private ActivityAnimator _seated;   // the mod's riding clip on the rider, when the clip bundle has one
+        private AnimationClip _rideClip, _coastClip, _standClip;   // coast and stand may be missing
         private BikeRules.Pose _riding;
-        private float _otherFor;            // seconds the rider has been doing something else than the clip shows
-        private float _poseAge;             // seconds since the clip last changed: no change while one is still fading in
-        private float _legs = 1f;           // how much of a cyclist's legs is the pedals' (1) and how much the clip's (0: a foot on the ground)
+        private float _otherFor;            // seconds the rider has been doing other than the clip shows
+        private float _poseAge;             // seconds since the clip last changed
+        private float _legs = 1f;           // a cyclist's legs: 1 on the pedals, 0 the clip's (a foot on the ground)
 
         public BikeRecord Record { get; private set; }
 
@@ -128,7 +108,7 @@ namespace RealLifeOverhaul
 
         public bool Ridden => _ridden;
 
-        /// <summary>Set when the rider has come off (the speed they were doing, m/s); the director deals with it and clears it.</summary>
+        /// <summary>The speed (m/s) the rider came off at; TwoWheelers deals with it and clears it.</summary>
         public float Fell { get; set; }
 
         /// <summary>Signed speed along the bike, m/s.</summary>
@@ -173,17 +153,13 @@ namespace RealLifeOverhaul
             return mount;
         }
 
-        // ---------------------------------------------------------------- the body
-
         private void Dress()
         {
-            // The scooter's own body: not drawn, and otherwise left as it is (the game still asks its renderers things).
-            // Taken before our body exists, so nothing of ours can ever be among them: the renderers the scooter
-            // itself lists, and every mesh under it that list leaves out (a wheel, the bag it carries).
+            // Only not drawn, as the game still asks them things; taken before our body exists, with what its list leaves out.
             Hide(_scooter.Renderers);
             GameInstance save = SaveGameManager.Current;
             bool ridden = _scooter.controlledByPlayer || (save != null && _scooter.vehicleInstance != null && save.ActiveVehicleId == _scooter.vehicleInstance.id);
-            if (!ridden)   // with somebody on it (a save made in the saddle) the rider is among its children: only the scooter's own list then
+            if (!ridden)   // a save made in the saddle: the rider is among its children
             {
                 Hide(_scooter.GetComponentsInChildren<MeshRenderer>(true));
                 Hide(_scooter.GetComponentsInChildren<SkinnedMeshRenderer>(true));
@@ -194,7 +170,7 @@ namespace RealLifeOverhaul
             {
                 throw new InvalidOperationException("the game's lit shader was not found");
             }
-            // And the other way round: whatever the scooter does to its children, ours are drawn.
+            // Whatever the scooter does to its children, ours are drawn.
             Renderer[] ours = _body.Root.GetComponentsInChildren<Renderer>(true);
             for (int i = 0; i < ours.Length; i++)
             {
@@ -215,17 +191,15 @@ namespace RealLifeOverhaul
             }
         }
 
-        // What the world meets. The scooter's own box (the game's vehicleCollider: what its gas stations, garages, barriers
-        // and parking look for) becomes the frame's, wheel to wheel; the bars and the rider's knees are a box of ours on the
-        // same body, switched on while ridden (Mounted), on the layer the game gives a ridden scooter's box. The walkers'
-        // obstacle is made the frame's length, so that nobody's path runs into the wheels of one standing.
+        // The scooter's own box (which stations, barriers and parking look for) becomes the frame's; the bars a box of ours.
+        // The walkers' obstacle is made as long, so that nobody walks into the wheels of one standing.
         private void Shape()
         {
             BikeRules.Box frame = BikeRules.Frame(Def.RearZ, Def.FrontZ, Def.WheelRadius, Def.Seat.x, Def.Motor);
             _frame = _scooter.vehicleCollider as BoxCollider;
             if (_frame != null)
             {
-                Transform space = _frame.transform;   // (the game's box sits at the scooter's origin, turned as it is)
+                Transform space = _frame.transform;   // the game's box sits at the scooter's origin, turned as it is
                 _frameCentreWas = _frame.center;
                 _frameSizeWas = _frame.size;
                 _frame.center = space.InverseTransformPoint(transform.TransformPoint(new Vector3(frame.X, frame.Y, frame.Z)));
@@ -254,7 +228,7 @@ namespace RealLifeOverhaul
                 _obstacleCentreWas = _obstacle.center;
                 _obstacleSizeWas = _obstacle.size;
                 _obstacle.center = space.InverseTransformPoint(transform.TransformPoint(new Vector3(0f, frame.Y, frame.Z)));
-                Vector3 was = SizeIn(space, _obstacleSizeWas, true);   // (the game's, in the bike's axes)
+                Vector3 was = SizeIn(space, _obstacleSizeWas, true);   // the game's, in the bike's axes
                 _obstacle.size = SizeIn(space, new Vector3(Mathf.Max(was.x, frame.Width), Mathf.Max(was.y, frame.Height), frame.Length));
             }
             else
@@ -263,8 +237,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A box's size given along the bike's own axes, as the size along the axes of the transform it is set on (whatever way
-        // that is turned and scaled): each of its axes takes the parts of the bike's that lie along it. back: the other way.
+        // A size along the bike's axes as one along those of the transform it is set on; back: the other way.
         private Vector3 SizeIn(Transform space, Vector3 size, bool back = false)
         {
             Quaternion turn = Quaternion.Inverse(space.rotation) * transform.rotation;   // the bike's axes in the space's
@@ -282,14 +255,8 @@ namespace RealLifeOverhaul
             return new Vector3(x * Mathf.Abs(own.x) / Mathf.Max(1e-4f, Mathf.Abs(scale.x)), y * Mathf.Abs(own.y) / Mathf.Max(1e-4f, Mathf.Abs(scale.y)), z * Mathf.Abs(own.z) / Mathf.Max(1e-4f, Mathf.Abs(scale.z)));
         }
 
-        // The body's centre of mass and inertia are the game's: VariableCenterOfMass writes them each time the game lets the
-        // scooter go (VehicleController.SetFreeze(false)). A collider changed on the body must not move them, so they are
-        // kept before the boxes change and written back after each change. Only ever from a body free to turn
-        // (BikeRules.KeepMass): the game holds a scooter nobody is on frozen, and the engine freezes a turn by setting its
-        // inertia to zero. Read from a bike dressed while it stands (every one is, after a save loads), the inertia is
-        // (0, 0, 0); written back as the bike is got on, the engine takes it as infinite, and the front wheel steers while
-        // the bike goes straight on. So it is kept when the mount is made if the body is free then (a bike just made), and
-        // each time it is got on, when the game has just let it go.
+        // Kept before the boxes change, written back after; only from a body free to turn, as a frozen one reads an inertia
+        // of nothing, which written back makes the bike go straight on as it steers.
         private void KeepMass()
         {
             if (_rigidbody == null)
@@ -299,7 +266,7 @@ namespace RealLifeOverhaul
             Vector3 inertia = _rigidbody.inertiaTensor;
             if (!BikeRules.KeepMass(TurnFree, inertia.x, inertia.y, inertia.z))
             {
-                return;   // held frozen by the game, or no inertia it turns on: what was kept before stays
+                return;   // what was kept before stays
             }
             _massCentre = _rigidbody.centerOfMass;
             _inertia = inertia;
@@ -307,8 +274,7 @@ namespace RealLifeOverhaul
             _massKept = true;
         }
 
-        // Written back only into a body free to turn (BikeRules.PutMassBack): one the game holds frozen is given the game's
-        // own values by the game as it is let go, and a write would undo its hold.
+        // Never into a frozen body: the game gives it its own values as it lets it go, and a write would undo its hold.
         private void PutMassBack()
         {
             if (_rigidbody == null || !BikeRules.PutMassBack(_massKept, TurnFree))
@@ -320,11 +286,10 @@ namespace RealLifeOverhaul
             _rigidbody.inertiaTensorRotation = _inertiaTurn;
         }
 
-        // True while no turn of the body is frozen: the game's hold on a scooter nobody is on freezes every constraint.
+        // The game's hold on a scooter nobody is on freezes every constraint.
         private bool TurnFree => _rigidbody != null && (_rigidbody.constraints & RigidbodyConstraints.FreezeRotation) == 0;
 
-        // The self-check of getting on: the body free to turn, on an inertia it turns on. A fault is always written (a bike
-        // that steers and goes straight on); a pass only with Developer diagnostics on. Once per getting on.
+        // Getting on's self-check: a fault always in the log, a pass only with Developer diagnostics.
         private void TurnCheck()
         {
             if (_rigidbody == null)
@@ -353,7 +318,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The bars box on: solid on the layer the game gives a ridden scooter's box.
+        // Solid, on the layer the game gives a ridden scooter's box.
         private void BarsOn()
         {
             if (_bars == null)
@@ -365,11 +330,7 @@ namespace RealLifeOverhaul
             PutMassBack();
         }
 
-        /// <summary>
-        /// The bars box off. Traffic is told first, as the game tells it of any collider it takes away
-        /// (Manager.TriggerColliderRemovedEvent): the engine says nothing to the traffic's sensors when a collider is switched
-        /// off or destroyed, and a car that had sensed the box would wait for it for ever. Safe to ask twice.
-        /// </summary>
+        /// <summary>The bars box off, traffic told first: else a car that had sensed it waits for ever. Safe to ask twice.</summary>
         public void BarsOff()
         {
             if (_bars == null || !_bars.enabled)
@@ -381,7 +342,7 @@ namespace RealLifeOverhaul
             PutMassBack();
         }
 
-        // The game's own getting off, from inside its ExitVehicle: the box is off before anything else of the exit runs on.
+        // From inside the game's ExitVehicle: the box is off before the rest of the exit runs.
         private void Exited(VehicleController vehicle)
         {
             if (ReferenceEquals(vehicle, _scooter))
@@ -392,7 +353,7 @@ namespace RealLifeOverhaul
 
         private void HookExit(bool on)
         {
-            _onExit = _onExit ?? Guard.Wrap<VehicleController>(Exited);   // (made once, through the guard: Core/Guard)
+            _onExit = _onExit ?? Guard.Wrap<VehicleController>(Exited);
             GlobalEvents.onExitVehicle = (Action<VehicleController>)Delegate.Remove(GlobalEvents.onExitVehicle, _onExit);
             if (on)
             {
@@ -401,25 +362,18 @@ namespace RealLifeOverhaul
             _exitHooked = on;
         }
 
-        /// <summary>The last thing <see cref="Pinned"/> found a box of a bike in, for the log line that says so. Null if none yet.</summary>
+        /// <summary>The last thing <see cref="Pinned"/> found a bike's box in, for the log; null if none yet.</summary>
         public static Collider PinnedBy { get; private set; }
 
-        /// <summary>
-        /// True if this bike, stood at a place and turned so, would have its frame box or its bars box (as they are while
-        /// it is ridden, switched on or not) in something on the given layers: each box less a skin
-        /// (<see cref="BikeClearRules.Skin"/>), so that a resting touch is not being in it. The bike's own colliders and
-        /// whatever is under <paramref name="also"/> (the player, who has just got off and is still standing in its
-        /// middle) are not counted. Two box queries into one shared buffer: asked when a bike is got off or on, never per frame.
-        /// </summary>
+        /// <summary>True if this bike stood here would have a box in something on these layers but itself and <paramref name="also"/>.</summary>
         public bool Pinned(Vector3 position, Quaternion rotation, int mask, Transform also)
         {
             BoxCollider frame = _frame != null ? _frame : _scooter != null ? _scooter.vehicleCollider as BoxCollider : null;
             return Boxed(frame, position, rotation, mask, also) || Boxed(_bars, position, rotation, mask, also);
         }
 
-        private static readonly Collider[] Touching = new Collider[24];   // one buffer: the queries run one at a time, on the main thread
+        private static readonly Collider[] Touching = new Collider[24];   // the queries run one at a time, on the main thread
 
-        // One box of the bike, moved with the bike from where it is now to the place asked about.
         private bool Boxed(BoxCollider box, Vector3 position, Quaternion rotation, int mask, Transform also)
         {
             if (box == null || mask == 0)
@@ -448,7 +402,7 @@ namespace RealLifeOverhaul
             return found;
         }
 
-        // The game destroying the scooter (or the scene going) with the box on: traffic is told it has gone.
+        // The scooter destroyed, or the scene going, with the box on: traffic is told.
         private void OnDestroy()
         {
             try
@@ -465,9 +419,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Its name wherever the game names what the pointer is on: the game's own per-object header, which it gives
-        // a chauffeur's car the same way (EntityController.customOverlayHeaderKey). The panel while it is ridden and the
-        // game's few messages that name a vehicle are TwoWheelers' (they belong to the ride, not to the bike).
+        // The game's per-object header, as it names a chauffeur's car; the ride's panel and messages are BikeNames'.
         private void Name()
         {
             _headerWas = _scooter.customOverlayHeaderKey;
@@ -475,8 +427,7 @@ namespace RealLifeOverhaul
             _headerSet = true;
         }
 
-        // The game marks the player's cars on the map and, within 100 m, on the street; it leaves scooters out
-        // (they are hire scooters to it). Ours get that same marker, under their own name, so that they can be found.
+        // The game marks the player's cars but not scooters (hire scooters to it): ours get that marker.
         private void Mark()
         {
             try
@@ -511,13 +462,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        public bool Marked => _poi != null;
-
-        /// <summary>
-        /// Everything about where this two-wheeler is and whether it can be seen, as one line for the log: its
-        /// place, the ground found under it, what of its body is drawn and where that is, what of the scooter is
-        /// hidden, and how the game holds it. Builds a string: called when one is made and once shortly after.
-        /// </summary>
+        /// <summary>Where this two-wheeler is and whether it can be seen, as one log line; builds a string.</summary>
         public string Report()
         {
             Vector3 at = transform.position;
@@ -581,8 +526,6 @@ namespace RealLifeOverhaul
                    + $"physics {(_nwh != null && _nwh.enabled ? "running" : "at rest")}, map marker {(_poi != null ? "yes" : "no")}.";
         }
 
-        // ---------------------------------------------------------------- the numbers
-
         private void Tune()
         {
             _nwh = _scooter.GetComponent<NwhVehicle>();
@@ -598,7 +541,6 @@ namespace RealLifeOverhaul
             var limiter = _scooter.GetComponent<SpeedLimiterModuleWrapper>();
             var lean = _scooter.GetComponent<LeanWrapper>();
 
-            // Record first.
             _power = engine.maxPower;
             _canRunWas = engine.canRun;
             _clutchTypeWas = clutch.controlType;
@@ -631,18 +573,17 @@ namespace RealLifeOverhaul
             _autoDestroyWas = _autoDestroy != null && _autoDestroy.enabled;
             _changed = true;
 
-            // The game takes a scooter away four hours after it was last looked at. These are kept: an owned one is
-            // the player's, a hired one is collected by the mod (TwoWheelers), which also tells the player.
+            // The game takes a scooter away four hours after it was last looked at; a hired one is collected by TwoWheelers.
             if (_autoDestroy != null)
             {
                 _autoDestroy.enabled = false;
             }
 
-            // Leaning with the speed, gently at a crawl (BikeRules): the scooter leans fully from 1 m/s and swings there fast.
+            // Leaning with the speed: the scooter leans fully from 1 m/s and swings there fast.
             if (_lean != null)
             {
-                _lean.maxLeanAngle = LeanMostCurve();
-                _lean.leanAngleMaxDelta = LeanRateCurve();
+                _lean.maxLeanAngle = _leanMostCurve ??= LeanCurve(BikeRules.LeanMost);
+                _lean.leanAngleMaxDelta = _leanRateCurve ??= LeanCurve(BikeRules.LeanRate);
             }
 
             string line;
@@ -672,9 +613,7 @@ namespace RealLifeOverhaul
                     _noteRange = sound.engineRunningComponent.volumeRange;
                     sound.engineRunningComponent.volumeRange = 0f;
                 }
-                // The scooter's drivetrain let go: its engine does not run, its clutch stays out, and its final drive is made
-                // so small that the engine and gearbox no longer weigh on the rear wheel (through the gearbox they did, like
-                // another 275 kg, and 600 with the clutch in). The rider pushes it instead (FixedUpdate, BikeRules.Pedal).
+                // The drivetrain let go: the engine off, the clutch out, a final drive so small that nothing weighs on the wheel.
                 engine.canRun = false;
                 engine.StopEngine();
                 clutch.controlType = ClutchComponent.ClutchControlType.Manual;
@@ -714,7 +653,7 @@ namespace RealLifeOverhaul
                 _drag = Setup.Drag;
                 if (_limiter != null)
                 {
-                    _limiter.speedLimit = 0f;   // the limiter's own "no limit": drag ends the speed now
+                    _limiter.speedLimit = 0f;   // the limiter's own "no limit": drag ends the speed
                 }
                 _nwh.brakes.maxTorque = _brake * 1.6f;   // it has three times the scooter's speed to lose
                 line = FormattableString.Invariant($"Two-wheelers: {Def.Kind}: target 0-100 {Def.Seconds:F1} s, top {Def.TopKmh:F0} km/h; power {_power:F0} -> {Setup.PowerKw:F0} kW, ")
@@ -736,36 +675,17 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The lean curves of BikeRules as the game's module reads them (degrees against m/s), made once for every two-wheeler.
-        private static AnimationCurve LeanMostCurve()
+        // A lean rule as the game's module reads it (degrees against m/s), straight between the keys as the rule is.
+        private static AnimationCurve LeanCurve(Func<float, float> rule)
         {
-            if (_leanMostCurve == null)
+            var curve = new AnimationCurve(new Keyframe(0f, rule(0f)), new Keyframe(BikeRules.FullLeanAt, rule(BikeRules.FullLeanAt)), new Keyframe(90f, rule(90f)));
+            for (int i = 0; i < curve.length; i++)
             {
-                _leanMostCurve = new AnimationCurve(new Keyframe(0f, BikeRules.LeanMost(0f)), new Keyframe(BikeRules.FullLeanAt, BikeRules.LeanMost(BikeRules.FullLeanAt)),
-                    new Keyframe(90f, BikeRules.LeanMost(90f)));
-                for (int i = 0; i < _leanMostCurve.length; i++)
-                {
-                    Linear(_leanMostCurve, i);
-                }
+                Linear(curve, i);
             }
-            return _leanMostCurve;
+            return curve;
         }
 
-        private static AnimationCurve LeanRateCurve()
-        {
-            if (_leanRateCurve == null)
-            {
-                _leanRateCurve = new AnimationCurve(new Keyframe(0f, BikeRules.LeanRate(0f)), new Keyframe(BikeRules.FullLeanAt, BikeRules.LeanRate(BikeRules.FullLeanAt)),
-                    new Keyframe(90f, BikeRules.LeanRate(90f)));
-                for (int i = 0; i < _leanRateCurve.length; i++)
-                {
-                    Linear(_leanRateCurve, i);
-                }
-            }
-            return _leanRateCurve;
-        }
-
-        // Straight lines between the keys, as the rules have it.
         private static void Linear(AnimationCurve curve, int i)
         {
             Keyframe key = curve[i];
@@ -784,8 +704,7 @@ namespace RealLifeOverhaul
                 Dismounted();
             }
             BarsOff();
-            // First and each on its own, so that nothing further down can leave them changed: the game's box, its obstacle,
-            // its header and the body's mass.
+            // First and each on its own, so that nothing further down can leave them changed.
             try
             {
                 if (_frame != null)
@@ -849,10 +768,10 @@ namespace RealLifeOverhaul
                     {
                         _scooter.poi = null;
                     }
-                    MapPlaces.Drop(_poi);   // out of the game's list of markers first, then destroyed (Core/MapPlaces)
+                    MapPlaces.Drop(_poi);   // out of the game's list of markers, then destroyed
                     _poi = null;
                 }
-                _bars = null;   // (on our body, which goes next)
+                _bars = null;   // on our body, which goes next
                 if (_body != null && _body.Root != null)
                 {
                     Destroy(_body.Root);
@@ -920,9 +839,7 @@ namespace RealLifeOverhaul
             Destroy(this);
         }
 
-        // ---------------------------------------------------------------- the rider
-
-        /// <summary>The player has just got on (the game has attached them and given them its riding pose).</summary>
+        /// <summary>The player has just got on: the game has attached them and given them its riding pose.</summary>
         public void Mounted(PlayerController player)
         {
             if (_ridden || player == null || _body == null)
@@ -935,10 +852,10 @@ namespace RealLifeOverhaul
             _lastVelocity = _rigidbody != null ? _rigidbody.velocity : Vector3.zero;
             _lastPosition = transform.position;
             _steerShown = _front != null ? _front.SteerAngle : 0f;
-            KeepMass();       // the game has just let it go and written its own centre of mass and inertia
-            BarsOn();         // as the game puts a ridden scooter's own box
+            KeepMass();       // the game has just let it go and written its own values
+            BarsOn();
             TurnCheck();
-            HookExit(true);   // off again inside the game's own getting off
+            HookExit(true);
             _animator = PlayerHelper.GetAnimator();
             float hip = 0.95f;
             if (_animator != null && _animator.isHuman)
@@ -953,14 +870,11 @@ namespace RealLifeOverhaul
                 _footR = _animator.GetBoneTransform(HumanBodyBones.RightFoot);
                 if (hips != null)
                 {
-                    // How high this character's hips are when standing: what the saddle is fitted to.
+                    // The standing hip height the saddle is fitted to.
                     hip = Mathf.Clamp(Vector3.Dot(hips.position - _player.position, _player.up), 0.75f, 1.15f);
                 }
             }
-            // Riding clips of the mod's own, when the clip bundle has them: seated loops made with the feet's ground
-            // under the saddle and the palms on this model's grips (CityAssets/README.md, "Garage"). One for riding
-            // (pedalling, on a bicycle), one for freewheeling (bicycles), one for standing still with a foot down;
-            // each model's own, else the town bicycle's or the roadster's. Without them the game's own riding pose.
+            // The mod's riding clips (CityAssets/README.md, "Garage"); without them the game's own riding pose.
             _seated = null;
             _rideClip = Loop(Def.Ride, Def.Motor ? "moto_ride" : "cycle_ride");
             _coastClip = Def.Bicycle ? Loop(Def.Coast, "cycle_coast") : null;
@@ -982,14 +896,11 @@ namespace RealLifeOverhaul
                 _riding = BikeRules.Pose.Ride;
                 _legs = 1f;
             }
-            // The game seats the rider at the scooter's origin, standing on its deck. Moved over the seat, and (in the
-            // game's standing pose) up or down so that the hip joint is just above it: the joint is some 8 cm above
-            // what one sits on. A riding clip brings its own height.
+            // Over the seat from the scooter's deck; in the game's pose with the hip joint some 8 cm above it.
             float lift = _seated != null ? 0f : Mathf.Clamp(Def.Seat.x + 0.08f - hip, -0.3f, 0.3f);
             _player.localPosition = new Vector3(0f, lift, Def.Seat.y + 0.04f);
 
-            // The hands: the game's own hand rig, aimed at our grips instead of the scooter's bar. The grips
-            // take the scooter's own grip rotation, since that is what the rig was set up to hold.
+            // The game's hand rig, aimed at our grips, which take the scooter's grip rotation the rig was set up for.
             if (_scooter.LHandIKAttachmentPoint != null && _scooter.RHandIKAttachmentPoint != null && player.Character != null)
             {
                 _body.HandLeft.rotation = _scooter.LHandIKAttachmentPoint.rotation;
@@ -1004,87 +915,6 @@ namespace RealLifeOverhaul
             enabled = true;
         }
 
-        // The Head bone's axes are the rig's, not the character's (other features measure them too: ServiceKit,
-        // EventPeople.Wear). In the avatar's T-pose the head is held straight, so the bone's rotation there,
-        // relative to the character, is what stands between the two: read once per mount from the avatar's own
-        // skeleton. False when the avatar does not say (the helmet then keeps the player's heading, as it used to).
-        private static bool HeadSquare(Animator animator, Transform head, out Quaternion square)
-        {
-            square = Quaternion.identity;
-            try
-            {
-                SkeletonBone[] skeleton = animator != null && animator.avatar != null ? animator.avatar.humanDescription.skeleton : null;
-                if (skeleton == null || skeleton.Length == 0)
-                {
-                    return false;
-                }
-                Quaternion inPose = Quaternion.identity;   // the Head bone's rotation relative to the character, in the T-pose
-                bool found = false;
-                for (Transform bone = head; bone != null && bone != animator.transform; bone = bone.parent)
-                {
-                    Quaternion local = bone.localRotation;   // a node the avatar does not list does not move
-                    for (int i = 0; i < skeleton.Length; i++)
-                    {
-                        if (skeleton[i].name == bone.name)
-                        {
-                            local = skeleton[i].rotation;
-                            found |= bone == head;
-                            break;
-                        }
-                    }
-                    inPose = local * inPose;
-                }
-                if (!found)
-                {
-                    return false;
-                }
-                square = Quaternion.Inverse(inPose);
-                return true;
-            }
-            catch (Exception)
-            {
-                return false;
-            }
-        }
-
-        // A looping clip by its id, or by the id every model of that kind can fall back on; null if the bundle has neither.
-        private static AnimationClip Loop(string own, string shared)
-        {
-            if (!ClipLibrary.Ready)
-            {
-                return null;
-            }
-            string id = own != null && ClipLibrary.Has(own) ? own : ClipLibrary.Has(shared) ? shared : null;
-            return id != null && ClipLibrary.TryGet(id, out CityClip clip) && clip.Loop ? clip.Clip : null;
-        }
-
-        // Which clip the rider shows (BikeRules.Want): riding (pedalling, on a bicycle), freewheeling, or stopped with a
-        // foot down. Looked at each frame while ridden (a few comparisons); the engine is told only when it changes, a
-        // change has to last its moment first (pushing off: at once), and none is made while the last is still fading in:
-        // the animator replaces the clip that is fading out, which would show as a jump.
-        private void Pose(float dt, float speed, bool pushing)
-        {
-            _poseAge += dt;
-            BikeRules.Pose want = BikeRules.Want(_riding, speed, pushing, _standClip != null, _coastClip != null, Def.Bicycle);
-            if (want == _riding)
-            {
-                _otherFor = 0f;
-                return;
-            }
-            _otherFor += dt;
-            if (_otherFor < BikeRules.HoldFor(_riding, want) || _poseAge < BikeRules.PoseFade)
-            {
-                return;
-            }
-            AnimationClip clip = want == BikeRules.Pose.Stand ? _standClip : want == BikeRules.Pose.Coast ? _coastClip : _rideClip;
-            if (clip != null && _seated.Play(clip, BikeRules.PoseFade))
-            {
-                _riding = want;
-                _poseAge = 0f;
-            }
-            _otherFor = 0f;
-        }
-
         /// <summary>The player is off (the game has already let them go and dropped its hand targets).</summary>
         public void Dismounted()
         {
@@ -1094,7 +924,7 @@ namespace RealLifeOverhaul
             }
             _ridden = false;
             enabled = false;
-            BarsOff();   // standing, it is the frame the game can be pointed at, as with its own scooter
+            BarsOff();
             if (_exitHooked)
             {
                 HookExit(false);
@@ -1128,14 +958,14 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotFixedUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // switched off after its faults
                 return;
             }
             try
             {
                 OnFixedUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -1153,8 +983,7 @@ namespace RealLifeOverhaul
             {
                 _rigidbody.AddForce(velocity * (-BikeRules.Air(_drag, speed) / speed));
             }
-            // A bicycle is pushed by its rider (BikeRules.Pedal): hard from a standstill, no more than the rider's power as
-            // it gathers speed, half as hard when tired; held at a standstill in the gearbox's reverse, walked back slowly.
+            // A bicycle is pushed by its rider; with the gearbox in reverse at a standstill, walked back.
             if (_drivetrainLetGo && _nwh != null && _nwh.input != null)
             {
                 Vector3 ahead = transform.forward;
@@ -1166,8 +995,7 @@ namespace RealLifeOverhaul
                     _rigidbody.AddForce(ahead * push);
                 }
             }
-            // Coming off: most of the speed gone in one physics step (it hit something), or the bike on its side while moving.
-            // Not when the game has just moved the bike somewhere else (a tow, a way in or out of a building).
+            // Coming off: most of the speed gone in a step, or on its side; not when the game has just moved the bike.
             float was = _lastVelocity.magnitude;
             Vector3 position = _rigidbody.position;
             bool moved = (position - _lastPosition).sqrMagnitude > 2f * 2f;
@@ -1186,148 +1014,6 @@ namespace RealLifeOverhaul
                 Fell = speed;
             }
             _lastVelocity = velocity;
-        }
-
-        private static readonly int HotLateUpdate = HotSpots.Slot("Garage: BikeMount.LateUpdate");
-        private void LateUpdate()
-        {
-            using var hotSpot = HotSpots.Time(HotLateUpdate);
-            if (FrameGuard.Off)
-            {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
-                return;
-            }
-            try
-            {
-                OnLateUpdate();
-            }
-            catch (System.Exception e)
-            {
-                Guard.Fail(FrameGuard, e, this);
-            }
-        }
-
-        private void OnLateUpdate()
-        {
-            if (!_ridden || _body == null || _nwh == null)
-            {
-                return;
-            }
-            float dt = Time.deltaTime;
-            float speed = _nwh.Speed;
-
-            bool pushing = _nwh.input != null && _nwh.input.Throttle > 0.1f;
-            if (_seated != null)
-            {
-                Pose(dt, speed, pushing);
-            }
-            if (_body.FrontWheel != null && _body.RearWheel != null)   // a stand-in or a model in parts; a one-mesh body has no wheels to turn
-            {
-                _spin = Mathf.Repeat(_spin + speed / Def.WheelRadius * dt * Mathf.Rad2Deg, 360f);
-                Quaternion roll = Quaternion.AngleAxis(_spin, Vector3.right);
-                _body.FrontWheel.localRotation = roll;
-                _body.RearWheel.localRotation = roll;
-            }
-            if (_front != null)
-            {
-                // The physics steers once a step; the bars are drawn every frame, so they follow it eased, not in steps.
-                _steerShown = BikeRules.Ease(_steerShown, _front.SteerAngle, dt, SteerEase);
-                _body.Steer.localRotation = Quaternion.AngleAxis(_steerShown, _body.SteerAxis);
-            }
-
-            Vector3 forward = transform.forward;
-            if (Def.Bicycle)
-            {
-                bool stopped = _seated != null && _riding == BikeRules.Pose.Stand;
-                if (stopped)
-                {
-                    // Standing astride with the left foot down: the clip has the right foot on its pedal, forward and
-                    // level, so the cranks are brought round to there (backwards, as one does on a freewheel) and the
-                    // legs are handed to the clip.
-                    if (_crank != 0f)
-                    {
-                        _crank = Mathf.MoveTowards(_crank, _crank > Mathf.PI ? Mathf.PI * 2f : 0f, CrankHome * dt);
-                        if (_crank >= Mathf.PI * 2f)
-                        {
-                            _crank = 0f;
-                        }
-                        _body.Pedals(Def, _crank);
-                    }
-                }
-                else if (pushing && speed > 0.3f)
-                {
-                    _crank = Mathf.Repeat(_crank - speed * CadencePerMetre * dt, Mathf.PI * 2f);   // the top of the stroke goes forwards
-                    _body.Pedals(Def, _crank);
-                }
-                _legs = Mathf.MoveTowards(_legs, stopped ? 0f : 1f, dt / LegsFade);
-                if (_legs > 0f && _footL != null && _footR != null)
-                {
-                    float weight = BikeRules.Smooth(_legs);   // eased in and out: the feet leave and reach the pedals without a jolt
-                    Vector3 up = transform.up * AnkleAbovePedal - forward * 0.03f;
-                    LegIk.Solve(_thighR, _shinR, _footR, transform.TransformPoint(BikeBody.PedalAt(Def, _crank, 1f)) + up, forward, weight);
-                    LegIk.Solve(_thighL, _shinL, _footL, transform.TransformPoint(BikeBody.PedalAt(Def, _crank + Mathf.PI, -1f)) + up, forward, weight);
-                }
-            }
-            else if (_seated == null && _footL != null && _footR != null)
-            {
-                Vector3 right = transform.right;
-                Vector3 up = transform.up * AnkleAbovePedal;
-                LegIk.Solve(_thighR, _shinR, _footR, transform.TransformPoint(new Vector3(Def.Peg.x, Def.Peg.y, Def.Peg.z)) + up, forward + right * 0.25f);
-                LegIk.Solve(_thighL, _shinL, _footL, transform.TransformPoint(new Vector3(-Def.Peg.x, Def.Peg.y, Def.Peg.z)) + up, forward - right * 0.25f);
-            }
-
-            if (_helmet != null && _head != null && _player != null)
-            {
-                // On the head, turn and all: the helmet's pivot is the Head bone, and it turns with the bone
-                // (by the bone's own axes made square to the character: see HeadSquare).
-                _helmet.transform.SetPositionAndRotation(_head.position, _headKnown ? _head.rotation * _headSquare : _player.rotation);
-            }
-        }
-    }
-
-    /// <summary>
-    /// A leg put on a point after the animation: the thigh and shin are turned so that the ankle is on
-    /// the target with the knee towards a given side. Unlike CityLife's TwoBoneReach (made for arms that
-    /// are already bent the right way) this decides the bend itself: a standing leg is straight.
-    /// </summary>
-    public static class LegIk
-    {
-        /// <summary>weight: 1 puts the ankle on the target; less leaves that much of the pose the animation gave the leg.</summary>
-        public static void Solve(Transform thigh, Transform shin, Transform foot, Vector3 target, Vector3 kneeTowards, float weight = 1f)
-        {
-            if (thigh == null || shin == null || foot == null)
-            {
-                return;
-            }
-            Vector3 hip = thigh.position;
-            float upper = (shin.position - hip).magnitude;
-            float lower = (foot.position - shin.position).magnitude;
-            if (upper < 0.01f || lower < 0.01f)
-            {
-                return;
-            }
-            Quaternion footTurn = foot.rotation;
-            Quaternion thighWas = thigh.localRotation, shinWas = shin.localRotation;
-            Vector3 to = target - hip;
-            float reach = Mathf.Clamp(to.magnitude, Mathf.Abs(upper - lower) + 0.01f, upper + lower - 0.005f);
-            Vector3 along = to.sqrMagnitude > 1e-6f ? to.normalized : Vector3.down;
-            Vector3 side = kneeTowards - along * Vector3.Dot(kneeTowards, along);
-            if (side.sqrMagnitude < 1e-6f)
-            {
-                return;
-            }
-            side.Normalize();
-            float cos = Mathf.Clamp((upper * upper + reach * reach - lower * lower) / (2f * upper * reach), -1f, 1f);
-            Vector3 knee = hip + along * (upper * cos) + side * (upper * Mathf.Sqrt(1f - cos * cos));
-            thigh.rotation = Quaternion.FromToRotation(shin.position - hip, knee - hip) * thigh.rotation;
-            Vector3 ankle = hip + along * reach;
-            shin.rotation = Quaternion.FromToRotation(foot.position - shin.position, ankle - shin.position) * shin.rotation;
-            if (weight < 1f)
-            {
-                thigh.localRotation = Quaternion.Slerp(thighWas, thigh.localRotation, weight);
-                shin.localRotation = Quaternion.Slerp(shinWas, shin.localRotation, weight);
-            }
-            foot.rotation = footTurn;   // the foot stays as flat as the animation had it
         }
     }
 }

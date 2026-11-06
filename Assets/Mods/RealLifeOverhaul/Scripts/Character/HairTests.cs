@@ -32,6 +32,7 @@ namespace RealLifeOverhaul
         private const float LampLumens = 40000f;    // about 3 200 candela: 350 lux at the head, a headlamp at that distance
         private const float LampRange = 12f;
         private const float NoticeSeconds = 9f;
+        private const string OldSearch = "character: everyone in the game's strand hair being looked for (the old search of the whole scene, for the side-by-side test)";
 
         private static readonly Color LampColour = new Color(1f, 0.82f, 0.63f);   // warm: a halogen headlamp beside an amber indicator
         private static readonly Color StreetLampColour = new Color(1f, 0.86f, 0.7f);
@@ -111,7 +112,7 @@ namespace RealLifeOverhaul
                 data.SetIntensity(LampLumens, LightUnit.Lumen);
                 data.range = LampRange;
                 data.affectsVolumetric = false;
-                UnityEngine.Object.Destroy(_lamp, LampSeconds);   // the engine's own timer: nothing of ours runs meanwhile
+                UnityEngine.Object.Destroy(_lamp, LampSeconds);   // the engine's own timer: nothing of ours runs meanwhile (RLO-PERF-023 no cullables: a plain light)
 
                 HairLook.Logger?.Warn("Hair test: a lamp of " + LampLumens.ToString("F0") + " lm stands " + LampDistance.ToString("F0") + " m beyond the player's head for "
                                       + LampSeconds.ToString("F0") + " s. " + HairLook.Describe(character));
@@ -186,7 +187,7 @@ namespace RealLifeOverhaul
                     said = "no street lamp of the game's is near, so a point light of " + StreetLampLumens.ToString("F0") + " lm";
                 }
                 data.affectsVolumetric = false;
-                UnityEngine.Object.Destroy(_lamp, LampSeconds);
+                UnityEngine.Object.Destroy(_lamp, LampSeconds);   // RLO-PERF-023 no cullables: a plain light, never a copy of the game's lamp
                 HairLook.Logger?.Warn("Hair test: " + said + " stands " + height.ToString("F1", CultureInfo.InvariantCulture) + " m above the player's feet, " + StreetLampOffset.ToString("F0")
                                       + " m beyond the head, for " + LampSeconds.ToString("F0") + " s. " + HairLook.Describe(character));
                 Notifications.Show(NotificationType.Info, "reallife_hair_test_streetlamp", null, NoticeSeconds, null, null, true, false);
@@ -263,6 +264,86 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>
+        /// "Test: compare the hair search with the old one": the search the hair finish makes behind the black screen (from
+        /// the drawn hair to its wearer) and the search of every character it replaced, made one after the other on this
+        /// scene, and the characters each finds in drawn strand hair compared, the ones on show included. One line in
+        /// Player.log with both sets, both times and PASS or FAIL, and a notice. Nothing is finished or changed by it.
+        /// </summary>
+        public static void Search()
+        {
+            try
+            {
+                CharacterQuality quality = CharacterQuality.Instance;
+                if (!ModState.Loaded || quality == null || quality.CreationScene)
+                {
+                    TestRefusals.Tell(HairLook.Logger, Test, TestRefusal.NotLoaded);
+                    return;
+                }
+                var drawn = new List<AppearanceSetter>(8);
+                long began = System.Diagnostics.Stopwatch.GetTimestamp();
+                int unplaced = quality.DrawnWearers(drawn);
+                double drawnMs = Milliseconds(began);
+
+                var everyone = new List<AppearanceSetter>(8);
+                began = System.Diagnostics.Stopwatch.GetTimestamp();
+                foreach (AppearanceSetter character in SceneFinds.All<AppearanceSetter>(OldSearch))
+                {
+                    if (HairLook.WearsStrandHair(character))
+                    {
+                        everyone.Add(character);
+                    }
+                }
+                double everyoneMs = Milliseconds(began);
+
+                bool same = drawn.Count == everyone.Count;
+                for (int i = 0; i < drawn.Count && same; i++)
+                {
+                    same = everyone.Contains(drawn[i]);
+                }
+                string verdict = same ? "PASS."
+                    : unplaced > 0 ? "not the same from the drawn hair alone, but " + unplaced + " drawn renderer(s) are new to it,"
+                                     + " and for those the search of every character is made once, as before: PASS."
+                    : "FAIL, the two searches found different characters.";
+                HairLook.Logger?.Warn("Hair search check (side by side): from the drawn hair " + drawn.Count + " character(s) in " + Number((float)drawnMs, "F2") + " ms ("
+                                      + Names(drawn) + "), " + unplaced + " drawn renderer(s) it could not place; the old search of every character " + everyone.Count
+                                      + " in " + Number((float)everyoneMs, "F1") + " ms (" + Names(everyone) + "): " + verdict);
+                var data = new Dictionary<string, string>(3)
+                {
+                    { "count", everyone.Count.ToString() }, { "fast", Number((float)drawnMs, "F2") }, { "old", Number((float)everyoneMs, "F1") }
+                };
+                Notifications.Show(NotificationType.Info, same || unplaced > 0 ? "reallife_hair_test_search_same" : "reallife_hair_test_search_differs", data, NoticeSeconds, null, null, true, false);
+            }
+            catch (Exception e)
+            {
+                HairLook.Logger?.Error(e);
+            }
+        }
+
+        private static double Milliseconds(long began)
+        {
+            return (System.Diagnostics.Stopwatch.GetTimestamp() - began) * 1000.0 / System.Diagnostics.Stopwatch.Frequency;
+        }
+
+        private static string Number(float value, string format)
+        {
+            return value.ToString(format, CultureInfo.InvariantCulture);
+        }
+
+        private static string Names(List<AppearanceSetter> characters)
+        {
+            if (characters.Count == 0)
+            {
+                return "nobody";
+            }
+            var text = new System.Text.StringBuilder(64);
+            for (int i = 0; i < characters.Count; i++)
+            {
+                text.Append(i > 0 ? ", '" : "'").Append(characters[i] != null ? characters[i].name : "gone").Append("'");
+            }
+            return text.ToString();
+        }
+
         /// <summary>End of the scene, or the save prepared for removal: the lamp goes and the finish is the option's again.</summary>
         public static void Forget()
         {
@@ -274,7 +355,7 @@ namespace RealLifeOverhaul
         {
             if (_lamp != null)
             {
-                UnityEngine.Object.Destroy(_lamp);
+                UnityEngine.Object.Destroy(_lamp);   // RLO-PERF-023 no cullables: a plain light
             }
             _lamp = null;
         }

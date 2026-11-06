@@ -138,14 +138,8 @@ namespace RealLifeOverhaul
             // will stop there is nothing to gain by pulling out. Otherwise the lanes either side are
             // looked at, but not at every glance: finding a lane means asking the road.
             bool look = MayPass && !_reverse && !_pulledOver && _targetOffset == 0f && Mathf.Abs(_offset) < 0.3f && Time.time >= _nextPassLook && HasRoomToPass(goalSqr);
-            if (look && CanPass(middle, forward, roadRight, -PassOffset))
+            if (look && TryPass(middle, forward, roadRight))
             {
-                _targetOffset = -PassOffset;   // on the left
-                Unblock();
-            }
-            else if (look && CanPass(middle, forward, roadRight, PassOffset))
-            {
-                _targetOffset = PassOffset;
                 Unblock();
             }
             else
@@ -192,23 +186,6 @@ namespace RealLifeOverhaul
             return goalSqr > near * near;
         }
 
-        // A pass is only ever into a lane of the road: a road point where it would run, and nothing in it.
-        private bool CanPass(Vector3 middle, Vector3 forward, Vector3 roadRight, float offset)
-        {
-            Vector3 beside = middle + roadRight * offset;
-            Vector3 lane = beside + forward * (_car.length * 0.5f + 6f) - Vector3.up * SenseHeight;
-            if (IsBlocked(beside, forward))
-            {
-                return false;
-            }
-            if (_gridLanes && RoadMap.Usable)
-            {
-                // The squares of RoadMap's grid round the place: a handful of points, whatever the lane; the call below finds the nearest lane point.
-                return RoadMap.NearestLane(lane, out float off, out _, out _) && off < LaneSnap;
-            }
-            return TrafficManager.HasInstance && TrafficTools.ClosestWaypoint(lane, LaneSnap) != null;
-        }
-
         private bool IsBlocked(Vector3 origin, Vector3 direction)
         {
             return Physics.CheckSphere(origin, _halfWidth + SenseMargin, Mask, QueryTriggerInteraction.Ignore)
@@ -219,6 +196,10 @@ namespace RealLifeOverhaul
         private float FreeAhead(Vector3 origin, Vector3 direction, bool beside, out Rigidbody blocker)
         {
             blocker = null;
+            if (!beside)
+            {
+                _aheadHit = null;   // set again below if the look finds something with a collider
+            }
             float halfLength = _car.length * 0.5f;
             // From a fast drive's speeds, as far as it takes to stop and a little over; a careless driver takes in only a share.
             float reach = halfLength + Mathf.Max(SenseDistance + Mathf.Max(0f, _speed - DefaultCruiseSpeed), _speed * _speed / (2f * Slowing) * 1.15f + StopGap + 4f) * _foresight;
@@ -248,6 +229,10 @@ namespace RealLifeOverhaul
                     {
                         nearest = seen.distance;
                         blocker = seen.rigidbody;
+                        if (!beside)
+                        {
+                            _aheadHit = seen.collider;
+                        }
                     }
                 }
                 if (nearest < float.MaxValue)
@@ -275,6 +260,10 @@ namespace RealLifeOverhaul
                 else if (found && (_target == null || hit.rigidbody != _target))
                 {
                     blocker = hit.rigidbody;
+                    if (!beside)
+                    {
+                        _aheadHit = hit.collider;
+                    }
                     free = Mathf.Max(0f, travelled + halfWidth * 0.5f - halfLength);
                     onFoot = hit.collider != null && ((1 << hit.collider.gameObject.layer) & TrafficTools.PeopleMask) != 0;
                 }
@@ -290,6 +279,10 @@ namespace RealLifeOverhaul
                 {
                     free = room;
                     blocker = null;
+                    if (!beside)
+                    {
+                        _aheadHit = null;
+                    }
                     onFoot = true;
                 }
             }

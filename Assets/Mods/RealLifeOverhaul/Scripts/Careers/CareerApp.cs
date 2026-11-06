@@ -12,14 +12,15 @@ namespace RealLifeOverhaul.Careers
     public sealed partial class CareerApp
     {
         public const string OpeningRow = "post:", ApplicationRow = "app:", ProfessionRow = "prof:";
-        private const string DayRow = "day:", SpellRow = "spell:", QualRow = "qual:";
+        private const string DayRow = "day:", SpellRow = "spell:", QualRow = "qual:", OlderApplicationRow = "appx:";
+        private readonly System.Collections.Generic.HashSet<int> _seenPosts = new System.Collections.Generic.HashSet<int>();
         // The Guide's pages the tabs point to at their foot: finding a job, the working life, working for yourself.
         private const string JobsGuide = "reallife_meta_title_careers_jobs", LifeGuide = "reallife_meta_title_careers_life", OwnGuide = "reallife_meta_title_careers_own";
 
         private static readonly string[] TabKeys =
         {
             "reallife_career_tab_start", "reallife_career_tab_jobs", "reallife_career_tab_applications", "reallife_career_tab_job", "reallife_career_tab_cv",
-            "reallife_career_tab_own"
+            "reallife_career_tab_own", "reallife_career_tab_ladder"
         };
 
         private readonly CareersDirector _director;
@@ -148,7 +149,7 @@ namespace RealLifeOverhaul.Careers
                 else
                 {
                     UiClone.Words(_shell.Header, w.Job != null
-                        ? CareersText.T("reallife_career_head_job", "title", CareersText.Title(w.Job.Post.Prof, w.Job.Post.Rank), "employer", CareersText.Employer(w.Job.Post.Employer))
+                        ? CareersText.T("reallife_career_head_job", "title", _director.JobTitle(w.Job), "employer", CareersText.Employer(w.Job.Post.Employer))
                         : CareersText.T("reallife_career_head_none"));
                     int day = SaveGameManager.Current.Day;
                     switch (_tab)
@@ -158,6 +159,7 @@ namespace RealLifeOverhaul.Careers
                         case CareersDirector.TabJob: table = WriteJob(box, w, day); break;
                         case CareersDirector.TabCv: table = WriteCv(box, w, f, day); break;
                         case CareersDirector.TabOwn: table = WriteOwn(box, w, f, day); break;
+                        case CareersDirector.TabLadder: table = WriteLadder(box, w, day); break;
                         default: table = WriteJobs(box, w, f, day); break;
                     }
                 }
@@ -238,11 +240,15 @@ namespace RealLifeOverhaul.Careers
         private TableSpec WriteApplications(InfoBox box, WorkFile w, int day)
         {
             Application picked = null;
-            int id = PickedId(_picked, ApplicationRow), offers = 0;
+            int id = PickedId(_picked, ApplicationRow), older = PickedId(_picked, OlderApplicationRow), offers = 0;
+            // A post applied to again after a withdrawal has two applications: the newest keeps the post's row (notices open
+            // it by the post), an older one gets a row of its own, so a click never lands on the withdrawn one instead.
+            _seenPosts.Clear();
             for (int i = w.Applications.Count - 1; i >= 0; i--)
             {
                 Application a = w.Applications[i];
-                TableRow row = Row(ApplicationRow + a.Post.Id);
+                bool newest = _seenPosts.Add(a.Post.Id);
+                TableRow row = Row(newest ? ApplicationRow + a.Post.Id : OlderApplicationRow + i);
                 row.Set(0, CareersText.Title(a.Post.Prof, a.Post.Rank));
                 row.Set(1, CareersText.Employer(a.Post.Employer));
                 row.Set(2, CareersText.Day(a.Day), a.Day);
@@ -255,7 +261,7 @@ namespace RealLifeOverhaul.Careers
                 row.Set(6, by > 0 ? CareersText.Day(by) : "-", by);
                 row.Set(7, CareersText.Step(a.At), a.Stage == (int)ApplyStep.Offered || interview ? TableRow.Green : a.Live ? TableRow.Plain : TableRow.Yellow);
                 offers += a.Stage == (int)ApplyStep.Offered ? 1 : 0;
-                picked = a.Post.Id == id ? a : picked;
+                picked = (newest && a.Post.Id == id) || (!newest && i == older) ? a : picked;
             }
             if (picked != null)
             {
@@ -337,6 +343,7 @@ namespace RealLifeOverhaul.Careers
                     box.Note(CareersText.T("reallife_career_app_over"));
                     break;
             }
+            MapButton(box.ButtonRow(), () => _director.ShowPost(a.Post));
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "common_close", ClosePick);
             Meta.Guide.Point(box, JobsGuide);
         }
@@ -348,6 +355,10 @@ namespace RealLifeOverhaul.Careers
             if (j == null)
             {
                 box.Title(CareersText.T("reallife_career_job_none_title"));
+                if (ClosureRules.Shown(w, day))
+                {
+                    LaidOffNote(box, w, day);   // who closed, and the way to the open roles at once
+                }
                 box.Note(CareersText.T(w.Retired > 0 ? "reallife_career_job_retired" : "reallife_career_job_none"));
                 NoJobMore(box, w, day);
                 Meta.Guide.Point(box, LifeGuide);
@@ -371,7 +382,7 @@ namespace RealLifeOverhaul.Careers
                     : today ? CareersText.T("reallife_career_row_today") : CareersText.T("reallife_career_row_ahead");
                 row.Set(3, state, today ? TableRow.Green : TableRow.Plain);
             }
-            box.Title(CareersText.Title(j.Post.Prof, j.Post.Rank));
+            box.Title(_director.JobTitle(j));
             box.Subtitle(CareersText.Fill("reallife_ibox_post_sub", "employer", CareersText.Employer(j.Post.Employer), "place", WorkGame.Address(j.Post.Street, j.Post.Number)));
             if (j.NoticeEnd > 0)
             {
@@ -423,7 +434,7 @@ namespace RealLifeOverhaul.Careers
             {
                 InfoBox.Button(buttons, InfoBox.Positive, "reallife_career_button_work", () => Do(_director.StartWorkDay));
             }
-            InfoBox.Button(buttons, InfoBox.Additional, "common_setdestination", () => Do(_director.DeskRoute));
+            MapButton(buttons, _director.ShowWork);
             JobButtons(buttons, j, day);
             Transform leave = box.ButtonRow();
             if (j.NoticeEnd <= 0)

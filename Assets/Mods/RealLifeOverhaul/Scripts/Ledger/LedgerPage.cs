@@ -78,6 +78,10 @@ namespace RealLifeOverhaul.Ledger
             {
                 return;
             }
+            if (!PhoneApp.PhoneUp)
+            {
+                return;   // the game's phone is not built yet: asked again next time, nothing made for it
+            }
             _app = PhoneApp.Install(new PhoneAppDef
             {
                 Id = AppId,

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
+using RealLifeOverhaul.Careers;
 using RealLifeOverhaul.GameUi;
 using UI.Load;
 using UI.Notification;
@@ -81,18 +82,28 @@ namespace RealLifeOverhaul.Economy
         private void Awake()
         {
             Instance = this;
+            GameSprites.Want(AppGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
             _second = EachSecond;
             _onSave = OnSave;
             _onDay = OnDay;
+            _onHour = OnHour;
+            _onCounter = CounterClicked;
             EconomyDirector.Follow(StartSeats.OwnBank, _second);   // its first second after a load waits for its seat (Core/StartLine)
+            EconomyDirector.AfterHour += _onHour;
             EconomyDirector.AfterDay += _onDay;
         }
 
         private void OnDestroy()
         {
             EconomyDirector.Unfollow(_second);
+            EconomyDirector.AfterHour -= _onHour;
             EconomyDirector.AfterDay -= _onDay;
             SaveHook.Drop(_onSave);
+            if (ReferenceEquals(DeskGame.OtherClicked, _onCounter))
+            {
+                DeskGame.OtherTarget = null;
+                DeskGame.OtherClicked = null;
+            }
             if (Instance != this)
             {
                 RemoveApp();
@@ -134,6 +145,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     Install();
                 }
+                BranchSecond();
             }
             catch (Exception e)
             {
@@ -159,6 +171,7 @@ namespace RealLifeOverhaul.Economy
             }
             bank = bank ?? new OwnBank();
             bool mended = OwnBankStore.Mend(bank);
+            Fit(bank);
             OwnBankRules.Resume(bank, save.Day, CatchUpDays);
             _bank = bank;
             _running = true;
@@ -174,6 +187,7 @@ namespace RealLifeOverhaul.Economy
                 _bank.Still = true;   // read back on the next start, so the days off are not run then
                 Write(Save);
             }
+            BranchesDown();
             _running = false;
             RemoveApp();
             Logger?.Info("Own bank: stood down (" + why + "); the bank is kept in the save as it is, nothing is run, booked or charged until it is on again.");
@@ -195,6 +209,7 @@ namespace RealLifeOverhaul.Economy
             Logger?.Error(e);
             try
             {
+                BranchesDown();
                 RemoveApp();
             }
             catch (Exception second)
@@ -207,8 +222,11 @@ namespace RealLifeOverhaul.Economy
 
         private void Install()
         {
+            if (!PhoneApp.PhoneUp)
+            {
+                return;   // the game's phone is not built yet: asked again next time, nothing made for it
+            }
             var view = new OwnBankApp(this);
-            GameSprites.Want(AppGlyphs);
             _app = PhoneApp.Install(new PhoneAppDef
             {
                 Id = AppId,
@@ -266,6 +284,7 @@ namespace RealLifeOverhaul.Economy
                 {
                     RunDay(d, OwnBankGame.City(), true);
                 }
+                TellReady();
                 _view?.Changed();
             }
             catch (Exception e)
@@ -283,7 +302,7 @@ namespace RealLifeOverhaul.Economy
             int month = _bank.Month;
             OwnBankRules.Day(_bank, city, day, market ? _quotes : null, _day);
             BuildingRegistration hq = OwnBankGame.Headquarters();
-            OwnBankGame.BookDay(_day, hq, dated ? day : Save.Day);
+            OwnBankGame.BookDay(_day, hq, _bank.Name, dated ? day : Save.Day);
             if (hq == null && _warnedDay != Save.Day && (_day.Income > 0 || _day.Costs > 0))
             {
                 _warnedDay = Save.Day;
@@ -295,15 +314,20 @@ namespace RealLifeOverhaul.Economy
                 Tell(NotificationType.Info, "reallife_ob_toast_month", TabBank, "deposits", OwnBankText.Money(_bank.Savings), "loans", OwnBankText.Money(_bank.Lent),
                     "profit", OwnBankText.Signed(_bank.LastIncome - _bank.LastCosts), "ratio", OwnBankText.Ratio(OwnBankRules.Ratio(_bank)));
                 Logger?.Info("Own bank: the month turned on day " + day + ": " + Describe() + "; last month's income " + _bank.LastIncome / 100 + ", costs " + _bank.LastCosts / 100
-                             + ", written off " + _bank.LastLost / 100 + "; the last year's profit " + OwnBankRules.YearProfit(_bank) / 100 + ".");
+                             + ", written off " + _bank.LastLost / 100 + ", paid to the owner " + _bank.PaidLast / 100 + "; the last year's profit " + OwnBankRules.YearProfit(_bank) / 100 + ".");
+                TellFull(city);
             }
             if (Verbose)
             {
                 bool balanced = !_bank.Running || OwnBankRules.Balanced(_bank);
+                bool asked = !_bank.Running || (_day.Pay >= 0 && _day.Pay == _bank.PayGiven && _bank.PayGiven <= _bank.PayWanted
+                                                && (_bank.PayGiven == _bank.PayWanted || _bank.PayHeld != BankTiers.PayHeldNone));
                 Logger?.Info("Own bank check (day " + day + "): income " + _day.Income + " and costs " + _day.Costs + " cents booked at " + (hq != null ? OwnBankGame.Name(hq) : "no address")
-                             + " (the day's profit " + _day.Profit + " kept in the capital, so the player's cash is unchanged); " + (market ? _quotes.Count + " quotes" : "no market")
-                             + "; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.00", CultureInfo.InvariantCulture) + " ms; the books "
-                             + (balanced ? "balance: PASS" : "DO NOT BALANCE: FAIL") + ".");
+                             + " as " + _bank.Name + " (the day's profit " + _day.Profit + "; " + _day.Pay + " of " + _bank.PayWanted + " asked paid to the owner"
+                             + (_bank.PayGiven < _bank.PayWanted ? ", held back for " + _bank.PayHeld : string.Empty) + ", " + (_day.Profit - _day.Pay) + " to the capital); "
+                             + (market ? _quotes.Count + " quotes" : "no market") + "; " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.00", CultureInfo.InvariantCulture)
+                             + " ms; the books " + (balanced && asked ? "balance and the pay is what was asked or says why not: PASS"
+                                 : !balanced ? "DO NOT BALANCE: FAIL" : "PAY NOT AS ASKED: FAIL") + ".");
             }
         }
 
@@ -354,7 +378,7 @@ namespace RealLifeOverhaul.Economy
             {
                 if (_day.WoundUp > 0)
                 {
-                    OwnBankGame.Give(_day.WoundUp, OwnBankCatalogue.SaleKey, hq);
+                    OwnBankGame.Give(_day.WoundUp, OwnBankCatalogue.SaleKey, hq, name);
                 }
                 string key = OwnBankText.WhyKey(_day.Why);
                 Tell(NotificationType.Error, "reallife_ob_toast_closed", TabBank, "bank", name, "why", OwnBankText.T(key), "left", OwnBankText.Money(_day.WoundUp));
@@ -397,8 +421,9 @@ namespace RealLifeOverhaul.Economy
         }
 
         /// <summary>
-        /// The bank founded with the least capital, the licence and the capital paid from the player's cash. False with a
-        /// reason key if it cannot be, or if either sum is no longer the one the player confirmed.
+        /// The bank founded as a community bank (Economy/OwnBank/Tiers) with that level's least capital, the licence and the
+        /// capital paid from the player's cash. False with a reason key if it cannot be, or if either sum is no longer the one
+        /// the player confirmed.
         /// </summary>
         public bool Found(string name, long licenceAsked, long capitalAsked, out string why)
         {
@@ -418,7 +443,7 @@ namespace RealLifeOverhaul.Economy
                 why = "reallife_ob_why_no_hq";
             }
             int level = Prices.Level, share = EndScaleRules.Buying(Settings.EndScale);
-            long licence = OwnBankRules.Licence(level, share), capital = OwnBankRules.CapitalLeast(level, _bank.Closures, share);
+            long licence = FoundLicence(level, share), capital = FoundCapital(level, _bank.Closures, share);
             if (why == null && (licence != licenceAsked || capital != capitalAsked))
             {
                 why = ChangedKey;   // a day passed under the question: the sums are asked again
@@ -431,23 +456,25 @@ namespace RealLifeOverhaul.Economy
             {
                 return false;
             }
-            if (!OwnBankGame.Pay(licence, OwnBankCatalogue.LicenceKey, hq, GameBooks.Licensing))
+            string named = Named(name, hq);
+            if (!OwnBankGame.Pay(licence, OwnBankCatalogue.LicenceKey, hq, named, GameBooks.Licensing))
             {
                 why = "reallife_ob_why_no_cash";
                 return false;
             }
-            if (!OwnBankGame.Pay(capital, OwnBankCatalogue.CapitalInKey, hq, null))
+            if (!OwnBankGame.Pay(capital, OwnBankCatalogue.CapitalInKey, hq, named, null))
             {
-                OwnBankGame.Give(licence, OwnBankCatalogue.LicenceKey, hq, GameBooks.Licensing);   // the game refused the capital: no bank, so no licence
+                OwnBankGame.Give(licence, OwnBankCatalogue.LicenceKey, hq, named, GameBooks.Licensing);   // the game refused the capital: no bank, so no licence
                 why = "reallife_ob_why_no_cash";
                 return false;
             }
             int today = Save.Day;
-            OwnBankRules.Found(_bank, today, new System.Random().Next(1, int.MaxValue), capital, Named(name, hq));
-            _bank.FoundedLeast = OwnBankRules.LeastAt(share, _bank.Closures);
+            OwnBankRules.Found(_bank, today, new System.Random().Next(1, int.MaxValue), capital, named, BankTiers.Community);
+            _bank.FoundedLeast = OwnBankRules.TierLeastAt(BankTiers.Community, share, _bank.Closures);
             Tell(NotificationType.Success, "reallife_ob_toast_founded", TabBank, "bank", _bank.Name, "capital", OwnBankText.Money(capital));
             Print("reallife_ob_news_founded", "bank", _bank.Name, "place", OwnBankGame.Name(hq));
-            Logger?.Info("Own bank: " + _bank.Name + " founded on day " + today + " at " + OwnBankGame.Name(hq) + ", the licence " + licence / 100 + " and the capital " + capital / 100 + " paid.");
+            Logger?.Info("Own bank: " + _bank.Name + " founded as a community bank on day " + today + " at " + OwnBankGame.Name(hq) + ", the licence " + licence / 100 + " and the capital "
+                         + capital / 100 + " paid.");
             Changed();
             return true;
         }
@@ -481,7 +508,7 @@ namespace RealLifeOverhaul.Economy
             {
                 why = "reallife_ob_why_no_cash";
             }
-            if (why != null || !OwnBankGame.Pay(cents, OwnBankCatalogue.CapitalInKey, OwnBankGame.Headquarters(), null))
+            if (why != null || !OwnBankGame.Pay(cents, OwnBankCatalogue.CapitalInKey, OwnBankGame.Headquarters(), _bank.Name, null))
             {
                 why = why ?? "reallife_ob_why_no_cash";
                 return false;
@@ -506,7 +533,7 @@ namespace RealLifeOverhaul.Economy
             {
                 return false;
             }
-            OwnBankGame.Give(cents, OwnBankCatalogue.CapitalOutKey, OwnBankGame.Headquarters());
+            OwnBankGame.Give(cents, OwnBankCatalogue.CapitalOutKey, OwnBankGame.Headquarters(), _bank.Name);
             Tell(NotificationType.Success, "reallife_ob_toast_dividend", TabBank, "amount", OwnBankText.Money(cents));
             Logger?.Info("Own bank: a dividend of " + cents / 100 + " taken on day " + Save.Day + "; the ratio is " + OwnBankRules.Ratio(_bank) + " thousandths.");
             Changed();
@@ -527,7 +554,7 @@ namespace RealLifeOverhaul.Economy
             }
             string name = _bank.Name;
             long price = OwnBankRules.Sell(_bank, Save.Day);
-            OwnBankGame.Give(price, OwnBankCatalogue.SaleKey, OwnBankGame.Headquarters());
+            OwnBankGame.Give(price, OwnBankCatalogue.SaleKey, OwnBankGame.Headquarters(), name);
             Tell(NotificationType.Success, "reallife_ob_toast_sold", TabBank, "bank", name, "price", OwnBankText.Money(price));
             Print("reallife_ob_news_sold", "bank", name, "price", OwnBankText.Money(price));
             Logger?.Info("Own bank: " + name + " sold on day " + Save.Day + " for " + price / 100 + ".");
@@ -642,7 +669,8 @@ namespace RealLifeOverhaul.Economy
             {
                 return b.Name + " (" + b.State + " on day " + b.EndDay + (b.Why != ClosedWhy.None ? ", " + b.Why : string.Empty) + ")";
             }
-            return b.Name + " founded on day " + b.FoundedDay + ": deposits " + b.Savings / 100 + ", loans " + b.Lent / 100 + ", arrears " + b.InArrears / 100 + ", the fund "
+            return b.Name + ", a " + TierWord(b.Tier) + " bank founded on day " + b.FoundedDay + ": deposits " + b.Savings / 100 + ", loans " + b.Lent / 100
+                   + ", arrears " + b.InArrears / 100 + ", the fund "
                    + b.FundValue / 100 + " in " + b.Holdings.Count + " companies, reserves " + b.Reserves / 100 + ", capital " + b.Capital / 100 + ", ratio " + OwnBankRules.Ratio(b)
                    + " thousandths, " + b.Stage + (b.Run ? ", in a run" : string.Empty) + (b.Test ? ", founded by a test" : string.Empty);
         }

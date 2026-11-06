@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -50,14 +50,17 @@ internal static partial class Program
         Polish();
         Hitch();
         Hair();
+        HairWearersChecks();
         Solid();
         Crew(Array.IndexOf(args, "--crew") >= 0);
         CarExit();
+        TestStall();   // the school's car that will not move: mended, then the drive called off; the examiner who never boards; time stopped (TestStallCheck.cs)
         Station();
         StationFurnish();   // a station's walkway rule walked once with the same answers, timed, and where the furnishing runs (StationFurnishCheck.cs)
         Tow();
         TechSites();
         OfficeConversions();
+        DrivingOfficeFixes();   // the car tuning on the player's own car only, the rivals' list changed only where the mod added to it (DrivingFixCheck.cs)
         FrontSigns();
         Fits();
         FitPresets();
@@ -70,21 +73,44 @@ internal static partial class Program
         PointGrids();
         TestRoutes();   // the driving school's route: planned round lanes an accident has closed, and what the player is told (TestRouteCheck.cs)
         LoadPace();
+        DayWarms();      // the mod's code for the game's midnight compiled ahead: what the walk takes in, sliced as whole, the budget (DayWarmCheck.cs)
         AppsSources();   // the phone apps: panels built when first opened, the box's parts kept, tables written as they scroll (AppsCheck.cs)
+        PhoneInstalls(); // the phone apps go on one a frame in their order, the phones' names read once, the pages laid out once (PhoneInstallCheck.cs)
         Cordons();       // who is inside a cordon's tape and where they are put outside it, and every cordon running that rule (CordonCheck.cs)
         MapRows();       // the mod's places on the city map: a row and an icon for every kind, a row of its own for every claimed building, nothing before the map can take it (MapRowCheck.cs)
         CameraYields();  // when the mod's camera stands aside for the game's own camera moments and what it gives back, the highway's bridges among them (CameraYieldCheck.cs)
         Bikes();         // bicycles and motorbikes: the pull-away, the pose, the lean, the boxes the world meets, and their names (BikeCheck.cs)
         LeisureReaches(); // leisure's reaches in metres against squares of flat distances, and every such comparison in the sources (LeisureReachCheck.cs)
+        TableSeats();     // the chess players face the board's centre from either stool, and are kept so once a second (TableSeatCheck.cs)
         StationReaches(); // a police station's door and desk: from the doorstep, as the game's own door, never from the road; JobSpots.Flat never squared (StationReachCheck.cs)
         MeshCutLabels();  // what the session record names as the mod's last change to the walking mesh: a constant text that says where (MeshCutCheck.cs)
         Drivers();        // the city's drivers against a model of the game's own traffic, and the officer's wave-through (DriverCheck.cs)
         PanelPicks();     // who has the game's one panel box near two places, the key to what it shows, and every panel through that rule (PanelPickCheck.cs)
+        PanelEdges();     // a job's panel over a place out of the picture waits at the screen's edge toward it, never off the screen (PanelEdgeCheck.cs)
         CarSounds();      // the recorded car sounds: the crossfade, the parts, every clip shipped and licensed, every way back to the game's sound (CarSoundCheck.cs)
         CarContactChecks(); // when a contact of the player's car is a hit: never the road under a braking van, a kerb or its load; every collision judged so (CarContactCheck.cs)
         Handling(Array.IndexOf(args, "--handling") >= 0);   // the driven car's handling on the game's own cars, with the Garage's builds, and its sources (HandlingCheck.cs)
+        Tunings();        // car tuning: the gear change parts on the model, the build line, the figures page, the sale and its sources (TuningCheck.cs)
+        CarSpread();      // the driven car's sums a step at a time: the same as whole, each step short, the frames they are spread over (CarSpreadCheck.cs)
+
         Walks();          // walking on a key: the toggle, the walk over the game's own pace frame by frame, its cycle, and its sources (WalkCheck.cs)
         Washes();         // the game's car wash in a repair bay never holding a car for good, and every way out of the custom shop (WashCheck.cs)
+        BusStopLooks();   // a bus stop whose model is missing or unfit still stands, is clickable and says why (BusStopLookCheck.cs)
+        Culling();        // the mod's own things drawn by distance: the game's bands, what may and may not be culled, the group's slots (CullCheck.cs)
+        SceneryCulls();   // the game's culling lists kept free of what the mod destroys: one pass, the group's spheres in step, the unload line (SceneryCullCheck.cs)
+        MapChecksVerdict(); // the map check's verdict: a camera not as before the map fails it, an opening while the last one shut keeps the first's (MapCheckCheck.cs)
+        Bounces();        // the bounce watch still catches a bounce while moving traffic is looked at a fifth as often (BounceCheck.cs)
+        TrafficMends();   // the game's traffic that stopped adding cars for good told from its log and given a new density manager (TrafficMendCheck.cs)
+        RenderLevels();   // the performance section's picture settings: the game's own until moved, their limits, the trials (RenderLevelCheck.cs)
+        FlareHours();     // Flare's hour a step a frame, in its order, finished first by the save and the day (FlareHourCheck.cs)
+        SlowSpots();      // the interact key's flags only on a press, the bus zones' parking laid out a lane a tick (SlowSpotCheck.cs)
+        Wraps();          // the game's scaffolding round a building and a new plot's stages: layout, doors, stages, pace, the fade link (WrapCheck.cs)
+        NewGrounds();     // new ground: the road generator never off the grid, the walking rules and lines, and the sources (NewGroundCheck.cs)
+        Uptowns(Array.IndexOf(args, "--uptown") >= 0);   // Uptown's ground: the band's lots, the first block's streets through 1st Avenue, its walking ground (UptownCheck.cs)
+        UptownStreets(Array.IndexOf(args, "--uptown") >= 0);  // Uptown's streets: its buses' two routes and their reach over every block, its street furniture at Manhattan's spacing (UptownStreetsCheck.cs)
+        UptownParks(Array.IndexOf(args, "--parks") >= 0);    // Uptown's parks: laid in their squares, walked end to end, the search for the game's pieces, the sources and the texts (UptownParksCheck.cs)
+        GroundSurveys();  // "What is this ground?": the bare blocks, every lot read back as itself, the streets, the game's own city, the sources, the texts (GroundSurveyCheck.cs)
+        HotSpotsFull();   // last of all: the session record's names once all are given, "others" a slot of its own (HotSpotsFullCheck.cs)
         if (Array.IndexOf(args, "--sites") >= 0)
         {
             DrawSites();

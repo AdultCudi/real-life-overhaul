@@ -6,28 +6,21 @@ using UnityEngine;
 namespace RealLifeOverhaul.Utilities
 {
     /// <summary>
-    /// The city's utilities office (City Light and Power and Riverside Water): at 13 7th Street, Midtown, the same in every
-    /// game (Core/CityReserves, Core/CivicHost: an ordinary residential building, none of the game's own, that no business
-    /// of the city's or a rival's can ever use, reserved for it and refused to the player). Its desk is at the door, spoken
-    /// to standing on the pavement in front of it, as the university is at the school's door: the game lets nobody into a
-    /// residential building that is not their home, so it has no floor to furnish. Its name is on the building's card and
-    /// lit on the game's sign holders where the building has any (Core/FrontSigns), and it lights up on the city map in its
-    /// own row (World/MapLinks).
-    ///
-    /// In an older game where a player rents or owns 13 7th Street it stands meanwhile at the smallest other free
-    /// residential building of Midtown, and moves back for good once 13 7th Street is free. Never a
-    /// building of the game's own, never one the player rents or owns (it moves off one that becomes theirs). Before, it
-    /// took the city's largest office building, 17 7th Street: nothing of the mod is left there (the sign, the name and the
-    /// furnished floor were never saved), and it is the player's to rent or buy as the game has it. A move since the save
-    /// was made is told once (Core/PlaceMoves); accounts are kept by account, not address. Looked for once per city load,
-    /// then a few reads every five seconds; nothing here runs by itself.
+    /// The city's utilities office at 13 7th Street, Midtown (Core/CityReserves), its desk at the door; meanwhile elsewhere
+    /// while a player holds it, and nowhere while every building that could hold it is a player's (the app takes the
+    /// desk's work by phone then: <see cref="ByPhone"/>). Looked for once a city load, then a few reads every five
+    /// seconds, and one walk over the city every half minute while there is no office.
     /// </summary>
     public sealed class UtilitiesOffice
     {
         private const float ReachAtDoor = 2.4f;     // metres: how near the door front the player must be to speak to the desk
+        private const int LookAgainSeconds = 30;    // seconds between searches while no building can hold it: a building let go is found within half a minute, one walk over the city each time
 
         private readonly IModLogger _logger;
         private bool _failed;
+        private bool _usable;
+        private bool _held;     // a test holds the office away, as if no building could hold it
+        private bool _none;     // the last search found no building: told once, looked for again, and quiet about the move when found
         private int _look;
 
         public UtilitiesOffice(IModLogger logger)
@@ -35,11 +28,22 @@ namespace RealLifeOverhaul.Utilities
             _logger = logger;
         }
 
-        /// <summary>True once the search is over, whatever it found.</summary>
         public bool Searched { get; private set; }
 
-        /// <summary>True if there is a desk to speak to in person.</summary>
-        public bool Usable { get; private set; }
+        /// <summary>True while the desk can be visited.</summary>
+        public bool Usable => _usable && !_held;
+
+        /// <summary>
+        /// True while there is no desk to visit (no building could hold it, no pavement at its door, it failed, or a test
+        /// holds it away): accounts are applied for and reconnected in the app, by phone, on the desk's rules.
+        /// </summary>
+        public bool ByPhone => !Usable;
+
+        /// <summary>Test: the office held away (true), as if every building that could hold it were a player's, or given back.</summary>
+        public void Hold(bool away)
+        {
+            _held = away;
+        }
 
         /// <summary>Where the player stands to speak to the desk: in front of the door.</summary>
         public Vector3 Front { get; private set; }
@@ -63,27 +67,32 @@ namespace RealLifeOverhaul.Utilities
         /// <summary>Changes each time the office is chosen (for the map).</summary>
         public int Moves { get; private set; }
 
-        /// <summary>
-        /// Once a second: until <see cref="Searched"/>, finds the building; after that, every five seconds, an office whose
-        /// building has become the player's (another player's in a session) moves off it, and one standing meanwhile moves
-        /// back to 13 7th Street once that is free.
-        /// </summary>
+        /// <summary>Once a second: finds the building; then every five seconds moves off one a player took, or back home.</summary>
         public void Tick()
         {
             if (_failed)
             {
                 return;
             }
-            if (Searched)
+            if (Searched && Building == null)
             {
-                if (Building != null && ++_look >= 5)
+                if (++_look < LookAgainSeconds)
+                {
+                    return;
+                }
+                _look = 0;   // and looked for again below: a building may have been let go
+            }
+            else if (Searched)
+            {
+                if (++_look >= 5)
                 {
                     _look = 0;
                     CityManager now = InstanceBehavior<CityManager>.Instance;
-                    bool back = !CivicHost.IsFixed(Building) && now != null && CivicHost.FixedServes(now.cityBuildingControllers);
+                    bool back = !CivicHost.IsFixed(Building) && now != null && CivicHost.FixedServes(GameDlc.Open(now));
                     if (SpecialBuildings.Players(Building) || back)
                     {
-                        _logger?.Info("Utilities: the office's building, " + Name + (back ? ", was meanwhile: 13 7th Street is free again; the office moves back for good." : ", is the player's; the office moves to another."));
+                        _logger?.Info("Utilities: the office's building, " + Name
+                                      + (back ? ", was meanwhile: 13 7th Street is free again; the office moves back for good." : ", is the player's; the office moves to another."));
                         Dispose();
                         Building = null;
                         Name = string.Empty;
@@ -95,7 +104,7 @@ namespace RealLifeOverhaul.Utilities
             try
             {
                 CityManager city = InstanceBehavior<CityManager>.Instance;
-                CityBuildingController[] buildings = city != null ? city.cityBuildingControllers : null;
+                CityBuildingController[] buildings = GameDlc.Open(city);
                 if (buildings == null || buildings.Length == 0)
                 {
                     return;
@@ -104,20 +113,28 @@ namespace RealLifeOverhaul.Utilities
                 Searched = true;
                 if (picked == null)
                 {
-                    _logger?.Warn("Utilities: no building could serve as the office; accounts are applied for by phone (the Utilities app) instead.");
+                    if (!_none)
+                    {
+                        _none = true;
+                        _logger?.Warn("Utilities: no building could serve as the office; accounts are applied for by phone (the Utilities app) instead, and the office is looked for again every "
+                                      + LookAgainSeconds + " s.");
+                    }
                     return;
                 }
+                // back after a spell with no office: the director tells the player the desk is open again, so the move is not told twice
+                bool back = _none;
+                _none = false;
+                _look = 0;
                 Building = picked;
                 Moves++;
                 Name = picked.building.Address.ToFormattedString();
                 if (JobSpots.Front(picked, out Vector3 door))
                 {
                     Front = door;
-                    Usable = true;
-                    // Its own name wherever the game names the building (Core/SpecialBuildings), lit on the game's sign holders where it has any (Core/FrontSigns).
+                    _usable = true;
                     SpecialBuildings.Set(CityReserves.UtilitiesId, picked, SpecialKind.Civic, "reallife_util_desk_title", "reallife_util_card_type", () => Settings.Utilities);
                     PlaceMoves.Chosen(CityReserves.UtilitiesKey, UtilitiesStore.Key, CityReserves.OldUtilities, picked.building.Address.streetName, picked.building.Address.streetNumber, Name,
-                        "reallife_util_note_moved", "Utilities: the office", _logger);
+                        "reallife_util_note_moved", "Utilities: the office", _logger, !back);
                 }
                 Meta.Dev.Always(_logger, "Utilities: the office is inside " + Name + " (" + (fixedOne ? "its permanent building" : "meanwhile: 13 7th Street is a player's") + "; "
                                          + picked.building.totalSqm + " sqm); " + (Usable ? "the desk is at the door." : "no pavement at its door: accounts are applied for in the app."));
@@ -126,7 +143,7 @@ namespace RealLifeOverhaul.Utilities
             {
                 _failed = true;
                 Searched = true;
-                Usable = false;
+                _usable = false;
                 _logger?.Error(e);
                 _logger?.Warn("Utilities: the office could not be set up after the error above; accounts are applied for in the app.");
             }
@@ -138,7 +155,7 @@ namespace RealLifeOverhaul.Utilities
             {
                 SpecialBuildings.Remove(CityReserves.UtilitiesId);
             }
-            Usable = false;
+            _usable = false;
         }
     }
 }

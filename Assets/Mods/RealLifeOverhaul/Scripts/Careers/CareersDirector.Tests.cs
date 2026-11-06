@@ -1,4 +1,7 @@
 using System;
+using System.Collections;
+using PlayerActivity;
+using UI.Elements;
 using UI.Notification;
 
 namespace RealLifeOverhaul.Careers
@@ -192,6 +195,106 @@ namespace RealLifeOverhaul.Careers
             return j;
         }
 
+        /// <summary>
+        /// A job now at the business at an address, for another feature's test (Uptown's offices, through the wiring): the
+        /// first rung of the first profession of the catalogue its type employs that the player could hold now, else of the
+        /// first it employs at all, worked on site, as if the interview had gone well. A job held elsewhere ends first as a
+        /// resignation (on the CV, said in Player.log). Null when hired, else the locale key of the notice saying why not.
+        /// </summary>
+        public string TestJobAt(string street, int number)
+        {
+            if (_broken || !_studyOn || Save == null)
+            {
+                return "reallife_study_test_off";
+            }
+            if (!_workOn)
+            {
+                return "reallife_work_test_off";
+            }
+            try
+            {
+                WorkFile w = _study.Work;
+                if (w.Job != null && w.Job.Post.Street == street && w.Job.Post.Number == number)
+                {
+                    Logger?.Info("Careers test: the player works at " + w.Job.Post.Employer + " already, as " + w.Job.Def.Key + " rank " + w.Job.Post.Rank + ".");
+                    return null;
+                }
+                EmployerRef at = WorkGame.EmployerAt(street, number);
+                Profession pick = null, first = null;
+                for (int i = 0; at != null && i < ProCatalogue.All.Length && pick == null; i++)
+                {
+                    Profession p = ProCatalogue.All[i];
+                    if (p.Public || !ProCatalogue.Holds(at.Professions, p, at.Type))
+                    {
+                        continue;
+                    }
+                    first = first ?? p;
+                    pick = ProRules.Qualified(_study, p, 0) ? p : null;
+                }
+                pick = pick ?? first;
+                if (pick == null)
+                {
+                    Logger?.Info("Careers test: no job at " + street + " " + number + ": "
+                                 + (at == null ? "no business there that employs a profession" : "its type " + at.Type + " employs none of the catalogue's") + ".");
+                    return "reallife_work_test_none";
+                }
+                if (w.Job != null)
+                {
+                    Logger?.Info("Careers test: the job at " + w.Job.Post.Employer + " ends as a resignation for the job at " + at.Name + ".");
+                    EndJob(LeaveReason.Resigned, Save.Day, false);
+                }
+                var a = new Application { Day = Save.Day, Score = 70 };
+                Opening o = a.Post;
+                o.Id = w.Next();
+                o.Prof = pick.Id;
+                o.Rank = 0;
+                o.Kind = (int)at.Kind;
+                o.Employer = at.Name;
+                o.Street = at.Street;
+                o.Number = at.Number;
+                o.Rival = at.Rival;
+                o.Pay = ProRules.PostPay(pick, 0, at.Kind, CareersBridges.ShortageOf(pick.Family));
+                o.Work = (int)WorkMode.OnSite;   // the test is of the day at a desk in the office, never from home
+                o.From = o.To = Save.Day;
+                o.Via = (int)Via.Board;
+                a.Offer = o.Pay;
+                Begin(a, Save.Day);
+                Logger?.Info("Careers test: a job as " + pick.Key + " at " + at.Name + " (" + at.Type + ") at " + street + " " + number + ", worked on site.");
+                Changed();
+                return null;
+            }
+            catch (Exception e)
+            {
+                Fault("a test", e);
+                return "reallife_work_test_none";
+            }
+        }
+
+        /// <summary>
+        /// How many of the city's open posts today (made now if the day has not made them, the same by the seed) are at a
+        /// place <paramref name="at"/> picks, and how many are open in all: what Uptown's offices' census counts. One pass.
+        /// </summary>
+        public int OpeningsAt(Func<string, int, bool> at, out int all)
+        {
+            all = 0;
+            if (!_workOn || _study == null || Save == null || at == null)
+            {
+                return 0;
+            }
+            VacanciesNow();
+            int found = 0, day = Save.Day;
+            System.Collections.Generic.List<Opening> open = _study.Work.Openings;
+            for (int i = 0; i < open.Count; i++)
+            {
+                if (open[i].Open(day))
+                {
+                    all++;
+                    found += at(open[i].Street, open[i].Number) ? 1 : 0;
+                }
+            }
+            return found;
+        }
+
         /// <summary>The rest of a working day now, here, whatever the hour and the place (a job is given for it if there is none).</summary>
         public void TestWorkDay()
         {
@@ -253,6 +356,145 @@ namespace RealLifeOverhaul.Careers
             {
                 Fault("a test", e);
             }
+        }
+
+        /// <summary>
+        /// An interview this hour at the employer nearest the player with a vacancy worked on site: begun at once by its entrance
+        /// (in at the door, the black screen, out again), else set for this hour with the employer as the destination.
+        /// </summary>
+        public void TestInterviewPlace()
+        {
+            if (!WorkReady())
+            {
+                return;
+            }
+            try
+            {
+                WorkFile w = _study.Work;
+                if (w.Openings.Count == 0)
+                {
+                    Vacancies(Save.Day);
+                }
+                Opening pick = null;
+                float near = float.MaxValue;
+                for (int i = 0; i < w.Openings.Count; i++)
+                {
+                    Opening o = w.Openings[i];
+                    if (o.Work == (int)WorkMode.Remote || string.IsNullOrEmpty(o.Street) || !TestInterviewFree(o))
+                    {
+                        continue;
+                    }
+                    float d = InterviewGame.Distance(o.Street, o.Number);
+                    if (d < near)
+                    {
+                        near = d;
+                        pick = o;
+                    }
+                }
+                if (pick == null)
+                {
+                    Notifications.Show(NotificationType.Warning, "reallife_work_test_none", null, 8f);
+                    return;
+                }
+                Application a = TestInterviewOf(pick, false);
+                string employer = CareersText.Employer(pick.Employer);
+                if (!WorkGame.AtWork(pick.Def, a.Post))
+                {
+                    DeskGame.Route(pick.Street, pick.Number);
+                    Tell2(NotificationType.Info, "reallife_work_test_interview_go", Data("employer", employer, "address", WorkGame.Address(pick.Street, pick.Number)),
+                        TabApplications, CareerApp.ApplicationRow + a.Post.Id);
+                    Logger?.Info("Careers test: an interview at " + pick.Employer + " set for this hour, "
+                                 + near.ToString("0", System.Globalization.CultureInfo.InvariantCulture) + " m away; it is the destination.");
+                    Changed();
+                    return;
+                }
+                string why = Interview(a.Post.Id);
+                Logger?.Info("Careers test: an interview at " + pick.Employer + (why == null ? " begun by its entrance." : " not begun (" + why + ")."));
+                if (why != null)
+                {
+                    Notifications.Show(NotificationType.Warning, why, null, 8f);
+                }
+                Changed();
+            }
+            catch (Exception e)
+            {
+                Fault("a test", e);
+            }
+        }
+
+        /// <summary>A video interview now at home: at the home's computer when it has one, else on the game's panel where the player stands, with its one word.</summary>
+        public void TestInterviewHome()
+        {
+            if (!WorkReady())
+            {
+                return;
+            }
+            try
+            {
+                if (!CareersGame.AtHome())
+                {
+                    Notifications.Show(NotificationType.Warning, "reallife_work_why_interview_home", null, 8f);
+                    return;
+                }
+                WorkFile w = _study.Work;
+                if (w.Openings.Count == 0)
+                {
+                    Vacancies(Save.Day);
+                }
+                Opening pick = null;
+                for (int i = 0; i < w.Openings.Count && (pick == null || pick.Work != (int)WorkMode.Remote); i++)
+                {
+                    Opening o = w.Openings[i];
+                    pick = TestInterviewFree(o) && (pick == null || o.Work == (int)WorkMode.Remote) ? o : pick;   // a post worked from home first
+                }
+                if (pick == null)
+                {
+                    Notifications.Show(NotificationType.Warning, "reallife_work_test_none", null, 8f);
+                    return;
+                }
+                Application a = TestInterviewOf(pick, true);
+                string why = Interview(a.Post.Id);
+                Logger?.Info("Careers test: a video interview with " + pick.Employer + (why == null ? " begun at home." : " not begun (" + why + ")."));
+                if (why != null)
+                {
+                    Notifications.Show(NotificationType.Warning, why, null, 8f);
+                }
+                Changed();
+            }
+            catch (Exception e)
+            {
+                Fault("a test", e);
+            }
+        }
+
+        // A vacancy the interview tests may use: none of the player's applications to it has an offer or has been taken.
+        private bool TestInterviewFree(Opening o)
+        {
+            Application a = _study.Work.ApplicationOf(o.Id);
+            return a == null || (a.Stage != (int)ApplyStep.Offered && a.Stage != (int)ApplyStep.Accepted);
+        }
+
+        // The player's application to a vacancy, made if there is none, invited to an interview this hour as the employer would; by video if asked.
+        private Application TestInterviewOf(Opening o, bool video)
+        {
+            WorkFile w = _study.Work;
+            Application a = w.ApplicationOf(o.Id);
+            if (a == null)
+            {
+                a = new Application { Day = Save.Day };
+                o.CopyTo(a.Post);
+                w.Applications.Add(a);
+            }
+            if (video)
+            {
+                a.Post.Work = (int)WorkMode.Remote;
+            }
+            a.Stage = (int)ApplyStep.Interview;
+            a.Score = ProRules.HireScore(CandidateFor(o));
+            a.InterviewDay = Save.Day;
+            a.InterviewHour = Save.Hour;
+            a.Lapse = Save.Day;
+            return a;
         }
 
         /// <summary>The city's vacancies made again now.</summary>
@@ -586,6 +828,95 @@ namespace RealLifeOverhaul.Careers
             }
         }
 
+        /// <summary>
+        /// A class of the first course under way (first aid, enrolled on free, if none) at the nearest study desk, begun as a
+        /// Going Public session begins it on either machine: the desk's own panel opened as the walk to a classroom ends, then
+        /// Going Public's press for the player, which hides the game's panel and presses the first button named Start
+        /// (ClassPlayRules.SessionPick), then one check line, PASS once the class is under way. Only this player's class: no
+        /// session is pretended, nothing is sent, and the clock and the other players are not touched.
+        /// </summary>
+        public void TestSessionDesk()
+        {
+            if (!TestReady())
+            {
+                return;
+            }
+            try
+            {
+                EducationDoorController door = DeskGame.NearestStudyDoor();
+                string why = door == null ? "reallife_study_test_session_desk_none" : SeatBusy();
+                Enrolment e = null;
+                for (int i = 0; why == null && i < _study.Courses.Count && e == null; i++)
+                {
+                    Enrolment o = _study.Courses[i];
+                    e = o.Stage == (int)EnrolStage.Studying && o.Def != null && o.Def.Timetabled ? o : null;
+                }
+                if (why == null && e == null)
+                {
+                    e = new Enrolment { Course = StudyCatalogue.FirstAid, Start = Save.Day, Instalments = 1 };
+                    _study.Courses.Add(e);
+                }
+                if (why == null)
+                {
+                    e.SettledDay = Math.Min(e.SettledDay, Save.Day - 1);
+                    CourseDef c = e.Def;
+                    Sitting sitting = ClassSitting(e, c.Hours * 60);
+                    var offer = new SchoolDesk.DeskOffer
+                    {
+                        Course = c.Id, Kind = SittingKind.Class, Can = true, Key = StartKey(SittingKind.Class), Title = CareersText.Course(c.Id), Lines = sitting.Lines, Test = sitting
+                    };
+                    why = OwnDesk(door, offer, false, true, "the nearest study desk (a test)", false) ?? (_desk != null && DeskGame.Shows(_desk) ? null : "reallife_study_why_game_busy");
+                    if (why == null)
+                    {
+                        StartCoroutine(Guard.Routine(SessionPress(_desk, c.Key)));
+                        Changed();
+                    }
+                }
+                Logger?.Info("Careers test: a class at the nearest desk as in a Going Public session " + (why == null ? "opened; Going Public's press follows." : "not opened (" + why + ")."));
+                if (why != null)
+                {
+                    Notifications.Show(NotificationType.Warning, why, null, 8f);
+                }
+            }
+            catch (Exception ex)
+            {
+                Fault("a test", ex);
+            }
+        }
+
+        // Going Public's press for the player, a frame after the panel opened (it looks every half second), then the check.
+        private IEnumerator SessionPress(SchoolDesk desk, string course)
+        {
+            yield return null;
+            ButtonInfo[] buttons = desk.GetButtons();
+            int n = buttons != null ? buttons.Length : 0;
+            var names = new string[n];
+            var on = new bool[n];
+            for (int i = 0; i < n; i++)
+            {
+                names[i] = buttons[i] != null ? buttons[i].name : null;
+                on[i] = buttons[i] != null && buttons[i].interactable;
+            }
+            ClassPlayRules.SessionPick(names, on, out int start, out int cancel);
+            if (start >= 0)
+            {
+                buttons[start].onClick();
+            }
+            for (int f = 0; f < 4; f++)
+            {
+                yield return null;   // the desk sets off two frames after its press
+            }
+            PlayerActivityState state = desk.GetState();
+            bool going = desk.Open && (state == PlayerActivityState.MovingTowardsActivity || state == PlayerActivityState.Started || state == PlayerActivityState.Running);
+            string fail = start < 0 ? "no button of the desk's is named for Going Public to press (" + string.Join(", ", names) + ")"
+                : cancel < 0 ? "Going Public's stand up finds no Cancel" : !going ? "the class did not begin after Going Public's press (" + state + ")" : null;
+            Logger?.Info("Careers check (session desk): a class of " + course + " at the nearest study desk, as in a Going Public session: Going Public presses "
+                         + (start >= 0 ? "'" + names[start] + "'" : "nothing") + ", its stand up " + (cancel >= 0 ? "'" + names[cancel] + "'" : "nothing")
+                         + "; the class is " + (going ? "under way (" + state + ")" : "not under way") + ": " + (fail == null ? "PASS" : "FAIL, " + fail));
+            Notifications.Show(fail == null ? NotificationType.Info : NotificationType.Warning,
+                fail == null ? "reallife_study_test_session_desk_pass" : "reallife_study_test_session_desk_fail", null, 8f);
+        }
+
         /// <summary>With the home's internet in an outage now, today's online class and a day from home not yet worked go by now, each excused.</summary>
         public void TestOutage()
         {
@@ -638,6 +969,177 @@ namespace RealLifeOverhaul.Careers
             {
                 Fault("a test", ex);
             }
+        }
+
+        /// <summary>
+        /// The player's next working days, and every vacancy's and application's week, against their places' opening hours as the
+        /// game keeps them: PASS when none starts or runs while its place is shut. A line each in the log, one notice.
+        /// </summary>
+        public void TestShiftHours()
+        {
+            if (!WorkReady())
+            {
+                return;
+            }
+            try
+            {
+                int day = Save.Day, days = 0, shut = 0;
+                WorkFile w = _study.Work;
+                Job j = w.Job;
+                if (j != null && j.Post.Work != (int)WorkMode.Remote && WorkGame.OpenWeek(j.Post.Street, j.Post.Number, _week))
+                {
+                    Profession p = j.Def;
+                    for (int d = day, n = 0; n < 7; d++, n++)
+                    {
+                        if (!ProRules.WorkDay(p, d) || d < j.Hired || ProRules.FromHome((WorkMode)j.Work, d))
+                        {
+                            continue;
+                        }
+                        int open = _week[OpenHoursRules.Weekday(d)];
+                        bool ok = OpenHoursRules.Covers(open, p.Hour, p.Hours);
+                        days++;
+                        shut += ok ? 0 : 1;
+                        Logger?.Info("Careers check (shift hours): the job at " + j.Post.Employer + ", day " + d + " " + Span(p.Hour, p.Hours) + ", open " + OpenText(open) + ": "
+                                     + (ok ? "PASS" : "FAIL, it starts or runs while the place is shut"));
+                    }
+                }
+                for (int i = 0; i < w.Openings.Count + w.Applications.Count; i++)
+                {
+                    Opening o = i < w.Openings.Count ? w.Openings[i] : w.Applications[i - w.Openings.Count].Post;
+                    if (o.Work == (int)WorkMode.Remote || !WorkGame.OpenWeek(o.Street, o.Number, _week))
+                    {
+                        continue;
+                    }
+                    Profession p = o.Def;
+                    int week = OpenHoursRules.Pack(p.Days, p.Hour, p.Hours);
+                    int wrong = OpenHoursRules.Count(p.Days & ~OpenHoursRules.DaysCovered(p.Days, p.Hour, p.Hours, _week));
+                    days += OpenHoursRules.Count(p.Days);
+                    shut += wrong;
+                    Logger?.Info("Careers check (shift hours): " + (i < w.Openings.Count ? "the vacancy" : "the application") + " for " + p.Key + " at " + o.Employer + ", " + Week(week)
+                                 + ": " + (wrong == 0 ? "PASS" : "FAIL, " + wrong + " of its days start or run while the place is shut"));
+                }
+                if (days == 0)
+                {
+                    Notifications.Show(NotificationType.Info, "reallife_work_test_shift_hours_none", null, 8f);
+                    return;
+                }
+                Notifications.Show(shut == 0 ? NotificationType.Success : NotificationType.Error, shut == 0 ? "reallife_work_test_shift_hours_pass" : "reallife_work_test_shift_hours_fail",
+                    Data("count", days.ToString(), "shut", shut.ToString()), 10f);
+                Logger?.Info("Careers check (shift hours): " + days + " working days against their places' opening hours, " + shut + " while shut: " + (shut == 0 ? "PASS" : "FAIL"));
+            }
+            catch (Exception e)
+            {
+                Fault("a test", e);
+            }
+        }
+
+        /// <summary>
+        /// The owner's case made again: a warehouse job as a save from before the fit holds it, on the profession's 06:00 at a
+        /// business of the city that opens later, with the two warnings its shut mornings gave. The load's pass is run on it:
+        /// PASS when its week moves inside the opening hours, the warnings are taken back, and a morning shut at the old start
+        /// is excused. Given as the job if the player has none, so it can be gone to and worked; otherwise checked on a copy.
+        /// </summary>
+        public void TestForklift()
+        {
+            if (!WorkReady())
+            {
+                return;
+            }
+            try
+            {
+                int day = Save.Day;
+                ReadEmployers(day);
+                Profession own = ProCatalogue.Find(ProCatalogue.Warehouse);
+                int oldWeek = OpenHoursRules.Pack(own.Days, own.Hour, own.Hours);
+                EmployerRef at = null;
+                for (int pass = 0; pass < 2 && at == null; pass++)
+                {
+                    for (int i = 0; i < _employers.Count && at == null; i++)
+                    {
+                        EmployerRef e = _employers[i];
+                        bool employs = ProCatalogue.Holds(e.Professions, own, e.Type);
+                        if ((pass == 0) == employs && WorkGame.OpenWeek(e.Street, e.Number, _week) && OpenHoursRules.AnyShut(oldWeek, _week)
+                            && OpenHoursRules.Fit(own.Days, own.Hour, own.Hours, _week) != 0)
+                        {
+                            at = e;   // a place that employs warehouse staff first, else any business shut at the old start
+                        }
+                    }
+                }
+                if (at == null)
+                {
+                    Notifications.Show(NotificationType.Warning, "reallife_work_test_forklift_none", Data("start", CareersText.Hour(own.Hour)), 8f);
+                    Logger?.Info("Careers check (forklift case): no business of the city keeps hours shut at " + own.Hour.ToString("00") + ":00 on a working day; not set up.");
+                    return;
+                }
+                WorkFile w = _study.Work;
+                bool given = w.Job == null;
+                var j = new Job { Hired = day - 7, RankDay = day - 7, ReviewDay = day - 7, Work = (int)WorkMode.OnSite, SettledDay = day - 1, Due = 2, Absent = 2, Warnings = 2 };
+                j.Post.Id = given ? w.Next() : 0;
+                j.Post.Prof = ProCatalogue.Warehouse;
+                j.Post.Kind = (int)at.Kind;
+                j.Post.Employer = at.Name;
+                j.Post.Street = at.Street;
+                j.Post.Number = at.Number;
+                j.Post.Rival = at.Rival;
+                j.Post.Pay = j.Pay = ProRules.PostPay(own, 0, at.Kind, 0);
+                j.Post.Work = (int)WorkMode.OnSite;
+                j.Post.From = j.Post.To = day;
+                j.Post.Shift = 0;   // as a save from before the fit holds it: the profession's own 06:00
+                if (given)
+                {
+                    w.Job = j;
+                }
+                KeepJobShift(j, day, true);
+                WorkGame.OpenWeek(at.Street, at.Number, _week);
+                bool moved = j.Post.Shift != 0 && j.Post.Shift != oldWeek && !OpenHoursRules.AnyShut(j.Post.Shift, _week);
+                bool righted = j.Warnings == 0 && j.Absent == 0;
+                var old = new Job { Hired = j.Hired, Work = j.Work };
+                j.Post.CopyTo(old.Post);
+                old.Post.Shift = oldWeek;
+                int shutMorning = -1;
+                for (int d = day; d < day + 7 && shutMorning < 0; d++)
+                {
+                    shutMorning = ProRules.WorkDay(old.Def, d) && OpenHoursRules.StartsShut(oldWeek, _week, OpenHoursRules.Weekday(d)) ? d : -1;
+                }
+                bool excused = shutMorning >= 0 && ShutExcused(old, shutMorning);
+                bool ok = moved && righted && excused;
+                Logger?.Info("Careers check (forklift case): a warehouse job at " + at.Name + " (" + at.Street + " " + at.Number + "), open on Monday " + OpenText(_week[0])
+                             + "; the old week " + Week(oldWeek) + " now " + Week(j.Post.Shift) + " (" + (moved ? "inside its hours" : "NOT inside its hours") + "), warnings "
+                             + j.Warnings + " and missed days " + j.Absent + " after the load's pass, a morning shut at the old start " + (excused ? "excused" : "NOT excused")
+                             + (given ? "; given as the player's job" : "; checked on a copy, the player's own job kept") + ": " + (ok ? "PASS" : "FAIL"));
+                Notifications.Show(ok ? NotificationType.Success : NotificationType.Error, ok ? "reallife_work_test_forklift_pass" : "reallife_work_test_forklift_fail",
+                    Data("employer", CareersText.Employer(at.Name), "hours", CareersText.Hours(j.Def), "start", CareersText.Hour(own.Hour)), 12f);
+                if (given)
+                {
+                    Changed();
+                }
+            }
+            catch (Exception e)
+            {
+                Fault("a test", e);
+            }
+        }
+
+        private static string Span(int hour, int hours) => hour.ToString("00") + ":00 to " + ((hour + hours) % 24).ToString("00") + ":00";
+
+        // A day's opening hours as runs of hours for the log: "08-20", or "shut".
+        private static string OpenText(int mask)
+        {
+            var b = new System.Text.StringBuilder(24);
+            for (int h = 0; h < 24; h++)
+            {
+                if ((mask >> h & 1) == 0 || (h > 0 && (mask >> (h - 1) & 1) != 0))
+                {
+                    continue;
+                }
+                int end = h;
+                while (end < 24 && (mask >> end & 1) != 0)
+                {
+                    end++;
+                }
+                b.Append(b.Length > 0 ? ", " : string.Empty).Append(h.ToString("00")).Append('-').Append(end.ToString("00"));
+            }
+            return b.Length > 0 ? b.ToString() : "shut";
         }
     }
 }

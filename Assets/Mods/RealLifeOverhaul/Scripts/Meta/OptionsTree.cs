@@ -211,6 +211,8 @@ namespace RealLifeOverhaul.Meta
                     .Also("health sick sleep stress hygiene tired").Also("home_morning_news", "notification notifications summary news weather wake"),
                 S("routines").Guide("home").Need("home_life").Opts("home_routines", "home_fitness", "home_body", "home_jog")
                     .Also("cooking cook food kitchen exercise gym run diet"),
+                S("meals").For("meals").Opts("meals_seated").Opt("meals_cooked", "home_life", "home_routines").Opts("meals_dance", "meals_takeout")
+                    .Also("eat eating meal table seat chair sit plate tray dinner cook dance dancing music radio speaker loudspeaker mood takeout takeaway bag pack leftovers bench"),
                 S("looks").For("character").Opts("character_new_looks", "character_high_detail", "character_hair", "character_skin", "character_lighting")
                     .Also("appearance beard face"),
                 S("outfit_m").Guide("character").Opts("look2_top_m", "look2_top_m_colour", "look2_legs_m", "look2_legs_m_colour", "look_feet_m")
@@ -219,14 +221,17 @@ namespace RealLifeOverhaul.Meta
                     .Also("clothes wardrobe wear skirt"),
                 S("shops").Guide("leisure").Need("leisure").Opts("clothes_shops", "clothes_must_be_bought").Also("wardrobe buy outfit"),
                 S("roommates").For("home_roommates").Opts("home_roommates").Also("flatmate lodger share"),
-                S("utilities").For("utilities").Main("utilities")
-                    .Also("power water electricity bills utility office deposit"),
+                S("household").For("home_household").Opts("home_household").Also("staff cleaner cook butler maid housekeeper mechanic servant chores car wash"),
+                S("utilities").For("utilities").Main("utilities").Opt("utilities_net_speed", "utilities")
+                    .Also("power water electricity bills utility office deposit").Also("utilities_net_speed", "internet speed mbps broadband fibre tech online shop orders"),
                 S("family").For("family").Main("family").Opts("family_at_home", "family_wedding", "family_children", "family_relatives", "family_friction",
                     "family_interest", "family_year_weeks").Buttons("reallife_family_test_page").Also("partner spouse wife husband marriage kids baby"),
                 S("partner").Guide("family").Need("family").Opts("family_work", "family_wealth_mood", "family_expect").Also("partner money rich wealth job work half days part time"),
                 S("social").For("social").Main("social").Opts("social_meetings", "social_relationships", "social_outings", "social_contact", "social_texts")
                     .Opt("social_texts_max", "social_texts").Opt("social_composer", "texts", "texts_people")
                     .Opt("texts_city", "texts", "texts_people").Also("friends dating date people calls typing staff gossip"),
+                S("networking").For("networking").Need("social").Opts("social_networking")
+                    .Also("networking contacts position recruiter importer wholesaler lawyer investor landlord official favour job lead tip"),
                 S("street").For("street").Main("street_talk").Opts("street_brush").Also("talk passer-by stranger chat directions conversation pedestrian"),
                 S("flare").For("flare").Main("social_media")
                     .Opts("social_media_notices", "flare_busy", "flare_city_office", "flare_share_posts", "flare_share_pictures", "flare_filter", "flare_theme", "flare_pictures", "flare_city_photos")
@@ -236,26 +241,35 @@ namespace RealLifeOverhaul.Meta
                 S("textsai").For("textsai").Need("texts").Opts("texts_service")
                     .Buttons("reallife_textsai_key", "reallife_textsai_chatgpt", "reallife_textsai_model", "reallife_textsai_address", "reallife_textsai_forget",
                         "reallife_textsai_test", "reallife_textsai_status", "reallife_textsai_usage")
-                    .Also("ai service chatgpt openai anthropic gemini google openrouter groq mistral cerebras opencode zen ollama lm studio key api sign model"),
+                    .Also("ai service chatgpt openai anthropic gemini google openrouter groq mistral cerebras opencode zen ollama lm studio player2 player 2 free key api sign model"),
                 S("standing").For("standing").Main("standing").Opts("standing_street", "standing_press", "standing_corruption", "standing_request_notes")
                     .Also("fame reputation recognition wealth famous reporter interview press bribe lobby charity")
                     .Also("standing_request_notes", "fundraiser fundraising donation sponsor request requests"),
-                S("ledger").For("ledger").Main("social_newspaper").Opts("ledger_kiosks", "ledger_online").Opt("ledger_online_notes", "ledger_online")
-                    .Also("newspaper paper news kiosk subscription delivery online newsstand internet phone"),
+                S("ledger").For("ledger").Main("social_newspaper").Opts("ledger_kiosks", "ledger_online").Opt("ledger_online_notes", "ledger_online").Opts("ledger_stories")
+                    .Also("newspaper paper news kiosk subscription delivery online newsstand internet phone milestone billion valuable takeover rival"),
                 S("leisure").For("leisure").Main("leisure").Opt("leisure_chess", "city_life").Opts("leisure_fishing", "leisure_night_out", "leisure_sights", "leisure_cinema")
                     .Opt("night_life", "city_life").Opts("photo_mode").Buttons("reallife_leisure_test_records").Also("fun hobby nightclub bar"),
                 S("lifeevents").For("life").Main("life_events").Opts("life_frequency").Also("random luck surprise"),
                 S("permadeath").For("permadeath").Opts("permadeath").Also("death die dead obituary ending hardcore funeral"),
-                S("phone").For("phone", "phonefolders").Opts("phone_contacts", "phone_skin", "phone_folders", "notice_look").Buttons("reallife_phone_layout_reset")
-                    .Also("call numbers wallpaper notifications toast icons folder folders dock home screen apps tidy arrange"),
+                S("phone").For("phone", "phonefolders").Opts("phone_contacts", "phone_contact_groups", "phone_skin", "phone_folders", "notice_look").Buttons("reallife_phone_layout_reset")
+                    .Also("call numbers wallpaper notifications toast icons folder folders dock home screen apps tidy arrange")
+                    .Also("group groups category categories tabs family friends people services money city sort"),
                 S("photos").For("photos").Main("phone_camera").Opts("phone_camera_grid").Also("camera gallery photo photos picture pictures selfie grid filter frame wallpaper")),
 
             G("city",
                 S("citylife").For("citylife").Main("city_life").Opts("city_density", "city_workers", "city_everyday", "city_interactions")
                     .Also("pedestrians passers-by pavement crowd"),
+                S("newbuildings").For("newbuildings").Main("new_buildings").Also("building buildings new construction copy design district ground plot land street address"),
+                S("uptown").For("uptown").Main("uptown").Also("uptown district north manhattan new streets block lots avenue map expansion"),
+                S("landmarks").For("landmarks").Main("uptown_landmarks").Also("landmark landmarks skyscraper tower mall galleria stadium football match megaproject uptown"),
+                S("schools").For("schools").Main("uptown_campus").Also("school schools campus birchwood education pupils teachers fees league table inspection results children uptown"),
                 S("events").For("events").Opts("city_fires").Opt("fire_frequency", "city_fires").Opts("weather_matters").Opt("weather_frequency", "weather_matters")
                     .Opts("street_events").Opt("street_event_frequency", "street_events").Opt("street_protest_notes", "street_events")
                     .Also("rain storm market parade protest").Also("street_protest_notes", "demonstration demonstrations notification notifications"),
+                S("seasons").For("seasons").Main("seasons").Opts("snow_look", "season_trees", "season_sky", "season_rain", "season_leaves", "season_bar")
+                    .Opt("season_bar_size", "season_bar").Opts("season_coats", "season_beside_alcware")
+                    .Also("season seasons winter spring summer autumn snow snowfall cold demand coffee tea ice cream gifts flowers sales")
+                    .Also("season_bar_size", "icon picture size bigger larger top bar date calendar"),
                 S("accidents").For("traffic", "ragdoll", "people").Opts("traffic_accidents").Opt("accident_frequency", "traffic_accidents")
                     .Opt("accident_notices", "traffic_accidents").Opt("accident_marker", "traffic_accidents").Opts("siren", "people",
                     "crash_consequences", "ragdolls").Opt("player_knockdown", "ragdolls").Opt("ped_incidents", "ragdolls")
@@ -282,8 +296,11 @@ namespace RealLifeOverhaul.Meta
                 S("handling").Guide("driving").Opts("car_handling")
                     .Also("weight heavy suspension springs bounce body roll lean dive brakes abs grip slide sliding tyres tires steering"),
                 S("owning").Guide("transport").Main("car_ownership").Opts("car_easy").Also("fuel petrol service insurance breakdown wear"),
-                S("garage").For("garage").Main("garage").Opts("garage_cosmetics", "garage_tuning", "garage_underglow", "garage_police", "garage_sounds").Buttons("reallife_garage_test_vehicles")
-                    .Also("tuning paint parts custom"),
+                S("garage").For("garage").Main("garage").Opts("garage_cosmetics", "garage_tuning", "garage_underglow", "garage_police", "garage_sounds", "garage_resale")
+                    .Buttons("reallife_garage_test_vehicles")
+
+                    .Also("tuning paint parts custom dyno figures gearbox resale sell"),
+
                 S("bikes").Guide("garage").Opt("two_wheelers", "garage").Also("bicycle bicycles motorbike motorbikes motorcycle scooter two-wheelers"),
                 S("traffic").For("streets").Opts("horn_reactions", "natural_accidents", "solid_streets", "city_drivers").Opt("tow_trucks", "traffic_accidents")
                     .Also("pedestrians cars road tow truck wreck recovery braking parking park pull out drivers"),
@@ -294,13 +311,17 @@ namespace RealLifeOverhaul.Meta
                 S("districtview").For("districtview").Opts("district_view")
                     .Also("district districts neighbourhood neighbourhoods neighborhood map layer layers stats statistics wealth rent prices footfall crime standing coverage "
                         + "internet competition council"),
-                S("licences").For("licences").Main("driving_licence").Opts("licence_start_with", "driving_school", "licence_points", "roadside_checks")
-                    .Also("driving test theory examiner points"),
+                S("licences").For("licences").Main("driving_licence").Opts("licence_start_with", "driving_school", "licence_points", "roadside_checks", "heavy_licence")
+                    .Also("driving test theory examiner points heavy goods truck lorry cdl hgv"),
                 S("travel").For("travel").Opts("travel_hotels", "travel_holidays", "travel_extras").Also("holiday trip hotel stay")),
 
             G("work",
-                S("jobs").For("jobs").Main("jobs").Opts("job_pay").Also("gig gigs shift wage employment"),
+                S("jobs").For("jobs").Main("jobs").Opts("job_pay", "job_taxi_easy", "job_cart_sounds")
+                    .Also("gig gigs shift wage employment ride hail taxi fare passenger passengers comfort easier drinks cart sound sounds customer till"),
                 S("careers").For("careers").Opt("careers", "jobs").Also("employer promotion rank review"),
+                S("buildtrades").For("buildtrades").Opt("build_trades", "jobs").Opt("build_trades_office", "build_trades")
+                    .Also("construction building site mason labourer bricks architect architecture design inspector bribe surveyor crane")
+                    .Also("security electrician plumber roofer scaffold painter estimator tender apprentice practice"),
                 S("study").For("careers_study").Main("careers_study").Opts("careers_class_start")
                     .Also("school course courses class classes diploma education study learn skill skills homework exam timetable"),
                 S("degrees").For("careers_degrees").Opt("careers_degrees", "careers_study")
@@ -312,27 +333,39 @@ namespace RealLifeOverhaul.Meta
                 S("worklife").For("careers_life").Opt("careers_life", "careers_jobs")
                     .Also("review reviews promotion promoted rise raise bonus overtime burnout boss office politics headhunter poached redundancy redundant benefit pension retire "
                         + "retirement options shares conflict interest"),
+                S("ladder").For("careers_ladder").Opt("careers_ladder", "careers_life")
+                    .Also("management ladder manager supervisor store regional executive coo chro cfo staff schedule rota gap hire raise escalation policy permissions performance"),
                 S("ownwork").For("careers_own").Opt("careers_own", "careers_jobs").Opt("careers_own_offer_notes", "careers_own")
                     .Also("freelance freelancing contract contracts client clients practice self employed startup found founder spin out colleagues restraint clause non compete side work"),
-                S("planner").For("planner").Main("planner").Opts("planner_reminders", "planner_morning").Also("diary calendar notes to do")),
+                S("planner").For("planner").Main("planner").Opts("planner_reminders", "planner_morning").Also("diary notes to do"),
+                S("calendar").For("calendar").Main("calendar").Also("calendar month months year date dates payday bills due birthday birthdays"),
+                S("hustles").For("hustles").Main("hustles")
+                    .Also("marketplace market flip flipping second hand used goods sell buy haggle haggling repair fix clean freelance detailing junk removal moving handyman helper rating")),
 
             G("money",
-                S("credit").For("economy").Opts("economy").Opt("economy_grade_up_notes", "economy").Also("bank borrow score finance"),
+                S("credit").For("economy").Opts("economy").Opt("economy_grade_up_notes", "economy").Opt("economy_day_result", "economy")
+                    .Also("bank borrow score finance").Also("economy_day_result", "day end summary profit loss topbar top bar yesterday result income"),
                 S("debt").Guide("economy").Need("economy").Opts("economy_products", "economy_shark", "economy_consequences", "economy_level")
                     .Also("borrow overdraft card collections repossession").Also("economy_products", "mortgage rent overdraft card finance"),
                 S("banks").For("economy_banks").Need("economy").Opts("economy_banks").Also("bank app current account statement card loan apply"),
                 S("cityeco").For("economy_city").Need("economy").Main("economy_city").Opts("economy_city_level", "economy_rate_ahead").Also("prices rates boom recession inflation"),
+                S("econapp").For("economy_app").Need("economy").Main("economy_app").Opts("economy_app_look")
+                    .Also("economy app dashboard dashboards chart charts trend trends insight insights advice verdict jobs districts markets finances dark light theme look"),
                 S("ventures").For("ventures").Opts("ventures_investors", "ventures_level").Also("invest investor pitch deal"),
                 S("markets").For("markets", "markets_listing", "markets_bots", "markets_derivatives").Main("ventures_market")
-                    .Opts("markets_margin", "markets_listing", "markets_bots", "markets_dividend_notes", "markets_bonds", "markets_bond_so_far", "markets_large", "markets_reinvest",
-                        "markets_derivatives")
+                    .Opts("markets_margin", "markets_listing", "markets_bots", "markets_dividend_notes", "markets_bonds", "markets_bond_so_far", "markets_derivatives")
                     .Also("shares stocks invest dividend broker trading candles chart margin short property trust reit")
                     .Also("markets_listing", "listing flotation offer prospectus shareholders takeover")
                     .Also("markets_bots", "bot bots robot automated algorithm strategy stop loss take profit limit order trend momentum")
                     .Also("markets_bonds", "bond bonds treasury gilt deposit certificate fixed income interest coupon reinvest savings rollover ladder")
+                    .Also("markets_derivatives", "futures future options option call put hedge hedging derivative derivatives strike premium raw materials commodity factory import"),
+                S("investor").Guide("markets").Need("ventures_market").Opts("markets_holding", "markets_large", "markets_reinvest")
+                    .Also("markets_holding", "holding limit cap most stake tenth quarter half whole control majority percent shares company")
                     .Also("markets_large", "large big block limit volume worked order algorithm vwap slice wealth investor")
                     .Also("markets_reinvest", "reinvest drip dividend reinvestment compound distribution trust")
-                    .Also("markets_derivatives", "futures future options option call put hedge hedging derivative derivatives strike premium raw materials commodity factory import")),
+                    .Also("markets_derivatives", "futures future options option call put hedge hedging derivative derivatives strike premium raw materials commodity factory import"),
+                S("buildersmarket").For("markets_builders").Opt("markets_builders", "ventures_market")
+                    .Also("builder builders construction contractor tender shares stock cement steel bricks timber hedge hedging materials project exposure")),
 
             G("business",
                 S("company").For("economy_company").Need("economy").Main("economy_company").Opts("economy_company_staff", "economy_company_cover",
@@ -341,19 +374,23 @@ namespace RealLifeOverhaul.Meta
                 S("rota").For("economy_rota").Opt("economy_rota", "economy_company").Also("schedule shifts opening hours staff"),
                 S("managers").For("economy_managers").Opt("economy_managers", "economy_company")
                     .Also("manager managers regional bureaucracy delegate automate restock orders prices raises hiring report"),
+                S("hierarchy").For("economy_hierarchy").Opt("economy_hierarchy", "economy_managers")
+                    .Also("hierarchy policy policies escalation exceptions regional executive coo chro cfo chief bureaucracy corporate deep mode template"),
                 S("cleaning").For("economy_cleaning").Need("economy").Opts("economy_cleaning").Also("cleaners contract"),
                 S("sale").For("economy_sale").Need("economy").Opts("economy_sale").Also("sell buyer offer"),
                 S("ownbank").For("economy_ownbank").Need("economy").Opts("economy_bank").Also("bank licence deposits savers loans regulator capital fund"),
+                S("bankbranch").For("economy_bank_branch").Need("economy").Opt("economy_bank_branch", "economy_bank")
+                    .Also("bank branch branches teller tellers counter customers accounts deposit withdraw loan high street"),
                 S("endscale").For("economy_endscale").Opts("economy_endscale")
                     .Also("end game late scale billions hyperscaler cloud data centre racks broadband network fibre bank maintenance upkeep crews staff payback"),
                 S("brands").For("economy_brands").Need("economy").Opts("economy_brands").Also("chain franchise"),
-                S("rivals").For("rivals").Main("rivals").Opts("rivals_strength")
+                S("rivals").For("rivals").Main("rivals").Opts("rivals_strength", "rivals_first")
                     .Also("rival rivals tycoon tycoons competitor competitors rich list richest takeover outbid poach lobby lawsuit sue press end game late game pressure"),
                 S("online").For("economy_online").Need("economy").Opts("economy_online").Opt("economy_online_wait_notes", "economy_online").Also("web shop orders delivery internet"),
                 S("people").For("tech_people").Opts("tech_people").Also("professionals staff employees skills skill percent role promotion review course certificate notice severance lay off poach"),
                 S("jobsboard").For("tech_jobs").Opt("tech_jobs", "tech_people")
                     .Also("jobs board hire hiring recruit recruitment applicants interview offer headhunter search labour market candidates"),
-                S("techsector").For("tech_sector").Opt("tech_sector", "tech_people").Opt("tech_offer_notes", "tech_sector")
+                S("techsector").For("tech_sector").Opt("tech_sector", "tech_people").Opt("tech_offer_notes", "tech_sector").Opt("tech_infra_offer", "tech_sector")
                     .Also("tech software saas app game studio consultancy cybersecurity security breach outage product subscription contract tender developer"),
                 S("startups").For("tech_startups").Opt("tech_startups", "tech_sector")
                     .Also("startup startups venture capital vc angel fund pitch term sheet valuation equity round board shares options dilution"),
@@ -361,9 +398,26 @@ namespace RealLifeOverhaul.Meta
                     .Also("data centre data center server servers rack racks cooling headquarters hq lobby reception office cloud hyperscaler sign buildings"),
                 S("dealer").For("economy_dealer").Need("economy").Opts("economy_dealer", "economy_dealer_floor").Also("car dealership showroom auction wholesale used cars finance warranty")
                     .Also("economy_dealer_floor", "visitors customers floor salesperson bay bays camera photo"),
+                S("construction").For("construction").Opt("construction", "civic_construction").Opt("construction_developers", "construction")
+                    .Opt("construction_land_tax", "construction").Opt("construction_risks", "construction")
+                    .Opt("construction_show_flats", "construction").Opt("construction_renovations", "construction").Opt("construction_city", "construction")
+                    .Opt("construction_redevelop", "construction").Opt("construction_city_redevelop", "construction")
+                    .Also("demolish demolition knock down redevelop redevelopment join assemble split extension storeys convert conversion change of use cleared")
+                    .Opt("construction_track", "construction")
+                    .Also("objectives objective tasks task hud show on map destination where marker")
+                    .Also("show flat flats viewing viewings buyer buyers sales agent renovation renovate refit refurbish hoarding")
+                    .Also("builder builders building company land lot lots plot plots project plans architect planning permission appeal inspector inspection")
+                    .Also("crew crews foreman tender tenders developer developers rival rivals merchant materials crane yard flats loan investor ribbon"),
+                S("buildmode").Guide("construction").Need("construction").Opts("construction_buildmode").Opt("construction_growth", "construction_buildmode")
+                    .Opt("construction_parking", "construction_buildmode")
+                    .Also("parking lot lots car park carpark bays pay machine lease leases garage")
+                    .Also("build mode zoning zone zones cells cell squares grid cities skylines demand bulldoze")
+                    .Also("grow growth growables let it grow tier basic standard premium tenants condition run down brush rectangle fill unzone"),
                 S("offices").For("office_space").Opts("office_conversion").Also("office offices shop shops empty space building buildings convert vacant"),
                 S("estate").For("economy_estate").Need("economy").Opts("economy_estate", "economy_estate_hotel", "economy_estate_hire", "economy_estate_rent")
                     .Also("buildings landlord tenant letting rent rental income").Also("economy_estate", "rent tenant landlord letting"),
+                S("estateduties").For("economy_estate_duties").Opt("economy_estate_duties", "economy_estate")
+                    .Also("landlord tenants satisfaction repairs repair maintenance complaints inspection inspector fine arrears payment plan reminder eviction letting agent property manager flip"),
                 S("bizevents").For("business").Main("business_pressure").Opts("business_frequency", "business_easy").Also("trouble pressure competition"),
                 S("bizkinds").Guide("business").Need("business_pressure").Opts("business_rivals", "business_racket", "business_inspections", "business_staff",
                     "business_suppliers", "business_customers", "business_audit", "business_opportunities").Also("trouble competition"),
@@ -373,7 +427,9 @@ namespace RealLifeOverhaul.Meta
                     .Also("district standard minimum complaints basket products reward strength slider income customers"),
                 S("interiordecor").For("interiors_decor").Need("interiors").Opts("interiors_decor_strength").Also("decor ambience customers footfall clients office strength slider"),
                 S("designs").For("designs").Opts("designs")
-                    .Also("ready made design designs interior installation installer firm layout furniture fit out showroom studio academy office shop")),
+                    .Also("ready made design designs interior installation installer firm layout furniture fit out showroom studio academy office shop"),
+                S("newshops").For("newshops").Opts("new_shops")
+                    .Also("new shops kinds business types ice cream parlour gelato tea bar bubble tea slush tobacconist tobacco vape cigarettes cigars bizman start")),
 
             G("controls",
                 S("keys").For("keys").Buttons("reallife_keys_reset", "reallife_keys_camera_toggle", "reallife_keys_interact", "reallife_keys_interact_alt",
@@ -386,7 +442,9 @@ namespace RealLifeOverhaul.Meta
 
             G("performance",
                 S("speed").For("performance").Opts("perf_refraction", "perf_sky_updates", "perf_stale_lights", "perf_far_districts", "perf_view_radius",
-                    "perf_far_props", "perf_textures_whole").Also("fps frame rate lag stutter slow faster"),
+                    "perf_far_props", "perf_textures_whole", "perf_mod_cull").Also("fps frame rate lag stutter slow faster"),
+                S("render").Guide("performance").Opts("render_shadow_reach", "render_shadow_cascades", "render_lod_reach")
+                    .Also("graphics shadows shadow distance cascades level of detail lod models quality fps"),
                 S("picture").For("visuals").Main("visuals_enabled").Opts("visuals_saturation", "visuals_contrast", "visuals_bloom", "visuals_detail")
                     .Also("graphics colour visuals quality")),
 
@@ -398,8 +456,9 @@ namespace RealLifeOverhaul.Meta
                 S("multiplayer").For("multiplayer").Buttons("reallife_gp_tell_button", "reallife_gp_city_button")
                     .Also("going public multiplayer online friends host guest session"),
                 S("measure").Guide("performance").Opts("perf_step_timing").Buttons("reallife_perf_probe_button", "reallife_perf_bench_button4",
-                    "reallife_keys_perf_probe", "reallife_keys_perf_bench", "reallife_keys_phone_dump", "reallife_keys_character_report")
+                    "reallife_keys_perf_probe", "reallife_keys_perf_bench", "reallife_keys_character_report")
                     .Also("benchmark fps developer keys"),
+                S("newground").For("newground").Opts("newground_test_road").Also("new ground walking mesh navmesh roads lanes traffic parking district developer"),
                 S("tuning").Guide("driving").Opts("car_handling_softness", "car_handling_bounce", "car_handling_roll", "car_handling_grip", "car_handling_steering",
                     "car_handling_brakes").Also("handling suspension springs dampers roll grip steering brakes developer sliders")),
         };

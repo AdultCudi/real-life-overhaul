@@ -71,7 +71,7 @@ namespace RealLifeOverhaul.Economy.Ventures
         };
 
         // Words in the game's business type ids ("ba:businesstype_coffeeshop"); a type none of them fits is retail.
-        private static readonly string[] FoodWords = { "coffee", "fastfood", "restaurant", "supermarket", "fruit", "liquor", "bakery", "food" };
+        private static readonly string[] FoodWords = { "coffee", "fastfood", "restaurant", "supermarket", "fruit", "liquor", "bakery", "food", "icecream", "teabar" };
         private static readonly string[] OfficeWords =
         {
             "agency", "lawfirm", "designer", "headquarters", "bank", "school", "clinic", "hospital", "reallife:businesstype_"   // the last: the tech sector's types

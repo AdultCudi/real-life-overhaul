@@ -171,6 +171,9 @@ Staged traffic accidents with an ambulance and police response, the tow truck, h
   A unit leaving through the scene by a lane checked for it does not pull out to pass (`EmergencyDriver.MayPass`): the lane beside is the other unit's.
   A driver that is out of its lane and held up goes back to its own lane when that is clear.
 
+- A lit unit held up (`EmergencyDriver.Lit`: the ambulance, the patrol car, the fire engine) is made way for in turn (`Traffic/MakeWayRules`, the rules; `EmergencyDriver.Way`, the driver's part): a lane left, a lane right, and held 2.5 s two lanes left and right with a lane point looked for twice as far off; a bus of the mod's own held up behind something that stands still goes round it after 2 s instead of 30 when a lit unit comes up behind it, and one standing at a stop with no bay pulls away (`TransitBus.StandsInTheWay`); standing traffic in its way is taken off the road as an accident scene's units do (`MakeWay.ClearStanding`); a fire engine held up near enough stands where it is and its crew walks the rest; the tow truck gives a wreck up after 40 s held up.
+  A hold of 4 s is written once as an `Emergency way` line (what holds it, the ways past and why each failed), and its end once.
+
   A leaving ambulance held up by the patrol car has it moved at once (`GiveWay`): officers called aboard, driven off ahead of it, or backed along its own lane when the two are nose to nose (the one case in which a unit reverses).
   "Could not be moved" does not exist for the mod's own vehicles.
 

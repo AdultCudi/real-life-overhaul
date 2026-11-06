@@ -1,11 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
-using System.Reflection;
-using BigAmbitions.Characters;
-using BigAmbitions.Characters.Appearance;
-using Character;
-using Character.Customization;
+using System.Threading.Tasks;
 using RealLifeOverhaul.GameUi;
 using UI.Load;
 using Unity.Collections;
@@ -14,38 +11,21 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Paints the contacts' pictures (<see cref="ContactPictures"/>) from the game's own assets, one at a time.
-    ///
-    ///   a logo    the game's logo shape (StreamingAssets/LogoShapes, read with the game's own LogoHelper.GetLogoShapeTexture)
-    ///             in white on the catalogue's colour, the way a business logo is a shape on a colour; or, where the game
-    ///             has a picture of its own for the same kind of contact (its tow service), that picture
-    ///   a face    from the game's portrait camera (PortraitGenerator.Create, as the Rivals app draws a rival), with the
-    ///             look built exactly as the mod builds the person in the city: AppearanceSetter.RandomizeElements with
-    ///             the person's sex, the skin of their seed, casual clothes and their seed, their age, and the build capped
-    ///             as the mod's own people are (Social/SocialCast.Dress). The face is kept as a JPEG under the game's
-    ///             data folder (RealLifeOverhaul/Portraits) and read from there on every later load
-    ///
-    /// A logo is kept there too, once painted, as its picture's own bytes (256 KB, nothing to decode), named by the shape,
-    /// the colour, and the size and date of the game's shape file (or the game's own picture and the game's build), so a
-    /// shape the game changes is painted again. Every picture is written into the texture's own memory
-    /// (Texture2D.GetPixelData) or through one buffer kept for the session: no array per picture, where each picture made
-    /// some 0.5 to 1.3 MB of garbage (561 KB a second under this in the first minute after a load).
-    ///
-    /// COST. Nothing while there is nothing to paint: the component switches itself off. While there is: pictures one after
-    /// another for about a millisecond of a frame (<see cref="WorkSlice"/>; eight behind a black screen), the first of a frame
-    /// always; a picture not in the cache (a logo's 65,536 samples of the shape, once ever; a face drawn by the game's
-    /// portrait camera with its own read-back, once per look, ever, with the session watch told first) only as the first of
-    /// a frame, alone. A logo from the cache is one read of a file and one upload; a face from the cache one JPEG decode.
+    /// Paints the contacts' pictures one at a time: a logo is the game's logo shape in white on the catalogue's colour (or
+    /// the game's own picture for that kind of contact), a face comes from <see cref="PortraitTurn"/>. Both are kept under
+    /// RealLifeOverhaul/Portraits, named by what they are drawn from. Every file is looked for, read, written and deleted on
+    /// a worker, one after another in the order asked (a write is on disk before a later read of it); the main thread
+    /// only puts the bytes into the texture. Cost: idle, nothing (it switches itself off); busy, one picture a frame at
+    /// most, a kept one about a millisecond of it, and a picture not yet kept painted in its frame alone.
     /// </summary>
     public sealed class ContactPainter : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("phone", "ContactPainter", typeof(ContactPainter));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("phone", "ContactPainter", typeof(ContactPainter));
 
-        private const double SliceMs = 1.0;         // milliseconds of a frame in play the painting may take (the first picture of a frame always)
-        private const double HiddenSliceMs = 8.0;   // ...and of a frame behind the game's black screen
+        private const double KeptMs = 3.0;          // milliseconds of the main thread a kept picture may take: its bytes into the texture, a face's JPEG decoded
         private const float FacePaceSeconds = 2f;   // after a face drawn by the portrait camera
-        private const int LogoBytes = ContactPictures.Size * ContactPictures.Size * 4;   // a logo's picture as it is kept: RGBA, a byte each
-        private const string LogoVersion = "logo_v1_";   // the painting's own version in a kept logo's name: a new way of painting paints them all again
+        private const int LogoBytes = ContactPictures.Size * ContactPictures.Size * 4;   // RGBA, a byte each
+        private const string LogoVersion = "logo_v1_";   // a new way of painting changes this, and every kept logo is painted again
         private const float FaceTimeout = 15f;      // seconds to wait for the camera's read-back before trying again
         private const int TriesMost = 3;
         private const float GlyphShare = 0.62f;     // of the square's height the shape takes, as the game's own logos leave a margin
@@ -54,10 +34,39 @@ namespace RealLifeOverhaul
         private static ContactPainter _instance;
         private static readonly Queue<ContactPictures.Picture> Wanted = new Queue<ContactPictures.Picture>(32);
 
-        private static byte[] _logoBuffer;          // one for the session, made the first time a logo is read or kept: what a kept logo passes through
+        private static byte[] _logoBuffer;          // one for the session: every kept logo read passes through it, on the worker, while no other read is out
+        private static byte[] _rgb, _rgba;          // the main thread's own: a kept face's decoded rows, and as the texture's
+        private static Task _io = Task.CompletedTask;   // the files' work, one after another on a worker
+        private static string _folder, _icons;      // the cache's folder and the game's logo shapes', read on the main thread once
+        private static int _build = -1;             // the game's build, which names a kept copy of one of its pictures
 
         private ContactPictures.Picture _drawing;   // a face waiting for the portrait camera's read-back
         private float _drawingSince, _next;
+        private Task<Fetch> _fetch;                 // the next picture's kept file, being looked for and read on the worker
+
+        private enum Found
+        {
+            Nothing,     // not kept: painted, or drawn by the portrait camera
+            GameLogo,    // the kept copy of the game's own picture, in the logo buffer
+            ShapeLogo,   // the kept logo painted from the game's shape, in the logo buffer
+            Face         // the kept face's JPEG
+        }
+
+        // One picture's kept file, looked for and read on the worker; the look and seed it was asked with, so a picture
+        // given another look meanwhile is never painted with the old one.
+        private sealed class Fetch
+        {
+            public ContactPictures.Picture P;
+            public ContactLook Look;
+            public int Seed;
+            public string Folder, Icons, GameFile, FaceFile;   // given by the main thread
+            public string ShapeFile;   // the kept logo's name: from the shape file's size and date, so found on the worker; null if the game has no such shape
+            public Found What;
+            public byte[] Jpeg;        // a kept face
+            public byte[] ShapePng;    // a logo painted from nothing: the game's shape file (or its 'not found' one), null if neither is there
+            public string ShapePath;   // ...and the path it was read from, the texture's name as the game's own helper gives it
+            public Exception Fault;    // a file that could not be read: the picture is tried again, as a fault in painting it is
+        }
 
         internal static void Want(ContactPictures.Picture p)
         {
@@ -72,17 +81,40 @@ namespace RealLifeOverhaul
             _instance.enabled = true;
         }
 
-        /// <summary>A face's file in the portrait cache is deleted, so that it is drawn again.</summary>
+        /// <summary>Deletes a face's file in the portrait cache, on the worker before any later read, so it is drawn again.</summary>
         internal static void Forget(ContactPictures.Picture p)
         {
             string file = Path.Combine(Folder, ContactCatalogue.CacheName(p.Look.Female, p.Look.Age, p.Seed));
-            if (File.Exists(file))
+            OnWorker(() =>
             {
-                File.Delete(file);
-            }
+                if (File.Exists(file))
+                {
+                    File.Delete(file);
+                }
+            }, "a face could not be taken out of the portrait cache");
         }
 
-        private static string Folder => Path.Combine(Application.persistentDataPath, "RealLifeOverhaul", "Portraits");
+        private static string Folder => _folder ??= Path.Combine(Application.persistentDataPath, "RealLifeOverhaul", "Portraits");
+
+        private static string Icons => _icons ??= LogoHelper.GetBuildInIconsFolder();
+
+        private static int Build => _build >= 0 ? _build : (_build = Nav.NavBaseGame.Build());
+
+        // A piece of file work queued behind the others on the worker; a fault is written to the log with what failed.
+        private static void OnWorker(Action work, string failed)
+        {
+            _io = _io.ContinueWith(_ =>
+            {
+                try
+                {
+                    work();
+                }
+                catch (Exception e)
+                {
+                    ContactPictures.Logger?.Warn("Contacts: " + failed + " (" + e.Message + "); it is made again on the next load.");
+                }
+            }, TaskScheduler.Default);
+        }
 
         private static readonly int HotUpdate = HotSpots.Slot("Phone: ContactPainter.Update");
         private void Update()
@@ -90,7 +122,7 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;   // switched off after its faults
                 return;
             }
             try
@@ -116,85 +148,167 @@ namespace RealLifeOverhaul
                 }
                 return;
             }
+            if (_fetch != null)
+            {
+                if (!_fetch.IsCompleted || LoadScene.isLoading)
+                {
+                    return;   // the file is still being read: the main thread does nothing for it
+                }
+                Fetch f = _fetch.Result;   // Read never throws: a fault comes back in the fetch
+                _fetch = null;
+                if (f.Fault != null)
+                {
+                    ContactPictures.Logger?.Error(f.Fault);
+                    Requeue(f.P);
+                    return;
+                }
+                try
+                {
+                    Use(f);
+                }
+                catch (Exception e)
+                {
+                    ContactPictures.Logger?.Error(e);
+                    Requeue(f.P);
+                }
+                return;   // one picture a frame: a kept one is a millisecond, one made from nothing has the frame to itself
+            }
             if (Wanted.Count == 0)
             {
-                enabled = false;   // nothing to paint: no cost at all until a picture is wanted
+                enabled = false;   // nothing to paint: no cost until a picture is wanted
                 return;
             }
             if (Time.realtimeSinceStartup < _next || LoadScene.isLoading)
             {
                 return;
             }
-            WorkSlice slice = WorkSlice.Of(SceneFinds.Hidden ? HiddenSliceMs : SliceMs, 1);
-            while (Wanted.Count > 0 && _drawing == null && Time.realtimeSinceStartup >= _next)
+            ContactPictures.Picture p = null;
+            while (p == null && Wanted.Count > 0)
             {
-                ContactPictures.Picture p = Wanted.Peek();
-                bool heavy = !p.Drawn && !Kept(p);
-                if (!slice.More(heavy))
-                {
-                    return;
-                }
-                Wanted.Dequeue();
+                p = Wanted.Dequeue();
                 p.Queued = false;
-                if (p.Drawn)
-                {
-                    continue;
-                }
-                try
-                {
-                    if (p.Look.Kind == PictureKind.Logo)
-                    {
-                        PaintLogo(p);
-                    }
-                    else
-                    {
-                        PaintFace(p);
-                    }
-                }
-                catch (Exception e)
-                {
-                    ContactPictures.Logger?.Error(e);
-                    Requeue(p);
-                }
-                if (heavy)
-                {
-                    slice.End();   // a picture made from nothing has the frame to itself
-                }
+                p = p.Drawn ? null : p;   // painted meanwhile: nothing to read
+            }
+            if (p != null)
+            {
+                _fetch = Ask(p);
             }
         }
 
-        // True if the picture is in the cache: a face's JPEG, a logo's own bytes.
-        private static bool Kept(ContactPictures.Picture p)
+        // The picture's kept file asked of the worker, behind any file work already given it: once a picture, not a frame.
+        private static Task<Fetch> Ask(ContactPictures.Picture p)
         {
-            if (p.Look.Kind != PictureKind.Logo)
+            var ask = new Fetch
             {
-                return File.Exists(Path.Combine(Folder, ContactCatalogue.CacheName(p.Look.Female, p.Look.Age, p.Seed)));
+                P = p, Look = p.Look, Seed = p.Seed, Folder = Folder, Icons = Icons,
+                GameFile = p.Look.Kind == PictureKind.Logo && p.Look.LikeGame != null ? GameLogoFile(p.Look.LikeGame) : null,
+                FaceFile = p.Look.Kind == PictureKind.Logo ? null : Path.Combine(Folder, ContactCatalogue.CacheName(p.Look.Female, p.Look.Age, p.Seed))
+            };
+            Task<Fetch> read = _io.ContinueWith(_ => Read(ask), TaskScheduler.Default);
+            _io = read;
+            return read;
+        }
+
+        // On the worker: the picture's kept file looked for and read, in the order the painting tries them.
+        private static Fetch Read(Fetch f)
+        {
+            try
+            {
+                return Look(f);
             }
-            string game = p.Look.LikeGame != null ? GameLogoFile(p.Look.LikeGame) : null;
-            string shape = ShapeLogoFile(p.Look);
-            return (game != null && File.Exists(game)) || (shape != null && File.Exists(shape));
+            catch (Exception e)
+            {
+                f.Fault = e;
+                return f;
+            }
+        }
+
+        private static Fetch Look(Fetch f)
+        {
+            if (f.Look.Kind != PictureKind.Logo)
+            {
+                f.Jpeg = File.Exists(f.FaceFile) ? File.ReadAllBytes(f.FaceFile) : null;
+                f.What = f.Jpeg != null ? Found.Face : Found.Nothing;
+                return f;
+            }
+            if (ReadLogo(f.GameFile))
+            {
+                f.What = Found.GameLogo;
+                return f;
+            }
+            f.ShapeFile = ShapeLogoFile(f.Look, f.Icons, f.Folder);
+            if (ReadLogo(f.ShapeFile))
+            {
+                f.What = Found.ShapeLogo;
+                return f;
+            }
+            f.What = Found.Nothing;
+            string path = Path.Combine(f.Icons, f.Look.Shape + ".png");
+            if (!File.Exists(path))
+            {
+                path = Path.Combine(f.Icons, "notfound.png");   // the game's own stand-in, as PaintLogo has always fallen back to
+            }
+            if (File.Exists(path))
+            {
+                f.ShapePng = File.ReadAllBytes(path);
+                f.ShapePath = path;
+            }
+            return f;
+        }
+
+        // On the main thread: what the worker found put into the picture, or the picture made from nothing.
+        private void Use(Fetch f)
+        {
+            ContactPictures.Picture p = f.P;
+            if (p.Drawn)
+            {
+                return;
+            }
+            if (!Same(p.Look, f.Look) || p.Seed != f.Seed)
+            {
+                if (!p.Queued)
+                {
+                    p.Queued = true;   // given another look while its file was read: read again for that one
+                    Wanted.Enqueue(p);
+                }
+                return;
+            }
+            long began = Stopwatch.GetTimestamp();
+            if (p.Look.Kind == PictureKind.Logo)
+            {
+                PaintLogo(p, f, began);
+            }
+            else
+            {
+                PaintFace(p, f, began);
+            }
+        }
+
+        private static bool Same(ContactLook a, ContactLook b)
+        {
+            return a.Kind == b.Kind && a.Female == b.Female && a.Age == b.Age && a.Shape == b.Shape && a.LikeGame == b.LikeGame && a.R == b.R && a.G == b.G && a.B == b.B;
         }
 
         // A kept logo copied from one of the game's own pictures: by its name and the game's build.
         private static string GameLogoFile(string name)
         {
-            return Path.Combine(Folder, LogoVersion + "game_" + name + "_" + Nav.NavBaseGame.Build() + ".raw");
+            return Path.Combine(Folder, LogoVersion + "game_" + name + "_" + Build + ".raw");
         }
 
-        // A kept logo painted from one of the game's shapes: by the shape, the colour, and the shape file's size and date. Null if the game has no such file.
-        private static string ShapeLogoFile(ContactLook look)
+        // On the worker: named by the shape, the colour and the shape file's size and date; null if the game has no such file.
+        private static string ShapeLogoFile(ContactLook look, string icons, string folder)
         {
-            var shape = new FileInfo(Path.Combine(LogoHelper.GetBuildInIconsFolder(), look.Shape + ".png"));
+            var shape = new FileInfo(Path.Combine(icons, look.Shape + ".png"));
             if (!shape.Exists)
             {
                 return null;
             }
-            return Path.Combine(Folder, LogoVersion + look.Shape + "_" + look.R.ToString("X2") + look.G.ToString("X2") + look.B.ToString("X2")
+            return Path.Combine(folder, LogoVersion + look.Shape + "_" + look.R.ToString("X2") + look.G.ToString("X2") + look.B.ToString("X2")
                                         + "_" + shape.Length + "_" + shape.LastWriteTimeUtc.Ticks + ".raw");
         }
 
-        // A kept logo into the picture: one read through the session's buffer, one upload. False if there is none (or it is not whole).
-        private static bool ReadLogo(ContactPictures.Picture p, string file)
+        // On the worker: a kept logo into the logo buffer. False if there is none, or it is not whole.
+        private static bool ReadLogo(string file)
         {
             if (file == null || !File.Exists(file))
             {
@@ -218,34 +332,35 @@ namespace RealLifeOverhaul
                     read += got;
                 }
             }
-            p.Texture.SetPixelData(_logoBuffer, 0);
-            p.Texture.Apply(false, false);
             return true;
         }
 
-        // The picture just painted, kept for every later load. A logo that cannot be kept is painted again next time.
+        // On the main thread: the logo buffer the worker filled into the picture.
+        private static void UseLogo(ContactPictures.Picture p)
+        {
+            p.Texture.SetPixelData(_logoBuffer, 0);
+            p.Texture.Apply(false, false);
+        }
+
+        // A logo that cannot be kept is painted again next time. Its bytes are copied here, once ever a logo, and written on the worker.
         private static void KeepLogo(ContactPictures.Picture p, string file)
         {
             if (file == null)
             {
                 return;
             }
-            try
+            NativeArray<byte> bytes = p.Texture.GetPixelData<byte>(0);
+            if (bytes.Length != LogoBytes)
             {
-                _logoBuffer ??= new byte[LogoBytes];
-                NativeArray<byte> bytes = p.Texture.GetPixelData<byte>(0);
-                if (bytes.Length != LogoBytes)
-                {
-                    return;
-                }
-                bytes.CopyTo(_logoBuffer);
-                Directory.CreateDirectory(Folder);
-                File.WriteAllBytes(file, _logoBuffer);
+                return;
             }
-            catch (Exception e)
+            byte[] kept = bytes.ToArray();
+            string folder = Folder;
+            OnWorker(() =>
             {
-                ContactPictures.Logger?.Warn("Contacts: a logo could not be kept in the portrait cache (" + e.Message + "); it is painted again on the next load.");
-            }
+                Directory.CreateDirectory(folder);
+                File.WriteAllBytes(file, kept);
+            }, "a logo could not be kept in the portrait cache");
         }
 
         private void Requeue(ContactPictures.Picture p)
@@ -262,45 +377,36 @@ namespace RealLifeOverhaul
             }
         }
 
-        // ---------------------------------------------------------------- a logo
-
-        private static void PaintLogo(ContactPictures.Picture p)
+        private static void PaintLogo(ContactPictures.Picture p, Fetch f, long began)
         {
             if (p.Look.LikeGame != null)
             {
-                string game = GameLogoFile(p.Look.LikeGame);
-                if (ReadLogo(p, game))
+                if (f.What == Found.GameLogo)
                 {
-                    Done(p, "the game's own picture '" + p.Look.LikeGame + "', kept");
+                    UseLogo(p);
+                    Done(p, "the game's own picture '" + p.Look.LikeGame + "', kept", began);
                     return;
                 }
                 if (CopyGamePicture(p, p.Look.LikeGame))
                 {
-                    KeepLogo(p, game);
-                    Done(p, "the game's own picture '" + p.Look.LikeGame + "'");
+                    KeepLogo(p, f.GameFile);
+                    Done(p, "the game's own picture '" + p.Look.LikeGame + "'", -1);
                     return;
                 }
             }
-            string kept = ShapeLogoFile(p.Look);
-            if (ReadLogo(p, kept))
+            string kept = f.ShapeFile;
+            if (f.What == Found.ShapeLogo)
             {
-                Done(p, "the game's logo shape '" + p.Look.Shape + "', kept");
+                UseLogo(p);
+                Done(p, "the game's logo shape '" + p.Look.Shape + "', kept", began);
                 return;
             }
-            string path = Path.Combine(LogoHelper.GetBuildInIconsFolder(), p.Look.Shape + ".png");
-            Texture2D shape = LogoHelper.GetLogoShapeTexture(path);
-            if (shape == null)
-            {
-                shape = LogoHelper.GetLogoShapeTexture(Path.Combine(LogoHelper.GetBuildInIconsFolder(), "notfound.png"));
-            }
+            Texture2D shape = ShapeTexture(f);
             var back = new Color32(p.Look.R, p.Look.G, p.Look.B, 255);
             var white = new Color32(255, 255, 255, 255);
             int size = ContactPictures.Size;
-            NativeArray<Color32> pixels = p.Texture.GetPixelData<Color32>(0);   // the picture's own memory: no array of our own
-            // The shape is fitted by what is drawn of it, not by its canvas: as high as GlyphShare of the square, and a wide
-            // one (a car) as wide as WideShare, centred. One pass over the shape's pixels to find its bounds, and the same
-            // pixels then sampled here (Ink), not through the engine one call a pixel: some 30,000 calls, most of a frame
-            // of 11 ms for each logo in the first minute after a load.
+            NativeArray<Color32> pixels = p.Texture.GetPixelData<Color32>(0);
+            // Fitted by what is drawn of the shape, not its canvas, and sampled here (Ink) rather than one engine call a pixel.
             int minX = 0, minY = 0, maxX = -1, maxY = -1;
             Color32[] texels = null;
             int sw = 1, sh = 1;
@@ -330,14 +436,25 @@ namespace RealLifeOverhaul
             p.Texture.Apply(false, false);
             if (shape != null)
             {
-                KeepLogo(p, kept);   // (the game's 'not found' shape stands in for a missing one: that is never kept)
+                KeepLogo(p, kept);   // the game's stand-in for a missing shape is never kept
             }
-            Done(p, "the game's logo shape '" + p.Look.Shape + "'" + (shape == null ? " (not found: the game's own 'not found' shape)" : string.Empty));
+            Done(p, "the game's logo shape '" + p.Look.Shape + "'" + (shape == null ? " (not found: the game's own 'not found' shape)" : string.Empty), -1);
         }
 
-        // The shape's alpha at texel coordinates (tx, ty), filtered between the four nearest texels as the engine's
-        // Texture2D.GetPixelBilinear does it for the game's shapes (texel centres at half-texel offsets; edges clamped, the
-        // wrap mode LogoHelper.GetLogoShapeTexture gives them). Pure arithmetic over the pixels already read.
+        // The shape's texture from the bytes the worker read, made as the game's LogoHelper.GetLogoShapeTexture makes it from its file.
+        private static Texture2D ShapeTexture(Fetch f)
+        {
+            if (f.ShapePng == null)
+            {
+                return null;
+            }
+            var shape = new Texture2D(2, 2) { hideFlags = HideFlags.HideAndDontSave, name = f.ShapePath };   // destroyed by PaintLogo once sampled
+            shape.LoadImage(f.ShapePng);
+            shape.wrapMode = TextureWrapMode.Clamp;
+            return shape;
+        }
+
+        // The shape's alpha at texel coordinates, filtered as Texture2D.GetPixelBilinear does for the game's shapes.
         private static float Ink(Color32[] texels, int w, int h, float tx, float ty)
         {
             float u = tx - 0.5f, v = ty - 0.5f;
@@ -350,7 +467,7 @@ namespace RealLifeOverhaul
             return Mathf.Lerp(low, high, fy) / 255f;
         }
 
-        // The box of a shape's pixels that are drawn (alpha over a twentieth), and the pixels it was read from.
+        // The box of a shape's drawn pixels (alpha over a twentieth), and the pixels it was read from.
         private static Color32[] Bounds(Texture2D shape, out int minX, out int minY, out int maxX, out int maxY)
         {
             Color32[] px = shape.GetPixels32();
@@ -364,10 +481,22 @@ namespace RealLifeOverhaul
                 {
                     if (px[y * w + x].a > 12)
                     {
-                        if (x < minX) minX = x;
-                        if (x > maxX) maxX = x;
-                        if (y < minY) minY = y;
-                        if (y > maxY) maxY = y;
+                        if (x < minX)
+                        {
+                            minX = x;
+                        }
+                        if (x > maxX)
+                        {
+                            maxX = x;
+                        }
+                        if (y < minY)
+                        {
+                            minY = y;
+                        }
+                        if (y > maxY)
+                        {
+                            maxY = y;
+                        }
                     }
                 }
             }
@@ -378,7 +507,7 @@ namespace RealLifeOverhaul
             return px;
         }
 
-        // One of the game's own contact pictures, copied through the graphics card (it is packed and not readable as it is).
+        // One of the game's own contact pictures, copied through the graphics card: it is packed and not readable as it is.
         private static bool CopyGamePicture(ContactPictures.Picture p, string name)
         {
             var references = InstanceBehavior<GlobalReferences>.Instance;
@@ -416,26 +545,24 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        // ---------------------------------------------------------------- a face
-
-        private void PaintFace(ContactPictures.Picture p)
+        private void PaintFace(ContactPictures.Picture p, Fetch f, long began)
         {
-            string file = Path.Combine(Folder, ContactCatalogue.CacheName(p.Look.Female, p.Look.Age, p.Seed));
-            if (File.Exists(file) && FromJpeg(p, File.ReadAllBytes(file)))
+            string file = f.FaceFile;
+            if (f.What == Found.Face && FromJpeg(p, f.Jpeg))
             {
-                Done(p, "the portrait cache");
+                Done(p, "the portrait cache", began);
                 return;
             }
             float now = Time.realtimeSinceStartup;
             if (!PortraitTurn.Ready || !PortraitTurn.Take(this, now))
             {
-                Requeue(p);   // the city's portrait camera is not there yet (the main menu, a load), or Flare's painter has it: asked again in a moment
-                p.Tries--;    // (not a failure)
+                Requeue(p);   // the portrait camera is not there yet (the main menu, a load), or Flare's painter has it
+                p.Tries--;    // not a failure
                 return;
             }
             _drawing = p;
             _drawingSince = now;
-            using var piece = SessionWatch.Piece("contacts: a face drawn by the game's portrait camera");   // once per look, ever: a render and a read-back
+            using var piece = SessionWatch.Piece("contacts: a face drawn by the game's portrait camera");   // once per look, ever
             Action<Sprite> back = sprite => UiClone.Safe(() => Drawn(p, sprite, file));
             if (!PortraitTurn.Face(p.Look.Female, p.Look.Age, p.Seed, back))
             {
@@ -459,7 +586,7 @@ namespace RealLifeOverhaul
             {
                 if (sprite != null)
                 {
-                    Destroy(sprite);   // the game's portrait is made for this call alone: let go, as a readable one is below
+                    Destroy(sprite);   // the game's portrait is made for this call alone
                 }
                 if (source != null)
                 {
@@ -471,16 +598,14 @@ namespace RealLifeOverhaul
             Copy(source, p.Texture);
             Destroy(sprite);
             Destroy(source);
-            try
+            byte[] jpeg = p.Texture.EncodeToJPG(90);   // the engine's encoder on the texture: the very bytes it always kept
+            string folder = Folder;
+            OnWorker(() =>
             {
-                Directory.CreateDirectory(Folder);
-                File.WriteAllBytes(file, p.Texture.EncodeToJPG(90));
-            }
-            catch (Exception e)
-            {
-                ContactPictures.Logger?.Warn("Contacts: a face could not be kept in the portrait cache (" + e.Message + "); it is drawn again on the next load.");
-            }
-            Done(p, "the game's portrait camera");
+                Directory.CreateDirectory(folder);
+                File.WriteAllBytes(file, jpeg);
+            }, "a face could not be kept in the portrait cache");
+            Done(p, "the game's portrait camera", -1);
         }
 
         private static bool FromJpeg(ContactPictures.Picture p, byte[] bytes)
@@ -501,8 +626,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        // A readable texture into a picture's own, scaled to its size if it is not already: written into the picture's own memory,
-        // the source read in its own (a JPEG of the cache is RGB24, a picture of the camera RGBA32 or ARGB32), with no array made.
+        // A readable texture into a picture's own memory, scaled if need be; no array is made.
         private static void Copy(Texture2D source, Texture2D into)
         {
             int size = ContactPictures.Size;
@@ -512,7 +636,23 @@ namespace RealLifeOverhaul
             {
                 pixels.CopyFrom(source.GetPixelData<Color32>(0));
             }
-            else if (same && (source.format == TextureFormat.RGB24 || source.format == TextureFormat.ARGB32))
+            else if (same && source.format == TextureFormat.RGB24)
+            {
+                // A kept face: its rows copied out at once and widened in a managed array, not three engine calls a pixel.
+                int n = size * size;
+                _rgb ??= new byte[n * 3];
+                _rgba ??= new byte[n * 4];
+                NativeArray<byte>.Copy(source.GetPixelData<byte>(0), _rgb, n * 3);
+                for (int i = 0, b = 0, o = 0; i < n; i++, b += 3, o += 4)
+                {
+                    _rgba[o] = _rgb[b];
+                    _rgba[o + 1] = _rgb[b + 1];
+                    _rgba[o + 2] = _rgb[b + 2];
+                    _rgba[o + 3] = 255;
+                }
+                into.SetPixelData(_rgba, 0);
+            }
+            else if (same && source.format == TextureFormat.ARGB32)
             {
                 NativeArray<byte> from = source.GetPixelData<byte>(0);
                 bool rgb = source.format == TextureFormat.RGB24;
@@ -532,7 +672,7 @@ namespace RealLifeOverhaul
             }
             else if (same)
             {
-                into.SetPixels32(source.GetPixels32());   // (a format the camera has never given: the engine converts it, as before)
+                into.SetPixels32(source.GetPixels32());   // a format the camera has never given: the engine converts it
             }
             else
             {
@@ -547,14 +687,21 @@ namespace RealLifeOverhaul
             into.Apply(false, false);
         }
 
-        private static void Done(ContactPictures.Picture p, string from)
+        // A kept picture (began: when its bytes started into the texture; -1 for one made from nothing) says the main
+        // thread's time of it against KeptMs: its file was read on the worker.
+        private static void Done(ContactPictures.Picture p, string from, long began)
         {
             p.Drawn = true;
             p.Tries = 0;
             if (Meta.Dev.Verbose)
             {
-                ContactPictures.Logger?.Info("Contacts check (picture): '" + p.Id + "' is a " + (p.Look.Kind == PictureKind.Person ? (p.Look.Female ? "woman" : "man") + " of " + p.Look.Age + ", seed " + p.Seed : "logo")
-                                             + ", from " + from + "; " + ContactPictures.Report() + ": PASS");
+                double ms = began >= 0 ? (Stopwatch.GetTimestamp() - began) * 1000.0 / Stopwatch.Frequency : -1.0;
+                ContactPictures.Logger?.Info("Contacts check (picture): '" + p.Id + "' is a "
+                                             + (p.Look.Kind == PictureKind.Person ? (p.Look.Female ? "woman" : "man") + " of " + p.Look.Age + ", seed " + p.Seed : "logo")
+                                             + ", from " + from
+                                             + (ms >= 0.0 ? " (its file read on a worker, " + ms.ToString("0.00", System.Globalization.CultureInfo.InvariantCulture)
+                                                            + " ms of the main thread, wanted under " + KeptMs + " ms)" : string.Empty)
+                                             + "; " + ContactPictures.Report() + ": " + (ms <= KeptMs ? "PASS" : "SLOW"));
             }
         }
     }

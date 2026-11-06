@@ -173,6 +173,7 @@ internal static partial class Program
         MarketCancelling();
         MarketMargin();
         MarketCaps();
+        HoldingCapChecks();   // the most of a company one may hold, at each choice of its option (HoldingCapChecks.cs)
         MarketCity();
         MarketNoFreeLunch();
         MarketCost();

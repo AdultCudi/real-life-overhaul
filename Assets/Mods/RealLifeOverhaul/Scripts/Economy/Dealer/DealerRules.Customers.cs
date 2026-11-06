@@ -90,6 +90,57 @@ namespace RealLifeOverhaul.Economy.Dealership
             return (int)Math.Min(900, c);
         }
 
+        /// <summary>
+        /// The offer chance at a showroom with fixed prices: only <see cref="DealerCatalogue.FixedOffers"/> of the buyers who would
+        /// make an offer still do, as the rest came to bargain. The price's own draw (<see cref="PriceDraw"/>) still counts in full.
+        /// </summary>
+        public static int FixedChance(int chance, bool fixedPrices)
+        {
+            return fixedPrices ? (int)((long)Math.Max(0, chance) * DealerCatalogue.FixedOffers / 1000) : chance;
+        }
+
+        /// <summary>
+        /// A buyer at a showroom with fixed prices: they offer the asking price and go no higher. A bargain hunter does not make
+        /// such an offer (<see cref="FixedChance"/>), so one drawn buys as an ordinary buyer.
+        /// </summary>
+        public static void AtAsking(DealerOffer d, StockCar car)
+        {
+            d.Offer = car.Asking;
+            d.Ceiling = car.Asking;
+            d.Profile = Math.Max(1, d.Profile);
+        }
+
+        /// <summary>The price a deal closes at: the car's asking price as it stands at a showroom with fixed prices, otherwise the buyer's offer.</summary>
+        public static int Price(DealerYard y, DealerOffer d, StockCar car)
+        {
+            return y.Fixed ? car.Asking : d.Offer;
+        }
+
+        /// <summary>Whether the staff close a deal on their own: with fixed prices as soon as no test drive is owed, otherwise from their floor.</summary>
+        public static bool StaffClose(DealerYard y, DealerOffer d, StockCar car)
+        {
+            return y.Fixed ? d.Stage == OfferStage.Open && (!d.WantsDrive || d.Drove) : StaffClose(d, car, y.StaffFloor);
+        }
+
+        /// <summary>
+        /// Fixed prices switched on: the offers waiting below the asking price are withdrawn, as those buyers came to bargain (no
+        /// reputation lost; the showroom changed its terms, not they). Returns how many went.
+        /// </summary>
+        public static int Withdraw(DealerYard y)
+        {
+            int gone = 0;
+            for (int i = y.Deals.Count - 1; i >= 0; i--)
+            {
+                StockCar car = y.Car(y.Deals[i].Car);
+                if (car != null && y.Deals[i].Offer < car.Asking)
+                {
+                    y.Deals.RemoveAt(i);
+                    gone++;
+                }
+            }
+            return gone;
+        }
+
         /// <summary>The car a visitor looks at, weighted by its draw; none out, in the workshop or with an offer waiting. -1 if none.</summary>
         public static int LookAt(DealerYard y, int now, int day, IList<int> worths, int featured, ref DealerDice dice)
         {
@@ -324,11 +375,16 @@ namespace RealLifeOverhaul.Economy.Dealership
                 }
                 StockCar car = y.Cars[c];
                 int lift = IsFeatured(featured, c) ? (int)((long)mood.Convert * DealerCatalogue.FeaturedOffer / 1000) : mood.Convert;
-                if (!dice.Chance(OfferChance(car.Asking, worths[c], day - car.Bought, h.Skill, car.Condition, lift)))
+                if (!dice.Chance(FixedChance(OfferChance(car.Asking, worths[c], day - car.Bought, h.Skill, car.Condition, lift), y.Fixed)))
                 {
                     continue;
                 }
-                y.Deals.Add(Offer(s.Next(), car, now, h.Skill, y.Warranty, financeLeastAtPrices, models, colours, level, mood, ref dice));
+                DealerOffer offer = Offer(s.Next(), car, now, h.Skill, y.Warranty, financeLeastAtPrices, models, colours, level, mood, ref dice);
+                if (y.Fixed)
+                {
+                    AtAsking(offer, car);
+                }
+                y.Deals.Add(offer);
                 r.Offers++;
             }
             if (y.Today.Day < day)

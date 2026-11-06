@@ -4,19 +4,16 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.Nav
 {
     /// <summary>
-    /// A line through a list of points, drawn as one ribbon by the game's interface (a Graphic: it is masked and
-    /// batched like any picture of the HUD). Four vertices a point: the two inner ones carry the colour, the two
-    /// outer ones fade to nothing, which is what gives the edge its softness without a texture.
-    ///
-    /// The mesh is made only when <see cref="Set"/> is called (a new route, or the part already driven being cut
-    /// off), never per frame: on the minimap the line lies in the map's own space and is moved with it.
+    /// A line through points, drawn as one ribbon by the game's interface, masked and batched like any picture of the HUD.
+    /// Four vertices a point: the inner two carry the colour and the outer two fade out, a soft edge with no texture. The
+    /// mesh is made only when <see cref="Set"/> is called, never per frame.
     /// </summary>
     public sealed class NavRouteLine : MaskableGraphic
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("navigation", "NavRouteLine", typeof(NavRouteLine));   // the game's calls of it (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("navigation", "NavRouteLine", typeof(NavRouteLine));
 
         private const int MostPoints = 15000;   // four vertices each: under the 65,000 one mesh of the interface holds
-        private const float MiterLimit = 2.5f;
+        private const float MiterLimit = 2.5f;  // times the half width a corner may reach out
 
         private float[] _x;
         private float[] _y;
@@ -24,7 +21,7 @@ namespace RealLifeOverhaul.Nav
         private float _half = 3f;
         private float _soft = 0.6f;
 
-        /// <summary>The points (kept by reference: the caller owns the arrays and calls again when they change), the line's width and the width of its soft edge.</summary>
+        /// <summary>The points, kept by reference (the caller calls again when they change), the width and the soft edge's width.</summary>
         public void Set(float[] x, float[] y, int count, float width, float soft)
         {
             _x = x;
@@ -48,7 +45,7 @@ namespace RealLifeOverhaul.Nav
         {
             if (FrameGuard.Off)
             {
-                Guard.NoMesh(vh);   // (its feature is off: nothing drawn)
+                Guard.NoMesh(vh);   // the feature is off: nothing drawn
                 return;
             }
             try
@@ -140,7 +137,7 @@ namespace RealLifeOverhaul.Nav
             }
             catch (System.Exception fault)
             {
-                Guard.FailMesh(FrameGuard, fault, vh);   // (half a mesh is not drawn)
+                Guard.FailMesh(FrameGuard, fault, vh);   // half a mesh is not drawn
             }
         }
     }

@@ -4,21 +4,16 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The fault count of one entry point of a feature (a director's Update, a component's FixedUpdate, a handler on
-    /// one of the game's events). A fault now and then is reported and the feature goes on; <see cref="Most"/> of them
-    /// within <see cref="Seconds"/> seconds switch it off for the session (<see cref="Off"/>), so that a feature broken
-    /// by a game update says so once instead of throwing every frame. Core/Guard does the saying and the switching;
-    /// this class is the arithmetic, with no Unity or game types (ContractCheck tests it).
+    /// The fault count of one entry point of a feature: <see cref="Most"/> faults within <see cref="Seconds"/> switch it
+    /// off for the session, so a feature broken by a game update says so once instead of throwing every frame.
+    /// Core/Guard does the saying and switching; this is the arithmetic, game-free (ContractCheck tests it).
     /// </summary>
     public sealed class FeatureGuard
     {
-        /// <summary>Faults within the window that switch an entry point off.</summary>
-        public const int Most = 5;
+        public const int Most = 5;           // faults within the window that switch an entry point off
+        public const float Seconds = 30f;    // the window, seconds of real time
 
-        /// <summary>The window, in seconds of real time.</summary>
-        public const float Seconds = 30f;
-
-        /// <summary>The feature of Meta/FeatureList it belongs to (null: the mod's own machinery).</summary>
+        /// <summary>Its Meta/FeatureList id; null for the mod's own machinery.</summary>
         public readonly string Feature;
 
         /// <summary>What it is, in English, for Player.log: "LifeEvents.Update".</summary>
@@ -26,6 +21,8 @@ namespace RealLifeOverhaul
 
         private float _windowStart;
         private int _inWindow;
+        private bool _off;    // switched off for the session
+        private bool _away;   // its feature stands on New York's data and this city is another (Core/CityCheck); back in New York
 
         public FeatureGuard(string feature, string where)
         {
@@ -33,20 +30,20 @@ namespace RealLifeOverhaul
             Where = where;
         }
 
-        /// <summary>True once it has been switched off; for the rest of the session.</summary>
-        public bool Off { get; private set; }
+        /// <summary>True once switched off, for the rest of the session, and while its feature is away in another city.</summary>
+        public bool Off => _off || _away;
 
-        /// <summary>Faults since the session began, counted after it was switched off too.</summary>
+        /// <summary>True while its feature stands down in a city it does not know (<see cref="FeatureGuards.SetAway"/>).</summary>
+        public bool Away => _away;
+
+        /// <summary>Faults this session, counted after the switch-off too.</summary>
         public int Faults { get; private set; }
 
-        /// <summary>
-        /// Counts one fault at the given time (seconds of real time). True only for the fault that switches it off;
-        /// every later call answers false.
-        /// </summary>
+        /// <summary>Counts a fault at <paramref name="now"/> (seconds of real time); true only for the one that switches it off.</summary>
         public bool Count(float now)
         {
             Faults++;
-            if (Off)
+            if (_off)
             {
                 return false;
             }
@@ -58,16 +55,22 @@ namespace RealLifeOverhaul
             _inWindow++;
             if (_inWindow >= Most)
             {
-                Off = true;
+                _off = true;
                 return true;
             }
             return false;
         }
 
-        /// <summary>Switched off from outside (its feature was switched off by another of its entry points).</summary>
+        /// <summary>Switched off from outside: another entry point of its feature switched the feature off.</summary>
         public void SwitchOff()
         {
-            Off = true;
+            _off = true;
+        }
+
+        /// <summary>Its feature stands down in this city, or comes back; a switch-off for faults or a missing member stays.</summary>
+        internal void SetAway(bool away)
+        {
+            _away = away;
         }
     }
 
@@ -78,10 +81,11 @@ namespace RealLifeOverhaul
     {
         private static readonly List<FeatureGuard> All = new List<FeatureGuard>(128);
         private static readonly HashSet<string> OffFeatures = new HashSet<string>(StringComparer.Ordinal);
+        private static readonly HashSet<string> AwayFeatures = new HashSet<string>(StringComparer.Ordinal);   // standing down in this city
 
         public static IReadOnlyList<FeatureGuard> Guards => All;
 
-        /// <summary>A guard for an entry point, made once (a static of the class it guards); off from the start when its feature is off already.</summary>
+        /// <summary>A guard for an entry point, made once as a static; off from the start if its feature is off already.</summary>
         public static FeatureGuard For(string feature, string where)
         {
             var guard = new FeatureGuard(feature, where);
@@ -90,27 +94,27 @@ namespace RealLifeOverhaul
                 All.Add(guard);
                 if (feature != null && OffFeatures.Contains(feature))
                 {
-                    guard.SwitchOff();   // (a class first used after its feature was switched off, as the mod started or after its faults)
+                    guard.SwitchOff();   // a class first used after its feature was switched off
+                }
+                if (feature != null && AwayFeatures.Contains(feature))
+                {
+                    guard.SetAway(true);   // a class first used in a city its feature stands down in
                 }
             }
             return guard;
         }
 
-        /// <summary>True when the feature was switched off this session after its faults.</summary>
         public static bool FeatureOff(string feature)
         {
             return feature != null && OffFeatures.Contains(feature);
         }
 
-        /// <summary>True when any feature was switched off this session.</summary>
         public static bool AnyOff => OffFeatures.Count > 0;
 
         /// <summary>The features switched off this session, in no order.</summary>
         public static IEnumerable<string> OffList => OffFeatures;
 
-        /// <summary>
-        /// Switches the whole feature off: every guard of it says Off from now on. True the first time for that feature.
-        /// </summary>
+        /// <summary>Switches every guard of a feature off; true the first time for that feature.</summary>
         public static bool SwitchOff(string feature)
         {
             lock (All)
@@ -130,7 +134,57 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>For the checks: forget every feature switched off (the guards themselves stay as they are).</summary>
+        /// <summary>True while the feature stands down in this city.</summary>
+        public static bool FeatureAway(string feature)
+        {
+            return feature != null && AwayFeatures.Contains(feature);
+        }
+
+        /// <summary>
+        /// The features that stand down in this city, in place of those before (<paramref name="away"/> empty or null: every
+        /// feature runs): every guard of each is away, every other guard back. The features that went away and those that
+        /// came back are added to the lists given (either may be null). Once a city load, never per frame.
+        /// </summary>
+        public static void SetAway(ICollection<string> away, List<string> wentAway, List<string> cameBack)
+        {
+            lock (All)
+            {
+                if (away != null)
+                {
+                    foreach (string feature in away)
+                    {
+                        if (feature != null && !AwayFeatures.Contains(feature))
+                        {
+                            wentAway?.Add(feature);
+                        }
+                    }
+                }
+                foreach (string feature in AwayFeatures)
+                {
+                    if (away == null || !away.Contains(feature))
+                    {
+                        cameBack?.Add(feature);
+                    }
+                }
+                AwayFeatures.Clear();
+                if (away != null)
+                {
+                    foreach (string feature in away)
+                    {
+                        if (feature != null)
+                        {
+                            AwayFeatures.Add(feature);
+                        }
+                    }
+                }
+                foreach (FeatureGuard guard in All)
+                {
+                    guard.SetAway(guard.Feature != null && AwayFeatures.Contains(guard.Feature));
+                }
+            }
+        }
+
+        /// <summary>For the checks: forgets the features switched off; the guards stay as they are.</summary>
         internal static void ForgetForTests()
         {
             OffFeatures.Clear();

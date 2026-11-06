@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
 using RealLifeOverhaul.GameUi;
+using UI.Notification;
 using UI.Smartphone;
 using UnityEngine;
 
@@ -121,7 +122,8 @@ namespace RealLifeOverhaul.Economy
                 _table.ClearSelection();
                 return;
             }
-            _pick = row.Id;
+            int mark = row.Id.IndexOf('#');   // a row that shares its page with another of the list (the managers' Needs you) carries a mark after it
+            _pick = mark > 0 ? row.Id.Substring(0, mark) : row.Id;
             Refresh();
         }
 
@@ -489,11 +491,23 @@ namespace RealLifeOverhaul.Economy
             {
                 box.Row("reallife_co_shop_hidden", file.Hide + "%", CellTone.Yellow);
             }
+            BuildingRegistration reg = shop.Reg;   // the shop is the director's and is used again; the click keeps its own
+            Transform buttons = box.ButtonRow();
+            InfoBox.Button(buttons, InfoBox.Positive, "reallife_co_open_bizman", () => OpenBizMan(reg));
             if (ServicesDirector.CanSell)
             {
-                InfoBox.Button(box.ButtonRow(), InfoBox.Negative, "reallife_svc_open_sale", () => ServicesDirector.OpenSale(file.Place));
+                InfoBox.Button(buttons, InfoBox.Negative, "reallife_svc_open_sale", () => ServicesDirector.OpenSale(file.Place));
             }
             BackButton(box);
+        }
+
+        // The business's own page in the game's BizMan (CompanyGame.OpenBizMan); the game's notice if it cannot be opened.
+        private static void OpenBizMan(BuildingRegistration reg)
+        {
+            if (!CompanyGame.OpenBizMan(reg))
+            {
+                Notifications.ShowError("reallife_co_bizman_cannot", "reallife_co_bizman_cannot", false);
+            }
         }
     }
 }

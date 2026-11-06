@@ -378,7 +378,19 @@ namespace RealLifeOverhaul.Meta
             {
                 return (value != 0 ? "reallife_meta_on" : "reallife_meta_off").GetLocalization();
             }
+            if (info.Type == OptionType.Choice && info.ChoiceKeys != null)
+            {
+                string choice = OptionValueRules.Choice(info.ChoiceKeys, value, Words);
+                return choice.Length > 0 ? choice : value.ToString(CultureInfo.InvariantCulture);
+            }
+            if (info.Type == OptionType.Slider && info.LabelKey != null)
+            {
+                return OptionValueRules.Slider(info.ValueLabelKey, value, Words);   // "75%", as the page shows it
+            }
             return value.ToString(CultureInfo.InvariantCulture);
         }
+
+        /// <summary>The game's localizer as a function, made once for <see cref="OptionValueRules"/>.</summary>
+        internal static readonly Func<string, string> Words = key => key.GetLocalization();
     }
 }

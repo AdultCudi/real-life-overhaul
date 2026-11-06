@@ -2,19 +2,11 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Events
 {
-    /// <summary>
-    /// The hose run from the engine to the nozzle: a line of round segments lying on the ground
-    /// along a gentle curve, the last of them rising to the nozzle in the firefighter's hands.
-    /// Sixteen segments, made once from the shared round shape and one shared paint, kept
-    /// switched off and reused; laid on an event, never moved per frame. The run is laid clear
-    /// of vehicles and street furniture: the curve is tried bending one way, then the other,
-    /// then straight, and if every way passes through something solid no hose is laid at all
-    /// (the crew then works from the engine's own reel, and the log says so).
-    /// </summary>
+    /// <summary>The hose from engine to nozzle, sixteen segments along the ground made once and laid on an event; no hose if every curve meets something.</summary>
     internal sealed class Hose
     {
         private const int Segments = 16;
-        private const float Thickness = 0.075f;
+        private const float Thickness = 0.075f;   // metres
         private static readonly Color Jacket = new Color(0.86f, 0.72f, 0.10f);
 
         private readonly Transform _root;
@@ -82,12 +74,12 @@ namespace RealLifeOverhaul.Events
             return true;
         }
 
-        /// <summary>Rolls it up one length at a time from the nozzle end. True while there is hose left on the ground.</summary>
-        public bool RollUp()
+        /// <summary>Rolls it up two lengths at a time from the nozzle end.</summary>
+        public void RollUp()
         {
             if (_shown <= 0)
             {
-                return false;
+                return;
             }
             _shown = Mathf.Max(0, _shown - 2);
             for (int i = _shown; i < Segments; i++)
@@ -101,7 +93,6 @@ namespace RealLifeOverhaul.Events
             {
                 _root.gameObject.SetActive(false);
             }
-            return _shown > 0;
         }
 
         /// <summary>Gone at once. Safe at any time.</summary>
@@ -111,10 +102,10 @@ namespace RealLifeOverhaul.Events
             _root.gameObject.SetActive(false);
         }
 
-        // The points of the run with the curve bent by an offset at its middle; false if any ground stretch passes through something solid.
+        // The points of the run, bent by an offset at its middle; false if a ground stretch passes through something solid.
         private bool Trace(Vector3 outlet, Vector3 nozzle, Vector3 bend)
         {
-            // An S: out from the engine one way, in to the nozzle the other, both on the ground; the last segment rises to the hands.
+            // Out from the engine one way and in to the nozzle the other; the last segment rises to the hands.
             for (int i = 0; i <= Segments; i++)
             {
                 float t = i / (float)Segments;

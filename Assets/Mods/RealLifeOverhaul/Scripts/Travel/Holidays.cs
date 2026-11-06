@@ -146,7 +146,7 @@ namespace RealLifeOverhaul
                 for (int i = 0; all != null && i < all.Count; i++)
                 {
                     BuildingRegistration registration = all[i];
-                    if (registration == null || !GoingPublic.Mine(registration))
+                    if (registration == null || !GoingPublic.Mine(registration) || !GameRegistrations.Found(registration))
                     {
                         continue;
                     }
@@ -157,7 +157,7 @@ namespace RealLifeOverhaul
                     }
                     count++;
                     profit += registration.GetAvgDailyIncome(7);
-                    alerts += registration.Alerts;
+                    alerts += GameRegistrations.Alerts(registration);
                 }
                 if (count == 0)
                 {
@@ -299,7 +299,7 @@ namespace RealLifeOverhaul
             TravelState.Away = true;
             TravelState.AwayStep = 0;
             TravelState.AwayStartDay = TimeHelper.CurrentDay;
-            TravelState.AwayMoneyAtStart = Mathf.RoundToInt(SaveGameManager.Current.Money);
+            TravelState.AwayMoneyAtStart = WholeMoney.Round(SaveGameManager.Current.Money);   // saturating: a purse past an int is not a cast (Core/WholeMoney)
             TravelState.AwaySpent = TravelState.AwayRelaxed = TravelState.AwaySouvenirs = 0;
             _director.Seclude(true);
             _director.Log("Travel: set off on " + trip.Id + " (" + trip.Days + " days).");

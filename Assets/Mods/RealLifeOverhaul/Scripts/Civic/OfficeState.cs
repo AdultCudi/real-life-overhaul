@@ -6,8 +6,8 @@ namespace RealLifeOverhaul
     /// <summary>A matter before the council at its next meeting.</summary>
     public sealed class OfficeMotion
     {
-        public const int KindPolicy = 0, KindBudget = 1;
-        public const int ByCity = 0, ByPlayer = 1, ByMayor = 2, ByPetition = 3;
+        public const int KindPolicy = 0, KindBudget = 1, KindZoning = 2;
+        public const int ByCity = 0, ByPlayer = 1, ByMayor = 2, ByPetition = 3, ByApplicant = 4;
 
         public int Kind;
         public int Policy = -1;                          // an index into CivicCatalogue.All (a policy motion)
@@ -15,6 +15,17 @@ namespace RealLifeOverhaul
         public int Day;                                  // the day it was put on the agenda
         public bool Undeclared;                          // the player tabled it as mayor with an interest in it they did not declare
         public readonly int[] Budget = new int[4];       // the departments' levels (a budget motion)
+
+        // A zoning motion (CouncilZoning): a builder's application for a lot, or a change for a whole class of the new
+        // district's lots. Saved apart from the other motions, after everything an older version reads.
+        public string Lot;                               // the lot applied for; null for a class's rezoning
+        public int Class;                                // the lot's class (small, office, big, warehouse)
+        public int Use;                                  // the builders' use (homes, shops, offices, warehouses)
+        public bool Add = true;                          // to allow the use; false to stop allowing it (a class's rezoning only)
+        public int Suit = 500;                           // the planners' view of the use on the land, thousandths
+        public int Reputation = 50;                      // the applicant's standing, 0 to 100
+
+        public bool Zoning => Kind == KindZoning;
     }
 
     /// <summary>A vote the player cast on something they had an interest in, without declaring it.</summary>
@@ -245,10 +256,15 @@ namespace RealLifeOverhaul
             w.Int(RaceTurnout);
             w.Int(Result).Int((int)ResultRace).Int(ResultShare).Int(ResultDay).Bool(ResultShown);
             w.Int((int)Holds).Int(Seat).Int(TermStart).Float(Approval).Int(LowDays).Int(PayDay).Bool(Registered).Int(RegisterBy).Int(NextMeeting);
-            w.Int(Agenda.Count);
+            int zoning = ZoningCount();
+            w.Int(Agenda.Count - zoning);
             for (int i = 0; i < Agenda.Count; i++)
             {
                 OfficeMotion m = Agenda[i];
+                if (m.Zoning)
+                {
+                    continue;   // written after everything an older version reads
+                }
                 w.Int(m.Kind).Int(m.Policy).Int(m.By).Int(m.Day).Bool(m.Undeclared);
                 for (int d = 0; d < m.Budget.Length; d++)
                 {
@@ -274,7 +290,28 @@ namespace RealLifeOverhaul
             }
             w.Int(Runs).Int(Wins).Int(Terms);
             GovState.WriteCandidate(w, Held);
+            // Fields added later, at the end in this order: an older line stops before them.
+            w.Int(zoning);
+            for (int i = 0; i < Agenda.Count; i++)
+            {
+                OfficeMotion m = Agenda[i];
+                if (m.Zoning)
+                {
+                    w.Int(m.By).Int(m.Day).Bool(m.Undeclared).Text(m.Lot).Int(m.Class).Int(m.Use).Bool(m.Add).Int(m.Suit).Int(m.Reputation);
+                }
+            }
             return w.ToString();
+        }
+
+        /// <summary>The zoning matters on the agenda.</summary>
+        public int ZoningCount()
+        {
+            int n = 0;
+            for (int i = 0; i < Agenda.Count; i++)
+            {
+                n += Agenda[i].Zoning ? 1 : 0;
+            }
+            return n;
         }
 
         /// <summary>False (and the caller starts afresh) for a line that is not a state of this version.</summary>
@@ -417,6 +454,20 @@ namespace RealLifeOverhaul
                 Terms = Math.Max(0, r.Int());
                 GovState.ReadCandidate(r, Held);
                 Held.Player = true;
+                int zoning = r.More ? Math.Min(r.Int(), CouncilZoning.AgendaMost) : 0;
+                for (int i = 0; i < zoning && !r.Failed; i++)
+                {
+                    var m = new OfficeMotion
+                    {
+                        Kind = OfficeMotion.KindZoning, By = OfficeRules.Clamp(r.Int(), 0, OfficeMotion.ByApplicant), Day = r.Int(), Undeclared = r.Bool(), Lot = r.Text(),
+                        Class = OfficeRules.Clamp(r.Int(), 0, 3), Use = OfficeRules.Clamp(r.Int(), 0, 3), Add = r.Bool(), Suit = OfficeRules.Clamp(r.Int(), 0, 1000),
+                        Reputation = OfficeRules.Clamp(r.Int(), 0, 100)
+                    };
+                    if (!r.Failed)
+                    {
+                        Agenda.Add(m);
+                    }
+                }
                 if (Holds != OfficeRace.Council)
                 {
                     Seat = -1;

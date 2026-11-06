@@ -3,16 +3,11 @@ using System;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Keys by the input system's own names ("&lt;Keyboard&gt;/f3", "&lt;Mouse&gt;/rightButton"), so that a key of the
-    /// mod's (a Unity KeyCode), a binding of the game's (an input action's path) and a key the game reads by itself (a
-    /// KeyCode, or a Keyboard property such as leftShiftKey) can be told to be the same key. Game-free, so that
-    /// ContractCheck (KeyClashChecks.cs) reads the game's files and the built mod with the very rules <see cref="Keys"/>
-    /// names a key by on the options page.
-    ///
-    /// What the game binds and reads is read from its files; what Windows, Steam, the graphics drivers' overlays and the
-    /// mods players run beside this one take is listed here (<see cref="Taken"/>), each with why.
-    ///
-    /// Only called when a rebind row is drawn and by the checks: string work, never per frame.
+    /// Keys by the input system's names ("&lt;Keyboard&gt;/f3"), so a key of the mod's (a KeyCode), a binding of the game's
+    /// and a key the game reads itself (a KeyCode or a Keyboard property) can be told to be the same. Game-free, so
+    /// ContractCheck reads the game with the same rules Core/Keys uses on the options page. What Windows, Steam, the
+    /// overlays and other mods take is listed in <see cref="Taken"/>.
+    /// COST: string work when a rebind row is drawn; never per frame.
     /// </summary>
     public static class KeyRules
     {
@@ -33,10 +28,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Keys taken outside the game and this mod: a key that acts by itself, or changes what typing gives; a key that
-        /// acts with Shift, which is held while moving (the game's Toggle Running); and F4, whose Alt+F4 closes the game
-        /// at once. The overlays' Alt combinations (NVIDIA's Alt+F1 to Alt+F3, Alt+F9, Alt+F10 and Alt+Z, AMD's Alt+R) are
-        /// not counted: nothing in play holds Alt down (the mod's free-cursor key is a press).
+        /// Keys taken outside the game and this mod: one that acts alone or changes typing, one that acts with Shift (held
+        /// while running), and F4 (Alt+F4). The overlays' Alt combinations are not counted: nothing in play holds Alt.
         /// </summary>
         public static readonly Holder[] Taken =
         {
@@ -69,9 +62,8 @@ namespace RealLifeOverhaul
         };
 
         /// <summary>
-        /// The input system's path of a Unity KeyCode, by its name ("F3", "Alpha1", "LeftShift", "Mouse1"). With
-        /// <paramref name="either"/>, the path that covers both of a pair ("&lt;Keyboard&gt;/shift"); null for a key the
-        /// input system has no path for (a joystick button).
+        /// The input system's path of a KeyCode by name ("Alpha1"); with <paramref name="either"/>, the path covering both
+        /// of a pair ("&lt;Keyboard&gt;/shift"). Null for a key without a path (a joystick button).
         /// </summary>
         public static string PathOf(string keyCode, bool either = false)
         {
@@ -122,9 +114,9 @@ namespace RealLifeOverhaul
             }
             if (keyCode.StartsWith("Mouse", StringComparison.Ordinal))
             {
-                return Mouse + "button" + keyCode.Substring(5);   // (Mouse5 and Mouse6: buttons the input system names by number)
+                return Mouse + "button" + keyCode.Substring(5);   // Mouse5 and Mouse6, named by number
             }
-            // Letters, function keys, arrows, brackets and the rest are the same word with a small first letter.
+            // The rest are the same word with a small first letter.
             return Keyboard + char.ToLowerInvariant(keyCode[0]) + keyCode.Substring(1);
         }
 
@@ -160,10 +152,7 @@ namespace RealLifeOverhaul
             return Keyboard + name;
         }
 
-        /// <summary>
-        /// Whether a binding's path takes a key: the same path, or a path that covers both of a pair ("shift" takes the
-        /// left and the right one). Compared without regard to case, as the input system does.
-        /// </summary>
+        /// <summary>True if a binding's path takes a key: the same path, or one covering both of a pair; case ignored, as the input system does.</summary>
         public static bool Takes(string bound, string key)
         {
             if (bound == null || key == null)

@@ -107,7 +107,7 @@ namespace RealLifeOverhaul.Economy
                         row.Set(2, FinanceText.T("reallife_econ_row_rate", "rate", rate.ToString("0.#")), rate);
                         if (answer == ProductAnswer.Yes)
                         {
-                            LoanQuote quote = PhoneLending.Quote(Bank, Mathf.FloorToInt(most), score);
+                            LoanQuote quote = PhoneLending.Quote(Bank, WholeMoney.Floor(most), score);
                             row.Set(3, FinanceText.Money(quote.DailyPayment + quote.DailyInterest), quote.DailyPayment + quote.DailyInterest);
                             row.Set(4, FinanceText.Money(quote.Fee), quote.Fee);
                         }

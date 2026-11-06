@@ -72,6 +72,9 @@ What cannot be told from the one log there is: its last transit line is the only
 
 - **The network** (`TransitMap`, `RouteSearch`) is laid out by rule in the first seconds out of doors after a city load and kept in memory only.
   The ends of the routes are the game's subway stations in the order of `SubwayStationName`: up to six times over, the first station not yet used, and the unused station furthest from it (500 m to 2.8 km) that can be driven to **and back from**.
+  After the stations come the termini of the mod's own (`TransitMap.AddTerminus`), sorted by name: a district of the mod's own has no subway station, and the game's station names are a fixed list ([New ground](new-ground.md)). With none, the network is as before.
+
+  After the paired routes come a district's own (`TransitMap.AddRoute`, `TransitPlan.Route`; Uptown's two, [Uptown](uptown.md)): a way through given points, each stretch the shortest to the kerb lanes round the next point, and its stops where they are wanted, each at the nearest lane point round the place that takes a stop by the rules below (26 m of plain lane either side, or 18 m a little further off, as an avenue between near crossings holds), or shared with a line stopping there. They run as local lines numbered on after the paired ones, so the main lines stay the paired routes they were. `Transit check (district routes): ...` says how many stops were wanted, laid and missed.
 
   A line's end is any plain lane point within 150 m of its station (0.43.0 took the one nearest point, which is often on a lane that only leads away: that, and never changing lane, is why six directions had "no way along the road graph").
 
@@ -85,6 +88,7 @@ What cannot be told from the one log there is: its last transit line is the only
   It must have no junction, give-way or lane beside it on the kerb side within 26 m of line either way.
 
   It must have pavement 1.3 to 5.6 m to its right that is 1.5 m deep, with nothing static and no door within 2.4 m where the pole and the waiting people stand.
+  The pole is judged again where it stands once its spot on the pavement is found (up to 0.3 m off the place asked) against the kerb as found (up to 0.3 m off the step that found it): the figures `Transit check (poles)` reads, so every pole laid clears both doors and the ways to them (until 25 Oct 2026 a pole was judged at the place asked against the step, the likely cause of the check failing at 19 of 51 stops in a log of that day).
 
   Where the pavement is also bare and deep 3.2 m further on there is room for a shelter.
   A stop is named after the nearest building's address.
@@ -348,6 +352,8 @@ So a Honza is 120 to service, 180 for tyres, 90 for brakes, 40 a period to insur
 | insurance | per car, 28 days, renews itself; pays 80 % of a repair bill over the first 100 | 0.6 % of list price, 40 to 2,500, +25 % per claim (a claim is forgotten after 56 days) |
 | registration and inspection | once a game year (`daysPerYear`), renewable from 30 days before | 60 + 0.2 % (300 at most), 75 more when late |
 
+The Garage contact opens on a summary when the player has two cars or more and one is uninsured: "Insure all" insures every car without a policy, each at its own premium (`CarPhone.PremiumOf`), booked one line a car as the renewals are, or none when the money does not cover them all; "Go through the cars" opens the pages. A car's page and Insure all both buy through `CarPhone.Insure`, so the premium and the dates cannot differ. With "Developer diagnostics" on, each press writes `Car check (insure all)`.
+
 A service is asked for standing in a filling station's repair bay (the game's own bay, trucks in the truck bay).
 The game shows its own panel there ("Repair [F]", "Wash [P]": `GasStationOverlay` in the game's box over a place); `Garage/GarageBay` gives that panel a second line (what is due and what it comes to, `CarOwnership.BayLine`) and a third button, "Garage", on the game's confirm key.
 
@@ -384,9 +390,9 @@ Props (`PropAssets`, metres, standing on their origin):
 | `bus_shelter` | 1.70 x 2.50 x 3.76 | ground centre of the floor (1.4 deep, 3.6 long); length along Z, open to -X, back at +X | bench seat 0.46 up along the back from z -1.3 to +0.6, end panel (route map, advert) at +Z; glass may be opaque |
 | `city_bus` and its parts | 2.40 x 3.05 x 10.90 | ground centre under the middle of the bus, nose to +Z | **delivered**: the mod's own bus (`Transport/BusVehicle`), its body with the wheels, the door leaves and the lit lamps as props of their own that the code puts together ([`PropAssets/README.md`](../../PropAssets/README.md), "Service vehicles"); the shuttle body `minibus` it replaced is gone |
 | `turnstile` | 0.30 x 1.00 x 1.20 | ground centre, reader on top at 0.975 | for a subway entrance, if entrances are ever dressed |
-| `fuel_pump`, `jerry_can` | 0.5 x 1.6 x 0.4; 0.35 x 0.45 x 0.18 | ground centre; can: handle on top | the mechanic's can for fuel brought to the roadside |
-| `warning_triangle` | 0.45 x 0.42 x 0.05 | ground centre, faces +Z, glow | stood behind a broken-down car |
-| `car_wash_arch` | 3.6 x 3.2 x 1.0 | ground centre, drive through along Z | the game already washes cars in its repair bays |
+| `jerry_can` | 0.35 x 0.45 x 0.18 | ground centre; handle on top | the mechanic's can for fuel brought to the roadside (`fuel_pump` was taken out of the props bundle on 26 Oct 2026 as nothing placed it; a feature that wants it models it anew in the second bundle (PropAssets/README.md, "Adding a prop from Blender")) |
+| `warning_triangle` | 0.45 x 0.42 x 0.05 | ground centre, faces +Z, glow | taken out of the props bundle on 26 Oct 2026 as nothing placed it; a feature that wants it models it anew in the second bundle (PropAssets/README.md, "Adding a prop from Blender") |
+| `car_wash_arch` | 3.6 x 3.2 x 1.0 | ground centre, drive through along Z | taken out of the props bundle on 26 Oct 2026 as nothing placed it; a feature that wants it models it anew in the second bundle (PropAssets/README.md, "Adding a prop from Blender") |
 
 Clips (`CityAssets`, Humanoid, in place, starting and ending in the standing idle):
 

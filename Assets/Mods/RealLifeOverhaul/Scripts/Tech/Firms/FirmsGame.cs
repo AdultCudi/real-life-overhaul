@@ -19,6 +19,9 @@ namespace RealLifeOverhaul.Tech
     /// </summary>
     internal static class FirmsGame
     {
+        /// <summary>Owner deduction labels whose mixed costs have no single portable recurrence rule.</summary>
+        internal static string[] CompanionUnclassifiedTaxLabels() => new[] { DeductKey.GetLocalization(), ReliefDeductKey.GetLocalization() };
+
         public const string TakingsKey = "reallife_transaction_tech_takings";
         public const string HostingKey = "reallife_transaction_tech_hosting";
         public const string SoftwareKey = "reallife_transaction_tech_software";
@@ -65,7 +68,7 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 BuildingRegistration reg = all[i];
-                if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.HasEstablishedBusiness && KindOf(reg.businessTypeName) >= 0)
+                if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.HasEstablishedBusiness && KindOf(reg.businessTypeName) >= 0 && GameRegistrations.Found(reg))
                 {
                     into.Add(reg);
                 }
@@ -81,7 +84,7 @@ namespace RealLifeOverhaul.Tech
             {
                 BuildingRegistration reg = all[i];
                 if (reg != null && GoingPublic.Mine(reg) && reg.HasValidAddress && reg.HasEstablishedBusiness && !string.IsNullOrEmpty(reg.businessTypeName)
-                    && reg.businessTypeName != "ba:businesstype_empty" && KindOf(reg.businessTypeName) < 0)
+                    && reg.businessTypeName != "ba:businesstype_empty" && KindOf(reg.businessTypeName) < 0 && GameRegistrations.Found(reg))
                 {
                     into.Add(new KeyValuePair<string, string>(TalentGame.Place(reg), TalentGame.NameOf(reg)));
                 }
@@ -239,7 +242,7 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 BuildingRegistration reg = all[i];
-                if (reg == null || !reg.RentedByPlayer || !reg.HasValidAddress || !reg.HasEstablishedBusiness)
+                if (reg == null || !reg.RentedByPlayer || !reg.HasValidAddress || !reg.HasEstablishedBusiness || !GameRegistrations.Found(reg))
                 {
                     continue;
                 }
@@ -271,15 +274,8 @@ namespace RealLifeOverhaul.Tech
                 }
                 street = reg.StreetName;
                 number = reg.StreetNumber;
-                try
-                {
-                    string id = reg.Neighborhood;
-                    district = string.IsNullOrEmpty(id) ? null : id.GetLocalization();
-                }
-                catch (Exception)
-                {
-                    district = null;
-                }
+                string id = GameRegistrations.District(reg);
+                district = string.IsNullOrEmpty(id) ? null : id.GetLocalization();
                 return true;
             }
             return false;
@@ -340,7 +336,7 @@ namespace RealLifeOverhaul.Tech
         {
             if (cents > 0 && Save != null && at != null)
             {
-                GameManager.ChangeMoneySafe(cents / 100f, Info(TakingsKey, name, null), day, at.Address, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(cents / 100f, Info(TakingsKey, name, null), day, at.Address, true);
             }
         }
 
@@ -353,7 +349,7 @@ namespace RealLifeOverhaul.Tech
             }
             TransactionInfo info = Info(key, name, key == MarketingKey ? Marketing : null);
             info.SetTaxDeductibleName(DeductKey.GetLocalization());
-            GameManager.ChangeMoneySafe(-cents / 100f, info, day, at != null ? at.Address : null, true);
+            RealLifeOverhaul.Economy.BizBooks.Book(-cents / 100f, info, day, at != null ? at.Address : null, true);
         }
 
         /// <summary>A charge the player chose to pay now (the register's fee), cents; refused if the cash does not cover it.</summary>
@@ -365,7 +361,7 @@ namespace RealLifeOverhaul.Tech
             }
             TransactionInfo info = Info(key, name, null);
             info.SetTaxDeductibleName(DeductKey.GetLocalization());
-            return Save != null && GameManager.ChangeMoneySafe(-cents / 100f, info, null, at != null ? at.Address : null, false);
+            return Save != null && RealLifeOverhaul.Economy.BizBooks.Book(-cents / 100f, info, null, at != null ? at.Address : null, false);
         }
 
         /// <summary>A fine, cents: charged at once, not deductible.</summary>
@@ -373,7 +369,7 @@ namespace RealLifeOverhaul.Tech
         {
             if (cents > 0 && Save != null)
             {
-                GameManager.ChangeMoneySafe(-cents / 100f, Info(FineKey, name, null), null, at != null ? at.Address : null, true);
+                RealLifeOverhaul.Economy.BizBooks.Book(-cents / 100f, Info(FineKey, name, null), null, at != null ? at.Address : null, true);
             }
         }
 
@@ -389,6 +385,105 @@ namespace RealLifeOverhaul.Tech
             info.SetTaxDeductibleName(ReliefDeductKey.GetLocalization());
             TaxHelper.TrackTransaction(new Transaction(info) { amount = -amount });
         }
+
+        public const string DeskEnergyKey = "RealLifeOwnDesk";   // the energy spent at a desk of the player's own firm, under a key of its own
+
+        /// <summary>The player's own tech firm they stand in (GoingPublic.Mine), or null outside one or while the game goes in or out.</summary>
+        public static BuildingRegistration InsideFirm()
+        {
+            if (!Careers.DeskGame.Inside(out _, out BuildingRegistration reg))
+            {
+                return null;
+            }
+            return GoingPublic.Mine(reg) && reg.HasEstablishedBusiness && KindOf(reg.businessTypeName) >= 0 ? reg : null;
+        }
+
+        /// <summary>A business of the player's (any kind) they stand in (GoingPublic.Mine), or null: where Options > Tests seats them at a desk.</summary>
+        public static BuildingRegistration InsideOwn()
+        {
+            if (!Careers.DeskGame.Inside(out _, out BuildingRegistration reg))
+            {
+                return null;
+            }
+            return GoingPublic.Mine(reg) && reg.HasEstablishedBusiness ? reg : null;
+        }
+
+        /// <summary>Of a building's desks, the free one nearest the player, or null. On a button press only.</summary>
+        public static EmployeeStationController NearestFree(List<EmployeeStationController> desks)
+        {
+            Vector3 at = PlayerHelper.GetPosition();
+            EmployeeStationController best = null;
+            float near = float.MaxValue;
+            for (int i = 0; i < desks.Count; i++)
+            {
+                float d = Free(desks[i]) ? (desks[i].transform.position - at).sqrMagnitude : float.MaxValue;
+                if (d < near)
+                {
+                    near = d;
+                    best = desks[i];
+                }
+            }
+            return best;
+        }
+
+        /// <summary>The game's clock in whole minutes since its start, or 0 with no game loaded.</summary>
+        public static int Clock => Save != null ? (int)TimeHelper.NowInMinutes() : 0;
+
+        /// <summary>The desks of the building the player stands in: the game's workstations with their chair that it would seat somebody at. One pass over its items.</summary>
+        public static void Desks(List<EmployeeStationController> into)
+        {
+            into.Clear();
+            if (!Careers.DeskGame.Inside(out BuildingManager manager, out _))
+            {
+                return;
+            }
+            List<ItemController> items = manager.allItemControllers;
+            for (int i = 0; items != null && i < items.Count; i++)
+            {
+                if (items[i] is EmployeeStationController station && Careers.DeskGame.Usable(station) && Careers.DeskGame.KindOf(station) == Careers.StationKind.Desk)
+                {
+                    into.Add(station);
+                }
+            }
+        }
+
+        /// <summary>True for a desk nobody sits at now: none of the game's people, and not the player.</summary>
+        public static bool Free(EmployeeStationController station)
+        {
+            return station != null && station.gameObject.activeInHierarchy && station.employee == null;
+        }
+
+        /// <summary>
+        /// True while the player is the one at a station (the game seats them there as its employee while they work). Read by
+        /// the tag the game's Employee reads its isPlayer from, since that flag is set only on the frame after it is seated.
+        /// </summary>
+        public static bool PlayerAt(EmployeeStationController station)
+        {
+            return station != null && station.employee != null && station.employee.gameObject.CompareTag("Player");
+        }
+
+        /// <summary>The player's energy spent at a desk at its own rate while they work there, as the game's WorkActivity spends it, or no longer.</summary>
+        public static void Tiring(EmployeeStationController station, bool on)
+        {
+            try
+            {
+                if (on && station != null)
+                {
+                    EnergyHelper.AddEnergySpender(DeskEnergyKey, station.workEnergyConsumption);
+                }
+                else
+                {
+                    EnergyHelper.RemoveEnergySpender(DeskEnergyKey);
+                }
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+        }
+
+        /// <summary>True while the game has the business temporarily closed (its switch, which the utilities use for no internet or power).</summary>
+        public static bool Shut(BuildingRegistration reg) => reg != null && reg.temporarilyClosed;
 
         // A dictionary each: the game keeps a transaction's data for as long as it lists the transaction.
         private static TransactionInfo Info(string key, string name, string category)

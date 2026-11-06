@@ -5,31 +5,23 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The one place the mod's clip players and held tools are stepped from.
-    ///
-    ///     ActivityAnimator player = ActivityAnimators.For(character.animator);
-    ///     player.Play(clip);           // cross-fades in; a loop runs until Stop, a one-off returns by itself
-    ///     player.Stop();               // cross-fades back to the game's own animation
-    ///
-    /// Update steps only the players whose weights are changing or whose one-off clip is
-    /// counting down; LateUpdate keeps the second hand on tools held in both hands. With
-    /// nothing fading and no such tool this component is switched off and costs nothing.
-    /// Any fault hands every character back to the game and switches the service off for the
-    /// session (reported once through <see cref="Fault"/>).
+    /// The one place the mod's clip players (<see cref="For"/>) and held tools are stepped from: Update steps only players fading
+    /// or counting down, LateUpdate keeps the second hand on two-handed tools, and idle it is switched off and costs nothing. A
+    /// fault hands every character back and switches it off for the session, reported through <see cref="Fault"/>.
     /// </summary>
     public sealed class ActivityAnimators : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For("citylife", "ActivityAnimators", typeof(ActivityAnimators));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For("citylife", "ActivityAnimators", typeof(ActivityAnimators));
 
         private static ActivityAnimators _instance;
         private static readonly Dictionary<int, ActivityAnimator> Players = new Dictionary<int, ActivityAnimator>(16);
         private static readonly List<ActivityAnimator> Stepping = new List<ActivityAnimator>(16);
         private static readonly List<HeldTool> Reaching = new List<HeldTool>(8);
         private static readonly List<int> Dead = new List<int>(16);
-        private const int SweepFrom = 32;   // players kept before those of destroyed characters are looked for: the game's pools destroy the people they overflow with
+        private const int SweepFrom = 32;   // players kept before those of destroyed characters are swept: the game's pools destroy their overflow
         private static bool _failed;
 
-        /// <summary>Told about the fault that switched the service off. Set by whoever owns the log.</summary>
+        /// <summary>Told about the fault that switched the service off; set by whoever owns the log.</summary>
         public static Action<Exception> Fault;
 
         /// <summary>False after a fault: Play then does nothing, and callers leave people to the game's animations.</summary>
@@ -56,8 +48,8 @@ namespace RealLifeOverhaul
             return player;
         }
 
-        // The players of characters destroyed without Forget (a passer-by a horn made gesture, taken by the game's own pool)
-        // let go with their graphs. Only as a new player is made past SweepFrom: a pass over the dictionary.
+        // Lets go of the players of characters destroyed without Forget (a passer-by taken back by the game's pool). Runs only
+        // as a new player is made past SweepFrom.
         private static void SweepDead()
         {
             Dead.Clear();
@@ -78,7 +70,7 @@ namespace RealLifeOverhaul
             Dead.Clear();
         }
 
-        /// <summary>Hands one character back to the game at once and forgets its player (the character is going away).</summary>
+        /// <summary>Hands one character back to the game at once and forgets its player, as the character goes away.</summary>
         public static void Forget(Animator animator)
         {
             if (animator != null && Players.TryGetValue(animator.GetInstanceID(), out ActivityAnimator player))
@@ -88,7 +80,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Everyone back to the game's own animation, now. For city unload and for switching the feature off.</summary>
+        /// <summary>Everyone back to the game's own animation, now: as the city unloads or the feature is switched off.</summary>
         public static void ReleaseAll()
         {
             foreach (ActivityAnimator player in Players.Values)
@@ -123,7 +115,7 @@ namespace RealLifeOverhaul
             Wake();
         }
 
-        /// <summary>One frame's worth of fading, by hand: for tests, which have no frames of their own.</summary>
+        /// <summary>One frame's fading, by hand, for tests, which have no frames of their own.</summary>
         public static void StepAll(float delta)
         {
             for (int i = Stepping.Count - 1; i >= 0; i--)
@@ -135,7 +127,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The same for the hands on tools: call after the animation has been evaluated.</summary>
+        /// <summary>One frame's second hands on two-handed tools, by hand, for tests.</summary>
         public static void ReachAll(float delta)
         {
             for (int i = Reaching.Count - 1; i >= 0; i--)
@@ -177,14 +169,14 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
             {
                 OnUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }
@@ -212,14 +204,14 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotLateUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
             {
                 OnLateUpdate();
             }
-            catch (System.Exception e)
+            catch (Exception e)
             {
                 Guard.Fail(FrameGuard, e, this);
             }

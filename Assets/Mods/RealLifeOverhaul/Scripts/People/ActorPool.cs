@@ -255,7 +255,11 @@ namespace RealLifeOverhaul
             Tend();
         }
 
-        /// <summary>Called once behind the loading screen: the civilians are made now; the uniformed wait on the shelf for the modelled props.</summary>
+        /// <summary>
+        /// Called once behind the loading screen: the civilians are made now, and the uniformed too if the modelled props are
+        /// read by then (as a rule: they are read in the background from the main menu); else the uniformed are made in play
+        /// a look at a time once the props are there.
+        /// </summary>
         public void Prewarm()
         {
             if (!Settings.People)
@@ -268,13 +272,28 @@ namespace RealLifeOverhaul
                 {
                     Make(ActorLook.Civilian);
                 }
+                _uniformsDue = true;
+                _uniformsSince = Time.unscaledTime;
+                if (PropLibrary.Ready)
+                {
+                    for (int n = 0; _uniformsDue && n < MaxActors; n++)
+                    {
+                        MakeUniformed();   // each made in play a look at a time up to 0.61.3, five seconds apart (the own-spikes scan of 28 Oct 2026)
+                    }
+                    if (Meta.Dev.Verbose)
+                    {
+                        Logger?.Info("People check (the uniformed made ahead): " + Have(ActorLook.Officer) + " of " + ReadyOfficers + " officers and " + Have(ActorLook.Paramedic) + " of "
+                                     + ReadyParamedics + " paramedics made behind the loading screen, none to be made in play: "
+                                     + (Have(ActorLook.Officer) >= ReadyOfficers && Have(ActorLook.Paramedic) >= ReadyParamedics || _actors.Count >= MaxActors ? "PASS" : "FAIL"));
+                    }
+                }
             }
             catch (Exception e)
             {
                 Logger?.Error(e);   // they are made on first need instead
+                _uniformsDue = true;
+                _uniformsSince = Time.unscaledTime;
             }
-            _uniformsDue = true;
-            _uniformsSince = Time.unscaledTime;
             Tend();
         }
 
@@ -333,17 +352,10 @@ namespace RealLifeOverhaul
                 {
                     return;   // their kit is made of the modelled props: a little longer
                 }
-                if (_actors.Count < MaxActors && Have(ActorLook.Officer) < ReadyOfficers)
+                if (MakeUniformed())
                 {
-                    Make(ActorLook.Officer);
                     return;
                 }
-                if (_actors.Count < MaxActors && Have(ActorLook.Paramedic) < ReadyParamedics)
-                {
-                    Make(ActorLook.Paramedic);
-                    return;
-                }
-                _uniformsDue = false;
             }
             for (int i = 0; i < _actors.Count; i++)
             {
@@ -358,6 +370,23 @@ namespace RealLifeOverhaul
                     actor.Stale = false;
                 }
             }
+        }
+
+        // The next of the uniformed the ready pool still lacks, made; false (and no longer due) when none is.
+        private bool MakeUniformed()
+        {
+            if (_actors.Count < MaxActors && Have(ActorLook.Officer) < ReadyOfficers)
+            {
+                Make(ActorLook.Officer);
+                return true;
+            }
+            if (_actors.Count < MaxActors && Have(ActorLook.Paramedic) < ReadyParamedics)
+            {
+                Make(ActorLook.Paramedic);
+                return true;
+            }
+            _uniformsDue = false;
+            return false;
         }
 
         private int Have(ActorLook look)

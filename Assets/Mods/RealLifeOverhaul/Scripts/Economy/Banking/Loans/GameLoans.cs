@@ -13,6 +13,7 @@ namespace RealLifeOverhaul.Economy
         public const string AccountKey = "loans";
         public const string ExpenseCategory = "ba:transactioncategory_loanexpenses";   // the game's own: its statements count loan payments under it
         public const string LoanPaidEvent = "ba:gameevent_loanpaid";                   // the game's own, as EconoView pays a loan off (LoanEntryUi.PayOffLoan)
+        public const string MoneyChangeEvent = "ba:gameevent_moneychange";             // the game's own, after every change of the cash (GameManager.ChangeMoney)
 
         /// <summary>The game's interest multiplier on every loan (a setting of the save); 1 without a save.</summary>
         public static float Multiplier => SaveGameManager.Current != null && SaveGameManager.Current.gameVariables != null ? SaveGameManager.Current.gameVariables.bankInterestMultiplier : 1f;
@@ -123,7 +124,7 @@ namespace RealLifeOverhaul.Economy
             {
                 owed += save.Loans[i].remainingAmount;
             }
-            return Mathf.FloorToInt(Mathf.Max(0f, most - owed));
+            return WholeMoney.Floor(most - owed);   // a rich player's limit is past an int: saturated, never a cast (Core/WholeMoney)
         }
     }
 }

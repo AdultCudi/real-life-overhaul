@@ -373,7 +373,8 @@ internal static partial class Program
         {
             started++;
         }
-        Check(started == TextQueue.PerMinute, "texts, the queue: a burst is held to the budget, " + TextQueue.PerMinute + " a minute (started " + started + ")");
+        Check(started == TextQueue.PerMinute - TextQueue.Kept(TextQueue.PerMinute),
+            "texts, the queue: a burst is held to the budget, " + TextQueue.PerMinute + " a minute less the starts kept for spoken lines (started " + started + ")");
         Check(q4.Take(now + 61.0, true) != null, "texts, the queue: the budget frees again after a minute");
         var q5 = new TextQueue();
         int back5 = 0;
@@ -756,8 +757,8 @@ internal static partial class Program
     private static void TextsSources()
     {
         string scripts = System.IO.Path.GetFullPath(System.IO.Path.Combine(LocalesFolder(), "..", "Scripts", "Texts"));
-        var gameFree = new[] { "TextCard.cs", "TextFaces.cs", "TextIntents.cs", "TextWords.cs", "TextCheck.cs", "TextQueue.cs", "TextJson.cs", "TextServer.cs", "TextPacks.cs",
-            "TextSpeed.cs", "TextsStore.cs", "TextsShare.cs", "TextsHub.cs", "TextsMapRules.cs", "TextHang.cs" };
+        var gameFree = new[] { "TextCard.cs", "TextFaces.cs", "TextIntents.cs", "TextIntents.Three.cs", "TextWords.cs", "TextCheck.cs", "TextQueue.cs", "TextJson.cs", "TextServer.cs", "TextServer.Start.cs", "TextServer.Process.cs", "TextCores.cs", "TextPacks.cs",
+            "TextSpeed.cs", "TextsStore.cs", "TextsShare.cs", "TextsHub.cs", "TextsHub.Look.cs", "TextRequest.cs", "TextsMapRules.cs", "TextHang.cs" };
         var problems = new List<string>();
         foreach (string file in gameFree)
         {
@@ -781,7 +782,7 @@ internal static partial class Program
         string comments = TextsSource("Social/Flare/FlareDirector.Comments.cs");
         Check(Regex.IsMatch(app, @"private string WordsOf\(FlarePost p, string author\)\s*\{\s*return _director\.WordsFor\(p, author\);")
               && Regex.IsMatch(comments, @"public string WordsFor\(FlarePost p, string author\)\s*\{\s*string model = ModelWords\(p\);")
-              && app.Contains("_director.FriendWords(p.Id, index) ?? FlareText.Reply(") && flare.Contains("r.Wanted = () => _file != null && _file.Post(post.Id) == post && Now < post.At;"),
+              && app.Contains("string words = _director.FriendWords(p.Id, index);") && app.Contains("Text = words ?? FlareText.Reply(") && flare.Contains("r.Wanted = () => _file != null && _file.Post(post.Id) == post && Now < post.At;"),
             "texts, Flare: the model's words are shown in place of the written line, and never once the post is up (a post does not change its words in front of the player)");
         Check(Regex.Matches(live, @"TextsAhead\(\);").Count == 3 && !Regex.IsMatch(TextsSource("Social/Flare/FlareDirector.cs"), @"TextsAhead"),
             "texts, Flare: the words are asked on the events that make posts (the day, the hour, a post of the player's), never on a timer of their own");
@@ -789,7 +790,8 @@ internal static partial class Program
         Check(social.Contains("SocialLinks.HoldText == null || !SocialLinks.HoldText(person, key, data, (k, d) => Deliver(person, contact, k, d, must))")
               && phone.Contains("Flush = true") && director.Contains("int flushed = Hub.FlushForSave();"),
             "texts, the phone: a text is held for its words only through RLO Texts' bridge, and goes out with its written line when the game saves meanwhile");
-        string server = File.ReadAllText(System.IO.Path.Combine(scripts, "TextServer.cs"));
+        string server = File.ReadAllText(System.IO.Path.Combine(scripts, "TextServer.cs")) + File.ReadAllText(System.IO.Path.Combine(scripts, "TextServer.Start.cs"))
+                        + File.ReadAllText(System.IO.Path.Combine(scripts, "TextServer.Process.cs"));
         string onCpu = TextServer.Arguments(new TextServerStart { Model = "m.gguf", Threads = 4 }, 5000, "key");
         string onGpu = TextServer.Arguments(new TextServerStart { Model = "m.gguf", Threads = 2, Device = "Vulkan0" }, 5001, "key");
         Check(onCpu.Contains(" --host 127.0.0.1 --port 5000 --api-key key ") && onGpu.Contains(" --host 127.0.0.1 --port 5001 --api-key key ")
@@ -813,9 +815,10 @@ internal static partial class Program
             "texts, safety: on the Workshop only RLO's own pack items by id are looked in (none while their ids are empty, never a path)");
         string game = TextsSource("Texts/TextsGame.cs");
         Check(TextPacks.WorkshopItems.Length == 4 && TextPacks.WorkshopItems[0] == "3820711613" && TextPacks.WorkshopItems[1] == "3820712020" && TextPacks.WorkshopItems[2] == "3820776564"
-              && TextPacks.WorkshopItems[3] == "" && !TextPacks.LargePublished
-              && TextPacks.WorkshopPacks(@"C:\ws", TextPacks.WorkshopItems).Count == 3 && TextPacks.WorkshopPacks(@"C:\ws", new[] { "3820711613", "" }).Count == 1,
-            "texts, packs: the mod looks only in the three published pack items, RLO Texts (3820711613), RLO Texts Lite (3820712020) and RLO Texts Medium (3820776564); RLO Texts Large's id is empty until it is published, and an empty id is never looked in");
+              && (TextPacks.WorkshopItems[3] == "" ? !TextPacks.LargePublished : TextPacks.LargePublished && TextPacks.WorkshopItems[3].Length >= 9)
+              && TextPacks.WorkshopPacks(@"C:\ws", TextPacks.WorkshopItems).Count == (TextPacks.LargePublished ? 4 : 3) && TextPacks.WorkshopPacks(@"C:\ws", new[] { "3820711613", "" }).Count == 1,
+            "texts, packs: the mod looks only in the published pack items, RLO Texts (3820711613), RLO Texts Lite (3820712020), RLO Texts Medium (3820776564) and RLO Texts Large ("
+            + (TextPacks.LargePublished ? TextPacks.WorkshopItems[3] : "no id until it is published") + "), and an empty id is never looked in");
         Check(game.Contains("TextPacks.WorkshopPacks(TextPacks.WorkshopOf(Application.dataPath, AppId), TextPacks.WorkshopItems)") && !game.Contains("places.Add(workshop)"),
             "texts, safety: the game's whole Workshop folder is never a place packs are looked for in");
         Check(TextPacks.Inside(@"C:\p\RLO", @"C:\p\RLO\runtime\a.exe") && !TextPacks.Inside(@"C:\p\RLO", @"C:\p\RLOX\a.exe") && !TextPacks.Inside(@"C:\p\RLO", @"C:\p\a.exe"),
@@ -864,7 +867,7 @@ internal static partial class Program
             }
         }
         Check(TextRuntime.Files.Length == 46 && TextRuntime.Files[0] == "llama-server.exe" && TextRuntime.Files[1].Length == 64, "texts, safety: llama.cpp " + TextRuntime.Release + "'s 23 runtime files are pinned by SHA-256");
-        string director = TextsSource("Texts/TextsDirector.cs");
+        string director = TextsSource("Texts/TextsDirector.cs") + TextsSource("Texts/TextsDirector.Status.cs");
         int verify = director.IndexOf("TextPacks.Verify(_packs[i], TextRuntime.Files)", StringComparison.Ordinal), devices = director.IndexOf("TextPacks.ListDevices(", StringComparison.Ordinal);
         Check(verify > 0 && devices > verify && director.Contains("_pack = TextPacks.Pick(verified, ") && System.Text.RegularExpressions.Regex.IsMatch(director, @"if \(why == null\)\s*\{\s*verified\.Add\(_packs\[i\]\);")
               && director.Contains("\"pack files changed: \""),
@@ -898,7 +901,7 @@ internal static partial class Program
         TextServer.Offline(info);
         Check(!info.EnvironmentVariables.ContainsKey("LLAMA_ARG_HOST") && !info.EnvironmentVariables.ContainsKey("HF_ENDPOINT") && info.EnvironmentVariables.ContainsKey("RLO_KEEP"),
             "texts, offline: no LLAMA_ARG_ or HF_ variable reaches llama.cpp");
-        string server = TextsSource("Texts/TextServer.cs"), packs = TextsSource("Texts/TextPacks.cs");
+        string server = TextsSource("Texts/TextServer.cs") + TextsSource("Texts/TextServer.Start.cs") + TextsSource("Texts/TextServer.Process.cs"), packs = TextsSource("Texts/TextPacks.cs");
         Check(server.Contains("--offline") && Regex.Matches(server, @"Offline\(info\);").Count == 1 && packs.Contains("TextServer.Offline(info);"),
             "texts, offline: both of llama.cpp's starts are offline (--offline, and the variables taken out)");
         Check(server.Contains("Interlocked.Exchange(ref _process, null)") && server.Contains("Interlocked.Exchange(ref _job, IntPtr.Zero)") && server.Contains("Interlocked.Exchange(ref _headFile, null)")
@@ -928,7 +931,7 @@ internal static partial class Program
         // 10, 12, 13, 14, 15, 16 and the main menu.
         Check(director.Contains("ThreadPool.QueueUserWorkItem(_ => server.Dispose());") && Regex.IsMatch(director, @"if \(_server != null && _runDevice == Settings\.TextsDevice && _runThreads == Settings\.TextsThreads\)\s*\{\s*return;"),
             "texts, the game's thread: the server is ended on the thread pool, and an idle look builds nothing");
-        Check(Regex.IsMatch(director, @"if \(!_loaded\)\s*\{\s*return;   // \(the main menu"), "texts: the model is started only once a save is loaded, never in the main menu");
+        Check(Regex.IsMatch(director, @"if \(!_loaded\)\s*\{\s*return;[^\n]*\s*\}\s*Run\(\);"), "texts: the model is started only once a save is loaded, never in the main menu");
         Dictionary<string, string>[] words = LanguageWords(out string[] codes);
         int longest = 0;
         foreach (string key in new[] { "reallife_texts_status_failed", "reallife_texts_status_none", "reallife_texts_status_ready", "reallife_texts_note_lite" })
@@ -947,7 +950,7 @@ internal static partial class Program
         string flare = TextsSource("Social/Flare/FlareDirector.Texts.cs"), flareMain = TextsSource("Social/Flare/FlareDirector.cs");
         string forget = FlareMethod(flareMain, "private void ForgetAsked()");
         Check(Regex.Matches(flareMain, @"ForgetAsked\(\);").Count == 3 && forget.Contains("_textAsked.Clear();") && forget.Contains("_textDms.Clear();")
-              && Regex.IsMatch(flare, @"if \(FlareBridges\.TextAsk\(r\)\)\s*\{\s*_textAsked\.Asked\(id\);") && Regex.IsMatch(flare, @"if \(FlareBridges\.TextAsk\(r\)\)\s*\{\s*_textDms\.Asked\(key\);"),
+              && Regex.IsMatch(flare, @"bool asked = FlareBridges\.TextAsk\(r\);\s*if \(asked\)\s*\{\s*_textAsked\.Asked\(id\);") && Regex.IsMatch(flare, @"bool asked = FlareBridges\.TextAsk\(r\);\s*if \(asked\)\s*\{\s*_textDms\.Asked\(key\);"),
             "texts, Flare: the posts and answers asked for are forgotten with the file, and one counts as asked only when it was");
         string phone = TextsSource("Wiring/TextsPhone.cs");
         Check(phone.Contains("if (ReferenceEquals(save, SaveGameManager.Current))"), "texts, the phone: a text held for its words is never sent into another save");
@@ -986,7 +989,7 @@ internal static partial class Program
         var keys = new SortedSet<string>(StringComparer.Ordinal);
         var key = new Regex("\"(reallife_(?:texts|meta_title_texts|guide_texts|opt_sec_texts)[a-z0-9_]*)\"");
         string scripts = System.IO.Path.GetFullPath(System.IO.Path.Combine(LocalesFolder(), "..", "Scripts"));
-        foreach (string file in new[] { "Texts/TextsGuide.cs", "Texts/TextsDirector.cs", "Texts/TextsText.cs" })
+        foreach (string file in new[] { "Texts/TextsGuide.cs", "Texts/TextsDirector.cs", "Texts/TextsDirector.Status.cs", "Texts/TextsText.cs" })
         {
             foreach (Match m in key.Matches(File.ReadAllText(System.IO.Path.Combine(scripts, file))))
             {
@@ -1102,6 +1105,7 @@ internal static partial class Program
                 "texts, the runner: a crashed session's head file is gone at the start, and the server keeps one of its own");
             TextsRunnerV3(lite, q, server);
             TextsRunnerSix(q, server);   // (data v6's grammars and the name's ban through the same server: TextsDecodingChecks.cs)
+            TextsRunnerHistory(lite, q, server);   // (a call back's and the day after's cards, with memory and a thread: TextsHistoryChecks.cs)
         }
         Check(Directory.GetFiles(cache, "rlo-head-*.bin").Length == 0, "texts, the runner: the server's head file goes with it (the cache never grows)");
         try

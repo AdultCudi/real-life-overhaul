@@ -7,16 +7,10 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Every search of the whole scene the mod makes goes through here. The engine answers "every object of this
-    /// kind" by going through every object it has in memory, and this game has well over a million: one such search
-    /// is a frame of about 110 ms (the line "Crime: road map built" was followed each time
-    /// by a frame of 112 to 117 ms, and every driving lesson began with one of 126 to 146 ms; both asked the traffic
-    /// system for its road data, which it finds by such a search). So a search is never to be made while the game is
-    /// being played: what it finds is found once per city, behind the loading screen (<see cref="ScenePrewarm"/>), and
-    /// kept. Where one is made in play after all, it is named and timed for the session record's long-frame line,
-    /// counted for its line a minute, and said in the log with FAIL.
-    ///
-    /// Cost of a call: the search itself. Nothing here runs unless something calls it.
+    /// Every search of the whole scene the mod makes goes through here. The engine goes through every object in memory,
+    /// well over a million in this game, so one search is a frame of about 110 ms: what it finds is found once per city
+    /// behind the loading screen (<see cref="ScenePrewarm"/>) and kept. One made in play is named and timed for the
+    /// session record and said in the log with FAIL. Cost: the search itself; nothing runs unless called.
     /// </summary>
     public static class SceneFinds
     {
@@ -24,20 +18,66 @@ namespace RealLifeOverhaul
         public static int Made { get; private set; }
         public static int InPlay { get; private set; }
 
-        /// <summary>
-        /// True while a long frame is not seen as one: the loading screen (also in the frame the game ends its own start of the
-        /// city in, while the late prewarm runs: <see cref="ScenePrewarm.InLate"/>), a pause, or the game's own black screen at a door.
-        /// </summary>
+        /// <summary>True while a long frame is not seen: the loading screen, a pause, or the game's black screen at a door.</summary>
         public static bool Hidden => Looks.Hidden || UI.UiFader.isFading || ScenePrewarm.InLate;
 
         /// <summary>
-        /// True while the screen is dark: the loading screen, or the game's own black screen (a door, sleep, fast travel).
-        /// Not a plain pause: its menu stays on the screen, and a search of some 80 ms there is a hitch the player sees in
-        /// the menu. Work that comes back again and again (a search after every door) waits for this, never <see cref="Hidden"/>.
+        /// True while the screen is dark: the loading screen or the game's black screen, its fades included. Not a pause,
+        /// whose menu would show a hitch: work that comes back after every door keeps its stretch by this, never
+        /// <see cref="Hidden"/>, and runs only on a frame that is <see cref="Black"/>.
         /// </summary>
         public static bool Dark => UI.Load.LoadScene.isLoading || UI.UiFader.isFading;
 
-        /// <summary>Every object of a kind in the loaded scenes, in no particular order. <paramref name="what"/> is a constant text.</summary>
+        /// <summary>True while the screen shows black; through a door's 0.2 s fades the picture shows, so heavy work waits for this.</summary>
+        public static bool Black => UI.Load.LoadScene.isLoading || Covered;
+
+        /// <summary>
+        /// True while the game's black overlay is at full strength, its alpha read only while it fades; false for good
+        /// where it cannot be read (one log line).
+        /// </summary>
+        public static bool Covered
+        {
+            get
+            {
+                if (!UI.UiFader.isFading || _overlayUnread)
+                {
+                    return false;
+                }
+                try
+                {
+                    return OverlayAlpha() >= Opaque;
+                }
+                catch (Exception e)
+                {
+                    _overlayUnread = true;
+                    SessionWatch.Logger?.Warn("Scene searches: the game's black screen cannot be read in this build (" + e.GetType().Name
+                                              + "); the searches that wait for it wait for the loading screen.");
+                    return false;
+                }
+            }
+        }
+
+        private const float Opaque = 0.99f;   // the overlay's alpha from which nothing shows through (the game's fade ends at 1)
+        private static UnityEngine.UI.Image _overlay;   // from the game's register of singletons, no search
+        private static bool _overlayUnread;
+
+        // In a method of its own: a build without the overlay fails here alone (Mono compiles a method whole).
+        [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
+        private static float OverlayAlpha()
+        {
+            if (_overlay == null)
+            {
+                UI.UIs uis = InstanceBehavior<UI.UIs>.IsInitialized ? InstanceBehavior<UI.UIs>.Instance : null;
+                _overlay = uis != null ? uis.blackOverlay : null;
+                if (_overlay == null)
+                {
+                    return 0f;
+                }
+            }
+            return _overlay.color.a;
+        }
+
+        /// <summary>Every object of a kind in the loaded scenes, in no order. <paramref name="what"/> is a constant text.</summary>
         public static T[] All<T>(string what, FindObjectsInactive inactive = FindObjectsInactive.Exclude) where T : UnityEngine.Object
         {
             int mark = SessionWatch.Mark(what);
@@ -47,7 +87,7 @@ namespace RealLifeOverhaul
             return found;
         }
 
-        /// <summary>Any one active object of a kind known only at run time (another author's type), or null. <paramref name="what"/> is a constant text.</summary>
+        /// <summary>Any one active object of a type known only at run time, or null. <paramref name="what"/> is a constant text.</summary>
         public static UnityEngine.Object Any(Type type, string what)
         {
             int mark = SessionWatch.Mark(what);
@@ -57,7 +97,7 @@ namespace RealLifeOverhaul
             return found;
         }
 
-        /// <summary>Every object of a kind the engine has in memory, in a scene or not (assets too). <paramref name="what"/> is a constant text.</summary>
+        /// <summary>Every object of a kind in memory, assets too. <paramref name="what"/> is a constant text.</summary>
         public static T[] InMemory<T>(string what) where T : UnityEngine.Object
         {
             int mark = SessionWatch.Mark(what);
@@ -70,7 +110,9 @@ namespace RealLifeOverhaul
         private static void Said(string what, int mark, long began, int found)
         {
             SessionWatch.Done(mark);
-            bool hidden = Hidden;
+            // The game's black screen counts only at full strength: through its fade the picture shows.
+            bool hidden = Looks.Hidden || ScenePrewarm.InLate || Covered;
+            bool fading = !hidden && UI.UiFader.isFading;
             Made++;
             InPlay += hidden ? 0 : 1;
             if (Meta.Dev.Verbose)
@@ -78,59 +120,81 @@ namespace RealLifeOverhaul
                 double ms = (Stopwatch.GetTimestamp() - began) * 1000.0 / Stopwatch.Frequency;
                 SessionWatch.Logger?.Info("Scene search check (" + what + "): " + found + " found in " + ms.ToString("F1", CultureInfo.InvariantCulture) + " ms, "
                                           + (hidden ? "behind the loading screen, a pause or the game's black screen: PASS."
+                                              : fading ? "during the game's fade, with the picture showing through: FAIL (a stutter the player sees; "
+                                                         + "it belongs behind the black screen at full strength)."
                                               : "while the game was being played: FAIL (a stutter of that length; it belongs behind the loading screen)."));
             }
         }
     }
 
     /// <summary>
-    /// The one-off work that would otherwise be done the first time it is needed, in the middle of play: done instead
-    /// while the loading screen is still up. A feature hands its piece over in its Awake (<see cref="Add"/>); the mod's
-    /// entry calls <see cref="Begin"/> once every feature is there, which the game does after the city's scenes are
-    /// loaded and before its loading screen goes (UI.Load.LoadingScreen.LoadAsyncScenes). A piece that cannot be done
-    /// yet (it needs the city shown, and the save was made inside a building) says so by returning false and is tried
-    /// again, once, each time the player is outdoors with the game's black screen up, which is the walk out of a door.
-    ///
-    /// LATE PIECES (<see cref="AddLate"/>). Some work needs what the game itself makes of the city only after the mods are
-    /// loaded: its traffic system started, which marks the lane points at junctions (the road graph's changes of lane depend
-    /// on those marks), its list of subway stations and of buildings (CityManager.OnScenesLoaded). The game makes them in its
-    /// "game loaded" call, in the frame after which its loading screen begins to fade (LoadingScreen.LoadAsyncScenes:
-    /// GlobalEvents.InvokeOnGameLoaded, then the fade). Late pieces run in that same frame, in the game's own late call
-    /// (GlobalEvents.RegisterOnGameLoadedLateCallback, after its own calls), with the loading screen still fully up; a piece
-    /// that cannot be done there joins the others that wait for the black screen out of doors.
-    ///
-    /// Per frame: nothing (the component is disabled) unless a piece is waiting; then two of the game's flags read.
+    /// One-off work done while the loading screen is still up instead of when first needed in play. Features hand pieces
+    /// over in Awake (<see cref="Add"/>); the entry calls <see cref="Begin"/> once all are there. A piece that returns
+    /// false (it needs the city shown and the save was made indoors) is tried again once each time the player is outdoors
+    /// behind the black screen. Late pieces (<see cref="AddLate"/>) need the game's own start of the city (its traffic
+    /// system, stations, buildings) and run in its late "game loaded" call, the loading screen still up. Per frame:
+    /// nothing (disabled) unless a piece is waiting; then two of the game's flags read.
     /// </summary>
     public sealed class ScenePrewarm : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For(null, "ScenePrewarm", typeof(ScenePrewarm));   // its Update, LateUpdate and FixedUpdate (Core/Guard)
+        private static readonly FeatureGuard FrameGuard = Guard.For(null, "ScenePrewarm", typeof(ScenePrewarm));
 
         private static readonly List<Func<bool>> Work = new List<Func<bool>>(8);
         private static readonly List<string> Names = new List<string>(8);
+        private static readonly List<int> TriedIn = new List<int>(8);   // the black screen each piece was last tried behind
         private static readonly List<Func<bool>> Late = new List<Func<bool>>(4);
         private static readonly List<string> LateNames = new List<string>(4);
-        private static Action _lateCall;   // made once: the game's late "game loaded" call, through the guard (Core/Guard)
+        private static Action _lateCall;   // made once: the game's late "game loaded" call, through the guard
         private static ScenePrewarm _instance;
         private bool _tried;
 
-        /// <summary>True while the late pieces run: the loading screen is up, though the game has said its load is done.</summary>
+        // Behind a black screen the pieces go one a frame, never all in one (RLO-PERF-024: beta 6 had a frame of 13 ms and
+        // beta 4 one of 45 ms from every waiting piece at once): a piece is tried once behind each black screen, and a piece
+        // of several steps (a dozen coats, each a mesh merge) does one step a frame. A frame is one piece's call at most.
+        private const int MostSteps = 64;            // steps of one piece behind the loading screen at most (a stuck piece is let go)
+        private static int _blacks;                  // black screens with pieces waiting, counted: a piece is tried once in each
+        private static bool _stepAgain;              // the piece just called did one step of several (NextFrame)
+        private static readonly SpreadWatch Spread = new SpreadWatch();
+        private static string _slowest;              // the piece of the slowest frame behind this black screen, for its line
+        private static bool _spreading;              // a black screen's pieces are being tried: its line is still to be written
+
+        /// <summary>True while the late pieces run: the loading screen is up though the game's load is done.</summary>
         public static bool InLate { get; private set; }
 
-        /// <summary>Hands over a piece of one-off work. It returns true when done (or never to be done), false to be tried again later. A constant text.</summary>
+        /// <summary>Hands over a piece of one-off work: true when done (or never to be), false to be tried later. A constant text.</summary>
         public static void Add(string what, Func<bool> work)
         {
             if (work != null)
             {
                 Work.Add(work);
                 Names.Add(what);
+                TriedIn.Add(0);
             }
         }
 
         /// <summary>
-        /// Hands over a piece of one-off work that needs the game's own start of the city done (its traffic system, its stations):
-        /// done in the game's late "game loaded" call, the loading screen still up; false there, and it waits with the others for
-        /// the black screen out of doors. Pieces run in the order they were handed over. A constant text.
+        /// Said by a piece that did one step of work that has several (a look merged of a dozen), as it returns false: it is
+        /// called again in the next frame while the screen is black, and at once behind the loading screen.
         /// </summary>
+        public static void NextFrame()
+        {
+            _stepAgain = true;
+        }
+
+        /// <summary>
+        /// Hands a piece over again in play, for a feature switched back on whose work the loading screen already passed:
+        /// it is done the next time the player goes through a door to the street, behind the black screen.
+        /// </summary>
+        public static void Again(string what, Func<bool> work)
+        {
+            Add(what, work);
+            if (_instance != null && work != null)
+            {
+                _instance.enabled = true;
+            }
+        }
+
+        /// <summary>Hands over a piece run in the game's late "game loaded" call, in order; false there, and it waits. A constant text.</summary>
         public static void AddLate(string what, Func<bool> work)
         {
             if (work != null)
@@ -140,7 +204,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>Does every piece now. Called once per city, while the loading screen is up.</summary>
+        /// <summary>Does every piece now; once per city, while the loading screen is up.</summary>
         public static void Begin()
         {
             int before = Work.Count;
@@ -158,12 +222,12 @@ namespace RealLifeOverhaul
             }
             if (Late.Count > 0)
             {
-                // At once if the game has already made its call (a mod loaded after it): the pieces then find what they need or wait.
+                // At once if the game has already made its call: the pieces then find what they need or wait.
                 GlobalEvents.RegisterOnGameLoadedLateCallback(_lateCall ??= Guard.Wrap(RunLate));
             }
         }
 
-        // The game's late "game loaded" call: its traffic system and stations are there, its loading screen still fully up.
+        // The game's late "game loaded" call: its traffic system and stations are there, the loading screen still up.
         private static void RunLate()
         {
             int before = Late.Count;
@@ -174,28 +238,15 @@ namespace RealLifeOverhaul
             {
                 for (int i = 0; i < Late.Count; i++)
                 {
-                    bool finished = true;
-                    int mark = SessionWatch.Mark(LateNames[i]);
-                    try
-                    {
-                        finished = Late[i]();
-                    }
-                    catch (Exception e)
-                    {
-                        if (!Guard.DoesWithout(e, "the work behind the loading screen: " + LateNames[i], "the feature does it when it first needs it"))
-                        {
-                            SessionWatch.Logger?.Error(e);   // the feature does it on first need instead, as it did before
-                        }
-                    }
-                    SessionWatch.Done(mark);
-                    if (finished)
+                    if (Steps(Late[i], LateNames[i]))
                     {
                         done++;
                     }
                     else
                     {
-                        Work.Insert(0, Late[i]);   // with the others, at the end of the round they are run in (last first)
+                        Work.Insert(0, Late[i]);   // with the others, last in their round (they run last first)
                         Names.Insert(0, LateNames[i]);
+                        TriedIn.Insert(0, 0);
                     }
                 }
             }
@@ -217,29 +268,100 @@ namespace RealLifeOverhaul
             }
         }
 
+        // Behind the loading screen: every piece whole, each of its steps at once.
         private static void Run()
         {
             for (int i = Work.Count - 1; i >= 0; i--)
             {
-                bool done = true;
-                int mark = SessionWatch.Mark(Names[i]);
-                try
+                if (Steps(Work[i], Names[i]) && i < Work.Count)
                 {
-                    done = Work[i]();
+                    Work.RemoveAt(i);
+                    Names.RemoveAt(i);
+                    TriedIn.RemoveAt(i);
                 }
-                catch (Exception e)
+            }
+        }
+
+        // A piece with all its steps, where a long frame is not seen.
+        private static bool Steps(Func<bool> work, string what)
+        {
+            bool done = Call(work, what);
+            for (int n = 1; !done && _stepAgain && n < MostSteps; n++)
+            {
+                done = Call(work, what);
+            }
+            return done;
+        }
+
+        // One call of a piece: true when it is done (or failed: the feature then does it on first need).
+        private static bool Call(Func<bool> work, string what)
+        {
+            _stepAgain = false;
+            bool done = true;
+            int mark = SessionWatch.Mark(what);
+            try
+            {
+                done = work();
+            }
+            catch (Exception e)
+            {
+                _stepAgain = false;
+                if (!Guard.DoesWithout(e, "the work behind the loading screen: " + what, "the feature does it when it first needs it"))
                 {
-                    if (!Guard.DoesWithout(e, "the work behind the loading screen: " + Names[i], "the feature does it when it first needs it"))
-                    {
-                        SessionWatch.Logger?.Error(e);   // the feature does it on first need instead, as it did before
-                    }
+                    SessionWatch.Logger?.Error(e);   // the feature does it on first need instead
                 }
-                SessionWatch.Done(mark);
+            }
+            SessionWatch.Done(mark);
+            return done;
+        }
+
+        // Behind a black screen: the next piece not yet tried behind it, one a frame. False when every piece has been.
+        private static bool RunOne()
+        {
+            int i = Work.Count - 1;
+            while (i >= 0 && TriedIn[i] == _blacks)
+            {
+                i--;
+            }
+            if (i < 0)
+            {
+                return false;
+            }
+            string what = Names[i];
+            long began = Stopwatch.GetTimestamp();
+            bool done = Call(Work[i], what);
+            if (Spread.Item(0, began))
+            {
+                _slowest = what;
+            }
+            if (i < Work.Count && ReferenceEquals(Names[i], what))
+            {
                 if (done)
                 {
                     Work.RemoveAt(i);
                     Names.RemoveAt(i);
+                    TriedIn.RemoveAt(i);
                 }
+                else if (!_stepAgain)
+                {
+                    TriedIn[i] = _blacks;   // tried behind this black screen: the next one tries it again
+                }
+            }
+            return true;
+        }
+
+        // The self-check line of one black screen's pieces, with Developer diagnostics on: written once it is over.
+        private static void SayDoor()
+        {
+            if (!_spreading)
+            {
+                return;
+            }
+            _spreading = false;
+            if (Meta.Dev.Verbose && Spread.Items > 0)
+            {
+                SessionWatch.Logger?.Info("Prewarm check (behind a black screen, a piece a frame): " + Spread.Said(_slowest ?? "-") + "; " + Work.Count
+                                          + " piece(s) wait for the next: " + Spread.Verdict(true) + ".");
             }
         }
 
@@ -255,7 +377,7 @@ namespace RealLifeOverhaul
             using var hotSpot = HotSpots.Time(HotUpdate);
             if (FrameGuard.Off)
             {
-                enabled = false;   // (its feature was switched off after its faults: Core/Guard)
+                enabled = false;
                 return;
             }
             try
@@ -272,18 +394,39 @@ namespace RealLifeOverhaul
         {
             if (Work.Count == 0)
             {
+                SayDoor();
                 enabled = false;
                 return;
             }
             if (BuildingManager.IsInsideBuilding || !SceneFinds.Dark)
             {
-                _tried = false;   // (a plain pause is not the walk out of a door: its menu would show the work as a hitch)
+                SayDoor();
+                _tried = false;   // a plain pause is not the walk out of a door: its menu would show the hitch
                 return;
+            }
+            if (!SceneFinds.Black)
+            {
+                return;   // the game's fade, the street showing through: wait for the screen fully black
             }
             if (!_tried)
             {
-                _tried = true;   // once each time the screen goes black, not once a frame while it is
-                Run();
+                _tried = true;   // a new black screen: every piece is tried once behind it, not once a frame while it is
+                _blacks++;
+                _slowest = null;
+                _spreading = true;
+                Spread.Begin();
+            }
+            if (_spreading)
+            {
+                long began = Stopwatch.GetTimestamp();
+                if (RunOne())
+                {
+                    Spread.Frame(began);
+                }
+                else
+                {
+                    SayDoor();   // every piece tried behind this black screen; the rest wait for the next
+                }
             }
         }
 
@@ -294,6 +437,8 @@ namespace RealLifeOverhaul
                 _instance = null;
                 Work.Clear();   // the pieces belonged to the city that is going
                 Names.Clear();
+                TriedIn.Clear();
+                _spreading = false;
                 Late.Clear();
                 LateNames.Clear();
             }

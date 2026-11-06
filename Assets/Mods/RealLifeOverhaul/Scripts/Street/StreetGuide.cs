@@ -4,11 +4,7 @@ using RealLifeOverhaul.Meta;
 
 namespace RealLifeOverhaul.Street
 {
-    /// <summary>
-    /// The feature's entry in the mod's feature list, and the figures its Guide page prints: every {name} in its text is
-    /// filled from <see cref="StreetRules"/> here, so the page can never say anything street talk does not do. Called once,
-    /// when the feature list is built (Meta/FeatureList); each figure is worked out when the page is opened.
-    /// </summary>
+    /// <summary>The feature's entry in the feature list, and its Guide page's figures from <see cref="StreetRules"/>.</summary>
     public static class StreetGuide
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
@@ -21,7 +17,7 @@ namespace RealLifeOverhaul.Street
                 .Owns(Settings.StreetTalkId, Settings.StreetBrushId)
                 .Preset(Settings.StreetBrushId, 0, 1, 2)
                 .Data(StreetStore.Key)
-                .Test("reallife_street_test_talk", "reallife_street_test_forget")
+                .Test("reallife_street_test_talk", "reallife_street_test_age", "reallife_street_test_forget")
                 .Fact("street_police", () => ((int)StreetRules.PoliceMetres).ToString(Inv))
                 .Fact("street_find", () => ((int)StreetRules.FindMetres).ToString(Inv))
                 .Fact("street_mouth", () => StreetRules.MouthPercent.ToString(Inv))
@@ -36,10 +32,9 @@ namespace RealLifeOverhaul.Street
         }
     }
 
-    /// <summary>Street talk's place on the options page, under the mod's own namespace so that it is one line there.</summary>
+    /// <summary>Street talk's block on the options page, as an extension so it is one line there.</summary>
     public static class StreetOptions
     {
-        /// <summary>The "Street talk" block of the options page: its switch, how often people have no time, and the tests.</summary>
         public static ModOptions AddStreetTalk(this ModOptions options)
         {
             return options
@@ -48,6 +43,7 @@ namespace RealLifeOverhaul.Street
                 .AddDropdown(Settings.StreetBrushId, "reallife_street_opt_brush",
                     new[] { "reallife_street_brush_0", "reallife_street_brush_1", "reallife_street_brush_2" }, Settings.StreetBrush, v => Settings.StreetBrush = v)
                 .AddButton("reallife_street_test_talk", () => StreetDirector.Instance?.TestTalk())
+                .AddButton("reallife_street_test_age", () => StreetDirector.Instance?.TestAge())
                 .AddButton("reallife_street_test_forget", () => StreetDirector.Instance?.TestForget())
                 .AddSplitter();
         }

@@ -3,10 +3,9 @@ using UI.Notification;
 
 namespace RealLifeOverhaul.Permadeath
 {
+    /// <summary>The test buttons.</summary>
     public sealed partial class PermadeathDirector
     {
-        // ---------------------------------------------------------------- the test buttons
-
         private bool Ready(string test)
         {
             if (!ModState.Loaded || !PermadeathState.Loaded || PermadeathGame.Save == null || !ReferenceEquals(PermadeathGame.Save, _save))
@@ -22,7 +21,7 @@ namespace RealLifeOverhaul.Permadeath
             return true;
         }
 
-        /// <summary>Test button: the obituary of this character as it would be printed now, on the City Ledger's page. Nothing ends; the switch need not be on.</summary>
+        /// <summary>Test button: this character's obituary as it would be printed now. Nothing ends; the switch need not be on.</summary>
         public void TestObituary()
         {
             const string Test = "The obituary";
@@ -42,10 +41,7 @@ namespace RealLifeOverhaul.Permadeath
             _ending = false;
         }
 
-        /// <summary>
-        /// Test button: a death rehearsed from start to end (the fade, the obituary) with nothing saved and the character
-        /// alive afterwards: the game's own "the player is dead" is not used, only walking is held.
-        /// </summary>
+        /// <summary>Test button: the fade and the obituary rehearsed, nothing saved and the character alive afterwards.</summary>
         public void TestRehearsal()
         {
             const string Test = "A death rehearsed";
@@ -57,11 +53,7 @@ namespace RealLifeOverhaul.Permadeath
             StartCoroutine(Guard.Routine(Dying(DeathCause.Test, false)));
         }
 
-        /// <summary>
-        /// Test button: the character dies now, for real, exactly as from a danger (the save is written as ended, the
-        /// obituary, the main menu), after the game's own red question. Only in a save where Permadeath is on, never in a
-        /// session: for proving the whole of it in a save nobody needs.
-        /// </summary>
+        /// <summary>Test button: after the game's red question the character dies for real, as from a danger. Only with Permadeath on, never in a session.</summary>
         public void TestDie()
         {
             const string Test = "Die for real";
@@ -89,10 +81,7 @@ namespace RealLifeOverhaul.Permadeath
             }, null, "reallife_pd_test_die_yes", "reallife_meta_cancel", allowConfirmationSkip: false, isNegative: true);
         }
 
-        /// <summary>
-        /// Test button: a flu that began two days ago and has had no treatment, so that the first warning comes within the
-        /// game hour (and, with the game's clock run on, the second and third a day apart each).
-        /// </summary>
+        /// <summary>Test button: an untreated flu begun two days ago, so the first warning comes within the game hour.</summary>
         public void TestFlu()
         {
             const string Test = "A flu left untreated";
@@ -112,14 +101,11 @@ namespace RealLifeOverhaul.Permadeath
                 return;
             }
             Notifications.Show(NotificationType.Info, PermadeathState.Armed ? "reallife_pd_test_flu_done" : "reallife_pd_test_flu_off", null, 12f);
-            Logger?.Info(Test + " test: a flu begun " + (PermadeathRules.IllWarnFirst - 0.5f) + " hours ago, untreated; Permadeath " + (PermadeathState.Armed ? "on: the first warning comes on the hour." : "off: it takes its usual course."));
+            Logger?.Info(Test + " test: a flu begun " + (PermadeathRules.IllWarnFirst - 0.5f) + " hours ago, untreated; Permadeath "
+                         + (PermadeathState.Armed ? "on: the first warning comes on the hour." : "off: it takes its usual course."));
         }
 
-        /// <summary>
-        /// Test button: the hunger bar at its bottom, as if for half an hour short of a day, so that the first warning of
-        /// going without food comes within the game hour (and, with the clock run on, the others a day apart). Only with
-        /// Permadeath on in this save: off, the bar is simply what it always was.
-        /// </summary>
+        /// <summary>Test button: the hunger bar at its bottom for half an hour short of a day, so the first warning comes within the hour. Only with Permadeath on.</summary>
         public void TestStarve()
         {
             const string Test = "Going without food";
@@ -142,7 +128,7 @@ namespace RealLifeOverhaul.Permadeath
             Logger?.Info(Test + " test: the bar at its bottom since " + (PermadeathRules.StarveWarnFirst - 0.5f) + " hours ago; the first warning comes on the hour.");
         }
 
-        /// <summary>Test button: the notice a near miss shows (a crash's), and nothing more: nothing is remembered as warned.</summary>
+        /// <summary>Test button: a crash's near-miss notice, and nothing remembered as warned.</summary>
         public void TestNearMiss()
         {
             const string Test = "A near miss";

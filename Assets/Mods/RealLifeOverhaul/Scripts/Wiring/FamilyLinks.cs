@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using BigAmbitions.DayNightCycle;
 using Entities;
 using RealLifeOverhaul.Law;
 using FamilyApi = RealLifeOverhaul.Family.FamilyApi;
@@ -17,24 +16,12 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// Family life with the features it leans on. The doors that are filled in:
-        ///
-        ///   FamilyBridges.Social     the partner is one of the people of Scripts/Social (the one the player is dating or with),
-        ///                            what happens between the two moves that person's figures, the wedding's guests are the close people,
-        ///                            and a job the partner retrained for is that person's job in People
-        ///   FamilyBridges.Home       a partner who looks after the player when ill shortens the illness; a baby's broken night is owed sleep
-        ///   FamilyBridges.Law        whether the player is locked up (a cell or a prison term): family life waits
-        ///   SocialLinks.PartnerChanged   a break-up or a new partner in Social reaches the family at once
-        ///   SocialPhone.FamilyMatters    the partner's People call has time apart and the in-laws while there is no Family contact
-        ///   HomeFridgeButton.Family*     the fridge's Family button opens the family's board then
-        ///
-        /// An arrest is told to the family from <see cref="Arrests"/>, once, as it happens.
-        ///
-        /// Left at their defaults, each because the other side has nothing to answer with: FamilyBridges.Travel (a trip is bought at
-        /// the travel agent's desk and run by the travel feature; it cannot be started for somebody else), FamilyBridges.Leisure (an
-        /// evening or an outing there is an activity at a venue for the player, not a date with a named companion), and from Home
-        /// the shared cooking and television and the health visit (Home has no routine for two, or for recording a visit). Social's
-        /// own outings are planned with a venue and a time by its people, so StartOuting answers false and Family runs its short evening.
+        /// Family life with the social life (the partner is one of its people), home life (care when ill, broken nights,
+        /// the pantry, tidying) and the law (locked up, family life waits); an arrest is told from <see cref="Arrests"/>.
+        /// Left at their defaults, the other side having nothing to answer with: FamilyBridges.Travel and Leisure (neither
+        /// can be run for a named partner), television together and the health visit. Social's outings are planned with a
+        /// venue and a time, so StartOuting answers false and Family runs its short evening.
+        /// Mom's own call, whichever dialog her contact opens (PhoneContacts), offers the family dinner at hers on its day.
         /// </summary>
         public static class FamilyLinks
         {
@@ -47,8 +34,12 @@ namespace RealLifeOverhaul
                 SocialPerson.FreeOf = (p, hour, weekend) => p != null && PeopleOn && p == SocialState.Partner ? FamilyApi.PartnerFree(hour, weekend) : null;
                 SocialPhone.HasFamilyMatters = p => p != null && PeopleOn && p == SocialState.Partner && FamilyPhone.HasCallMatters;
                 SocialPhone.FamilyMatters = FamilyPhone.CallMatters;
+                SocialPhone.FamilyKeepsMoveIn = p => p != null && PeopleOn && p == SocialState.Partner && FamilyPhone.KeepsMoveIn;
+                SocialPhone.FamilyMoveIn = MoveIn;
                 HomeFridgeButton.FamilyShown = () => FamilyPhone.BoardShown;
                 HomeFridgeButton.FamilyClicked = FamilyPhone.Board;
+                PhoneContacts.MomsDinner = () => FamilyApi.MomsDinner;   // Mom's own call offers today's dinner at hers
+                PhoneContacts.GoToMoms = FamilyApi.GoToMoms;
             }
 
             internal static void Disconnect()
@@ -57,9 +48,29 @@ namespace RealLifeOverhaul
                 SocialPerson.FreeOf = null;
                 SocialPhone.HasFamilyMatters = null;
                 SocialPhone.FamilyMatters = null;
+                SocialPhone.FamilyKeepsMoveIn = null;
+                SocialPhone.FamilyMoveIn = null;
                 HomeFridgeButton.FamilyShown = null;
                 HomeFridgeButton.FamilyClicked = null;
+                PhoneContacts.MomsDinner = null;
+                PhoneContacts.GoToMoms = null;
                 FamilyBridges.Reset();
+            }
+
+            // Moving the partner in from People: family life's own move in (null if they did), and what they say if it could not be.
+            private static string MoveIn()
+            {
+                try
+                {
+                    string why = FamilyPhone.MoveInFromPeople();
+                    return why == null ? null : why == "reallife_family_no_room" ? "reallife_social_movein_room"
+                        : why == "reallife_family_no_home" ? "reallife_social_movein_home" : "reallife_social_movein_no";
+                }
+                catch (Exception e)
+                {
+                    Fault("FamilyLinks.MoveIn", e);
+                    return "reallife_social_movein_no";
+                }
             }
 
             // Social lost its partner or has a new one.
@@ -85,11 +96,12 @@ namespace RealLifeOverhaul
                     Name = p.Name,
                     LookSeed = p.Seed,
                     Female = p.Female,
+                    Age = p.Age,
                     Affection = p.Affection,
                     Trust = p.Trust,
                     Stage = (int)p.Stage,
                     DaysTogether = Math.Max(0, TimeHelper.CurrentDay - p.StageDay),  // since the stage they are in began
-                    LastContactDay = p.LastContactDay,                                 // Social's calls, texts, outings and meetings
+                    LastContactDay = p.LastContactDay,
                     JobKey = SocialCatalogue.Jobs[Math.Max(0, Math.Min(p.Job, SocialCatalogue.Jobs.Length - 1))],
                     FreeFrom = p.FreeFrom,
                     FreeTo = p.FreeTo,
@@ -136,7 +148,7 @@ namespace RealLifeOverhaul
                         }
                         if (what == FamilyEvent.Divorced)
                         {
-                            // The family ended it: the figures fall, and Social is told it is over without its own announcements.
+                            // The family ended it: Social is told it is over without its own announcements.
                             SocialRules.Change(p, 0f, affection, trust);
                             p.Stage = SocialStage.Acquaintance;
                             p.StageDay = TimeHelper.CurrentDay;
@@ -203,7 +215,7 @@ namespace RealLifeOverhaul
                         {
                             return false;
                         }
-                        p.Job = job;   // saved with the person (SocialState): People, the texts and Flare all read it
+                        p.Job = job;   // saved with the person: People, the texts and Flare all read it
                         return true;
                     }
                     catch (Exception e)
@@ -242,7 +254,7 @@ namespace RealLifeOverhaul
                             // Family first, then the rest from the closest down.
                             for (int stage = (int)SocialStage.CloseFriend; stage >= (int)SocialStage.Friend; stage--)
                             {
-                                for (int i = 0; i < SocialRules.CastSize && added < most; i++)
+                                for (int i = 0; i < SocialState.Count && added < most; i++)
                                 {
                                     SocialPerson p = SocialState.Get(i);
                                     if (p != null && p.Met && p != partner && (int)p.Stage == stage && p.IsFamily == (pass == 0))
@@ -318,7 +330,7 @@ namespace RealLifeOverhaul
                 {
                     try
                     {
-                        return Roommates.RoommateGame.Tidy(points);   // as a tidy roommate's cleaning: the game's own dirt off the floor
+                        return Roommates.RoommateGame.Tidy(points);   // the game's own dirt off the floor, as a tidy roommate cleans
                     }
                     catch (Exception e)
                     {
@@ -338,7 +350,7 @@ namespace RealLifeOverhaul
                         float most = -1f;
                         try
                         {
-                            // The player's own cars only: not another player's shown in a Going Public session, nor the one handed to the partner.
+                            // The player's own cars only: not another player's in a session, nor the one handed to the partner.
                             List<VehicleController> cars = Helpers.VehicleHelper.AllPlayerVehicles;
                             for (int i = 0; cars != null && i < cars.Count; i++)
                             {
@@ -365,7 +377,7 @@ namespace RealLifeOverhaul
                         {
                             return false;
                         }
-                        HomeHealth.Shorten(8f * 60f);   // a night of being looked after, as the default takes off the old sickness
+                        HomeHealth.Shorten(8f * 60f);   // minutes: a night of being looked after, as the default takes off the old sickness
                         ModState.AddModifier(ModState.MoodUp);
                         return true;
                     }

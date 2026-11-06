@@ -776,7 +776,7 @@ internal static partial class Program
             all &= has && (l == 0 || text != langs[0][key]) && !text.Contains("!") && !text.Contains("—")
                    && !text.Contains("–") && !text.Contains(" - ");
         }
-        Check(all && codes.Length == ModLanguages.All.Length,
+        Check(all && codes.Length == ModLanguages.PerFeature.Length,
             "rival offers: the contract part's name is in every language, each its own, with no dash and no exclamation mark");
     }
 }

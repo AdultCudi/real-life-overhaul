@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
 using BAModAPI;
+using Streets;
 using UI.Load;
 using UI.Notification;
 using UnityEngine;
@@ -21,6 +22,7 @@ namespace RealLifeOverhaul.Tech
         public static TechDirector Instance { get; private set; }
 
         private Action _onSave, _onHour, _onDay, _hourSeen, _daySeen;
+        private Action<Address> _onRegChange, _regChangeSeen;   // a building's record changed: a warehouse may have been taken
         private bool _broken;
         private TechNews _news;
         private GameInstance _newsOf;   // the save _news was read from
@@ -32,13 +34,17 @@ namespace RealLifeOverhaul.Tech
         private void Awake()
         {
             Instance = this;
+            GameUi.GameSprites.Want(RolesGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
+            GameUi.GameSprites.Want(TechGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
             TalentGame.Logger = Logger;
             HiringGame.Logger = Logger;
             FirmsGame.Logger = Logger;
+            SeatGame.Logger = Logger;
             MovesGame.Logger = Logger;
             _onSave = OnSave;
             _onHour = Guard.Wrap(OnHour);
             _onDay = Guard.Wrap(OnDay);
+            _onRegChange = Guard.Wrap<Address>(OnRegistrationChange);
             StartCoroutine(Guard.Routine(Tick()));
         }
 
@@ -47,6 +53,7 @@ namespace RealLifeOverhaul.Tech
             SaveHook.Drop(_onSave);
             GlobalEvents.onNewHour -= _onHour;
             GlobalEvents.onNewDay -= _onDay;
+            GlobalEvents.onBuildingRegistrationChange -= _onRegChange;
             try
             {
                 StopParts(false, true);
@@ -155,6 +162,12 @@ namespace RealLifeOverhaul.Tech
             {
                 InstallTech();
             }
+            KeepRegistrationHandler();   // counted whatever the sector does (InCity), a warehouse's flagged
+            if (_firmsOn)
+            {
+                KeepWarehouses();
+                DeskSecond();   // a desk of the player's own firm to click, a stint at one watched
+            }
         }
 
         private static readonly int HotOnHour = HotSpots.Slot("Tech: TechDirector.OnHour");
@@ -180,6 +193,13 @@ namespace RealLifeOverhaul.Tech
         }
 
         private static readonly int HotOnDay = HotSpots.Slot("Tech: TechDirector.OnDay");
+        // The day's stages each under a name of their own (the midnight line of the session record names every part over a tenth of a millisecond).
+        private static readonly int HotDayMoves = HotSpots.Slot("Tech: day, moves followed");
+        private static readonly int HotDayHiring = HotSpots.Slot("Tech: day, the labour market");
+        private static readonly int HotDayPeople = HotSpots.Slot("Tech: day, the professionals");
+        private static readonly int HotDayFirms = HotSpots.Slot("Tech: day, firms and data centres");
+        private static readonly int HotDayVenture = HotSpots.Slot("Tech: day, startups");
+        private static readonly int HotDayApps = HotSpots.Slot("Tech: day, apps redrawn");
         private void OnDay()
         {
             using var hotSpot = HotSpots.Time(HotOnDay);
@@ -192,26 +212,34 @@ namespace RealLifeOverhaul.Tech
                 float started = Time.realtimeSinceStartup;
                 if (_peopleOn)
                 {
+                    using var moves = HotSpots.Time(HotDayMoves);
                     FollowMoves();   // a move made since the last read is followed before the day is worked
                 }
                 if (_hiringOn)
                 {
+                    using var hiring = HotSpots.Time(HotDayHiring);   // before the professionals' day, which reads the market's shortages
                     HiringDay(Save.Day);
                 }
                 if (_peopleOn)
                 {
+                    using var people = HotSpots.Time(HotDayPeople);   // the game's employees' moods and absences, before its own daily run of them
                     PeopleDay(Save.Day);
                 }
                 if (_firmsOn)
                 {
+                    using var firms = HotSpots.Time(HotDayFirms);   // takings and costs booked into yesterday's statement, before the game's tax reads it
                     FirmsDay(Save.Day);
                     InfraDay(Save.Day);
                 }
                 if (_ventureOn)
                 {
+                    using var venture = HotSpots.Time(HotDayVenture);   // a sale's money is paid out to the player
                     VentureDay(Save.Day);
                 }
-                Changed();
+                using (HotSpots.Time(HotDayApps))
+                {
+                    Changed();
+                }
                 if (Verbose)
                 {
                     Logger?.Info("Tech check (day " + Save.Day + "): " + ((Time.realtimeSinceStartup - started) * 1000f).ToString("0.0", CultureInfo.InvariantCulture) + " ms: PASS");

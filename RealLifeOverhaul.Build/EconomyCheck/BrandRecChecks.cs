@@ -446,8 +446,8 @@ internal static partial class Program
             FlareCast.Day(f, day, shops, null, null, null, visits);
         }
         int paid = f.Posts.FindAll(p => p.Who == fit.Id && p.Source == FlareSource.Hired && p.Place == "Gym~1").Count;
-        Check(paid == 7 && hire.Posted == 7 && hire.LastPost == 16,
-            "Flare: an influencer who stopped posting still makes the 7 posts of a week's deal paid for (" + paid + " made, " + hire.Posted + " counted, the last on day " + hire.LastPost + ")");
+        Check(paid == 5 && hire.Posted == 5 && hire.LastPost == 16,
+            "Flare: an influencer who stopped posting still makes the 5 posts of a week's series paid for (" + paid + " made, " + hire.Posted + " counted, the last on day " + hire.LastPost + ")");
         Check(!f.Posts.Exists(p => p.Who == fit.Id && p.Day > 16), "Flare: and nothing more once the deal is over");
 
         var late = new FlareHire { Id = 901, Kind = 5, Place = "Gym~1", Name = "Iron Works", From = 30, To = 31, Late = true };
@@ -483,14 +483,14 @@ internal static partial class Program
         }
         int own, last;
         int all = FlareCast.PostsAbout(f, "Gym~1", out own, out last);
-        Check(all == 5 && own == 1 && last == 8,
-            "Flare: the Business tab counts a business's paid posts with the player's own (" + all + " in all, " + own + " own, the last on day " + last + "; the hire's 4 were not counted before)");
+        Check(all == 4 && own == 1 && last == 8,
+            "Flare: the Business tab counts a business's paid posts with the player's own (" + all + " in all, " + own + " own, the last on day " + last + "; the series' 3 so far were not counted before)");
         for (int day = 9; day < 9 + 40; day++)
         {
             FlareCast.Day(f, day, shops, new[] { "Rival Corp" }, new[] { "A Candidate" }, new[] { "A Brand" }, visits);
         }
         all = FlareCast.PostsAbout(f, "Gym~1", out own, out last);
-        Check(hire.Posted == 7 && all == 8 && last == 11, "Flare: the count holds after the Feed has let the deal's posts go (" + all + ", the last on day " + last + ")");
+        Check(hire.Posted == 5 && all == 6 && last == 11, "Flare: the count holds after the Feed has let the deal's posts go (" + all + ", the last on day " + last + ")");
         Check(FlareCast.PostsAbout(f, "Nowhere~0", out own, out last) == 0 && own == 0 && last == -1, "Flare: a business with no post has none, and no last day");
         // The Business tab's card and a deal's card read these, not a count of their own (Social/Flare/FlareApp.Business.cs).
         string screens = System.IO.File.ReadAllText(System.IO.Path.Combine(LocalesFolder(), @"..\Scripts\Social\Flare\FlareApp.Business.cs"));

@@ -26,6 +26,8 @@ internal static partial class Program
         BusFare();
         BusJourney();
         BusRound();
+        MakeWays();
+        BusStartHold();
         BusBoarding();
         BusMiddleDoor();
         BusNetwork();

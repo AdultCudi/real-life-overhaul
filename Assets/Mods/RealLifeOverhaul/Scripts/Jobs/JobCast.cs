@@ -101,6 +101,10 @@ namespace RealLifeOverhaul
                 return null;
             }
             int slot = !_out[0] ? 0 : !_out[1] ? 1 : -1;
+            if (seed != 0 && slot == 0 && !_out[1] && !Wears(0, seed, female, formal) && Wears(1, seed, female, formal))
+            {
+                slot = 1;   // the one on the shelf already in this person's look: no merge for them
+            }
             if (slot < 0)
             {
                 return null;
@@ -188,7 +192,9 @@ namespace RealLifeOverhaul
                 }
                 _out[i] = false;
                 _seated[i] = false;
-                _stale[i] = true;
+                // A seeded person (a boss, a colleague) keeps their look for when they are put out again: a new one on the
+                // shelf was a mesh merge in play, made again at need when they came back (the owner's session, 25 Oct 2026).
+                _stale[i] = !_fixed[i];
                 person.InUse = false;
                 Shelve(person);
                 if (_refresh == null && _host != null && _host.isActiveAndEnabled)
@@ -395,6 +401,7 @@ namespace RealLifeOverhaul
                         body.SetActive(true);
                         Dress(person);
                         Wear(slot, 0, false, false);
+                        _fixed[slot] = false;   // a random look now: whoever is put out next wears it as it is
                         body.SetActive(false);
                     }
                     catch (Exception e)

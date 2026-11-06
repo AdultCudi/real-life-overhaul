@@ -178,6 +178,10 @@ namespace RealLifeOverhaul
                     break;
 
                 case TransitBus.Phase.Approaching:
+                    if (_bus.TakeHoldCut(out float early) && _promisedAt > 0f)
+                    {
+                        _promisedAt -= early;   // seen at its start, it drove on that much sooner: the panel follows it down (Track)
+                    }
                     _eta.Track(TickInterval, _bus.Estimate(_pace), _bus.Waiting != TransitBus.Hold.None);
                     if (!_journey)
                     {
@@ -201,6 +205,14 @@ namespace RealLifeOverhaul
                     if (_rider.WantsDeparture && !busy)
                     {
                         Leave(now);   // they sit or hold on: the doors close and it goes
+                        break;
+                    }
+                    if (!busy && !held && _bus.StandsInTheWay())
+                    {
+                        // In the lane with no bay, and a lit emergency vehicle comes up behind: it stands clear, as a bus does for one.
+                        Logger?.Info("Transit check (make way): the " + LineNumber(_bus.Stop) + " stands in its lane at its stop with no bay and a lit emergency vehicle is coming up behind it; "
+                                     + "it closes its doors and pulls away after standing " + _bus.Standing.ToString("F0") + " s: PASS.");
+                        Leave(now);
                         break;
                     }
                     // The driver waits for somebody at or walking to the stop, unless the player waits for another line.
@@ -290,6 +302,7 @@ namespace RealLifeOverhaul
             }
             if (_next.State == TransitBus.Phase.Approaching)
             {
+                _next.TakeHoldCut(out _);   // its promise is made when it is the front bus, from what the panel shows then
                 _nextEta.Track(TickInterval, _next.Estimate(_pace), _next.Waiting != TransitBus.Hold.None);
                 if (_next.NoProgressFor > GiveUpAfter || _next.Out > GiveUpOut)
                 {

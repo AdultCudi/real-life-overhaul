@@ -256,7 +256,7 @@ namespace RealLifeOverhaul
             if (pass)
             {
                 // The game took its fare in the frame its ride began (SubwaySystem.TravelToCoroutine).
-                GameManager.ChangeMoneySafe(SubwayStation.PricePerRide, new TransactionInfo(CivicBridges.FareGivenBack), null, null, force: true, showNotification: true);
+                RealLifeOverhaul.Economy.BizBooks.Book(SubwayStation.PricePerRide, new TransactionInfo(CivicBridges.FareGivenBack), null, null, force: true, showNotification: true);
             }
             TransitDirector.Logger?.Info("Transit: the game's subway ride from " + (_rideFrom != null ? _rideFrom.stationName.ToString() : "?") + " to "
                                          + (_rideTo != null ? _rideTo.stationName.ToString() : "?") + " has begun" + (pass ? "; the day pass gives the game's fare back" : string.Empty) + ".");

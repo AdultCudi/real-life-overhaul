@@ -4,8 +4,10 @@ using UnityEngine;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Civic life's own people, five at most: a second instance of city life's pool, made a person at a time once something
-    /// first needs people. Civic life asks city life's code for people only through this class and <see cref="CivicCrew"/>.
+    /// Civic life's own people, five at most: a second instance of city life's pool, made behind the loading screen (a
+    /// person a step, <see cref="Prewarm"/>), or a person at a time out of sight once something first needs people if civic
+    /// life was switched on after the load. Civic life asks city life's code for people only through this class and
+    /// <see cref="CivicCrew"/>.
     /// </summary>
     public sealed class CivicCast
     {
@@ -43,6 +45,22 @@ namespace RealLifeOverhaul
             }
             return false;
         }
+
+        /// <summary>
+        /// Behind the loading screen (Core/ScenePrewarm): one more of the five made, as <see cref="Ready"/> would make it in
+        /// play, a prefab and a mesh merge each; true when all five are there.
+        /// </summary>
+        public bool Prewarm(Vector3 near)
+        {
+            if (_people == null || _people.Count >= Most)
+            {
+                return true;
+            }
+            _people.Warm(near + Vector3.down * 40f);
+            return _people.Count >= Most;
+        }
+
+        public int Count => _people != null ? _people.Count : 0;
 
         public CityPerson Take(CityLook look, Vector3 spot, Vector3 face)
         {

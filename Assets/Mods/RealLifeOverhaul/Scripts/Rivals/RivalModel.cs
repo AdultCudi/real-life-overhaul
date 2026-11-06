@@ -134,6 +134,7 @@ namespace RealLifeOverhaul.Rivals
         public int YearDays = 365;             // the market's year, for a quarter of it
         public int Level = 1000;               // the city's price level, tenths of a point
         public int Cycle = 1;                  // the city's cycle: 0 boom, 1 steady, 2 slowdown, 3 recession
+        public long FirstFrom = RivalCatalogue.TierFrom[1];   // at the start's prices: the worth the first rival comes forward from, by the option
         public bool Listed;                    // the player's company is on the stock market, settled
         public bool Market;                    // the stock market runs here (alone: not following another player's)
         public bool Staff;                     // the company's staff part runs (a poaching offer can be made)
@@ -149,6 +150,7 @@ namespace RealLifeOverhaul.Rivals
             YearDays = 365;
             Level = 1000;
             Cycle = 1;
+            FirstFrom = RivalCatalogue.TierFrom[1];
             Listed = Market = Staff = Issues = Court = Paper = false;
             Shops.Clear();
         }

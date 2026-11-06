@@ -32,7 +32,7 @@ namespace RealLifeOverhaul
                 return;
             }
             Collider by = _driver.HeldBy;
-            if (State == Phase.Approaching && now >= _holdUntil && Stop != null)
+            if (State == Phase.Approaching && !_startHold.Holds(now) && Stop != null)
             {
                 bool player = by != null && IsPlayer(by);
                 bool door = DoorOnKerb();
@@ -57,6 +57,37 @@ namespace RealLifeOverhaul
                 _hold.Logged = true;
                 Logger?.Info("Transit check (hold): " + HoldWords(still) + ".");
             }
+        }
+
+        // True when a lit emergency vehicle is coming up behind it, in its lane or the next (EmergencyDriver.UnitComingUp).
+        private bool UnitBehind()
+        {
+            if (Vehicle == null)
+            {
+                return false;
+            }
+            Vehicle.Footprint(out Vector3 centre, out Vector3 forward, out _, out _);
+            return EmergencyDriver.UnitComingUp(centre, forward);
+        }
+
+        /// <summary>True while it stands at its stop in the lane, with no bay to stand in, and a lit emergency vehicle is coming up behind it: it should stand clear.</summary>
+        public bool StandsInTheWay()
+        {
+            return State == Phase.Standing && MakeWayRules.BusStandsClear(_bay, UnitBehind());
+        }
+
+        // Its hold at the start let go because the player can see it (RideRules.StartHold): it drives on from this tick, what
+        // it stood is what counts as held, and the director is told how early it now is. One line in the log.
+        private void HoldLetGo()
+        {
+            float cut = _startHold.Cut;
+            Held0 = Mathf.Max(0f, Held0 - cut);
+            _holdCutTold = true;
+            Logger?.Info("Transit check (start hold): the " + (_line != null ? _line.Number : "bus") + ", held at its start out of sight to keep the timetable, can be seen "
+                         + Mathf.Sqrt(CitySpots.Flat(Vehicle.transform.position - PlayerHelper.GetPosition())).ToString("F0") + " m from the player after standing "
+                         + Held0.ToString("F1", CultureInfo.InvariantCulture) + " s: the last " + cut.ToString("F1", CultureInfo.InvariantCulture)
+                         + " s of the hold are let go and it drives on now (looked at every " + RideRules.StartLookEvery.ToString("F1", CultureInfo.InvariantCulture)
+                         + " s while it holds), early at its stop by that much: PASS.");
         }
 
         // A door of it by the stop's kerb, as it stands now.
@@ -152,7 +183,7 @@ namespace RealLifeOverhaul
         /// <summary>What it is standing for now, in words for the log.</summary>
         public string WaitsFor()
         {
-            if (State == Phase.Approaching && Time.time < _holdUntil)
+            if (State == Phase.Approaching && _startHold.Holds(Time.time))
             {
                 return "nothing on the road: it is held at its start, out of sight, to keep the timetable (" + HoldLeft.ToString("F0") + " s more)";
             }

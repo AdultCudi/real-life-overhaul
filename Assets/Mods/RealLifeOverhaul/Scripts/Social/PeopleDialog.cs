@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Text;
 using Dialogs;
@@ -10,14 +11,14 @@ namespace RealLifeOverhaul
     /// <summary>The "People" page: everybody the player knows, closest first, how things stand with each, and what they would like to do.</summary>
     public sealed class PeopleDialog : Dialog
     {
-        // By origin: where somebody not yet met may be found.
+        // By origin (SocialOrigin's numbers): where somebody not yet met may be found.
         private static readonly string[] Hints =
         {
             null, null, "reallife_social_hint_gym", "reallife_social_hint_work", "reallife_social_hint_cart", "reallife_social_hint_neighbour",
             "reallife_social_hint_helped", "reallife_social_hint_customer"
         };
 
-        private readonly List<SocialPerson> _known = new List<SocialPerson>(SocialRules.CastSize);
+        private readonly List<SocialPerson> _known = new List<SocialPerson>(SocialRules.BaseCast);
 
         public PeopleDialog()
         {
@@ -27,7 +28,7 @@ namespace RealLifeOverhaul
                 DialogController.current.ShowEntry(Guard.Entry(PhoneContacts.Closing("reallife_social_call_off")));
                 return;
             }
-            for (int i = 0; i < SocialRules.CastSize; i++)
+            for (int i = 0; i < SocialState.Count; i++)
             {
                 SocialPerson p = SocialState.Get(i);
                 if (p != null && p.Met)
@@ -41,13 +42,14 @@ namespace RealLifeOverhaul
 
         private DialogEntry Overview()
         {
+            // Every place while somebody new can still come from it; once the cast is full, the places with somebody left.
             var text = new StringBuilder(256);
-            for (int i = 0; i < SocialRules.CastSize; i++)
+            bool room = SocialState.Count < SocialRules.MaxCast || SocialDirector.RoomToMake();
+            for (int o = 0; o < Hints.Length; o++)
             {
-                SocialPerson p = SocialState.Get(i);
-                if (p != null && !p.Met && Hints[i] != null)
+                if (Hints[o] != null && (room || SocialState.Unmet((SocialOrigin)o) != null))
                 {
-                    text.Append(text.Length > 0 ? ", " : string.Empty).Append(SocialLife.T(Hints[i]));
+                    text.Append(text.Length > 0 ? ", " : string.Empty).Append(SocialLife.T(Hints[o]));
                 }
             }
             SocialPlan plan = SocialState.Plan;
@@ -63,7 +65,10 @@ namespace RealLifeOverhaul
             {
                 { "count", _known.Count.ToString() },
                 { "plan", planLine },
-                { "hints", text.Length > 0 ? SocialLife.T("reallife_social_people_hints").Replace("{list}", text.ToString()) : SocialLife.T("reallife_social_people_all_met") }
+                {
+                    "hints", text.Length > 0 ? SocialLife.T("reallife_social_people_hints").Replace("{list}", text.ToString())
+                        : SocialLife.T("reallife_social_people_full").Replace("{cast}", SocialRules.MaxCast.ToString())
+                }
             };
             var entry = new DialogEntry { messageData = "reallife_social_people_overview".Localize(data), OnCancel = PhoneContacts.HangUp };
             if (_known.Count > 0)
@@ -90,7 +95,14 @@ namespace RealLifeOverhaul
             int birthday = SocialTalk.BirthdayIn(p);
             data["birthday"] = birthday == 0 ? SocialLife.T("reallife_social_people_birthday_today")
                 : SocialLife.T("reallife_social_people_birthday_in").Replace("{days}", birthday.ToString());
-            var entry = new DialogEntry { messageData = "reallife_social_people_page".Localize(data), OnCancel = PhoneContacts.HangUp };
+            string network = SocialPhone.NetworkLine != null ? SocialPhone.NetworkLine(p) : null;   // their position, and what they could do next
+            var entry = new DialogEntry
+            {
+                messageData = network != null
+                    ? SocialLinks.WordsKey.Localize(new Dictionary<string, string> { { "text", SocialLife.T("reallife_social_people_page", data) + "\n" + network } })
+                    : "reallife_social_people_page".Localize(data),
+                OnCancel = PhoneContacts.HangUp
+            };
             entry.ConfirmTextOverride = "reallife_social_btn_next".Localize();
             entry.OnConfirm = () => Page(at + 1);
             entry.SecondOptionTextOverride = "reallife_social_btn_history";
@@ -128,7 +140,33 @@ namespace RealLifeOverhaul
             var entry = new DialogEntry { messageData = "reallife_social_people_history".Localize(data), OnCancel = PhoneContacts.HangUp };
             entry.ConfirmTextOverride = "reallife_social_btn_next".Localize();
             entry.OnConfirm = () => Page(at + 1);
+            entry.SecondOptionTextOverride = "reallife_social_lose_btn";
+            entry.OnSecondOption = () => LoseTouch(at);
             return entry;
+        }
+
+        // Losing touch: why not, on the page, or the call ends and the game's question box asks, as its Contacts app does before
+        // it deletes a contact.
+        private DialogEntry LoseTouch(int at)
+        {
+            SocialPerson p = _known[at % _known.Count];
+            LoseBlock block = SocialDirector.LoseBlockOf(p);
+            string whyNot = (int)block < SocialCatalogue.LoseBlocks.Length ? SocialCatalogue.LoseBlocks[(int)block] : null;
+            if (block != LoseBlock.None && whyNot != null)
+            {
+                var refused = new DialogEntry { messageData = whyNot.Localize(SocialLife.Data(p)), OnCancel = PhoneContacts.HangUp };
+                refused.ConfirmTextOverride = "reallife_social_btn_next".Localize();
+                refused.OnConfirm = () => Page(at + 1);
+                return refused;
+            }
+            DialogEntry closing = PhoneContacts.Closing("reallife_social_lose_closing", SocialLife.Data(p));
+            Action finish = closing.OnVisible;
+            closing.OnVisible = () =>
+            {
+                finish?.Invoke();
+                SocialDirector.AskLoseTouch(p);
+            };
+            return closing;
         }
     }
 }

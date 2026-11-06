@@ -90,7 +90,13 @@ namespace RealLifeOverhaul
             {
                 _harsh = Mathf.Max(HarshLeast * 0.8f, _harsh * CareerCatalogue.PremiumHarsh);   // a premium passenger minds sooner
             }
-            _bump = _harsh + BumpOver;
+            _harsh = TaxiComfortRules.Harsh(_harsh, _table, HarshG);   // easier passengers mind later, but an emergency stop is still one
+            _bump = _harsh + _table.BumpOver;
+            if (_table != TaxiComfortRules.Normal)
+            {
+                Ctx.Logger?.Info("Jobs: taxi passengers are easier on this fare: a hard stop is " + _harsh.ToString("F1", CultureInfo.InvariantCulture) + " m/s2; "
+                                 + TaxiComfortRules.Describe(_table) + ".");
+            }
         }
     }
 }

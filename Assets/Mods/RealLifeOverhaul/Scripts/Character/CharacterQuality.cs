@@ -110,6 +110,8 @@ namespace RealLifeOverhaul
         private const int CitySearchAttempts = 600;      // each one is a single lookup; the city can take minutes to load
         private const float OthersSeconds = 5f;          // Going Public's other players are looked through this often for strand hair (in play)
         private const int OthersLogged = 6;              // a line for each of the first few found in a scene, then one more
+        private const string DrawnSearch = "character: the drawn strand hair looked for (the scene's skinned meshes, from the engine's own list of them, behind the black screen)";
+        private const string WholeSearch = "character: everyone in the game's strand hair being looked for (a search of the whole scene, behind the black screen)";
 
         private sealed class Managed
         {
@@ -129,9 +131,14 @@ namespace RealLifeOverhaul
         // Everyone else drawn here in the game's strand hair (another player's character in a Going Public session, or
         // anyone the game builds from the detailed set): the hair finish only, on the materials of this machine's renderers.
         private readonly List<Managed> _others = new List<Managed>(4);
-        private readonly SearchPace _othersPace = new SearchPace();   // the whole scene, only behind the loading screen or the black screen at a door (Core/SearchPace, SceneFinds.Dark)
+        // The whole scene, only on a frame the loading screen or the game's black screen at full strength covers (Core/SearchPace, SceneFinds.Black).
+        private readonly SearchPace _othersPace = new SearchPace();
+        private Action<Address> _onArrived, _arrivedSeen;              // the game's "entered, and settled" call, through the guard: made once, kept on (Core/EventHold)
         private readonly List<Transform> _remotes = new List<Transform>(4);
         private readonly List<AppearanceSetter> _remoteLooks = new List<AppearanceSetter>(4);
+        // Whose each drawn renderer of strand hair is, learned from the whole search; the renderers only it can place (HairWearers).
+        private readonly HairWearers<AppearanceSetter> _wearers = new HairWearers<AppearanceSetter>(HairLook.Wears);
+        private readonly List<SkinnedMeshRenderer> _unplaced = new List<SkinnedMeshRenderer>(4);
         private int _othersFound;
         private float _nextOthers;
         private CharacterLighting _lighting;
@@ -160,10 +167,19 @@ namespace RealLifeOverhaul
         {
             _searchesLeft = CreationScene ? CreationSearchAttempts : CitySearchAttempts;
             SkinLook.Logger = Logger;
+            if (!CreationScene)
+            {
+                _onArrived = Guard.Wrap<Address>(Arrived);   // (a fault here never reaches the game's own handlers: Core/Guard)
+                HoldArrival();
+            }
         }
 
         private void OnDestroy()
         {
+            if (_onArrived != null)
+            {
+                GlobalEvents.onEnterBuildingDelayed -= _onArrived;
+            }
             Stop();
             if (Instance == this)
             {
@@ -245,15 +261,17 @@ namespace RealLifeOverhaul
 
                 if (!CreationScene && _hairOn && !_hairSuspended && !_stopped)
                 {
-                    // The whole scene only while the screen is dark (never on a plain pause, whose menu would show the
-                    // search as a hitch); in play, Going Public's other players alone.
-                    if (_othersPace.Due(SceneFinds.Dark, Time.unscaledTime))
+                    // The whole scene only on a frame the screen shows black (never in the game's fades, whose picture
+                    // would stop, nor on a plain pause, whose menu would show the search as a hitch); in play, Going
+                    // Public's other players alone.
+                    if (_othersPace.Due(SceneFinds.Dark, SceneFinds.Black, Time.unscaledTime))
                     {
-                        FindOthers(SceneFinds.All<AppearanceSetter>("character: everyone in the game's strand hair being looked for (a search of the whole scene, behind the black screen)"));
+                        FindOthers();
                     }
                     else if (Time.unscaledTime >= _nextOthers)
                     {
                         _nextOthers = Time.unscaledTime + OthersSeconds;
+                        HoldArrival();
                         FindRemoteOthers();
                     }
                 }
@@ -361,20 +379,126 @@ namespace RealLifeOverhaul
         // swapped: the character's appearance data (what a save keeps and what Going Public sends to the other players) is
         // neither read for this nor written.
         //
-        // Where they are found: every character of the scene, behind the game's black screen at a door or a loading screen
-        // (Core/SearchPace: at most twice in one; never on a plain pause, whose menu would show each search, some 80 ms, as
-        // a hitch: it can be made a dozen times in a short session, at doors, loading screens and pauses); and in
-        // play, every five seconds, the other players' figures of a
-        // Going Public session from that mod's own list (Core/GoingPublic.RemotePlayers): in a game played alone the search
-        // found nobody in the street. The search of the whole scene used to be made every five seconds of play: a frame of
-        // some 90 ms each time in the city (0.9.4). The finish itself only on a change of look.
-        private void FindOthers(AppearanceSetter[] all)
+        // Where they are found: every character of the scene, on a frame the game's black screen covers at full strength or
+        // the loading screen is up (Core/SearchPace: at most twice in one; at a door, in the frame after the game says the
+        // building is in, four frames before its fade back in; never in a fade, whose picture would stop, nor on a plain
+        // pause, whose menu would show each search as a hitch); and in play, every five seconds, the other players' figures
+        // of a Going Public session from that mod's own list (Core/GoingPublic.RemotePlayers): in a game played alone the
+        // search found nobody in the street. The finish itself only on a change of look.
+        //
+        // How they are found: from the drawn hair to its wearer. Skinned meshes are a kind of the engine's own, found from
+        // its list of that kind (a few hundred drawn in the city, well under a millisecond); the game's characters are a
+        // kind of its scripts, which the engine finds only by going through every object in memory, 80 to 120 ms in the
+        // city, a frame that can spill past the black screen. A character in strand hair wears a drawn renderer of it
+        // (WearsStrandHair asks just that of each of its pieces), so every such renderer is asked who wears it
+        // (HairWearers): the same characters as the search of every character finds. A renderer that neither its nearest
+        // character nor what was learned can place sends the search of every character, once.
+        private void FindOthers()
         {
             PruneOthers();
+            SkinnedMeshRenderer[] drawn = SceneFinds.All<SkinnedMeshRenderer>(DrawnSearch);
+            _unplaced.Clear();
+            for (int i = 0; i < drawn.Length; i++)
+            {
+                AppearanceSetter wearer = DrawnWearer(drawn[i], out bool unplaced);
+                if (unplaced)
+                {
+                    _unplaced.Add(drawn[i]);
+                }
+                else
+                {
+                    Other(wearer);
+                }
+            }
+            if (_unplaced.Count > 0)
+            {
+                FindOthersEverywhere();
+            }
+            _unplaced.Clear();
+        }
+
+        // Who wears this skinned mesh, if it is drawn in strand hair: null when it is not, when nobody does, or when only
+        // the search of every character can say (unplaced). A wearer whose object is switched off is none: the search of
+        // every character never returned one.
+        private AppearanceSetter DrawnWearer(SkinnedMeshRenderer renderer, out bool unplaced)
+        {
+            unplaced = false;
+            if (!HairLook.DrawsStrandHair(renderer))
+            {
+                return null;
+            }
+            AppearanceSetter wearer = _wearers.Wearer(renderer.GetInstanceID(), renderer.GetComponentInParent<AppearanceSetter>(true), out unplaced);
+            return wearer != null && wearer.gameObject.activeInHierarchy ? wearer : null;
+        }
+
+        // The search of every character, for the renderers nothing else could place:
+        // everyone switched on is looked at as then, and each of those renderers learns its wearer, or that it has none
+        // (switched-off characters are asked too, so that one switched on later is still known as the wearer).
+        private void FindOthersEverywhere()
+        {
+            AppearanceSetter[] all = SceneFinds.All<AppearanceSetter>(WholeSearch, FindObjectsInactive.Include);
             for (int i = 0; i < all.Length; i++)
             {
-                Other(all[i]);
+                if (all[i] != null && all[i].gameObject.activeInHierarchy)   // what the search without switched-off objects returned
+                {
+                    Other(all[i]);
+                }
             }
+            int placed = 0;
+            for (int u = 0; u < _unplaced.Count; u++)
+            {
+                int id = _unplaced[u].GetInstanceID();
+                AppearanceSetter wearer = null;
+                for (int i = 0; i < all.Length && wearer == null; i++)
+                {
+                    wearer = HairLook.Wears(all[i], id) ? all[i] : null;
+                }
+                placed += wearer != null ? 1 : 0;
+                _wearers.Learn(id, wearer);
+            }
+            if (Meta.Dev.Verbose)
+            {
+                Logger?.Info("Hair search check: " + _unplaced.Count + " drawn renderer(s) of strand hair new to the search ('" + _unplaced[0].name
+                             + "' the first), so every character was searched for once, as before: " + placed + " placed with a wearer, "
+                             + (_unplaced.Count - placed) + " worn by nobody; " + _wearers.Count + " known now. PASS.");
+            }
+        }
+
+        /// <summary>
+        /// For the side-by-side test (Options > Tests): every character the search behind the black screen finds in drawn
+        /// strand hair, the ones on show too, put into <paramref name="found"/> once each; returns how many drawn renderers
+        /// it could not place without the search of every character. Changes nothing but what <see cref="HairWearers{T}"/> forgets.
+        /// </summary>
+        internal int DrawnWearers(List<AppearanceSetter> found)
+        {
+            SkinnedMeshRenderer[] drawn = SceneFinds.All<SkinnedMeshRenderer>(DrawnSearch);
+            int unplaced = 0;
+            for (int i = 0; i < drawn.Length; i++)
+            {
+                AppearanceSetter wearer = DrawnWearer(drawn[i], out bool unknown);
+                unplaced += unknown ? 1 : 0;
+                if (wearer != null && !found.Contains(wearer))
+                {
+                    found.Add(wearer);
+                }
+            }
+            return unplaced;
+        }
+
+        // The game's "entered, and settled" call (BuildingManager.DelayedEnterBuildingActions): the building and everyone
+        // the game puts in it are there, and its black screen stays up four frames more before it fades back in. Kept on
+        // the event (the game empties its events on a load) every five seconds, one reference comparison.
+        private void HoldArrival()
+        {
+            if (_onArrived != null)
+            {
+                EventHold.Keep(ref GlobalEvents.onEnterBuildingDelayed, _onArrived, ref _arrivedSeen);
+            }
+        }
+
+        private void Arrived(Address _)
+        {
+            _othersPace.Arrived();   // the search, on the next frame the screen is black: the one that finds who is in the building
         }
 
         // In play: the other players of a Going Public session, from that mod's list. Nothing outside a session.
@@ -753,6 +877,7 @@ namespace RealLifeOverhaul
                 }
             }
             _others.Clear();
+            _wearers.Clear();
             try
             {
                 _creatorLooks?.Dispose();

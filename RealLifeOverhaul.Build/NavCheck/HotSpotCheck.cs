@@ -6,8 +6,8 @@ using RealLifeOverhaul;
 
 // Checks for the timing of the mod's own scripts that the session record reads (Core/HotSpots.cs: the frame before
 // this one by feature and method, nested scopes, the minute's sums and the heap's sampled growth under them), and for
-// when the whole scene may be searched for something that can turn up at any time (Core/SearchPace.cs), with the
-// before and after of the hair finish's search on a made-up session like a real one. Part of the
+// when the whole scene may be searched for something that can turn up at any time (Core/SearchPace.cs, on a model of
+// the game's own fades in DoorFadeCheck.cs), with the before and after of the hair finish's search. Part of the
 // work against long frames (HitchCheck.cs). Compiled as they ship.
 internal static partial class Program
 {
@@ -23,8 +23,7 @@ internal static partial class Program
         HotStretch();
         HotHeap();
         HotCost();
-        Pace();
-        PaceSession();
+        DoorFadeChecks();
         HotSpots.On = false;
         HotSpots.Reset();
     }
@@ -386,104 +385,5 @@ internal static partial class Program
         long allocated = GC.GetAllocatedBytesForCurrentThread() - before;
         ms = watch.Elapsed.TotalMilliseconds;
         return allocated;
-    }
-
-    private static void Pace()
-    {
-        var pace = new SearchPace();
-        bool any = false;
-        for (int f = 0; f < 6000; f++)
-        {
-            any |= pace.Due(false, f * 0.01f);
-        }
-        Check(!any && pace.Made == 0, "pace: a minute of play, no search");
-        // The screen goes black at a door for 1.2 seconds: one search, half a second in.
-        float t = 60f;
-        int made = 0;
-        float at = -1f;
-        for (; t < 61.2f; t += 0.01f)
-        {
-            if (pace.Due(true, t))
-            {
-                made++;
-                at = t;
-            }
-        }
-        Check(made == 1 && at >= 60.5f && at < 60.52f, "pace: a walk through a door, one search, once the screen is black (" + made + ", at " + (at - 60f).ToString("F2") + " s)");
-        // Play again, then a loading screen of twenty seconds: two searches, not forty.
-        for (int f = 0; f < 100; f++, t += 0.01f)
-        {
-            any |= pace.Due(false, t);
-        }
-        made = 0;
-        float start = t;
-        float second = -1f;
-        for (; t < start + 20f; t += 0.01f)
-        {
-            if (pace.Due(true, t))
-            {
-                made++;
-                second = t - start;
-            }
-        }
-        Check(!any && made == 2 && second >= SearchPace.Second && second < SearchPace.Second + 0.02f, "pace: a long black screen, two searches at the most (" + made + ", the second at " + second.ToString("F2") + " s)");
-        Check(pace.Made == 3, "pace: three searches in all (" + pace.Made + ")");
-    }
-
-    // Before and after, on a made-up ten minutes like a real session: on foot in the street, a door every ninety
-    // seconds (the screen black for 1.2 s), a loading screen first, a pause of half a minute. The hair finish's search of the
-    // whole scene, some 90 ms in that city each time: every five seconds of play before, behind the black screen now.
-    private static void PaceSession()
-    {
-        const float Frame = 0.0096f;   // 9.6 ms a frame on average (Session 5 min)
-        var pace = new SearchPace();
-        int beforePlay = 0, beforeHidden = 0, afterPlay = 0, afterHidden = 0, stretches = 0, mostInOne = 0, inOne = 0;
-        float nextOld = 0f;
-        bool wasHidden = false;
-        for (float t = 0f; t < 600f; t += Frame)
-        {
-            bool loading = t < 20f;
-            bool door = t > 20f && (t - 20f) % 90f < 1.2f;
-            bool paused = t > 300f && t < 330f;
-            bool hidden = loading || door || paused;
-            if (hidden && !wasHidden)
-            {
-                stretches++;
-                inOne = 0;
-            }
-            wasHidden = hidden;
-            // Before: every five seconds, whatever was on the screen (CharacterQuality.FindOthers until 0.9.4).
-            if (t >= nextOld)
-            {
-                nextOld = t + 5f;
-                if (hidden)
-                {
-                    beforeHidden++;
-                }
-                else
-                {
-                    beforePlay++;
-                }
-            }
-            // After: the pace, behind the black screen only.
-            if (pace.Due(hidden, t))
-            {
-                if (hidden)
-                {
-                    afterHidden++;
-                    inOne++;
-                    mostInOne = Math.Max(mostInOne, inOne);
-                }
-                else
-                {
-                    afterPlay++;
-                }
-            }
-        }
-        Check(afterPlay == 0, "pace: ten minutes of the session, no search of the whole scene while it is played (before: " + beforePlay + ")");
-        Check(mostInOne <= 2 && afterHidden >= stretches && afterHidden <= 2 * stretches, "pace: one or two behind each black screen (" + afterHidden + " behind " + stretches + ")");
-        Check(beforePlay >= 100, "pace: the old way searched in play every five seconds (" + beforePlay + " in ten minutes)");
-        Console.WriteLine("pace: the hair finish's search of the whole scene (some 90 ms each) in ten minutes of play: before " + beforePlay + " in play and " + beforeHidden
-                          + " behind the black screen, about " + (beforePlay / 10.0).ToString("F0") + " frames over 80 ms a minute; after " + afterPlay + " in play and " + afterHidden + " behind it");
     }
 }

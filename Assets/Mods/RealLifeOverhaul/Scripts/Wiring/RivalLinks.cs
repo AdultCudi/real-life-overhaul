@@ -11,34 +11,10 @@ namespace RealLifeOverhaul
     public static partial class Wiring
     {
         /// <summary>
-        /// The rival tycoons (Scripts/Rivals/RivalBridges) with the rest of the mod. The rivals call no other feature and none
-        /// calls them: every move goes through the feature that owns what it touches, here, one line each.
-        ///
-        /// What the rivals read:
-        ///   Worth         the player's net worth as the Finance app shows it (Economy/Finance, Books.NetWorth)
-        ///   Cycle         the city's cycle (Economy/City, CityEconomy.State): their fortunes grow with it
-        ///   Playthrough   the stock market's playthrough id, for a new file's seed
-        ///
-        /// What the rivals do, each through its owner:
-        ///   ListHolding   a tycoon's holding comes to the stock market when they come forward (MarketDirector.ListHolding)
-        ///   Stake, Bid    a block of the player's listed company with a demand on its board, a bid for it: the market's own
-        ///                 investor and bid, decided by its own rules (MarketDirector.RivalStake, RivalBid)
-        ///   Offer         an offer to the player's most skilled employee, answered on the Company app's Staff tab
-        ///                 (CompanyDirector.RivalOffer)
-        ///   Smear, Inspect business pressure's own smear and an inspection or a licence check, started through its own rules
-        ///                 (BusinessDirector.StartIssue)
-        ///   Footfall      a rival's business near one of the player's: its part is added to <see cref="BusinessGame.Ambient"/>
-        ///                 and written by business pressure's one writer (BusinessDirector.Footfall), inside its bounds
-        ///   WeightOf      a rival's lobbying: inspections, licences and audits more often (BusinessDirector.WeightOf)
-        ///   Premium       a rival buying up a district: its buildings for sale cost more (EstateBridges.Premium)
-        ///   Sue           a civil claim in the Legal file (Justice/RivalClaims)
-        ///   Customers     a piece in the paper: the customers' reputation (FameDirector.Moved, FameCause.Press)
-        ///   the paper     the rivals' pieces in the morning's paper (News.Extra), and the rich list as a page of the City
-        ///                 Ledger (LedgerDirector.ShowSpecial)
-        ///   the page      the rivals' page is a page of the Finance app (EconomyBridges.Rivals, Finance.OpenRivals)
-        ///
-        /// What the player does back goes through the same owners: a takeover of a holding is the market's
-        /// (MarketDirector.TakeOverHolding). COST: nothing per frame; each answer is read when its feature asks.
+        /// The rival tycoons (RivalBridges): every move goes through the feature that owns what it touches, and decides by
+        /// its own rules: the stock market (holdings, a stake, a bid, a takeover), the company (an offer to the staff),
+        /// business pressure (a smear, inspections, lobbying, footfall), property prices, the courts, Standing, the paper
+        /// and the Finance app's page. Nothing per frame; each answer is read when its feature asks.
         /// </summary>
         public static class RivalLinks
         {
@@ -90,7 +66,7 @@ namespace RealLifeOverhaul
             {
                 RivalBridges.Reset();
                 EconomyBridges.Rivals = null;
-                BusinessGame.Ambient = _ambientBefore;   // (the brands', the company's and the city's own pairings take theirs off in a moment)
+                BusinessGame.Ambient = _ambientBefore;   // the brands', the company's and the city's pairings take theirs off next
                 _ambientBefore = null;
                 BusinessDirector.WeightOf = _weightBefore;
                 _weightBefore = null;
@@ -189,8 +165,16 @@ namespace RealLifeOverhaul
 
             private static ulong Playthrough()
             {
-                MarketState state = MarketDirector.Instance != null ? MarketDirector.Instance.State : null;
-                return state != null ? state.Id : 0UL;
+                try
+                {
+                    MarketState state = MarketDirector.Instance != null ? MarketDirector.Instance.State : null;
+                    return state != null ? state.Id : 0UL;
+                }
+                catch (Exception e)
+                {
+                    Fault("RivalLinks.Playthrough", e);
+                    return 0UL;
+                }
             }
 
             private static bool Holding(int id, out long shares, out long held, out long most, out int midCents)
@@ -255,28 +239,68 @@ namespace RealLifeOverhaul
 
             private static int Ambient(BuildingRegistration reg)
             {
-                return (_ambientBefore != null ? _ambientBefore(reg) : 0) + RivalDirector.FootfallOf(reg);
+                int before = 0;
+                try
+                {
+                    before = _ambientBefore != null ? _ambientBefore(reg) : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("RivalLinks.Ambient (the pairings before)", e);
+                }
+                try
+                {
+                    return before + RivalDirector.FootfallOf(reg);
+                }
+                catch (Exception e)
+                {
+                    Fault("RivalLinks.Ambient", e);
+                    return before;
+                }
             }
 
-            // Business pressure's share of the deal for a kind of issue: the others' first, then a rival's lobbying on the inspections.
+            // A kind of issue's weight in business pressure's deal: the earlier pairings' first, then a rival's lobbying.
             private static int Weight(string kind, int weight)
             {
-                int w = _weightBefore != null ? _weightBefore(kind, weight) : weight;
-                switch (kind)
+                int w = weight;
+                try
                 {
-                    case BusinessCatalogue.Health:
-                    case BusinessCatalogue.Fire:
-                    case BusinessCatalogue.Licence:
-                    case BusinessCatalogue.Audit:
-                        return (int)((long)w * (1000 + RivalDirector.InspectionWeight()) / 1000);
-                    default:
-                        return w;
+                    w = _weightBefore != null ? _weightBefore(kind, weight) : weight;
+                }
+                catch (Exception e)
+                {
+                    Fault("RivalLinks.Weight (the pairings before)", e);
+                }
+                try
+                {
+                    switch (kind)
+                    {
+                        case BusinessCatalogue.Health:
+                        case BusinessCatalogue.Fire:
+                        case BusinessCatalogue.Licence:
+                        case BusinessCatalogue.Audit:
+                            return (int)((long)w * (1000 + RivalDirector.InspectionWeight()) / 1000);
+                        default:
+                            return w;
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("RivalLinks.Weight", e);
+                    return w;
                 }
             }
 
             private static void Extra(int day, List<NewsItem> into)
             {
-                _extraBefore?.Invoke(day, into);
+                try
+                {
+                    _extraBefore?.Invoke(day, into);
+                }
+                catch (Exception e)
+                {
+                    Fault("RivalLinks.Extra (the pieces before)", e);
+                }
                 try
                 {
                     RivalDirector.Instance?.Paper(day, into);

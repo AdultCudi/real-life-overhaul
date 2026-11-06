@@ -1,0 +1,391 @@
+using System;
+using System.Globalization;
+using RealLifeOverhaul.GameUi;
+using TMPro;
+using UI;
+using UnityEngine;
+using UnityEngine.UI;
+
+namespace RealLifeOverhaul.Seasons
+{
+    /// <summary>
+    /// The season and its day under the game's date on the top bar: a copy of the date's own label (its font, size and
+    /// colour), smaller, with the season's picture before it, so it goes wherever the top bar goes. The director calls
+    /// <see cref="Show"/> once a second; the words are written only when the day changes. A fault removes it for the session.
+    /// It is the calendar's season, so it does not stand down with the rest of the seasons for another mod's: it gives way only to
+    /// another mod's season that is really under the date (<see cref="SeasonRules.BarShows"/>), one child lookup each time.
+    /// Its size follows the size option (<see cref="SeasonRules.BarScale"/>): the same once-a-second call compares the size laid out with
+    /// the option's, one int, and lays the three rects and the font again when they differ, without building anything. It grows down and
+    /// to the right from where it always stood, into the empty band under the bar beside the clock, never over the date or the clock.
+    /// </summary>
+    public static class SeasonBar
+    {
+        // The piece's first size, in the top bar's units (3840 x 2160, matched to height): the size option multiplies all but Below.
+        private const float Below = 4f;          // from the date's lower edge; kept at every size, so the piece grows away from the date
+        private const float Height = 34f;        // the box's height
+        private const float Width = 420f;        // the box's width: the date's own width, short of the clock beside it
+        private const float Picture = 28f;       // the picture's side
+        private const float Gap = 8f;            // from the picture to the words
+        private const float Shrink = 0.8f;       // of the date's own font size
+        private const string OtherPiece = "Alcware season indicator";   // what Alcware Seasons 0.4.1 puts under the date's label: its own season and day
+
+        private static GameObject _piece;
+        private static Component _words;
+        private static Image _picture;
+        private static RectTransform _rect;      // the piece, its picture and its words, kept to lay them again at another size
+        private static RectTransform _pictureRect;
+        private static RectTransform _wordsRect;
+        private static TMP_Text _text;
+        private static RectTransform _bar;       // the top bar's left part, which the piece is checked to stay inside
+        private static float _dateSize;          // the date's own font size when the piece was built
+        private static int _size = -1;           // the size option's value laid out; -1 none yet
+        private static string _shown;
+        private static int _season = -1;
+        private static bool _failed;
+        private static int _taken = -1;          // 1 while another mod's season stands under the date, 0 while none does, -1 not looked yet (for the log line)
+
+        public static bool Shown => _piece != null && _piece.activeSelf;
+
+        /// <summary>True while another mod's season is under the date, which this one gives its place to; false before the bar is built.</summary>
+        public static bool Taken => _taken == 1;
+        public static string Line => _shown;
+
+        /// <summary>The size option's value the piece is laid out at; -1 before it is.</summary>
+        public static int Size => _size;
+
+        /// <summary>Shows <paramref name="line"/> with <paramref name="season"/>'s picture; pass the same string object while nothing changes.</summary>
+        public static void Show(string line, int season)
+        {
+            if (_failed)
+            {
+                return;
+            }
+            try
+            {
+                if (_piece == null && !Build())
+                {
+                    _failed = true;
+                    return;
+                }
+                if (!Wanted())
+                {
+                    Hide();
+                    return;
+                }
+                int size = Settings.SeasonBarSize;
+                if (size != _size)
+                {
+                    Lay(size);
+                }
+                if (!ReferenceEquals(line, _shown))
+                {
+                    _shown = line;
+                    UiClone.Words(_words, line);
+                }
+                if (season != _season)
+                {
+                    _season = season;
+                    Sprite sprite = SeasonIcons.Of(season);
+                    _picture.sprite = sprite;
+                    _picture.enabled = sprite != null;
+                }
+                if (!_piece.activeSelf)
+                {
+                    _piece.SetActive(true);
+                }
+            }
+            catch (Exception e)
+            {
+                SeasonDirector.Logger?.Error(e);
+                Remove();
+                _failed = true;
+            }
+        }
+
+        public static void Hide()
+        {
+            if (_piece != null && _piece.activeSelf)
+            {
+                _piece.SetActive(false);
+            }
+        }
+
+        // The rule's three answers, asked once a look: the seasons and the option as they are, and whether a season of another mod's stands
+        // under the date (a direct child of the date's label, found by name: nothing is searched). One log line when that answer changes.
+        private static bool Wanted()
+        {
+            Transform date = _piece.transform.parent;
+            Transform piece = date != null ? date.Find(OtherPiece) : null;
+            bool other = piece != null && piece.gameObject.activeInHierarchy;
+            int now = other ? 1 : 0;
+            if (now != _taken)
+            {
+                _taken = now;
+                if (Meta.Dev.Verbose)
+                {
+                    string says = other ? "yes, so this one gives way to it" : "none, so the season under the date is shown (with Alcware Seasons loaded or not)";
+                    SeasonDirector.Logger?.Info("Seasons check (top bar): another mod's season under the date: " + says + ": PASS");
+                }
+            }
+            return SeasonRules.BarShows(Settings.Seasons, Settings.SeasonBar, other);
+        }
+
+        /// <summary>The city is unloading: the piece goes with the top bar's copy of it.</summary>
+        public static void Remove()
+        {
+            if (_piece != null)
+            {
+                UnityEngine.Object.Destroy(_piece);
+            }
+            _piece = null;
+            _words = null;
+            _picture = null;
+            _rect = null;
+            _pictureRect = null;
+            _wordsRect = null;
+            _text = null;
+            _bar = null;
+            _size = -1;
+            SeasonIcons.Drop();
+            _shown = null;
+            _season = -1;
+            _taken = -1;
+            _failed = false;
+        }
+
+        // The piece at the size option's step: the box, the picture, the words' start and their font, from one scale, so Normal is the
+        // first look exactly. Called when the option differs from the size laid out (once, then on a change), never a frame.
+        private static void Lay(int size)
+        {
+            float scale = SeasonRules.BarScale(size);
+            float picture = Picture * scale;
+            _rect.sizeDelta = new Vector2(Width * scale, Height * scale);
+            _pictureRect.sizeDelta = new Vector2(picture, picture);
+            _wordsRect.offsetMin = new Vector2(picture + Gap * scale, 0f);
+            _text.fontSize = _dateSize * Shrink * scale;
+            _size = size;
+            if (Meta.Dev.Verbose)
+            {
+                Check(size, picture, _dateSize * Shrink * scale);
+            }
+        }
+
+        // One line when a size is laid out: the picture and the font as set against what the step asks, and the piece's right edge against
+        // the top bar's left part, which it must stay inside (beyond it the game's notifications begin).
+        private static void Check(int size, float picture, float font)
+        {
+            Rect own = _pictureRect.rect;
+            float right = _bar != null ? _bar.InverseTransformPoint(_rect.TransformPoint(new Vector3(_rect.rect.xMax, 0f, 0f))).x : 0f;
+            float room = _bar != null ? _bar.rect.xMax : right;
+            string says = Mathf.Abs(own.width - picture) > 0.01f || Mathf.Abs(own.height - picture) > 0.01f ? "the picture came out " + Units(own.width) + " x " + Units(own.height)
+                : Mathf.Abs(_text.fontSize - font) > 0.01f ? "the words came out at " + Font(_text.fontSize)
+                : right > room + 0.5f ? "it reaches " + Units(right - room) + " past the top bar's left part"
+                : "PASS";
+            SeasonDirector.Logger?.Info("Seasons check (top bar size): size " + SeasonRules.BarSizeOf(size).ToString(CultureInfo.InvariantCulture) + " asked (x"
+                                        + SeasonRules.BarScale(size).ToString("0.##", CultureInfo.InvariantCulture) + "): picture " + Units(picture) + ", words " + Font(font)
+                                        + " (the date's " + Font(_dateSize) + "), right edge " + Units(right) + " of the bar's " + Units(room) + ": " + says);
+        }
+
+        private static string Units(float value) => value.ToString("F0", CultureInfo.InvariantCulture);
+
+        private static string Font(float value) => value.ToString("F1", CultureInfo.InvariantCulture);
+
+        private static bool Build()
+        {
+            UIs uis = InstanceBehavior<UIs>.IsInitialized ? InstanceBehavior<UIs>.Instance : null;
+            Transform container = uis != null && uis.topBar != null && uis.topBar.container != null ? uis.topBar.container.transform : null;
+            Transform bar = UiClone.Need(container, "Left Bar", "the season under the date");
+            Transform date = UiClone.Need(bar, "Date/Label", "the season under the date");
+            var dateText = date != null ? date.GetComponent<TMP_Text>() : null;
+            if (dateText == null)
+            {
+                UiClone.Fallback("the game's top bar has no date label as expected, so the season is not shown under it (the Calendar still says it)");
+                return false;
+            }
+            Transform holder = UiClone.Dormant(bar, "RealLifeOverhaul Season Holder");
+            try
+            {
+                var piece = new GameObject("RealLifeOverhaul Season", typeof(RectTransform));
+                piece.SetActive(false);
+                piece.AddComponent<LayoutElement>().ignoreLayout = true;   // the date's own row keeps its layout
+                var rect = (RectTransform)piece.transform;
+                rect.SetParent(date, false);
+                rect.anchorMin = rect.anchorMax = new Vector2(0f, 0f);
+                rect.pivot = new Vector2(0f, 1f);
+                rect.anchoredPosition = new Vector2(0f, -Below);
+
+                var pictureObject = new GameObject("Picture", typeof(RectTransform));
+                var pictureRect = (RectTransform)pictureObject.transform;
+                pictureRect.SetParent(rect, false);
+                pictureRect.anchorMin = pictureRect.anchorMax = new Vector2(0f, 0.5f);
+                pictureRect.pivot = new Vector2(0f, 0.5f);
+                pictureRect.anchoredPosition = Vector2.zero;
+                _picture = pictureObject.AddComponent<Image>();
+                _picture.raycastTarget = false;
+                _picture.preserveAspect = true;
+                _picture.color = dateText.color;
+
+                GameObject words = UiClone.Asleep(date.gameObject, holder, "Words");
+                for (int i = words.transform.childCount - 1; i >= 0; i--)
+                {
+                    UnityEngine.Object.DestroyImmediate(words.transform.GetChild(i).gameObject);
+                }
+                UiClone.StripGameScripts(words, null);
+                var wordsRect = (RectTransform)words.transform;
+                wordsRect.SetParent(rect, false);
+                wordsRect.anchorMin = Vector2.zero;
+                wordsRect.anchorMax = Vector2.one;
+                wordsRect.pivot = new Vector2(0f, 0.5f);
+                wordsRect.offsetMax = Vector2.zero;
+                var text = words.GetComponent<TMP_Text>();
+                text.enableAutoSizing = false;
+                text.alignment = TextAlignmentOptions.MidlineLeft;
+                text.textWrappingMode = TextWrappingModes.NoWrap;
+                text.overflowMode = TextOverflowModes.Ellipsis;
+                text.raycastTarget = false;
+                words.SetActive(true);
+                _words = text;
+                _text = text;
+                _rect = rect;
+                _pictureRect = pictureRect;
+                _wordsRect = wordsRect;
+                _bar = bar as RectTransform;
+                _dateSize = dateText.fontSize;
+                _size = -1;              // laid out at the option's size by the first Show
+                _piece = piece;
+                UnityEngine.Object.DestroyImmediate(holder.gameObject);
+                return true;
+            }
+            catch (Exception e)
+            {
+                SeasonDirector.Logger?.Error(e);
+                if (holder != null)
+                {
+                    UnityEngine.Object.DestroyImmediate(holder.gameObject);
+                }
+                UiClone.Fallback("the season could not be put under the game's date");
+                return false;
+            }
+        }
+    }
+
+    /// <summary>
+    /// The seasons' four pictures, drawn once in code in the game's flat style (white shapes on nothing, tinted by the
+    /// date's colour): a snowflake, a flower, a sun and a leaf. 64 pixels a side, made the first time each is asked for
+    /// in a city and destroyed with it.
+    /// </summary>
+    internal static class SeasonIcons
+    {
+        private const int Size = 64;
+        private static readonly Sprite[] Made = new Sprite[4];
+
+        public static Sprite Of(int season)
+        {
+            if (season < 0 || season > 3)
+            {
+                return null;
+            }
+            if (Made[season] == null)
+            {
+                var texture = new Texture2D(Size, Size, TextureFormat.RGBA32, false) { name = "RealLifeOverhaul Season " + season, wrapMode = TextureWrapMode.Clamp };
+                var pixels = new Color32[Size * Size];
+                for (int y = 0; y < Size; y++)
+                {
+                    for (int x = 0; x < Size; x++)
+                    {
+                        float u = (x + 0.5f) / Size * 2f - 1f, v = (y + 0.5f) / Size * 2f - 1f;
+                        float d = Distance(season, u, v);
+                        byte a = (byte)Mathf.RoundToInt(255f * Mathf.Clamp01(0.5f - d * Size * 0.5f));   // a pixel's worth of soft edge
+                        pixels[y * Size + x] = new Color32(255, 255, 255, a);
+                    }
+                }
+                texture.SetPixels32(pixels);
+                texture.Apply(false, true);
+                Sprite sprite = Sprite.Create(texture, new Rect(0f, 0f, Size, Size), new Vector2(0.5f, 0.5f), 100f);
+                Made[season] = sprite;
+            }
+            return Made[season];
+        }
+
+        /// <summary>The pictures and their textures destroyed: the city is unloading.</summary>
+        public static void Drop()
+        {
+            for (int i = 0; i < Made.Length; i++)
+            {
+                Sprite sprite = Made[i];
+                Made[i] = null;
+                CodeAssets.DropSprite(sprite);
+            }
+        }
+
+        // How far a point (-1 to 1 each way) is outside the season's shape; under 0 inside.
+        private static float Distance(int season, float u, float v)
+        {
+            float r = Mathf.Sqrt(u * u + v * v);
+            switch (season)
+            {
+                case CalendarRules.Winter:
+                {
+                    // Six arms with a short branch each, and a small hub.
+                    float arm = float.MaxValue;
+                    for (int k = 0; k < 6; k++)
+                    {
+                        float a = k * Mathf.PI / 3f;
+                        arm = Mathf.Min(arm, Segment(u, v, 0f, 0f, 0.82f * Mathf.Cos(a), 0.82f * Mathf.Sin(a)) - 0.09f);
+                        float bx = 0.5f * Mathf.Cos(a), by = 0.5f * Mathf.Sin(a);
+                        arm = Mathf.Min(arm, Segment(u, v, bx, by, bx + 0.25f * Mathf.Cos(a + 0.9f), by + 0.25f * Mathf.Sin(a + 0.9f)) - 0.07f);
+                        arm = Mathf.Min(arm, Segment(u, v, bx, by, bx + 0.25f * Mathf.Cos(a - 0.9f), by + 0.25f * Mathf.Sin(a - 0.9f)) - 0.07f);
+                    }
+                    return Mathf.Min(arm, r - 0.18f);
+                }
+                case CalendarRules.Spring:
+                {
+                    // Five round petals about a hole.
+                    float petals = float.MaxValue;
+                    for (int k = 0; k < 5; k++)
+                    {
+                        float a = Mathf.PI / 2f + k * 2f * Mathf.PI / 5f;
+                        float px = u - 0.45f * Mathf.Cos(a), py = v - 0.45f * Mathf.Sin(a);
+                        petals = Mathf.Min(petals, Mathf.Sqrt(px * px + py * py) - 0.36f);
+                    }
+                    return Mathf.Max(petals, 0.15f - r);
+                }
+                case CalendarRules.Summer:
+                {
+                    // A disc and eight rays.
+                    float rays = float.MaxValue;
+                    for (int k = 0; k < 8; k++)
+                    {
+                        float a = k * Mathf.PI / 4f;
+                        rays = Mathf.Min(rays, Segment(u, v, 0.62f * Mathf.Cos(a), 0.62f * Mathf.Sin(a), 0.9f * Mathf.Cos(a), 0.9f * Mathf.Sin(a)) - 0.08f);
+                    }
+                    return Mathf.Min(rays, r - 0.42f);
+                }
+                default:
+                {
+                    // A leaf: two arcs meeting at its tips (on the x axis), on a slant, with a stem and a vein.
+                    float c = Mathf.Cos(0.785f), s = Mathf.Sin(0.785f);
+                    float lx = (u * c + v * s) / 0.85f, ly = (-u * s + v * c) / 0.85f;
+                    float leaf = Mathf.Max(Circle(lx, ly, 0f, -0.42f, 0.92f), Circle(lx, ly, 0f, 0.42f, 0.92f));
+                    float stem = Segment(lx, ly, -0.78f, 0f, -1.05f, 0f) - 0.07f;
+                    float vein = 0.04f - Segment(lx, ly, -0.6f, 0f, 0.55f, 0f);
+                    return Mathf.Min(Mathf.Max(leaf, vein), stem) * 0.85f;
+                }
+            }
+        }
+
+        private static float Circle(float x, float y, float cx, float cy, float radius)
+        {
+            float dx = x - cx, dy = y - cy;
+            return Mathf.Sqrt(dx * dx + dy * dy) - radius;
+        }
+
+        private static float Segment(float x, float y, float ax, float ay, float bx, float by)
+        {
+            float px = x - ax, py = y - ay, qx = bx - ax, qy = by - ay;
+            float t = Mathf.Clamp01((px * qx + py * qy) / Mathf.Max(0.0001f, qx * qx + qy * qy));
+            float dx = px - qx * t, dy = py - qy * t;
+            return Mathf.Sqrt(dx * dx + dy * dy);
+        }
+    }
+}

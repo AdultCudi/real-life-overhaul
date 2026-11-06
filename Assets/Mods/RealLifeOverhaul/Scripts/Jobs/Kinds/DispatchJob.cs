@@ -319,11 +319,11 @@ namespace RealLifeOverhaul
             }
             if (JobSpots.Flat(Ctx.PlayerPosition, _desk) < DeskReach)
             {
-                _panel.Show(_desk + Vector3.up * PanelUp, Ctx.Player);
+                _panel.Show(_desk + Vector3.up * PanelUp);
             }
             else
             {
-                _panel.Show(Ctx.Player.transform, 2.1f, Ctx.Player);
+                _panel.Show(Ctx.Player.transform, 2.1f);
             }
         }
 

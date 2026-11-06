@@ -114,7 +114,7 @@ namespace RealLifeOverhaul
         public bool Conflicted(int policy)
         {
             PolicyDef p = CivicCatalogue.At(policy);
-            return p != null && OfficeRules.Conflicted(p.Lever, Businesses(-1), CivicBridges.Ask(CivicBridges.Landlord));
+            return p != null && OfficeRules.Conflicted(p.Lever, Businesses(-1), CivicBridges.Ask(CivicBridges.Landlord), ZoningBridges.HasInterest());
         }
 
         /// <summary>How many motions the player may table now, and why not (a locale key, or null).</summary>
@@ -128,7 +128,7 @@ namespace RealLifeOverhaul
             int mine = 0;
             for (int i = 0; i < State.Agenda.Count; i++)
             {
-                mine += State.Agenda[i].By == OfficeMotion.ByPlayer && State.Agenda[i].Kind == OfficeMotion.KindPolicy ? 1 : 0;
+                mine += State.Agenda[i].By == OfficeMotion.ByPlayer && State.Agenda[i].Kind != OfficeMotion.KindBudget ? 1 : 0;   // a policy or a district's zoning
             }
             room = (State.Holds == OfficeRace.Mayor ? 2 : 1) - mine;
             return room > 0 ? null : "reallife_civic_office_table_full";

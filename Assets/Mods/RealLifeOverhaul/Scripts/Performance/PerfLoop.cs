@@ -14,34 +14,26 @@ namespace RealLifeOverhaul
         public bool Valid;
         public int Frames;
         public float TotalMs;      // every lap added up: the main thread's whole frame
-        public float ScriptsMs;    // every script Update, LateUpdate, FixedUpdate, coroutine and timer, the game's and every mod's
+        public float ScriptsMs;   // every script Update, LateUpdate, FixedUpdate, coroutine and timer, the game's and every mod's
         public float PhysicsMs;
         public float AnimationMs;  // animators, timelines, constraints, skinning set-up
         public float NavigationMs; // navigation mesh agents and obstacles
         public float UiMs;         // canvas layout, rebuilds and batching (drawing the batches is in RenderMs)
-        public float RenderMs;     // everything the main thread does to draw: culling, the render pipeline, handing over to the render thread
-        public float PipelineMs;   // the part of RenderMs spent inside the render pipeline's own code, all cameras
+        public float RenderMs;   // all the main thread does to draw: culling, the pipeline, handing over to the render thread
+        public float PipelineMs;   // the part of RenderMs inside the pipeline's own code, all cameras
         public float AudioMs;
         public float WaitMs;       // waiting for the display or a frame cap
         public float OtherMs;
     }
 
     /// <summary>
-    /// Says where the main thread's frame goes in a build whose profiler is silent. The engine runs a frame as a
-    /// fixed list of about 130 steps (the "player loop": input, physics, script Update, animation, script
-    /// LateUpdate, canvases, rendering...), and lets code put steps of its own in between. While a window is open
-    /// this puts a timestamp step in front of every engine step and adds up the time between consecutive
-    /// timestamps, so each engine step gets the time it took (including any job it waited for). The render
-    /// pipeline's per-camera callbacks split the rendering step by camera in the same way, which also proves
-    /// which cameras are really rendered each frame.
-    ///
-    /// Outside a window the game's own loop is back exactly as it was found and nothing here runs. Inside one
-    /// the cost is about 150 calls of four instructions per frame (well under 0.05 ms).
+    /// Times each of the engine's player loop steps, and each camera through the pipeline's callbacks, where the profiler is
+    /// silent. Outside a window the game's loop is as it was; inside, about 150 tiny calls a frame (under 0.05 ms).
     /// </summary>
     public sealed class PerfLoop
     {
         private const int MaxCameras = 12;
-        private const string Added = "[added by a script] ";   // a step that is not the engine's own: a task or tween library, a mod
+        private const string Added = "[added by a script] ";   // a step not the engine's own: a task or tween library, a mod
 
         private PlayerLoopSystem _original;
         private bool _installed;
@@ -52,7 +44,6 @@ namespace RealLifeOverhaul
         private long _last;
         private int _frames;
 
-        // The rendering step, split by the render pipeline's callbacks.
         private readonly int[] _cameraIds = new int[MaxCameras];
         private readonly string[] _cameraNames = new string[MaxCameras];
         private readonly long[] _cameraSetup = new long[MaxCameras];
@@ -60,22 +51,22 @@ namespace RealLifeOverhaul
         private readonly int[] _cameraFrames = new int[MaxCameras];
         private int _cameras;
         private long _pipelineTicks, _pipelineEnd, _contextStart, _cameraLast;
-        private int _begun = -1;          // the camera whose 'begin' was the last callback, or -1
+        private int _begun = -1;   // the camera whose 'begin' was the last callback, or -1
         private int _contexts;
         private bool _hooked;
-        private Action<ScriptableRenderContext, List<Camera>> _onBeginContext, _onEndContext;   // made once, through the guard: a fault never reaches the render pipeline (Core/Guard)
+        private Action<ScriptableRenderContext, List<Camera>> _onBeginContext, _onEndContext;   // made once, through the guard: a fault never reaches the pipeline
         private Action<ScriptableRenderContext, Camera> _onBeginCamera, _onEndCamera;
 
         public bool IsOpen => _installed;
 
-        /// <summary>Starts timing. Safe to call when the loop cannot be changed: the result is then simply not valid.</summary>
+        /// <summary>Starts timing; where the loop cannot be changed, the result is simply not valid.</summary>
         public void Open()
         {
             if (_installed || !PerfTweaks.StepTiming)
             {
                 return;
             }
-            FrameSteps.Pause();   // the session record's own few timestamps stand aside: this window times every step itself
+            FrameSteps.Pause();   // the session record's own timestamps stand aside while this window times every step
             _original = PlayerLoop.GetCurrentPlayerLoop();
             PlayerLoopSystem[] phases = _original.subSystemList;
             if (phases == null || phases.Length == 0)
@@ -162,7 +153,7 @@ namespace RealLifeOverhaul
             return new PlayerLoopSystem { type = typeof(PerfLoop), updateDelegate = () => Lap(index) };
         }
 
-        // Everything since the previous timestamp belongs to the step that timestamp stood in front of.
+        // everything since the previous timestamp belongs to the step that timestamp stood in front of
         private void Lap(int index)
         {
             long now = Stopwatch.GetTimestamp();
@@ -186,8 +177,8 @@ namespace RealLifeOverhaul
             _contexts++;
         }
 
-        // The pipeline calls this just before it culls for the camera. What came since the previous callback is
-        // that camera's set-up (frame settings, volumes), unless another camera had just begun: then it was that one's culling.
+        // Just before the pipeline culls for the camera: what came since the last callback is this camera's set-up, unless
+        // another camera had just begun, whose culling it then was.
         private void OnBeginCamera(ScriptableRenderContext context, Camera camera)
         {
             long now = Stopwatch.GetTimestamp();
@@ -208,7 +199,7 @@ namespace RealLifeOverhaul
             _cameraLast = now;
         }
 
-        // Called when the camera's picture has been handed to the render thread: culling, building and running the frame graph lie before it.
+        // the picture handed to the render thread: culling and the frame graph lie before this
         private void OnEndCamera(ScriptableRenderContext context, Camera camera)
         {
             long now = Stopwatch.GetTimestamp();
@@ -243,7 +234,7 @@ namespace RealLifeOverhaul
                 return -1;
             }
             _cameraIds[_cameras] = id;
-            _cameraNames[_cameras] = camera.name + " (" + camera.cameraType + ")";   // once per camera per window
+            _cameraNames[_cameras] = camera.name + " (" + camera.cameraType + ")";   // once per camera a window
             return _cameras++;
         }
 
@@ -288,10 +279,7 @@ namespace RealLifeOverhaul
             return result;
         }
 
-        /// <summary>
-        /// Which share of the frame a step belongs to. The names are the engine's own (UnityEngine.PlayerLoop);
-        /// a step somebody else added (a task library, a tween library, a mod) is script code.
-        /// </summary>
+        /// <summary>Which share of the frame a step belongs to, by the engine's step names; a step someone else added is script code.</summary>
         private static char Group(string name)
         {
             if (name.Contains("WaitForLastPresentation") || name.Contains("PresentAfterDraw"))
@@ -304,7 +292,8 @@ namespace RealLifeOverhaul
             {
                 return 'R';
             }
-            if (name.Contains(Added) || name.Contains("ScriptRun") || name.Contains("UniTask") || name.Contains("SendMouseEvents") || name.Contains("NewInputUpdate") || name.Contains("NewInputFixedUpdate") || name.Contains("TriggerEndOfFrameCallbacks"))
+            if (name.Contains(Added) || name.Contains("ScriptRun") || name.Contains("UniTask") || name.Contains("SendMouseEvents") || name.Contains("NewInputUpdate")
+                || name.Contains("NewInputFixedUpdate") || name.Contains("TriggerEndOfFrameCallbacks"))
             {
                 return 'S';
             }
@@ -328,10 +317,6 @@ namespace RealLifeOverhaul
             {
                 return 'O';
             }
-            if (name.Contains("(after its last step"))
-            {
-                return '-';
-            }
             return '-';
         }
 
@@ -345,11 +330,14 @@ namespace RealLifeOverhaul
                     : "  Not timed: the option 'Measurements time every step of the frame' is off.");
                 return;
             }
-            text.AppendLine("  measured by the mod on the main thread, " + _frames + " frames: a timestamp in front of each of the engine's " + _names.Length + " frame steps. Milliseconds per frame.");
-            text.AppendLine("  by share:  scripts " + PerfText.F2(result.ScriptsMs) + "   rendering " + PerfText.F2(result.RenderMs) + " (of it inside the render pipeline " + PerfText.F2(result.PipelineMs) + ")   physics "
-                            + PerfText.F2(result.PhysicsMs) + "   animation " + PerfText.F2(result.AnimationMs) + "   navigation " + PerfText.F2(result.NavigationMs) + "   UI " + PerfText.F2(result.UiMs)
-                            + "   audio " + PerfText.F2(result.AudioMs) + "   waiting for the display " + PerfText.F2(result.WaitMs) + "   everything else " + PerfText.F2(result.OtherMs) + "   = " + PerfText.F2(result.TotalMs));
-            text.AppendLine("  'scripts' is every Update, LateUpdate, FixedUpdate, coroutine and timer of the game and of every mod together: one script cannot be told from another without patching the game.");
+            text.AppendLine("  measured by the mod on the main thread, " + _frames + " frames: a timestamp in front of each of the engine's " + _names.Length
+                            + " frame steps. Milliseconds per frame.");
+            text.AppendLine("  by share:  scripts " + PerfText.F2(result.ScriptsMs) + "   rendering " + PerfText.F2(result.RenderMs) + " (of it inside the render pipeline "
+                            + PerfText.F2(result.PipelineMs) + ")   physics " + PerfText.F2(result.PhysicsMs) + "   animation " + PerfText.F2(result.AnimationMs)
+                            + "   navigation " + PerfText.F2(result.NavigationMs) + "   UI " + PerfText.F2(result.UiMs) + "   audio " + PerfText.F2(result.AudioMs)
+                            + "   waiting for the display " + PerfText.F2(result.WaitMs) + "   everything else " + PerfText.F2(result.OtherMs) + "   = " + PerfText.F2(result.TotalMs));
+            text.AppendLine("  'scripts' is every Update, LateUpdate, FixedUpdate, coroutine and timer of the game and of every mod together:"
+                            + " one script cannot be told from another without patching the game.");
 
             var order = new int[_names.Length];
             for (int i = 0; i < order.Length; i++)
@@ -372,11 +360,14 @@ namespace RealLifeOverhaul
                     .Append(PerfText.F2((float)_calls[step] / _frames)).Append("  ").AppendLine(_names[step]);
             }
             text.AppendLine("    " + PerfText.F2(result.TotalMs - shown).PadLeft(7) + "          all the smaller steps together");
-            text.AppendLine("  how to read it: Update.ScriptRunBehaviourUpdate = every script's Update; PreLateUpdate.ScriptRunBehaviourLateUpdate = every LateUpdate; FixedUpdate.* run once per physics step;");
+            text.AppendLine("  how to read it: Update.ScriptRunBehaviourUpdate = every script's Update; PreLateUpdate.ScriptRunBehaviourLateUpdate = every LateUpdate;"
+                            + " FixedUpdate.* run once per physics step;");
             text.AppendLine("  PostLateUpdate.FinishFrameRendering = culling, the render pipeline and handing the frame to the render thread; PostLateUpdate.PlayerUpdateCanvases = UI rebuilds;");
-            text.AppendLine("  PreLateUpdate.DirectorUpdateAnimationBegin/End = animators; PreUpdate.AIUpdate / PreLateUpdate.AIUpdatePostScript = navigation; TimeUpdate.WaitForLastPresentationAndUpdateTime = waiting for the display or a frame cap.");
+            text.AppendLine("  PreLateUpdate.DirectorUpdateAnimationBegin/End = animators; PreUpdate.AIUpdate / PreLateUpdate.AIUpdatePostScript = navigation;"
+                            + " TimeUpdate.WaitForLastPresentationAndUpdateTime = waiting for the display or a frame cap.");
 
-            text.AppendLine("  cameras the render pipeline drew (" + _contexts + " pipeline runs in " + _frames + " frames, " + PerfText.F2(result.PipelineMs) + " ms per frame inside the pipeline):");
+            text.AppendLine("  cameras the render pipeline drew (" + _contexts + " pipeline runs in " + _frames + " frames, " + PerfText.F2(result.PipelineMs)
+                            + " ms per frame inside the pipeline):");
             for (int i = 0; i < _cameras; i++)
             {
                 text.AppendLine("    '" + _cameraNames[i] + "' drawn in " + _cameraFrames[i] + " of " + _frames + " frames   set-up before culling " + PerfText.F2(Ms(_cameraSetup[i]) / _frames)
@@ -386,7 +377,8 @@ namespace RealLifeOverhaul
             {
                 text.AppendLine("    none answered (the pipeline's camera callbacks did not fire)");
             }
-            text.AppendLine("    after the last camera " + PerfText.F2(Ms(_pipelineEnd) / _frames) + " ms.  A camera that is listed under CAMERAS as active but is missing here is not drawn (it targets a display that is not in use) and costs nothing.");
+            text.AppendLine("    after the last camera " + PerfText.F2(Ms(_pipelineEnd) / _frames) + " ms.  A camera that is listed under CAMERAS as active but is missing here"
+                            + " is not drawn (it targets a display that is not in use) and costs nothing.");
         }
     }
 }

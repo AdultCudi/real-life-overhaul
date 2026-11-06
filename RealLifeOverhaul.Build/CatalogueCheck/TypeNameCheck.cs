@@ -29,6 +29,9 @@ namespace RealLifeOverhaul
         public static readonly HashSet<string> OtherModsKeys = new HashSet<string>(StringComparer.Ordinal)
         {
             EmpireKey,   // the city map's row for Empire Motors' dealership: its own files are not in the game's format, so the game has no text for it
+            // The Contacts app's groups: the game asks for a category's name by its number (ContactCategoryName.GetLocalizeKey), the mod's seven are 101 to 107
+            ContactGroups.NameKey(ContactGroup.Family), ContactGroups.NameKey(ContactGroup.Friends), ContactGroups.NameKey(ContactGroup.Work), ContactGroups.NameKey(ContactGroup.Services),
+            ContactGroups.NameKey(ContactGroup.Money), ContactGroups.NameKey(ContactGroup.City), ContactGroups.NameKey(ContactGroup.Other)
         };
 
         public static void Run(Action<string> fail, Dictionary<string, string> en, string src)

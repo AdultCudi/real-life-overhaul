@@ -6,31 +6,18 @@ using UI.InGameUI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// The members of the game that a build before the one the mod is made for can lack (Build 3675 lacked all of these),
-    /// read here and nowhere else. Mono compiles a method when it is first called, and it cannot compile one that names a
-    /// member the running game does not have: it throws at every call instead (TypeLoadException, MissingFieldException,
-    /// MissingMethodException), and the whole method is lost, whatever else it does. So each member is named in a small
-    /// method of its own, never inlined, and the answer without it is the one that fits a game without it: nobody is dead
-    /// without the game's own funeral, no building stands behind a private fence without the game's fences, the building
-    /// card has no target, and a station is named by its older field. The question box (HudConfirm.Show) is
-    /// Core/GameConfirm's.
-    ///
-    /// Each is a line of the game contract (Core/GameContract: PlayerDead, FuneralActive, FenceIndex, ResumeTarget,
-    /// StationNameKey, StationName), resolved as the mod starts: on a game that lacks one, <see cref="Known"/> takes its
-    /// answer before anything asks, and the method that names it is never called. Should one be found missing only when
-    /// it is first used, its catch takes the same answer and says it once (Core/Guard.DoesWithout).
-    ///
-    /// Cost while the game has them all: a call and a flag test for each read. ContractCheck holds every method of the
-    /// mod that names one of these to being such a method, never inlined and called inside a try.
+    /// The game members an older build can lack (Build 3675 lacked all of these), read here and nowhere else. Mono
+    /// cannot compile a method that names a missing member and throws at every call of it, so each is named in a small
+    /// method of its own, never inlined, called in a try; without it the answer is the one that fits such a game. Each is
+    /// a contract line, so <see cref="Known"/> takes that answer at start; one found missing later is said once
+    /// (Guard.DoesWithout). The question box is Core/GameConfirm's.
+    /// COST: a call and a flag test for each read.
     /// </summary>
     public static class GameMembers
     {
         private static bool _noFuneral, _noFence, _noTarget, _noNameKey, _noStationName;
 
-        /// <summary>
-        /// From Core/Guard as the mod starts, once the contract is resolved: each member this game lacks is known from
-        /// then on, so that nothing here is ever compiled against it.
-        /// </summary>
+        /// <summary>From Core/Guard once the contract is resolved, so nothing here is compiled against a missing member.</summary>
         public static void Known()
         {
             _noFuneral = GameContract.PlayerDead.Missing || GameContract.FuneralActive.Missing;
@@ -40,9 +27,7 @@ namespace RealLifeOverhaul
             _noStationName = GameContract.StationName.Missing;
         }
 
-        // ---------------------------------------------------------------- Helpers.FuneralHelper
-
-        /// <summary>The game's own "the player is dead" (FuneralHelper.PlayerDead); false on a game without it, where setting it does nothing.</summary>
+        /// <summary>FuneralHelper.PlayerDead; false on a game without it, where setting it does nothing.</summary>
         public static bool PlayerDead
         {
             get
@@ -78,7 +63,7 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>True while the game's funeral is on (FuneralHelper.IsFuneralActive); false on a game without it.</summary>
+        /// <summary>FuneralHelper.IsFuneralActive; false on a game without it.</summary>
         public static bool FuneralActive
         {
             get
@@ -123,9 +108,7 @@ namespace RealLifeOverhaul
             Guard.DoesWithout(e, "the game's own death and funeral", "the player is taken to be alive and no funeral to be on");
         }
 
-        // ---------------------------------------------------------------- Building.locatedInsidePrivateFenceIndex
-
-        /// <summary>True when the building stands inside one of the game's private fences (locatedInsidePrivateFenceIndex 0 or more); false on a game without them.</summary>
+        /// <summary>True when the building stands inside one of the game's private fences; false on a game without them.</summary>
         public static bool Fenced(Building building)
         {
             if (_noFence || building == null)
@@ -149,8 +132,6 @@ namespace RealLifeOverhaul
         {
             return building.locatedInsidePrivateFenceIndex;
         }
-
-        // ---------------------------------------------------------------- BuildingResume.TargetController
 
         /// <summary>What the game's building card is about (BuildingResume.TargetController); null on a game without it.</summary>
         public static EntityController TargetOf(BuildingResume card)
@@ -177,11 +158,9 @@ namespace RealLifeOverhaul
             return card.TargetController;
         }
 
-        // ---------------------------------------------------------------- SubwayStation.GetNameKey
-
         /// <summary>
-        /// The key of a subway station's name (SubwayStation.GetNameKey). A game without it is asked what that method
-        /// is made of ("subwaystation_" and the station's name field), and failing that the station's object name stands in.
+        /// The key of a subway station's name (SubwayStation.GetNameKey); without it, what that method is made of, and
+        /// failing that the station's object name.
         /// </summary>
         public static string NameKey(SubwayStation station)
         {

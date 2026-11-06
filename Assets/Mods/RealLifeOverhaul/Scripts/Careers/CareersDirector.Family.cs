@@ -239,7 +239,7 @@ namespace RealLifeOverhaul.Careers
                 long cents = (long)students * Prices.At(StudyCatalogue.AcademyFeeCents);
                 if (cents > 0)
                 {
-                    GameManager.ChangeMoneySafe(cents / 100f, new TransactionInfo(AcademyKey, new Dictionary<string, string>(1) { { "name", TalentGame.NameOf(reg) } }), day, reg.Address, true);
+                    Economy.BizBooks.Book(cents / 100f, new TransactionInfo(AcademyKey, new Dictionary<string, string>(1) { { "name", TalentGame.NameOf(reg) } }), day, reg.Address, true);
                 }
                 if (Verbose)
                 {

@@ -514,11 +514,17 @@ namespace RealLifeOverhaul
             return ayes > noes;
         }
 
-        /// <summary>True if a lever touches what the player earns from their own businesses or buildings: a vote on it is a conflict of interest.</summary>
-        public static bool Conflicted(Lever lever, int businesses, bool landlord)
+        /// <summary>
+        /// True if a lever touches what the player earns from their own businesses or buildings: a vote on it is a conflict of
+        /// interest. The permits policy is the building code: it touches a builder (a construction company, or land in the new
+        /// district) as it touches nobody else.
+        /// </summary>
+        public static bool Conflicted(Lever lever, int businesses, bool landlord, bool builder = false)
         {
             switch (lever)
             {
+                case Lever.Permits:
+                    return builder;
                 case Lever.BusinessTax:
                 case Lever.TradeLevy:
                 case Lever.Grants:
@@ -636,6 +642,13 @@ namespace RealLifeOverhaul
         public static float RecallKeep(float approval, float push)
         {
             return Clamp(0.32f + Clamp(approval, 0f, 100f) / 100f * 0.6f + Clamp(push, 0f, MostPush), 0.05f, 0.95f);
+        }
+
+        /// <summary>The approval after a post about the office went out (thousandths of a point of its worth): up to a point and a half, never past 95.</summary>
+        public static float PostedApproval(float approval, int weight)
+        {
+            float worth = Clamp(weight, 0, 1500) / 1000f;
+            return Math.Min(95f, approval + Math.Min(1.5f, worth * 3f));
         }
 
         public static float StartApproval(float share)

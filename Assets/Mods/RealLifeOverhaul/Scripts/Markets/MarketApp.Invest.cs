@@ -34,7 +34,7 @@ namespace RealLifeOverhaul.Markets
             OrderWhy why = _director.WorkedWhy(k.Id, _side, _qty);
             if (why != OrderWhy.None)
             {
-                box.Line(MarketText.Why(why), CellTone.Red);
+                box.Line(MarketText.Why(why, k), CellTone.Red);
                 return;
             }
             bool buying = _side == OrderSide.Buy;

@@ -217,7 +217,7 @@ internal static partial class Program
 
     private static void StreetOfferSources()
     {
-        string director = TextsSource(@"Street\StreetDirector.cs"), talk = TextsSource(@"Street\StreetDirector.Talk.cs"), game = TextsSource(@"Street\StreetGame.cs");
+        string director = TextsSource(@"Street\StreetDirector.cs"), talk = TextsSource(@"Street\StreetDirector.Talk.cs"), game = TextsSource(@"Street\StreetGame.cs") + TextsSource(@"Street\StreetHold.cs");
         string horn = TextsSource(@"People\HornReactions.cs"), tests = TextsSource(@"Street\StreetDirector.Tests.cs");
         int offer = director.IndexOf("private void Offer(float now)", StringComparison.Ordinal);
         int offerEnd = offer >= 0 ? director.IndexOf("private void Aim(", offer, StringComparison.Ordinal) : -1;
@@ -259,7 +259,7 @@ internal static partial class Program
             "street offer: somebody seated is never turned (only a standing figure's turn is the mod's)");
         Check(game.Contains("p.enabled = _ped;") && game.Contains("agent.isStopped = _stopped;") && game.Contains("p.pedestrianWalkingAiBehavior.enabled = _walk;") && talk.Contains("_hold.Release();"),
             "street offer: a stopped walker is given back as found");
-        Check(tests.Contains("StreetPeople.Standing(Logger)") && tests.Contains("Begin(best, bestWalker, bestKind, Time.unscaledTime)"),
+        Check(tests.Contains("StreetPeople.Standing(Logger)") && tests.Contains("Begin(best, bestWalker, bestKind, Time.unscaledTime, age)"),
             "street offer: the options page's test talks to the nearest walking, standing or seated person");
     }
 }

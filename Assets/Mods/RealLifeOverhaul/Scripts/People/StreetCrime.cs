@@ -1,4 +1,3 @@
-using BAModAPI;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -9,8 +8,6 @@ namespace RealLifeOverhaul
     /// </summary>
     public class StreetCrime : MonoBehaviour
     {
-        public static IModLogger Logger;
-
         /// <summary>True while a crime scene runs. Only one incident of any kind runs at a time.</summary>
         public static bool IsActive => CrimeDirector.IsActive;
 

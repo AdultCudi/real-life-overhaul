@@ -46,6 +46,24 @@ namespace RealLifeOverhaul.Flare
             return p.Viral ? 4 : p.Reach >= 5000 ? 3 : p.Reach >= 1000 ? 2 : 1;
         }
 
+        /// <summary>
+        /// What Flare's talk adds to a business's customers: the talk of its posts and what the cleaners' round adds, together inside the cap,
+        /// which is "all of it together".
+        /// </summary>
+        public static int Footfall(int talk, int clean)
+        {
+            return Clamp(talk + clean, -BuzzMost, BuzzMost);
+        }
+
+        /// <summary>
+        /// The day a business opened, for a launch's fortnight: the game's own creation day of it; for a business that has none (-1, an old save's),
+        /// the day Flare first saw it, or Flare's first day.
+        /// </summary>
+        public static int OpenedOn(int created, int fallback)
+        {
+            return created > 0 ? created : fallback;
+        }
+
         /// <summary>Talk about a business from today, added within the cap either way. The business's figure now.</summary>
         public static int AddBuzz(FlareFile f, string place, int percent, int day, int days)
         {
@@ -280,6 +298,56 @@ namespace RealLifeOverhaul.Flare
                     into.Add(p.Id);
                 }
             }
+        }
+
+        /// <summary>
+        /// The player lost touch with the social life's person <paramref name="person"/>: their own posts and replies go, with
+        /// the player's replies to them and the drafts about them, and no post, like or follow points at their number any more, so whoever takes
+        /// the number next starts with none. How many posts went. Game-free; once, when somebody goes.
+        /// </summary>
+        public static int Forget(FlareFile f, int person)
+        {
+            if (f == null || person < 0)
+            {
+                return 0;
+            }
+            int bit = person <= 30 ? 1 << person : 0;
+            f.Following &= ~bit;
+            var gone = new List<int>(4);
+            for (int i = f.Posts.Count - 1; i >= 0; i--)
+            {
+                FlarePost p = f.Posts[i];
+                if (p.Author == FlareAuthor.Friend && p.Who == person)
+                {
+                    gone.Add(p.Id);
+                    f.Posts.RemoveAt(i);
+                }
+            }
+            int removed = gone.Count;
+            for (int i = f.Posts.Count - 1; i >= 0; i--)
+            {
+                FlarePost p = f.Posts[i];
+                if (p.ReplyTo >= 0 && gone.Contains(p.ReplyTo))
+                {
+                    f.Posts.RemoveAt(i);
+                    removed++;
+                    continue;
+                }
+                if (p.Tag == person)
+                {
+                    p.Tag = -1;
+                }
+                p.Likers &= ~bit;
+                p.Repliers &= ~bit;
+            }
+            for (int i = f.Drafts.Count - 1; i >= 0; i--)
+            {
+                if (f.Drafts[i].Person == person)
+                {
+                    f.Drafts.RemoveAt(i);   // an outing or a selfie with them is no longer something to post about
+                }
+            }
+            return removed;
         }
 
         public static int Count(int bits)

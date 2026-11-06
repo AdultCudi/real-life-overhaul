@@ -1,6 +1,6 @@
 namespace RealLifeOverhaul.Designs
 {
-    /// <summary>The locale keys of the ready-made designs, written out whole so that the text checks find them. Read only when something is shown.</summary>
+    /// <summary>The locale keys of the ready-made designs, written out whole so the text checks find them.</summary>
     public static class DesignsText
     {
         public const string SaySome = "reallife_designs_say_some";              // the test: {count} designs for {types} kinds of business

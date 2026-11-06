@@ -32,7 +32,7 @@ namespace RealLifeOverhaul
 
         public static bool Pay(int amount, string transaction)
         {
-            return Free || GameManager.ChangeMoneySafe(-amount, new TransactionInfo(transaction), null, null, force: false, showNotification: true);
+            return Free || RealLifeOverhaul.Economy.BizBooks.Book(-amount, new TransactionInfo(transaction), null, null, force: false, showNotification: true);
         }
     }
 
@@ -110,7 +110,8 @@ namespace RealLifeOverhaul
             int cost = (medicine ? HomeBalance.PrescriptionFee : 0) + (note ? HomeBalance.SickNoteFee : 0);
             if (!DoctorVisit.Pay(cost, "reallife_transaction_prescription"))
             {
-                return null;
+                // The game keeps the entry on a null (DialogController.ConfirmCurrentEntry): the visit ends with a word instead.
+                return PhoneContacts.Closing("reallife_doctor_prescribe_no_money", new { amount = JobText.Money(cost) });
             }
             if (medicine)
             {

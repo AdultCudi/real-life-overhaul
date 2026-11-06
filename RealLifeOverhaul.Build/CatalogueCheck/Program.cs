@@ -157,7 +157,7 @@ namespace RealLifeOverhaul
 
             // ---------------------------------------------------------------- every reallife key in the mod source
             Section("Every reallife_* string literal in the mod source");
-            var notLocale = new Regex("^(reallife_sick|reallife_accident|reallife_[a-z0-9]+_calldialogtype|reallife_happinessmodifier_|reallife_ev_|reallife_transaction_|reallife_flare_dm_invite_|reallife_)$");   // reallife_ alone: NoticeKinds' prefix of every key of the mod's; reallife_flare_dm_invite_: FlareInviteRules.KeyStart
+            var notLocale = new Regex("^(reallife_sick|reallife_accident|reallife_[a-z0-9]+_calldialogtype|reallife_happinessmodifier_|reallife_ev_|reallife_transaction_|reallife_flare_dm_invite_|reallife_socialp|reallife_|reallife-|reallife_social_desc_)$");   // reallife- and reallife_social_desc_: ContactGroups' marks of the mod's contact ids and of the people's descriptions; reallife_ alone: NoticeKinds' prefix of every key of the mod's; reallife_flare_dm_invite_: FlareInviteRules.KeyStart; reallife_socialp: SocialRules.DialogTypeName's, a call dialog type
             int literals = 0;
             foreach (string file in Directory.GetFiles(src, "*.cs", SearchOption.AllDirectories))
             {
@@ -206,11 +206,15 @@ namespace RealLifeOverhaul
             LifeAccounts.Card = () => hasCard;
             LifeAccounts.Accountant = () => hasAccountant;
             LifeAccounts.Power = () => hasPower;
+            // ...and what the lines take for granted (Core/LineNeeds): a fridge, a flat, a landlord, a car, each by its own coin.
+            LineNeed has = LineNeed.None;
+            LineNeeds.Read = needs => (has & needs) == needs;
             for (int i = 0; i < 200000; i++)
             {
                 hasCard = rng.Next(2) == 0;
                 hasAccountant = rng.Next(2) == 0;
                 hasPower = rng.Next(2) == 0;
+                has = (LineNeed)rng.Next(1 << 12);
                 LifeContext c = RandomContext(rng);
                 List<LifeEvent> fitting = all.Where(e => e.Fits(c)).ToList();
                 bool exhausted = fitting.All(e => seen.Contains(e.Id));
@@ -231,10 +235,16 @@ namespace RealLifeOverhaul
                 {
                     Fail($"{drawn.Id} dealt to somebody without what it is about");
                 }
+                LineNeed wants = LineNeeds.Of(drawn.Key);
+                if ((has & wants) != wants)
+                {
+                    Fail($"{drawn.Id} dealt to somebody without what its words take for granted ({wants})");
+                }
                 everDrawn.Add(drawn.Id);
                 last = drawn.Id;
             }
             LifeAccounts.Card = LifeAccounts.Accountant = LifeAccounts.Power = null;
+            LineNeeds.Read = null;
             if (early > 0) Fail($"{early} events repeated while unseen fitting events remained");
             Console.WriteLine($"  200000 draws in random situations: {draws} dealt, {nothing} with nothing fitting, {early} early repeats, first repeat on draw {firstRepeatAt}");
             Console.WriteLine($"  events reached at least once: {everDrawn.Count}/{all.Length}");
@@ -290,6 +300,7 @@ namespace RealLifeOverhaul
 
             CheckCrimes(src, locale);
             CheckContacts(src);
+            CheckContactGroups(src, locale);
             GigCheck.Run(Fail, locale);
             GigCheck.Sources(Fail, locale, src);
             SavedShiftCheck.Run(Fail, locale, src);
