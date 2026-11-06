@@ -23,8 +23,15 @@ namespace RealLifeOverhaul.Ui
         {
             if (_scaleCanvas == null && _root != null)
             {
-                Canvas c = _root.GetComponentInParent<Canvas>();
-                _scaleCanvas = c != null ? c.rootCanvas : null;
+                // Walked by hand: the engine keeps rootCanvas up only while the canvas is on.
+                for (Transform t = _root; t != null; t = t.parent)
+                {
+                    Canvas c = t.GetComponent<Canvas>();
+                    if (c != null)
+                    {
+                        _scaleCanvas = c;
+                    }
+                }
             }
             float canvasToScreen = _scaleCanvas != null ? _scaleCanvas.scaleFactor : Screen.height / (UiTokens.CanvasPerPx * 1080f);
             return Scale * canvasToScreen;
