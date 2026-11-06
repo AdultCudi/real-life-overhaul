@@ -8,7 +8,7 @@ namespace RealLifeOverhaul.Ui
         // choice of a place, and the status bar under them. (Made when asked: the screens' list is gathered while the class is first set up, before this file's fields are.)
         private static string[] MapKeys => new[]
         {
-            "bizman_status", "buildingresume_rented_by_you", "citymap_category_active_businesses", "citymap_category_activities", "citymap_category_jobs",
+            "bizman_status", "reallife_co_open_bizman", "buildingresume_rented_by_you", "citymap_category_active_businesses", "citymap_category_activities", "citymap_category_jobs",
             "citymap_category_rentable", "citymap_category_special_buildings", "citymap_filter_hide_closed", "citymap_map_search_placeholder", "common_cancel",
             "common_close", "common_closed", "common_friday", "common_monday", "common_neighborhoods", "common_open", "common_real_estate", "common_saturday",
             "common_setdestination", "common_subwaystation", "common_sunday", "common_thursday", "common_tuesday", "common_wednesday", "reallife_dv_about_crime",
