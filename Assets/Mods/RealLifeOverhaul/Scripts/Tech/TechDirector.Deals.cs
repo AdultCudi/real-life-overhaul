@@ -234,6 +234,7 @@ namespace RealLifeOverhaul.Tech
             {
                 return TechText.T("reallife_vc_meet_no_sheet", "firm", VentureCatalogue.Firms[vc].Name);
             }
+            t.T = TermsFor(c, firm, vc, Save.Day);
             c.Sheets.Add(t);
             TellTech(NotificationType.Success, "reallife_vc_note_sheet", Data("vc", VentureCatalogue.Firms[vc].Name, "amount", TechText.Cents(Level(t.Amount)), "pre", TechText.Cents(Level(t.Pre))),
                 TabFunding, TechApp.CapRow + place);
@@ -262,6 +263,7 @@ namespace RealLifeOverhaul.Tech
             }
             TermSheet t = c.Sheets[index];
             long money = VentureRules.Accept(c, t, FirmMrr(place) * 1000 / Math.Max(1, Prices.Level), Save.Day);
+            Grow(TalentCatalogue.Law, TermsCatalogue.GrowRead);
             VentureGame.Give(Level(money), VentureGame.RaiseKey, firm.File.Name, firm.Reg);
             c.Acc.Name = firm.File.Name;
             RefreshFloor(Save.Day);   // the round is the investors', held in the player's wallet from now

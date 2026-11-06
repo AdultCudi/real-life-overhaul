@@ -8,7 +8,7 @@ internal static partial class UiSamples
 {
     public static readonly string[] TechStates =
     {
-        "firms", "firms_empty", "studio", "game", "game_plan", "datacentre", "software", "products", "product", "contracts", "tender", "infra", "startups", "startup", "funding", "cap", "cap_account", "books", "books_free",
+        "firms", "firms_empty", "studio", "game", "game_plan", "datacentre", "software", "products", "product", "contracts", "tender", "infra", "startups", "startup", "funding", "cap", "cap_account", "books", "books_free", "terms",
         "team", "rivals", "concept", "off"
     };
 
@@ -117,6 +117,7 @@ internal static partial class UiSamples
             case "cap_account": TechCapAccount(t, m, runs); break;
             case "books": TechBooks(t, m, runs, true); break;
             case "books_free": TechBooks(t, m, runs, false); break;
+            case "terms": TechTerms(t, m, runs); break;
             case "team": TechTeam(t, m, runs); break;
             case "rivals": TechRivals(t, m, runs); break;
             case "concept": TechConcept(t, m, runs); break;
@@ -793,6 +794,33 @@ internal static partial class UiSamples
             .Step(TW(t, "books_price", "Price"), WF(t, "reallife_vc_related_tier_0", "At the fair price, $4,000", "price", "$4,000"), null, true, true, () => true, () => true)
             .Button(W(t, "reallife_vc_button_related", "Pay for work"), UiButtonKind.Secondary, UiAction.Count, () => true);
         m.Right = new[] { out1.Build() };
+    }
+
+    // A raise page with an offer on the table: its terms on the right, what they cost with Law, and the offer against the market.
+    private static void TechTerms(UiWords t, TechModel m, TechRunList runs)
+    {
+        m.Shape = TechShape.Sheet;
+        m.Nav = TechTabNav(t, out string[] keys);
+        m.NavKeys = keys;
+        m.NavSelected = 5;
+        m.Back = TW(t, "back_cap", "Back to the firm");
+        m.Head = new UiHeadModel { Name = "Pioneer Game Studio: raise", Icon = UiIcon.Coin, Role = "Game studio" };
+        var left = new TechCard(runs.Runs, TW(t, "raise_round", "Raise a round"));
+        left.Say("Ironbark Growth offers $2,400,000 for 18%.").Button(W(t, "reallife_vc_button_take_sheet", "Take the offer"), UiButtonKind.Primary, UiAction.Count, () => true);
+        m.Left = new[] { left.Build() };
+        var terms = new TechCard(runs.Runs, WF(t, "reallife_vc_terms_title", "Terms from Ironbark Growth", "vc", "Ironbark Growth"));
+        terms.Row(W(t, "reallife_vc_terms_label_pref", "Liquidation preference"), W(t, "reallife_vc_terms_pref_2", "2x, paid back first"), UiRole.WarnText)
+            .Row(W(t, "reallife_vc_terms_label_part", "Participation"), W(t, "reallife_vc_terms_part_1", "Participating: takes its preference, then shares as common"), UiRole.WarnText)
+            .Row(W(t, "reallife_vc_terms_label_anti", "Anti-dilution"), W(t, "reallife_vc_terms_anti_2", "Full ratchet"), UiRole.WarnText)
+            .Row(W(t, "reallife_vc_terms_label_vest", "Founder vesting"), W(t, "reallife_vc_terms_vest_1", "Your vesting starts again"), UiRole.WarnText)
+            .Row(W(t, "reallife_vc_terms_label_info", "Information rights"), W(t, "reallife_vc_terms_info_2", "Monthly pack and a look on demand"))
+            .Row(W(t, "reallife_vc_terms_label_prov", "Board approval"), WF(t, "reallife_vc_terms_prov", "Spending over $120,000 at once", "amount", "$120,000"))
+            .Say(WF(t, "reallife_vc_terms_cost_pref", "The 2x preference costs you $310,000 in a sale for $13,000,000 and $0 in a sale for $39,000,000.", "multiple", "2x", "at1", "$310,000", "value1", "$13,000,000", "at3", "$0", "value3", "$39,000,000"))
+            .Say(WF(t, "reallife_vc_terms_cost_part", "Participating costs you a further $540,000 and $1,150,000.", "at1", "$540,000", "at3", "$1,150,000"))
+            .Say(WF(t, "reallife_vc_terms_cost_anti", "If a later round prices 40% lower, you would hold 52% of the firm instead of 47%.", "cut", "40%", "with", "47%", "without", "52%"))
+            .Say(WF(t, "reallife_vc_terms_hard", "Hard terms: Liquidation preference, Anti-dilution.", "terms", "Liquidation preference, Anti-dilution"), UiRole.WarnText)
+            .Say(WF(t, "reallife_vc_terms_market", "A fair value for the firm today is $9,800,000 before the money. This offer values it at $10,600,000, which is 108% of that.", "market", "$9,800,000", "pre", "$10,600,000", "percent", "108"));
+        m.Right = new[] { terms.Build() };
     }
 
     private static void TechTeam(UiWords t, TechModel m, TechRunList runs)

@@ -79,6 +79,7 @@ namespace RealLifeOverhaul.Tech
         private void RefreshFloor(int day)
         {
             _floorNow = Level(StartupMoney.FloorOf(_venture.Caps, day));
+            RefreshProvision();
         }
 
         private void OnMoneyEvent(string gameEvent)
@@ -94,6 +95,10 @@ namespace RealLifeOverhaul.Tech
             }
             double was = _wallet, now = save.Money;
             _wallet = now;
+            if (_provisionLeast > 0 && now < was && (was - now) * 100.0 >= _provisionLeast)
+            {
+                WatchProvision(save, (long)((was - now) * 100.0));
+            }
             if (_floorNow <= 0 || now >= was)
             {
                 return;
@@ -363,9 +368,9 @@ namespace RealLifeOverhaul.Tech
             {
                 SendPack(c, firm, day);
             }
-            int diligence = StartupMoney.Diligence(c), threshold = StartupMoney.Threshold(diligence);
+            int threshold = StartupMoney.ThresholdOf(c);
             int suspicion = StartupMoney.Suspicion(c, day, accounting, leadership);
-            switch (StartupMoney.Next(c, day, suspicion, threshold, packDay))
+            switch (StartupMoney.Next(c, day, suspicion, threshold, packDay || VentureTerms.OnDemand(c)))   // a right to look on demand: any day, not only a pack day
             {
                 case StartupMoney.ActAsk:
                     Ask(c, firm, day);
@@ -402,6 +407,7 @@ namespace RealLifeOverhaul.Tech
         private void SendPack(Cap c, FirmPlace firm, int day)
         {
             BoardPack p = PackOf(c, firm, day);
+            PackSlip(c, firm, day);
             TellTech(NotificationType.Info, "reallife_vc_note_pack",
                 Data("firm", firm.File.Name, "runway", p.Runway < 0 ? "-" : p.Runway.ToString(), "revenue", TechText.Cents(p.Mrr), "target", TechText.Cents(p.Target),
                     "account", TechText.Cents(p.Balance), "wallet", TechText.Cents(p.Wallet)), TabFunding, TechApp.CapRow + c.Place);
@@ -413,8 +419,7 @@ namespace RealLifeOverhaul.Tech
         {
             FirmAccount a = c.Acc;
             long profit = firm != null ? FirmProfit(firm) : 0;
-            int diligence = StartupMoney.Diligence(c);
-            int threshold = StartupMoney.Threshold(diligence);
+            int threshold = StartupMoney.ThresholdOf(c);
             int suspicion = StartupMoney.Suspicion(c, day, TechBridges.SkillNow(TalentCatalogue.Accounting), TechBridges.SkillNow(TalentCatalogue.Leadership));
             return new BoardPack
             {
@@ -448,10 +453,9 @@ namespace RealLifeOverhaul.Tech
 
         private long Found(Cap c)
         {
-            int diligence = StartupMoney.Diligence(c);
             int suspicion = StartupMoney.Suspicion(c, Save.Day, TechBridges.SkillNow(TalentCatalogue.Accounting), TechBridges.SkillNow(TalentCatalogue.Leadership));
-            bool audit = StartupMoney.Audit(c, suspicion, StartupMoney.Threshold(diligence));
-            return audit ? c.Acc.Taken : c.Acc.Taken * StartupMoney.LookFinds(diligence) / 1000;
+            bool audit = StartupMoney.Audit(c, suspicion, StartupMoney.ThresholdOf(c));
+            return audit ? c.Acc.Taken : c.Acc.Taken * StartupMoney.LookFindsOf(c) / 1000;
         }
 
         private void Ask(Cap c, FirmPlace firm, int day)
@@ -581,6 +585,7 @@ namespace RealLifeOverhaul.Tech
                 key = "reallife_tech_desk_board_stonewalled";
             }
             RefreshFloor(day);
+            Grow(TalentCatalogue.Leadership, TermsCatalogue.GrowBoard);
             ChangedTech();
             return true;
         }
@@ -765,6 +770,10 @@ namespace RealLifeOverhaul.Tech
             {
                 TellTech(NotificationType.Warning, allowed == StartupMoney.RelatedSoon ? "reallife_vc_note_related_soon" : "reallife_vc_note_related_capped",
                     Data("firm", firm.File.Name, "other", name, "days", MoneyCatalogue.RelatedGap.ToString()), TabFunding, TechApp.CapRow + place);
+                return false;
+            }
+            if (!RelatedAllowed(c, firm, paid, Save.Day))
+            {
                 return false;
             }
             VentureGame.Give(Level(paid), VentureGame.RelatedTakingsKey, firm.File.Name, other);

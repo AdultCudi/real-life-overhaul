@@ -117,7 +117,21 @@ namespace RealLifeOverhaul.Ui
                 "reallife_vc_dig_strict", "reallife_vc_misuse_loan", "reallife_vc_misuse_related", "reallife_vc_misuse_rent",
                 "reallife_vc_misuse_running", "reallife_vc_misuse_running_own", "reallife_vc_misuse_unknown", "reallife_vc_mood_0",
                 "reallife_vc_mood_1", "reallife_vc_mood_2", "reallife_vc_mood_3", "reallife_vc_related_none", "reallife_vc_related_tier_0",
-                "reallife_vc_related_tier_1", "reallife_vc_related_tier_2"
+                "reallife_vc_related_tier_1", "reallife_vc_related_tier_2",
+                "reallife_vc_terms_label_pref", "reallife_vc_terms_label_part", "reallife_vc_terms_label_anti",
+                "reallife_vc_terms_label_vest", "reallife_vc_terms_label_info", "reallife_vc_terms_label_prov",
+                "reallife_vc_terms_pref_1", "reallife_vc_terms_pref_15", "reallife_vc_terms_pref_2",
+                "reallife_vc_terms_part_0", "reallife_vc_terms_part_1", "reallife_vc_terms_anti_0",
+                "reallife_vc_terms_anti_1", "reallife_vc_terms_anti_2", "reallife_vc_terms_vest_0",
+                "reallife_vc_terms_vest_1", "reallife_vc_terms_info_0", "reallife_vc_terms_info_1",
+                "reallife_vc_terms_info_2", "reallife_vc_terms_prov", "reallife_vc_terms_prov_none",
+                "reallife_vc_terms_plain", "reallife_vc_terms_hard", "reallife_vc_terms_law_hint",
+                "reallife_vc_terms_cost_pref", "reallife_vc_terms_cost_part", "reallife_vc_terms_cost_none",
+                "reallife_vc_terms_cost_anti", "reallife_vc_terms_title", "reallife_vc_terms_held",
+                "reallife_vc_terms_old", "reallife_vc_terms_pushed", "reallife_vc_terms_market",
+                "reallife_vc_terms_ask_market", "reallife_vc_terms_lead", "reallife_vc_deck_stretched",
+                "reallife_vc_acct_rights", "reallife_vc_acct_provision", "reallife_vc_acct_approved",
+                "reallife_vc_acct_breach", "reallife_vc_button_ask_spend", "reallife_vc_button_ask_raise"
                 // KEYS END
             }).Switch(UiScreenSwitches.Tech));
         }

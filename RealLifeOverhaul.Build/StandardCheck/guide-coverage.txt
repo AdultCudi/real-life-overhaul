@@ -15,6 +15,7 @@ desk-sessions	reallife_guide_living	desk sessions and the living economy's maste
 game-studio	reallife_guide_studio	the game studio rebuilt
 flare-city	reallife_guide_flare_city	Flare connected to the city's residents
 startup-money	reallife_guide_tech_startups	investors' money kept by the firm account, the board and the wind down
+startup-terms	reallife_guide_tech_startups	the terms of a round, the board's say over big spends and the skills that read them
 tech-firms	reallife_guide_firms	the other tech firms rebuilt: shared markets, rivals and desk sessions
 delivery-trips	reallife_guide_trips	logistics routes as delivery trips, and food spoilage
 district-save	-	how the save keeps the mod's places: nothing a player sees

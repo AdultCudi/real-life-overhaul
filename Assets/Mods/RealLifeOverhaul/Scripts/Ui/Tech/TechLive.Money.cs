@@ -71,6 +71,7 @@ namespace RealLifeOverhaul.Ui
                     : c.Acc.LoanUsed ? TechText.T("reallife_vc_acct_loan_used")
                     : TechText.Fill("reallife_vc_acct_loan_free", "max", Cents(_d.Level(StartupMoney.LoanMax(c))), "days", MoneyCatalogue.LoanDays.ToString()));
                 books.Say(TechText.T(VentureCatalogue.MoodKey(p.Mood)), p.Mood >= 2 ? UiRole.WarnText : UiRole.None);
+                RightsLines(books, c);
                 if (TechBridges.SkillNow(TalentCatalogue.Law) >= 40)
                 {
                     int diligence = StartupMoney.Diligence(c);
@@ -106,6 +107,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     out1.Button(TechText.T("reallife_vc_button_loan"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.TakeLoan(place)));
                 }
+                RightsButtons(out1, place, c);
                 out1.Button(TechText.T("reallife_vc_button_dividend"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.PayDividend(place)));
                 if (p.Delayable)
                 {

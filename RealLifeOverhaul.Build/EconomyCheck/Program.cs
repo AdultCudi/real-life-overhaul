@@ -632,6 +632,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--startup-terms")
+        {
+            StartupTermsChecks();   // (term sheets with teeth, the waterfall's terms, the board's rights and the Law page alone, while working on them: StartupTermsChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--schools")
         {
             SchoolChecks();   // (Birchwood School and the city's schools alone, while working on them: SchoolChecks.cs)
