@@ -39,21 +39,25 @@ namespace RealLifeOverhaul.Ui
         // ------------------------------------------------------------------ requirements
 
         /// <summary>
-        /// What a requirement's count says: "6" for a count the business has met, "0 of 1" for one still short, null for a requirement with no count (a
-        /// kind of thing, not a number of them).
+        /// What a requirement's count says: "6" for a count the business has met, "0 of 1" for one still short (in the words the language gives
+        /// <paramref name="pair"/>), null for a requirement with no count (a kind of thing, not a number of them).
         /// </summary>
-        public static string CountWords(bool counted, bool met, int have, int need)
+        public static string CountWords(bool counted, bool met, int have, int need, string pair)
         {
             if (!counted || need <= 0)
             {
                 return null;
             }
             have = Math.Max(0, have);
-            return met ? have.ToString(CultureInfo.InvariantCulture) : have.ToString(CultureInfo.InvariantCulture) + " of " + need.ToString(CultureInfo.InvariantCulture);
+            return met ? have.ToString(CultureInfo.InvariantCulture) : Pair(pair, have, need);
         }
 
         /// <summary>The figure at the head of the requirements: how many are met of how many.</summary>
-        public static string MetWords(int met, int of) => met.ToString(CultureInfo.InvariantCulture) + " of " + of.ToString(CultureInfo.InvariantCulture);
+        public static string MetWords(int met, int of, string pair) => Pair(pair, met, of);
+
+        /// <summary>Two numbers in the language's own words for "this of that", from its text with {have} and {need} in it.</summary>
+        public static string Pair(string pair, int have, int need) =>
+            (pair ?? "{have}/{need}").Replace("{have}", have.ToString(CultureInfo.InvariantCulture)).Replace("{need}", need.ToString(CultureInfo.InvariantCulture));
 
         // ------------------------------------------------------------------ the readings
 

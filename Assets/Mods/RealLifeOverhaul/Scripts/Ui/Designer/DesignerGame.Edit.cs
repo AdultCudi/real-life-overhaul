@@ -411,6 +411,7 @@ namespace RealLifeOverhaul.Ui
             i.RequireTitle = UiText.Fill("reallife_ui_designer_needs", "type", kind);
             i.ShowLabel = UiText.T("reallife_ui_designer_show");
             i.HowLabel = UiText.T("reallife_ui_designer_how");
+            string pair = UiText.T("reallife_ui_designer_count_of");
             int met = 0, n = Math.Min(Rows.Count, UiDesignerInfo.RequireMost);
             for (int k = 0; k < Rows.Count; k++)
             {
@@ -421,12 +422,12 @@ namespace RealLifeOverhaul.Ui
                 RequireRow r = Rows[k];
                 i.Require[k] = new UiDesignerRequirement
                 {
-                    Title = r.Title, Met = r.Met, Count = DesignerRules.CountWords(r.Counted, r.Met, r.Have, r.Rule.Need), CanShow = !r.Met && r.Items, Showing = k == _needFilter,
+                    Title = r.Title, Met = r.Met, Count = DesignerRules.CountWords(r.Counted, r.Met, r.Have, r.Rule.Need, pair), CanShow = !r.Met && r.Items, Showing = k == _needFilter,
                     CanHelp = !string.IsNullOrEmpty(r.Help)
                 };
             }
             i.RequireCount = n;
-            i.RequireFigure = DesignerRules.MetWords(met, Rows.Count);
+            i.RequireFigure = DesignerRules.MetWords(met, Rows.Count, pair);
             i.RequireInk = met == Rows.Count ? UiRole.OkText : UiRole.WarnText;
         }
 

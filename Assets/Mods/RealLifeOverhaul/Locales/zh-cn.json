@@ -34684,5 +34684,6 @@
   "reallife_ui_test_designer_state_is": "室内设计师已在套件上。手持工具：{tool}。已满足的需求：{met}。仍缺：{short}。本次编辑：{apply}。",
   "reallife_ui_test_designer_shut": "请先通过 HUD 上的按钮打开室内设计师，然后再运行此测试。",
   "reallife_ui_test_designer_close_first": "请先关闭室内设计师，然后再运行此测试。",
-  "reallife_ui_test_designer_flipped": "室内设计师的开关已经关了又开。打开设计师即可看到套件的外观。"
+  "reallife_ui_test_designer_flipped": "室内设计师的开关已经关了又开。打开设计师即可看到套件的外观。",
+  "reallife_ui_designer_count_of": "{have}/{need}"
 }

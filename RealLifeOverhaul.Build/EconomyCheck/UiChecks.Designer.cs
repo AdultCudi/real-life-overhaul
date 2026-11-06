@@ -82,8 +82,9 @@ internal static partial class Program
             "designer rules: the search is the game's own, the name in lower case with its spaces out holding the words typed the same way");
         Check(DesignerRules.IsTagSearch("#desk") && DesignerRules.IsTagSearch("  #nightclub") && !DesignerRules.IsTagSearch("desk") && !DesignerRules.IsTagSearch(null),
             "designer rules: a hash asks the game for a tag, as its own search does");
-        Check(DesignerRules.CountWords(true, true, 6, 6) == "6" && DesignerRules.CountWords(true, false, 0, 1) == "0 of 1" && DesignerRules.CountWords(false, false, 0, 0) == null
-              && DesignerRules.CountWords(true, true, 3, 0) == null && DesignerRules.MetWords(4, 6) == "4 of 6",
+        const string of = "{have} of {need}";
+        Check(DesignerRules.CountWords(true, true, 6, 6, of) == "6" && DesignerRules.CountWords(true, false, 0, 1, of) == "0 of 1" && DesignerRules.CountWords(false, false, 0, 0, of) == null
+              && DesignerRules.CountWords(true, true, 3, 0, of) == null && DesignerRules.MetWords(4, 6, of) == "4 of 6" && DesignerRules.MetWords(4, 6, "{have}/{need}") == "4/6",
             "designer rules: a requirement's count says what is placed once met and what is placed of what is needed while short, and nothing for a kind of thing");
         Check(DesignerRules.Fill(56, 80) == 70 && DesignerRules.Fill(80, 80) == 100 && DesignerRules.Fill(120, 80) == 100 && DesignerRules.Fill(0, 80) == 0 && DesignerRules.Fill(5, 9999) == 100
               && DesignerRules.Fill(0, 9999) == 0 && DesignerRules.Fill(5, 0) == 100,
@@ -170,6 +171,21 @@ internal static partial class Program
             "designer places: the wheel moves the tiles a whole row at a time and never past the last");
         Check(UiDesignerPanels.ItemsScrolled(3, 100f) == 0f && UiDesignerPanels.ItemsScrolled(20, 100f) == Math.Round(100f / UiDesignerPanels.ItemStep) * UiDesignerPanels.ItemStep
               && UiDesignerPanels.ItemsVisible(20, 0f, out int ifirst, out int ilast) && ifirst == 0 && ilast == UiDesignerPanels.ItemRows - 1, "designer places: an item list scrolls a whole row at a time");
+        // The row of categories is one target: the face tells which tab a place across it means from where the layout stood each one, at every frame.
+        bool tabs = true;
+        foreach (float aspect in UiAspects)
+        {
+            UiFrame tf = UiFrame.FullMenu(aspect, "Interior designer");
+            UiDesignerModel withTabs = UiSamples.Designer(DesignerWords, "furniture");
+            UiDesignerPanels.Lay(new UiScene(), withTabs, tf, true, UiDefaultKeys.Keyboard);
+            UiDesignerCatalogue c = withTabs.Catalogue;
+            tabs &= c.TabCount == 8 && UiDesignerPanels.TabAt(c, c.TabLeft[0] - 8f) == -1 && UiDesignerPanels.TabAt(c, c.TabRight[c.TabCount - 1] + 40f) == -1;
+            for (int i = 0; i < c.TabCount; i++)
+            {
+                tabs &= c.TabRight[i] > c.TabLeft[i] && UiDesignerPanels.TabAt(c, (c.TabLeft[i] + c.TabRight[i]) / 2f) == i && (i == 0 || c.TabLeft[i] >= c.TabRight[i - 1]);
+            }
+        }
+        Check(tabs, "designer places: the eight categories stand in a row in order at every frame, and a place across it names the one it is over");
         // The bar: the tool row, its steps and the right end stand between the time and the screen's edge at the narrowest frame.
         UiFrame narrow = UiFrame.FullMenu(4f / 3f, "Interior designer");
         UiDesignerModel bar = UiSamples.Designer(DesignerWords, "second_floor");

@@ -300,7 +300,7 @@ namespace RealLifeOverhaul.Ui
             {
                 if (Fills(k, item))
                 {
-                    string count = Rows[k].Counted && Rows[k].Rule.Need > 0 ? DesignerRules.CountWords(true, false, Rows[k].Have, Rows[k].Rule.Need) : null;
+                    string count = Rows[k].Counted && Rows[k].Rule.Need > 0 ? DesignerRules.CountWords(true, false, Rows[k].Have, Rows[k].Rule.Need, UiText.T("reallife_ui_designer_count_of")) : null;
                     Row(c, UiText.T("reallife_ui_designer_fills"), count != null ? Rows[k].Title + ", " + count : Rows[k].Title, UiRole.WarnText);
                     break;
                 }

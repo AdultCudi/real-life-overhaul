@@ -34684,5 +34684,6 @@
   "reallife_ui_test_designer_state_is": "Interior designer on the kit. Tool in hand: {tool}. Needs met: {met}. Still short: {short}. This edit: {apply}.",
   "reallife_ui_test_designer_shut": "Open the interior designer first, with its button on the HUD, then run this test again.",
   "reallife_ui_test_designer_close_first": "Close the interior designer first, then run this test again.",
-  "reallife_ui_test_designer_flipped": "The interior designer's switch went off and on again. Open the designer to see the kit's face."
+  "reallife_ui_test_designer_flipped": "The interior designer's switch went off and on again. Open the designer to see the kit's face.",
+  "reallife_ui_designer_count_of": "{have} of {need}"
 }

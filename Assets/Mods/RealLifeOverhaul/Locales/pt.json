@@ -34684,5 +34684,6 @@
   "reallife_ui_test_designer_state_is": "Designer de interiores no kit. Ferramenta na mão: {tool}. Necessidades atendidas: {met}. Ainda faltando: {short}. Esta alteração: {apply}.",
   "reallife_ui_test_designer_shut": "Abra antes o designer de interiores pelo botão no HUD e depois execute este teste de novo.",
   "reallife_ui_test_designer_close_first": "Feche antes o designer de interiores e depois execute este teste de novo.",
-  "reallife_ui_test_designer_flipped": "O interruptor do designer de interiores foi desligado e ligado de novo. Abra o designer para ver a aparência do kit."
+  "reallife_ui_test_designer_flipped": "O interruptor do designer de interiores foi desligado e ligado de novo. Abra o designer para ver a aparência do kit.",
+  "reallife_ui_designer_count_of": "{have} de {need}"
 }

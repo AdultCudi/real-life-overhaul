@@ -180,11 +180,12 @@ internal static partial class UiSamples
         i.ScoreTone = UiRole.Ok;
         i.RequireShown = true;
         i.RequireTitle = DesignerFill(Of(t, "reallife_ui_designer_needs", "{type} needs"), "type", "Florist");
-        i.RequireFigure = "4 of 6";
+        string pair = Of(t, "reallife_ui_designer_count_of", "{have} of {need}");
+        i.RequireFigure = DesignerFill(pair, "have", "4", "need", "6");
         i.ShowLabel = Of(t, "reallife_ui_designer_show", "Show");
         i.HowLabel = Of(t, "reallife_ui_designer_how", "How");
         string[] titles = { "Cash register", "Flower stands", "Lighting", "Security camera", "Storage shelf", "Restroom for staff" };
-        string[] counts = { "2", "6", null, null, "0 of 1", null };
+        string[] counts = { "2", "6", null, null, DesignerFill(pair, "have", "0", "need", "1"), null };
         for (int k = 0; k < 6; k++)
         {
             i.Require[k] = new UiDesignerRequirement { Title = titles[k], Met = k < 4, Count = counts[k], CanShow = k == 4, CanHelp = k >= 4 };
@@ -260,7 +261,7 @@ internal static partial class UiSamples
         c.DetailName = c.Cards[0].Name;
         c.DetailKind = needed ? "Storage, holds 48" : "Decoration, " + DesignerFill(Of(t, "reallife_ui_designer_holds", "holds {n}"), "n", "24");
         string[] lab = { t("common_price", "Price"), t("bizman_customers_capacity", "Customer capacity"), Of(t, "reallife_ui_designer_fills", "Needed for") };
-        string[] val = { c.Cards[0].Price, "+4", needed ? "Storage shelf, 0 of 1" : "Flower stands, 4 of 6" };
+        string[] val = { c.Cards[0].Price, "+4", needed ? "Storage shelf, " + DesignerFill(Of(t, "reallife_ui_designer_count_of", "{have} of {need}"), "have", "0", "need", "1") : "Flower stands, " + DesignerFill(Of(t, "reallife_ui_designer_count_of", "{have} of {need}"), "have", "4", "need", "6") };
         UiRole[] ink = { UiRole.Text, UiRole.OkText, UiRole.WarnText };
         for (int k = 0; k < 3; k++)
         {
