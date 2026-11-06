@@ -359,11 +359,12 @@ namespace RealLifeOverhaul.Ui
             return redo != null && redo.interactable;
         }
 
+        // The game switches its floor buttons on only after its toolbar has come on, which is when the kit first lays out, so the buttons' state is the last building's.
+        // The game's own condition for them, a building with floors, is read instead; without it the floor index has no controller to ask.
         private static bool HasFloors()
         {
-            InteriorDesignerUI ui = Ui;
-            GameObject parent = ui != null && GameContract.DesignerFloors.Field != null ? GameContract.DesignerFloors.Field.GetValue(ui) as GameObject : null;
-            return parent != null && parent.activeSelf;
+            BuildingManager manager = InstanceBehavior<BuildingManager>.Instance;
+            return manager != null && manager.multipleHeightsBuildingController != null;
         }
 
         /// <summary>The floor in view (0 to 2) while the building has floors, else -1.</summary>
