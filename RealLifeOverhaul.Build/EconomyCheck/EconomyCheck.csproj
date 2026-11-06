@@ -1010,6 +1010,11 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCheckout.cs" Link="Mod\UiCheckout.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPauseMenu.cs" Link="Mod\UiPauseMenu.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Pause\PlayTimeStore.cs" Link="Mod\PlayTimeStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiTooltipCard.cs" Link="Mod\UiTooltipCard.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiTooltipRules.cs" Link="Mod\UiTooltipRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiNetWorthTip.cs" Link="Mod\UiNetWorthTip.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Finance\WorthBook.cs" Link="Mod\WorthBook.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Finance\WorthStore.cs" Link="Mod\WorthStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiDraw.MenuRow.cs" Link="Mod\UiDraw.MenuRow.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiVehicleBuy.cs" Link="Mod\UiVehicleBuy.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiItemPanel.cs" Link="Mod\UiItemPanel.cs" />

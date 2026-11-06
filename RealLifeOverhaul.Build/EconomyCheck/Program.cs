@@ -125,6 +125,14 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--tooltips-ui")
+        {
+            TooltipChecks();   // the card's placing and words, the customers shared, the days of net worth and the live code's promises (TooltipChecks.cs), then the card's screen
+            Environment.SetEnvironmentVariable("RLO_UI_ONLY", "tooltips");
+            UiScreenChecks();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--buildmode-ui")
         {
             BuildModeChecks();   // the rules Build mode stands on, then the kit's face: its layers, designs, places and wiring, then its screen in every state (UiChecks.BuildMode.cs)
@@ -1032,6 +1040,7 @@ internal static partial class Program
         HudKitChecks(); // the HUD's pieces and host: the UI zoom, the world prompt inside the screen at every frame, every pill whole in every language, the activity's states, the money's changes, no key taken, the cost (UiHudChecks.cs)
         MinimapChecks(); // the minimap's card above the kit's bar and clear of its pieces, its canvas between the HUD and the windows (UiMinimapChecks.cs)
         PauseMenuChecks();   // the pause menu: the time played in the save, a save's age and the time in words, the game's save list and loading (PauseMenuChecks.cs)
+        TooltipChecks();   // the tooltip card: placing, customers shared, the days of net worth and its card, the live code's promises (TooltipChecks.cs)
         UiGrids();      // the app window's page shapes (diary, board, reader, settings list, conversation, message list, feed, edition) and the kit's links (UiGridChecks.cs)
         PhoneKitChecks();   // the kit phone: every app on one page, the nav bar still, its own height, the apps' colours, the sources (UiChecks.Phone.cs)
         ActivityKitChecks();   // the activity panel, time skip, funeral and time of day tool on the kit: every activity through the one panel, the game's keys left to it, its sources (UiChecks.Activity.cs)
