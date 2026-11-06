@@ -849,6 +849,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPromptCard.cs" Link="Mod\UiPromptCard.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiOfferCard.cs" Link="Mod\UiOfferCard.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiWorld.cs" Link="Mod\UiWorld.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Overlays\UiOverlayCard.cs" Link="Mod\Overlays\UiOverlayCard.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Overlays\OverlayRules.cs" Link="Mod\Overlays\OverlayRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Overlays\OverlayKinds.cs" Link="Mod\Overlays\OverlayKinds.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Overlays\UiOverlays.cs" Link="Mod\Overlays\UiOverlays.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiToolPanel.cs" Link="Mod\UiToolPanel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiItemsList.cs" Link="Mod\UiItemsList.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiSidePanel.cs" Link="Mod\UiSidePanel.cs" />

@@ -213,6 +213,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--overlays-ui")
+        {
+            OverlaysUiChecks();   // the cards over the world's items: the table of kinds, the rules, every target answered, the code (UiChecks.Overlays.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--work-walk")
         {
             WorkWalkChecks();   // the pad's walk of every work page alone (UiChecks.WorkWalk.cs): RLO_WALK_REPORT=1 prints each walk
