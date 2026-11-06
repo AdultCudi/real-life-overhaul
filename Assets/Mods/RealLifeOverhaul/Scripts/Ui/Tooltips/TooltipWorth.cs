@@ -38,7 +38,7 @@ namespace RealLifeOverhaul.Ui
                 s = new WorthSummary { Now = now, High = now, Low = now, HighDay = today, LowDay = today, FromDay = today, Points = 1 };
             }
             float[] line = s.Points >= 2 ? Fit(_line, s.Points) : null;
-            UiTooltipModel made = UiNetWorthTip.Model(UiText.Words, s, today, line, Money, Short);
+            UiTooltipModel made = UiNetWorthTip.Model(UiText.Words, s, today, line, Short);
             into.Clear();
             into.Blocks.AddRange(made.Blocks);
             return true;
@@ -51,8 +51,6 @@ namespace RealLifeOverhaul.Ui
             Array.Copy(values, line, count);
             return line;
         }
-
-        private static string Money(long amount) => ((double)amount).ToShortCurrencyFormat();
 
         private static string Short(long amount) => ((double)amount).ToShortCurrencyFormat(true);
     }
