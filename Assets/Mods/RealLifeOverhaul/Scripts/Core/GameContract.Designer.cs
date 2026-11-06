@@ -20,7 +20,6 @@ namespace RealLifeOverhaul
         public static readonly GameMember DesignerInfoPanels = Field(UiDesigner, Game, DesignerUi, "infoPanelUI", "InteriorDesignerInfoPanelUI");
         public static readonly GameMember DesignerActionPanels = Field(UiDesigner, Game, DesignerUi, "actionPanelUI", "InteriorDesignerActionPanelUI");
         public static readonly GameMember DesignerRedo = Field(UiDesigner, Game, DesignerUi, "redoButton", "Button");
-        public static readonly GameMember DesignerFloors = Field(UiDesigner, Game, DesignerUi, "changeFloorButtonsParent", "GameObject");
         public static readonly GameMember DesignerUndoStack = Field(UiDesigner, Game, DesignerUi, "_undoStack", "Stack<IRevertibleAction>");
         public static readonly GameMember DesignerRedoStack = Field(UiDesigner, Game, DesignerUi, "_redoStack", "Stack<IRevertibleAction>");
 

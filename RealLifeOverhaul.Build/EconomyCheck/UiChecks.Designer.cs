@@ -338,6 +338,9 @@ internal static partial class Program
             "designer wiring: a tile's tooltip is the game's own ItemInfoTooltip and a tool's name goes through its TooltipSystem too, never a tooltip the kit draws");
         Check(face.Contains("IUiPointing") && face.Contains("IUiTyping") && face.Contains("public bool Back() => false;") && face.Contains("public bool Act(UiAction action) => false;"),
             "designer wiring: the face takes no Back and no action key, so Esc and the game's tool keys are the game's");
+        string floors = MethodText(game, "private static bool HasFloors()");
+        Check(floors.Contains("multipleHeightsBuildingController != null") && !floors.Contains("activeSelf") && !game.Contains("DesignerFloors"),
+            "designer wiring: whether the building has floors is read from the building itself, not from the game's floor buttons, which the game switches only after the kit's first layout (an empty building then drew the game's old designer)");
         Check(!game.Contains("Harmony") && !face.Contains("Harmony") && !kits.Contains("Harmony"), "designer wiring: no Harmony patch");
         string[] commands =
         {
