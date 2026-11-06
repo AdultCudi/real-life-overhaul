@@ -461,9 +461,9 @@ internal static partial class Program
         UiFrame keys = UiFrame.FullMenu(16f / 9f, "The city's people");
         UiFrame pointer = keys;
         pointer.Pointer = true;
-        UiDashboard.Lay(s, UiSamples.PopulationContributors(UiWords("en")), keys, true, UiDefaultKeys.Keyboard);
+        PopulationFace.Lay(s, UiSamples.PopulationPage(UiWords("en"), "contributors"), keys, true, UiDefaultKeys.Keyboard);
         bool keysNamed = Prompted(s, UiAction.Move) && Prompted(s, UiAction.Confirm) && Prompted(s, UiAction.Back) && PromptsDrawn(s) > 0;
-        UiDashboard.Lay(s, UiSamples.PopulationContributors(UiWords("en")), pointer, true, UiDefaultKeys.Keyboard);
+        PopulationFace.Lay(s, UiSamples.PopulationPage(UiWords("en"), "contributors"), pointer, true, UiDefaultKeys.Keyboard);
         Check(keysNamed && PromptsDrawn(s) == 0 && Prompted(s, UiAction.Back),
             "ui input: with the keys leading the status bar names every key and the way back; with the mouse leading it shows none, as the mouse does it by pointing");
     }

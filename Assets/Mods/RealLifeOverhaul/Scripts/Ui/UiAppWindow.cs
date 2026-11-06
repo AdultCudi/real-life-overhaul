@@ -376,8 +376,11 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Text(s, at, tx, ty, right - UiTokens.S6 - tx, UiStyle.Hero, UiRole.Text, p.Name, UiFlags.Truncate);
             ty += nameH + UiTokens.S1;
             float rh = UiTokens.PairRow;
-            UiDraw.Icon(s, at, tx, ty + (rh - UiTokens.Icon) / 2f, UiTokens.Icon, p.RoleIcon, p.RoleTint, UiFlags.Middle, true);
-            float rx = tx + UiTokens.Icon + UiTokens.S2;
+            if (p.RoleIcon != UiIcon.None)
+            {
+                UiDraw.Icon(s, at, tx, ty + (rh - UiTokens.Icon) / 2f, UiTokens.Icon, p.RoleIcon, p.RoleTint, UiFlags.Middle, true);   // a head with no role has no glyph for one
+            }
+            float rx = tx + (p.RoleIcon != UiIcon.None ? UiTokens.Icon + UiTokens.S2 : 0f);
             float chip = string.IsNullOrEmpty(p.Status) ? 0f : UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(p.Status, UiStyle.SmallStrong) + UiTokens.S1);
             float room = UiDraw.SnapDown(right - UiTokens.S6 - rx - (chip > 0f ? chip + UiTokens.S3 : 0f));
             float rw = Math.Min(UiDraw.Snap(UiTextRules.Width(p.Role ?? string.Empty, UiStyle.Body) + UiTokens.S1), room);

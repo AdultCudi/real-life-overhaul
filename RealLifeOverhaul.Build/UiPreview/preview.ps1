@@ -55,6 +55,8 @@ Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\Overlays') -Filter *.cs -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike '*Live.cs' -and $_.Name -notlike '*Live.*.cs' -and $_.Name -notlike 'UiDirector*.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 # The sweep's small rules (Ui\Sweep): a desk session's trade as the card's lines; the audit table stays out.
 Copy-Item (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\Sweep\SweepRules.cs') (Join-Path $preview 'Kit')
+# The city's people page (Ui\Pages): its model and its drawing; the screen, the views' translation and the game's reads stay out.
+@('PopulationModel.cs', 'PopulationFace.cs') | ForEach-Object { Copy-Item (Join-Path $repo (Join-Path 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\Pages' $_)) (Join-Path $preview 'Kit') }
 # The showrooms' state and rules (game-free): the samples build the Car Showroom's one world from the real state and read its reports through the real functions.
 @('DealerState.cs', 'DealerReport.cs', 'DealerCatalogue.cs', 'DealerRules.cs', 'DealerRules.Market.cs', 'DealerRules.Customers.cs', 'DealerRules.Business.cs', 'RivalRules.cs', 'ViewRules.cs', 'DealerDay.cs', 'BidEntry.cs') | ForEach-Object {
     Copy-Item (Join-Path $repo (Join-Path 'Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer' $_)) (Join-Path $preview 'Kit')

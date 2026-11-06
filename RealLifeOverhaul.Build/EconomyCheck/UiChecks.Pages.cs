@@ -3,6 +3,8 @@ using RealLifeOverhaul.Ui;
 
 internal static partial class Program
 {
+    private static readonly int[] PopulationCommands = { UiAppWindow.ActionCommand, PopulationFace.RowCommand };
+
     // The overhaul's own pages: each page of a screen shaped to its job is checked, and its zero state with it.
     static partial void UiCasesPages(UiScreenDef def, List<UiScreenCase> cases)
     {
@@ -23,12 +25,16 @@ internal static partial class Program
         }
         if (def.Id == "population")
         {
-            // Each page shaped to its job: the city's districts, who contributes, a household's ledger, a person's profile, one who has moved on.
-            cases.Add(new UiScreenCase { Def = def, Name = def.Id, Title = "The city's people", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.PopulationCity(t), f, dark, k) });
-            cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (who contributes)", Title = "The city's people", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.PopulationContributors(t), f, dark, k) });
-            cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (a household)", Title = "The city's people", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.PopulationHousehold(t), f, dark, k) });
-            cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (a person)", Title = "The city's people", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.PopulationPerson(t), f, dark, k) });
-            cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (moved on)", Title = "The city's people", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.PopulationGone(t), f, dark, k) });
+            // Each page shaped to its job: the city and its districts, who contributes, a district, a building, a household, a person (alone or not), a business, one who moved on.
+            foreach (string state in UiSamples.PopulationStates)
+            {
+                string st = state;
+                cases.Add(new UiScreenCase
+                {
+                    Def = def, Name = st == "city" ? def.Id : def.Id + " (" + st.Replace('_', ' ') + ")", Title = "The city's people", Commands = PopulationCommands,
+                    Lay = (s, f, dark, k, t) => PopulationFace.Lay(s, UiSamples.PopulationPage(t, st), f, dark, k)
+                });
+            }
             return;
         }
     }

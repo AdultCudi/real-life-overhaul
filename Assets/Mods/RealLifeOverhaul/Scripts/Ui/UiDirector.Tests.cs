@@ -61,7 +61,7 @@ namespace RealLifeOverhaul.Ui
                     Notifications.Show(NotificationType.Warning, !UiFonts.Ready ? "reallife_ui_test_fonts" : "reallife_ui_test_city", null, 8f);
                     return;
                 }
-                var screen = new PopulationScreen();
+                var screen = new PopulationScreen(PopulationLive.Source());
                 Overlay(screen, UiText.T("reallife_ui_page_population"), host => screen.Close = () =>
                 {
                     host.Hide();

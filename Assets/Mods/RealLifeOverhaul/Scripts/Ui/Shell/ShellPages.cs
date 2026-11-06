@@ -32,7 +32,7 @@ namespace RealLifeOverhaul.Ui
         private static readonly Page[] Pages =
         {
             new Page { Id = UiShellApps.ShellPeople, ScreenId = "population", TitleKey = "reallife_ui_page_population", Icon = UiIcon.People,
-                Ready = () => Population.CityPopulation.Running, Make = () => new PopulationScreen { Close = CloseMenu } },
+                Ready = () => Population.CityPopulation.Running, Make = () => new PopulationScreen(PopulationLive.Source()) { Close = CloseMenu } },
             new Page { Id = UiShellApps.ShellFirm, ScreenId = "studio", TitleKey = "reallife_ui_page_studio", Icon = UiIcon.GameController,
                 Ready = () => Tech.TechDirector.Instance != null && Tech.TechDirector.Instance.FirmPlaces.Count > 0,
                 Make = () => new StudioPageScreen(Tech.TechDirector.Instance.FirmPlaces[0].File.Place) { Close = CloseMenu } },

@@ -9,11 +9,35 @@ namespace RealLifeOverhaul.Ui
         {
             screens.AddRange(new[]
             {
-                new UiScreenDef("population", UiTemplate.Dashboard, "PopulationScreen", new[]
+                new UiScreenDef("population", UiTemplate.AppWindow, "PopulationScreen", new[]
                 {
                     "reallife_ui_page_details", "reallife_ui_page_empty", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back",
-                    "reallife_pop_view_city", "reallife_ui_pop_household", "reallife_ui_pop_household_plain", "reallife_ui_pop_last_month", "reallife_ui_pop_home",
-                    "reallife_ui_pop_age", "reallife_ui_pop_gone_body", "reallife_ui_pop_gone_named", "reallife_pop_fig_field", "reallife_pop_landlord_city"
+                    "reallife_ui_pop_household", "reallife_ui_pop_household_plain", "reallife_ui_pop_last_month", "reallife_ui_pop_home", "reallife_ui_pop_age",
+                    "reallife_ui_pop_gone_body", "reallife_ui_pop_gone_named", "reallife_pop_view_city", "reallife_pop_view_contributors", "reallife_pop_fig_people",
+                    "reallife_pop_fig_households", "reallife_pop_fig_unemployment", "reallife_pop_fig_rent", "reallife_pop_fig_births", "reallife_pop_fig_deaths",
+                    "reallife_pop_fig_moved_in", "reallife_pop_fig_moved_out", "reallife_pop_fig_jobs", "reallife_pop_fig_vacancies", "reallife_pop_fig_commuters",
+                    "reallife_pop_fig_taxes", "reallife_pop_fig_vacant", "reallife_pop_fig_income", "reallife_pop_fig_flats", "reallife_pop_fig_free",
+                    "reallife_pop_fig_flat_rent", "reallife_pop_fig_flat_size", "reallife_pop_fig_earned", "reallife_pop_fig_tax_paid", "reallife_pop_fig_spent",
+                    "reallife_pop_fig_saved", "reallife_pop_fig_rent_paid", "reallife_pop_fig_landlord", "reallife_pop_fig_savings", "reallife_pop_fig_debt",
+                    "reallife_pop_fig_top_spend", "reallife_pop_fig_age", "reallife_pop_fig_pay", "reallife_pop_fig_hours", "reallife_pop_fig_education",
+                    "reallife_pop_fig_field", "reallife_pop_fig_value_added", "reallife_pop_fig_customers", "reallife_pop_fig_takings", "reallife_pop_fig_against_first",
+                    "reallife_pop_fig_working", "reallife_pop_fig_middle", "reallife_pop_fig_upper", "reallife_pop_fig_month", "reallife_pop_fig_sales_tax",
+                    "reallife_pop_fig_wage_bill", "reallife_pop_fig_residents", "reallife_pop_fig_your_people", "reallife_pop_fig_your_spending",
+                    "reallife_pop_fig_your_taxes", "reallife_pop_fig_top_district", "reallife_pop_rows_districts", "reallife_pop_rows_buildings",
+                    "reallife_pop_rows_households", "reallife_pop_rows_members", "reallife_pop_rows_from", "reallife_pop_rows_employers",
+                    "reallife_pop_act_contributors", "reallife_pop_act_busiest", "reallife_pop_act_where", "reallife_pop_act_employer", "reallife_pop_act_household",
+                    "reallife_pop_act_staff", "reallife_pop_act_top_district", "reallife_pop_empty_city", "reallife_pop_empty_district", "reallife_pop_empty_building",
+                    "reallife_pop_empty_household", "reallife_pop_empty_person", "reallife_pop_empty_business", "reallife_pop_empty_contributors",
+                    "reallife_pop_class_working", "reallife_pop_class_middle", "reallife_pop_class_upper", "reallife_pop_status_child", "reallife_pop_status_pupil",
+                    "reallife_pop_status_student", "reallife_pop_status_worker", "reallife_pop_status_unemployed", "reallife_pop_status_retired",
+                    "reallife_pop_status_home", "reallife_pop_education_none", "reallife_pop_education_school", "reallife_pop_education_college",
+                    "reallife_pop_education_degree", "reallife_pop_education_postgraduate", "reallife_pop_field_none", "reallife_pop_field_service",
+                    "reallife_pop_field_trades", "reallife_pop_field_office", "reallife_pop_field_professional", "reallife_pop_field_tech",
+                    "reallife_pop_field_creative", "reallife_pop_field_public", "reallife_pop_field_management", "reallife_pop_landlord_own",
+                    "reallife_pop_landlord_player", "reallife_pop_landlord_city", "reallife_pop_employer_business", "reallife_pop_employer_tenants",
+                    "reallife_pop_employer_public", "reallife_pop_employer_special", "reallife_pop_employer_building", "reallife_pop_employer_mod",
+                    "reallife_pop_fig_homes_wanted", "reallife_pop_fig_homes_started", "reallife_pop_fig_homes_built", "reallife_pop_fig_firms_opened",
+                    "reallife_pop_fig_firms_closed", "reallife_pop_rows_lives_with", "reallife_pop_empty_alone"
                 }).Switch(UiScreenSwitches.Apps),
                 new UiScreenDef("studio", UiTemplate.Dashboard, "StudioPageScreen", new[]
                 {
