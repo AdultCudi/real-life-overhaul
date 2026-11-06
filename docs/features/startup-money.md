@@ -53,7 +53,7 @@ Each step is taken only if money is counted as taken; an honest firm never leave
 
 ## Winding down
 
-A funded firm whose business is gone for any reason (the player closed or sold it, eviction, bankruptcy) is found gone for two daily looks running and then wound down. The firm's cash is worked out from the account; the **bridge loan** is paid first; the rest goes through the cap table's waterfall (`VentureRules.Waterfall`: preferences first, then everyone shares); the investors' lines are paid out of the wallet. What the wallet cannot cover is the investors' claim, with a tenth in costs. If that gap comes with money still counted as taken over a tenth of the raise (misuse followed by a shutdown) the charge is filed too. A firm that honestly ran dry has nothing to share, owes nothing, and is told so. Every funded firm's cap is wound down: none is ever left dormant.
+A funded firm whose business is gone for any reason (the player closed or sold it, eviction, bankruptcy) is found gone for two daily looks running and then wound down. The firm's cash is worked out from the account, with a director's loan still out added back with its interest (closing the firm never forgives it); the **bridge loan** is paid first; the rest goes through the cap table's waterfall (`VentureRules.Waterfall`: preferences first, then everyone shares); the investors' lines are paid out of the wallet. What the wallet cannot cover is the investors' claim, with a tenth in costs. If that gap comes with money still counted as taken over a tenth of the raise (misuse followed by a shutdown) the charge is filed too. A firm that honestly ran dry has nothing to share, owes nothing, and is told so. Every funded firm's cap is wound down: none is ever left dormant.
 
 ## Older saves
 

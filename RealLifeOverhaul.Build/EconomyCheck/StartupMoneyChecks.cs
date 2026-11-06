@@ -59,6 +59,13 @@ internal static partial class Program
         StartupMoney.Wind w = StartupMoney.Close(c, 0, 30);
         Check(w.Owed >= Raise && w.Paid == 0 && w.Gap == w.Owed && w.Fraud && !w.Dry,
             "startup money: the exploit run to the end (raise, spend elsewhere, close) leaves the investors a claim of " + w.Gap + " and a fraud charge");
+        Cap lent = FundedCap();
+        long loan = StartupMoney.Lend(lent, 20);
+        long spent = StartupMoney.Balance(lent);
+        lent.Acc.Out += spent;   // the rest of the round honestly spent on the firm
+        StartupMoney.Wind loanWind = StartupMoney.Close(lent, 0, 50);
+        Check(loan > 0 && loanWind.Owed >= StartupMoney.LoanOwed(lent, 50) && loanWind.Gap == loanWind.Owed && !loanWind.Dry,
+            "startup money: a director's loan still out when the firm closes goes back to the investors, it is not forgiven (" + loanWind.Owed + " of " + loan + ")");
         Check(StartupMoney.Evidence(c) >= 0.5f && StartupMoney.Evidence(c) <= 0.95f, "startup money: the audit's evidence for the court is a strength between half and nearly all");
         Check(Regex.IsMatch(ModSource(@"Tech\TechDirector.Venture.cs"), @"WindDown\(") && ModSource(@"Tech\TechDirector.Venture.cs").Contains("_firmsFile.FirmAt(c.Place) == null"),
             "startup money: a funded firm whose business is gone is wound down, no cap is left dormant");

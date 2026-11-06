@@ -649,7 +649,8 @@ namespace RealLifeOverhaul.Tech
         public static Wind Close(Cap c, long wallet, int day)
         {
             var w = new Wind { Taken = c.Acc.Taken };
-            long balance = Math.Max(0L, Balance(c));
+            // A director's loan still out is owed to the firm: closing it must not forgive the loan.
+            long balance = Math.Max(0L, Balance(c)) + (c.Acc.Loan > 0 ? LoanOwed(c, day) : 0L);
             w.Bridge = Math.Min(Math.Max(0L, c.Bridge), balance);
             w.Price = balance - w.Bridge;
             w.Dry = balance <= 0;
