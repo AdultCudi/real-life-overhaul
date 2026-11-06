@@ -227,9 +227,12 @@ namespace RealLifeOverhaul.Tech
                 return string.Empty;
             }
             long arr = FirmsRules.Arr(_firmsFile, place);
-            long value = Math.Max(VentureCatalogue.FloorValue[0], FirmsRules.Value(firm.File, arr, 500));
+            FoundedFirm founded = FoundingOf(place);   // fit and the articles price a raise; a firm not founded here is priced as it was
+            long value = Math.Max(VentureCatalogue.FloorValue[0] * FoundRules.FitFactor(founded) / 1000, FirmsRules.Value(firm.File, arr, 500 + FoundRules.GrowthBp(founded)));
+            value = value * FoundRules.ArticlesFactor(founded) / 1000;
             long amount = Math.Max(VentureCatalogue.TicketLeast * 4, value / 4);
             TermSheet t = VentureRules.Sheet(vc, value, amount, score, VentureRules.Mood(HiringGame.Cycle), Save.Day);
+            t.Board |= FoundRules.SeatAsked(founded);
             if (score < 350)
             {
                 return TechText.T("reallife_vc_meet_no_sheet", "firm", VentureCatalogue.Firms[vc].Name);
@@ -264,6 +267,7 @@ namespace RealLifeOverhaul.Tech
             long money = VentureRules.Accept(c, t, FirmMrr(place) * 1000 / Math.Max(1, Prices.Level), Save.Day);
             VentureGame.Give(Level(money), VentureGame.RaiseKey, firm.File.Name, firm.Reg);
             c.Acc.Name = firm.File.Name;
+            FoundingAccountOpened(c);
             RefreshFloor(Save.Day);   // the round is the investors', held in the player's wallet from now
             Story("reallife_tech_news_raised", "name", firm.File.Name, "amount", TechText.Cents(Level(money)));
             string lead = VentureCatalogue.Firms[TalentCatalogue.Clamp(t.Vc, 0, VentureCatalogue.FirmCount - 1)].Name;

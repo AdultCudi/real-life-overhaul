@@ -9,7 +9,7 @@ internal static partial class UiSamples
     public static readonly string[] TechStates =
     {
         "firms", "firms_empty", "studio", "game", "game_plan", "datacentre", "software", "products", "product", "contracts", "tender", "infra", "startups", "startup", "funding", "cap", "cap_account", "books", "books_free",
-        "team", "rivals", "concept", "off"
+        "team", "rivals", "concept", "found", "found_angel", "found_none", "niches", "niche", "gtm", "gtm_placed", "off"
     };
 
     // The runs a sample page holds: each does nothing here, and the count is what the checks press.
@@ -117,6 +117,13 @@ internal static partial class UiSamples
             case "cap_account": TechCapAccount(t, m, runs); break;
             case "books": TechBooks(t, m, runs, true); break;
             case "books_free": TechBooks(t, m, runs, false); break;
+            case "found": TechFound(t, m, runs); break;
+            case "found_angel": TechFoundAngel(t, m, runs); break;
+            case "found_none": TechFoundNone(t, m, runs); break;
+            case "niches": TechNiches(t, m, runs); break;
+            case "niche": TechNiche(t, m, runs); break;
+            case "gtm": TechGtm(t, m, runs, false); break;
+            case "gtm_placed": TechGtm(t, m, runs, true); break;
             case "team": TechTeam(t, m, runs); break;
             case "rivals": TechRivals(t, m, runs); break;
             case "concept": TechConcept(t, m, runs); break;
@@ -655,10 +662,14 @@ internal static partial class UiSamples
         }, rows, "", "");
         m.RowKeys = new[] { "start:1", "start:2", "start:3", "start:4" };
         m.Next = "You hold 2 stakes, put in $750,000, worth $888,000 now. Hype 120%.";
+        m.Actions = new[]
+        {
+            TechAct(runs, W(t, "reallife_niche_button_niches", "Niches"), UiButtonKind.Secondary, UiAction.Option), TechAct(runs, W(t, "reallife_found_button_open", "Found a startup"), UiButtonKind.Primary, UiAction.Alt)
+        };
         var fund = new TechCard(runs.Runs, TW(t, "fund_title", "Your fund"));
         fund.Say("Committed $5,000,000, cash $3,200,000, invested $1,800,000, returned $0.")
-            .Step(TW(t, "fund_step", "Put in"), "$5,000,000", null, true, true, () => true, () => true).Button("Put money in", UiButtonKind.Primary, UiAction.Alt, () => true)
-            .Button("Take cash out", UiButtonKind.Secondary, UiAction.Option, () => true);
+            .Step(TW(t, "fund_step", "Put in"), "$5,000,000", null, true, true, () => true, () => true).Button("Put money in", UiButtonKind.Secondary, UiAction.Count, () => true)
+            .Button("Take cash out", UiButtonKind.Secondary, UiAction.Count, () => true);
         m.Side = fund.Build();
     }
 
@@ -682,7 +693,8 @@ internal static partial class UiSamples
         var cards = runs.Runs;
         var facts = new TechCard(cards, TW(t, "startup_facts", "The startup"));
         facts.Say("Asks $2,000,000 at $16,500,000 before the money, for 10.8%. The offer lapses on day 420.", UiRole.OkText).Say("Founded by Sara Bell on day 88, at Series A. It says it takes $88,000 a month.")
-            .Say("Its books have not been checked. A check costs $5,000.");
+            .Say("Its books have not been checked. A check costs $5,000.")
+            .Say(WF(t, "reallife_niche_startup", "Sells to: Restaurants.", "niche", W(t, "reallife_niche_restaurants", "Restaurants")));
         m.Left = new[] { facts.Build() };
     }
 
@@ -711,6 +723,7 @@ internal static partial class UiSamples
         }, rows, "", "");
         m.RowKeys = new[] { "cap:a", "cap:b", "cap:c" };
         m.Next = "A round takes 30 days and up to 3 meetings. Investors want 20% growth a month to a target in 180 days.";
+        m.Actions = new[] { TechAct(runs, W(t, "reallife_found_button_open", "Found a startup"), UiButtonKind.Primary, UiAction.Alt) };
     }
 
     private static void TechCap(UiWords t, TechModel m, TechRunList runs)

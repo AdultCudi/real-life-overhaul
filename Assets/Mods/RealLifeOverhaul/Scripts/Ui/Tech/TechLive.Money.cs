@@ -71,6 +71,10 @@ namespace RealLifeOverhaul.Ui
                     : c.Acc.LoanUsed ? TechText.T("reallife_vc_acct_loan_used")
                     : TechText.Fill("reallife_vc_acct_loan_free", "max", Cents(_d.Level(StartupMoney.LoanMax(c))), "days", MoneyCatalogue.LoanDays.ToString()));
                 books.Say(TechText.T(VentureCatalogue.MoodKey(p.Mood)), p.Mood >= 2 ? UiRole.WarnText : UiRole.None);
+                if (p.Fit >= 0)
+                {
+                    books.Say(TechText.Fill("reallife_vc_acct_fit", "fit", TechText.Mille(p.Fit), "stage", TechText.T(FoundCatalogue.StageKey(p.Stage))));
+                }
                 if (TechBridges.SkillNow(TalentCatalogue.Law) >= 40)
                 {
                     int diligence = StartupMoney.Diligence(c);

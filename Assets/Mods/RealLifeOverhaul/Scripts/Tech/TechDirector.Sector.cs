@@ -318,7 +318,17 @@ namespace RealLifeOverhaul.Tech
             int m = SectorRules.MarketOf(p);
             long users = p.Users;
             int appeal = index < _appeals.Length ? _appeals[index] : 0, aware = index < _aware.Length ? _aware[index] : 0;
-            ProductDay r = SectorRules.SellDay(_firmsFile, file, p, c, c.Support, day, _sector.Markets[m], appeal, aware, hostingRate);
+            SectorMarketDay market = _sector.Markets[m];
+            Crew selling = c;
+            if (_founding != null)
+            {
+                market = NicheView(firm, p, market, day, SectorRules.Attraction(appeal, aware), ref appeal, ref aware, ref selling);   // a founded firm sells into its niche
+            }
+            ProductDay r = SectorRules.SellDay(_firmsFile, file, p, selling, c.Support, day, market, appeal, aware, hostingRate);
+            if (_founding != null)
+            {
+                NicheSold(firm, p, r);
+            }
             if (r.Outage)
             {
                 sf.LastOutage = day;

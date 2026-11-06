@@ -49,10 +49,12 @@ namespace RealLifeOverhaul
                 TechBridges.UtilityCents = (service, use) => Utilities.UtilitiesRules.DayCents(service == 0 ? Utilities.Service.Power : Utilities.Service.Water, use, Prices.Level, false);
                 _paperBefore = News.Extra;
                 News.Extra = Paper;
+                FoundLinks.Connect();   // the go to market sessions, the population's people and niches, the study's route for skills
             }
 
             internal static void Disconnect()
             {
+                FoundLinks.Disconnect();
                 TechBridges.Reset();
                 News.Extra = _paperBefore;
                 _paperBefore = null;

@@ -78,7 +78,10 @@ internal static partial class Program
                 if (v.Pick.StartsWith("work:", StringComparison.Ordinal)) { return "tender"; }
                 if (v.Pick.StartsWith("dc:", StringComparison.Ordinal)) { return "datacentre"; }
                 if (v.Pick.StartsWith("start:", StringComparison.Ordinal)) { return "startup"; }
-                if (v.Pick.StartsWith("cap:", StringComparison.Ordinal)) { return "cap"; }
+                if (v.Pick.StartsWith("cap:", StringComparison.Ordinal)) { return v.Page == 3 ? "gtm" : "cap"; }
+                if (v.Pick.StartsWith("found:", StringComparison.Ordinal)) { return "found"; }
+                if (v.Pick.StartsWith("niches:", StringComparison.Ordinal)) { return "niches"; }
+                if (v.Pick.StartsWith("niche:", StringComparison.Ordinal)) { return "niche"; }
                 if (v.Pick.StartsWith("newprod:", StringComparison.Ordinal)) { return "concept"; }
                 if (v.Pick.StartsWith("rival:", StringComparison.Ordinal)) { return "rivals"; }
                 return "product";

@@ -35,6 +35,21 @@ namespace RealLifeOverhaul.Ui
                 string pick = _v.Pick;
                 if (pick != null)
                 {
+                    if (Pick(pick, FoundRow) != null)
+                    {
+                        FoundPage();
+                        return;
+                    }
+                    if (Pick(pick, NichesRow) != null)
+                    {
+                        NichesPage();
+                        return;
+                    }
+                    if (int.TryParse(Pick(pick, NicheRow), out int nicheId) && nicheId >= 0 && nicheId < NicheCatalogue.Count)
+                    {
+                        NichePage(nicheId);
+                        return;
+                    }
                     Startup picked = int.TryParse(Pick(pick, TechApp.StartupRow), out int sid) ? v.StartupOf(sid) : null;
                     if (picked != null)
                     {
@@ -90,6 +105,11 @@ namespace RealLifeOverhaul.Ui
                 _m.RowKeys = keys.ToArray();
                 _m.Next = TechText.Fill("reallife_vc_portfolio", "count", holdings.ToString(Inv), "invested", Cents(_d.Level(invested)), "value", Cents(_d.Level(value)), "hype",
                     TechText.Mille(_d.HypeNow));
+                _m.Actions = new[]
+                {
+                    Button(TechText.T("reallife_niche_button_niches"), UiButtonKind.Secondary, UiAction.Option, Go(view => view.Open(NichesRow))),
+                    Button(TechText.T("reallife_found_button_open"), UiButtonKind.Primary, UiAction.Alt, Go(view => view.Open(FoundRow)))
+                };
                 FundCard(v);
             }
 
@@ -105,10 +125,10 @@ namespace RealLifeOverhaul.Ui
                 card.Step(TechText.T("reallife_ui_tech_fund_step"), TechText.T("reallife_vc_fund_step", "amount", Cents(_d.Level(FundSteps[at]))), null, at > 0, at < FundSteps.Length - 1,
                     Go(view => _fundStep = at - 1), Go(view => _fundStep = at + 1));
                 long step = _d.Level(FundSteps[at]);
-                card.Button(TechText.T(fund.Open ? "reallife_vc_button_fund_in" : "reallife_vc_button_fund_open"), UiButtonKind.Primary, UiAction.Alt, Do(() => _d.FundIn(step)));
+                card.Button(TechText.T(fund.Open ? "reallife_vc_button_fund_in" : "reallife_vc_button_fund_open"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.FundIn(step)));
                 if (fund.Open && fund.Cash > 0)
                 {
-                    card.Button(TechText.T("reallife_vc_button_fund_out"), UiButtonKind.Secondary, UiAction.Option, Do(() => _d.FundOut()));
+                    card.Button(TechText.T("reallife_vc_button_fund_out"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.FundOut()));
                 }
                 _m.Side = card.Build();
             }
@@ -146,6 +166,11 @@ namespace RealLifeOverhaul.Ui
                 card.Say(TechText.Fill("reallife_vc_startup_line", "founder", s.Founder, "stage", TechText.RoundName((RoundStage)s.Stage), "founded", s.Founded.ToString(Inv),
                     "revenue", Cents(_d.Level(known ? s.Mrr : VentureRules.Claimed(s))), "said", TechText.T(known ? "reallife_vc_startup_true" : "reallife_vc_startup_claimed"),
                         "value", Cents(_d.Level(s.Post))));
+                int niche = _d.NicheOfStartup(s);
+                if (niche >= 0)
+                {
+                    card.Say(TechText.Fill("reallife_niche_startup", "niche", TechText.T(NicheCatalogue.NameKey(niche))));
+                }
                 int runway = VentureRules.Runway(s.Cash, s.Burn, s.Mrr);
                 card.Say(s.Diligence
                     ? TechText.Fill("reallife_vc_startup_diligence", "quality",
@@ -191,7 +216,11 @@ namespace RealLifeOverhaul.Ui
                 FirmPlace picked = cap != null ? _d.FirmOf(cap) : null;
                 if (picked != null)
                 {
-                    if (_v.Page == PageRaise)
+                    if (_v.Page == PageGtm)
+                    {
+                        GtmPage(picked);
+                    }
+                    else if (_v.Page == PageRaise)
                     {
                         RaisePage(picked);
                     }
@@ -256,6 +285,7 @@ namespace RealLifeOverhaul.Ui
                 _m.RowKeys = keys.ToArray();
                 _m.Next = TechText.Fill("reallife_vc_funding_about", "days", VentureCatalogue.RaiseDays.ToString(), "growth", TechText.Mille(VentureCatalogue.TargetGrowth),
                     "target", VentureCatalogue.TargetDays.ToString());
+                _m.Actions = new[] { Button(TechText.T("reallife_found_button_open"), UiButtonKind.Primary, UiAction.Alt, Go(view => view.Open(FoundRow))) };
             }
 
             private void CapPage(FirmPlace firm)
@@ -277,9 +307,7 @@ namespace RealLifeOverhaul.Ui
                     for (int i = 0; i < c.Holders.Count; i++)
                     {
                         Holder h = c.Holders[i];
-                        string who = h.Kind == (int)HolderKind.Player ? TechText.T("reallife_vc_holder_you") : h.Kind == (int)HolderKind.Pool ? TechText.T("reallife_vc_holder_pool")
-                            : VentureCatalogue.Firms[TalentCatalogue.Clamp(h.Who, 0, VentureCatalogue.FirmCount - 1)].Name;
-                        card.Row(who, TechText.Mille(VentureRules.ShareOf(h, total)));
+                        card.Row(FoundText.HolderName(h, _d.Foundings, place), TechText.Mille(VentureRules.ShareOf(h, total)));
                     }
                     card.Say(TechText.Fill("reallife_vc_cap_board", "seats", c.BoardSeats.ToString(), "theirs", c.VcSeats.ToString(), "target", Cents(_d.Level(c.TargetMrr)), "day",
                         c.TargetDay.ToString(),
@@ -326,6 +354,10 @@ namespace RealLifeOverhaul.Ui
                 if (c != null && StartupMoney.Has(c))
                 {
                     head.Add(Button(TechText.T("reallife_vc_button_books"), UiButtonKind.Secondary, UiAction.Option, Go(v => v.Page = PageBooks)));
+                }
+                if (_d.FoundingOf(place) != null)
+                {
+                    head.Add(Button(TechText.T("reallife_gtm_button_open"), UiButtonKind.Secondary, UiAction.Count, Go(v => v.Page = PageGtm)));
                 }
                 head.Add(Button(TechText.T("reallife_vc_button_raise_page"), UiButtonKind.Primary, UiAction.Alt, Go(v => v.Page = PageRaise)));
                 _m.HeadActions = head.ToArray();

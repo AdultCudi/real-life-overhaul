@@ -569,7 +569,9 @@ namespace RealLifeOverhaul.Ui
                     raise.Row(TechText.T("reallife_vc_col_share"), TechText.Mille(cap != null ? VentureRules.PlayerShare(cap) : 1000));
                     raise.Go(TechText.T("reallife_ui_tech_open_funding"), Go(v => v.Open("tab:" + TabFunding)));
                 }
-                _m.Right = new[] { raise.Build() };
+                var right = new List<UiFactCardModel>(2) { raise.Build() };
+                GtmCard(right, place);
+                _m.Right = right.ToArray();
                 _m.Back = null;
                 PathCard();
             }
