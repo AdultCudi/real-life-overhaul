@@ -37,6 +37,8 @@ namespace RealLifeOverhaul
         public static readonly GameMember ShowBottom = Optional(Field(BizManKitPart, Game, "BizManPresentation", "bottomInfoBox", "Transform"));
         public static readonly GameMember ShowForSale = Optional(Field(BizManKitPart, Game, "BizManPresentation", "forSaleBox", "Transform"));
         public static readonly GameMember ShowNotForSale = Optional(Field(BizManKitPart, Game, "BizManPresentation", "notForSaleBox", "Transform"));
+        public static readonly GameMember ShowForSaleOffer = Optional(Field(BizManKitPart, Game, "BizManPresentation", "forSaleOfferButton", "Transform"));
+        public static readonly GameMember ShowNotForSaleOffer = Optional(Field(BizManKitPart, Game, "BizManPresentation", "notForSaleOfferButton", "Transform"));
         public static readonly GameMember ShowStart = Optional(Field(BizManKitPart, Game, "BizManPresentation", "startBusinessUI", "StartBusinessUI"));
         public static readonly GameMember ShowRent = Optional(Field(BizManKitPart, Game, "BizManPresentation", "rentBuildingUI", "RentBuildingUI"));
         public static readonly GameMember ShowVilla = Optional(Field(BizManKitPart, Game, "BizManPresentation", "hamptonsPurchaseBoxUI", "HamptonsPurchaseBoxUI"));

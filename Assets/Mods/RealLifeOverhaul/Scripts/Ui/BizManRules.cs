@@ -184,5 +184,19 @@ namespace RealLifeOverhaul.Ui
             double marks = direction > 0 ? Math.Floor(amount / step + 1e-9) + 1.0 : Math.Ceiling(amount / step - 1e-9) - 1.0;
             return Math.Max(0.0, Math.Round(marks * step, 2));
         }
+
+        /// <summary>
+        /// Which offer for the building the game offers: its for-sale box with the button to make an offer, else its not-for-sale
+        /// box with its own. The game keeps the box that holds the amount and Send shut until that button is pressed, so the
+        /// offer is read from the two boxes and their buttons, never from Send. 0 for none, 1 for the for-sale box, 2 for the other.
+        /// </summary>
+        public static int BuildingOffer(bool forSale, bool forSaleButton, bool notForSale, bool notForSaleButton) =>
+            forSale && forSaleButton ? 1 : notForSale && notForSaleButton ? 2 : 0;
+
+        /// <summary>
+        /// True when the game holds a Send: it shows now and cannot be pressed (Going Public's locks, a missing diploma). A Send the
+        /// game keeps shut behind its make-an-offer button is not held: the method it calls is what runs, and it answers with its own notice.
+        /// </summary>
+        public static bool SendHeld(bool shown, bool interactable) => shown && !interactable;
     }
 }

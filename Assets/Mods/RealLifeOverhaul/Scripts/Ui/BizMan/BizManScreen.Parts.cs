@@ -48,6 +48,7 @@ namespace RealLifeOverhaul.Ui
             if (On(rent))
             {
                 Rent(rent);
+                BuyOffer(pres, false);   // the game's left side offers the building for sale beside the lease
             }
             else if (On(villa))
             {
@@ -143,19 +144,23 @@ namespace RealLifeOverhaul.Ui
         private void BuyOffer(BizManPresentation pres, bool second)
         {
             Transform forSale = Get<Transform>(GameContract.ShowForSale, pres), notForSale = Get<Transform>(GameContract.ShowNotForSale, pres);
-            Transform box = On(forSale) ? forSale : On(notForSale) ? notForSale : null;
-            Button send = Calling(pres, "SendBuyBuildingOffer");
-            if (box == null || send == null)
+            int which = BizManRules.BuildingOffer(On(forSale), On(Get<Transform>(GameContract.ShowForSaleOffer, pres)), On(notForSale),
+                On(Get<Transform>(GameContract.ShowNotForSaleOffer, pres)));
+            if (which == 0)
             {
                 return;
             }
+            Transform box = which == 1 ? forSale : notForSale;
+            // The game keeps Send's box shut until its make-an-offer button is pressed, so Send is found wired, shown or not.
+            Button send = UiWidgets.Calling(pres, "SendBuyBuildingOffer");
+            bool held = send != null && BizManRules.SendHeld(send.gameObject.activeInHierarchy, send.interactable);
             var a = new BizManAmount
             {
                 Title = UiText.T("bizman_buy_building"), Line = Join(WordsAt(box, "RivalBuildingOwner"), On(forSale) ? WordsAt(box, "BuildingPriceLabel") : Words(pres.buildingSideInfoValuation)),
                 Figure = pres.buyBuildingAmountInputField != null ? pres.buyBuildingAmountInputField.text : null, Field = BizManPages.FieldBuy, CanLess = true, CanMore = true,
                 Disabled = pres.buyBuildingAmountInputField == null || !pres.buyBuildingAmountInputField.interactable,
                 Send = Do(BizManPages.DoBuy, UiWidgets.Label(send) ?? UiText.T("bizman_send_purchase_offer"), second ? UiButtonKind.Secondary : UiButtonKind.Primary, UiIcon.Send,
-                    second ? UiAction.Count : UiAction.Alt, !send.interactable)
+                    second ? UiAction.Count : UiAction.Alt, held)
             };
             if (second)
             {
@@ -195,13 +200,13 @@ namespace RealLifeOverhaul.Ui
         private void Villa(BizManPresentation pres, HamptonsPurchaseBoxUI villa)
         {
             _m.Part = BizManPart.Villa;
-            Button send = Calling(villa, "SendBuyBuildingOffer") ?? Calling(pres, "SendBuyBuildingOffer");
+            Button send = UiWidgets.Calling(villa, "SendBuyBuildingOffer") ?? UiWidgets.Calling(pres, "SendBuyBuildingOffer");
             _m.Amount = new BizManAmount
             {
                 Title = UiText.T("bizman_buy_building"), Line = Words(Get<Component>(GameContract.VillaPrice, villa)) ?? Words(Get<Component>(GameContract.VillaValuation, villa)),
                 Figure = villa.offerInputField != null ? villa.offerInputField.text : null, Field = BizManPages.FieldBuy, CanLess = true, CanMore = true,
-                Send = Do(BizManPages.DoBuy, send != null ? UiWidgets.Label(send) : UiText.T("bizman_send_purchase_offer"), UiButtonKind.Primary, UiIcon.Send, UiAction.Alt,
-                    send == null || !send.interactable)
+                Send = Do(BizManPages.DoBuy, (send != null ? UiWidgets.Label(send) : null) ?? UiText.T("bizman_send_purchase_offer"), UiButtonKind.Primary, UiIcon.Send, UiAction.Alt,
+                    send != null && BizManRules.SendHeld(send.gameObject.activeInHierarchy, send.interactable))
             };
         }
 
@@ -232,14 +237,15 @@ namespace RealLifeOverhaul.Ui
                 }
                 _m.More = hours.ToArray();
             }
-            Button send = Calling(pres, "SendOvertakeOffer");
-            if (On(pres.sendOvertakeOfferPanel) && send != null)
+            if (On(pres.sendOvertakeOfferPanel))
             {
+                Button send = UiWidgets.Calling(pres, "SendOvertakeOffer");   // the game keeps the field and Send shut until its make-an-offer button is pressed
+                bool held = send != null && BizManRules.SendHeld(send.gameObject.activeInHierarchy, send.interactable);
                 _m.Amount = new BizManAmount
                 {
                     Title = UiText.T("reallife_ui_bizman_take_over"), Line = Words(pres.businessSideOfferValuation) ?? Words(pres.businessSideInfoValuation),
                     Figure = pres.offerAmountInputField != null ? pres.offerAmountInputField.text : null, Field = BizManPages.FieldOffer, CanLess = true, CanMore = true,
-                    Send = Do(BizManPages.DoTakeover, UiWidgets.Label(send) ?? UiText.T("bizman_send_offer_button"), UiButtonKind.Primary, UiIcon.Send, UiAction.Alt, !send.interactable)
+                    Send = Do(BizManPages.DoTakeover, UiWidgets.Label(send) ?? UiText.T("bizman_send_offer_button"), UiButtonKind.Primary, UiIcon.Send, UiAction.Alt, held)
                 };
             }
             BuyOffer(pres, _m.Amount != null);
