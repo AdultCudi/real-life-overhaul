@@ -54,6 +54,7 @@ namespace RealLifeOverhaul.Economy
             P + "tech_wages", P + "tech_severance_wage", P + "tech_training", P + "tech_bonus_clause", P + "tech_crew_wages", P + "tech_upkeep",
             P + "tech_it_services", P + "tech_data_fine", P + "tech_register_fee", P + "tech_cloud_licence_fee",
             P + "tech_game_engine", P + "tech_game_certification", P + "tech_game_contractors", P + "tech_game_bonus", P + "tech_game_royalty",
+            P + "tech_founding_fees", P + "tech_founding_expand", P + "tech_founding_reseller",   // a startup's incorporation, a neighbouring niche opened, a partner's cut of what it resells
             P + "tech_related_cost",   // what a firm pays another business of the player's for work, at the firm
             P + "tech_desk_costs",   // what a desk session's answer costs: data, credits to customers, an award's fee, a power price fixed
             P + "tech_recruitment_ad", P + "tech_recruitment_checks", P + "tech_recruitment_search",

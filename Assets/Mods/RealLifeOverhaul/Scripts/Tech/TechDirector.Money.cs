@@ -13,6 +13,8 @@ namespace RealLifeOverhaul.Tech
         public long Balance, Investors, Floor, Wallet, Taken, Burn, Mrr, Target, SalaryDrawn, Band, RelatedPaid, RelatedOver, Loan, LoanOwed;
         public int Runway;            // days; -1 for none (the firm is not burning)
         public int RelatedDeals, Suspicion, Threshold, Mood, PackDay, GraceTo, Step;
+        public int Fit;               // product market fit, thousandths, for a firm that was founded here or took its niche up; -1 for none
+        public int Stage;             // its stage of going to market (FoundCatalogue)
         public bool Grace, Delayable, Question;
     }
 
@@ -408,9 +410,9 @@ namespace RealLifeOverhaul.Tech
         {
             BoardPack p = PackOf(c, firm, day);
             PackSlip(c, firm, day);
-            TellTech(NotificationType.Info, "reallife_vc_note_pack",
+            TellTech(NotificationType.Info, p.Fit >= 0 ? "reallife_vc_note_pack_fit" : "reallife_vc_note_pack",
                 Data("firm", firm.File.Name, "runway", p.Runway < 0 ? "-" : p.Runway.ToString(), "revenue", TechText.Cents(p.Mrr), "target", TechText.Cents(p.Target),
-                    "account", TechText.Cents(p.Balance), "wallet", TechText.Cents(p.Wallet)), TabFunding, TechApp.CapRow + c.Place);
+                    "account", TechText.Cents(p.Balance), "wallet", TechText.Cents(p.Wallet), "fit", TechText.Mille(Math.Max(0, p.Fit))), TabFunding, TechApp.CapRow + c.Place);
             StartupMoney.Sent(c, day);
         }
 
@@ -421,8 +423,10 @@ namespace RealLifeOverhaul.Tech
             long profit = firm != null ? FirmProfit(firm) : 0;
             int threshold = StartupMoney.ThresholdOf(c);
             int suspicion = StartupMoney.Suspicion(c, day, TechBridges.SkillNow(TalentCatalogue.Accounting), TechBridges.SkillNow(TalentCatalogue.Leadership));
+            FoundedFirm founded = FoundingOf(c.Place);
             return new BoardPack
             {
+                Fit = founded != null && founded.Counts ? founded.Fit : -1, Stage = founded != null ? founded.Stage : 0,
                 Balance = Level(StartupMoney.Balance(c)), Investors = Level(StartupMoney.Investors(c)), Floor = Level(StartupMoney.Floor(c, day)), Wallet = VentureGame.Cash,
                 Taken = Level(a.Taken), Burn = profit < 0 ? -profit : 0, Runway = profit < 0 ? (int)Math.Min(int.MaxValue, VentureGame.Cash / -profit) : -1,
                 Mrr = firm != null ? FirmMrr(c.Place) : 0, Target = Level(c.TargetMrr), SalaryDrawn = Level(day - a.SalaryFrom >= MoneyCatalogue.PackDays ? 0L : a.SalaryDrawn),
@@ -483,6 +487,11 @@ namespace RealLifeOverhaul.Tech
         {
             c.Acc.Step = StartupMoney.StepRemoved;
             c.Acc.StepDay = day;
+            if (!FoundingCanRemove(c))
+            {
+                Unremoved(c, firm, day);   // the articles do not let this board remove the founder
+                return;
+            }
             long back = StartupMoney.BadLeaver(c, day, Year);
             bool replaced = string.IsNullOrEmpty(c.Ceo) && _talent.People.Count < TalentStore.PeopleMost;
             if (replaced)
@@ -798,6 +807,7 @@ namespace RealLifeOverhaul.Tech
             long wallet = Base(VentureGame.Cash);
             float evidence = StartupMoney.Evidence(c);
             StartupMoney.Wind w = StartupMoney.Close(c, wallet, day);
+            FoundingWound(c, w, name);
             string lead = LeadName(c);
             c.Acc.Wound = true;
             if (w.Paid > 0)

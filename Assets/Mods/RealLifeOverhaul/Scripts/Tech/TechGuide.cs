@@ -204,6 +204,10 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; i < VentureCatalogue.Firms.Length; i++)
             {
                 VcDef vc = VentureCatalogue.Firms[i];
+                if (!vc.Leads)
+                {
+                    continue;
+                }
                 text.Append("- ").Append(TechText.Fill(vc.Angels ? "reallife_guide_vc_angels" : "reallife_guide_vc_firm", "name", vc.Name,
                     "least", TechText.RoundName((RoundStage)vc.Least), "most", TechText.RoundName((RoundStage)vc.Most))).Append('\n');
             }

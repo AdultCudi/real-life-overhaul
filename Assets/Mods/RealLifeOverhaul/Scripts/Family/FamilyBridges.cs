@@ -170,6 +170,15 @@ namespace RealLifeOverhaul.Family
             }
         }
 
+        /// <summary>A firm that lost the family's money lets the partner down: points of trust and of affection lost, taken as a promise broken. Nothing without a partner.</summary>
+        public static void LetDown(float trust, float affection)
+        {
+            if (Active && HasPartner && (trust > 0f || affection > 0f))
+            {
+                FamilyDirector.Instance.Guarded(() => Partner.Tell(FamilyEvent.BrokenPromise, -affection, -trust));
+            }
+        }
+
         /// <summary>Social: who the partner is has changed outside Family's own flows (a break-up, somebody new).</summary>
         public static void PartnerChanged()
         {

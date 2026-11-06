@@ -259,7 +259,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     return TabInfra;
                 }
-                if (pick.StartsWith(TechApp.StartupRow, StringComparison.Ordinal))
+                if (pick.StartsWith(TechApp.StartupRow, StringComparison.Ordinal) || pick.StartsWith(FoundRow, StringComparison.Ordinal) || pick.StartsWith(NichesRow, StringComparison.Ordinal)
+                    || pick.StartsWith(NicheRow, StringComparison.Ordinal))
                 {
                     return TabStartups;
                 }

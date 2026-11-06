@@ -224,8 +224,7 @@ namespace RealLifeOverhaul.Tech
                     {
                         words.Append(", ");
                     }
-                    words.Append(h.Kind == (int)HolderKind.Player ? TechText.T("reallife_vc_holder_you") : h.Kind == (int)HolderKind.Pool ? TechText.T("reallife_vc_holder_pool")
-                        : VentureCatalogue.Firms[TalentCatalogue.Clamp(h.Who, 0, VentureCatalogue.FirmCount - 1)].Name).Append(' ').Append(TechText.Mille(VentureRules.ShareOf(h, total)));
+                    words.Append(FoundText.HolderName(h, _director.Foundings, place)).Append(' ').Append(TechText.Mille(VentureRules.ShareOf(h, total)));
                 }
                 box.Row("reallife_vc_cap_holders", words.ToString());
                 box.Line(TechText.Fill("reallife_vc_cap_board", "seats", c.BoardSeats.ToString(), "theirs", c.VcSeats.ToString(),
