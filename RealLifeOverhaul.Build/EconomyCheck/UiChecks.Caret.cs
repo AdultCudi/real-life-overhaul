@@ -34,6 +34,7 @@ internal static partial class Program
         { "OptionsScreen", new[] { UiSettingsList.SearchCommand, UiOptions.NameCommand } },
         { "HelpScreen", new[] { UiHelp.SearchCommand } },
         { "BlueprintsScreen", new[] { UiBlueprints.SearchCommand } },
+        { "DesignerFace", new[] { UiDesignerPanels.SearchCommand, UiDesignerPanels.MaterialSearchCommand, UiDesignerPanels.NameCommand } },
         { "StaffScreen", new[] { UiSettingsList.SearchCommand } },
         { "TextBoxScreen", new[] { UiCard.FieldCommand } },
         { "StocksScreen", new[] { StocksLay.Shares, StocksLay.PricePlain, UiDataTable.First + UiDataTable.Search, StocksSheetLay.Type } },

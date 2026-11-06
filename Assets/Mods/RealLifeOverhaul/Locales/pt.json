@@ -35001,7 +35001,7 @@
   "reallife_ui_designer_no_tool": "nenhuma ferramenta",
   "reallife_ui_designer_no_needs": "nada exigido",
   "reallife_ui_screen_designer": "Designer de interiores",
-  "reallife_opt_tip_ui_screen_designer": "A barra de ferramentas, o painel de informações e os painéis que surgem de cada ferramenta do designer de interiores na interface do RLO. Desligado: os painéis do próprio jogo. O cômodo e as sobreposições continuam sendo do jogo de qualquer forma.",
+  "reallife_opt_tip_ui_screen_designer": "A barra de ferramentas, o painel de informações e os painéis de cada ferramenta do designer de interiores na interface RLO. Desligado: os painéis do jogo. O cômodo e as sobreposições continuam do jogo.",
   "reallife_contract_part_ui_designer": "o designer de interiores desenhado na interface do RLO",
   "reallife_ui_test_designer_state": "Diga o que o designer de interiores mostra",
   "reallife_ui_test_designer_switch": "Alterne o designer de interiores para os painéis do próprio jogo e de volta",

@@ -12,6 +12,10 @@ internal static partial class Program
 
     static partial void UiCasesDesigner(UiScreenDef def, List<UiScreenCase> cases)
     {
+        if (def.Id != "designer")
+        {
+            return;
+        }
         foreach (string state in UiSamples.DesignerStates)
         {
             string st = state;

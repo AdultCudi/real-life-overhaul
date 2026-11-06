@@ -35001,7 +35001,7 @@
   "reallife_ui_designer_no_tool": "no tool",
   "reallife_ui_designer_no_needs": "none asked for",
   "reallife_ui_screen_designer": "Interior designer",
-  "reallife_opt_tip_ui_screen_designer": "The interior designer's tool row, info panel and the panels that rise from each tool on the RLO interface. Off: the game's own panels. The room and its overlays stay the game's either way.",
+  "reallife_opt_tip_ui_screen_designer": "The interior designer's tool row, info panel and tool panels on the RLO interface. Off: the game's own panels. The room and its overlays stay the game's.",
   "reallife_contract_part_ui_designer": "the interior designer drawn on the RLO interface",
   "reallife_ui_test_designer_state": "Say what the interior designer shows",
   "reallife_ui_test_designer_switch": "Flip the interior designer to the game's own panels and back",
