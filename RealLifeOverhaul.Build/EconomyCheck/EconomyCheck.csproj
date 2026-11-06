@@ -863,6 +863,14 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiToolRow.cs" Link="Mod\UiToolRow.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BuildMode\UiBuildModel.cs" Link="Mod\BuildMode\UiBuildModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\BuildMode\UiBuildPanels.cs" Link="Mod\BuildMode\UiBuildPanels.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Designer\UiDesignerModel.cs" Link="Mod\Designer\UiDesignerModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Designer\UiDesignerPanels.cs" Link="Mod\Designer\UiDesignerPanels.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Designer\UiDesignerPanels.Catalogue.cs" Link="Mod\Designer\UiDesignerPanels.Catalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Designer\UiDesignerPanels.Materials.cs" Link="Mod\Designer\UiDesignerPanels.Materials.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Designer\UiDesignerPanels.Sheets.cs" Link="Mod\Designer\UiDesignerPanels.Sheets.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Designer\DesignerRules.cs" Link="Mod\Designer\DesignerRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Designer\DesignerGlyphs.cs" Link="Mod\Designer\DesignerGlyphs.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Designer\DesignerRequirementRules.cs" Link="Mod\Designer\DesignerRequirementRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildFavouriteRules.cs" Link="Mod\BuildFavouriteRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiHud.cs" Link="Mod\UiHud.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiHudNotice.cs" Link="Mod\UiHudNotice.cs" />
