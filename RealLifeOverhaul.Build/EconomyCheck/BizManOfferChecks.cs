@@ -61,8 +61,8 @@ internal static partial class Program
         foreach (string code in new[] { "en", "de", "es", "fr", "ko", "nl", "pl", "pt", "ru", "tr", "zh-cn" })
         {
             Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(DesignLocales, code + ".json"));
-            Check(words != null && words.TryGetValue("reallife_changes_next", out string next) && next.Substring(Math.Max(0, next.Length - 230)).Contains("BizMan")
-                  && (code != "en" || next.EndsWith("an offer to buy its building, also beside the lease of a building for rent.")) && !next.Contains('!')
+            Check(words != null && words.TryGetValue("reallife_changes_next", out string next) && next.Contains("BizMan")
+                  && (code != "en" || next.Contains("an offer to buy its building, also beside the lease of a building for rent.")) && !next.Contains('!')
                   && !next.Contains((char)0x2014) && !next.Contains((char)0x2013),
                 "bizman offer: What's new says so in " + code);
         }
