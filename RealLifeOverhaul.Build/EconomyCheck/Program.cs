@@ -157,6 +157,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--test-shops")
+        {
+            TestShopsAll();   // the test tool that takes businesses over (TestShopsChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--bizman-goods")
         {
             BizManGoodsAll();   // BizMan's Browse Store Inventory and Show employees on the kit, and the shift card's components (BizManGoodsChecks.cs)
@@ -1118,6 +1124,7 @@ internal static partial class Program
         TechFixes();    // the tech sector: a board that cannot hire, a pitch whose meeting never opened, the utilities asked safely, an interview cut short (TechFixChecks.cs)
         TechMoves();    // a tech firm moved by the moving company: its data follows whole, a save left behind is put back, nothing followed with a doubt (TechMoveChecks.cs)
         LagSecond();    // the stutter every second: which stretch of the mod's clock the engine's frame time is, and the mod never driving the engine's clock (LagSecondChecks.cs)
+        TestShopsAll();   // the test tool that takes businesses over: the pick, the notice, the refusals, the texts (TestShopsChecks.cs)
         BizPaceAll();   // what the mod adds to BizMan's open, switch and tab change: the rules, the book, the registration filter and the start screen's walk timed on a large save, the sources, the texts (BizPaceChecks.cs)
         DaySpreadAll(); // the game's midnight spread over frames: a step queued is played in a later frame, a slice a frame equals the job at once, the save and the next day finish it, the weekly look of the investors (DaySpreadChecks.cs)
         BizIncome();    // BizMan's income: every money line through BizBooks.Book, every key of the mod's businesses in one list of BizLines, the day's refresh, the self-check line (BizIncomeChecks.cs)
