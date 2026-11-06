@@ -111,6 +111,12 @@ namespace RealLifeOverhaul.Tech
         public const int OptionMorale = 100;            // thousandths of morale a grant adds
         public const int OptionPoach = 600;             // thousandths of the rivals' approaches with options unvested
 
+        // Whole keys, so the text checks can find each one.
+        public static readonly string[] MoodKeys = { "reallife_vc_mood_0", "reallife_vc_mood_1", "reallife_vc_mood_2", "reallife_vc_mood_3" };
+        public static readonly string[] TierKeys = { "reallife_vc_related_tier_0", "reallife_vc_related_tier_1", "reallife_vc_related_tier_2" };
+
+        public static string MoodKey(int mood) => MoodKeys[System.Math.Max(0, System.Math.Min(MoodKeys.Length - 1, mood))];
+
         /// <summary>Names for the city's startups: two halves.</summary>
         public static readonly string[] NameA =
         {

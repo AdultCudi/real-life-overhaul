@@ -27,7 +27,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 BoardPack p = _d.PackOf(c, firm, _d.Today);
                 card.Say(AccountLine(p));
-                card.Say(TechText.T("reallife_vc_mood_" + p.Mood), p.Mood >= 2 ? UiRole.WarnText : UiRole.None);
+                card.Say(TechText.T(VentureCatalogue.MoodKey(p.Mood)), p.Mood >= 2 ? UiRole.WarnText : UiRole.None);
                 if (c.Acc.Taken > 0)
                 {
                     card.Say(TechText.T("reallife_vc_cap_taken", "taken", Cents(p.Taken)), UiRole.WarnText);
@@ -70,7 +70,7 @@ namespace RealLifeOverhaul.Ui
                     ? TechText.Fill("reallife_vc_acct_loan", "owed", Cents(p.LoanOwed), "days", MoneyCatalogue.LoanDays.ToString(), "day", c.Acc.LoanDay.ToString())
                     : c.Acc.LoanUsed ? TechText.T("reallife_vc_acct_loan_used")
                     : TechText.Fill("reallife_vc_acct_loan_free", "max", Cents(_d.Level(StartupMoney.LoanMax(c))), "days", MoneyCatalogue.LoanDays.ToString()));
-                books.Say(TechText.T("reallife_vc_mood_" + p.Mood), p.Mood >= 2 ? UiRole.WarnText : UiRole.None);
+                books.Say(TechText.T(VentureCatalogue.MoodKey(p.Mood)), p.Mood >= 2 ? UiRole.WarnText : UiRole.None);
                 if (TechBridges.SkillNow(TalentCatalogue.Law) >= 40)
                 {
                     int diligence = StartupMoney.Diligence(c);
@@ -89,6 +89,9 @@ namespace RealLifeOverhaul.Ui
                     out1.Button(TechText.T("reallife_vc_button_answer_repay"), UiButtonKind.Primary, UiAction.Count, Do(() => _d.AnswerBoard(place, 0)));
                     out1.Button(TechText.T("reallife_vc_button_answer_explain"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.AnswerBoard(place, 1)));
                     out1.Button(TechText.T("reallife_vc_button_answer_stonewall"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.AnswerBoard(place, 2)));
+                    // The board's answer comes first: until it is given, the page offers nothing else to press.
+                    _m.Right = new[] { out1.Build() };
+                    return;
                 }
                 if (c.Acc.Taken > 0)
                 {
@@ -124,7 +127,7 @@ namespace RealLifeOverhaul.Ui
                     TechRun Tier(int i) => Go(v => _tierStep = i);
                     out1.Step(TechText.T("reallife_ui_tech_books_from"), TalentGame.NameOf(work[_siblingStep]), null, n > 1, n > 1, Pick((_siblingStep + n - 1) % n), Pick((_siblingStep + 1) % n));
                     long price = fair * (_tierStep == 0 ? 1000 : _tierStep == 1 ? 1500 : 2000) / 1000;
-                    out1.Step(TechText.T("reallife_ui_tech_books_price"), TechText.T("reallife_vc_related_tier_" + _tierStep, "price", Cents(price)),
+                    out1.Step(TechText.T("reallife_ui_tech_books_price"), TechText.T(VentureCatalogue.TierKeys[_tierStep], "price", Cents(price)),
                         null, true, true, Tier((_tierStep + 2) % 3), Tier((_tierStep + 1) % 3));
                     int business = _siblingStep, tier = _tierStep;
                     out1.Button(TechText.T("reallife_vc_button_related"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.PayRelated(place, business, tier)));

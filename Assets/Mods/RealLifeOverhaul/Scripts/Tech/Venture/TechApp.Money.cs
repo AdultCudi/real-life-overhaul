@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Tech
             }
             BoardPack p = _director.PackOf(c, firm, day);
             box.Line(AccountLine(p));
-            box.Line(TechText.T("reallife_vc_mood_" + p.Mood), p.Mood >= 2 ? CellTone.Yellow : CellTone.Plain);
+            box.Line(TechText.T(VentureCatalogue.MoodKey(p.Mood)), p.Mood >= 2 ? CellTone.Yellow : CellTone.Plain);
             if (c.Acc.Taken > 0)
             {
                 box.Line(TechText.T("reallife_vc_cap_taken", "taken", TechText.Cents(p.Taken)), CellTone.Yellow);
@@ -66,7 +66,7 @@ namespace RealLifeOverhaul.Tech
                 ? TechText.Fill("reallife_vc_acct_loan", "owed", TechText.Cents(p.LoanOwed), "days", MoneyCatalogue.LoanDays.ToString(), "day", c.Acc.LoanDay.ToString())
                 : c.Acc.LoanUsed ? TechText.T("reallife_vc_acct_loan_used")
                 : TechText.Fill("reallife_vc_acct_loan_free", "max", TechText.Cents(_director.Level(StartupMoney.LoanMax(c))), "days", MoneyCatalogue.LoanDays.ToString()));
-            box.Line(TechText.T("reallife_vc_mood_" + p.Mood), p.Mood >= 2 ? CellTone.Yellow : CellTone.Plain);
+            box.Line(TechText.T(VentureCatalogue.MoodKey(p.Mood)), p.Mood >= 2 ? CellTone.Yellow : CellTone.Plain);
             if (TechBridges.SkillNow(TalentCatalogue.Law) >= 40)
             {
                 int diligence = StartupMoney.Diligence(c);
@@ -123,7 +123,7 @@ namespace RealLifeOverhaul.Tech
             if (box.HasSelector)
             {
                 box.Selector(_siblings.Count, _siblingStep, i => TechText.T("reallife_vc_related_pick", "name", TalentGame.NameOf(_siblings[i])), i => Set(() => _siblingStep = i));
-                box.Selector(3, _tierStep, i => TechText.T("reallife_vc_related_tier_" + i, "price", TechText.Cents(fair * (i == 0 ? 1000 : i == 1 ? 1500 : 2000) / 1000)),
+                box.Selector(3, _tierStep, i => TechText.T(VentureCatalogue.TierKeys[i], "price", TechText.Cents(fair * (i == 0 ? 1000 : i == 1 ? 1500 : 2000) / 1000)),
                 i => Set(() => _tierStep = i));
             }
             int business = _siblingStep, tier = _tierStep;

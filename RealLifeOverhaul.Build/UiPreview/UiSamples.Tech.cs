@@ -8,7 +8,7 @@ internal static partial class UiSamples
 {
     public static readonly string[] TechStates =
     {
-        "firms", "firms_empty", "studio", "game", "game_plan", "datacentre", "software", "products", "product", "contracts", "tender", "infra", "startups", "startup", "funding", "cap", "cap_account", "books",
+        "firms", "firms_empty", "studio", "game", "game_plan", "datacentre", "software", "products", "product", "contracts", "tender", "infra", "startups", "startup", "funding", "cap", "cap_account", "books", "books_free",
         "team", "rivals", "concept", "off"
     };
 
@@ -115,7 +115,8 @@ internal static partial class UiSamples
             case "funding": TechFunding(t, m, runs); break;
             case "cap": TechCap(t, m, runs); break;
             case "cap_account": TechCapAccount(t, m, runs); break;
-            case "books": TechBooks(t, m, runs); break;
+            case "books": TechBooks(t, m, runs, true); break;
+            case "books_free": TechBooks(t, m, runs, false); break;
             case "team": TechTeam(t, m, runs); break;
             case "rivals": TechRivals(t, m, runs); break;
             case "concept": TechConcept(t, m, runs); break;
@@ -755,7 +756,7 @@ internal static partial class UiSamples
     }
 
     // The firm account's own page: the books on the left, the lawful ways out and the board's question on the right.
-    private static void TechBooks(UiWords t, TechModel m, TechRunList runs)
+    private static void TechBooks(UiWords t, TechModel m, TechRunList runs, bool asked)
     {
         m.Shape = TechShape.Sheet;
         m.Nav = TechTabNav(t, out string[] keys);
@@ -771,14 +772,19 @@ internal static partial class UiSamples
             .Say(WF(t, "reallife_vc_acct_related", "Deals with your other businesses: 2, $8,000 paid, of which $0 over the fair price and counted as taken.", "count", "2", "paid", "$8,000", "over", "$0"))
             .Say(WF(t, "reallife_vc_acct_salary", "Salary this month $9,000 of the $14,000 the board allows.", "drawn", "$9,000", "band", "$14,000"))
             .Say(WF(t, "reallife_vc_acct_loan_free", "A founder's loan of up to $100,000 can be taken once, repaid within 180 days with interest.", "max", "$100,000", "days", "180"))
-            .Say(W(t, "reallife_vc_mood_2", "The board is asking about the books."), UiRole.WarnText);
+            .Say(asked ? W(t, "reallife_vc_mood_2", "The board is asking about the books.") : W(t, "reallife_vc_mood_1", "The board is a little uneasy about the books."), asked ? UiRole.WarnText : UiRole.None);
         m.Left = new[] { books.Build() };
         var out1 = new TechCard(runs.Runs, TW(t, "books_out", "Taking money out"));
-        out1.Say(W(t, "reallife_vc_ask_line", "The board has asked about the books. Answer here or at your desk."), UiRole.WarnText)
-            .Button(W(t, "reallife_vc_button_answer_repay", "Repay"), UiButtonKind.Primary, UiAction.Count, () => true)
-            .Button(W(t, "reallife_vc_button_answer_explain", "Explain"), UiButtonKind.Secondary, UiAction.Count, () => true)
-            .Button(W(t, "reallife_vc_button_answer_stonewall", "Say nothing"), UiButtonKind.Secondary, UiAction.Count, () => true)
-            .Button(W(t, "reallife_vc_button_repay", "Put cash back"), UiButtonKind.Primary, UiAction.Count, () => true)
+        if (asked)
+        {
+            out1.Say(W(t, "reallife_vc_ask_line", "The board has asked about the books. Answer here or at your desk."), UiRole.WarnText)
+                .Button(W(t, "reallife_vc_button_answer_repay", "Repay"), UiButtonKind.Primary, UiAction.Count, () => true)
+                .Button(W(t, "reallife_vc_button_answer_explain", "Explain"), UiButtonKind.Secondary, UiAction.Count, () => true)
+                .Button(W(t, "reallife_vc_button_answer_stonewall", "Say nothing"), UiButtonKind.Secondary, UiAction.Count, () => true);
+            m.Right = new[] { out1.Build() };
+            return;
+        }
+        out1.Button(W(t, "reallife_vc_button_repay", "Put cash back"), UiButtonKind.Primary, UiAction.Count, () => true)
             .Button(W(t, "reallife_vc_button_salary", "Draw salary"), UiButtonKind.Secondary, UiAction.Count, () => true)
             .Button(W(t, "reallife_vc_button_loan", "Take a founder's loan"), UiButtonKind.Secondary, UiAction.Count, () => true)
             .Button(W(t, "reallife_vc_button_dividend", "Pay a dividend"), UiButtonKind.Secondary, UiAction.Count, () => true)
