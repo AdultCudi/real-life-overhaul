@@ -850,7 +850,7 @@ internal static partial class UiSamples
         m.ShapesTitle = t("reallife_ui_bizman_logo_shapes", "Shapes");
         m.ShapesNone = t("reallife_ui_bizman_logo_shapes_none", "The shapes are still loading.");
         m.ShapesOwn = t("reallife_ui_bizman_logo_own", "Add your own shapes");
-        m.LogoNote = t("reallife_ui_bizman_logo_note", "The shape and background show as they will on your sign.");
+        m.LogoNote = t("reallife_ui_bizman_logo_note", "The shape and background show as they will on your sign. Your name appears in the font and colour you pick once you save the logo.");
         m.ShapeCount = 40;
         m.ShapePics = new string[40];
         for (int i = 0; i < 40; i++)

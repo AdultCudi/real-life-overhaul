@@ -90,7 +90,7 @@ internal static partial class UiSamples
         {
             Now = now, Has = history, High = high, Low = low, HighDay = 281, LowDay = 262, Change = now - (long)line[0], FromDay = 259, Points = days
         };
-        return UiNetWorthTip.Model(t, s, 288, line, Money, ShortMoney);
+        return UiNetWorthTip.Model(t, s, 288, line, ShortMoney);
     }
 
     private static string Money(long amount) => (amount < 0 ? "-" : string.Empty) + "$" + Math.Abs(amount).ToString("N0");

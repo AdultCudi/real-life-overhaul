@@ -388,6 +388,8 @@ internal static partial class Program
         Check(chart != null && chart.Points.Length == 30 && chart.From == "Day 259" && chart.To == "Day 288" && chart.High == "$1.93B" && chart.Low == "$1.71B", "net worth card: a line of the thirty days with its highest and lowest at the right and its first and last day under it");
         Check(rows != null && rows.Lines.Count == 4 && rows.Lines[0].Left == "Now" && rows.Lines[1].Left == "Highest" && rows.Lines[1].Right.EndsWith("on day 281") && rows.Lines[2].Right.EndsWith("on day 262")
               && rows.Lines[3].Left == "Change" && rows.Lines[3].Right.StartsWith("+") && rows.Lines[3].Ink == UiRole.OkText, "net worth card: Now, Highest and Lowest with their days and the change, a rise in green");
+        Check(rows != null && rows.Lines[0].Right == "$1.9B" && rows.Lines[1].Right == "$1.93B on day 281" && rows.Lines[2].Right == "$1.71B on day 262" && rows.Lines[3].Right.StartsWith("+$"),
+            "net worth card: Now, Highest, Lowest and Change are short amounts, so a big fortune's rows fit the card");
         UiTooltipModel early = UiSamples.Tooltip(en, "worth_early");
         bool any = false, said = false;
         for (int i = 0; i < early.Blocks.Count; i++)
@@ -397,7 +399,7 @@ internal static partial class Program
         }
         Check(!any && said, "net worth card: a save with fewer than two days says its line starts later and draws none, not a made up one");
         var loss = new WorthSummary { Now = 1000, Has = true, High = 2000, Low = 900, HighDay = 3, LowDay = 8, Change = -400, FromDay = 1, Points = 8 };
-        UiTooltipModel down = UiNetWorthTip.Model(en, loss, 9, new float[] { 1400, 2000, 900, 1000 }, a => "$" + a, a => "$" + a);
+        UiTooltipModel down = UiNetWorthTip.Model(en, loss, 9, new float[] { 1400, 2000, 900, 1000 }, a => "$" + a);
         UiTipBlock dr = down.Blocks[down.Blocks.Count - 1];
         Check(dr.Lines[3].Right == "-$400" && dr.Lines[3].Ink == UiRole.DangerText, "net worth card: a fall is written with its sign and in red");
     }

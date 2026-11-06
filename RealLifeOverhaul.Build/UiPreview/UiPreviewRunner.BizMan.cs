@@ -27,6 +27,22 @@ public static partial class UiPreviewRunner
             BizManInput(screen, state);
             screens.Add(screen);
         }
+        // The logo editor in the mod's own words of other languages: its note is two sentences and must show whole in the longest.
+        foreach (string lang in new[] { "pt", "zh-cn", "de", "ru" })
+        {
+            UiWords words = ModWords(lang);
+            foreach (string state in new[] { "store_logo", "store_logo_colours" })
+            {
+                var shot = new Screen
+                {
+                    Name = "bizman_" + state + "_" + lang, AppName = "BizMan", Icon = UiIcon.Building, Backdrop = "13.jpg", Single = true,
+                    Bar = () => UiSamples.ShellBar(UiSamples.RowBizMan, false),
+                    Lay = (s, f, d, k) => BizManPages.Lay(s, UiSamples.BizMan(words, state), f, d, k)
+                };
+                BizManInput(shot, state);
+                screens.Add(shot);
+            }
+        }
     }
 
     private static string BizManBackdrop(string state, int i)
