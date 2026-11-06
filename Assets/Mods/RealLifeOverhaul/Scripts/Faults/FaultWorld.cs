@@ -67,6 +67,21 @@ namespace RealLifeOverhaul.Faults
             _props = new CivicProps(parent);
         }
 
+        /// <summary>The original and live limits of lanes held by potholes. Reads the kept entries only.</summary>
+        internal void AppendSlowedLanes(List<object> lanes, List<int> originalLimits, List<int> currentLimits)
+        {
+            foreach (KeyValuePair<int, Shown> pair in _shown)
+            {
+                Shown shown = pair.Value;
+                if (shown.Lane != null)
+                {
+                    lanes.Add(shown.Lane);
+                    originalLimits.Add(shown.LaneLimit);
+                    currentLimits.Add(shown.Lane.maxSpeed);
+                }
+            }
+        }
+
         /// <summary>The world brought in line with the faults: the mended put back, the new switched and, near the player, stood.</summary>
         public void Sync(FaultFile file, bool hasPlayer, Vector3 player)
         {
