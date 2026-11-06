@@ -134,6 +134,8 @@ internal static partial class Program
         var callers = makers.ToDictionary(p => p.Key, p => new List<string>());
         var listNames = new List<KeyValuePair<string, string>>();   // a list window's literal name, where it is made
         var nameAt = new Regex(@"(?:TravelList\.Make|new\s+(?:GameUi\.)?(?:DeskList|SceneDesk))\s*\(\s*""([^""]+)""");
+        var sceneNames = new List<string>();   // the scene windows: each names itself to the scene kit as its desk is made, and the picker leaves it there
+        var sceneAt = new Regex(@"new\s+SceneDesk\s*\(\s*""([^""]+)""");
         var overlays = new List<string>();
         var bypass = new List<string>();
         var insides = new Regex(@"\b(headerGameObject|buttonsGameObject|firstLineLabel|secondLineLeftLabel|secondLineRightLabel)\b");
@@ -152,6 +154,10 @@ internal static partial class Program
                     {
                         callers[maker.Key].Add(rel);
                     }
+                }
+                foreach (Match m in sceneAt.Matches(code))
+                {
+                    sceneNames.Add(m.Groups[1].Value);
                 }
                 foreach (Match m in nameAt.Matches(code))
                 {
@@ -207,8 +213,8 @@ internal static partial class Program
         string kits = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "World", "WorldKits.cs"));
         string picker = File.ReadAllText(System.IO.Path.Combine(scripts, "Ui", "World", "WorldPicker.cs"));
         Check(kits.Contains("TravelList.Face = WorldPicker.Instance"), "world callers: the kit's picker is the lists' face while its switch is on");
-        Match scenes = Regex.Match(picker, @"Scenes\s*=\s*\{([^}]*)\}");
-        var theirs = scenes.Success ? Regex.Matches(scenes.Groups[1].Value, @"""([^""]+)""").Cast<Match>().Select(m => m.Groups[1].Value).ToList() : new List<string>();
+        var theirs = sceneNames.Distinct().ToList();
+        Check(picker.Contains("SceneKit.Owns(windowName)") && !picker.Contains("\"RealLifeOverhaul "), "world callers: the picker leaves a window to the scene kit by the name its SceneDesk gave it, never by a list of its own");
         var named = listNames.Select(p => p.Key).Distinct().ToList();
         var stale = theirs.Where(n => !named.Contains(n)).ToList();
         Check(theirs.Count >= 1 && stale.Count == 0, "world callers: the conversations' scenes the picker leaves are lists the mod makes ("

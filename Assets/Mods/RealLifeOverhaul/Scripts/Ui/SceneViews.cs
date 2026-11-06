@@ -107,6 +107,12 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Lines an answer's meaning takes under its name, at the most.</summary>
         public const int MeaningMost = 4;
 
+        /// <summary>Lines the words a player says by an answer (a pitch's) take under its name: said whole, not cut short by an ellipsis.</summary>
+        public const int SaidMost = 8;
+
+        /// <summary>The room a card keeps clear above and below it: the hint bar over the status bar stays seen under it.</summary>
+        public const float Clear = UiTokens.S12;
+
         /// <summary>
         /// What the lines under the headline say, and the progress written small under them; null where the owner told them
         /// as the moment's caption (its kicker and those present), so they are not said again.
@@ -137,11 +143,11 @@ namespace RealLifeOverhaul.Ui
         {
             string said = SaidOf(page, out string _);
             int lines = Lines(Body(page)) + (Kicks(page, said) ? 0 : Lines(said));
-            return DialogRules.Look(page.Look == SceneLook.Talk || page.Statement != null, lines);   // a statement reads in the conversation's bubble
+            return DialogRules.Look(page.Statement != null, lines);   // a statement reads in the conversation's bubble; questions stand on the card too
         }
 
         /// <summary>The card stands whole over the status bar, a gutter above and below it; one that cannot is a conversation.</summary>
-        public static bool CardFits(UiDecisionModel card, float bandY, IUiKeys keys) => UiDecision.Height(card, CardWords, keys) <= bandY - UiTokens.S8 * 2f;
+        public static bool CardFits(UiDecisionModel card, float bandY, IUiKeys keys) => UiDecision.Height(card, CardWords, keys) <= bandY - Clear * 2f;
 
         /// <summary>
         /// The page laid in its look: the decision card for a moment that stands whole on the screen, else the conversation
@@ -171,14 +177,14 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The page as the decision card.</summary>
         public static UiDecisionModel Decision(ScenePage page, SceneWords words)
         {
-            string said = SaidOf(page, out string _);
+            string said = SaidOf(page, out string progress);
             string speaker = Speaker(page);
             bool kicks = Kicks(page, said);
             string[] faces = Faces(page, speaker, out string[] roles, out UiRole[] rings);
             int speaking = speaker != null ? System.Array.IndexOf(faces, speaker) : -1;
             var m = new UiDecisionModel
             {
-                Kicker = Clean(page.Kicker) ?? (kicks ? said : null),
+                Kicker = Clean(page.Kicker) ?? (kicks ? said : page.Look == SceneLook.Talk ? Clean(progress) : null),
                 Title = Clean(page.Title),
                 Emblem = page.Emblem,
                 EmblemTint = UiRole.Accent,
@@ -194,7 +200,7 @@ namespace RealLifeOverhaul.Ui
                     ? new UiActionModel[0]
                     : new[] { new UiActionModel { Label = words.Back, Kind = UiButtonKind.Secondary, Key = UiAction.Back, Command = UiDecision.ButtonCommand } },
             };
-            m.Selected = DialogRules.Keys(m.Choices, -1, out int _);   // F on the answer it leads with, chosen; P on the next
+            m.Selected = Keyed(page, out int _);   // F takes the answer it leads with, chosen; no cap says so, each row shows its number alone
             m.Prompts = Prompts(page, words);
             m.PromptCount = m.Prompts.Length;
             return m;
@@ -253,7 +259,7 @@ namespace RealLifeOverhaul.Ui
                 Choices = Choices(page, TalkLine(frameWidth)),
                 Offset = -1f
             };
-            m.Chosen = DialogRules.Keys(m.Choices, -1, out int _);
+            m.Chosen = Keyed(page, out int _);
             m.ChoicesLabel = m.Choices.Length > 0 ? Clean(words.Answer) : null;
             m.Typing = m.Choices.Length == 0;
             m.Prompts = Prompts(page, words);
@@ -312,7 +318,7 @@ namespace RealLifeOverhaul.Ui
         /// What an answer means, in lines that each fit the room: a sentence to a line, and a sentence too long for one
         /// broken between words (between characters in a script without spaces); <see cref="MeaningMost"/> lines at most.
         /// </summary>
-        public static UiConsequence[] Meaning(string detail, float width)
+        public static UiConsequence[] Meaning(string detail, float width, int most = MeaningMost)
         {
             string words = Clean(detail);
             if (words == null)
@@ -331,7 +337,7 @@ namespace RealLifeOverhaul.Ui
                 int end = i < words.Length ? i + 1 : i;
                 string sentence = words.Substring(start, end - start).Trim();
                 start = end;
-                string left = lines.Count < MeaningMost ? Fit(sentence, width, lines) : sentence;
+                string left = lines.Count < most ? Fit(sentence, width, lines, most) : sentence;
                 if (left.Length > 0)
                 {
                     rest = (left + " " + words.Substring(start)).Trim();
@@ -361,9 +367,9 @@ namespace RealLifeOverhaul.Ui
 
         // A sentence onto lines that fit: whole if it fits, else broken where a space allows, else between characters.
         // Returns what the lines left could not take, empty when it all went on.
-        private static string Fit(string sentence, float width, List<UiConsequence> lines)
+        private static string Fit(string sentence, float width, List<UiConsequence> lines, int most)
         {
-            while (sentence.Length > 0 && lines.Count < MeaningMost)
+            while (sentence.Length > 0 && lines.Count < most)
             {
                 if (UiTextRules.Fits(sentence, UiStyle.Small, width))
                 {
@@ -506,7 +512,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     Key = i < 9 ? (UiAction)((int)UiAction.Pick1 + i) : UiAction.Count,
                     Name = name,
-                    Lines = With(Meaning(detail, lineWidth), e.Lines),
+                    Lines = With(Meaning(detail, lineWidth, said != null ? SaidMost : MeaningMost), e.Lines),
                     Note = Clean(e.Note),
                     Disabled = !e.Enabled
                 };
@@ -553,7 +559,7 @@ namespace RealLifeOverhaul.Ui
 
         // The line under the headline as the card's kicker: the owner told none, and it is one short line.
         private static bool Kicks(ScenePage page, string said) =>
-            Clean(page.Kicker) == null && said != null && said.Length <= KickerMost && said.IndexOf('\n') < 0;
+            page.Look != SceneLook.Talk && Clean(page.Kicker) == null && said != null && said.Length <= KickerMost && said.IndexOf('\n') < 0;
 
         private static string Join(string a, string b) => a == null ? b : b == null ? a : a + "\n\n" + b;
 

@@ -62,6 +62,14 @@ namespace RealLifeOverhaul.Ui
         /// </summary>
         public static bool ShowsAtBind(bool stands, bool objectOn) => stands && objectOn;
 
+        /// <summary>
+        /// True when the kit shows the moment it binds because the screen's object was not there at the host's earlier looks: the game builds some
+        /// screens on their first use, so the first look that finds one finds it already opened by the player, and the watcher on it can only tell
+        /// of the openings after. Without this the first opening of such a screen is the game's own window and only the second is the kit's. An
+        /// overlay over the world is excluded: it stands on while nothing is shown.
+        /// </summary>
+        public static bool ShowsLate(bool builtLate, bool objectOn, bool overlay) => builtLate && objectOn && !overlay;
+
         /// <summary>The order a kit canvas takes over a screen drawn at this order: just above it, below the game's boxes, notices and other mods.</summary>
         public static int Above(int covered) => covered + 1;
 

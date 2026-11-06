@@ -340,13 +340,13 @@ internal static partial class Program
         {
             var thread = new List<SceneSaid>();
             SceneLook look = SceneViews.Lay(s, UiSamples.ScenePageOf(en, state, thread), thread, words, -1f, frame, true, UiDefaultKeys.Keyboard);
-            bool talk = state == "court_charges" || state == "legal_file" || state == "interview_round" || state == "pitch_question" || state == "venture_pitch";
+            bool talk = state == "court_charges" || state == "legal_file";
             if (look != (talk ? SceneLook.Talk : SceneLook.Decision))
             {
                 wrong = state + " laid as " + look;
             }
         }
-        Check(wrong == "none", "scenes: a moment is the decision card, a round of questions and a page longer than the card (a charge sheet, the Legal file) the conversation (" + wrong + ")");
+        Check(wrong == "none", "scenes: a moment and a round of questions are the decision card, a page longer than the card (a charge sheet, the Legal file) the conversation (" + wrong + ")");
 
         var none = new List<SceneSaid>();
         UiDecisionModel court = SceneViews.Decision(UiSamples.ScenePageOf(en, "court_plea", none), words);

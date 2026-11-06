@@ -184,6 +184,7 @@ namespace RealLifeOverhaul.Ui
                 _state = NotBuilt;
                 return;   // the game builds it a little after the city: asked again next second
             }
+            bool builtLate = _misses > 0 || _state == NotBuilt;   // the game made it after the host's first look: found already opened
             string wrong = _screen.Check(found);
             // The game keeps its screens switched off until opened, so the search for the canvases takes switched off ones.
             Canvas[] above = found.GetComponentsInParent<Canvas>(true);
@@ -262,7 +263,8 @@ namespace RealLifeOverhaul.Ui
             _state = Drawn;
             _watch = found.gameObject.AddComponent<UiGameWatch>();   // on a screen the game opens later its OnEnable shows the kit at once
             _watch.Host = this;
-            if (UiHostRules.ShowsAtBind(_screen is IUiGameStands, found.gameObject.activeInHierarchy))
+            if (UiHostRules.ShowsAtBind(_screen is IUiGameStands, found.gameObject.activeInHierarchy)
+                || UiHostRules.ShowsLate(builtLate, found.gameObject.activeInHierarchy, _screen.Kind == UiGameKind.Overlay))
             {
                 Opened();   // an object that is on already (the toast stack) never switches on again: its OnEnable ran before the host was set
             }

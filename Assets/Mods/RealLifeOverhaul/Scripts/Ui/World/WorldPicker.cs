@@ -19,13 +19,6 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public sealed class WorldPicker : ITravelFace
     {
-        /// <summary>The scene windows the conversations draw (Ui/Dialog), by their objects' names: never taken here.</summary>
-        private static readonly string[] Scenes =
-        {
-            "RealLifeOverhaul Civic Office", "RealLifeOverhaul Ventures", "RealLifeOverhaul Standing", "RealLifeOverhaul Justice", "RealLifeOverhaul Interview",
-            "RealLifeOverhaul Venture",
-        };
-
         public static readonly WorldPicker Instance = new WorldPicker();
 
         private readonly WorldPickerScreen _screen = new WorldPickerScreen();
@@ -47,8 +40,8 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The screen the picker runs, for the tests.</summary>
         internal static WorldPickerScreen Screen => Instance._screen;
 
-        /// <summary>True for a scene window the conversations draw, which the picker leaves to them.</summary>
-        public static bool Theirs(string windowName) => windowName != null && Array.IndexOf(Scenes, windowName) >= 0;
+        /// <summary>True for a scene window the conversations draw (every SceneDesk names its own), which the picker leaves to them.</summary>
+        public static bool Theirs(string windowName) => SceneKit.Owns(windowName);
 
         public bool Take(TravelList list)
         {

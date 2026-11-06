@@ -16,7 +16,14 @@ namespace RealLifeOverhaul.Ui
     {
         private static readonly Dictionary<string, SceneHost> ByName = new Dictionary<string, SceneHost>(8);
         private static readonly List<SceneHost> Hosts = new List<SceneHost>(8);
+        private static readonly HashSet<string> Named = new HashSet<string>(8);
         private static bool _on = true;
+
+        /// <summary>A scene window's name, told as its desk is made: no other screen of the kit may take that window.</summary>
+        internal static void Name(string name) => Named.Add(name);
+
+        /// <summary>True for a window that is a scene's.</summary>
+        internal static bool Owns(string name) => name != null && Named.Contains(name);
 
         /// <summary>Where each scene's window stands, for the interface's line at load.</summary>
         public static string State
@@ -136,7 +143,9 @@ namespace RealLifeOverhaul.Ui
         }
 
         // A scene's window as the host needs it: the mod's own copy of the game's list window on the HUD, the whole window the leaf the kit hides.
-        private sealed class SceneHost : IUiGameScreen
+        // The window is switched on by the owner before the kit binds to it (the first scene of a session makes the host in that same
+        // call), so the host's watcher never sees it open: standing says the kit shows the moment it binds over a window already on.
+        private sealed class SceneHost : IUiGameScreen, IUiGameStands
         {
             private const string Answers = "Scroll View";
 
