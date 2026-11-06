@@ -49,37 +49,50 @@ namespace RealLifeOverhaul
 
         private static CityApiStatus Status()
         {
-            if (GoingPublic.InSession)
+            try
             {
-                return CityApiStatus.Shared;
+                if (GoingPublic.InSession)
+                {
+                    return CityApiStatus.Shared;
+                }
+                if (!ModState.Loaded || SaveGameManager.Current == null)
+                {
+                    return CityApiStatus.NotYet;
+                }
+                return LoadScene.isLoading ? CityApiStatus.Refreshing : CityApiStatus.Ready;
             }
-            if (!ModState.Loaded || SaveGameManager.Current == null)
+            catch (Exception e)
             {
-                return CityApiStatus.NotYet;
+                Wiring.Fault("ModApiLinks.Status", e);
+                return CityApiStatus.Failed;
             }
-            return LoadScene.isLoading ? CityApiStatus.Refreshing : CityApiStatus.Ready;
         }
 
         // Immutable public objects are prepared on the population's event, never during a public read.
         private static void Prepare(int seed, IReadOnlyList<FlareCitizen> citizens)
         {
-            if (_failed || ModApiRules.CheckCitizens(Citizens, _citySeed, seed, citizens.Count, ReadIdentity) != CityApiStatus.Refreshing)
+            if (_failed)
             {
                 return;
             }
-            Citizens.Clear();
-            _citySeed = 0;
             try
             {
+                if (ModApiRules.CheckCitizens(Citizens, _citySeed, seed, citizens.Count, ReadIdentity) != CityApiStatus.Refreshing)
+                {
+                    return;
+                }
+                Citizens.Clear();
+                _citySeed = 0;
                 for (int i = 0; i < citizens.Count; i++)
                 {
-                    Citizens.Add(new CityApiCitizen(Identity(seed, citizens[i])));
+                    Citizens.Add(new CityApiCitizen(IdentityOf(seed, citizens[i])));
                 }
                 _citySeed = seed;
             }
             catch (Exception e)
             {
                 Citizens.Clear();
+                _citySeed = 0;
                 _failed = true;
                 Wiring.Fault("ModApiLinks.Prepare", e);
             }
@@ -87,10 +100,18 @@ namespace RealLifeOverhaul
 
         private static ModApiIdentity Identity(int seed, int index)
         {
-            return Identity(seed, FlareDirector.Instance.Citizens[index]);
+            try
+            {
+                return IdentityOf(seed, FlareDirector.Instance.Citizens[index]);
+            }
+            catch (Exception e)
+            {
+                Wiring.Fault("ModApiLinks.Identity", e);
+                return default(ModApiIdentity);   // no names: the gate reads it as Refreshing
+            }
         }
 
-        private static ModApiIdentity Identity(int seed, FlareCitizen citizen)
+        private static ModApiIdentity IdentityOf(int seed, FlareCitizen citizen)
         {
             FlareAvatarPlan avatar = FlareAvatarRules.Citizen(seed, citizen.Index);
             return new ModApiIdentity
@@ -103,33 +124,43 @@ namespace RealLifeOverhaul
 
         private static CityApiStatus Population(List<CityApiCitizen> into, out int citySeed)
         {
-            citySeed = 0;
-            if (!Settings.SocialMedia)
+            try
             {
-                return CityApiStatus.Off;
+                citySeed = 0;
+                if (!Settings.SocialMedia)
+                {
+                    return CityApiStatus.Off;
+                }
+                FlareDirector flare = FlareDirector.Instance;
+                if (flare == null)
+                {
+                    return CityApiStatus.NotYet;
+                }
+                if (_failed || flare.Faulted || FeatureGuards.FeatureOff("flare"))
+                {
+                    return CityApiStatus.Failed;
+                }
+                if (!flare.Running)
+                {
+                    return CityApiStatus.Off;
+                }
+                if (flare.File == null)
+                {
+                    return CityApiStatus.NotYet;
+                }
+                int seed = FlareLiveRules.CitySeed(flare.File);
+                CityApiStatus status = ModApiRules.ReadCitizens(Citizens, _citySeed, seed,
+                    flare.Citizens.Count, ReadIdentity, into);
+                citySeed = status == CityApiStatus.Ready ? seed : 0;
+                return status;
             }
-            FlareDirector flare = FlareDirector.Instance;
-            if (flare == null)
+            catch (Exception e)
             {
-                return CityApiStatus.NotYet;
-            }
-            if (_failed || flare.Faulted || FeatureGuards.FeatureOff("flare"))
-            {
+                Wiring.Fault("ModApiLinks.Population", e);
+                into.Clear();
+                citySeed = 0;
                 return CityApiStatus.Failed;
             }
-            if (!flare.Running)
-            {
-                return CityApiStatus.Off;
-            }
-            if (flare.File == null)
-            {
-                return CityApiStatus.NotYet;
-            }
-            int seed = FlareLiveRules.CitySeed(flare.File);
-            CityApiStatus status = ModApiRules.ReadCitizens(Citizens, _citySeed, seed,
-                flare.Citizens.Count, ReadIdentity, into);
-            citySeed = status == CityApiStatus.Ready ? seed : 0;
-            return status;
         }
 
         // A Flare person said yes online and is out with the player: their contact carries the Flare name and face
@@ -137,44 +168,74 @@ namespace RealLifeOverhaul
         // when Flare stops, so somebody still out is still found. Nobody out costs nothing.
         private static CityApiStatus Reservations(List<int> indexes)
         {
-            SocialCast cast = SocialDirector.Instance?.Cast;
-            if (cast == null)
+            try
             {
+                SocialCast cast = SocialDirector.Instance?.Cast;
+                if (cast == null)
+                {
+                    return CityApiStatus.Ready;
+                }
+                for (int slot = 0; slot < SocialCast.Size; slot++)
+                {
+                    int person = cast.OutPerson(slot);
+                    if (person < 0)
+                    {
+                        continue;
+                    }
+                    SocialPerson who = person < SocialState.People.Length ? SocialState.People[person] : null;
+                    FlareDirector flare = FlareDirector.Instance;
+                    if (who == null || Citizens.Count == 0
+                        || (flare != null && flare.File != null && FlareLiveRules.CitySeed(flare.File) != _citySeed))
+                    {
+                        return CityApiStatus.Refreshing;
+                    }
+                    ModApiRules.Reserve(Citizens, who.Name, who.Seed, indexes);
+                }
                 return CityApiStatus.Ready;
             }
-            for (int slot = 0; slot < SocialCast.Size; slot++)
+            catch (Exception e)
             {
-                int person = cast.OutPerson(slot);
-                if (person < 0)
-                {
-                    continue;
-                }
-                SocialPerson who = person < SocialState.People.Length ? SocialState.People[person] : null;
-                FlareDirector flare = FlareDirector.Instance;
-                if (who == null || Citizens.Count == 0
-                    || (flare != null && flare.File != null && FlareLiveRules.CitySeed(flare.File) != _citySeed))
-                {
-                    return CityApiStatus.Refreshing;
-                }
-                ModApiRules.Reserve(Citizens, who.Name, who.Seed, indexes);
+                Wiring.Fault("ModApiLinks.Reservations", e);
+                indexes.Clear();
+                return CityApiStatus.Failed;
             }
-            return CityApiStatus.Ready;
         }
 
         // Whatever RLO holds is listed, whether or not its option is still on: a body or a lane is given back by its own
         // feature, not by this read.
         private static CityApiStatus Bodies(List<object> pedestrians, List<object> characters)
         {
-            SocialDirector.Instance?.Cast?.AppendBodies(characters);
-            PedestrianIncidents.Instance?.AppendBodies(pedestrians);
-            RagdollSystem.Instance?.AppendBodies(characters);
-            return CityApiStatus.Ready;
+            try
+            {
+                SocialDirector.Instance?.Cast?.AppendBodies(characters);
+                PedestrianIncidents.Instance?.AppendBodies(pedestrians);
+                RagdollSystem.Instance?.AppendBodies(characters);
+                return CityApiStatus.Ready;
+            }
+            catch (Exception e)
+            {
+                Wiring.Fault("ModApiLinks.Bodies", e);
+                pedestrians.Clear();
+                characters.Clear();
+                return CityApiStatus.Failed;
+            }
         }
 
         private static CityApiStatus Lanes(List<object> lanes, List<int> originalLimits, List<int> currentLimits)
         {
-            FaultDirector.Instance?.AppendSlowedLanes(lanes, originalLimits, currentLimits);
-            return CityApiStatus.Ready;
+            try
+            {
+                FaultDirector.Instance?.AppendSlowedLanes(lanes, originalLimits, currentLimits);
+                return CityApiStatus.Ready;
+            }
+            catch (Exception e)
+            {
+                Wiring.Fault("ModApiLinks.Lanes", e);
+                lanes.Clear();
+                originalLimits.Clear();
+                currentLimits.Clear();
+                return CityApiStatus.Failed;
+            }
         }
     }
 }

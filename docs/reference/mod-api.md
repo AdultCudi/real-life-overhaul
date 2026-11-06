@@ -15,7 +15,7 @@ CityApiStatus ReadReservedBodies(List<object> pedestrians, List<object> characte
 CityApiStatus ReadSlowedLanes(List<object> lanes, List<int> originalLimits, List<int> currentLimits);
 ```
 
-`ReadCitizens` reads Flare's city population for the current account. Indexes are unique and run from zero to the count minus one; Flare's account key is `"c" + Index`. It checks the live citizen against the prepared identity and avatar before returning anyone. An age or sex disagreement returns `Refreshing`.
+`ReadCitizens` reads Flare's city population for the current account. Indexes are unique and run from zero to the count minus one. It checks the live citizen against the prepared identity and avatar before returning anyone. An age or sex disagreement returns `Refreshing`.
 
 `ReadReservedCitizens` reports the indexes represented by live social cast slots, including a person seated in a car. A match requires both `First + " " + Last` and the appearance seed. Age is not part of the match because the street clamps a contact's age to 18 through 85. Indexes are returned once each.
 
