@@ -293,6 +293,8 @@ namespace RealLifeOverhaul.Ui
             float dockRight = UiTokens.S2;
             UiPrompt[] prompts = null;
             int count = 0;
+            // The right edge belongs to the layers (top) and the buttons (foot): a dock dragged there would stand under them.
+            s.WindowRight = frame.Width - UiTokens.S4 * 2f - (m.Layers != null ? UiMapChrome.LayersWidth : UiMapChrome.Button);
             s.WindowBegin();   // the dock with its rail, which the player drags by its title strip; the strip over the map, the layers and the buttons stay put
             if (m.Place != null)
             {

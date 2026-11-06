@@ -178,6 +178,7 @@ namespace RealLifeOverhaul.Ui
         public int HandleNode = -1;      // the title strip's grip this layout (UiDraw.TitleStrip), or -1
         public int HandlePanel = -1;     // the item of the window the grip belongs to, or -1 when its strip had no parent
         public bool HasWindow;           // the screen marked what is its window (WindowBegin): only that moves when the player drags it
+        public float WindowRight;        // px: where the window may reach to at the right when the screen keeps pieces of its own there (the map's layers and buttons); 0 for the whole width
         private bool _inWindow;
 
         /// <summary>Empties the scene for a new layout at a size, keeping its arrays.</summary>
@@ -193,6 +194,7 @@ namespace RealLifeOverhaul.Ui
             CaretItem = -1;
             HandleNode = HandlePanel = -1;
             HasWindow = _inWindow = false;
+            WindowRight = 0f;
             Pointer = false;
             Floats = false;
             Held = false;
