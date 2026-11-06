@@ -25,6 +25,7 @@ namespace RealLifeOverhaul.Ui
         bool PickedDestination();
         bool PickedClear();
         bool PickedMore();
+        bool PickedBizMan();
 
         // the place card
         bool PlaceTab(int index);
@@ -80,6 +81,8 @@ namespace RealLifeOverhaul.Ui
                 case UiMapFilters.PickedDestinationCommand: return a.PickedDestination();
                 case UiMapFilters.PickedClearCommand: return a.PickedClear();
                 case UiMapFilters.PickedMoreCommand: return a.PickedMore();
+                case UiMapFilters.PickedBizManCommand: return a.PickedBizMan();
+                case UiMapPlace.BizManCommand: return a.PickedBizMan();
                 case UiMapPlace.TabCommand: return a.PlaceTab(arg);
                 case UiMapPlace.DirectionsCommand: return a.Directions();
                 case UiMapPlace.SaveCommand: return a.Save();
@@ -110,6 +113,7 @@ namespace RealLifeOverhaul.Ui
             UiMapFilters.RailCommand, UiMapFilters.ShowAllCommand, UiMapFilters.SearchCommand, UiMapFilters.ResultCommand, UiMapFilters.ChipCommand, UiMapFilters.GroupCommand,
             UiMapFilters.GroupAllCommand, UiMapFilters.LineCommand, UiMapFilters.LocateCommand, UiMapFilters.StationCommand, UiMapFilters.ChoiceCommand, UiMapFilters.FooterCommand,
             UiMapFilters.PickedLocateCommand, UiMapFilters.PickedDestinationCommand, UiMapFilters.PickedClearCommand, UiMapFilters.PickedMoreCommand,
+            UiMapFilters.PickedBizManCommand, UiMapPlace.BizManCommand,
             UiMapPlace.TabCommand, UiMapPlace.DirectionsCommand, UiMapPlace.SaveCommand, UiMapPlace.DestinationCommand, UiMapPlace.RentCommand, UiMapPlace.AllCommand, UiMapPlace.ReviewCommand,
             UiMapChrome.OptionCommand, UiMapChrome.GoCommand, UiMapChrome.NorthCommand, UiMapChrome.CentreCommand, UiMapChrome.ZoomInCommand, UiMapChrome.ZoomOutCommand,
             UiMapChrome.TiltCommand, UiMapChrome.LayerCommand, UiMapChrome.HideAllCommand,

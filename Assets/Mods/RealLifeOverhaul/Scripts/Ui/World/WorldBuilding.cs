@@ -112,14 +112,15 @@ namespace RealLifeOverhaul.Ui
             {
                 return;
             }
-            // A building in the street; the city map's own picks (a station, a taxi's stop, a building on the map) stay the game's box.
-            bool up = on && !CityMap.IsOpen && _panel.gameObject.activeInHierarchy && _resume.CityBuildingController != null;
+            // A building in the street, or on the city map once it is picked (a click on it): its card stands at the building where the game puts its own box. The map's
+            // other picks (a station, a taxi's stop) stay the game's box.
+            bool picked = _resume.options != null && _resume.options.gameObject.activeInHierarchy;
+            bool up = on && (picked || !CityMap.IsOpen) && _panel.gameObject.activeInHierarchy && _resume.CityBuildingController != null;
             if (!up)
             {
                 Hide();
                 return;
             }
-            bool picked = _resume.options != null && _resume.options.gameObject.activeInHierarchy;
             int hour = TimeHelper.CurrentHour;   // read again as the hour turns, which the game's own box is not
             if (Changed() || picked != _docked || _dirty || hour != _readHour)
             {
@@ -601,7 +602,7 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             HudHost hud = HudHost.Instance;
-            if (hud != null && HudStatusGame.Shows)
+            if (hud != null && HudStatusGame.Shows && !CityMap.IsOpen)
             {
                 return;   // the HUD lays it out in its left column (Dock)
             }
@@ -619,9 +620,9 @@ namespace RealLifeOverhaul.Ui
         private void Dock(UiFrame frame)
         {
             HudHost hud = HudHost.Instance;
-            if (hud != null && HudStatusGame.Shows)
+            if (hud != null && HudStatusGame.Shows && !CityMap.IsOpen)
             {
-                _dockView.Root.gameObject.SetActive(false);
+                _dockView.Root.gameObject.SetActive(false);   // on the city map the dock holds the left, so the card stays at its building
                 HudScreen screen = hud.Screen;
                 if (!ReferenceEquals(screen.Model.Info, _info) || !_inHud)
                 {

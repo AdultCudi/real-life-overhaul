@@ -43,6 +43,8 @@ namespace RealLifeOverhaul.Ui
         public bool Saved;                           // the place is in the player's list
         public bool RouteShown;                      // Directions is chosen: the route strip is up
         public bool CanDestination;
+        public bool CanBizMan;                       // the game's card offers its business manager for the building
+        public string BizManLabel;
         public string[] Tabs = new string[0];
         public int Tab;
         public MapPlaceRow[] Rows = new MapPlaceRow[0];
@@ -69,6 +71,8 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class UiMapPlace
     {
+        public const int BizManCommand = 9761;
+
         public const int TabCommand = 5020, DirectionsCommand = 5021, SaveCommand = 5022, DestinationCommand = 5023, RentCommand = 5024, AllCommand = 5025, ReviewCommand = 5026;
         public const float Width = UiMapFilters.Width;
         private const float Hero = 80f;           // the picture's tile
@@ -117,7 +121,7 @@ namespace RealLifeOverhaul.Ui
                 cy += Chips(s, on, m.Chips, ix, cy, iw) + UiTokens.S3;
             }
             Actions(s, on, m, ix, cy, iw, keys);
-            cy += UiTokens.Control * 2f + UiTokens.S2 + UiTokens.S3;
+            cy += UiTokens.Control * 2f + UiTokens.S2 + UiTokens.S3 + (m.CanBizMan ? UiTokens.Control + UiTokens.S2 : 0f);
             if (m.Tabs.Length > 0)
             {
                 UiDraw.Tabs(s, on, ix, cy, iw, m.Tabs, m.Tab, null, TabCommand);
@@ -182,6 +186,10 @@ namespace RealLifeOverhaul.Ui
             // With the route strip up, its Go is the screen's one main action (and owns the key): Set destination is a quiet button beside it.
             UiDraw.Button(s, at, x, y + h + gap, w, h, m.RouteShown ? UiButtonKind.Secondary : UiButtonKind.Primary, m.DestinationLabel, UiIcon.None,
                 m.RouteShown ? UiAction.Count : UiAction.Alt, keys, DestinationCommand, 0, !m.CanDestination);
+            if (m.CanBizMan)
+            {
+                UiDraw.Button(s, at, x, y + (h + gap) * 2f, w, h, UiButtonKind.Secondary, m.BizManLabel, UiIcon.Briefcase, UiAction.Count, null, BizManCommand, 0);
+            }
         }
 
         /// <summary>
@@ -228,7 +236,7 @@ namespace RealLifeOverhaul.Ui
             float need = UiFrame.Strip + UiTokens.S3 + Hero + UiTokens.S3 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Hero)) + UiTokens.S1
                 + UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)) + UiTokens.S2
                          + (m.Chips.Length > 0 ? ChipsHeight(m.Chips, iw) + UiTokens.S3 : 0f) + UiTokens.Control * 2f + UiTokens.S2 + UiTokens.S3
-                         + (m.Tabs.Length > 0 ? UiTokens.Control + UiTokens.S2 : 0f);
+                         + (m.CanBizMan ? UiTokens.Control + UiTokens.S2 : 0f) + (m.Tabs.Length > 0 ? UiTokens.Control + UiTokens.S2 : 0f);
             if (m.Tab == 1)
             {
                 need += m.Reviews.Length == 0

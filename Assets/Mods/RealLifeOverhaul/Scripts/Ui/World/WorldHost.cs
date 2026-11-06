@@ -205,43 +205,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>The game's words with its rich text taken off, the lines kept; null for none.</summary>
-        internal static string Plain(string text)
-        {
-            if (string.IsNullOrEmpty(text))
-            {
-                return null;
-            }
-            if (text.IndexOf('<') < 0)
-            {
-                return text.Trim();
-            }
-            var sb = new System.Text.StringBuilder(text.Length);
-            bool tag = false;
-            int start = 0;
-            for (int i = 0; i < text.Length; i++)
-            {
-                char c = text[i];
-                if (c == '<')
-                {
-                    tag = true;
-                    start = i;
-                }
-                else if (c == '>' && tag)
-                {
-                    tag = false;
-                    string name = text.Substring(start + 1, i - start - 1).Trim().ToLowerInvariant();
-                    if (name == "br" || name == "br/")
-                    {
-                        sb.Append('\n');
-                    }
-                }
-                else if (!tag)
-                {
-                    sb.Append(c);
-                }
-            }
-            return sb.ToString().Trim();
-        }
+        internal static string Plain(string text) => string.IsNullOrEmpty(text) ? null : MapText.Plain(text);
 
         /// <summary>The kit's tone for the colour the game gives its words (its green open, red closed, yellow yours, blue for rent).</summary>
         internal static UiRole Tone(Color c)

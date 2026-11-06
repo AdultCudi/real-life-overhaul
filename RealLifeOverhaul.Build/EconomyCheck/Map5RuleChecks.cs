@@ -294,6 +294,7 @@ internal static partial class Program
         public bool PickedDestination() => R("PickedDestination");
         public bool PickedClear() => R("PickedClear");
         public bool PickedMore() => R("PickedMore");
+        public bool PickedBizMan() => R("PickedBizMan");
         public bool PlaceTab(int index) => R("PlaceTab", index);
         public bool Directions() => R("Directions");
         public bool Save() => R("Save");
@@ -323,7 +324,8 @@ internal static partial class Program
         (UiMapFilters.ChipCommand, "Chip", true), (UiMapFilters.GroupCommand, "Group", true), (UiMapFilters.GroupAllCommand, "GroupAll", true), (UiMapFilters.LineCommand, "Line", true),
         (UiMapFilters.LocateCommand, "Locate", true), (UiMapFilters.StationCommand, "Station", true), (UiMapFilters.ChoiceCommand, "Choice", true), (UiMapFilters.FooterCommand, "Footer", false),
         (UiMapFilters.PickedLocateCommand, "PickedLocate", false), (UiMapFilters.PickedDestinationCommand, "PickedDestination", false), (UiMapFilters.PickedClearCommand, "PickedClear", false),
-        (UiMapFilters.PickedMoreCommand, "PickedMore", false), (UiMapPlace.TabCommand, "PlaceTab", true), (UiMapPlace.DirectionsCommand, "Directions", false), (UiMapPlace.SaveCommand, "Save", false),
+        (UiMapFilters.PickedMoreCommand, "PickedMore", false), (UiMapFilters.PickedBizManCommand, "PickedBizMan", false), (UiMapPlace.BizManCommand, "PickedBizMan", false),
+        (UiMapPlace.TabCommand, "PlaceTab", true), (UiMapPlace.DirectionsCommand, "Directions", false), (UiMapPlace.SaveCommand, "Save", false),
         (UiMapPlace.DestinationCommand, "PlaceDestination", false), (UiMapPlace.RentCommand, "PlaceRent", false), (UiMapPlace.AllCommand, "PlaceAllReviews", false), (UiMapPlace.ReviewCommand, "PlaceReview", true),
         (UiMapChrome.OptionCommand, "RouteOption", true), (UiMapChrome.GoCommand, "Go", false), (UiMapChrome.NorthCommand, "North", false), (UiMapChrome.CentreCommand, "Centre", false),
         (UiMapChrome.ZoomInCommand, "ZoomIn", false), (UiMapChrome.ZoomOutCommand, "ZoomOut", false), (UiMapChrome.TiltCommand, "Tilt", false), (UiMapChrome.LayerCommand, "Layer", true),

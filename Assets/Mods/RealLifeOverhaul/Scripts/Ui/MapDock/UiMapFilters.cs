@@ -86,6 +86,8 @@ namespace RealLifeOverhaul.Ui
         public string DestinationLabel;     // "Set destination"; in taxi mode the taxi's own words
         public bool CanDestination;
         public bool CanDetails;             // a place card stands behind the block's name
+        public bool CanBizMan;              // the game's card offers its business manager for the building
+        public string BizManLabel;
     }
 
     /// <summary>
@@ -142,6 +144,9 @@ namespace RealLifeOverhaul.Ui
         public const int RailCommand = 5000, ShowAllCommand = 5001, SearchCommand = 5002, ResultCommand = 5003, ChipCommand = 5004, GroupCommand = 5005, GroupAllCommand = 5006,
             LineCommand = 5007, LocateCommand = 5008, StationCommand = 5009, ChoiceCommand = 5010, FooterCommand = 5011, PickedLocateCommand = 5012, PickedDestinationCommand = 5013,
             PickedClearCommand = 5014, PickedMoreCommand = 5015;
+
+        /// <summary>Opens the picked building in BizMan, as the game's own button on its building card does.</summary>
+        public const int PickedBizManCommand = 9760;
         public const float Width = UiInfoPanel.Width;   // px: the dock's panel is an info panel's width
         public const float Menu = 104f;                  // px: the rail, two icons across as an info view's menu
         public const float DockRight = Menu + UiTokens.S2 + Width + UiTokens.S4;   // px: past the dock with its rail, which the names over the map keep off
@@ -572,7 +577,8 @@ namespace RealLifeOverhaul.Ui
         {
             bool chips = m.Place.Chips != null && m.Place.Chips.Length > 0;
             float chipRows = chips ? UiTokens.S2 + UiMapPlace.ChipsHeight(m.Place.Chips, Width - UiTokens.S4 * 2f) : 0f;
-            return UiTokens.S3 + UiTokens.PairRow + UiTokens.S1 + PickedTile + chipRows + UiTokens.S3 + UiTokens.Control + UiTokens.S3;
+            float more = m.Place.CanBizMan ? UiTokens.S2 + UiTokens.Control : 0f;
+            return UiTokens.S3 + UiTokens.PairRow + UiTokens.S1 + PickedTile + chipRows + UiTokens.S3 + UiTokens.Control + more + UiTokens.S3;
         }
 
         private static void Picked(UiScene s, UiAt at, MapPanelModel m, float px, float y, float ix, float iw, IUiKeys keys)
@@ -631,6 +637,11 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Button(s, at, ix, cy, half, UiTokens.Control, UiButtonKind.Secondary, p.LocateLabel, UiIcon.Locate, UiAction.Option, keys, PickedLocateCommand, 0);
             UiDraw.Button(s, at, ix + half + UiTokens.S2, cy, iw - half - UiTokens.S2, UiTokens.Control, UiButtonKind.Primary, p.DestinationLabel, UiIcon.Navigation, UiAction.Alt, keys,
                 PickedDestinationCommand, 0, !p.CanDestination);
+            if (p.CanBizMan)
+            {
+                UiDraw.Button(s, at, ix, cy + UiTokens.Control + UiTokens.S2, iw, UiTokens.Control, UiButtonKind.Secondary, p.BizManLabel, UiIcon.Briefcase, UiAction.Count, null,
+                    PickedBizManCommand, 0);
+            }
         }
     }
 }

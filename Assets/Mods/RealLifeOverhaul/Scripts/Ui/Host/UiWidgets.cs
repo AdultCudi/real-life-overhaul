@@ -40,7 +40,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     if (!string.IsNullOrEmpty(Texts[i].text))
                     {
-                        return Plain(Texts[i].text);
+                        return MapText.OneLine(Texts[i].text);
                     }
                 }
             }
@@ -56,7 +56,7 @@ namespace RealLifeOverhaul.Ui
         {
             try
             {
-                return t != null ? Plain(t.text) : null;
+                return t != null ? MapText.Plain(t.text) : null;
             }
             catch (Exception e) when (UiForeignGame.Spoilt(e, t))
             {
@@ -80,7 +80,7 @@ namespace RealLifeOverhaul.Ui
             }
             for (int i = 0; i < d.options.Count; i++)
             {
-                into.Add(Plain(d.options[i].text));
+                into.Add(MapText.OneLine(d.options[i].text));
             }
             return d.value;
         }
@@ -217,31 +217,5 @@ namespace RealLifeOverhaul.Ui
             return into.Count;
         }
 
-        // The game's rich text (bold, colours, sprites) as plain words.
-        private static string Plain(string text)
-        {
-            if (string.IsNullOrEmpty(text) || text.IndexOf('<') < 0)
-            {
-                return text;
-            }
-            var sb = new System.Text.StringBuilder(text.Length);
-            bool tag = false;
-            foreach (char ch in text)
-            {
-                if (ch == '<')
-                {
-                    tag = true;
-                }
-                else if (ch == '>')
-                {
-                    tag = false;
-                }
-                else if (!tag)
-                {
-                    sb.Append(ch);
-                }
-            }
-            return sb.ToString();
-        }
     }
 }
