@@ -1009,6 +1009,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCataloguePanel.cs" Link="Mod\UiCataloguePanel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiCheckout.cs" Link="Mod\UiCheckout.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiPauseMenu.cs" Link="Mod\UiPauseMenu.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Blueprints\BlueprintsRules.cs" Link="Mod\BlueprintsRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Blueprints\UiBlueprints.cs" Link="Mod\UiBlueprints.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Help\HelpRules.cs" Link="Mod\HelpRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Help\UiHelp.cs" Link="Mod\UiHelp.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Pause\PlayTimeStore.cs" Link="Mod\PlayTimeStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiTooltipCard.cs" Link="Mod\UiTooltipCard.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiTooltipRules.cs" Link="Mod\UiTooltipRules.cs" />

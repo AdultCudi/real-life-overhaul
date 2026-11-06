@@ -209,6 +209,18 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--blueprints-ui")
+        {
+            BlueprintsUiChecks();   // the pause menu's blueprints window: its rules, its states, its presses and the game's own Escape, alone (UiChecks.Blueprints.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--help-ui")
+        {
+            HelpUiChecks();   // the game's help window: its markdown, its states, its presses and the mod's own pages in its list, alone (UiChecks.Blueprints.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--services-ui")
         {
             ServicesUiChecks();   // the Services screen's pages, presses and entry points, and the rules a sale keeps, alone (UiChecks.Services.cs)
@@ -1039,6 +1051,8 @@ internal static partial class Program
         UiIconChecks(); // the icons: Phosphor's outlines, both variants, filled as their winding says, pinned and regenerated (UiIconChecks.cs)
         HudKitChecks(); // the HUD's pieces and host: the UI zoom, the world prompt inside the screen at every frame, every pill whole in every language, the activity's states, the money's changes, no key taken, the cost (UiHudChecks.cs)
         MinimapChecks(); // the minimap's card above the kit's bar and clear of its pieces, its canvas between the HUD and the windows (UiMinimapChecks.cs)
+        BlueprintsUiChecks();   // the pause menu's blueprints window (UiChecks.Blueprints.cs)
+        HelpUiChecks();         // the game's help window (UiChecks.Blueprints.cs)
         PauseMenuChecks();   // the pause menu: the time played in the save, a save's age and the time in words, the game's save list and loading (PauseMenuChecks.cs)
         TooltipChecks();   // the tooltip card: placing, customers shared, the days of net worth and its card, the live code's promises (TooltipChecks.cs)
         UiGrids();      // the app window's page shapes (diary, board, reader, settings list, conversation, message list, feed, edition) and the kit's links (UiGridChecks.cs)
