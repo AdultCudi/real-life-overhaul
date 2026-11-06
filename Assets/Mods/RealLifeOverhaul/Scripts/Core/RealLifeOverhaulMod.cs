@@ -769,6 +769,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_rival_test_list", () => Rivals.RivalDirector.Instance?.TestList())
                 .AddButton("reallife_rival_test_takeover", () => Rivals.RivalDirector.Instance?.TestTakeover())
                 .AddButton("reallife_rival_test_back", () => Rivals.RivalDirector.Instance?.TestBack())
+                .AddButton("reallife_testshops_all", () => TestShops.TestShopsGame.Run(true))
+                .AddButton("reallife_testshops_nearest", () => TestShops.TestShopsGame.Run(false))
                 .AddSplitter()
                 .AddHeader("reallife_travel_header")
                 .AddToggle(Settings.HotelsId, "reallife_travel_hotels", Settings.Hotels,
