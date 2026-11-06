@@ -80,6 +80,7 @@ namespace RealLifeOverhaul
             Step("the calendar", CalendarLinks.Connect);   // its sources read the others' schedules when it is shown
             Step("the Marketplace", HustleLinks.Connect);
             Step("rival tycoons", RivalLinks.Connect);   // after the economy, the company, Flare and the interiors: what it wraps is theirs already
+            Step("the public city read API", ModApiLinks.Connect);
             Step("standing", StandingLinks.Connect);   // last: what it wraps of the others' is theirs already
             Step("companion reporting", CompanionLinks.Connect);   // wraps nothing: it only reads what the others own
             Step("the mod's own buildings on the minimap", NewBuildingsLinks.Connect);   // wraps nothing
@@ -108,6 +109,7 @@ namespace RealLifeOverhaul
             Step("the mod's own buildings on the minimap", NewBuildingsLinks.Disconnect);
             Step("companion reporting", CompanionLinks.Disconnect);
             Step("standing", StandingLinks.Disconnect);   // first: what it wrapped goes back before the others take theirs off
+            Step("the public city read API", ModApiLinks.Disconnect);
             Step("the calendar", CalendarLinks.Disconnect);
             Step("the Marketplace", HustleLinks.Disconnect);
             Step("the seasons", SeasonLinks.Disconnect);
