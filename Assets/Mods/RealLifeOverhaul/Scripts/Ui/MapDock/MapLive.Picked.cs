@@ -67,6 +67,8 @@ namespace RealLifeOverhaul.Ui
             p.DestinationLabel = taxi ? TaxiWords(card) : UiText.T("common_setdestination");
             p.CanDestination = taxi ? UiWidgets.Shows(card.taxiTravelButton) : UiWidgets.Shows(card.setDestinationButton);
             p.CanDetails = _pickedBuilding != null && reg != null;
+            p.CanBizMan = OffersBizMan(card);
+            p.BizManLabel = UiText.T("reallife_co_open_bizman");
             return true;
         }
 
@@ -213,6 +215,15 @@ namespace RealLifeOverhaul.Ui
             }
             card.Close();
             return true;
+        }
+
+        // The game's card shows its BizMan button for a building it has a registration for, and the kit offers it exactly then, through that button's own click.
+        private static bool OffersBizMan(BuildingResume card) => card != null && UiWidgets.Shows(card.bizManButton);
+
+        public bool PickedBizMan()
+        {
+            BuildingResume card = Card();
+            return card != null && UiWidgets.Press(card.bizManButton);
         }
 
         public bool PickedMore()

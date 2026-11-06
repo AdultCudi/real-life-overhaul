@@ -29,6 +29,7 @@ internal static partial class UiSamples
                 },
             DirectionsLabel = t("reallife_map_directions", "Directions"), SaveLabel = t("reallife_map_save", "Save"), SavedLabel = t("reallife_map_saved", "Saved"),
             DestinationLabel = t("common_setdestination", "Set destination"), Saved = yours, RouteShown = true, CanDestination = true,
+            CanBizMan = true, BizManLabel = t("reallife_co_open_bizman", "Open in BizMan"),
             Tabs = new[] { t("reallife_map_tab_overview", "Overview"), t("reallife_map_tab_reviews", "Reviews"), t("reallife_map_tab_business", "Business") },
             Tab = state == "reviews" ? 1 : state == "business" ? 2 : 0,
             Rows = new[]

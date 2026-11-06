@@ -98,6 +98,7 @@ internal static partial class UiSamples
                 : new[] { new MapStateChip { Label = t("common_open", "Open"), Tone = UiRole.Ok }, new MapStateChip { Label = t("buildingresume_rented_by_you", "Rented by you"), Tone = UiRole.Accent } },
             BlockLabel = t("reallife_map_picked", "Picked place"), ClearLabel = t("reallife_map_clear", "Clear"), LocateLabel = t("reallife_map_locate", "Locate"),
             DestinationLabel = t("common_setdestination", "Set destination"), CanDestination = true, CanDetails = true,
+            CanBizMan = true, BizManLabel = t("reallife_co_open_bizman", "Open in BizMan"),
         };
     }
 

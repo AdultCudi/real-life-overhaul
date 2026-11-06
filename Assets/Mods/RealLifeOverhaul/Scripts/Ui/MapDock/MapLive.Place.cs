@@ -79,6 +79,8 @@ namespace RealLifeOverhaul.Ui
             m.Saved = MapStoreGame.Saved(building.Address.streetName, building.Address.streetNumber);
             m.RouteShown = _routeShown;
             m.CanDestination = UiWidgets.Shows(card.setDestinationButton);
+            m.CanBizMan = OffersBizMan(card);
+            m.BizManLabel = UiText.T("reallife_co_open_bizman");
             m.Tabs = new[] { UiText.T("reallife_map_tab_overview"), UiText.T("reallife_map_tab_reviews"), UiText.T("reallife_map_tab_business") };
             m.Tab = _placeTab;
             m.Rows = OverviewRows(building);

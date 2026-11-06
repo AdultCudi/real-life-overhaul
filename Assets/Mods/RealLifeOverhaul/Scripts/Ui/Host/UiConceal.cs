@@ -11,7 +11,8 @@ namespace RealLifeOverhaul.Ui
     /// mod may have set them. Nothing is switched off, so every activeInHierarchy, IsOpen and IsPanelOpen another mod reads
     /// stays true. A shared parent never gets a group (UiHostRules.SharedParents, or one the screen names): only a
     /// graphic of its own is hidden, by its renderer's alpha, which no copy of it carries. Cost: nothing a frame; a few
-    /// writes when a screen shows or hides.
+    /// writes when a screen shows or hides. Two screens may hide the same leaf (the city map's dock and the street's building card both hide the game's building box): the
+    /// first to hide it keeps what it was, the last to give it back restores that, so one screen showing again never uncovers it under the other.
     /// </summary>
     public sealed class UiConceal
     {
@@ -28,6 +29,15 @@ namespace RealLifeOverhaul.Ui
             public CanvasRenderer Renderer;
             public float Alpha;
         }
+
+        private struct Hold
+        {
+            public int Count;
+            public float Alpha;
+            public bool Interactable, Blocks;
+        }
+
+        private static readonly Dictionary<CanvasGroup, Hold> Holds = new Dictionary<CanvasGroup, Hold>(8);
 
         private readonly List<Leaf> _leaves = new List<Leaf>(8);
         private readonly List<Dimmed> _graphics = new List<Dimmed>(8);
@@ -138,7 +148,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < _leaves.Count; i++)
             {
                 Leaf l = _leaves[i];
-                if (l.Group != null)
+                if (l.Group != null && Release(l.Group))
                 {
                     l.Group.alpha = l.Alpha;
                     l.Group.interactable = l.Interactable;
@@ -182,15 +192,43 @@ namespace RealLifeOverhaul.Ui
             _shared.Clear();
         }
 
+        // True when this was the last screen holding the group hidden.
+        private static bool Release(CanvasGroup group)
+        {
+            if (!Holds.TryGetValue(group, out Hold held))
+            {
+                return true;
+            }
+            if (held.Count > 1)
+            {
+                held.Count--;
+                Holds[group] = held;
+                return false;
+            }
+            Holds.Remove(group);
+            return true;
+        }
+
         private static void Take(ref Leaf l)
         {
             if (l.Group == null)
             {
                 return;
             }
+            if (Holds.TryGetValue(l.Group, out Hold held))
+            {
+                // Hidden already by another screen: its saved state is the one to give back.
+                held.Count++;
+                Holds[l.Group] = held;
+                l.Alpha = held.Alpha;
+                l.Interactable = held.Interactable;
+                l.Blocks = held.Blocks;
+                return;
+            }
             l.Alpha = l.Group.alpha;
             l.Interactable = l.Group.interactable;
             l.Blocks = l.Group.blocksRaycasts;
+            Holds[l.Group] = new Hold { Count = 1, Alpha = l.Alpha, Interactable = l.Interactable, Blocks = l.Blocks };
             l.Group.alpha = 0f;
             l.Group.interactable = false;
             l.Group.blocksRaycasts = l.KeepBlocking && l.Blocks;

@@ -219,7 +219,7 @@ namespace RealLifeOverhaul.Ui
             string sub = running ? UiText.T(b.BusinessType)
                 : b.IsRealEstate ? UiText.Fill("bizman_list_real_estate_type", "buildingType", UiText.T(b.BuildingType))
                 : UiText.Fill("bizman_empty_building", "buildingType", UiText.T(b.BuildingType));
-            string status = b.OpenStatus.text.ToString();
+            string status = MapText.OneLine(b.OpenStatus.text.ToString());
             UiRole tone = Tone(b.OpenStatus.color);
             BuildingRegistration reg = BuildingHelper.GetBuildingRegistration(b.Address);
             if (reg != null && !reg.RentedByPlayer && !reg.BuildingOwnedByPlayer)
@@ -457,7 +457,7 @@ namespace RealLifeOverhaul.Ui
         private static string Label(Component c)
         {
             TMP_Text text = c != null ? c.GetComponentInChildren<TMP_Text>(true) : null;
-            return text != null ? text.text : null;
+            return text != null ? MapText.OneLine(text.text) : null;
         }
 
         private string[] FilterChoices(int group, out int chosen)
