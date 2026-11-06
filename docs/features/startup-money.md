@@ -71,6 +71,10 @@ Nothing per frame. The money hook does a string compare and a float compare for 
 
 `reallife:tech_ventures`, version 2, with three new parts that an older RLO does not read: `x` (the account of each firm with investors), `m` (what was counted as taken) and `r` (the deals with the player's other businesses). The parts it had keep their fields.
 
+## Terms
+
+Every round now comes with terms (preference multiple, participation, anti-dilution, founder vesting, information rights, a spending limit the board must agree), and the player's skills do real work: see [Startup terms](startup-terms.md).
+
 ## Tests
 
 On the options page, under the Tech sector's startups: "My firm's board looks at its books" (the pack is sent now and the board looks at the books), "Wind down my funded firm" (for real) and "Spend investor money on something else" (a quarter of the investors' money goes into startups and comes straight back, so only the books remember it).

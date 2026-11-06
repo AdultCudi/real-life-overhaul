@@ -112,6 +112,7 @@ namespace RealLifeOverhaul.Tech
                     TechText.T(s.Quality >= 700 ? "reallife_vc_quality_strong" : s.Quality >= 400 ? "reallife_vc_quality_fair" : "reallife_vc_quality_weak"),
                     "claim", TechText.Bp(s.ClaimBp), "runway", VentureRules.Runway(s.Cash, s.Burn, s.Mrr) == int.MaxValue ? "-" : VentureRules.Runway(s.Cash, s.Burn, s.Mrr).ToString())
                 : TechText.T("reallife_vc_startup_no_diligence", "fee", TechText.Cents(_director.Level(VentureCatalogue.DiligenceFee))));
+            WriteStartupTerms(box, s);
             bool followOn = put > 0 && VentureRules.FollowOnOpen(s, day);   // once a round: gone when taken
             if (followOn)
             {
@@ -238,6 +239,7 @@ namespace RealLifeOverhaul.Tech
             if (c != null)
             {
                 WriteAccount(box, firm, c, day);
+                WriteHeld(box, c);
             }
             // the chief executive: the player, or one of the firm's professionals
             _chiefs.Clear();
@@ -324,6 +326,7 @@ namespace RealLifeOverhaul.Tech
                     "amount", TechText.Cents(_director.Level(t.Amount)),
                     "pre", TechText.Cents(_director.Level(t.Pre)), "share", TechText.Mille(t.EquityMille),
                         "board", TechText.T(t.Board ? "reallife_vc_sheet_board" : "reallife_vc_sheet_no_board"), "day", t.Lapse.ToString()));
+                WriteOffer(box, firm, c, t);
                 InfoBox.Button(box.ButtonRow(), InfoBox.Positive, "reallife_vc_button_take_sheet", () => GameConfirm.Show("reallife_vc_confirm_sheet_title", "reallife_vc_confirm_sheet_body",
                     () => UiClone.Safe(() => Do(() => _director.TakeSheet(place, index))), null, null, null, true, false));
             }

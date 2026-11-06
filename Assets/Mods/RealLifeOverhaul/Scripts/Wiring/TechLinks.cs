@@ -33,6 +33,7 @@ namespace RealLifeOverhaul
                 TechBridges.InvestorClaim = InvestorClaims.File;
                 TechBridges.InvestorFraud = TaxCases.FileInvestorFraud;
                 TechBridges.Skill = Skill;
+                TechBridges.Learn = Learn;
                 TechBridges.Fame = Fame;
                 TechBridges.Supplied = Supplied;
                 TechBridges.Ipo = Ipo;
@@ -325,6 +326,22 @@ namespace RealLifeOverhaul
                 {
                     Fault("TechLinks.Skill", e);
                     return 0;
+                }
+            }
+
+            private static void Learn(int skill, int thousandths)
+            {
+                try
+                {
+                    Careers.StudyFile f = Careers.CareersDirector.Instance != null ? Careers.CareersDirector.Instance.Study : null;
+                    if (f != null)
+                    {
+                        Careers.StudyRules.Learn(f, skill, thousandths, TimeHelper.CurrentDay);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("TechLinks.Learn", e);
                 }
             }
 

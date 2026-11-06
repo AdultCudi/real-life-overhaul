@@ -111,7 +111,7 @@ namespace RealLifeOverhaul.Tech
         /// A round closes: new shares at the pre-money's price, a staff pool at the seed round; the stage moves on. The player's
         /// shares before it are kept, so their one follow-on of it can bring them back to that share and no further.
         /// </summary>
-        public static void Round(Startup s, long pre, IList<Holder> investors, int day)
+        public static void Round(Startup s, long pre, IList<Holder> investors, int day, int seed = 0, int mood = 1000)
         {
             s.BeforeMine = PlayerShares(s);
             s.BeforeTotal = s.Total;
@@ -119,15 +119,21 @@ namespace RealLifeOverhaul.Tech
             s.Followed = false;
             long total = Math.Max(1, s.Total);
             long raised = 0;
+            int weak = VentureTerms.Weak(s);
             for (int i = 0; i < investors.Count; i++)
             {
                 Holder h = investors[i];
+                if (h.Kind == (int)HolderKind.Vc && h.T == null)
+                {
+                    h.T = VentureTerms.Stamp(h.Who, s.Stage + 1, mood, weak, seed, s.Id, day);   // a lead asks what its firm asks, the city's startups as much as the player's
+                }
                 h.Shares = (long)((double)h.Invested * total / Math.Max(1, pre));
-                h.Preference = h.Invested * VentureCatalogue.LiquidationPreference / 1000;
+                h.Preference = h.Invested * (h.T != null ? h.T.Pref : VentureCatalogue.LiquidationPreference) / 1000;
                 h.Round = s.Stage + 1;
                 s.Holders.Add(h);
                 raised += h.Invested;
             }
+            VentureTerms.AntiDilute(s.Holders, total, pre, raised);
             s.Stage = Math.Min((int)RoundStage.Growth, s.Stage + 1);
             if (s.Stage == (int)RoundStage.Seed && !HasPool(s.Holders))
             {
@@ -158,7 +164,10 @@ namespace RealLifeOverhaul.Tech
         /// <summary>A holder's share of the company, thousandths.</summary>
         public static int ShareOf(Holder h, long total) => total > 0 ? (int)(h.Shares * 1000 / total) : 0;
 
-        /// <summary>A sale's money by the cap table, preferences first (the latest round first). Returns each line's money in order.</summary>
+        /// <summary>
+        /// A sale's money by the cap table, preferences first (the latest round first). A line takes its preference, or, if it is worth more, shares as
+        /// common instead; a participating line (<see cref="Holder.T"/>) takes its preference and then shares as common as well. Returns each line's money in order.
+        /// </summary>
         public static long[] Waterfall(IList<Holder> holders, long price)
         {
             var pay = new long[holders.Count];
@@ -173,16 +182,21 @@ namespace RealLifeOverhaul.Tech
             }
             var prefers = new bool[holders.Count];
             long left = price, sharesLeft = total;
+            for (int i = 0; i < holders.Count; i++)
+            {
+                prefers[i] = holders[i].Preference > 0 && holders[i].Participating;
+            }
             // who takes the preference, worked out again until nobody changes their mind
             for (int pass = 0; pass < holders.Count + 1; pass++)
             {
                 bool changed = false;
-                long prefTotal = 0, converted = 0;
+                long prefTotal = 0, converted = 0, shared = 0;
                 for (int i = 0; i < holders.Count; i++)
                 {
                     if (prefers[i])
                     {
                         prefTotal += holders[i].Preference;
+                        shared += holders[i].Participating ? holders[i].Shares : 0;
                     }
                     else
                     {
@@ -193,11 +207,12 @@ namespace RealLifeOverhaul.Tech
                 for (int i = 0; i < holders.Count; i++)
                 {
                     Holder h = holders[i];
-                    if (h.Preference <= 0)
+                    if (h.Preference <= 0 || h.Participating)
                     {
                         continue;
                     }
-                    long asCommon = converted + (prefers[i] ? h.Shares : 0) > 0 ? (long)((double)rest * h.Shares / (converted + (prefers[i] ? h.Shares : 0))) : 0;
+                    long sharing = converted + shared + (prefers[i] ? h.Shares : 0);
+                    long asCommon = sharing > 0 ? (long)((double)rest * h.Shares / sharing) : 0;
                     bool want = h.Preference > asCommon;
                     if (want != prefers[i])
                     {
@@ -220,7 +235,7 @@ namespace RealLifeOverhaul.Tech
                         long take = Math.Min(left, holders[i].Preference);
                         pay[i] = take;
                         left -= take;
-                        sharesLeft -= holders[i].Shares;
+                        sharesLeft -= holders[i].Participating ? 0 : holders[i].Shares;
                     }
                 }
             }
@@ -230,10 +245,11 @@ namespace RealLifeOverhaul.Tech
                 int last = -1;
                 for (int i = 0; i < holders.Count; i++)
                 {
-                    if (!prefers[i])
+                    if (!prefers[i] || holders[i].Participating)
                     {
-                        pay[i] = (long)((double)left * holders[i].Shares / sharesLeft);
-                        given += pay[i];
+                        long part = (long)((double)left * holders[i].Shares / sharesLeft);
+                        pay[i] += part;
+                        given += part;
                         last = i;
                     }
                 }
@@ -319,7 +335,7 @@ namespace RealLifeOverhaul.Tech
             long size = RoundSize(next);
             if (lead >= 0)
             {
-                Led(s, lead, pre, size, day, notes);
+                Led(s, lead, pre, size, day, notes, f.Seed, mood);
                 return;
             }
             s.FailedRaises++;
@@ -330,7 +346,7 @@ namespace RealLifeOverhaul.Tech
                 int insider = InsiderVc(s);
                 var vc = new Holder { Kind = (int)HolderKind.Vc, Who = insider < 0 ? 5 : insider, Invested = size / 2 };
                 int stage = s.Stage;
-                Round(s, down, new[] { vc }, day);
+                Round(s, down, new[] { vc }, day, f.Seed, mood);
                 s.Stage = stage;   // a down round raises money but is no new stage
                 s.Burn = VentureCatalogue.BurnByStage[stage];
                 notes?.Add(new VentureNote { Kind = NoteDown, Startup = s.Id, Amount = size / 2 });
@@ -343,10 +359,10 @@ namespace RealLifeOverhaul.Tech
         }
 
         /// <summary>A round a venture firm leads for all of it: the round closes, and a player with pro rata rights is offered their follow-on.</summary>
-        public static void Led(Startup s, int lead, long pre, long size, int day, List<VentureNote> notes)
+        public static void Led(Startup s, int lead, long pre, long size, int day, List<VentureNote> notes, int seed = 0, int mood = 1000)
         {
             var vc = new Holder { Kind = (int)HolderKind.Vc, Who = lead, Invested = size, ProRata = true, Board = !VentureCatalogue.Firms[lead].Angels };
-            Round(s, pre, new[] { vc }, day);
+            Round(s, pre, new[] { vc }, day, seed, mood);
             notes?.Add(new VentureNote { Kind = NoteRaised, Startup = s.Id, Amount = size });
             FollowOn(s, notes);
         }
@@ -495,7 +511,7 @@ namespace RealLifeOverhaul.Tech
             {
                 raised += investors[i].Invested;
             }
-            Round(s, s.Ask.Pre, investors, day);
+            Round(s, s.Ask.Pre, investors, day, f.Seed, mood);
             notes?.Add(new VentureNote { Kind = NoteRaised, Startup = s.Id, Amount = raised });
             return true;
         }

@@ -37,9 +37,9 @@ namespace RealLifeOverhaul.Tech
         public static long Accept(Cap c, TermSheet t, long mrr, int day)
         {
             long total = Math.Max(1, c.Total);
-            var h = new Holder { Kind = (int)HolderKind.Vc, Who = t.Vc, Invested = t.Amount, Board = t.Board, ProRata = t.ProRata, Round = c.Stage + 1 };
+            var h = new Holder { Kind = (int)HolderKind.Vc, Who = t.Vc, Invested = t.Amount, Board = t.Board, ProRata = t.ProRata, Round = c.Stage + 1, T = t.T };
             h.Shares = (long)((double)t.Amount * total / Math.Max(1, t.Pre));
-            h.Preference = t.Amount * VentureCatalogue.LiquidationPreference / 1000;
+            h.Preference = t.Amount * (t.T != null ? t.T.Pref : VentureCatalogue.LiquidationPreference) / 1000;
             c.Holders.Add(h);
             if (c.Bridge > 0)
             {
@@ -50,9 +50,14 @@ namespace RealLifeOverhaul.Tech
                 });
                 c.Bridge = 0;
             }
+            VentureTerms.AntiDilute(c.Holders, total, t.Pre, t.Amount);   // an earlier line priced above this round is given shares
             c.Stage = Math.Min((int)RoundStage.Growth, c.Stage + 1);
             c.Post = t.Pre + t.Amount;
             StartupMoney.Inflow(c, t.Amount, day);
+            if (t.T != null && t.T.Vest > 0)
+            {
+                c.Acc.FounderDay = day;   // the round starts the founder's vesting again
+            }
             if (t.Board)
             {
                 c.BoardSeats += VentureCatalogue.BoardSeatsPerRound;

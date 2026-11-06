@@ -164,6 +164,22 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The player's own skill in points (a TalentCatalogue skill's number in, 0 to 100 out). Default: none, so 0.</summary>
         public static Func<int, int> Skill;
 
+        /// <summary>Adds thousandths of a point to one of the player's skills by doing: a TalentCatalogue skill's number and the thousandths (Careers' StudyRules.Learn). Default: none.</summary>
+        public static Action<int, int> Learn;
+
+        /// <summary><see cref="Learn"/> told; a fault in Careers changes nothing here.</summary>
+        public static void LearnNow(int skill, int thousandths)
+        {
+            try
+            {
+                Learn?.Invoke(skill, thousandths);
+            }
+            catch (Exception)
+            {
+                // the skill does not grow this time
+            }
+        }
+
         /// <summary><see cref="Skill"/> asked: 0 with no answer, or if Careers fault.</summary>
         public static int SkillNow(int skill)
         {
@@ -485,6 +501,7 @@ namespace RealLifeOverhaul.Tech
             InvestorClaim = null;
             InvestorFraud = null;
             Skill = null;
+            Learn = null;
             BoardSessions = null;
             Claim = null;
             Fame = null;

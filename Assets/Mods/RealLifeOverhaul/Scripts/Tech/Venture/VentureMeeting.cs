@@ -17,7 +17,7 @@ namespace RealLifeOverhaul.Tech
     {
         private const NavigationBlocker Blocker = (NavigationBlocker)7317;
         private const float InputDelay = 0.4f;
-        private const int Leave = 20, TakeAngel = 21, TakeFund = 22, Haggle = 23, Think = 24, Pass = 25, Done = 26;
+        private const int Leave = 20, TakeAngel = 21, TakeFund = 22, Haggle = 23, Think = 24, Pass = 25, Done = 26, PushBase = 40;
         private const string ButtonAsk = "reallife_vc_meet_ask";
         private const string ButtonDo = "reallife_vc_meet_do";
 
@@ -47,6 +47,8 @@ namespace RealLifeOverhaul.Tech
         private PlayerController _held;
         private int _round, _asked, _score;
         private string _heard = string.Empty;
+        private string _said = string.Empty, _pushed = string.Empty;   // the sheet the pitch earned, and what the push on a term came to
+        private bool _sheetMade, _weighed;
         private bool _over, _leaving;
         private float _shownAt;
 
@@ -77,7 +79,8 @@ namespace RealLifeOverhaul.Tech
             _revenue = revenue;
             _growth = growthMille;
             _people = people;
-            _score = 500 + TechBridges.FounderNow();   // a founder's record in a profession is listened to
+            _score = 500 + TechBridges.FounderNow()   // a founder's record in a profession is listened to
+                     + VentureTerms.Warmth(TechBridges.SkillNow(TalentCatalogue.Selling), TechBridges.SkillNow(TalentCatalogue.Relationships));   // and a seller is warmer
             _heard = TechText.T("reallife_vc_meet_player_open", "firm", VentureCatalogue.Firms[TalentCatalogue.Clamp(vc, 0, VentureCatalogue.FirmCount - 1)].Name);
             return Begin();
         }
@@ -92,6 +95,8 @@ namespace RealLifeOverhaul.Tech
             _round = 0;
             _asked = 0;
             _over = false;
+            _said = _pushed = string.Empty;
+            _sheetMade = _weighed = false;
             Active = true;
             UIs uis = InstanceBehavior<UIs>.Instance;
             if (uis != null && uis.fullMenu != null && FullMenu.IsOpen)
@@ -311,6 +316,11 @@ namespace RealLifeOverhaul.Tech
             }
             list.Begin(Title, TechText.T("reallife_vc_meet_over"));
             list.Moment(TechText.T("reallife_vc_meet_over"), UiIcon.Rocket, _startup != null ? _startup.Name : FirmName);
+            if (_startup != null && !_weighed)
+            {
+                _weighed = true;
+                _director.WeighedStartup();
+            }
             if (_startup != null && _startup.Ask != null)
             {
                 TermSheet a = _startup.Ask;
@@ -334,8 +344,30 @@ namespace RealLifeOverhaul.Tech
             }
             else
             {
-                string said = _director.VcSheet(_place, _vc, _score);
+                if (!_sheetMade)
+                {
+                    _sheetMade = true;
+                    _said = _director.VcSheet(_place, _vc, _score);
+                    _director.PitchDone();
+                }
+                string said = _said;
+                TermSheet sheet = _director.SheetOf(_place, _vc);
+                if (sheet != null && sheet.T != null)
+                {
+                    said += "\n" + _director.TermsText(_place, sheet);
+                }
+                if (_pushed.Length > 0)
+                {
+                    said += "\n" + _pushed;
+                }
                 list.AddNote(VentureCatalogue.Firms[TalentCatalogue.Clamp(_vc, 0, VentureCatalogue.FirmCount - 1)].Name, said, list.HeightFor((int)(said.Length * 1.3f), false));
+                for (int term = 0; sheet != null && sheet.T != null && !sheet.Pushed && term < TermsCatalogue.Count; term++)
+                {
+                    if (VentureTerms.Pushable(sheet.T, term))
+                    {
+                        list.Add(PushBase + term, TechText.T(TermsCatalogue.PushKeys[term]), TechText.T("reallife_vc_push_detail"), ButtonDo, true);
+                    }
+                }
                 list.Add(Done, TechText.T("reallife_hire_meet_close"), string.Empty, ButtonDo, true);
             }
             _over = true;
@@ -344,6 +376,13 @@ namespace RealLifeOverhaul.Tech
 
         private void Decided(int id)
         {
+            if (_startup == null && id >= PushBase && id < PushBase + TermsCatalogue.Count)
+            {
+                int result = _director.PushTerm(_place, _vc, id - PushBase);
+                _pushed = TechText.T(result == 1 ? "reallife_vc_push_won" : result == 3 ? "reallife_vc_push_sour" : "reallife_vc_push_lost", "firm", FirmName);
+                Summary();
+                return;
+            }
             Startup s = _startup;
             End();
             if (s == null)

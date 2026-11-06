@@ -152,6 +152,7 @@ namespace RealLifeOverhaul.Ui
                         TechText.T(s.Quality >= 700 ? "reallife_vc_quality_strong" : s.Quality >= 400 ? "reallife_vc_quality_fair" : "reallife_vc_quality_weak"),
                         "claim", TechText.Bp(s.ClaimBp), "runway", runway == int.MaxValue ? "-" : runway.ToString(Inv))
                     : TechText.T("reallife_vc_startup_no_diligence", "fee", Cents(_d.Level(VentureCatalogue.DiligenceFee))));
+                StartupTerms(card, s);
                 var actions = new List<UiActionModel>(3);
                 if (!s.Diligence && s.Alive)
                 {
@@ -330,6 +331,11 @@ namespace RealLifeOverhaul.Ui
                 head.Add(Button(TechText.T("reallife_vc_button_raise_page"), UiButtonKind.Primary, UiAction.Alt, Go(v => v.Page = PageRaise)));
                 _m.HeadActions = head.ToArray();
                 _m.Left = new[] { card.Build() };
+                UiFactCardModel[] held = HeldCards(c);
+                if (held != null)
+                {
+                    _m.Right = held;
+                }
             }
 
             private void RaisePage(FirmPlace firm)
@@ -373,6 +379,10 @@ namespace RealLifeOverhaul.Ui
                         "reallife_vc_confirm_sheet_body", () => _d.TakeSheet(place, index)));
                 }
                 _m.Left = new[] { card.Build() };
+                if (c != null && c.Sheets.Count > 0)
+                {
+                    _m.Right = OfferCards(firm, c);
+                }
             }
         }
     }

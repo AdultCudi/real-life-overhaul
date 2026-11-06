@@ -483,6 +483,9 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The suspicion at which the lead looks into the books: a stricter firm looks sooner. Always between a question's 30 and removal's 60.</summary>
         public static int Threshold(int diligence) => 55 - Math.Max(0, Math.Min(1000, diligence)) * 25 / 1000;
 
+        /// <summary>The threshold of a firm: its lead's, sooner when the investors hold the right to look on demand and later with a quarterly pack, still between 31 and 58.</summary>
+        public static int ThresholdOf(Cap c) => Math.Max(31, Math.Min(58, Threshold(Diligence(c)) + VentureTerms.ThresholdShift(c)));
+
         /// <summary>
         /// The board's suspicion of a firm, 0 to 100. Taken money by its size against the raise is the main part; deals over the fair
         /// price, spending while the firm burns, a delayed pack and a stonewalled question add; time and paying back bring it down,
@@ -510,14 +513,15 @@ namespace RealLifeOverhaul.Tech
             s += Math.Min(15, burning * 5);
             bool late = a.DelayDay > 0 && day - a.DelayDay < 90;
             bool missed = c.Misses > 0 || c.Pressure > 0;
+            int extra = VentureTerms.Extra(c, day);   // a breach of the board's say over big spends, a slip in a pack
             s += late ? 8 : 0;
             s += missed ? 5 : 0;
             s += a.Stonewalled ? 15 : 0;
             if (a.Taken <= 0)
             {
-                return Math.Max(0, Math.Min(100, s / 4 + deals));
+                return Math.Max(0, Math.Min(100, s / 4 + deals + extra));
             }
-            s += deals;
+            s += deals + extra;
             s -= Math.Min(30, Math.Max(0, day - a.Event) / 4);
             s -= size < 100 ? Math.Max(0, Math.Min(100, accounting)) * 12 / 100 : 0;
             s -= late || missed ? Math.Max(0, Math.Min(100, leadership)) * 8 / 100 : 0;
@@ -529,6 +533,9 @@ namespace RealLifeOverhaul.Tech
 
         /// <summary>The share of what was taken that a look at the books finds, thousandths; an audit finds all of it.</summary>
         public static int LookFinds(int diligence) => 400 + Math.Max(0, Math.Min(1000, diligence)) * 600 / 1000;
+
+        /// <summary>What a look at this firm finds: its lead's, and more of it with the right to look on demand.</summary>
+        public static int LookFindsOf(Cap c) => Math.Max(0, Math.Min(1000, LookFinds(Diligence(c)) + VentureTerms.LookShift(c)));
 
         public static bool Audit(Cap c, int suspicion, int threshold) => c.Acc.Step >= StepRemoved || suspicion >= threshold + 15;
 
@@ -617,7 +624,7 @@ namespace RealLifeOverhaul.Tech
         public static void Sent(Cap c, int day)
         {
             c.Acc.PackLast = day;
-            c.Acc.PackDay = day + MoneyCatalogue.PackDays;
+            c.Acc.PackDay = day + VentureTerms.PackEvery(c);
             c.Acc.DelayUsed = false;
         }
 

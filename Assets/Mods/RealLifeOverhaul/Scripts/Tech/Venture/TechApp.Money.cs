@@ -104,6 +104,7 @@ namespace RealLifeOverhaul.Tech
             {
                 InfoBox.Button(out2, InfoBox.Additional, "reallife_vc_button_delay", () => Do(() => _director.DelayPack(place)));
             }
+            WriteRights(box, place, c, day, out2);
             WriteRelated(box, place);
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_roles_button_back", BackToFirm);
             Meta.Guide.Point(box, StartupsGuide);

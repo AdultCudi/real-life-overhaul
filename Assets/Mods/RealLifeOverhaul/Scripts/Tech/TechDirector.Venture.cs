@@ -43,6 +43,7 @@ namespace RealLifeOverhaul.Tech
             }
             _venture = file;
             _ventureOn = true;
+            LoadTerms();
             CatchUpMoves(MoveRules.PartVenture);
             FollowMoves();
             StartMoney();
@@ -85,6 +86,7 @@ namespace RealLifeOverhaul.Tech
             if (_venture != null && data != null)
             {
                 data[VentureStore.Key] = VentureStore.Write(_venture);
+                WriteTerms(data);
             }
         }
 
