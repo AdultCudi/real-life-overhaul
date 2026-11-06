@@ -38,9 +38,9 @@ namespace RealLifeOverhaul.Ui
                     "reallife_studio_genre_simulation", "reallife_studio_genre_strategy", "reallife_studio_next_hire", "reallife_studio_page_needed_how",
                     "reallife_studio_page_no_games_hire", "reallife_studio_page_age_days", "reallife_tech_mkt_page_building", "reallife_tech_mkt_page_ready"
                 }).Switch(UiScreenSwitches.Apps),
-                new UiScreenDef("session_panel", UiTemplate.Session, "ActivityScreen", new[]
+                new UiScreenDef("session_panel", UiTemplate.Decision, "ActivityScreen", new[]
                 {
-                    "reallife_ui_page_desk", "reallife_ui_prompt_move", "reallife_ui_prompt_choose", "reallife_ui_prompt_back"
+                    "reallife_ui_page_desk", "reallife_session_enabled", "reallife_ui_prompt_move", "reallife_ui_prompt_choose", "reallife_ui_prompt_back"
                 }).Switch(UiScreenSwitches.Apps),
             });
         }

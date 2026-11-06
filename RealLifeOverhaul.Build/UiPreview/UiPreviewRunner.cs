@@ -82,6 +82,7 @@ public static partial class UiPreviewRunner
             string outFolder = Argument("-out", Path.GetFullPath("../../../not-in-repo/previews/ui"));
             string[] only = Argument("-only", "").Split(new[] { ',' }, StringSplitOptions.RemoveEmptyEntries);
             string set = Argument("-set", "");
+            bool baseOnly = Argument("-shots", "") == "1080";   // the 1080 shot of each screen alone, for the sweep's contact sheets
             _backdrops = Argument("-backdrops", "");
             Directory.CreateDirectory(outFolder);
             if (PlayerSettings.colorSpace != ColorSpace.Linear)
@@ -111,7 +112,7 @@ public static partial class UiPreviewRunner
                 }
                 // One look now: each screen at 1080 and 720, with the mouse resting on a target and with the keys leading.
                 shots.Add(new Shot { Screen = screen, Name = screen.Name + "_1080", Width = 1920, Height = 1080, Dark = true });
-                if (screen.Single)
+                if (screen.Single || baseOnly)
                 {
                     continue;
                 }

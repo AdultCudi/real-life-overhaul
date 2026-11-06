@@ -14,6 +14,7 @@ graphics card: it renders with graphics, so no -nographics. Exit code 0 = every 
 param(
     [string]$Out = (Join-Path $PSScriptRoot '..\..\..\not-in-repo\previews\ui'),
     [string]$Only = '',
+    [string]$Shots = '',        # 1080: the 1080 shot of each screen alone (the sweep's contact sheets)
     [string]$Set = '',          # cs2: the prototype's six screens over the game's world (needs -Backdrops)
     [string]$Backdrops = '',    # a folder of the game's own street pictures, local only, never committed
     [string]$Method = 'UiPreviewRunner.Render',   # another editor entry that draws into -Out (the 2.5D map's own pictures: Map25Preview.Render)
@@ -52,6 +53,8 @@ Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures
 @('Blueprints', 'Help') | ForEach-Object { Get-ChildItem (Join-Path $repo (Join-Path 'Assets\Mods\RealLifeOverhaul\Scripts\Ui' $_)) -Filter *.cs -ErrorAction SilentlyContinue } | Where-Object { $_.Name -notlike '*Screen.cs' -and $_.Name -notlike '*Kits.cs' -and $_.Name -notlike 'UiDirector*.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
 # The cards over the world's items (Ui\Overlays): the model, the drawing and the rules; the files that meet the game and the tests stay out.
 Get-ChildItem (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\Overlays') -Filter *.cs -ErrorAction SilentlyContinue | Where-Object { $_.Name -notlike '*Live.cs' -and $_.Name -notlike '*Live.*.cs' -and $_.Name -notlike 'UiDirector*.cs' } | ForEach-Object { Copy-Item $_.FullName (Join-Path $preview 'Kit') }
+# The sweep's small rules (Ui\Sweep): a desk session's trade as the card's lines; the audit table stays out.
+Copy-Item (Join-Path $repo 'Assets\Mods\RealLifeOverhaul\Scripts\Ui\Sweep\SweepRules.cs') (Join-Path $preview 'Kit')
 # The showrooms' state and rules (game-free): the samples build the Car Showroom's one world from the real state and read its reports through the real functions.
 @('DealerState.cs', 'DealerReport.cs', 'DealerCatalogue.cs', 'DealerRules.cs', 'DealerRules.Market.cs', 'DealerRules.Customers.cs', 'DealerRules.Business.cs', 'RivalRules.cs', 'ViewRules.cs', 'DealerDay.cs', 'BidEntry.cs') | ForEach-Object {
     Copy-Item (Join-Path $repo (Join-Path 'Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer' $_)) (Join-Path $preview 'Kit')
@@ -87,6 +90,7 @@ New-Item -ItemType Directory -Force (Split-Path $log) | Out-Null
 $arguments = @('-batchmode', '-quit', '-projectPath', "`"$project`"", '-executeMethod', $Method, '-bundle', "`"$bundle`"", '-out', "`"$Out`"", '-logFile', "`"$log`"")
 if ($Only) { $arguments += @('-only', $Only) }
 if ($Set) { $arguments += @('-set', $Set) }
+if ($Shots) { $arguments += @('-shots', $Shots) }
 if ($Backdrops) { $arguments += @('-backdrops', "`"$Backdrops`"") }
 $process = Start-Process -FilePath $Unity -ArgumentList $arguments -Wait -PassThru -NoNewWindow
 if (Test-Path $log) { Select-String -Path $log -Pattern '^\[UiPreview\]' | ForEach-Object { $_.Line } }

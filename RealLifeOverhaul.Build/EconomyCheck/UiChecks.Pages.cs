@@ -17,7 +17,8 @@ internal static partial class Program
         }
         if (def.Id == "session_panel")
         {
-            cases.Add(new UiScreenCase { Def = def, Name = def.Id, Title = "Desk", Lay = (s, f, dark, k, t) => UiSessionSteps.Lay(s, UiSamples.DeskPanel(t), f, dark, k) });
+            cases.Add(new UiScreenCase { Def = def, Name = def.Id, Title = "Desk", Lay = (s, f, dark, k, t) => UiDecision.Lay(s, UiSamples.DeskCard(t), f, dark, k) });
+            cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (a page without choices)", Title = "Desk", Lay = (s, f, dark, k, t) => UiDecision.Lay(s, UiSamples.DeskStart(t), f, dark, k) });
             return;
         }
         if (def.Id == "population")

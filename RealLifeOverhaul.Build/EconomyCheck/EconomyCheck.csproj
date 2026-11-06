@@ -853,6 +853,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Overlays\OverlayRules.cs" Link="Mod\Overlays\OverlayRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Overlays\OverlayKinds.cs" Link="Mod\Overlays\OverlayKinds.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Overlays\UiOverlays.cs" Link="Mod\Overlays\UiOverlays.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Sweep\SweepLedger.cs" Link="Mod\Sweep\SweepLedger.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Sweep\SweepRules.cs" Link="Mod\Sweep\SweepRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiToolPanel.cs" Link="Mod\UiToolPanel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiItemsList.cs" Link="Mod\UiItemsList.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiSidePanel.cs" Link="Mod\UiSidePanel.cs" />
