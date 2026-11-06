@@ -51,7 +51,8 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Each piece on the kit or the game's own, as its switch says.</summary>
         public static void Install()
         {
-            if (UiScreenSwitches.On(PromptId) || UiScreenSwitches.On(BuildingId))
+            if (UiScreenSwitches.On(PromptId) || UiScreenSwitches.On(BuildingId) || UiScreenSwitches.On(UiOverlays.HoverId) || UiScreenSwitches.On(UiOverlays.ClickId)
+                || UiScreenSwitches.On(UiOverlays.PointerId))
             {
                 WorldHost.Ensure();
             }

@@ -40,12 +40,13 @@ namespace RealLifeOverhaul.Ui
         public const string Ventures = "uiscreens_ventures";   // Brands, Ventures and the Web shop
         public const string Construction = "uiscreens_construction";   // the Construction app: its eight sections
         public const string Map = "uiscreens_map";        // the city map's panels: its filters, the place card, the district view, the subway list and the picker
+        public const string Overlays = "uiscreens_overlays";   // the cards over the world's items: the small one under the pointer, the large one a click opens, a person's panel
 
         /// <summary>Every section, in the page's order; a section with no switch yet is left off the page.</summary>
         public static readonly string[] Sections =
         {
             Apps, Business, Market, Boxes, Hud, Tools, Activity, Buy, Pause, Life, Social, Help, Money, News, Work, Company, Construction, Estate, Tech,
-            Ventures, Map,
+            Ventures, Map, Overlays,
         };
 
         private static readonly UiScreenDef[] Switched = Gather();

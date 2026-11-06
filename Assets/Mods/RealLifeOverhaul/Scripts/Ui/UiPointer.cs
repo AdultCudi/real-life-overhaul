@@ -15,12 +15,26 @@ namespace RealLifeOverhaul.Ui
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("ui", "UiPointer", typeof(UiPointer));   // the engine's calls of it (Core/Guard)
 
+        private static readonly System.Collections.Generic.List<UiView> Standing = new System.Collections.Generic.List<UiView>(16);
+
         private UiView _view;
+
+        /// <summary>Every view that stands: the tutorial's arrow finds the kit's own button behind the game's by looking at what they say. Cost: a list the engine's create and destroy keep.</summary>
+        public static System.Collections.Generic.List<UiView> Views => Standing;
 
         /// <summary>Points this at the view whose root it stands on.</summary>
         public void Bind(UiView view)
         {
             _view = view;
+            if (view != null && !Standing.Contains(view))
+            {
+                Standing.Add(view);
+            }
+        }
+
+        private void OnDestroy()
+        {
+            Standing.Remove(_view);
         }
 
 
