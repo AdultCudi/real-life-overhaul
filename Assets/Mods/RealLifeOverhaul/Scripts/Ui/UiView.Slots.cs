@@ -291,14 +291,19 @@ namespace RealLifeOverhaul.Ui
                 case UiKind.Picture:
                 {
                     // The layout gave the box the picture's own shape, so it fills it unstretched; one the game cannot find shows nothing.
-                    Place(slot.Rect, it.X, it.Y, it.W, it.H);
                     var pictureSlot = (ImageSlot)slot;
                     Image picture = pictureSlot.Image;
                     Sprite sprite = UiPictures.Find != null ? UiPictures.Find(it.Text) : null;
+                    float px = it.X, py = it.Y, pw = it.W, ph = it.H;
                     if ((it.Flags & UiFlags.Cover) != 0 && sprite != null)
                     {
                         sprite = CoverCut(pictureSlot, sprite, it.W, it.H);   // cropped once per picture and shape, nothing per frame
                     }
+                    else if (sprite != null)
+                    {
+                        sprite = Crisp(sprite, ref px, ref py, ref pw, ref ph);   // never stretched past its pixels, never shrunk by skipping them
+                    }
+                    Place(slot.Rect, px, py, pw, ph);
                     if (picture.sprite != sprite)
                     {
                         picture.sprite = sprite;

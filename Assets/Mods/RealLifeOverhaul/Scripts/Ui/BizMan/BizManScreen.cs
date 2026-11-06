@@ -164,7 +164,7 @@ namespace RealLifeOverhaul.Ui
         {
             if (command == BizManPages.Type || command == UiDataTable.First + UiDataTable.Search || command == BizManPages.Goods + UiDataTable.Type || command == BizManPages.OpsType
                 || command == BizManPages.OpsSearch || command == BizManPages.People + UiDataTable.Search || command == BizManPages.Table + UiDataTable.Type
-                || command == BizManPages.Table + UiDataTable.Search)
+                || command == BizManPages.Table + UiDataTable.Search || command == BizManPages.StartKinds + UiDataTable.Search)
             {
                 _typeCommand = command;
                 _typeArg = arg;
@@ -206,10 +206,6 @@ namespace RealLifeOverhaul.Ui
             if (_m.Amount != null && _m.Amount.Send.Key == action && !_m.Amount.Send.Disabled)
             {
                 return Press(BizManPages.Action, _m.Amount.Send.Arg);
-            }
-            if (_m.Catalogue != null && _m.Catalogue.Actions.Length > 0 && _m.Catalogue.Actions[0].Key == action)
-            {
-                return Press(UiCatalogue.First + UiCatalogue.Action, 0);
             }
             if (_m.Page == BizManPage.Business && (Pressing(_m.Ops.Actions, action, BizManPages.OpsAction, false) || Pressing(_m.Ops.PlanActions, action, BizManPages.OpsAction, false)))
             {
@@ -257,14 +253,15 @@ namespace RealLifeOverhaul.Ui
                 _dirty = true;
                 return;
             }
+            if (StartReveal(list, index))
+            {
+                _dirty = true;
+                return;
+            }
             UiDataTableModel table = _m.Page == BizManPage.Portfolio ? _m.Table : _m.Goods;
             if (table != null)
             {
                 table.Reveal = index;
-            }
-            if (_m.Catalogue != null && _m.Page == BizManPage.Business && _m.Part == BizManPart.Start)
-            {
-                _m.Catalogue.Reveal = index;
             }
             _dirty = true;
         }
@@ -296,14 +293,15 @@ namespace RealLifeOverhaul.Ui
                 _dirty = true;
                 return;
             }
+            if (StartWheel(clip, by))
+            {
+                _dirty = true;
+                return;
+            }
             UiDataTableModel table = _m.Page == BizManPage.Portfolio ? _m.Table : _m.Goods;
             if (table != null)
             {
                 table.Offset = Math.Max(0f, table.Offset + by);
-            }
-            if (_m.Catalogue != null)
-            {
-                _m.Catalogue.Offset = Math.Max(0f, _m.Catalogue.Offset + by);
             }
             _dirty = true;
         }
@@ -312,11 +310,18 @@ namespace RealLifeOverhaul.Ui
 
         public int TypingCommand => _typeCommand;
 
-        public string TypingText => OpsTyping(_typeCommand, out string ops) ? ops : Field(_typeCommand, _typeArg) is TMP_InputField f ? f.text : null;
+        public string TypingText => _typeCommand == BizManPages.StartKinds + UiDataTable.Search ? _kindQuery
+            : OpsTyping(_typeCommand, out string ops) ? ops : Field(_typeCommand, _typeArg) is TMP_InputField f ? f.text : null;
 
 
         public void Typed(string text)
         {
+            if (_typeCommand == BizManPages.StartKinds + UiDataTable.Search)
+            {
+                KindTyped(text);
+                _dirty = true;
+                return;
+            }
             if (OpsTyped(_typeCommand, _typeArg, text))
             {
                 _dirty = true;

@@ -93,35 +93,6 @@ namespace RealLifeOverhaul.Ui
         private static float AmountHeight(BizManAmount a) => a == null ? 0f
             : TitleHeight(a.Title) + (string.IsNullOrEmpty(AmountLine(a)) ? 0f : UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Body)) + UiTokens.S2) + UiTokens.Control + UiTokens.S6;
 
-        // ------------------------------------------------------------------------------------------------- start a business
-
-        // The name to give it and Randomise on one row, then the kinds this building takes as a catalogue, the chosen one's
-        // detail beside them with Start business.
-        private static void StartPage(UiScene s, UiAt at, BizManModel m, float x, float y, float w, float bottom, IUiKeys keys)
-        {
-            float lx = x;
-            if (!string.IsNullOrEmpty(m.NameLabel))
-            {
-                float lw = UiDraw.Snap(UiTextRules.Width(m.NameLabel, UiStyle.SectionHeader) + UiTokens.S1);
-                UiDraw.TextMiddle(s, at, x, y, UiTokens.Control, lw, UiStyle.SectionHeader, UiRole.Text, m.NameLabel, UiFlags.Label);
-                lx = x + lw + UiTokens.S4;
-            }
-            float fw = UiDraw.SnapDown(Math.Min(UiTokens.S16 * 6f, (x + w - lx) * 0.5f));
-            UiDraw.TextField(s, at, lx, y, fw, m.NameText, m.NamePlaceholder, Type, FieldName, false, m.Typing);
-            int random = Find(m.Actions, DoRandomName);
-            if (random >= 0)
-            {
-                ref UiActionModel a = ref m.Actions[random];
-                float bw = UiDraw.ButtonWidth(a.Kind, a.Label, a.Icon, a.Key, keys);
-                UiDraw.Button(s, at, lx + fw + UiTokens.S3, y, bw, UiTokens.Control, a.Kind, a.Label, a.Icon, a.Key, keys, Action, a.Arg, a.Disabled);
-            }
-            float cy = y + UiTokens.Control + UiTokens.S5;
-            if (m.Catalogue != null)
-            {
-                UiCatalogue.Lay(s, at, m.Catalogue, x, cy, w, bottom - cy, keys, out _);
-            }
-        }
-
         // ------------------------------------------------------------------------------------------------- insight
 
         // Customers over time in the left column with the period beside its title, the capacity in the right, and under them

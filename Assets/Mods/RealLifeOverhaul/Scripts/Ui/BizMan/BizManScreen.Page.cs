@@ -463,7 +463,7 @@ namespace RealLifeOverhaul.Ui
             {
                 Transform kinds = Get<Transform>(GameContract.StartKinds, start);
                 TMP_InputField name = Get<TMP_InputField>(GameContract.StartName, start);
-                sig = sig * 31 + (kinds != null ? kinds.childCount : 0) + Hash(name != null ? name.text : null);
+                sig = sig * 31 + (kinds != null ? kinds.childCount : 0) + Hash(name != null ? name.text : null) + Hash(_kindQuery) * 7;
                 for (int i = 0; kinds != null && i < kinds.childCount; i++)
                 {
                     GameObject chosen = Get<GameObject>(GameContract.KindChosen, kinds.GetChild(i).GetComponent<StartBusinessTypeUI>());
@@ -490,7 +490,6 @@ namespace RealLifeOverhaul.Ui
             _m.Facts = _m.More = _m.BuildingFacts = new BizManFact[0];
             _m.Actions = new UiActionModel[0];
             _m.Amount = _m.Second = null;
-            _m.Catalogue = null;
             _m.Chart = null;
             _m.Periods = new string[0];
             _m.Grades = _m.SecondGrades = new BizManGrade[0];

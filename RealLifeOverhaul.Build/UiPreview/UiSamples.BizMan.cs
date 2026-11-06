@@ -701,29 +701,73 @@ internal static partial class UiSamples
         m.NameLabel = t("common_business_name", "Business name");
         m.NamePlaceholder = t("reallife_ui_bizman_name_hint", "Name your business");
         m.NameText = "Mott Street Bakery";
-        string[] kinds = { "Coffee Shop", "Fast Food Restaurant", "Florist", "Gift Shop", "Bookstore", "Clothing Store", "Jewelry Store", "Liquor Store" };
-        string[] types = { "coffeeshop", "fastfoodrestaurant", "florist", "giftshop", "bookstore", "clothingstore", "jewelrystore", "liquorstore" };
-        int[] rivals = { 4, 7, 1, 2, 0, 5, 3, 2 };
-        var cards = new UiCatalogueCard[kinds.Length];
+        string[] kinds = { "Florist", "Fruit And Vegetable Store", "Coffee Shop", "Supermarket", "Fast Food Restaurant", "Hairdresser", "Gym", "Gift Shop", "Bookstore", "Liquor Store",
+            "Nightclub", "Jewelry Store", "Clothing Store", "Electronics Store", "Car Showroom", "Bank", "Headquarters", "Warehouse" };
+        string[] types = { "florist", "fruitandvegetablestore", "coffeeshop", "supermarket", "fastfoodrestaurant", "hairdresser", "gym", "giftshop", "bookstore", "liquorstore",
+            "nightclub", "jewelrystore", "clothingstore", "electronicsstore", "cardealership", "bank", "headquarters", "warehouse" };
+        string[] rivals = { "6", "6", "7", "3", "5", "4", "3", "6", "2", "1", "2", "1", "1", "1", "0", "0", "-", "-" };
+        var rows = new UiDataRow[kinds.Length];
         for (int i = 0; i < kinds.Length; i++)
         {
-            cards[i] = new UiCatalogueCard
-            {
-                Icon = BizManRules.KindIcon("ba:businesstype_" + types[i], null), Name = kinds[i],
-                Figure = "Competitors: " + rivals[i]
-            };
+            rows[i] = new UiDataRow { Cells = new[] { kinds[i], rivals[i] }, Values = new[] { (int)BizManRules.KindIcon("ba:businesstype_" + types[i], null), 0 } };
         }
-        m.Catalogue = new UiCatalogueModel
+        m.StartKinds = new UiDataTableModel
         {
-            Cards = cards, CardCount = cards.Length, Chosen = 0, DetailKicker = t("common_business_type", "Business type"),
-            DetailLabels = new[] { t("bizman_primary_products", "Primary products") },
-            DetailValues = new[] { "Coffee, croissants, cupcakes" },
-            DetailNote = t("reallife_ui_bizman_start_note", "Name it, then start it. You fit it out afterwards from inside the building."),
-            Actions = new[] { new UiActionModel { Label = t("bizman_start_business_button", "Start business"), Kind = UiButtonKind.Primary, Icon = UiIcon.Check, Key = UiAction.Alt,
-                Command = UiCatalogue.First + UiCatalogue.Action, Arg = 0 } }
+            Columns = new[]
+            {
+                new UiDataColumn { Title = t("common_business_type", "Business type"), Kind = UiCellKind.Tile },
+                new UiDataColumn { Title = t("reallife_ui_bizman_competitors", "Competitors"), Kind = UiCellKind.Figure, Width = 128f }
+            },
+            Rows = rows, RowCount = rows.Length, Selected = 2, SearchPlaceholder = t("reallife_ui_bizman_find_kind", "Find a type of business"),
+            EmptyIcon = UiIcon.Store, EmptyTitle = t("reallife_ui_bizman_kinds_none", "No kind of business fits this building")
         };
-        m.Actions = new[] { new UiActionModel { Label = t("reallife_ui_bizman_randomise", "Randomise"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Spark, Key = UiAction.Count,
-            Command = BizManPages.Action, Arg = BizManPages.DoRandomName } };
+        var detail = new BizManStart { Kicker = t("common_business_type", "Business type"), Name = kinds[2], Icon = UiIcon.Coffee };
+        var list = new System.Collections.Generic.List<BizManStartRow>();
+        list.Add(new BizManStartRow { Kind = BizManStartKind.Fact, Label = t("reallife_ui_bizman_competitors_here", "Competitors in the neighbourhood"), Value = "7" });
+        list.Add(new BizManStartRow { Kind = BizManStartKind.Heading, Label = t("bizman_primary_products", "Primary products") });
+        string[] goods = { "Cappuccino", "Croissant", "Espresso", "Latte", "Muffin", "Tea", "Iced Coffee", "Sandwich", "Donut", "Cookie", "Brownie", "Hot Chocolate" };
+        for (int i = 0; i < goods.Length; i++)
+        {
+            bool can = i != 7 && i != 10;
+            list.Add(new BizManStartRow { Kind = BizManStartKind.Item, Label = goods[i], Mark = can ? UiIcon.None : UiIcon.Warning, Tone = can ? UiRole.None : UiRole.Warn });
+        }
+        list.Add(new BizManStartRow { Kind = BizManStartKind.Heading, Label = t("reallife_ui_bizman_start_sources", "Where the goods come from") });
+        list.Add(new BizManStartRow { Kind = BizManStartKind.Item, Label = "Wholesaler", Mark = UiIcon.Check, Tone = UiRole.Ok });
+        list.Add(new BizManStartRow { Kind = BizManStartKind.Item, Label = "Importer", Mark = UiIcon.Warning, Tone = UiRole.Warn });
+        list.Add(new BizManStartRow
+        {
+            Kind = BizManStartKind.Note,
+            Label = t("reallife_ui_bizman_start_source_missing", "A source marked with a warning is one you cannot use yet. The game asks you to confirm when you choose the type.")
+        });
+        list.Add(new BizManStartRow { Kind = BizManStartKind.Heading, Label = t("reallife_ui_bizman_start_needs", "What it needs to open") });
+        list.Add(new BizManStartRow { Kind = BizManStartKind.Item, Label = "2 x Coffee Machine" });
+        list.Add(new BizManStartRow { Kind = BizManStartKind.Item, Label = "4 x Table" });
+        list.Add(new BizManStartRow { Kind = BizManStartKind.Item, Label = "Cash Register" });
+        list.Add(new BizManStartRow { Kind = BizManStartKind.Heading, Label = t("reallife_ui_bizman_start_diploma", "Diploma") });
+        list.Add(new BizManStartRow { Kind = BizManStartKind.Item, Label = "Hospitality", Mark = UiIcon.Warning, Tone = UiRole.Warn });
+        list.Add(new BizManStartRow
+        {
+            Kind = BizManStartKind.Note, Label = t("reallife_ui_bizman_start_diploma_missing", "You have not completed this diploma yet, so the game will not let you start this type.")
+        });
+        list.Add(new BizManStartRow { Kind = BizManStartKind.Heading, Label = t("reallife_ui_bizman_the_building", "The building") });
+        list.Add(new BizManStartRow { Kind = BizManStartKind.Fact, Label = t("common_building_type", "Building type"), Value = "Retail" });
+        list.Add(new BizManStartRow { Kind = BizManStartKind.Fact, Label = t("bizman_building_total_size", "Total size"), Value = "220 m2" });
+        list.Add(new BizManStartRow { Kind = BizManStartKind.Fact, Label = t("bizman_traffic_index", "Traffic index"), Value = "7" });
+        list.Add(new BizManStartRow { Kind = BizManStartKind.Fact, Label = t("bizman_customers_capacity", "Customer capacity"), Value = "48" });
+        list.Add(new BizManStartRow { Kind = BizManStartKind.Fact, Label = t("bizman_market_value", "Market value"), Value = "$1,480,000" });
+        detail.Rows = list.ToArray();
+        m.StartDetail = detail;
+        m.StartEmptyTitle = t("reallife_ui_bizman_start_pick", "Choose a type of business");
+        m.StartEmptyBody = t("reallife_ui_bizman_start_pick_body", "Pick one from the list to see what it sells, what it needs to open and who already trades near you.");
+        m.Actions = new[]
+        {
+            new UiActionModel { Label = t("reallife_ui_bizman_randomise", "Randomise"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Spark, Key = UiAction.Count,
+                Command = BizManPages.Action, Arg = BizManPages.DoRandomName },
+            new UiActionModel { Label = t("bizman_preview_button", "Preview"), Kind = UiButtonKind.Secondary, Icon = UiIcon.Eye, Key = UiAction.Option,
+                Command = BizManPages.Action, Arg = BizManPages.DoPreview },
+            new UiActionModel { Label = t("bizman_start_business_button", "Start business"), Kind = UiButtonKind.Primary, Icon = UiIcon.Check, Key = UiAction.Alt,
+                Command = BizManPages.Action, Arg = BizManPages.DoStartHere },
+        };
         m.Prompts = BizManPrompts(t, false);
         m.PromptCount = m.Prompts.Length;
         return m;

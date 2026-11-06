@@ -27,6 +27,8 @@ namespace RealLifeOverhaul.Ui
             DoRandom = 11, DoSave = 12, DoShutdown = 13, DoSaveLogo = 14, DoLogoEdit = 15, DoLogoDone = 28, DoApplyRent = 16, DoTakeoverUnit = 17, DoMarkSale = 18, DoCancelSale = 19,
             DoOrder = 20, DoUrgent = 21, DoCancelContract = 22, DoEndContract = 23, DoEconoView = 25, DoClassic = 26, DoRandomName = 27;
         public const int DoLine = 100;                // a button a page of lines offers (the Interior tab's), its index from here
+        public const int StartKinds = 9800;           // the start page's kinds table, from here as UiDataTable's from its First (this job's block 9800 to 9819)
+        public const int DoStartHere = 9810;              // the start page's own Start business, the game's SetUpBusiness
         public const int Goods = 400;                 // the goods' table's commands, from here as UiDataTable's from its First
         public const int FieldName = 0, FieldOffer = 1, FieldBuy = 2, FieldSale = 3;
         private const float SummaryH = UiTokens.Control;   // px: the portfolio's slim line
@@ -41,7 +43,7 @@ namespace RealLifeOverhaul.Ui
             UiDataTable.First + UiDataTable.Head, UiDataTable.First + UiDataTable.Filter, UiDataTable.First + UiDataTable.Search, UiDataTable.First + UiDataTable.Row,
             UiDataTable.First + UiDataTable.Clear, UiDataTable.First + UiDataTable.Act,
             Goods + UiDataTable.Head, Goods + UiDataTable.Less, Goods + UiDataTable.Type, Goods + UiDataTable.More, Goods + UiDataTable.Row,
-            UiChart.First + UiChart.Point, UiCatalogue.First + UiCatalogue.Card, UiCatalogue.First + UiCatalogue.Action,
+            UiChart.First + UiChart.Point, StartKinds + UiDataTable.Search, StartKinds + UiDataTable.Row, StartKinds + UiDataTable.Clear,
             OpsRow, OpsChoice, OpsOption, OpsLess, OpsType, OpsMore, OpsSlider, OpsPlan, OpsAction, OpsTab, OpsStop, OpsStopRemove, OpsStopChoice, OpsDayOpen, OpsSearch,
             OpsCancelFill, OpsFirstPlan, OpsHours, OpsHour, OpsSheetDone, OpsFilter, UiBoard.ShiftCommand, UiBoard.LaneCommand, UiBoard.DayCommand, UiBoard.ActionCommand,
             UiCard.ButtonCommand, UiCard.CheckCommand,

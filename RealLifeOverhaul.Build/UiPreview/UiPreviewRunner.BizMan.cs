@@ -164,11 +164,11 @@ public static partial class UiPreviewRunner
                 screen.Walk = Moves("RDDLDD");
                 break;
             case "start":
-                screen.HoverCommand = UiCatalogue.First + UiCatalogue.Card;
-                screen.HoverArg = 2;
-                screen.FocusCommand = UiCatalogue.First + UiCatalogue.Card;
-                screen.FocusArg = 0;
-                screen.Walk = Moves("RDRRDR");
+                screen.HoverCommand = BizManPages.StartKinds + UiDataTable.Row;
+                screen.HoverArg = 4;
+                screen.FocusCommand = BizManPages.StartKinds + UiDataTable.Row;
+                screen.FocusArg = 2;
+                screen.Walk = Moves("DDDRDD");
                 break;
             case "rival":
                 screen.HoverCommand = BizManPages.Action;

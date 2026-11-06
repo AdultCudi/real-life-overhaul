@@ -96,13 +96,10 @@ namespace RealLifeOverhaul.Ui
                     return StepGood(b, arg, command == BizManPages.Goods + UiDataTable.More);
                 case BizManPages.Goods + UiDataTable.Type:
                     return true;
-                case UiCatalogue.First + UiCatalogue.Card:
-                    return arg >= 0 && arg < _kindCards.Count && Click(Get<Button>(GameContract.KindSelect, _kindCards[arg].GetComponent<StartBusinessTypeUI>()), "choose " + _kindCards[arg].name);
-                case UiCatalogue.First + UiCatalogue.Action:
-                {
-                    StartBusinessUI start = Get<StartBusinessUI>(GameContract.ShowStart, PageOf<BizManPresentation>(b, BizManRules.Presentation));
-                    return Click(Calling(start, "SetUpBusiness"), "set up the business");
-                }
+                case BizManPages.StartKinds + UiDataTable.Row:
+                    return ChooseKind(arg);
+                case BizManPages.StartKinds + UiDataTable.Clear:
+                    return ClearKindSearch();
                 case BizManPages.Item:
                 {
                     List<DeliveryContractEntry> entries = Get<List<DeliveryContractEntry>>(GameContract.DealEntries, PageOf<BizManDeliveries>(b, BizManRules.Deliveries));
@@ -253,6 +250,7 @@ namespace RealLifeOverhaul.Ui
                 case BizManPages.DoBrowse: return Click(Calling(pres, "BrowseInventory"), "browse the store's goods");
                 case BizManPages.DoEmployees:
                     return pres != null && pres.showEmployeesButton != null && Click(pres.showEmployeesButton.GetComponentInChildren<Button>(true), "show the business's employees");
+                case BizManPages.DoStartHere: return SetUpBusiness(b);
                 case BizManPages.DoRandomName:
                     return Click(Calling(Get<StartBusinessUI>(GameContract.ShowStart, pres), "RandomizeName"), "a name from the game's own generator");
                 case BizManPages.DoRandom: return Click(Calling(b.bizManSettings, "RandomizeBusinessName"), "a name from the game's own generator");

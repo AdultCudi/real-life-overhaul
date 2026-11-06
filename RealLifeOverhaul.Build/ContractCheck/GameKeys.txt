@@ -1088,6 +1088,7 @@ myemployees_skills
 myemployees_task
 myemployees_task_absent
 myemployees_task_training
+myemployees_title
 myemployees_train_skill_button
 myemployees_uniform
 myemployees_wants_and_demands
