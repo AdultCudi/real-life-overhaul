@@ -1,6 +1,6 @@
 # 0007: A read API for other mods
 
-**Status:** Proposed. **Date:** 21 October 2026.
+**Status:** Accepted. **Date:** 21 October 2026, accepted 6 November 2026.
 
 ## Context
 
