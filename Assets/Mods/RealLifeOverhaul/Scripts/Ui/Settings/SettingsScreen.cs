@@ -82,6 +82,29 @@ namespace RealLifeOverhaul.Ui
 
         public bool Dirty => _dirty;
 
+        /// <summary>The groups of the mod's settings, for the game's Options in the city to list them and open one (Ui/Options).</summary>
+        internal int GroupCount
+        {
+            get
+            {
+                EnsureGroups();
+                return _groupNames.Length;
+            }
+        }
+
+        internal string GroupName(int group) => group >= 0 && group < _groupNames.Length ? _groupNames[group] : string.Empty;
+
+        internal UiIcon GroupIcon(int group) => group >= 0 && group < _groupIcons.Length ? _groupIcons[group] : UiIcon.Gear;
+
+        internal int GroupOptions(int group) => group >= 0 && group < _groupCounts.Length ? _groupCounts[group] : 0;
+
+        /// <summary>Shows the list at one group, as a press on it in the sidebar does.</summary>
+        internal void ShowGroup(int group)
+        {
+            EnsureGroups();
+            OpenGroup(group, true);
+        }
+
         public int TypingCommand => UiSettingsList.SearchCommand;
 
         public string TypingText => _query ?? string.Empty;

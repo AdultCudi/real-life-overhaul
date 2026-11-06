@@ -34,6 +34,7 @@ namespace RealLifeOverhaul.Ui
                 .Test("reallife_ui_test_checkout", "reallife_ui_test_vehicle_buy", "reallife_ui_test_item_panel", "reallife_ui_test_cargo", "reallife_ui_test_wardrobe",
                     "reallife_ui_test_buy_switch")
                 .Test("reallife_ui_test_pause_menu", "reallife_ui_test_pause_switch")
+                .Test("reallife_ui_test_options", "reallife_ui_test_options_switch")
                 .Test("reallife_ui_test_map_open", "reallife_ui_test_map_switch")
                 .Test("reallife_ui_test_econoview", "reallife_ui_test_econoview_loans", "reallife_ui_test_econoview_switch")
                 .Test("reallife_ui_test_persona", "reallife_ui_test_rivals", "reallife_ui_test_market", "reallife_ui_test_persona_switch", "reallife_ui_test_rivals_switch",

@@ -1153,6 +1153,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_ui_test_buy_switch", () => Ui.UiDirector.Instance?.TestBuySwitch())
                 .AddButton("reallife_ui_test_pause_menu", () => Ui.UiDirector.Instance?.TestPauseMenu())
                 .AddButton("reallife_ui_test_pause_switch", () => Ui.UiDirector.Instance?.TestPauseSwitch())
+                .AddButton("reallife_ui_test_options", () => Ui.UiDirector.Instance?.TestOptions())
+                .AddButton("reallife_ui_test_options_switch", () => Ui.UiDirector.Instance?.TestOptionsSwitch())
                 .AddButton("reallife_ui_test_map_open", () => Ui.UiDirector.Instance?.TestMapOpen())
                 .AddButton("reallife_ui_test_map_switch", () => Ui.UiDirector.Instance?.TestMapSwitch())
                 .AddButton("reallife_ui_test_persona", () => Ui.UiDirector.Instance?.TestPersona())
