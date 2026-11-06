@@ -133,6 +133,14 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--designer-ui")
+        {
+            DesignerKitAll();   // the interior designer on the kit: its pages, rules, places, requirements and wiring, then its screen in every state (UiChecks.Designer.cs)
+            Environment.SetEnvironmentVariable("RLO_UI_ONLY", "designer");
+            UiScreenChecks();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--buildmode-ui")
         {
             BuildModeChecks();   // the rules Build mode stands on, then the kit's face: its layers, designs, places and wiring, then its screen in every state (UiChecks.BuildMode.cs)

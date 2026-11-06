@@ -64,6 +64,7 @@ namespace RealLifeOverhaul.Ui
                 .Test("reallife_ui_test_estate", "reallife_ui_test_estate_rents", "reallife_ui_test_dealer", "reallife_ui_test_estate_switch")
                 .Test("reallife_ui_test_services", "reallife_ui_test_services_sell", "reallife_ui_test_services_switch")
                 .Test("reallife_ui_test_build_catalogue", "reallife_ui_test_build_switch")
+                .Test("reallife_ui_test_designer_state", "reallife_ui_test_designer_switch")
                 .Test("reallife_ui_test_tech", "reallife_ui_test_tech_game", "reallife_ui_test_tech_centre", "reallife_ui_test_tech_switch")
                 .Test("reallife_ui_test_ventures", "reallife_ui_test_brands", "reallife_ui_test_webshop", "reallife_ui_test_ventures_switch")
                 .Data(PlayTimeStore.Key)   // the time played in the city, for the pause menu's card (Ui/Pause/PlayTime)

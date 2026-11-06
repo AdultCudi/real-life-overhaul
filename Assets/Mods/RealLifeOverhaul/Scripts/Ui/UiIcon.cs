@@ -186,6 +186,12 @@ namespace RealLifeOverhaul.Ui
         Walk, // on foot: a route's walk, a quiet street
         Taxi, // a cab: a route by taxi
         Bookmark, // a place the player saved
+        Copy, // the designer's duplicate tool
+        Wall, // the designer's wall tool
+        Palette, // the designer's palette tool
+        Eyedropper, // the designer's eyedropper tool
+        Undo, // a step taken back
+        Redo, // a step taken back, put forward again
         Count
     }
 
@@ -259,6 +265,14 @@ namespace RealLifeOverhaul.Ui
                     return UiRole.CatFood;
                 case UiIcon.Building: case UiIcon.Wrench: case UiIcon.Factory: case UiIcon.Package: case UiIcon.GenreHorror:
                     return UiRole.CatIndustry;
+                case UiIcon.Copy:
+                    return UiRole.Chart1;   // the designer's tools: a copy sky blue, a wall brick orange, the palette in the shop family's colour, the dropper gold
+                case UiIcon.Wall:
+                    return UiRole.Chart6;
+                case UiIcon.Palette:
+                    return UiRole.CatRetail;
+                case UiIcon.Eyedropper:
+                    return UiRole.Chart4;
                 default:
                     return UiRole.Text2;   // the chrome's own: search, close, the arrows, the clock's controls, settings
             }

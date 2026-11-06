@@ -203,6 +203,12 @@ ICONS = [
     ("Walk", "person-simple-walk", "duotone", "26ab881dea91b7484cd115af1abd38448f26790fb5045538fb31f762384c0be7"),
     ("Taxi", "taxi", "duotone", "26efeae2bd5ff23693ee20b011d3029375c180346f5f569d6176a0906bf542b7"),
     ("Bookmark", "bookmark-simple", "duotone", "b560161da8079c67c381dcfd1ae69b39e8eed3815370cf2adc6ba4b3bea04aff"),
+    ("Copy", "copy", "duotone", "587be2bbc922a32b5cbd06d39b04129fae4bd01d9ee240ba86f635f6285902a2"),
+    ("Wall", "wall", "duotone", "e345ee0236e194f3ab7c62106430f785da8e1e54031e9a07912156971eb02de9"),
+    ("Palette", "palette", "duotone", "f88e53a831d175ba02b0ba49d8be24be22963a1522cd8e55bf07d02897b8c7eb"),
+    ("Eyedropper", "eyedropper", "duotone", "4a397eadada7af0e6f23593f5909c90b95c2d79afbfbd5c0465037845d763e63"),
+    ("Undo", "arrow-u-up-left", "duotone", "23c40b3701ce556eee89166f7c0aea2ee200177af773cddd0f538c1b152ee442"),
+    ("Redo", "arrow-u-up-right", "duotone", "25d375dd48f9773eb2dc7e5ddb96ee0605d454d58fc61de85601213e4f91cf4f"),
 ]
 
 # Phosphor's fill weight of every duotone icon, its second variant: the chunky solid glyph a toolbar's tile asks for
@@ -340,6 +346,12 @@ FILLS = {
     "Walk": "1bd98cb5854e25fb93e4fcb59cb3ebe2af4c4fc1d4ad9cc28f52508ebb35bbee",
     "Taxi": "5b0fcb03fa1bf56b8a701aece4017de93aebc9a62bd0ae938e3cef3b537cb015",
     "Bookmark": "379dfd32059dc79b50e9e51a92ff94e028f0325262a985ad8136b0d4c661db65",
+    "Copy": "eac5e853ad04f714e8d7f74932b62a6227d0853c9f31550e006c9b20f469172f",
+    "Wall": "cb8f17fe071b96098bb33ae94ee1fb8295c7530dc213bafcc3da98c7a1800f90",
+    "Palette": "c8f6bdc5d4ddff5ad039a926e13efe7ceb92f5a57e6a755df516ca05deadba53",
+    "Eyedropper": "8fb839f52aaadbe156dc9982deab2288c1e23fe335d65f7a638ba21ac8078037",
+    "Undo": "f9e8890a04c24f2f973e7ff3f764bae79df60056d654e987da351618a9cabfc4",
+    "Redo": "5b4c7535d1c58bde4c4f87e2ab23c8d20ddf6a1d039a1f968445c811bcc537c3",
 }
 
 # The shapes an icon may be drawn with, and the attributes each may carry. Anything else stops the run, so an icon is never
