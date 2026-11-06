@@ -125,7 +125,7 @@ namespace RealLifeOverhaul.Ui
                         long fee = ExitRules.Retainer(FirmValueNow(firm));
                         card.Step(TechText.T("reallife_ui_tech_exit_bank"), TechText.Fill("reallife_exit_bank_line", "bank", banks[at], "fee", Cents(_d.Level(fee))), null, n > 1, n > 1,
                             Go(v => _bankStep = (at + n - 1) % n), Go(v => _bankStep = (at + 1) % n));
-                        card.Button(TechText.T("reallife_exit_button_bankers"), UiButtonKind.Primary, UiAction.Count, Do(() => _d.ExitBankers(place, at)));
+                        card.Button(TechText.T("reallife_exit_button_bankers"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.ExitBankers(place, at)));
                     }
                 }
                 else if (e.Stage == ListStage.Bankers)
@@ -135,7 +135,7 @@ namespace RealLifeOverhaul.Ui
                     int at = _approachStep;
                     card.Step(TechText.T("reallife_ui_tech_exit_road"), TechText.T(RoadKeys[at]), null, at > 0, at < RoadKeys.Length - 1, Go(v => _approachStep = at - 1),
                         Go(v => _approachStep = at + 1));
-                    card.Button(TechText.T("reallife_exit_button_road"), UiButtonKind.Primary, UiAction.Count, Do(() => _d.ExitRoadshow(place, at)));
+                    card.Button(TechText.T("reallife_exit_button_road"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.ExitRoadshow(place, at)));
                     card.Button(TechText.T("reallife_exit_button_withdraw"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.ExitWithdraw(place)));
                 }
                 else if (e.Stage == ListStage.Roadshow)

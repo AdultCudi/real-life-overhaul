@@ -63,13 +63,13 @@ internal static partial class UiSamples
         {
             market.Say(W(t, "reallife_exit_market_start", "Bankers take the firm to the market. Choose one: the largest reaches furthest and keeps most of what the offer raises."))
                 .Step(TW(t, "exit_bank", "Bank"), WF(t, "reallife_exit_bank_line", "Harbour City Bancorp: retainer $210,000", "bank", "Harbour City Bancorp", "fee", "$210,000"), null, true, true, () => true, () => true)
-                .Button(W(t, "reallife_exit_button_bankers", "Engage the bankers"), UiButtonKind.Primary, UiAction.Count, () => true);
+                .Button(W(t, "reallife_exit_button_bankers", "Engage the bankers"), UiButtonKind.Secondary, UiAction.Count, () => true);
         }
         else if (state == "exits_market")
         {
             market.Say(WF(t, "reallife_exit_market_bankers", "Harbour City Bancorp is engaged ($210,000 paid). Next is the roadshow, at your desk or here.", "bank", "Harbour City Bancorp", "fee", "$210,000"))
                 .Step(TW(t, "exit_road", "Roadshow"), W(t, "reallife_exit_road_1", "Deep: fewer, better investors"), null, true, true, () => true, () => true)
-                .Button(W(t, "reallife_exit_button_road", "Hold the roadshow"), UiButtonKind.Primary, UiAction.Count, () => true)
+                .Button(W(t, "reallife_exit_button_road", "Hold the roadshow"), UiButtonKind.Secondary, UiAction.Count, () => true)
                 .Button(W(t, "reallife_exit_button_withdraw", "Withdraw the offer"), UiButtonKind.Secondary, UiAction.Count, () => true);
         }
         else if (state == "exits_listed")
