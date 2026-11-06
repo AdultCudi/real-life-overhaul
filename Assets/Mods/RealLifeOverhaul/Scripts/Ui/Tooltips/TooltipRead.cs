@@ -180,12 +180,13 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             bool upper = (text.fontStyle & FontStyles.UpperCase) != 0;
+            // the game's labels carry their own line breaks: one block a line
             foreach (string line in words.Split('\n'))
             {
                 string one = line.Trim();
                 if (one.Length > 0)
                 {
-                    m.Text(upper ? one.ToUpperInvariant() : one, Ink(text.color), (text.fontStyle & FontStyles.Bold) != 0, ((int)text.alignment & 0x2) != 0);   // the game's labels carry their own line breaks
+                    m.Text(upper ? one.ToUpperInvariant() : one, Ink(text.color), (text.fontStyle & FontStyles.Bold) != 0, ((int)text.alignment & 0x2) != 0);
                 }
             }
         }
