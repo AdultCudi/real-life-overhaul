@@ -409,6 +409,7 @@ namespace RealLifeOverhaul.Tech
                     continue;
                 }
                 TermSheet t = FoundRules.DemoSheet(vc, value, f, VentureRules.Mood(HiringGame.Cycle), day);
+                t.T = TermsFor(c, firm, vc, day);   // a demo day's lead asks what it asks at any pitch
                 c.Sheets.Add(t);
                 made++;
             }
