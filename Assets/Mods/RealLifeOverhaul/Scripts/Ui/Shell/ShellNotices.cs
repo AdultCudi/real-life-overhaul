@@ -331,7 +331,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     _hidden.Add(entry.GetChild(c));
                 }
-                _hidden.Add(entry.GetComponent<Graphic>());
+                // Deaf: the entry's button tints this picture on hover, which would show it again behind the card.
+                _hidden.AddDeaf(entry.GetComponent<Graphic>());
             }
 
             // The once-a-session line (developer diagnostics): the first toast drawn as a card, and how many of the game's entries are unseen.
