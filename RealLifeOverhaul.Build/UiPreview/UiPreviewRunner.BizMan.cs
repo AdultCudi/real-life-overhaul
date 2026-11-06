@@ -14,7 +14,7 @@ public static partial class UiPreviewRunner
     static partial void AddBizMan(List<Screen> screens)
     {
         Func<string, Sprite> before = UiPictures.Find;
-        UiPictures.Find = key => key != null && key.StartsWith("bizman:", StringComparison.Ordinal) ? BizManPicture(key) : before?.Invoke(key);
+        UiPictures.Find = key => key != null && (key.StartsWith("bizman:", StringComparison.Ordinal) || key.StartsWith(UiDraw.SwatchPicture, StringComparison.Ordinal)) ? BizManPicture(key) : before?.Invoke(key);
         for (int i = 0; i < UiSamples.BizManStates.Length; i++)
         {
             string state = UiSamples.BizManStates[i];
@@ -107,6 +107,13 @@ public static partial class UiPreviewRunner
                 screen.FocusArg = BizManPages.FieldName;
                 screen.Walk = Moves("RDDDRDD");
                 break;
+            case "store_logo": case "store_logo_colours":
+                screen.HoverCommand = state == "store_logo" ? BizManPages.LogoShape : BizManPages.LogoColour;
+                screen.HoverArg = 5;
+                screen.FocusCommand = state == "store_logo" ? BizManPages.LogoShape : BizManPages.LogoColour + 2;
+                screen.FocusArg = 2;
+                screen.Walk = Moves("RRDDRD");
+                break;
             case "store_estate":
                 screen.HoverCommand = BizManPages.Action;
                 screen.HoverArg = BizManPages.DoApplyRent;
@@ -185,6 +192,10 @@ public static partial class UiPreviewRunner
         {
             return known;
         }
+        if (key.StartsWith(UiDraw.SwatchPicture, StringComparison.Ordinal) || key.StartsWith("bizman:shape:", StringComparison.Ordinal) || key == "bizman:logopreview")
+        {
+            return BizPictures[key] = BizLogoPiece(key);
+        }
         if (key == "bizman:logo")
         {
             return BizPictures[key] = BizLogo();
@@ -203,6 +214,47 @@ public static partial class UiPreviewRunner
         return sprite;
     }
 
+
+    // Offline stand-ins for the editor's pictures: a square of a swatch's colour, the Nth of the game's shape files, and the logo painted
+    // the way the kit paints it (the first coffee shape in black on white).
+    private static Sprite BizLogoPiece(string key)
+    {
+        if (key.StartsWith(UiDraw.SwatchPicture, StringComparison.Ordinal))
+        {
+            int rgb = UiDraw.SwatchColour(key);
+            var sq = new Texture2D(4, 4, TextureFormat.RGB24, false) { filterMode = FilterMode.Point };
+            var px = new Color32[16];
+            for (int i = 0; i < px.Length; i++)
+            {
+                px[i] = new Color32((byte)(rgb >> 16), (byte)(rgb >> 8), (byte)rgb, 255);
+            }
+            sq.SetPixels32(px);
+            sq.Apply();
+            return Sprite.Create(sq, new Rect(0, 0, 4, 4), new Vector2(0.5f, 0.5f));
+        }
+        string[] files = Directory.Exists(BizGameShapes) ? Directory.GetFiles(BizGameShapes, "*.png") : new string[0];
+        int n = key == "bizman:logopreview" ? 16 : int.Parse(key.Substring("bizman:shape:".Length));
+        if (n >= files.Length)
+        {
+            return null;
+        }
+        var tex = new Texture2D(2, 2, TextureFormat.RGBA32, false);
+        tex.LoadImage(File.ReadAllBytes(files[n]));
+        if (key != "bizman:logopreview")
+        {
+            return Sprite.Create(tex, new Rect(0f, 0f, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+        }
+        Color32[] src = tex.GetPixels32();
+        for (int i = 0; i < src.Length; i++)
+        {
+            int a = src[i].a;
+            byte v = (byte)(255 - a);   // black shape over white
+            src[i] = new Color32(v, v, v, 255);
+        }
+        tex.SetPixels32(src);
+        tex.Apply();
+        return Sprite.Create(tex, new Rect(0f, 0f, tex.width, tex.height), new Vector2(0.5f, 0.5f));
+    }
     private const string BizGameShapes = @"G:\Steam\steamapps\common\Big Ambitions\Big Ambitions_Data\StreamingAssets\LogoShapes";
 
     // The café's logo as the game draws its own: one of the game's logo shapes for a coffee shop, from the game's files.

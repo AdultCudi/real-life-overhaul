@@ -19,9 +19,12 @@ namespace RealLifeOverhaul.Ui
             Cancel = 319, Page = 320, Heading = 321, Pages = 322;
         public const int SecondColumn = 1000;         // a heading of the right column: its argument from here, the left's from 0
 
+        // The logo editor's commands (this job's block 9600 to 9619; used 9600 to 9603 and 9610 to 9612).
+        public const int LogoShape = 9600, LogoOwn = 9601, LogoColourAdd = 9602, LogoTab = 9603, LogoColour = 9610;   // a colour row's swatches: LogoColour plus the row (0 to 2)
+
         // What an action does, its argument: the game's side presses the game's own button for each.
         public const int DoRent = 1, DoStart = 2, DoTerminate = 3, DoPreview = 4, DoBuy = 5, DoTakeover = 6, DoBrowse = 7, DoEmployees = 8,
-            DoRandom = 11, DoSave = 12, DoShutdown = 13, DoSaveLogo = 14, DoLogoClassic = 15, DoApplyRent = 16, DoTakeoverUnit = 17, DoMarkSale = 18, DoCancelSale = 19,
+            DoRandom = 11, DoSave = 12, DoShutdown = 13, DoSaveLogo = 14, DoLogoEdit = 15, DoLogoDone = 28, DoApplyRent = 16, DoTakeoverUnit = 17, DoMarkSale = 18, DoCancelSale = 19,
             DoOrder = 20, DoUrgent = 21, DoCancelContract = 22, DoEndContract = 23, DoEconoView = 25, DoClassic = 26, DoRandomName = 27;
         public const int DoLine = 100;                // a button a page of lines offers (the Interior tab's), its index from here
         public const int Goods = 400;                 // the goods' table's commands, from here as UiDataTable's from its First
@@ -32,7 +35,7 @@ namespace RealLifeOverhaul.Ui
         public static readonly int[] Commands =
         {
             Section, Action, Type, Less, More, FilterOption, Period, Item, ItemLink, Toggle, Repeat, Kind, KindOption, Font, FontOption, Uniforms, FactLink, Slider,
-            Classic, Cancel, Page, Heading, Pages,
+            Classic, Cancel, Page, Heading, Pages, LogoShape, LogoOwn, LogoColourAdd, LogoTab, LogoColour, LogoColour + 1, LogoColour + 2,
             UiFirmHead.First + UiFirmHead.Name, UiFirmHead.First + UiFirmHead.Option, UiFirmHead.First + UiFirmHead.Place, UiFirmHead.First + UiFirmHead.Switch,
             UiFirmHead.First + UiFirmHead.Todo, UiFirmHead.First + UiFirmHead.Action,
             UiDataTable.First + UiDataTable.Head, UiDataTable.First + UiDataTable.Filter, UiDataTable.First + UiDataTable.Search, UiDataTable.First + UiDataTable.Row,
@@ -156,7 +159,16 @@ namespace RealLifeOverhaul.Ui
                 case BizManPart.Pricing: PricingPage(s, at, m, x, under, w, bottom, keys); break;
                 case BizManPart.Deliveries: DeliveriesPage(s, at, m, x, under, w, bottom, keys); break;
                 case BizManPart.Marketing: MarketingPage(s, at, m, x, under, w, bottom, keys); break;
-                case BizManPart.Settings: SettingsPage(s, at, m, x, under, w, bottom, keys); break;
+                case BizManPart.Settings:
+                    if (m.LogoEdit)
+                    {
+                        LogoPage(s, at, m, x, under, w, bottom, keys);
+                    }
+                    else
+                    {
+                        SettingsPage(s, at, m, x, under, w, bottom, keys);
+                    }
+                    break;
                 case BizManPart.Estate: EstatePage(s, at, m, x, under, w, bottom, keys); break;
                 case BizManPart.Classic: ClassicPage(s, at, m, x, under, w, bottom, keys); break;
                 case BizManPart.Interior: InteriorPage(s, at, m, x, under, w, bottom, keys); break;

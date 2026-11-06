@@ -743,11 +743,20 @@ namespace RealLifeOverhaul.Ui
                 _m.FontChosen = font != null ? font.SelectedOptionIndex : -1;
                 _m.FontOpen = _fontOpen && _m.Fonts.Length > 1;
                 Button saveLogo = Get<Button>(GameContract.LogoSave, logo);
+                if (_logoEdit)
+                {
+                    ReadLogo(logo, saveLogo);   // shape and colours open: the editor takes the page
+                    return;
+                }
                 if (saveLogo != null && saveLogo.gameObject.activeInHierarchy)
                 {
                     _actions.Add(Do(BizManPages.DoSaveLogo, UiText.T("bizman_settings_save_logo"), UiButtonKind.Secondary, UiIcon.Check, UiAction.Count, !saveLogo.interactable));
                 }
-                _actions.Add(Do(BizManPages.DoLogoClassic, UiText.T("reallife_ui_bizman_logo_more"), UiButtonKind.Quiet, UiIcon.None, UiAction.Count));
+                _actions.Add(Do(BizManPages.DoLogoEdit, UiText.T("reallife_ui_bizman_logo_more"), UiButtonKind.Quiet, UiIcon.None, UiAction.Count));
+            }
+            else
+            {
+                _logoEdit = false;
             }
             Offer(_actions, Calling(page, "TerminateContract"), BizManPages.DoTerminate, UiButtonKind.Destructive, UiIcon.Trash, UiAction.Count, "bizman_terminate_contract_button");
             Offer(_actions, Calling(set, "ShutdownBusiness"), BizManPages.DoShutdown, UiButtonKind.Destructive, UiIcon.Close, UiAction.Count, "bizman_shutdown_business");

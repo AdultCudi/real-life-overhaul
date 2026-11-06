@@ -233,6 +233,12 @@ namespace RealLifeOverhaul.Ui
 
         public void Reveal(int list, int index)
         {
+            if (_m.LogoEdit && _m.Part == BizManPart.Settings && list >= _m.ShapesList && list < _m.ShapesList + _m.ShapesColumns && _m.ShapesList >= 0)
+            {
+                _m.ShapesReveal = index;   // a row of the shapes' grid the pad stepped to
+                _dirty = true;
+                return;
+            }
             if (_m.Part == BizManPart.Interior && _m.Page == BizManPage.Business && (list == _m.LinesList || list == _m.SecondList))
             {
                 if (list == _m.LinesList)
@@ -266,6 +272,12 @@ namespace RealLifeOverhaul.Ui
         public void Wheel(int clip, float notches)
         {
             float by = -notches * UiTokens.S16;
+            if (_m.LogoEdit && _m.Part == BizManPart.Settings && clip == _m.ShapesClip && clip >= 0)
+            {
+                _m.ShapesOffset = Math.Max(0f, _m.ShapesOffset + by);
+                _dirty = true;
+                return;
+            }
             if (OpsWheel(clip, by))
             {
                 _dirty = true;

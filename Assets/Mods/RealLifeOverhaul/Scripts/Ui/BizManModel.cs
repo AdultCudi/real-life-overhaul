@@ -108,6 +108,16 @@ namespace RealLifeOverhaul.Ui
         public UiRole Tone;      // full, a third or less, between
     }
 
+    /// <summary>One row of the logo editor's colours: what it sets, the game's swatches (picture keys) and the one chosen.</summary>
+    public struct BizManColours
+    {
+        public string Label;
+        public string[] Pics;
+        public int Count;
+        public int Chosen;       // -1 when the logo's colour is none of the list's (a custom one the list has not got yet)
+        public bool CanAdd;      // the game's own add button shows, which opens its colour picker
+    }
+
     /// <summary>
     /// What BizMan shows, as plain data: the portfolio's groups and table, or a place's head, its sections and the part its
     /// chosen section shows; no colour but a role, no position. The game's side fills it from the game's own widgets after
@@ -210,6 +220,21 @@ namespace RealLifeOverhaul.Ui
         public string LogoTitle;
         public string LogoLabel;
         public string Uniforms;                         // the link that opens the uniforms' editor, or null
+
+        // The logo's shape and colours, where the settings page gives way to the editor
+        public bool LogoEdit;
+        public string[] LogoTabs = new string[0];       // the two tabs of the editor: the shapes and the colours
+        public int LogoTab;
+        public string ShapesTitle, ShapesNone, ShapesOwn, LogoNote;
+        public string[] ShapePics = new string[0];      // the game's shape sprites (UiPictures keys), the player's own first
+        public int ShapeCount;
+        public int ShapeChosen = -1;
+        public float ShapesOffset;                      // px the grid is scrolled; Lay writes back what it took
+        public int ShapesReveal = -1;                   // a row the pad stepped to, brought into view at the next layout
+        public short ShapesClip = -1, ShapesList = -1;
+        public int ShapesColumns;
+        public BizManColours[] Colours = new BizManColours[0];
+        public string PreviewPic;                       // the logo as it stands now, shape and background painted once a pick
 
         // Rent
         public string SliderLabel;

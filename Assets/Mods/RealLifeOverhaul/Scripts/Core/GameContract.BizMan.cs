@@ -98,7 +98,20 @@ namespace RealLifeOverhaul
         public static readonly GameMember SetUniforms = Optional(Field(BizManKitPart, Game, "BizManSettings", "setUpUniformsWindow", "SetUpUniformsWindow"));
         public static readonly GameMember LogoSave = Optional(Field(BizManKitPart, Game, "UI.Smartphone.Apps.BizMan.LogoCustomizer", "saveLogoChangesButton", "Button"));
         public static readonly GameMember LogoFont = Optional(Field(BizManKitPart, Game, "UI.Smartphone.Apps.BizMan.LogoCustomizer", "fontDropdown", "Dropdown"));
-        public static readonly GameMember EstateRent = Optional(Field(BizManKitPart, Game, "UI.Smartphone.Apps.BizMan.RealEstateSettings", "rentManagementGameObject", "GameObject"));
+        // The logo editor's pieces: the customizer's lists of shapes and colours (whose buttons the kit presses, so the game's own handlers run), its
+        // private current picks (what the preview and the chosen frames read) and the shapes' two lists with the template their entries copy.
+        public static readonly GameMember LogoShapesOf = Optional(Field(BizManKitPart, Game, "UI.Smartphone.Apps.BizMan.LogoCustomizer", "logoShapes", "LogoShapes"));
+        public static readonly GameMember LogoShapeColours = Optional(Field(BizManKitPart, Game, "UI.Smartphone.Apps.BizMan.LogoCustomizer", "logoColorList", "ColorListUI"));
+        public static readonly GameMember LogoFontColours = Optional(Field(BizManKitPart, Game, "UI.Smartphone.Apps.BizMan.LogoCustomizer", "fontColorList", "ColorListUI"));
+        public static readonly GameMember LogoBackColours = Optional(Field(BizManKitPart, Game, "UI.Smartphone.Apps.BizMan.LogoCustomizer", "backgroundColorList", "ColorListUI"));
+        public static readonly GameMember LogoShapeNow = Optional(Field(BizManKitPart, Game, "UI.Smartphone.Apps.BizMan.LogoCustomizer", "_logoShape", "String"));
+        public static readonly GameMember LogoShapeColourNow = Optional(Field(BizManKitPart, Game, "UI.Smartphone.Apps.BizMan.LogoCustomizer", "_logoColor", "Color"));
+        public static readonly GameMember LogoFontColourNow = Optional(Field(BizManKitPart, Game, "UI.Smartphone.Apps.BizMan.LogoCustomizer", "_fontColor", "Color"));
+        public static readonly GameMember LogoBackColourNow = Optional(Field(BizManKitPart, Game, "UI.Smartphone.Apps.BizMan.LogoCustomizer", "_backgroundColor", "Color"));
+        public static readonly GameMember LogoShapesBuiltIn = Optional(Field(BizManKitPart, Game, "UI.Smartphone.Apps.BizMan.LogoShapes", "builtInShapesList", "LogoShapesList"));
+        public static readonly GameMember LogoShapesPlayer = Optional(Field(BizManKitPart, Game, "UI.Smartphone.Apps.BizMan.LogoShapes", "playerShapesList", "LogoShapesList"));
+        public static readonly GameMember LogoShapeTemplate = Optional(Field(BizManKitPart, Game, "LogoShapesList", "shapeTemplate", "Transform"));
+        public static readonly GameMember EstateRent =Optional(Field(BizManKitPart, Game, "UI.Smartphone.Apps.BizMan.RealEstateSettings", "rentManagementGameObject", "GameObject"));
         public static readonly GameMember EstateRentNow = Optional(Field(BizManKitPart, Game, "UI.Smartphone.Apps.BizMan.RealEstateSettings", "currentRent", "TextLocalizationComponent"));
         public static readonly GameMember EstateRentMarket = Optional(Field(BizManKitPart, Game, "UI.Smartphone.Apps.BizMan.RealEstateSettings", "avgMarketPrice", "TextLocalizationComponent"));
         public static readonly GameMember EstateSlider = Optional(Field(BizManKitPart, Game, "UI.Smartphone.Apps.BizMan.RealEstateSettings", "newRentSlider", "Slider"));

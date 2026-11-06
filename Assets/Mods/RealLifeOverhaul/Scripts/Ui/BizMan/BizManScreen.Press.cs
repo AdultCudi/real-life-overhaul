@@ -144,6 +144,14 @@ namespace RealLifeOverhaul.Ui
                     // view stands under it while it is open, and the kit comes back once it closes.
                     BizManKit.StepAside(UniformsKit.Over());
                     return Click(Calling(Page(b, BizManRules.Settings), "OnConfigureUniformPresetsButtonClick"), "set up uniforms");
+                case BizManPages.LogoShape: return PressShape(arg);
+                case BizManPages.LogoColour: case BizManPages.LogoColour + 1: case BizManPages.LogoColour + 2:
+                    return PressColour(command - BizManPages.LogoColour, arg);
+                case BizManPages.LogoColourAdd: return PressAddColour(arg);
+                case BizManPages.LogoTab:
+                    _logoTab = arg == 1 ? 1 : 0;
+                    return true;
+                case BizManPages.LogoOwn: return PressOwnShapes(b);
                 case BizManPages.Slider:
                     _sliderHeld = !_sliderHeld;
                     return true;
@@ -251,10 +259,9 @@ namespace RealLifeOverhaul.Ui
                 case BizManPages.DoSave: return Click(Get<Button>(GameContract.SetSave, b.bizManSettings), "save the business's settings");
                 case BizManPages.DoShutdown: return Click(Calling(b.bizManSettings, "ShutdownBusiness"), "shut down the business (the game asks first)");
                 case BizManPages.DoSaveLogo: return Click(Get<Button>(GameContract.LogoSave, Get<LogoCustomizer>(GameContract.SetLogo, b.bizManSettings)), "save the logo");
-                case BizManPages.DoLogoClassic:
-                    // The logo's shapes and colours are the game's own pickers: its own view until the app closes.
-                    UiDirector.Logger?.Info("BizMan (kit): the game's own view for the logo's shapes and colours until the app closes");
-                    BizManKit.Classic();
+                case BizManPages.DoLogoEdit: return OpenLogoEditor(b);   // the shapes and colours are the kit's page; each pick presses the game's own entry
+                case BizManPages.DoLogoDone:
+                    _logoEdit = false;
                     return true;
                 case BizManPages.DoApplyRent: return Click(Get<Button>(GameContract.EstateApply, PageOf<RealEstateSettings>(b, BizManRules.RealEstate)), "apply the new rent");
                 case BizManPages.DoTakeoverUnit: return Click(Get<Button>(GameContract.EstateTakeover, PageOf<RealEstateSettings>(b, BizManRules.RealEstate)), "take over the unit");
@@ -400,9 +407,9 @@ namespace RealLifeOverhaul.Ui
 
         private bool CloseLists()
         {
-            bool any = _filterOpen >= 0 || _listOpen || _todoOpen || _kindOpen || _fontOpen || _sliderHeld || _pagesOpen;
+            bool any = _filterOpen >= 0 || _listOpen || _todoOpen || _kindOpen || _fontOpen || _sliderHeld || _pagesOpen || _logoEdit;
             _filterOpen = -1;
-            _listOpen = _todoOpen = _kindOpen = _fontOpen = _sliderHeld = _pagesOpen = false;
+            _listOpen = _todoOpen = _kindOpen = _fontOpen = _sliderHeld = _pagesOpen = _logoEdit = false;   // Back from the logo editor lands on the settings
             return any;
         }
 
