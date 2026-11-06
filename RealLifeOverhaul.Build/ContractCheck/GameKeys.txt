@@ -535,7 +535,10 @@ bizman_traffic_index
 bizman_vehicle_slots
 bizman_warehouse_driverstation_no_vehicle_assigned
 bizman_warehouses
+blueprint_list_no_results_connection
+blueprintdata_businesstypename
 building_rival_owner_description
+building_title
 buildingmanager_notification_business_closed
 buildingmanager_notification_private_property
 buildingpreview_cancel_preview
@@ -575,17 +578,20 @@ common_accepted
 common_add
 common_address
 common_agree
+common_all
 common_amount
 common_apply_changes
 common_available_for_rent
 common_back
 common_balance
 common_blueprints
+common_building_size
 common_building_type
 common_buildings_for_sale
 common_business
 common_business_name
 common_business_type
+common_business_types
 common_businesses
 common_businessschool
 common_cancel
@@ -602,8 +608,13 @@ common_days_left
 common_declined
 common_energy
 common_events
+common_factory_ingredients
+common_factorymachines
+common_factoryrecipes
+common_finance
 common_font
 common_friday
+common_furniture
 common_happiness
 common_hourly_wage
 common_hours
@@ -641,6 +652,7 @@ common_save_changes
 common_search
 common_select_option
 common_select_type
+common_sellable_products
 common_setdestination
 common_show_on_map
 common_show_warehouse
@@ -839,6 +851,8 @@ econoview_taxes_projection
 econoview_total_tax_deductions
 econoview_yesterday_date
 educationdoorcontroller_closed
+employee_management
+employee_types
 ferris_wheel
 filebrowser_delete
 food_delivery_job_title
@@ -847,6 +861,8 @@ furniture_delivery_dialog_order
 furniture_delivery_item
 government
 healthinsuranceplantype_silver
+help_general
+help_importers
 hospital_respawn_notification
 hud_confirm_are_you_sure
 input_key_brakes
@@ -1022,6 +1038,7 @@ rivals_defense_icons_product_shortage_title
 rivals_leaderboard
 rivals_overview
 rivals_real_estate_properties
+rivals_title
 sign_appearance
 sign_appearance_sign_bulb_color
 sign_appearance_sign_light_color
@@ -1059,6 +1076,7 @@ uniform_customizer_save_preset_changes
 vehicle_auto_park_support
 vehicle_max_speed
 vehicle_tank_capacity
+vehicles_title
 workout_plan
 workout_plan_objective
 workpanel_business_is_currently_closed

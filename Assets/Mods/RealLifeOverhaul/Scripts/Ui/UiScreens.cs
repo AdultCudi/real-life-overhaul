@@ -101,6 +101,7 @@ namespace RealLifeOverhaul.Ui
             AddMap(screens);
             AddOverlays(screens);
             AddPause(screens);
+            AddBlueprints(screens);
             AddSweep(screens);
             return screens.ToArray();
         }
@@ -139,6 +140,7 @@ namespace RealLifeOverhaul.Ui
         static partial void AddMap(List<UiScreenDef> screens);
         static partial void AddOverlays(List<UiScreenDef> screens);
         static partial void AddPause(List<UiScreenDef> screens);
+        static partial void AddBlueprints(List<UiScreenDef> screens);
         static partial void AddSweep(List<UiScreenDef> screens);
 
         /// <summary>A registered screen by its id, or null.</summary>
