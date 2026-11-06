@@ -34685,5 +34685,9 @@
   "reallife_ui_test_designer_shut": "请先通过 HUD 上的按钮打开室内设计师，然后再运行此测试。",
   "reallife_ui_test_designer_close_first": "请先关闭室内设计师，然后再运行此测试。",
   "reallife_ui_test_designer_flipped": "室内设计师的开关已经关了又开。打开设计师即可看到套件的外观。",
-  "reallife_ui_designer_count_of": "{have}/{need}"
+  "reallife_ui_designer_count_of": "{have}/{need}",
+  "reallife_ui_designer_bp_empty": "名称为空",
+  "reallife_ui_designer_bp_empty_side": "请在上方输入名称",
+  "reallife_ui_designer_bp_unfit": "名称不能这样使用",
+  "reallife_ui_designer_bp_unfit_side": "只能用字母、数字和空格"
 }

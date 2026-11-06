@@ -34656,7 +34656,7 @@
   "reallife_ui_designer_bp_mods": "Mods necessários",
   "reallife_ui_designer_bp_mods_n": "{n} mods ativos",
   "reallife_ui_designer_bp_free": "O nome está livre",
-  "reallife_ui_designer_bp_free_side": "Sua biblioteca não tem nenhuma planta com este nome",
+  "reallife_ui_designer_bp_free_side": "Nenhuma planta com este nome",
   "reallife_ui_designer_bp_gifts": "Nenhum presente especial no cômodo",
   "reallife_ui_designer_bp_gifts_side": "Presentes não podem entrar em uma planta",
   "reallife_ui_designer_bp_foot": "Salvo na sua biblioteca, em Plantas no menu de pausa",
@@ -34685,5 +34685,9 @@
   "reallife_ui_test_designer_shut": "Abra antes o designer de interiores pelo botão no HUD e depois execute este teste de novo.",
   "reallife_ui_test_designer_close_first": "Feche antes o designer de interiores e depois execute este teste de novo.",
   "reallife_ui_test_designer_flipped": "O interruptor do designer de interiores foi desligado e ligado de novo. Abra o designer para ver a aparência do kit.",
-  "reallife_ui_designer_count_of": "{have} de {need}"
+  "reallife_ui_designer_count_of": "{have} de {need}",
+  "reallife_ui_designer_bp_empty": "O nome está vazio",
+  "reallife_ui_designer_bp_empty_side": "Digite um nome na caixa acima",
+  "reallife_ui_designer_bp_unfit": "O nome não pode ser usado assim",
+  "reallife_ui_designer_bp_unfit_side": "Só letras, números e espaços"
 }

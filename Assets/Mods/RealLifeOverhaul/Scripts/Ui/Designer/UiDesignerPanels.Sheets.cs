@@ -54,8 +54,10 @@ namespace RealLifeOverhaul.Ui
             }
             if (m.Meter >= 0)
             {
-                UiDraw.Meter(s, on, ix, cy + (UiTokens.PairRow - UiTokens.Segment) / 2f, iw - 96f - UiTokens.S3, UiTokens.Segment, m.Meter, m.MeterTone);
-                UiDraw.TextMiddle(s, on, ix + iw - 96f, cy, UiTokens.PairRow, 96f, UiStyle.BodyStrong, UiRole.Text, m.MeterWords, UiFlags.Right | UiFlags.Truncate);
+                // The game's words for the rating ("Security Rating 64%") get the room they measure to, up to half the row, so the figure is not what is cut.
+                float lw = Math.Max(96f, Math.Min(UiDraw.Snap(UiTextRules.Width(m.MeterWords, UiStyle.BodyStrong) + UiTokens.S1), UiDraw.SnapDown(iw / 2f)));
+                UiDraw.Meter(s, on, ix, cy + (UiTokens.PairRow - UiTokens.Segment) / 2f, iw - lw - UiTokens.S3, UiTokens.Segment, m.Meter, m.MeterTone);
+                UiDraw.TextMiddle(s, on, ix + iw - lw, cy, UiTokens.PairRow, lw, UiStyle.BodyStrong, UiRole.Text, m.MeterWords, UiFlags.Right | UiFlags.Truncate);
                 cy += UiTokens.PairRow + UiTokens.S2;
             }
             if (m.Count == 0)
@@ -97,9 +99,14 @@ namespace RealLifeOverhaul.Ui
             }
             float nx = tx + tile + UiTokens.S3;
             float gw = d.Glyph != UiIcon.None ? UiTokens.Icon + UiTokens.S2 : 0f, nw = x + w - UiTokens.S4 * 2f - nx - gw;
-            float nh = Lh(UiStyle.BodyStrong), lh = Lh(UiStyle.Small), by = y + (ItemRow - nh - lh) / 2f;
+            // A name with no second line (the queue's counters) stands in the middle of the row, not at the top of two lines' room.
+            bool two = !string.IsNullOrEmpty(d.Line);
+            float nh = Lh(UiStyle.BodyStrong), lh = Lh(UiStyle.Small), by = y + (ItemRow - nh - (two ? lh : 0f)) / 2f;
             UiDraw.Text(s, on, nx, by, nw, UiStyle.BodyStrong, UiRole.Text, d.Name, UiFlags.Truncate | UiFlags.Middle);
-            UiDraw.Text(s, on, nx, by + nh, nw, UiStyle.Small, UiRole.Text, d.Line, UiFlags.Truncate | UiFlags.Middle);
+            if (two)
+            {
+                UiDraw.Text(s, on, nx, by + nh, nw, UiStyle.Small, UiRole.Text, d.Line, UiFlags.Truncate | UiFlags.Middle);
+            }
             if (d.Glyph != UiIcon.None)
             {
                 UiDraw.Icon(s, on, x + w - UiTokens.S4 * 2f - UiTokens.Icon, y + (ItemRow - UiTokens.Icon) / 2f, UiTokens.Icon, d.Glyph, d.GlyphTone, UiFlags.Middle);

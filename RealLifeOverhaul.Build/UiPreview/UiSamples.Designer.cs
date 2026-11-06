@@ -401,8 +401,9 @@ internal static partial class UiSamples
         b.FactLabels[3] = Of(t, "reallife_ui_designer_bp_mods", "Mods it needs");
         b.FactValues[3] = DesignerFill(Of(t, "reallife_ui_designer_bp_mods_n", "{n} active mods"), "n", "4");
         b.FactCount = 4;
-        b.CheckWords[0] = Of(t, "reallife_ui_designer_bp_free", "The name is free");
-        b.CheckSide[0] = Of(t, "reallife_ui_designer_bp_free_side", "Your library has no blueprint called this");
+        b.CheckWords[0] = bad ? Of(t, "reallife_ui_designer_bp_unfit", "The name cannot be used as it is") : Of(t, "reallife_ui_designer_bp_free", "The name is free");
+        b.CheckSide[0] = bad ? Of(t, "reallife_ui_designer_bp_unfit_side", "Letters, numbers and spaces only")
+            : Of(t, "reallife_ui_designer_bp_free_side", "Your library has no blueprint called this");
         b.CheckMet[0] = !bad;
         b.CheckWords[1] = Of(t, "reallife_ui_designer_bp_gifts", "No special gifts in the room");
         b.CheckSide[1] = Of(t, "reallife_ui_designer_bp_gifts_side", "Gifts cannot go in a blueprint");

@@ -262,9 +262,23 @@ namespace RealLifeOverhaul.Ui
             b.NameHint = UiText.T(problem == 2 ? "reallife_ui_designer_bp_bad" : "reallife_ui_designer_bp_hint");
             b.FactsTitle = UiText.T("reallife_ui_designer_bp_saved");
             FillFacts(b, reg);
+            // A name that is empty, or has a character the game refuses, is not "free": the row says what is wrong with it, as the line under the box does.
             bool taken = problem == 0 && BlueprintsFolderLoader.IsBlueprintNameInUse(name);
-            b.CheckWords[0] = UiText.T(taken ? "reallife_ui_designer_bp_used" : "reallife_ui_designer_bp_free");
-            b.CheckSide[0] = UiText.T(taken ? "reallife_ui_designer_bp_used_side" : "reallife_ui_designer_bp_free_side");
+            if (problem == 1)
+            {
+                b.CheckWords[0] = UiText.T("reallife_ui_designer_bp_empty");
+                b.CheckSide[0] = UiText.T("reallife_ui_designer_bp_empty_side");
+            }
+            else if (problem == 2)
+            {
+                b.CheckWords[0] = UiText.T("reallife_ui_designer_bp_unfit");
+                b.CheckSide[0] = UiText.T("reallife_ui_designer_bp_unfit_side");
+            }
+            else
+            {
+                b.CheckWords[0] = UiText.T(taken ? "reallife_ui_designer_bp_used" : "reallife_ui_designer_bp_free");
+                b.CheckSide[0] = UiText.T(taken ? "reallife_ui_designer_bp_used_side" : "reallife_ui_designer_bp_free_side");
+            }
             b.CheckMet[0] = !taken && problem == 0;
             bool gift = HasGift();
             b.CheckWords[1] = UiText.T(gift ? "reallife_ui_designer_bp_gifts_in" : "reallife_ui_designer_bp_gifts");

@@ -61,7 +61,7 @@ namespace RealLifeOverhaul.Ui
         {
             if (c.Chosen < 0 || c.Chosen >= c.CardCount)
             {
-                return UiTokens.S3 * 2f + Lh(UiStyle.Body) * 4f;
+                return 0f;
             }
             float h = UiTokens.S3 + Lh(UiStyle.Hero) + Lh(UiStyle.Small) + UiTokens.S2 + Math.Max(1, c.DetailCount) * UiTokens.PairRow;
             if (c.SwatchCount > 0)
@@ -80,10 +80,18 @@ namespace RealLifeOverhaul.Ui
             Header(s, on, c, x, y, w, keys);
             float body = y + HeaderHeight;
             UiDraw.Box(s, on, x, body - UiTokens.Hairline, w, UiTokens.Hairline, UiRole.Rule, UiRole.None, 0f, UiFlags.Decor);
+            // With nothing to list, the empty state takes the whole body: a column for the chosen piece would only say it again.
+            bool none = c.CardCount == 0;
             float detailX = x + w - DetailWidth;
-            UiDraw.Box(s, on, detailX, body, UiTokens.Hairline, h - HeaderHeight, UiRole.Rule, UiRole.None, 0f, UiFlags.Decor);
-            Grid(s, on, c, x + GridLeft, body + GridTop, detailX - x - GridLeft - UiTokens.S3, h - HeaderHeight - GridTop - UiTokens.S3, w);
-            Detail(s, on.InRegion(DetailRegion), c, detailX, body, DetailWidth, h - HeaderHeight, keys);
+            if (!none)
+            {
+                UiDraw.Box(s, on, detailX, body, UiTokens.Hairline, h - HeaderHeight, UiRole.Rule, UiRole.None, 0f, UiFlags.Decor);
+            }
+            Grid(s, on, c, x + GridLeft, body + GridTop, none ? w - GridLeft * 2f : detailX - x - GridLeft - UiTokens.S3, h - HeaderHeight - GridTop - UiTokens.S3, w);
+            if (!none)
+            {
+                Detail(s, on.InRegion(DetailRegion), c, detailX, body, DetailWidth, h - HeaderHeight, keys);
+            }
         }
 
         // The head: the categories as tabs with their counts (or the requirement the catalogue is narrowed to, with its way off), the favourites'
@@ -238,7 +246,9 @@ namespace RealLifeOverhaul.Ui
             float ty = y + UiTokens.S1 + TilePicture + UiTokens.S2, tw = TileW - UiTokens.S2 * 2f;
             UiDraw.Text(s, on, x + UiTokens.S2, ty, tw, UiStyle.BodyStrong, UiRole.Text, d.Name, UiFlags.Truncate);
             ty += Lh(UiStyle.BodyStrong);
-            float kw = string.IsNullOrEmpty(d.Kind) ? 0f : Math.Min(UiDraw.Snap(UiTextRules.Width(d.Kind, UiStyle.Small) + UiTokens.S1), tw * 0.5f);
+            // What it is for may take more than half the line while the price is short, so a long language still shows the number of "holds 24".
+            float pw = UiDraw.Snap(UiTextRules.Width(d.Price, UiStyle.Small) + UiTokens.S1);
+            float kw = string.IsNullOrEmpty(d.Kind) ? 0f : Math.Min(UiDraw.Snap(UiTextRules.Width(d.Kind, UiStyle.Small) + UiTokens.S1), Math.Max(tw * 0.5f, tw - pw - UiTokens.S2));
             UiDraw.Text(s, on, x + UiTokens.S2, ty, tw - kw - (kw > 0f ? UiTokens.S2 : 0f), UiStyle.Small, UiRole.Text, d.Price, UiFlags.Truncate);
             if (kw > 0f)
             {
@@ -279,7 +289,6 @@ namespace RealLifeOverhaul.Ui
             float by = y + h - UiTokens.S3 - buttonsH;
             if (c.Chosen < 0 || c.Chosen >= c.CardCount)
             {
-                UiDraw.Text(s, at, ix, cy, iw, UiStyle.Body, UiRole.Text2, c.NoneBody, UiFlags.Wrap | UiFlags.Truncate, 4);
                 return;
             }
             UiDraw.Text(s, at, ix, cy, iw, UiStyle.Hero, UiRole.Text, c.DetailName, UiFlags.Truncate);

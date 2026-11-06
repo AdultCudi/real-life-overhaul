@@ -383,7 +383,8 @@ namespace RealLifeOverhaul.Ui
             float h = UiFrame.Strip;
             if (folded)
             {
-                return UiDraw.Snap(h + FoldedHead + UiTokens.S2 + UiTokens.PairRow * FoldedRows(i) + UiTokens.S3);
+                int extra = FoldedRows(i) - 1;
+                return UiDraw.Snap(h + FoldedHead + (extra > 0 ? UiTokens.S2 * 2f + UiTokens.PairRow * extra : 0f) + UiTokens.S2);
             }
             h += HeadHeight(i);
             h += SectionHeight(i.CostCount) + UiTokens.S1;
@@ -654,7 +655,10 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.TextMiddle(s, on, right - total, y, FoldedHead, total, UiStyle.BodyStrong, UiRole.Text, figure, UiFlags.Right | UiFlags.Truncate);
             }
             float ry = y + FoldedHead + UiTokens.S2, iw = InfoWidth - UiTokens.S4 * 2f, ix = x + UiTokens.S4;
-            UiDraw.Band(s, on, x, ry - UiTokens.S2, InfoWidth, UiTokens.S2 + UiTokens.PairRow * (FoldedRows(i) - 1) + UiTokens.S2);
+            if (FoldedRows(i) > 1)
+            {
+                UiDraw.Band(s, on, x, ry - UiTokens.S2, InfoWidth, UiTokens.S2 + UiTokens.PairRow * (FoldedRows(i) - 1) + UiTokens.S2);
+            }
             if (i.ScoreShown)
             {
                 string line = i.ScoreFigure + (string.IsNullOrEmpty(i.ScoreChange) ? string.Empty : "  " + i.ScoreChange);
