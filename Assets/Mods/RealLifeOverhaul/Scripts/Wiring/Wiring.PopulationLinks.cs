@@ -276,6 +276,7 @@ namespace RealLifeOverhaul
                             into.Add(new LinkAsk { Kind = LinkKind.Seeker, Key = "seeker:" + k.Id, Age = k.P.Age, Female = k.P.Female });
                         }
                     }
+                    ExitLinks.Founders(into);   // the city startups' founders, residents of the field their startup works in
                 }
                 catch (Exception e)
                 {

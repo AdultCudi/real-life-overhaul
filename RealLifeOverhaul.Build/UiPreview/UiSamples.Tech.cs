@@ -6,11 +6,19 @@ using RealLifeOverhaul.Ui;
 // checks measure it in all eleven languages. Names here are placeholders and never ship.
 internal static partial class UiSamples
 {
-    public static readonly string[] TechStates =
+    public static readonly string[] TechStates = JoinStates(new[]
     {
         "firms", "firms_empty", "studio", "game", "game_plan", "datacentre", "software", "products", "product", "contracts", "tender", "infra", "startups", "startup", "funding", "cap", "cap_account", "books", "books_free",
         "team", "rivals", "concept", "off"
-    };
+    }, TechExitStates());
+
+    private static string[] JoinStates(string[] a, string[] b)
+    {
+        var all = new string[a.Length + b.Length];
+        a.CopyTo(all, 0);
+        b.CopyTo(all, a.Length);
+        return all;
+    }
 
     // The runs a sample page holds: each does nothing here, and the count is what the checks press.
     private sealed class TechRunList
@@ -120,6 +128,8 @@ internal static partial class UiSamples
             case "team": TechTeam(t, m, runs); break;
             case "rivals": TechRivals(t, m, runs); break;
             case "concept": TechConcept(t, m, runs); break;
+            case "exits": case "exits_market": case "exits_listed": case "exits_hire": TechExits(t, m, runs, state); break;
+            case "startup_place": TechStartupPlace(t, m, runs); break;
             default:
                 m.Shape = TechShape.Off;
                 m.OffTitle = W(t, "reallife_roles_off_title", "Tech is off");

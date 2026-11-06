@@ -345,6 +345,12 @@ namespace RealLifeOverhaul.Tech
             {
                 return false;
             }
+            int locked = ExitLockLeft(place);
+            if (locked > 0)
+            {
+                Notifications.Show(NotificationType.Warning, "reallife_exit_note_locked", Data("firm", firm.File.Name, "days", locked.ToString()), 8f, null, null, true, false);
+                return false;   // the lock-up after a listing: the player sells nothing for 180 days
+            }
             int lead = 0;
             for (int i = c.Holders.Count - 1; i >= 0; i--)
             {
@@ -366,6 +372,11 @@ namespace RealLifeOverhaul.Tech
             FirmPlace firm = FirmOf(place);
             if (firm == null)
             {
+                return;
+            }
+            if (_exits != null)
+            {
+                OpenExits(place);   // the way to the market has a page of its own (bankers, roadshow, pricing, lock-up)
                 return;
             }
             bool taken = TechBridges.Ipo != null && TechBridges.Ipo();

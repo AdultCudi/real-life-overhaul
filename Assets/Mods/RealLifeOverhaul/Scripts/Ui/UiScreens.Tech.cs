@@ -7,7 +7,7 @@ namespace RealLifeOverhaul.Ui
         // The Tech app on the kit: its six tabs and a firm's own sections (Tech/TechFace), over the old pages that stay the way back. Its switch stands in its own section.
         static partial void AddTech(List<UiScreenDef> screens)
         {
-            screens.Add(new UiScreenDef("tech", UiTemplate.AppWindow, "TechScreen", new[]
+            screens.Add(new UiScreenDef("tech", UiTemplate.AppWindow, "TechScreen", Plus(new[]
             {
                 // KEYS BEGIN
                 "reallife_crew_button_brief", "reallife_endscale_button_racks", "reallife_endscale_button_replace", "reallife_endscale_cloud_ops",
@@ -119,7 +119,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_vc_mood_1", "reallife_vc_mood_2", "reallife_vc_mood_3", "reallife_vc_related_none", "reallife_vc_related_tier_0",
                 "reallife_vc_related_tier_1", "reallife_vc_related_tier_2"
                 // KEYS END
-            }).Switch(UiScreenSwitches.Tech));
+            }, TechExitKeys())).Switch(UiScreenSwitches.Tech));
         }
     }
 }

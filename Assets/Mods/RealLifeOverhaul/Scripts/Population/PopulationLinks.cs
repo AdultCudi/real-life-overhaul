@@ -21,6 +21,7 @@ namespace RealLifeOverhaul.Population
         public string Key;
         public int Age;
         public bool Female;
+        public int Prefer;         // a field (Field as a number) a resident of is looked for first; 0 for any
     }
 
     /// <summary>
@@ -111,7 +112,7 @@ namespace RealLifeOverhaul.Population
                 {
                     continue;
                 }
-                if (Linked(s, a.Kind, a.Key) < 0 && Link(s, a.Kind, a.Key, a.Age, a.Female, day) >= 0)
+                if (Linked(s, a.Kind, a.Key) < 0 && Link(s, a.Kind, a.Key, a.Age, a.Female, day, a.Prefer) >= 0)
                 {
                     made++;
                 }
@@ -131,6 +132,23 @@ namespace RealLifeOverhaul.Population
                 s.Links.RemoveAt(i);
             }
             return made;
+        }
+
+        /// <summary>The record of the person a link names: their age, sex, field and skill (the record only, nothing of how they look); false with no such link.</summary>
+        public static bool Record(PopulationState s, LinkKind kind, string key, int day, out int age, out bool female, out int field, out int skill)
+        {
+            age = field = skill = 0;
+            female = false;
+            int p = Linked(s, kind, key);
+            if (p < 0)
+            {
+                return false;
+            }
+            age = s.Age(p, day);
+            female = s.People.Female[p] == 1;
+            field = s.People.Field[p];
+            skill = s.People.Skill[p];
+            return true;
         }
 
         /// <summary>The slot of the person a link names, or -1 (the person is gone).</summary>
@@ -173,7 +191,7 @@ namespace RealLifeOverhaul.Population
         /// A person of another system's linked to a fitting resident: of their sex and an age near theirs, not linked already, out of work first and in
         /// work after, from a start drawn from their id; -1 with none (they are left for the next day).
         /// </summary>
-        public static int Link(PopulationState s, LinkKind kind, string key, int age, bool female, int day)
+        public static int Link(PopulationState s, LinkKind kind, string key, int age, bool female, int day, int prefer = 0)
         {
             PersonTable pt = s.People;
             if (pt.Count == 0)
@@ -188,6 +206,10 @@ namespace RealLifeOverhaul.Population
                 {
                     int p = (start + n) % pt.Count;
                     if (pt.Id[p] == 0 || (pt.Flags[p] & (PersonFlags.Linked | PersonFlags.Frozen)) != 0 || (pt.Female[p] == 1) != female || pt.Household[p] < 0)
+                    {
+                        continue;
+                    }
+                    if (prefer > 0 && pass < 2 && pt.Field[p] != prefer)
                     {
                         continue;
                     }

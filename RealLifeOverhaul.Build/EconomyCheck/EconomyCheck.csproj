@@ -637,6 +637,11 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\VentureRules.Caps.cs" Link="Mod\VentureRules.Caps.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\VentureStore.cs" Link="Mod\VentureStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\FirmAccount.cs" Link="Mod\FirmAccount.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\ExitCatalogue.cs" Link="Mod\ExitCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\ExitRules.cs" Link="Mod\ExitRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\ExitPlaces.cs" Link="Mod\ExitPlaces.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\ExitStore.cs" Link="Mod\ExitStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\ExitBridges.cs" Link="Mod\ExitBridges.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\InfraCatalogue.cs" Link="Mod\InfraCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\InfraModel.cs" Link="Mod\InfraModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Infra\InfraRules.cs" Link="Mod\InfraRules.cs" />

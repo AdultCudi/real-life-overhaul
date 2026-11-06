@@ -157,6 +157,11 @@ namespace RealLifeOverhaul.Ui
                 Pick = pick;
                 Tab = 0;
             }
+            else if (Rest(pick, "exits:", out place))
+            {
+                Pick = "cap:" + place;   // a firm's page of exits: the cap table's third page
+                Page = 3;
+            }
             else
             {
                 Pick = pick;

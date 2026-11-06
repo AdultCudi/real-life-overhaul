@@ -61,6 +61,7 @@ namespace RealLifeOverhaul.Tech
                     file.Startups.Add(s);
                 }
             }
+            StartExits();
             Logger?.Info("Tech: startups " + (fresh ? "opened for this save" : "loaded (version " + version + ")") + " on day " + save.Day + ": " + _venture.Startups.Count + " startup(s), "
                          + _venture.Caps.Count + " firm(s) of the player's with investors.");
         }
@@ -76,6 +77,7 @@ namespace RealLifeOverhaul.Tech
                 WriteVenture(Save.modData);
             }
             _pitch?.End();
+            StopExits(keep);
             StopMoney();
             _ventureOn = false;
         }
@@ -85,6 +87,7 @@ namespace RealLifeOverhaul.Tech
             if (_venture != null && data != null)
             {
                 data[VentureStore.Key] = VentureStore.Write(_venture);
+                WriteExits(data);
             }
         }
 
@@ -134,6 +137,7 @@ namespace RealLifeOverhaul.Tech
                 }
             }
             CapsDay(day, mood);
+            ExitsDay(day);
             _venture.LastDay = day;
             if (Verbose)
             {

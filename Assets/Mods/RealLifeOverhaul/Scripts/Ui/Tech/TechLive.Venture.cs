@@ -173,6 +173,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 _m.HeadActions = actions.ToArray();
                 _m.Left = new[] { card.Build() };
+                _m.Right = StartupPlace(s);   // the founder as a person of the city, and the office to find them at
             }
 
             // ------------------------------------------------------------------------------------------------- the funding tab
@@ -198,6 +199,10 @@ namespace RealLifeOverhaul.Ui
                     else if (_v.Page == PageBooks)
                     {
                         BooksPage(picked);
+                    }
+                    else if (_v.Page == PageExits)
+                    {
+                        ExitsPage(picked);
                     }
                     else
                     {
@@ -278,7 +283,8 @@ namespace RealLifeOverhaul.Ui
                     {
                         Holder h = c.Holders[i];
                         string who = h.Kind == (int)HolderKind.Player ? TechText.T("reallife_vc_holder_you") : h.Kind == (int)HolderKind.Pool ? TechText.T("reallife_vc_holder_pool")
-                            : VentureCatalogue.Firms[TalentCatalogue.Clamp(h.Who, 0, VentureCatalogue.FirmCount - 1)].Name;
+                            : h.Kind == (int)HolderKind.Public ? TechText.T("reallife_exit_holder_public") : VentureCatalogue.Firms[TalentCatalogue.Clamp(h.Who, 0,
+                                VentureCatalogue.FirmCount - 1)].Name;
                         card.Row(who, TechText.Mille(VentureRules.ShareOf(h, total)));
                     }
                     card.Say(TechText.Fill("reallife_vc_cap_board", "seats", c.BoardSeats.ToString(), "theirs", c.VcSeats.ToString(), "target", Cents(_d.Level(c.TargetMrr)), "day",
@@ -327,6 +333,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     head.Add(Button(TechText.T("reallife_vc_button_books"), UiButtonKind.Secondary, UiAction.Option, Go(v => v.Page = PageBooks)));
                 }
+                head.Add(Button(TechText.T("reallife_exit_button_page"), UiButtonKind.Secondary, UiAction.Count, Go(v => v.Page = PageExits)));
                 head.Add(Button(TechText.T("reallife_vc_button_raise_page"), UiButtonKind.Primary, UiAction.Alt, Go(v => v.Page = PageRaise)));
                 _m.HeadActions = head.ToArray();
                 _m.Left = new[] { card.Build() };

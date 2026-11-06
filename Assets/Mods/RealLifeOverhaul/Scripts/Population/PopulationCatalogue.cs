@@ -111,7 +111,8 @@ namespace RealLifeOverhaul.Population
         Staff = 6,         // household staff at the player's home (Household)
         Met = 7,           // somebody the player has met (Social)
         Child = 8,         // one of the player's children (Family)
-        Player = 9         // the player
+        Player = 9,        // the player
+        Founder = 10       // the founder of one of the city's startups (Tech/Venture/ExitPlaces), a resident of the field their startup works in
     }
 
     /// <summary>
