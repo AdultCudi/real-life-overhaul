@@ -39,7 +39,7 @@ namespace RealLifeOverhaul.Ui
                     "reallife_pop_fig_homes_wanted", "reallife_pop_fig_homes_started", "reallife_pop_fig_homes_built", "reallife_pop_fig_firms_opened",
                     "reallife_pop_fig_firms_closed", "reallife_pop_rows_lives_with", "reallife_pop_empty_alone"
                 }).Switch(UiScreenSwitches.Apps),
-                new UiScreenDef("studio", UiTemplate.Dashboard, "StudioPageScreen", new[]
+                new UiScreenDef("studio", UiTemplate.AppWindow, "StudioPageScreen", new[]
                 {
                     "reallife_ui_page_empty", "reallife_ui_prompt_move", "reallife_ui_prompt_back", "reallife_studio_page_games_out", "reallife_studio_page_copies",
                     "reallife_studio_page_takings", "reallife_studio_page_col_game", "reallife_studio_page_col_genre", "reallife_studio_page_col_score",
@@ -60,7 +60,10 @@ namespace RealLifeOverhaul.Ui
                     "reallife_tech_mkt_page_desk", "reallife_tech_mkt_page_reputation", "reallife_tech_mkt_market_businesssoftware", "reallife_tech_mkt_market_apps",
                     "reallife_ui_sample_firm", "reallife_ui_sample_firm_note", "reallife_ui_sample_engine", "reallife_studio_genre_adventure",
                     "reallife_studio_genre_simulation", "reallife_studio_genre_strategy", "reallife_studio_next_hire", "reallife_studio_page_needed_how",
-                    "reallife_studio_page_no_games_hire", "reallife_studio_page_age_days", "reallife_tech_mkt_page_building", "reallife_tech_mkt_page_ready"
+                    "reallife_studio_page_no_games_hire", "reallife_studio_page_age_days", "reallife_tech_mkt_page_building", "reallife_tech_mkt_page_ready",
+                    "reallife_ui_tech_skill", "reallife_studio_page_none", "reallife_ui_page_studio", "reallife_ui_tech_col_person", "reallife_ui_tech_morale",
+                    "reallife_ui_tech_open_roles", "reallife_ui_tech_sec_overview", "reallife_ui_tech_sec_team", "reallife_ui_tech_note_support", "reallife_ui_tech_in_development",
+                    "reallife_ui_tech_at_desk"
                 }).Switch(UiScreenSwitches.Apps),
                 new UiScreenDef("session_panel", UiTemplate.Decision, "ActivityScreen", new[]
                 {

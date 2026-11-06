@@ -4,27 +4,25 @@ using RealLifeOverhaul.Tech;
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>
-    /// A tech firm's whole page (StudioViews.Page, SectorViews.Page: a FirmPage) as the kit's dashboard: the title with what
-    /// to do next under it in its weight's colour, the primary action and the others at the head's right, the figures with
-    /// the takings' line in a wide panel, the main table over the second, the team as bars and the facts as pairs at the side.
-    /// The actions are handed back so a press reaches the feature's own act. Game-free. Cost: a model a page, when it opens
-    /// or after a press.
+    /// A tech firm's whole page (StudioViews.Page, SectorViews.Page: a FirmPage) as the face the Tech app's firm pages share
+    /// (StudioFace): the title, what to do next in its weight's colour, the actions at the head's right, the figures with the
+    /// takings' line, the main table over the second, the team as graded bars and the facts at the side. The actions are handed
+    /// back in the order they stand, the main one last, so a press reaches the feature's own act. Cost: a model a page, when it
+    /// opens or after a press.
     /// </summary>
     public static class StudioPages
     {
-        public const int MostOthers = 2;                                   // actions beside the primary: a page keeps to a few
-        public const float FigureColumn = UiTokens.S16 * 2f + UiTokens.S4;   // px: a table's column of figures or a short status
+        public const int MostOthers = 2;   // actions beside the primary: a page keeps to a few
 
-        public static UiDashboardModel Page(FirmPage page, UiWords t, List<ViewAction> others, out ViewAction primary)
+        public static StudioFaceModel Page(FirmPage page, UiWords t, List<ViewAction> acts, StudioExtras extras = null)
         {
             StudioScreen v = page.Screen;
-            others.Clear();
-            primary = v.Primary != null && Runs(v.Primary.Act) ? v.Primary : null;
-            var m = new UiDashboardModel { Title = Fill(t, v.TitleKey, v.TitlePairs), StatsFirst = true };
+            acts.Clear();
+            var m = new StudioFaceModel { Title = Fill(t, v.TitleKey, v.TitlePairs) };
             if (v.Next != null)
             {
-                m.Subtitle = Fill(t, v.Next.Key, v.Next.Pairs);
-                m.SubtitleInk = v.Next.Tone == ViewTone.Bad ? UiRole.DangerText : v.Next.Tone == ViewTone.Warn ? UiRole.WarnText : v.Next.Tone == ViewTone.Good ? UiRole.OkText : UiRole.Text;
+                m.Next = Fill(t, v.Next.Key, v.Next.Pairs);
+                m.NextInk = v.Next.Tone == ViewTone.Bad ? UiRole.DangerText : v.Next.Tone == ViewTone.Warn ? UiRole.WarnText : v.Next.Tone == ViewTone.Good ? UiRole.OkText : UiRole.Text;
             }
             m.Figures = new UiFigureModel[page.Figures.Count];
             for (int i = 0; i < page.Figures.Count; i++)
@@ -32,76 +30,90 @@ namespace RealLifeOverhaul.Ui
                 ViewFigure f = page.Figures[i];
                 m.Figures[i] = new UiFigureModel { Label = t(f.LabelKey, f.LabelKey), Value = f.Value, Change = f.Change, Rising = f.Rising, Good = f.Good, Trend = f.Trend, Span = f.Wide ? 2 : 1 };
             }
-            m.FigureCount = m.Figures.Length;
-            m.Table = Table(page.Main, t);
-            m.More = Table(page.More, t);
-            m.StatsTitle = t(page.TeamKey, page.TeamKey);
-            m.Stats = new UiStatModel[page.Team.Count];
+            m.Main = Table(page.Main, t, UiIcon.GameController);
+            m.More = Table(page.More, t, UiIcon.Flag);
+            string[] groups = new string[page.Team.Count], figures = new string[page.Team.Count];
+            int[] skills = new int[page.Team.Count];
+            bool needed = false;
             for (int i = 0; i < page.Team.Count; i++)
             {
                 ViewRole r = page.Team[i];
                 string group = t(StudioViews.GroupKey(r.Group), StudioViews.GroupKey(r.Group));
-                m.Stats[i] = new UiStatModel
-                {
-                    Label = t(StudioViews.GroupCountKey, StudioViews.GroupCountKey).Replace("{group}", group).Replace("{count}", r.Count.ToString(System.Globalization.CultureInfo.InvariantCulture)),
-                    Figure = r.Needed ? t(StudioViews.NeededKey, StudioViews.NeededKey) : r.Skill.ToString(System.Globalization.CultureInfo.InvariantCulture), Value = r.Skill
-                };
+                groups[i] = t(StudioViews.GroupCountKey, StudioViews.GroupCountKey).Replace("{group}", group).Replace("{count}", r.Count.ToString(System.Globalization.CultureInfo.InvariantCulture));
+                figures[i] = r.Needed ? t(StudioViews.NeededKey, StudioViews.NeededKey) : r.Skill.ToString(System.Globalization.CultureInfo.InvariantCulture);
+                skills[i] = r.Skill;
+                needed |= r.Needed;
             }
-            m.StatCount = m.Stats.Length;
-            bool needed = false;
-            for (int i = 0; i < page.Team.Count; i++)
-            {
-                needed |= page.Team[i].Needed;
-            }
+            m.Team = StudioFace.TeamTable(t(page.TeamKey, page.TeamKey), t("reallife_ui_tech_skill", "Skill"), groups, skills, figures, t("reallife_studio_page_none", "None"));
             // A "Needed" alone left the owner unsure how to fill it: the people are hired, then their roles are set in Open Roles.
-            m.StatsNote = needed ? t("reallife_studio_page_needed_how", "To fill a group, hire people in the Business app, then set their roles in Open Roles, on its Team tab.") : null;
-            m.SideTitle = t(page.FactsKey, page.FactsKey);
-            m.Side = new UiPairModel[page.Facts.Count];
-            for (int i = 0; i < page.Facts.Count; i++)
+            string how = t("reallife_studio_page_needed_how", "To fill a group, hire people in the Business app, then set their roles in Open Roles, on its Team tab.");
+            var notes = new List<string>(2);
+            if (extras != null && !string.IsNullOrEmpty(extras.Tickets))
             {
-                m.Side[i] = new UiPairModel { Key = t(page.Facts[i].LabelKey, page.Facts[i].LabelKey), Value = Capital(page.Facts[i].Value) };
+                notes.Add(extras.Tickets);
             }
-            m.SideCount = m.Side.Length;
-            for (int i = 0; i < v.Others.Count && others.Count < MostOthers; i++)
+            if (needed)
+            {
+                notes.Add(how);
+            }
+            m.Note = notes.Count > 0 ? StudioFace.NoteCard(notes.ToArray(), t("reallife_ui_tech_open_roles", "Open Roles")) : null;
+            if (extras != null)
+            {
+                m.Hero = extras.Hero;
+                m.People = StudioFace.PeopleTable(t("reallife_ui_tech_col_person", "Person"), t("reallife_ui_tech_skill", "Skill"), t("reallife_ui_tech_morale", "Morale"), extras.People,
+                    t("reallife_studio_page_none", "None"));
+                m.Tabs = StudioFace.TabEntries(t("reallife_ui_tech_sec_overview", "Overview"), t("reallife_ui_tech_sec_team", "Team"), extras.People.Length);
+            }
+            if (page.Facts.Count > 0)
+            {
+                string[] labels = new string[page.Facts.Count], values = new string[page.Facts.Count];
+                for (int i = 0; i < labels.Length; i++)
+                {
+                    labels[i] = t(page.Facts[i].LabelKey, page.Facts[i].LabelKey);
+                    values[i] = Capital(page.Facts[i].Value);
+                }
+                m.Facts = StudioFace.FactsCard(t(page.FactsKey, page.FactsKey), labels, values);
+            }
+            for (int i = 0; i < v.Others.Count && acts.Count < MostOthers; i++)
             {
                 if (Runs(v.Others[i].Act))
                 {
-                    others.Add(v.Others[i]);
+                    acts.Add(v.Others[i]);
                 }
             }
-            m.Others = new UiActionModel[others.Count];
-            for (int i = 0; i < others.Count; i++)
+            int others = acts.Count;
+            bool primary = v.Primary != null && Runs(v.Primary.Act);
+            if (primary)
             {
-                ViewAction a = others[i];
-                m.Others[i] = new UiActionModel
+                acts.Add(v.Primary);
+            }
+            m.Actions = new UiActionModel[acts.Count];
+            for (int i = 0; i < acts.Count; i++)
+            {
+                ViewAction a = acts[i];
+                bool main = primary && i == others;
+                m.Actions[i] = new UiActionModel
                 {
-                    Label = t(a.Key, a.Key), Kind = a.Danger ? UiButtonKind.Destructive : UiButtonKind.Secondary, Key = i == 0 ? UiAction.Option : UiAction.Count,
-                    Command = UiDashboard.OtherCommand, Disabled = !a.Enabled
+                    Label = t(a.Key, a.Key), Kind = main ? UiButtonKind.Primary : a.Danger ? UiButtonKind.Destructive : UiButtonKind.Secondary,
+                    Key = main ? UiAction.Alt : i == 0 ? UiAction.Option : UiAction.Count, Command = StudioFace.ActionCommand, Arg = i, Disabled = !a.Enabled
                 };
             }
-            m.OtherCount = m.Others.Length;
-            m.HasAction = primary != null;
-            if (m.HasAction)
-            {
-                m.Action = new UiActionModel { Label = t(primary.Key, primary.Key), Kind = UiButtonKind.Primary, Key = UiAction.Alt, Command = UiDashboard.ActionCommand, Disabled = !primary.Enabled };
-            }
-            var prompts = new List<UiPrompt>(3) { new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") } };
-            if (m.HasAction)
-            {
-                prompts.Add(new UiPrompt { Action = UiAction.Alt, Label = m.Action.Label });
-            }
-            prompts.Add(new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") });
-            m.Prompts = prompts.ToArray();
-            m.PromptCount = m.Prompts.Length;
+            m.Prompts = Prompts(t, primary ? m.Actions[acts.Count - 1].Label : null);
             return m;
         }
 
         /// <summary>
-        /// Whether the page can run an act itself, through the director. The Tech app's own screens (a new product, the
-        /// contracts, the concept) open only inside that app, and its close button is the kit's Back already, so those are
-        /// left off the page rather than drawn as buttons that do nothing.
+        /// Whether the page has a button for an act: the director runs it, or it opens the Tech app on the firm's own screen for it.
+        /// What is left off is what is not a button of the firm's page in the Tech app either: a screen's own way out and the
+        /// choices on its cards (the marketing beat, the project).
         /// </summary>
-        public static bool Runs(int act)
+        public static bool Runs(int act) => Direct(act) || Opens(act);
+
+        /// <summary>The acts that open the Tech app's own screen: a new game's concept, a new product, the contracts.</summary>
+        public static bool Opens(int act) => act == StudioAct.Concept || act == SectorAct.NewProduct || act == SectorAct.Contracts;
+
+        /// <summary>Whether the director runs an act itself.</summary>
+        public static bool Direct(int act)
         {
             switch (act)
             {
@@ -120,33 +132,52 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // A view's table as the kit's: its columns named, figures to the right in a column of their own width, its rows as
-        // written. Its rows open nothing, so none is a target.
-        private static UiTableModel Table(ViewTable v, UiWords t)
+        /// <summary>The page when its firm cannot be read (it was sold or closed since): its words, and the way back.</summary>
+        public static StudioFaceModel Empty(UiWords t)
         {
-            var columns = new UiColumn[v.ColumnKeys.Length];
-            for (int i = 0; i < columns.Length; i++)
+            string empty = t("reallife_ui_page_empty", "Nothing here yet");
+            return new StudioFaceModel
             {
-                bool figure = i < v.Figures.Length && v.Figures[i];
-                columns[i] = new UiColumn { Title = t(v.ColumnKeys[i], v.ColumnKeys[i]), Width = figure ? FigureColumn : 0f, Right = figure };
+                Title = t("reallife_ui_page_studio", "Your firm"),
+                Main = StudioFace.Table(new[] { string.Empty }, new[] { string.Empty }, new[] { false }, new string[0][], empty, UiIcon.GameController),
+                Prompts = Prompts(t, null)
+            };
+        }
+
+        // A view's table in the face's: its columns named, figures to the right, its rows as written.
+        private static UiDataTableModel Table(ViewTable v, UiWords t, UiIcon icon)
+        {
+            var titles = new string[v.ColumnKeys.Length];
+            for (int i = 0; i < titles.Length; i++)
+            {
+                titles[i] = t(v.ColumnKeys[i], v.ColumnKeys[i]);
             }
-            var table = new UiTableModel { Columns = columns, Rows = v.Rows.ToArray(), RowCount = v.Rows.Count, Selected = -1, Inert = true };
-            table.EmptyTitle = string.IsNullOrEmpty(v.EmptyKey) ? t("reallife_ui_page_empty", "Nothing here yet") : t(v.EmptyKey, v.EmptyKey);
-            return table;
+            string empty = string.IsNullOrEmpty(v.EmptyKey) ? t("reallife_ui_page_empty", "Nothing here yet") : t(v.EmptyKey, v.EmptyKey);
+            return StudioFace.Table(titles, v.ColumnKeys, v.Figures, v.Rows, empty, icon);
+        }
+
+        private static UiPrompt[] Prompts(UiWords t, string primary)
+        {
+            var prompts = new List<UiPrompt>(3) { new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") } };
+            if (primary != null)
+            {
+                prompts.Add(new UiPrompt { Action = UiAction.Alt, Label = primary });
+            }
+            prompts.Add(new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") });
+            return prompts.ToArray();
         }
 
         /// <summary>
         /// A sample studio's page, named as a sample, for the test that opens a firm before the player owns one: the page
         /// can be seen on a fresh save, and nothing on it acts, as none of it is the player's. Back closes it.
         /// </summary>
-        public static UiDashboardModel Sample(UiWords t)
+        public static StudioFaceModel Sample(UiWords t)
         {
-            var m = new UiDashboardModel
+            var m = new StudioFaceModel
             {
                 Title = t("reallife_ui_sample_firm", "A sample studio"),
-                Subtitle = t("reallife_ui_sample_firm_note", "This is a sample, so the page can be seen. Open a tech firm to see your own here."),
-                SubtitleInk = UiRole.WarnText,
-                StatsFirst = true,
+                Next = t("reallife_ui_sample_firm_note", "This is a sample, so the page can be seen. Open a tech firm to see your own here."),
+                NextInk = UiRole.WarnText,
                 Figures = new[]
                 {
                     new UiFigureModel { Label = t("reallife_studio_page_games_out", "Games out"), Value = "3" },
@@ -158,41 +189,23 @@ namespace RealLifeOverhaul.Ui
                     },
                 },
             };
-            m.FigureCount = m.Figures.Length;
-            m.Table = new UiTableModel
-            {
-                Columns = new[]
-                {
-                    new UiColumn { Title = t("reallife_studio_page_col_game", "Game") }, new UiColumn { Title = t("reallife_studio_page_col_genre", "Genre") },
-                    new UiColumn { Title = t("reallife_studio_page_col_score", "Score"), Width = FigureColumn, Right = true },
-                    new UiColumn { Title = t("reallife_studio_page_col_copies", "Copies"), Width = FigureColumn, Right = true },
-                    new UiColumn { Title = t("reallife_studio_page_col_kept", "Kept"), Width = FigureColumn, Right = true },
-                },
-                Rows = new[]
+            m.Main = StudioFace.Table(
+                new[] { t("reallife_studio_page_col_game", "Game"), t("reallife_studio_page_col_genre", "Genre"), t("reallife_studio_page_col_score", "Score"),
+                    t("reallife_studio_page_col_copies", "Copies"), t("reallife_studio_page_col_kept", "Kept") },
+                new[] { "page_col_game", "page_col_genre", "page_col_score", "page_col_copies", "page_col_kept" }, new[] { false, false, true, true, true },
+                new[]
                 {
                     new[] { "Ember Isle", t("reallife_studio_genre_adventure", "Adventure"), "78", "41,000", "$612,400" },
                     new[] { "Tiny Towns", t("reallife_studio_genre_simulation", "Simulation"), "74", "28,500", "$341,900" },
                     new[] { "Deep Signal", t("reallife_studio_genre_strategy", "Strategy"), "69", "12,600", "$128,300" },
-                },
-                RowCount = 3, Selected = -1, Inert = true,
-            };
-            m.StatsTitle = t("reallife_studio_page_team", "Team");
-            m.Stats = new[]
-            {
-                new UiStatModel { Label = t("reallife_studio_page_group_engineers", "Engineers"), Figure = "64", Value = 64 },
-                new UiStatModel { Label = t("reallife_studio_page_group_designers", "Designers"), Figure = "58", Value = 58 },
-                new UiStatModel { Label = t("reallife_studio_page_group_testers", "Testers"), Figure = "52", Value = 52 },
-            };
-            m.StatCount = m.Stats.Length;
-            m.SideTitle = t("reallife_studio_page_facts", "Sales and support");
-            m.Side = new[]
-            {
-                new UiPairModel { Key = t("reallife_studio_page_pirated", "Pirated copies"), Value = "9,800" },
-                new UiPairModel { Key = t("reallife_studio_page_engine", "Engine"), Value = t("reallife_ui_sample_engine", "Under licence") },
-            };
-            m.SideCount = m.Side.Length;
-            m.Prompts = new[] { new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") } };
-            m.PromptCount = 1;
+                }, string.Empty, UiIcon.GameController);
+            m.Team = StudioFace.TeamTable(t("reallife_studio_page_team", "Team"), t("reallife_ui_tech_skill", "Skill"),
+                new[] { t("reallife_studio_page_group_engineers", "Engineers"), t("reallife_studio_page_group_designers", "Designers"), t("reallife_studio_page_group_testers", "Testers") },
+                new[] { 64, 58, 52 }, new[] { "64", "58", "52" }, string.Empty);
+            m.Facts = StudioFace.FactsCard(t("reallife_studio_page_facts", "Sales and support"),
+                new[] { t("reallife_studio_page_pirated", "Pirated copies"), t("reallife_studio_page_engine", "Engine") },
+                new[] { "9,800", t("reallife_ui_sample_engine", "Under licence") });
+            m.Prompts = Prompts(t, null);
             return m;
         }
 
