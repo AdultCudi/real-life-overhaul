@@ -38,6 +38,7 @@ namespace RealLifeOverhaul.Ui
         }
 
         private static readonly Dictionary<CanvasGroup, Hold> Holds = new Dictionary<CanvasGroup, Hold>(8);
+        private static readonly List<CanvasGroup> Gone = new List<CanvasGroup>(4);
 
         private readonly List<Leaf> _leaves = new List<Leaf>(8);
         private readonly List<Dimmed> _graphics = new List<Dimmed>(8);
@@ -167,12 +168,18 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Forgets what the game has destroyed since (a toast gone): nothing to give back to it.</summary>
         public void Prune()
         {
+            bool gone = false;
             for (int i = _leaves.Count - 1; i >= 0; i--)
             {
                 if (_leaves[i].Group == null)
                 {
                     _leaves.RemoveAt(i);
+                    gone = true;
                 }
+            }
+            if (gone)
+            {
+                ForgetGone();
             }
             for (int i = _graphics.Count - 1; i >= 0; i--)
             {
@@ -190,6 +197,24 @@ namespace RealLifeOverhaul.Ui
             _leaves.Clear();
             _graphics.Clear();
             _shared.Clear();
+        }
+
+        // A group the game destroyed while hidden is never released, so its hold would stay for the rest of the session.
+        private static void ForgetGone()
+        {
+            Gone.Clear();
+            foreach (CanvasGroup g in Holds.Keys)
+            {
+                if (g == null)
+                {
+                    Gone.Add(g);
+                }
+            }
+            for (int i = 0; i < Gone.Count; i++)
+            {
+                Holds.Remove(Gone[i]);
+            }
+            Gone.Clear();
         }
 
         // True when this was the last screen holding the group hidden.
