@@ -106,6 +106,8 @@ internal static partial class Program
         string[] marks = { "Fixed: ", "Corrigido: ", "已修复：", "Behoben: ", "Corrigé : ", "Corregido: ", "Исправлено: ", "Opgelost: ", "Düzeltildi: ", "Naprawiono: ", "수정: " };
         string[] codes = { "en", "pt", "zh-cn", "de", "fr", "es", "ru", "nl", "tr", "pl", "ko" };
         bool all = true, next = true;
+        string rowKey = SocialRowKey(LoadWords(System.IO.Path.Combine(LocalesFolder(), "en.json")));
+        next = rowKey != null;
         for (int l = 0; l < codes.Length; l++)
         {
             Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(LocalesFolder(), codes[l] + ".json"));
@@ -121,33 +123,28 @@ internal static partial class Program
                     all &= words.TryGetValue(key, out string many) && many.Contains("{days}") && words.TryGetValue(key + "_one", out string one) && !one.Contains("{days}") && one.Length > 10;
                 }
             }
-            string row = SocialRow(words, marks[l]);
+            string row = rowKey != null && words.TryGetValue(rowKey, out string found) ? found : string.Empty;
             next &= row.Split(new[] { marks[l] }, StringSplitOptions.None).Length - 1 >= 2;
         }
         Check(all, "social steps: each wait is said in en, pt and zh-cn, in the plural with the days and in the singular without");
         Check(next, "social steps: What's new says both fixes in all eleven languages");
     }
 
-    // The next row before a release; once the version script has numbered it, the newest numbered row holds the lines.
-    private static string SocialRow(Dictionary<string, string> words, string mark)
+    // The row that holds the English lines, whichever version took them: every language's row of that key says both.
+    private static string SocialRowKey(Dictionary<string, string> en)
     {
-        string next = words.TryGetValue("reallife_changes_next", out string r) ? r : string.Empty;
-        if (next.Contains(mark))
+        if (en == null)
         {
-            return next;
+            return null;
         }
-        string newest = string.Empty;
-        int best = -1;
-        foreach (KeyValuePair<string, string> row in words)
+        foreach (KeyValuePair<string, string> row in en)
         {
-            string[] parts = row.Key.Split('_');
-            if (parts.Length == 4 && row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal)
-                && int.TryParse(parts[2], out int minor) && int.TryParse(parts[3], out int patch) && minor * 1000 + patch > best)
+            if (row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && !row.Key.EndsWith("_title", StringComparison.Ordinal)
+                && row.Value.Contains("too early to make things official") && row.Value.Contains("draws faces no older than 60"))
             {
-                best = minor * 1000 + patch;
-                newest = row.Value;
+                return row.Key;
             }
         }
-        return newest;
+        return null;
     }
 }
