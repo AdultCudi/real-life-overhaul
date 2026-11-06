@@ -22,6 +22,7 @@ namespace RealLifeOverhaul.Ui
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("ui", "WorldHost", typeof(WorldHost));   // its Update (Core/Guard)
         private static readonly int HotUpdate = HotSpots.Slot("Ui: WorldHost.Update");
+        private static readonly int HotLate = HotSpots.Slot("Ui: WorldHost.LateUpdate");
 
         private RectTransform _rect;
         private Vector2 _laidSize;
@@ -29,6 +30,10 @@ namespace RealLifeOverhaul.Ui
         private float _scale = UiTokens.CanvasPerPx;
         private readonly WorldPrompt _prompt = new WorldPrompt();
         private readonly WorldBuilding _building = new WorldBuilding();
+        private readonly OverlayCardsLive _overlays = new OverlayCardsLive();
+        private const float SwitchEvery = 0.5f;   // s of real time between reads of the item cards' switches: a switch is never read each frame
+        private float _switchDue;
+        private bool _hoverOn, _clickOn, _personOn, _aimOn;
 
         /// <summary>The one host while it stands.</summary>
         public static WorldHost Instance { get; private set; }
@@ -39,8 +44,12 @@ namespace RealLifeOverhaul.Ui
         /// <summary>The building's reader, for the tests.</summary>
         internal WorldBuilding Building => _building;
 
+        /// <summary>The cards over the world's items, for the tests.</summary>
+        internal OverlayCardsLive Overlays => _overlays;
+
         /// <summary>What each piece is doing, for the interface's line at load.</summary>
-        public static string State => Instance == null ? "the world: not built yet" : "the world: the prompt " + Instance._prompt.State + ", the building's panel " + Instance._building.State;
+        public static string State => Instance == null ? "the world: not built yet" : "the world: the prompt " + Instance._prompt.State + ", the building's panel "
+            + Instance._building.State + ", the items' cards " + Instance._overlays.State;
 
         /// <summary>The host over the game's OverlayUI, made the first time it is asked for in a city; null while the game has not built it.</summary>
         public static WorldHost Ensure()
@@ -60,6 +69,7 @@ namespace RealLifeOverhaul.Ui
             host._rect = rect;
             host._prompt.Build(rect, host._scale);
             host._building.Build(rect, host._scale);
+            host._overlays.Build(rect, host._scale);
             rect.gameObject.SetActive(true);
             return host;
         }
@@ -75,6 +85,8 @@ namespace RealLifeOverhaul.Ui
             Instance = null;
             host._prompt.Give();
             host._building.Give();
+            host._overlays.Give();
+            TutorialAimLive.Release();
             Destroy(host.gameObject);
             if (Meta.Dev.Verbose && why != null)
             {
@@ -115,6 +127,7 @@ namespace RealLifeOverhaul.Ui
                 _scale = UiHudRules.Scale(size.x);
                 _prompt.Rescale(_scale);
                 _building.Rescale(_scale);
+                _overlays.Rescale(_scale);
             }
             UiFrame frame = Frame();
             // No face to write with yet: the game's own boxes stay, so a door, a prompt or a right click is never hidden and
@@ -127,6 +140,25 @@ namespace RealLifeOverhaul.Ui
             }
             _prompt.Frame(frame, write && UiScreenSwitches.On(WorldKits.PromptId));
             _building.Frame(frame, write && UiScreenSwitches.On(WorldKits.BuildingId));
+            float now = Time.unscaledTime;
+            if (now >= _switchDue)
+            {
+                _switchDue = now + SwitchEvery;
+                _hoverOn = UiScreenSwitches.On(UiOverlays.HoverId);
+                _clickOn = UiScreenSwitches.On(UiOverlays.ClickId);
+                _personOn = UiScreenSwitches.On(UiOverlays.PersonId);
+                _aimOn = UiScreenSwitches.On(UiOverlays.PointerId);
+            }
+            _overlays.Frame(frame, write && _hoverOn, write && _clickOn, _personOn);
+            EmployeeFollowLive.Tick();
+            if (_aimOn)
+            {
+                TutorialAimLive.Tick(Time.unscaledTime);
+            }
+            else
+            {
+                TutorialAimLive.Release();
+            }
         }
 
         private static void SayNoFace() =>
@@ -135,8 +167,28 @@ namespace RealLifeOverhaul.Ui
 
         private UiFrame Frame() => new UiFrame { Width = _laidSize.x / _scale, Height = _laidSize.y / _scale, Band = UiFrame.BandHeight, Pointer = true };
 
+        // After the game's own move of the tutorial's arrows, which it makes in its Update.
+        private void LateUpdate()
+        {
+            using var hotSpot = HotSpots.Time(HotLate);
+            if (FrameGuard.Off)
+            {
+                return;
+            }
+            try
+            {
+                TutorialAimLive.Late();
+            }
+            catch (Exception e)
+            {
+                Guard.Fail(FrameGuard, e, this);
+                Remove("a fault");
+            }
+        }
+
         private void OnDestroy()
         {
+            TutorialAimLive.Release();
             if (Instance == this)
             {
                 Instance = null;
