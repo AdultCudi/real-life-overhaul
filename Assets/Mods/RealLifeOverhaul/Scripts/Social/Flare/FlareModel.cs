@@ -140,6 +140,7 @@ namespace RealLifeOverhaul.Flare
         public int Age;              // years
         public int LookSeed;         // the look's seed; 0 when not told
         public int Mood;             // -2 a rough day to +2 a great one, as the social life rolls it each morning: the ring round their face
+        public string Contact;       // the id of their contact on the phone, whose picture is their face; null when not told
 
         /// <summary>Acquaintances and closer follow the player.</summary>
         public bool Follows => Stage >= FlareRules.FollowFromStage;

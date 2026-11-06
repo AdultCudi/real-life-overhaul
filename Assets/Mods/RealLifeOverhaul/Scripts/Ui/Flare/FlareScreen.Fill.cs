@@ -823,7 +823,7 @@ namespace RealLifeOverhaul.Ui
             else if (n.Kind == FlareNoticeKind.Dm || n.Kind == FlareNoticeKind.Job)
             {
                 FlareDm m = DmOf(file, n.Dm);
-                r.Line = m != null ? _flare.DmWords(m) : null;
+                r.Line = m != null ? _flare.DmLine(m) : null;
             }
             // What the post a notice is about brought, under it: told for the player's own posts that carry a boost.
             if (post != null && post.Author == FlareAuthor.Player && n.Kind != FlareNoticeKind.Promo && FlareNoticeRules.Brought(file, post.Id, now, out int visitors, out long cents))
@@ -937,7 +937,7 @@ namespace RealLifeOverhaul.Ui
             {
                 FlareThread t = threads[i];
                 string name = ThreadName(t.With, t.Name);
-                string last = t.Last != null ? _flare.DmWords(t.Last) : string.Empty;
+                string last = t.Last != null ? _flare.DmLine(t.Last) : string.Empty;
                 if (_inbox.Trim().Length > 0 && !FlareFeedRules.Matches(name, _inbox) && !FlareFeedRules.Matches(last, _inbox))
                 {
                     continue;
@@ -989,7 +989,7 @@ namespace RealLifeOverhaul.Ui
                 name = !d.Mine && !string.IsNullOrEmpty(d.Name) ? d.Name : name;
                 ref FlareRow r = ref _m.Detail.Add();
                 r.Kind = FlareRowKind.Bubble;
-                r.Text = _flare.DmWords(d);
+                r.Text = _flare.DmLine(d);
                 r.Time = Ago(d.At, now);
                 r.Flags = d.Mine ? FlareRowFlags.Mine : FlareRowFlags.None;
             }

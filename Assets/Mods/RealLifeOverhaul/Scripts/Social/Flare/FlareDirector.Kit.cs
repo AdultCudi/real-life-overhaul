@@ -48,6 +48,18 @@ namespace RealLifeOverhaul.Flare
             return _threads;
         }
 
+        /// <summary>A message in words as Flare shows it: the typed text, else the model's, else the city's line by its key.</summary>
+        public string DmLine(FlareDm m)
+        {
+            if (m == null)
+            {
+                return string.Empty;
+            }
+            string kept = DmWords(m);
+            string keyed = m.Text == null && kept == null && m.Key != null ? FlareText.DmWords(m, !string.IsNullOrEmpty(m.Name) ? m.Name : AccountName(m.With)) : null;
+            return FlareTextsMap.DmShown(m, kept, keyed);
+        }
+
         /// <summary>One conversation, oldest first; the director's list, filled again on each call.</summary>
         public List<FlareDm> KitThread(string with)
         {

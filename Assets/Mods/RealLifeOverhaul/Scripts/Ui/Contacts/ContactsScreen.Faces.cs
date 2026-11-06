@@ -28,10 +28,7 @@ namespace RealLifeOverhaul.Ui
                 FaceSources.Employee(name, EmployeeOf(c.id, out bool _));
                 return;
             }
-            if (!UiFaces.Has(name))
-            {
-                FaceSources.Held(name, FaceSources.Icon(c.id));   // the sprite the game's own contacts list holds for them
-            }
+            ContactFaces.Tell(name, c.id);
         }
 
         // A firm's contact (a bank, a shop, a rival's business, an agency): the game's own picture for it, as the game's

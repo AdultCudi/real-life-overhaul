@@ -648,7 +648,7 @@ namespace RealLifeOverhaul
                             Index = p.Index, First = SocialLife.First(p), Stage = (int)p.Stage, Taste = Taste(p), Closeness = p.Closeness, Partner = p.Together, Compatible = p.Compatible,
                             Unanswered = p.LastTextDay > p.LastContactDay && SocialLife.Day - p.LastTextDay <= 3,
                             Job = SocialCatalogue.Jobs[Math.Max(0, Math.Min(p.Job, SocialCatalogue.Jobs.Length - 1))].GetLocalization(), District = SocialPlaces.District(p.District),
-                            Female = p.Female, Age = p.Age, LookSeed = p.Seed, Mood = p.Mood
+                            Female = p.Female, Age = p.Age, LookSeed = p.Seed, Mood = p.Mood, Contact = SocialPhone.IdOf(p)
                         });
                     }
                 }
@@ -672,7 +672,7 @@ namespace RealLifeOverhaul
                     for (int i = 0; i < met.Count; i++)
                     {
                         SocialPerson p = met[i];
-                        into.Add(new FlarePerson { Index = p.Index, Stage = (int)p.Stage, Partner = p.Together, Female = p.Female, Age = p.Age, LookSeed = p.Seed });
+                        into.Add(new FlarePerson { Index = p.Index, Stage = (int)p.Stage, Partner = p.Together, Female = p.Female, Age = p.Age, LookSeed = p.Seed, Contact = SocialPhone.IdOf(p) });
                     }
                 }
                 catch (Exception e)
