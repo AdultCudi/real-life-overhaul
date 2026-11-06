@@ -43,7 +43,7 @@ namespace RealLifeOverhaul.Tech
         private static GameInstance Save => SaveGameManager.Current;
 
         /// <summary>True for a transaction type that is the tech sector's takings (for the economy's books).</summary>
-        public static bool IsTakings(string type) => type == TakingsKey || type == InfraGame.TakingsKey;
+        public static bool IsTakings(string type) => type == TakingsKey || type == InfraGame.TakingsKey || type == BakeGame.BakeKey;
 
         /// <summary>The row of a business's costs a transaction type of the tech sector's belongs to; null for none.</summary>
         public static string RowOf(string type) => type == HostingKey || type == SoftwareKey || type == InfraGame.ComputeKey ? CostRow

@@ -101,7 +101,27 @@ internal static partial class UiSamples
         m.Next = W(t, "reallife_niche_about", "Each niche is counted from this city's own businesses of that kind, once a day. A small niche has fewer rivals and caps out sooner.");
     }
 
-    private static void TechNiche(UiWords t, TechModel m, TechRunList runs)
+    // The rivals that sell into a niche: one line each with the price it asks, its share and its money; a niche with none says so.
+    private static UiFactCardModel TechRivalsCard(UiWords t, TechRunList runs, bool busy)
+    {
+        var card = new TechCard(runs.Runs, W(t, "reallife_rival_card_niche", "Who sells here"));
+        if (busy)
+        {
+            string Row(string price, string share, string customers) => WF(t, "reallife_rival_row", "Asks " + price + " a month, holds " + share + " of the niche, " + customers + " customers", "price", price, "share", share, "customers", customers);
+            card.Who("Tablefold", Row("$72", "31%", "186"), "$1,840,000", UiRole.WarnText).Who("Menu Harbour", Row("$54", "22%", "132"), "$420,000")
+                .Who("Orderly", WF(t, "reallife_rival_backed_by", "Backed by Shopfront Online", "company", "Shopfront Online") + ". " + Row("$43", "12%", "71"), "$96,000", UiRole.WarnText)
+                .Who("Codeharbour Software", Row("$60", "9%", "54"), W(t, "reallife_rival_listed", "Listed company")).Who("Kitchen Cloud", Row("$60", "4%", "24"), "$210,000")
+                .Who("Pantry Pilot", Row("$48", "3%", "18"), "$88,000").Say(WF(t, "reallife_rival_more", "2 more not shown.", "count", "2"));
+        }
+        else
+        {
+            card.Say(W(t, "reallife_rival_none", "No startup or listed company is selling into this niche yet."));
+        }
+        card.Say(W(t, "reallife_rival_pool_about", "Everyone here sells to the same buyers. A customer one product wins is one the others do not get."));
+        return card.Build();
+    }
+
+    private static void TechNiche(UiWords t, TechModel m, TechRunList runs, bool rivals = false)
     {
         m.Shape = TechShape.Sheet;
         TechFoundNav(t, m, 4);
@@ -116,7 +136,7 @@ internal static partial class UiSamples
         facts.Row(W(t, "reallife_niche_col_businesses", "Businesses"), "214").Row(W(t, "reallife_niche_staff", "Jobs at them"), "2,310").Row(W(t, "reallife_niche_col_buyers", "Customers"), "1,070,000")
             .Row(W(t, "reallife_niche_col_rivals", "Rivals"), "7").Row(W(t, "reallife_niche_col_price", "Price"), "112%")
             .Say(W(t, "reallife_niche_size_about", "Customers are the city's businesses of this kind and the region's like them. The most a month is those customers at the going price."));
-        m.Left = new[] { facts.Build() };
+        m.Left = new[] { facts.Build(), TechRivalsCard(t, runs, rivals) };
         var mood = new TechCard(runs.Runs, W(t, "reallife_niche_card_mood", "What moves it"));
         mood.Row(W(t, "reallife_niche_cycle", "The city's cycle"), "92%").Row(W(t, "reallife_niche_season", "The season"), "104%").Row(W(t, "reallife_niche_rent", "Rents"), "-")
             .Say(W(t, "reallife_niche_mood_about", "Restaurants buy less in a downturn, and landlords buy more when rents rise. A dash means the mod holds no data for it."));
@@ -126,7 +146,38 @@ internal static partial class UiSamples
         m.Right = new[] { mood.Build(), open.Build() };
     }
 
-    private static void TechGtm(UiWords t, TechModel m, TechRunList runs, bool placed)
+    // Who is coming at a founded firm and why, one short line each, and the bake offs it can enter.
+    private static void TechComing(UiWords t, TechRunList runs, bool busy, out UiFactCardModel coming, out UiFactCardModel bake)
+    {
+        var c = new TechCard(runs.Runs, W(t, "reallife_rival_card_firm", "Coming at you"));
+        var b = new TechCard(runs.Runs, W(t, "reallife_rival_card_bake", "Bake offs"));
+        if (busy)
+        {
+            c.Say(WF(t, "reallife_rival_line_copying", "Tablefold saw your lead and is copying it. It will have the feature in 21 days.", "rival", "Tablefold", "days", "21"))
+                .Say(WF(t, "reallife_rival_line_chest", "Menu Harbour is raising $2,400,000 early, after your raise.", "rival", "Menu Harbour", "amount", "$2,400,000"))
+                .Say(WF(t, "reallife_rival_line_cut", "Tablefold cut its price after losing share in Restaurants.", "rival", "Tablefold", "niche", "Restaurants"))
+                .Say(WF(t, "reallife_rival_line_poach", "Menu Harbour has money and is hiring. Your senior staff will get more offers.", "rival", "Menu Harbour"))
+                .Say(WF(t, "reallife_rival_line_backed", "Shopfront Online bought Orderly. It now has a big company's money behind it.", "company", "Shopfront Online", "rival", "Orderly"))
+                .Say(WF(t, "reallife_rival_line_entered", "Codeharbour Software came into Restaurants. It is a strong rival.", "company", "Codeharbour Software", "niche", "Restaurants"));
+            b.Say(WF(t, "reallife_rival_bake_open_line", "The Corner Table wants a bake off in Restaurants. The contract is worth $64,800. It is decided on day 512.", "customer", "The Corner Table",
+                    "niche", "Restaurants", "value", "$64,800", "day", "512"))
+                .Say(WF(t, "reallife_rival_bake_won_line", "Won the bake off at Pasta Palace. $38,400 booked at the firm.", "customer", "Pasta Palace", "amount", "$38,400"), UiRole.OkText)
+                .Say(WF(t, "reallife_rival_bake_lost_line", "Lost the bake off at Burger Row to Tablefold.", "customer", "Burger Row", "winner", "Tablefold"), UiRole.WarnText)
+                .Button(W(t, "reallife_tech_desk_bake_c0", "Demo the product"), UiButtonKind.Secondary, UiAction.Count, () => true)
+                .Button(W(t, "reallife_tech_desk_bake_c1", "Sharpen the price"), UiButtonKind.Secondary, UiAction.Count, () => true)
+                .Button(W(t, "reallife_tech_desk_bake_c2", "Work the relationships"), UiButtonKind.Secondary, UiAction.Count, () => true)
+                .Say(W(t, "reallife_rival_bake_about", "The best product wins, by its features, price, name, your Selling and its fit. You can also enter at your desk."));
+        }
+        else
+        {
+            c.Say(W(t, "reallife_rival_firm_none", "No rival has reacted to this firm yet."));
+            b.Say(W(t, "reallife_rival_bake_none", "No big customer has asked for a bake off yet."));
+        }
+        coming = c.Build();
+        bake = b.Build();
+    }
+
+    private static void TechGtm(UiWords t, TechModel m, TechRunList runs, bool placed, bool rivals = false)
     {
         m.Shape = TechShape.Sheet;
         TechFoundNav(t, m, 5);
@@ -154,7 +205,8 @@ internal static partial class UiSamples
                 "ceiling", "$6,420,000", "rivals", "7"))
             .Row(W(t, "reallife_gtm_opened", "Also in"), W(t, "reallife_niche_cafes", "Cafes"))
             .Go(W(t, "reallife_gtm_niches_link", "See all niches"), () => true);
-        m.Left = new[] { stage.Build(), niche.Build() };
+        TechComing(t, runs, rivals, out UiFactCardModel coming, out UiFactCardModel bake);
+        m.Left = new[] { stage.Build(), niche.Build(), coming };
         var papers = new TechCard(runs.Runs, W(t, "reallife_gtm_card_papers", "Papers"));
         papers.Row(W(t, "reallife_found_articles", "Articles"), W(t, "reallife_found_articles_standard", "Standard")).Row(W(t, "reallife_found_source", "First money"), W(t, "reallife_found_source_accelerator", "An accelerator"))
             .Say(W(t, "reallife_found_articles_standard_about", "Standard articles. Investors with a board seat can remove you as chief executive if the firm's money goes missing. They value the firm at its full worth."));
@@ -162,6 +214,6 @@ internal static partial class UiSamples
         team.Who("Priya Raman", "Software engineer, Senior", WF(t, "reallife_gtm_cofounder_vested", "31% vested", "vested", "31%"))
             .Button(WF(t, "reallife_gtm_button_part", "Part ways with Priya Raman", "name", "Priya Raman"), UiButtonKind.Secondary, UiAction.Count, () => true)
             .Row("Tomas Ondrej", WF(t, "reallife_gtm_cofounder_left", "kept 120,000 shares, left on day 410", "kept", "120,000", "day", "410"), UiRole.WarnText);
-        m.Right = new[] { papers.Build(), team.Build() };
+        m.Right = new[] { papers.Build(), team.Build(), bake };
     }
 }

@@ -164,7 +164,15 @@ namespace RealLifeOverhaul.Ui
                 "reallife_vc_terms_old", "reallife_vc_terms_pushed", "reallife_vc_terms_market",
                 "reallife_vc_terms_ask_market", "reallife_vc_terms_lead", "reallife_vc_deck_stretched",
                 "reallife_vc_acct_rights", "reallife_vc_acct_provision", "reallife_vc_acct_approved",
-                "reallife_vc_acct_breach", "reallife_vc_button_ask_spend", "reallife_vc_button_ask_raise"
+                "reallife_vc_acct_breach", "reallife_vc_button_ask_spend", "reallife_vc_button_ask_raise",
+                "reallife_rival_card_niche", "reallife_rival_row", "reallife_rival_listed", "reallife_rival_backed_by", "reallife_rival_none",
+                "reallife_rival_more", "reallife_rival_pool_about", "reallife_rival_card_firm", "reallife_rival_firm_none",
+                "reallife_rival_line_none", "reallife_rival_line_cut", "reallife_rival_line_raised", "reallife_rival_line_copying",
+                "reallife_rival_line_copied", "reallife_rival_line_chest", "reallife_rival_line_funded", "reallife_rival_line_poach",
+                "reallife_rival_line_backed", "reallife_rival_line_entered", "reallife_rival_line_bought", "reallife_rival_card_bake",
+                "reallife_rival_bake_none", "reallife_rival_bake_open_line", "reallife_rival_bake_entered_line",
+                "reallife_rival_bake_won_line", "reallife_rival_bake_lost_line", "reallife_rival_bake_missed_line",
+                "reallife_rival_bake_about", "reallife_tech_desk_bake_c0", "reallife_tech_desk_bake_c1", "reallife_tech_desk_bake_c2"
                 // KEYS END
             }).Switch(UiScreenSwitches.Tech));
         }

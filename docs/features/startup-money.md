@@ -84,3 +84,5 @@ On the options page, under the Tech sector's startups: "My firm's board looks at
 `EconomyCheck --startup-money`: the exploit run end to end, honest failure, each lawful way out, a deal over the fair price, suspicion and digging by diligence, the ladder's steps, the waterfall at wind down, an old save's grace, the save line read by an old and a new reader, determinism, and the cost of the floor check.
 
 Founding a startup, niches and going to market: [Founding a startup](startup-founding.md).
+
+Rivals in the niches, their reactions, bake offs and listed companies buying or coming in: [Competition in niches](startup-rivals.md).

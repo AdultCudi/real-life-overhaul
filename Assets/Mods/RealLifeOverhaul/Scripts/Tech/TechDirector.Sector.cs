@@ -128,7 +128,7 @@ namespace RealLifeOverhaul.Tech
                 // a company a newer version adds gets its products here, settled at their share below
                 SectorRules.Companies(_sector, day, SectorRules.StartFeatures(_firmsFile));
                 VentureFile v = Ventures;
-                SectorRules.Startups(_sector, v != null ? v.Startups : null, day, _rivalNotes);
+                SectorRules.Startups(_sector, v != null ? v.Startups : null, day, _rivalNotes, _keptRival);
                 for (int i = 0; i < _rivalNotes.Count; i++)
                 {
                     RivalProduct r = _rivalNotes[i].Rival >= 0 && _rivalNotes[i].Rival < _sector.Rivals.Count ? _sector.Rivals[_rivalNotes[i].Rival] : null;
@@ -174,6 +174,7 @@ namespace RealLifeOverhaul.Tech
             {
                 SectorRules.Count(_sector, products[i]);
             }
+            RivalryPrepare(day);
             SectorRules.Attract(_sector);
             for (int i = 0; i < products.Count; i++)
             {
@@ -194,8 +195,10 @@ namespace RealLifeOverhaul.Tech
                 if (p.Live)
                 {
                     SectorRules.Join(md, SectorRules.Attraction(_appeals[i], _aware[i]));
+                    RivalryOwn(firm, p, md, day, i);
                 }
             }
+            RivalryViews(day);
         }
 
         /// <summary>
@@ -351,7 +354,7 @@ namespace RealLifeOverhaul.Tech
                 return 1000;
             }
             SectorRules.Poacher(_sector, firm.File.Kind, day, out int pull);
-            return pull;
+            return Math.Max(pull, RivalryPull(place));   // and a funded rival in the niche of its product
         }
 
         /// <summary>The rival company that approaches a firm's people, or null: the one that lately took a lead or won a tender against its kind.</summary>
@@ -359,7 +362,7 @@ namespace RealLifeOverhaul.Tech
         {
             FirmPlace firm = _sectorOn ? FirmOf(place) : null;
             int c = firm != null ? SectorRules.Poacher(_sector, firm.File.Kind, day, out _) : -1;
-            return c >= 0 && c < HiringCatalogue.RivalFirms.Length ? HiringCatalogue.RivalFirms[c] : null;
+            return c >= 0 && c < HiringCatalogue.RivalFirms.Length ? HiringCatalogue.RivalFirms[c] : firm != null ? RivalAgainst(place, out _) : null;
         }
 
         /// <summary>A tender lost to a rival under the sector: the paper names the winner, Flare hears of it.</summary>
