@@ -28,7 +28,7 @@ namespace RealLifeOverhaul.Ui
         public const string ScreenId = OptionsKits.CityId;
 
         /// <summary>The custom difficulty's name field (this job's command numbers are 9500 to 9519).</summary>
-        public const int NameCommand = 9501;
+        public const int NameCommand = UiOptions.NameCommand;
 
         private const float Every = 0.25f;           // seconds between looks at the game's controls
         private const int ModePage = 0, ModeFound = 1;

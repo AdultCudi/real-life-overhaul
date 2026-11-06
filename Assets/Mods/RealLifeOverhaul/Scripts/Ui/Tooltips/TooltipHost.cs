@@ -88,8 +88,7 @@ namespace RealLifeOverhaul.Ui
             _read = read;
             _view = new UiView(rect, "Tooltip") { Scale = _scale, Ring = false };
             var group = _view.Root.gameObject.AddComponent<CanvasGroup>();
-            group.interactable = false;
-            group.blocksRaycasts = false;
+            group.interactable = false;   // the pointer is kept off by the canvas's raycaster, switched off in Install
             _view.Root.gameObject.SetActive(false);
             _data = data;
             _byScale = byScale;   // the game's own fade group stands on its content: that group is its to write, so the content is hidden by its scale instead

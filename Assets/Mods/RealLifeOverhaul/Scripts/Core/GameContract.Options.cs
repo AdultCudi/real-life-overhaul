@@ -23,7 +23,7 @@ namespace RealLifeOverhaul
         public static readonly GameMember OptParticles = Field(UiOptions, Game, OptionsType, "particleQualityDropdown", "Dropdown");
         public static readonly GameMember OptTextures = Field(UiOptions, Game, OptionsType, "textureQualityDropdown", "Dropdown");
         public static readonly GameMember OptAa = Field(UiOptions, Game, OptionsType, "antiAliasingDropdown", "Dropdown");
-        public static readonly GameMember OptShadows = Field(UiOptions, Game, OptionsType, "shadowsDropdown", "Dropdown");
+        public static readonly GameMember OptShade = Field(UiOptions, Game, OptionsType, "shadowsDropdown", "Dropdown");
         public static readonly GameMember OptHbao = Field(UiOptions, Game, OptionsType, "hbaoQualityDropdown", "Dropdown");
         public static readonly GameMember OptGamma = Field(UiOptions, Game, OptionsType, "gammaSlider", "Slider");
         public static readonly GameMember OptGammaText = Field(UiOptions, Game, OptionsType, "gammaPercentage", "TMP_Text");

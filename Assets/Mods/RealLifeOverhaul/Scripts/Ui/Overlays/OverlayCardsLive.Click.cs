@@ -130,7 +130,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < _found.Count && m.ActionCount < UiOverlayModel.MostActions; i++)
             {
                 Button b = _found[i];
-                if (b == null || !b.gameObject.activeInHierarchy || b.GetComponentInParent<UI.Elements.Dropdown>() != null)
+                if (b == null || !b.gameObject.activeInHierarchy || b.GetComponentInParent<UI.Elements.Dropdown>(false) != null)
                 {
                     continue;
                 }

@@ -425,7 +425,7 @@ internal static partial class Program
             "tooltips: a frame reads a flag and two numbers and allocates nothing: no search, no new object");
         Check(host.Contains("if (m.x == _mouse.x && m.y == _mouse.y)") && host.Contains("UiTooltipRules.Place("), "tooltips: the card follows the mouse by the game's placing, and only when the mouse moved");
         Check(Between(host, "private void Lay()", "// The card follows the mouse") .Contains("_view.Write(_scene, false)") && !update.Contains("_view.Write"), "tooltips: the card is laid out when the words change, never in a frame's update");
-        Check(host.Contains("raycaster.enabled = false") && host.Contains("group.blocksRaycasts = false") && host.Contains("group.interactable = false"), "tooltips: the card takes no pointer, so the target under it keeps its hover");
+        Check(host.Contains("raycaster.enabled = false") && host.Contains("group.interactable = false") && !host.Contains("blocksRaycasts = true"), "tooltips: the card takes no pointer, so the target under it keeps its hover");
         Check(host.Contains("UiOverCanvas.Make(canvas") && host.Contains("UiHudRules.Scale(size.x)"), "tooltips: the card stands on a canvas nested in the game's tooltip canvas and follows the UI zoom");
         Check(update.Contains("UiScreenSwitches.On(TooltipKit.Id)") && update.Contains("UiDirector.On") && kit.Contains("public const string Id = \"tooltips\""), "tooltips: the switch and the interface's master switch give the game's tooltip back at once");
         Check(kit.Contains("Fallback(") && host.Contains("Guard.Fail(FrameGuard") && host.Contains("TooltipKit.Fault("), "tooltips: a fault gives the game's tooltips back for the session with one warning");

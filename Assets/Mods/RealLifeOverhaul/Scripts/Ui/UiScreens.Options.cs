@@ -27,7 +27,7 @@ namespace RealLifeOverhaul.Ui
             keys.AddRange(OptionsGameKeys());
             for (int i = 0; actions && i < OptionsRules.Described.Length; i++)
             {
-                keys.Add("reallife_ui_opt_act_" + OptionsRules.Described[i]);
+                keys.Add(OptionsRules.ActPrefix + OptionsRules.Described[i]);
             }
             return keys.ToArray();
         }

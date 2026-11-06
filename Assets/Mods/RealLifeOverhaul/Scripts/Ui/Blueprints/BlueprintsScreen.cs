@@ -895,7 +895,7 @@ namespace RealLifeOverhaul.Ui
             {
                 foreach (TMP_Text t in card.GetComponentsInChildren<TMP_Text>(false))
                 {
-                    if (string.IsNullOrWhiteSpace(t.text) || t.GetComponentInParent<UnityEngine.UI.Button>() != null)
+                    if (string.IsNullOrWhiteSpace(t.text) || t.GetComponentInParent<UnityEngine.UI.Button>(false) != null)
                     {
                         continue;
                     }

@@ -27,6 +27,8 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Jobs\JobSave.cs" Link="Mod\JobSave.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Meta\OptionsTree.cs" Link="Mod\OptionsTree.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiScreens.cs" Link="Mod\UiScreens.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Overlays\UiOverlays.cs" Link="Mod\UiOverlays.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Options\OptionsRules.cs" Link="Mod\OptionsRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiScreens.*.cs" Link="Mod\%(Filename)%(Extension)" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiScreenSwitches.cs" Link="Mod\UiScreenSwitches.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiBreaker.cs" Link="Mod\UiBreaker.cs" />

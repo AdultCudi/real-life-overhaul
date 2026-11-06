@@ -31,6 +31,7 @@ namespace RealLifeOverhaul.Ui
     public static class UiOptions
     {
         public const string SceneName = "options";
+        public const int NameCommand = 9501;   // the custom difficulty's preset name field; block 9500 to 9519 is Options'
 
         /// <summary>The left of the controls' column in px of the layout, where a slider's pointer is measured from and a drop-down opens.</summary>
         public static float ControlLeft(UiFrame frame)

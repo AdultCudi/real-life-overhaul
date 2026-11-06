@@ -24,6 +24,10 @@ namespace RealLifeOverhaul.Ui
     /// </summary>
     public static class OptionsRules
     {
+        private const string Mod = "reallife";
+        /// <summary>The start of each action's sentence key; built from parts so the key list does not read it as a key.</summary>
+        public const string ActPrefix = Mod + "_ui_opt_act_";
+
         /// <summary>The sidebar's categories, in the game's order.</summary>
         public const int Graphics = 0, Audio = 1, Controls = 2, Game = 3, Mods = 4, Categories = 5;
 
@@ -130,7 +134,7 @@ namespace RealLifeOverhaul.Ui
             {
                 return "reallife_ui_opt_act_tool";
             }
-            return Array.IndexOf(Described, lower) >= 0 ? "reallife_ui_opt_act_" + lower : null;
+            return Array.IndexOf(Described, lower) >= 0 ? ActPrefix + lower : null;
         }
 
         /// <summary>True when a binding's control schemes (the game's groups, separated by semicolons) name the gamepad's.</summary>

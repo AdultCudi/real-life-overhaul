@@ -239,7 +239,7 @@ namespace RealLifeOverhaul.Ui
             AddChoice("menu_options_graphics_particle_quality", Field<UI.Elements.Dropdown>(GameContract.OptParticles));
             AddChoice("menu_options_graphics_texture_quality", Field<UI.Elements.Dropdown>(GameContract.OptTextures));
             AddChoice("menu_options_graphics_aa", Field<UI.Elements.Dropdown>(GameContract.OptAa));
-            AddChoice("menu_options_graphics_shadows", Field<UI.Elements.Dropdown>(GameContract.OptShadows));
+            AddChoice("menu_options_graphics_shadows", Field<UI.Elements.Dropdown>(GameContract.OptShade));
             AddChoice("menu_options_graphics_hbao", Field<UI.Elements.Dropdown>(GameContract.OptHbao));
         }
 
