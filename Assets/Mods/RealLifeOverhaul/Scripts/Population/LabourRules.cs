@@ -205,7 +205,7 @@ namespace RealLifeOverhaul.Population
             over -= commuters;
             for (int p = s.People.Count - 1; p >= 0 && over > 0; p--)
             {
-                if (s.People.Id[p] != 0 && s.People.Job[p] == e && (s.People.Flags[p] & PersonFlags.Linked) == 0)
+                if (s.People.Id[p] != 0 && s.People.Job[p] == e && (s.People.Flags[p] & PersonFlags.Linked) == 0 && !HoldRules.Held(s, p))
                 {
                     Lose(s, p, s.Day, false);
                     over--;
@@ -402,7 +402,7 @@ namespace RealLifeOverhaul.Population
             int id = pt.Id[p];
             if (status == Status.Worker)
             {
-                if (PopDraw.Daily(s.Seed, PopDraw.Quit, id, day, PopulationCatalogue.Turnover, s.YearDays))
+                if (!HoldRules.Held(s, p) && PopDraw.Daily(s.Seed, PopDraw.Quit, id, day, PopulationCatalogue.Turnover, s.YearDays))
                 {
                     Lose(s, p, day, false);
                 }

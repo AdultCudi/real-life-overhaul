@@ -219,6 +219,11 @@ namespace RealLifeOverhaul.Population
                 _sim.Measure = MeasureRules.Measure(read.Buildings, read.Districts, null);
                 CityTable.Middles(read);
                 Begin(read, false);
+                Dictionary<string, string> saved = PopulationGame.Data();
+                if (saved != null && saved.TryGetValue(HoldRules.Key, out string heldLine))
+                {
+                    HoldRules.Read(read, heldLine);
+                }
                 Logger?.Info("Living population: loaded (" + _readWhy + ") on day " + Save.Day + ": " + read.Households.Live + " households, " + read.People.Live + " people in "
                              + read.Buildings.Count + " buildings" + (away > 0 ? "; " + away + " household(s) away, their building not standing at this load" : string.Empty) + ".");
                 return;
@@ -343,6 +348,7 @@ namespace RealLifeOverhaul.Population
             {
                 return;
             }
+            HoldRules.Expire(_state, day);
             _jobDay = day;
             _attentionCursor = -2;   // the frame the day turns in only queues the turn: the businesses are read in its first step
             DaySpread.Shared.Add(this, "Population: the day's turn", _dayStep, Time.frameCount, HotDay);
@@ -521,6 +527,38 @@ namespace RealLifeOverhaul.Population
             }
         }
 
+        /// <summary>True while the population runs and so can hold a kept business's staff to their jobs; what the sale's words say depends on it.</summary>
+        public bool CanHold => Running && !SharedCity.Follows(PopulationShare.Part);
+
+        /// <summary>A sale kept the player's staff (by the game's employee ids, before the game dropped them): the people they are stay in their jobs for 30 days. Returns how many.</summary>
+        public int HoldStaff(IList<string> employeeIds)
+        {
+            if (!CanHold || Save == null || employeeIds == null)
+            {
+                return 0;
+            }
+            int held = 0;
+            for (int i = 0; i < employeeIds.Count; i++)
+            {
+                held += HoldRules.Start(_state, PopulationLinks.Linked(_state, LinkKind.Employee, employeeIds[i]), Save.Day) ? 1 : 0;
+            }
+            if (Verbose)
+            {
+                Logger?.Info("Population check (a sale's staff): " + held + " of " + employeeIds.Count + " member(s) of staff held to their jobs for " + HoldRules.Days + " days: PASS");
+            }
+            return held;
+        }
+
+        /// <summary>A rival's business passes to another owner: the residents who work there stay in their jobs for 30 days. Returns how many.</summary>
+        public int HoldBusiness(string street, int number)
+        {
+            if (!CanHold || Save == null)
+            {
+                return 0;
+            }
+            return HoldRules.StartAt(_state, _state.EmployerOfKey(PopulationState.KeyOf(street, number)), Save.Day);
+        }
+
         // The player's staff linked to residents: each member of the game's staff a person of the city, in the job the game gives them.
         private void LinkStaff(PopulationState s, int day)
         {
@@ -586,6 +624,15 @@ namespace RealLifeOverhaul.Population
                 float started = Time.realtimeSinceStartup;
                 string line = PopulationStore.Line(_state, _zip) ?? PopulationStore.Encode(_state);
                 data[PopulationStore.Key] = line;
+                string holds = HoldRules.Write(_state);
+                if (holds != null)
+                {
+                    data[HoldRules.Key] = holds;
+                }
+                else
+                {
+                    data.Remove(HoldRules.Key);
+                }
                 SaveDemand(data);
                 if (Verbose)
                 {

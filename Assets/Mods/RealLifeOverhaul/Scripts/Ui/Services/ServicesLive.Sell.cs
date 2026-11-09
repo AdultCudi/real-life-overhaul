@@ -380,7 +380,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     lines.Add(UiFactLine.Tick(m.Short > 0 ? ServicesText.T("reallife_ui_svc_check_short", "amount", Money(m.Short)) : ServicesText.T("reallife_ui_svc_check_repaid"), m.Short <= 0));
                 }
-                lines.Add(UiFactLine.Tick(ServicesText.T(o.KeepsStaff ? "reallife_svc_bid_staff_keep" : "reallife_svc_bid_staff_not"), o.KeepsStaff));
+                lines.Add(UiFactLine.Tick(ServicesText.StaffLine(o.KeepsStaff), o.KeepsStaff));
                 if (refusal != null)
                 {
                     lines.Add(UiFactLine.Tick(refusal, false));

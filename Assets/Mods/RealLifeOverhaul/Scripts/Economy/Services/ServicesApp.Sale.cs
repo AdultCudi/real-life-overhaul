@@ -184,7 +184,7 @@ namespace RealLifeOverhaul.Economy
                 ? ServicesText.T("reallife_svc_bid_parts", "now", ServicesText.Money(m.Now), "part", ServicesText.Money(m.Part), "count", m.PartsLeft.ToString())
                 : ServicesText.T("reallife_svc_bid_once"));
             box.Section("reallife_ibox_sec_terms");
-            box.Line(ServicesText.T(o.KeepsStaff ? "reallife_svc_bid_staff_keep" : "reallife_svc_bid_staff_not"), o.KeepsStaff ? CellTone.Green : CellTone.Yellow);
+            box.Line(ServicesText.StaffLine(o.KeepsStaff), o.KeepsStaff ? CellTone.Green : CellTone.Yellow);
             box.Line(o.ClauseDays > 0
                 ? ServicesText.T("reallife_svc_bid_clause", "days", o.ClauseDays.ToString(), "share", ServicesCatalogue.ClausePenaltyPct.ToString())
                 : ServicesText.T("reallife_svc_bid_no_clause"));

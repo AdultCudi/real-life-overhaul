@@ -29,6 +29,15 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Tells "running a business" that a business, by its place, is no longer the player's. Default: nobody.</summary>
         public static Action<string> BusinessGone;
 
+        /// <summary>Staff a buyer kept, by their employee ids, told before the game drops them: the living population holds them to their jobs for 30 days. Default: nobody.</summary>
+        public static Action<List<string>> StaffKept;
+
+        /// <summary>A rival's business passed to another owner, by its address: its staff are held to their jobs likewise. Default: nobody.</summary>
+        public static Action<Address> RivalHanded;
+
+        /// <summary>True when a kept staff is really held (the living population runs). Default: false, and the sale's words say only that the staff leave the payroll.</summary>
+        public static Func<bool> HoldsStaff;
+
         /// <summary>A business sold, by its place, and its whole price, for the player's listed company (Markets/Listing). Default: nobody.</summary>
         public static Action<string, int> Sold;
 
@@ -42,6 +51,9 @@ namespace RealLifeOverhaul.Economy
             LoansOwed = null;
             SettleLoans = null;
             BusinessGone = null;
+            StaffKept = null;
+            RivalHanded = null;
+            HoldsStaff = null;
             Sold = null;
             Investors = null;
         }

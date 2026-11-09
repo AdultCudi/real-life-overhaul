@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Economy.Ventures;
 using RealLifeOverhaul.Planner;
+using Streets;
 using UnityEngine;
 
 namespace RealLifeOverhaul
@@ -102,6 +103,9 @@ namespace RealLifeOverhaul
                 ServicesBridges.LoansOwed = LoansOwed;
                 ServicesBridges.SettleLoans = SettleLoans;
                 ServicesBridges.BusinessGone = BusinessGone;
+                ServicesBridges.StaffKept = StaffKept;
+                ServicesBridges.RivalHanded = RivalHanded;
+                ServicesBridges.HoldsStaff = HoldsStaff;
                 ServicesBridges.Investors = InvestorNames;
                 CompanyBridges.OtherIncome = BusinessSales.GainsBetween;   // a sale's gain goes into the quarter's return
                 CompanyBridges.Cleaned = CleaningService.Covers;            // the staff rota planner asks for no cleaning shift where the service cleans
@@ -277,6 +281,18 @@ namespace RealLifeOverhaul
                     into.Clear();
                 }
             }
+
+            private static void StaffKept(List<string> ids) => RealLifeOverhaul.Population.PopulationDirector.Instance?.HoldStaff(ids);
+
+            private static void RivalHanded(Address address)
+            {
+                if (address != null)
+                {
+                    RealLifeOverhaul.Population.PopulationDirector.Instance?.HoldBusiness(address.streetName, address.streetNumber);
+                }
+            }
+
+            private static bool HoldsStaff() => RealLifeOverhaul.Population.PopulationDirector.Instance != null && RealLifeOverhaul.Population.PopulationDirector.Instance.CanHold;
 
             private static void BusinessGone(string place)
             {

@@ -26,6 +26,7 @@ internal static partial class Program
         PopulationCosts();
         PopulationSaveChecks();
         PopulationLinkChecks();
+        StaffHoldChecks();
         PopulationGamesChecks();
         PopulationTextChecks();
     }

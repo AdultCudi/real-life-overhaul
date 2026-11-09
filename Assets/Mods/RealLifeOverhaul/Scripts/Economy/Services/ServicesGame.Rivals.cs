@@ -416,6 +416,14 @@ namespace RealLifeOverhaul.Economy
             }
             reg.businessOwnerRivalId = sale.Buyer;
             RivalsHelper.RefreshRivals();
+            try
+            {
+                ServicesBridges.RivalHanded?.Invoke(reg.Address);
+            }
+            catch (Exception e)
+            {
+                Logger?.Warn("Services: the staff of a rival's business sold could not be held to their jobs (" + e.Message + "); the sale goes on.");
+            }
             Told(reg.Address);
             return true;
         }

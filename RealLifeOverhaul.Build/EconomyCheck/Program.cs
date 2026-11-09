@@ -298,6 +298,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--staff-hold")
+        {
+            StaffHoldChecks();   // a buyer that keeps the staff holds them to their jobs for 30 days (StaffHoldChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--services-ui")
         {
             ServicesUiChecks();   // the Services screen's pages, presses and entry points, and the rules a sale keeps, alone (UiChecks.Services.cs)
