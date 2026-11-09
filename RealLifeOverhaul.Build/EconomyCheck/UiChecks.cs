@@ -690,9 +690,14 @@ internal static partial class Program
     {
         var s = new UiScene();
         var said = new HashSet<string>(StringComparer.Ordinal);
+        bool every = Environment.GetEnvironmentVariable("RLO_UI_ALL") != null;   // every finding, in UTF-8, for a pass over the languages
+        if (every)
+        {
+            Console.SetOut(new System.IO.StreamWriter(Console.OpenStandardOutput(), new System.Text.UTF8Encoding(false)) { AutoFlush = true });
+        }
         Action<string> say = line =>
         {
-            if (said.Count < 60 && said.Add(line))
+            if ((said.Count < 60 || every) && said.Add(line))
             {
                 Console.WriteLine("        " + line);   // each different finding once
             }
