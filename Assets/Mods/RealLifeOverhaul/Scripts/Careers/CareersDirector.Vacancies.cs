@@ -69,7 +69,7 @@ namespace RealLifeOverhaul.Careers
         // True if the post was moved to its company's headquarters as they stand now.
         private static bool AtHeadquarters(Opening o)
         {
-            if (o == null || o.Kind != (int)EmployerKind.TechFirm || Array.IndexOf(HiringCatalogue.RivalFirms, o.Employer) < 0 || CareersBridges.Headquarters == null)
+            if (o == null || o.Kind != (int)EmployerKind.TechFirm || CareersBridges.Headquarters == null)
             {
                 return false;
             }
@@ -313,14 +313,20 @@ namespace RealLifeOverhaul.Careers
         }
 
         /// <summary>One new vacancy of the city's: a profession that has employers, one of them, a rung, the pay and how the days are worked.</summary>
-        private Opening NewVacancy(int day, int n, bool agency, bool referrals, int forProf = -1, int forRank = -1)
+        private Opening NewVacancy(int day, int n, bool agency, bool referrals, int forProf = -1, int forRank = -1, string firm = null)
         {
             int prof = forProf >= 0 ? forProf : TechRandom.Range(StudySeed, 8301, day, n, 0, ProCatalogue.Count - 1);
             Profession p = ProCatalogue.Find(prof);
             EmployerRef at = null;
             EmployerKind kind = EmployerKind.City;
             string name = null;
-            if (p.Public)
+            if (firm != null)
+            {
+                at = AtFirm(p) && CareersBridges.Headquarters != null && CareersBridges.Headquarters(firm, out _, out _) ? OfficeFor(firm, p) : null;
+                kind = EmployerKind.TechFirm;
+                name = firm;
+            }
+            else if (p.Public)
             {
                 at = WorkGame.PublicFor(p, TechRandom.Range(StudySeed, 8302, day, n, 0, 999));
                 kind = EmployerKind.Public;
@@ -336,8 +342,8 @@ namespace RealLifeOverhaul.Careers
                         _fit.Add(_employers[i]);
                     }
                 }
-                bool firm = p.Family >= 0 && p.Types.Length > 0 && p.Types[0] == ProCatalogue.TechTypes && _offices.Count > 0 && TechRandom.Mille(StudySeed, 8303, day, n) < 450;
-                if (firm || _fit.Count == 0)
+                bool techFirm = p.Family >= 0 && p.Types.Length > 0 && p.Types[0] == ProCatalogue.TechTypes && _offices.Count > 0 && TechRandom.Mille(StudySeed, 8303, day, n) < 450;
+                if (techFirm || _fit.Count == 0)
                 {
                     if (p.Types.Length == 0 || p.Types[0] != ProCatalogue.TechTypes || _offices.Count == 0)
                     {

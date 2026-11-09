@@ -1310,6 +1310,8 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_exit_test_offer", () => Tech.TechDirector.Instance?.TestExitOffer())
                 .AddButton("reallife_exit_test_pricing", () => Tech.TechDirector.Instance?.TestExitPricing())
                 .AddButton("reallife_exit_test_hire", () => Tech.TechDirector.Instance?.TestStartupHire())
+                .AddButton("reallife_exit_test_lead", () => Tech.TechDirector.Instance?.TestExitLead())
+                .AddButton("reallife_exit_test_founder", () => Tech.TechDirector.Instance?.TestExitFounder())
                 .AddToggle(Settings.TechSiteRoomsId, "reallife_sites_rooms", Settings.TechSiteRooms,
                     v => Settings.TechSiteRooms = v)
                 .AddToggle(Settings.TechSiteHqId, "reallife_sites_hq", Settings.TechSiteHq,

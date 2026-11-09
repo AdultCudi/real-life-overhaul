@@ -37,6 +37,15 @@ namespace RealLifeOverhaul.Tech
 
         /// <summary>A business's stock and furniture at the game's resale price, in dollars (a sale of a business's cost); 0 when unreadable. Default: none.</summary>
         public static Func<string, int> Fixtures;
+        /// <summary>The job lead an acqui-hire gives (Careers): the buyer, whether its own office may have the post, a salt; true with the post's title, employer and
+        /// opening's id and whether it is at the buyer, else false with the key of why not. Default: none.</summary>
+        public delegate bool JobAsk(string buyer, bool office, int salt, out bool atBuyer, out string title, out string employer, out int opening, out string why);
+
+        public static JobAsk Job;
+
+        /// <summary>A founder of a city startup taken on by the buyer of their acqui-hired firm in the population: the startup's id, and the buyer's office (a street and a
+        /// number, or none). True once their employer record moved. Default: none.</summary>
+        public static Func<int, string, int, bool> FounderHired;
 
         public static string KeyOf(int startup) => "founder:" + startup.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
@@ -88,6 +97,8 @@ namespace RealLifeOverhaul.Tech
             Practised = null;
             Sessions = null;
             Fixtures = null;
+            Job = null;
+            FounderHired = null;
         }
     }
 }

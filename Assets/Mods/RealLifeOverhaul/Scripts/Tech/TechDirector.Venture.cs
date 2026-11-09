@@ -199,6 +199,10 @@ namespace RealLifeOverhaul.Tech
                 case VentureRules.NoteAcquired:
                 case VentureRules.NoteAcquihire:
                     PayOut(s);
+                    if (n.Kind == VentureRules.NoteAcquihire)
+                    {
+                        FounderTaken(s, day);
+                    }
                     bool failed = n.Kind == VentureRules.NoteFailed;
                     Story(failed ? "reallife_tech_news_startup_failed" : "reallife_tech_news_startup_sold", "name", s.Name, "amount", TechText.Cents(Level(SalePrice(s))));
                     if (mine)

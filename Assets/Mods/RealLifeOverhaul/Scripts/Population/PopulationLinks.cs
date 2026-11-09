@@ -170,6 +170,52 @@ namespace RealLifeOverhaul.Population
             return -1;
         }
 
+        /// <summary>
+        /// A linked person taken on by an employer, as the population hires anyone (<see cref="LabourRules.Hire"/>): the one at <paramref name="employerKey"/> (its
+        /// building, or the other firms of that office building) when it has a vacancy, else the first of the city's own with a vacancy in the person's field from a
+        /// start drawn from their key. Never the player's employers, whose people are the game's staff. False with no such person or no vacancy anywhere: nobody is moved.
+        /// </summary>
+        public static bool Employ(PopulationState s, LinkKind kind, string key, string employerKey, int day)
+        {
+            int p = Linked(s, kind, key);
+            if (p < 0 || s.Employers.Count == 0)
+            {
+                return false;
+            }
+            EmployerTable et = s.Employers;
+            int e = Open(s, employerKey);
+            e = e >= 0 ? e : Open(s, employerKey != null ? employerKey + "|t" : null);
+            if (e < 0)
+            {
+                int field = s.People.Field[p] > 0 ? s.People.Field[p] : (int)Field.Office;
+                int start = (int)(PopDraw.Hash(s.Seed, PopDraw.Link, KeyHash(key), day) % (uint)et.Count);
+                for (int n = 0; n < et.Count && e < 0; n++)
+                {
+                    int c = (start + n) % et.Count;
+                    var kindOf = (EmployerKind)et.Kind[c];
+                    if (et.Field[c] == field && !et.Players[c] && et.Vacancies(c) > 0 && (kindOf == EmployerKind.Business || kindOf == EmployerKind.Tenants || kindOf == EmployerKind.Mod))
+                    {
+                        e = c;
+                    }
+                }
+            }
+            if (e < 0)
+            {
+                return false;
+            }
+            if (s.People.Job[p] != e)
+            {
+                LabourRules.Hire(s, p, e, day);
+            }
+            return true;
+        }
+
+        private static int Open(PopulationState s, string key)
+        {
+            int e = s.EmployerOfKey(key);
+            return e >= 0 && !s.Employers.Players[e] && s.Employers.Vacancies(e) > 0 ? e : -1;
+        }
+
         // The slot of a link's person: its slot when the id there is still theirs (slots are kept in the save), else a search by the id.
         private static int SlotOf(PopulationState s, PersonLink link)
         {

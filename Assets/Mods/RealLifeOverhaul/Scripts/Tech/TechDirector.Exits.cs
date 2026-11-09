@@ -41,6 +41,7 @@ namespace RealLifeOverhaul.Tech
                 file.Seed = Math.Max(1, Math.Abs(unchecked(_venture.Seed * 31 + 7)));   // the host's file seeds it: the same startups give the same founders and floors
             }
             _exits = file;
+            LoadExitJobs();
             _tenants.Clear();
             RebuildTenants();
             try
@@ -75,6 +76,7 @@ namespace RealLifeOverhaul.Tech
                 Logger?.Error(e);
             }
             _exits = null;
+            _exitJobs = null;
             _tenants.Clear();
         }
 
@@ -83,6 +85,7 @@ namespace RealLifeOverhaul.Tech
             if (_exits != null && data != null)
             {
                 data[ExitStore.Key] = ExitStore.Write(_exits);
+                WriteExitJobs(data);
             }
         }
 
@@ -389,6 +392,10 @@ namespace RealLifeOverhaul.Tech
                          + TechText.Cents(Level(r.Owed)) + " and paid " + TechText.Cents(Level(r.Paid)) + ", claim " + TechText.Cents(Level(r.Gap)) + " (suit " + suit
                              + ", fraud case " + fraud + "); the wallet "
                          + (r.Player >= 0 ? "gained " : "gave ") + TechText.Cents(Level(Math.Abs(r.Player))) + GainLog(gain) + ".");
+            if (o.Hire)
+            {
+                ExitJobFor(o, day);
+            }
             ChangedTech();
             return true;
         }

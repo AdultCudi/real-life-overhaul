@@ -41,6 +41,7 @@ namespace RealLifeOverhaul
                 ExitBridges.Sessions = Hold;
                 ExitBridges.Fixtures = Fixtures;
                 CompanyBridges.StartupGains = (from, to) => TechDirector.Instance != null ? TechDirector.Instance.GainsBetween(from, to) : 0;   // a startup stake's gain joins the quarter's return
+                ExitJobLinks.Connect();
             }
 
             internal static void Disconnect()
