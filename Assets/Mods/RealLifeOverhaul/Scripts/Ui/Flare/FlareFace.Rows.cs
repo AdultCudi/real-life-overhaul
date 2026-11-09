@@ -211,7 +211,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 case FlareRowKind.Review:
                 {
-                    float tw = w - ContentX - UiTokens.S4 - ActionRoom;
+                    float tw = w - ContentX - UiTokens.S4 - ActionRoomFor(r.Button);
                     float h = UiTokens.S3 + UiTokens.S6;
                     h += string.IsNullOrEmpty(r.Text) ? 0f : UiDraw.Snap(UiTextRules.WrappedHeight(r.Text, UiStyle.Body, tw, ReviewLines)) + UiTokens.S1;
                     h += string.IsNullOrEmpty(r.Line) ? 0f : UiDraw.Snap(UiTextRules.WrappedHeight(r.Line, UiStyle.Small, tw - UiTokens.S3, 2)) + UiTokens.S2;
@@ -228,7 +228,7 @@ namespace RealLifeOverhaul.Ui
                     return UiTokens.S16 + UiTokens.S4;
                 case FlareRowKind.Card:
                 {
-                    float tw = w - UiTokens.S4 - UiTokens.AvatarRow - UiTokens.S3 - UiTokens.S4 - ActionRoom;
+                    float tw = w - UiTokens.S4 - UiTokens.AvatarRow - UiTokens.S3 - UiTokens.S4 - ActionRoomFor(r.Button);
                     float h = UiTokens.S3 + UiTokens.S6;
                     h += string.IsNullOrEmpty(r.Text) ? 0f : UiDraw.Snap(UiTextRules.WrappedHeight(r.Text, UiStyle.Body, tw, CardLines)) + UiTokens.S1;
                     h += string.IsNullOrEmpty(r.Line) ? 0f : UiTokens.S5;
@@ -246,6 +246,9 @@ namespace RealLifeOverhaul.Ui
         // The column a row's action stands in, and the room it takes: every row of a list has it, with or without an action, so the times and the buttons stand in a line.
         public const float ActionColumn = 96f;
         private static float ActionRoom => ActionColumn + UiTokens.S3;
+
+        // A longer translation of the button is wider than the column; the words beside it give way, never lie under it.
+        private static float ActionRoomFor(string button) => Math.Max(ActionColumn, string.IsNullOrEmpty(button) ? 0f : PillWidth(button)) + UiTokens.S3;
 
         // The hire table: its button and its figure columns are the same width on every row; the columns share what the name leaves, so a row has no gap in it.
         public const float HireButton = 112f, HireColumnLeast = 96f, HireColumnMost = 176f, HireIdentity = 264f;
@@ -526,7 +529,7 @@ namespace RealLifeOverhaul.Ui
             bool answered = (r.Flags & FlareRowFlags.Answered) != 0;
             int row = UiDraw.Box(s, at, 0f, y, w, h, UiRole.None, UiRole.None, 0f);
             UiAt inRow = at.In(row);
-            float bw = ActionRoom;
+            float bw = ActionRoomFor(r.Button);
             Face(s, inRow, UiTokens.S4, y + UiTokens.S3, UiTokens.AvatarRow, r.Name, r.Hue, (r.Flags & FlareRowFlags.Person) != 0, r.Ring, false);   // the reviewer's face, ringed by how they left
             float x = ContentX, tw = w - ContentX - UiTokens.S4 - bw, cy = y + UiTokens.S3;
             float sw = UiDraw.Stars(s, inRow, x, cy + UiTokens.S1, UiTokens.IconSmall, Math.Max(0, Math.Min(10, r.Stars * 2)));
@@ -712,7 +715,7 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Icon(s, inRow.In(disc), UiTokens.S4 + (UiTokens.AvatarRow - UiTokens.Icon) / 2f, y + UiTokens.S3 + (UiTokens.AvatarRow - UiTokens.Icon) / 2f, UiTokens.Icon,
                 r.Icon == UiIcon.None ? UiIcon.MapPin : r.Icon, r.Tint == UiRole.None ? UiRole.Text2 : r.Tint, UiFlags.Middle | UiFlags.Centre, true);
             float pw = string.IsNullOrEmpty(r.Button) ? 0f : Math.Max(ActionColumn, PillWidth(r.Button));
-            float tx = ContentX, tw = w - tx - UiTokens.S4 - ActionRoom;
+            float tx = ContentX, tw = w - tx - UiTokens.S4 - ActionRoomFor(r.Button);
             float cy = y + UiTokens.S3;
             float timeW = string.IsNullOrEmpty(r.Time) ? 0f : UiDraw.Snap(UiTextRules.Width(r.Time, UiStyle.Small) + UiTokens.S1);
             UiDraw.TextMiddle(s, inRow, tx, cy, UiTokens.S6, tw - timeW - UiTokens.S2, UiStyle.Title, UiRole.Text, r.Name, UiFlags.Truncate);

@@ -197,7 +197,8 @@ namespace RealLifeOverhaul.Ui
                 Rail(s, at.InRegion(RailRegion), m, x, y);
                 px = x + Menu + UiTokens.S2;
             }
-            float h = Math.Min(PanelHeight(frame), Needed(m, frame));
+            float full = Math.Min(PanelHeight(frame), Needed(m, frame));
+            float h = Fit(m, full);
             UiAt column = at.InRegion(PanelRegion);
             int panel = UiDraw.Box(s, column, px, y, Width, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt on = column.In(panel);
@@ -220,7 +221,7 @@ namespace RealLifeOverhaul.Ui
             if (m.Chips.Length > 0)
             {
                 float ch = ChipsHeight(m, iw);
-                if (y + h - cy - ch - UiTokens.S2 - stepTail - picked - foot - UiTokens.S2 >= RowStep(m) * 5f)
+                if (ChipsFit(m, full, cy - y, ch, stepTail, picked, foot))
                 {
                     cy += Chips(s, on, m, ix, cy, iw) + UiTokens.S2;
                 }
@@ -245,6 +246,48 @@ namespace RealLifeOverhaul.Ui
                 Link(s, m);
             }
             return px + Width;
+        }
+
+        // Whether the quick chips keep at least five rows of the list in a panel of this height, cy the room used above them.
+        private static bool ChipsFit(MapPanelModel m, float height, float cy, float chipsH, float stepTail, float picked, float foot) =>
+            height - cy - chipsH - UiTokens.S2 - stepTail - picked - foot - UiTokens.S2 >= RowStep(m) * 5f;
+
+        // A list that scrolls shows whole rows; what its room leaves over short of one more row is taken off the panel's foot, so the picked place
+        // and the button under the list stand against it with no hole between, and a longer translation of the note above does not open one.
+        private static float Fit(MapPanelModel m, float height)
+        {
+            float iw = Width - UiTokens.S4 * 2f, step = RowStep(m);
+            if (m.Rows.Length == 0)
+            {
+                return height;
+            }
+            float cy = UiFrame.Strip + UiTokens.S3;
+            if (!string.IsNullOrEmpty(m.Note))
+            {
+                cy += UiDraw.Snap(UiTextRules.Lines(m.Note, UiStyle.Body, iw, 3, out float widest) * UiTextRules.LineHeight(UiStyle.Body)) + UiTokens.S2;
+            }
+            cy += UiTokens.Control + UiTokens.S2;
+            int results = Math.Min(ResultsMost, m.Results.Length);
+            cy += results > 0 ? results * ResultRow + UiTokens.S2 : !string.IsNullOrEmpty(m.ResultsNone) ? UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2 : 0f;
+            float picked = m.Picked ? PickedHeight(m) + UiTokens.S2 : 0f;
+            float foot = !string.IsNullOrEmpty(m.FooterLabel) ? UiTokens.Control + UiTokens.S4 + UiTokens.S2 : 0f;
+            float stepTail = m.ShowAll ? UiTokens.Control + UiTokens.S1 : 0f;
+            if (m.Chips.Length > 0)
+            {
+                float ch = ChipsHeight(m, iw);
+                if (ChipsFit(m, height, cy, ch, stepTail, picked, foot))
+                {
+                    cy += ch + UiTokens.S2;
+                }
+            }
+            cy += stepTail;
+            float room = height - picked - foot - UiTokens.S2 - cy;
+            if (room < step || m.Rows.Length * step <= room)
+            {
+                return height;
+            }
+            float view = Math.Min((float)Math.Floor(room / step) * step, MostRows * step);
+            return height - UiDraw.SnapDown(room - view);
         }
 
         /// <summary>

@@ -196,13 +196,18 @@ namespace RealLifeOverhaul.Ui
             UiAt inside = at.In(face);
             Icon(s, inside, x + UiTokens.S4, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, UiIcon.Search, UiRole.Muted, UiFlags.Middle);
             float cw = string.IsNullOrEmpty(count) ? 0f : UiTextRules.Width(count, UiStyle.Small) + UiTokens.S1;
+            float tx = x + UiTokens.S4 + UiTokens.Icon + UiTokens.S3;
+            bool typed = !string.IsNullOrEmpty(query);
+            bool caret = Typing(s, command, arg);
+            if (cw > 0f && !typed && !string.IsNullOrEmpty(placeholder)
+                && w - (tx - x) - cw - UiTokens.S6 - (caret ? CaretRoom : 0f) < UiTextRules.Width(placeholder, UiStyle.Body) + UiTokens.S1)
+            {
+                cw = 0f;   // a longer translation of the placeholder keeps its whole words; the count comes back with the first letter typed
+            }
             if (cw > 0f)
             {
                 TextMiddle(s, inside, x + w - UiTokens.S4 - cw, y, h, cw, UiStyle.Small, UiRole.Muted, count, UiFlags.Right);
             }
-            float tx = x + UiTokens.S4 + UiTokens.Icon + UiTokens.S3;
-            bool typed = !string.IsNullOrEmpty(query);
-            bool caret = Typing(s, command, arg);
             float room = w - (tx - x) - cw - UiTokens.S6;
             float lead = caret && !typed ? CaretRoom : 0f;   // the caret before the placeholder, not over its first letter
             string shown = caret && typed ? Typed(query, UiStyle.Body, room) : typed ? query : placeholder;

@@ -164,7 +164,8 @@ namespace RealLifeOverhaul.Ui
             float linkW = 0f;
             if (!string.IsNullOrEmpty(check.Link))
             {
-                linkW = UiDraw.Snap(UiTextRules.Width(check.Link, UiStyle.Body) + UiTokens.S6);
+                // The button's own measure (its font and padding), not the body text's.
+                linkW = Math.Min(UiDraw.SnapDown(w * 0.5f), UiDraw.ButtonWidth(UiButtonKind.Secondary, check.Link, UiIcon.None, UiAction.Count, null));
                 UiDraw.Button(s, at, x + w - linkW, y + (h - UiTokens.ControlSmall) / 2f, linkW, UiTokens.ControlSmall, UiButtonKind.Secondary, check.Link,
                     UiIcon.None, UiAction.Count, null, LinkCommand, index, false);
             }

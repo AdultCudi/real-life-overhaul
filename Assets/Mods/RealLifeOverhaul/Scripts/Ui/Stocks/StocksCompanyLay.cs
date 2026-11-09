@@ -59,8 +59,10 @@ namespace RealLifeOverhaul.Ui
             float metaW = UiDraw.Snap(UiTextRules.Width(c.Meta ?? string.Empty, UiStyle.Small) + UiTokens.S1);
             float watch = UiTokens.ControlSmall;
             float blockW = UiDraw.SnapDown(Math.Min(UiTokens.S16 * 6f, Math.Max(nameW + watch + UiTokens.S2, meta + chipW + UiTokens.S2 + metaW)));
-            UiDraw.TextMiddle(s, at, nx, y, UiTokens.S8, Math.Max(UiTokens.S16, blockW - watch - UiTokens.S2), UiStyle.Hero, UiRole.Text, c.Name, UiFlags.Truncate);
-            float wx = UiDraw.Snap(nx + Math.Min(nameW, Math.Max(UiTokens.S16, blockW - watch - UiTokens.S2)) + UiTokens.S2);
+            // The name's box is no wider than the name, so the watch button beside it never lies on the box of a longer one.
+            float nameBox = Math.Min(nameW, Math.Max(UiTokens.S16, blockW - watch - UiTokens.S2));
+            UiDraw.TextMiddle(s, at, nx, y, UiTokens.S8, nameBox, UiStyle.Hero, UiRole.Text, c.Name, UiFlags.Truncate);
+            float wx = UiDraw.Snap(nx + nameBox + UiTokens.S2);
             UiDraw.IconButton(s, at, wx, y, watch, UiIcon.Eye, UiRole.None, StocksLay.Watch, 0, c.Watching);
             float ly = y + UiTokens.S8 + UiTokens.S1;
             UiDraw.TextMiddle(s, at, nx, ly, lineH, meta, UiStyle.Body, UiRole.Text2, c.Ticker, UiFlags.Truncate);

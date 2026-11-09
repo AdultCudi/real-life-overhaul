@@ -111,6 +111,7 @@ namespace RealLifeOverhaul.Ui
         // meets a chart's or a catalogue's on one page.
         public const int Less = 60, Type = 61, More = 62, Act = 63;
         public const int CanLess = 1, CanMore = 2;   // a stepper cell's Values: which way it may step now
+        private const float LeastShare = 128f;     // px: the least a shared column keeps when a longer translation widens the fixed ones
         public const float StepperWidth = 176f;  // px: a stepper cell's widest, room for a price between its buttons
         public const float MarkRoom = 40f;       // px: and the room before it for its warning's glyph, when its column gives it
         /// <summary>A person cell whose value is this draws its words with no face: the row has nobody in it.</summary>
@@ -364,15 +365,33 @@ namespace RealLifeOverhaul.Ui
             int n = columns.Length;
             var lefts = new float[n];
             widths = new float[n];
-            float fixedW = 0f;
+            float fixedW = 0f, baseW = 0f, grow = 0f;
             int shares = 0;
             for (int c = 0; c < n; c++)
             {
                 // A fixed column is never narrower than its head's words with the sort's arrow: a longer translation widens it.
                 widths[c] = columns[c].Width > 0f ? Math.Max(columns[c].Width, UiDraw.Snap(UiTextRules.Width(columns[c].Title, UiStyle.SectionHeader) + UiTokens.S1
                                                                                                 + (columns[c].Sortable ? UiTokens.IconSmall + UiTokens.S1 : 0f))) : 0f;
+                baseW += columns[c].Width > 0f ? columns[c].Width : 0f;
+                grow += widths[c] - (columns[c].Width > 0f ? columns[c].Width : 0f);
                 fixedW += widths[c];
                 shares += columns[c].Width <= 0f ? 1 : 0;
+            }
+            // The widening may take only what the shared columns can spare above their least, so the row never runs past its width: what is
+            // over the room stays a second line of the head (or is cut) rather than pushing the last column out.
+            float room = w - baseW - UiTokens.S4 * (n - 1) - shares * LeastShare;
+            if (grow > 0f && grow > room)
+            {
+                float keep = Math.Max(0f, room) / grow;
+                fixedW = baseW;
+                for (int c = 0; c < n; c++)
+                {
+                    if (columns[c].Width > 0f)
+                    {
+                        widths[c] = columns[c].Width + UiDraw.SnapDown((widths[c] - columns[c].Width) * keep);
+                        fixedW += widths[c] - columns[c].Width;
+                    }
+                }
             }
             float spare = Math.Max(UiTokens.S16, w - fixedW - UiTokens.S4 * (n - 1));
             float share = UiDraw.SnapDown(spare / Math.Max(1, shares));

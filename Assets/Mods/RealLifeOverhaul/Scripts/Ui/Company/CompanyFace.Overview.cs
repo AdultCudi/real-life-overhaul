@@ -83,11 +83,11 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             float rx = x + lw + gap;
-            float toolsH = o.Tools != null && o.Tools.Length > 0 ? UiTokens.Control + UiTokens.S4 : 0f;
+            float toolsH = ToolsHeight(o, rw, keys) + (o.Tools != null && o.Tools.Length > 0 ? UiTokens.S4 : 0f);
             CompanyCard panel = beside.Length > 0 ? WithBlocks(o.Shop, before) : o.Shop;
             float end = CardPage(s, at.InRegion(RegionSide), panel, v, w, lay, rx, top, rw, bottom - toolsH, keys);
             // The tools stand under the panel's last block, as the big company's do: at the foot of the column they were alone, far from the actions above them.
-            ToolsRow(s, at.InRegion(RegionSide), lay, v, o, rx, rw, Math.Min(bottom, end + UiTokens.S5 + UiTokens.Control), keys);
+            ToolsRow(s, at.InRegion(RegionSide), lay, v, o, rx, rw, end + UiTokens.S5, bottom, keys);
         }
 
         // The blocks of a card before its first break, and those after it.
@@ -501,7 +501,7 @@ namespace RealLifeOverhaul.Ui
                 cy += UiTokens.S4;
             }
             // The managers today.
-            float toolsH = o.Tools != null && o.Tools.Length > 0 ? UiTokens.Control + UiTokens.S4 : 0f;   // the tools row has the foot of the column
+            float toolsH = ToolsHeight(o, rw, keys) + (o.Tools != null && o.Tools.Length > 0 ? UiTokens.S4 : 0f);   // the tools row has the foot of the column
             if (!managersLeft && bottom - toolsH - cy >= UiTokens.PairRow + PersonRow)
             {
                 cy = ManagersToday(s, at, lay, o, w, x, cy, rw, bottom, bottom - toolsH - (string.IsNullOrEmpty(o.Note) ? 0f : UiTokens.S12));
@@ -511,7 +511,7 @@ namespace RealLifeOverhaul.Ui
                 cy = Sentence(s, at, o.Note, x, cy + UiTokens.S2, rw, UiRole.Text2, 3, UiStyle.Small);
             }
             // The tools stand under what the column holds; they take the foot of the column only when the column is full.
-            ToolsRow(s, at, lay, v, o, x, rw, Math.Min(bottom, cy + UiTokens.S6 + UiTokens.Control), keys);
+            ToolsRow(s, at, lay, v, o, x, rw, cy + UiTokens.S6, bottom, keys);
         }
 
         private static float ManagerLine(UiScene s, UiAt at, CompanyLayout lay, ref CompanyManagerToday m, float x, float y, float w)
@@ -533,13 +533,36 @@ namespace RealLifeOverhaul.Ui
         }
 
         // What else the overview has to hand: cleaning, the player's own bank, the company's line in Stocks, each only where it is there.
-        private static void ToolsRow(UiScene s, UiAt at, CompanyLayout lay, CompanyView v, CompanyOverviewFacts o, float x, float rw, float bottom, IUiKeys keys)
+        // The tools stand at y when the column has the room, else as high as their rows need to end at the bottom: a language whose words do not fit one
+        // row sets the rest on a second (Buttons wraps them), so the height is counted the way Buttons wraps.
+        private static void ToolsRow(UiScene s, UiAt at, CompanyLayout lay, CompanyView v, CompanyOverviewFacts o, float x, float rw, float y, float bottom, IUiKeys keys)
         {
             if (o.Tools == null || o.Tools.Length == 0)
             {
                 return;
             }
-            Buttons(s, at, lay, v, o.Tools, x, bottom - UiTokens.Control, rw, keys, true);
+            Buttons(s, at, lay, v, o.Tools, x, Math.Min(y, bottom - ToolsHeight(o, rw, keys)), rw, keys, true);
+        }
+
+        private static float ToolsHeight(CompanyOverviewFacts o, float rw, IUiKeys keys)
+        {
+            if (o.Tools == null || o.Tools.Length == 0)
+            {
+                return 0f;
+            }
+            int rows = 1;
+            float cx = 0f;
+            for (int i = 0; i < o.Tools.Length; i++)
+            {
+                float bw = Math.Min(rw, UiDraw.ButtonWidth(o.Tools[i].Kind, o.Tools[i].Label, o.Tools[i].Icon, o.Tools[i].Key, keys));
+                if (cx > 0.5f && cx + bw > rw + 0.5f)
+                {
+                    rows++;
+                    cx = 0f;
+                }
+                cx += bw + UiTokens.S3;
+            }
+            return rows * UiTokens.Control + (rows - 1) * UiTokens.S2;
         }
     }
 }

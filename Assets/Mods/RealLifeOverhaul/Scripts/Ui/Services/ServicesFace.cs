@@ -178,7 +178,9 @@ namespace RealLifeOverhaul.Ui
             UiAt head = at.InRegion(RegionHead);
             float ry = y;
             float note = string.IsNullOrEmpty(p.OffersNote) ? 0f : Math.Min(UiDraw.SnapDown(rw * 0.5f), UiDraw.Snap(UiTextRules.Width(p.OffersNote, UiStyle.Small) + UiTokens.S1));
+            int chipsFrom = s.NodeCount;
             ry += ChipsRow(s, head, p.Views, p.View, rx, ry, rw, note + UiTokens.S3, keys) + UiTokens.S3;
+            int lastChip = s.NodeCount - 1;
             if (note > 0f)
             {
                 UiDraw.TextMiddle(s, head, rx + rw - note, y, UiTokens.Control, note, UiStyle.Small, UiRole.Muted, p.OffersNote, UiFlags.Right | UiFlags.Truncate);
@@ -190,7 +192,21 @@ namespace RealLifeOverhaul.Ui
             m.TableClip = ClipOf(s, m.TableList);
             cardsTop = UiDraw.Snap(ry + th + UiTokens.S3);
             float cardsH = bottom - cardsTop, cw = UiDraw.SnapDown((rw - UiTokens.S4) / 2f), px = rx + cw + UiTokens.S4, pw = rw - cw - UiTokens.S4;
+            int acceptFrom = s.NodeCount;
             UiFactCard.Lay(s, at.InRegion(RegionSide), p.Accept, rx, cardsTop, cw, cardsH, keys, true, true);
+            // With offers out of view the d-pad scrolls the table before it leaves it, and where the cards under it lie from the chips was left to the
+            // words' widths; the last chip leads to them whatever the language.
+            if (lastChip >= chipsFrom && m.TableList >= 0 && s.Lists[m.TableList].Count > s.Lists[m.TableList].Shown)
+            {
+                for (int i = acceptFrom; i < s.NodeCount; i++)
+                {
+                    if (!s.Nodes[i].Disabled)
+                    {
+                        s.Nodes[lastChip].Right = i;
+                        break;
+                    }
+                }
+            }
             UiAt lower = at.InRegion(RegionLower);
             float priceH = UiFactCard.Height(p.Price, pw, keys, true), footH = UiFactCard.Height(p.PriceFoot, pw, keys, true);
             float barsH = cardsH - priceH - footH - UiTokens.S3 * 2f;

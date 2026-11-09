@@ -943,7 +943,7 @@ namespace RealLifeOverhaul.Ui
                 float chip = 0f;
                 if (!string.IsNullOrEmpty(st.Open2))
                 {
-                    float most = iw / 2f;
+                    float most = UiDraw.SnapDown(iw / 2f);
                     chip = Math.Min(most, ChipW(st.Open2));
                     UiDraw.Chip(s, inside, ix + iw - chip, fy + UiDraw.SnapDown((foot - UiTokens.Badge - UiTokens.S1) / 2f), st.Open2, st.OpenTone, most);
                 }

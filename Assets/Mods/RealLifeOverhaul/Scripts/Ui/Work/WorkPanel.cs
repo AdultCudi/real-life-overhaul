@@ -312,7 +312,8 @@ namespace RealLifeOverhaul.Ui
             }
             float right = string.IsNullOrEmpty(p.Right) ? 0f : UiDraw.Snap(Math.Min(w * 0.3f, UiTextRules.Width(p.Right, UiStyle.BodyStrong) + UiTokens.S1));
             float star = UiTokens.IconSmall, starsW = p.Halves >= 0 ? UiDraw.Snap(5f * (star + UiTokens.Hairline * 2f) + UiTokens.S2) : 0f;
-            float chipW = string.IsNullOrEmpty(p.Chip) ? 0f : Math.Min(w * 0.34f, UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(p.Chip, UiStyle.SmallStrong) + UiTokens.S1));
+            float chipW = string.IsNullOrEmpty(p.Chip) ? 0f
+                : Math.Min(UiDraw.SnapDown(w * 0.34f), UiDraw.Snap(UiTokens.S2 * 3f + UiTokens.StatusDot + UiTextRules.Width(p.Chip, UiStyle.SmallStrong) + UiTokens.S1));
             float tx = x + face + UiTokens.S3, tw = w - face - UiTokens.S3 - right - (right > 0f ? UiTokens.S2 : 0f) - starsW - (chipW > 0f ? chipW + UiTokens.S2 : 0f);
             float lh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Title)), sh = UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small));
             float top = y + (PersonLine - lh - sh) / 2f;

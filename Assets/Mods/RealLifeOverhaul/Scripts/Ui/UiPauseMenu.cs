@@ -317,7 +317,7 @@ namespace RealLifeOverhaul.Ui
             // The card stands to the menu's foot: room to spare under the rows goes to the rows themselves, each taller by
             // the same whole step of 8 px so its tile and buttons stay on the grid.
             float room = y + h - UiTokens.S2 - cy, row = SaveRow, left = room - SaveRow * m.Saves.Length;
-            if (left > UiCheckRules.MostDeadSpace)
+            if (left >= UiTokens.S2 * m.Saves.Length)   // a step a row or more to give: the text sits mid-row, so less than that still shows as a hole
             {
                 row = (float)Math.Floor(room / m.Saves.Length / UiTokens.S2) * UiTokens.S2;
             }
