@@ -56,7 +56,9 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_designer_note_package", "reallife_ui_designer_note_eyedropper", "reallife_ui_designer_note_sell",
                 "reallife_ui_designer_none_things", "reallife_ui_designer_bp_empty", "reallife_ui_designer_bp_empty_side",
                 "reallife_ui_designer_bp_used", "reallife_ui_designer_bp_used_side", "reallife_ui_designer_bp_gifts_in",
-                "reallife_ui_designer_no_tool", "reallife_ui_designer_no_needs"
+                "reallife_ui_designer_no_tool", "reallife_ui_designer_no_needs", "reallife_ui_designer_rlo",
+                "reallife_ui_designer_fit_tab", "reallife_ui_designer_size", "reallife_ui_designer_size_tiles",
+                "reallife_ui_designer_cost_floor_back", "reallife_ui_designer_sold_back"
         };
     }
 }

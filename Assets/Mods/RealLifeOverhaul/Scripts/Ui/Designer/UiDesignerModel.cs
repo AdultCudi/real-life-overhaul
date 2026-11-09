@@ -89,7 +89,9 @@ namespace RealLifeOverhaul.Ui
         public int Index;            // the catalogue's own order, the argument of a press
         public string Name;
         public string Price;
-        public string Kind;          // "wall", "ceiling", "holds 24" or null
+        public string Kind;          // "wall", "ceiling", "holds 24", "wall, holds 12" or null
+        public string Size;          // "2 x 1 tiles", the footprint in the game's grid cells, or null while unknown or for a piece with none
+        public bool Rlo;             // the piece is one the mod's own fit-outs are made of
         public string Picture;       // the game's picture of the item (UiPictures), resolved for the tiles in view
         public bool Needed;          // it fills a requirement the business has not met
         public bool Favourite;
@@ -98,7 +100,7 @@ namespace RealLifeOverhaul.Ui
     /// <summary>The furniture catalogue: its categories, its search, its tiles and the chosen item's detail.</summary>
     public sealed class UiDesignerCatalogue
     {
-        public const int TabsMost = 12, RowsMost = 10;
+        public const int TabsMost = 14, RowsMost = 10;
 
         public string[] Tabs = new string[TabsMost];          // "Decoration", each with its count in TabCounts
         public string[] TabCounts = new string[TabsMost];
@@ -106,6 +108,7 @@ namespace RealLifeOverhaul.Ui
         public int TabCount;
         public int Tab;
         public int TabHover = -1;                              // the tab the pointer rests on, or -1
+        public int FitTab = -1;                                // the "RLO fit-out" tab's place among the tabs (the last), or -1 where there is none
         public string SearchPlaceholder, Search = string.Empty;
         public string FavouritesLabel;
         public bool FavouritesOnly;
@@ -113,7 +116,8 @@ namespace RealLifeOverhaul.Ui
         public int CardCount;
         public int Chosen = -1;                                // an index of Cards
         public float Scroll;
-        public string NeededLabel;                             // "NEEDED"
+        public string NeededLabel, RloLabel;                   // "NEEDED", "RLO"
+        public int ShownFirst, ShownLast = -1;                 // the tiles the last layout drew, so the game's side works out their sizes first
         public string NoneTitle, NoneBody;
 
         public string DetailName, DetailKind;                  // "Flower stand", "Shop fittings, holds 24 bunches"

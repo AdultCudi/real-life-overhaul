@@ -14,7 +14,10 @@ namespace RealLifeOverhaul.Ui
     /// The furniture catalogue on the kit, mirrored from the game's furniture panel and pressed through it. What the panel lists is what the game's own filters left
     /// (its categories, its favourites, its search, whatever other mods added to the items it offers), so the kit never filters again: a tab is the switch the
     /// game made for that category, the search is the game's search field, the tile's place is the call the game's own tile makes. Only two things are the kit's: the
-    /// count of each category (worked out with the game's own tag test) and narrowing the list to what one unmet requirement of the business takes.
+    /// count of each category (worked out with the game's own tag test) and narrowing the list to what one unmet requirement of the business takes. The last tab,
+    /// "RLO fit-out", is the same kind of narrowing: the game's list on All items, cut to the pieces the mod's own fit-outs are made of (DesignerFitOut), each
+    /// still placed by the call its own tile makes. A tile also shows its facts: where it goes, what it holds, and its size in the game's grid cells, which the
+    /// game's grid filler counts from the item's prefab, read a few at a time so opening the catalogue never waits on a run of loads.
     /// </summary>
     internal static partial class DesignerGame
     {
@@ -24,6 +27,10 @@ namespace RealLifeOverhaul.Ui
         private static readonly Dictionary<string, int> CatOf = new Dictionary<string, int>(512, StringComparer.Ordinal);
         private static readonly Dictionary<string, string> Named = new Dictionary<string, string>(512, StringComparer.Ordinal);
         private static readonly Dictionary<string, string> Priced = new Dictionary<string, string>(512, StringComparer.Ordinal);
+        private static readonly Dictionary<string, string> Kinds = new Dictionary<string, string>(512, StringComparer.Ordinal);   // where it goes and what it holds; "" for neither
+        private static readonly Dictionary<string, string> Sized = new Dictionary<string, string>(512, StringComparer.Ordinal);   // its size in cells, "2 x 1"; "" for none
+        private static readonly Dictionary<string, string> SizedWords = new Dictionary<string, string>(512, StringComparer.Ordinal);   // the same in words, "2 x 1 tiles"
+        private static readonly List<string> FitList = new List<string>(256);
         private static readonly List<IDItemUiTemplateData> Listed = new List<IDItemUiTemplateData>(256);
         private static readonly List<IDItemUiTemplateData> Everything = new List<IDItemUiTemplateData>(512);
         private static readonly List<IDItemUiTemplateData> View = new List<IDItemUiTemplateData>(256);
@@ -31,6 +38,10 @@ namespace RealLifeOverhaul.Ui
         private static readonly HashSet<string> Excluded = new HashSet<string>(StringComparer.Ordinal);
         private static bool _catBuilt;
         private static int _needFilter = -1;   // the requirement the catalogue is narrowed to, or -1
+        private static bool _fitOn;            // the "RLO fit-out" tab is up
+        private static int _fitAt = -1;        // that tab's place among the tabs, or -1 while the business can place none of its pieces
+        private static bool _sizesPending;     // some tile in view has no size yet: the face looks again until it has
+        private const int SizesPerLook = 3;    // prefabs read in one look at the game
         private static string _chosenItem;
 
         private static void BeginCatalogue()
@@ -41,17 +52,25 @@ namespace RealLifeOverhaul.Ui
         private static void EndCatalogue()
         {
             _needFilter = -1;
+            _fitOn = false;
         }
 
         private static void ForgetCatalogue()
         {
             _catBuilt = false;
             _needFilter = -1;
+            _fitOn = false;
+            _fitAt = -1;
+            _sizesPending = false;
             _chosenItem = null;
             _cats = Array.Empty<FurnitureCategoryToggle>();
             CatOf.Clear();
             Named.Clear();
             Priced.Clear();
+            Kinds.Clear();
+            Sized.Clear();
+            SizedWords.Clear();
+            FitList.Clear();
             Listed.Clear();
             Everything.Clear();
             View.Clear();
@@ -79,7 +98,7 @@ namespace RealLifeOverhaul.Ui
             }
             CatOf.Clear();
             var inside = new List<IDItemUiTemplateData>(Everything.Count);
-            int most = Math.Min(_cats.Length, UiDesignerCatalogue.TabsMost - 1);
+            int most = Math.Min(_cats.Length, UiDesignerCatalogue.TabsMost - 2);
             for (int k = 0; k < most; k++)
             {
                 Included.Clear();
@@ -104,6 +123,12 @@ namespace RealLifeOverhaul.Ui
                 }
             }
             CatCounts[0] = UiText.Whole(Everything.Count);
+            int fit = DesignerFitOut.Pick(names, FitList);
+            _fitAt = fit > 0 ? most + 1 : -1;
+            if (_fitAt > 0)
+            {
+                CatCounts[_fitAt] = UiText.Whole(fit);
+            }
             _catBuilt = true;
         }
 
@@ -136,6 +161,7 @@ namespace RealLifeOverhaul.Ui
                 BuildTabs(panel);
             }
             c.NeededLabel = UiText.T("reallife_ui_designer_needed");
+            c.RloLabel = UiText.T("reallife_ui_designer_rlo");
             c.SearchPlaceholder = UiText.T("common_search");
             c.FavouritesLabel = UiText.T("interior_designer_furniture_panel_category_favorites");
             c.ColoursLabel = UiText.T("reallife_ui_designer_colours");
@@ -150,7 +176,7 @@ namespace RealLifeOverhaul.Ui
                 Toggle all = SwitchOf(0);
                 string first = UiWidgets.Label(all);
                 CatNames[0] = string.IsNullOrEmpty(first) ? UiText.T("interior_designer_furniture_panel_category_allitems") : first;
-                int most = Math.Min(_cats.Length, UiDesignerCatalogue.TabsMost - 1);
+                int most = Math.Min(_cats.Length, UiDesignerCatalogue.TabsMost - 2);
                 for (int k = 0; k < most; k++)
                 {
                     string words = UiWidgets.Label(_cats[k]);   // the category's own label, wherever the game put it under its object
@@ -166,8 +192,20 @@ namespace RealLifeOverhaul.Ui
                     c.TabCounts[k] = CatCounts[k];
                 }
                 c.TabCount = most + 1;
+                c.FitTab = _fitAt;
+                if (_fitAt > 0)
+                {
+                    CatNames[_fitAt] = UiText.T("reallife_ui_designer_fit_tab");
+                    c.Tabs[_fitAt] = CatNames[_fitAt];
+                    c.TabCounts[_fitAt] = CatCounts[_fitAt];
+                    c.TabCount = _fitAt + 1;
+                }
+                else
+                {
+                    _fitOn = false;
+                }
                 int active = Array.IndexOf(_cats, FurnitureCategoryToggle.CurrentActiveToggle);
-                c.Tab = c.FavouritesOnly ? -1 : active >= 0 && active < most ? active + 1 : 0;   // the favourites stand in the place of a category
+                c.Tab = c.FavouritesOnly ? -1 : _fitOn ? _fitAt : active >= 0 && active < most ? active + 1 : 0;   // the favourites stand in the place of a category
             }
             TMP_InputField search = SearchField();
             c.Search = search != null ? search.text ?? string.Empty : string.Empty;
@@ -183,10 +221,11 @@ namespace RealLifeOverhaul.Ui
                 _needFilter = -1;   // the need is met (the player placed what it wanted) or gone: the catalogue is whole again
             }
             bool narrowed = _needFilter >= 0;
+            bool fitOnly = _fitOn && !c.FavouritesOnly;
             for (int i = 0; i < Listed.Count; i++)
             {
                 Item item = ItemsGetter.GetByName(Listed[i].itemName);
-                if (item != null && (!narrowed || Fills(_needFilter, item)))
+                if (item != null && (!narrowed || Fills(_needFilter, item)) && (!fitOnly || DesignerFitOut.Is(Listed[i].itemName)))
                 {
                     View.Add(Listed[i]);
                 }
@@ -208,14 +247,18 @@ namespace RealLifeOverhaul.Ui
             {
                 c.Cards = new UiDesignerCard[Math.Max(n, c.Cards.Length * 2)];
             }
+            // The tiles the last layout drew are measured first (or the first screenful, before there was a layout); the rest as the wheel brings them in.
+            int from = c.ShownLast >= c.ShownFirst ? c.ShownFirst : 0, to = c.ShownLast >= c.ShownFirst ? c.ShownLast : 15, budget = SizesPerLook;
+            _sizesPending = false;
             for (int i = 0; i < n; i++)
             {
                 string name = View[i].itemName;
                 Item item = ItemsGetter.GetByName(name);
                 c.Cards[i] = new UiDesignerCard
                 {
-                    Index = i, Name = NameOf(name), Price = PriceOf(name, item), Kind = KindOf(item), Picture = ItemPictureKey(name), Needed = Needed(item),
-                    Favourite = PlayerSettingsHelper.IsFurnitureFavorite(name)
+                    Index = i, Name = NameOf(name), Price = PriceOf(name, item), Kind = KindOf(name, item), Picture = ItemPictureKey(name), Needed = Needed(item),
+                    Favourite = PlayerSettingsHelper.IsFurnitureFavorite(name), Rlo = DesignerFitOut.Is(name),
+                    Size = i >= from && i <= to ? SizeOf(name, item, ref budget) : SizeKnown(name)
                 };
             }
             c.CardCount = n;
@@ -256,18 +299,94 @@ namespace RealLifeOverhaul.Ui
             return words;
         }
 
-        // What the piece is for the room: what it holds, or that it hangs from the ceiling or the wall.
-        private static string KindOf(Item item)
+        // What the piece is for the room, from its own placement flags and cargo capacity: where it goes (ceiling, wall) and what it holds; null for neither.
+        private static string KindOf(string itemName, Item item)
         {
             if (item == null)
             {
                 return null;
             }
-            if (item.cargoCapacity > 0)
+            if (!Kinds.TryGetValue(itemName, out string words))
             {
-                return UiText.Fill("reallife_ui_designer_holds", "n", UiText.Whole(item.cargoCapacity));
+                DesignerRules.FactWords(DesignerRules.PlaceOf(item.wallMounted, item.snapToCeiling), item.cargoCapacity, 0, 0, UiText.T("reallife_ui_designer_holds"),
+                    UiText.T("reallife_ui_designer_ceiling"), UiText.T("reallife_ui_designer_wall"), null, out words, out _);
+                words = words ?? string.Empty;
+                Kinds[itemName] = words;
             }
-            return item.snapToCeiling ? UiText.T("reallife_ui_designer_ceiling") : item.wallMounted ? UiText.T("reallife_ui_designer_wall") : null;
+            return words.Length > 0 ? words : null;
+        }
+
+        // The piece's size in grid cells if it has been measured, else null.
+        private static string SizeKnown(string itemName) => Sized.TryGetValue(itemName, out string words) && words.Length > 0 ? words : null;
+
+        // Its size, measured now if it has not been and the look has prefabs left to read; a tile still unmeasured makes the face look again.
+        private static string SizeOf(string itemName, Item item, ref int budget)
+        {
+            if (Sized.TryGetValue(itemName, out string words))
+            {
+                return words.Length > 0 ? words : null;
+            }
+            if (item == null)
+            {
+                return null;
+            }
+            if (budget <= 0)
+            {
+                _sizesPending = true;
+                return null;
+            }
+            budget--;
+            words = string.Empty;
+            string full = string.Empty;
+            if (Footprint(itemName, item.gridSize, out int wide, out int deep))
+            {
+                DesignerRules.FactWords(DesignerRules.Place.None, 0, wide, deep, null, null, null, DesignerRules.SizeShort, out _, out words);
+                DesignerRules.FactWords(DesignerRules.Place.None, 0, wide, deep, null, null, null, UiText.T("reallife_ui_designer_size_tiles"), out _, out full);
+            }
+            Sized[itemName] = words ?? string.Empty;
+            SizedWords[itemName] = full ?? string.Empty;
+            return words != null && words.Length > 0 ? words : null;
+        }
+
+        // The piece's footprint on the floor in the game's cells: its prefab's colliders merged as the game's own grid filler reads them (MovingServiceHelper), the cell the
+        // piece's own placement step. The game keeps the prefab loaded after the first read.
+        private static bool Footprint(string itemName, float cell, out int wide, out int deep)
+        {
+            wide = deep = 0;
+            try
+            {
+                ItemController prefab = PrefabHelper.LoadItemControllerFromPrefab(itemName);
+                Collider[] colliders = prefab != null ? prefab.Colliders : null;
+                if (colliders == null || colliders.Length == 0)
+                {
+                    return false;
+                }
+                var extent = new DesignerRules.Extent();
+                for (int i = 0; i < colliders.Length; i++)
+                {
+                    switch (colliders[i])
+                    {
+                        case BoxCollider box:
+                            extent.Add(box.size.x, box.size.z, box.center.x, box.center.z);
+                            break;
+                        case SphereCollider sphere:
+                            extent.Add(sphere.radius * 2f, sphere.radius * 2f, sphere.center.x, sphere.center.z);
+                            break;
+                        case CapsuleCollider capsule:
+                            float across = capsule.radius * 2f;
+                            extent.Add(capsule.direction == 0 ? capsule.height : across, capsule.direction == 2 ? capsule.height : across, capsule.center.x, capsule.center.z);
+                            break;
+                        case MeshCollider mesh when colliders.Length == 1 && mesh.sharedMesh != null:
+                            extent.Add(mesh.sharedMesh.bounds.size.x, mesh.sharedMesh.bounds.size.z, 0f, 0f);
+                            break;
+                    }
+                }
+                return DesignerRules.Tiles(extent.Width, extent.Depth, cell, out wide, out deep);
+            }
+            catch (Exception)
+            {
+                return false;   // a prefab the game cannot load has no size to show
+            }
         }
 
         /// <summary>A picture key for an item's icon, answered by <see cref="Picture"/>.</summary>
@@ -288,10 +407,15 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             c.DetailName = NameOf(name);
-            string kind = KindOf(item);
+            string kind = KindOf(name, item);
             string category = CatOf.TryGetValue(name, out int at) && at < c.TabCount ? CatNames[at] : null;
             c.DetailKind = category != null && kind != null ? category + ", " + kind : category ?? kind;
             Row(c, UiText.T("common_price"), PriceOf(name, item), UiRole.Text);
+            int one = 1;   // the chosen piece is measured whatever else the look has to read
+            if (SizeOf(name, item, ref one) != null)
+            {
+                Row(c, UiText.T("reallife_ui_designer_size"), SizedWords[name], UiRole.Text);
+            }
             if (item.addedCustomersPerHour > 0)
             {
                 Row(c, UiText.T("bizman_customers_capacity"), "+" + UiText.Whole(item.addedCustomersPerHour), UiRole.OkText);
@@ -331,15 +455,34 @@ namespace RealLifeOverhaul.Ui
         /// <summary>A category (or All items at 0) taken as the game's own switch for it is: the filter it runs is the game's.</summary>
         public static bool Tab(int tab)
         {
-            Toggle t = SwitchOf(tab);
             _needFilter = -1;
-            return UiWidgets.Set(t, true);
+            if (tab > 0 && tab == _fitAt)
+            {
+                return FitOut();
+            }
+            _fitOn = false;
+            return UiWidgets.Set(SwitchOf(tab), true);
+        }
+
+        /// <summary>The "RLO fit-out" tab: the game's list on all items with no favourites, cut to the mod's own pieces. Pressing a piece of it is any other tab's press.</summary>
+        public static bool FitOut()
+        {
+            if (_fitAt < 0)
+            {
+                return false;
+            }
+            _needFilter = -1;
+            _fitOn = true;
+            UiWidgets.Set(BuyKits.Get<Toggle>(GameContract.DesignerFavToggle, DesignerPanes.Furniture), false);
+            UiWidgets.Set(SwitchOf(0), true);
+            return true;
         }
 
         /// <summary>The favourites' switch: on shows the favourites, off goes back to all items, each through the game's own switches.</summary>
         public static bool Favourites(bool on)
         {
             _needFilter = -1;
+            _fitOn = false;
             Toggle fav = BuyKits.Get<Toggle>(GameContract.DesignerFavToggle, DesignerPanes.Furniture);
             if (on)
             {
@@ -410,6 +553,7 @@ namespace RealLifeOverhaul.Ui
                 Tool((int)UiDesignerTool.Furniture);
             }
             _needFilter = line;
+            _fitOn = false;
             UiWidgets.Type(SearchField(), string.Empty, false);
             UiWidgets.Set(BuyKits.Get<Toggle>(GameContract.DesignerFavToggle, DesignerPanes.Furniture), false);
             UiWidgets.Set(SwitchOf(0), true);
@@ -421,5 +565,25 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>The line the catalogue is narrowed to, or -1.</summary>
         public static int NarrowedLine => _needFilter;
+
+        /// <summary>
+        /// Told after each layout which tiles it drew: the tiles in view that still have no size make the face look again, whatever the wheel brought into view since the
+        /// last look at the game. Null when the catalogue is not what was drawn.
+        /// </summary>
+        public static void CatalogueDrawn(UiDesignerCatalogue c)
+        {
+            bool missing = false;
+            for (int i = c != null ? Math.Max(0, c.ShownFirst) : 0; c != null && i <= c.ShownLast && i < View.Count && !missing; i++)
+            {
+                missing = !Sized.ContainsKey(View[i].itemName);
+            }
+            _sizesPending = missing;
+        }
+
+        /// <summary>
+        /// What the catalogue's own state adds to the face's signature: the fit-out tab, and while a tile in view still has no size a number that moves every tenth of
+        /// a second, so the face lays the catalogue out again and reads the next few until all are known.
+        /// </summary>
+        public static long CatalogueSignature() => (_fitOn ? 1L : 0L) + (_sizesPending ? 2L + (long)(Time.unscaledTime * 10f) * 4L : 0L);
     }
 }

@@ -6,7 +6,7 @@ internal static partial class UiSamples
     /// <summary>The states of the interior designer the previews and the checks draw.</summary>
     public static readonly string[] DesignerStates =
     {
-        "furniture", "furniture_needed", "furniture_empty", "floors", "walls", "palette", "producer", "queue", "security", "time", "blueprint", "blueprint_bad", "business_type",
+        "furniture", "furniture_needed", "furniture_empty", "furniture_fit", "floors", "walls", "palette", "producer", "queue", "security", "time", "blueprint", "blueprint_bad", "business_type",
         "folded", "hand", "second_floor"
     };
 
@@ -51,13 +51,14 @@ internal static partial class UiSamples
     public static UiDesignerModel Designer(UiWords t, string state)
     {
         var m = new UiDesignerModel();
-        int tool = state == "furniture" || state == "furniture_needed" || state == "furniture_empty" || state == "folded" || state == "second_floor" ? (int)UiDesignerTool.Furniture
+        int tool = state == "furniture" || state == "furniture_needed" || state == "furniture_empty" || state == "furniture_fit" || state == "folded" || state == "second_floor"
+            ? (int)UiDesignerTool.Furniture
             : state == "floors" ? (int)UiDesignerTool.Floor : state == "walls" ? (int)UiDesignerTool.Wall : state == "palette" ? (int)UiDesignerTool.Palette
             : state == "producer" ? (int)UiDesignerTool.Producer : state == "queue" ? (int)UiDesignerTool.Queue : state == "security" ? (int)UiDesignerTool.Security
             : state == "time" ? (int)UiDesignerTool.TimeOfDay : state.StartsWith("blueprint", StringComparison.Ordinal) || state == "business_type" ? (int)UiDesignerTool.SaveBlueprint
             : (int)UiDesignerTool.Hand;
         DesignerBar(t, m, tool, state == "second_floor");
-        DesignerInfo(t, m, state == "folded", state == "second_floor");
+        DesignerInfo(t, m, state == "folded", state == "second_floor", state == "floors");
         m.Prompts = new[]
         {
             new UiPrompt { Action = UiAction.Pick1, Label = "Rotate" }, new UiPrompt { Action = UiAction.Pick2, Label = "Free place" },   // the game's own hint lines, in its own words
@@ -70,15 +71,19 @@ internal static partial class UiSamples
             case "folded":
             case "second_floor":
                 m.Panel = UiDesignerPanelKind.Furniture;
-                DesignerCatalogue(t, m.Catalogue, false, false);
+                DesignerCatalogue(t, m.Catalogue, false, false, false);
                 break;
             case "furniture_needed":
                 m.Panel = UiDesignerPanelKind.Furniture;
-                DesignerCatalogue(t, m.Catalogue, true, false);
+                DesignerCatalogue(t, m.Catalogue, true, false, false);
                 break;
             case "furniture_empty":
                 m.Panel = UiDesignerPanelKind.Furniture;
-                DesignerCatalogue(t, m.Catalogue, false, true);
+                DesignerCatalogue(t, m.Catalogue, false, true, false);
+                break;
+            case "furniture_fit":
+                m.Panel = UiDesignerPanelKind.Furniture;
+                DesignerCatalogue(t, m.Catalogue, false, false, true);
                 break;
             case "floors":
             case "walls":
@@ -142,7 +147,7 @@ internal static partial class UiSamples
         m.CloseLabel = t("common_close", "Close");
     }
 
-    private static void DesignerInfo(UiWords t, UiDesignerModel m, bool folded, bool floors)
+    private static void DesignerInfo(UiWords t, UiDesignerModel m, bool folded, bool floors, bool repaid)
     {
         UiDesignerInfo i = m.Info;
         i.Title = t("interior_designer", "Interior designer");
@@ -153,17 +158,24 @@ internal static partial class UiSamples
         i.Facts = "Florist, 214 5th Avenue, Garment District";
         i.Folded = folded;
         i.EditTitle = Of(t, "reallife_ui_designer_edit", "This edit");
+        // The old floor sold back is a line of its own only once a floor has been laid over one laid in the same edit: the floors state shows it.
         string[] labels =
         {
             DesignerFill(Of(t, "reallife_ui_designer_cost_furniture", "Furniture bought ({n})"), "n", "9"), DesignerFill(Of(t, "reallife_ui_designer_cost_floor", "Floor, {area} m2"), "area", "64"),
+            DesignerFill(Of(t, "reallife_ui_designer_cost_floor_back", "Old floor sold back, {area} m2"), "area", "12"),
             DesignerFill(Of(t, "reallife_ui_designer_cost_sold", "Sold back ({n})"), "n", "2"), Of(t, "reallife_ui_designer_cost_total", "Total on apply")
         };
-        string[] values = { "$14,860", "$1,180", "-$900", "$15,140" };
-        for (int k = 0; k < 4; k++)
+        string[] values = { "$14,860", repaid ? "$1,360" : "$1,180", "-$180", "-$900", "$15,140" };
+        int row = 0;
+        for (int k = 0; k < 5; k++)
         {
-            i.Cost[k] = new UiDesignerCostLine { Label = labels[k], Value = values[k], Ink = k == 2 ? UiRole.OkText : UiRole.Text, Total = k == 3 };
+            if (k == 2 && !repaid)
+            {
+                continue;
+            }
+            i.Cost[row++] = new UiDesignerCostLine { Label = labels[k], Value = values[k], Ink = k == 2 || k == 3 ? UiRole.OkText : UiRole.Text, Total = k == 4 };
         }
-        i.CostCount = 4;
+        i.CostCount = row;
         i.CapacityShown = true;
         i.CapacityTitle = t("bizman_customers_capacity", "Customer capacity");
         i.CapacityFigure = "56";
@@ -200,39 +212,43 @@ internal static partial class UiSamples
     };
 
     private static readonly string[] CardPrices = { "$1,240", "$1,860", "$980", "$2,400", "$3,150", "$2,720", "$140", "$310", "$560", "$290", "$1,950", "$1,100", "$420", "$380", "$210", "$90", "$120", "$260" };
-    private static readonly string[] CardKinds = { "holds 24", "holds 36", "holds 48", null, "holds 24", "holds 60", null, "ceiling", null, null, null, "wall", null, null, null, "wall", null, "ceiling" };
 
-    // What a piece is for the room, in words: what it holds, or that it hangs from the ceiling or the wall.
-    private static string KindOf(UiWords t, string kind)
+    // What each sample piece is, as the item's own data holds it: placement flags, cargo capacity and the footprint in cells (0 for a piece with none).
+    private static readonly bool[] CardWall = { false, false, false, false, false, false, false, false, false, false, false, true, false, false, false, true, false, false };
+    private static readonly bool[] CardCeiling = { false, false, false, false, false, false, false, true, false, false, false, false, false, false, false, false, false, true };
+    private static readonly int[] CardHolds = { 24, 36, 48, 0, 24, 60, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
+    private static readonly int[] CardWide = { 2, 2, 3, 6, 3, 2, 1, 1, 2, 2, 2, 3, 1, 3, 1, 1, 0, 2 };
+    private static readonly int[] CardDeep = { 1, 2, 1, 1, 2, 2, 1, 1, 2, 2, 1, 1, 1, 1, 1, 1, 0, 2 };
+    private static readonly int[] CardMod = { 3, 8, 9, 12, 13, 14, 15, 16 };   // the pieces the mod's own fit-outs are made of
+
+    // A piece's facts in words, by the same rule the live catalogue uses: where it goes and what it holds, and its size in cells; null for a fact it has not.
+    private static void CardFacts(UiWords t, int at, out string kind, out string size, out string words)
     {
-        if (kind == null)
-        {
-            return null;
-        }
-        if (kind.StartsWith("holds", StringComparison.Ordinal))
-        {
-            return DesignerFill(Of(t, "reallife_ui_designer_holds", "holds {n}"), "n", kind.Substring(6));
-        }
-        return kind == "ceiling" ? Of(t, "reallife_ui_designer_ceiling", "ceiling") : Of(t, "reallife_ui_designer_wall", "wall");
+        DesignerRules.FactWords(DesignerRules.PlaceOf(CardWall[at], CardCeiling[at]), CardHolds[at], CardWide[at], CardDeep[at], Of(t, "reallife_ui_designer_holds", "holds {n}"),
+            Of(t, "reallife_ui_designer_ceiling", "ceiling"), Of(t, "reallife_ui_designer_wall", "wall"), DesignerRules.SizeShort, out kind, out size);
+        DesignerRules.FactWords(DesignerRules.Place.None, 0, CardWide[at], CardDeep[at], null, null, null, Of(t, "reallife_ui_designer_size_tiles", "{w} x {d} tiles"), out _, out words);
     }
 
-    private static void DesignerCatalogue(UiWords t, UiDesignerCatalogue c, bool needed, bool empty)
+    private static void DesignerCatalogue(UiWords t, UiDesignerCatalogue c, bool needed, bool empty, bool fit)
     {
         string[] tabs = { t("interior_designer_furniture_panel_category_allitems", "All Items"), t("interior_designer_furniture_panel_category_decoration", "Decoration"),
             t("interior_designer_furniture_panel_category_lights", "Lights"), t("interior_designer_furniture_panel_category_security", "Security"),
             t("interior_designer_furniture_panel_category_tablesandchairs", "Tables & Chairs"), t("interior_designer_furniture_panel_category_warehouseandfactory", "Warehouse & Factory"),
-            t("interior_designer_furniture_panel_category_cinemaandtheater", "Cinema & Theater"), t("interior_designer_furniture_panel_category_outdoor", "Outdoor") };
-        string[] counts = { "212", "46", "22", "9", "24", "38", "12", "20" };
+            t("interior_designer_furniture_panel_category_cinemaandtheater", "Cinema & Theater"), t("interior_designer_furniture_panel_category_outdoor", "Outdoor"),
+            Of(t, "reallife_ui_designer_fit_tab", "RLO fit-out") };
+        string[] counts = { "212", "46", "22", "9", "24", "38", "12", "20", CardMod.Length.ToString() };
         for (int k = 0; k < tabs.Length; k++)
         {
             c.Tabs[k] = tabs[k];
             c.TabCounts[k] = counts[k];
         }
         c.TabCount = tabs.Length;
-        c.Tab = 0;
+        c.FitTab = tabs.Length - 1;
+        c.Tab = fit ? c.FitTab : 0;
         c.SearchPlaceholder = t("common_search", "Search");
         c.FavouritesLabel = t("interior_designer_furniture_panel_category_favorites", "Favorites");
         c.NeededLabel = Of(t, "reallife_ui_designer_needed", "NEEDED");
+        c.RloLabel = Of(t, "reallife_ui_designer_rlo", "RLO");
         c.ColoursLabel = Of(t, "reallife_ui_designer_colours", "Colours");
         c.PlaceLabel = Of(t, "reallife_ui_designer_place", "Place");
         c.FavouriteLabel = Of(t, "reallife_ui_designer_favourite", "Favourite");
@@ -241,14 +257,15 @@ internal static partial class UiSamples
         c.NoneBody = Of(t, "reallife_ui_designer_none_body", "No furniture matches. Clear the search or pick another category.");
         c.Filtered = needed;
         c.FilterNote = DesignerFill(Of(t, "reallife_ui_designer_showing", "Showing what {need} needs"), "need", "Storage shelf");
-        int n = empty ? 0 : needed ? 3 : CardNames.Length;
+        int n = empty ? 0 : needed ? 3 : fit ? CardMod.Length : CardNames.Length;
         c.Cards = new UiDesignerCard[n];
         for (int k = 0; k < n; k++)
         {
-            int at = needed ? new[] { 2, 4, 5 }[k] : k;
+            int at = needed ? new[] { 2, 4, 5 }[k] : fit ? CardMod[k] : k;
+            CardFacts(t, at, out string kind, out string size, out _);
             c.Cards[k] = new UiDesignerCard
             {
-                Index = at, Name = CardNames[at], Price = CardPrices[at], Kind = KindOf(t, CardKinds[at]),
+                Index = k, Name = CardNames[at], Price = CardPrices[at], Kind = kind, Size = size, Rlo = Array.IndexOf(CardMod, at) >= 0,
                 Picture = "designer:sample:" + at, Needed = at == 0 || at == 2, Favourite = at % 3 == 0
             };
         }
@@ -259,17 +276,24 @@ internal static partial class UiSamples
             return;
         }
         c.DetailName = c.Cards[0].Name;
-        c.DetailKind = needed ? "Storage, holds 48" : "Decoration, " + DesignerFill(Of(t, "reallife_ui_designer_holds", "holds {n}"), "n", "24");
-        string[] lab = { t("common_price", "Price"), t("bizman_customers_capacity", "Customer capacity"), Of(t, "reallife_ui_designer_fills", "Needed for") };
-        string[] val = { c.Cards[0].Price, "+4", needed ? "Storage shelf, " + DesignerFill(Of(t, "reallife_ui_designer_count_of", "{have} of {need}"), "have", "0", "need", "1") : "Flower stands, " + DesignerFill(Of(t, "reallife_ui_designer_count_of", "{have} of {need}"), "have", "4", "need", "6") };
-        UiRole[] ink = { UiRole.Text, UiRole.OkText, UiRole.WarnText };
-        for (int k = 0; k < 3; k++)
+        c.DetailKind = c.Cards[0].Kind == null ? "Decoration" : "Decoration, " + c.Cards[0].Kind;
+        string[] lab = { t("common_price", "Price"), Of(t, "reallife_ui_designer_size", "Size"), t("bizman_customers_capacity", "Customer capacity"), Of(t, "reallife_ui_designer_fills", "Needed for") };
+        CardFacts(t, needed ? 2 : fit ? CardMod[0] : 0, out _, out _, out string firstWords);
+        string[] val = { c.Cards[0].Price, firstWords, "+4", needed ? "Storage shelf, " + DesignerFill(Of(t, "reallife_ui_designer_count_of", "{have} of {need}"), "have", "0", "need", "1") : "Flower stands, " + DesignerFill(Of(t, "reallife_ui_designer_count_of", "{have} of {need}"), "have", "4", "need", "6") };
+        UiRole[] ink = { UiRole.Text, UiRole.Text, UiRole.OkText, UiRole.WarnText };
+        int rows = 0;
+        for (int k = 0; k < 4; k++)
         {
-            c.DetailLabels[k] = lab[k];
-            c.DetailValues[k] = val[k];
-            c.DetailInks[k] = ink[k];
+            if (val[k] == null)
+            {
+                continue;   // a fact the piece has not is not shown
+            }
+            c.DetailLabels[rows] = lab[k];
+            c.DetailValues[rows] = val[k];
+            c.DetailInks[rows] = ink[k];
+            rows++;
         }
-        c.DetailCount = 3;
+        c.DetailCount = rows;
         int[] rgb = { 0x9B6A3C, 0xD8C3A5, 0x2E3B4A, 0xF2F2F0, 0x4F8A5B };
         for (int k = 0; k < rgb.Length; k++)
         {
@@ -313,6 +337,13 @@ internal static partial class UiSamples
         c.DetailValues[1] = "+2%";
         c.DetailInks[1] = UiRole.OkText;
         c.DetailCount = 2;
+        if (!walls)
+        {
+            c.DetailLabels[2] = Of(t, "reallife_ui_designer_sold_back", "Old floor sold back");
+            c.DetailValues[2] = "-$180";
+            c.DetailInks[2] = UiRole.OkText;
+            c.DetailCount = 3;
+        }
         c.ShadeLabel = Of(t, "reallife_ui_designer_shade", "Shade");
         int[] rgb = { 0xE8C27A, 0x9C6B43, 0xC9A57C, 0xD9CBB5 };
         for (int k = 0; k < rgb.Length; k++)
