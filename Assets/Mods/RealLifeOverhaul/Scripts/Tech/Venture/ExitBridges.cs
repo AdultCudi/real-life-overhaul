@@ -35,6 +35,9 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The sessions of exits put in (true) or taken out of the registry as the venture part starts and stops. Default: nothing.</summary>
         public static Action<bool> Sessions;
 
+        /// <summary>A business's stock and furniture at the game's resale price, in dollars (a sale of a business's cost); 0 when unreadable. Default: none.</summary>
+        public static Func<string, int> Fixtures;
+
         public static string KeyOf(int startup) => "founder:" + startup.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
         public static bool ResidentOf(int startup, out ResidentInfo info)
@@ -84,6 +87,7 @@ namespace RealLifeOverhaul.Tech
             People = null;
             Practised = null;
             Sessions = null;
+            Fixtures = null;
         }
     }
 }

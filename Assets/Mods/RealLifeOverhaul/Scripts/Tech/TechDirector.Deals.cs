@@ -366,8 +366,10 @@ namespace RealLifeOverhaul.Tech
                     break;
                 }
             }
+            long held = ExitRules.PlayerShares(c);
             long paid = VentureRules.SellShares(c, 100, lead);
             VentureGame.Give(Level(paid), VentureGame.ShareSaleKey, firm.File.Name);
+            GainNotice(firm.File.Name, ExitGains.ForShares(_gains, c, place, firm.File.Name, paid, held, held * 100 / 1000, Save != null ? Save.Day : 0, Prices.Level));
             ChangedTech();
             return paid > 0;
         }

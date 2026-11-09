@@ -651,6 +651,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\ExitPlaces.cs" Link="Mod\ExitPlaces.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\ExitStore.cs" Link="Mod\ExitStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\ExitBridges.cs" Link="Mod\ExitBridges.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\ExitGains.cs" Link="Mod\ExitGains.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Rivals\RivalryCatalogue.cs" Link="Mod\Rivals\RivalryCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Rivals\RivalryFile.cs" Link="Mod\Rivals\RivalryFile.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Rivals\RivalryStore.cs" Link="Mod\Rivals\RivalryStore.cs" />

@@ -18,7 +18,11 @@ A firm taking `RoundBar[Seed]` a month or more draws an offer on the day, seeded
 
 The business passes to the buyer by the game's own hand over of a business (`ServicesDirector.HandOver`: staff go along, the lease ends); the buyer's money comes into the wallet and the investors' lines come out of it, before the player has anything. `ExitRules.Settle`: the pot is the price, what the firm account holds and a director's loan still out, less the bridge (paid first); `VentureRules.Waterfall` shares it as it stands; the venture firms and the public are owed their lines; the rest is the player's. What the price and wallet cannot cover is the investors' claim (and the charge for a clear pattern), as at a wind down. A sale for nothing is exactly a wind down. Money counted as taken is inside the pot the investors share, so it is paid from the player's proceeds first or stays owed.
 
-Left out: capital gains of the sale are not noted for the tax return (the game's sale of a business notes them; the hand over does not); staff option holders get no cash.
+Staff option holders get no cash.
+
+## Capital gains
+
+Every way the player is paid for a stake notes a capital gain on the day: a firm sold (and a team taken for the hire), the vested shares sold after a round or after a lock-up, the plain sale of a tenth, and an angel stake sold with a startup of the city. The gain is what the wallet gained less the cost basis, never under nothing, and joins the quarter's return beside a business sale's gain (`CompanyBridges.StartupGains`, summed with `OtherIncome` by `TaxRules.OtherIncome`). The basis is what the player paid for shares (`Holder.Invested`, used in proportion to the shares sold) and, for a firm sold with its business, the stock and furniture at the game's resale price in the player's share of the firm. The incorporation fee and running costs were deductible when paid and are not counted again. City startups and rivals have no return. Save line `reallife:tech_exit_gains`; check `--exit-tax`.
 
 ## The way to the market
 
