@@ -342,38 +342,6 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        /// <summary>A tenth of the player's shares sold to the lead investor at a fifth off the last round's price.</summary>
-        internal bool SellShares(string place)
-        {
-            FirmPlace firm = FirmOf(place);
-            Cap c = CapFor(place, false);
-            if (firm == null || c == null || c.VcSeats == 0 || c.Post <= 0)
-            {
-                return false;
-            }
-            int locked = ExitLockLeft(place);
-            if (locked > 0)
-            {
-                Notifications.Show(NotificationType.Warning, "reallife_exit_note_locked", Data("firm", firm.File.Name, "days", locked.ToString()), 8f, null, null, true, false);
-                return false;   // the lock-up after a listing: the player sells nothing for 180 days
-            }
-            int lead = 0;
-            for (int i = c.Holders.Count - 1; i >= 0; i--)
-            {
-                if (c.Holders[i].Kind == (int)HolderKind.Vc)
-                {
-                    lead = c.Holders[i].Who;
-                    break;
-                }
-            }
-            long held = ExitRules.PlayerShares(c);
-            long paid = VentureRules.SellShares(c, 100, lead);
-            VentureGame.Give(Level(paid), VentureGame.ShareSaleKey, firm.File.Name);
-            GainNotice(firm.File.Name, ExitGains.ForShares(_gains, c, place, firm.File.Name, paid, held, held * 100 / 1000, Save != null ? Save.Day : 0, Prices.Level));
-            ChangedTech();
-            return paid > 0;
-        }
-
         /// <summary>A listing asked for: the share issue feature takes it, or the player is told it is not open yet.</summary>
         internal void PrepareListing(string place)
         {

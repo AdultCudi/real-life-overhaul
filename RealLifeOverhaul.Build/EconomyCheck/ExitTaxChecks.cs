@@ -139,7 +139,6 @@ internal static partial class Program
             "exit tax: a firm sold to a buyer, and a team taken for the hire (one path), notes its gain after the buyer's money came in");
         Check(Regex.IsMatch(exits, @"VentureGame\.Give\(Level\(paid\), VentureGame\.ShareSaleKey[\s\S]*?ExitGains\.ForShares\(_gains, c, place, firm\.File\.Name, paid, held, room"),
             "exit tax: the player's vested shares sold after a round, and a listed firm's after the lock-up (one path), note theirs");
-        Check(Regex.IsMatch(deals, @"VentureGame\.Give\(Level\(paid\), VentureGame\.ShareSaleKey[\s\S]*?ExitGains\.ForShares\(_gains"), "exit tax: the plain sale of a tenth of the shares notes its gain too");
         Check(venture.Contains("ExitGains.ForStake(_gains, s.Name, h.Paid, h.Invested"), "exit tax: an angel's stake in a startup of the city sold with it notes its gain");
         int hand = exits.IndexOf("ExitBridges.HandOver(place, o.Name)"), note = exits.IndexOf("ExitGains.ForSale(");
         Check(hand > 0 && note > hand, "exit tax: a sale refused at the hand over notes nothing (the note comes after it)");

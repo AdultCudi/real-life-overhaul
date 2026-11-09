@@ -28,7 +28,7 @@ namespace RealLifeOverhaul.Ui
                     "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back", "hud_confirm_are_you_sure", "common_confirm",
                     "common_cancel",
                     "reallife_ui_test_question_body", "reallife_ui_test_question_negative_body", "reallife_ui_test_ack_body",
-                    "reallife_ui_test_mod_box_body", "reallife_vc_confirm_sell_title", "reallife_vc_confirm_sell_body",
+                    "reallife_ui_test_mod_box_body",
                     "change_character_clothes_unsaved_changes_warning", "reallife_pd_ask_header", "reallife_pd_ask_body"
                 }).Switch(UiScreenSwitches.Boxes),
                 new UiScreenDef("acknowledge_box", UiTemplate.Decision, "AcknowledgeScreen", new[]

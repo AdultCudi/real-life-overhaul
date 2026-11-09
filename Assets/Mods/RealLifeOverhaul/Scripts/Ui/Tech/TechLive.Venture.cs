@@ -353,8 +353,7 @@ namespace RealLifeOverhaul.Ui
                 card.Button(TechText.T("reallife_vc_button_options"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.GrantOptions(place)));
                 if (c != null && c.VcSeats > 0)
                 {
-                    card.Button(TechText.T("reallife_vc_button_sell"), UiButtonKind.Secondary, UiAction.Count, Ask("reallife_vc_confirm_sell_title",
-                        "reallife_vc_confirm_sell_body", () => _d.SellShares(place)));
+                    card.Button(TechText.T("reallife_exit_button_sell"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.OpenExits(place)));
                 }
                 card.Button(TechText.T("reallife_vc_button_listing"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.PrepareListing(place)));
                 var head = new List<UiActionModel>(2);

@@ -279,8 +279,7 @@ namespace RealLifeOverhaul.Tech
             Transform more = box.ButtonRow();
             if (c != null && c.VcSeats > 0)
             {
-                InfoBox.Button(more, InfoBox.Additional, "reallife_vc_button_sell", () => GameConfirm.Show("reallife_vc_confirm_sell_title", "reallife_vc_confirm_sell_body",
-                    () => UiClone.Safe(() => Do(() => _director.SellShares(place))), null, null, null, true, true));
+                InfoBox.Button(more, InfoBox.Additional, "reallife_exit_button_sell", () => Do(() => _director.OpenExits(place)));
             }
             InfoBox.Button(more, InfoBox.Additional, "reallife_vc_button_listing", () => Do(() => _director.PrepareListing(place)));
             InfoBox.Button(more, InfoBox.Additional, "common_close", ClosePick);

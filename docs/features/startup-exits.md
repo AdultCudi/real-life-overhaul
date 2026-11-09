@@ -22,7 +22,7 @@ Staff option holders get no cash.
 
 ## Capital gains
 
-Every way the player is paid for a stake notes a capital gain on the day: a firm sold (and a team taken for the hire), the vested shares sold after a round or after a lock-up, the plain sale of a tenth, and an angel stake sold with a startup of the city. The gain is what the wallet gained less the cost basis, never under nothing, and joins the quarter's return beside a business sale's gain (`CompanyBridges.StartupGains`, summed with `OtherIncome` by `TaxRules.OtherIncome`). The basis is what the player paid for shares (`Holder.Invested`, used in proportion to the shares sold) and, for a firm sold with its business, the stock and furniture at the game's resale price in the player's share of the firm. The incorporation fee and running costs were deductible when paid and are not counted again. City startups and rivals have no return. Save line `reallife:tech_exit_gains`; check `--exit-tax`.
+Every way the player is paid for a stake notes a capital gain on the day: a firm sold (and a team taken for the hire), the vested shares sold after a round or after a lock-up, and an angel stake sold with a startup of the city. The gain is what the wallet gained less the cost basis, never under nothing, and joins the quarter's return beside a business sale's gain (`CompanyBridges.StartupGains`, summed with `OtherIncome` by `TaxRules.OtherIncome`). The basis is what the player paid for shares (`Holder.Invested`, used in proportion to the shares sold) and, for a firm sold with its business, the stock and furniture at the game's resale price in the player's share of the firm. The incorporation fee and running costs were deductible when paid and are not counted again. City startups and rivals have no return. Save line `reallife:tech_exit_gains`; check `--exit-tax`.
 
 ## The way to the market
 
@@ -31,6 +31,8 @@ Every way the player is paid for a stake notes a capital gain on the day: a firm
 ## Shares sold later
 
 After a priced round, for 30 days, the player may sell a fifth of their vested shares to the round's investors at the round's price less 10 to 25 per cent (Selling and Relationships take it down); a listed firm's shares may be sold for a quarter after the lock-up at the market's spread. The money is the player's own, booked with no address; the firm account and the floor are not touched.
+
+This is the only way the player sells their own shares. The firm page's "Sell my shares" button opens this page, and the sale keeps its rules: vested shares only, inside the window, the round's limit counted in the save line `reallife:tech_exits` (so a reload gives no room back), the lock-up after a listing, and the capital gain noted once. The older button that sold a tenth of all shares at four fifths of the post-money value is gone. A player who sold unvested shares with it keeps what they got and has nothing more to sell until shares vest. City startups and rivals never sell through this path.
 
 ## Acqui-hire
 
