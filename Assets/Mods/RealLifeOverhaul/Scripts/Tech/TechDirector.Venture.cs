@@ -48,6 +48,7 @@ namespace RealLifeOverhaul.Tech
             FollowMoves();
             StartMoney();
             StartFounding();
+            StartExitStock();
             StartRivalry();
             if (_pitch == null)
             {
@@ -80,6 +81,7 @@ namespace RealLifeOverhaul.Tech
                 WriteVenture(Save.modData);
             }
             _pitch?.End();
+            StopExitStock(keep);
             StopRivalry();
             StopFounding();
             StopExits(keep);
@@ -94,6 +96,7 @@ namespace RealLifeOverhaul.Tech
                 data[VentureStore.Key] = VentureStore.Write(_venture);
                 WriteTerms(data);
                 WriteFounding(data);
+                WriteExitStock(data);
                 WriteExits(data);
                 WriteRivalry(data);
             }
@@ -146,6 +149,7 @@ namespace RealLifeOverhaul.Tech
             }
             CapsDay(day, mood);
             ExitsDay(day);
+            ExitStockDay(day);   // after the day's listing, sale or wind down, so the stock and the cap table are brought together once
             FoundingDay(day);
             RivalryDay(day);
             _venture.LastDay = day;
@@ -206,6 +210,7 @@ namespace RealLifeOverhaul.Tech
                     break;
                 case VentureRules.NoteListing:
                     PayOut(s);
+                    StockCity(s);
                     Story("reallife_tech_news_listing", "name", s.Name, "amount", TechText.Cents(Level(s.Post)));
                     if (mine)
                     {

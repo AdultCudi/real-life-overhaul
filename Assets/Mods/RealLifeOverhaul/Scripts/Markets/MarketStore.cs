@@ -13,8 +13,9 @@ namespace RealLifeOverhaul.Markets
     ///   results and candles (MarketCodec; today's step candles only for those the player follows), p positions, o orders,
     ///   t the account's history, w the watch list, a the account, n the news, d dividends owed, x the index, y the sectors.
     ///   Never in the city's line a host sends: l the player's way to the market and books, u their listed company while set
-    ///   aside as a guest, b their bots, f their bonds (BondStore), g worked orders and dividends to put back, q their futures
-    ///   and options (DerivStore). In both lines: m the raw materials exchange (DerivStore).
+    ///   aside as a guest and v their firms that listed on their own the same way (a record each), b their bots, f their bonds
+    ///   (BondStore), g worked orders and dividends to put back, q their futures and options (DerivStore). In both lines: m the
+    ///   raw materials exchange (DerivStore).
     /// A bot's shares are also written into the player's holding of part p, marked, and taken out again on reading, so an
     /// older reader takes them as the player's own. A bot's capital added or taken out is a deposit or withdrawal marked 1;
     /// worked orders are apart from part o so an older reader never fills one whole. A player's listed company is a k record
@@ -276,6 +277,10 @@ namespace RealLifeOverhaul.Markets
                 {
                     t.Append("~u:").Append(s.Listing.Suspended);
                 }
+                if (s.Listing.SuspendedFirms.Count > 0)
+                {
+                    t.Append("~v:").Append(string.Join(";", s.Listing.SuspendedFirms));   // their firms' stocks set aside the same way, a record each
+                }
             }
             if (!city && DeskStore.Any(s))
             {
@@ -295,7 +300,7 @@ namespace RealLifeOverhaul.Markets
             }
             var s = new MarketState();
             bool header = false;
-            string suspended = null, bots = null, worked = null;
+            string suspended = null, suspendedFirms = null, bots = null, worked = null;
             for (int p = 1; p < parts.Length; p++)
             {
                 string part = parts[p];
@@ -438,6 +443,9 @@ namespace RealLifeOverhaul.Markets
                     case 'u':
                         suspended = body;
                         break;
+                    case 'v':
+                        suspendedFirms = body;
+                        break;
                     case 'b':
                         bots = body;
                         break;
@@ -489,6 +497,16 @@ namespace RealLifeOverhaul.Markets
             if (s.Listing != null && suspended != null && ReadStockLine(suspended, s.YearDays) != null)
             {
                 s.Listing.Suspended = suspended;
+            }
+            if (s.Listing != null && suspendedFirms != null)
+            {
+                foreach (string record in Records(suspendedFirms))
+                {
+                    if (s.Listing.SuspendedFirms.Count < MarketEnv.FirmsMost && ReadStockLine(record, s.YearDays) != null)
+                    {
+                        s.Listing.SuspendedFirms.Add(record);
+                    }
+                }
             }
             Repair(s);
             MarketLife.DayBases(s, s.InSession);   // a save made after a close by an old version has every company's at its close

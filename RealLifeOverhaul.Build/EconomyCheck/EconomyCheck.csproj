@@ -448,6 +448,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Close.cs" Link="Mod\MarketEngine.Close.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Orders.cs" Link="Mod\MarketEngine.Orders.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Own.cs" Link="Mod\MarketEngine.Own.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Firms.cs" Link="Mod\MarketEngine.Firms.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Holdings.cs" Link="Mod\MarketEngine.Holdings.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketIndex.cs" Link="Mod\MarketIndex.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Bots.cs" Link="Mod\MarketEngine.Bots.cs" />
@@ -469,6 +470,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Listing\ListingBook.cs" Link="Mod\ListingBook.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Listing\ListingVotes.cs" Link="Mod\ListingVotes.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Listing\ListingSector.cs" Link="Mod\ListingSector.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Listing\ListingFirm.cs" Link="Mod\ListingFirm.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketSetup.cs" Link="Mod\MarketSetup.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketCarryOver.cs" Link="Mod\MarketCarryOver.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketCodec.cs" Link="Mod\MarketCodec.cs" />
@@ -651,6 +653,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\ExitPlaces.cs" Link="Mod\ExitPlaces.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\ExitStore.cs" Link="Mod\ExitStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\ExitBridges.cs" Link="Mod\ExitBridges.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\StockFile.cs" Link="Mod\StockFile.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\StockBridges.cs" Link="Mod\StockBridges.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\ExitStockRules.cs" Link="Mod\ExitStockRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Venture\ExitStockStore.cs" Link="Mod\ExitStockStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Rivals\RivalryCatalogue.cs" Link="Mod\Rivals\RivalryCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Rivals\RivalryFile.cs" Link="Mod\Rivals\RivalryFile.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\Rivals\RivalryStore.cs" Link="Mod\Rivals\RivalryStore.cs" />

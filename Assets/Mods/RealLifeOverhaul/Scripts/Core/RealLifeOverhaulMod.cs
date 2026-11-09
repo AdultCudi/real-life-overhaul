@@ -1307,6 +1307,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_vc_test_wind_down", () => Tech.TechDirector.Instance?.TestWindDown())
                 .AddButton("reallife_vc_test_spend", () => Tech.TechDirector.Instance?.TestSpendElsewhere())
                 .AddButton("reallife_vc_test_terms", () => Tech.TechDirector.Instance?.TestTerms())
+                .AddButton("reallife_exit_test_stock", () => Tech.TechDirector.Instance?.TestExitStock())
                 .AddButton("reallife_exit_test_offer", () => Tech.TechDirector.Instance?.TestExitOffer())
                 .AddButton("reallife_exit_test_pricing", () => Tech.TechDirector.Instance?.TestExitPricing())
                 .AddButton("reallife_exit_test_hire", () => Tech.TechDirector.Instance?.TestStartupHire())

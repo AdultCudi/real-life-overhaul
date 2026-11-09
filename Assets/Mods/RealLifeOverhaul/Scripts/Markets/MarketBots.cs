@@ -171,9 +171,9 @@ namespace RealLifeOverhaul.Markets
         /// <summary>Whether a company is in a bot's scope; a holding outside it is sold at the next session.</summary>
         public static bool InScope(MarketState state, Bot b, Stock s)
         {
-            if (s == null || (s.Own != null && !Mine(state, s)))
+            if (s == null || (s.Own != null && (!Mine(state, s) || s.Own.Firm)))
             {
-                return false;   // another player's company is never traded by a bot
+                return false;   // another player's company is never traded by a bot, nor a firm that listed: its founder's own deals are the only ones
             }
             switch (b.Scope)
             {

@@ -61,9 +61,12 @@ namespace RealLifeOverhaul.Tech
         }
 
         /// <summary>The offer a firm draws today, or null: seeded, more often when it grows, from a buyer that can pay. Never backdated: it is made on the day.</summary>
-        public static ExitOffer Offer(ExitFile f, FirmExit e, int day, int mood, long mrr, long value, int growthBp, IList<ExitBuyer> buyers)
+        public static ExitOffer Offer(ExitFile f, FirmExit e, int day, int mood, long mrr, long value, int growthBp, IList<ExitBuyer> buyers, bool onTheMarket = false)
         {
-            if (mrr < ExitCatalogue.OfferMrrLeast || value <= 0 || e.Offers.Count >= ExitCatalogue.OffersMost || e.Stage == ListStage.Listed || e.OnTheWay || buyers == null || buyers.Count == 0)
+            // A firm whose shares trade on the market is bought at what the market makes of it (the caller gives that as the value);
+            // one that listed and has no stock draws none, as before.
+            if (mrr < ExitCatalogue.OfferMrrLeast || value <= 0 || e.Offers.Count >= ExitCatalogue.OffersMost
+                || (e.Stage == ListStage.Listed && !onTheMarket) || e.OnTheWay || buyers == null || buyers.Count == 0)
             {
                 return null;
             }

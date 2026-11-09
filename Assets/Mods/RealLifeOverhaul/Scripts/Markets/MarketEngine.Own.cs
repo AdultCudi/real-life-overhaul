@@ -27,12 +27,13 @@ namespace RealLifeOverhaul.Markets
             return MarketBots.Mine(State, s);
         }
 
+        /// <summary>The player's whole company on the market; a firm of theirs that listed on its own is not it (<see cref="MineFirms"/>).</summary>
         public Stock MineListed()
         {
             for (int i = 0; i < State.Stocks.Count; i++)
             {
                 Stock s = State.Stocks[i];
-                if (s.Listed && Mine(s))
+                if (s.Listed && Mine(s) && !s.Own.Firm)
                 {
                     return s;
                 }
@@ -87,29 +88,48 @@ namespace RealLifeOverhaul.Markets
                 f.Suspended = null;
                 if (back != null && back.Own != null && back.Own.Owner == State.Me)
                 {
-                    back.Id = FreeId(back.Id);
-                    Stock old = State.Stock(back.Id);
-                    if (old != null)
-                    {
-                        State.Stocks.Remove(old);
-                    }
-                    back.Quarter = MarketCatalogue.QuarterOf(State.Day, Year);
-                    back.PendingQuarter = -1;
-                    back.ResultsDay = 0;
-                    back.QRev = back.QNi = 0.0;
-                    back.Own.Expect = ListingRules.Expected(back, back.Quarter, Year, State.Env);
-                    back.BarCount = back.LastBarCount = 0;
-                    back.DayVolume = 0;
-                    back.BidCents = back.BidEndDay = back.BidDay = 0;
-                    back.Last = back.MidCents;
-                    Reweigh(back, true);
-                    State.Stocks.Add(back);
+                    BringBack(back);
                     f.StockId = back.Id;
                     f.Stage = ListingStage.Listed;
                     moved++;
                 }
             }
+            for (int i = 0; f != null && i < f.SuspendedFirms.Count; i++)
+            {
+                Stock back = MarketStore.ReadStockLine(f.SuspendedFirms[i], Year);
+                if (back != null && back.Own != null && back.Own.Firm && back.Own.Owner == State.Me)
+                {
+                    BringBack(back);   // a firm's stock is found again by its place, so a new id changes nothing for the tech sector
+                    moved++;
+                }
+            }
+            if (f != null)
+            {
+                f.SuspendedFirms.Clear();
+            }
             return moved;
+        }
+
+        // A player's company set aside while they were a guest, back in this market as the days it missed are counted.
+        private void BringBack(Stock back)
+        {
+            back.Id = FreeId(back.Id);
+            Stock old = State.Stock(back.Id);
+            if (old != null)
+            {
+                State.Stocks.Remove(old);
+            }
+            back.Quarter = MarketCatalogue.QuarterOf(State.Day, Year);
+            back.PendingQuarter = -1;
+            back.ResultsDay = 0;
+            back.QRev = back.QNi = 0.0;
+            back.Own.Expect = ListingRules.Expected(back, back.Quarter, Year, State.Env);
+            back.BarCount = back.LastBarCount = 0;
+            back.DayVolume = 0;
+            back.BidCents = back.BidEndDay = back.BidDay = 0;
+            back.Last = back.MidCents;
+            Reweigh(back, true);
+            State.Stocks.Add(back);
         }
 
         // The book priced at its last open and the company listed on its first day, only by the founder's market playing alone.
@@ -327,7 +347,8 @@ namespace RealLifeOverhaul.Markets
             }
             OwnMeetings(s, day);
             OwnBidChance(s, day);
-            if (s.SplitDay <= 0 && s.BidCents <= 0 && s.Last > MarketCatalogue.SplitAboveCents)
+            // A split would multiply the shares in issue, and a firm's cap table is not scaled with them: a firm's price runs on.
+            if (!s.Own.Firm && s.SplitDay <= 0 && s.BidCents <= 0 && s.Last > MarketCatalogue.SplitAboveCents)
             {
                 s.SplitRatio = MarketLife.SplitRatioAt(s.Last);
                 s.SplitDay = MarketTrading.MarketDays(day, MarketCatalogue.SplitNoticeDays);
@@ -457,9 +478,9 @@ namespace RealLifeOverhaul.Markets
         private void OwnBidChance(Stock s, int day)
         {
             OwnListing o = s.Own;
-            if (s.BidCents > 0 || day - s.ListedDay <= 10 || o.Others(s) <= 0)
+            if (o.Firm || s.BidCents > 0 || day - s.ListedDay <= 10 || o.Others(s) <= 0)
             {
-                return;
+                return;   // a firm is bought through the tech sector's offers (they hand its business over and pay its investors), never by a bid here
             }
             double chance = o.SaleDay > 0 && day >= o.SaleDay ? 1.0 : ListingVotes.BidChance(ListingVotes.Read(s, State.IndexLast), TradingYear);
             if (chance > 0.0 && MarketRandom.Unit(_secret, MarketRandom.OwnBid, s.Id, 0) < chance)
@@ -548,6 +569,10 @@ namespace RealLifeOverhaul.Markets
             if (action == OwnAction.Audit || action == OwnAction.Proceeds)
             {
                 return OwnWhy.None;   // the auditors' findings and a business sold are not the founder's to ask
+            }
+            if (o.Firm && action != OwnAction.Deal)
+            {
+                return OwnWhy.Firm;   // its pay is the board's salary band, its dividends and buy-backs would be a second way for investors' money out: only the founder's deals
             }
             bool board = action == OwnAction.Pay || action == OwnAction.Dividend || action == OwnAction.BuyBack || action == OwnAction.Issue || action == OwnAction.Private;
             if (board && !o.Board)
@@ -730,17 +755,28 @@ namespace RealLifeOverhaul.Markets
             }
             Pay(s, q.Fee, MarketMoney.Commission);
             o.Founder += shares;
+            if (o.Firm)
+            {
+                o.Float -= shares;   // what the founder sells the public holds, what they buy it holds no more
+            }
             int bp = ListingRules.Bp(Math.Abs(shares), s.Shares);
             ListingRules.Count(o, State.Day, Year, shares > 0 ? bp : 0, shares < 0 ? bp : 0, 0);
             long gain = ListingRules.ShortSwing(o, State.Day, shares, q.Cents, Year);
             if (gain > 0)
             {
                 Pay(s, gain, ListingMoney.ShortSwing);
-                o.Rps += gain / (double)Math.Max(1L, o.Others(s));
+                if (!o.Firm)
+                {
+                    o.Rps += gain / (double)Math.Max(1L, o.Others(s));   // a firm has no reserve: the gain paid back is simply gone from the founder
+                }
                 Say(new MarketNews { Day = State.Day, Kind = MarketNewsKind.OwnDisgorged, Stock = s.Id, A = (int)Math.Min(int.MaxValue, gain) });
             }
             Moved(s, buying, q.Shares, ListingRules.Reading(shares, s.Shares, ListingCatalogue.DealKickBp));
             Say(new MarketNews { Day = State.Day, Kind = MarketNewsKind.OwnDeal, Stock = s.Id, A = (int)Math.Max(int.MinValue, Math.Min(int.MaxValue, shares)), B = q.Cents });
+            if (o.Firm && Mine(s) && !o.Test)
+            {
+                FirmDealt?.Invoke(s.Id, shares, q.Cents, q.Value);   // the tech sector follows its cap table, and notes the sale for the tax
+            }
         }
 
         private void BuyBack(Stock s, long shares)

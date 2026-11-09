@@ -285,6 +285,13 @@ namespace RealLifeOverhaul.Markets
         public int OwnScandal;
         public long OwnDebt;
 
+        // The player's firms that listed on their own (ListingFirm): the days counted (FirmDays from FirmFrom) and, for each firm's stock, its takings, profit and
+        // debt over them, from the game's statements at the firm's address. Written after the columns above on the tape, so an older reader stops before them.
+        public const int FirmsMost = 8;
+        public int Firms, FirmFrom, FirmDays;
+        public int[] FirmStock;
+        public long[] FirmRev, FirmProfit, FirmDebt;
+
         public static MarketEnv Quiet()
         {
             return new MarketEnv

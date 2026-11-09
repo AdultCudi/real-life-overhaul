@@ -180,7 +180,7 @@ namespace RealLifeOverhaul.Tech
         {
             FirmPlace firm = FirmOf(place);
             Cap c = firm != null ? CapFor(place, true) : null;
-            if (c == null || Save == null || c.RaiseUntil > 0)
+            if (c == null || Save == null || c.RaiseUntil > 0 || StockRaiseRefused(place, firm.File.Name))
             {
                 return false;
             }
@@ -262,6 +262,11 @@ namespace RealLifeOverhaul.Tech
             Cap c = CapFor(place, false);
             if (firm == null || c == null || index < 0 || index >= c.Sheets.Count || Save == null)
             {
+                return false;
+            }
+            if (HasStock(place))
+            {
+                c.Sheets.Clear();   // a firm whose shares trade closes no private round: the shares in issue are the stock's
                 return false;
             }
             TermSheet t = c.Sheets[index];
@@ -347,7 +352,7 @@ namespace RealLifeOverhaul.Tech
         {
             FirmPlace firm = FirmOf(place);
             Cap c = CapFor(place, false);
-            if (firm == null || c == null || c.VcSeats == 0 || c.Post <= 0)
+            if (firm == null || c == null || c.VcSeats == 0 || c.Post <= 0 || StockSellRefused(place, firm.File.Name))
             {
                 return false;
             }

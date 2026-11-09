@@ -41,10 +41,14 @@ It has no Update and no Harmony patch: its price, results, meetings and bids rid
 | `Listing/ListingRules.cs` | the price from the books (`Day`, `Figures`, `Morning`), the reserve (`ToReserve`), quarters and results, dividends, the founder's news, closed times, short swings, the year's limits, the price to take it private |
 | `Listing/ListingBook.cs` | the books by quarter, the requirements, the audit's findings, the fees, the shares, the prospectus, the book's price, the stock on its first day |
 | `Listing/ListingVotes.cs` | what the holders make of the year, the votes, investors' reasons, a bid's chance and acceptance, the dividend tax |
+| `Listing/ListingFirm.cs` | a firm of the player's that listed on its own (a tech startup, [Startup exits](startup-exits.md)): the asks, the stock made on its first day, a firm's statements read from the day's env |
 | `MarketEngine.Own.cs` | the engine's part: the book priced and the first day at the open, the business, results, meetings, investors, bids, the founder's tape events, `Alone` |
+| `MarketEngine.Firms.cs`, `MarketDirector.Firms.cs` | a firm's stock and a city startup's made, grown, ended and swept, and the founder's deals on a firm's stock told to the tech sector |
 | `MarketDirector.Own.cs`, `.OwnTests.cs` | the game's part: who the player is, the books, the steps of the way, the year's fees, asking, the hand-over, the founder's notifications, the dividend tax, the save tools; the test buttons |
 | `MarketApp.Own.cs`, `Listing/ListingText.cs`, `Listing/ListingGuide.cs` | the Stocks app's page and the founder's ticket; the words; the Guide's figures |
 | `Wiring/ListingLinks.cs` | the bridges: the books from the game's statements (the player's own businesses only), the facts for the audit, the day's city, the hand-over and a business sold (Economy/Services), the Company app's line, the Planner |
+
+A firm of the player's that listed on its own is a second kind of `OwnListing`, marked `Firm` (see [Startup exits](startup-exits.md)): it has no reserve, only the founder's deals are open, it is never bid for or split, and its days are its own statements, carried on the tape after the eight columns of the whole company's. `MineListed` (the whole company) skips it and `MineFirms` finds it.
 
 The first five are game-free and compiled by EconomyCheck (`ListingChecks.cs`), with the engine.
 

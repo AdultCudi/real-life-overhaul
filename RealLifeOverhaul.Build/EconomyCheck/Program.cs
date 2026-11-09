@@ -696,6 +696,19 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--exit-stock")
+        {
+            ExitStockChecks();   // (a firm that listed on its own as a stock: the shares, the lock-up, the money, the endings, the city's startups and the saves alone, while working on them: ExitStockChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--own-listing")
+        {
+            Listing();   // (the player's own company on the market alone, while working on it: ListingChecks.cs)
+            ListSector();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--gates")
         {
             GateChecks();   // (the vehicle entrances of the copied buildings alone, while working on them: GateChecks.cs)
@@ -1141,6 +1154,7 @@ internal static partial class Program
         Buyout();       // buying out a notice: the price, who can be bought out, the rival's seeded once-only choice, the sources and texts (BuyoutChecks.cs)
         Tech();
         ListSector();   // a listed company's sector from what it earns now: the mix, the review, the load, the save (ListSectorChecks.cs)
+        ExitStockChecks();   // a firm that listed on its own is a stock: the shares kept once, the lock-up one, the money lawful, every ending, the city's startups, the saves (ExitStockChecks.cs)
         OwnDesk();      // working at a desk of one's own tech firm: the minutes by the day, the crew's points, the professions, the save, the sources and texts (OwnDeskChecks.cs)
         DeskSeat();     // every seat at a desk or station is one pair: held or given back at once, begun before it holds, stood up on every end; the test and texts (DeskSeatChecks.cs)
         DeskScreens();  // the screens at a computer desk lit while somebody is seated there to work and dark when they stand up, for the player and the staff the mod seats (DeskScreenChecks.cs)

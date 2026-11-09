@@ -83,6 +83,12 @@ namespace RealLifeOverhaul.Ui
             {
                 string place = firm.File.Place;
                 var card = new TechCard(_runs, TechText.T("reallife_ui_tech_exit_shares"));
+                StockInfo stock = _d.StockOf(place);
+                if (stock.Live)
+                {
+                    StockLines(card, place, stock);   // the shares trade on the stock market: the one place the player sells them
+                    return card.Build();
+                }
                 int locked = _d.ExitLockLeft(place);
                 long room = _d.ExitRoom(place, out long cents, out int discount);
                 if (locked > 0)
@@ -155,6 +161,17 @@ namespace RealLifeOverhaul.Ui
                 }
                 card.Button(TechText.T("reallife_exit_button_whole"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.ListWholeCompany(place)));
                 return card.Build();
+            }
+
+            // A firm whose shares trade: its ticker and price, the player's stake, how long their shares are locked up, and the way to its page in the Stocks app.
+            // Shared by the exits page and the firm's page.
+            private void StockLines(TechCard card, string place, StockInfo stock)
+            {
+                int stake = stock.Shares > 0 ? (int)(stock.Founder * 1000L / stock.Shares) : 0;
+                card.Say(TechText.Fill("reallife_exit_stock_line", "ticker", stock.Ticker, "price", Cents(stock.Last), "stake", TechText.Mille(stake)), UiRole.OkText);
+                int locked = _d.ExitLockLeft(place);
+                card.Say(locked > 0 ? TechText.Fill("reallife_exit_shares_locked", "days", locked.ToString(Inv)) : TechText.T("reallife_exit_stock_free"), locked > 0 ? UiRole.WarnText : UiRole.None);
+                card.Button(TechText.T("reallife_exit_button_stock"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.StockShow(place)));
             }
 
             private long FirmValueNow(FirmPlace firm)

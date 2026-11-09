@@ -232,6 +232,10 @@ namespace RealLifeOverhaul.Markets
         public static double ToReserve(Stock s, double perShare)
         {
             OwnListing o = s.Own;
+            if (o.Firm)
+            {
+                return 0.0;   // a firm that raised money keeps its holders' share in its own account (Tech/Venture/FirmAccount): no second pot, no dividend paid twice
+            }
             double was = Math.Max(0.0, o.Rps);
             o.Rps += perShare;
             return (Math.Max(0.0, o.Rps) - was) * Math.Max(0L, o.Others(s));
@@ -481,11 +485,19 @@ namespace RealLifeOverhaul.Markets
             }
             if (shares < 0 && day < o.LockDay)
             {
-                return OwnWhy.LockedUp;
+                return o.Firm ? OwnWhy.FirmLocked : OwnWhy.LockedUp;
             }
             if (shares < 0 && -shares > o.Founder)
             {
                 return OwnWhy.NoShares;
+            }
+            if (o.Firm && shares < 0 && -shares > ListingFirm.Sellable(o, day))
+            {
+                return OwnWhy.Unvested;   // the founder's shares vest over years: the part not yet vested is not for sale
+            }
+            if (o.Firm && shares > o.Float)
+            {
+                return OwnWhy.NoShares;   // all there is to buy is what the public holds; the investors' and the staff's shares are not on this market
             }
             if (shares > 0 && (o.Founder + shares) * 10000L > s.Shares * (long)ListingCatalogue.FounderMostBp)
             {

@@ -501,7 +501,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (quoted.Own != null && _market.Engine != null && _market.Engine.Mine(quoted))
             {
-                OpenSheet(StocksSheets.Founder, (int)OwnAction.Deal);   // the founder deals by their own rules
+                OpenSheet(StocksSheets.Founder, (int)OwnAction.Deal, quoted.Own.Firm ? quoted.Id : 0);   // the founder deals by their own rules, in a firm of theirs as in their company
                 return true;
             }
             bool closing = _kind >= 2;
