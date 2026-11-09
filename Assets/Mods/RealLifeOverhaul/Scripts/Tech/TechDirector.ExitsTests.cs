@@ -66,6 +66,44 @@ namespace RealLifeOverhaul.Tech
         }
 
         /// <summary>Every startup of the city short of people takes one from the market the player hires from, today.</summary>
+        /// <summary>The first buyer an acqui-hire could have puts the player forward for a post now, as a sale would (no sale, nothing kept in the ledger).</summary>
+        public void TestExitLead()
+        {
+            if (!TestVentures() || _exits == null)
+            {
+                return;
+            }
+            GatherBuyers();
+            if (_buyers.Count == 0)
+            {
+                Notifications.ShowError("reallife_exit_test_none");
+                return;
+            }
+            ExitBuyer b = _buyers[_buyers.Count - 1];
+            if (!GiveLead(b.Name, ExitJobRules.AtOffice(b.Buyer, true), Save.Day, null))
+            {
+                ExitJobNone(b.Name);
+            }
+        }
+
+        /// <summary>The founder of the first startup of the city that has one is taken on by a buyer in the population now.</summary>
+        public void TestExitFounder()
+        {
+            if (!TestVentures() || _exits == null)
+            {
+                return;
+            }
+            for (int i = 0; i < _venture.Startups.Count; i++)
+            {
+                Startup s = _venture.Startups[i];
+                if (s.Alive && _exits.FounderOf(s.Id) != null && FounderTaken(s, Save.Day))
+                {
+                    return;
+                }
+            }
+            Notifications.ShowError("reallife_exit_test_none");
+        }
+
         public void TestStartupHire()
         {
             if (!TestVentures() || _exits == null || !_hiringOn)

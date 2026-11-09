@@ -39,6 +39,7 @@ namespace RealLifeOverhaul
                 ExitBridges.People = () => Settings.LivingPopulation && CityPopulation.Running;
                 ExitBridges.Practised = (skill, hours) => CareersDirector.Instance?.PractisedSkill(skill, hours);
                 ExitBridges.Sessions = Hold;
+                ExitJobLinks.Connect();
             }
 
             internal static void Disconnect()
