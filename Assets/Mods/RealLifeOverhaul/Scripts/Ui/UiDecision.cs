@@ -65,7 +65,6 @@ namespace RealLifeOverhaul.Ui
         public bool ButtonsOwn;
         public int Start = -1, StartButton = -1;    // where focus starts: a choice, or a button: the safe answer, never the way out
         public UiDecisionStep[] Steps = new UiDecisionStep[0];   // amounts to set before choosing, between the facts and the choices
-        public bool LiftChoices;                    // a choice's row under the pointer lifts as the table rows do: its fill stays as drawn and the hover fill lies over it, plainly seen
     }
 
     /// <summary>
@@ -126,7 +125,7 @@ namespace RealLifeOverhaul.Ui
             for (int i = 0; i < m.Choices.Length; i++)
             {
                 int arg = m.ChoiceArgs != null && i < m.ChoiceArgs.Length ? m.ChoiceArgs[i] : i;
-                cy += Choice(s, at, ref m.Choices[i], i, i == m.Selected, cx, cy, inner, keys, m.ChoiceCmd, arg, m.LiftChoices) + UiTokens.S2;
+                cy += Choice(s, at, ref m.Choices[i], i, i == m.Selected, cx, cy, inner, keys, m.ChoiceCmd, arg) + UiTokens.S2;
             }
             cy += UiTokens.S4;
             float total = 0f;
@@ -395,17 +394,16 @@ namespace RealLifeOverhaul.Ui
         /// <paramref name="arg"/> (its index when -1), the card's own by default. Returns its height.
         /// </summary>
         public static float Choice(UiScene s, UiAt at, ref UiDecisionChoice c, int index, bool chosen, float x, float y, float w, IUiKeys keys,
-            int command = ChoiceCommand, int arg = -1, bool lift = false)
+            int command = ChoiceCommand, int arg = -1)
         {
             float h = ChoiceHeight(ref c);
-            // A row's own fill steps only a few levels towards the words under the pointer, too little to see: with the lift the resting fill is a plain box behind and the
-            // target's face has none, so the hover fill (a table row's) lies over it.
-            bool over = lift && !chosen;
-            if (over)
+            // A row's own fill steps only a few levels towards the words under the pointer, too little to see: the resting fill is a plain box behind and the
+            // target's face has none, so the hover fill (a table row's) lies over it, as on a table row. The chosen row keeps its own fill.
+            if (!chosen)
             {
                 UiDraw.Box(s, at, x - UiTokens.S3, y, w + UiTokens.S3 * 2f, h, UiRole.Row, UiRole.None, UiTokens.RadiusLarge, UiFlags.Decor | (c.Disabled ? UiFlags.Disabled : UiFlags.None));
             }
-            int face = UiDraw.Box(s, at, x - UiTokens.S3, y, w + UiTokens.S3 * 2f, h, chosen ? UiRole.RowSel : over ? UiRole.None : UiRole.Row, UiRole.None, UiTokens.RadiusLarge,
+            int face = UiDraw.Box(s, at, x - UiTokens.S3, y, w + UiTokens.S3 * 2f, h, chosen ? UiRole.RowSel : UiRole.None, UiRole.None, UiTokens.RadiusLarge,
                 (chosen ? UiFlags.Selected : UiFlags.None) | (c.Disabled ? UiFlags.Disabled : UiFlags.None));
             UiAt inside = at.In(face);
             float nameH = UiTextRules.LineHeight(UiStyle.BodyStrong);

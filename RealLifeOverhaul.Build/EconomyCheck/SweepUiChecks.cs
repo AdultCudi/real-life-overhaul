@@ -155,7 +155,7 @@ internal static partial class Program
             {
                 noText.Add(def.Id);
             }
-            if (def.Template == UiTemplate.ListDetail || def.Template == UiTemplate.Form || def.Template == UiTemplate.Session || def.Template == UiTemplate.Dashboard)
+            if (def.Template == UiTemplate.ListDetail || def.Template == UiTemplate.Form || def.Template == UiTemplate.Session)
             {
                 older.Add(def.Id);
             }

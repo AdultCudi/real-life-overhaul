@@ -215,7 +215,7 @@ faces for people. Checked by: EconomyCheck (`ui icons`, `the chart's hues stay a
 
 **MUST.** Draw every screen on the kit's templates: the info panel (`UiInfoPanel`), the info view (`UiInfoView`), the
 app window (`UiAppWindow`), the decision card (`UiDecision`) and the phone (`UiPhone`). Until its screen is converted, a
-screen may stay on one of the four older shapes, drawn in the window (`UiListDetail`, `UiDashboard`, `UiSessionSteps`,
+screen may stay on one of the three older shapes, drawn in the window (`UiListDetail`, `UiSessionSteps`,
 `UiForm`). When a conversion needs something the kit lacks, add it to the kit as a reusable piece with its sample and
 its checks, never as a one-off screen.
 

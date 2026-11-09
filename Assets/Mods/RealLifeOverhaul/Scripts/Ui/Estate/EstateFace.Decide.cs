@@ -51,7 +51,7 @@ namespace RealLifeOverhaul.Ui
                 Kicker = d.Kicker, Title = d.Title, Body = d.Body, BodyLines = 4, Portrait = d.Portrait, PortraitLines = d.PortraitLines, Emblem = d.Emblem,
                 EmblemTint = d.EmblemTint, EmblemLabel = d.EmblemLabel, FactLabels = d.FactLabels, FactValues = d.FactValues, FactInks = d.FactInks, Steps = d.Steps,
                 Choices = choices, Buttons = d.Buttons, ChoiceCmd = ActionCommand, ChoiceArgs = args, ButtonsOwn = true, Start = d.Start, StartButton = d.Start < 0 ? 0 : -1,
-                Prompts = m.Prompts, PromptCount = m.Prompts.Length, LiftChoices = true
+                Prompts = m.Prompts, PromptCount = m.Prompts.Length
             };
             UiDecision.Lay(s, card, frame, dark, keys);
             WrapWayOut(s);

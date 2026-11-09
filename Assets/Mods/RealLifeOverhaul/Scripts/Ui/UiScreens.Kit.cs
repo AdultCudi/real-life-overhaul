@@ -100,10 +100,6 @@ namespace RealLifeOverhaul.Ui
                 }),
                 new UiScreenDef("template_decision", UiTemplate.Decision, null, new[] { "reallife_ui_prompt_move", "reallife_ui_prompt_choose", "reallife_ui_prompt_back" }),
                 new UiScreenDef("template_phone", UiTemplate.Phone, null, new[] { "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_prompt_back" }),
-                new UiScreenDef("template_dashboard", UiTemplate.Dashboard, null, new[]
-                {
-                    "reallife_ui_prompt_move", "reallife_ui_prompt_page", "reallife_ui_prompt_select", "reallife_ui_prompt_back"
-                }),
                 new UiScreenDef("template_session", UiTemplate.Session, null, new[]
                 {
                     "reallife_ui_prompt_move", "reallife_ui_prompt_choose", "reallife_ui_prompt_back", "reallife_session_button_hand", "reallife_session_button_begin"

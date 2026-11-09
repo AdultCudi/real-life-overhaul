@@ -38,8 +38,8 @@ Ui/                         game-free unless named: the offline checks and the p
   UiInfoPanel, UiInfoView,    the templates: a person's or a place's panel, an info view with its donut, an app's
   UiAppWindow, UiDecision,    window, a decision card, the phone's home
   UiPhone
-  UiListDetail, UiDashboard,  the four older shapes, drawn in the window until their screens are converted
-  UiSessionSteps, UiForm
+  UiListDetail, UiSessionSteps,  the three older shapes, drawn in the window until their screens are converted
+  UiForm
   UiGallery(Screen)           the kit's gallery
   UiFocusMode, UiFocusRules,  who leads (the mouse or the keys), the d-pad's focus, and the rules EconomyCheck holds
   UiCheckRules                every screen to

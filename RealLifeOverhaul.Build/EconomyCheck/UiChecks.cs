@@ -511,7 +511,6 @@ internal static partial class Program
 
     private static readonly int[] ListDetailCommands = { UiListDetail.Group, UiListDetail.SideAction, UiListDetail.Search, UiListDetail.Row, UiListDetail.Action,
         UiListDetail.Service, UiListDetail.Reply, UiListDetail.Compose, UiListDetail.Send, UiListDetail.Answer, UiListDetail.CallOption, UiListDetail.CallEnd, UiListDetail.Classic };
-    private static readonly int[] DashboardCommands = { UiDashboard.TabCommand, UiDashboard.RowCommand, UiDashboard.ActionCommand, UiDashboard.OtherCommand, UiDashboard.MoreCommand };
     private static readonly int[] SessionCommands = { UiSessionSteps.ChoiceCommand, UiSessionSteps.ActionCommand };
     private static readonly int[] FormCommands = { UiForm.FieldCommand, UiForm.ActionCommand };
     private static readonly int[] GalleryCommands = { UiGallery.PageCommand, UiGallery.Sample, UiGallery.Answer, UiGallery.CallOption, UiGallery.CallEnd };
@@ -528,7 +527,6 @@ internal static partial class Program
         switch (template)
         {
             case UiTemplate.ListDetail: return ListDetailCommands;
-            case UiTemplate.Dashboard: return DashboardCommands;
             case UiTemplate.Session: return SessionCommands;
             case UiTemplate.Form: return FormCommands;
             case UiTemplate.InfoPanel: return InfoPanelCommands;
@@ -646,9 +644,6 @@ internal static partial class Program
             case UiTemplate.ListDetail:
                 cases.Add(new UiScreenCase { Def = def, Name = def.Id, Lay = (s, f, dark, k, t) => UiListDetail.Lay(s, UiSamples.Contacts(t, false), f, dark, k) });
                 cases.Add(new UiScreenCase { Def = def, Name = def.Id + " (a line that takes replies)", Lay = (s, f, dark, k, t) => UiListDetail.Lay(s, UiSamples.Contacts(t, true), f, dark, k) });
-                break;
-            case UiTemplate.Dashboard:
-                cases.Add(new UiScreenCase { Def = def, Name = def.Id, Title = "Economy", Lay = (s, f, dark, k, t) => UiDashboard.Lay(s, UiSamples.Dashboard(t), f, dark, k) });
                 break;
             case UiTemplate.Session:
                 cases.Add(new UiScreenCase { Def = def, Name = def.Id, Title = "Desk", Lay = (s, f, dark, k, t) => UiSessionSteps.Lay(s, UiSamples.Session(t), f, dark, k) });
@@ -1007,7 +1002,7 @@ internal static partial class Program
         UiDraw.Text(beta, UiAt.Screen.In(sheet), 44f, 300f, 300f, UiStyle.Display, UiRole.Text, "48,210", UiFlags.None);
         Check(UiCheckRules.TypeLevels(beta, null) == 1, "ui rules: more than three sizes of type are found");
         UiDraw.Node(beta, UiAt.Screen, 24f, 600f, 200f, 48f, 0, 0, -1);
-        Check(UiCheckRules.UnknownCommands(beta, DashboardCommands, null) == 1, "ui rules: a button whose command its template answers nowhere is found (beta 3's Call read as a group)");
+        Check(UiCheckRules.UnknownCommands(beta, DecisionCommands, null) == 1, "ui rules: a button whose command its template answers nowhere is found (beta 3's Call read as a group)");
         var games = new UiScene();
         games.Begin("strays", played.Width, played.Height, true);
         int table = UiDraw.Box(games, UiAt.Screen, 24f, 300f, 1000f, 300f, UiRole.Panel, UiRole.None, 0f, UiFlags.Panel);

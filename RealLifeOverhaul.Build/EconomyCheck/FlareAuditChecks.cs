@@ -86,7 +86,7 @@ internal static partial class Program
             inBlock &= c >= 340 && c < 360;
         }
         bool clash = false;
-        int[] others = { UiAppWindow.NavCommand, UiDecision.ChoiceCommand, UiDashboard.TabCommand, UiInfoPanel.TabCommand };
+        int[] others = { UiAppWindow.NavCommand, UiDecision.ChoiceCommand, UiInfoPanel.TabCommand };
         foreach (int c in all)
         {
             foreach (int o in others)
@@ -94,11 +94,11 @@ internal static partial class Program
                 clash |= c == o;
             }
         }
-        Check(inBlock && unique && !clash, "flare audit: the new commands are a block of their own (340 to 344), none is the window's, a decision's, a dashboard's or an info panel's number");
+        Check(inBlock && unique && !clash, "flare audit: the new commands are a block of their own (340 to 344), none is the window's, a decision's or an info panel's number");
         // The audit's presses that change the kit's own state are answered by it and by nothing else.
         var host = new FlareAuditHost();
         var kit = new FlareKitPress(host);
-        bool others3 = !kit.Press(FlareFace.TabCommand, 0, 7) && !kit.Press(UiAppWindow.NavCommand, 1, 7) && !kit.Press(UiDecision.ChoiceCommand, 1, 7) && !kit.Press(UiDashboard.TabCommand, 1, 7)
+        bool others3 = !kit.Press(FlareFace.TabCommand, 0, 7) && !kit.Press(UiAppWindow.NavCommand, 1, 7) && !kit.Press(UiDecision.ChoiceCommand, 1, 7)
                        && !kit.Press(UiInfoPanel.TabCommand, 1, 7) && !kit.Press(FlareFace.ButtonCommand, 1, 7);
         Check(others3 && host.Seen == 0 && host.EndCalls == 0 && host.Bought == 0 && host.Saved == 0,
             "flare audit: a press that is another kind of action (the window's nav, a decision's choice, a tab, a row's button) does nothing in the new part");
