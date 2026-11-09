@@ -133,6 +133,23 @@ namespace RealLifeOverhaul.Flare
             }
         }
 
+        /// <summary>The text key of an empty home feed's title: what is true of the tab and of the accounts the player follows.</summary>
+        public static string EmptyTitleKey(FlareFeedTab tab, int follows)
+        {
+            switch (tab)
+            {
+                case FlareFeedTab.Following: return follows > 0 ? "reallife_flare_empty_following_quiet" : "reallife_flare_empty_following";
+                case FlareFeedTab.Businesses: return "reallife_flare_kit_empty_businesses";
+                default: return "reallife_flare_empty_feed";
+            }
+        }
+
+        /// <summary>The text key of an empty home feed's body, or null for none. The advice to follow accounts is only for a player who follows none.</summary>
+        public static string EmptyBodyKey(FlareFeedTab tab, int follows)
+        {
+            return tab != FlareFeedTab.Businesses && follows <= 0 ? "reallife_flare_kit_empty_feed_body" : null;
+        }
+
         /// <summary>Whether the player may follow an account: not themselves, nor a friend of their own life (they already follow each other), nor a sponsor's.</summary>
         public static bool Followable(string key)
         {

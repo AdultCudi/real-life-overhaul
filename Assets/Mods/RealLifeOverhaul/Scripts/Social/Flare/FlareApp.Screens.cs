@@ -57,7 +57,7 @@ namespace RealLifeOverhaul.Flare
             }
             if (shown == 0)
             {
-                Note(FlareText.T(following ? "reallife_flare_empty_following" : "reallife_flare_empty_feed"));
+                Note(FlareText.T(FlareFeedRules.EmptyTitleKey(following ? FlareFeedTab.Following : FlareFeedTab.ForYou, file.Follows.Count)));
             }
             _director.CommentsAhead(null);   // RLO Texts: a few of the comments under the feed's posts asked; once a game minute at most
         }
