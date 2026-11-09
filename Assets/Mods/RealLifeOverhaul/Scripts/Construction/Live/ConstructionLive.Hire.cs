@@ -176,12 +176,11 @@ namespace RealLifeOverhaul.Construction
             }
         }
 
-        // The rent a project's building would let for in a month, from the city's rents a square metre for its use; 0 where the rents are not read yet.
+        // The rent a project's building would let for in a month, from the rents a square metre in its district for its use; 0 where the rents are not read yet.
         private static long RentMonth(ProjectFile p)
         {
-            RentMapData rents = EstateDirector.Instance != null ? EstateDirector.Instance.Rents : null;
             int use = BuildCatalogue.Clamp((int)p.Use, 0, RentMapData.Uses - 1);
-            int cents = rents != null ? rents.PerSqm(use) : -1;
+            int cents = ConstructionDirector.RentPerSqm(p.District, use);
             return cents > 0 ? (long)cents * Math.Max(0, p.Area) / 100L : 0L;
         }
 

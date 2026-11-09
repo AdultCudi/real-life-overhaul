@@ -25,7 +25,6 @@ namespace RealLifeOverhaul.Construction
 
         private BuildModeGame.Plots _plots;
         private byte[] _plotFills = new byte[0];
-        private readonly int[] _rentStepOfUse = new int[BuildCatalogue.UseTypes.Length];   // the Rents layer's step for each use, for the city's plots
         private byte[] _plotLines = new byte[0];
         private int _plot = -1;                    // the plot picked: its tool panel is up
         private int _hoverPlot = -1;
@@ -79,7 +78,7 @@ namespace RealLifeOverhaul.Construction
                 return;
             }
             _d.CityWorks(_worksShare, _worksMine);
-            _d.RentStepsByUse(_rentStepOfUse);
+            _d.BeginRentSteps();
             float least = float.MaxValue, most = 0f;
             for (int i = 0; i < _plots.Count; i++)
             {
@@ -95,7 +94,7 @@ namespace RealLifeOverhaul.Construction
             {
                 PlotFacts f = _plots.Facts[i];
                 f.ValueStep = BuildModeCityRules.ValueStep(_plots.PricePerSqm[i], least == float.MaxValue ? 0f : least, most);
-                f.RentStep = f.Use >= 0 && f.Use < _rentStepOfUse.Length ? _rentStepOfUse[f.Use] : -1;
+                f.RentStep = _d.RentStepOf(_plots.District[i], f.Use);
                 string key = _plots.Street[i] + "#" + _plots.Number[i].ToString(CultureInfo.InvariantCulture);
                 if (_worksShare.TryGetValue(key, out int share))
                 {

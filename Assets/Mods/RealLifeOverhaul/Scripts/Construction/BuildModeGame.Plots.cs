@@ -37,6 +37,7 @@ namespace RealLifeOverhaul.Construction
             public int[] Number;
             public string[] Type;       // the game's building type (ba:buildingtype_...)
             public string[] Size;       // the game's building size (ba:buildingsize_...)
+            public string[] District;   // the game's neighbourhood id: where its rent is read
             public int[] Sqm;
             public float[] PricePerSqm; // the game's market price a square metre now
             public float[] X, Z;        // four corners a plot, round it
@@ -89,7 +90,7 @@ namespace RealLifeOverhaul.Construction
             int n = all.Length;
             var p = new Plots
             {
-                Buildings = new CityBuildingController[n], Street = new string[n], Number = new int[n], Type = new string[n], Size = new string[n], Sqm = new int[n],
+                Buildings = new CityBuildingController[n], Street = new string[n], Number = new int[n], Type = new string[n], Size = new string[n], District = new string[n], Sqm = new int[n],
                 PricePerSqm = new float[n], X = new float[n * 4], Z = new float[n * 4], Roof = new float[n], Facts = new PlotFacts[n]
             };
             int failed = 0;
@@ -124,6 +125,7 @@ namespace RealLifeOverhaul.Construction
                     p.Number[at] = b.StreetNumber;
                     p.Type[at] = b.BuildingType;
                     p.Size[at] = b.BuildingSize;
+                    p.District[at] = b.Neighbourhood;
                     p.Sqm[at] = b.totalSqm;
                     p.PricePerSqm[at] = Price(b);
                     p.Facts[at] = FactsOf(c, b, sale.Contains(key));
