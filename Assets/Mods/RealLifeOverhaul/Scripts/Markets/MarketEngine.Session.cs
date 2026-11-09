@@ -235,7 +235,7 @@ namespace RealLifeOverhaul.Markets
             MarketEnv env = _openEnv;
             if (s.Own != null)
             {
-                OwnBusiness(s, env, from, day);   // its business is its founder's books
+                OwnBusiness(s, s.Own.Firm ? ListingFirm.EnvFor(env, s.Id) : env, from, day);   // its business is its founder's books; a firm's are its own statements', not the whole company's
                 return;
             }
             double competition = Competition(s, env);

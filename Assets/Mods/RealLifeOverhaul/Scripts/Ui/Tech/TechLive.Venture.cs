@@ -307,6 +307,7 @@ namespace RealLifeOverhaul.Ui
                 card.Say(profit < 0 ? TechText.Fill("reallife_vc_cap_burn", "burn", Cents(-profit), "days",
                     (VentureGame.Cash / -profit).ToString()) : TechText.T("reallife_vc_cap_profit", "profit", Cents(profit)),
                     profit < 0 ? UiRole.WarnText : UiRole.None);
+                StockInfo stock = _d.StockOf(place);   // a firm whose shares trade: the cap table below is the stock's, and the stock has a page of its own
                 if (c != null)
                 {
                     long total = Math.Max(1, c.Total);
@@ -315,6 +316,10 @@ namespace RealLifeOverhaul.Ui
                         Holder h = c.Holders[i];
                         string who = h.Kind == (int)HolderKind.Public ? TechText.T("reallife_exit_holder_public") : FoundText.HolderName(h, _d.Foundings, place);
                         card.Row(who, TechText.Mille(VentureRules.ShareOf(h, total)));
+                    }
+                    if (stock.Live)
+                    {
+                        StockLines(card, place, stock);
                     }
                     card.Say(TechText.Fill("reallife_vc_cap_board", "seats", c.BoardSeats.ToString(), "theirs", c.VcSeats.ToString(), "target", Cents(_d.Level(c.TargetMrr)), "day",
                         c.TargetDay.ToString(),
@@ -351,7 +356,7 @@ namespace RealLifeOverhaul.Ui
                     card.Step(TechText.T("reallife_ui_tech_chief"), Chief(at), null, true, true, Set((at + n - 1) % n), Set((at + 1) % n));
                 }
                 card.Button(TechText.T("reallife_vc_button_options"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.GrantOptions(place)));
-                if (c != null && c.VcSeats > 0)
+                if (c != null && c.VcSeats > 0 && !stock.Live)
                 {
                     card.Button(TechText.T("reallife_exit_button_sell"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.OpenExits(place)));
                 }

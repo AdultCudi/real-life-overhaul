@@ -356,6 +356,7 @@ namespace RealLifeOverhaul.Markets
             HookBonds();
             HookInvest();
             HookDerivs();
+            HookFirms();
             _engine.HoldAfterLoad();
             OwnStarted(save);   // who the player is, and their company back if a save as a guest set it aside
             _frontierWritten = tape.Frontier;

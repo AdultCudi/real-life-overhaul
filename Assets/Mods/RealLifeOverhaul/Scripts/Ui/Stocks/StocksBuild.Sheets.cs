@@ -503,7 +503,7 @@ namespace RealLifeOverhaul.Ui
         private static void AddCandidate(MarketState s, int id, List<int> into)
         {
             Stock k = id > 0 ? s.Stock(id) : null;
-            if (k != null && k.Listed && (k.Own == null || MarketBots.Mine(s, k)) && !into.Contains(id))
+            if (k != null && k.Listed && (k.Own == null || (MarketBots.Mine(s, k) && !k.Own.Firm)) && !into.Contains(id))
             {
                 into.Add(id);
             }

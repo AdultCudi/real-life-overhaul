@@ -24,6 +24,8 @@ namespace RealLifeOverhaul.Ui
         public const int AlertLevel = 0, AlertKindAt = 1;
         // The margin account's and the founder's.
         public const int Sum = 0, Side = 1, Float = 2, Walk = 3, Name = 4;
+        // The founder's sheet about a firm of theirs that listed on its own: the stock's id (0: their whole company).
+        public const int Target = 5;
 
         /// <summary>
         /// What the old Stocks app lets a player do, by the kit's handler: the page, the old tab's action and the sheet or button

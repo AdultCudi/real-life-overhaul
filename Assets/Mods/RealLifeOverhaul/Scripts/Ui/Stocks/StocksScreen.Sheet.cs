@@ -89,11 +89,12 @@ namespace RealLifeOverhaul.Ui
 
         // ------------------------------------------------------------------------------------------------ opening
 
-        private void OpenSheet(byte kind, int key)
+        private void OpenSheet(byte kind, int key, int target = 0)
         {
             _sheet.Close();
             _sheet.Kind = kind;
             _sheet.Key = key;
+            _sheet.V[StocksSheets.Target] = target;   // set before the defaults read it: a founder's sheet about a firm of theirs that listed on its own
             _parts.Name = string.Empty;
             MarketState s = _market != null ? _market.State : null;
             if (s != null)
@@ -233,7 +234,7 @@ namespace RealLifeOverhaul.Ui
 
         private void FounderDefaults(MarketState s, int key)
         {
-            Stock k = _market.MyCompany;
+            Stock k = _market.FounderStock((int)_sheet.V[StocksSheets.Target]);
             long[] v = _sheet.V;
             if (k == null || k.Own == null)
             {
@@ -1132,7 +1133,7 @@ namespace RealLifeOverhaul.Ui
                 case OwnAction.Private: value = 0; break;
                 default: value = v; break;
             }
-            return Own(_market.Ask(action, value));
+            return Own(_market.Ask(action, value, (int)_sheet.V[StocksSheets.Target]));
         }
 
         private bool Own(OwnWhy why)

@@ -485,6 +485,10 @@ namespace RealLifeOverhaul.Tech
         // Standing falls and the City Ledger tells it.
         private void Remove(Cap c, FirmPlace firm, int day)
         {
+            if (HasStock(c.Place) && !StockOf(c.Place).Live)
+            {
+                return;   // its shares are the market's and the market cannot be asked now: the removal waits, so the unvested shares go back in the stock itself
+            }
             c.Acc.Step = StartupMoney.StepRemoved;
             c.Acc.StepDay = day;
             if (!FoundingCanRemove(c))
@@ -492,7 +496,7 @@ namespace RealLifeOverhaul.Tech
                 Unremoved(c, firm, day);   // the articles do not let this board remove the founder
                 return;
             }
-            long back = StartupMoney.BadLeaver(c, day, Year);
+            long back = HasStock(c.Place) ? StockCancelUnvested(c, day) : StartupMoney.BadLeaver(c, day, Year);   // a firm whose shares trade: the stock says what is still to vest
             bool replaced = string.IsNullOrEmpty(c.Ceo) && _talent.People.Count < TalentStore.PeopleMost;
             if (replaced)
             {
@@ -804,6 +808,7 @@ namespace RealLifeOverhaul.Tech
         /// </summary>
         internal void WindDown(Cap c, string name, int day)
         {
+            StockSyncFor(c.Place, c, day);   // a firm whose shares trade: the cap table is what the stock says before the waterfall shares the pot
             long wallet = Base(VentureGame.Cash);
             float evidence = StartupMoney.Evidence(c);
             StartupMoney.Wind w = StartupMoney.Close(c, wallet, day);
@@ -830,6 +835,7 @@ namespace RealLifeOverhaul.Tech
             Logger?.Info("Tech: " + name + " wound down on day " + day + ": the firm held " + TechText.Cents(Level(StartupMoney.Balance(c)))
                          + ", owed to its investors " + TechText.Cents(Level(w.Owed))
                          + ", paid " + TechText.Cents(Level(w.Paid)) + ", claim " + TechText.Cents(Level(w.Gap)) + " (suit " + suit + "), fraud case " + fraud + ".");
+            StockWound(c.Place, c, w.Price, w.Dry, day);   // its stock leaves the market, each share paid what the waterfall pays the public's
             _venture.Caps.Remove(c);
             RefreshFloor(day);
             ChangedTech();

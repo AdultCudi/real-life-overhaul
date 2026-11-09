@@ -8,7 +8,7 @@ namespace RealLifeOverhaul.Markets
         private const string P = "reallife";   // apart, so a key made of parts is not taken for a whole key
 
         private static readonly string[] WhyKeys = Keys(P + "_lst_why_", "none", "not_listed", "shut", "held", "closed", "locked_up", "no_money", "no_shares", "too_much", "too_large",
-            "board", "bid", "reserve", "control", "suspended", "off", "not_ready", "year_limit");
+            "board", "bid", "reserve", "control", "suspended", "off", "not_ready", "year_limit", "firm", "firm_locked", "unvested");
 
         private static readonly string[] DemandKeys = Keys(P + "_lst_demand_", "none", "payout", "pay", "board", "sale");
 

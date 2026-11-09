@@ -217,7 +217,14 @@ namespace RealLifeOverhaul.Tech
                     ChangedTech();
                 }
                 ExitRules.Pricing priced = ExitRules.Price(_exits, e, day);
-                if (priced == ExitRules.Pricing.Priced)
+                if (priced == ExitRules.Pricing.Priced && ExitStockRules.ListBlocked(c) != ExitStockRules.BlockedNone)
+                {
+                    e.Stage = ListStage.CalledOff;   // money of the investors' is missing from the firm's account: the public is not sold shares of a firm that owes
+                    e.Called = day;
+                    TellTech(NotificationType.Warning, "reallife_exit_note_called_off_owed", Data("firm", firm.File.Name), TabFunding, ExitRow + place);
+                    ChangedTech();
+                }
+                else if (priced == ExitRules.Pricing.Priced)
                 {
                     ListFirm(firm, e, day);
                 }
@@ -237,7 +244,12 @@ namespace RealLifeOverhaul.Tech
                     GatherBuyers();
                 }
                 FirmValue(firm, out long value, out int growthBp);
-                ExitOffer o = ExitRules.Offer(_exits, e, day, mood, mrr, value, growthBp, _buyers) ?? ExitRules.Hire(_exits, e, c, BurnOf(firm), day, _buyers);
+                bool traded = e.Stage == ListStage.Listed && HasStock(place);   // a firm whose shares trade is bought at what the market makes of it
+                if (traded)
+                {
+                    value = StockWorth(place, value);
+                }
+                ExitOffer o = ExitRules.Offer(_exits, e, day, mood, mrr, value, growthBp, _buyers, traded) ?? ExitRules.Hire(_exits, e, c, BurnOf(firm), day, _buyers);
                 if (o != null)
                 {
                     TellTech(NotificationType.Info, o.Hire ? "reallife_exit_note_hire" : "reallife_exit_note_offer",
@@ -328,6 +340,7 @@ namespace RealLifeOverhaul.Tech
                 return false;
             }
             Cap c = _venture.CapOf(place);
+            StockSyncFor(place, c, day);   // a firm whose shares trade: the cap table is what the stock says before the sale works out who is paid what
             bool funded = c != null && c.Acc.Open;
             int fixtures = ExitBridges.Fixtures != null ? Math.Max(0, ExitBridges.Fixtures(place)) : 0;   // read while the business is still the player's
             if (funded)
@@ -369,6 +382,7 @@ namespace RealLifeOverhaul.Tech
             }
             if (c != null)
             {
+                StockSold(place, c, r.Pot, day);   // its stock leaves the market, each share paid what the waterfall pays the public's
                 _venture.Caps.Remove(c);
             }
             e.Offers.Clear();
@@ -476,6 +490,12 @@ namespace RealLifeOverhaul.Tech
             {
                 return false;
             }
+            int owed = ExitStockRules.ListBlocked(_venture.CapOf(place));
+            if (owed != ExitStockRules.BlockedNone)
+            {
+                Notifications.ShowError(owed == ExitStockRules.BlockedTaken ? "reallife_exit_refuse_taken" : "reallife_exit_refuse_ladder");   // not while the firm owes its investors
+                return false;
+            }
             IReadOnlyList<string> banks = ExitBanks();
             int bank = TalentCatalogue.Clamp(index, 0, banks.Count - 1);
             long mrr = FirmsRules.Arr(_firmsFile, place) / 12;
@@ -548,6 +568,7 @@ namespace RealLifeOverhaul.Tech
             Story("reallife_tech_news_listing", "name", firm.File.Name, "amount", TechText.Cents(Level(c.Post)));
             TellTech(NotificationType.Success, "reallife_exit_note_listed", Data("firm", firm.File.Name, "price", TechText.Cents(Level(e.Price)), "amount", TechText.Cents(Level(net)),
                 "days", ExitCatalogue.LockUpDays.ToString(CultureInfo.InvariantCulture)), TabFunding, ExitRow + place);
+            StockAfterListing(firm, e, c, day);   // the offer's money is in the firm's account; its stock comes to the market at the offer's price, with no money of its own
             Logger?.Info("Tech: " + firm.File.Name + " listed on day " + day + " at " + TechText.Cents(Level(e.Price)) + " before the money (bank " + e.BankName
                 + "): the public bought " + ExitCatalogue.FloatBp
                          + " bp for " + TechText.Cents(Level(e.Gross)) + ", " + TechText.Cents(Level(net)) + " reached the firm; the player's shares are locked up to day " + e.LockTo + ".");
@@ -557,6 +578,11 @@ namespace RealLifeOverhaul.Tech
         /// <summary>The days the player's shares stay locked up after a listing; 0 when they are free.</summary>
         internal int ExitLockLeft(string place)
         {
+            int traded = StockLockLeft(place);   // a firm whose shares trade has one lock-up, the stock's
+            if (traded >= 0)
+            {
+                return traded;
+            }
             FirmExit e = _exits != null && Save != null ? _exits.Exit(place, false) : null;
             return e != null && ExitRules.Locked(e, Save.Day) ? e.LockTo - Save.Day : 0;
         }
@@ -570,9 +596,9 @@ namespace RealLifeOverhaul.Tech
             discount = 0;
             Cap c = _ventureOn ? _venture.CapOf(place) : null;
             FirmExit e = _exits != null ? _exits.Exit(place, false) : null;
-            if (c == null || e == null || Save == null)
+            if (c == null || e == null || Save == null || HasStock(place))
             {
-                return 0;
+                return 0;   // a firm whose shares trade has no second place to sell them: the stock market's
             }
             discount = ExitRules.Discount(TechBridges.SkillNow(TalentCatalogue.Selling), TechBridges.SkillNow(TalentCatalogue.Relationships), e.Listed);
             long room = ExitRules.Room(c, e, Save.Day, Year);
@@ -587,7 +613,7 @@ namespace RealLifeOverhaul.Tech
             FirmPlace firm = FirmOf(place);
             Cap c = CapFor(place, false);
             FirmExit e = _exits != null ? _exits.Exit(place, false) : null;
-            if (firm == null || c == null || e == null || Save == null)
+            if (firm == null || c == null || e == null || Save == null || StockSellRefused(place, firm.File.Name))
             {
                 return false;
             }

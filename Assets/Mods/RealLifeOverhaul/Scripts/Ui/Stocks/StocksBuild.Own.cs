@@ -261,7 +261,8 @@ namespace RealLifeOverhaul.Ui
         public static StocksSheetModel FounderSheet(MarketDirector d, StocksSheetState st, UiWords w)
         {
             MarketState s = d.State;
-            Stock k = d.MyCompany;
+            int target = (int)st.V[StocksSheets.Target];   // a firm of theirs that listed on its own, else their whole company
+            Stock k = d.FounderStock(target);
             var action = (OwnAction)Math.Max(0, Math.Min((int)OwnAction.Private, st.Key));
             StocksSheetModel m = Frame(w, w("reallife_stk_nav_listing", "Listing"), FounderTitle(action, w), UiIcon.Presentation);
             if (k == null || k.Own == null)
@@ -311,7 +312,7 @@ namespace RealLifeOverhaul.Ui
                         f.Add(StepField(StocksSheets.Sum, w("reallife_mkt_col_shares", "Shares"), v.ToString("N0"), v, 1, Math.Max(1, k.Shares), Nice(Math.Max(1, k.Shares) / 50, 1), true));
                     }
                     long shares = deal ? (sell ? -v : v) : action == OwnAction.Private ? 0 : v;
-                    q = d.Quote(action, shares);
+                    q = d.Quote(action, shares, target);
                     quoted = true;
                     if (q.Why == OwnWhy.None)
                     {

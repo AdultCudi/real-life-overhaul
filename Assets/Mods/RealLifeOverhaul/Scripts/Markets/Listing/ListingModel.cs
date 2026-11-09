@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Markets
@@ -20,7 +21,11 @@ namespace RealLifeOverhaul.Markets
     /// <summary>Why something the founder asked for cannot be done. Saved as a number (in the news); each has a sentence.</summary>
     public enum OwnWhy
     {
-        None = 0, NotListed, Shut, Held, Closed, LockedUp, NoMoney, NoShares, TooMuch, TooLarge, Board, Bid, Reserve, Control, Suspended, Off, NotReady, YearLimit, Count
+        None = 0, NotListed, Shut, Held, Closed, LockedUp, NoMoney, NoShares, TooMuch, TooLarge, Board, Bid, Reserve, Control, Suspended, Off, NotReady, YearLimit,
+        Firm,        // a firm of the founder's that raised money: only its founder's deals are open, the rest is the firm's own page
+        FirmLocked,  // the lock-up after a firm's listing has not run out
+        Unvested,    // the shares left are the ones still vesting
+        Count
     }
 
     /// <summary>What an investor who buys in to press the board asks for. Saved as a number.</summary>
@@ -115,6 +120,15 @@ namespace RealLifeOverhaul.Markets
         public int Lead = -1;                    // a sector that led the one it is in at the last review (-1 none)...
         public int LeadCount;                    // ...at so many reviews in a row
 
+        // A firm of the founder's that listed on its own (a startup with investors), not their whole company: see ListingFirm. Its books are the firm's
+        // alone, no reserve moves money for it (the firm's account is where its investors' money is kept), and the founder's deals are the only thing
+        // open to them here. All of it is saved after the fields an older version reads.
+        public bool Firm;
+        public string Place = string.Empty;      // the firm's place as the save line keeps it (MarketStore.Clean), so the stock names its firm
+        public long Float;                       // the shares the public holds: the most the founder can buy, and what their sales add to
+        public long VestBase;                    // the founder's shares that were vesting when it listed; the part that has vested is theirs to sell
+        public int VestDay, VestCliff, VestSpan; // the day the vesting began, the days to its cliff and to its end
+
         public long Others(Stock s)
         {
             return s.Shares - Founder;
@@ -123,6 +137,18 @@ namespace RealLifeOverhaul.Markets
         public int StakeBp(Stock s)
         {
             return s.Shares > 0 ? (int)(Founder * 10000L / s.Shares) : 0;
+        }
+
+        /// <summary>The founder's shares of a firm that are not theirs to sell yet: what is still to vest of those that were vesting, never more than they hold.</summary>
+        public long Unvested(int day)
+        {
+            if (!Firm || VestBase <= 0 || VestSpan <= 0)
+            {
+                return 0L;
+            }
+            int age = day - VestDay;
+            long vested = age < VestCliff ? 0L : Math.Min(1000L, age * 1000L / VestSpan);
+            return Math.Min(Math.Max(0L, Founder), VestBase * (1000L - vested) / 1000L);
         }
     }
 
@@ -154,6 +180,7 @@ namespace RealLifeOverhaul.Markets
         public int FirstDay;                     // the day the first of the player's businesses was taken on (0 not known)
         public int BooksDay;                     // the last statement day counted into the books
         public string Suspended;                 // the company's record while its founder is a guest in another player's city
+        public readonly List<string> SuspendedFirms = new List<string>(4);   // ...and each firm of theirs that listed on its own (ListingFirm)
         public int SetAsideDay;                  // the day it was set aside; statements from it count when it is back
         public long Proceeds;                    // money from businesses of the listed company sold, not yet heard by the market
         public string HandOverTo;                // a bid took the company: the buyer its businesses pass to...
@@ -173,7 +200,8 @@ namespace RealLifeOverhaul.Markets
 
         /// <summary>True for a file with nothing in it: the save line then has no part for it.</summary>
         public bool Empty => Stage == ListingStage.None && Books.Count == 0 && AuditDay == 0 && StockId == 0 && Fees == 0 && FirstDay == 0 && string.IsNullOrEmpty(Suspended)
-                             && string.IsNullOrEmpty(Name) && AdvisedDay == 0 && AuditFrom == 0 && HandOver.Count == 0 && string.IsNullOrEmpty(HandOverTo) && Proceeds == 0;
+                             && string.IsNullOrEmpty(Name) && AdvisedDay == 0 && AuditFrom == 0 && HandOver.Count == 0 && string.IsNullOrEmpty(HandOverTo) && Proceeds == 0
+                             && SuspendedFirms.Count == 0;
 
         public int IndexOf(int quarter)
         {

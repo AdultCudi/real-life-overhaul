@@ -15,6 +15,7 @@ namespace RealLifeOverhaul.Ui
             "reallife_exit_market_start", "reallife_exit_bank_line", "reallife_exit_bank_default", "reallife_exit_button_bankers", "reallife_exit_market_bankers", "reallife_exit_road_0",
             "reallife_exit_road_1", "reallife_exit_road_2", "reallife_exit_button_road", "reallife_exit_button_withdraw", "reallife_exit_market_wait", "reallife_exit_market_listed",
             "reallife_exit_market_free", "reallife_exit_market_called", "reallife_exit_button_whole", "reallife_exit_holder_public", "reallife_exit_founder_city",
+            "reallife_exit_stock_line", "reallife_exit_stock_free", "reallife_exit_button_stock",
             "reallife_exit_founder_invented", "reallife_exit_team", "reallife_exit_office", "reallife_exit_office_none", "common_setdestination"
         };
 

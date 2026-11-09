@@ -456,11 +456,23 @@ namespace RealLifeOverhaul.Markets
                 t.Append(',').Append(e.TradeOf[i].ToString(Inv)).Append(',').Append(e.TradeSales[i].ToString(Inv));
             }
             // A player's own company's day, only while there is one; a day without is written as before.
-            if (e.OwnDays > 0 || e.OwnStanding >= 0 || e.OwnDebt != 0 || e.OwnPress != 0 || e.OwnScandal != 0)
+            int firms = e.Firms > 0 && e.FirmStock != null && e.FirmRev != null && e.FirmProfit != null && e.FirmDebt != null
+                ? Math.Min(Math.Min(e.Firms, MarketEnv.FirmsMost), Math.Min(Math.Min(e.FirmStock.Length, e.FirmRev.Length), Math.Min(e.FirmProfit.Length, e.FirmDebt.Length))) : 0;
+            if (e.OwnDays > 0 || e.OwnStanding >= 0 || e.OwnDebt != 0 || e.OwnPress != 0 || e.OwnScandal != 0 || firms > 0)
             {
                 t.Append(',').Append(e.OwnFrom.ToString(Inv)).Append(',').Append(e.OwnDays.ToString(Inv)).Append(',').Append(e.OwnRev.ToString(Inv)).Append(',')
                     .Append(e.OwnProfit.ToString(Inv)).Append(',').Append(e.OwnStanding.ToString(Inv)).Append(',').Append(e.OwnPress.ToString(Inv)).Append(',')
                     .Append(e.OwnScandal.ToString(Inv)).Append(',').Append(e.OwnDebt.ToString(Inv));
+            }
+            // The firms that listed on their own, after those eight columns (always there when these are): their count and window, then a stock, its takings, profit and debt each.
+            if (firms > 0)
+            {
+                t.Append(',').Append(firms.ToString(Inv)).Append(',').Append(e.FirmFrom.ToString(Inv)).Append(',').Append(e.FirmDays.ToString(Inv));
+                for (int i = 0; i < firms; i++)
+                {
+                    t.Append(',').Append(e.FirmStock[i].ToString(Inv)).Append(',').Append(e.FirmRev[i].ToString(Inv)).Append(',').Append(e.FirmProfit[i].ToString(Inv)).Append(',')
+                        .Append(e.FirmDebt[i].ToString(Inv));
+                }
             }
         }
 
@@ -513,6 +525,26 @@ namespace RealLifeOverhaul.Markets
                 e.OwnPress = Clamp(Int(f[own + 5]), -10000, 10000);
                 e.OwnScandal = Clamp(Int(f[own + 6]), 0, 10);
                 e.OwnDebt = Math.Max(0L, Long(f[own + 7]));
+                int firm = own + 8;
+                int firms = firm + 2 < f.Length ? Clamp(Int(f[firm]), 0, MarketEnv.FirmsMost) : 0;
+                if (firms > 0 && firm + 3 + firms * 4 <= f.Length)
+                {
+                    e.FirmFrom = Int(f[firm + 1]);
+                    e.FirmDays = Clamp(Int(f[firm + 2]), 0, 400);
+                    e.FirmStock = new int[firms];
+                    e.FirmRev = new long[firms];
+                    e.FirmProfit = new long[firms];
+                    e.FirmDebt = new long[firms];
+                    for (int i = 0; i < firms; i++)
+                    {
+                        int column = firm + 3 + i * 4;
+                        e.FirmStock[i] = Int(f[column]);
+                        e.FirmRev[i] = Math.Max(0L, Long(f[column + 1]));
+                        e.FirmProfit[i] = Long(f[column + 2]);
+                        e.FirmDebt[i] = Math.Max(0L, Long(f[column + 3]));
+                    }
+                    e.Firms = firms;
+                }
             }
             return true;
         }

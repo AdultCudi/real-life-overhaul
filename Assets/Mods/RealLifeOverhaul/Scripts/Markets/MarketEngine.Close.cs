@@ -347,7 +347,7 @@ namespace RealLifeOverhaul.Markets
         {
             Finish();
             Stock s = State.Stock(stockId);
-            if (s == null || !s.Listed || s.BidCents > 0)
+            if (s == null || !s.Listed || s.BidCents > 0 || (s.Own != null && s.Own.Firm))   // a firm of the player's is bought through the tech sector's offers, never by a bid here
             {
                 return false;
             }

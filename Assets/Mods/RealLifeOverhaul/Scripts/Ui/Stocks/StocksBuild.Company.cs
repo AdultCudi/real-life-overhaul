@@ -96,6 +96,10 @@ namespace RealLifeOverhaul.Ui
             string[] caps = { words("reallife_stk_cap_large", "Large cap"), words("reallife_stk_cap_mid", "Mid cap"), words("reallife_stk_cap_small", "Small cap") };
             int size = (int)s.Size;
             c.Meta = caps[size >= 0 && size < caps.Length ? size : 1];   // the market has no exchange of a real name: the size alone
+            if (s.Own != null && s.Own.Firm)
+            {
+                c.Meta += ", " + (MarketBots.Mine(state, s) ? words("reallife_stk_firm_yours", "your firm") : words("reallife_stk_firm_other", "a startup that listed"));   // names whose firm it is
+            }
             c.LogoTint = UiTokens.Chart((int)s.Sector);
             c.Price = MarketText.Price(s.Last);
             c.Way = move > 0 ? 1 : move < 0 ? -1 : 0;
@@ -165,6 +169,24 @@ namespace RealLifeOverhaul.Ui
         {
             c.PositionTitle = words("reallife_stk_position_title", "Your position");
             c.PositionNone = words("reallife_stk_position_none", "You hold no shares of this company");
+            if (s.Own != null && s.Own.Firm && MarketBots.Mine(state, s))
+            {
+                // A firm of the player's that listed: they hold it as its founder, with a lock-up and what has vested, and it is theirs alone to deal in by those rules.
+                OwnListing o = s.Own;
+                long sellable = ListingFirm.Sellable(o, state.Day);
+                int left = Math.Max(0, o.LockDay - state.Day);
+                c.PositionTitle = words("reallife_stk_founder_title", "Your stake as the founder");
+                c.Position = new[]
+                {
+                    new StocksRow { Label = words("reallife_mkt_col_shares", "Shares"), Value = o.Founder.ToString("N0") },
+                    new StocksRow { Label = words("reallife_stk_founder_stake", "Of the company"), Value = MarketText.Percent(o.StakeBp(s)) },
+                    new StocksRow { Label = words("reallife_stk_founder_public", "Held by the public"), Value = MarketText.Percent(s.Shares > 0 ? (int)(o.Float * 10000L / s.Shares) : 0) },
+                    left > 0
+                        ? new StocksRow { Label = words("reallife_stk_founder_locked", "Locked up until day"), Value = o.LockDay.ToString(), Tone = UiRole.WarnText }
+                        : new StocksRow { Label = words("reallife_stk_founder_free", "Free to sell"), Value = sellable.ToString("N0") }
+                };
+                return;
+            }
             Position p = state.Position(s.Id);
             if (p == null || p.Shares == 0)
             {

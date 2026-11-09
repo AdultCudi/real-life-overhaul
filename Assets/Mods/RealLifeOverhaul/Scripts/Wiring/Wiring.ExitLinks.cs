@@ -129,7 +129,8 @@ namespace RealLifeOverhaul
                     for (int i = 0; stocks != null && i < stocks.Count && into.Count < 8; i++)
                     {
                         Stock s = stocks[i];
-                        if (s != null && s.Listed && s.RivalId == null && Array.IndexOf(Listers, s.Sector.ToString()) >= 0)
+                        // A firm of the player's is no buyer of their others.
+                        if (s != null && s.Listed && s.RivalId == null && (s.Own == null || !s.Own.Firm) && Array.IndexOf(Listers, s.Sector.ToString()) >= 0)
                         {
                             into.Add(new KeyValuePair<int, string>(s.Id, s.Name));
                         }
