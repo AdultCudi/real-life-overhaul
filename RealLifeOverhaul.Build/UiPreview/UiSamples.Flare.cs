@@ -323,7 +323,7 @@ internal static partial class UiSamples
         m.List.EmptyIcon = UiIcon.Fire;
         m.List.EmptyTitle = t(tab == 1 ? "reallife_flare_empty_following" : tab == 2 ? "reallife_flare_kit_empty_businesses" : "reallife_flare_empty_feed",
             tab == 1 ? "Nothing yet from the accounts you follow. Follow some from Explore." : tab == 2 ? "No business posts yet" : "Nothing posted yet.");
-        m.List.EmptyBody = t("reallife_flare_kit_empty_feed_body", "Follow a few accounts or post something, and your feed fills up.");
+        m.List.EmptyBody = tab == 2 ? null : t("reallife_flare_kit_empty_feed_body", "Follow a few accounts or post something, and your feed fills up.");   // a player who follows nobody
         if (tab == 1)
         {
             return;   // following nobody yet: no stories, the empty feed

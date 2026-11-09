@@ -351,9 +351,9 @@ namespace RealLifeOverhaul.Ui
                 PostRow(file, p, now);
             }
             _m.List.EmptyIcon = UiIcon.Fire;
-            _m.List.EmptyTitle = FlareText.T(tab == FlareFeedTab.Following ? "reallife_flare_empty_following" : tab == FlareFeedTab.Businesses
-                ? "reallife_flare_kit_empty_businesses" : "reallife_flare_empty_feed");
-            _m.List.EmptyBody = FlareText.T("reallife_flare_kit_empty_feed_body");
+            string bodyKey = FlareFeedRules.EmptyBodyKey(tab, file.Follows.Count);
+            _m.List.EmptyTitle = FlareText.T(FlareFeedRules.EmptyTitleKey(tab, file.Follows.Count));
+            _m.List.EmptyBody = bodyKey != null ? FlareText.T(bodyKey) : null;
             _flare.CommentsAhead(null);   // RLO Texts: a few of the comments under the feed's posts asked; once a game minute at most
         }
 
