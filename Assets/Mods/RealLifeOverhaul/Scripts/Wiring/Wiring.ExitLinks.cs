@@ -39,12 +39,15 @@ namespace RealLifeOverhaul
                 ExitBridges.People = () => Settings.LivingPopulation && CityPopulation.Running;
                 ExitBridges.Practised = (skill, hours) => CareersDirector.Instance?.PractisedSkill(skill, hours);
                 ExitBridges.Sessions = Hold;
+                ExitBridges.Fixtures = Fixtures;
+                CompanyBridges.StartupGains = (from, to) => TechDirector.Instance != null ? TechDirector.Instance.GainsBetween(from, to) : 0;   // a startup stake's gain joins the quarter's return
             }
 
             internal static void Disconnect()
             {
                 Hold(false);
                 ExitBridges.Reset();
+                CompanyBridges.StartupGains = null;
             }
 
             // The founders of the city's startups as residents of the field their startup works in; none while the venture part is off.
@@ -149,6 +152,19 @@ namespace RealLifeOverhaul
                 {
                     Fault("ExitLinks.HandOver", e);
                     return false;
+                }
+            }
+
+            private static int Fixtures(string place)
+            {
+                try
+                {
+                    return ServicesGame.Fixtures(ServicesGame.Find(place));
+                }
+                catch (Exception e)
+                {
+                    Fault("ExitLinks.Fixtures", e);
+                    return 0;
                 }
             }
 

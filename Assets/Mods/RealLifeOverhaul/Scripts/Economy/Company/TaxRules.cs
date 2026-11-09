@@ -14,6 +14,13 @@ namespace RealLifeOverhaul.Economy
         public const int SettledKept = 4;                                   // past returns kept for the page
         public const int StateOnTime = 0, StateLate = 1, StateMissed = 2;   // how a return ended
 
+        /// <summary>The income no statement holds, from its two sources (a business sold, a startup stake sold), each counted once; either may be missing.</summary>
+        public static int OtherIncome(Func<int, int, int> business, Func<int, int, int> stake, int fromDay, int toDay)
+        {
+            long sum = (business != null ? business(fromDay, toDay) : 0L) + (stake != null ? stake(fromDay, toDay) : 0L);
+            return (int)Math.Min(int.MaxValue / 2, sum);
+        }
+
         public static int QuarterDays(int monthDays)
         {
             return CompanyCatalogue.QuarterMonths * Math.Max(1, monthDays);

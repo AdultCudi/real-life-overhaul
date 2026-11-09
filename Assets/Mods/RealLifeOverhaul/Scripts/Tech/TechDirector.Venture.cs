@@ -65,6 +65,7 @@ namespace RealLifeOverhaul.Tech
                 }
             }
             StartExits();
+            StartGains();
             Logger?.Info("Tech: startups " + (fresh ? "opened for this save" : "loaded (version " + version + ")") + " on day " + save.Day + ": " + _venture.Startups.Count + " startup(s), "
                          + _venture.Caps.Count + " firm(s) of the player's with investors.");
         }
@@ -83,6 +84,7 @@ namespace RealLifeOverhaul.Tech
             StopRivalry();
             StopFounding();
             StopExits(keep);
+            StopGains(keep);
             StopMoney();
             _ventureOn = false;
         }
@@ -95,6 +97,7 @@ namespace RealLifeOverhaul.Tech
                 WriteTerms(data);
                 WriteFounding(data);
                 WriteExits(data);
+                WriteGains(data);
                 WriteRivalry(data);
             }
         }
@@ -250,6 +253,7 @@ namespace RealLifeOverhaul.Tech
                 if (h.Kind == (int)HolderKind.Angel)
                 {
                     VentureGame.Give(Level(h.Paid), VentureGame.ReturnKey, s.Name);
+                    GainNotice(s.Name, ExitGains.ForStake(_gains, s.Name, h.Paid, h.Invested, Save.Day, Prices.Level));
                 }
                 else if (h.Kind == (int)HolderKind.Fund)
                 {

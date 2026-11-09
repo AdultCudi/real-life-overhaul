@@ -326,6 +326,7 @@ namespace RealLifeOverhaul.Tech
             }
             Cap c = _venture.CapOf(place);
             bool funded = c != null && c.Acc.Open;
+            int fixtures = ExitBridges.Fixtures != null ? Math.Max(0, ExitBridges.Fixtures(place)) : 0;   // read while the business is still the player's
             if (funded)
             {
                 c.Acc.Wound = true;   // before anything moves: while the firm is sold, the wallet's floor for it is settled by the sale and not counted again
@@ -351,6 +352,7 @@ namespace RealLifeOverhaul.Tech
                 buyer.Cash -= o.Price;
                 buyer.Mrr += Math.Min(mrr, Math.Max(buyer.Mrr, 1));
             }
+            long gain = ExitGains.ForSale(_gains, c, place, name, r.Player, fixtures * 100L, day, Prices.Level);   // before the cap table goes
             string lead = c != null ? LeadName(c) : string.Empty;
             float evidence = funded ? StartupMoney.Evidence(c) : 0f;
             int suit = 0, fraud = 0;
@@ -379,13 +381,14 @@ namespace RealLifeOverhaul.Tech
             Notifications.Show(r.Gap > 0 ? NotificationType.Error : NotificationType.Success, key,
                 Data("firm", name, "buyer", o.Name, "amount", TechText.Cents(Level(r.Price)), "investors", TechText.Cents(Level(r.Paid)), "you", TechText.Cents(Level(Math.Max(0L, r.Player))),
                     "gap", TechText.Cents(Level(r.Gap))), 12f, null, null, true, false);
+            GainNotice(name, gain);
             Logger?.Info("Tech: " + name + " " + (o.Hire ? "(its team) " : string.Empty) + "sold to " + o.Name + " on day " + day + " for " + TechText.Cents(Level(r.Price))
                 + ": the firm's account held "
                          + TechText.Cents(Level(r.Cash)) + ", a director's loan " + TechText.Cents(Level(r.Loan)) + ", the bridge " + TechText.Cents(Level(r.Bridge))
                              + "; the investors were owed "
                          + TechText.Cents(Level(r.Owed)) + " and paid " + TechText.Cents(Level(r.Paid)) + ", claim " + TechText.Cents(Level(r.Gap)) + " (suit " + suit
                              + ", fraud case " + fraud + "); the wallet "
-                         + (r.Player >= 0 ? "gained " : "gave ") + TechText.Cents(Level(Math.Abs(r.Player))) + ".");
+                         + (r.Player >= 0 ? "gained " : "gave ") + TechText.Cents(Level(Math.Abs(r.Player))) + GainLog(gain) + ".");
             ChangedTech();
             return true;
         }
@@ -594,6 +597,7 @@ namespace RealLifeOverhaul.Tech
                 Notifications.Show(NotificationType.Info, "reallife_exit_note_no_room", Data("firm", firm.File.Name), 8f, null, null, true, false);
                 return false;
             }
+            long held = ExitRules.PlayerShares(c);
             long paid = ExitRules.Sell(c, e, room, discount, LeadWho(c), day, Year);
             if (paid <= 0)
             {
@@ -601,11 +605,13 @@ namespace RealLifeOverhaul.Tech
             }
             long floor = _floorNow;
             VentureGame.Give(Level(paid), VentureGame.ShareSaleKey, firm.File.Name);   // the player's own shares: no address, no part of the firm's account
+            long gain = ExitGains.ForShares(_gains, c, place, firm.File.Name, paid, held, room, day, Prices.Level);
+            GainNotice(firm.File.Name, gain);
             ExitBridges.Practised?.Invoke(TalentCatalogue.Selling, 1);
             RefreshFloor(day);
             Logger?.Info("Tech: the player sold " + room + " share(s) of " + firm.File.Name + " for " + TechText.Cents(Level(paid)) + " (" + discount
                 + " thousandths under the price); the floor stayed at "
-                         + TechText.Cents(floor) + " and is " + TechText.Cents(_floorNow) + ".");
+                         + TechText.Cents(floor) + " and is " + TechText.Cents(_floorNow) + GainLog(gain) + ".");
             ChangedTech();
             return true;
         }
