@@ -461,7 +461,8 @@ internal static partial class UiSamples
         r.Profile = new UiProfileModel
         {
             Name = name, Hue = tycoons ? 200f : fresh ? 260f : 28f, Role = tycoons ? "Karen Aerospace & Motors" : fresh ? "Brooks Fresh Markets" : "Burger Barn", RoleIcon = UiIcon.Store, Status = live0 ? "Making a move" : "Quiet",
-            StatusTone = live0 ? UiRole.Warn : UiRole.Muted, FactLabels = new[] { "Worth", "In a week" }, FactValues = new[] { FM(tycoons ? 40000000 : fresh ? 27880000 : 31420000), fresh ? string.Empty : "+" + FM(640000) },
+            StatusTone = live0 ? UiRole.Warn : UiRole.Muted, FactLabels = new[] { "Worth", "In a week", "Change on record" },
+            FactValues = new[] { FM(tycoons ? 40000000 : fresh ? 27880000 : 31420000), fresh ? string.Empty : "+" + FM(640000), fresh ? "Starts later" : "+" + FM(7420000) + " over 7 days" },
             Rating = -1
         };
         r.Labels = new[] { "Their holding", "Your shares in it" };

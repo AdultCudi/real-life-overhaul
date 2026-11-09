@@ -126,6 +126,25 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        public const int PlayerWho = -1;       // the rich list's number for the player (RichRow.Player)
+
+        /// <summary>
+        /// The figures the rich list shows for one entry, from the same sums as the player's card: the player (<see cref="PlayerWho"/>) or a
+        /// tycoon by its place in the catalogue, who must still stand. False for anyone else (an old fortune, a tycoon taken over or one this
+        /// book has no place for), so no row reads another's days or reads past the rings.
+        /// </summary>
+        public bool Standing(int who, bool standing, int today, long now, float[] line, out WorthSummary s)
+        {
+            NetWorthRing ring = who == PlayerWho ? Player : standing && who >= 0 && who < Rivals.Length ? Rivals[who] : null;
+            s = default;
+            if (ring == null)
+            {
+                return false;
+            }
+            s = Summary(ring, today, now, line);
+            return true;
+        }
+
         /// <summary>
         /// A ring over the last <see cref="Window"/> days to <paramref name="today"/>, with <paramref name="now"/> as today's figure: highest
         /// and lowest with their days, the change from the window's first day on record, and how many days the line has. The line's values
