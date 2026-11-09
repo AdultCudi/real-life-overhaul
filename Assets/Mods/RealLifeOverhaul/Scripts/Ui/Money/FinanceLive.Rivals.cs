@@ -14,6 +14,9 @@ namespace RealLifeOverhaul.Ui
         private readonly List<RichRow> _rich = new List<RichRow>(RivalCatalogue.RichListSize);
         private readonly float[] _seriesB = new float[DaySeriesCatalogue.Days];
         private readonly int[] _daysB = new int[DaySeriesCatalogue.Days];
+        private readonly float[] _worthLine = new float[NetWorthRing.Most + 1];
+        private WorthSummary[] _sums = new WorthSummary[0];
+        private bool[] _kept = new bool[0];
 
         private static int RivalsCount()
         {
@@ -51,6 +54,12 @@ namespace RealLifeOverhaul.Ui
             DaySeriesBook book = DaySeriesDirector.Book;
             var rows = new List<FinanceRow>(_rich.Count);
             r.Who = new int[_rich.Count];
+            WorthBook worthBook = WorthWatch.Book;   // null for a guest: the page is then as it was
+            if (_sums.Length < _rich.Count)
+            {
+                _sums = new WorthSummary[_rich.Count];
+                _kept = new bool[_rich.Count];
+            }
             int first = -1;
             for (int i = 0; i < _rich.Count; i++)
             {
@@ -58,6 +67,8 @@ namespace RealLifeOverhaul.Ui
                 r.Who[i] = row.Who;
                 first = first < 0 && row.Who >= 0 && row.Who < RivalCatalogue.TycoonCount && file.Tycoons[row.Who].Active ? i : first;
                 string name = row.Name;
+                bool tycoon = row.Who >= 0 && row.Who < file.Tycoons.Length;
+                _kept[i] = worthBook != null && worthBook.Standing(row.Who, tycoon && file.Tycoons[row.Who].Active, day, row.Worth, _worthLine, out _sums[i]);
                 int dir = row.WeekAgo > 0 ? (row.Worth > row.WeekAgo ? 1 : row.Worth < row.WeekAgo ? -1 : 0) : 0;
                 string sub = row.Who == RichRow.Player ? RivalText.T("reallife_rival_note_you") : row.Who >= RichRow.FortuneBase
                     ? RivalText.T("reallife_rival_note_old_money") : RivalCatalogue.Tycoons[row.Who].Holding;
@@ -65,7 +76,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     Name = string.IsNullOrEmpty(name) ? you : name, Sub = sub, Hue = UiColour.HueOf(name ?? string.Empty),
                     Cells = new[] { Money(row.Worth), string.Empty, RivalText.Change(row.Worth, row.WeekAgo) }, Values = new[] { 0, 0, dir },
-                    Line = SparkOf(book, SeriesKey(row.Who), day)
+                    Line = _kept[i] ? (_sums[i].Points >= 2 ? Copy(_worthLine, _sums[i].Points) : null) : SparkOf(book, SeriesKey(row.Who), day)
                 });
             }
             v.Rival = v.Rival >= 0 && v.Rival < rows.Count ? v.Rival : Math.Max(0, first);
@@ -99,7 +110,39 @@ namespace RealLifeOverhaul.Ui
                         FactValues = new[] { Money(chosen.Worth), RivalText.Change(chosen.Worth, chosen.WeekAgo) }
                 };
             }
+            if (_kept[v.Rival] && r.Profile != null)
+            {
+                WorthFact(r.Profile, _sums[v.Rival], w, day);
+            }
             r.Chart = RivalChart(book, who, you, chosen.Name, w, day);
+        }
+
+        // The days on record as the net worth card sums them, for the entry chosen; with fewer than two days it says so and invents nothing.
+        private static void WorthFact(UiProfileModel p, WorthSummary s, UtilitiesWords w, int day)
+        {
+            string value;
+            if (s.Has)
+            {
+                long c = s.Change;
+                value = w.F("reallife_fin_worth_over", "{change} over {days} days", "change", (c > 0 ? "+" : c < 0 ? "-" : string.Empty) + RivalText.Money(c < 0 ? -c : c),
+                    "days", Math.Min(Math.Max(1, day - s.FromDay + 1), WorthBook.Window).ToString(Inv));
+            }
+            else
+            {
+                value = w.T("reallife_fin_worth_later", "Starts later");
+            }
+            int n = p.FactLabels != null ? p.FactLabels.Length : 0;
+            var labels = new string[n + 1];
+            var values = new string[n + 1];
+            for (int i = 0; i < n; i++)
+            {
+                labels[i] = p.FactLabels[i];
+                values[i] = p.FactValues[i];
+            }
+            labels[n] = w.T("reallife_fin_worth_label", "Change on record");
+            values[n] = value;
+            p.FactLabels = labels;
+            p.FactValues = values;
         }
 
         private static string SeriesKey(int who)

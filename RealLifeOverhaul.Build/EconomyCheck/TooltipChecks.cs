@@ -4,6 +4,7 @@ using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 using RealLifeOverhaul.Economy;
+using RealLifeOverhaul.Rivals;
 using RealLifeOverhaul.Ui;
 
 // The tooltip card (Scripts/Ui/UiTooltipCard, UiTooltipRules, UiNetWorthTip, Ui/Tooltips) and the days of net worth behind the money pill's card
@@ -25,6 +26,7 @@ internal static partial class Program
         TooltipDaysSave();
         TooltipCard();
         TooltipWorthCard();
+        RivalWorthRows();
         TooltipSource();
         TooltipWords();
         Console.WriteLine("  tooltips: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
@@ -402,6 +404,69 @@ internal static partial class Program
         UiTooltipModel down = UiNetWorthTip.Model(en, loss, 9, new float[] { 1400, 2000, 900, 1000 }, a => "$" + a);
         UiTipBlock dr = down.Blocks[down.Blocks.Count - 1];
         Check(dr.Lines[3].Right == "-$400" && dr.Lines[3].Ink == UiRole.DangerText, "net worth card: a fall is written with its sign and in red");
+    }
+
+    // ------------------------------------------------------------------------------------------------- the rich list's days
+
+    // The rich list shows each rival's change and 30 day line from the same book and the same sums as the player's card.
+    private static void RivalWorthRows()
+    {
+        var book = new WorthBook();
+        var worths = new long[WorthBook.Tycoons];
+        var active = new bool[WorthBook.Tycoons];
+        for (int d = 1; d <= 40; d++)
+        {
+            active[0] = true;
+            active[1] = d >= 39;
+            worths[0] = 5000L + d * 70L;
+            worths[1] = 9000L + d;
+            book.Day(d, 800L + d * 3L, worths, active, 3);
+        }
+        int today = 41;
+        var line = new float[WorthBook.LineLength(book.Rivals[0], today)];
+        bool got = book.Standing(0, true, today, 7900L, line, out WorthSummary s);
+        var plain = new float[line.Length];
+        WorthSummary direct = WorthBook.Summary(book.Rivals[0], today, 7900L, plain);
+        bool same = got && s.Change == direct.Change && s.Points == direct.Points && s.High == direct.High && s.Low == direct.Low && s.FromDay == direct.FromDay;
+        for (int i = 0; i < line.Length; i++)
+        {
+            same &= line[i] == plain[i];
+        }
+        Check(same && s.Has && s.Points == WorthBook.TycoonDays && s.Change == 7900L - book.Rivals[0].WorthAt(1) && line[line.Length - 1] == 7900f,
+            "rich list days: a rival's change and 30 day line are WorthBook's sums for its ring (" + s.Change + " over " + s.Points + " points)");
+        var pline = new float[WorthBook.LineLength(book.Player, today)];
+        Check(book.Standing(WorthBook.PlayerWho, false, today, 1000L, pline, out WorthSummary mine) && mine.Change == WorthBook.Summary(book.Player, today, 1000L, null).Change && mine.Points == pline.Length,
+            "rich list days: the player's row is the card's sums too, so the two cannot disagree");
+        Check(book.Standing(1, true, today, 9050L, new float[WorthBook.LineLength(book.Rivals[1], today)], out WorthSummary late) && late.Has && late.Points == 3,
+            "rich list days: a rival who came forward two days ago has a line of the days since (" + late.Points + ")");
+        var fresh = new WorthBook();
+        fresh.Day(5, 100L, worths, active, 3);
+        Check(fresh.Standing(0, true, 6, 5000L, null, out WorthSummary one) && one.Has && fresh.Standing(0, true, 5, 5000L, null, out WorthSummary same5) && !same5.Has && same5.Points == 1,
+            "rich list days: a rival with fewer than two days on record gets the starts later state, never an invented line");
+        Check(!book.Standing(2, true, today, 1L, null, out WorthSummary none) || (!none.Has && none.Points == 1), "rich list days: a tycoon with no days at all has none to show");
+        Check(!book.Standing(0, false, today, 1L, null, out _) && !book.Standing(WorthBook.Tycoons, true, today, 1L, null, out _) && !book.Standing(WorthBook.Tycoons + 90, true, today, 1L, null, out _)
+            && !book.Standing(-2, true, today, 1L, null, out _) && !book.Standing(RichRow.FortuneBase, true, today, 1L, null, out _),
+            "rich list days: a rival taken over, a place past the rings and an old fortune read no ring");
+        var file = new RivalFile();
+        file.Tycoons[0].ActiveDay = 3;
+        file.Tycoons[1].ActiveDay = 3;
+        file.Tycoons[0].Worth = 5000;
+        file.Tycoons[1].Worth = 6000;
+        var rows = new List<RichRow>();
+        RivalRules.RichList(file, 100, 1000, "You", rows);
+        bool both = rows.Exists(r => r.Who == 1) && rows.Exists(r => r.Who == 0);
+        file.Tycoons[1].DefeatedDay = 9;
+        RivalRules.RichList(file, 100, 1000, "You", rows);
+        Check(both && !rows.Exists(r => r.Who == 1) && rows.Exists(r => r.Who == 0), "rich list days: a rival taken over leaves no row on the list, so its ring is never read");
+        Check(WorthStore.Read(WorthStore.Write(book), out WorthBook back) && back.Standing(0, true, today, 7900L, null, out WorthSummary kept) && kept.Change == direct.Change,
+            "rich list days: a book written and read again gives the same change");
+        Check(WorthStore.Read("WD|1\nP|1:500,2:510", out WorthBook old) && old.Player.Count == 2 && old.Rivals[0].Count == 0 && old.Standing(0, true, 3, 5000L, null, out WorthSummary empty) && !empty.Has,
+            "rich list days: an old save with a player's days and no rival rings loads and every rival shows the empty state");
+        Check(WorthStore.Read(null, out WorthBook nothing) && nothing.Standing(1, true, 3, 5000L, null, out WorthSummary nil) && !nil.Has, "rich list days: a save with no line at all shows the empty state");
+        string scripts = System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\Assets\Mods\RealLifeOverhaul\Scripts"));
+        string live = File.ReadAllText(System.IO.Path.Combine(scripts, @"Ui\Money\FinanceLive.Rivals.cs"));
+        Check(live.Contains("worthBook != null && worthBook.Standing(") && live.Contains("WorthWatch.Book") && live.Contains(": SparkOf(book, SeriesKey(row.Who), day)") && live.Contains("reallife_fin_worth_later"),
+            "rich list days: with no book (a guest, an unread line) the page is as it was, and the rows are written when the page is, never in a frame");
     }
 
     // ------------------------------------------------------------------------------------------------- the live code's promises
