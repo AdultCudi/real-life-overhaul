@@ -259,7 +259,7 @@ internal static partial class Program
         string market = ModSource(@"Markets\MarketEngine.Own.cs"), rules = ModSource(@"Markets\Listing\ListingRules.cs"), links = ModSource(@"Wiring\Wiring.ExitStockLinks.cs");
         Check(Regex.IsMatch(rules, @"public static double ToReserve[\s\S]{0,200}if \(o\.Firm\)[\s\S]{0,80}return 0\.0;") && market.Contains("if (o.Firm && action != OwnAction.Deal)")
               && Regex.IsMatch(market, @"private void OwnBidChance[\s\S]{0,200}o\.Firm \|\|"), "wiring: the market keeps no reserve for a firm, takes only the founder's deals of it and makes no bid for it");
-        Check(ModSource(@"Markets\MarketEngine.Session.cs").Contains("OwnBusiness(s, s.Own.Firm ? ListingFirm.EnvFor(env, s.Id) : env, from, day);") && market.Contains("FirmDealt?.Invoke(s.Id, shares, q.Cents, q.Value)"),
+        Check(ModSource(@"Markets\MarketEngine.Session.cs").Contains("OwnBusiness(s, s.Own.Firm ? ListingFirm.EnvFor(env, s.Id) : env, from, day);") && market.Contains("FirmDealt?.Invoke(s.Id, shares, q.Cents, q.Value, q.Reserve + q.Fee)"),
             "wiring: a firm's days are its own statements' in the env the tape keeps, and each of the founder's deals is told to the tech sector");
         Check(links.Contains("StockBridges.Open = Open;") && links.Contains("MarketBridges.FirmDealt = Dealt;") && ModSource(@"Wiring\MarketLinks.cs").Contains("ExitStockLinks.Connect();")
               && ModSource(@"Wiring\MarketLinks.cs").Contains("ExitStockLinks.Disconnect();"), "wiring: the bridges are connected when the market's are and let go with them");
@@ -269,7 +269,7 @@ internal static partial class Program
         Check(ModSource(@"Core\RealLifeOverhaulMod.cs").Contains(".AddButton(\"reallife_exit_test_stock\", () => Tech.TechDirector.Instance?.TestExitStock())") && ModSource(@"Tech\TechDirector.ExitStock.cs").Contains("public void TestExitStock()"),
             "wiring: the test button under the tech startups lists a firm at once");
         string sale = ModSource(@"Tech\TechDirector.ExitStock.cs");
-        Check(sale.Contains("ExitBridges.Practised?.Invoke(TalentCatalogue.Selling, 1);") && sale.Contains("internal void FirmStockDealt(int stockId, long shares, int cents, long money)") && !Regex.IsMatch(sale, @"StockBridges\.Grow\([^;]*\);[\s\S]{0,40}FirmStockDealt"),
+        Check(sale.Contains("ExitBridges.Practised?.Invoke(TalentCatalogue.Selling, 1);") && sale.Contains("internal void FirmStockDealt(int stockId, long shares, int cents, long money, long fee)") && !Regex.IsMatch(sale, @"StockBridges\.Grow\([^;]*\);[\s\S]{0,40}FirmStockDealt"),
             "wiring: the founder's sale on the market is followed by the tech sector at FirmStockDealt, where the exit-tax job's gain record goes beside ExitSell's; it changes nothing in the market");
         // the texts
         Dictionary<string, string>[] words = LanguageWords(out string[] codes);

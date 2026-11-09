@@ -775,7 +775,7 @@ namespace RealLifeOverhaul.Markets
             Say(new MarketNews { Day = State.Day, Kind = MarketNewsKind.OwnDeal, Stock = s.Id, A = (int)Math.Max(int.MinValue, Math.Min(int.MaxValue, shares)), B = q.Cents });
             if (o.Firm && Mine(s) && !o.Test)
             {
-                FirmDealt?.Invoke(s.Id, shares, q.Cents, q.Value);   // the tech sector follows its cap table, and notes the sale for the tax
+                FirmDealt?.Invoke(s.Id, shares, q.Cents, q.Value, q.Reserve + q.Fee);   // the tech sector follows its cap table, and notes the sale for the tax
             }
         }
 

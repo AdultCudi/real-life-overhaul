@@ -113,6 +113,24 @@ namespace RealLifeOverhaul.Tech
         }
 
         /// <summary>
+        /// The player's shares of a firm that trades on the market, sold there (the founder's deal in the Stocks app). The market pays the wallet in today's money, so
+        /// what it fetched is <paramref name="money"/> less the <paramref name="fee"/> (what the wallet gained, as every other sale counts it) and is not levelled again;
+        /// the basis is the one a sale of the same shares in <see cref="ForShares"/> uses. A purchase (shares not under nothing) notes nothing. Returns the cents noted.
+        /// </summary>
+        public static long ForMarketSale(GainFile f, Cap c, string place, string name, long money, long fee, long held, long shares, int day, int level)
+        {
+            long net = money - Math.Max(0L, fee);
+            if (f == null || shares >= 0 || net <= 0)
+            {
+                return 0;
+            }
+            long sold = -shares;
+            long slice = Slice(f, c, place, held, sold);
+            Take(f, place, sold, slice);
+            return Note(f, day, name, Gain(net, Level(slice, level)));
+        }
+
+        /// <summary>
         /// A firm sold with its business (a buyer's offer, the team taken for the hire): the wallet's gain by the sale, the business's stock and furniture at the game's
         /// resale price in today's cents (0 when it cannot be read), and the firm's cap table. The player's part of the fixtures is their share of the firm; what the
         /// investors' share of it cost was the investors' money, which the sale already paid back to them before the player had anything.

@@ -232,11 +232,11 @@ namespace RealLifeOverhaul
             }
 
             // The player dealt in a firm's shares on the market: the tech sector follows its cap table.
-            private static void Dealt(int stock, long shares, int cents, long money)
+            private static void Dealt(int stock, long shares, int cents, long money, long fee)
             {
                 try
                 {
-                    TechDirector.Instance?.FirmStockDealt(stock, shares, cents, money);
+                    TechDirector.Instance?.FirmStockDealt(stock, shares, cents, money, fee);
                 }
                 catch (Exception e)
                 {
