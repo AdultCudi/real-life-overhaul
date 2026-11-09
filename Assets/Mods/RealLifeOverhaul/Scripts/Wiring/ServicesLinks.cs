@@ -282,17 +282,45 @@ namespace RealLifeOverhaul
                 }
             }
 
-            private static void StaffKept(List<string> ids) => RealLifeOverhaul.Population.PopulationDirector.Instance?.HoldStaff(ids);
-
-            private static void RivalHanded(Address address)
+            private static void StaffKept(List<string> ids)
             {
-                if (address != null)
+                try
                 {
-                    RealLifeOverhaul.Population.PopulationDirector.Instance?.HoldBusiness(address.streetName, address.streetNumber);
+                    RealLifeOverhaul.Population.PopulationDirector.Instance?.HoldStaff(ids);
+                }
+                catch (Exception e)
+                {
+                    Fault("ServicesLinks.StaffKept", e);
                 }
             }
 
-            private static bool HoldsStaff() => RealLifeOverhaul.Population.PopulationDirector.Instance != null && RealLifeOverhaul.Population.PopulationDirector.Instance.CanHold;
+            private static void RivalHanded(Address address)
+            {
+                try
+                {
+                    if (address != null)
+                    {
+                        RealLifeOverhaul.Population.PopulationDirector.Instance?.HoldBusiness(address.streetName, address.streetNumber);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("ServicesLinks.RivalHanded", e);
+                }
+            }
+
+            private static bool HoldsStaff()
+            {
+                try
+                {
+                    return RealLifeOverhaul.Population.PopulationDirector.Instance != null && RealLifeOverhaul.Population.PopulationDirector.Instance.CanHold;
+                }
+                catch (Exception e)
+                {
+                    Fault("ServicesLinks.HoldsStaff", e);
+                    return false;
+                }
+            }
 
             private static void BusinessGone(string place)
             {

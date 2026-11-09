@@ -61,7 +61,7 @@ SAME_WORDS = 4                                     # a Latin-script translation 
 NOTICE_MOST = 240                                  # characters: a toast holds about 240 (Workshop/STYLE.md, NoticeCheck)
 # Texts that may stay as the English in any translation: placeholders alone, version numbers, and invented names kept in Latin letters.
 ENGLISH_OK = {
-    # 9 Nov 2026, the designer's badge for the mod's own fit-out pieces: the mod's short name, kept in Latin letters in Chinese too
+    # 9 Nov 2026, the badge in the designer for fit-out pieces of the mod: its short name, kept in Latin letters in Chinese too
     'reallife_ui_designer_rlo',
     # 4 Nov 2026, the Gallery's fact about Flare: the app's name, kept in Latin letters in Chinese too
     'reallife_gallery_fact_flare',

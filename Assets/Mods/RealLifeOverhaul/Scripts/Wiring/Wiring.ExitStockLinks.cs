@@ -47,8 +47,16 @@ namespace RealLifeOverhaul
 
             private static bool Open()
             {
-                MarketDirector m = MarketDirector.Instance;
-                return m != null && m.FirmsOpen;
+                try
+                {
+                    MarketDirector m = MarketDirector.Instance;
+                    return m != null && m.FirmsOpen;
+                }
+                catch (Exception e)
+                {
+                    Fault("ExitStockLinks.Open", e);
+                    return false;
+                }
             }
 
             private static StockInfo Info(Stock s)
