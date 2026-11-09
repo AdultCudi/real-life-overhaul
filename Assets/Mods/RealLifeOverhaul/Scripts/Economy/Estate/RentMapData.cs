@@ -144,6 +144,10 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Rent a month for a square metre over the whole city for a use, in cents; -1 for none.</summary>
         public int PerSqm(int use)
         {
+            if (use < 0 || use >= Uses)
+            {
+                return -1;
+            }
             long rent = 0, sqm = 0;
             for (int d = 0; d < Districts.Count; d++)
             {
@@ -152,6 +156,17 @@ namespace RealLifeOverhaul.Economy
                 sqm += Sqm[cell];
             }
             return sqm > 0 ? (int)Math.Min(int.MaxValue / 4, rent * MonthDays * 100 / sqm) : -1;
+        }
+
+        /// <summary>
+        /// Rent a month for a square metre, cents, where a district is by its id (the game's neighbourhood id, the mod's own districts' ids
+        /// too): the district's own figure for the use, the whole city's where the district has no building of it, -1 when no rent is read.
+        /// </summary>
+        public int PerSqmIn(string district, int use)
+        {
+            int at = Districts.IndexOf(district ?? string.Empty);
+            int own = at >= 0 ? PerSqm(at, use) : -1;
+            return own >= 0 ? own : PerSqm(use);
         }
 
         /// <summary>The mean rent a month of one unit of a use over the whole city, dollars; -1 for none.</summary>

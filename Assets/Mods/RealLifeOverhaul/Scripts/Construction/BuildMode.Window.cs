@@ -690,7 +690,7 @@ namespace RealLifeOverhaul.Construction
             string use = T(BuildCatalogue.UseKeys[(int)_use]);
             Sprite picture = _kit != null ? _kit.Icon(BuildModeCatalogue.Picture((int)_use), "Icon-Building") : null;
             bool wanted = BuildModeCatalogue.Wanted(_demandNow, _demandNow.Length) == (int)_use;
-            int rent = _d.RentPerSqm(_use);
+            int rent = _d.RentPerSqm(_use, _site.FirstColumn);
             for (int k = 0; k < n; k++)
             {
                 int i = _dOrder[k];
