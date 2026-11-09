@@ -246,6 +246,7 @@ namespace RealLifeOverhaul.Ui
                     h = h * 31 + (FurnitureCategoryToggle.CurrentActiveToggle != null ? FurnitureCategoryToggle.CurrentActiveToggle.GetInstanceID() : 0);
                     h = h * 31 + (UiWidgets.On(BuyKits.Get<UnityEngine.UI.Toggle>(GameContract.DesignerFavToggle, DesignerPanes.Furniture)) ? 1 : 0);
                     h = h * 31 + _needFilter;
+                    h = h * 31 + CatalogueSignature();
                 }
                 for (int t = (int)UiDesignerTool.Producer; t <= (int)UiDesignerTool.Security; t++)
                 {

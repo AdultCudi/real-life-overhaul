@@ -27,6 +27,7 @@ namespace RealLifeOverhaul.Ui
         private static readonly DesignerRules.Tally Tally = new DesignerRules.Tally();
         private static readonly Dictionary<string, float> Areas = new Dictionary<string, float>(256, StringComparer.Ordinal);
         private static readonly HashSet<string> Laid = new HashSet<string>(StringComparer.Ordinal);   // the pieces of floor this edit has laid, each counted once in the metres
+        private static readonly HashSet<string> Repaid = new HashSet<string>(StringComparer.Ordinal);   // the pieces of floor whose old material this edit has been paid back for
         private static readonly List<DesignerRequirementRules.Placed> Placed = new List<DesignerRequirementRules.Placed>(128);
         private static readonly List<RequireRow> Rows = new List<RequireRow>(12);
 
@@ -126,6 +127,7 @@ namespace RealLifeOverhaul.Ui
         {
             Tally.Clear();
             Laid.Clear();
+            Repaid.Clear();
             InteriorDesignerUI ui = Ui;
             object stack = ui != null && GameContract.DesignerUndoStack.Field != null ? GameContract.DesignerUndoStack.Field.GetValue(ui) : null;
             if (!(stack is IEnumerable actions))
@@ -199,13 +201,60 @@ namespace RealLifeOverhaul.Ui
             }
             if (floor)
             {
-                Tally.Add(DesignerRules.Cause.Floor, cost, seen.Count);
+                // The game's one figure for the action nets what the new material costs against what the old one is paid back; the two are told apart here.
+                float repaid = Repayment(action, ids, out int pieces);
+                Tally.Add(DesignerRules.Cause.Floor, cost + repaid, seen.Count);
                 Tally.Area += area;
+                if (pieces > 0)
+                {
+                    Tally.Add(DesignerRules.Cause.FloorBack, -repaid, pieces);
+                }
             }
             else
             {
                 Tally.Add(DesignerRules.Cause.Wall, cost, seen.Count);
             }
+        }
+
+        // What the game pays back in one laid-floor action: the price of the material each piece had, for the pieces whose material was laid in this edit (or that go back
+        // to what they were), never for what the room began with. The same rule as the game's InteriorElementTool.CalculateInteriorElementChangePrice.
+        private static float Repayment(object action, string[] ids, out int pieces)
+        {
+            pieces = 0;
+            var indices = GameContract.DesignerLaidIndices.Field != null ? GameContract.DesignerLaidIndices.Field.GetValue(action) as int[] : null;
+            var oldIds = GameContract.DesignerLaidOldIds.Field != null ? GameContract.DesignerLaidOldIds.Field.GetValue(action) as string[] : null;
+            var oldColours = GameContract.DesignerLaidOldColours.Field != null ? GameContract.DesignerLaidOldColours.Field.GetValue(action) as int[] : null;
+            string newId = GameContract.DesignerLaidNewId.Field != null ? GameContract.DesignerLaidNewId.Field.GetValue(action) as string : null;
+            int newColour = GameContract.DesignerLaidNewColour.Field != null && GameContract.DesignerLaidNewColour.Field.GetValue(action) is int c ? c : 0;
+            if (indices == null || oldIds == null || oldColours == null || newId == null || indices.Length != ids.Length || oldIds.Length != ids.Length || oldColours.Length != ids.Length)
+            {
+                return 0f;
+            }
+            float total = 0f;
+            for (int k = 0; k < ids.Length; k++)
+            {
+                if (!Originals.TryGetValue(ids[k], out Began[] began) || !InteriorElementsHelper.PresetsDictionary.TryGetValue(oldIds[k], out InteriorMaterialPreset old))
+                {
+                    continue;
+                }
+                Began start = FindBegan(began, indices[k]);
+                if (start.Preset == null)
+                {
+                    continue;
+                }
+                DesignerRules.PieceMoney(newId, newColour, start.Preset, start.Colour, oldIds[k], oldColours[k], old.price, 0f, out float back);
+                if (back <= 0f)
+                {
+                    continue;
+                }
+                total += back;
+                pieces++;
+                if (Repaid.Add(ids[k]) && InteriorElementsHelper.InteriorElementsCache.TryGetValue(ids[k], out InteriorElement piece) && piece != null)
+                {
+                    Tally.AreaBack += AreaOf(ids[k], piece);
+                }
+            }
+            return total;
         }
 
         // A piece of floor's size on the ground, from its own drawn bounds, kept for the edit.
@@ -229,8 +278,12 @@ namespace RealLifeOverhaul.Ui
         {
             i.EditTitle = UiText.T("reallife_ui_designer_edit");
             int n = 0;
-            string[] causes = { "reallife_ui_designer_cost_furniture", "reallife_ui_designer_cost_floor", "reallife_ui_designer_cost_walls", "reallife_ui_designer_cost_sold" };
-            DesignerRules.Cause[] order = { DesignerRules.Cause.Furniture, DesignerRules.Cause.Floor, DesignerRules.Cause.Wall, DesignerRules.Cause.Sold };
+            string[] causes =
+            {
+                "reallife_ui_designer_cost_furniture", "reallife_ui_designer_cost_floor", "reallife_ui_designer_cost_floor_back", "reallife_ui_designer_cost_walls",
+                "reallife_ui_designer_cost_sold"
+            };
+            DesignerRules.Cause[] order = { DesignerRules.Cause.Furniture, DesignerRules.Cause.Floor, DesignerRules.Cause.FloorBack, DesignerRules.Cause.Wall, DesignerRules.Cause.Sold };
             for (int k = 0; k < order.Length; k++)
             {
                 int things = Tally.Count[(int)order[k]];
@@ -239,8 +292,9 @@ namespace RealLifeOverhaul.Ui
                     continue;
                 }
                 float money = Tally.Money[(int)order[k]];
-                string label = order[k] == DesignerRules.Cause.Floor
-                    ? UiText.Fill(causes[k], "area", Math.Max(1, (int)Math.Round(Tally.Area)).ToString(System.Globalization.CultureInfo.InvariantCulture))
+                float metres = order[k] == DesignerRules.Cause.FloorBack ? Tally.AreaBack : Tally.Area;
+                string label = order[k] == DesignerRules.Cause.Floor || order[k] == DesignerRules.Cause.FloorBack
+                    ? UiText.Fill(causes[k], "area", Math.Max(1, (int)Math.Round(metres)).ToString(System.Globalization.CultureInfo.InvariantCulture))
                     : UiText.Fill(causes[k], "n", things.ToString(System.Globalization.CultureInfo.InvariantCulture));
                 i.Cost[n++] = new UiDesignerCostLine { Label = label, Value = UiText.Money(money), Ink = money < 0f ? UiRole.OkText : UiRole.Text };
             }

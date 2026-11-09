@@ -198,6 +198,8 @@ namespace RealLifeOverhaul.Ui
             if (c.CardCount == 0)
             {
                 c.Scroll = 0f;
+                c.ShownFirst = 0;
+                c.ShownLast = -1;
                 UiDraw.EmptyState(s, on, x, y, w, h, UiIcon.Sofa, c.NoneTitle, c.NoneBody);
                 return;
             }
@@ -210,6 +212,8 @@ namespace RealLifeOverhaul.Ui
             var inClip = new UiAt { Parent = -1, Clip = clip, Layer = on.Layer, Order = -1, Region = on.Region };
             int top = (int)(offset / step + 0.5f), last = Math.Min(rows - 1, top + Rows - 1);
             short list = s.AddList(rows, top, last - top + 1, clip, c.Chosen >= 0 ? c.Chosen / cols : -1);
+            c.ShownFirst = top * cols;
+            c.ShownLast = Math.Min(c.CardCount - 1, (last + 1) * cols - 1);
             for (int r = top; r <= last; r++)
             {
                 for (int k = 0; k < cols; k++)
@@ -226,7 +230,8 @@ namespace RealLifeOverhaul.Ui
         }
 
         // A tile: the item's picture over its name, its price and what it is for the room (ceiling, wall, what it holds); NEEDED over its corner when
-        // it fills a requirement not yet met, the star for a favourite.
+        // it fills a requirement not yet met, the star for a favourite, its size in grid cells over the picture's lower left and RLO over its lower right
+        // for a piece the mod's own fit-outs are made of.
         private static void Tile(UiScene s, UiAt at, UiDesignerCatalogue c, ref UiDesignerCard d, bool chosen, float x, float y, short list, int row)
         {
             int face = UiDraw.Box(s, at, x, y, TileW, TileH, chosen ? UiRole.RowSel : UiRole.Row, chosen ? UiRole.Accent : UiRole.None, UiTokens.RadiusLarge, chosen ? UiFlags.Selected : UiFlags.None);
@@ -243,6 +248,15 @@ namespace RealLifeOverhaul.Ui
                 Badge(s, over, x + UiTokens.S2, y + UiTokens.S2, c.NeededLabel, TileW - UiTokens.S2 * 3f - UiTokens.IconSmall - UiTokens.S2);
             }
             UiDraw.Icon(s, over, x + TileW - UiTokens.S2 - UiTokens.Icon, y + UiTokens.S2, UiTokens.Icon, UiIcon.Star, d.Favourite ? UiRole.Gold : UiRole.Muted, UiFlags.Decor, d.Favourite);
+            float lowY = y + UiTokens.S1 + TilePicture - UiTokens.Badge - UiTokens.S1 - UiTokens.S2, half = (TileW - UiTokens.S2 * 3f) / 2f;
+            if (!string.IsNullOrEmpty(d.Size))
+            {
+                Badge(s, over, x + UiTokens.S2, lowY, d.Size, d.Rlo ? half : TileW - UiTokens.S2 * 2f, UiRole.Text, false);
+            }
+            if (d.Rlo)
+            {
+                Badge(s, over, x + TileW - UiTokens.S2, lowY, c.RloLabel, half, UiRole.AccentText, true);
+            }
             float ty = y + UiTokens.S1 + TilePicture + UiTokens.S2, tw = TileW - UiTokens.S2 * 2f;
             UiDraw.Text(s, on, x + UiTokens.S2, ty, tw, UiStyle.BodyStrong, UiRole.Text, d.Name, UiFlags.Truncate);
             ty += Lh(UiStyle.BodyStrong);
@@ -257,8 +271,8 @@ namespace RealLifeOverhaul.Ui
             UiDraw.Node(s, at, x, y, TileW, TileH, CardCommand, d.Index, face, false, list, row);
         }
 
-        // A small amber label over a tile's corner: what it is for the business.
-        private static void Badge(UiScene s, UiAt at, float x, float y, string words, float most)
+        // A small label over a tile's corner: what it is for the business (amber), how big it is, or whose it is. From the right the label ends at x.
+        private static void Badge(UiScene s, UiAt at, float x, float y, string words, float most, UiRole ink = UiRole.WarnText, bool fromRight = false)
         {
             if (string.IsNullOrEmpty(words))
             {
@@ -266,8 +280,12 @@ namespace RealLifeOverhaul.Ui
             }
             float tw = Math.Min(UiTextRules.Width(words, UiStyle.SmallStrong) + UiTokens.S1, Math.Max(UiTokens.S8, most - UiTokens.S3 * 2f));
             float w = UiDraw.Snap(tw + UiTokens.S3 * 2f), h = UiTokens.Badge + UiTokens.S1;
+            if (fromRight)
+            {
+                x -= w;
+            }
             int face = UiDraw.Box(s, at, x, y, w, h, UiRole.Panel, UiRole.None, UiTokens.RadiusSmall, UiFlags.Overflow);
-            UiDraw.TextMiddle(s, at.In(face), x + UiTokens.S3, y, h, tw, UiStyle.SmallStrong, UiRole.WarnText, words, UiFlags.Label | UiFlags.Truncate);
+            UiDraw.TextMiddle(s, at.In(face), x + UiTokens.S3, y, h, tw, UiStyle.SmallStrong, ink, words, UiFlags.Label | UiFlags.Truncate);
         }
 
         /// <summary>A picture of the game's in a box, kept to its own shape.</summary>

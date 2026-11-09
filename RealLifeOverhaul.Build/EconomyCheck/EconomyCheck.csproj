@@ -904,6 +904,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Designer\DesignerRules.cs" Link="Mod\Designer\DesignerRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Designer\DesignerGlyphs.cs" Link="Mod\Designer\DesignerGlyphs.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Designer\DesignerRequirementRules.cs" Link="Mod\Designer\DesignerRequirementRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Designer\DesignerFitOut.cs" Link="Mod\Designer\DesignerFitOut.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Construction\BuildFavouriteRules.cs" Link="Mod\BuildFavouriteRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiHud.cs" Link="Mod\UiHud.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\UiHudNotice.cs" Link="Mod\UiHudNotice.cs" />

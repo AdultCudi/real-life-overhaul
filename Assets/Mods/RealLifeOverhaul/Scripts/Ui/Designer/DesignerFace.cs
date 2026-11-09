@@ -70,6 +70,7 @@ namespace RealLifeOverhaul.Ui
                 _m.BusinessType.Offset = 0f;
             }
             UiDesignerPanels.Lay(s, _m, frame, dark, DesignerHints.Wrap(keys));
+            DesignerGame.CatalogueDrawn(_m.Panel == UiDesignerPanelKind.Furniture ? _m.Catalogue : null);
             int rects = UiDesignerPanels.Blocks(_m, frame, _blocks);
             DesignerKits.Shield(_blocks, rects);
             _seen = unchecked(DesignerGame.Signature() * 31 + HintsSignature());

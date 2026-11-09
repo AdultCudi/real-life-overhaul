@@ -218,7 +218,7 @@ namespace RealLifeOverhaul.Ui
             m.ShadeChosen = Math.Max(0, Math.Min(colour, m.ShadeCount - 1));
             if (kind == 0)
             {
-                int pieces = LayPlan(p, colour, null, out float cost);
+                int pieces = LayPlan(p, colour, null, out float cost, out float refund);
                 m.LayLabel = UiText.T("reallife_ui_designer_lay");
                 if (pieces == 0)
                 {
@@ -228,6 +228,13 @@ namespace RealLifeOverhaul.Ui
                 else
                 {
                     m.LayFigure = UiText.Money(cost);
+                    if (refund > 0.5f && m.DetailCount < UiDesignerMaterials.RowsMost)
+                    {
+                        m.DetailLabels[m.DetailCount] = UiText.T("reallife_ui_designer_sold_back");
+                        m.DetailValues[m.DetailCount] = UiText.Money(-refund);
+                        m.DetailInks[m.DetailCount] = UiRole.OkText;
+                        m.DetailCount++;
+                    }
                     if (cost > _balanceAfter)
                     {
                         m.LayOff = true;
@@ -241,11 +248,13 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>
         /// What laying a material over every piece of floor comes to: how many pieces change, at the game's own price for each (against what the room began
-        /// with). Fills the action's arrays when asked. Only pieces of floor that are in the room now are counted.
+        /// with), and how much of that the game pays back for the material a piece has from this edit. Fills the action's arrays when asked. Only pieces of floor
+        /// that are in the room now are counted.
         /// </summary>
-        private static int LayPlan(InteriorMaterialPreset preset, int colour, List<object> into, out float cost)
+        private static int LayPlan(InteriorMaterialPreset preset, int colour, List<object> into, out float cost, out float refund)
         {
             cost = 0f;
+            refund = 0f;
             int pieces = 0;
             foreach (KeyValuePair<string, InteriorElement> pair in InteriorElementsHelper.InteriorElementsCache)
             {
@@ -263,8 +272,10 @@ namespace RealLifeOverhaul.Ui
                         continue;
                     }
                     Began start = FindBegan(began, md.materialIndex);
-                    cost += DesignerRules.PieceCost(preset.uuid, colour, start.Preset ?? md.preset.uuid, start.Preset != null ? start.Colour : md.colorIndex, md.preset.uuid, md.colorIndex,
-                        md.preset.price, preset.price);
+                    float charge = DesignerRules.PieceMoney(preset.uuid, colour, start.Preset ?? md.preset.uuid, start.Preset != null ? start.Colour : md.colorIndex, md.preset.uuid,
+                        md.colorIndex, md.preset.price, preset.price, out float back);
+                    cost += charge - back;
+                    refund += back;
                     pieces++;
                     if (into != null)
                     {
@@ -304,7 +315,7 @@ namespace RealLifeOverhaul.Ui
             }
             int colour = InteriorElementTool.selectedPresetColorIndex;
             var pieces = new List<object>(256);
-            int n = LayPlan(preset, colour, pieces, out float cost);
+            int n = LayPlan(preset, colour, pieces, out float cost, out _);
             if (n == 0)
             {
                 return false;

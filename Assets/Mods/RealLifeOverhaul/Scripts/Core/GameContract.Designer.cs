@@ -48,6 +48,11 @@ namespace RealLifeOverhaul
         public static readonly GameMember DesignerSoldPackPrice = Field(UiDesigner, DesignerAssembly, DesignerTools + "PackageSellRevertibleAction", "_price", "Single");
         public static readonly GameMember DesignerLaidCost = Field(UiDesigner, DesignerAssembly, DesignerTools + "InteriorElementRevertibleAction", "_cost", "Single");
         public static readonly GameMember DesignerLaidIds = Field(UiDesigner, DesignerAssembly, DesignerTools + "InteriorElementRevertibleAction", "_interiorElementIds", "String[]");
+        public static readonly GameMember DesignerLaidIndices = Field(UiDesigner, DesignerAssembly, DesignerTools + "InteriorElementRevertibleAction", "_materialIndices", "Int32[]");
+        public static readonly GameMember DesignerLaidOldIds = Field(UiDesigner, DesignerAssembly, DesignerTools + "InteriorElementRevertibleAction", "_oldPresetIds", "String[]");
+        public static readonly GameMember DesignerLaidOldColours = Field(UiDesigner, DesignerAssembly, DesignerTools + "InteriorElementRevertibleAction", "_oldPresetColorIndices", "Int32[]");
+        public static readonly GameMember DesignerLaidNewId = Field(UiDesigner, DesignerAssembly, DesignerTools + "InteriorElementRevertibleAction", "_newPresetId", "String");
+        public static readonly GameMember DesignerLaidNewColour = Field(UiDesigner, DesignerAssembly, DesignerTools + "InteriorElementRevertibleAction", "_newPresetColorIndex", "Int32");
         public static readonly GameMember DesignerComposed = Field(UiDesigner, DesignerAssembly, "BigAmbitions.InteriorDesigner.CompositeRevertibleAction", "_actions", "IRevertibleAction[]");
 
         // The action panels' own list (the furniture panel, the materials, the item lists, the time of day, the blueprint), found once as the designer opens.

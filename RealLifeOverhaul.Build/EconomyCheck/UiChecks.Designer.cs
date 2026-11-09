@@ -183,13 +183,13 @@ internal static partial class Program
             UiDesignerModel withTabs = UiSamples.Designer(DesignerWords, "furniture");
             UiDesignerPanels.Lay(new UiScene(), withTabs, tf, true, UiDefaultKeys.Keyboard);
             UiDesignerCatalogue c = withTabs.Catalogue;
-            tabs &= c.TabCount == 8 && UiDesignerPanels.TabAt(c, c.TabLeft[0] - 8f) == -1 && UiDesignerPanels.TabAt(c, c.TabRight[c.TabCount - 1] + 40f) == -1;
+            tabs &= c.TabCount == 9 && UiDesignerPanels.TabAt(c, c.TabLeft[0] - 8f) == -1 && UiDesignerPanels.TabAt(c, c.TabRight[c.TabCount - 1] + 40f) == -1;
             for (int i = 0; i < c.TabCount; i++)
             {
                 tabs &= c.TabRight[i] > c.TabLeft[i] && UiDesignerPanels.TabAt(c, (c.TabLeft[i] + c.TabRight[i]) / 2f) == i && (i == 0 || c.TabLeft[i] >= c.TabRight[i - 1]);
             }
         }
-        Check(tabs, "designer places: the eight categories stand in a row in order at every frame, and a place across it names the one it is over");
+        Check(tabs, "designer places: the eight categories and the RLO fit-out tab stand in a row in order at every frame, and a place across it names the one it is over");
         // The bar: the tool row, its steps and the right end stand between the time and the screen's edge at the narrowest frame.
         UiFrame narrow = UiFrame.FullMenu(4f / 3f, "Interior designer");
         UiDesignerModel bar = UiSamples.Designer(DesignerWords, "second_floor");

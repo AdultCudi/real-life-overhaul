@@ -81,27 +81,31 @@ namespace RealLifeOverhaul.Ui
         // ------------------------------------------------------------------ what a piece of floor costs
 
         /// <summary>
-        /// The price of changing one piece of a floor or a wall to a material, as the game's own tool works it out (InteriorElementTool): nothing if it
-        /// is that material already; going back to what it was when the designer opened takes back what the piece cost this time; otherwise the new
-        /// price, less what a change made this time paid for the material it now has. The material the room began with is never paid back.
+        /// What changing one piece of a floor or a wall to a material comes to, as the game's own tool works it out (InteriorElementTool): the charge for the new material
+        /// and, apart from it, the refund of the one it had. Nothing at all if it is that material already. Going back to what it was when the designer opened takes back
+        /// what the piece cost this time and charges nothing; otherwise the new price is charged and the material a change made this time put there is paid back. The
+        /// material the room began with is never paid back: the game refunds only what this edit laid.
         /// </summary>
-        public static float PieceCost(string newId, int newColour, string startId, int startColour, string nowId, int nowColour, float nowPrice, float newPrice)
+        public static float PieceMoney(string newId, int newColour, string startId, int startColour, string nowId, int nowColour, float nowPrice, float newPrice, out float refund)
         {
-            bool same = nowId == newId && nowColour == newColour;
-            if (same)
+            refund = 0f;
+            if (nowId == newId && nowColour == newColour)
             {
                 return 0f;
             }
-            if (startId == newId && startColour == newColour)
+            bool home = startId == newId && startColour == newColour;
+            if (home || nowId != startId || nowColour != startColour)
             {
-                return -nowPrice;
+                refund = nowPrice;
             }
-            float cost = 0f;
-            if (nowId != startId || nowColour != startColour)
-            {
-                cost -= nowPrice;
-            }
-            return cost + newPrice;
+            return home ? 0f : newPrice;
+        }
+
+        /// <summary>The price of changing one piece, the charge less the refund: what the game's tool adds to the edit.</summary>
+        public static float PieceCost(string newId, int newColour, string startId, int startColour, string nowId, int nowColour, float nowPrice, float newPrice)
+        {
+            float charge = PieceMoney(newId, newColour, startId, startColour, nowId, nowColour, nowPrice, newPrice, out float refund);
+            return charge - refund;
         }
 
         // ------------------------------------------------------------------ the time of day
@@ -183,17 +187,91 @@ namespace RealLifeOverhaul.Ui
             return one.Length >= 2 ? one.Substring(0, 2).ToUpperInvariant() : one.ToUpperInvariant();
         }
 
+        // ------------------------------------------------------------------ what a piece of furniture is for the room
+
+        /// <summary>Where a piece goes besides the floor.</summary>
+        public enum Place : byte { None = 0, Wall, Ceiling }
+
+        /// <summary>Where a piece hangs, by the item's own placement flags; a piece that snaps to the ceiling is a ceiling piece even if the wall flag is set too.</summary>
+        public static Place PlaceOf(bool wallMounted, bool snapToCeiling) => snapToCeiling ? Place.Ceiling : wallMounted ? Place.Wall : Place.None;
+
+        public const float DefaultCell = 0.5f;   // metres: the item's own placement step when the data holds none
+        public const string SizeShort = "{w} x {d}";   // a size on a tile, where the unit would not fit in every language; the detail says it in words
+
+        /// <summary>
+        /// A piece's footprint in the game's grid cells, as its grid filler counts them (GridFiller.TryPlaceItem): each side rounded to the centimetre, divided by the
+        /// cell and rounded up. False for a piece with no footprint, which has no size to show.
+        /// </summary>
+        public static bool Tiles(float width, float depth, float cell, out int wide, out int deep)
+        {
+            wide = deep = 0;
+            if (!(width > 0.005f) || !(depth > 0.005f))
+            {
+                return false;
+            }
+            float step = cell > 0f ? cell : DefaultCell;
+            wide = Math.Max(1, (int)Math.Ceiling((float)Math.Round(width, 2) / step));
+            deep = Math.Max(1, (int)Math.Ceiling((float)Math.Round(depth, 2) / step));
+            return true;
+        }
+
+        /// <summary>The floor extent of a piece's colliders, merged as the game merges them (MovingServiceHelper.MergeColliders): the box all of them lie in.</summary>
+        public struct Extent
+        {
+            public float MinX, MaxX, MinZ, MaxZ;
+            public int Count;
+
+            /// <summary>One collider: its size and its centre, on the ground's two axes.</summary>
+            public void Add(float sizeX, float sizeZ, float centreX, float centreZ)
+            {
+                float x0 = centreX - sizeX * 0.5f, x1 = centreX + sizeX * 0.5f, z0 = centreZ - sizeZ * 0.5f, z1 = centreZ + sizeZ * 0.5f;
+                if (Count == 0)
+                {
+                    MinX = x0;
+                    MaxX = x1;
+                    MinZ = z0;
+                    MaxZ = z1;
+                }
+                else
+                {
+                    MinX = Math.Min(MinX, x0);
+                    MaxX = Math.Max(MaxX, x1);
+                    MinZ = Math.Min(MinZ, z0);
+                    MaxZ = Math.Max(MaxZ, z1);
+                }
+                Count++;
+            }
+
+            public float Width => Count > 0 ? MaxX - MinX : 0f;
+            public float Depth => Count > 0 ? MaxZ - MinZ : 0f;
+        }
+
+        /// <summary>
+        /// A piece's facts for its tile, in the player's words: where it goes ("ceiling", "wall"), what it holds ("holds 24") joined in one line, and its size in
+        /// cells ("2 x 1 tiles"). A fact a piece does not have is null.
+        /// </summary>
+        public static void FactWords(Place place, int holds, int wide, int deep, string holdsPattern, string ceilingWord, string wallWord, string sizePattern, out string kind, out string size)
+        {
+            string where = place == Place.Ceiling ? ceilingWord : place == Place.Wall ? wallWord : null;
+            string holding = holds > 0 ? (holdsPattern ?? "holds {n}").Replace("{n}", holds.ToString(CultureInfo.InvariantCulture)) : null;
+            kind = where != null && holding != null ? where + ", " + holding : where ?? holding;
+            size = wide > 0 && deep > 0
+                ? (sizePattern ?? "{w} x {d}").Replace("{w}", wide.ToString(CultureInfo.InvariantCulture)).Replace("{d}", deep.ToString(CultureInfo.InvariantCulture))
+                : null;
+        }
+
         // ------------------------------------------------------------------ the cost lines
 
-        /// <summary>The kinds of change that cost or pay: a piece of furniture bought, a floor or wall laid, a thing sold back.</summary>
-        public enum Cause { Furniture = 0, Floor, Wall, Sold, Count }
+        /// <summary>The kinds of change that cost or pay: a piece of furniture bought, a floor or wall laid, a thing sold back, the floor a new one laid over paid back.</summary>
+        public enum Cause { Furniture = 0, Floor, Wall, Sold, FloorBack, Count }
 
         /// <summary>Money by cause for this edit: what each costs (positive) or pays back (negative), and how many things it was.</summary>
         public sealed class Tally
         {
             public readonly float[] Money = new float[(int)Cause.Count];
             public readonly int[] Count = new int[(int)Cause.Count];
-            public float Area;   // square metres of floor laid
+            public float Area;       // square metres of floor laid
+            public float AreaBack;   // square metres of floor paid back
 
             public void Clear()
             {
@@ -203,6 +281,7 @@ namespace RealLifeOverhaul.Ui
                     Count[i] = 0;
                 }
                 Area = 0f;
+                AreaBack = 0f;
             }
 
             /// <summary>One change of a cause: its price (a refund negative) and how many things it was.</summary>
