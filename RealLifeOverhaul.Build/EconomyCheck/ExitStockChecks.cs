@@ -179,7 +179,7 @@ internal static partial class Program
         f.World.State = () => state;
         f.World.Fallback = new[] { revDay, profitDay };
         f.Engine = new MarketEngine(state, new MarketTape(seed), f.World);
-        f.Engine.FirmDealt = (id, shares, cents, money) => f.Dealt.Add(new[] { (long)id, shares, cents, money });
+        f.Engine.FirmDealt = (id, shares, cents, money, fee) => f.Dealt.Add(new[] { (long)id, shares, cents, money, fee });
         f.Cap = FundedCap();
         f.Cap.Place = place;
         var file = new ExitFile { Seed = 5 };

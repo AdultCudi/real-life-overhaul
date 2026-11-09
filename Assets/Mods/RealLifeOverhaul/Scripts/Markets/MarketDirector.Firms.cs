@@ -140,16 +140,16 @@ namespace RealLifeOverhaul.Markets
         }
 
         // The founder dealt in a firm's shares on this machine: the tech sector follows its cap table.
-        private void FirmDealtHeard(int stockId, long shares, int cents, long money)
+        private void FirmDealtHeard(int stockId, long shares, int cents, long money, long fee)
         {
-            Action<int, long, int, long> told = MarketBridges.FirmDealt;
+            Action<int, long, int, long, long> told = MarketBridges.FirmDealt;
             if (told == null)
             {
                 return;
             }
             try
             {
-                told(stockId, shares, cents, money);
+                told(stockId, shares, cents, money, fee);
             }
             catch (Exception e)
             {

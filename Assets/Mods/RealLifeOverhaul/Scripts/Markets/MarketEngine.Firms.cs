@@ -10,8 +10,9 @@ namespace RealLifeOverhaul.Markets
     /// </summary>
     public sealed partial class MarketEngine
     {
-        /// <summary>The founder dealt in a firm's shares on the founder's machine: the stock, the shares (under nothing: sold), the price in cents and the money before commission.</summary>
-        public Action<int, long, int, long> FirmDealt;
+        /// <summary>The founder dealt in a firm's shares: the stock, the shares (under nothing: sold), the price in cents,
+        /// the money before commission and the commission.</summary>
+        public Action<int, long, int, long, long> FirmDealt;
 
         /// <summary>The player's firm of a place on the market, or null; with <paramref name="live"/> only one still listed.</summary>
         public Stock FirmByPlace(string place, bool live = true)

@@ -306,9 +306,9 @@ namespace RealLifeOverhaul.Tech
 
         /// <summary>
         /// The player dealt in a firm's shares on the market (MarketBridges.FirmDealt): the cap table follows the stock. Called from the market's own moment on this
-        /// machine, so it changes nothing there. This is where a gain on the shares sold is noted for the tax, as ExitSell does for the older sale.
+        /// machine, so it changes nothing there. The gain on shares sold is noted here for the tax, net of the commission, as ExitSell notes the older sale's.
         /// </summary>
-        internal void FirmStockDealt(int stockId, long shares, int cents, long money)
+        internal void FirmStockDealt(int stockId, long shares, int cents, long money, long fee)
         {
             if (!_ventureOn || _stock == null || Save == null)
             {
@@ -323,13 +323,21 @@ namespace RealLifeOverhaul.Tech
                 {
                     continue;
                 }
+                long gain = 0;
+                if (shares < 0)
+                {
+                    // Before Align: the stock holds the shares after the sale, so the shares held before it are those and the ones sold. The market's money is today's.
+                    gain = ExitGains.ForMarketSale(_gains, c, place, _firms[i].File.Name, money, fee, info.Founder - shares, shares, Save.Day, Prices.Level);
+                    GainNotice(_firms[i].File.Name, gain);
+                }
                 ExitStockRules.Align(c, info);
                 if (shares < 0)
                 {
                     ExitBridges.Practised?.Invoke(TalentCatalogue.Selling, 1);
                 }
-                Logger?.Info("Tech: the player " + (shares < 0 ? "sold " + (-shares) : "bought " + shares) + " share(s) of " + _firms[i].File.Name + " on the market at " + TechText.Cents(cents) + ", "
-                             + TechText.Cents(money) + " before the commission; the cap table has them " + info.Founder + " the player's and " + info.Float + " the public's.");
+                Logger?.Info("Tech: the player " + (shares < 0 ? "sold " + (-shares) : "bought " + shares) + " share(s) of " + _firms[i].File.Name
+                             + " on the market at " + TechText.Cents(cents) + ", " + TechText.Cents(money) + " before the commission; the cap table has them " + info.Founder + " the player's and "
+                             + info.Float + " the public's" + (shares < 0 ? GainLog(gain) : string.Empty) + ".");
                 ChangedTech();
                 return;
             }

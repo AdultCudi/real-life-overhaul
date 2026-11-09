@@ -694,6 +694,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--exit-market-gain")
+        {
+            ExitMarketGainChecks();   // (a founder's sale on the market noted for the return alone, while working on it: ExitMarketGainChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--exit-job")
         {
             ExitJobChecks();   // (the job an acqui-hire opens, while working on it: ExitJobChecks.cs)
@@ -1198,6 +1204,7 @@ internal static partial class Program
         StartupExitsChecks();
         SellTenthChecks();
         ExitTaxChecks();
+        ExitMarketGainChecks();   // a founder's sale of a listed firm's shares in the Stocks app is a capital gain on the return (ExitMarketGainChecks.cs)
         ExitJobChecks();
         StartupRivalsChecks();
         Firms();
