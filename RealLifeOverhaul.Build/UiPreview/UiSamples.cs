@@ -452,45 +452,6 @@ internal static partial class UiSamples
     /// <summary>Money as the game writes it in English: a dollar sign and thousands.</summary>
     public static string Dollars(float amount) => "$" + amount.ToString("#,0", System.Globalization.CultureInfo.InvariantCulture);
 
-    /// <summary>A dashboard of the city's people, the shape the Economy app's population view takes.</summary>
-    public static UiDashboardModel Dashboard(UiWords t)
-    {
-        var m = new UiDashboardModel
-        {
-            Tabs = new[] { t("reallife_ui_gallery_tab_city", "City"), t("reallife_ui_gallery_tab_district", "District"), t("reallife_ui_gallery_tab_people", "People") },
-            Figures = SampleFigures(t),
-            Table = SampleTable(t),
-            SideTitle = t("reallife_ui_sample_share", "Your share"),
-            Side = new[]
-            {
-                new UiPairModel { Key = "People employed", Value = "1,240" },
-                new UiPairModel { Key = "Share of spending", Value = "6.2%" },
-                new UiPairModel { Key = "Taxes paid", Value = "$41,200" },
-                new UiPairModel { Key = "Customers a day", Value = "3,860" },
-            },
-            StatsTitle = t("reallife_ui_sample_mood", "How people feel"),
-            Stats = new[]
-            {
-                new UiStatModel { Label = "Satisfaction", Figure = "71", Value = 71 },
-                new UiStatModel { Label = "Rent against pay", Figure = "38", Value = 38 },
-                new UiStatModel { Label = "Safety", Figure = "64", Value = 64 },
-                new UiStatModel { Label = "Getting about", Figure = "82", Value = 82 },
-            },
-        };
-        m.FigureCount = m.Figures.Length;
-        m.SideCount = m.Side.Length;
-        m.StatCount = m.Stats.Length;
-        m.Prompts = new[]
-        {
-            new UiPrompt { Action = UiAction.Move, Label = t("reallife_ui_prompt_move", "Move") },
-            new UiPrompt { Action = UiAction.TabPrev, Label = t("reallife_ui_prompt_page", "Page") },
-            new UiPrompt { Action = UiAction.Confirm, Label = t("reallife_ui_prompt_select", "Select") },
-            new UiPrompt { Action = UiAction.Back, Label = t("reallife_ui_prompt_back", "Back") },
-        };
-        m.PromptCount = m.Prompts.Length;
-        return m;
-    }
-
     /// <summary>The board's question to a founder whose firm account is short, as the desk session's one step.</summary>
     public static UiSessionModel BoardSession(UiWords t)
     {
@@ -611,47 +572,6 @@ internal static partial class UiSamples
         };
         m.PromptCount = m.Prompts.Length;
         return m;
-    }
-
-    private static UiFigureModel[] SampleFigures(UiWords t)
-    {
-        return new[]
-        {
-            new UiFigureModel { Label = t("reallife_ui_sample_people", "People"), Value = "62,800", Change = "+1.8%", Rising = true, Good = true, Trend = new[] { 60.1f, 60.6f, 61.0f, 61.5f, 61.4f, 62.2f, 62.8f } },
-            new UiFigureModel { Label = t("reallife_ui_sample_jobs", "Jobs"), Value = "79,440", Change = "+0.6%", Rising = true, Good = true, Trend = new[] { 78.2f, 78.7f, 78.5f, 79.0f, 79.2f, 79.4f } },
-            new UiFigureModel { Label = t("reallife_ui_sample_unemployed", "Out of work"), Value = "6.4%", Change = "+0.3", Rising = true, Good = false, Trend = new[] { 5.6f, 5.9f, 6.1f, 6.0f, 6.2f, 6.4f } },
-            new UiFigureModel { Label = t("reallife_ui_sample_rent", "Average rent"), Value = "$2,140", Change = "+2.1%", Rising = true, Good = false, Trend = new[] { 2.0f, 2.02f, 2.05f, 2.09f, 2.12f, 2.14f } },
-        };
-    }
-
-    private static UiTableModel SampleTable(UiWords t)
-    {
-        return new UiTableModel
-        {
-            Columns = new[]
-            {
-                new UiColumn { Title = t("reallife_ui_sample_district", "District") },
-                new UiColumn { Title = t("reallife_ui_sample_people", "People"), Width = 120f, Right = true },
-                new UiColumn { Title = t("reallife_ui_sample_jobs", "Jobs"), Width = 120f, Right = true },
-                new UiColumn { Title = t("reallife_ui_sample_rent", "Average rent"), Width = 160f, Right = true },
-            },
-            Rows = new[]
-            {
-                new[] { t("ba:neighborhood_midtown", "Midtown"), "14,210", "28,400", "$2,620" },
-                new[] { t("ba:neighborhood_murrayhill", "Murray Hill"), "9,880", "7,100", "$2,280" },
-                new[] { t("ba:neighborhood_garmentdistrict", "Garment District"), "6,040", "11,900", "$1,960" },
-                new[] { t("ba:neighborhood_hellskitchen", "Hell's Kitchen"), "8,310", "6,200", "$2,050" },
-                new[] { t("ba:neighborhood_lowermanhattan", "Lower Manhattan"), "7,450", "9,800", "$1,880" },
-                new[] { t("ba:neighborhood_industrycity", "Industry City"), "5,960", "8,700", "$1,420" },
-                new[] { t("ba:neighborhood_thehamptons", "The Hamptons"), "1,180", "640", "$4,900" },
-                new[] { t("reallife_neighborhood_uptown", "Uptown"), "5,200", "3,900", "$1,740" },
-                new[] { t("reallife_neighborhood_cedarheights", "Cedar Heights"), "4,570", "2,800", "$1,610" },
-            },
-            RowCount = 9,
-            Selected = -1,
-            EmptyTitle = t("reallife_ui_sample_none", "Nothing here yet"),
-            EmptyBody = t("reallife_ui_sample_none_body", "The city has no figures for this yet."),
-        };
     }
 
     private static UiNavModel Nav(string label, string count, float hue, bool selected) => new UiNavModel { Label = label, Count = count, Hue = hue, Selected = selected };

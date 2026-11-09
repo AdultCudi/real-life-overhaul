@@ -49,11 +49,9 @@ mixed with a few other games: the owner's choice of 1 November 2026. The rules a
      arrows and dots fixed at the screen's foot. Every app the phone lists is `Phone/PhoneItems`, which the status bar's
      app row and All apps read too.
 
-   The four older shapes draw inside the app window and stay until their screens are converted. Start no new screen on
+   The three older shapes draw inside the app window and stay until their screens are converted. Start no new screen on
    them:
    - **List and detail** (`UiListDetail`): groups, a list and the selected record. Contacts uses it, in the window.
-   - **Dashboard** (`UiDashboard`, with its page shapes): figures, tables and a side panel. The Economy app's views
-     and the tech firms' pages. (Flare is its own app on the kit, FlareFace and FlareScreen.)
    - **Session steps** (`UiSessionSteps`): a desk session's steps, its question and its choices.
    - **Form** (`UiForm`): settings before an action, or a page of lines and actions.
 

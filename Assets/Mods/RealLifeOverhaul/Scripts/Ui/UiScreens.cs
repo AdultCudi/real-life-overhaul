@@ -6,7 +6,6 @@ namespace RealLifeOverhaul.Ui
     public enum UiTemplate : byte
     {
         ListDetail = 0,   // groups, list and detail (Contacts)
-        Dashboard,        // figures over time (the Economy app's views)
         Session,          // a desk session's steps and choices
         Form,             // settings and choices before an action
         Gallery,          // the kit's own gallery

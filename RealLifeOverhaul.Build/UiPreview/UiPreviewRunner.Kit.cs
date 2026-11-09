@@ -8,8 +8,6 @@ public static partial class UiPreviewRunner
     // stands indoors, where a desk is; the parts stand over the day street, as the style sheet does.
     static partial void AddKit(List<Screen> screens)
     {
-        screens.Add(new Screen { Name = "dashboard", AppName = "Economy", Lay = (s, f, d, k) => UiDashboard.Lay(s, UiSamples.Dashboard(English), f, d, k),
-            HoverCommand = UiDashboard.RowCommand, HoverArg = 2, Walk = new[] { Down, Down, Down, Right, Down, Left, Up, Up }, Backdrop = "02.jpg" });
         screens.Add(new Screen { Name = "session", AppName = "Desk", Lay = (s, f, d, k) => UiSessionSteps.Lay(s, UiSamples.Session(English), f, d, k),
             Walk = new[] { Down, Down, Down, Right, Left, Up }, Backdrop = "03.jpg" });
         screens.Add(new Screen { Name = "session_board", AppName = "Desk", Lay = (s, f, d, k) => UiSessionSteps.Lay(s, UiSamples.BoardSession(English), f, d, k),
