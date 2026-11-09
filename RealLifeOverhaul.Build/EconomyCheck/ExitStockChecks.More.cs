@@ -276,9 +276,9 @@ internal static partial class Program
         // the shares sold by the tech sector's older paths are not open to a firm whose shares trade
         string deals = ModSource(@"Tech\TechDirector.Deals.cs");
         string exitsFile = ModSource(@"Tech\TechDirector.Exits.cs");
-        Check(Regex.IsMatch(deals, @"internal bool SellShares[\s\S]{0,420}StockSellRefused\(place, firm\.File\.Name\)") && Regex.IsMatch(exitsFile, @"internal bool ExitSell[\s\S]{0,420}StockSellRefused\(place, firm\.File\.Name\)")
+        Check(!deals.Contains("internal bool SellShares") && Regex.IsMatch(exitsFile, @"internal bool ExitSell[\s\S]{0,420}StockSellRefused\(place, firm\.File\.Name\)")
               && Regex.IsMatch(exitsFile, @"internal long ExitRoom[\s\S]{0,520}HasStock\(place\)") && Regex.IsMatch(exitsFile, @"internal int ExitLockLeft[\s\S]{0,200}StockLockLeft\(place\)"),
-            "money: a tenth to the lead and the window's sale are both refused for a firm whose shares trade, and the lock-up they read is the stock's");
+            "money: the window's sale, the only older path left, is refused for a firm whose shares trade, and the lock-up it reads is the stock's");
         Check(Regex.IsMatch(deals, @"internal bool StartRaise[\s\S]{0,500}StockRaiseRefused") && Regex.IsMatch(deals, @"internal bool TakeSheet[\s\S]{0,600}HasStock\(place\)"),
             "money: a firm whose shares trade closes no private round: the shares in issue are the stock's, and a round under way ends with the listing");
         Check(exitsFile.Contains("VentureGame.Give(Level(paid), VentureGame.ShareSaleKey, firm.File.Name);") && exitsFile.Contains("VentureGame.Give(Level(net), VentureGame.RaiseKey, firm.File.Name, firm.Reg);"),
