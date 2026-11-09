@@ -18,6 +18,7 @@ Start at the [front door](../RealLifeOverhaul.Build/README.md) if you are new: i
 
 ## Reference
 
+- [City reads for other mods](reference/mod-api.md): the versioned public contract for citizens, reservations and slowed lanes.
 - [Logs and debugging](reference/logs-and-debugging.md): where `Player.log` is, what the mod writes there, and how to report a bug.
 - [The test run](reference/test-run.md): one button that runs every automatic check of the city expansion, and the one line a feature adds to join it.
 - [Architecture](reference/architecture.md): start-up, the director pattern, wiring, the save, the guard, per-frame rules.

@@ -11,6 +11,7 @@ An architecture decision record (ADR) says why the code is built the way it is: 
 | [0005](0005-rlo-texts-local-model.md) | RLO Texts runs a small text model on the player's own PC, offline | RLO-PERF-001, RLO-PERF-011, RLO-MP-004, RLO-ARC-009 |
 | [0007](0007-rlo-interface.md) | The RLO interface: the mod's own designed screens | RLO-UI-001 to 016, RLO-ARC-013 |
 | [0006](0006-your-own-ai.md) | Your own AI: RLO Texts' cards may go to an AI service the player chooses | RLO-PERF-001, RLO-MP-004, RLO-MP-007, RLO-ARC-009, RLO-ARC-012 |
+| [0007](0007-a-read-api-for-other-mods.md) | A read API for other mods | RLO-ARC-002, RLO-ARC-005, RLO-ARC-007, RLO-ARC-009, RLO-PERF-003, RLO-MP-004, RLO-TST-001 |
 | [0008](0008-cs2-interface-look.md) | The RLO interface's look: Cities: Skylines II in place of the City Ledger | RLO-UI-002, 004, 006 to 008, 010, 015 to 018 |
 
 ## Adding a record

@@ -40,6 +40,7 @@ namespace RealLifeOverhaul.Flare
 
         /// <summary>Moves when the account changes, so a screen lays out again and not every frame.</summary>
         public int Revision { get; private set; }
+        internal bool Faulted => _broken;
 
         /// <summary>The save's account; null while Flare is not running.</summary>
         public FlareFile File => Running ? _file : null;
