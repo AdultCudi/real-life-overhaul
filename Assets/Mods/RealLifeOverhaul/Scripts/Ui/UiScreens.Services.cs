@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_co_part_off", "reallife_econ_day", "reallife_ibox_sec_how_often", "reallife_ibox_skill", "reallife_svc_add_do",
                 "reallife_svc_add_no_hours", "reallife_svc_add_own_hours", "reallife_svc_add_says", "reallife_svc_app", "reallife_svc_asking_says",
                 "reallife_svc_bid_accept", "reallife_svc_bid_clause", "reallife_svc_bid_counter", "reallife_svc_bid_no_clause",
-                "reallife_svc_bid_price", "reallife_svc_bid_refuse", "reallife_svc_bid_staff_keep", "reallife_svc_bid_staff_not",
+                "reallife_svc_bid_price", "reallife_svc_bid_refuse", "reallife_svc_bid_staff_keep", "reallife_svc_bid_staff_hold", "reallife_svc_bid_staff_not",
                 "reallife_svc_bid_until", "reallife_svc_bid_until_asking", "reallife_svc_bid_until_final", "reallife_svc_buyer_chain",
                 "reallife_svc_buyer_chain_0", "reallife_svc_buyer_chain_1", "reallife_svc_buyer_chain_2", "reallife_svc_buyer_investor",
                 "reallife_svc_buyer_investor_0", "reallife_svc_buyer_investor_1", "reallife_svc_buyer_investor_2", "reallife_svc_buyer_rival",

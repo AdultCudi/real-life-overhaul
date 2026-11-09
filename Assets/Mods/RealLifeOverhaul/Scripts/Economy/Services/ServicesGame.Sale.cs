@@ -35,6 +35,7 @@ namespace RealLifeOverhaul.Economy
 
         private static readonly List<ItemInstance> Items = new List<ItemInstance>(64);
         private static readonly List<EmployeeInstance> Staff = new List<EmployeeInstance>(16);
+        private static readonly List<string> Kept = new List<string>(16);
 
         /// <summary>The player's businesses that can be sold: those that take money (the Finance app's own test).</summary>
         public static void Sellable(List<BuildingRegistration> into)
@@ -176,12 +177,25 @@ namespace RealLifeOverhaul.Economy
                 EmployeeInstance e = Staff[i];
                 if (e != null && !e.isBeingReplaced && !ReferenceEquals(e, Self()))
                 {
+                    Kept.Add(e.id);
                     e.PayWage(reg);
                     e.RemoveEmployee();
                     staffGone++;
                 }
             }
             Staff.Clear();
+            if (Kept.Count > 0)
+            {
+                try
+                {
+                    ServicesBridges.StaffKept?.Invoke(Kept);
+                }
+                catch (Exception e)
+                {
+                    Logger?.Warn("Services: the staff the buyer kept could not be held to their jobs (" + e.Message + "); the sale goes on.");
+                }
+                Kept.Clear();
+            }
             if (staffGone > 0)
             {
                 RivalOfferGuard.Look("staff gone with a business sold");   // a rival's offer to them goes now

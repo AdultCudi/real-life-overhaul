@@ -1313,6 +1313,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationViews.cs" Link="Mod\Population\PopulationViews.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PeopleTally.cs" Link="Mod\Population\PeopleTally.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PopulationLinks.cs" Link="Mod\Population\PopulationLinks.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\HoldRules.cs" Link="Mod\Population\HoldRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\CityPopulation.cs" Link="Mod\Population\CityPopulation.cs" />
     <!-- What the people bring the mod's own businesses (PopDemandChecks.cs): the day's measure, the anchor, the factors, the leans, the save's line, the shared part and the screens. -->
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\Demand\PopDemandCatalogue.cs" Link="Mod\Population\Demand\PopDemandCatalogue.cs" />

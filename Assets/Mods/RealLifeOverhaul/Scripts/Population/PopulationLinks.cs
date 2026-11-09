@@ -87,7 +87,7 @@ namespace RealLifeOverhaul.Population
                 if (p >= 0)
                 {
                     s.People.Flags[p] = (byte)(s.People.Flags[p] & ~PersonFlags.Linked);
-                    if (s.People.Status[p] == (byte)Status.Worker)
+                    if (s.People.Status[p] == (byte)Status.Worker && !HoldRules.Held(s, p))
                     {
                         LabourRules.Lose(s, p, day, false);   // let go by the player (or gone): out of work, their last pay kept for their benefit
                     }

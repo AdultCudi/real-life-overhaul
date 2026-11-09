@@ -631,6 +631,7 @@ namespace RealLifeOverhaul.Population
         public readonly RegionState Region = new RegionState();
         public readonly CityBooks Books = new CityBooks();
         public readonly List<PersonLink> Links = new List<PersonLink>(64);
+        public readonly Dictionary<int, int> Holds = new Dictionary<int, int>(8);   // person id to the day the hold ends: staff a buyer kept (HoldRules); its own save line
         public readonly GrowthState Growth = new GrowthState();
         public readonly FirmEventLog Events = new FirmEventLog();   // what the city's and the rivals' firms did lately (a business opened, prices moved): saved at the line's end
         public int[] RentIndex = new int[0];     // thousandths of the game's own rent, by district

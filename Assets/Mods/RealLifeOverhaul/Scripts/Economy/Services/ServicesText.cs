@@ -18,6 +18,21 @@ namespace RealLifeOverhaul.Economy
 
         public static string T(string key) => FinanceText.T(key);
 
+        /// <summary>
+        /// What happens to the staff in a sale: a buyer that keeps them holds them to their jobs for 30 days where the living
+        /// population can; one that does not leaves them with the player.
+        /// </summary>
+        public static string StaffLine(bool keeps)
+        {
+            if (!keeps)
+            {
+                return FinanceText.T("reallife_svc_bid_staff_not");
+            }
+            return ServicesBridges.HoldsStaff != null && ServicesBridges.HoldsStaff()
+                ? FinanceText.T("reallife_svc_bid_staff_hold", "days", RealLifeOverhaul.Population.HoldRules.Days.ToString())
+                : FinanceText.T("reallife_svc_bid_staff_keep");
+        }
+
         public static string T(string key, string name, string value) => FinanceText.T(key, name, value);
 
         public static string T(string key, string name, string value, string name2, string value2) => FinanceText.T(key, name, value, name2, value2);
