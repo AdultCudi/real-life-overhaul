@@ -35578,7 +35578,7 @@
   "reallife_transaction_tech_bakeoff_label": "Won contracts",
   "reallife_exit_job_note_at": "{name} has a post for you: {title} at {employer}. It is in your Career app. Take it or leave it.",
   "reallife_exit_job_note_forward": "The people at {name} put your name forward for {title} at {employer}. It is in your Career app. You do not have to take it.",
-  "reallife_exit_job_none": "{buyer} took your team, but there is no post to put your name to right now.",
+  "reallife_exit_job_none": "{buyer} took your team, but has no job for you right now.",
   "reallife_exit_test_lead": "A buyer puts me forward for a job now",
   "reallife_exit_test_founder": "A city startup's founder is taken on by a buyer now"
 }

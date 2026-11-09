@@ -26667,7 +26667,7 @@
   "reallife_testshops_single": "Te przyciski testowe działają tylko w grze jednoosobowej. W sesji Going Public nic nie robią.",
   "reallife_exit_job_note_at": "{name} ma dla ciebie ofertę: {title} w {employer}. Jest w twojej aplikacji Kariera. Weź ją albo zostaw.",
   "reallife_exit_job_note_forward": "Ludzie z {name} zgłosili twoją kandydaturę na {title} w {employer}. Jest w twojej aplikacji Kariera. Nie musisz tego przyjmować.",
-  "reallife_exit_job_none": "{buyer} przejął twój zespół, ale nie ma teraz żadnego stanowiska, na które mógłby zgłosić twoją kandydaturę.",
+  "reallife_exit_job_none": "{buyer} przejął twój zespół, ale w tej chwili nie ma dla ciebie pracy.",
   "reallife_exit_test_lead": "Kupiec teraz zgłasza mnie do pracy",
   "reallife_exit_test_founder": "Założyciel miejskiego startupu zostaje teraz zatrudniony przez kupca"
 }

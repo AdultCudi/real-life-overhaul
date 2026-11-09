@@ -26667,7 +26667,7 @@
   "reallife_testshops_single": "Estos botones de prueba solo funcionan en un jugador. En una sesión de Going Public no hacen nada.",
   "reallife_exit_job_note_at": "{name} tiene un puesto para ti: {title} en {employer}. Está en tu app Carrera. Acéptalo o déjalo.",
   "reallife_exit_job_note_forward": "La gente de {name} propuso tu nombre para {title} en {employer}. Está en tu app Carrera. No tienes que aceptarlo.",
-  "reallife_exit_job_none": "{buyer} se quedó con tu equipo, pero ahora mismo no hay ningún puesto al que poner tu nombre.",
+  "reallife_exit_job_none": "{buyer} se quedó con tu equipo, pero ahora mismo no tiene trabajo para ti.",
   "reallife_exit_test_lead": "Un comprador me propone para un trabajo ahora",
   "reallife_exit_test_founder": "El fundador de una startup de la ciudad es contratado por un comprador ahora"
 }

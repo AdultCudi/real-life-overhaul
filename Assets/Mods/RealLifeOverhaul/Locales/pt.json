@@ -35578,7 +35578,7 @@
   "reallife_transaction_tech_bakeoff_label": "Contratos de disputa direta",
   "reallife_exit_job_note_at": "{name} tem uma vaga para você: {title} em {employer}. Ela está no seu aplicativo Carreira. Aceite ou deixe passar.",
   "reallife_exit_job_note_forward": "As pessoas em {name} indicaram o seu nome para {title} em {employer}. Está no seu aplicativo Carreira. Você não precisa aceitar.",
-  "reallife_exit_job_none": "{buyer} ficou com a sua equipe, mas não há nenhuma vaga para indicar o seu nome no momento.",
+  "reallife_exit_job_none": "{buyer} ficou com a sua equipe, mas não tem vaga para você no momento.",
   "reallife_exit_test_lead": "Um comprador me indica para um emprego agora",
   "reallife_exit_test_founder": "O fundador de uma startup da cidade é contratado por um comprador agora"
 }

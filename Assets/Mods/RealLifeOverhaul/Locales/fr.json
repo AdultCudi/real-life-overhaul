@@ -26667,7 +26667,7 @@
   "reallife_testshops_single": "Ces boutons de test ne fonctionnent qu'en solo. Dans une session Going Public, ils ne font rien.",
   "reallife_exit_job_note_at": "{name} vous a un poste à proposer : {title} chez {employer}. Il est dans votre app Carrière. À prendre ou à laisser.",
   "reallife_exit_job_note_forward": "Les gens de {name} ont proposé votre nom pour {title} chez {employer}. C'est dans votre app Carrière. Vous n'êtes pas obligé de l'accepter.",
-  "reallife_exit_job_none": "{buyer} a repris votre équipe, mais il n'y a aucun poste auquel on puisse rattacher votre nom pour le moment.",
+  "reallife_exit_job_none": "{buyer} a repris votre équipe, mais aucun poste n'est disponible pour vous pour le moment.",
   "reallife_exit_test_lead": "Un acheteur me propose un emploi maintenant",
   "reallife_exit_test_founder": "Le fondateur d'une startup de la ville est embauché par un acheteur maintenant"
 }

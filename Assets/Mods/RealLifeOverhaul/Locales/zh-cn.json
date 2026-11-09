@@ -35578,7 +35578,7 @@
   "reallife_transaction_tech_bakeoff_label": "同台竞标合同",
   "reallife_exit_job_note_at": "{name}有一个职位给你：{employer}的{title}。它在你的职业应用里。接受或放弃都行。",
   "reallife_exit_job_note_forward": "{name}的人把你的名字推荐给了{employer}的{title}。它在你的职业应用里。你不必接受。",
-  "reallife_exit_job_none": "{buyer}收下了你的团队，但目前没有可以让你挂名的职位。",
+  "reallife_exit_job_none": "{buyer}收下了你的团队，但目前没有适合你的工作。",
   "reallife_exit_test_lead": "现在有买家推荐我去一份工作",
   "reallife_exit_test_founder": "现在有买家录用了一家城市初创公司的创始人"
 }

@@ -26667,7 +26667,7 @@
   "reallife_testshops_single": "Deze testknoppen werken alleen in de singleplayer. In een Going Public sessie doen ze niets.",
   "reallife_exit_job_note_at": "{name} heeft een baan voor je: {title} bij {employer}. Hij staat in je app Carrière. Neem hem aan of laat hem liggen.",
   "reallife_exit_job_note_forward": "Mensen bij {name} hebben jouw naam voorgedragen voor {title} bij {employer}. Het staat in je app Carrière. Je hoeft het niet aan te nemen.",
-  "reallife_exit_job_none": "{buyer} heeft je team overgenomen, maar er is op dit moment geen functie waarop we je naam kunnen zetten.",
+  "reallife_exit_job_none": "{buyer} heeft je team overgenomen, maar er is op dit moment geen baan voor je.",
   "reallife_exit_test_lead": "Een koper draagt me nu voor een baan",
   "reallife_exit_test_founder": "De oprichter van een startup uit de stad wordt nu door een koper aangenomen"
 }

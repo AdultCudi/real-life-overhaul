@@ -26667,7 +26667,7 @@
   "reallife_testshops_single": "이 테스트 버튼은 싱글 플레이에서만 작동합니다. Going Public 세션에서는 아무 동작도 하지 않습니다.",
   "reallife_exit_job_note_at": "{name} 님이 일자리를 제안했습니다: {employer}의 {title}. 커리어 앱에 있습니다. 수락하시거나 넘기셔도 됩니다.",
   "reallife_exit_job_note_forward": "{name} 측에서 당신을 {employer}의 {title} 자리에 추천했습니다. 커리어 앱에 있습니다. 꼭 수락하실 필요는 없습니다.",
-  "reallife_exit_job_none": "{buyer}이(가) 당신의 팀을 인수했지만, 지금은 당신의 이름을 올릴 자리가 없습니다.",
+  "reallife_exit_job_none": "{buyer}이(가) 당신의 팀을 인수했지만, 지금은 당신에게 맡길 일자리가 없습니다.",
   "reallife_exit_test_lead": "지금 한 구매자가 나를 일자리에 추천한다",
   "reallife_exit_test_founder": "도시 스타트업의 창업자가 지금 한 구매자에게 고용된다"
 }

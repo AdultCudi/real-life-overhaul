@@ -26667,7 +26667,7 @@
   "reallife_testshops_single": "Diese Testknöpfe funktionieren nur im Einzelspieler. In einer Going Public Sitzung tun sie nichts.",
   "reallife_exit_job_note_at": "{name} hat dir eine Stelle angeboten: {title} bei {employer}. Sie steht in deiner Karriere-App. Nimm sie an oder lass sie liegen.",
   "reallife_exit_job_note_forward": "Die Leute bei {name} haben deinen Namen für {title} bei {employer} vorgeschlagen. Es steht in deiner Karriere-App. Du musst es nicht annehmen.",
-  "reallife_exit_job_none": "{buyer} hat dein Team übernommen, aber im Moment gibt es keine Stelle, für die dein Name eingetragen werden kann.",
+  "reallife_exit_job_none": "{buyer} hat dein Team übernommen, aber gerade gibt es keine Stelle für dich.",
   "reallife_exit_test_lead": "Ein Käufer schlägt mich jetzt für einen Job vor",
   "reallife_exit_test_founder": "Ein Käufer stellt jetzt den Gründer eines Startups aus der Stadt ein"
 }

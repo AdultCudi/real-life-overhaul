@@ -26667,7 +26667,7 @@
   "reallife_testshops_single": "Bu test düğmeleri yalnızca tek oyunculu modda çalışır. Going Public oturumunda hiçbir şey yapmazlar.",
   "reallife_exit_job_note_at": "{name} size bir iş ilanı iletti: {employer} işletmesinde {title}. Kariyer uygulamanızda. Kabul edebilir ya da bırakabilirsiniz.",
   "reallife_exit_job_note_forward": "{name} ekibindeki kişiler adınızı {employer} işletmesindeki {title} pozisyonu için önerdi. Kariyer uygulamanızda. Kabul etmek zorunda değilsiniz.",
-  "reallife_exit_job_none": "{buyer} ekibinizi satın aldı, ancak şu anda adınızı yazdırabileceğiniz bir pozisyon yok.",
+  "reallife_exit_job_none": "{buyer} ekibinizi satın aldı, ancak şu anda sizin için uygun bir iş yok.",
   "reallife_exit_test_lead": "Bir alıcı şimdi beni bir işe öneriyor",
   "reallife_exit_test_founder": "Bir şehir girişiminin kurucusu şimdi bir alıcı tarafından işe alınıyor"
 }
