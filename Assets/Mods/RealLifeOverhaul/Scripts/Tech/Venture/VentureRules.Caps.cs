@@ -173,25 +173,5 @@ namespace RealLifeOverhaul.Tech
             }
             return Math.Min(1000, age * 1000 / (VentureCatalogue.VestYears * y));
         }
-
-        /// <summary>The player sells some of their shares to an investor at a fifth off the last round's price. Returns the cents paid.</summary>
-        public static long SellShares(Cap c, int thousandthsOfMine, int vc)
-        {
-            Holder me = null;
-            for (int i = 0; i < c.Holders.Count && me == null; i++)
-            {
-                me = c.Holders[i].Kind == (int)HolderKind.Player ? c.Holders[i] : null;
-            }
-            if (me == null || c.Post <= 0)
-            {
-                return 0;
-            }
-            long total = Math.Max(1, c.Total);
-            long shares = me.Shares * TalentCatalogue.Clamp(thousandthsOfMine, 0, 1000) / 1000;
-            long price = (long)((double)c.Post * shares / total * 800 / 1000);
-            me.Shares -= shares;
-            c.Holders.Add(new Holder { Kind = (int)HolderKind.Vc, Who = vc, Shares = shares, Invested = price, Round = Math.Max(0, c.Stage) });
-            return price;
-        }
     }
 }

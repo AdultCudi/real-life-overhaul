@@ -301,7 +301,6 @@ internal static partial class Program
         Check(l.LockTo == 105 + ExitCatalogue.LockUpDays && ExitCatalogue.LockUpDays == 180 && ExitRules.Locked(l, 105 + 179) && !ExitRules.Locked(l, 105 + 180) && !ExitRules.Locked(new FirmExit(), 5),
             "listing: the player's shares are locked up for 180 days after the listing");
         Check(ExitRules.Room(c, l, 105 + 100, 360) == 0 && ExitRules.Sell(c, l, 1, 20, 0, 105 + 100, 360) == 0, "listing: during the lock-up nothing of the player's shares can be sold, whatever the window");
-        Check(Regex.IsMatch(ModSource(@"Tech\TechDirector.Deals.cs"), @"ExitLockLeft\(place\)[\s\S]{0,260}return false;"), "listing: the older sale of a tenth of the shares is held by the lock-up too");
         c.Acc.FounderDay = -5000;
         int day = l.LockTo;
         ExitRules.Round(c, l, day);

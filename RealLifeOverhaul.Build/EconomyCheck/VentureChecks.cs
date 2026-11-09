@@ -242,8 +242,6 @@ internal static partial class Program
         VentureRules.Grant(c, VentureCatalogue.OptionGrant);
         Check(VentureRules.PlayerShare(c) < shareBefore && c.OptionsGranted == VentureCatalogue.OptionGrant, "ventures: share options dilute the owners");
         Check(VentureRules.Vested(0, 50, 120) == 0 && VentureRules.Vested(0, 240, 120) == 500 && VentureRules.Vested(0, 999, 120) == 1000, "ventures: options vest over four years after a one-year cliff");
-        long sold = VentureRules.SellShares(c, 100, 4);
-        Check(sold > 0 && VentureRules.PlayerShare(c) < shareBefore, "ventures: the player can sell some of their shares");
     }
 
     private static void VentureSave()

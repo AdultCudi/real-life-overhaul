@@ -155,15 +155,15 @@ internal static partial class UiSamples
     };
 
     /// <summary>
-    /// The game's question box, with words of real boxes: the mod's sale of shares (plain), the game's unsaved changes
+    /// The game's question box, with words of real boxes: the mod's own box (plain), the game's unsaved changes
     /// (negative: the danger's look, the keys starting on the way back) and the mod's Permadeath question (a long body).
     /// </summary>
     public static UiCardModel Question(UiWords t, bool negative, bool longBody)
     {
         string title = negative ? t("hud_confirm_are_you_sure", "Are you sure?") : longBody ? t("reallife_pd_ask_header", "Switch Permadeath on?")
-            : t("reallife_vc_confirm_sell_title", "Sell a tenth of your shares?");
+            : t("hud_confirm_are_you_sure", "Are you sure?");
         string body = negative ? t("change_character_clothes_unsaved_changes_warning", "Unsaved changes will be lost. Continue?") : longBody ? t("reallife_pd_ask_body", "From now on this character can die for good, after a warning: a crash at very high speed, being hit by fast traffic on foot, a mugging refused, an illness left untreated or days without food. A death is saved at once and the save can never be played again. This is for this save only, and you can switch it off again while your character lives.")
-            : t("reallife_vc_confirm_sell_body", "The lead investor buys them at a fifth under the last round's price. You keep the rest.");
+            : t("reallife_ui_test_question_body", "This is a test question. Pick either answer: nothing else happens.");
         var m = new UiCardModel
         {
             Icon = negative ? UiIcon.Warning : UiIcon.Info, Title = title, Body = body, Focus = negative ? 0 : -1,

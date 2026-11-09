@@ -656,6 +656,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--sell-tenth")
+        {
+            SellTenthChecks();   // (the one set of rules for selling the player's own shares alone, while working on it: SellTenthChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--exit-tax")
         {
             ExitTaxChecks();   // (a startup stake sold on the quarter's return alone, while working on it: ExitTaxChecks.cs)
@@ -1145,6 +1151,7 @@ internal static partial class Program
         StartupTermsChecks();
         StartupFoundingChecks();
         StartupExitsChecks();
+        SellTenthChecks();
         StartupRivalsChecks();
         Firms();
         Competitors();
