@@ -38,7 +38,6 @@ namespace RealLifeOverhaul.Suppliers
         public static void Attach(GameObject root, IModLogger logger)
         {
             Logger = logger;
-            SupplierGame.Logger = logger;
             root.AddComponent<SupplierDirector>();
         }
 

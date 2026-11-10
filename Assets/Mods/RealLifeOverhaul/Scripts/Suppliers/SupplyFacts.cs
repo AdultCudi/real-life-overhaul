@@ -56,6 +56,7 @@ namespace RealLifeOverhaul.Suppliers
         public int Against = 1000, FirstDay, Lines;
     }
 
+    /// <summary>One product of a contract as a page shows it: its name in the game's words, the units a delivery and the unit price in mills.</summary>
     public sealed class SupplyLineFact
     {
         public string Name = string.Empty;

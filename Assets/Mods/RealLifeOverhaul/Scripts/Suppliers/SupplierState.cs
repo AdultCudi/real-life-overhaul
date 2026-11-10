@@ -156,6 +156,7 @@ namespace RealLifeOverhaul.Suppliers
         Short = 4       // the city's shops left short by a supplier's failure: A how many
     }
 
+    /// <summary>A supplier's news for the morning's paper and the app's market page: the day, what it is about, the supplier and two figures of its kind.</summary>
     public sealed class SupplyNote
     {
         public int Day, Firm, A, B;
@@ -176,6 +177,7 @@ namespace RealLifeOverhaul.Suppliers
         FirmTrouble, FirmUnder, FirmBack, FirmGrew, OwedPaid, CreditBack, CreditLost, NoCover
     }
 
+    /// <summary>One thing the engine did: its kind, the contract and supplier it is about, the place's name and three figures of its kind. Never saved.</summary>
     public struct SupplyEvent
     {
         public SupplyEventKind Kind;

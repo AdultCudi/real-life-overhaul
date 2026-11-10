@@ -411,7 +411,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Suppliers\SupplierStore.cs" Link="Mod\Suppliers\SupplierStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Suppliers\SupplierRules.cs" Link="Mod\Suppliers\SupplierRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Suppliers\SupplierEngine.cs" Link="Mod\Suppliers\SupplierEngine.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Suppliers\SupplierFacts.cs" Link="Mod\Suppliers\SupplierFacts.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Suppliers\SupplyFacts.cs" Link="Mod\Suppliers\SupplyFacts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\SupplyPages.cs" Link="Mod\Ventures\SupplyPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLedger.cs" Link="Mod\RotaLedger.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLadder.cs" Link="Mod\RotaLadder.cs" />

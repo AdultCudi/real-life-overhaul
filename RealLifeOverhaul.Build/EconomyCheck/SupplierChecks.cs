@@ -1606,6 +1606,9 @@ internal static partial class Program
         Check(links.Contains("RivalBridges.SupplyLine =") && links.Contains("News.Extra = Paper;") && links.Contains("News.Extra = _paperBefore;") && ModSource(@"Rivals\RivalPage.cs").Contains("RivalBridges.SupplyLine(who)")
               && ModSource(@"Rivals\RivalPage.cs").Contains("RivalBridges.SupplyLine(i)") && links.Contains("Math.Max(0L, t.Worth - floor)"), "suppliers sources: the rivals' supply shows on the rich list, their panel and in the paper, and a cost never takes a tycoon under their floor");
         Check(links.Contains("return material > 0.0 && !double.IsInfinity(material) ? -1 : CityGame.KindOf(item);"), "suppliers sources: a raw material the exchange prices is never a supplier's to bring");
+        Check(CashCategory.For(SupplierEngine.GoodsKey) == CashCategory.Stock && CashCategory.For(SupplierEngine.OwedKey) == CashCategory.Stock && CashCategory.For(SupplierEngine.SettleKey) == CashCategory.Other
+              && CashCategory.For(SupplierEngine.CreditKey) == CashCategory.Other && !DayRules.IsTransfer(SupplierEngine.GoodsKey) && !DayRules.IsTransfer(SupplierEngine.SettleKey),
+            "suppliers sources: the Finance app's cash flow reads a supplier's delivery and a late payment for one as stock, and a settlement or a credit as neither stock nor a transfer");
         Check(BizLines.Of(SupplierEngine.GoodsKey) == BizLine.Foreign && BizLines.Of(SupplierEngine.SettleKey) == BizLine.Foreign && BizLines.Of(SupplierEngine.OwedKey) == BizLine.Foreign && BizLines.Of(SupplierEngine.CreditKey) == BizLine.Foreign,
             "suppliers sources: a purchase of stock is no running cost of the statement's: the game counts the goods when they sell, at the price they came in at");
     }
@@ -1632,8 +1635,8 @@ internal static partial class Program
             keys.Add("reallife_supply_firm_about_" + i);
         }
         foreach (string k in new[] { "reallife_opt_sec_suppliers", "reallife_opt_tip_living_suppliers", "reallife_ui_screen_suppliers", "reallife_opt_tip_ui_screen_suppliers", "reallife_supply_bizman_label",
-                     "reallife_supply_bizman_value", "reallife_supply_bizman_none", "reallife_supply_bizman_open", "reallife_transaction_supply_goods_label", "reallife_transaction_supply_settlement_label",
-                     "reallife_transaction_supply_owed_label", "reallife_transaction_supply_credit_label" })
+                     "reallife_supply_bizman_value", "reallife_supply_bizman_none", "reallife_supply_bizman_open", "reallife_transaction_supply_deliverycontract_label", "reallife_transaction_supply_settlement_label",
+                     "reallife_transaction_supply_deliverycontract_owed_label", "reallife_transaction_supply_credit_label" })
         {
             keys.Add(k);
         }

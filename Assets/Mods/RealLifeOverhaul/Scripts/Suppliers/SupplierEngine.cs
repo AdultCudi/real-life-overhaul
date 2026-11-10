@@ -88,9 +88,10 @@ namespace RealLifeOverhaul.Suppliers
     /// </summary>
     public static class SupplierEngine
     {
-        public const string GoodsKey = "reallife_transaction_supply_goods";
+        // The goods' and the owed payment's keys hold the game's own word for a delivery contract: the Finance app's cash flow reads a type's words, and these are stock.
+        public const string GoodsKey = "reallife_transaction_supply_deliverycontract";
         public const string SettleKey = "reallife_transaction_supply_settlement";
-        public const string OwedKey = "reallife_transaction_supply_owed";
+        public const string OwedKey = "reallife_transaction_supply_deliverycontract_owed";
         public const string CreditKey = "reallife_transaction_supply_credit";
 
         private static readonly List<ContractLine> Wanted = new List<ContractLine>(32);

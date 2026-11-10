@@ -25,8 +25,6 @@ namespace RealLifeOverhaul.Suppliers
     {
         private const string WholesaleType = "ba:businesstype_wholesalestore", ImportType = "ba:businesstype_importexport";
 
-        public static IModLogger Logger;
-
         private static readonly Dictionary<string, Vector3> Spots = new Dictionary<string, Vector3>(StringComparer.Ordinal);
         private static readonly List<string> Names = new List<string>(32);
         private static readonly Dictionary<string, int> Sold = new Dictionary<string, int>(32, StringComparer.Ordinal);
@@ -444,7 +442,7 @@ namespace RealLifeOverhaul.Suppliers
         public static string District(string depot)
         {
             BuildingRegistration reg = Reg(depot);
-            string district = reg != null ? reg.Neighborhood : null;
+            string district = GameRegistrations.District(reg);   // null where the city has no building for it
             return string.IsNullOrEmpty(district) ? string.Empty : LocalizorManager.IsLocalizedKey(district) ? district.GetLocalization() : district;
         }
 

@@ -150,14 +150,15 @@ namespace RealLifeOverhaul.Ui
             if (f.Places.Count == 0)
             {
                 left.Add(VentBlock.Note(w.T("reallife_supply_no_places", "None of your businesses sells goods a supplier brings yet. Open a shop and put its goods on the shelves, "
-                    + "or give a purchasing agent a plan for a warehouse.")));
+                    + "or set an import plan for a warehouse at your headquarters.")));
                 m.Left = left.ToArray();
                 m.Right = right.ToArray();
                 return;
             }
             int place = Math.Max(0, Math.Min(f.Places.Count - 1, f.Place));
             SupplyPlaceFact at = f.Places[place];
-            left.Add(VentBlock.Stepper(w.T("reallife_supply_step_place", "Deliver to"), at.Name, runs.Add(() => { v.A = Math.Max(0, place - 1); return true; }), place > 0, place < f.Places.Count - 1));
+            left.Add(VentBlock.Stepper(w.T("reallife_supply_step_place", "Deliver to"), at.Name, runs.Add(() => { v.A = Math.Max(0, place - 1); return true; }), place > 0,
+                place < f.Places.Count - 1));
             runs.Add(() => { v.A = Math.Min(f.Places.Count - 1, place + 1); return true; });
             int picked = 0;
             for (int i = 0; i < f.Firms.Count; i++)
@@ -239,9 +240,9 @@ namespace RealLifeOverhaul.Ui
                     w.F("reallife_supply_delivery_value", "{amount} for {n} products", "amount", w.Money(p.Value / 100f), "n", p.Lines.ToString())));
                 right.Add(VentBlock.Row(w.T("reallife_supply_row_price", "Its price"), Against(w, p.Against), p.Against <= 1000 ? UiRole.Ok : UiRole.Text));
                 right.Add(VentBlock.Note(term > 0
-                    ? w.F("reallife_supply_take_or_pay", "Take or pay: every delivery is paid for in full, whether your shelves have room or not. Ending early costs {share} of what "
+                    ? w.F("reallife_supply_take_or_pay", "Take or pay: every delivery is paid for in full, even when your shelves have no room. Ending early costs {share} of what "
                         + "is still to come.", "share", Percent(SupplierCatalogue.BreakShare))
-                    : w.T("reallife_supply_once_note", "One delivery at today's price. It is paid for in full when it comes, whether your shelves have room or not.")));
+                    : w.T("reallife_supply_once_note", "One delivery at today's price. It is paid for in full when it comes, even when your shelves have no room.")));
             }
             else
             {
@@ -328,7 +329,8 @@ namespace RealLifeOverhaul.Ui
             SupplyContractFact p = f.Contracts[picked];
             right.Add(VentBlock.Section(w.F("reallife_supply_sec_contract", "{supplier} for {business}", "supplier", FirmName(w, p.Supplier), "business", p.Place)));
             right.Add(VentBlock.Row(w.T("reallife_supply_row_term", "Term"), p.Weeks > 0
-                ? w.F("reallife_supply_term_done", "{made} of {all} deliveries", "made", p.Made.ToString(), "all", p.Deliveries.ToString()) : w.T("reallife_supply_term_once", "One delivery, today's price")));
+                ? w.F("reallife_supply_term_done", "{made} of {all} deliveries", "made", p.Made.ToString(), "all", p.Deliveries.ToString())
+                : w.T("reallife_supply_term_once", "One delivery, today's price")));
             if (p.Running)
             {
                 right.Add(VentBlock.Row(w.T("reallife_supply_row_next", "Next delivery"), w.F("reallife_supply_next_value", "day {day}", "day", (p.Due + p.Slip).ToString())));
@@ -369,7 +371,8 @@ namespace RealLifeOverhaul.Ui
             }
             for (int i = 0; i < p.Lines.Count; i++)
             {
-                right.Add(VentBlock.Row(p.Lines[i].Name, w.F("reallife_supply_line_value", "{units} at {price}", "units", p.Lines[i].Units.ToString(), "price", w.Price((p.Lines[i].Mills + 5) / 10))));
+                right.Add(VentBlock.Row(p.Lines[i].Name,
+                    w.F("reallife_supply_line_value", "{units} at {price}", "units", p.Lines[i].Units.ToString(), "price", w.Price((p.Lines[i].Mills + 5) / 10))));
             }
             if (!p.Running)
             {
