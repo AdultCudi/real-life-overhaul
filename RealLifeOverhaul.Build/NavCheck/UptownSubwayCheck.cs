@@ -58,7 +58,7 @@ internal static partial class Program
             Check(StationsRules.MeetsLot(s, UptownLots.All) == null && StationsRules.MeetsLot(s, UptownLots.Places) == null,
                 name + "off every lot of the plan: its buildings, its open runs and the big special places (" + (StationsRules.MeetsLot(s, UptownLots.All) ?? StationsRules.MeetsLot(s, UptownLots.Places)) + ")");
             float lotNear = UptownLots.All.Concat(UptownLots.Places).Min(l => SubwayLotGap(s, l)), openNear = UptownLots.All.Where(l => l.Open).Min(l => SubwayLotGap(s, l));
-            Check(lotNear >= StationsRules.LotClear && openNear >= 10f,
+            Check(lotNear >= 20f && openNear >= 60f,
                 name + "its nearest lot is " + lotNear.ToString("F1") + " m off and the nearest land the player can build on " + openNear.ToString("F0") + " m off");
             // Where its rider comes up: on the player's walking plan and the pedestrians', with room round it.
             bool onPlayer = true, onPeople = true;
@@ -70,7 +70,7 @@ internal static partial class Program
             Check(onPlayer && onPeople, name + "its rider comes up on ground the player's walking plan and the pedestrians' both hold, with " + StationsRules.ArriveRoom + " m round it ("
                 + (onPlayer ? "player yes" : "player NO") + ", " + (onPeople ? "pedestrians yes" : "pedestrians NO") + ")");
             float kerb = StationsRules.KerbDistance(s);
-            Check(kerb <= StationsRules.RoadNear && kerb > 0.5f, name + "a kerb a car stops at is " + kerb.ToString("F1") + " m from where its rider comes up (within " + StationsRules.RoadNear + ")");
+            Check(kerb <= 6f && kerb > 0.5f && StationsRules.RoadNear == 30f, name + "a kerb a car stops at is " + kerb.ToString("F1") + " m from where its rider comes up (6 m at the most; the rule's reach is 30)");
             Check(StationsRules.MeetsPoint(s, fx, fz, StationsRules.PieceClear, "furniture") == null,
                 name + "clear of the pavements' furniture (" + StationsRules.MeetsPoint(s, fx, fz, StationsRules.PieceClear, "furniture") + ")");
             Check(StationsRules.MeetsPoint(s, poleX, poleZ, StationsRules.StopClear, "a stop") == null && StationsRules.MeetsPoint(s, tx, tz, StationsRules.StopClear, "a terminus") == null,
@@ -86,7 +86,7 @@ internal static partial class Program
                     name + "clear of its avenue's three lamp posts (" + StationsRules.MeetsPoint(s, lampX, lampZ, StationsRules.LampClear, "a lamp") + ")");
                 Check(lampZ.All(z => z > z0 - 0.01f && z < z1 + 0.01f) && lampX.All(x => x < x0 - StationsRules.LampClear || x > x1 + StationsRules.LampClear),
                     name + "the lamps stand in its own line along the kerb, before and after it");
-                Check(behind >= StationsRules.WayPast && toKerb >= 0.15f && Math.Abs(behind + toKerb + StationsRules.HalfWidth * 2f - StationsRules.PavementWidth) < 0.01f,
+                Check(behind >= 1.1f && StationsRules.WayPast == 1.1f && toKerb >= 0.15f && Math.Abs(behind + toKerb + StationsRules.HalfWidth * 2f - StationsRules.PavementWidth) < 0.01f,
                     name + "it leaves " + behind.ToString("F2") + " m of pavement behind it as the way past and " + toKerb.ToString("F2") + " m to the kerb");
                 Check(UptownCovered(npc.Boxes, s.X, s.Z) && UptownCovered(player.Boxes, s.X, s.Z), name + "it stands on the pedestrians' pavement, which its cut then leaves a way past on");
             }
@@ -145,6 +145,11 @@ internal static partial class Program
         StationsRules.Lamps(sites[0], lampsHere, lampsHereZ);
         var onLamp = new StationSite("x", "k", sites[0].Block, StationGround.Pavement, lampsHere[0], sites[0].Z, 90);
         Check(StationsRules.MeetsPoint(onLamp, lampsHere, lampsHereZ, StationsRules.LampClear, "a lamp") != null, "subway: an entrance on a lamp post's place is refused");
+        // Its far end half a metre past the avenue's first lamp post is refused; 0.7 m past it is not (the plan's own is 1.57 m past it).
+        var nearLamp = new StationSite("x", "k", sites[0].Block, StationGround.Pavement, lampsHere[0] + 0.5f + StationsRules.Back, sites[0].Z, 90);
+        var pastLamp = new StationSite("x", "k", sites[0].Block, StationGround.Pavement, lampsHere[0] + 0.7f + StationsRules.Back, sites[0].Z, 90);
+        Check(StationsRules.MeetsPoint(nearLamp, lampsHere, lampsHereZ, StationsRules.LampClear, "a lamp") != null && StationsRules.MeetsPoint(pastLamp, lampsHere, lampsHereZ, StationsRules.LampClear, "a lamp") == null,
+            "subway: an entrance whose far end is half a metre from a lamp post is refused, one 0.7 m from it is not");
         var onStop = new StationSite("x", "k", 101, StationGround.Pavement, poleX[0], poleZ[0], 90);
         Check(StationsRules.MeetsPoint(onStop, poleX, poleZ, StationsRules.StopClear, "a stop") != null, "subway: an entrance at a bus stop the routes want is refused");
         Check(StationsRules.MeetsBox(sites[1], sites[1].X - 1f, sites[1].Z - 1f, sites[1].X + 1f, sites[1].Z + 1f, 0f, "a box") == "a box"

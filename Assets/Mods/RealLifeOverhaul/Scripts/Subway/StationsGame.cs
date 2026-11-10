@@ -155,19 +155,29 @@ namespace RealLifeOverhaul.Subway
             }
             catch (Exception)
             {
-                SceneryTrees.Destroy(copy);   // null is safe; asleep, its lamp never listed itself
+                SceneryTrees.Destroy(copy);   // null is safe; whatever of it woke is taken out of the game's culling lists first
                 throw;
             }
             finally
             {
                 SceneryTrees.Destroy(asleep);   // with a copy that was refused still under it, or empty
             }
+            // Joined whole or not at all: a station the game's list holds has its entry in the game's window, or it is taken out again.
             var entry = new Stood { Site = site, Station = station };
             Standing.Add(entry);
-            city.subwayStations.Add(station);          // last, after the game's own: whoever looks one up by its name's value finds the game's first
-            OwnStations.Add(station, site.NameKey, site.Id + " (the districts' own)");
-            entry.Entry = AddEntry(entry, list, entries);
-            Hang(list);
+            try
+            {
+                city.subwayStations.Add(station);          // last, after the game's own: whoever looks one up by its name's value finds the game's first
+                OwnStations.Add(station, site.NameKey, site.Id + " (the districts' own)");
+                entry.Entry = AddEntry(entry, list, entries);
+                Hang(list);
+            }
+            catch (Exception)
+            {
+                Standing.Remove(entry);
+                Remove(entry, city, uis, entries);
+                throw;
+            }
             stood = station;
             return null;
         }
@@ -236,7 +246,9 @@ namespace RealLifeOverhaul.Subway
         {
             if (_solidMask == 0)
             {
-                _solidMask = ~LayerMask.GetMask("Roads", "Ground", "GroundUnplacable", "UI", "Ignore Raycast", "AutoParkSpots", "ParkingArea", "TransparentFX", "Water");
+                // Not the ground, not the zones, and not people: somebody standing there (a save made before the stations) is put on the nearest
+                // walking ground by the cut, as round anything carved; a car, a lamp, a tree or a wall refuses the station.
+                _solidMask = ~LayerMask.GetMask("Roads", "Ground", "GroundUnplacable", "UI", "Ignore Raycast", "AutoParkSpots", "ParkingArea", "TransparentFX", "Water", "Player", "Human");
             }
             Physics.SyncTransforms();   // what the load stood in this same call is where it stands
             float height = StationsRules.Height - SolidFrom;
@@ -410,24 +422,7 @@ namespace RealLifeOverhaul.Subway
             List<CityMapSubwayStationEntry> entries = Entries(list);
             for (int i = Standing.Count - 1; i >= 0; i--)
             {
-                Stood stood = Standing[i];
-                StationEntrance station = stood.Station;
-                if (city != null && city.subwayStations != null && !ReferenceEquals(station, null))
-                {
-                    city.subwayStations.Remove(station);
-                }
-                OwnStations.Remove(station);
-                if (stood.Entry != null)
-                {
-                    entries?.Remove(stood.Entry);
-                    UnityEngine.Object.Destroy(stood.Entry.gameObject);
-                }
-                if (station != null)
-                {
-                    Unmark(city, station.transform);
-                    Release(uis, station);
-                    SceneryTrees.Destroy(station.gameObject);   // its lamp out of the game's culling lists first (RLO-PERF-023), then the entrance with its cut
-                }
+                Remove(Standing[i], city, uis, entries);
             }
             Standing.Clear();
             if (_search != null && _onSearch != null)
@@ -441,6 +436,28 @@ namespace RealLifeOverhaul.Subway
             _watch = null;
             _search = null;
             return gone;
+        }
+
+        // One station out of everything of the game's that holds it, in the order the game walks them, and then away.
+        private static void Remove(Stood stood, CityManager city, UIs uis, List<CityMapSubwayStationEntry> entries)
+        {
+            StationEntrance station = stood.Station;
+            if (city != null && city.subwayStations != null && !ReferenceEquals(station, null))
+            {
+                city.subwayStations.Remove(station);
+            }
+            OwnStations.Remove(station);
+            if (stood.Entry != null)
+            {
+                entries?.Remove(stood.Entry);
+                UnityEngine.Object.Destroy(stood.Entry.gameObject);
+            }
+            if (station != null)
+            {
+                Unmark(city, station.transform);
+                Release(uis, station);
+                SceneryTrees.Destroy(station.gameObject);   // its lamp out of the game's culling lists first (RLO-PERF-023), then the entrance with its cut
+            }
         }
 
         // The station's marker on the game's map, which the game makes the first time its stations are shown there and keeps in its list of markers.

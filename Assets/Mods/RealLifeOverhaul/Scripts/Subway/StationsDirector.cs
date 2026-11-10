@@ -63,9 +63,9 @@ namespace RealLifeOverhaul.Subway
                 ReleaseRiders();
                 _cast?.Dispose();
                 _cast = null;
-                if (!Meta.SaveTools.Dormant && !GameManager.isCitySceneBeingUnloaded)
+                if (!GameManager.isCitySceneBeingUnloaded)
                 {
-                    StationsGame.RemoveAll();   // a city that stays: out of the game's lists as they came
+                    StationsGame.RemoveAll();   // a city that stays, whoever stopped the mod: out of the game's lists as they came, before anything is destroyed
                 }
                 StationsGame.Forget();
             }
@@ -106,7 +106,15 @@ namespace RealLifeOverhaul.Subway
                 return;
             }
             bool busy = false;
-            if (_late && !_closed)
+            if (_late && _closed)
+            {
+                if (_leaving)
+                {
+                    Leave(_leaveWhy);   // the clean-up waited for a rider: asked again until they are up
+                }
+                busy = _leaving;
+            }
+            else if (_late)
             {
                 Decide("its option");
                 if (_checkAt >= 0f && now >= _checkAt)
@@ -311,6 +319,8 @@ namespace RealLifeOverhaul.Subway
             _leaveWhy = null;
             _checkAt = -1f;
             ReleaseRiders();
+            _near = -1;
+            _train = -1;
             int gone = StationsGame.RemoveAll();
             _stoodWhy = null;
             if (gone > 0)
@@ -332,19 +342,9 @@ namespace RealLifeOverhaul.Subway
         public void Close(string why)
         {
             _closed = true;
-            _leaving = false;
-            ReleaseRiders();
-            if (SubwaySystem.IsRiding && StationsGame.RideTouches())
-            {
-                Logger?.Info("Subway: closed until the next load (" + why + "); a ride is under way at one of the districts' stations, which stay until the city goes.");
-                return;
-            }
-            if (StationsGame.PickingFromOwn())
-            {
-                StationsGame.ShutMap();
-            }
-            int gone = StationsGame.RemoveAll();
-            Logger?.Info("Subway: closed until the next load (" + why + "); " + gone + " station(s) taken away.");
+            _nextLook = 0f;
+            Logger?.Info("Subway: closed until the next load (" + why + ").");
+            Leave(why);   // by the same rule: at once, or once a ride under way has brought its rider up (the look asks again)
         }
 
         // ---------------------------------------------------------------- the self-check

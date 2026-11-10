@@ -36,6 +36,7 @@ internal static partial class Program
     {
         SubwayListChecks();
         SubwayStandChecks();
+        SubwayFigureChecks();
         SubwayRiderChecks();
         SubwayCampusChecks();
         SubwaySourceChecks();
@@ -111,6 +112,54 @@ internal static partial class Program
         Check(lots && UptownLots.All.Count > 600 && UptownLots.All.Any(l => l.Open), "subway standing: none on a lot of the plan, of its " + UptownLots.All.Count + " (the open runs the player builds on among them) or its big special places");
     }
 
+    // ---- every figure, as the documentation states it, and each clearance tried a step inside it and a step outside
+
+    private static void SubwayFigureChecks()
+    {
+        Check(StationsRules.HalfWidth == 1.135f && StationsRules.Back == 3.2f && StationsRules.Front == 2.03f && StationsRules.ArriveAhead == 2.809f && StationsRules.Height == 3.05f
+              && StationsRules.CarveShrink == 0.2f && StationsRules.Sunk == 0.115f && StationsRules.LawnTop == 0.0492f && StationsRules.PavementTop == 0.058f,
+            "subway figures: the entrance's own measures and heights are the game's (2.27 m wide, 3.2 m behind and 2.03 m ahead of its origin, its travel point 2.809 m ahead, 3.05 m high, 0.115 m into its ground)");
+        Check(StationsRules.ParkIn == 1.75f && StationsRules.SpineGap == 0.3f && StationsRules.KerbIn == 1.35f && StationsRules.SchoolAlong == 19.7f && StationsRules.ParksSpineHalf == 1.5f,
+            "subway figures: where they stand: 1.75 m inside a park's edge, 0.3 m from its spine, 1.35 m from the avenue's kerb, 19.7 m along the campus's front");
+        Check(StationsRules.LotClear == 0.5f && StationsRules.PieceClear == 1.2f && StationsRules.LampClear == 0.6f && StationsRules.StopClear == 28f && StationsRules.WayPast == 1.1f
+              && StationsRules.RoadNear == 30f && StationsRules.ArriveRoom == 0.45f && StationsRules.LampIn == 0.95f,
+            "subway figures: what they keep: 0.5 m from a lot, 1.2 m from a piece, 0.6 m from a lamp post, 28 m from a wanted stop, 1.1 m of pavement behind, 0.45 m round where a rider comes up");
+        Check(StationsRules.LampsNorth.SequenceEqual(new[] { 4.93f, 22.13f, 41.84f }) && StationsRules.LampsSouth.SequenceEqual(new[] { 5.02f, 22.92f, 41.84f }),
+            "subway figures: the avenue module's lamp posts are where the game's module has them (Build 3682)");
+        // A site on plain ground: its ground runs 1.135 m either side, 3.2 m behind and 2.03 m ahead, its rider up 2.809 m ahead.
+        var site = new StationSite("x", "k", 309, StationGround.Park, 0f, 0f, 0);
+        string Point(float x, float z, float margin) => StationsRules.MeetsPoint(site, new[] { x }, new[] { z }, margin, "p");
+        float edge = StationsRules.HalfWidth;
+        Check(Point(edge + 0.5f, 0f, StationsRules.LampClear) != null && Point(edge + 0.7f, 0f, StationsRules.LampClear) == null,
+            "subway figures: a lamp post half a metre from an entrance is in its way, one 0.7 m off is not");
+        Check(Point(edge + 1.1f, 0f, StationsRules.PieceClear) != null && Point(edge + 1.3f, 0f, StationsRules.PieceClear) == null,
+            "subway figures: a tree 1.1 m from an entrance is in its way, one 1.3 m off is not");
+        Check(Point(edge + 27f, 0f, StationsRules.StopClear) != null && Point(edge + 29f, 0f, StationsRules.StopClear) == null,
+            "subway figures: a wanted bus stop 27 m from an entrance is too near, one 29 m off is not");
+        Check(Point(0f, StationsRules.ArriveAhead + 0.5f, StationsRules.LampClear) != null && Point(0f, StationsRules.ArriveAhead + 0.7f, StationsRules.LampClear) == null,
+            "subway figures: what stands half a metre from where a rider comes up is in the way, though it is clear of the entrance itself");
+        Check(Point(0f, 0f, 0f) != null && Point(0.5f, -1f, -3f) != null && Point(edge, 0f, 0f) != null && Point(edge + 0.01f, 0f, 0f) == null && Point(edge + 0.5f, 0f, -3f) == null,
+            "subway figures: what stands on an entrance's own ground is in its way whatever the margin, and a margin below none is none");
+        Lot Beside(float gap) => new Lot("l", 3, 9, "s", 1, 1, edge + gap + 5f, 0f, 0, 10, 4, LotClass.Small, false);
+        Check(StationsRules.MeetsLot(site, new[] { Beside(0.4f) }) == "l" && StationsRules.MeetsLot(site, new[] { Beside(0.6f) }) == null && StationsRules.MeetsLot(site, new Lot[0]) == null
+              && StationsRules.MeetsLot(site, null) == null, "subway figures: a lot 0.4 m from an entrance refuses it, one 0.6 m off does not");
+        Check(StationsRules.MeetsBox(site, edge + 0.4f, -1f, edge + 5f, 1f, 0.5f, "b") == "b" && StationsRules.MeetsBox(site, edge + 0.6f, -1f, edge + 5f, 1f, 0.5f, "b") == null
+              && StationsRules.MeetsBox(site, edge + 0.1f, -1f, edge + 5f, 1f, -9f, "b") == null && StationsRules.MeetsBox(site, edge + 5f, 1f, edge - 0.1f, -1f, -9f, "b") == "b",
+            "subway figures: a crowd's ground within the margin of an entrance refuses it, its corners in any order, and a margin below none is none");
+        string page = System.IO.File.ReadAllText(System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\..\docs\features\subway-uptown.md")));
+        string[] stated =
+        {
+            "19.7 m east of the block's west corner", "1.75 m inside the park's edge", "0.3 m from the spine's edge", "1.35 m from the kerb", "(1.1 m wanted)", "big special places by 0.5 m",
+            "bins by 1.2 m", "lamp posts by 0.6 m", "every terminus by 28 m", "(within 0.45 m)", "(within 70 m, kept to 95)", "walks off 34 m", "nine trains in ten in the weekday rush, six by day",
+            "two between midnight and five", "to five trains in ten, two at night", "2.27 m wide, 3.2 m behind its origin and 2.03 m ahead of it, 3.05 m high", "0.115 m into its ground",
+            "a lawn's top 0.0492 m, an avenue's pavement 0.058 m", "0.2 m narrower than the entrance each side", "(within 0.3 m)", "from 0.4 m above the ground", "Two people at the most"
+        };
+        foreach (string words in stated)
+        {
+            Check(page.Contains(words), "subway figures: the documentation's page states \"" + words + "\", as the code has it");
+        }
+    }
+
     // ---- the people of the line
 
     private static void SubwayRiderChecks()
@@ -169,13 +218,32 @@ internal static partial class Program
         float rushShare = upRush / (float)trainsRush, dayShare = up / (float)trainsDay, nightShare = upNight / (float)trainsNight, downShare = down / (float)trainsDay,
             downNightShare = downNight / (float)trainsNight, weekendShare = upWeekend / (float)trainsWeekend;
         Check(same, "subway people: who comes up, who goes down and how they look are the same when asked again: a mixed number, never chance");
-        Check(Math.Abs(rushShare - StationsRules.RushShare / 10f) < 0.03f && Math.Abs(dayShare - StationsRules.DayShare / 10f) < 0.03f && Math.Abs(nightShare - StationsRules.NightShare / 10f) < 0.03f,
+        Check(Math.Abs(rushShare - 0.9f) < 0.03f && Math.Abs(dayShare - 0.6f) < 0.03f && Math.Abs(nightShare - 0.2f) < 0.03f,
             "subway people: somebody comes up from nine trains in ten in the weekday rush, six by day and two at night (" + rushShare.ToString("F3") + ", " + dayShare.ToString("F3") + ", " + nightShare.ToString("F3") + ")");
-        Check(rushShare > dayShare && dayShare > nightShare && StationsRules.RushShare <= 10 && StationsRules.NightShare >= 1, "subway people: more in the rush than by day, more by day than at night, never every train nor none");
-        Check(Math.Abs(weekendShare - StationsRules.DayShare / 10f) < 0.04f, "subway people: a weekend has no rush (" + weekendShare.ToString("F3") + " at the rush's hours)");
-        Check(Math.Abs(downShare - StationsRules.DownShare / 10f) < 0.03f && Math.Abs(downNightShare - StationsRules.NightShare / 10f) < 0.03f,
+        Check(rushShare - dayShare > 0.2f && dayShare - nightShare > 0.3f && StationsRules.RushShare == 9 && StationsRules.DayShare == 6 && StationsRules.NightShare == 2 && StationsRules.DownShare == 5,
+            "subway people: a good deal more in the rush than by day and by day than at night, never every train nor none: the figures are nine, six, two and five trains in ten");
+        Check(Math.Abs(weekendShare - 0.6f) < 0.04f, "subway people: a weekend has no rush (" + weekendShare.ToString("F3") + " at the rush's hours)");
+        Check(Math.Abs(downShare - 0.5f) < 0.03f && Math.Abs(downNightShare - 0.2f) < 0.03f,
             "subway people: somebody walks down to five trains in ten, two at night (" + downShare.ToString("F3") + ", " + downNightShare.ToString("F3") + ")");
         Check(lookNeverZero && upDownDiffer && women > looks * 0.45f && women < looks * 0.55f, "subway people: a rider's look is seeded (never the game's own sequence), half of them women, the one who comes up not the one who goes down");
+        int differ = 0;
+        for (int train = 0; train < 144; train++)
+        {
+            differ += StationsRules.ComesUp(7, train, 0, 12, false) != StationsRules.ComesUp(7, train, 1, 12, false) ? 1 : 0;
+        }
+        Check(differ > 20, "subway people: each station its own: the trains that bring somebody up at one are not those of another (" + differ + " of 144 differ)");
+        // A save of many years: the answers stay in their ranges on far days, and the last train of a day is a train like any other.
+        bool far = true;
+        foreach (int day in new[] { 0, 1, 365, 36500, 1000000, int.MaxValue / 2, int.MaxValue })
+        {
+            for (int train = 0; train < 480; train += 37)
+            {
+                StationsRules.ComesUp(day, train, 2, 23, true);
+                StationsRules.GoesDown(day, train, 2, 0, false);
+                far &= StationsRules.RiderLook(day, train, 2, true, out _) > 0 && StationsRules.RiderBearing(day, train, 2, false, 7) >= 0 && StationsRules.RiderBearing(day, train, 2, false, 7) < 8;
+            }
+        }
+        Check(far, "subway people: on any day of any year a rider's look is a seed above none and their way one of the eight");
         // The ways a rider walks: one of eight, and eight tries cover all eight.
         bool ways = true;
         for (int day = 1; day <= 30; day++)
@@ -199,7 +267,7 @@ internal static partial class Program
         StationsRules.Along(0f, 0f, 0, 10f, out float ex, out float ez);
         StationsRules.Along(0f, 0f, 2, 10f, out float nx, out float nz);
         Check(along && Math.Abs(ex - 10f) < 0.001f && Math.Abs(ez) < 0.001f && Math.Abs(nx) < 0.001f && Math.Abs(nz - 10f) < 0.001f, "subway people: a way is a point that many metres off, east first, then towards north");
-        Check(StationsRules.RidersMost == 2 && StationsRules.RidersKeep > StationsRules.RidersNear && StationsRules.RiderWalk > StationsRules.RiderWalkLeast && StationsRules.RiderWalk < StationsRules.RidersNear,
+        Check(StationsRules.RidersMost == 2 && StationsRules.RidersNear == 70f && StationsRules.RidersKeep == 95f && StationsRules.RiderWalk == 34f && StationsRules.RiderWalkLeast == 20f,
             "subway people: two at the most, shown within " + StationsRules.RidersNear + " m and kept to " + StationsRules.RidersKeep + ", walking " + StationsRules.RiderWalk + " m");
         string cast = ModSource(@"Jobs\JobCast.cs"), riders = ModSource(@"Subway\StationsDirector.Riders.cs");
         Check(cast.Contains("public const int Size = 2;") && riders.Contains("private Rider _up, _down;") && riders.Contains("_cast.Prewarm(JobCast.Size)"), "subway people: the cast holds the two, made behind the loading screen");
@@ -312,6 +380,8 @@ internal static partial class Program
         int solid = game.IndexOf("string solid = Solid(at, turn);", StringComparison.Ordinal), walk = game.IndexOf("string walk = ComesUp(site, out Vector3 arrive);", StringComparison.Ordinal),
             made = game.IndexOf("UnityEngine.Object.Instantiate(template.gameObject, asleep.transform)", StringComparison.Ordinal), joined = game.IndexOf("city.subwayStations.Add(station);", StringComparison.Ordinal);
         Check(solid > 0 && walk > solid && made > walk && joined > made, "subway sources: something solid on its ground or riders off the walking ground refuse a station before anything of it is made or joined");
+        Check(game.Contains("\"Water\", \"Player\", \"Human\");") && game.Contains("Physics.OverlapBoxNonAlloc(centre, half, Overlaps, turn, _solidMask, QueryTriggerInteraction.Ignore)"),
+            "subway sources: the look for something solid is one box that counts no ground, no zone and no person: somebody standing there in an older save does not cost the station");
         Check(game.Contains("asleep.SetActive(false);") && game.Contains("UnityEngine.Object.DestroyImmediate(copied);") && game.Contains("!drawn.isPartOfStaticBatch"),
             "subway sources: the copy is made asleep, the game's own station on it never wakes, and an entrance drawn in a static batch is never copied");
         int outOfList = game.IndexOf("city.subwayStations.Remove(station);", StringComparison.Ordinal), destroyed = game.IndexOf("SceneryTrees.Destroy(station.gameObject);", StringComparison.Ordinal),
@@ -322,6 +392,17 @@ internal static partial class Program
               && game.Contains("UnityEngine.Object.Destroy(stood.Entry.gameObject);") && game.Contains("UnityEngine.Object.Destroy(marker.gameObject);") && game.Contains("UnityEngine.Object.Destroy(_watch);")
               && !all.Contains("RegisterCullable") && !all.Contains("UnregisterCullable"),
             "subway sources: every copy of the game's entrance is destroyed through SceneryTrees, which takes its lamp out of the game's culling lists first; the three plain destroys are the window's entry, the map's marker and the watch");
+        int joinedAt = game.IndexOf("city.subwayStations.Add(station);", StringComparison.Ordinal), backAt = game.IndexOf("Remove(entry, city, uis, entries);", StringComparison.Ordinal);
+        Check(joinedAt > 0 && backAt > joinedAt && game.Contains("Standing.Remove(entry);") && game.Contains("entry.Entry = AddEntry(entry, list, entries);")
+              && MemberText(game, "private static void Remove(Stood stood, CityManager city, UIs uis, List<CityMapSubwayStationEntry> entries)").Contains("city.subwayStations.Remove(station);"),
+            "subway sources: a station is joined whole or not at all: one whose entry in the game's window cannot be made is taken out of the game's list again and away");
+        string gone = MemberText(director, "private void OnDestroy()");
+        Check(gone.Contains("if (!GameManager.isCitySceneBeingUnloaded)") && gone.Contains("StationsGame.RemoveAll();") && !director.Contains("SaveTools.Dormant")
+              && gone.IndexOf("StationsGame.RemoveAll();", StringComparison.Ordinal) < gone.IndexOf("StationsGame.Forget();", StringComparison.Ordinal),
+            "subway sources: when the director goes in a city that stays, whoever stopped the mod, the stations leave the game's lists before anything is destroyed");
+        string closing = MemberText(director, "public void Close(string why)"), look = MemberText(director, "private void OnUpdate()");
+        Check(closing.Contains("_closed = true;") && closing.Contains("Leave(why);") && !closing.Contains("RemoveAll") && look.Contains("if (_late && _closed)") && look.Contains("Leave(_leaveWhy);"),
+            "subway sources: the feature's clean-up leaves by the same rule, never under a rider, and the look takes them away once the rider is up");
         Check(director.Contains("switch (StationsRules.Removal(SubwaySystem.IsRiding, StationsGame.RideTouches(), StationsGame.PickingFromOwn()))") && director.Contains("case StationRemoval.AfterRide:")
               && director.Contains("StationsGame.ShutMap();"), "subway sources: the director asks the rule before it takes them away, and waits for a rider");
         Check(director.Contains("bool wanted = StationsRules.Wanted(Settings.UptownSubway, UptownLots.Ready && !UptownLots.Closed, StationsGame.GameStations());")
@@ -465,6 +546,15 @@ internal static partial class Program
             {
                 Check(uptown.Contains("<b>" + title + "</b>") && (code != "en" || !uptown.Contains("There is no subway station of their own")),
                     "subway texts: Uptown's Guide page points to the stations' page by its title in " + code);
+            }
+            // The Transport page said the districts have no station: its third line now begins with the first sentence of the option's own tip.
+            if (words.TryGetValue("reallife_guide_transport", out string transport) && words.TryGetValue("reallife_opt_tip_uptown_subway", out string tip))
+            {
+                string[] lines = transport.Split('\n');
+                int stop = code == "zh-cn" ? tip.IndexOf('。') + 1 : tip.IndexOf(". ", StringComparison.Ordinal) + 1;
+                Check(lines.Length == 33 && stop > 3 && lines[2].StartsWith("- " + tip.Substring(0, stop), StringComparison.Ordinal)
+                      && (code != "en" || (!transport.Contains("have no subway station") && lines[2].StartsWith("- Three subway stations in Uptown and Cedar Heights, joined to the game's subway at its own fare. Buses end", StringComparison.Ordinal))),
+                    "subway texts: the Transport page of the Guide says the districts have three stations, in the words of the option's tip, in " + code);
             }
             if (row != null)
             {

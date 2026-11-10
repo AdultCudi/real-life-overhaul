@@ -223,17 +223,19 @@ namespace RealLifeOverhaul.Subway
 
         /// <summary>
         /// Null when no point of the list (a tree's, a bench's, a bin's, a lamp's or a stop's pole's middle) lies within <paramref name="margin"/> of an
-        /// entrance's ground or of where its rider comes up; else <paramref name="what"/> with the point.
+        /// entrance's ground or of where its rider comes up; else <paramref name="what"/> with the point. A point on the entrance's own ground is
+        /// met whatever the margin, and a margin below none counts as none.
         /// </summary>
         public static string MeetsPoint(StationSite site, IReadOnlyList<float> x, IReadOnlyList<float> z, float margin, string what)
         {
             Footprint(site, out float x0, out float z0, out float x1, out float z1);
             Arrival(site, out float ax, out float az);
+            float reach = Math.Max(0f, margin);
             for (int i = 0; x != null && i < x.Count; i++)
             {
                 float dx = Math.Max(Math.Max(x0 - x[i], 0f), x[i] - x1), dz = Math.Max(Math.Max(z0 - z[i], 0f), z[i] - z1);
                 float rx = x[i] - ax, rz = z[i] - az;
-                if (dx * dx + dz * dz < margin * margin || rx * rx + rz * rz < margin * margin)
+                if (dx * dx + dz * dz <= reach * reach || rx * rx + rz * rz <= reach * reach)
                 {
                     return what + " at (" + x[i].ToString("F1", Inv) + ", " + z[i].ToString("F1", Inv) + ")";
                 }
@@ -245,7 +247,7 @@ namespace RealLifeOverhaul.Subway
         public static string MeetsBox(StationSite site, float bx0, float bz0, float bx1, float bz1, float margin, string what)
         {
             Footprint(site, out float x0, out float z0, out float x1, out float z1);
-            return Meet(x0, z0, x1, z1, Math.Min(bx0, bx1), Math.Min(bz0, bz1), Math.Max(bx0, bx1), Math.Max(bz0, bz1), margin) ? what : null;
+            return Meet(x0, z0, x1, z1, Math.Min(bx0, bx1), Math.Min(bz0, bz1), Math.Max(bx0, bx1), Math.Max(bz0, bz1), Math.Max(0f, margin)) ? what : null;
         }
 
         private static readonly System.Globalization.CultureInfo Inv = System.Globalization.CultureInfo.InvariantCulture;
