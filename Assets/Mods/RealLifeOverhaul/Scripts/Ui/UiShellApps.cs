@@ -146,7 +146,7 @@ namespace RealLifeOverhaul.Ui
             }
             switch (id)
             {
-                case "Persona": return UiIcon.Percent;
+                case "Persona": return UiIcon.Person;
                 case "Contacts": return UiIcon.AddressBook;
                 case "MyEmployees": return UiIcon.IdBadge;
                 case "BizMan": return UiIcon.Building;
