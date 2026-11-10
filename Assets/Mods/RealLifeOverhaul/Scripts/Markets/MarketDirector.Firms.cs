@@ -137,6 +137,44 @@ namespace RealLifeOverhaul.Markets
         private void HookFirms()
         {
             _engine.FirmDealt = FirmDealtHeard;
+            _engine.CompanyDealt = CompanyDealtHeard;
+            _engine.CompanyTaken = CompanyTakenHeard;
+        }
+
+        // The founder dealt in the whole company's shares on this machine, or paid for a larger share of it: the tax return follows.
+        private void CompanyDealtHeard(string name, long shares, int cents, long money, long fee, long held)
+        {
+            Action<string, long, int, long, long, long> told = MarketBridges.CompanyDealt;
+            if (told == null)
+            {
+                return;
+            }
+            try
+            {
+                told(name, shares, cents, money, fee, held);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+        }
+
+        // A bid for the whole company won on this machine: the tax return notes the founder's gain.
+        private void CompanyTakenHeard(string name, long founder, long total, int cents, long money)
+        {
+            Action<string, long, long, int, long> told = MarketBridges.CompanyTaken;
+            if (told == null)
+            {
+                return;
+            }
+            try
+            {
+                told(name, founder, total, cents, money);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
         }
 
         // The founder dealt in a firm's shares on this machine: the tech sector follows its cap table.
