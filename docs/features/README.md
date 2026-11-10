@@ -10,6 +10,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [Crime](crime.md): crime near, by and against the player.
 - [Law](law.md): police precincts, arrests, custody, the record and reputation.
 - [Justice](justice.md): cases, bail, lawyers, the courthouse, sentences and prison.
+- [Schemes and inquiries](schemes.md): white collar schemes that pay at first and leave a trail, the inquiries that follow it into the courts, and the rivals who do the same.
 - [The living city](city-life.md): people at work and about their day on the pavements.
 - [City events](city-events.md): fires, weather that matters and street events.
 - [Seasons](seasons.md): what customers buy through the year, and snow on some winter days.

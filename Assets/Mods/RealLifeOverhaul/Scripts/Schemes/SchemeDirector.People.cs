@@ -341,9 +341,10 @@ namespace RealLifeOverhaul.Schemes
                 {
                     continue;
                 }
+                long cost = q.Stage == InquiryStage.Charged ? 0L : SchemeRules.RepayCost(s, q.Kind, SchemeGame.Day, unpaid);
                 into.Add(SchemeText.Fill(q.Stage == InquiryStage.Charged ? "reallife_scheme_file_charged" : q.Stage == InquiryStage.Visit ? "reallife_scheme_file_visit"
-                    : "reallife_scheme_file_letter", "what", SchemeText.Kind(q.Kind), "day", SchemeText.Whole(q.Opened), "amount",
-                    SchemeText.Money(SchemeRules.RepayCost(s, q.Kind, SchemeGame.Day, unpaid))));
+                             : "reallife_scheme_file_letter", "what", SchemeText.Kind(q.Kind), "day", SchemeText.Whole(q.Opened))
+                         + (cost > 0 ? " " + SchemeText.Fill("reallife_scheme_file_cost", "amount", SchemeText.Money(cost)) : string.Empty));
             }
             SchemeFund f = s.Fund;
             if (f.State == FundState.Open || f.State == FundState.Placed || (f.State == FundState.Lost && !f.Reported))

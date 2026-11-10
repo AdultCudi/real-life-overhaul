@@ -1076,7 +1076,7 @@ internal static partial class UiSamples
                 });
                 string hint = t("reallife_scheme_claim_hint", "Claim a loss of {amount}."), gain = t("reallife_scheme_claim_gain", "Up to {amount} from the insurer, less the excess");
                 Answer(p, 0, t("reallife_scheme_size_small", "A small one"), Fill(hint, "amount", "$2,000"));
-                Costs(p, null, Cost(Fill(gain, "amount", "$2,000"), 1), Cost(t("reallife_scheme_risk_small", "Rarely looked into, unless it repeats"), 0));
+                Costs(p, null, Cost(Fill(gain, "amount", "$2,000"), 1), Cost(Fill(t("reallife_scheme_risk_small", "A first one this size is looked into about {chance} times in a hundred, and every one still on file adds to that"), "chance", "25"), 0));
                 Answer(p, 1, t("reallife_scheme_size_large", "A large one"), Fill(hint, "amount", "$8,000"));
                 Costs(p, null, Cost(Fill(gain, "amount", "$8,000"), 1), Cost(t("reallife_scheme_risk_large", "A sum this size is always looked into"), -1));
                 Answer(p, 2, t("reallife_scheme_leave", "Leave it"), t("reallife_scheme_leave_hint", "Nothing is done."));
