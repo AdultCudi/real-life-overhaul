@@ -51,7 +51,10 @@ namespace RealLifeOverhaul
             return c != null && c.Stage == CaseStage.Pending ? c.Number : 0;
         }
 
-        /// <summary>The judge of a case weighs its evidence lightly: so much off every charge still standing, never under the least a charge is tried on. False for a case not waiting to be heard.</summary>
+        /// <summary>
+        /// The judge of a case weighs its evidence lightly: so much off every charge still standing, never under the
+        /// least a charge is tried on. False for a case not waiting to be heard.
+        /// </summary>
         public static bool Lean(int number, float less)
         {
             JusticeCase c = JusticeState.Loaded ? JusticeState.Find(number) : null;
