@@ -91,32 +91,72 @@ namespace RealLifeOverhaul
             // What the wallet must keep for the investors of the player's firms, whole money, rounded up.
             private static long Floor()
             {
-                Tech.TechDirector tech = Tech.TechDirector.Instance;
-                return tech != null ? (tech.FloorNow + 99) / 100 : 0L;
+                try
+                {
+                    Tech.TechDirector tech = Tech.TechDirector.Instance;
+                    return tech != null ? (tech.FloorNow + 99) / 100 : 0L;
+                }
+                catch (Exception e)
+                {
+                    Fault("PartyLinks.Floor", e);
+                    return 0L;
+                }
             }
 
             private static Economy.StaffFile StaffFile(string id)
             {
-                Economy.CompanyDirector company = Economy.CompanyDirector.Instance;
-                Economy.CompanyState state = company != null && company.On(Economy.CompanyPart.Staff) ? company.State : null;
-                return state != null ? state.Employee(id) : null;
+                try
+                {
+                    Economy.CompanyDirector company = Economy.CompanyDirector.Instance;
+                    Economy.CompanyState state = company != null && company.On(Economy.CompanyPart.Staff) ? company.State : null;
+                    return state != null ? state.Employee(id) : null;
+                }
+                catch (Exception e)
+                {
+                    Fault("PartyLinks.StaffFile", e);
+                    return null;
+                }
             }
 
             private static int StaffLevel()
             {
-                Economy.CompanyDirector company = Economy.CompanyDirector.Instance;
-                return company != null ? company.Level : 1;
+                try
+                {
+                    Economy.CompanyDirector company = Economy.CompanyDirector.Instance;
+                    return company != null ? company.Level : 1;
+                }
+                catch (Exception e)
+                {
+                    Fault("PartyLinks.StaffLevel", e);
+                    return 1;
+                }
             }
 
             // A business's own manager, appointed in the Company app and found at work there, as the desk sessions ask.
             private static bool Manager(string place)
             {
-                return Sessions.SessionBridges.ManagerAt(place, out string _, out int _);
+                try
+                {
+                    return Sessions.SessionBridges.ManagerAt(place, out string _, out int _);
+                }
+                catch (Exception e)
+                {
+                    Fault("PartyLinks.Manager", e);
+                    return false;
+                }
             }
 
             private static bool Close(BuildingRegistration reg, int hours)
             {
-                return BusinessDirector.Instance != null && BusinessDirector.Instance.CloseFor(reg, hours, ClosureSource.StaffEvent);
+                try
+                {
+                    return BusinessDirector.Instance != null && BusinessDirector.Instance.CloseFor(reg, hours, ClosureSource.StaffEvent);
+                }
+                catch (Exception e)
+                {
+                    Fault("PartyLinks.Close", e);
+                    return false;
+                }
             }
 
             private static void Forget(int person)
@@ -133,7 +173,15 @@ namespace RealLifeOverhaul
 
             private static string PartyLabel()
             {
-                return PartyDirector.On ? "reallife_party_people_host" : null;
+                try
+                {
+                    return PartyDirector.On ? "reallife_party_people_host" : null;
+                }
+                catch (Exception e)
+                {
+                    Fault("PartyLinks.PartyLabel", e);
+                    return null;
+                }
             }
 
             private static void PartyOpen()

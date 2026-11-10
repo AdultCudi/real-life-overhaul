@@ -23,12 +23,17 @@ namespace RealLifeOverhaul.Ui
                 "reallife_party_f_other", "reallife_party_f_place", "reallife_party_f_place_none", "reallife_party_f_room", "reallife_party_f_send",
                 "reallife_party_f_tier", "reallife_party_f_where", "reallife_party_g_answer", "reallife_party_g_ask", "reallife_party_g_list",
                 "reallife_party_g_none_body", "reallife_party_g_none_title", "reallife_party_g_not_asked", "reallife_party_g_take_off", "reallife_party_g_who",
-                "reallife_party_host_next", "reallife_party_kind_evening", "reallife_party_kind_lunch", "reallife_party_kind_teamday", "reallife_party_off_body",
-                "reallife_party_off_title", "reallife_party_place_bar", "reallife_party_place_home", "reallife_party_place_restaurant", "reallife_party_sec_city",
-                "reallife_party_sec_coming", "reallife_party_sec_event", "reallife_party_sec_guests", "reallife_party_sec_manager", "reallife_party_sec_party",
-                "reallife_party_sec_past", "reallife_party_sec_staff", "reallife_party_staff_next", "reallife_party_staff_none", "reallife_party_tab_diary",
-                "reallife_party_tab_host", "reallife_party_tab_staff", "reallife_party_tier_good", "reallife_party_tier_lavish", "reallife_party_tier_simple",
-                "reallife_ui_prompt_back", "reallife_ui_prompt_move", "reallife_ui_prompt_select"
+                "reallife_party_host_next", "reallife_party_kind_evening", "reallife_party_kind_lunch", "reallife_party_kind_teamday", "reallife_party_no_begun",
+                "reallife_party_no_business", "reallife_party_no_day", "reallife_party_no_early", "reallife_party_no_far", "reallife_party_no_guest",
+                "reallife_party_no_guests", "reallife_party_no_home", "reallife_party_no_hour", "reallife_party_no_late", "reallife_party_no_manager",
+                "reallife_party_no_many", "reallife_party_no_money", "reallife_party_no_nobody", "reallife_party_no_off", "reallife_party_no_often",
+                "reallife_party_no_planned", "reallife_party_no_reserve", "reallife_party_no_room", "reallife_party_no_save", "reallife_party_no_shut",
+                "reallife_party_no_soon", "reallife_party_no_staff", "reallife_party_no_there", "reallife_party_no_venue", "reallife_party_off_body",
+                "reallife_party_off_title", "reallife_party_place_bar", "reallife_party_place_home", "reallife_party_place_home_name", "reallife_party_place_restaurant",
+                "reallife_party_sec_city", "reallife_party_sec_coming", "reallife_party_sec_event", "reallife_party_sec_guests", "reallife_party_sec_manager",
+                "reallife_party_sec_party", "reallife_party_sec_past", "reallife_party_sec_staff", "reallife_party_staff_next", "reallife_party_staff_none",
+                "reallife_party_tab_diary", "reallife_party_tab_host", "reallife_party_tab_staff", "reallife_party_tier_good", "reallife_party_tier_lavish",
+                "reallife_party_tier_simple", "reallife_ui_prompt_back", "reallife_ui_prompt_move", "reallife_ui_prompt_select"
                 // KEYS END
             }).Switch(UiScreenSwitches.Life));
         }

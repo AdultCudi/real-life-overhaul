@@ -34,9 +34,13 @@ namespace RealLifeOverhaul.Parties
         /// <summary>Called once a second until it takes, since the phone is built a little after the city.</summary>
         public void Install()
         {
-            if (_app != null || _gaveUp || !PhoneApp.PhoneUp)
+            if (_app != null || _gaveUp)
             {
-                return;   // on the phone already; or the game's phone is not built yet: asked again next time, nothing made for it
+                return;
+            }
+            if (!PhoneApp.PhoneUp)
+            {
+                return;   // the game's phone is not built yet: asked again next time, nothing made for it
             }
             var def = new PhoneAppDef
             {
