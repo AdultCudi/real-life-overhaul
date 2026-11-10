@@ -274,6 +274,25 @@ public static partial class UiPreviewRunner
         return moves;
     }
 
+    private static readonly string[] BarLanguages = { "pt", "zh", "zh-cn", "de", "fr", "es", "ru", "nl", "tr", "pl", "ko" };
+
+    // The status bar is written in the language a shot's name ends in (dialog_bank_loan_pt, company_zh_staff): its weekday and
+    // season come from that language's own words, the game's included, like the rest of the shot.
+    private static UiWords BarLanguageOf(string name)
+    {
+        string[] parts = name.Split('_');
+        string tail = parts[parts.Length - 1];
+        string head = parts.Length > 1 && parts[0] == "company" ? parts[1] : tail;
+        foreach (string code in BarLanguages)
+        {
+            if (tail == code || head == code)
+            {
+                return DialogWords(code == "zh" ? "zh-cn" : code);
+            }
+        }
+        return (key, english) => english;
+    }
+
     private static void RenderShot(Shot shot, string outFolder)
     {
         float canvasW = Mathf.Max(3840f, CanvasH * shot.Width / shot.Height);
@@ -306,6 +325,7 @@ public static partial class UiPreviewRunner
             UiView.Stretch(host);
 
             Backdrop(cr, shot.Screen.Backdrop);
+            UiSamples.SampleWords = BarLanguageOf(shot.Screen.Name);
             UiChrome.Bar = shot.Screen.Bar ?? (() => UiSamples.Bar(shot.Screen.App));
             var view = new UiView(host, "Screen") { Motion = UiMotionSetting.Off };
             var scene = new UiScene();

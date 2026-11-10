@@ -608,8 +608,10 @@ internal static partial class UiSamples
         public static string WeekdayOf(int day)
         {
             string[] names = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
-            return names[((day + 4) % 7 + 7) % 7];
+            return names[WeekdayIndex(day)];
         }
+
+        public static int WeekdayIndex(int day) => ((day + 4) % 7 + 7) % 7;
 
         // The tax arithmetic, the same as TaxRules: what is left of takings after the costs, the tax on it, and the penalty on a late return. The check holds them equal.
         public static int Taxable(int takings, int costs) => Math.Max(0, takings - Math.Max(0, costs));

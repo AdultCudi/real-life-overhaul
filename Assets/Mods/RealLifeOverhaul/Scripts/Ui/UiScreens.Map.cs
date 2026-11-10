@@ -33,7 +33,8 @@ namespace RealLifeOverhaul.Ui
             "reallife_map_row_address", "reallife_map_row_distance", "reallife_map_row_for_rent", "reallife_map_row_hours", "reallife_map_row_next", "reallife_map_row_owner",
             "reallife_map_row_type", "reallife_map_save", "reallife_map_saved", "reallife_map_show_all", "reallife_map_show_on_map", "reallife_map_subway_note",
             "reallife_map_tab_business", "reallife_map_tab_overview", "reallife_map_tab_reviews", "reallife_map_taxi_note", "reallife_map_you", "reallife_nav_minutes",
-            "reallife_season_name_autumn", "reallife_ui_hud_weather_sunny", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_shell_all_apps"
+            "reallife_season_name_autumn", "topbar_date_format", "common_monday", "common_tuesday", "common_wednesday", "common_friday",
+            "reallife_ui_hud_weather_sunny", "reallife_ui_prompt_move", "reallife_ui_prompt_select", "reallife_ui_shell_all_apps"
         };
 
         // The city map's panels over the game's own windows (Scripts/Ui/MapDock, MapKits): its filters with the picked place, the place card, the route strip, the layers and

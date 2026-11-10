@@ -163,6 +163,7 @@ public static partial class UiPreviewRunner
             RectTransform host = UiView.NewRect(cr, "Host");
             UiView.Stretch(host);
             Backdrop(cr, screen.Backdrop);
+            UiSamples.SampleWords = (key, english) => english;
             UiChrome.Bar = screen.Bar ?? (() => UiSamples.Bar(screen.App));
             var view = new UiView(host, "Screen") { Motion = UiMotionSetting.Off, Scale = scale };
             var scene = new UiScene();

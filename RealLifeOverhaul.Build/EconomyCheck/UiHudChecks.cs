@@ -86,6 +86,82 @@ internal static partial class Program
         Check(mx == 960f && my == 540f && bx == 0f && by == 1080f, "hud: a camera's pixel (from the bottom left) becomes a px of the layout (from the top left) at any resolution");
     }
 
+    private static readonly string[] BarEnglishDays = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+    private static readonly string[] BarEnglishSeasons = { "Winter", "Spring", "Summer", "Autumn" };
+
+    // The English weekday or season name a status bar's text holds when the language's own words do not spell it the same.
+    private static string BarEnglishIn(string text, UiWords own)
+    {
+        if (text == null)
+        {
+            return null;
+        }
+        var keys = new[] { "common_monday", "common_tuesday", "common_wednesday", "common_thursday", "common_friday", "common_saturday", "common_sunday" };
+        var seasons = new[] { "reallife_season_name_winter", "reallife_season_name_spring", "reallife_season_name_summer", "reallife_season_name_autumn" };
+        for (int i = 0; i < 11; i++)
+        {
+            string english = i < 7 ? BarEnglishDays[i] : BarEnglishSeasons[i - 7];
+            string mine = own(i < 7 ? keys[i] : seasons[i - 7], english);
+            if (mine != english && text.IndexOf(english, StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return english;
+            }
+        }
+        return null;
+    }
+
+    // The sample status bar in another language: its weekday, day and season come from that language's own words (the game's
+    // for the weekdays and the date, the mod's for the seasons), never from the English the samples are written in.
+    private static void HudBarLanguageChecks()
+    {
+        UiWords was = UiSamples.SampleWords;
+        string held = null;
+        try
+        {
+            foreach (string lang in ModLanguages.All)
+            {
+                if (lang == "en")
+                {
+                    continue;
+                }
+                UiWords t = UiWords(lang);
+                UiSamples.SampleWords = t;
+                var bars = new System.Collections.Generic.List<UiStatusModel> { UiSamples.Bar(-1), UiSamples.ShellBar(4, false), UiSamples.WalkingBar(), UiSamples.PiecesBar(false), UiSamples.PiecesBar(true) };
+                foreach (bool night in new[] { false, true })
+                {
+                    bars.Add(UiSamples.HudBar(t, false, false, night));
+                }
+                var texts = new System.Collections.Generic.List<string> { UiSamples.Status, UiSamples.CompanyDayText("start") };
+                foreach (UiStatusModel b in bars)
+                {
+                    texts.Add(b.Day);
+                    texts.Add(b.DayWidest);
+                    texts.Add(b.Season);
+                }
+                foreach (string text in texts)
+                {
+                    string english = BarEnglishIn(text, t);
+                    held = held ?? (english == null ? null : lang + ": \"" + text + "\" holds " + english);
+                }
+                string expect = t("topbar_date_format", "{DayOfWeek} (Day {CurrentNumberDay})").Replace("{DayOfWeek}", t("common_tuesday", "Tuesday")).Replace("{CurrentNumberDay}", "412");
+                held = held ?? (UiSamples.Bar(-1).Day == expect && UiSamples.Bar(-1).Season == t("reallife_season_name_autumn", "Autumn") ? null : lang + ": the bar's day is not the game's date format");
+            }
+        }
+        finally
+        {
+            UiSamples.SampleWords = was;
+        }
+        Check(held == null, "ui screens: no sample status bar in another language holds an English weekday or season name" + (held == null ? string.Empty : " (" + held + ")"));
+        // Seen failing: the English bar, read as German, is caught.
+        UiWords german = UiWords("de");
+        Check(BarEnglishIn("Tuesday (Day 412)", german) == "Tuesday" && BarEnglishIn("Autumn", german) == "Autumn" && BarEnglishIn(german("common_tuesday", "Tuesday") + " (Tag 412)", german) == null,
+            "ui screens: the English-name rule flags an English weekday and season in a German bar and passes the German words");
+        UiSamples.SampleWords = (key, english) => english;
+        Check(UiSamples.Bar(-1).Day == "Tuesday (Day 412)" && UiSamples.Bar(-1).Season == "Autumn" && UiSamples.Status == "$48,210     Tuesday (Day 412)     14:32",
+            "ui screens: the sample status bar in English reads as it always did");
+        UiSamples.SampleWords = was;
+    }
+
     // The strip's widths: 1080 (and 1440, which lays out the same), the game's UI zoom at 80% and 120%, an ultrawide, and the
     // narrowest the HUD lays out (a zoom of 150% and over).
     // The frames a second in the status bar: only while the game's show-FPS option is on (the model's Fps above 0), a pill of its own

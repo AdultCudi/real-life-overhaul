@@ -22,8 +22,8 @@ internal static partial class UiSamples
     {
         var m = new UiStatusModel
         {
-            Time = night ? "22:47" : "14:32", Day = night ? "Friday (Day 415)" : "Tuesday (Day 412)", DayWidest = night ? "Wednesday (Day 420)" : "Wednesday (Day 413)", Paused = paused, Speed = fast ? 3 : 1,
-            TimeLocked = locked, Season = t("reallife_season_name_autumn", "Autumn"), Weather = night ? UiIcon.CloudRain : UiIcon.Sun,
+            Time = night ? "22:47" : "14:32", Day = night ? DayOf(t, 4, 415) : DayOf(t, 1, 412), DayWidest = night ? DayOf(t, 2, 420) : DayOf(t, 2, 413), Paused = paused, Speed = fast ? 3 : 1,
+            TimeLocked = locked, Season = SeasonOf(t, 3), Weather = night ? UiIcon.CloudRain : UiIcon.Sun,
             WeatherWords = night ? t("reallife_ui_hud_weather_rain", "Rain") : t("reallife_ui_hud_weather_sunny", "Sunny"),
             Place = night ? "1250 Avenue of the Americas" : "70 Fifth Avenue", District = night ? "Lower Manhattan" : "Midtown", Money = night ? "$2,415" : "$48,210",
             MoneyDay = night ? "-$1,120" : "$3,860", MoneyTrend = night ? -1 : 1, MoneyChange = night ? "-$385" : "+$1,240", MoneyChangeRises = !night,
@@ -441,7 +441,7 @@ internal static partial class UiSamples
     /// <summary>Sleeping until the shift: the clock running on, the goal, Cancel.</summary>
     public static UiTimeSkipModel HudSkip(UiWords t, bool locked) => new UiTimeSkipModel
     {
-        Title = t("playeractivityui_timemachine", "Skip time"), Clock = "03:40", Day = "Wednesday (Day 413)", Goal = "Until 07:00, when your shift starts", Share = 0.58f, CanCancel = !locked,
+        Title = t("playeractivityui_timemachine", "Skip time"), Clock = "03:40", Day = DayOf(t, 2, 413), Goal = "Until 07:00, when your shift starts", Share = 0.58f, CanCancel = !locked,
         CancelLabel = t("common_cancel", "Cancel"),
         Prompts = new[] { new UiPrompt { Action = UiAction.Back, Label = t("common_cancel", "Cancel") } }, PromptCount = 1,
     };
@@ -453,7 +453,7 @@ internal static partial class UiSamples
     private static UiStatusModel Skipping(UiStatusModel bar)
     {
         bar.Time = "03:40";
-        bar.Day = "Wednesday (Day 413)";
+        bar.Day = DayOf(SampleWords, 2, 413);
         return Over(bar);
     }
 

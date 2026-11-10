@@ -8,7 +8,9 @@ namespace RealLifeOverhaul.Ui
         // (Made when asked: the screens' list is gathered while the class is first set up, before this file's fields are.)
         private static string[] ActivityBarKeys => new[]
         {
-            "reallife_ui_prompt_move", "reallife_ui_prompt_select", "input_key_menu", "reallife_season_name_autumn", "reallife_ui_hud_weather_sunny", "reallife_ui_hud_weather_clear",
+            "reallife_ui_prompt_move", "reallife_ui_prompt_select", "input_key_menu", "reallife_season_name_autumn", "topbar_date_format",
+            "common_monday", "common_tuesday", "common_wednesday", "common_friday",
+            "reallife_ui_hud_weather_sunny", "reallife_ui_hud_weather_clear",
             "reallife_ui_hud_weather_rain", "reallife_ui_hud_weather_mist", "reallife_ui_hud_weather_storm", "reallife_ui_hud_weather_snow", "reallife_ui_hud_weather_heat",
             "reallife_ui_hud_weather_cold", "reallife_ui_hud_weather_ice", "tutorial_objectives", "common_setdestination", "common_close", "reallife_ui_shell_all_apps",
         };
