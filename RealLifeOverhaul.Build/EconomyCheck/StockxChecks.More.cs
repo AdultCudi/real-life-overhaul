@@ -392,6 +392,24 @@ internal static partial class Program
         Check(odd != null && odd.Units == 0 && odd.Cost == 0 && odd.Track == 1.0 && odd.OddCents == 99 && odd.Splits.Count == 0 && odd.Pushes.Count == 0 && odd.Bank.Stage == BankStage.Ended,
             "stock extras save: figures out of bounds are held to them: no units under nothing, a standing that cannot be, a split that is none, a push that is no number");
 
+        // A guest in another player's city keeps their own extras, and nothing of the host's comes over.
+        MarketEngine hostMarket = StockxMarket(1310, 1000000, out MarketWorld _, 20), guestMarket = StockxMarket(1311, 1000000, out MarketWorld _, 20);
+        hostMarket.State.Extras.Units = 999;
+        hostMarket.State.Extras.Bank.Stage = BankStage.Listed;
+        guestMarket.State.Extras.Units = 77;
+        guestMarket.State.Extras.OddCents = 5;
+        guestMarket.State.Extras.Track = 0.75;
+        guestMarket.State.Extras.Bank.Stage = BankStage.Advised;
+        string sent = MarketShare.Write(hostMarket.State, hostMarket.Tape);
+        MarketState adopted = MarketShare.Adopt(guestMarket.State, sent, new List<long>(), null, out MarketTape _, out long _);
+        Check(adopted != null && adopted.Extras.Units == 77 && adopted.Extras.OddCents == 5 && adopted.Extras.Track == 0.75 && adopted.Extras.Bank.Stage == BankStage.Advised,
+            "stock extras save: a guest takes their own units, cents kept and bank's way into the host's market, and nothing of the host's extras");
+        MarketState hostRead = MarketStore.Read(sent.Substring(0, sent.IndexOf((char)10)), out int _);
+        Check(!sent.Contains("stock_extras") && hostRead != null && hostRead.Extras.Empty, "stock extras save: the line a host sends is the market's own line, with no part for the host's extras");
+        string goingPublic = ModSource(@"Markets\MarketDirector.GoingPublic.cs");
+        Check(goingPublic.Contains("HookExtras();") && ModSource(@"Markets\MarketShare.cs").Contains("host.Extras.CopyFrom(mine.Extras);"),
+            "stock extras save: the engine made for a guest hears the extras as the first one does");
+
         // The market's own line keeps shares to be put together.
         MarketEngine m = StockxMarket(1301, 1000000, out MarketWorld _, 20);
         Stock s = StockxCity(m, 0), t = StockxCity(m, 1);

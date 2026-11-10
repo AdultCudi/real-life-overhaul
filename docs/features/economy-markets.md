@@ -2,7 +2,7 @@
 
 ## In a sentence
 
-The city's stock market in the **Stocks** app: the player's own businesses listed as a company with shareholders, orders that wait (stop loss, take profit, limits), trading bots the player can hire, the raw materials exchange with its futures and options, and the city's builders listed with a project's materials hedged.
+The city's stock market in the **Stocks** app: the player's own businesses listed as a company with shareholders, orders that wait (stop loss, take profit, limits), trading bots the player can hire, the raw materials exchange with its futures and options, the city's builders listed with a project's materials hedged, and the extras: splits by each board's own level, an index fund, block trades and a bank of the player's own listed by itself.
 
 ## Where the code is
 
@@ -451,3 +451,108 @@ The builders' news is the tape's own event kind (`MarketInputs.EventBuilder`, A 
 ### Not verified (the game could not be run)
 
 The Materials and hedge page's length in the white box (five materials, up to five futures' lines, a quote and two notes), the notifications on screen, the builders' news in the City Ledger, the units' words, a hedge's futures on the Futures tab, the transactions in Finance; how often the construction game gives the market news in a long game, and how the builders' prices feel with it.
+
+## Stock market extras (`Scripts/Markets/Extras`)
+
+Splits by each board's own level, shares put together under a unit, the founder's own split, an index fund, block trades, a bank of the player's own on the market by itself, and the rival tycoons doing the same (option "Stock market extras", id `markets_extras`, under the stock market's header, on by default; a player's suggestion).
+
+No Update and no Harmony patch: splits are decided at the market's closes and take effect at its opens (`MarketEngine.Extras.cs`), the fund's fee and distributions ride the closes, the player's own push fades with the market's steps, the bank's way to the market and the rivals' day are looked at on the market director's one-second timer (`MarketDirector.Extras.cs`, `.ExtrasBank.cs`), and the sheets are built when they are shown.
+
+### What was there, and what was therefore built
+
+| Was there | Built here |
+| --- | --- |
+| A split of two, three or five for one when a city company or the player's whole company closes over 300.00 (`MarketCatalogue.SplitAboveCents`), five market days after it is announced (`MarketLife.Split`) | Each board's own level; shares put together; the founder's own split; the player's drawn lines, alerts and rules and the rivals' blocks follow a split; a split waits for a declared dividend to leave the price |
+| No fund: the game's investment funds follow a yearly rate and are no share | The City Index Fund over the city's index |
+| One order held to a fifth of a day's usual volume (`OrderShareOfVolumePct`), a large order worked a slice a step | A block: many shares in one deal at the market's own price for its size |
+| The player's whole company listed together (`Listing`), a tech firm with recurring revenue listed on its own (`ListingFirm`); the bank's takings only lines of the headquarters' statement | The bank's own books, and a listing of its own; a firm's real takings counted for its way to the market |
+| A rival's "buying shares in a listed company" was a line in the loans feed and nothing else | A real block, units of the fund, and a bank or lab of their own listed |
+
+### Files
+
+| File | What it is |
+| --- | --- |
+| `Extras/ExtrasCatalogue.cs` | every figure; `ExtrasKeys`, the keys of the reasons |
+| `Extras/ExtrasState.cs` | `ExtrasState` on `MarketState.Extras`: the units, the fund's standing, cents kept, splits for the charts, the player's push, what was told, the rivals' books, `BankFloat` |
+| `Extras/ExtrasStore.cs` | the save line `reallife:stock_extras` |
+| `Extras/SplitRules.cs` | a board's level, who puts shares together and by how many, the founder's reasons, the wait for a dividend, a consolidation applied, what follows a split |
+| `Extras/FundRules.cs` | what a unit holds, a deal quoted and booked, the close (fee, distributions), a company that leaves |
+| `Extras/BlockRules.cs` | a block quoted, its least and most, the 5% steps told |
+| `Extras/BankFloatRules.cs` | the bank's own days and quarters, when it may list, its worth, the prospectus, the price, the offer's money, the owner's part of a payout |
+| `Extras/RivalMarket.cs` | the tycoons' day: units, a block bought or sold, an arm listed |
+| `Extras/MarketEngine.Extras.cs` | the engine's part: a split at an open, the decisions at a close, the tape's event, fund deals, blocks, a rival's block, the bank's price |
+| `Extras/MarketDirector.Extras.cs`, `.ExtrasBank.cs`, `.ExtrasTests.cs` | the game's part: the option, what the app asks, notifications, the tax on distributions, the bank's way, the rivals' day, the tests |
+| `Extras/ExtrasBridges.cs`, `Wiring/Wiring.StockExtrasLinks.cs` | the bridges: the bank, Standing, the tax return, the rivals, the company's books |
+| `Extras/ExtrasText.cs`, `Extras/ExtrasGuide.cs` | the words; the Guide's figures |
+| `Ui/Stocks/StocksBuild.Extras.cs`, `StocksScreen.Extras.cs` | the four sheets and what their buttons ask |
+
+The first eight and the engine's part are game-free and compiled by EconomyCheck (`StockxChecks.cs`, `.Rules.cs`, `.More.cs`; `--stockx` runs them alone).
+
+### Splits
+
+- **Each board's own level** (`SplitRules.LevelOf`): from a company's id, one of thirteen levels from 180.00 to 300.00 in steps of 10.00. A city company that closes over its level and at or under 300.00 splits by the old ratio rule (`MarketLife.SplitRatioAt`: two for one, three from 600.00, five from 900.00); over 300.00 the old rule still splits every company, option on or off. A player's own company splits by the old rule or when its founder asks.
+- **Shares put together** (`WantsReverse`, `ReverseRatio`): a city company or a tycoon's holding that has closed under a unit (the penny rule's 1.00 at today's prices) for 10 market days running, with distress under 0.5 and no bid, puts 2, 5, 10, 20 or 50 old shares into one new: the smallest that takes the price to 10.00 at today's prices. A company nearer failing is left to the penny rule, which delists at 20 days; 10 days, the next moment and the notice end before that.
+- **The founder's own** (`FounderWhy`, `MarketEngine.AskSplit`; the Listing page's **Split the shares**): 2, 3, 5 or 10 new for one, or 2, 5 or 10 old into one. The founder must chair the board; no bid and no split announced; no split takes a share under 5.00 at today's prices and no consolidation over 150.00, under every board's level. A firm with investors (`OwnListing.Firm`), the bank's stock too, is never split: its shares are also lines of a cap table and staff options counted outside the market (`MarketEngine.Own.cs`, the old rule's own exception).
+- **Decided once, heard everywhere**: a board's level, a consolidation and the founder's ask are decided where a close is played for the first time on a market of its own (`ExtrasCorporate`) and put on the tape as `MarketInputs.EventSplit` (A the company, B the ratio, under nothing for old shares put together). Every machine and every replayed day takes them from the tape, whatever its own option; a founder's is tested again at its moment. The split is announced then (`MarketNewsKind.Split`, or `Reverse` = 34) and takes effect five market days on.
+- **At the open** (`MarketEngine.SplitNow`): a split waits while a dividend is declared and has not left the price (a dividend a share in whole cents cannot be divided without somebody gaining by the rounding; this holds for the old rule's splits too, on every machine alike), then every count and price changes in one moment: the old `MarketLife.Split` for new shares, `SplitRules.Reverse` for old shares put together. The player's holding, open orders, stops, bots, options, the founder's shares and reserve, candles, results and dividend a share change as before; new here are the player's drawn lines and price alerts (`ChartBook`), the rules written on the company (`RuleBot`: its shares, shares a trade, a grid's level), the rivals' blocks and a note for the chart.
+- **A part of a share** left by a consolidation is paid for at the price before, not rounded until the sum is: whole money into the account that holds the shares (the wallet, or a margin account's cash; a short pays), the cents under a unit kept in `ExtrasState.OddCents` and paid with the next. The cost that went with it is taken as a gain or a loss, so the cost of what is kept and what was paid for add up to the cost before. An order left with no whole share is cancelled, a worked order's money settled.
+- **The chart** shows candles at today's share count, so no crash is drawn; the company page's readings begin with the last split ("Split 2 for 1 on day 61. Earlier prices are shown at today's share count.", `StocksBuild.SplitLine`); the last 48 splits are remembered.
+
+### The City Index Fund (`FundRules`)
+
+- **What a unit holds**: the city's index (free float, no company over a tenth: `MarketIndex`) over 10, in money, times the fund's standing against it (`ExtrasState.Track`): 100.00 a unit at 1,000 points. It is read from the companies' prices of the moment it is asked, never from a close.
+- **Dealing** (the Portfolio's **Index fund**; `FundRules.Quote`, `MarketEngine.FundTrade`): a unit is dealt at what its slice of every company costs at that company's own offer (sold: its bid), each slice moved by its size as an order of that size is (`MarketTrading.Impact`, the player's recent trading in that company counted) and never at a price the player's own lasting push made better for them (`ExtrasState.Pushes`: every fill of theirs, their bots' and their founder's deals, fading as the mood fades). Each slice then counts in the player's recent trading in its company. The market's commission (0.10%, never under its least) on top. From and into the cash, whatever the account; while the market trades, caught up and not held after a load. Fund deals move no price.
+- **Limits**: no slice more of its company than one order may be, and the units held stand for at most 2% of the whole market's float (`FundHoldingBp`).
+- **The fee**: 0.30% a year (`FundFeeBp`), a market day's share taken out of the standing at each close, once a day (`TrackDay`), whether units are held or not.
+- **A company that leaves**: the index's divisor keeps the index where it was, but the fund held the company; the standing changes by its weight times what its holders were paid against its price (`FundRules.Left`, called in `Leave` before the company is taken out). Listings and splits change nothing a unit holds.
+- **Distributions**: at the close of a company's record day the units held are owed the dividend of the shares behind them, on that company's own payment day (`ExtrasState.Dues`); paid into the cash to the whole unit of money, the cents kept for the next, and taxed as a dividend is (`ListingVotes.DividendTax`, `ListingMoney.DividendTax`). Units bought after the record day are owed nothing of it.
+- **Tax**: as shares are. The mod's quarterly return counts gains on a founder's own stake (`ExitGains`); gains on ordinary shares, and so on units, are in the account's "Realised" and in no return.
+- **With the option off** no unit is bought; units held can still be sold, the fee still comes out and distributions are still passed on.
+- **Going Public**: the units, the standing and the push are each player's own, in their own line; a deal moves no price and sends nothing. A guest's units are counted on the host's index while they are a guest, as their shares are on the host's prices.
+
+### Block trades (`BlockRules`)
+
+- **What it is** (the Portfolio's **Block trade**, on the company last opened; `MarketEngine.Block`): more shares than one order may be (at least an order's most and one) in one deal, as one market order filled by the market's own fill (`MarketTrading.Fill`): the offer or the bid moved by the square root of its size over a day's volume, the lasting quarter of that move on the price, the commission, the history, and in a Going Public session the trade's move sent as any trade's is.
+- **Limits, none of them new**: the most one holder may have (`MarketTrading.MostHeld`: the option's tenth, quarter, half or all; of a tycoon's holding its free float of 25%); no company under a bid; one that has traded 20 market days (28 days of the calendar); no player's own company, a firm's or the bank's stock too (its founder deals by the founder's rules on its page); shares sold must be held and not already asked to be sold; the cash, or a margin account's rules. At the most of a tycoon's holding the takeover on the rivals' page opens as before.
+- **Told**: a holding that passes a whole 5% of a company, up or down, is market news (`MarketNewsKind.Block` = 35: the holding in bp, bought or sold, and the tycoon's holding for a rival's), in the market's news, the City Ledger's markets section and a notification for a rival's block of what the player holds or watches. Told on the machine that dealt.
+- **Not to be played** (EconomyCheck, eight seeds): a block bought and sold again loses the spread, both moves and two commissions; the same shares as orders placed at the same moment cost at least as much; no block takes a holding past the most. Orders spread over hours pay less of the move, as a worked order does: that is the market's own patience, not a block's.
+
+### A bank of your own, and a studio, on the market (`BankFloatRules`)
+
+- **Why they could not**: the bank's takings were lines of the headquarters' statement, which the market reads only inside the player's whole company (`ListingLinks.Statements`), and the one way to list a single firm asked for a tech firm (`TechDirector.ExitBankers`). A tech firm's way opened only on recurring revenue (`ExitRules.ListReady` on `FirmsRules.Arr`), which is nothing for a game studio (`FirmsRules.MonthlyRevenue` returns 0 for a game) and for work done by the project.
+- **A studio or a consultancy**: the way to the market now counts a firm's month as its recurring revenue or its real takings of the last thirty days, whichever is more (`ExitRules.ListMonth`, `TechDirector.ListMonthOf`), and its worth as its usual value or what the market's model makes of its own statements when that is more (`ExitRules.ListValue`, `ExitBridges.BooksWorth`). Everything after is the firm's existing path.
+- **The bank's own books**: each day the bank books tells its income and its profit after savers' interest, losses and running costs (`OwnBankBridges.DayBooked`); the last 40 days are kept for the market's mornings and 12 quarters for its books (`BankFloat.Days`, `Books`).
+- **When it may** (`BankFloatRules.Ready`; the Listing page's **List your bank**): a bank running a game year, no test's, four complete quarters of its own books with a profit in three, clear of the regulator and no run, the player's whole company neither listed nor on its way (the bank is part of it already), the option on and the market this machine's own.
+- **Its worth**: the market's model on those books (`ListingBook.Worth`, as any company's), never over 3 times its own capital (`BankBookMost`). Savers' deposits and the cash that covers them are not among what the market is told (`BankFacts`).
+- **The way**: advisers engaged for the usual retainer from the player's cash (`ListingBook.Retainer`: 0.50% of the worth, 25,000 to 400,000 at the start's prices), every test made first; 10, 15, 20, 25, 30 or 40% of the bank offered in new shares; the usual range (12% under the worth a share, 8% either side); the book priced at the open five market days on from the day's secret as a company's is (`ListingBook.Price`), called off under the range's bottom, the retainer then spent.
+- **The offer's money** (the new shares at the price, less the underwriters' 5% or 4% and the exchange's 0.10%) goes into the bank's capital (`OwnBankDirector.PublicCapital`), never the player's cash.
+- **Listed**: a stock among the banks made by the path a firm's is (`MarketEngine.ListFirm`, place `#bank`), the founder locked up half a year, its days the bank's own (`ExitStockLinks.Env`), taken out of the whole company's books (`StockExtrasLinks.Books`). From then on what the bank pays its owner out of its capital (the owner's pay, a dividend by hand or automatic, a sale, what a winding up leaves) is every holder's by their shares: the owner has their part, rounded down (`OwnBankGame.Owner`, `BankFloatRules.OwnerPart`), also with the stock market switched off (the last stake seen, or the save's own line). The founder deals in its shares on its own page by the founder's rules; each deal is told to the tax return once, with what the bank was founded with as the shares' cost (`TechDirector.StakeDealt`, basis line `#bank`). A bank sold or closed takes its stock off the market.
+
+### The rival tycoons (`RivalMarket`, `MarketDirector.RivalsDay`)
+
+Each tycoon who is forward looks at the market every 30 days, on a day of their own, on a market of this machine's own; every choice is drawn from the market's id, the tycoon and the day.
+
+- **The fund**: units for 0.5% of their worth at a look until they hold 1.5% of it.
+- **A block**: of a listed company for 1% of their worth, one time in three another tycoon's holding; at most 5% of one company and what any holder may have, four companies at once; bought over the offer and sold under the bid by the market's own depth rule, so they lose by a round trip too. Its lasting move and shares go on the tape as a trade's (`EventTrade`, `EventVolume`), and a holding past 5% is told. One look in five they sell the oldest instead, the gain or loss into their worth. Their announced move "buying shares in a listed company" (`RivalMoveKind.Shares`) is now such a block.
+- **An arm**: one look in four, once, a tycoon whose holding is listed puts a bank or a lab of it on the market (`MarketEngine.ListStartup`: "Karen Bank", "Luthor Labs"), worth 8% of their fortune, among the banks or the software companies, and from then a company like any other: it splits, pays, fails or is bid for.
+- **Shown**: the rich list and each tycoon's panel on the Finance app's rivals page (`RivalBridges.MarketLine`), the market's news and the City Ledger. Their stake in and bid for the player's company are the rivals' own moves, as before.
+
+### The save
+
+`reallife:stock_extras`, version 1, a line of its own: parts `f` (units, cost, realised, paid, fees, the standing, its day, cents kept), `d` (distributions owed), `s` (splits), `p` (the player's push), `t` (holdings told), `r` (each tycoon's units, look, arm and blocks), `b`, `k`, `q` (the bank's way, days and quarters). A save without it starts with nothing; a part or a field of a later version is passed over; a line that cannot be read is kept as it was. Never in the line a host sends. The market's own line keeps a consolidation to come as a ratio under nothing in the split's own field.
+
+### Tests (options page, the stock market's extras)
+
+"A company I hold splits two for one at the next open", "A company I hold puts its shares together, ten into one, at the next open", "Check the index fund against its parts now", "Quote the largest block of a rival's holding now", "A rival tycoon looks at the stock market now", "Check my bank's own books for a listing". Each writes one `Stock extras check (...)` line; none starts in a Going Public session.
+
+### Log lines
+
+- `Stock market check (split, day 61): Northgate Stores 2 for 1, now 2400000 shares at 9120 cents; the player holds 400: PASS`
+- `Stock market check (fund): bought 250 unit(s) at 10441 cents against 10420 held by a unit (20 bp), 26129 with a commission of 26; PASS`
+- `Stock market check (block): bought 150000 of Luthor Everything Co. at 4486 cents (648 bp against the block), holding 1080 bp of at most 2500: PASS`
+- `Stock market: the bank Harbour Bank (HBK) listed on day 212 at 950 cents: 200000 new shares raised 1800000 into its capital after 95000 to the underwriters and 10000 to the exchange; the founder keeps 800000 shares.`
+- `Stock market: Space Karen looked at the market on day 95: 3800 unit(s) of the fund bought (3800 held); bought 21000 of Northgate Stores at 4810 cents for 1010100.`
+
+### Not verified (the game could not be run)
+
+That the four sheets fit the Stocks desk's sheet as their samples do; that the Portfolio's bar holds two buttons more and the Listing page's one more; the notifications on screen; the fund's and a block's transactions in Finance and EconoView; the rich list's and the tycoon's panel's new line; that the headquarters' statement and the bank's own days agree to the day; how often boards split and the tycoons deal over a long game.
