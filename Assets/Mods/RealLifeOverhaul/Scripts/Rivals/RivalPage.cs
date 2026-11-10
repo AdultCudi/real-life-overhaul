@@ -198,6 +198,11 @@ namespace RealLifeOverhaul.Rivals
             {
                 box.Row("reallife_rival_label_week", change, t.Worth >= t.WeekAgo ? CellTone.Red : CellTone.Green);
             }
+            string giving = RivalBridges.GivingLine != null ? RivalBridges.GivingLine(who) : null;
+            if (!string.IsNullOrEmpty(giving))
+            {
+                box.Line(giving);
+            }
             if (director.HoldingShares(who, out long held, out long most, out long _, out int mid))
             {
                 box.Row("reallife_rival_label_holding", RivalText.Fill("reallife_rival_holding_value", "held", RivalText.N(held), "most", RivalText.N(most), "price", RivalText.MoneyCents(mid)));
@@ -353,6 +358,11 @@ namespace RealLifeOverhaul.Rivals
                 {
                     rivals.Add(RivalText.Fill("reallife_rival_list_rival", "rival", t.Def.Name, "holding", t.Def.Holding, "change",
                         RivalText.Change(t.Worth, t.WeekAgo).Length > 0 ? RivalText.Change(t.Worth, t.WeekAgo) : RivalText.Money(0)));
+                    string gave = RivalBridges.GivingLine != null ? RivalBridges.GivingLine(i) : null;
+                    if (!string.IsNullOrEmpty(gave))
+                    {
+                        rivals.Add(gave);
+                    }
                 }
                 else if (t.DefeatedDay >= 0)
                 {

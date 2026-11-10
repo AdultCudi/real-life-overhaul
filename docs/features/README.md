@@ -29,6 +29,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [Family](family.md): a partner, a wedding, children, the wider family.
 - [Home life and health](home.md): needs, cooking, illness and the doctor.
 - [Household staff](household.md): a cleaner, a cook, a live-in butler and a mobile mechanic for the home.
+- [Giving](giving.md): gifts to the city's charities, money given or lent to people, the deduction on the tax return and the people who ask.
 - [Leisure](leisure.md): things to do for fun, the mod's clothes, night life, sound, photo mode.
 - [Travel and lodging](travel.md): hotels and holidays.
 - [Permadeath](permadeath.md): an ending the player chooses.

@@ -196,6 +196,7 @@ namespace RealLifeOverhaul
     public sealed class SocialOffer
     {
         public const int Loan = 100;   // Kind for a loan; anything else is a PlanKind
+        public const int Help = 101;   // Kind for a plea for money (Giving): the person is in trouble and asks, Amount is what they ask
 
         public int Person = -1;
         public int Kind;

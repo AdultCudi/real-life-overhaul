@@ -228,6 +228,11 @@ namespace RealLifeOverhaul
             {
                 _actions.Add("family");
             }
+            if (Giver != null && Giving.GivingDirector.CauseWhy == 0)
+            {
+                _actions.Add("give");   // Giving: money for them, given or lent; offered only where the city's people are there to receive it (not in a session, not with them off)
+                _actions.Add("lend");
+            }
             if (_p.Stage >= SocialStage.Friend && _p.Debt == 0)
             {
                 _actions.Add("borrow");
@@ -267,6 +272,14 @@ namespace RealLifeOverhaul
                     entry.ConfirmTextOverride = "reallife_social_btn_borrow".Localize(SocialLife.Data(_p, "amount", SocialLife.Money(BorrowAmount())));
                     entry.OnConfirm = Borrow;
                     entry.Gets(DialogButton.Confirm, "reallife_ui_dialog_cost_ask_in", "amount", SocialLife.Money(BorrowAmount()));
+                    break;
+                case "give":
+                    entry.ConfirmTextOverride = "reallife_giving_btn_give".Localize();
+                    entry.OnConfirm = () => GiveFlow(false, 0);
+                    break;
+                case "lend":
+                    entry.ConfirmTextOverride = "reallife_giving_btn_lend".Localize();
+                    entry.OnConfirm = () => GiveFlow(true, 0);
                     break;
                 case "introduce":
                     entry.ConfirmTextOverride = "reallife_social_btn_introduce".Localize();
@@ -447,6 +460,10 @@ namespace RealLifeOverhaul
             SocialOffer offer = SocialState.Offer;
             int kindId = offer.Kind;
             int amount = offer.Amount;
+            if (kindId == SocialOffer.Help)
+            {
+                return Plea();   // a plea for money (Giving): PersonDialog.Giving
+            }
             if (kindId == SocialOffer.Loan)
             {
                 DialogEntry loan = Line(SocialLines.Pick(SocialCatalogue.LoanAsk), SocialLife.Data(_p, "amount", SocialLife.Money(amount)));

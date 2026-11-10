@@ -55,6 +55,7 @@
         public const string ConstructionTrackId = "construction_track";            // ...its matters under way as lines in the game's objectives window
         public const string MealsTakeoutId = "meals_takeout";
         public const string HouseholdStaffId = "home_household";
+        public const string GivingId = "giving";
         public const string CameraFovId = "camera_fov";
         public const string CameraHeightId = "camera_height";
         public const string CarCameraId = "car_camera";
@@ -434,6 +435,7 @@
         public static bool ConstructionParking = true;     // car parks: the player's on their land in build mode, public pay parking and leases; the city's builders' too
         public static bool ConstructionTrack = true;       // the construction matters under way shown in the game's objectives window
         public static bool MealsTakeout = true;  // food carried in a bag is eaten from a plate once seated; a home dish can be packed to take
+        public static bool Giving = true;   // gifts to the city's charities and money for people: gifts, standing gifts, loans, asks and the deduction
         public static bool HouseholdStaff = true;   // a cleaner, a cook, a butler or a mechanic taken on for the home through the phone
         public static int CameraFov = 55;        // degrees, vertical
         public static bool LifeEvents = true;
@@ -861,6 +863,7 @@
             ConstructionParking = Bool(modId, ConstructionParkingId, ConstructionParking);
             MealsTakeout = Bool(modId, MealsTakeoutId, MealsTakeout);
             HouseholdStaff = Bool(modId, HouseholdStaffId, HouseholdStaff);
+            Giving = Bool(modId, GivingId, Giving);
             CameraFov = Int(modId, CameraFovId, CameraFov);
             CameraHeight = Int(modId, CameraHeightId, CameraHeight);
             CarCamera = Bool(modId, CarCameraId, CarCamera);
