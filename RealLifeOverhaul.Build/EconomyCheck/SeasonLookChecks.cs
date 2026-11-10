@@ -176,17 +176,23 @@ internal static partial class Program
         {
             sink += SeasonLookRules.Foliage(i % 600 + 1, 6f, 60).G + SeasonLookRules.RainOn(i % 600 + 1, 60, 777).Hours + SeasonLookRules.Leaves(i % 600 + 1, 12f, 60);
         }
-        var watch = Stopwatch.StartNew();
-        long before = GC.GetAllocatedBytesForCurrentThread();
-        for (int i = 0; i < 10000; i++)
+        long made = long.MaxValue;
+        double each = double.MaxValue;
+        // The least of three rounds: an allocation in the code shows in every round, the runtime's own few kilobytes now and then in one at most.
+        for (int round = 0; round < 3; round++)
         {
-            Tint t = SeasonLookRules.Foliage(i % 600 + 1, (i % 96) / 4f, 60);
-            RainDay r = SeasonLookRules.RainOn(i % 600 + 1, 60, 777);
-            sink += t.R + r.Hours + SeasonLookRules.Leaves(i % 600 + 1, 12f, 60) + SeasonLookRules.Overcast(0.5f, 0.5f);
+            var watch = Stopwatch.StartNew();
+            long before = GC.GetAllocatedBytesForCurrentThread();
+            for (int i = 0; i < 10000; i++)
+            {
+                Tint t = SeasonLookRules.Foliage(i % 600 + 1, (i % 96) / 4f, 60);
+                RainDay r = SeasonLookRules.RainOn(i % 600 + 1, 60, 777);
+                sink += t.R + r.Hours + SeasonLookRules.Leaves(i % 600 + 1, 12f, 60) + SeasonLookRules.Overcast(0.5f, 0.5f);
+            }
+            watch.Stop();
+            made = Math.Min(made, GC.GetAllocatedBytesForCurrentThread() - before);
+            each = Math.Min(each, watch.Elapsed.TotalMilliseconds / 10000.0);
         }
-        watch.Stop();
-        long made = GC.GetAllocatedBytesForCurrentThread() - before;
-        double each = watch.Elapsed.TotalMilliseconds / 10000.0;
         Check(made == 0 && each < 0.05, "season looks: a second's look (leaves, rain, falling leaves, sky) allocates nothing and takes " + each.ToString("0.0000") + " ms (under 0.05; "
                                         + made + " bytes; " + (sink >= 0f ? "ok" : "?") + ")");
     }
