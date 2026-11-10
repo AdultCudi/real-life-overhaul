@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
@@ -7,10 +8,13 @@ namespace RealLifeOverhaul.Parties
     /// <summary>
     /// The one line parties and company events keep in a save: "v=1|seed|next id|day settled|last invitation|off since",
     /// then one "^" part a record, led by a letter and its fields by "#": P a party (its guests as "person:answer:came"
-    /// joined by ","), E a company event, S a manager's schedule, I an invitation, L a lift (its gains as "day:amount"), R a rival's event. New fields
+    /// joined by ","), E a company event (the staff it was booked for as their ids joined by ","), S a manager's schedule, I an invitation, L a lift (its gains as "day:amount"), R a rival's
+    /// event, M the day a rival outlet's count of days started from. New fields
     /// go at the end of a record and a record with fewer reads the rest as they start, so an older line loads; a part led
     /// by a letter this version does not know, and fields past those it knows, are passed over, so a line from a newer
-    /// version is read as far as it goes. Numbers are written and read with the invariant culture. '%', '#', '^', '|',
+    /// version is read as far as it goes. A line holds as many parts of each kind as <see cref="PartyCatalogue.StoredParties"/> and the others say: past it the oldest
+    /// finished parties, events, invitations and rivals' events are left out, never one still to come and never a lift, whose records are the caps. Numbers are
+    /// written and read with the invariant culture. '%', '#', '^', '|',
     /// ',' and ':' in a name are written as %25, %23, %5E, %7C, %2C and %3A. A save with no line starts with nothing; a
     /// line whose head cannot be read gives nothing and is kept as it was read (SaveLines). Game-free.
     /// </summary>
@@ -18,8 +22,27 @@ namespace RealLifeOverhaul.Parties
     {
         public const string Key = "reallife:parties";
         public const int Version = 1;
-        private const int RecordsMost = 600;   // parts a line holds: far past what the rules keep
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+
+        /// <summary>
+        /// The file a save opens with: its line read, or a new file whose seed is drawn once by <paramref name="seeds"/>. <paramref name="fresh"/> is true for a save with no line
+        /// (or one that could not be read).
+        /// </summary>
+        public static PartyFile Open(Dictionary<string, string> data, Func<int> seeds, out int version, out bool fresh)
+        {
+            PartyFile f = Load(data, out version);
+            fresh = f == null;
+            return f ?? new PartyFile { Seed = seeds() };
+        }
+
+        /// <summary>
+        /// Writes the file's line into the save. It is written from the very first save, with nothing booked, so the seed every draw comes from is kept with the save and
+        /// the answers on the planning page do not draw again on each load.
+        /// </summary>
+        public static void Put(Dictionary<string, string> data, PartyFile f)
+        {
+            data[Key] = Write(f);
+        }
 
         public static string Write(PartyFile f)
         {
@@ -43,7 +66,11 @@ namespace RealLifeOverhaul.Parties
                 StaffEvent e = f.Events[i];
                 t.Append("^E#").Append(N(e.Id)).Append('#').Append(Escape(e.Place)).Append('#').Append(Escape(e.Name)).Append('#').Append(N((int)e.Kind)).Append('#').Append(N((int)e.State))
                  .Append('#').Append(N(e.Day)).Append('#').Append(N(e.Hour)).Append('#').Append(N(e.Paid)).Append('#').Append(N(e.Heads)).Append('#').Append(N(e.Came))
-                 .Append('#').Append(N(e.Shut)).Append('#').Append(B(e.ByManager));
+                 .Append('#').Append(N(e.Shut)).Append('#').Append(B(e.ByManager)).Append('#');
+                for (int c = 0; c < e.Crew.Count; c++)
+                {
+                    t.Append(c > 0 ? "," : string.Empty).Append(Escape(e.Crew[c]));
+                }
             }
             for (int i = 0; i < f.Plans.Count; i++)
             {
@@ -71,6 +98,10 @@ namespace RealLifeOverhaul.Parties
                 RivalEvent r = f.Rivals[i];
                 t.Append("^R#").Append(N(r.Day)).Append('#').Append(N(r.Tycoon)).Append('#').Append(Escape(r.Outlet)).Append('#').Append(Escape(r.District)).Append('#').Append(N((int)r.Kind))
                  .Append('#').Append(N(r.Heads)).Append('#').Append(N(r.Cost));
+            }
+            for (int i = 0; i < f.Marks.Count; i++)
+            {
+                t.Append("^M#").Append(Escape(f.Marks[i].Outlet)).Append('#').Append(N(f.Marks[i].Day));
             }
             return t.ToString();
         }
@@ -114,7 +145,7 @@ namespace RealLifeOverhaul.Parties
             f.Settled = Int(head, 3, -1);
             f.LastInvite = Int(head, 4, -1000);
             f.OffSince = Int(head, 5, -1);
-            for (int i = 1; i < parts.Length && i <= RecordsMost; i++)
+            for (int i = 1; i < parts.Length; i++)
             {
                 string[] x = parts[i].Split('#');
                 if (x.Length < 2 || x[0].Length != 1)
@@ -129,8 +160,10 @@ namespace RealLifeOverhaul.Parties
                     case 'I': ReadInvite(f, x); break;
                     case 'L': ReadLift(f, x); break;
                     case 'R': ReadRival(f, x); break;
+                    case 'M': ReadMark(f, x); break;
                 }
             }
+            Bound(f);
             for (int i = 0; i < f.Parties.Count; i++)
             {
                 f.NextId = System.Math.Max(f.NextId, f.Parties[i].Id + 1);
@@ -145,6 +178,30 @@ namespace RealLifeOverhaul.Parties
             }
             version = v;
             return f;
+        }
+
+        // The limits per kind: the oldest finished records of a kind that is history go first, and one still to come or under way is never left out.
+        private static void Bound(PartyFile f)
+        {
+            Oldest(f.Parties, PartyCatalogue.StoredParties, p => p.Over);
+            Oldest(f.Events, PartyCatalogue.StoredEvents, e => e.State != StaffEventState.Planned && e.State != StaffEventState.Running);
+            Oldest(f.Invites, PartyCatalogue.StoredInvites, v => !v.Open);
+            Oldest(f.Rivals, PartyCatalogue.StoredRivals, r => true);
+        }
+
+        private static void Oldest<T>(List<T> list, int most, Func<T, bool> finished)
+        {
+            for (int i = 0; i < list.Count && list.Count > most;)
+            {
+                if (finished(list[i]))
+                {
+                    list.RemoveAt(i);
+                }
+                else
+                {
+                    i++;
+                }
+            }
         }
 
         private static void ReadParty(PartyFile f, string[] x)
@@ -187,12 +244,21 @@ namespace RealLifeOverhaul.Parties
                 Hour = PartyCatalogue.Clamp(Int(x, 7, 0), 0, 23), Paid = System.Math.Max(0, Int(x, 8, 0)), Heads = Int(x, 9, 0), Came = Int(x, 10, 0), Shut = Int(x, 11, 0),
                 ByManager = Int(x, 12, 0) == 1
             });
+            string[] crew = x.Length > 13 && x[13].Length > 0 ? x[13].Split(',') : new string[0];
+            for (int c = 0; c < crew.Length; c++)
+            {
+                string who = Unescape(crew[c]);
+                if (who.Length > 0)
+                {
+                    f.Events[f.Events.Count - 1].Crew.Add(who);
+                }
+            }
         }
 
         private static void ReadPlan(PartyFile f, string[] x)
         {
             string place = Text(x, 1);
-            if (place.Length == 0 || f.Plan(place, false) != null)
+            if (place.Length == 0 || f.Plan(place, false) != null || f.Plans.Count >= PartyCatalogue.StoredPlans)
             {
                 return;
             }
@@ -226,6 +292,10 @@ namespace RealLifeOverhaul.Parties
             {
                 return;   // neither a person nor an employee, or both
             }
+            if (f.Lifts.Count >= PartyCatalogue.StoredLifts)
+            {
+                return;   // only a damaged line comes to this many
+            }
             Lift lift = id.Length > 0 ? f.Of(id, true) : f.Of(person, true);
             lift.Stand = PartyCatalogue.Clamp(Int(x, 3, 0), 0, PartyCatalogue.CapStanding);
             lift.Gains.Clear();
@@ -255,6 +325,16 @@ namespace RealLifeOverhaul.Parties
                 Day = Int(x, 1, 0), Tycoon = Int(x, 2, 0), Outlet = outlet, District = Text(x, 4), Kind = (StaffEventKind)PartyCatalogue.Clamp(Int(x, 5, 0), 0, 2), Heads = Int(x, 6, 0),
                 Cost = System.Math.Max(0, Int(x, 7, 0))
             });
+        }
+
+        private static void ReadMark(PartyFile f, string[] x)
+        {
+            string outlet = Text(x, 1);
+            if (outlet.Length == 0 || f.Marks.Count >= PartyCatalogue.StoredMarks)
+            {
+                return;
+            }
+            f.Mark(outlet, Int(x, 2, 0));
         }
 
         private static string N(int value) => value.ToString(Inv);

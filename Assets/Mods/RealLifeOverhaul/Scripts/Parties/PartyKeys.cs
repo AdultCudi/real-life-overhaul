@@ -102,6 +102,7 @@ namespace RealLifeOverhaul.Parties
                 case InviteState.Went: return "reallife_party_state_went";
                 case InviteState.Missed: return "reallife_party_state_missed";
                 case InviteState.Lapsed: return "reallife_party_state_lapsed";
+                case InviteState.Left: return "reallife_party_state_left";
                 default: return "reallife_party_state_cancelled";
             }
         }

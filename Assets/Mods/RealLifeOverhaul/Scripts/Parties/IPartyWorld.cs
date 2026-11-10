@@ -16,6 +16,7 @@ namespace RealLifeOverhaul.Parties
         public bool Found;       // the home is the player's, or the venue stands and is one
         public bool Open;        // open for the whole of the party (a home always is)
         public bool Own;         // a venue of the player's own
+        public bool Made;        // a venue of the player's own that is shut by their own doing (their switch or opening hours), not by a closure of the mod's or the city's
         public string Street, Name;
         public int Number;
         public int Sqm;          // its floor, square metres; 0: not known
@@ -79,13 +80,14 @@ namespace RealLifeOverhaul.Parties
         /// <summary>The place as it is now: the player's home, or the venue at an address.</summary>
         PlaceFacts Place(PartyPlace place, string street, int number, int start, int minutes);
 
-        HomeFacts Home();
+        /// <summary>The home a party was held at, by its address (the home now with none given); not known gives <see cref="HomeFacts.Tidy"/> -1.</summary>
+        HomeFacts Home(string street, int number);
 
         /// <summary>The player is at the place now: inside the home, or at or inside the venue.</summary>
         bool There(PartyPlace place, string street, int number);
 
-        /// <summary>The home is this much messier.</summary>
-        void Mess(int points);
+        /// <summary>The home at an address is this much messier.</summary>
+        void Mess(int points, string street, int number);
 
         /// <summary>The staff of a business of the player's now, into <paramref name="into"/> (cleared first); -1 if the business is not the player's.</summary>
         int Staff(string place, List<StaffHand> into);

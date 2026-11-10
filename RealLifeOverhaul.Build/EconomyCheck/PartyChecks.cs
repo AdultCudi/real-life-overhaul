@@ -16,12 +16,13 @@ internal static partial class Program
     /// <summary>The checks' own world: what the game would answer, set by each check, and a ledger of every money move.</summary>
     private sealed class PartyWorld : IPartyWorld
     {
-        public bool IsOn = true, IsGuest, IsThere = true, HomeFound = true, VenueFound = true, VenueOpen = true, VenueOwn, TextsGo = true;
+        public bool IsOn = true, IsGuest, IsThere = true, HomeFound = true, VenueFound = true, VenueOpen = true, VenueOwn, VenueMade, TextsGo = true;
         public int Minute = 100 * 1440 + 9 * 60, PriceLevel = PriceRules.Start, Sqm = 96, District = 2, ShutAnswer = 0, Messed, Asked;
         public long Cash0 = 100000, Reserve;
         public HomeFacts HomeNow = new HomeFacts { Tidy = 80 };
         public readonly List<SocialPerson> Cast = new List<SocialPerson>();
         public readonly List<string> Ledger = new List<string>(), Notes = new List<string>(), Texts = new List<string>();
+        public readonly List<int> Closures = new List<int>();   // the hours a business was shut for, one per call that shut it, as the game's world counts them from the minute of the call
         public readonly Dictionary<string, List<StaffHand>> Staffs = new Dictionary<string, List<StaffHand>>();
         public readonly Dictionary<string, float> Moods = new Dictionary<string, float>();
         public readonly HashSet<string> Managers = new HashSet<string>();
@@ -73,14 +74,14 @@ internal static partial class Program
             {
                 return new PlaceFacts { Found = HomeFound, Open = true, Street = "Home Road", Number = 1, Name = "Your home", Sqm = Sqm, District = District };
             }
-            return new PlaceFacts { Found = VenueFound, Open = VenueOpen, Own = VenueOwn, Street = street ?? "Venue Street", Number = number > 0 ? number : 7, Name = "The Venue", Sqm = Sqm,
+            return new PlaceFacts { Found = VenueFound, Open = VenueOpen, Own = VenueOwn, Made = VenueOwn && !VenueOpen && VenueMade, Street = street ?? "Venue Street", Number = number > 0 ? number : 7, Name = "The Venue", Sqm = Sqm,
                 District = District };
         }
 
         public PlaceFacts FindVenue(PartyPlace place, int start, int minutes) => Place(place, "Venue Street", 7, start, minutes);
-        public HomeFacts Home() => HomeNow;
+        public HomeFacts Home(string street, int number) => HomeNow;
         public bool There(PartyPlace place, string street, int number) => IsThere;
-        public void Mess(int points) => Messed += points;
+        public void Mess(int points, string street, int number) => Messed += points;
 
         public int Staff(string place, List<StaffHand> into)
         {
@@ -112,7 +113,15 @@ internal static partial class Program
 
         public string Business(string place) => Staffs.ContainsKey(place) ? "Shop " + place : string.Empty;
         public string Why(PartyRefusal why) => why.ToString();
-        public int Shut(string place, int day, int hour, int minutes) => ShutAnswer;
+        public int Shut(string place, int day, int hour, int minutes)
+        {
+            // As the game's world does: the business is shut from now for the hours still to run of the event, when its hours are covered; the answer says how many opening hours it covers.
+            if (ShutAnswer > 0)
+            {
+                Closures.Add(Math.Max(1, (PartyRules.Stamp(day, hour) + minutes - Minute + 59) / 60));
+            }
+            return ShutAnswer;
+        }
         public bool Manager(string place) => Managers.Contains(place);
         public void Tell(PartyTone tone, string key, params string[] pairs) => Notes.Add(key);
 
@@ -188,6 +197,7 @@ internal static partial class Program
         PartySaveChecks();
         PartyYearChecks();
         PartyPageChecks();
+        PartyFixChecks();
         PartyWiringChecks();
         PartyTextChecks();
     }
@@ -562,17 +572,31 @@ internal static partial class Program
         PartyWorld wa = PartyTown();
         wa.Staffs["shop"] = new List<StaffHand> { new StaffHand { Id = "e1", Name = "Sam", Mood = 60 }, new StaffHand { Id = "e2", Name = "Kim", Mood = 60 } };
         long start = wa.Cash0;
+        var everyParty = new List<Party>();
+        var everyEvent = new List<StaffEvent>();
+        long bookedParties = 0, bookedEvents = 0;
         for (int d = 0; d < 60; d++)
         {
             wa.At(100 + d, 9);
-            if (PartyDesk.Host(all, wa, PartyAskOf(wa, 100 + d, 19, (PartyTier)(d % 3), d % 2 == 0 ? PartyPlace.Home : PartyPlace.Bar), out Party p) == PartyRefusal.None && d % 4 == 0)
+            bool hosted = PartyDesk.Host(all, wa, PartyAskOf(wa, 100 + d, 19, (PartyTier)(d % 3), d % 2 == 0 ? PartyPlace.Home : PartyPlace.Bar), out Party p) == PartyRefusal.None;
+            if (hosted)
+            {
+                everyParty.Add(p);
+                bookedParties += p.Paid;
+            }
+            if (hosted && d % 4 == 0)
             {
                 wa.At(100 + d, 9 + d % 9);
                 PartyDesk.Cancel(all, wa, p.Id);
             }
-            if (StaffDesk.Book(all, wa, new StaffAsk { Place = "shop", Kind = (StaffEventKind)(d % 3), Day = 101 + d, Hour = PartyCatalogue.EventHourFrom[d % 3] }, out StaffEvent e)
-                == PartyRefusal.None
-                && d % 14 == 0)
+            bool arranged = StaffDesk.Book(all, wa, new StaffAsk { Place = "shop", Kind = (StaffEventKind)(d % 3), Day = 101 + d, Hour = PartyCatalogue.EventHourFrom[d % 3] }, out StaffEvent e)
+                            == PartyRefusal.None;
+            if (arranged)
+            {
+                everyEvent.Add(e);
+                bookedEvents += e.Paid;
+            }
+            if (arranged && d % 14 == 0)
             {
                 StaffDesk.Cancel(all, wa, e.Id);
             }
@@ -589,11 +613,12 @@ internal static partial class Program
             }
             PartyDesk.Day(all, wa, 12);
         }
-        long outstanding = all.Parties.Sum(p => (long)p.Paid) + all.Events.Sum(e => (long)e.Paid);
+        // The records against the ledger: every coin paid belongs to one booking, and what the records still say is paid is exactly what was paid less what came back.
+        long outstanding = everyParty.Sum(p => (long)p.Paid) + everyEvent.Sum(e => (long)e.Paid);
         bool keys = wa.Ledger.All(l => l.Contains(" " + PartyDesk.HostKey + " pocket") || l.Contains(" " + StaffDesk.StaffKey + " shop"));
-        Check(wa.Back <= wa.Paid && wa.Cash0 == start - wa.Paid + wa.Back && wa.Cash0 <= start && keys && wa.Paid > 0 && wa.Back > 0 && outstanding <= wa.Paid - wa.Back,
-            "no money loop: over sixty days of booking, cancelling, shut venues and events, the wallet only ever falls by what was paid less what came back (paid " + wa.Paid
-            + ", back " + wa.Back + "), a party from the pocket and an event at its business, each under its own key");
+        Check(wa.Back <= wa.Paid && wa.Paid == bookedParties + bookedEvents && wa.Paid - wa.Back == outstanding && wa.Cash0 <= start && keys && wa.Paid > 0 && wa.Back > 0,
+            "no money loop: over sixty days of booking, cancelling, shut venues and events, what was paid is what the bookings say they cost, and what the records still hold as paid is what was paid "
+            + "less what came back (paid " + wa.Paid + ", back " + wa.Back + ", held " + outstanding + "), a party from the pocket and an event at its business, each under its own key");
     }
 
     private static void PartyCancelChecks()
@@ -685,14 +710,17 @@ internal static partial class Program
         Check(refused && w.Ledger.Count == moves && soon.State == PartyState.Planned && later.State == PartyState.Planned && lunch.State == StaffEventState.Planned
               && f.Invites[0].State == InviteState.Accepted && w.Changes == 0 && f.OffSince == PartyRules.Stamp(100, 12) && f.Events.Count == 1 && w.Notes.Count(n => n.Contains("missed")) == 0,
             "the option off: three days pass with nothing booked, begun, charged, refunded or missed, the managers book nothing, and everything planned is kept");
+        int soonPaid = soon.Paid, lunchPaid = lunch.Paid;
         w.IsOn = true;
         w.At(104, 9);
         long back = w.Back;
         PartyDesk.Tick(f, w);
-        Check(soon.State == PartyState.Cancelled && soon.Paid == 0 && lunch.State == StaffEventState.Cancelled && lunch.Paid == 0 && w.Back - back > 0 && later.State == PartyState.Planned
-              && f.Invites[0].State == InviteState.Off && w.Changes == 0 && f.OffSince == -1 && w.Notes.Contains("reallife_party_note_off_while")
-              && w.Notes.Contains("reallife_party_note_event_off_while") && !w.Cast[0].Remembers(MemoryCode.StoodUp),
-            "the option on again: the party and the event that came due meanwhile are called off with everything back and nobody minding, and what is still ahead resumes");
+        // Called off as if by the player at the hour they switched the option off (day 100 at 12:00): the party 7 hours ahead gives half back, the event exactly a day ahead 80 per cent.
+        Check(soon.State == PartyState.Cancelled && soon.Paid == soonPaid - soonPaid * 50 / 100 && lunch.State == StaffEventState.Cancelled && lunch.Paid == lunchPaid - lunchPaid * 80 / 100
+              && w.Back - back == soonPaid * 50 / 100 + lunchPaid * 80 / 100 && later.State == PartyState.Planned
+              && f.Invites[0].State == InviteState.Off && Math.Abs(w.Cast[0].Trust - 29f) < 0.01f && Math.Abs(w.Cast[0].Affection - 39f) < 0.01f && f.OffSince == -1
+              && w.Notes.Contains("reallife_party_note_off_while") && w.Notes.Contains("reallife_party_note_event_off_while") && !w.Cast[0].Remembers(MemoryCode.StoodUp),
+            "the option on again: the party and the event that came due meanwhile are called off as if by the player when they switched it off, by the notice then, and what is still ahead resumes");
         w.At(105, 19);
         Check(PartyDesk.Begin(f, w, later.Id) == PartyRefusal.None && later.State == PartyState.Running, "the option on again: the party still ahead is held as planned");
 
@@ -957,6 +985,8 @@ internal static partial class Program
         var fa = new PartyFile { Seed = 88 };
         wa.ShutAnswer = 0;
         StaffDesk.Book(fa, wa, new StaffAsk { Place = "shop", Kind = StaffEventKind.EveningOut, Day = 100, Hour = 19 }, out StaffEvent evening);
+        wa.At(100, 19);
+        PartyDesk.Tick(fa, wa);
         wa.Minute = evening.End;
         PartyDesk.Tick(fa, wa);
         PartyDesk.Tick(fa, wa);
@@ -979,15 +1009,16 @@ internal static partial class Program
         var fn = new PartyFile { Seed = 88 };
         StaffDesk.Book(fn, wn, new StaffAsk { Place = "shop", Kind = StaffEventKind.Lunch, Day = 100, Hour = 13 }, out StaffEvent empty);
         StaffDesk.Book(fn, wn, new StaffAsk { Place = "shop", Kind = StaffEventKind.Lunch, Day = 108, Hour = 13 }, out StaffEvent sold);
+        int emptyPaid = empty.Paid, soldPaid = sold.Paid;
         none.Clear();
         wn.At(100, 13);
         PartyDesk.Tick(fn, wn);
         wn.Staffs.Remove("shop");
         wn.At(108, 13);
         PartyDesk.Tick(fn, wn);
-        Check(empty.State == StaffEventState.Empty && sold.State == StaffEventState.Cancelled && wn.Back == wn.Paid && wn.Moods.Count == 0 && fn.Lifts.Count == 0
-              && wn.Notes.Contains("reallife_party_note_event_empty") && wn.Notes.Contains("reallife_party_note_event_off_gone"),
-            "staff events: an event with no staff left does nothing and says so, as does one at a business no longer the player's, and the money comes back");
+        Check(empty.State == StaffEventState.Empty && empty.Paid == 0 && sold.State == StaffEventState.Cancelled && wn.Back == emptyPaid && sold.Paid == soldPaid && wn.Moods.Count == 0
+              && fn.Lifts.Count == 0 && wn.Notes.Contains("reallife_party_note_event_empty") && wn.Notes.Contains("reallife_party_note_event_off_gone"),
+            "staff events: an event with no staff left does nothing, says so and gives everything back; one at a business no longer the player's is found at its hour, their doing, and nothing comes back");
         var reasons = new List<string>();
         void Refused(string what, PartyRefusal want, Action<PartyWorld, PartyFile> set, StaffAsk ask)
         {
@@ -1017,9 +1048,16 @@ internal static partial class Program
         wr.Reserve = 5000;
         wr.Cash0 = 5000 + meal * 4;
         bool atFloor = StaffDesk.Book(fr, wr, lunch, out StaffEvent ok) == PartyRefusal.None && wr.Cash0 == 5000;
-        bool under2 = StaffDesk.Book(fr, wr, new StaffAsk { Place = "shop", Kind = StaffEventKind.Lunch, Day = 110, Hour = 13 }, out StaffEvent _) == PartyRefusal.NoMoney
-                      || StaffDesk.Book(fr, wr, new StaffAsk { Place = "shop", Kind = StaffEventKind.Lunch, Day = 110, Hour = 13 }, out StaffEvent _) == PartyRefusal.Reserve;
-        Check(atFloor && ok != null && under2 && wr.Cash0 == 5000, "company money: an event may take the wallet down to what it keeps for a firm's investors and not a coin under it");
+        PartyRefusal next = StaffDesk.Book(fr, wr, new StaffAsk { Place = "shop", Kind = StaffEventKind.Lunch, Day = 110, Hour = 13 }, out StaffEvent _);
+        PartyWorld wq = PartyShop(out List<StaffHand> _);
+        var fq = new PartyFile { Seed = 1 };
+        int cost4 = StaffDesk.Cost(StaffEventKind.Lunch, wq.PriceLevel, 4);
+        wq.Reserve = 5000;
+        wq.Cash0 = 5000 + cost4 - 1;
+        PartyRefusal oneShort = StaffDesk.Book(fq, wq, lunch, out StaffEvent _);
+        Check(atFloor && ok != null && next == PartyRefusal.Reserve && wr.Cash0 == 5000 && oneShort == PartyRefusal.Reserve && wq.Ledger.Count == 0 && cost4 == meal * 4,
+            "company money: an event may take the wallet down to exactly what it keeps for a firm's investors (" + atFloor + ") and not a coin under it: the reserve answers at one coin short ("
+            + oneShort + ") and with the wallet at the floor (" + next + "), not the lack of money");
         wr.At(99, 9);
         var fc = new PartyFile { Seed = 1 };
         PartyWorld wcx = PartyShop(out List<StaffHand> _);
@@ -1092,11 +1130,12 @@ internal static partial class Program
 
     // ------------------------------------------------------------------------------------------------- the rivals
 
-    private static RivalFile PartyRivals(int crew, long worth, int landed)
+    // A rival file with one outlet; <paramref name="above"/> is the tycoon's worth above the floor the rivals' own day keeps a fortune at (a tycoon is never under it).
+    private static RivalFile PartyRivals(int crew, long above, int landed)
     {
         var rivals = new RivalFile { Seed = 5 };
         rivals.Tycoons[0].ActiveDay = 1;
-        rivals.Tycoons[0].Worth = worth;
+        rivals.Tycoons[0].Worth = RivalRules.At(rivals.Tycoons[0].Def.StartWorth, 1000) + above;
         rivals.Moves.Add(new RivalMove { Id = 3, Tycoon = 0, Kind = RivalMoveKind.Outlet, Land = landed });
         var outlet = new RivalOutlet { Move = 3, Tycoon = 0, District = "ba:district_midtown", Type = "ba:businesstype_coffeeshop" };
         for (int i = 0; i < crew; i++)
@@ -1107,26 +1146,44 @@ internal static partial class Program
         return rivals;
     }
 
+    // A rivals' day as RivalDirector plays it: the tycoons grow first (RivalRules.Grow, which lifts a fortune back up to its floor), then the outlets hold their events.
+    private static long PartyRivalDay(PartyFile f, RivalFile rivals, int day)
+    {
+        foreach (Tycoon t in rivals.Tycoons)
+        {
+            if (t.Active)
+            {
+                t.Worth = RivalRules.Grow(t, RivalRules.Aim(t, 0, 0, 0, 1000), 0, day, 1000);
+            }
+        }
+        return StaffDesk.RivalDay(f, rivals, day, 1000);
+    }
+
     private static void PartyRivalChecks()
     {
         // The rivals' outlets hold staff events by the same rule: paid from the tycoon's fortune, the crew's standing lifted by the same cap, half for the underpaid, fading.
         var f = new PartyFile { Seed = 321 };
         RivalFile rivals = PartyRivals(5, 1000000, 100);
-        long worth = rivals.Tycoons[0].Worth, paid = 0;
+        long floor = RivalRules.At(rivals.Tycoons[0].Def.StartWorth, 1000), paid = 0;
+        bool conserved = true, aboveFloor = true;
         var days = new List<int>();
         int most = 0;
         for (int day = 100; day < 100 + 400; day++)
         {
-            long cost = StaffDesk.RivalDay(f, rivals, day, 1000);
+            Tycoon tycoon = rivals.Tycoons[0];
+            tycoon.Worth = RivalRules.Grow(tycoon, RivalRules.Aim(tycoon, 0, 0, 0, 1000), 0, day, 1000);
+            long before = tycoon.Worth, cost = StaffDesk.RivalDay(f, rivals, day, 1000);
             paid += cost;
             if (cost > 0)
             {
                 days.Add(day);
+                conserved &= tycoon.Worth == before - cost;   // what the outlet paid is what the fortune lost, no more and no less
+                aboveFloor &= tycoon.Worth >= floor;          // and the rivals' next day cannot lift it back: it never went under the floor
             }
             most = Math.Max(most, rivals.Outlets[0].Crew.Max(c => c.Standing));
         }
         bool spaced = days.Zip(days.Skip(1), (a, b) => b - a).All(gap => gap >= PartyCatalogue.RivalEveryDays && gap < PartyCatalogue.RivalEveryDays + PartyCatalogue.RivalSpreadDays);
-        Check(days.Count >= 6 && days.Count <= 9 && days[0] >= 100 + PartyCatalogue.RivalEveryDays && spaced && rivals.Tycoons[0].Worth == worth - paid && paid > 0
+        Check(days.Count >= 6 && days.Count <= 9 && days[0] >= 100 + PartyCatalogue.RivalEveryDays && spaced && conserved && aboveFloor && paid > 0
               && f.Rivals.Count == days.Count && f.Rivals.All(r => r.Outlet == RivalFirms.Key(rivals.Outlets[0]) && r.Cost == StaffDesk.Cost(r.Kind, 1000, 5) && r.Heads <= 5),
             "rivals: an outlet holds a staff event every 45 to 59 days (" + days.Count + " in 400 days), each at the player's own price a head, paid from its tycoon's fortune");
         Check(most <= 60 + PartyCatalogue.CapStanding && most > 60 && rivals.Outlets[0].Crew.All(c => c.Standing >= 60 && c.Standing <= 60 + PartyCatalogue.CapStanding),
@@ -1135,7 +1192,7 @@ internal static partial class Program
         RivalFile again = PartyRivals(5, 1000000, 100);
         for (int day = 100; day < 500; day++)
         {
-            StaffDesk.RivalDay(f2, again, day, 1000);
+            PartyRivalDay(f2, again, day);
         }
         Check(PartyStore.Write(f) == PartyStore.Write(f2) && again.Tycoons[0].Worth == rivals.Tycoons[0].Worth, "rivals: the same save gives the same events on every machine");
         // The underpaid crew member gains half; a team day gives the others the whole cap, and it fades back.
@@ -1144,7 +1201,7 @@ internal static partial class Program
         int eventDay = -1;
         for (int day = 100; day < 200 && eventDay < 0; day++)
         {
-            eventDay = StaffDesk.RivalDay(f3, one, day, 1000) > 0 ? day : -1;
+            eventDay = PartyRivalDay(f3, one, day) > 0 ? day : -1;
         }
         RivalEvent held = f3.Rivals[0];
         int full = PartyCatalogue.CapStanding * PartyCatalogue.EventWorth[(int)held.Kind] / 1000, halfLift = PartyCatalogue.CapStanding * (PartyCatalogue.EventWorth[(int)held.Kind] / 2) / 1000;
@@ -1154,7 +1211,7 @@ internal static partial class Program
             "rivals: on the day of the event the crew gain by its kind, the underpaid one half (" + held.Kind + ": " + fair.Standing + " and " + underpaid.Standing + ")");
         for (int day = eventDay + 1; day <= eventDay + PartyCatalogue.StaffWindowDays + 1; day++)
         {
-            StaffDesk.RivalDay(f3, one, day, 1000);
+            PartyRivalDay(f3, one, day);
         }
         Check(underpaid.Standing == 60 && fair.Standing == 60 && !f3.Lifts.Any(l => l.Id.StartsWith("r/", StringComparison.Ordinal) && l.Gains.Count == 0 && l.Stand > 0),
             "rivals: the crew's lift fades back over thirty days, as the player's staff's does");
@@ -1167,14 +1224,14 @@ internal static partial class Program
         {
             none += StaffDesk.RivalDay(f4, poor, day, 1000) + StaffDesk.RivalDay(f4, outOfPlay, day, 1000) + StaffDesk.RivalDay(f4, bare, day, 1000) + StaffDesk.RivalDay(f4, null, day, 1000);
         }
-        Check(none == 0 && f4.Rivals.Count == 0 && poor.Tycoons[0].Worth == 10 && f4.Lifts.Count == 0, "rivals: a tycoon who cannot pay, one out of play and an outlet with no crew hold none");
+        Check(none == 0 && f4.Rivals.Count == 0 && poor.Tycoons[0].Worth == RivalRules.At(poor.Tycoons[0].Def.StartWorth, 1000) + 10 && f4.Lifts.Count == 0, "rivals: a tycoon who cannot pay, one out of play and an outlet with no crew hold none");
         rivals.Outlets.Clear();
-        StaffDesk.RivalDay(f, rivals, 600, 1000);
+        PartyRivalDay(f, rivals, 600);
         Check(f.Rivals.Count == 0 && !f.Lifts.Any(l => l.Id.StartsWith("r/", StringComparison.Ordinal)), "rivals: an outlet that closed takes its events and its crew's lifts with it");
         var crowd = new PartyFile { Seed = 321 };
         var manyOutlets = new RivalFile { Seed = 5 };
         manyOutlets.Tycoons[0].ActiveDay = 1;
-        manyOutlets.Tycoons[0].Worth = 100000000;
+        manyOutlets.Tycoons[0].Worth = RivalRules.At(manyOutlets.Tycoons[0].Def.StartWorth, 1000) + 100000000;
         for (int o = 0; o < 6; o++)
         {
             manyOutlets.Moves.Add(new RivalMove { Id = 10 + o, Tycoon = 0, Kind = RivalMoveKind.Outlet, Land = 100 });
@@ -1184,10 +1241,61 @@ internal static partial class Program
         }
         for (int day = 100; day < 1200; day++)
         {
-            StaffDesk.RivalDay(crowd, manyOutlets, day, 1000);
+            PartyRivalDay(crowd, manyOutlets, day);
         }
         Check(crowd.Rivals.Count <= PartyCatalogue.RivalLogMost && manyOutlets.Outlets.All(o => crowd.Rivals.Any(r => r.Outlet == RivalFirms.Key(o))),
             "rivals: the log stays bounded over three years of six outlets, and always keeps each outlet's newest event");
+
+        // Only from worth above the floor: found by running the very rule once with plenty, then with one coin too little and with exactly enough.
+        var rich = new PartyFile { Seed = 321 };
+        RivalFile plenty = PartyRivals(5, 100000000, 100);
+        int theDay = -1;
+        long theCost = 0;
+        for (int day = 100; day < 300 && theDay < 0; day++)
+        {
+            long cost = PartyRivalDay(rich, plenty, day);
+            theDay = cost > 0 ? day : -1;
+            theCost = cost;
+        }
+        long fl = RivalRules.At(plenty.Tycoons[0].Def.StartWorth, 1000);
+        // The growth of the days before is the same in all three runs, so the three tycoons differ by the same amount on the day: set the tycoon's worth on the day directly.
+        var tight = new PartyFile { Seed = 321 };
+        var enough = new PartyFile { Seed = 321 };
+        RivalFile low = PartyRivals(5, 0, 100), exact = PartyRivals(5, 0, 100);
+        for (int day = 100; day < theDay; day++)
+        {
+            PartyRivalDay(tight, low, day);
+            PartyRivalDay(enough, exact, day);
+        }
+        low.Tycoons[0].Worth = fl + theCost - 1;
+        exact.Tycoons[0].Worth = fl + theCost;
+        long paidLow = StaffDesk.RivalDay(tight, low, theDay, 1000), paidExact = StaffDesk.RivalDay(enough, exact, theDay, 1000);
+        Check(theDay > 0 && theCost > 0 && paidLow == 0 && low.Tycoons[0].Worth == fl + theCost - 1 && paidExact == theCost && exact.Tycoons[0].Worth == fl,
+            "rivals: an outlet pays only from worth above the floor the rivals' own day keeps a fortune at: one coin short holds no event, exactly enough does and leaves the fortune at the floor ("
+            + theCost + " on day " + theDay + ")");
+        long grown = RivalRules.Grow(exact.Tycoons[0], fl, 0, theDay + 1, 1000);
+        Check(grown >= fl && grown - fl <= fl / RivalCatalogue.MonthDays * RivalCatalogue.CycleGrowthBp[0] / 10000L, "rivals: the next day's growth lifts a fortune left at its floor only by its own growth, so none of what an event cost is handed back");
+
+        // An outlet whose opening move was trimmed from the file still holds events: its count starts from the day it was first seen, and that day is kept.
+        var nm = new PartyFile { Seed = 321 };
+        RivalFile trimmed = PartyRivals(5, 100000000, 100);
+        trimmed.Moves.Clear();
+        var heldDays = new List<int>();
+        for (int day = 500; day < 500 + 400; day++)
+        {
+            if (PartyRivalDay(nm, trimmed, day) > 0)
+            {
+                heldDays.Add(day);
+            }
+            if (day == 520)
+            {
+                nm = PartyStore.Read(PartyStore.Write(nm), out _);   // saved and loaded in the middle of the count
+            }
+        }
+        string outletKey = RivalFirms.Key(trimmed.Outlets[0]);
+        Check(heldDays.Count >= 6 && heldDays[0] >= 500 + PartyCatalogue.RivalEveryDays && heldDays[0] < 500 + PartyCatalogue.RivalEveryDays + PartyCatalogue.RivalSpreadDays
+              && nm.Marks.Count == 1 && nm.Marks[0].Outlet == outletKey && nm.Marks[0].Day == 500,
+            "rivals: an outlet whose opening move is no longer kept holds its events all the same, counted from the day it was first seen (" + heldDays.Count + " in 400 days)");
     }
 
     // ------------------------------------------------------------------------------------------------- the save
@@ -1487,6 +1595,442 @@ internal static partial class Program
                 : string.Join(", ", used.Where(x => !def.Keys.Contains(x)).Take(5))) + ")");
     }
 
+    // ------------------------------------------------------------------------------------------------- what the logic review found
+
+    private static void PartyFixChecks()
+    {
+        PartyLeaveChecks();
+        PartyEventTimeChecks();
+        PartyWithdrawChecks();
+        PartyCrewChecks();
+        PartyStoreChecks();
+        PartyWalkChecks();
+        PartySharedCapChecks();
+    }
+
+    private static PartyWorld PartyInvited(out PartyFile file, out Invite invite, InviteState state = InviteState.Accepted)
+    {
+        file = new PartyFile { Seed = 3 };
+        PartyWorld town = PartyTown(4);
+        invite = new Invite { Id = file.NextId++, Person = 1, State = state, Asked = 100, Day = 102, Hour = 19, Place = PartyPlace.Restaurant, Street = "Venue Street", Number = 7, Name = "The Venue" };
+        file.Invites.Add(invite);
+        town.At(102, 19, 10);
+        return town;
+    }
+
+    private static void PartyLeaveChecks()
+    {
+        // Presence at the end decides for an invitation as for a party the player hosts, whatever the time skip did: joined and gone before the end gains nothing and counts as a no.
+        PartyWorld w = PartyInvited(out PartyFile f, out Invite quit);
+        bool joined = PartyDesk.Join(f, w, quit.Id) == PartyRefusal.None;
+        w.Minute = quit.End - 20;
+        w.IsThere = false;
+        bool mid = !PartyDesk.Tick(f, w) && quit.State == InviteState.Accepted;
+        w.Minute = quit.End;
+        bool changed = PartyDesk.Tick(f, w);
+        SocialPerson host = w.Cast[1];
+        Check(joined && mid && changed && quit.State == InviteState.Left && Math.Abs(host.Affection - (40f + PartyCatalogue.LeftAffection)) < 0.01f && host.Familiarity == 40f && host.Trust == 30f
+              && host.Shared == 0 && !host.Remembers(MemoryCode.PartyTheirs) && f.Lifts.Count == 0 && w.Ledger.Count == 0 && w.Notes.Contains("reallife_party_note_invite_left")
+              && PartyKeys.Invite(InviteState.Left, false) == "reallife_party_state_left" && !quit.Open,
+            "an invitation: joined and gone before its end gains nothing, costs a point of affection as a no does, and is told so; being there when it ends is what counts");
+        PartyWorld wb = PartyInvited(out PartyFile fb, out Invite back);
+        PartyDesk.Join(fb, wb, back.Id);
+        wb.Minute = back.End - 40;
+        wb.IsThere = false;
+        PartyDesk.Tick(fb, wb);
+        wb.IsThere = true;   // away for a while and back in time
+        wb.Minute = back.End;
+        PartyDesk.Tick(fb, wb);
+        Check(back.State == InviteState.Went && wb.Cast[1].Familiarity > 40f && wb.Cast[1].Remembers(MemoryCode.PartyTheirs), "an invitation: somebody who stepped out and is back when it ends has been to it");
+    }
+
+    private static void PartyEventTimeChecks()
+    {
+        // A staff event begins only within a little of its hour. After a time skip (a party, a job, a night's sleep) or a load that went past its hours, it was never held, and no
+        // closure is made for it after the fact: it is called off with everything back.
+        PartyWorld w = PartyShop(out List<StaffHand> _);
+        var f = new PartyFile { Seed = 7 };
+        w.ShutAnswer = 3;
+        StaffDesk.Book(f, w, new StaffAsk { Place = "shop", Kind = StaffEventKind.Lunch, Day = 101, Hour = 12 }, out StaffEvent late);
+        long paid = w.Paid;
+        w.At(101, 17);
+        bool changed = PartyDesk.Tick(f, w);
+        Check(changed && late.State == StaffEventState.Cancelled && late.Paid == 0 && w.Back == paid && w.Closures.Count == 0 && w.Moods.Count == 0 && f.Lifts.Count == 0
+              && w.Notes.Contains("reallife_party_note_event_off_passed") && !w.Notes.Contains("reallife_party_note_event_held"),
+            "staff events: one whose hours passed in a time skip is called off with everything back, with no closure made for it afterwards and nothing lifted");
+        w.At(109, 9);
+        StaffDesk.Book(f, w, new StaffAsk { Place = "shop", Kind = StaffEventKind.Lunch, Day = 110, Hour = 12 }, out StaffEvent soon);
+        w.At(110, 12, PartyCatalogue.EventLateMinutes);
+        PartyDesk.Tick(f, w);
+        bool begins = soon.State == StaffEventState.Running && w.Closures.Count == 1 && w.Closures[0] == 1 && soon.Shut == 3;
+        w.At(119, 9);
+        StaffDesk.Book(f, w, new StaffAsk { Place = "shop", Kind = StaffEventKind.Lunch, Day = 120, Hour = 12 }, out StaffEvent over);
+        long before = w.Back;
+        int op = over.Paid;
+        w.At(120, 12, PartyCatalogue.EventLateMinutes + 1);
+        PartyDesk.Tick(f, w);
+        Check(begins && over.State == StaffEventState.Cancelled && w.Back - before == op && w.Closures.Count == 1,
+            "staff events: seen 30 minutes after its hour an event still begins and the business is shut for the hours left; at 31 minutes it is called off, whole money back, nothing shut");
+
+        // An event nobody could come to gives the money back, counts for the week, and the manager does not book it again the next day.
+        PartyWorld wm = PartyShop(out List<StaffHand> sick, 3);
+        for (int i = 0; i < sick.Count; i++)
+        {
+            sick[i] = new StaffHand { Id = sick[i].Id, Name = sick[i].Name, Mood = 60, Sick = true, File = sick[i].File };
+        }
+        var fm = new PartyFile { Seed = 3 };
+        wm.ShutAnswer = 1;
+        wm.Managers.Add("shop");
+        StaffDesk.Schedule(fm, wm, "shop", 30, StaffEventKind.Lunch);
+        var eventDays = new List<int>();
+        bool tooOften = false;
+        for (int day = 100; day < 200; day++)
+        {
+            for (int hour = 0; hour < 24; hour++)
+            {
+                wm.At(day, hour);
+                PartyDesk.Tick(fm, wm);
+                int had = fm.Events.Count;
+                PartyDesk.Day(fm, wm, hour);
+                if (fm.Events.Count > had)
+                {
+                    eventDays.Add(fm.Events[fm.Events.Count - 1].Day);
+                }
+            }
+            if (day == 131)
+            {
+                tooOften = StaffDesk.Book(fm, wm, new StaffAsk { Place = "shop", Kind = StaffEventKind.Lunch, Day = 134, Hour = 12 }, out StaffEvent _) == PartyRefusal.TooOften;
+            }
+        }
+        Check(eventDays.SequenceEqual(new[] { 130, 160, 190 }) && fm.Events.All(e => e.State == StaffEventState.Empty && e.Paid == 0) && wm.Back == wm.Paid && wm.Paid > 0 && tooOften
+              && wm.Notes.Count(n => n == "reallife_party_note_event_nobody") == 3 && wm.Moods.Count == 0,
+            "staff events: when all the staff are off sick the event is held for nobody, says so and gives everything back; it still counts for the week, and the manager's next one is a month on ("
+            + string.Join(", ", eventDays) + ")");
+        PartyWorld wo = PartyShop(out List<StaffHand> _);
+        var fo = new PartyFile { Seed = 3 };
+        wo.ShutAnswer = -1;
+        wo.Managers.Add("shop");
+        StaffDesk.Schedule(fo, wo, "shop", 30, StaffEventKind.Lunch);
+        for (int day = 100; day < 170; day++)
+        {
+            for (int hour = 0; hour < 24; hour++)
+            {
+                wo.At(day, hour);
+                PartyDesk.Tick(fo, wo);
+                PartyDesk.Day(fo, wo, hour);
+            }
+        }
+        Check(wo.Notes.Count(n => n == "reallife_party_note_event_off_open") == 2 && fo.Events.Count == 2 && wo.Back == wo.Paid,
+            "the manager's schedule: an event called off because the business could not be shut is not booked again the next day into the same cause, but a month on (2 in 70 days)");
+    }
+
+    private static void PartyWithdrawChecks()
+    {
+        // The option switched off an hour before a party and on after it: the refund and the guests' minds are those of calling it off at that hour, not a full refund.
+        var f = new PartyFile { Seed = 45 };
+        PartyWorld w = PartyTown();
+        w.At(100, 9);
+        PartyDesk.Host(f, w, PartyAskOf(w, 100, 19), out Party p);
+        int paid = p.Paid;
+        w.At(100, 18);
+        w.IsOn = false;
+        PartyDesk.Tick(f, w);
+        w.At(101, 9);
+        w.IsOn = true;
+        long back0 = w.Back;
+        PartyDesk.Tick(f, w);
+        Check(p.State == PartyState.Cancelled && w.Back == back0 && p.Paid == paid && Math.Abs(w.Cast[0].Trust - (30f + SocialRules.CancelledTrust)) < 0.01f
+              && Math.Abs(w.Cast[0].Affection - (40f + SocialRules.CancelledAffection)) < 0.01f && w.Notes.Contains("reallife_party_note_off_while"),
+            "the option off an hour before a party and on again after it: nothing comes back and each guest minds, as for a party called off then, not a full refund");
+        var fe = new PartyFile { Seed = 45 };
+        PartyWorld we = PartyShop(out List<StaffHand> _);
+        StaffDesk.Book(fe, we, new StaffAsk { Place = "shop", Kind = StaffEventKind.Lunch, Day = 100, Hour = 12 }, out StaffEvent e);
+        int epaid = e.Paid;
+        we.At(100, 10);
+        we.IsOn = false;
+        PartyDesk.Tick(fe, we);
+        we.At(101, 9);
+        we.IsOn = true;
+        long eback = we.Back;
+        PartyDesk.Tick(fe, we);
+        Check(e.State == StaffEventState.Cancelled && we.Back == eback && e.Paid == epaid, "the option off two hours before a staff event and on again after it: nothing comes back, as for an event called off then");
+
+        // A venue of the player's own shut by their own doing, or sold: the notice at that moment decides. A venue shut by somebody else, or not theirs, is a full refund.
+        PartyWorld Booked(out PartyFile file, out Party party, bool own, int day = 102)
+        {
+            file = new PartyFile { Seed = 46 };
+            PartyWorld town = PartyTown();
+            town.VenueOwn = own;
+            town.At(100, 9);
+            PartyDesk.Host(file, town, PartyAskOf(town, day, 19, PartyTier.Good, PartyPlace.Bar), out party);
+            return town;
+        }
+        PartyWorld wm = Booked(out PartyFile fm, out Party made, true);
+        wm.VenueOpen = false;
+        wm.VenueMade = true;
+        wm.At(102, 19);
+        long b1 = wm.Back;
+        PartyRefusal begun = PartyDesk.Begin(fm, wm, made.Id);
+        Check(begun == PartyRefusal.VenueShut && made.State == PartyState.Cancelled && wm.Back == b1 && Math.Abs(wm.Cast[0].Trust - (30f + SocialRules.CancelledTrust)) < 0.01f
+              && wm.Notes.Contains("reallife_party_note_off_own"),
+            "party: a venue of the player's own that they shut themselves is found shut at the party: nothing comes back and the guests mind, as for a party called off at that hour");
+        PartyWorld wc = Booked(out PartyFile fc, out Party city, true);
+        wc.VenueOpen = false;
+        wc.VenueMade = false;
+        wc.At(102, 19);
+        PartyDesk.Begin(fc, wc, city.Id);
+        PartyWorld wt = Booked(out PartyFile ft, out Party theirs, false);
+        wt.VenueOpen = false;
+        wt.VenueMade = true;
+        wt.At(102, 19);
+        PartyDesk.Begin(ft, wt, theirs.Id);
+        Check(city.State == PartyState.Cancelled && wc.Back == wc.Paid && wc.Changes == 0 && theirs.State == PartyState.Cancelled && wt.Back == wt.Paid && wt.Changes == 0,
+            "party: a venue of the player's own that a closure not theirs shut, and a venue that is not theirs, call the party off with everything back and nobody minding");
+        PartyWorld wd = Booked(out PartyFile fd, out Party daily, true, 103);
+        wd.VenueOpen = false;
+        wd.VenueMade = true;
+        wd.At(101, 10);
+        long b2 = wd.Back;
+        int dpaid = daily.Paid;
+        PartyDesk.Day(fd, wd, 10);
+        Check(daily.State == PartyState.Cancelled && wd.Back - b2 == dpaid * 80 / 100 && wd.Changes == 0 && wd.Notes.Contains("reallife_party_note_off_own"),
+            "party: the day's look finds a venue of the player's own shut by them two days ahead and calls the party off then: 80 per cent back, nobody minding");
+        PartyWorld wk = Booked(out PartyFile fk, out Party kept, true, 103);
+        wk.VenueOpen = false;
+        wk.VenueMade = false;
+        wk.At(101, 10);
+        PartyDesk.Day(fk, wk, 10);
+        Check(kept.State == PartyState.Planned && wk.Back == 0, "party: the day's look leaves a party whose venue a closure not theirs shut alone: it is found at the party, and then it is whole money back");
+        PartyWorld ws = Booked(out PartyFile fs, out Party sold, true);
+        ws.VenueFound = false;
+        ws.At(102, 20, 16);
+        long b3 = ws.Back;
+        PartyDesk.Tick(fs, ws);
+        Check(sold.State == PartyState.Cancelled && ws.Back == b3 && Math.Abs(ws.Cast[0].Trust - (30f + SocialRules.CancelledTrust)) < 0.01f && !ws.Cast[0].Remembers(MemoryCode.StoodUp),
+            "party: a venue of the player's own that is gone from their hands by the party is their doing: the notice at that hour, not a full refund, and not a stood-up party either");
+
+        // A host who moved house: the home the party was booked at is no longer theirs. The party is called off with everything back, and the guests are not stood up.
+        var fh = new PartyFile { Seed = 47 };
+        PartyWorld wh = PartyTown();
+        wh.At(100, 9);
+        PartyDesk.Host(fh, wh, PartyAskOf(wh, 100, 19), out Party home);
+        wh.HomeFound = false;
+        wh.IsThere = false;
+        wh.At(100, 20, 16);
+        PartyDesk.Tick(fh, wh);
+        Check(home.State == PartyState.Cancelled && wh.Back == wh.Paid && home.Paid == 0 && wh.Cast[0].Trust == 30f && !wh.Cast[0].Remembers(MemoryCode.StoodUp)
+              && wh.Notes.Contains("reallife_party_note_off_place") && !wh.Notes.Contains("reallife_party_note_missed"),
+            "party: a home the host no longer holds on the day calls the party off with everything back, and nobody who said yes is stood up");
+
+        // A business sold before its staff event: the notice at the moment it is found, by the day's look or at the event's hour, not a full refund.
+        var fs2 = new PartyFile { Seed = 48 };
+        PartyWorld wb = PartyShop(out List<StaffHand> _);
+        StaffDesk.Book(fs2, wb, new StaffAsk { Place = "shop", Kind = StaffEventKind.Lunch, Day = 103, Hour = 12 }, out StaffEvent early);
+        int early0 = early.Paid;
+        wb.Staffs.Remove("shop");
+        wb.At(101, 10);
+        long b4 = wb.Back;
+        PartyDesk.Day(fs2, wb, 10);
+        bool dayLook = early.State == StaffEventState.Cancelled && wb.Back - b4 == early0 * 80 / 100 && wb.Notes.Contains("reallife_party_note_event_off_gone");
+        var fs3 = new PartyFile { Seed = 48 };
+        PartyWorld wl = PartyShop(out List<StaffHand> _);
+        StaffDesk.Book(fs3, wl, new StaffAsk { Place = "shop", Kind = StaffEventKind.Lunch, Day = 103, Hour = 12 }, out StaffEvent unseen);
+        wl.Staffs.Remove("shop");
+        wl.At(103, 12);
+        long b5 = wl.Back;
+        PartyDesk.Tick(fs3, wl);
+        Check(dayLook && unseen.State == StaffEventState.Cancelled && wl.Back == b5, "staff events: a business sold before its event is found by the day's look (80 per cent back two days ahead) or at the event's hour (nothing back), never a full refund");
+    }
+
+    private static void PartyCrewChecks()
+    {
+        // The heads paid at booking are for the staff the event was booked for: those who left before it are not fed and come back in full; new hires are not lifted; a business sold
+        // while it runs leaves nobody to count; and with nobody left it does nothing.
+        PartyWorld w = PartyShop(out List<StaffHand> hands, 4);
+        var f = new PartyFile { Seed = 11 };
+        w.ShutAnswer = 1;
+        StaffDesk.Book(f, w, new StaffAsk { Place = "shop", Kind = StaffEventKind.Lunch, Day = 101, Hour = 12 }, out StaffEvent e);
+        int head = e.Paid / 4;
+        hands.RemoveAt(3);
+        hands.Add(new StaffHand { Id = "n9", Name = "New", Mood = 60, File = PartyStaffFile("n9", 60, false) });
+        long back0 = w.Back;
+        w.At(101, 12);
+        PartyDesk.Tick(f, w);
+        Check(e.State == StaffEventState.Running && e.Crew.Count == 4 && w.Back - back0 == head && e.Paid == head * 3 && w.Notes.Contains("reallife_party_note_event_short"),
+            "staff events: one of the four it was booked for has left by its hour: their head comes back in full, and the event begins");
+        w.Minute = e.End;
+        PartyDesk.Tick(f, w);
+        Check(e.State == StaffEventState.Held && e.Came == 3 && w.Moods.ContainsKey("e0") && w.Moods.ContainsKey("e1") && w.Moods.ContainsKey("e2") && !w.Moods.ContainsKey("e3")
+              && !w.Moods.ContainsKey("n9") && f.Of("n9", false) == null && f.Of("e3", false) == null,
+            "staff events: only those it was booked for and who are on the staff at its end are lifted; somebody hired since was not paid for and gains nothing");
+        w.At(109, 9);
+        StaffDesk.Book(f, w, new StaffAsk { Place = "shop", Kind = StaffEventKind.Lunch, Day = 110, Hour = 12 }, out StaffEvent mid);
+        w.At(110, 12);
+        PartyDesk.Tick(f, w);
+        w.Staffs.Remove("shop");
+        long back1 = w.Back;
+        int moods = w.Moods.Count;
+        w.Minute = mid.End;
+        PartyDesk.Tick(f, w);
+        Check(mid.State == StaffEventState.Held && mid.Came == 0 && w.Back == back1 && mid.Paid > 0 && w.Moods.Count == moods && w.Notes.Contains("reallife_party_note_event_sold"),
+            "staff events: a business sold while its event runs leaves nobody to count; the event was held and stays paid, and it says so");
+        PartyWorld wa = PartyShop(out List<StaffHand> crowd, 3);
+        var fa = new PartyFile { Seed = 11 };
+        StaffDesk.Book(fa, wa, new StaffAsk { Place = "shop", Kind = StaffEventKind.Lunch, Day = 101, Hour = 12 }, out StaffEvent all);
+        crowd.Clear();
+        crowd.Add(new StaffHand { Id = "n10", Name = "New", Mood = 60, File = PartyStaffFile("n10", 60, false) });
+        wa.At(101, 12);
+        PartyDesk.Tick(fa, wa);
+        Check(all.State == StaffEventState.Empty && all.Paid == 0 && wa.Back == wa.Paid && wa.Notes.Contains("reallife_party_note_event_empty"),
+            "staff events: with everyone it was booked for gone by its hour it does nothing, says so and gives everything back, though somebody else works there now");
+        PartyFile loaded = PartyStore.Read(PartyStore.Write(f), out _);
+        Check(loaded.Event(e.Id).Crew.SequenceEqual(e.Crew) && loaded.Event(e.Id).Crew.Count == 4 && PartyStore.Write(loaded) == PartyStore.Write(f),
+            "the save: the staff an event was booked for are kept with it and read back");
+        // An event from a save made before the list was kept counts whoever is on the staff, as it did.
+        PartyWorld wo = PartyShop(out List<StaffHand> _, 4);
+        var fo = new PartyFile { Seed = 11 };
+        var old = new StaffEvent { Id = fo.NextId++, Place = "shop", Name = "Shop", Kind = StaffEventKind.Lunch, State = StaffEventState.Planned, Day = 101, Hour = 12, Paid = 96, Heads = 4 };
+        fo.Events.Add(old);
+        wo.ShutAnswer = 1;
+        wo.At(101, 12);
+        PartyDesk.Tick(fo, wo);
+        wo.Minute = old.End;
+        PartyDesk.Tick(fo, wo);
+        Check(old.State == StaffEventState.Held && old.Came == 4 && wo.Back == 0, "the save: an event from before the list was kept counts everyone on the staff, as it always did");
+    }
+
+    private static void PartyStoreChecks()
+    {
+        // A large city's save has far more than 600 parts. Nothing that is still to come and no lift (the caps' records) is left out; what goes is the oldest finished history.
+        var big = new PartyFile { Seed = 5 };
+        for (int i = 0; i < 3000; i++)
+        {
+            Lift lift = big.Of("emp" + i, true);
+            lift.Gains.Add(new LiftGain { Day = 100, Amount = 300 });
+            lift.Stand = 2;
+        }
+        for (int i = 0; i < 700; i++)
+        {
+            big.Of(i, true).Gains.Add(new LiftGain { Day = 100, Amount = 400 });
+        }
+        for (int i = 0; i < 150; i++)
+        {
+            big.Parties.Add(new Party { Id = big.NextId++, Day = 50 + i, Hour = 19, State = PartyState.Held });
+        }
+        big.Parties.Add(new Party { Id = big.NextId++, Day = 300, Hour = 19, State = PartyState.Planned });
+        big.Parties.Add(new Party { Id = big.NextId++, Day = 301, Hour = 19, State = PartyState.Running });
+        for (int i = 0; i < 700; i++)
+        {
+            big.Events.Add(new StaffEvent { Id = big.NextId++, Place = "shop" + i, Day = 50 + i, Hour = 12, State = i < 10 ? StaffEventState.Planned : StaffEventState.Held });
+        }
+        for (int i = 0; i < 80; i++)
+        {
+            big.Invites.Add(new Invite { Id = big.NextId++, Person = i % 50, Day = 50 + i, Hour = 19, State = i < 3 ? InviteState.Accepted : InviteState.Went });
+        }
+        for (int i = 0; i < 300; i++)
+        {
+            big.Rivals.Add(new RivalEvent { Day = i, Outlet = "o" + i, Tycoon = 0 });
+        }
+        PartyFile read = PartyStore.Read(PartyStore.Write(big), out _);
+        Check(read.Lifts.Count == 3700 && read.Of("emp2999", false) != null && read.Of("emp2999", false).Stand == 2 && read.Of("emp0", false).Gains[0].Amount == 300 && read.Of(699, false).Gains[0].Amount == 400,
+            "the save: more than six hundred parts (" + (read.Lifts.Count + read.Parties.Count + read.Events.Count) + " in the file) keep every lift, the records of the caps");
+        Check(read.Parties.Count == PartyCatalogue.StoredParties && read.Parties.Count(x => !x.Over) == 2 && read.Parties.Where(x => x.Over).All(x => x.Day >= 50 + 150 - (PartyCatalogue.StoredParties - 2))
+              && read.Events.Count == PartyCatalogue.StoredEvents && read.Events.Count(x => x.State == StaffEventState.Planned) == 10 && read.Events.Last().Place == "shop699"
+              && read.Invites.Count == PartyCatalogue.StoredInvites && read.Invites.Count(x => x.Open) == 3 && read.Rivals.Count == PartyCatalogue.StoredRivals && read.Rivals.Last().Outlet == "o299"
+              && read.Rivals.First().Outlet == "o" + (300 - PartyCatalogue.StoredRivals),
+            "the save: past each kind's limit the oldest finished parties, events, invitations and rivals' events go, and every one still to come stays");
+
+        // The seed is written from the first save, with nothing booked, so the planning page's answers do not draw again on each load.
+        var data = new Dictionary<string, string>();
+        int drawn = 0;
+        Func<int> next = () => 1000 + ++drawn;
+        PartyFile first = PartyStore.Open(data, next, out int version, out bool fresh);
+        PartyStore.Put(data, first);
+        PartyFile second = PartyStore.Open(data, next, out int v2, out bool fresh2);
+        PartyFile third = PartyStore.Open(data, next, out int v3, out bool fresh3);
+        PartyWorld town = PartyTown(8);
+        for (int i = 0; i < town.Cast.Count; i++)
+        {
+            town.Cast[i].Traits = SocialTrait.None;
+        }
+        town.At(100, 9);
+        PartyAsk ask = PartyAskOf(town, 105, 19);
+        string Answers(PartyFile file)
+        {
+            Party draft = PartyDesk.Draft(file, town, ask, out PlaceFacts _, out int _, out int _);
+            return string.Join(",", draft.Guests.Select(g => (int)g.Answer));
+        }
+        Check(fresh && !fresh2 && !fresh3 && first.Seed == 1001 && second.Seed == 1001 && third.Seed == 1001 && drawn == 1 && v2 == PartyStore.Version && v3 == PartyStore.Version
+              && Answers(second) == Answers(third) && Answers(first) == Answers(second) && first.Parties.Count == 0 && data.ContainsKey(PartyStore.Key),
+            "the save: a save's first line is written with nothing booked, so a second and a third load draw the same seed and the same answers (seeds drawn: " + drawn + ")");
+    }
+
+    private static void PartyWalkChecks()
+    {
+        // The clock walks the list of parties and calls a party over from inside it: finishing several in one look, past the number kept, must not trim the list under the walk.
+        foreach (string how in new[] { "ended", "missed", "off" })
+        {
+            var f = new PartyFile { Seed = 2 };
+            PartyWorld w = PartyTown();
+            for (int i = 0; i < 10; i++)
+            {
+                f.Parties.Add(new Party { Id = f.NextId++, Day = 50 + i, Hour = 19, State = PartyState.Held });
+            }
+            var mine = new List<Party>();
+            for (int i = 0; i < 4; i++)
+            {
+                var p = new Party { Id = f.NextId++, Day = 100, Hour = 10 + i, Tier = PartyTier.Simple, State = how == "ended" ? PartyState.Running : PartyState.Planned, Began = how == "ended" ? 1 : -1 };
+                p.Guests.Add(new PartyGuest { Person = 0, Answer = PartyAnswer.Yes, Came = true });
+                f.Parties.Add(p);
+                mine.Add(p);
+            }
+            w.At(100, 9);
+            if (how == "off")
+            {
+                w.At(100, 8);
+                w.IsOn = false;
+                PartyDesk.Tick(f, w);
+                w.IsOn = true;
+            }
+            w.At(100, 20);
+            bool threw = false;
+            try
+            {
+                PartyDesk.Tick(f, w);
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                threw = true;
+            }
+            PartyState want = how == "ended" ? PartyState.Held : how == "missed" ? PartyState.Missed : PartyState.Cancelled;
+            Check(!threw && mine.All(p => p.State == want) && f.Parties.Count == PartyCatalogue.HostedMost && f.Parties.Count(p => !p.Over) == 0,
+                "party: four parties " + how + " in one look at the clock, past the number kept, are each dealt with and the list is trimmed only after the walk (" + (threw ? "it threw" : mine.Count(p => p.State == want) + " of 4") + ")");
+        }
+    }
+
+    private static void PartySharedCapChecks()
+    {
+        // A party the player hosts and an invitation they accept share the seven-day cap with the same person: the two together never give more than it.
+        var f = new PartyFile { Seed = 9 };
+        PartyWorld w = PartyTown(4);
+        Party lavish = PartyHeld(f, w, 102, 19, PartyTier.Lavish);
+        float afterParty = w.Cast[1].Familiarity - 40f;
+        int counted = PartyRules.Counted(f.Of(1, false), 102, PartyCatalogue.WindowDays);
+        var invite = new Invite { Id = f.NextId++, Person = 1, State = InviteState.Accepted, Asked = 100, Day = 103, Hour = 19, Place = PartyPlace.Restaurant, Street = "Venue Street", Number = 7, Name = "The Venue" };
+        f.Invites.Add(invite);
+        w.At(103, 19, 5);
+        w.IsThere = true;
+        PartyDesk.Join(f, w, invite.Id);
+        w.Minute = invite.End;
+        PartyDesk.Tick(f, w);
+        float together = w.Cast[1].Familiarity - 40f;
+        int after = PartyRules.Counted(f.Of(1, false), 103, PartyCatalogue.WindowDays);
+        Check(lavish != null && counted >= 500 && invite.State == InviteState.Went && after <= 1000 && after > counted - 1 && together <= PartyCatalogue.CapFamiliarity + 0.01f
+              && w.Cast[1].Affection - 40f <= PartyCatalogue.CapAffection + 0.01f && w.Cast[1].Trust - 30f <= PartyCatalogue.CapTrust + 0.01f && f.Lifts.Count(l => l.Person == 1) == 1,
+            "the cap: a lavish party and an invitation to the same person in one week share the one cap (the party "
+            + counted + " per mille, with the invitation " + after + "; " + afterParty.ToString("0.0") + " then " + together.ToString("0.0") + " of familiarity, cap 8)");
+    }
+
     // ------------------------------------------------------------------------------------------------- the wiring and the texts
 
     private static void PartyWiringChecks()
@@ -1508,7 +2052,8 @@ internal static partial class Program
             "parties wiring: the director runs the very steps the checks drive, each through the game's world");
         Check(director.Contains("StartCoroutine(Guard.Routine(Tick()))") && director.Contains("new WaitForSecondsRealtime(1f)") && !director.Contains("void Update(")
             && !director.Contains("void LateUpdate(")
-              && director.Contains("if (now != _minute)") && director.Contains("SaveHook.Keep(_onSave)") && director.Contains("save.modData[PartyStore.Key] = PartyStore.Write(_file);")
+              && director.Contains("if (now != _minute)") && director.Contains("SaveHook.Keep(_onSave)") && director.Contains("PartyStore.Put(save.modData, _file);")
+              && director.Contains("PartyStore.Open(save.modData, NewSeed, out int version, out bool fresh)")
               && director.Contains("SaveLines.Unreadable(save.modData, PartyStore.Key"),
             "parties wiring: no Update: a look once a second that does its work only when the game's minute has moved; the line is written in the game's save event and kept when unreadable");
         Check(game.Contains("BizBooks.Book(-amount, new TransactionInfo(key), null, address, force: false, showNotification: false)")
@@ -1526,8 +2071,13 @@ internal static partial class Program
               && ModSource(@"Wiring\Wiring.cs").Contains("Step(\"parties and company events\", PartyLinks.Connect);")
               && ModSource(@"Wiring\Wiring.cs").Contains("Step(\"parties and company events\", PartyLinks.Disconnect);"),
             "parties wiring: startup money's floor, business pressure's closures, the social life, the rivals and the Planner are met through bridges, connected and disconnected");
+        // Not drivable offline (the director is the game's MonoBehaviour): the first look at a second save loaded in one run, and the rivals' day that may come before it.
+        Check(director.Contains("private bool Mine => _file != null && ReferenceEquals(Save, _save);") && director.Contains("public PartyFile File => Mine ? _file : null;")
+              && director.Contains("if (!On || !Mine || rivals == null)") && director.Contains("if (!Mine)") && director.Contains("PartyRefusal why = Mine ? PartyDesk.Cancel(_file, _world, id)")
+              && !director.Contains("if (_file == null)"),
+            "parties wiring: the file in hand belongs to the save that is open now, so a second save loaded in one run is never booked, paid or drawn from with the first one's file (the rivals' day and the paper included)");
         string rivals = ModSource(@"Rivals\RivalDirector.cs");
-        Check(rivals.Contains("paid += RivalBridges.StaffEvents != null ? RivalBridges.StaffEvents(_file, day, index * 10) : 0L;")
+        Check(rivals.Contains("paid += RivalBridges.StaffEvents != null ? RivalBridges.StaffEvents(_file, day, _world.Level) : 0L;")
             && rivals.Contains("RivalBridges.StaffEventsPaper(day, into, RivalCatalogue.PiecesMost - added)")
               && links.Contains("Key = \"reallife_party_paper_rival\"") && links.Contains("if (e.Day != day - 1)"),
             "parties wiring: the rivals' own day holds their outlets' staff events, and the City Ledger's rivals' pieces tell of yesterday's");
@@ -1561,8 +2111,8 @@ internal static partial class Program
         bool gameFree = free.All(file => !ModSource(@"Parties\" + file).Contains("UnityEngine") && !ModSource(@"Parties\" + file).Contains("System.Random") && !ModSource(@"Parties\"
             + file).Contains("GetHashCode"));
         string every = string.Join("\n", free.Select(file => ModSource(@"Parties\" + file))) + director + game + live + app + tests;
-        Check(gameFree && !every.Contains("UnityEngine.Random") && !every.Contains("Random.value") && !every.Contains("Random.Range") && CountOfText(every, "new System.Random()") == 2
-              && director.Contains("Seed = new System.Random().Next(1, int.MaxValue)"),
+        Check(gameFree && !every.Contains("UnityEngine.Random") && !every.Contains("Random.value") && !every.Contains("Random.Range") && CountOfText(every, "new System.Random()") == 1
+              && director.Contains("private static int NewSeed() => new System.Random().Next(1, int.MaxValue);"),
             "parties wiring: the rules are game-free and draw only from the save's own seed, made once a save and kept with it");
         var seen = new HashSet<int>();
         int[] purposes =
@@ -1624,7 +2174,11 @@ internal static partial class Program
             { "reallife_party_note_event_held", new[] { "business", "count", "staff", "hours" } }, { "reallife_party_note_manager_refused", new[] { "business", "why" } },
             { "reallife_party_text_invite", new[] { "place", "when" } }, { "reallife_party_ask_begin", new[] { "place", "count", "until" } },
             { "reallife_party_paper_rival", new[] { "rival", "holding", "kind", "count" } }, { "reallife_party_when_day", new[] { "day", "time" } },
-            { "reallife_party_paper_host", new[] { "place", "count" } }
+            { "reallife_party_paper_host", new[] { "place", "count" } }, { "reallife_party_note_invite_left", new[] { "name", "place" } },
+            { "reallife_party_note_event_off_passed", new[] { "business", "back" } }, { "reallife_party_note_event_short", new[] { "business", "count", "back" } },
+            { "reallife_party_note_event_sold", new[] { "business" } }, { "reallife_party_note_off_own", new[] { "place", "back" } },
+            { "reallife_party_note_off_while", new[] { "place", "back" } }, { "reallife_party_note_event_off_while", new[] { "business", "back" } },
+            { "reallife_party_note_event_nobody", new[] { "business", "staff", "back" } }
         };
         var wrong = new List<string>();
         foreach (string code in ModLanguages.All)

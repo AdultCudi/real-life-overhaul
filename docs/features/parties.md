@@ -7,7 +7,7 @@ Under the living economy's master option **Living population**, the player hosts
 ## Where the code is
 
 - Folder: [`Scripts/Parties`](../../Assets/Mods/RealLifeOverhaul/Scripts/Parties/); the pages in [`Scripts/Ui/Parties`](../../Assets/Mods/RealLifeOverhaul/Scripts/Ui/Parties/); the wiring in `Scripts/Wiring/Wiring.PartyLinks.cs`.
-- Option: "Parties and company events" (`living_parties`, on by default, under `living_population`). Off, nothing is booked, begun, charged, refunded or missed, the app is off the phone, and what is planned is kept.
+- Option: "Parties and company events" (`living_parties`, on by default, under `living_population`). Off, nothing is booked, begun, charged, refunded or missed, the app is off the phone, and what is planned is kept (what came due meanwhile is settled when it is on again: see The save).
 - Save: one line, `reallife:parties`. Checks: `EconomyCheck --parties` (`PartyChecks.cs`).
 
 ```
@@ -18,7 +18,7 @@ Parties/                       the first nine are game-free and compiled by Econ
   PartyRules                     time, the seeded draws, the cap, cost, room, who comes and why, turnout, quality, worth, the ceiling
   PartyDesk                      a party from booking to end, calling off, missing it, invitations, the clock's look, the day's round
   StaffDesk                      a company event from booking to end, the lift and its fade, a manager's schedule, the rivals' outlets
-  PartyStore                     the save's one line
+  PartyStore                     the save's one line (and the open and the first write of it)
   PartyHosted                    the door for another feature: "the player hosted X with guests Y"
   PartyKeys                      the locale keys of a place, a tier, a kind, an answer, a state, a refusal
   PartyGame                      the only file that touches the game: IPartyWorld answered from the game
@@ -74,7 +74,14 @@ Every step is written against `IPartyWorld`, so the offline checks drive the ver
 - At home each guest who came leaves the flat 2 points messier.
 - A party that 10 guests or more came to is a piece in the next morning's City Ledger (`PartyHosted.Large`, through the paper's own chain of pieces, `News.Extra`).
 
-**Calling it off** (`PartyDesk.Cancel`): 80 % back a day or more ahead and nobody minds; 50 % under a day, and each who said yes loses a point of trust and of affection; nothing in the last 3 hours, with the social life's own cost of a plan called off at short notice (-4 trust, -3 affection). A party never held gives nothing, so nothing is kept by booking and cancelling. A place found shut or gone on the day calls the party off with everything back and nobody minding.
+**Calling it off** (`PartyDesk.Cancel`): 80 % back a day or more ahead and nobody minds; 50 % under a day, and each who said yes loses a point of trust and of affection; nothing in the last 3 hours, with the social life's own cost of a plan called off at short notice (-4 trust, -3 affection). A party never held gives nothing, so nothing is kept by booking and cancelling.
+
+**Every way a party is given up by the host is calling it off at the hour it was done** (`PartyDesk.Withdraw`: the refund and the guests' minds are those of that hour's notice, never a full refund):
+
+- The option switched off: the hour is the minute the option was found off, taken when it is on again and the party's time came meanwhile.
+- A venue of the player's own that they shut (their switch or opening hours, not a closure the mod or the city made) or no longer hold: the hour is the day's round of 10:00 that finds it (`PartyDesk.Watch`, one place look a day for each party at a venue of their own) or, if that did not, the party's own hour.
+
+**A place that cannot hold the party for any other reason** (`PartyDesk.Gone`): a venue of somebody else's found shut, a closure of the mod's or the city's on a venue of the player's own, or a home the host no longer holds (they moved house since the booking). The party is called off with everything back and nobody minding, found at the party's hour if the host is there (`Begin`) and at the 75 minutes after it if they are not, so a host who moved house is never counted as having stood their guests up. The home a party leaves messier, and the tidiness it is judged by, are those of the address it was booked at, not of the home the player is in.
 
 **A venue of the player's own.** The food and drink are charged at cost (the home's price, no service), and nothing is booked there as a sale: no fee of a party or an event ever comes back as takings.
 
@@ -84,14 +91,17 @@ Once a day from 10:00 (`PartyDesk.InviteDay`), when 10 days have passed since th
 
 | what the player does | what it does |
 |---|---|
-| says yes, is at the place in its time and stays to the end (150 minutes) | 600 per mille of the same weekly cap with the host, a thing done together, remembered |
+| says yes, is at the place in its time and is there when it ends (150 minutes after the start) | 600 per mille of the same weekly cap with the host (the one cap that hosted parties use: a party and an invitation to the same person in a week give together no more than it), a thing done together, remembered |
+| says yes, joins, and is gone when it ends | nothing gained, -1 affection as a no, and the Diary says "Left early" |
 | says no | -1 affection |
 | never answers | -2 affection |
 | says yes and does not come within 75 minutes | -6 trust, -5 affection, remembered as being stood up |
 
+Presence is asked at the end, as it is for a party the player hosts, and whatever the time skip did: in a Going Public session the clock is shared, no time is skipped, and the player can join and walk off; the invitation then pays nothing.
+
 ## A company event
 
-**Booking** (`StaffDesk.Book`, from the Staff events page): a business of the player's with staff, one of three kinds, 3 hours to 14 days ahead, and at most one event a business within 7 days of another. The cost is a head for every one of the staff, paid at once at the business's own address under `reallife_transaction_parties_staff`, which `BizLines` lists as a running cost, so it stands in the business's statement.
+**Booking** (`StaffDesk.Book`, from the Staff events page): a business of the player's with staff, one of three kinds, 3 hours to 14 days ahead, and at most one event a business within 7 days of another (one held for nobody counts too). The cost is a head for every one of the staff, paid at once at the business's own address under `reallife_transaction_parties_staff`, which `BizLines` lists as a running cost, so it stands in the business's statement. The event is booked for those staff: their ids are kept with it (`StaffEvent.Crew`).
 
 | kind | a head (start's prices) | lasts | can start |
 |---|---|---|---|
@@ -101,15 +111,27 @@ Once a day from 10:00 (`PartyDesk.InviteDay`), when 10 days have passed since th
 
 **Company money.** An event is refused when paying it would take the wallet under what it keeps for the investors of the player's firms (startup money's floor, `TechDirector.FloorNow`); so is a party. Spending at a firm's own address is the firm's own lawful spending ([startup money](startup-money.md)); it is bounded here by one event a week and the kinds' prices, and nothing of it comes back to the player.
 
-**The working time it takes.** When the event's hour comes the business is closed for the opening hours it covers, by business pressure's closures (`BusinessDirector.CloseFor`, `ClosureSource.StaffEvent`), and opens again by itself; everybody but the sick comes. Outside opening hours nobody at or under 20 satisfaction comes, nor one in five by a draw. A business that is open then and cannot be shut has its event called off with everything back. An event with no staff left, or at a business no longer the player's, does nothing, says so and gives the money back.
+**The working time it takes.** When the event's hour comes the business is closed for the opening hours it covers, by business pressure's closures (`BusinessDirector.CloseFor`, `ClosureSource.StaffEvent`), and opens again by itself; everybody but the sick comes. Outside opening hours nobody at or under 20 satisfaction comes, nor one in five by a draw. A business that is open then and cannot be shut has its event called off with everything back.
 
-**What it gives**, when it ends, to each who came (`StaffDesk.LiftOne`): a lunch 330, an evening out 580 and a team day 1000 per mille of a cap of 12 points of the game's satisfaction and 8 points of the company's standing in any 30 days; half to somebody underpaid (the company's own rule, `StaffRules.Underpaid`, or the game's wage formula where the company keeps no file). The satisfaction is given once and the game's own hourly rule wears it down again; the standing wears off evenly over the 30 days and is all taken back (`StaffDesk.Fade`, once a day). Quitting, strikes and rivals' offers read satisfaction and standing as before, so an event lowers them only as far as it lifts those.
+**An event begins only within 30 minutes of its hour** (`PartyCatalogue.EventLateMinutes`, `StaffDesk.Begin`). The game's time skip (a party, a job, a night's sleep) runs its own hourly rules for every hour it passes but gives the mod's clock only its one look a second, so a skip can carry the clock past an event's whole hours. Such an event was not held: it is called off with everything back, and the business is never shut for it afterwards. The business's real opening hours were not closed during the skip, so nothing is claimed for them. Seen within 30 minutes of its hour, an event begins and the business is shut for the hours still to run.
+
+**At the event's hour** (`StaffDesk.Begin`), of the staff it was booked for:
+
+- A head is paid for each. Those who have left the staff by the hour are not fed: their heads come back in full, and a notice says so. Somebody hired since the booking was not paid for and gains nothing.
+- With none of them left, the event does nothing, says so and gives the money back.
+- A business no longer the player's is the player's doing (they sold it): the event is called off by the notice at the moment it is found (the day's round of 10:00, `StaffDesk.Watch`, or the event's hour), not a full refund.
+
+**At its end** (`StaffDesk.Settle`) each of those it was booked for, still on the staff and able to come, gets their share. One who leaves during the event was fed and stays paid. A business sold while it runs leaves nobody to count: the event was held, stays paid, and says so. If nobody could come (all off sick, all unable after hours), the event does nothing, says so and gives the money back; it still counts for the week and for a manager's schedule, which counts from its day, so a manager does not book into the same cause the next day. An event of the manager's schedule that was called off, for whatever cause that was not the staff's, is likewise not tried again before the schedule's days have run from its day.
+
+**What it gives**, when it ends, to each who came (`StaffDesk.LiftOne`): a lunch 330, an evening out 580 and a team day 1000 per mille of a cap of 12 points of the game's satisfaction and 8 points of the company's standing in any 30 days; half to somebody underpaid (the company's own rule, `StaffRules.Underpaid`, or the game's wage formula where the company keeps no file). The satisfaction is given once and the game's own hourly rule wears it down again; the standing wears off evenly over the 30 days and is all taken back (`StaffDesk.Fade`, once a day). Quitting, strikes and rivals' offers read satisfaction and standing as before, so an event lowers them only as far as it lifts those. An event from a save made before its staff were kept counts whoever is on the staff, as it did.
+
+**Calling an event off** (`StaffDesk.Cancel`) is the same as for a party: 80 % back a day or more ahead, 50 % under a day, nothing in the last 3 hours, to the business's books. The option switched off and the business sold are calling it off at the hour they were done (as for a party above).
 
 **A manager's schedule.** Under The manager's schedule a business's manager (appointed in the Company app and at work) is told to hold a kind every 30, 60 or 90 days: the day before it is due they book it for the next day by the very rules above. With no manager the schedule waits; a refusal is told once a week.
 
 ## The rivals and the city
 
-- **Rival tycoons** (`StaffDesk.RivalDay`, called by the rivals' own day through `RivalBridges.StaffEvents`): each outlet with a crew holds a staff event every 45 to 59 days (a draw of its own), a lunch (50 in 100), an evening out (35) or a team day (15), at the player's price a head, paid from its tycoon's fortune; an outlet whose tycoon cannot pay holds none. Its crew's standing is lifted by the same cap and fades the same way. The morning after, the City Ledger's rivals' pieces say so, and the Diary lists the last six.
+- **Rival tycoons** (`StaffDesk.RivalDay`, called by the rivals' own day through `RivalBridges.StaffEvents`): each outlet with a crew holds a staff event every 45 to 59 days (a draw of its own), a lunch (50 in 100), an evening out (35) or a team day (15), at the player's price a head, paid from its tycoon's fortune; an outlet whose tycoon cannot pay holds none. A tycoon pays only from the worth above the floor the rivals' own day keeps a fortune at (`RivalRules.At(StartWorth, level)`, which `Grow` lifts a lower one back to every day): money paid from under it would come straight back, so with less than the cost above it no event is held. An outlet counts its days from the event it last held, else from its opening move's landing; when that move is no longer kept the count starts from the day the outlet was first seen, and that day is saved (the `M` part), so it is not restarted every day. Its crew's standing is lifted by the same cap and fades the same way. The morning after, the City Ledger's rivals' pieces say so, and the Diary lists the last six.
 - **People of the city** hold parties of their own and ask the player: see Other people's parties.
 
 ## Where the player finds it
@@ -121,7 +143,11 @@ Once a day from 10:00 (`PartyDesk.InviteDay`), when 10 days have passed since th
 
 ## Going Public
 
-A guest of another player's city can book, begin, call off, answer and schedule nothing, and is refused before the place is read or any money is booked (`PartyDesk.Stand`); nothing is missed or drawn for them meanwhile. A host plays as alone, with no time skipped. Every draw is from the save's own seed (`PartyRules.Roll`), nothing is sent, and only the player's own businesses and people are touched. The rivals rest in a session, and so do their events.
+A guest of another player's city can book, begin, call off, answer and schedule nothing, and is refused before the place is read or any money is booked (`PartyDesk.Stand`); nothing is missed or drawn for them meanwhile. A host plays as alone, with no time skipped. Every draw is from the save's own seed (`PartyRules.Roll`), written with the save's first line (`PartyStore.Put`), so the answers on the planning page do not draw again on each load; nothing is sent, and only the player's own businesses and people are touched. The rivals rest in a session, and so do their events.
+
+## A second save in one run
+
+The director's file belongs to the save that was open when it was read (`PartyDirector.Mine`). A second save loaded in the same run is read by the clock's next look; until then the previous save's file is handed to nobody: the pages, the paper, the Planner, the booking calls and the rivals' day (`RivalDay`, which may come first) all see no file, and the rivals' outlets hold their events on the next day instead.
 
 ## For another feature
 
@@ -129,13 +155,15 @@ A guest of another player's city can book, begin, call off, answer and schedule 
 
 ## The save
 
-`reallife:parties`: "v=1|seed|next id|day settled|last invitation|off since", then one part a record led by a letter (P party with its guests, E event, S schedule, I invitation, L lift with its dated gains, R rival's event). A save with no line starts with nothing. New fields go at the end of a record; a part or a field this version does not know is passed over, so a line from a newer version is read as far as it goes. A line whose head cannot be read is kept as it was read. Numbers use the invariant culture. The business's closure for an event is business pressure's own save.
+`reallife:parties`: "v=1|seed|next id|day settled|last invitation|off since", then one part a record led by a letter (P party with its guests, E event with the ids of the staff it was booked for at the end, S schedule, I invitation, L lift with its dated gains, R rival's event, M the day a rival outlet's count started from). The line is written from the first save, with nothing booked, so the seed is kept. A save with no line starts with nothing. New fields go at the end of a record; a part or a field this version does not know is passed over, so a line from a newer version is read as far as it goes. A line whose head cannot be read is kept as it was read. Numbers use the invariant culture. The business's closure for an event is business pressure's own save.
 
-With the option off the line is still written. A party, an invitation or an event that came due while it was off is called off, with everything back and nobody minding, when it is on again; one under way is settled then.
+**Limits.** A line holds at most 64 parties, 512 events, 64 invitations and 96 rivals' events (`PartyCatalogue.Stored...`); past that the oldest finished ones are left out when it is read, never one still to come or under way. Lifts (the caps' records), schedules and marks are never left out for want of room: their limits (20,000, 2,000, 2,000) only guard against a damaged line, and the rules keep far fewer.
+
+With the option off the line is still written. A party, an invitation or an event that came due while it was off is settled when it is on again: a party or an event is called off as if by the player at the minute the option was found off, by that minute's notice (the refund and, for a party, the guests' minds), an invitation is dropped with nobody minding; one under way is settled then.
 
 ## Cost
 
-No Update. A one-second timer on the real clock compares the game's minute; when it has moved, a pass over the handful of open records. The day's round runs once a day. While a party's time has come, one look a second at whether the host is there (a venue's door is looked up once and kept). The pages are written when the director's revision moves or a button is pressed.
+No Update. A one-second timer on the real clock compares the game's minute; when it has moved, a pass over the handful of open records. The day's round runs once a day, with one place look for each planned party at a venue of the player's own and one staff look for each planned event. While a party's time has come, one look a second at whether the host is there (a venue's door is looked up once and kept). The pages are written when the director's revision moves or a button is pressed.
 
 ## Tests
 
@@ -152,6 +180,10 @@ With Developer diagnostics on: `Parties check (host)`, `(event)`, `(begin)`, `(t
 - **A large party on Flare.** Flare's posts are written by its own accounts from its own rules and have no door for another feature's piece, so a large party reaches the paper and not Flare.
 - **The player attending their own staff event.** It is the staff's; the owner's part is the booking.
 
+## What the game's time skip does
+
+Checked against the game's code (`TimeMachine.Update` runs `GameManager.RunMainGameTick` with the minutes that frame moves, `Hourly` rules run for every hour it crosses and `NewDay` for every midnight, with wages, rents and `EnergyHelper.UpdateEnergy(minutes)` for the needs): a party or a team day costs its hours honestly, and each charge falls once per hour or day crossed, none skipped and none twice. What does not run per hour is the mod's own clock, one look a second: it can see a game minute far on from the last. That is why a staff event only begins within 30 minutes of its hour (above), a party is settled by presence at its end, and the day's round runs once for the day it finds. In a Going Public session with a shared clock no skip is started and the party runs in the session's time.
+
 ## Not verified in the game
 
-That the game's question box comes up at the place and its "Begin" starts the time skip; that the skip ends exactly at the party's end; how the app's pages look on the kit and how its older page looks without it; that a business closed for an event opens again at its hour; the People page's second button; the wording and length of the notices on screen.
+That the game's question box comes up at the place and its "Begin" starts the time skip; that the skip ends exactly at the party's end; how the app's pages look on the kit and how its older page looks without it; that the mod's clock sees an event's hour in time during a normal game day, and what a time skip leaves of it (an event passed in one is called off, as above); that a business closed for an event opens again at its hour; the People page's second button; the wording and length of the notices on screen.

@@ -187,8 +187,20 @@ namespace RealLifeOverhaul.Parties
             {
                 return p != null && p.State == PartyState.Running ? PartyRefusal.Begun : PartyRefusal.NotPlanned;
             }
-            int now = w.Now, ahead = p.Start - now;
-            int back = PartyRules.Refund(p.Paid, p.Start, now);
+            Withdraw(f, w, p, w.Now, "reallife_party_note_cancelled");
+            Trim(f);
+            return PartyRefusal.None;
+        }
+
+        /// <summary>
+        /// A planned party ended by the host's own doing, measured at the moment it was done (<paramref name="at"/>): calling it off, the option switched off, a venue of their
+        /// own shut or sold. Part of the money back by the notice that moment gave, and those who said yes mind by it, as the social life counts a plan called off. The one place
+        /// a planned party is given up by the host, so no way of ending one is better than calling it off at that hour.
+        /// </summary>
+        private static void Withdraw(PartyFile f, IPartyWorld w, Party p, int at, string key)
+        {
+            int ahead = p.Start - at;
+            int back = PartyRules.Refund(p.Paid, p.Start, at);
             float trust = ahead >= PartyCatalogue.EarlyHours * 60 ? 0f : ahead >= PartyCatalogue.LeadHours * 60 ? -1f : SocialRules.CancelledTrust;
             float affection = ahead >= PartyCatalogue.EarlyHours * 60 ? 0f : ahead >= PartyCatalogue.LeadHours * 60 ? -1f : SocialRules.CancelledAffection;
             for (int i = 0; i < p.Guests.Count && (trust != 0f || affection != 0f); i++)
@@ -205,12 +217,10 @@ namespace RealLifeOverhaul.Parties
             }
             p.Paid -= back;
             p.State = PartyState.Cancelled;
-            w.Tell(PartyTone.Info, "reallife_party_note_cancelled", "place", p.Name, "back", w.Cash(back));
-            Trim(f);
-            return PartyRefusal.None;
+            w.Tell(PartyTone.Info, key, "place", p.Name, "back", w.Cash(back));
         }
 
-        // Called off by what nobody could know ahead: everything back, nobody minds.
+        // Called off by what the host did not do: everything back, nobody minds.
         private static void CallOff(PartyFile f, IPartyWorld w, Party p, string key)
         {
             int back = p.Paid;
@@ -221,7 +231,28 @@ namespace RealLifeOverhaul.Parties
             p.Paid = 0;
             p.State = PartyState.Cancelled;
             w.Tell(PartyTone.Warn, key, "place", p.Name, "back", w.Cash(back));
-            Trim(f);
+        }
+
+        /// <summary>
+        /// A planned party whose place cannot hold it now (<paramref name="place"/> as the world finds it) is ended. A venue of the host's own found shut by their switch or
+        /// hours, or gone from their hands, is their doing: it is called off at this moment, by the notice then. Anything else (a closure that is not theirs, a home they no
+        /// longer hold, another's venue) is nobody's fault: everything back and nobody minds. False when the place can hold it and nothing was done.
+        /// </summary>
+        private static bool Gone(PartyFile f, IPartyWorld w, Party p, PlaceFacts place, int at)
+        {
+            if (place.Found && place.Open)
+            {
+                return false;
+            }
+            if (p.Own && (!place.Found || place.Made))
+            {
+                Withdraw(f, w, p, at, "reallife_party_note_off_own");
+            }
+            else
+            {
+                CallOff(f, w, p, "reallife_party_note_off_place");
+            }
+            return true;
         }
 
         /// <summary>Why the host cannot begin a party now; None when they can: it is planned, its time has come and they are there.</summary>
@@ -262,9 +293,9 @@ namespace RealLifeOverhaul.Parties
             }
             int now = w.Now, from = Math.Max(now, p.Start);
             PlaceFacts place = w.Place(p.Place, p.Street, p.Number, from, Math.Max(1, p.End - from));
-            if (!place.Found || !place.Open)
+            if (Gone(f, w, p, place, now))
             {
-                CallOff(f, w, p, "reallife_party_note_off_place");
+                Trim(f);
                 return p.Place == PartyPlace.Home ? PartyRefusal.NoHome : PartyRefusal.VenueShut;
             }
             p.Began = now;
@@ -295,7 +326,7 @@ namespace RealLifeOverhaul.Parties
             var home = new HomeFacts { Tidy = -1 };
             if (p.Place == PartyPlace.Home)
             {
-                home = w.Home();
+                home = w.Home(p.Street, p.Number);
             }
             p.Quality = PartyRules.Quality(p.Tier, p.Place, came, p.Coming, home, p.Late, p.Left);
             bool bad = p.Quality < PartyCatalogue.BadBelow;
@@ -318,13 +349,12 @@ namespace RealLifeOverhaul.Parties
             }
             if (p.Place == PartyPlace.Home && came > 0)
             {
-                w.Mess(came * PartyCatalogue.TidyPerGuest);
+                w.Mess(came * PartyCatalogue.TidyPerGuest, p.Street, p.Number);
             }
             p.State = PartyState.Held;
             PartyHosted.Tell(p);
             string key = bad ? "reallife_party_note_bad" : p.Quality >= PartyCatalogue.GoodFrom ? "reallife_party_note_good" : "reallife_party_note_fair";
             w.Tell(bad ? PartyTone.Bad : PartyTone.Good, key, "place", p.Name, "count", came.ToString(), "closer", gained.ToString());
-            Trim(f);
         }
 
         // What a share of the cap gives one person, through the social life's own call; a party that gave half the cap or more counts as a thing done together.
@@ -362,7 +392,6 @@ namespace RealLifeOverhaul.Parties
             }
             p.State = PartyState.Missed;
             w.Tell(PartyTone.Bad, "reallife_party_note_missed", "place", p.Name, "count", stood.ToString());
-            Trim(f);
         }
 
         // ------------------------------------------------------------------------------------------------- other people's parties
@@ -552,6 +581,14 @@ namespace RealLifeOverhaul.Parties
             }
             if (invite.State == InviteState.Accepted && invite.Began >= 0 && now >= invite.End)
             {
+                if (!w.There(invite.Place, invite.Street, invite.Number))
+                {
+                    // Presence at the end decides, as for a party the player hosts, whatever the time skip did: gone before it ended, nothing is gained and it counts as a no.
+                    invite.State = InviteState.Left;
+                    w.Change(host, 0f, PartyCatalogue.LeftAffection, 0f);
+                    w.Tell(PartyTone.Warn, "reallife_party_note_invite_left", "name", host.Name, "place", invite.Name);
+                    return true;
+                }
                 invite.State = InviteState.Went;
                 int liking = (int)Math.Round(SocialRules.Liking(host, PartyCatalogue.KindOf(invite.Place)) * 1000f);
                 int worth = Math.Min(1000, PartyCatalogue.InviteWorth * liking / 1000);
@@ -598,11 +635,11 @@ namespace RealLifeOverhaul.Parties
                     {
                         if (off >= 0 && last >= off)
                         {
-                            CallOff(f, w, p, "reallife_party_note_off_while");   // its time came while parties were switched off: not the host's doing
+                            Withdraw(f, w, p, off, "reallife_party_note_off_while");   // its time came while parties were switched off: the host's own doing, at the hour it was done
                         }
-                        else
+                        else if (!Gone(f, w, p, w.Place(p.Place, p.Street, p.Number, p.Start, Math.Max(1, p.End - p.Start)), now))
                         {
-                            Miss(f, w, p);
+                            Miss(f, w, p);   // the place could hold it, and the host never came
                         }
                         changed = true;
                     }
@@ -661,9 +698,38 @@ namespace RealLifeOverhaul.Parties
             }
             f.Settled = day;
             StaffDesk.Fade(f, w);
+            Watch(f, w);
             StaffDesk.ManagerDay(f, w);
             InviteDay(f, w);
+            Trim(f);
             return true;
+        }
+
+        /// <summary>
+        /// The day's look at what the host's own doing may have ended since the booking: a planned party at a venue of theirs that is now shut by their switch or gone from
+        /// their hands, and a planned event at a business that is no longer theirs. Each is called off at the moment it was found, by the notice that gives, so closing or
+        /// selling something is never a way to a full refund. One place lookup a party at a venue of the player's own, once a day.
+        /// </summary>
+        private static void Watch(PartyFile f, IPartyWorld w)
+        {
+            if (Stand(w) != PartyRefusal.None)
+            {
+                return;
+            }
+            int now = w.Now;
+            for (int i = 0; i < f.Parties.Count; i++)
+            {
+                Party p = f.Parties[i];
+                if (p.State == PartyState.Planned && p.Own && p.Place != PartyPlace.Home)
+                {
+                    PlaceFacts place = w.Place(p.Place, p.Street, p.Number, p.Start, Math.Max(1, p.End - p.Start));
+                    if (!place.Found || (!place.Open && place.Made))
+                    {
+                        Gone(f, w, p, place, now);
+                    }
+                }
+            }
+            StaffDesk.Watch(f, w);
         }
 
         /// <summary>

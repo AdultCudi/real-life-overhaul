@@ -42,8 +42,11 @@ namespace RealLifeOverhaul.Parties
         /// <summary>True while parties run: the master option and their own on, and no fault has stopped them.</summary>
         public static bool On => Settings.LivingPopulation && Settings.LivingParties && Instance != null && !Instance._broken;
 
-        /// <summary>The save's file, for the page; null before a save is read.</summary>
-        public PartyFile File => _file;
+        /// <summary>The save's file, for the page; null before the save that is open now has been read (the previous save's file is never handed out in that first second).</summary>
+        public PartyFile File => Mine ? _file : null;
+
+        // The file belongs to the save that is open now: a second save loaded in one run is read by the next look, and until then the old file is nobody's to book, pay or draw from.
+        private bool Mine => _file != null && ReferenceEquals(Save, _save);
 
         /// <summary>The game as the rules ask it, for the page's drafts.</summary>
         public IPartyWorld World => _world;
@@ -151,14 +154,13 @@ namespace RealLifeOverhaul.Parties
             {
                 save.modData = new Dictionary<string, string>();
             }
-            PartyFile f = PartyStore.Load(save.modData, out int version);
+            PartyFile f = PartyStore.Open(save.modData, NewSeed, out int version, out bool fresh);
             if (version < 0)
             {
                 SaveLines.Unreadable(save.modData, PartyStore.Key, "it could not be read");   // put back as it was read at every save
                 Logger?.Warn("Parties: the save's line of parties and events could not be read (" + PartyStore.Key + "); nothing is planned, and the line is kept in the save as it is.");
             }
-            bool fresh = f == null;
-            _file = f ?? new PartyFile { Seed = new System.Random().Next(1, int.MaxValue) };   // a save's own seed for every draw, kept with it
+            _file = f;   // a new file has a seed of its own for every draw, written with the save's first line
             _minute = -1;
             _asking = 0;
             Touch();
@@ -169,7 +171,10 @@ namespace RealLifeOverhaul.Parties
             }
         }
 
-        // Inside the game's save event: the line, unless nothing was ever kept and the save had none.
+        // A seed for a new save, drawn once: it goes into the save's first line, from where every later load reads it.
+        private static int NewSeed() => new System.Random().Next(1, int.MaxValue);
+
+        // Inside the game's save event: the line, from the very first save, so the seed is kept even while nothing is booked.
         private void OnSave()
         {
             GameInstance save = Save;
@@ -177,19 +182,13 @@ namespace RealLifeOverhaul.Parties
             {
                 return;
             }
-            bool empty = _file.Parties.Count == 0 && _file.Events.Count == 0 && _file.Invites.Count == 0 && _file.Lifts.Count == 0 && _file.Plans.Count == 0
-                         && _file.Rivals.Count == 0;
-            if (empty && !save.modData.ContainsKey(PartyStore.Key))
-            {
-                return;
-            }
-            save.modData[PartyStore.Key] = PartyStore.Write(_file);
+            PartyStore.Put(save.modData, _file);
         }
 
         /// <summary>The feature's data is reset (Meta/SaveTools): what the save kept is forgotten. Nothing is given back: a reset is the player's own.</summary>
         public void Forget()
         {
-            _file = new PartyFile { Seed = new System.Random().Next(1, int.MaxValue) };
+            _file = new PartyFile { Seed = NewSeed() };
             _minute = -1;
             _asking = 0;
             Save?.modData?.Remove(PartyStore.Key);
@@ -241,7 +240,7 @@ namespace RealLifeOverhaul.Parties
                 }
                 NotYet();   // the box went without an answer: asked again a little later
             }
-            if (Time.unscaledTime < _askAfter || _file == null || HudConfirm.isOpen)
+            if (Time.unscaledTime < _askAfter || !Mine || HudConfirm.isOpen)
             {
                 return;
             }
@@ -292,7 +291,7 @@ namespace RealLifeOverhaul.Parties
             int asked = _asking;
             _asking = 0;
             _askAfter = Time.unscaledTime + AskGapSeconds;
-            if (_file == null || asked == 0)
+            if (!Mine || asked == 0)
             {
                 return;
             }
@@ -332,7 +331,7 @@ namespace RealLifeOverhaul.Parties
         /// <summary>Books a party the player hosts; a refusal is told in a notice and returned.</summary>
         public PartyRefusal Host(PartyAsk ask)
         {
-            if (_file == null)
+            if (!Mine)
             {
                 return Refused(PartyRefusal.NoSave);
             }
@@ -346,14 +345,14 @@ namespace RealLifeOverhaul.Parties
 
         public PartyRefusal CancelParty(int id)
         {
-            PartyRefusal why = _file != null ? PartyDesk.Cancel(_file, _world, id) : PartyRefusal.NoSave;
+            PartyRefusal why = Mine ? PartyDesk.Cancel(_file, _world, id) : PartyRefusal.NoSave;
             Touch();
             return why == PartyRefusal.None ? why : Refused(why);
         }
 
         public PartyRefusal Reply(int id, bool yes)
         {
-            PartyRefusal why = _file != null ? PartyDesk.Reply(_file, _world, id, yes) : PartyRefusal.NoSave;
+            PartyRefusal why = Mine ? PartyDesk.Reply(_file, _world, id, yes) : PartyRefusal.NoSave;
             Touch();
             return why == PartyRefusal.None ? why : Refused(why);
         }
@@ -361,7 +360,7 @@ namespace RealLifeOverhaul.Parties
         /// <summary>Books a company event at one of the player's businesses; a refusal is told in a notice and returned.</summary>
         public PartyRefusal Book(StaffAsk ask)
         {
-            if (_file == null)
+            if (!Mine)
             {
                 return Refused(PartyRefusal.NoSave);
             }
@@ -375,14 +374,14 @@ namespace RealLifeOverhaul.Parties
 
         public PartyRefusal CancelEvent(int id)
         {
-            PartyRefusal why = _file != null ? StaffDesk.Cancel(_file, _world, id) : PartyRefusal.NoSave;
+            PartyRefusal why = Mine ? StaffDesk.Cancel(_file, _world, id) : PartyRefusal.NoSave;
             Touch();
             return why == PartyRefusal.None ? why : Refused(why);
         }
 
         public PartyRefusal Schedule(string place, int every, StaffEventKind kind)
         {
-            PartyRefusal why = _file != null ? StaffDesk.Schedule(_file, _world, place, every, kind) : PartyRefusal.NoSave;
+            PartyRefusal why = Mine ? StaffDesk.Schedule(_file, _world, place, every, kind) : PartyRefusal.NoSave;
             Touch();
             return why == PartyRefusal.None ? why : Refused(why);
         }
@@ -390,7 +389,7 @@ namespace RealLifeOverhaul.Parties
         /// <summary>The player lost touch with whoever had this place in the social life's cast (Wiring: SocialLinks.PartiesForget).</summary>
         public void ForgetPerson(int person)
         {
-            if (_file != null && PartyDesk.Forget(_file, person))
+            if (Mine && PartyDesk.Forget(_file, person))
             {
                 Touch();
             }
@@ -402,7 +401,7 @@ namespace RealLifeOverhaul.Parties
         /// </summary>
         public long RivalDay(Rivals.RivalFile rivals, int day, int level)
         {
-            if (!On || _file == null || rivals == null)
+            if (!On || !Mine || rivals == null)
             {
                 return 0L;
             }
@@ -418,7 +417,7 @@ namespace RealLifeOverhaul.Parties
         /// <summary>The parties the player hosted on or after a day that are still kept: the door for another feature (PartyHosted).</summary>
         public int Hosted(int fromDay, List<HostedParty> into)
         {
-            return PartyHosted.Since(_file, fromDay, into);
+            return PartyHosted.Since(File, fromDay, into);
         }
 
         /// <summary>Opens the app on a tab: the People page's Host a party, the Company app's staff page, a notice.</summary>

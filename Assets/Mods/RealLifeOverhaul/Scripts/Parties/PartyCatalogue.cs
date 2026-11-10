@@ -19,7 +19,7 @@ namespace RealLifeOverhaul.Parties
     public enum StaffEventState { Planned = 0, Held = 1, Cancelled = 2, Empty = 3, Running = 4 }
 
     /// <summary>Where an invitation to somebody else's party stands. Saved as a number: new ones go at the end.</summary>
-    public enum InviteState { Asked = 0, Accepted = 1, Declined = 2, Went = 3, Missed = 4, Lapsed = 5, Off = 6 }
+    public enum InviteState { Asked = 0, Accepted = 1, Declined = 2, Went = 3, Missed = 4, Lapsed = 5, Off = 6, Left = 7 }
 
     /// <summary>Why something cannot be booked, begun or answered; None when it can. Never saved, so a reason may be added anywhere.</summary>
     public enum PartyRefusal
@@ -106,6 +106,7 @@ namespace RealLifeOverhaul.Parties
         public const float LapseAffection = -2f;      // never answered
         public const float NoShowTrust = SocialRules.StoodUpTrust / 2f;          // said yes and did not come
         public const float NoShowAffection = SocialRules.StoodUpAffection / 2f;
+        public const float LeftAffection = -1f;       // joined, and was gone when it ended: no gain, and as a no
 
         // ---- company events
         public static readonly int[] EventMinutes = { 60, 180, 480 }; // game minutes by kind: a lunch, an evening out, a team day
@@ -117,6 +118,7 @@ namespace RealLifeOverhaul.Parties
         public const int CapStanding = 8;             // points of the company's standing (0 to 100) likewise, taken back as the lift fades
         public const int UnderpaidShare = 50;         // per cent of an event's worth to somebody underpaid: no substitute for pay
         public const int EventGapDays = 7;            // days at least between two events at one business
+        public const int EventLateMinutes = 30;       // game minutes after its start a planned event can still begin: the clock looks once a second, so only a time skip or a load goes past
         public const int AfterHoursNo = 200;          // per mille an employee has a reason not to come to an event outside their working hours
         public const int LowMood = 20;                // an employee at or under this satisfaction does not come after hours
         public static readonly int[] ScheduleDays = { 0, 30, 60, 90 };           // a manager's schedule: off, or every so many days
@@ -132,6 +134,17 @@ namespace RealLifeOverhaul.Parties
         public const int ManagerRetryDays = 7;        // days between two notices that a manager could not book
         public const int HostedMost = 8;              // parties of the player's kept once over, for the page and for other features
         public const int EventsKept = 12;             // company events kept once over
+
+        // ---- the save: the most a line holds of each kind of part, sized to a large city. A kind that is history (parties, events, invitations, rivals' events) drops its
+        // oldest finished records past the limit and never one that is still to come; the lifts, the schedules and the marks are never dropped for want of room, and their
+        // limit is only a guard against a damaged line.
+        public const int StoredParties = 64;          // planned and under way (PlannedMost) with the finished kept (HostedMost), and room
+        public const int StoredEvents = 512;          // a few planned to a business, for a hundred businesses, and the finished kept (EventsKept)
+        public const int StoredInvites = 64;
+        public const int StoredRivals = 96;           // RivalLogMost, and room
+        public const int StoredPlans = 2000;
+        public const int StoredMarks = 2000;
+        public const int StoredLifts = 20000;         // the cast, every business's staff and every rival crew: far past what the rules keep
 
         /// <summary>The food and drink of a tier a head, at the start's prices: two coffees, a meal, or a meal and drinks, as the social life prices them.</summary>
         public static int HeadBase(PartyTier tier)

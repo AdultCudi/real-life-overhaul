@@ -78,6 +78,7 @@ namespace RealLifeOverhaul.Parties
         public int Came;                       // staff who came, once held
         public int Shut;                       // opening hours the business was closed for it, once held
         public bool ByManager;                 // booked by the business's manager on its schedule
+        public readonly List<string> Crew = new List<string>(8);   // staff it was booked for, by id, a head paid for each; empty in an older save: then whoever is on the staff counts
 
         public int Start => PartyRules.Stamp(Day, Hour);
         public int End => Start + PartyCatalogue.EventMinutes[PartyCatalogue.Clamp((int)Kind, 0, PartyCatalogue.EventMinutes.Length - 1)];
@@ -144,6 +145,13 @@ namespace RealLifeOverhaul.Parties
         public int Cost;
     }
 
+    /// <summary>The day an outlet of a rival tycoon's count of days to its staff event started from, kept so that it does not start again every day.</summary>
+    public sealed class RivalMark
+    {
+        public string Outlet = string.Empty;   // RivalFirms.Key
+        public int Day;
+    }
+
     /// <summary>
     /// Parties and company events of a save: the player's parties, their staff events, the managers' schedules, invitations,
     /// what is left of every lift, and the rivals' events. Game-free; <see cref="PartyStore"/> writes it as one line.
@@ -161,6 +169,7 @@ namespace RealLifeOverhaul.Parties
         public readonly List<Invite> Invites = new List<Invite>(4);
         public readonly List<Lift> Lifts = new List<Lift>(32);
         public readonly List<RivalEvent> Rivals = new List<RivalEvent>(PartyCatalogue.RivalLogMost);
+        public readonly List<RivalMark> Marks = new List<RivalMark>(4);
 
         public Party Find(int id)
         {
@@ -257,6 +266,20 @@ namespace RealLifeOverhaul.Parties
             var plan = new StaffPlan { Place = place };
             Plans.Add(plan);
             return plan;
+        }
+
+        /// <summary>An outlet's mark: the day it was first counted from, made as <paramref name="day"/> when there is none.</summary>
+        public int Mark(string outlet, int day)
+        {
+            for (int i = 0; i < Marks.Count; i++)
+            {
+                if (Marks[i].Outlet == outlet)
+                {
+                    return Marks[i].Day;
+                }
+            }
+            Marks.Add(new RivalMark { Outlet = outlet, Day = day });
+            return day;
         }
 
         /// <summary>Parties still to come or under way.</summary>

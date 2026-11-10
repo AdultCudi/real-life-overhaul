@@ -14,7 +14,7 @@ namespace RealLifeOverhaul.Parties
         // Why no test can run, as a notice's key; null when one can.
         private string TestReady()
         {
-            return !On ? "reallife_party_no_off" : _file == null || Save == null ? "reallife_party_no_save" : _world.Guest ? "reallife_party_no_guest" : null;
+            return !On ? "reallife_party_no_off" : !Mine ? "reallife_party_no_save" : _world.Guest ? "reallife_party_no_guest" : null;
         }
 
         private static void Say(NotificationType type, string key, params string[] pairs)

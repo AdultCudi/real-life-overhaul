@@ -68,7 +68,7 @@ namespace RealLifeOverhaul.Parties
             for (int i = 0; i < f.Events.Count; i++)
             {
                 StaffEvent e = f.Events[i];
-                if (e.Place == ask.Place && e.State != StaffEventState.Cancelled && e.State != StaffEventState.Empty && Math.Abs(e.Day - ask.Day) < PartyCatalogue.EventGapDays)
+                if (e.Place == ask.Place && e.State != StaffEventState.Cancelled && Math.Abs(e.Day - ask.Day) < PartyCatalogue.EventGapDays)
                 {
                     return PartyRefusal.TooOften;
                 }
@@ -110,6 +110,10 @@ namespace RealLifeOverhaul.Parties
                 Id = f.NextId++, Place = ask.Place, Name = w.Business(ask.Place) ?? string.Empty, Kind = (StaffEventKind)Index(ask.Kind), State = StaffEventState.Planned,
                 Day = ask.Day, Hour = ask.Hour, Paid = cost, Heads = heads, ByManager = ask.ByManager
             };
+            for (int i = 0; i < hands.Count; i++)
+            {
+                booked.Crew.Add(hands[i].Id);
+            }
             f.Events.Add(booked);
             w.Tell(PartyTone.Good, ask.ByManager ? "reallife_party_note_event_manager" : "reallife_party_note_event_booked", "business", booked.Name,
                 "when", w.When(ask.Day, ask.Hour), "count", heads.ToString(), "cost", w.Cash(cost));
@@ -129,20 +133,31 @@ namespace RealLifeOverhaul.Parties
             {
                 return e != null && e.State == StaffEventState.Running ? PartyRefusal.Begun : PartyRefusal.NotPlanned;
             }
-            int back = PartyRules.Refund(e.Paid, e.Start, w.Now);
+            Withdraw(f, w, e, w.Now, "reallife_party_note_event_cancelled");
+            Trim(f);
+            return PartyRefusal.None;
+        }
+
+        /// <summary>
+        /// A planned event ended by the player's own doing, measured at the moment it was done (<paramref name="at"/>): calling it off, the option switched off, the business
+        /// sold. Part of the money back by the notice that moment gave. The one place a planned event is given up by the player, so no way of ending one is better than
+        /// calling it off at that hour.
+        /// </summary>
+        private static void Withdraw(PartyFile f, IPartyWorld w, StaffEvent e, int at, string key)
+        {
+            int back = PartyRules.Refund(e.Paid, e.Start, at);
             if (back > 0)
             {
                 w.Refund(back, StaffKey, e.Place);
             }
             e.Paid -= back;
             e.State = StaffEventState.Cancelled;
-            w.Tell(PartyTone.Info, "reallife_party_note_event_cancelled", "business", e.Name, "back", w.Cash(back));
-            Trim(f);
-            return PartyRefusal.None;
+            w.Tell(PartyTone.Info, key, "business", e.Name, "back", w.Cash(back));
+            Rest(f, e);
         }
 
-        // Called off by what nobody could know ahead, or held for nobody: everything back.
-        private static void CallOff(PartyFile f, IPartyWorld w, StaffEvent e, string key, StaffEventState state)
+        // Called off by what the player did not do, or held for nobody: everything back.
+        private static void CallOff(PartyFile f, IPartyWorld w, StaffEvent e, string key, StaffEventState state, int staff = 0)
         {
             int back = e.Paid;
             if (back > 0)
@@ -151,7 +166,41 @@ namespace RealLifeOverhaul.Parties
             }
             e.Paid = 0;
             e.State = state;
-            w.Tell(PartyTone.Warn, key, "business", e.Name, "back", w.Cash(back));
+            w.Tell(PartyTone.Warn, key, "business", e.Name, "back", w.Cash(back), "staff", staff.ToString());
+            Rest(f, e);
+        }
+
+        // An event of a manager's schedule that did not stand is not tried again the next day into the same cause: the schedule counts from its day.
+        private static void Rest(PartyFile f, StaffEvent e)
+        {
+            StaffPlan plan = e.ByManager ? f.Plan(e.Place, false) : null;
+            if (plan != null)
+            {
+                plan.Since = Math.Max(plan.Since, e.Day);
+            }
+        }
+
+        /// <summary>
+        /// The day's look at what the player's own doing may have ended since the booking: a planned event at a business that is no longer theirs is called off at the moment
+        /// it was found, by the notice that gives, so selling a business is never a way to a full refund. A pass over the planned events, once a day.
+        /// </summary>
+        public static void Watch(PartyFile f, IPartyWorld w)
+        {
+            List<StaffHand> hands = null;
+            int now = w.Now;
+            for (int i = 0; i < f.Events.Count; i++)
+            {
+                StaffEvent e = f.Events[i];
+                if (e.State != StaffEventState.Planned)
+                {
+                    continue;
+                }
+                hands = hands ?? new List<StaffHand>(16);
+                if (w.Staff(e.Place, hands) < 0)
+                {
+                    Withdraw(f, w, e, now, "reallife_party_note_event_off_gone");
+                }
+            }
         }
 
         /// <summary>A business's manager is told to hold an event every so many days (0: no more). No money moves here.</summary>
@@ -207,14 +256,14 @@ namespace RealLifeOverhaul.Parties
             }
         }
 
-        // The day of the newest event at a business that stands (planned, under way or held), or the day given with none.
+        // The day of the newest event at a business that stands (planned, under way, held or held for nobody), or the day given with none.
         private static int LastAt(PartyFile f, string place, int none)
         {
             int last = none;
             for (int i = 0; i < f.Events.Count; i++)
             {
                 StaffEvent e = f.Events[i];
-                if (e.Place == place && e.State != StaffEventState.Cancelled && e.State != StaffEventState.Empty && e.Day > last)
+                if (e.Place == place && e.State != StaffEventState.Cancelled && e.Day > last)
                 {
                     last = e.Day;
                 }
@@ -345,11 +394,11 @@ namespace RealLifeOverhaul.Parties
                 {
                     if (off >= 0 && e.Start >= off)
                     {
-                        CallOff(f, w, e, "reallife_party_note_event_off_while", StaffEventState.Cancelled);
+                        Withdraw(f, w, e, off, "reallife_party_note_event_off_while");   // the player's own doing, at the hour it was done
                     }
                     else
                     {
-                        Begin(f, w, e);
+                        Begin(f, w, e, now);
                     }
                     changed = true;
                 }
@@ -366,16 +415,38 @@ namespace RealLifeOverhaul.Parties
             return changed;
         }
 
-        private static void Begin(PartyFile f, IPartyWorld w, StaffEvent e)
+        // Whether one of the staff on the business now is one the event was booked for (an event from an older save knows no list: then everybody is).
+        private static bool Booked(StaffEvent e, StaffHand hand)
+        {
+            return e.Crew.Count == 0 || e.Crew.Contains(hand.Id);
+        }
+
+        /// <summary>
+        /// The event's hour has come. It begins only within <see cref="PartyCatalogue.EventLateMinutes"/> of its start: the clock's look is once a second, so only a time skip
+        /// (a party, a job, a night's sleep) or a load goes past that, and an event whose hours passed that way was never held, and no closure is made for it after the fact:
+        /// it is called off with everything back. A business no longer the player's is their doing, called off by the notice at this moment. Of those the event was booked for,
+        /// the ones who have left the staff are not fed: their heads come back in full; with none left it does nothing and says so.
+        /// </summary>
+        private static void Begin(PartyFile f, IPartyWorld w, StaffEvent e, int now)
         {
             var hands = new List<StaffHand>(16);
             int heads = w.Staff(e.Place, hands);
             if (heads < 0)
             {
-                CallOff(f, w, e, "reallife_party_note_event_off_gone", StaffEventState.Cancelled);
+                Withdraw(f, w, e, now, "reallife_party_note_event_off_gone");
                 return;
             }
-            if (heads == 0)
+            if (now - e.Start > PartyCatalogue.EventLateMinutes)
+            {
+                CallOff(f, w, e, "reallife_party_note_event_off_passed", StaffEventState.Cancelled);
+                return;
+            }
+            int staying = 0;
+            for (int i = 0; i < hands.Count; i++)
+            {
+                staying += Booked(e, hands[i]) ? 1 : 0;
+            }
+            if (staying == 0)
             {
                 CallOff(f, w, e, "reallife_party_note_event_empty", StaffEventState.Empty);
                 return;
@@ -386,16 +457,34 @@ namespace RealLifeOverhaul.Parties
                 CallOff(f, w, e, "reallife_party_note_event_off_open", StaffEventState.Cancelled);
                 return;
             }
+            int gone = e.Crew.Count > 0 ? e.Crew.Count - staying : 0;
+            if (gone > 0 && e.Heads > 0)
+            {
+                int back = Math.Min(e.Paid, e.Paid / e.Heads * gone);
+                if (back > 0)
+                {
+                    w.Refund(back, StaffKey, e.Place);
+                }
+                e.Paid -= back;
+                w.Tell(PartyTone.Info, "reallife_party_note_event_short", "business", e.Name, "count", gone.ToString(), "back", w.Cash(back));
+            }
             e.Shut = shut;
             e.State = StaffEventState.Running;
         }
 
+        // The event's end: each of those it was booked for, still on the staff and able to come, gets their share. A business sold while it ran leaves nobody to count (the
+        // event was held and stays paid); an event nobody could come to gives the money back and says so.
         private static void Settle(PartyFile f, IPartyWorld w, StaffEvent e)
         {
             var hands = new List<StaffHand>(16);
-            int heads = w.Staff(e.Place, hands), day = w.Day, came = 0;
+            int heads = w.Staff(e.Place, hands), day = w.Day, came = 0, counted = 0;
             for (int i = 0; i < hands.Count && heads > 0; i++)
             {
+                if (!Booked(e, hands[i]))
+                {
+                    continue;
+                }
+                counted++;
                 if (Comes(f.Seed, e.Id, e.Shut, hands[i]))
                 {
                     came++;
@@ -403,9 +492,19 @@ namespace RealLifeOverhaul.Parties
                 }
             }
             e.Came = came;
-            e.State = came > 0 ? StaffEventState.Held : StaffEventState.Empty;
-            w.Tell(came > 0 ? PartyTone.Good : PartyTone.Warn, came > 0 ? "reallife_party_note_event_held" : "reallife_party_note_event_nobody", "business", e.Name,
-                "count", came.ToString(), "staff", Math.Max(0, heads).ToString(), "hours", e.Shut.ToString());
+            if (heads < 0)
+            {
+                e.State = StaffEventState.Held;
+                w.Tell(PartyTone.Warn, "reallife_party_note_event_sold", "business", e.Name);
+                return;
+            }
+            if (came > 0)
+            {
+                e.State = StaffEventState.Held;
+                w.Tell(PartyTone.Good, "reallife_party_note_event_held", "business", e.Name, "count", came.ToString(), "staff", counted.ToString(), "hours", e.Shut.ToString());
+                return;
+            }
+            CallOff(f, w, e, "reallife_party_note_event_nobody", StaffEventState.Empty, counted);
         }
 
         /// <summary>Keeps the events bounded: every one still to come, and the newest that are over.</summary>
@@ -432,7 +531,8 @@ namespace RealLifeOverhaul.Parties
         /// the player's staff do, and an outlet whose time has come (every <see cref="PartyCatalogue.RivalEveryDays"/> days
         /// and a few more, by its own draw) holds a staff event of a drawn kind, paid from its tycoon's fortune, lifting its
         /// crew's standing by the very rule the player's is lifted by (<see cref="LiftOne"/>). An outlet whose tycoon cannot
-        /// pay holds none. Returns what was paid. Read from the files only: the same day gives the same on every machine.
+        /// pay out of the worth above its floor (<c>RivalRules.At(StartWorth, level)</c>, the least the rivals' day keeps a fortune at) holds none. Returns what was
+        /// paid. Read from the files only: the same day gives the same on every machine.
         /// </summary>
         public static long RivalDay(PartyFile f, RivalFile rivals, int day, int level)
         {
@@ -459,7 +559,7 @@ namespace RealLifeOverhaul.Parties
                 if (mark < 0)
                 {
                     RivalMove move = rivals.Move(o.Move);
-                    mark = move != null ? move.Land : day;
+                    mark = f.Mark(key, move != null ? move.Land : day);   // counted from its landing, or from the day it was first seen with no landing kept: saved, so it is a day to count from
                 }
                 int gap = PartyCatalogue.RivalEveryDays + PartyRules.Roll(f.Seed, PartyRules.PurposeRivalWhen, PartyRules.Hash(key), mark) * PartyCatalogue.RivalSpreadDays / 1000;
                 if (day - mark < gap)
@@ -470,9 +570,9 @@ namespace RealLifeOverhaul.Parties
                 StaffEventKind kind = draw < PartyCatalogue.RivalLunch ? StaffEventKind.Lunch
                     : draw < PartyCatalogue.RivalLunch + PartyCatalogue.RivalEvening ? StaffEventKind.EveningOut : StaffEventKind.TeamDay;
                 int cost = Cost(kind, level, o.Crew.Count);
-                if (t.Worth < cost)
+                if (t.Worth - RivalRules.At(t.Def.StartWorth, level) < cost)
                 {
-                    continue;
+                    continue;   // only from worth above the floor the rivals' own growth lifts a fortune back to every day: money under it would come straight back
                 }
                 t.Worth -= cost;
                 all += cost;
@@ -514,6 +614,13 @@ namespace RealLifeOverhaul.Parties
         // Bounded: events of outlets that closed go, with their crews' lifts, then the oldest that is not its outlet's newest.
         private static void TrimRivals(PartyFile f, RivalFile rivals)
         {
+            for (int i = f.Marks.Count - 1; i >= 0; i--)
+            {
+                if (!Stands(rivals, f.Marks[i].Outlet))
+                {
+                    f.Marks.RemoveAt(i);
+                }
+            }
             for (int i = f.Rivals.Count - 1; i >= 0; i--)
             {
                 if (!Stands(rivals, f.Rivals[i].Outlet))

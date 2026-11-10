@@ -167,6 +167,7 @@ namespace RealLifeOverhaul.Parties
             facts.Name = venue.Name;
             facts.Own = reg != null && GoingPublic.Mine(reg);
             facts.Open = OpenThrough(reg, start, minutes);
+            facts.Made = facts.Own && !facts.Open && !ClosedByTheMod(reg);
             facts.Sqm = venue.Building.building != null ? BuildingHelper.GetBuildingSquareMeters(venue.Building.building.Address) : 0;
             facts.District = DistrictOf(GameRegistrations.District(reg));
         }
@@ -195,6 +196,12 @@ namespace RealLifeOverhaul.Parties
                 return true;
             }
             return !reg.temporarilyClosed && OpenHours(reg, start, minutes) == HoursCovered(start, minutes);
+        }
+
+        // The mod keeps a closure of its own on a business (business pressure's issues, the utilities, a staff event): what it shut is not the owner's doing.
+        private static bool ClosedByTheMod(BuildingRegistration reg)
+        {
+            return reg.temporarilyClosed && BusinessState.Loaded && BusinessState.ClosureAt(BusinessGame.Place(reg)) >= 0;
         }
 
         private static int HoursCovered(int start, int minutes) => (start + Math.Max(1, minutes) - 1) / 60 - start / 60 + 1;
@@ -237,9 +244,9 @@ namespace RealLifeOverhaul.Parties
             return reg != null && GameRegistrations.BuildingType(reg) == Residential ? reg : null;
         }
 
-        public HomeFacts Home()
+        public HomeFacts Home(string street, int number)
         {
-            BuildingRegistration home = HomeTidy.Home();
+            BuildingRegistration home = HomeAt(street, number) ?? HomeTidy.Home();
             return new HomeFacts { Tidy = home != null ? Mathf.RoundToInt(HomeTidy.ReadOf(home)) : -1, Dark = HomeTidy.Dark(home), Dry = HomeTidy.Dry(home) };
         }
 
@@ -275,9 +282,9 @@ namespace RealLifeOverhaul.Parties
             }
         }
 
-        public void Mess(int points)
+        public void Mess(int points, string street, int number)
         {
-            BuildingRegistration home = HomeTidy.Home();
+            BuildingRegistration home = HomeAt(street, number) ?? HomeTidy.Home();
             if (home != null && points > 0)
             {
                 HomeTidy.Change(home, -points);
