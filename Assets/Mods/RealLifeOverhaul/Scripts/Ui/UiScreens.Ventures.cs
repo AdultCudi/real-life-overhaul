@@ -110,6 +110,25 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_shop_was_label", "reallife_ui_shop_week", "reallife_ui_shop_you_answered"
                 // KEYS END
             }).Switch(UiScreenSwitches.Ventures));
+            screens.Add(new UiScreenDef("giving", UiTemplate.AppWindow, "VentScreen", new[]
+            {
+                // KEYS BEGIN
+                "reallife_giving_app", "reallife_giving_charity_0_about", "reallife_giving_charity_0_name", "reallife_giving_charity_1_about",
+                "reallife_giving_charity_1_name", "reallife_giving_charity_2_about", "reallife_giving_charity_2_name", "reallife_giving_fig_deducted",
+                "reallife_giving_fig_given", "reallife_giving_fig_spare", "reallife_giving_give", "reallife_giving_item_monthly",
+                "reallife_giving_item_sub", "reallife_giving_loan_closed", "reallife_giving_loan_late", "reallife_giving_loan_off_chip",
+                "reallife_giving_loan_open", "reallife_giving_loan_repaid_chip", "reallife_giving_loan_sub", "reallife_giving_loans_how",
+                "reallife_giving_loans_none", "reallife_giving_monthly", "reallife_giving_off_body", "reallife_giving_off_title",
+                "reallife_giving_row_cap", "reallife_giving_row_cap_share", "reallife_giving_row_deducted", "reallife_giving_row_gifts",
+                "reallife_giving_row_held", "reallife_giving_row_income", "reallife_giving_row_last", "reallife_giving_row_last_value",
+                "reallife_giving_row_neighbours", "reallife_giving_row_neighbours_value", "reallife_giving_row_paid_value", "reallife_giving_row_rivals",
+                "reallife_giving_row_yours", "reallife_giving_sec_charities", "reallife_giving_sec_city", "reallife_giving_sec_how_loans",
+                "reallife_giving_sec_loans", "reallife_giving_sec_tax", "reallife_giving_stepper", "reallife_giving_stop_monthly",
+                "reallife_giving_tab_charities", "reallife_giving_tab_loans", "reallife_giving_tab_year", "reallife_giving_tax_note",
+                "reallife_giving_why_people", "reallife_giving_why_session", "reallife_ui_prompt_back", "reallife_ui_prompt_move",
+                "reallife_ui_prompt_select"
+                // KEYS END
+            }).Switch(UiScreenSwitches.Ventures));
         }
     }
 }

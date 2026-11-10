@@ -18,7 +18,7 @@ namespace RealLifeOverhaul.Ui
             "Persona", "Contacts", "MyEmployees", "BizMan", "EconoView", "VoogleMaps", "MarketInsider", "Rivals",
             "RealLifePlanner", "RealLifeFlare", "RealLifeCalendar", "RealLifeCamera", "RealLifeGallery", "RealLifeNewsstand", "RealLifeLedger",
             "RealLifeCareer", "RealLifeCampus", "RealLifeOpenRoles", "RealLifeMarketplace",
-            "RealLifeFinance", "RealLifeBanks", "RealLifeOwnBank", "RealLifeStocks", "RealLifeEconomy",
+            "RealLifeFinance", "RealLifeBanks", "RealLifeOwnBank", "RealLifeStocks", "RealLifeEconomy", "RealLifeGiving",
             "RealLifeCompany", "RealLifeBrands", "RealLifeServices", "RealLifeVentures", "RealLifeOnline", "RealLifeEstate", "RealLifeDealer",
             "RealLifeBuilders", "RealLifeTechSector", "RealLifeOverhaulUtilities",
             "RealLifeGuide", "RealLifeSettings", "RealLifeStaff"

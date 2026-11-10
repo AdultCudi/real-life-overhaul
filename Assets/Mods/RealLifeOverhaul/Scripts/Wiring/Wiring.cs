@@ -95,6 +95,7 @@ namespace RealLifeOverhaul
             Step("the construction game", ConstructionLinks.Connect);   // after the paper's and the credit side's: its piece and its account go on top of theirs
             Step("the landmarks", LandmarkLinks.Connect);   // after the construction game's: its piece of the paper goes on top of it
             Step("the schools", SchoolLinks.Connect);   // after the landmarks': its piece of the paper goes on top of theirs
+            Step("giving", GivingLinks.Connect);   // after the schools' and the rivals': its piece of the paper goes on top of theirs
             Step("Uptown's shops of the mod's own kinds", UptownShopsLinks.Connect);   // wraps nothing
             Step("the living population", PopulationLinks.Connect);   // after the business features: their levers become what people hear of a business
             Step("Flare in the city", FlareCityLinks.Connect);   // after the living population: its residents follow, hear and go where they heard good things
@@ -117,6 +118,7 @@ namespace RealLifeOverhaul
             Step("Flare in the city", FlareCityLinks.Disconnect);
             Step("the living population", PopulationLinks.Disconnect);
             Step("Uptown's shops of the mod's own kinds", UptownShopsLinks.Disconnect);
+            Step("giving", GivingLinks.Disconnect);   // before the schools': what it wrapped of the paper goes back first
             Step("the schools", SchoolLinks.Disconnect);   // first: what it wrapped of the paper goes back before the landmarks'
             Step("the landmarks", LandmarkLinks.Disconnect);   // first: what it wrapped of the paper goes back before the construction game's
             Step("the construction game", ConstructionLinks.Disconnect);   // first: what it wrapped of the paper and the accounts goes back before the others take theirs off

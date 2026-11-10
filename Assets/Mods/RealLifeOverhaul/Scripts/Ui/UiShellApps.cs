@@ -170,6 +170,7 @@ namespace RealLifeOverhaul.Ui
                 case "RealLifeOwnBank": return UiIcon.PiggyBank;
                 case "RealLifeStocks": return UiIcon.ChartLineUp;
                 case "RealLifeEconomy": return UiIcon.Globe;
+                case "RealLifeGiving": return UiIcon.Heart;
                 case "RealLifeCompany": return UiIcon.Presentation;
                 case "RealLifeBrands": return UiIcon.Trophy;
                 case "RealLifeServices": return UiIcon.Handshake;

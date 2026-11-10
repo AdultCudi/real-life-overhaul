@@ -29,6 +29,8 @@ namespace RealLifeOverhaul.Rivals
     public static class RivalBridges
     {
         // ---- what the city is
+        /// <summary>A line on what a tycoon (by index) has given to the city's charities this year; empty for nothing (Giving). Default: none.</summary>
+        public static Func<int, string> GivingLine;
         /// <summary>The player's net worth as the Finance app shows it. Default: the game's own figure.</summary>
         public static Func<long> Worth;
         /// <summary>The city's cycle: 0 boom, 1 steady, 2 slowdown, 3 recession (Economy/City). Default: steady.</summary>
@@ -110,6 +112,7 @@ namespace RealLifeOverhaul.Rivals
         public static void Reset()
         {
             Seats = null;
+            GivingLine = null;
             LeaseTrend = null;
             LeaseRenewed = null;
             Worth = null;

@@ -21,6 +21,7 @@ namespace RealLifeOverhaul.Meta
             RegisterEconomy();
             Roommates.RoommateGuide.Register();
             Household.HouseholdGuide.Register();
+            Giving.GivingGuide.Register();
             Permadeath.PermadeathGuide.Register();
             Faults.FaultGuide.Register();
             Texts.TextsGuide.Register();

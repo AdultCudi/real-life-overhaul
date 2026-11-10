@@ -96,7 +96,7 @@ namespace RealLifeOverhaul.Economy
             "consolidation_paid_out", "consolidation_paid_off", "credit_drawn", "overdraft_cover", "finance_advance", "finance_returned", "private_loan", "private_loan_taken",
             "repossession_surplus",
             // money lent and paid back, or borrowed from a friend
-            "family_loan", "social_loan", "social_loan_back", "roommate_loan", "roommate_loan_back", "loan_friend", "social_borrowed", "repaid",
+            "family_loan", "giving_loan", "giving_loan_back", "social_loan", "social_loan_back", "roommate_loan", "roommate_loan_back", "loan_friend", "social_borrowed", "repaid",
             // a deposit held and given back
             "util_deposit", "util_deposit_back", "civic_office_deposit", "civic_office_deposit_back", "estate_hire_deposit",
             // a hotel or a school bought or sold
