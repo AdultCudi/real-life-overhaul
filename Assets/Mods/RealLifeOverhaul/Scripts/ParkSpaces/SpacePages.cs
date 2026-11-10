@@ -96,6 +96,19 @@ namespace RealLifeOverhaul.Ui
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
+        /// <summary>Every key the row and the page label with: the Property screen's entry names them, so the texts checks see each one translated.</summary>
+        public static readonly string[] Keys =
+        {
+            "reallife_co_back", "reallife_ui_estate_pair", "reallife_econ_day", "reallife_space_kind", "reallife_space_number", "reallife_space_page_title", "reallife_space_row_free",
+            "reallife_space_row_full", "reallife_space_row_held", "reallife_space_row_yours", "reallife_space_fig_price", "reallife_space_fig_rent", "reallife_space_fig_fee",
+            "reallife_space_fig_spaces", "reallife_space_sec_take", "reallife_space_sec_holders", "reallife_space_sec_mine", "reallife_space_l_seller", "reallife_space_l_you",
+            "reallife_space_l_rivals", "reallife_space_l_city", "reallife_space_l_free", "reallife_space_l_hours", "reallife_space_what", "reallife_space_what_yours",
+            "reallife_space_owner_you", "reallife_space_owner_landlord", "reallife_space_tenure_owned", "reallife_space_tenure_rented", "reallife_space_tenure_ending",
+            "reallife_space_btn_buy", "reallife_space_btn_rent", "reallife_space_btn_sell", "reallife_space_btn_end", "reallife_space_btn_keep", "reallife_space_refuse_off",
+            "reallife_space_refuse_session", "reallife_space_refuse_no_park", "reallife_space_refuse_full", "reallife_space_refuse_limit", "reallife_space_refuse_park_limit",
+            "reallife_space_refuse_cash", "reallife_space_refuse_not_held", "reallife_space_refuse_own_building", "reallife_space_refuse_rented", "reallife_space_refuse_owned"
+        };
+
         /// <summary>A car park's row on the Market tab, in that table's columns: the building, the price, no condition, no rent a month, its state.</summary>
         public static UiDataRow MarketRow(UiWords t, SpaceState s, SpacePark p, int day, Func<long, string> money)
         {

@@ -308,15 +308,16 @@ namespace RealLifeOverhaul.ParkSpaces
             {
                 return;
             }
+            int most = 24 * SpaceCatalogue.CapacityMost;   // a day of every space of the largest car park: more than that is never owed
             int at = s.HourPark.IndexOf(park);
             if (at < 0)
             {
                 s.HourPark.Add(park);
-                s.HourCount.Add(hours);
+                s.HourCount.Add(Math.Min(hours, most));
             }
             else
             {
-                s.HourCount[at] = Math.Min(s.HourCount[at] + hours, 24 * SpaceCatalogue.CapacityMost);
+                s.HourCount[at] = Math.Min(s.HourCount[at], most) + Math.Min(hours, most - Math.Min(s.HourCount[at], most));
             }
         }
 

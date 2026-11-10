@@ -9,12 +9,12 @@ internal static partial class UiSamples
     public static readonly string[] EstateStates =
     {
         "roll", "roll_twenty", "roll_first", "roll_empty", "unit_late", "unit_request", "unit_empty", "tenants", "works", "market", "building", "listing", "works_page", "call", "applicant", "agency", "agency_closed", "hotel",
-        "hire", "rents", "rents_new", "off"
+        "hire", "rents", "rents_new", "space", "space_full", "off"
     };
 
     public static readonly string[] DealerStates =
     {
-        "stock", "stock_empty", "stock_full", "market", "used", "auction", "auction_new", "offers", "deal", "finance", "growth", "event", "reports", "reports_new", "lots", "yard", "off"
+        "stock", "stock_empty", "stock_full", "market", "suppliers", "used", "auction", "auction_new", "offers", "deal", "finance", "growth", "event", "reports", "reports_new", "lots", "yard", "off"
     };
 
     private static UiPrompt[] EstatePrompts(UiWords t) => new[]
@@ -246,6 +246,11 @@ internal static partial class UiSamples
             case "hire":
                 m.Tab = 6;
                 Hire(t, m, runs, w);
+                break;
+            case "space":
+            case "space_full":
+                m.Tab = 3;
+                SpaceSample(t, m, runs, state == "space_full");   // a building's car park (UiSamples.BizAsks.cs)
                 break;
             default:
                 EstateDetail(t, m, runs, w, state);

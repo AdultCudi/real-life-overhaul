@@ -7,10 +7,24 @@ namespace RealLifeOverhaul.Ui
         // Property and the Car Showroom: two apps on one set of page shapes (EstateFace), each with its own source and its own switch.
         static partial void AddEstate(List<UiScreenDef> screens)
         {
-            screens.Add(new UiScreenDef("estate", UiTemplate.AppWindow, "EstateScreen", EstateKeys())
+            screens.Add(new UiScreenDef("estate", UiTemplate.AppWindow, "EstateScreen", With(EstateKeys(), SpacePages.Keys))   // and a building's car park (ParkSpaces)
                 .Switch(UiScreenSwitches.Estate));
-            screens.Add(new UiScreenDef("dealer", UiTemplate.AppWindow, "EstateScreen", DealerKeys())
+            screens.Add(new UiScreenDef("dealer", UiTemplate.AppWindow, "EstateScreen", With(DealerKeys(), SupplyPages.Keys))   // and the suppliers (Economy/Dealer/Supply)
                 .Switch(UiScreenSwitches.Estate));
+        }
+
+        // A screen's keys with those of a page another feature adds to it, each once.
+        private static string[] With(string[] keys, string[] more)
+        {
+            var all = new List<string>(keys);
+            for (int i = 0; i < more.Length; i++)
+            {
+                if (!all.Contains(more[i]))
+                {
+                    all.Add(more[i]);
+                }
+            }
+            return all.ToArray();
         }
 
         // Every label the Property screen writes (EstateLive asks for these and the keys of the old app's words it reuses).

@@ -112,6 +112,18 @@ namespace RealLifeOverhaul.Ui
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
+        /// <summary>Every key the page labels with: the Car Showroom screen's entry names them, so the texts checks see each one translated.</summary>
+        public static readonly string[] Keys =
+        {
+            "reallife_ui_dealer_back", "reallife_carsup_title", "reallife_carsup_sub", "reallife_carsup_kept_terms", "reallife_carsup_sec_suppliers", "reallife_carsup_sec_standing",
+            "reallife_carsup_sec_rivals", "reallife_carsup_l_showroom", "reallife_carsup_l_supplier", "reallife_carsup_l_delivery", "reallife_carsup_has",
+            "reallife_carsup_standing_managed", "reallife_carsup_standing_unmanaged", "reallife_carsup_fig_on_order", "reallife_carsup_price_same", "reallife_carsup_price_under",
+            "reallife_carsup_price_over", "reallife_carsup_delivery_now", "reallife_carsup_delivery_days", "reallife_carsup_terms", "reallife_carsup_rivals_part",
+            "reallife_carsup_name_0", "reallife_carsup_name_1", "reallife_carsup_name_2", "reallife_carsup_about_0", "reallife_carsup_about_1", "reallife_carsup_about_2",
+            "reallife_carsup_link", "reallife_dealer_carkind_1", "reallife_dealer_carkind_2", "reallife_dealer_carkind_3", "reallife_dealer_carkind_4", "reallife_dealer_carkind_5",
+            "reallife_dealer_carkind_6"
+        };
+
         public static void Fill(EstateModel m, EstateRuns runs, UiWords t, DealerState s, CarSupplyState supply, IReadOnlyList<MarketModel> models, string yardPlace,
             Func<DealerYard, bool> managed, ISupplyActions act)
         {
@@ -154,8 +166,9 @@ namespace RealLifeOverhaul.Ui
                         keep > 0, keep < CarSupplyCatalogue.KeepMost, () => act.SetKeep(place, kind, keep - 1), () => act.SetKeep(place, kind, keep + 1)));
                 }
                 bool has = managed != null && managed(y);
-                order.Add(UiFactLine.Say(has ? t("reallife_carsup_standing_managed", "The showroom's manager orders what is missing each morning.")
-                    : t("reallife_carsup_standing_unmanaged", "No manager orders stock here. Appoint one with Stock orders in the Company app, or buy by hand."), has ? UiRole.None : UiRole.WarnText));
+                string who = has ? t("reallife_carsup_standing_managed", "The showroom's manager orders what is missing each morning.")
+                    : t("reallife_carsup_standing_unmanaged", "No manager orders stock here. Appoint one with Stock orders in the Company app, or buy by hand.");
+                order.Add(UiFactLine.Say(who, has ? UiRole.None : UiRole.WarnText));
                 right.Add(new UiFactCardModel { Title = t("reallife_carsup_sec_standing", "Standing order"), Heading = true, Lines = order.ToArray() });
             }
             var others = new List<UiFactLine>(CarSupplyCatalogue.Kinds);
