@@ -205,10 +205,6 @@ namespace RealLifeOverhaul.Schemes
             bool felony = e.B != 0;
             SchemeBridges.Exposed?.Invoke(felony);
             SchemeBridges.Story?.Invoke("reallife_scheme_news_own_" + kind.ToString().ToLowerInvariant());
-            if (felony)
-            {
-                SchemeBridges.Trended?.Invoke();
-            }
             if (number > 0)
             {
                 q.Case = number;

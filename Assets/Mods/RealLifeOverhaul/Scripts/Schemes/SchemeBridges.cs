@@ -116,9 +116,6 @@ namespace RealLifeOverhaul.Schemes
         /// <summary>What the wallet must keep for the investors of the player's firms. Default: nothing.</summary>
         public static Func<long> Floor;
 
-        /// <summary>Social media hears of a charge as it hears of an arrest. Default: nothing.</summary>
-        public static Action Trended;
-
         /// <summary>A piece for the paper, by locale key. Default: nothing printed.</summary>
         public static Action<string> Story;
 
@@ -162,7 +159,6 @@ namespace RealLifeOverhaul.Schemes
             RivalBarred = null;
             Worth = null;
             Floor = null;
-            Trended = null;
             Story = null;
             Till = null;
             Letter = null;

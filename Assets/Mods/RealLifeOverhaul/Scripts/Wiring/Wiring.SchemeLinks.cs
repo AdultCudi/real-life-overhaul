@@ -5,7 +5,6 @@ using Entities;
 using Localizor;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Fame;
-using RealLifeOverhaul.Flare;
 using RealLifeOverhaul.GameUi;
 using RealLifeOverhaul.Networking;
 using RealLifeOverhaul.Population;
@@ -77,7 +76,6 @@ namespace RealLifeOverhaul
                 SchemeBridges.RivalBarred = RivalBarred;
                 SchemeBridges.Worth = Books.NetWorth;
                 SchemeBridges.Floor = () => Tech.TechDirector.Instance != null ? Tech.TechDirector.Instance.FloorNow : 0L;
-                SchemeBridges.Trended = () => FlareDirector.Instance?.Happened(FlareSource.Arrested, -1, null, null, 0);
                 SchemeBridges.Story = Paper.Print;
                 SchemeBridges.Till = Till;
                 SchemeBridges.Letter = (key, data) => LegalPhone.Send(key, data);
