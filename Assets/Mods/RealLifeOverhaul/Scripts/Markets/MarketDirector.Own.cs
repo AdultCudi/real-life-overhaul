@@ -495,6 +495,9 @@ namespace RealLifeOverhaul.Markets
                 case MarketNewsKind.Split:
                     Queue(NotificationType.Info, "reallife_mkt_note_split", "name", k.Name, "ratio", news.A.ToString(), "day", news.B.ToString());
                     break;
+                case MarketNewsKind.Reverse:
+                    Queue(NotificationType.Info, "reallife_stx_note_reverse", "name", k.Name, "ratio", news.A.ToString(), "day", news.B.ToString());
+                    break;
             }
             return true;
         }

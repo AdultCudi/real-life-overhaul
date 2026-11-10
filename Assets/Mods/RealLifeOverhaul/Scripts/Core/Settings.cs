@@ -178,6 +178,7 @@
         public const string MarketsDerivativesId = "markets_derivatives";
         public const string MarketsBuildersId = "markets_builders";              // the city's builders on the market, building materials and a project's hedge
         public const string MarketsHoldingId = "markets_holding";
+        public const string MarketsExtrasId = "markets_extras";                  // splits by a board's own level, the index fund, block trades, a bank on the market
         public const string VenturesLevelId = "ventures_level";
         public const string EconomyCompanyId = "economy_company";
         public const string EconomyCompanyLevelId = "economy_company_level";
@@ -557,6 +558,7 @@
         public static bool MarketsReinvest = true;       // the share of each dividend a holding is set to put back is bought into the same company at the next open
         public static bool MarketsDerivatives = true;    // the exchange prices raw materials; futures and options on the Futures tab
         public static bool MarketsBuilders = true;       // the rival builders listed and moved by the construction game's news; a project's materials hedged
+        public static bool MarketsExtras = true;         // the stock market's extras: seeded and reverse splits, the founder's split, the index fund, block trades, a bank of the player's listed
         public static int MarketsHolding = 0;            // the most of one company the player may hold: 0 a tenth (the old rule), 1 a quarter, 2 half, 3 all of it (MarketCatalogue.HoldingCapBp)
         public static int VenturesLevel = 1;             // how demanding investors are: 0 Relaxed, 1 Standard, 2 Realistic, 3 Hardcore
         public static bool EconomyCompany = true;        // running a business (off: none of it runs and nothing is charged)
@@ -992,6 +994,7 @@
             MarketsDerivatives = Bool(modId, MarketsDerivativesId, MarketsDerivatives);
             MarketsBuilders = Bool(modId, MarketsBuildersId, MarketsBuilders);
             MarketsHolding = Int(modId, MarketsHoldingId, MarketsHolding);
+            MarketsExtras = Bool(modId, MarketsExtrasId, MarketsExtras);
             VenturesLevel = Int(modId, VenturesLevelId, VenturesLevel);
             EconomyCompany = Bool(modId, EconomyCompanyId, EconomyCompany);
             EconomyCompanyLevel = Int(modId, EconomyCompanyLevelId, EconomyCompanyLevel);

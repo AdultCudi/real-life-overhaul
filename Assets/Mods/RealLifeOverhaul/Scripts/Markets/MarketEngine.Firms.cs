@@ -207,7 +207,7 @@ namespace RealLifeOverhaul.Markets
             for (int i = 0; i < State.Stocks.Count; i++)
             {
                 Stock s = State.Stocks[i];
-                if (s.Listed && s.Own != null && s.Own.Firm && Mine(s) && !keep.Contains(s.Own.Place))
+                if (s.Listed && s.Own != null && s.Own.Firm && Mine(s) && !keep.Contains(s.Own.Place) && !BankFloatRules.IsBank(s.Own.Place))   // the bank is no tech firm: it ends with the bank
                 {
                     Leave(s, State.Day, GoneReason.Delisted, 0, MarketNewsKind.Delisted);
                     left++;

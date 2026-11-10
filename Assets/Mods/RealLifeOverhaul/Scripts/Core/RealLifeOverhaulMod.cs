@@ -963,6 +963,8 @@ namespace RealLifeOverhaul
                     v => Settings.MarketsDerivatives = v)
                 .AddToggle(Settings.MarketsBuildersId, "reallife_mkt_builders_opt", Settings.MarketsBuilders,
                     v => Settings.MarketsBuilders = v)
+                .AddToggle(Settings.MarketsExtrasId, "reallife_stx_opt", Settings.MarketsExtras,
+                    v => Settings.MarketsExtras = v)
                 .AddDropdown(Settings.MarketsHoldingId, "reallife_mkt_opt_holding",
                     new[] { "reallife_mkt_opt_holding_tenth", "reallife_mkt_opt_holding_quarter", "reallife_mkt_opt_holding_half", "reallife_mkt_opt_holding_all" }, Settings.MarketsHolding,
                     v => Settings.MarketsHolding = v)

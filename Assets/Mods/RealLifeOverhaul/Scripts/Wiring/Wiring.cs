@@ -96,6 +96,7 @@ namespace RealLifeOverhaul
             Step("the landmarks", LandmarkLinks.Connect);   // after the construction game's: its piece of the paper goes on top of it
             Step("the schools", SchoolLinks.Connect);   // after the landmarks': its piece of the paper goes on top of theirs
             Step("giving", GivingLinks.Connect);   // after the schools' and the rivals': its piece of the paper goes on top of theirs
+            Step("the stock market's extras", StockExtrasLinks.Connect);   // after the listing's and the rivals': it wraps the company's books and adds to the rivals' page
             Step("Uptown's shops of the mod's own kinds", UptownShopsLinks.Connect);   // wraps nothing
             Step("the living population", PopulationLinks.Connect);   // after the business features: their levers become what people hear of a business
             Step("Flare in the city", FlareCityLinks.Connect);   // after the living population: its residents follow, hear and go where they heard good things
@@ -118,6 +119,7 @@ namespace RealLifeOverhaul
             Step("Flare in the city", FlareCityLinks.Disconnect);
             Step("the living population", PopulationLinks.Disconnect);
             Step("Uptown's shops of the mod's own kinds", UptownShopsLinks.Disconnect);
+            Step("the stock market's extras", StockExtrasLinks.Disconnect);   // first: the books it wrapped go back before the listing's own
             Step("giving", GivingLinks.Disconnect);   // before the schools': what it wrapped of the paper goes back first
             Step("the schools", SchoolLinks.Disconnect);   // first: what it wrapped of the paper goes back before the landmarks'
             Step("the landmarks", LandmarkLinks.Disconnect);   // first: what it wrapped of the paper goes back before the construction game's

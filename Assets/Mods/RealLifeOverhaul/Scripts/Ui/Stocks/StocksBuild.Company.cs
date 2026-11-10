@@ -78,6 +78,14 @@ namespace RealLifeOverhaul.Ui
             c.Order.Place = c.Order.Buying ? words("reallife_stk_place_buy", "Place buy order") : words("reallife_stk_place_sell", "Place sell order");
             Toolbar(c, state, v, words);
             c.Signals = StocksSignals.Read(c.Chart, words);
+            string split = SplitLine(state, s.Id);   // a split is said beside the chart: earlier prices are shown as they would be at today's share count
+            if (split != null)
+            {
+                var read = new StocksSignal[Math.Min(StocksSignals.Most, c.Signals.Length + 1)];
+                read[0] = new StocksSignal { Words = split, Tone = UiRole.Muted, Ind = StocksInd.Count };
+                Array.Copy(c.Signals, 0, read, 1, read.Length - 1);
+                c.Signals = read;
+            }
             c.SignalsTitle = words("reallife_stk_signals_title", "Signals");
             c.SignalsNone = words("reallife_stk_signals_none", "Add an indicator or draw a line to see what it says");
             Position(c, state, s, words);

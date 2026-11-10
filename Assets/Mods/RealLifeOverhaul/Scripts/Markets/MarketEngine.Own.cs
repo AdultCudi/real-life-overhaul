@@ -870,6 +870,10 @@ namespace RealLifeOverhaul.Markets
             double kept = (buying ? 1.0 : -1.0) * MarketCatalogue.ImpactPermanent * MarketCatalogue.ImpactTemporary * MarketTrading.DayVol(State, s) * share;
             s.Mis += kept + reading;
             s.Sent += kept + reading;
+            if (Mine(s))
+            {
+                State.Extras.Push(s.Id, kept + reading);   // the founder's own push on their company
+            }
             s.DayVolume += shares;
             s.Impact += shares;
             s.Last = s.MidCents;

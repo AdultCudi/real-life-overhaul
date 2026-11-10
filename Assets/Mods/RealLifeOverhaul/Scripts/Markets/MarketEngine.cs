@@ -472,6 +472,11 @@ namespace RealLifeOverhaul.Markets
                 BuilderEvent(e);   // MarketEngine.Builders.cs
                 return;
             }
+            if (e.Kind == MarketInputs.EventSplit)
+            {
+                SplitEvent(e);   // Extras/MarketEngine.Extras.cs
+                return;
+            }
             if (e.Kind == MarketInputs.EventTrade || e.Kind == MarketInputs.EventVolume)
             {
                 // A player's trade in a Going Public session: its lasting move of the price, or its shares.

@@ -111,7 +111,7 @@ namespace RealLifeOverhaul.Ui
             {
                 string place = firm.File.Place;
                 var card = new TechCard(_runs, TechText.T("reallife_ui_tech_exit_market"));
-                long mrr = FirmsRules.Arr(_f, place) / 12;
+                long mrr = _d.ListMonthOf(firm);   // its real takings, recurring or not: a studio's games and a consultancy's projects count
                 if (e == null || e.Stage == ListStage.None || e.Stage == ListStage.CalledOff)
                 {
                     if (e != null && e.Stage == ListStage.CalledOff)
@@ -128,7 +128,7 @@ namespace RealLifeOverhaul.Ui
                         _bankStep = Math.Max(0, Math.Min(banks.Count - 1, _bankStep));
                         int at = _bankStep, n = banks.Count;
                         card.Say(TechText.T("reallife_exit_market_start"));
-                        long fee = ExitRules.Retainer(FirmValueNow(firm));
+                        long fee = ExitRules.Retainer(_d.ListValueOf(firm));
                         card.Step(TechText.T("reallife_ui_tech_exit_bank"), TechText.Fill("reallife_exit_bank_line", "bank", banks[at], "fee", Cents(_d.Level(fee))), null, n > 1, n > 1,
                             Go(v => _bankStep = (at + n - 1) % n), Go(v => _bankStep = (at + 1) % n));
                         card.Button(TechText.T("reallife_exit_button_bankers"), UiButtonKind.Secondary, UiAction.Count, Do(() => _d.ExitBankers(place, at)));

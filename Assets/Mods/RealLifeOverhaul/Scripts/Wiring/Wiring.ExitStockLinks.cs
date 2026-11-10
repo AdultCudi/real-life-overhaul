@@ -36,11 +36,13 @@ namespace RealLifeOverhaul
                 MarketBridges.FirmDealt = Dealt;
                 MarketBridges.CompanyDealt = CompanyDealt;
                 MarketBridges.CompanyTaken = CompanyTaken;
+                ExitBridges.BooksWorth = BooksWorth;
             }
 
             internal static void Disconnect()
             {
                 StockBridges.Reset();
+                ExitBridges.BooksWorth = null;
                 MarketBridges.FirmDealt = null;
                 MarketBridges.CompanyDealt = null;
                 MarketBridges.CompanyTaken = null;
@@ -368,6 +370,15 @@ namespace RealLifeOverhaul
                             reg = all[k] != null && GoingPublic.Mine(all[k]) && all[k].HasValidAddress && MarketStore.Clean(TalentGame.Place(all[k])) == s.Own.Place ? all[k] : null;
                         }
                         e.FirmStock[found] = s.Id;
+                        if (BankFloatRules.IsBank(s.Own.Place))
+                        {
+                            // The player's bank on the market on its own: its days are the bank's own books, not a business's statements.
+                            m.BankDays(from, day, out long bankRevenue, out long bankProfit);
+                            e.FirmRev[found] = bankRevenue;
+                            e.FirmProfit[found] = bankProfit;
+                            found++;
+                            continue;
+                        }
                         if (reg != null && e.FirmDays > 0)
                         {
                             Statements(reg.Address, from, day, out long revenue, out long profit);
@@ -383,6 +394,39 @@ namespace RealLifeOverhaul
                 {
                     Fault("ExitStockLinks.Env", ex);
                     e.Firms = 0;
+                }
+            }
+
+            // What the market's own model makes of a firm's books, cents at the start's prices: the same model its stock will be priced by from its first day.
+            private static long BooksWorth(string place)
+            {
+                try
+                {
+                    MarketDirector m = MarketDirector.Instance;
+                    GameInstance save = SaveGameManager.Current;
+                    BuildingRegistration reg = TalentGame.Find(place);
+                    if (m == null || !m.Running || save == null || reg == null)
+                    {
+                        return 0L;
+                    }
+                    MarketState state = m.State;
+                    int year = Math.Max(8, state.YearDays), trade = MarketInputs.TradeOf(reg.businessTypeName);
+                    var f = new ListingFile { Stage = ListingStage.Listed, Sector = trade >= 0 ? (int)ListingSector.SectorOf(trade) : (int)MarketSector.Software, Trade = trade };
+                    BookQuarter[] books = Quarters(reg.Address, save.Day, year, out double _, out double _);
+                    for (int i = 0; i < books.Length; i++)
+                    {
+                        if (books[i].Days > 0)
+                        {
+                            f.Books.Add(books[i]);
+                        }
+                    }
+                    double worth = ListingBook.Worth(f, state.Me, save.Day, year, state.Env, 0L);
+                    return worth <= 0.0 ? 0L : (long)Math.Min(long.MaxValue / 4, worth * 100.0 * 1000.0 / Math.Max(100, state.Env.PriceLevel));
+                }
+                catch (Exception e)
+                {
+                    Fault("ExitStockLinks.BooksWorth", e);
+                    return 0L;
                 }
             }
 

@@ -308,6 +308,10 @@ namespace RealLifeOverhaul.Economy
             OwnBankRules.Day(_bank, city, day, market ? _quotes : null, _day);
             BuildingRegistration hq = OwnBankGame.Headquarters();
             OwnBankGame.BookDay(_day, hq, _bank.Name, dated ? day : Save.Day);
+            if (dated && !_bank.Test)
+            {
+                OwnBankBridges.DayBooked?.Invoke(day, _day.Income, _day.Profit);   // the bank's own books, for a listing of its own (Markets/Extras)
+            }
             if (hq == null && _warnedDay != Save.Day && (_day.Income > 0 || _day.Costs > 0))
             {
                 _warnedDay = Save.Day;
@@ -522,6 +526,22 @@ namespace RealLifeOverhaul.Economy
             OwnBankRules.PutIn(_bank, cents);
             Tell(NotificationType.Success, "reallife_ob_toast_capital_in", TabBank, "amount", OwnBankText.Money(cents), "ratio", OwnBankText.Ratio(OwnBankRules.Ratio(_bank)));
             Logger?.Info("Own bank: " + cents / 100 + " of capital put in on day " + Save.Day + "; the ratio is " + OwnBankRules.Ratio(_bank) + " thousandths.");
+            Changed();
+            return true;
+        }
+
+        /// <summary>
+        /// The money an offer of the bank's shares raised on the stock market (Markets/Extras), in cents: into its capital and its cash as capital put in is, but the
+        /// public's, so nothing leaves the player's cash. False if no bank runs.
+        /// </summary>
+        public bool PublicCapital(long cents)
+        {
+            if (!Running || _bank == null || !_bank.Running || _bank.Test || cents <= 0)
+            {
+                return false;
+            }
+            OwnBankRules.PutIn(_bank, cents);
+            Logger?.Info("Own bank: " + cents / 100 + " of capital raised from the public on day " + Save.Day + "; the ratio is " + OwnBankRules.Ratio(_bank) + " thousandths.");
             Changed();
             return true;
         }

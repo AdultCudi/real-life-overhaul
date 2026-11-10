@@ -31,6 +31,13 @@ namespace RealLifeOverhaul.Rivals
         // ---- what the city is
         /// <summary>A line on what a tycoon (by index) has given to the city's charities this year; empty for nothing (Giving). Default: none.</summary>
         public static Func<int, string> GivingLine;
+        /// <summary>What a tycoon (by index) holds on the stock market beside their holding: units of the fund, blocks, an arm they listed (Markets/Extras). Default: none.</summary>
+        public static Func<int, string> MarketLine;
+        /// <summary>
+        /// A tycoon's (by index) announced purchase of shares comes: a block of a listed company for the sum, bought through the market. True if one was
+        /// bought. Default: nothing is.
+        /// </summary>
+        public static Func<int, long, bool> Shares;
         /// <summary>The player's net worth as the Finance app shows it. Default: the game's own figure.</summary>
         public static Func<long> Worth;
         /// <summary>The city's cycle: 0 boom, 1 steady, 2 slowdown, 3 recession (Economy/City). Default: steady.</summary>
@@ -113,6 +120,8 @@ namespace RealLifeOverhaul.Rivals
         {
             Seats = null;
             GivingLine = null;
+            MarketLine = null;
+            Shares = null;
             LeaseTrend = null;
             LeaseRenewed = null;
             Worth = null;

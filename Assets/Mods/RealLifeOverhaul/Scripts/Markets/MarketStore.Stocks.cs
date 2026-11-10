@@ -267,14 +267,14 @@ namespace RealLifeOverhaul.Markets
             k.LastExDay = I(c, 43);
             k.Adv = Math.Max(1.0, F(c, 44, 1000.0));
             k.SplitDay = Math.Max(0, I(c, 45));
-            k.SplitRatio = Clamp(I(c, 46), 0, 10);
+            k.SplitRatio = Clamp(I(c, 46), -ExtrasCatalogue.RatioMost, 10);   // under nothing: so many old shares put together into one (Extras/SplitRules)
             k.BidDay = Math.Max(0, I(c, 47));
             k.BidEndDay = Math.Max(0, I(c, 48));
             k.BidCents = Math.Max(0, I(c, 49));
             k.BidderId = Math.Max(0, I(c, 50));
             k.ResultsBoostDay = I(c, 51);
             k.LowDays = Math.Max(0, I(c, 52));
-            if (k.SplitDay > 0 && k.SplitRatio < 2)
+            if (k.SplitDay > 0 && !SplitRules.Known(k.SplitRatio))
             {
                 k.SplitDay = 0;
             }

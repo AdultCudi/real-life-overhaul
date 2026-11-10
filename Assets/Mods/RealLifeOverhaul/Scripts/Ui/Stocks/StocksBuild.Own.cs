@@ -55,6 +55,10 @@ namespace RealLifeOverhaul.Ui
                 case StocksSheets.Founder: return FounderSheet(d, st, w);
                 case StocksSheets.Alert: return AlertSheet(d, st, w);
                 case StocksSheets.Ticket: return TicketSheet(d, st, w);
+                case StocksSheets.Fund: return FundSheet(d, st, w);
+                case StocksSheets.Block: return BlockSheet(d, st, w, p.Companies);
+                case StocksSheets.Split: return SplitSheet(d, st, w);
+                case StocksSheets.BankList: return BankSheet(d, st, w);
                 default: return null;
             }
         }
@@ -345,6 +349,14 @@ namespace RealLifeOverhaul.Ui
         public static void PortfolioCodes(MarketState s, List<int> into)
         {
             into.Clear();
+            if (Settings.MarketsExtras || s.Extras.Units > 0)
+            {
+                into.Add(CodeFund);   // the extras first: the account's own button stays the last, the page's main one; units held can always be sold
+            }
+            if (Settings.MarketsExtras)
+            {
+                into.Add(CodeBlock);
+            }
             if (s.Account.Margin)
             {
                 if (Settings.MarketsMargin)
@@ -376,7 +388,15 @@ namespace RealLifeOverhaul.Ui
                     into.Add(100 + (int)OwnAction.Private);
                 }
                 into.Add(100 + (int)OwnAction.Deal);
+                if (own.Own.Board && !own.Own.Firm && Settings.MarketsExtras)
+                {
+                    into.Add(CodeSplit);
+                }
                 return;
+            }
+            if (Settings.MarketsExtras && d.BankFloat != null && (d.BankFloat.Stage != BankStage.None || d.BankRuns))
+            {
+                into.Add(CodeBank);   // a bank of the player's own may list by itself (first, so the company's own step stays where it was after it)
             }
             if (f == null || d.CompanyAside)
             {
@@ -407,6 +427,10 @@ namespace RealLifeOverhaul.Ui
 
         private static string CodeWords(int code, UiWords w)
         {
+            if (code >= CodeSplit)
+            {
+                return ExtrasCodeWords(code, w);
+            }
             if (code >= 100)
             {
                 return FounderTitle((OwnAction)(code - 100), w);
@@ -442,7 +466,8 @@ namespace RealLifeOverhaul.Ui
                     {
                         m.Actions[i] = new UiActionModel
                         {
-                            Label = w(codes[i] == 1 ? "reallife_mkt_withdraw" : s.Account.Margin ? "reallife_mkt_deposit" : "reallife_mkt_open_margin",
+                            Label = codes[i] >= CodeFund ? ExtrasCodeWords(codes[i], w)
+                                : w(codes[i] == 1 ? "reallife_mkt_withdraw" : s.Account.Margin ? "reallife_mkt_deposit" : "reallife_mkt_open_margin",
                                 codes[i] == 1 ? "Withdraw" : s.Account.Margin ? "Deposit" : "Open a margin account"),
                             Kind = i == codes.Count - 1 ? UiButtonKind.Primary : UiButtonKind.Secondary, Key = UiAction.Count
                         };

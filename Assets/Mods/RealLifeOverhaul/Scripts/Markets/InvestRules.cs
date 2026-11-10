@@ -371,6 +371,7 @@ namespace RealLifeOverhaul.Markets
             {
                 worth += MarketTrading.Value(founder.Own.Founder, MarketTrading.QuoteOf(s, founder, phase).Bid, false);
             }
+            worth += FundRules.Worth(s, s.Extras.Units, phase);   // units of the index fund (Extras)
             return worth + s.Derivs.Balance / 100;   // the futures' margin account: the player's money with the broker
         }
 

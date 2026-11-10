@@ -61,6 +61,7 @@ namespace RealLifeOverhaul.Markets
             {
                 Shared(s, kept, qty);
             }
+            State.Extras.Push(s.Id, kept);   // the player's own lasting push: the fund never deals at a price it made better
             s.Last = s.MidCents;
             if (!o.Forced && State.Held(s.Id) == 0)
             {
