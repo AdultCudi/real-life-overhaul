@@ -611,6 +611,14 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Sessions\SessionRules.cs" Link="Mod\SessionRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Sessions\SessionFile.cs" Link="Mod\SessionFile.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Sessions\SessionStore.cs" Link="Mod\SessionStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schemes\SchemeCatalogue.cs" Link="Mod\SchemeCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schemes\SchemeState.cs" Link="Mod\SchemeState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schemes\SchemeRules.cs" Link="Mod\SchemeRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schemes\SchemeRules.People.cs" Link="Mod\SchemeRules.People.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schemes\SchemeRules.Money.cs" Link="Mod\SchemeRules.Money.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schemes\SchemeRules.Day.cs" Link="Mod\SchemeRules.Day.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schemes\SchemeRules.Rivals.cs" Link="Mod\SchemeRules.Rivals.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schemes\SchemeStore.cs" Link="Mod\SchemeStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\TalentStore.cs" Link="Mod\TalentStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\PlaceRules.cs" Link="Mod\PlaceRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\StaffNameRules.cs" Link="Mod\StaffNameRules.cs" />
