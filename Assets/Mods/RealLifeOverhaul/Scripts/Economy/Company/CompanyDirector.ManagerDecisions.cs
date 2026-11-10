@@ -248,7 +248,9 @@ namespace RealLifeOverhaul.Economy
                     StockSnap snap = m.Snap(name);
                     if (snap != null && m.SnapDay > 0)
                     {
-                        use = ManagerRules.Use(snap.Stock, ManagerRules.Delivered(turns, snap.Week, line.amountOrderedLastWeek, line.amountOrderedThisWeek), now, hours);
+                        // What a supply contract brought since the look came in too (Suppliers), so the use is not read too low.
+                        use = ManagerRules.Use(snap.Stock, ManagerRules.WithSupply(ManagerRules.Delivered(turns, snap.Week, line.amountOrderedLastWeek, line.amountOrderedThisWeek),
+                            CompanyBridges.SupplyBroughtAt(reg, name, m.SnapDay, m.SnapHour)), now, hours);
                     }
                     if (!change || _rounds.Contains(name) || _lines[name] > 1 || m.Holds(name) || use < 0)
                     {
@@ -265,6 +267,10 @@ namespace RealLifeOverhaul.Economy
                     int most = ManagerGame.Most(line);
                     int fair = ManagerRules.Order(use, now, toDelivery, floor, most, 0);
                     int amount = ManagerRules.Order(use, now, toDelivery, floor, most, ManagerRules.Slip(skill, roll, slip));
+                    // The manager follows the supply contracts: what they bring in the week the order is for is not ordered again (Suppliers).
+                    int coming = CompanyBridges.SupplyComingAt(reg, name, day + 1, day + (toDelivery + 23) / 24 + ManagerRules.WeekAhead);
+                    fair = ManagerRules.LessComing(fair, coming);
+                    amount = ManagerRules.LessComing(amount, coming);
                     int keeps = ShelfLife(name);
                     if (keeps > 0)
                     {

@@ -56,9 +56,17 @@ namespace RealLifeOverhaul.Ui
                     UiDirector.Logger?.Info("BizMan (kit): another business chosen in the game's own list");
                     return true;
                 }
-                case UiFirmHead.First + UiFirmHead.Place:
+                case BizManPages.Suppliers:
+                    return OpenSuppliers(b);
                 case BizManPages.FactLink:
+                    if (arg == BizManPages.FactSuppliers)
+                    {
+                        return OpenSuppliers(b);
+                    }
                     b.SetDestination();   // the game's own Set destination: its notice, its guide, the menu closed
+                    return true;
+                case UiFirmHead.First + UiFirmHead.Place:
+                    b.SetDestination();
                     return true;
                 case UiFirmHead.First + UiFirmHead.Switch:
                 {
@@ -273,6 +281,13 @@ namespace RealLifeOverhaul.Ui
                 case BizManPages.DoClassic: return ToClassic(b);
                 default: return false;
             }
+        }
+
+        // The Suppliers app, on the business this page shows (Scripts/Suppliers).
+        private static bool OpenSuppliers(BizManBusiness b)
+        {
+            BuildingRegistration reg = b != null ? b.buildingRegistration : null;
+            return reg != null && reg.Address != null && Suppliers.SupplierDirector.OpenApp(Suppliers.SupplierGame.Key(reg.Address));
         }
 
         // An offer's Send: the game's button while it shows, else the public method that button calls. The game keeps the box that

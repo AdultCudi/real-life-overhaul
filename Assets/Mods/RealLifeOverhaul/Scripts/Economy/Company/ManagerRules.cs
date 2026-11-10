@@ -651,6 +651,20 @@ namespace RealLifeOverhaul.Economy
             return (int)Math.Max(0L, Math.Min(cap, units));
         }
 
+        public const int WeekAhead = 6;   // days after a delivery that its order is for: what a supply contract brings up to then is counted
+
+        /// <summary>An order less what a supply contract brings in the week it is for (Suppliers): never under nothing, and an order not yet known stays so.</summary>
+        public static int LessComing(int order, int coming)
+        {
+            return order < 0 ? order : Math.Max(0, order - Math.Max(0, coming));
+        }
+
+        /// <summary>Units come since a look with those a supply contract brought added; -1 (too long ago to tell) stays so.</summary>
+        public static int WithSupply(int delivered, int supplied)
+        {
+            return delivered < 0 ? delivered : delivered + Math.Max(0, supplied);
+        }
+
         /// <summary>A mistake's share of an order, thousandths: as large as the skill is small, up or down by the roll.</summary>
         public static int Slip(int skill, int roll, bool mistake)
         {

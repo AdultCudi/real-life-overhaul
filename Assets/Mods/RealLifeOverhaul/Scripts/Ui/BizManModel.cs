@@ -236,6 +236,7 @@ namespace RealLifeOverhaul.Ui
         public BizManItem[] Items = new BizManItem[0];
         public string ItemsEmpty;
         public string ItemsEmptyBody;
+        public string ItemsEmptyAction;                 // the button under an empty list (the Deliveries page's way to the Suppliers app); null for none
         public BizManToggle[] Toggles = new BizManToggle[0];
         public bool HasRepeat;                          // a contract's repeating order
         public bool Repeat;

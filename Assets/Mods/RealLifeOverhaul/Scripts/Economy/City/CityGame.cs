@@ -334,6 +334,19 @@ namespace RealLifeOverhaul.Economy
             }
         }
 
+        /// <summary>
+        /// The kind of goods a product is (MacroCatalogue's six), or -1 for a service or a product the city does not know. The goods are found first where the city's
+        /// economy has not read them (it is off): Suppliers asks whether it runs or not.
+        /// </summary>
+        public static int KindOf(string itemName)
+        {
+            if (Goods.Count == 0)
+            {
+                FindGoods();
+            }
+            return !string.IsNullOrEmpty(itemName) && Goods.TryGetValue(itemName, out Good good) ? good.Kind : -1;
+        }
+
         public static int CountOf(int kind)
         {
             return kind >= 0 && kind < KindCount.Length ? KindCount[kind] : 0;

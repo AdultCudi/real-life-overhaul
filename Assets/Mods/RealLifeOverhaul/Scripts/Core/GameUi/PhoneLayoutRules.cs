@@ -34,7 +34,7 @@ namespace RealLifeOverhaul.GameUi
             Dock, Dock, Life, Life, Life, Money, Money,
             Work, Work, Work, Work,
             Money, Money, Money, Money, Money, Money,
-            Business, Business, Business, Business, Business, Business, Business,
+            Business, Business, Business, Business, Business, Business, Business, Business,
             Business,
             Business, Money,
             Setup, Setup, Setup

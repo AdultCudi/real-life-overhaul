@@ -203,6 +203,11 @@ namespace RealLifeOverhaul.Rivals
             {
                 box.Line(giving);
             }
+            string supply = RivalBridges.SupplyLine != null ? RivalBridges.SupplyLine(who) : null;
+            if (!string.IsNullOrEmpty(supply))
+            {
+                box.Line(supply);
+            }
             if (director.HoldingShares(who, out long held, out long most, out long _, out int mid))
             {
                 box.Row("reallife_rival_label_holding", RivalText.Fill("reallife_rival_holding_value", "held", RivalText.N(held), "most", RivalText.N(most), "price", RivalText.MoneyCents(mid)));
@@ -362,6 +367,11 @@ namespace RealLifeOverhaul.Rivals
                     if (!string.IsNullOrEmpty(gave))
                     {
                         rivals.Add(gave);
+                    }
+                    string supplied = RivalBridges.SupplyLine != null ? RivalBridges.SupplyLine(i) : null;
+                    if (!string.IsNullOrEmpty(supplied))
+                    {
+                        rivals.Add(supplied);
                     }
                 }
                 else if (t.DefeatedDay >= 0)

@@ -40,6 +40,36 @@ namespace RealLifeOverhaul.Economy
         /// <summary>True while the tech sector has its own rival's offer or a departure in hand for an employee (the game's id): the company makes no offer then.</summary>
         public static Func<string, bool> Held;
 
+        /// <summary>Units a supply contract is due to bring a business of a product from a day to another, both counted (Suppliers). Null: none.</summary>
+        public static Func<BuildingRegistration, string, int, int, int> SupplyComing;
+
+        /// <summary>Units the supply contracts brought a business of a product since a day and hour (Suppliers). Null: none.</summary>
+        public static Func<BuildingRegistration, string, int, int, int> SupplyBrought;
+
+        internal static int SupplyComingAt(BuildingRegistration reg, string item, int fromDay, int toDay)
+        {
+            try
+            {
+                return SupplyComing != null && reg != null ? Math.Max(0, SupplyComing(reg, item, fromDay, toDay)) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
+        internal static int SupplyBroughtAt(BuildingRegistration reg, string item, int day, int hour)
+        {
+            try
+            {
+                return SupplyBrought != null && reg != null ? Math.Max(0, SupplyBrought(reg, item, day, hour)) : 0;
+            }
+            catch (Exception)
+            {
+                return 0;
+            }
+        }
+
         internal static bool HeldAt(string id)
         {
             try
