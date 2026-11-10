@@ -93,7 +93,10 @@ internal static partial class UiSamples
             f.Dirty = false;
         }
         f.DraftWhy = DynastyRules.Valid(f.Draft);
-        var e = new EstateIn { Day = 400, Level = 1000, Mode = HandMode.Death, Generation = 2, From = f.Name, Cash = f.Cash, Reserved = f.Cash - f.Spare, Other = 9800000, Gifts = f.Gifts, Charities = true };
+        var e = new EstateIn
+        {
+            Day = 400, Level = 1000, Mode = HandMode.Death, Generation = 2, From = f.Name, Cash = f.Cash, Reserved = f.Cash - f.Spare, Other = 9800000, Gifts = f.Gifts, Charities = true
+        };
         if (state == "estate_under")
         {
             e.Other = -6500000;
