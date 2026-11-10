@@ -667,6 +667,12 @@ namespace RealLifeOverhaul.NewBuildings
             {
                 Wire(c, Designs[design], building, madeId);
             }
+            // A parking lane of the copy that reaches into a bus stop's kerb has its cars kept out of it, before it wakes and parks any (BusZones).
+            ParkingLaneGenerator[] lanes = copy.GetComponentsInChildren<ParkingLaneGenerator>(true);
+            for (int i = 0; i < lanes.Length; i++)
+            {
+                BusZones.Meet(lanes[i]);
+            }
             copy.gameObject.SetActive(true);
             FarDistricts.Include(copy);
             return c;

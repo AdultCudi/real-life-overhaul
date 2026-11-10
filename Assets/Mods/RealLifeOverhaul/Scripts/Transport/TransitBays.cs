@@ -6,7 +6,7 @@ namespace RealLifeOverhaul
 {
     /// <summary>
     /// A stop's bay as it is now: whether its length of the strip is free. The bus zone (BusZones) keeps the game from
-    /// parking there; what this finds came since. One of the game's parked cars in the bay, where nobody is looking, is
+    /// parking there; what this finds came since. One of the game's parked cars in the bay, in view or not, is
     /// handed back to the game's store the way the game takes them in itself (ParkingLaneGenerator.CleanupParkedVehicles);
     /// anything else (the player's car, a delivery van, a wreck) leaves the bay taken and the bus stops in the lane. The box
     /// runs from the lane's edge to the bus's door side, so a sign on the kerb is not counted. One box a time, when a stop
@@ -23,8 +23,8 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// True if nothing stands in the stop's bay between <paramref name="behind"/> and <paramref name="ahead"/> metres of
-        /// the pole, <paramref name="except"/> aside. With <paramref name="sendAway"/>, the game's parked cars in it that
-        /// nobody is looking at are taken in first. <paramref name="taken"/> names what stands in it.
+        /// the pole, <paramref name="except"/> aside. With <paramref name="sendAway"/>, the game's parked cars in it are taken in
+        /// first. <paramref name="taken"/> names what stands in it.
         /// </summary>
         public static bool Free(TransitStop stop, float behind, float ahead, Rigidbody except, bool sendAway, out string taken, out int sentAway)
         {
@@ -77,7 +77,7 @@ namespace RealLifeOverhaul
             return taken == null;
         }
 
-        // One of the game's parked cars for show, standing where nobody is looking: back into the game's store of them.
+        // One of the game's parked cars for show: back into the game's store of them, whether it is in view or not (the bay is no place for it).
         private static bool SendAway(Collider collider)
         {
             try
@@ -97,7 +97,7 @@ namespace RealLifeOverhaul
                     car = car.parent;
                 }
                 // Only the lane's own children on that layer are what the lane takes in and puts out.
-                if (car.parent != lane.transform || car.gameObject.layer != _parkedLayer || CitySpots.InView(car.position))
+                if (car.parent != lane.transform || car.gameObject.layer != _parkedLayer)
                 {
                     return false;
                 }

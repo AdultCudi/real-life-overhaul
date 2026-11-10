@@ -133,6 +133,7 @@ namespace RealLifeOverhaul
         public static void Reset()
         {
             BusZones.Restore();   // before the stops go: it marks their zones as not made
+            BusZones.NewLayout();
             Lines.Clear();
             Stops.Clear();
             Places.Clear();

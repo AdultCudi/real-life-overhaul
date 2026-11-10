@@ -115,6 +115,13 @@ namespace RealLifeOverhaul.NewGround
                 why = "there is no road or ground under it";
                 return false;
             }
+            // No lane of the mod's parks cars in a bus stop's kerb (BusZones): its cars would stand there.
+            TransitStop stop = BusZones.HeldAt(centre, turn * Vector3.forward, half.z, half.x);
+            if (stop != null)
+            {
+                why = "the kerb of the bus stop at " + stop.Name + " is there";
+                return false;
+            }
             return true;
         }
 
@@ -180,6 +187,7 @@ namespace RealLifeOverhaul.NewGround
             // from where it stands, as large as the lane Room measured.
             copy.transform.SetPositionAndRotation(at, turn);
             copy.transform.localScale = template.transform.lossyScale;
+            BusZones.Meet(lane);   // a lane that reaches into a bus stop's kerb has its cars kept out of it, before it wakes and parks any
             copy.transform.SetParent(null, true);
             return lane;
         }

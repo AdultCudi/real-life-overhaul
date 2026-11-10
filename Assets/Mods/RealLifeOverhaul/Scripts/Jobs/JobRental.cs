@@ -589,7 +589,7 @@ namespace RealLifeOverhaul
                         continue;
                     }
                     at.y = ground + 0.05f;
-                    if (SceneParking.IsFree(at, along, heavy ? TruckHalfWidth : HalfWidth, heavy ? TruckHalfLength : HalfLength, 0.5f)
+                    if (SceneParking.Stands(at, along, heavy ? TruckHalfWidth : HalfWidth, heavy ? TruckHalfLength : HalfLength, 0.5f)
                         && JobSpots.Flat(at, near) > (heavy ? TruckFromPlayer : 5f))   // never on top of the player
                     {
                         spot = at;

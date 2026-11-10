@@ -134,7 +134,7 @@ namespace RealLifeOverhaul
                             at.y = ground + 0.05f;
                             Vector3 flat = at - near;
                             flat.y = 0f;
-                            if (flat.sqrMagnitude > 25f && SceneParking.IsFree(at, along, HalfWidth, HalfLength, 0.5f))
+                            if (flat.sqrMagnitude > 25f && SceneParking.Stands(at, along, HalfWidth, HalfLength, 0.5f))
                             {
                                 spot = at;
                                 heading = along;
