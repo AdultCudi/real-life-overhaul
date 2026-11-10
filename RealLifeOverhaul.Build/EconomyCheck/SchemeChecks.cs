@@ -138,7 +138,8 @@ internal static partial class Program
             "schemes figures: a share of a sum is rounded down and never negative");
         Check(SchemeCatalogue.AtPrices(5000, 1000) == 5000 && SchemeCatalogue.AtPrices(5000, 1500) == 7500 && SchemeCatalogue.AtPrices(5000, 0) == 5,
             "schemes figures: a sum written at the start's prices is asked at today's level");
-        Check(SchemeState.Rivals == 3 && ModSource(@"Rivals\RivalCatalogue.cs").Contains("public const int TycoonCount = 3"), "schemes figures: the schemes keep a trail for each rival tycoon there is");
+        Check(SchemeState.Rivals == 3 && ModSource(@"Rivals\RivalCatalogue.cs").Contains("public const int TycoonCount = 3"),
+            "schemes figures: the schemes keep a trail for each rival tycoon there is");
         Check(SchemeCatalogue.FundReturn > SchemeCatalogue.FundFeePermille && SchemeCatalogue.FundRecoverPermille < 1000 && SchemeCatalogue.FundAnswerDays < SchemeCatalogue.FundDays
               && SchemeCatalogue.FundDays < SchemeCatalogue.FundEveryDays,
             "schemes figures: an honest fund pays more than having it looked at costs, a sham's money never comes back whole, and one fund is over before the next is offered");
@@ -254,7 +255,8 @@ internal static partial class Program
 
         // An act goes on its trail.
         SchemeWorld w = SchemeWorldOf();
-        int plain = SchemeSeedWhere(seed => !SchemeRules.Spotted(seed, SchemeKind.Expense, 0) && !SchemeRules.Spotted(seed, SchemeKind.Expense, 1) && !SchemeRules.Spotted(seed, SchemeKind.Expense, 2));
+        int plain = SchemeSeedWhere(seed => !SchemeRules.Spotted(seed, SchemeKind.Expense, 0) && !SchemeRules.Spotted(seed, SchemeKind.Expense, 1)
+            && !SchemeRules.Spotted(seed, SchemeKind.Expense, 2));
         SchemeState s = SchemeStateOf(plain, 10, w);
         SchemeAct first = SchemeRules.Expensed(s, 10, 3000, SchemeCatalogue.Small);
         int one = SchemeRules.HeatOf(SchemeKind.Expense, SchemeCatalogue.Small, 0, 0, 0, true);
@@ -273,12 +275,14 @@ internal static partial class Program
             "schemes trail: an earlier act is part of a pattern for " + SchemeCatalogue.RepeatDays + " days, an older one on file for " + SchemeCatalogue.TrailDays + ", and then it is gone");
         int before = SchemeHeat(s, SchemeKind.Expense);
         SchemeRules.Expensed(s, 10 + SchemeCatalogue.ExpenseGapDays, 3000, SchemeCatalogue.Small);
-        Check(SchemeHeat(s, SchemeKind.Expense) - before == one + SchemeCatalogue.HeatRepeat, "schemes trail: a second act within the pattern's days adds its own heat and the pattern's");
+        Check(SchemeHeat(s, SchemeKind.Expense) - before == one + SchemeCatalogue.HeatRepeat && SchemeHeat(s, SchemeKind.Expense) - before > one,
+            "schemes trail: a second act within the pattern's days adds its own heat and the pattern's");
         SchemeState old = SchemeStateOf(plain, 10, w);
         SchemeRules.Expensed(old, 10, 3000, SchemeCatalogue.Small);
         old.Heat[(int)SchemeKind.Expense] = 0;
         SchemeRules.Expensed(old, 11 + SchemeCatalogue.RepeatDays, 3000, SchemeCatalogue.Small);
-        Check(SchemeHeat(old, SchemeKind.Expense) == one + SchemeCatalogue.HeatOnFile, "schemes trail: an act with an older one still on file adds its own heat and the file's");
+        Check(SchemeHeat(old, SchemeKind.Expense) == one + SchemeCatalogue.HeatOnFile && SchemeHeat(old, SchemeKind.Expense) > one,
+            "schemes trail: an act with an older one still on file adds its own heat and the file's");
 
         // Fading, by the day.
         SchemeState fade = SchemeStateOf(plain, 10, w);
@@ -528,7 +532,8 @@ internal static partial class Program
             expenses += events[i].Kind == SchemeEventKind.Findings && events[i].A == (int)SchemeKind.Expense ? events[i].Amount : 0;
             claims += events[i].Kind == SchemeEventKind.Findings && events[i].A == (int)SchemeKind.Claim ? events[i].Amount : 0;
         }
-        Check(expenses == 24000 && claims == 9000, "schemes inquiry: an act done while its inquiry runs is found with the rest, and each kind's findings take its own (" + expenses + ", " + claims + ")");
+        Check(expenses == 24000 && claims == 9000, "schemes inquiry: an act done while its inquiry runs is found with the rest, and each kind's findings take its own (" + expenses + ", "
+            + claims + ")");
 
         // The tests' door: a day of every open inquiry now.
         SchemeState hurry = SchemeStateOf(seed, 10, w);

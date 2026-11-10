@@ -773,7 +773,8 @@ internal static partial class Program
             "schemes fund: a fund is offered every " + SchemeCatalogue.FundEveryDays + " days at most, and one nobody answers costs nothing: " + totals[never, 0] + " offers in " + saves + " saves");
         Check(shamShare >= 150 && shamShare <= 550, "schemes fund: some funds are shams, by how bent the rival who offers is: " + shamShare / 10.0 + "% of the offers");
         Check(wallets[always] < 0 && totals[always, 3] > 0 && totals[always, 4] <= totals[always, 3],
-            "schemes fund: putting money into every fund loses on average: " + wallets[always] / saves + " a save, " + totals[always, 3] + " shams, " + totals[always, 4] + " of them partly recovered");
+            "schemes fund: putting money into every fund loses on average: " + wallets[always] / saves + " a save, " + totals[always, 3] + " shams, " + totals[always, 4]
+            + " of them partly recovered");
         long best = (long)totals[looks, 0] * (SchemeRules.FundBack(SchemeRules.FundAmount(SchemeCity.PlayerWorth, 1000)) - SchemeRules.FundAmount(SchemeCity.PlayerWorth, 1000));
         Check(wallets[looks] > 0 && totals[looks, 3] == 0 && fees[looks] > 0 && wallets[looks] < best,
             "schemes fund: having each fund looked at first never loses the stake, costs its fee, and pays a little: " + wallets[looks] / saves + " a save, fees " + fees[looks] / saves

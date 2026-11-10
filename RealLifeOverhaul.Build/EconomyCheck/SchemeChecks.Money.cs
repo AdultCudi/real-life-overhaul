@@ -326,7 +326,8 @@ internal static partial class Program
         d2.Shop(SchemePlace, true).Wash = SchemeCatalogue.WashSteps[2];
         events.Clear();
         SchemeRules.Day(d2, 101, dear, events);
-        Check(events.Count == 1 && events[0].Kind == SchemeEventKind.Washed && events[0].Amount == 4000, "schemes till: the bank's lines are at today's prices: at twice the level 4000 a day is not reported");
+        Check(events.Count == 1 && events[0].Kind == SchemeEventKind.Washed
+            && events[0].Amount == 4000, "schemes till: the bank's lines are at today's prices: at twice the level 4000 a day is not reported");
         SchemeState win = SchemeStateOf(calm, 100, w);
         win.Dirty = 100000;
         SchemeShop ws = win.Shop(SchemePlace, true);
@@ -354,7 +355,8 @@ internal static partial class Program
             SchemeRules.Day(little, d, w, events);
         }
         int lot = SchemeCatalogue.LiftMost / SchemeCatalogue.LiftHeatDivisor;
-        Check(SchemeHeat(books, SchemeKind.Books) == lot + 49 * (lot - SchemeCatalogue.HeatDecay) && SchemeHeat(little, SchemeKind.Books) <= SchemeCatalogue.LiftSteps[1] / SchemeCatalogue.LiftHeatDivisor
+        Check(SchemeHeat(books, SchemeKind.Books) == lot + 49 * (lot - SchemeCatalogue.HeatDecay)
+            && SchemeHeat(little, SchemeKind.Books) <= SchemeCatalogue.LiftSteps[1] / SchemeCatalogue.LiftHeatDivisor
               && events.Count == 0,
             "schemes till: books dressed a lot heat their trail a little every day they stand, books dressed a little do not, and neither is an act until a sale");
     }
@@ -456,7 +458,8 @@ internal static partial class Program
         SchemeRules.Record(p, SchemeKind.Claim, 10, 20000, SchemeCatalogue.Large, 0, true, SchemePlace, 1);
         var q = new SchemeInquiry { Id = 1, Kind = SchemeKind.Claim, Opened = 10, Stage = InquiryStage.Letter };
         var smallFile = new SchemeInquiry { Id = 2, Kind = SchemeKind.Expense, Opened = 10, Stage = InquiryStage.Letter };
-        Check(SchemeRules.PriceOf(p, Favour.Word, null, 10, 1000) == 1500 && SchemeRules.PriceOf(p, Favour.Word, null, 10, 2000) == 3000 && SchemeRules.PriceOf(p, Favour.Judge, null, 10, 1000) == 25000
+        Check(SchemeRules.PriceOf(p, Favour.Word, null, 10, 1000) == 1500 && SchemeRules.PriceOf(p, Favour.Word, null, 10, 2000) == 3000
+            && SchemeRules.PriceOf(p, Favour.Judge, null, 10, 1000) == 25000
               && SchemeRules.PriceOf(p, Favour.Investigator, q, 10, 1000) == 20000L * SchemeCatalogue.InvestigatorShare / 1000
               && SchemeRules.PriceOf(p, Favour.Investigator, smallFile, 10, 1000) == SchemeCatalogue.FavourPrice[(int)Favour.Investigator]
               && SchemeRules.PriceOf(p, Favour.Investigator, null, 10, 1000) == SchemeCatalogue.FavourPrice[(int)Favour.Investigator],
@@ -531,7 +534,8 @@ internal static partial class Program
             "schemes people: an invented expense is tax evasion, and cash sales of little are false accounting");
         SchemeState washed = SchemeStateOf(seed, 10, w);
         washed.Acts.Add(new SchemeAct { Kind = SchemeKind.Wash, Day = 10, Gain = SchemeCatalogue.FelonyFrom, Place = SchemePlace, Size = 1000 });
-        Check(SchemeRules.ChargeOf(washed, SchemeKind.Wash, 10, 1000, false) == JusticeLaw.MoneyLaundering && SchemeRules.ChargeOf(washed, SchemeKind.Wash, 10, 1000, true) == JusticeLaw.FalseAccounting,
+        Check(SchemeRules.ChargeOf(washed, SchemeKind.Wash, 10, 1000, false) == JusticeLaw.MoneyLaundering
+            && SchemeRules.ChargeOf(washed, SchemeKind.Wash, 10, 1000, true) == JusticeLaw.FalseAccounting,
             "schemes people: cash sales of a felony's worth are money laundering, and the lesser charge for somebody who told it all");
 
         // The court's own sum, for a rival and for the checks' player.
@@ -586,7 +590,8 @@ internal static partial class Program
             bentInRange &= bent == 0 || (bent >= SchemeCatalogue.RivalBentLeast && bent < SchemeCatalogue.RivalBentLeast + SchemeCatalogue.RivalBentSpread);
             bentInRange &= bent == SchemeRules.Bent(i * 7919 + 1, i % 3);
         }
-        Check(bentInRange && Math.Abs(never / 3 - SchemeCatalogue.RivalCleanPermille) <= 30, "schemes fund: how bent a rival is, is a trait of theirs within its bounds, and nothing for " + never / 30.0 + "% of them");
+        Check(bentInRange && Math.Abs(never / 3 - SchemeCatalogue.RivalCleanPermille) <= 30, "schemes fund: how bent a rival is, is a trait of theirs within its bounds, and nothing for "
+            + never / 30.0 + "% of them");
 
         int shamSeed = 0, honestSeed = 0;
         var events = new List<SchemeEvent>();
@@ -789,7 +794,8 @@ internal static partial class Program
         string text = SchemeStore.Write(full);
         SchemeState read = SchemeStore.Read(text, out int version);
         string again = read != null ? SchemeStore.Write(read) : string.Empty;
-        Check(read != null && version == SchemeStore.Version && again == text.Replace("Oak|St\n~1", "Oak St ~1").Replace("Oak St\n~1", "Oak St ~1") && again == SchemeStore.Write(SchemeStore.Read(again, out _)),
+        Check(read != null && version == SchemeStore.Version && again == text.Replace("Oak|St\n~1", "Oak St ~1").Replace("Oak St\n~1", "Oak St ~1")
+            && again == SchemeStore.Write(SchemeStore.Read(again, out _)),
             "schemes save: a save with something in every field is written and read back the same, to the last figure");
         Check(read != null && read.Seed == 987654 && read.Dirty == 4321 && read.Watched && read.Cautioned == 5 && read.Heat[5] == 285 && read.Inquiries[5] == 6 && read.Acts.Count == 3
               && read.Acts[0].Gain == 4250 && read.Acts[0].Back == 1000 && read.Acts[1].Paid == 6000 && read.Acts[1].Inquiry == 3 && read.Acts[2].Place == "Oak St ~1" && read.Cases.Count == 2
@@ -851,7 +857,8 @@ internal static partial class Program
         // A damaged line is brought within bounds, never trusted.
         var bad = new StringBuilder("SC1|5|1|9|0|-50|-7|-8|1|-3|1|-4\nH|99999|-5|1|1|1|1|-1|2|3|4|5|6");
         bad.Append("\nA|9|1|1|1|1|1|1|1|1|1|x\nA|0|10|100|500|-5|5000|-2|1|-3|4|Elm~7\nA|0|10");
-        bad.Append("\nQ|1|0|5|1|9999|0|0|0|-5|-1|0|0|-9|-9|-9\nQ|1|0|5|1|10|0|0|0|0|0|0|0|0|0\nQ|2|1|6|2|10|0|0|0|0|0|0|0|0|0\nQ|5|0|6|2|10|0|0|0|0|0|0|0|0|0\nQ|3|9|6|2|10|0|0|0|0|0|0|0|0|0\nQ|4|2|6|7|10|0|0|0|0|0|0|0|0|0");
+        bad.Append("\nQ|1|0|5|1|9999|0|0|0|-5|-1|0|0|-9|-9|-9\nQ|1|0|5|1|10|0|0|0|0|0|0|0|0|0\nQ|2|1|6|2|10|0|0|0|0|0|0|0|0|0\nQ|5|0|6|2|10|0|0|0|0|0|0|0|0|0"
+            + "\nQ|3|9|6|2|10|0|0|0|0|0|0|0|0|0\nQ|4|2|6|7|10|0|0|0|0|0|0|0|0|0");
         for (int i = 0; i < 40; i++)
         {
             bad.Append("\nP|w").Append(i).Append("|1|5|0|0\nB|").Append(i).Append("\nB|").Append(i);
@@ -861,7 +868,8 @@ internal static partial class Program
             bad.Append("\nC|c").Append(i).Append("\nC|c").Append(i);
         }
         bad.Append("\nP|w|1|5|9|0\nP||1|5|0|0\nB|-4\nS|Elm~7|120|999|-5|3|1|4|5\nS|Elm~7|300|50|0|0|0|0|0\nS||300|50|0|0|0|0|0");
-        bad.Append("\nR|7|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1\nR|0|99999|-1|1|-5|9999|-2|4|1|99999|-1|-1|-1|1|9|99|-1|-6\nR|1|500|1|1|1|1|1|9|1|1|1|1|1|1|1|1|1|1\nF|9|2|1|1|-5|1|1|1|-3\nF|1|77|1|1|5|1|1|1|3");
+        bad.Append("\nR|7|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1|1\nR|0|99999|-1|1|-5|9999|-2|4|1|99999|-1|-1|-1|1|9|99|-1|-6\nR|1|500|1|1|1|1|1|9|1|1|1|1|1|1|1|1|1|1\nF|9|2|1|1|-5|1|1|1|-3"
+            + "\nF|1|77|1|1|5|1|1|1|3");
         SchemeState mended = SchemeStore.Read(bad.ToString(), out _);
         Check(mended != null && mended.NextInquiry == 3 && mended.Dirty == 0 && mended.ClubTaken == 0 && mended.ClubBack == 0 && mended.Acted == 0 && mended.Cautioned == 0
               && mended.Heat[0] == SchemeCatalogue.HeatMost && mended.Heat[1] == 0 && mended.Inquiries[0] == 0 && mended.Inquiries[1] == 2,
@@ -972,14 +980,16 @@ internal static partial class Program
             foreach (SchemeEventKind kind in new[]
                      {
                          SchemeEventKind.Washed, SchemeEventKind.Letter, SchemeEventKind.Visit, SchemeEventKind.Findings, SchemeEventKind.Caution, SchemeEventKind.RivalLetter,
-                         SchemeEventKind.RivalFound, SchemeEventKind.RivalTried, SchemeEventKind.FundOffered, SchemeEventKind.FundPaid, SchemeEventKind.FundLost
+                         SchemeEventKind.RivalFound, SchemeEventKind.RivalTried, SchemeEventKind.FundOffered, SchemeEventKind.FundPaid, SchemeEventKind.FundLost,
+                         SchemeEventKind.FundRecovered
                      })
             {
                 every &= all.Contains(":" + ((int)kind).ToString(CultureInfo.InvariantCulture) + ":");
             }
             return every;
         });
-        Check(seed != 0, "schemes save and load: a save is found in which a caution, findings, a rival's letter, findings and trial, and a fund paid and a fund lost all happen in " + days + " days");
+        Check(seed != 0, "schemes save and load: a save is found in which a caution, findings, a rival's letter, findings and trial, a fund paid, a sham and its money back all happen in "
+                         + days + " days");
         if (seed == 0)
         {
             return;

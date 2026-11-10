@@ -92,7 +92,8 @@ internal static partial class Program
         Check(SchemeLine(claim, 0, 0) == "reallife_scheme_claim_gain(amount,$2000)" && SchemeTone(claim, 0, 0) == SchemePages.Gain
               && SchemeLine(claim, 0, 1) == "reallife_scheme_risk_small(chance," + SchemeRules.FirstChance(SchemeKind.Claim, SchemeCatalogue.Small, 0, true) + ")" && SchemeTone(claim, 0, 1) == 0
               && SchemeLine(claim, 1, 1) == "reallife_scheme_risk_large" && SchemeTone(claim, 1, 1) == SchemePages.Risk && claim.Lines[2] == null,
-            "schemes pages: each size says what it brings and what it risks before the player commits: the odds of a first small one by the rules' own sum, and that a large one is always looked into");
+            "schemes pages: each size says what it brings and what it risks before the player commits: the odds of a first small one by the rules' own sum, and that a large one is"
+            + " always looked into");
 
         SchemePage expense = SchemePages.Expense(w, 3000, 20);
         Check(expense.Count == 3 && SchemePressIs(expense, 0, SchemeDo.Expense, null, 0, SchemeCatalogue.Small) && SchemePressIs(expense, 1, SchemeDo.Expense, null, 0, SchemeCatalogue.Large)
@@ -117,8 +118,10 @@ internal static partial class Program
 
         SchemePage wash = SchemePages.Wash(w, SchemePlace, "Shop", true, 3000, 0, 9000, false, 1000, 20);
         SchemePage washing = SchemePages.Wash(w, SchemePlace, "Shop", true, 3000, 50, 9000, true, 2000, 20);
-        SchemePage noTill = SchemePages.Wash(w, SchemePlace, "Shop", false, 3000, 0, 9000, false, 1000, 20), noTillOn = SchemePages.Wash(w, SchemePlace, "Shop", false, 3000, 50, 9000, false, 1000, 20);
-        Check(wash.Count == 3 && SchemePressIs(wash, 0, SchemeDo.Wash, SchemePlace, SchemeCatalogue.WashSteps[1], 0) && SchemePressIs(wash, 1, SchemeDo.Wash, SchemePlace, SchemeCatalogue.WashSteps[2], 0)
+        SchemePage noTill = SchemePages.Wash(w, SchemePlace, "Shop", false, 3000, 0, 9000, false, 1000, 20), noTillOn = SchemePages.Wash(w, SchemePlace, "Shop", false, 3000, 50, 9000,
+            false, 1000, 20);
+        Check(wash.Count == 3 && SchemePressIs(wash, 0, SchemeDo.Wash, SchemePlace, SchemeCatalogue.WashSteps[1], 0)
+            && SchemePressIs(wash, 1, SchemeDo.Wash, SchemePlace, SchemeCatalogue.WashSteps[2], 0)
               && SchemePressIs(wash, 2, SchemeDo.Leave, null, 0, 0) && wash.Hints[0] == "reallife_scheme_wash_hint(amount,$150)" && wash.Hints[1] == "reallife_scheme_wash_hint(amount,$600)"
               && wash.Body == "reallife_scheme_wash_body(business,Shop,cash,$9000,cut,15%,report,$" + SchemeCatalogue.ReportFrom + ",now,0%,percent,20)" && SchemeTone(wash, 1, 0) == SchemePages.Risk,
             "schemes pages: the till's page says the cash in hand, the cut, the game's tax and the bank's line, and offers its two rates with what each puts through a day");
@@ -142,7 +145,8 @@ internal static partial class Program
         fund.Checked = true;
         fund.Sham = true;
         SchemePage looked = SchemePages.Fund(w, "Rival", "Holding", fund, 1000);
-        Check(offer.Count == 3 && SchemePressIs(offer, 0, SchemeDo.FundPut, null, 0, 0) && SchemePressIs(offer, 1, SchemeDo.FundLook, null, 0, 0) && SchemePressIs(offer, 2, SchemeDo.FundDown, null, 0, 0)
+        Check(offer.Count == 3 && SchemePressIs(offer, 0, SchemeDo.FundPut, null, 0, 0) && SchemePressIs(offer, 1, SchemeDo.FundLook, null, 0, 0)
+            && SchemePressIs(offer, 2, SchemeDo.FundDown, null, 0, 0)
               && offer.Body == "reallife_scheme_fund_body(rival,Rival,holding,Holding,amount,$12000,back,$12960,days," + SchemeCatalogue.FundDays + ",day,507)"
               && SchemeLine(offer, 0, 0) == "reallife_scheme_fund_put_cost(amount,$12000)" && SchemeTone(offer, 0, 0) == UiConsequence.Loss && SchemeTone(offer, 0, 1) == 0
               && SchemeLine(offer, 1, 0) == "reallife_scheme_fund_look_cost(amount,$360)" && SchemeTone(offer, 1, 0) == UiConsequence.Loss,
@@ -225,8 +229,10 @@ internal static partial class Program
         Check(Regex.Matches(acts, @"if \(!On \|\| d == null").Count == 2, "schemes pages: with the option off no quiet button is shown and none opens a page");
         foreach (string[] place in new[]
                  {
-                     new[] { @"Economy\Company\CompanyApp.Cover.cs", "QuietPolicy" }, new[] { @"Economy\Company\CompanyApp.Tax.cs", "QuietReturn" }, new[] { @"Economy\Company\CompanyApp.Tax.cs", "QuietBooks" },
-                     new[] { @"Economy\Company\CompanyApp.Marketing.cs", "QuietCampaign" }, new[] { @"Ui\Company\CompanyLive.Money.cs", "QuietPolicy" }, new[] { @"Ui\Company\CompanyLive.Tax.cs", "QuietReturn" },
+                     new[] { @"Economy\Company\CompanyApp.Cover.cs", "QuietPolicy" }, new[] { @"Economy\Company\CompanyApp.Tax.cs", "QuietReturn" },
+                         new[] { @"Economy\Company\CompanyApp.Tax.cs", "QuietBooks" },
+                     new[] { @"Economy\Company\CompanyApp.Marketing.cs", "QuietCampaign" }, new[] { @"Ui\Company\CompanyLive.Money.cs", "QuietPolicy" },
+                         new[] { @"Ui\Company\CompanyLive.Tax.cs", "QuietReturn" },
                      new[] { @"Ui\Company\CompanyLive.Tax.cs", "QuietBooks" }, new[] { @"Ui\Company\CompanyLive.Money.cs", "QuietCampaign" }
                  })
         {
@@ -281,7 +287,8 @@ internal static partial class Program
             Check(code.Length > 0, "schemes sources: " + name + " is there");
             all += "\n" + code;
         }
-        string[] free = { "SchemeBridges.cs", "SchemeCatalogue.cs", "SchemeKeys.cs", "SchemePages.cs", "SchemeRules.cs", "SchemeRules.Day.cs", "SchemeRules.Money.cs", "SchemeRules.People.cs", "SchemeRules.Rivals.cs",
+        string[] free = { "SchemeBridges.cs", "SchemeCatalogue.cs", "SchemeKeys.cs", "SchemePages.cs", "SchemeRules.cs", "SchemeRules.Day.cs", "SchemeRules.Money.cs",
+            "SchemeRules.People.cs", "SchemeRules.Rivals.cs",
             "SchemeState.cs", "SchemeStore.cs" };
         foreach (string name in free)
         {
@@ -316,7 +323,8 @@ internal static partial class Program
         Check(SchemeInOrder(SchemeMethod(acts, "public SchemeSaid FundPut("), "SchemeGame.InSession || !SchemeRules.FundStands(_state, day)", "!Affords(f.Amount)",
                 "!SchemeGame.Pay(f.Amount, SchemeGame.FundKey)", "SchemeRules.FundPlace(_state, day);", "SchemeBridges.RivalMoney?.Invoke(f.Tycoon, f.Amount);"),
             "schemes sources: money goes into a fund only outside a session, while the offer stands and above the investors' floor, is paid first, and the rival then has exactly it");
-        Check(SchemeInOrder(SchemeMethod(acts, "public SchemeSaid FundLook("), "SchemeGame.InSession", "!Affords(fee) || !SchemeGame.Pay(fee, SchemeGame.FundFeeKey)", "SchemeRules.FundCheck(_state);"),
+        Check(SchemeInOrder(SchemeMethod(acts, "public SchemeSaid FundLook("), "SchemeGame.InSession", "!Affords(fee) || !SchemeGame.Pay(fee, SchemeGame.FundFeeKey)",
+            "SchemeRules.FundCheck(_state);"),
             "schemes sources: a fund is looked at once its fee is paid, and never in a session");
         Check(SchemeInOrder(SchemeMethod(acts, "private void DoClaim("), "(shop.Covers & (1 << cover)) == 0", "SchemeRules.MayClaim(kept, day)", "SchemeBridges.Claim(place, cover, loss",
                 "SchemeRules.Claimed(_state, place, day, payout, size, id);"),
@@ -325,17 +333,20 @@ internal static partial class Program
                 "SchemeGame.Give(gain, SchemeGame.ExpenseKey);", "SchemeRules.Expensed(_state, day, gain, size);"),
             "schemes sources: an invented expense needs the game's tax to fall due and its wait, and what it pays is what goes on the trail");
         Check(SchemeInOrder(SchemeMethod(acts, "public SchemeSaid Repay("), "SchemeRules.RepayCost(_state, kind, day, unpaid)", "!Affords(cost - cash)",
-                "SchemeRules.Repay(_state, kind, day, unpaid, out long fromCash)", "SchemeGame.Pay(paid - fromCash, SchemeGame.RepayKey)", "GiveBack(paid);", "SchemeBridges.ClaimRefuse?.Invoke(unpaid[i]);"),
+                "SchemeRules.Repay(_state, kind, day, unpaid, out long fromCash)", "SchemeGame.Pay(paid - fromCash, SchemeGame.RepayKey)", "GiveBack(paid);",
+                "SchemeBridges.ClaimRefuse?.Invoke(unpaid[i]);"),
             "schemes sources: paying a file back is refused whole above the investors' floor, pays what the rules say, gives a club's stakes back and withdraws a claim not yet paid");
         Check(SchemeInOrder(SchemeMethod(people, "private FavourAnswer Offered("), "if (!cash && !Affords(price))", "SchemeRules.TemperOf(s.Seed, Office.Contact, contact)",
-                "favour == Favour.Vote && SchemeGame.InSession", "theirs == Temper.Takes && !Deliver(favour, person, inquiry, courtCase)", "SchemeRules.Offer(s, favour, office, who, price, cash, day)",
+                "favour == Favour.Vote && SchemeGame.InSession", "theirs == Temper.Takes && !Deliver(favour, person, inquiry, courtCase)",
+                "SchemeRules.Offer(s, favour, office, who, price, cash, day)",
                 "SchemeGame.Take(price, SchemeGame.FavourKey);"),
             "schemes sources: a favour is refused before any money when the wallet or the investors' floor cannot pay it or it cannot be had, and their own temper is asked before anybody else's");
         Check(people.Contains("if (!SchemeGame.InSession && d.SeatFor() != null)") && SchemeMethod(acts, "private static bool Affords(").Contains("SchemeGame.Cash - amount >= floor")
               && links.Contains("SchemeBridges.Floor = () => Tech.TechDirector.Instance != null ? Tech.TechDirector.Instance.FloorNow : 0L;"),
             "schemes sources: a council vote is not for sale in a Going Public session, and no scheme's money touches what the wallet holds for a firm's investors");
         Check(SchemeInOrder(SchemeMethod(day, "private void Findings("), "SchemeGame.Take(e.Amount - e.FromCash, SchemeGame.FoundKey);", "SchemeGame.Take(e.Net, SchemeGame.SurchargeKey);",
-                "GiveBack(e.Amount);", "SchemeBridges.ClaimRefuse?.Invoke(_state.Acts[i].Ref);", "SchemeBridges.Charge(e.Text", "SchemeBridges.Exposed?.Invoke(felony);", "SchemeBridges.Story?.Invoke(")
+                "GiveBack(e.Amount);", "SchemeBridges.ClaimRefuse?.Invoke(_state.Acts[i].Ref);", "SchemeBridges.Charge(e.Text", "SchemeBridges.Exposed?.Invoke(felony);",
+                "SchemeBridges.Story?.Invoke(")
               && SchemeMethod(game, "public static void Take(").Contains("null, null, true, false"),
             "schemes sources: the findings take back what the rules found whatever the wallet holds, give a club's stakes back, end a cheated cover, go to court, and are exposed");
         Check(Regex.IsMatch(day, @"case SchemeEventKind\.Washed:\s*SchemeGame\.Give\(e\.Net, SchemeGame\.WashKey\);")
@@ -345,7 +356,8 @@ internal static partial class Program
               && links.Contains("PurseRules.Take(s, at, households, id => SchemeRules.ClubDraw(seed, club, id), savings => SchemeRules.ClubStake(savings, level), out joined)")
               && links.Contains("return PurseRules.Give(s, shop != null ? s.DistrictOf(shop.District) : -1, amount);"),
             "schemes sources: a club's stakes leave and reach the households through the people's one purse, by the rules' own draw and stake");
-        Check(day.Contains("SchemeBridges.RivalMoney?.Invoke(e.Tycoon, e.Amount);") && day.Contains("SchemeBridges.RivalMoney?.Invoke(e.Tycoon, -e.Amount);") && day.Contains("SchemeBridges.RivalMoney?.Invoke(e.Tycoon, -e.Net);")
+        Check(day.Contains("SchemeBridges.RivalMoney?.Invoke(e.Tycoon, e.Amount);") && day.Contains("SchemeBridges.RivalMoney?.Invoke(e.Tycoon, -e.Amount);")
+            && day.Contains("SchemeBridges.RivalMoney?.Invoke(e.Tycoon, -e.Net);")
               && day.Contains("SchemeBridges.RivalBarred?.Invoke(e.Tycoon, SchemeCatalogue.RivalBarDays, SchemeCatalogue.RivalQuietDays);") && day.Contains("SchemeRules.FineOf(charge,"),
             "schemes sources: a rival's scheme, findings, fine and fund move their own worth, and a conviction bars and quiets them");
 
@@ -404,7 +416,8 @@ internal static partial class Program
         }
         string wiring = ModSource(@"Wiring\Wiring.cs");
         Check(wiring.Contains("SchemeLinks.Connect") && wiring.Contains("SchemeLinks.Disconnect"), "schemes sources: the links are put on and taken off with the others");
-        Check(ModSource(@"Core\Settings.cs").Contains("public const string LivingSchemesId = \"living_schemes\";") && ModSource(@"Core\Settings.cs").Contains("public static bool LivingSchemes = true;")
+        Check(ModSource(@"Core\Settings.cs").Contains("public const string LivingSchemesId = \"living_schemes\";")
+            && ModSource(@"Core\Settings.cs").Contains("public static bool LivingSchemes = true;")
               && ModSource(@"Meta\OptionsTree.cs").Contains("Opt(\"living_schemes\", \"living_population\")") && ModSource(@"Meta\FeatureList.cs").Contains("Schemes.SchemeGuide.Register();")
               && ModSource(@"Core\RealLifeOverhaulMod.cs").Contains("Guard.Add<Schemes.SchemeDirector>(_root)"),
             "schemes sources: one option, on by default under Living population, with its Guide entry and its director");
@@ -470,7 +483,8 @@ internal static partial class Program
         foreach (string key in keys)
         {
             if (key.Contains("_note_") || key == "reallife_scheme_text_letter" || Regex.IsMatch(key, "^reallife_scheme_test_(no_save|off|.*_(done|open|none)|no_rival)$") || key.Contains("_talk_")
-                || key.Contains("_fund_look_") || key.EndsWith("_done", StringComparison.Ordinal) || key.EndsWith("_short", StringComparison.Ordinal) || key.EndsWith("_nothing", StringComparison.Ordinal))
+                || key.Contains("_fund_look_") || key.EndsWith("_done", StringComparison.Ordinal) || key.EndsWith("_short", StringComparison.Ordinal)
+                || key.EndsWith("_nothing", StringComparison.Ordinal))
             {
                 notices.Add(key);
             }
@@ -625,27 +639,13 @@ internal static partial class Program
             {
                 Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(DesignLocales, locale + ".json"));
                 string line = words != null && row.Length > 0 && words.TryGetValue(row, out string value) ? value : string.Empty;
-                string title = words != null && words.TryGetValue("reallife_meta_title_schemes", out string name) ? name : "\u0000";
-                Check(line.Contains(SchemeNewsWord(locale)) && !line.Contains('!') && !line.Contains('—') && (locale == "en" || !line.Contains("Schemes and inquiries, under Living population"))
-                      && title.Length > 2,
-                    "schemes texts: the same row of What's new tells of them in " + locale + ", in its own words");
+                string title = words != null && words.TryGetValue("reallife_scheme_enabled", out string name) ? name : "\u0000";
+                Check(title.Length > 2 && line.Contains(title) && !line.Contains('!') && !line.Contains('—')
+                      && (locale == "en" || !line.Contains("Schemes and inquiries, under Living population")),
+                    "schemes texts: the same row of What's new tells of them in " + locale + ", by the option's own name there (" + title + ")");
             }
         }
     }
-
-    // A word of the feature's line in What's new that each language's own sentence has (its word for an inquiry or a claim).
-    private static string SchemeNewsWord(string locale)
-    {
-        switch (locale)
-        {
-            case "en":
-                return "Schemes and inquiries";
-            default:
-                return SchemeNewsWords.TryGetValue(locale, out string word) ? word : "\u0000";
-        }
-    }
-
-    private static readonly Dictionary<string, string> SchemeNewsWords = new Dictionary<string, string>();
 
     // ------------------------------------------------------------------------------------------------- the cost
 
@@ -696,7 +696,8 @@ internal static partial class Program
         }
         watch.Stop();
         double perDay = watch.Elapsed.TotalMilliseconds / (saves * days);
-        Check(happened > saves * days && perDay < 0.2, "schemes cost: a day's turn of the busiest save there can be (" + busy.Acts.Count + " acts, six inquiries, eight tills, three rivals) takes under 0.2 ms: "
+        Check(happened > saves * days && perDay < 0.2, "schemes cost: a day's turn of the busiest save there can be (" + busy.Acts.Count
+            + " acts, six inquiries, eight tills, three rivals) takes under 0.2 ms: "
                                                        + perDay.ToString("0.0000", CultureInfo.InvariantCulture) + " ms");
         watch.Restart();
         int length = 0;
@@ -706,7 +707,8 @@ internal static partial class Program
         }
         watch.Stop();
         Check(length == 200 * text.Length && watch.Elapsed.TotalMilliseconds / 200 < 2.0, "schemes cost: that save is written and read in under 2 ms: "
-                                                                                          + (watch.Elapsed.TotalMilliseconds / 200).ToString("0.000", CultureInfo.InvariantCulture) + " ms, " + text.Length + " characters");
+                                                                                          + (watch.Elapsed.TotalMilliseconds / 200).ToString("0.000", CultureInfo.InvariantCulture)
+                                                                                          + " ms, " + text.Length + " characters");
         SchemeWords words = SchemeKeyWords();
         watch.Restart();
         int answers = 0;

@@ -14,6 +14,7 @@ The **Sell** tab of the Services app: a business of the player's is valued, put 
 - It shares the cleaning service's line of the save (`reallife:economy_services`, `ServicesStore`) and its app.
 - Investors are bought out through Ventures, business loans are paid off through the credit core, and the save's investors are buyers by name (`Wiring/ServicesLinks.cs`).
 - A buyer that is a chain is one of the stock market's listed companies of that trade (`Markets/MarketCatalogue`).
+- The recent profit a buyer values a business by is read through `ServicesBridges.BooksShown`, a buyer about to pay may see through dressed books and withdraw the offer (`ServicesBridges.SeesThrough`), and a sale tells its price on (`ServicesBridges.Sold`): [Schemes and inquiries](schemes.md).
 - It stands down in a Going Public session: who rents what is the host's record there.
 
 Option "Selling a business", id `economy_sale`, under the credit core, on by default.
