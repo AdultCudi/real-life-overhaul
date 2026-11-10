@@ -17,16 +17,16 @@ namespace RealLifeOverhaul.Subway
         private static void DescribeFeature()
         {
             Features.Add("uptown_subway", "reallife_meta_title_uptown_subway")
-                .About(StationsText.About).Help(StationsText.Help)
-                .Row(new ToggleOption(Settings.UptownSubwayId, StationsText.Enabled, true, on => Settings.UptownSubway = on))
+                .About("reallife_guide_uptown_subway_about").Help("reallife_guide_uptown_subway")
+                .Row(new ToggleOption(Settings.UptownSubwayId, "reallife_uptown_subway_enabled", true, on => Settings.UptownSubway = on))
                 .Owns(Settings.UptownSubwayId)
                 .Objects(StationsDirector.RootName)
                 .Fact("uptown_subway_stations", () => StationsRules.Sites.Count.ToString(Inv))
                 .Fact("uptown_subway_fare", () => Guide.Money(SubwayStation.PricePerRide))
-                .Check(StationsText.TestCheck, StationsDirector.TestStations, "Subway check (stations)")
-                .Test(StationsText.TestGo, StationsDirector.TestGo)
-                .Test(StationsText.TestRide, StationsDirector.TestRide)
-                .Test(StationsText.TestRider, StationsDirector.TestRider)
+                .Check("reallife_uptown_subway_test_check", StationsDirector.TestStations, "Subway check (stations)")
+                .Test("reallife_uptown_subway_test_go", StationsDirector.TestGo)
+                .Test("reallife_uptown_subway_test_ride", StationsDirector.TestRide)
+                .Test("reallife_uptown_subway_test_rider", StationsDirector.TestRider)
                 .Cleanup(() => StationsDirector.Instance?.Close("its feature's clean-up (the options page, faults in a row, the save tools or another city)"));
         }
     }

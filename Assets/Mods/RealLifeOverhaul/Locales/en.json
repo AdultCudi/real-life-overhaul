@@ -35768,7 +35768,7 @@
   "reallife_subway_station_east": "Uptown East Park Station",
   "reallife_uptown_subway_test_check": "Subway: check the stations of Uptown and Cedar Heights",
   "reallife_uptown_subway_test_go": "Subway: take me to the next station of the two districts",
-  "reallife_uptown_subway_test_ride": "Subway: ride from the nearest of the game's stations to one of the two districts'",
+  "reallife_uptown_subway_test_ride": "Subway: ride from the game's nearest station to the two districts",
   "reallife_uptown_subway_test_rider": "Subway: somebody comes up at the station nearest me",
   "reallife_uptown_subway_check_done": "{count} subway stations stand in Uptown and Cedar Heights and are on the game's list of stations. Player.log has the check.",
   "reallife_uptown_subway_check_wrong": "The subway stations of Uptown and Cedar Heights are not as they should be. Player.log says what is wrong.",

@@ -441,10 +441,10 @@ internal static partial class Program
         Check(ModSource(@"Meta\FeatureCities.cs").Contains("new Line(\"uptown_subway\", CityScope.NewYork,") && ModSource(@"Core\FeatureOwners.cs").Contains("{ \"RealLifeOverhaul.Subway\", \"uptown_subway\" },")
               && ModSource(@"Meta\OptionsTree.cs").Contains("S(\"uptown_subway\").For(\"uptown_subway\").Opts(\"uptown_subway\")") && director.Contains("public const string FeatureId = \"uptown_subway\";"),
             "subway sources: a feature of New York's own, with its owner, its section of the options and its line of the cities");
-        Check(guide.Contains(".Check(StationsText.TestCheck, StationsDirector.TestStations, \"Subway check (stations)\")") && guide.Contains(".Test(StationsText.TestGo, StationsDirector.TestGo)")
-              && guide.Contains(".Test(StationsText.TestRide, StationsDirector.TestRide)") && guide.Contains(".Test(StationsText.TestRider, StationsDirector.TestRider)")
-              && guide.Contains(".Cleanup(") && guide.Contains("new ToggleOption(Settings.UptownSubwayId, StationsText.Enabled, true, on => Settings.UptownSubway = on)") && guide.Contains(".Objects(StationsDirector.RootName)"),
-            "subway sources: its entry has its option, its four tests, its clean-up and its own object's name");
+        Check(guide.Contains(".Check(\"reallife_uptown_subway_test_check\", StationsDirector.TestStations, \"Subway check (stations)\")") && guide.Contains(".Test(\"reallife_uptown_subway_test_go\", StationsDirector.TestGo)")
+              && guide.Contains(".Test(\"reallife_uptown_subway_test_ride\", StationsDirector.TestRide)") && guide.Contains(".Test(\"reallife_uptown_subway_test_rider\", StationsDirector.TestRider)")
+              && guide.Contains(".Cleanup(") && guide.Contains("new ToggleOption(Settings.UptownSubwayId, \"reallife_uptown_subway_enabled\", true, on => Settings.UptownSubway = on)") && guide.Contains("Features.Add(\"uptown_subway\", \"reallife_meta_title_uptown_subway\")") && guide.Contains(".Objects(StationsDirector.RootName)"),
+            "subway sources: its entry has its option, its four tests, its clean-up and its own object's name, every key written out whole as the options checks read them");
         Check(tests.Contains("public static void TestStations()") && tests.Contains("public static void TestGo()") && tests.Contains("public static void TestRide()") && tests.Contains("public static void TestRider()")
               && Regex.Matches(tests, @"TestRefusals\.Tell\(").Count >= 10 && tests.Contains("Logger?.Info(\"Subway check (stations): "),
             "subway sources: each test is there, says why when it cannot run, and the check writes its line");
