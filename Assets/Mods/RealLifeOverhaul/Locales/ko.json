@@ -36007,5 +36007,8 @@
   "reallife_supply_test_rivals": "경쟁 상점의 공급일이 실행되었습니다: {n}개 상점 확인, {moved}개는 더 많거나 적게 지불, {failed}개는 지연 또는 부족 배송을 겪었습니다.",
   "reallife_supply_test_back": "공급업체는 테스트 이전 상태로 돌아갔습니다. 지불된 돈과 배송된 상품은 그대로 남습니다.",
   "reallife_supply_test_back_none": "되돌릴 것이 없습니다.",
-  "reallife_supply_test_off": "공급업체와 계약이 꺼져 있거나 아직 준비되지 않았습니다."
+  "reallife_supply_test_off": "공급업체와 계약이 꺼져 있거나 아직 준비되지 않았습니다.",
+  "reallife_supply_left_out": "이 업체의 상품 {n}종이 더 빠집니다. 계약에는 상품 {most}종이 들어가며, 가장 잘 팔리는 상품부터 담깁니다.",
+  "reallife_supply_note_late_knew": "{day}일에 예정된 {supplier}의 {business} 배송이 {days}일 늦게 도착합니다: {cause}. 문제를 알고 서명하셨으므로 보상금은 없습니다. 다른 공급업체나 도매점이 공백을 메울 수 있습니다.",
+  "reallife_supply_note_short_knew": "{day}일 {supplier}의 {business} 배송이 {share} 적게 도착합니다: {cause}. 도착한 만큼만 내시면 됩니다. 문제를 알고 서명하셨으므로 보상금은 없습니다. 다른 공급업체나 도매점이 공백을 메울 수 있습니다."
 }

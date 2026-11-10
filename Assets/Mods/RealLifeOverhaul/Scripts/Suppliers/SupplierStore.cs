@@ -12,9 +12,10 @@ namespace RealLifeOverhaul.Suppliers
     ///
     /// Parts are divided by '^' and begin with a letter and a colon; records inside a part by ';', fields by '|'. h is the header, f the suppliers (in the catalogue's
     /// order), c the contracts (a contract's products are its last known field, divided by '~' with ',' inside), o what is owed, p the payment record, r the rival
-    /// tycoons' sums, n the paper's notes, l the log of deliveries. A newer version adds fields at the end of a record or a part with a new letter: this reader takes
-    /// what it knows as far as it goes and puts every figure inside its bounds. A save from before the feature has no line and loads with nothing in it. Every number is
-    /// written and read in the invariant culture.
+    /// tycoons' sums, n the paper's notes, l the log of deliveries, g the last valued day of each rival shop that was charged. A contract running or with money owed on it, and every
+    /// line owed, is read whatever the count; only the oldest ended ones past what the page keeps are let go. A newer version adds fields at the end of a record or a part
+    /// with a new letter: this reader takes what it knows as far as it goes and puts every figure inside its bounds. A save from before the feature has no line and loads
+    /// with nothing in it. Every number is written and read in the invariant culture.
     /// </summary>
     public static class SupplierStore
     {
@@ -63,6 +64,7 @@ namespace RealLifeOverhaul.Suppliers
                         t.Append(k > 0 ? "~" : string.Empty).Append(Uri.EscapeDataString(line.Item ?? string.Empty)).Append(',').Append(line.Kind.ToString(Inv)).Append(',')
                             .Append(line.Units.ToString(Inv)).Append(',').Append(line.Mills.ToString(Inv));
                     }
+                    t.Append('|').Append(c.Knew ? 1 : 0);
                 }
             }
             if (s.Owed.Count > 0)
@@ -72,7 +74,7 @@ namespace RealLifeOverhaul.Suppliers
                 {
                     OwedLine o = s.Owed[i];
                     t.Append(i > 0 ? ";" : string.Empty);
-                    Join(t, o.Supplier, o.Contract, o.Cents, o.Since, o.Due, o.Settlement ? 1 : 0);
+                    Join(t, o.Supplier, o.Contract, o.Cents, o.Since, o.Due, o.Settlement ? 1 : 0, o.Acted ? 1 : 0);
                 }
             }
             t.Append("^p:");
@@ -110,6 +112,17 @@ namespace RealLifeOverhaul.Suppliers
                     t.Append('|').Append(Uri.EscapeDataString(e.Place ?? string.Empty)).Append('|').Append(Uri.EscapeDataString(e.Item ?? string.Empty));
                 }
             }
+            if (s.Charges.Count > 0)
+            {
+                t.Append("^g:");
+                bool first = true;
+                foreach (KeyValuePair<int, RivalCharge> pair in s.Charges)
+                {
+                    t.Append(first ? string.Empty : ";");
+                    first = false;
+                    Join(t, pair.Key, pair.Value.Count, pair.Value.Bits);
+                }
+            }
             return t.ToString();
         }
 
@@ -145,12 +158,14 @@ namespace RealLifeOverhaul.Suppliers
                     case 'r': Rivals(s, body); break;
                     case 'n': Notes(s, body); break;
                     case 'l': Log(s, body); break;
+                    case 'g': Charges(s, body); break;
                 }
             }
             for (int i = 0; i < s.Contracts.Count; i++)
             {
                 s.NextId = Math.Max(s.NextId, s.Contracts[i].Id + 1);   // an id is never given twice, whatever the header says
             }
+            Keep(s);
             return s;
         }
 
@@ -199,7 +214,7 @@ namespace RealLifeOverhaul.Suppliers
         private static void Contracts(SupplierState s, string body)
         {
             string[] records = body.Split(';');
-            for (int i = 0; i < records.Length && s.Contracts.Count < SupplierCatalogue.ContractsMost + SupplierCatalogue.ContractsKept; i++)
+            for (int i = 0; i < records.Length; i++)
             {
                 string[] f = records[i].Split('|');
                 int id = I(f, 0), supplier = I(f, 1);
@@ -218,7 +233,8 @@ namespace RealLifeOverhaul.Suppliers
                     Failures = Math.Max(0, I(f, 15)), Withheld = Math.Max(0, I(f, 16)), Paid = Math.Max(0, L(f, 17)), Credit = Math.Max(0, L(f, 18)),
                     NotTaken = Math.Max(0, I(f, 19)), Renew = (RenewRule)SupplierCatalogue.Clamp(I(f, 20), 0, 2),
                     RenewLimit = SupplierCatalogue.Clamp(I(f, 21, SupplierCatalogue.RenewLimitDefault), 0, SupplierCatalogue.RenewLimits.Length - 1),
-                    Cover = I(f, 22) == 1, LeaveRule = I(f, 23) == 1, Reminded = I(f, 24) == 1, Covering = I(f, 25) == 1, Place = Unescape(f[26]), PlaceName = Unescape(f[27])
+                    Cover = I(f, 22) == 1, LeaveRule = I(f, 23) == 1, Reminded = I(f, 24) == 1, Covering = I(f, 25) == 1, Place = Unescape(f[26]), PlaceName = Unescape(f[27]),
+                    Knew = I(f, 29) == 1
                 };
                 string[] lines = f[28].Split('~');
                 for (int k = 0; k < lines.Length && c.Lines.Count < SupplierCatalogue.LinesMost; k++)
@@ -245,10 +261,41 @@ namespace RealLifeOverhaul.Suppliers
             }
         }
 
+        // The ended contracts past what the page keeps are let go, the oldest first; a contract still running, or with money owed on it, is never one of them.
+        private static void Keep(SupplierState s)
+        {
+            int ended = 0;
+            for (int i = 0; i < s.Contracts.Count; i++)
+            {
+                ended += s.Contracts[i].Running ? 0 : 1;
+            }
+            for (int i = 0; i < s.Contracts.Count && ended > SupplierCatalogue.ContractsKept; i++)
+            {
+                if (!s.Contracts[i].Running && s.OwedOn(s.Contracts[i].Id) == 0)
+                {
+                    s.Contracts.RemoveAt(i--);
+                    ended--;
+                }
+            }
+        }
+
+        private static void Charges(SupplierState s, string body)
+        {
+            string[] records = body.Split(';');
+            for (int i = 0; i < records.Length; i++)
+            {
+                string[] f = records[i].Split('|');
+                if (f.Length >= 3)
+                {
+                    s.Charges[I(f, 0)] = new RivalCharge { Count = I(f, 1), Bits = I(f, 2) };
+                }
+            }
+        }
+
         private static void Owed(SupplierState s, string body)
         {
             string[] records = body.Split(';');
-            for (int i = 0; i < records.Length && s.Owed.Count < 64; i++)
+            for (int i = 0; i < records.Length; i++)
             {
                 string[] f = records[i].Split('|');
                 long cents = L(f, 2);
@@ -256,7 +303,8 @@ namespace RealLifeOverhaul.Suppliers
                 {
                     continue;
                 }
-                s.Owed.Add(new OwedLine { Supplier = I(f, 0), Contract = Math.Max(0, I(f, 1)), Cents = cents, Since = Math.Max(0, I(f, 3)), Due = Math.Max(0, I(f, 4)), Settlement = I(f, 5) == 1 });
+                s.Owed.Add(new OwedLine { Supplier = I(f, 0), Contract = Math.Max(0, I(f, 1)), Cents = cents, Since = Math.Max(0, I(f, 3)), Due = Math.Max(0, I(f, 4)),
+                    Settlement = I(f, 5) == 1, Acted = f.Length > 6 ? I(f, 6) == 1 : I(f, 5) == 1 });   // a line from before the mark was acted on if it was a settlement
             }
         }
 

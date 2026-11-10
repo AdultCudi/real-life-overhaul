@@ -64,10 +64,11 @@ namespace RealLifeOverhaul.Suppliers
                     return "reallife_supply_note_not_taken";
                 case SupplyEventKind.Tomorrow:
                     warn = true;
-                    bool theirs = SupplierRules.Theirs((Cause)e.C);
-                    data = SupplierGame.Data("supplier", firm, "business", place, "day", e.B.ToString(), "cause", Cause((Cause)e.C), "days", e.A.ToString(), "share", Percent((int)e.A));
-                    return e.A <= SupplierCatalogue.LateDaysMost ? (theirs ? "reallife_supply_note_late_theirs" : "reallife_supply_note_late")
-                        : theirs ? "reallife_supply_note_short_theirs" : "reallife_supply_note_short";
+                    Cause cause = (Cause)(e.C & (SupplyEvent.KnewBit - 1));
+                    bool theirs = SupplierRules.Theirs(cause), knew = theirs && (e.C & SupplyEvent.KnewBit) != 0;
+                    data = SupplierGame.Data("supplier", firm, "business", place, "day", e.B.ToString(), "cause", Cause(cause), "days", e.A.ToString(), "share", Percent((int)e.A));
+                    return e.A <= SupplierCatalogue.LateDaysMost ? (knew ? "reallife_supply_note_late_knew" : theirs ? "reallife_supply_note_late_theirs" : "reallife_supply_note_late")
+                        : knew ? "reallife_supply_note_short_knew" : theirs ? "reallife_supply_note_short_theirs" : "reallife_supply_note_short";
                 case SupplyEventKind.Credit:
                     data = SupplierGame.Data("supplier", firm, "business", place, "amount", SupplierGame.Money(e.A), "n", e.B.ToString(), "most", SupplierCatalogue.FailuresToLeave.ToString());
                     return "reallife_supply_note_credit";

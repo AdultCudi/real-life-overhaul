@@ -19,8 +19,14 @@ namespace RealLifeOverhaul.Suppliers
         /// <summary>The player's credit rating, 300 to 850; 0 where the credit side keeps none. Null: 0.</summary>
         public static Func<int> Credit;
 
-        /// <summary>True where a manager of the mod's with stock orders on decides at a business today. Null: false.</summary>
+        /// <summary>True where a manager of the mod's with stock orders on decides at a business today: one at work, or the regional manager standing in. Null: false.</summary>
         public static Func<BuildingRegistration, bool> Manager;
+
+        /// <summary>That manager's budget for the month: a sum in whole money is spent from it and true, or false, nothing spent, when it does not fit. Null: no budget.</summary>
+        public static Func<BuildingRegistration, long, bool> Budget;
+
+        /// <summary>What the wallet must keep for the investors of the player's firms (Tech's firm account), cents; a payment to a supplier never takes it. Null: nothing.</summary>
+        public static Func<long> Reserved;
 
         /// <summary>A rival tycoon's name while they are forward and the rivals are not resting; null otherwise. Null: none.</summary>
         public static Func<int, string> RivalName;
@@ -37,6 +43,8 @@ namespace RealLifeOverhaul.Suppliers
             Day = null;
             Credit = null;
             Manager = null;
+            Budget = null;
+            Reserved = null;
             RivalName = null;
             RivalMove = null;
             Outlets = null;

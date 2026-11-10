@@ -42,10 +42,10 @@ namespace RealLifeOverhaul.Suppliers
         }
 
         /// <summary>The option: on under the living economy's master switch.</summary>
-        public static bool On => Settings.LivingPopulation && Settings.LivingSuppliers;
+        public static bool On => SupplierRules.On(Settings.LivingPopulation, Settings.LivingSuppliers);
 
         /// <summary>True while a save is read, the option is on and nothing has failed.</summary>
-        public bool Running => _loaded && !_broken && On;
+        public bool Running => SupplierRules.Running(_loaded, _broken, Settings.LivingPopulation, Settings.LivingSuppliers);
 
         /// <summary>The state in use. Read it only while <see cref="Running"/>.</summary>
         public SupplierState State => _state;
@@ -121,11 +121,12 @@ namespace RealLifeOverhaul.Suppliers
                 Install();
             }
             int day = SupplierGame.Today, hour = SupplierGame.HourNow;
-            if (day != _state.LastDay)
+            if (SupplierRules.DayDue(_state.LastDay, day))
             {
+                CatchUp(day);
                 DayPass(day);
             }
-            if (day != _hourDay || hour != _hour)
+            if (SupplierRules.HourDue(_hourDay, _hour, day, hour))
             {
                 _hourDay = day;
                 _hour = hour;
@@ -156,6 +157,10 @@ namespace RealLifeOverhaul.Suppliers
             if (version == 0)
             {
                 _state.LastDay = day;   // a save from before the feature: nothing in it, and its first day is counted from tomorrow
+            }
+            else if (_state.LastDay < day - 1)
+            {
+                _state.LastDay = day - 1;   // the option was off, or the save is from long ago: a pause, not days to play (Resume put the contracts on at their next delivery day)
             }
             _hourDay = -1;
             _hour = -1;
@@ -252,6 +257,22 @@ namespace RealLifeOverhaul.Suppliers
         }
 
         // ---- the day
+
+        // A time skip of several days (a long sleep, a journey): each day that went by is played by the engine (SupplierEngine.CatchUp), so how the player slept does not
+        // change what happened.
+        private void CatchUp(int day)
+        {
+            int played = SupplierEngine.CatchUp(_state, _world, day);
+            if (played == 0)
+            {
+                return;
+            }
+            Flush();
+            if (Verbose)
+            {
+                Logger?.Info("Suppliers check (time skip): " + played + " elapsed day(s) played one by one up to day " + day + ": PASS");
+            }
+        }
 
         private void DayPass(int day)
         {
@@ -379,10 +400,11 @@ namespace RealLifeOverhaul.Suppliers
             return day >= 0;
         }
 
-        /// <summary>Units the contracts are due to bring a business of a product from a day to another, both counted: a manager's order is smaller by them.</summary>
+        /// <summary>Units the contracts honestly expect to bring a business of a product from a day to another, both counted, each once: a manager's order is smaller by them.</summary>
         public int Coming(BuildingRegistration reg, string item, int fromDay, int toDay)
         {
-            return Running && reg != null && reg.Address != null ? _state.Coming(SupplierGame.Key(reg.Address), item, fromDay, toDay) : 0;
+            return Running && reg != null && reg.Address != null
+                ? _state.Coming(SupplierGame.Key(reg.Address), item, fromDay, toDay, SupplierGame.BackorderOf(item), SupplierGame.Spare) : 0;
         }
 
         /// <summary>Units the contracts brought a business of a product since a day and hour: a manager counts them as come when working out what was used.</summary>

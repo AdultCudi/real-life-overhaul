@@ -234,6 +234,10 @@ namespace RealLifeOverhaul.Suppliers
                 box.RowWords(SupplierText.Fill("reallife_supply_row_delivery"),
                     SupplierText.Fill("reallife_supply_delivery_value", "amount", SupplierGame.Money(p.Value), "n", p.Lines.ToString()));
                 box.RowWords(SupplierText.Fill("reallife_supply_row_price"), SupplyPages.Against(w, p.Against), p.Against <= 1000 ? CellTone.Green : CellTone.Plain);
+                if (p.LeftOut > 0)
+                {
+                    box.Line(SupplierText.Fill("reallife_supply_left_out", "n", p.LeftOut.ToString(), "most", SupplierCatalogue.LinesMost.ToString()), CellTone.Yellow);
+                }
                 box.Note(f.TermStep > 0 ? SupplierText.Fill("reallife_supply_take_or_pay", "share", SupplierText.Percent(SupplierCatalogue.BreakShare))
                     : SupplierText.Fill("reallife_supply_once_note"));
                 int supplier = p.Id, weeks = SupplyFacts.Weeks(f.TermStep), share = f.ShareStep;

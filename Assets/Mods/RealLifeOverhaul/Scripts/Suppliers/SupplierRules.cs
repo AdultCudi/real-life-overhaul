@@ -32,6 +32,7 @@ namespace RealLifeOverhaul.Suppliers
     /// <summary>What a rival shop's day came to on the supply side.</summary>
     public struct RivalDay
     {
+        public bool Skipped;    // its last valued day was charged already (the entry has not changed since): nothing comes off again
         public int Cents;       // what comes off its day (a saving is negative)
         public int Firm;        // who it buys from; 0 the wholesale stores
         public bool Contract;   // on a fixed price
@@ -73,6 +74,21 @@ namespace RealLifeOverhaul.Suppliers
             return range <= 1 ? 0 : (int)(Hash(seed, a, b, purpose) % (uint)range);
         }
 
+        /// <summary>A rival shop's number from its street and number, the same on every machine and made without building a string.</summary>
+        public static int ShopId(string streetName, int streetNumber)
+        {
+            unchecked
+            {
+                uint h = 2166136261u;
+                for (int i = 0; streetName != null && i < streetName.Length; i++)
+                {
+                    h = (h ^ streetName[i]) * 16777619u;
+                }
+                h = (h ^ (uint)streetNumber) * 16777619u;
+                return (int)(h & 0x7fffffff);
+            }
+        }
+
         /// <summary>A number for a text (a shop's key), the same on every machine.</summary>
         public static int Text(string text)
         {
@@ -98,6 +114,92 @@ namespace RealLifeOverhaul.Suppliers
         {
             return (long)money * Math.Max(1, level) / 10;
         }
+
+        /// <summary>
+        /// A supplier's list price of a product, mills a unit: the item's own wholesale price (the one the city's economy writes by its kind's factor), the game's market-price
+        /// multiplier and, for the price of the day, the whole market's event on it (a shortage, a backorder). It never holds the importers' daily price index, which the game
+        /// re-rolls for every product every day, on any change of business and at every export, with a roll nobody seeds: a supplier's price (a fixed one above all) is not
+        /// the importers' roll of the day, so loading a save again for a low day finds nothing and no price is locked at a momentary low.
+        /// </summary>
+        public static long ListMills(float wholesale, float multiplier, float market = 1f)
+        {
+            double price = (double)wholesale * multiplier * market;
+            return price > 0.0 && price < 1e9 ? (long)Math.Round(price * 1000.0) : 0L;
+        }
+
+        /// <summary>
+        /// A day's conditions as a delivery is judged by them, the day before and for the rival shops: what the mod honestly knows of any day from the save's own seed. The
+        /// city's economy reads the live sky for today, and a storm that is raging is no forecast (nor the same on every load), so it is dropped; a storm is the seasons'
+        /// seeded summer storm day, known ahead like a heat wave or ice.
+        /// </summary>
+        public static CityDay Forecast(CityDay city, bool weatherMatters, bool seasons, bool seededStormDay)
+        {
+            if (city.Weather == CityWeather.Storm)
+            {
+                city.Weather = CityWeather.Fair;
+            }
+            if (weatherMatters && seasons && seededStormDay && city.Weather == CityWeather.Fair)
+            {
+                city.Weather = CityWeather.Storm;
+            }
+            return city;
+        }
+
+        // ---- when the director runs what (game-free, so the checks drive the very rules the director asks)
+
+        /// <summary>The feature runs under the living economy's master switch with its own option on.</summary>
+        public static bool On(bool livingPopulation, bool suppliersOption) => livingPopulation && suppliersOption;
+
+        /// <summary>True while a save is read, the option is on and nothing has failed.</summary>
+        public static bool Running(bool loaded, bool broken, bool livingPopulation, bool suppliersOption) => loaded && !broken && On(livingPopulation, suppliersOption);
+
+        /// <summary>The day's pass is due on a day other than the last one counted.</summary>
+        public static bool DayDue(int lastDay, int today) => today != lastDay;
+
+        /// <summary>The hour's deliveries are due on an hour other than the last one looked at.</summary>
+        public static bool HourDue(int seenDay, int seenHour, int day, int hour) => day != seenDay || hour != seenHour;
+
+        /// <summary>
+        /// The first of the days that went by since the last one counted that is played one by one (a time skip, a long sleep): none (today) for a day that follows; at
+        /// most <see cref="SupplierCatalogue.CatchUpDays"/> of them, the days before being a pause (<paramref name="paused"/>).
+        /// </summary>
+        public static int PlayFrom(int lastDay, int today, out bool paused)
+        {
+            paused = false;
+            int from = lastDay + 1;
+            if (from >= today)
+            {
+                return today;
+            }
+            if (today - from > SupplierCatalogue.CatchUpDays)
+            {
+                paused = true;
+                return today - SupplierCatalogue.CatchUpDays;
+            }
+            return from;
+        }
+
+        /// <summary>
+        /// Whether the city's rival shops' day may be gone through now: never on a Going Public guest (the city's shops are the host's books), once a day, from the hour the
+        /// game has valued the shops, and a day under way is finished.
+        /// </summary>
+        public static bool RivalsMay(bool guest, int rivalDay, int today, bool underWay, int hour, bool valuing)
+        {
+            if (guest || rivalDay >= today)
+            {
+                return false;
+            }
+            return underWay || (hour >= SupplierCatalogue.RivalFromHour && !valuing);
+        }
+
+        /// <summary>The rival tycoons' outlets are gone through only while no Going Public session keeps the rivals at rest.</summary>
+        public static bool TycoonsMove(bool inSession) => !inSession;
+
+        /// <summary>A supplier's margin reaches the tycoon whose holding owns it: a whole dollar at least, and no session keeps the rivals at rest.</summary>
+        public static bool OwnerGainMay(long cents, bool inSession) => cents >= 100 && !inSession;
+
+        /// <summary>A payment to a supplier: never over the cash that may be paid with (over the investors' floor), and never a sum the booking cannot carry.</summary>
+        public static bool PayMay(long cents, long spendable) => cents <= spendable && cents <= int.MaxValue / 2;
 
         // ---- a supplier as it stands
 
@@ -250,10 +352,14 @@ namespace RealLifeOverhaul.Suppliers
             return Math.Max(0L, missingCents) * SupplierCatalogue.ShortCredit / 1000;
         }
 
-        /// <summary>The credit for a delivery the supplier itself made late, cents: a share of its value for each day, up to a most.</summary>
+        /// <summary>
+        /// The credit for a delivery the supplier itself made late, cents: the short credit on the share of the week's goods the late days missed, so a delivery that comes
+        /// whole is never credited more than the same days short would be (a credit never exceeds the honest loss).
+        /// </summary>
         public static long LateCredit(long valueCents, int days)
         {
-            return Math.Max(0L, valueCents) * Math.Min(SupplierCatalogue.LateCreditMost, Math.Max(0, days) * SupplierCatalogue.LateCreditADay) / 1000;
+            long missing = Math.Max(0L, valueCents) * Math.Min(SupplierCatalogue.WeekDays, Math.Max(0, days)) / SupplierCatalogue.WeekDays;
+            return ShortCredit(missing);
         }
 
         // ---- how a delivery comes
@@ -486,11 +592,13 @@ namespace RealLifeOverhaul.Suppliers
         }
 
         /// <summary>
-        /// A rival shop's day on the supply side, by the rules the player lives by: it buys from a supplier of its own choosing, most on a fixed price written at the
-        /// supplier's book (a protection while the market runs over it, a burden under it), the rest at the day's price; on its delivery day the supplier's delivery is
-        /// judged by the very draw the player's is, and a late or short one costs it sales. Never more than a share of its day either way, nothing of a day it made nothing.
+        /// A rival shop's day on the supply side, by the rules the player lives by: a supplier of its own choosing, most on a fixed price written at the supplier's
+        /// book, the rest at the day's price; on its delivery day the very draw the player's is judged by, and a late or short one costs it sales. What comes off is what
+        /// it paid against the price its day was valued at, so the market's push is never counted twice (docs/features/suppliers.md, "The rivals"). Never more than a share
+        /// of its day either way, nothing of a day it made nothing.
         /// </summary>
-        public static RivalDay Rival(int seed, int shop, int kind, SupplierState s, int day, int factor, CityDay conditions, int[] shortage, int dayCents)
+        /// <param name="baseline">thousandths of calm the day was valued at; 0 the kind's factor of the day (a city shop), 1000 calm (a tycoon's outlet)</param>
+        public static RivalDay Rival(int seed, int shop, int kind, SupplierState s, int day, int factor, CityDay conditions, int[] shortage, int dayCents, int baseline = 0)
         {
             var r = new RivalDay();
             if (dayCents <= 0 || kind < 0 || kind >= SupplierCatalogue.Kinds)
@@ -507,7 +615,8 @@ namespace RealLifeOverhaul.Suppliers
                 int level = Level(def, f);
                 paid = r.Contract ? (int)((long)f.Book[kind] * level / 1000 * (1000 - SupplierCatalogue.TermDiscount[1]) / 1000) : (int)((long)market * level / 1000);
             }
-            long cost = (long)dayCents * SupplierCatalogue.RivalGoodsShare / 1000 * (paid - 1000) / 1000;
+            int valued = baseline > 0 ? baseline : market;
+            long cost = (long)dayCents * SupplierCatalogue.RivalGoodsShare / 1000 * (paid - valued) / valued;
             if (def != null && Roll(seed, shop, 0, PurposeRivalDay, SupplierCatalogue.WeekDays) == day % SupplierCatalogue.WeekDays)
             {
                 Judged j = Judge(seed, def, f, day, 1 << kind, conditions, shortage);

@@ -36007,5 +36007,8 @@
   "reallife_supply_test_rivals": "Rakip dükkânların tedarik günü çalıştı: {n} dükkân okundu, {moved} tanesi daha fazla ya da daha az ödedi, {failed} tanesi geç ya da eksik teslimat aldı.",
   "reallife_supply_test_back": "Tedarikçiler testlerden önceki haline döndü. Ödenen para ve teslim edilen mallar kalır.",
   "reallife_supply_test_back_none": "Geri alınacak bir şey yok.",
-  "reallife_supply_test_off": "Tedarikçiler ve sözleşmeler kapalı ya da henüz hazır değil."
+  "reallife_supply_test_off": "Tedarikçiler ve sözleşmeler kapalı ya da henüz hazır değil.",
+  "reallife_supply_left_out": "Bu işletmenin {n} ürünü daha dışarıda kalıyor. Bir sözleşme {most} ürün içerir, en çok satanlar önce.",
+  "reallife_supply_note_late_knew": "{supplier}'dan {business}'e, {day}. günde beklenen teslimat {days} gün geç geliyor: {cause}. Sorunu bilerek imzaladınız, bu yüzden tazminat yok. Başka bir tedarikçi ya da bir toptancı açığı kapatabilir.",
+  "reallife_supply_note_short_knew": "{supplier}'dan {business}'e {day}. günde giden teslimat {share} daha az getiriyor: {cause}. Yalnızca geleni ödersiniz. Sorunu bilerek imzaladınız, bu yüzden tazminat yok. Başka bir tedarikçi ya da bir toptancı açığı kapatabilir."
 }

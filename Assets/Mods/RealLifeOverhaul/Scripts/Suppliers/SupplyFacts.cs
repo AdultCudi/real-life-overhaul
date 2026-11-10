@@ -63,7 +63,7 @@ namespace RealLifeOverhaul.Suppliers
         public bool Open = true;
         public Refusal Why;
         public long Value, MarketValue;     // cents a delivery
-        public int Against = 1000, FirstDay, Lines;
+        public int Against = 1000, FirstDay, Lines, LeftOut;   // LeftOut: products this place sells that it trades and a contract has no room for
     }
 
     /// <summary>One product of a contract as a page shows it: its name in the game's words, the units a delivery and the unit price in mills.</summary>

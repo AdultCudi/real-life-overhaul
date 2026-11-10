@@ -36007,5 +36007,8 @@
   "reallife_supply_test_rivals": "De leveringsdag van de concurrerende winkels is gedraaid: {n} winkels gelezen, {moved} betaalden meer of minder, {failed} hadden een late of onvolledige levering.",
   "reallife_supply_test_back": "De leveranciers zijn terug zoals ze waren voor de tests. Betaald geld en geleverde goederen blijven.",
   "reallife_supply_test_back_none": "Er is niets om terug te zetten.",
-  "reallife_supply_test_off": "Leveranciers en contracten zijn uit of nog niet klaar."
+  "reallife_supply_test_off": "Leveranciers en contracten zijn uit of nog niet klaar.",
+  "reallife_supply_left_out": "Nog {n} producten van dit bedrijf vallen af. Een contract bevat {most} producten, de bestverkopers eerst.",
+  "reallife_supply_note_late_knew": "De levering van {supplier} aan {business}, verwacht op dag {day}, komt {days} dagen te laat: {cause}. Je wist ervan, dus er is geen tegoed. Een andere leverancier of een groothandel kan het gat opvullen.",
+  "reallife_supply_note_short_knew": "De levering van {supplier} aan {business} op dag {day} brengt {share} minder: {cause}. Je betaalt alleen wat er komt. Je wist ervan, dus er is geen tegoed. Een andere leverancier of een groothandel kan het gat opvullen."
 }

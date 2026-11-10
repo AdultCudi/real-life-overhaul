@@ -36007,5 +36007,8 @@
   "reallife_supply_test_rivals": "竞争对手店铺的供货日已运行：读取了{n}家店铺，{moved}家支付的更多或更少，{failed}家遇到迟到或缺量的送货。",
   "reallife_supply_test_back": "供应商已恢复到测试前的状态。已付款项和已送达的货物保持不变。",
   "reallife_supply_test_back_none": "没有需要恢复的内容。",
-  "reallife_supply_test_off": "供应商与合同已关闭，或尚未准备就绪。"
+  "reallife_supply_test_off": "供应商与合同已关闭，或尚未准备就绪。",
+  "reallife_supply_left_out": "另有{n}种本店商品未列入。合同包含{most}种商品，销量最好的排在前面。",
+  "reallife_supply_note_late_knew": "{supplier}应于第{day}天送往{business}的货将迟到{days}天：{cause}。你签约时已知其问题，因此不需赔付。其他供应商或批发店可以填补缺口。",
+  "reallife_supply_note_short_knew": "{supplier}于第{day}天送往{business}的货少送了{share}：{cause}。你只为实际到货的部分付款。你签约时已知其问题，因此不需赔付。其他供应商或批发店可以填补缺口。"
 }

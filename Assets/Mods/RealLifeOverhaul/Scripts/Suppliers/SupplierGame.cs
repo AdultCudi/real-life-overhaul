@@ -30,11 +30,15 @@ namespace RealLifeOverhaul.Suppliers
         private static readonly Dictionary<string, int> Sold = new Dictionary<string, int>(32, StringComparer.Ordinal);
 
         private readonly SupplierState _state;
+        private int _playing = -1;   // a past day the engine is playing (a time skip's days, one by one); -1 for the game's own day
 
         public SupplierGame(SupplierState state)
         {
             _state = state;
         }
+
+        /// <summary>The engine plays a day that has passed: the world answers with that day, and with the delivery hour. -1 puts the game's own clock back.</summary>
+        public void Play(int day) => _playing = day;
 
         private static GameInstance Save => SaveGameManager.Current;
 
@@ -46,16 +50,30 @@ namespace RealLifeOverhaul.Suppliers
 
         // ---- the clock, the cash, the customer's standing
 
-        public int Day => Today;
+        public int Day => _playing >= 0 ? _playing : Today;
 
-        public int Hour => HourNow;
+        public int Hour => _playing >= 0 ? SupplierCatalogue.DeliveryHour : HourNow;
 
-        public int Month => Today / Math.Max(1, MacroCatalogue.MonthDays(GameCalendar.DaysPerYear));
+        public int Month => Day / Math.Max(1, MacroCatalogue.MonthDays(GameCalendar.DaysPerYear));
 
-        public long Cash => CashNow;
+        /// <summary>
+        /// What a supplier may be paid from: the cash less what the investors of the player's firms are owed. A payment never takes that, so it can neither count as misuse
+        /// of a firm's money nor take a firm under its floor.
+        /// </summary>
+        public long Cash => Spare;
 
         /// <summary>The player's cash in cents, never under nothing.</summary>
         public static long CashNow => Save != null ? (long)Math.Floor(Mathf.Clamp(Save.Money, 0f, 1e12f) * 100.0) : 0L;
+
+        /// <summary>The cash that may go to suppliers, cents: over the investors' floor of the player's firms (Tech's firm account), read through the bridge.</summary>
+        public static long Spare
+        {
+            get
+            {
+                Func<long> reserved = SupplierBridges.Reserved;
+                return Math.Max(0L, CashNow - Math.Max(0L, reserved != null ? reserved() : 0L));
+            }
+        }
 
         public int Level => Prices.Level;
 
@@ -109,17 +127,21 @@ namespace RealLifeOverhaul.Suppliers
 
         public long Market(string item) => MarketOf(item);
 
+        // The item's own wholesale price (the one the city's economy writes) and the game's market-price multiplier: the importers' daily price index is left out (SupplierRules.ListMills).
+        private static float Multiplier => Save != null && Save.gameVariables != null && Save.gameVariables.marketPriceMultiplier > 0f ? Save.gameVariables.marketPriceMultiplier : 1f;
+
+        /// <summary>A supplier's list price of a product, free of the importers' daily price index, mills: what a fixed price is written from.</summary>
         public static long BaseOf(string item)
         {
             Item it = ItemsGetter.GetByName(item, true);
-            return it != null ? Mills(it.GetWholesalePrice()) : 0L;
+            return it != null ? SupplierRules.ListMills(it.wholesalePrice, Multiplier) : 0L;
         }
 
-        /// <summary>The market's price of the day, as the game's importers charge it: the wholesale price and the whole market's event on it (a shortage, a backorder).</summary>
+        /// <summary>A supplier's price of the day: its list price and the whole market's event on it (a shortage, a backorder), still without the importers' daily index.</summary>
         public static long MarketOf(string item)
         {
             Item it = ItemsGetter.GetByName(item, true);
-            return it != null ? Mills(it.GetWholesalePrice() * ProductMarketHelper.GetProductMarketEventMultiplier(item)) : 0L;
+            return it != null ? SupplierRules.ListMills(it.wholesalePrice, Multiplier, ProductMarketHelper.GetProductMarketEventMultiplier(item)) : 0L;
         }
 
         public long Export(string item)
@@ -127,7 +149,10 @@ namespace RealLifeOverhaul.Suppliers
             return ItemsGetter.GetByName(item, true) != null ? Mills(ProductMarketHelper.GetProductExportPrice(item)) : 0L;
         }
 
-        public bool Backorder(string item) => ProductMarketHelper.IsProductInMarketEvent(item, MarketEventType.ProductBackorder);
+        public bool Backorder(string item) => BackorderOf(item);
+
+        /// <summary>True while the game has a product on backorder across the whole market.</summary>
+        public static bool BackorderOf(string item) => ProductMarketHelper.IsProductInMarketEvent(item, MarketEventType.ProductBackorder);
 
         public int Most(string item)
         {
@@ -297,17 +322,26 @@ namespace RealLifeOverhaul.Suppliers
                 return 0;
             }
             var cargo = new CargoInstance(item, units, mills / 1000f);
-            if (IsWarehouse(reg))
+            try
             {
-                ItemHelper.DeliverCargoToBuilding(cargo, reg, IsPallet);
-            }
-            else
-            {
-                ItemHelper.DeliverCargoToBuilding(cargo, reg, x => Shows(x, item));
-                if (cargo.amount > 0)
+                if (IsWarehouse(reg))
                 {
-                    ItemHelper.DeliverCargoToBuilding(cargo, reg, IsStorage);
+                    ItemHelper.DeliverCargoToBuilding(cargo, reg, IsPallet);
                 }
+                else
+                {
+                    ItemHelper.DeliverCargoToBuilding(cargo, reg, x => Shows(x, item));
+                    if (cargo.amount > 0)
+                    {
+                        ItemHelper.DeliverCargoToBuilding(cargo, reg, IsStorage);
+                    }
+                }
+            }
+            catch (Exception e)
+            {
+                // The game's own delivery call failed part way: what it put down stays, the rest found no room and stays with the supplier (the contract was stepped and
+                // paid before the goods were put down, so a fault here never charges a delivery twice).
+                SupplierDirector.Logger?.Error(e);
             }
             int took = units - Math.Max(0, cargo.amount);
             if (took > 0)
@@ -344,9 +378,9 @@ namespace RealLifeOverhaul.Suppliers
             {
                 return true;
             }
-            if (cents > CashNow || cents > int.MaxValue / 2)
+            if (!SupplierRules.PayMay(cents, Spare))
             {
-                return false;
+                return false;   // never more than the cash over the investors' floor
             }
             return BizBooks.Book(-(cents / 100f), Info(key, place, supplier, true), null, AddressOf(place), force: false, showNotification: false);
         }
@@ -380,6 +414,23 @@ namespace RealLifeOverhaul.Suppliers
         // ---- who decides
 
         public bool Buyer(string place) => BuyerAt(Reg(place));
+
+        /// <summary>The manager's budget for a stock order: this month's room for the sum, spent when it fits (the game's purchasing agents have none).</summary>
+        public bool Spend(string place, long cents)
+        {
+            BuildingRegistration reg = Reg(place);
+            if (reg == null)
+            {
+                return false;
+            }
+            Func<BuildingRegistration, bool> manager = SupplierBridges.Manager;
+            if (manager == null || !manager(reg))
+            {
+                return true;   // a purchasing agent of the game's decides here: it has no budget of the mod's
+            }
+            Func<BuildingRegistration, long, bool> budget = SupplierBridges.Budget;
+            return budget == null || budget(reg, (cents + 99) / 100);
+        }
 
         /// <summary>
         /// True where somebody who orders stock decides at a place today: a manager of the mod's with stock orders on (Economy/Company), or for a warehouse a purchasing
@@ -483,7 +534,7 @@ namespace RealLifeOverhaul.Suppliers
         public void OwnerGain(int tycoon, long cents)
         {
             Action<int, long> move = SupplierBridges.RivalMove;
-            if (move != null && cents >= 100 && !GoingPublic.InSession)
+            if (move != null && SupplierRules.OwnerGainMay(cents, GoingPublic.InSession))
             {
                 move(tycoon, cents / 100);
             }
@@ -544,6 +595,20 @@ namespace RealLifeOverhaul.Suppliers
         public static int LastDay(BuildingRegistration r)
         {
             return r != null && r.dailyIncomes != null && r.dailyIncomes.Count > 0 ? Mathf.RoundToInt(Mathf.Clamp(r.dailyIncomes[r.dailyIncomes.Count - 1], -1e7f, 1e7f) * 100f) : 0;
+        }
+
+        /// <summary>The game's list of a rival shop's valued days: how many it holds, and the bits of the last, the entry the supply side's cents come off. False for a shop with none.</summary>
+        public static bool Entry(BuildingRegistration r, out int count, out int bits)
+        {
+            count = 0;
+            bits = 0;
+            if (r == null || r.dailyIncomes == null || r.dailyIncomes.Count == 0)
+            {
+                return false;
+            }
+            count = r.dailyIncomes.Count;
+            bits = BitConverter.SingleToInt32Bits(r.dailyIncomes[count - 1]);
+            return true;
         }
 
         /// <summary>The supply side's cents come off (or, a saving, go on) a rival shop's last valued day, which its rival's income, worth and closing are read from.</summary>

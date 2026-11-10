@@ -28,7 +28,7 @@ namespace RealLifeOverhaul.Suppliers
                 .Fact("supply_break", () => Share(SupplierCatalogue.BreakShare))
                 .Fact("supply_failures", () => SupplierCatalogue.FailuresToLeave.ToString(Inv))
                 .Fact("supply_short_credit", () => Share(SupplierCatalogue.ShortCredit))
-                .Fact("supply_late_credit", () => Share(SupplierCatalogue.LateCreditADay))
+                .Fact("supply_late_credit", () => Share(SupplierCatalogue.ShortCredit / SupplierCatalogue.WeekDays))
                 .Fact("supply_grace_most", () => SupplierCatalogue.GraceDays[0].ToString(Inv))
                 .Fact("supply_grace_least", () => SupplierCatalogue.GraceDays[2].ToString(Inv))
                 .Fact("supply_sour", () => SupplierCatalogue.SourDays.ToString(Inv))

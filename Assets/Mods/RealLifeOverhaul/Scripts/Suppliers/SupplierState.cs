@@ -77,6 +77,7 @@ namespace RealLifeOverhaul.Suppliers
         public bool Cover, LeaveRule;       // the buyer's rules: cover a late or short delivery at the day's price, leave when the right to leave arises
         public bool Reminded;               // the end of the term was told
         public bool Covering;               // a one-off order made to cover another contract's delivery: it is never covered itself
+        public bool Knew;                   // the supplier was in trouble or short of money on the day of signing: a failure it brings is no failure of its own to the customer, who saw it
         public readonly List<ContractLine> Lines = new List<ContractLine>(SupplierCatalogue.LinesMost);
 
         public bool Running => State == ContractState.Running;
@@ -97,7 +98,8 @@ namespace RealLifeOverhaul.Suppliers
         public int Supplier, Contract;
         public long Cents;
         public int Since, Due;              // the day it arose, the last day to pay it before the supplier acts
-        public bool Settlement;             // a settlement or what an ended contract left: nothing more can follow from it but the record
+        public bool Settlement;             // a settlement or what an ended contract left
+        public bool Acted;                  // the supplier has acted on it past its days (the record, the days it offers nothing): once, whatever the sum
     }
 
     /// <summary>A supplier as the save keeps it: its health, its trouble, whether it trades, how far it has grown and the book of fixed prices it has written.</summary>
@@ -163,6 +165,12 @@ namespace RealLifeOverhaul.Suppliers
         public NoteKind Kind;
     }
 
+    /// <summary>The last valued day of a rival shop that the supply side has been charged against: the game's list of days has this many entries and its last holds these bits.</summary>
+    public struct RivalCharge
+    {
+        public int Count, Bits;
+    }
+
     /// <summary>Goods a contract brought to a place: what a manager's order counts as come.</summary>
     public sealed class DeliveryLog
     {
@@ -180,6 +188,7 @@ namespace RealLifeOverhaul.Suppliers
     /// <summary>One thing the engine did: its kind, the contract and supplier it is about, the place's name and three figures of its kind. Never saved.</summary>
     public struct SupplyEvent
     {
+        public const int KnewBit = 8;   // added to a tomorrow's cause: the customer signed knowing of the supplier's trouble, so no credit is due
         public SupplyEventKind Kind;
         public int Contract, Firm;
         public string Place;
@@ -205,6 +214,18 @@ namespace RealLifeOverhaul.Suppliers
         public readonly List<SupplyNote> Notes = new List<SupplyNote>(4);
         public readonly List<DeliveryLog> Log = new List<DeliveryLog>(32);
         public readonly List<SupplyEvent> Events = new List<SupplyEvent>(8);   // not saved
+        public readonly Dictionary<int, RivalCharge> Charges = new Dictionary<int, RivalCharge>(64);   // by shop: the entry of its valued days that was charged last, so none is charged twice
+
+        /// <summary>True when a rival shop's last valued day is the very entry that was charged: nothing in it has changed since, so it is not charged again.</summary>
+        public bool WasCharged(int shop, int count, int bits)
+        {
+            return Charges.TryGetValue(shop, out RivalCharge c) && c.Count == count && c.Bits == bits;
+        }
+
+        public void Charged(int shop, int count, int bits)
+        {
+            Charges[shop] = new RivalCharge { Count = count, Bits = bits };
+        }
 
         public SupplierState()
         {
@@ -283,27 +304,41 @@ namespace RealLifeOverhaul.Suppliers
             return n;
         }
 
-        /// <summary>Units the running contracts are due to bring to a place of an item from a day up to and counting another.</summary>
-        public int Coming(string place, string item, int fromDay, int toDay)
+        /// <summary>
+        /// Units the running contracts honestly expect to bring to a place of an item from a day up to and counting another, each delivery once: none of a product the game
+        /// has on backorder, none from a supplier that has gone under, none from a strict supplier when the cash in hand does not cover the delivery (it brings nothing
+        /// unpaid), the share a short delivery will bring, and a late one on the day it will come. A covering order is a delivery of its own, so what it brings is counted
+        /// beside the short or late one it stands in for, and never twice.
+        /// </summary>
+        /// <param name="backorder">the product is on backorder across the whole market</param>
+        /// <param name="spendable">the cash the customer can pay with now, cents</param>
+        public int Coming(string place, string item, int fromDay, int toDay, bool backorder, long spendable)
         {
             int n = 0;
-            for (int i = 0; i < Contracts.Count; i++)
+            for (int i = 0; i < Contracts.Count && !backorder; i++)
             {
                 Contract c = Contracts[i];
-                if (!c.Running || c.Place != place)
+                SupplierDef def = c.Running && c.Place == place ? SupplierCatalogue.Firm(c.Supplier) : null;
+                FirmState f = def != null ? Firm(c.Supplier) : null;
+                if (f == null || !f.Open)
                 {
                     continue;
                 }
-                for (int k = 0; k < c.Lines.Count; k++)
+                bool unpaid = def.Late == LatePolicy.Strict && SupplierEngine.Value(c) > spendable;
+                for (int k = 0; k < c.Lines.Count && !unpaid; k++)
                 {
-                    if (c.Lines[k].Item != item)
+                    ContractLine line = c.Lines[k];
+                    if (line.Item != item)
                     {
                         continue;
                     }
                     for (int n2 = 0; n2 < c.Left; n2++)
                     {
                         int day = c.Due + n2 * SupplierCatalogue.WeekDays + (n2 == 0 ? c.Slip : 0);   // only the delivery that is late slips: the ones after keep their week
-                        n += day >= fromDay && day <= toDay ? c.Lines[k].Units : 0;
+                        if (day >= fromDay && day <= toDay)
+                        {
+                            n += n2 == 0 ? SupplierRules.Brought(line.Units, line.Kind, c.Out, c.OutShare, c.OutKind) : line.Units;
+                        }
                     }
                 }
             }

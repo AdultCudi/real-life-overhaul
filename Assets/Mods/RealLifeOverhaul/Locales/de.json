@@ -36007,5 +36007,8 @@
   "reallife_supply_test_rivals": "Der Liefertag der Konkurrenzläden lief: {n} Läden gelesen, {moved} zahlten mehr oder weniger, {failed} hatten eine verspätete oder unvollständige Lieferung.",
   "reallife_supply_test_back": "Die Lieferanten sind wieder so, wie sie vor den Tests waren. Gezahltes Geld und gelieferte Waren bleiben.",
   "reallife_supply_test_back_none": "Es gibt nichts zurückzusetzen.",
-  "reallife_supply_test_off": "Lieferanten und Verträge sind ausgeschaltet oder noch nicht bereit."
+  "reallife_supply_test_off": "Lieferanten und Verträge sind ausgeschaltet oder noch nicht bereit.",
+  "reallife_supply_left_out": "{n} weitere Produkte dieses Betriebs fehlen. Ein Vertrag enthält {most} Produkte, die meistverkauften zuerst.",
+  "reallife_supply_note_late_knew": "Die Lieferung von {supplier} an {business}, fällig am Tag {day}, kommt {days} Tage zu spät: {cause}. Du wusstest davon, daher gibt es keine Gutschrift. Ein anderer Lieferant oder ein Großhändler kann die Lücke füllen.",
+  "reallife_supply_note_short_knew": "Die Lieferung von {supplier} an {business} am Tag {day} bringt {share} weniger: {cause}. Du zahlst nur, was ankommt. Du wusstest davon, daher gibt es keine Gutschrift. Ein anderer Lieferant oder ein Großhändler kann die Lücke füllen."
 }

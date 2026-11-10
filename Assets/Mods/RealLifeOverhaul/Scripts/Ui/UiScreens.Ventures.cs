@@ -147,6 +147,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_supply_item_sub_ended", "reallife_supply_kind_0", "reallife_supply_kind_1", "reallife_supply_kind_2",
                 "reallife_supply_kind_3", "reallife_supply_kind_4", "reallife_supply_kind_5", "reallife_supply_late_firm",
                 "reallife_supply_late_lenient", "reallife_supply_late_strict", "reallife_supply_lead_value", "reallife_supply_leave",
+                "reallife_supply_left_out",
                 "reallife_supply_limit_any", "reallife_supply_limit_market", "reallife_supply_limit_value", "reallife_supply_line_value",
                 "reallife_supply_market_note", "reallife_supply_news_none", "reallife_supply_next_late", "reallife_supply_next_short",
                 "reallife_supply_next_value", "reallife_supply_no_places", "reallife_supply_off_body", "reallife_supply_off_title",

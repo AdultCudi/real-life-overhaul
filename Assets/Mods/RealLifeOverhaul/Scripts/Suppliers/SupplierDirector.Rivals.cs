@@ -13,7 +13,6 @@ namespace RealLifeOverhaul.Suppliers
     public sealed partial class SupplierDirector
     {
         private const int RivalsASecond = 40;   // rival shops gone through in one second
-        private const int RivalFromHour = 1;    // the game values the city's shops at the turn of the day: their books are read from 01:00
 
         private readonly List<BuildingRegistration> _rivals = new List<BuildingRegistration>(256);
         private readonly int[] _customers = new int[SupplierCatalogue.Firms.Length];
@@ -34,16 +33,12 @@ namespace RealLifeOverhaul.Suppliers
 
         private void RivalsSecond(int today, int hour)
         {
-            if (GoingPublic.IsGuest || _state.RivalDay >= today)
+            if (!SupplierRules.RivalsMay(GoingPublic.IsGuest, _state.RivalDay, today, _rivalAt >= 0, hour, _state.RivalDay < today && _rivalAt < 0 && SupplierGame.Valuing))
             {
                 return;
             }
             if (_rivalAt < 0)
             {
-                if (hour < RivalFromHour || SupplierGame.Valuing)
-                {
-                    return;
-                }
                 SupplierGame.RivalShops(_rivals);
                 Array.Clear(_customers, 0, _customers.Length);
                 _rivalAt = 0;
@@ -73,11 +68,15 @@ namespace RealLifeOverhaul.Suppliers
                 {
                     continue;
                 }
-                RivalDay result = SupplierEngine.RivalShop(_state, _world, SupplierGame.Key(r.Address), kind, day, _customers);
+                int shop = SupplierRules.ShopId(r.Address.streetName, r.Address.streetNumber);
+                bool entry = SupplierGame.Entry(r, out int count, out int bits);
+                RivalDay result = SupplierEngine.RivalShop(_state, _world, shop, kind, day, _customers, entry ? count : -1, bits);
                 _rivalFailed += result.Failed ? 1 : 0;
-                if (result.Cents != 0)
+                if (result.Cents != 0 && entry)
                 {
                     SupplierGame.Charge(r, result.Cents);
+                    SupplierGame.Entry(r, out count, out bits);
+                    SupplierEngine.RivalCharged(_state, shop, count, bits);   // this entry is charged: a load part way through the game's valuation does not charge it again
                     _rivalCents += result.Cents;
                     _rivalMoved++;
                 }
@@ -101,7 +100,7 @@ namespace RealLifeOverhaul.Suppliers
             _outlets.Clear();
             _outletTypes.Clear();
             Action<List<RivalOutletRef>, List<string>> read = SupplierBridges.Outlets;
-            if (read == null || GoingPublic.InSession)
+            if (read == null || !SupplierRules.TycoonsMove(GoingPublic.InSession))
             {
                 return;
             }

@@ -36007,5 +36007,8 @@
   "reallife_supply_test_rivals": "O dia de fornecimento das lojas rivais rodou: {n} lojas lidas, {moved} pagaram mais ou menos, {failed} tiveram entrega atrasada ou incompleta.",
   "reallife_supply_test_back": "Os fornecedores voltaram como estavam antes dos testes. O dinheiro pago e os produtos entregues continuam.",
   "reallife_supply_test_back_none": "Não há nada para devolver.",
-  "reallife_supply_test_off": "Fornecedores e contratos estão desligados ou ainda não estão prontos."
+  "reallife_supply_test_off": "Fornecedores e contratos estão desligados ou ainda não estão prontos.",
+  "reallife_supply_left_out": "Mais {n} produtos deste negócio ficam de fora. Um contrato tem {most} produtos, os mais vendidos primeiro.",
+  "reallife_supply_note_late_knew": "A entrega de {supplier} para {business}, prevista para o dia {day}, chega {days} dias atrasada: {cause}. Você assinou sabendo do problema, então não há compensação. Outro fornecedor ou um atacadista pode cobrir a falta.",
+  "reallife_supply_note_short_knew": "A entrega de {supplier} para {business} no dia {day} traz {share} a menos: {cause}. Você paga só pelo que chega. Você assinou sabendo do problema, então não há compensação. Outro fornecedor ou um atacadista pode cobrir a falta."
 }

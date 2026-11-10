@@ -14,7 +14,9 @@ namespace RealLifeOverhaul.Suppliers
         int Hour { get; }
         /// <summary>The month the city counts, for the rivals' monthly sums.</summary>
         int Month { get; }
-        /// <summary>The customer's cash, cents.</summary>
+        /// <summary>The engine plays a day that has passed (a time skip's days one by one): the world answers with that day and the delivery hour. -1 puts the real clock back.</summary>
+        void Play(int day);
+        /// <summary>The cash the customer can pay suppliers with, cents: the cash less what the investors of their firms are owed (Tech's firm account), which a payment may never take.</summary>
         long Cash { get; }
         /// <summary>The city's price level, tenths of a point (1000 at the start).</summary>
         int Level { get; }
@@ -52,8 +54,13 @@ namespace RealLifeOverhaul.Suppliers
         bool Pay(long cents, string key, string place, int supplier);
         /// <summary>Money into the customer's cash.</summary>
         void Receive(long cents, string key, string place, int supplier);
-        /// <summary>True where somebody who orders stock decides at a place today: a manager of the mod's with stock orders on, or the game's purchasing agent for a warehouse.</summary>
+        /// <summary>
+        /// True where somebody who orders stock decides at a place today: a manager of the mod's with stock orders on who is at work (or stood in for), or the game's
+        /// purchasing agent for a warehouse.
+        /// </summary>
         bool Buyer(string place);
+        /// <summary>The buyer's budget: true, with so much of this month's budget spent, when the sum (cents) is inside what is left of it; a purchasing agent has none.</summary>
+        bool Spend(string place, long cents);
         /// <summary>Days more a first delivery takes to a place far from a supplier's depot.</summary>
         int FarDays(int supplier, string place);
         /// <summary>A share of what a supplier took reaches the tycoon whose holding owns it, cents.</summary>
@@ -66,7 +73,7 @@ namespace RealLifeOverhaul.Suppliers
     public sealed class Quote
     {
         public Refusal Why;
-        public int Supplier, Weeks, Share, Discount, Level, FirstDay;
+        public int Supplier, Weeks, Share, Discount, Level, FirstDay, LeftOut;   // LeftOut: products the supplier trades that the place sells and a contract's most left out
         public long Value, MarketValue, Min;   // cents a delivery at the offered prices and at the day's market prices; the supplier's minimum order
         public readonly List<ContractLine> Lines = new List<ContractLine>(SupplierCatalogue.LinesMost);
 
@@ -127,6 +134,7 @@ namespace RealLifeOverhaul.Suppliers
             q.Value = q.MarketValue = q.Min = 0;
             q.Discount = 0;
             q.FirstDay = 0;
+            q.LeftOut = 0;
             SupplierDef def = SupplierCatalogue.Firm(supplier);
             FirmState f = s.Firm(supplier);
             if (def == null || f == null || string.IsNullOrEmpty(place) || !w.PlaceOpen(place))
@@ -140,6 +148,12 @@ namespace RealLifeOverhaul.Suppliers
             Wanted.Clear();
             w.Wants(place, Wanted);
             bool any = Wanted.Count > 0;
+            // The best sellers first: a contract holds so many products, and the ones the place sells most (units at the day's price) are the ones it takes.
+            for (int i = 0; i < Wanted.Count; i++)
+            {
+                Wanted[i].Mills = w.Market(Wanted[i].Item);
+            }
+            Wanted.Sort(BestSellers);
             for (int i = 0; i < Wanted.Count; i++)
             {
                 if ((kinds & (1 << Wanted[i].Kind)) != 0)
@@ -150,6 +164,12 @@ namespace RealLifeOverhaul.Suppliers
             Wanted.Clear();
             Price(s, w, def, f, place, q, any);
         }
+
+        private static readonly Comparison<ContractLine> BestSellers = (a, b) =>
+        {
+            int order = ((long)b.Units * b.Mills).CompareTo((long)a.Units * a.Mills);
+            return order != 0 ? order : string.CompareOrdinal(a.Item, b.Item);
+        };
 
         /// <summary>
         /// What a supplier offers a place for one delivery at the day's price of goods named one by one (the units a late or short delivery leaves missing), in whole boxes.
@@ -163,6 +183,7 @@ namespace RealLifeOverhaul.Suppliers
             q.Value = q.MarketValue = q.Min = 0;
             q.Discount = 0;
             q.FirstDay = 0;
+            q.LeftOut = 0;
             SupplierDef def = SupplierCatalogue.Firm(supplier);
             FirmState f = s.Firm(supplier);
             if (def == null || f == null || string.IsNullOrEmpty(place) || !w.PlaceOpen(place))
@@ -183,7 +204,7 @@ namespace RealLifeOverhaul.Suppliers
         // A product joins an offer: only of a kind the supplier trades, in whole boxes, inside the game's own weekly limit and the most a contract holds.
         private static void Add(ISupplierWorld w, SupplierDef def, Quote q, ContractLine want, long units)
         {
-            if (q.Lines.Count >= SupplierCatalogue.LinesMost || !def.Trades(want.Kind) || units <= 0 || w.Market(want.Item) <= 0 || w.Base(want.Item) <= 0)
+            if (!def.Trades(want.Kind) || units <= 0 || w.Market(want.Item) <= 0 || w.Base(want.Item) <= 0)
             {
                 return;
             }
@@ -195,6 +216,11 @@ namespace RealLifeOverhaul.Suppliers
             }
             if (units <= 0)
             {
+                return;
+            }
+            if (q.Lines.Count >= SupplierCatalogue.LinesMost)
+            {
+                q.LeftOut++;   // a product the supplier would bring and a contract has no room for: the page says how many
                 return;
             }
             q.Lines.Add(new ContractLine { Item = want.Item, Kind = want.Kind, Units = (int)Math.Min(int.MaxValue / 2, units) });
@@ -258,13 +284,24 @@ namespace RealLifeOverhaul.Suppliers
             return why == Refusal.None ? Make(s, w, Scratch, place, placeName) : null;
         }
 
-        private static Contract Make(SupplierState s, ISupplierWorld w, Quote q, string place, string placeName)
+        // A contract made of an offer. The buyer's rules come in with it (from the contract it follows, if any), and so does the knowledge that the supplier was in trouble
+        // when it was signed, before anything is judged: its first delivery, if it is tomorrow's, is judged at once by the rules it will run by.
+        private static Contract Make(SupplierState s, ISupplierWorld w, Quote q, string place, string placeName, Contract rules = null, bool covering = false)
         {
+            FirmState signedWith = s.Firm(q.Supplier);
             var c = new Contract
             {
                 Id = s.NextId++, Supplier = q.Supplier, Place = place, PlaceName = placeName ?? string.Empty, Weeks = q.Weeks, Share = q.Share, Start = w.Day,
-                Due = Math.Max(w.Day + 1, q.FirstDay)
+                Due = Math.Max(w.Day + 1, q.FirstDay), Covering = covering,
+                Knew = signedWith != null && (signedWith.InTrouble(w.Day) || signedWith.Health < SupplierCatalogue.HealthWeak)
             };
+            if (rules != null)
+            {
+                c.Renew = rules.Renew;
+                c.RenewLimit = rules.RenewLimit;
+                c.Cover = rules.Cover;
+                c.LeaveRule = rules.LeaveRule;
+            }
             for (int i = 0; i < q.Lines.Count; i++)
             {
                 ContractLine line = q.Lines[i];
@@ -358,7 +395,9 @@ namespace RealLifeOverhaul.Suppliers
             return true;
         }
 
-        // The settlement of a contract ended early: taken from the cash, or put on the list of what is owed. Returns it.
+        // The settlement of a contract ended early: taken from the cash, or put on the list of what is owed with its supplier's late fee, to be paid in its days. Returns it.
+        // A settlement left unpaid past its days is acted on by the day's pass like any sum owed (Collect); one put on the list because the contract was ended for want of
+        // payment (defaulted) was counted already.
         private static long Settle(SupplierState s, ISupplierWorld w, Contract c, bool defaulted)
         {
             long settle = BreakCost(c);
@@ -373,12 +412,36 @@ namespace RealLifeOverhaul.Suppliers
                 return settle;
             }
             SupplierDef def = SupplierCatalogue.Firm(c.Supplier);
-            s.Owed.Add(new OwedLine
+            LatePolicy late = def != null ? def.Late : LatePolicy.Lenient;
+            long owed = SupplierRules.WithFee(settle, late);
+            Owe(s, new OwedLine
             {
-                Supplier = c.Supplier, Contract = c.Id, Cents = settle, Since = w.Day, Settlement = true,
-                Due = w.Day + SupplierCatalogue.GraceDays[def != null ? (int)def.Late : 0]
+                Supplier = c.Supplier, Contract = c.Id, Cents = owed, Since = w.Day, Settlement = true, Acted = defaulted,
+                Due = w.Day + SupplierCatalogue.GraceDays[(int)late]
             });
-            return settle;
+            return owed;
+        }
+
+        // A sum put on the list of what is owed. Past the lines the save keeps it joins the oldest line of its contract, or its supplier, so nothing owed is dropped or hidden.
+        private static void Owe(SupplierState s, OwedLine line)
+        {
+            if (s.Owed.Count >= SupplierCatalogue.OwedLinesMost)
+            {
+                int same = -1;
+                for (int i = 0; i < s.Owed.Count; i++)
+                {
+                    if (s.Owed[i].Supplier == line.Supplier && (same < 0 || (s.Owed[i].Contract == line.Contract && s.Owed[same].Contract != line.Contract)))
+                    {
+                        same = i;
+                    }
+                }
+                if (same >= 0)
+                {
+                    s.Owed[same].Cents += line.Cents;
+                    return;
+                }
+            }
+            s.Owed.Add(line);
         }
 
         private static void End(SupplierState s, ISupplierWorld w, Contract c, ContractState state)
@@ -387,21 +450,29 @@ namespace RealLifeOverhaul.Suppliers
             c.Ended = w.Day;
             c.Out = Arrival.None;
             c.Slip = 0;
-            if (c.Credit > 0)
-            {
-                FirmState f = s.Firm(c.Supplier);
-                if (state == ContractState.Failed || f == null || !f.Open)
-                {
-                    s.Say(SupplyEventKind.CreditLost, c, c.Supplier, c.Credit);   // the supplier is gone: said, not hidden
-                }
-                else
-                {
-                    w.Receive(c.Credit, CreditKey, c.Place, c.Supplier);
-                    s.Say(SupplyEventKind.CreditBack, c, c.Supplier, c.Credit);
-                }
-                c.Credit = 0;
-            }
+            PayOutCredit(s, w, c);
             Trim(s);
+        }
+
+        // The credit a supplier still owes on an ended contract is paid out, or said to be lost with the supplier; once.
+        private static void PayOutCredit(SupplierState s, ISupplierWorld w, Contract c)
+        {
+            if (c.Credit <= 0)
+            {
+                return;
+            }
+            long credit = c.Credit;
+            c.Credit = 0;   // gone from the contract before the money moves: a fault in between loses a credit, never pays it twice
+            FirmState f = s.Firm(c.Supplier);
+            if (c.State == ContractState.Failed || f == null || !f.Open)
+            {
+                s.Say(SupplyEventKind.CreditLost, c, c.Supplier, credit);   // the supplier is gone: said, not hidden
+            }
+            else
+            {
+                w.Receive(credit, CreditKey, c.Place, c.Supplier);
+                s.Say(SupplyEventKind.CreditBack, c, c.Supplier, credit);
+            }
         }
 
         private static void EndUnpaid(SupplierState s, ISupplierWorld w, Contract c)
@@ -465,6 +536,40 @@ namespace RealLifeOverhaul.Suppliers
         }
 
         /// <summary>
+        /// A time skip of several days (a long sleep, a journey): every day that went by since the last one counted is played one by one, the suppliers' books, the day's
+        /// judgement and the delivery hour of each, so how the player slept changes nothing of what happened. At most <see cref="SupplierCatalogue.CatchUpDays"/> are played;
+        /// the days before them are a pause, as after the option was off (<see cref="Resume"/>). Returns the days played. Today's own pass follows, asked by the caller.
+        /// </summary>
+        public static int CatchUp(SupplierState s, ISupplierWorld w, int today)
+        {
+            int from = SupplierRules.PlayFrom(s.LastDay, today, out bool paused);
+            if (from >= today)
+            {
+                return 0;
+            }
+            if (paused)
+            {
+                Resume(s, from);
+            }
+            int played = 0;
+            try
+            {
+                for (int d = from; d < today; d++)
+                {
+                    w.Play(d);
+                    Day(s, w);
+                    Hour(s, w);
+                    played++;
+                }
+            }
+            finally
+            {
+                w.Play(-1);
+            }
+            return played;
+        }
+
+        /// <summary>
         /// The feature was away (the option off, a save from long ago): a delivery whose day passed meanwhile is neither brought nor charged, and each contract goes on
         /// at its next day of the week. The term is counted in deliveries, so nothing of it is lost and nothing gained by the pause.
         /// </summary>
@@ -506,6 +611,8 @@ namespace RealLifeOverhaul.Suppliers
                 EndPlace(s, w, c);
                 return;
             }
+            Arrival outcome = c.Out;
+            int outShare = c.OutShare, outKind = c.OutKind;   // kept for the goods, which are put down after the step has cleared them from the contract
             // What the supplier brings to the door and what it is charged at: the agreed price, never under what the goods fetch on export that day.
             long due = 0, whole = Value(c), missing = 0;
             int units = 0;
@@ -517,13 +624,17 @@ namespace RealLifeOverhaul.Suppliers
                 missing += SupplierRules.Cents(line.Units - brought, line.Mills);
                 units += brought;
             }
-            bool theirs = SupplierRules.Theirs(c.Why) && (c.Out == Arrival.Late || c.Out == Arrival.Short);
+            // The remedy: only for a failure that is the supplier's own and that the customer did not sign knowing of.
+            bool theirs = SupplierRules.Theirs(c.Why) && !c.Knew && (c.Out == Arrival.Late || c.Out == Arrival.Short);
             if (theirs)
             {
                 long credit = c.Out == Arrival.Short ? SupplierRules.ShortCredit(missing) : SupplierRules.LateCredit(whole, c.Slip);
                 c.Credit += credit;
                 c.Failures++;
-                s.Say(SupplyEventKind.Credit, c, c.Supplier, credit, c.Failures);
+                if (credit > 0)
+                {
+                    s.Say(SupplyEventKind.Credit, c, c.Supplier, credit, c.Failures);
+                }
                 if (c.Failures == SupplierCatalogue.FailuresToLeave)
                 {
                     s.Say(SupplyEventKind.MayLeave, c, c.Supplier);
@@ -538,10 +649,16 @@ namespace RealLifeOverhaul.Suppliers
                 f.Missed++;
             }
             long used = Math.Min(c.Credit, due), net = due - used;
-            bool paid = net == 0 || (w.Cash >= net && w.Pay(net, GoodsKey, c.Place, c.Supplier));
-            if (!paid && def.Late == LatePolicy.Strict)
+            bool paid = net == 0;
+            if (!paid && w.Cash >= net)
             {
-                // A strict supplier brings nothing without payment: the goods stay with it and nothing is charged for them.
+                paid = w.Pay(net, GoodsKey, c.Place, c.Supplier);   // the money leaves here, and the books of it and the contract's step follow with no call of the world between
+            }
+            long owed = paid ? 0L : SupplierRules.WithFee(net, def.Late);
+            if (!paid && (def.Late == LatePolicy.Strict || s.OwedAll() + owed > SupplierRules.AtLevel(SupplierCatalogue.OwedMost, w.Level)))
+            {
+                // A strict supplier brings nothing without payment, and none delivers on account past the most a customer may owe in all: the goods stay with it and
+                // nothing is charged for them.
                 c.Withheld++;
                 Late(s, w.Day);
                 s.Say(SupplyEventKind.Withheld, c, c.Supplier, net, c.Withheld);
@@ -550,7 +667,8 @@ namespace RealLifeOverhaul.Suppliers
                     EndUnpaid(s, w, c);
                     return;
                 }
-                Next(s, w, c);
+                Step(w, c);
+                Finish(s, w, c);
                 return;
             }
             c.Credit -= used;
@@ -558,24 +676,24 @@ namespace RealLifeOverhaul.Suppliers
             {
                 c.Paid += net;
                 s.Record.OnTime += net > 0 ? 1 : 0;
-                if (def.Owner >= 0 && !f.Sold && net > 0)
-                {
-                    w.OwnerGain(def.Owner, net * SupplierCatalogue.OwnerShare / 1000);
-                }
             }
             else
             {
-                long owed = SupplierRules.WithFee(net, def.Late);
-                s.Owed.Add(new OwedLine { Supplier = c.Supplier, Contract = c.Id, Cents = owed, Since = w.Day, Due = w.Day + SupplierCatalogue.GraceDays[(int)def.Late] });
+                Owe(s, new OwedLine { Supplier = c.Supplier, Contract = c.Id, Cents = owed, Since = w.Day, Due = w.Day + SupplierCatalogue.GraceDays[(int)def.Late] });
                 Late(s, w.Day);
                 s.Say(SupplyEventKind.OnAccount, c, c.Supplier, owed, w.Day + SupplierCatalogue.GraceDays[(int)def.Late]);
+            }
+            Step(w, c);   // the delivery is made: from here a fault leaves the contract at its next delivery with its money paid, never the delivery charged again
+            if (paid && def.Owner >= 0 && !f.Sold && net > 0)
+            {
+                w.OwnerGain(def.Owner, net * SupplierCatalogue.OwnerShare / 1000);
             }
             // Take or pay: everything brought is paid for; what finds no room stays with the supplier.
             int left = 0;
             for (int i = 0; i < c.Lines.Count; i++)
             {
                 ContractLine line = c.Lines[i];
-                int brought = w.Backorder(line.Item) ? 0 : SupplierRules.Brought(line.Units, line.Kind, c.Out, c.OutShare, c.OutKind);
+                int brought = w.Backorder(line.Item) ? 0 : SupplierRules.Brought(line.Units, line.Kind, outcome, outShare, outKind);
                 if (brought <= 0)
                 {
                     continue;
@@ -592,8 +710,8 @@ namespace RealLifeOverhaul.Suppliers
                 c.NotTaken += left;
                 s.Say(SupplyEventKind.NotTaken, c, c.Supplier, left);
             }
-            s.Say(SupplyEventKind.Delivered, c, c.Supplier, net, units, (int)c.Out);
-            Next(s, w, c);
+            s.Say(SupplyEventKind.Delivered, c, c.Supplier, net, units, (int)outcome);
+            Finish(s, w, c);
         }
 
         private static void Late(SupplierState s, int day)
@@ -606,8 +724,9 @@ namespace RealLifeOverhaul.Suppliers
             }
         }
 
-        // A delivery is behind the contract: the next one a week after the day this one was due (a late one never moves the weeks after it), or the term's end.
-        private static void Next(SupplierState s, ISupplierWorld w, Contract c)
+        // A delivery is behind the contract: the next one a week after the day this one was due (a late one never moves the weeks after it), or the term's end. Plain state
+        // only, no call of the world.
+        private static void Step(ISupplierWorld w, Contract c)
         {
             c.Made++;
             c.Out = Arrival.None;
@@ -620,6 +739,17 @@ namespace RealLifeOverhaul.Suppliers
                 c.Due += SupplierCatalogue.WeekDays;
                 return;
             }
+            c.State = ContractState.Done;
+            c.Ended = w.Day;
+        }
+
+        // What follows a step that ended the term: the contract's end proper (its credit paid out) and, for a fixed price, the buyer's renewal.
+        private static void Finish(SupplierState s, ISupplierWorld w, Contract c)
+        {
+            if (c.State != ContractState.Done)
+            {
+                return;
+            }
             End(s, w, c, ContractState.Done);
             if (c.Fixed)
             {
@@ -630,7 +760,34 @@ namespace RealLifeOverhaul.Suppliers
 
         // ---- the buyer's rules
 
-        // A term has ended: where the place has a buyer and the rule says so, the same supplier again or the cheapest that offers, inside the customer's limit.
+        // True while an offer is inside the price limit of a contract's rules: no more over the market's price than the customer set (the last step is any price).
+        private static bool Within(Quote q, Contract rules)
+        {
+            int limit = SupplierCatalogue.RenewLimits[SupplierCatalogue.Clamp(rules.RenewLimit, 0, SupplierCatalogue.RenewLimits.Length - 1)];
+            return q.Value * 1000 <= q.MarketValue * (1000L + limit);
+        }
+
+        /// <summary>
+        /// The one gate every order a buyer places for the customer goes through (a renewal, a switch after the right to leave, a cover for a failed delivery): somebody
+        /// decides at the place today, the offer is inside the price limit of the contract's rules, the cash in hand covers what is already promised for the week and this
+        /// offer's first delivery with the investors' floor kept, and the buyer's budget has room for it, which it then spends. The player's own signing is not gated: it is
+        /// their choice.
+        /// </summary>
+        private static bool Allowed(SupplierState s, ISupplierWorld w, Quote q, string place, Contract rules)
+        {
+            if (!w.Buyer(place) || !w.PlaceOpen(place) || !Within(q, rules))
+            {
+                return false;
+            }
+            long promised = s.OwedAll();
+            for (int i = 0; i < s.Contracts.Count; i++)
+            {
+                promised += s.Contracts[i].Running ? Value(s.Contracts[i]) : 0L;
+            }
+            return w.Cash - promised >= q.Value && w.Spend(place, (q.Value + 99) / 100);
+        }
+
+        // A term has ended: where the place has a buyer and the rule says so, the same supplier again or the cheapest that offers, through the gate.
         private static void Renew(SupplierState s, ISupplierWorld w, Contract c)
         {
             if (c.Renew == RenewRule.Off || !w.Buyer(c.Place) || !w.PlaceOpen(c.Place))
@@ -638,17 +795,12 @@ namespace RealLifeOverhaul.Suppliers
                 return;
             }
             int step = ShareStep(c.Share);
-            if (!Best(s, w, c.Place, c.Weeks, step, c.Renew == RenewRule.Same ? c.Supplier : 0, 0, BestQuote, KindsOf(c))
-                || BestQuote.Value * 1000 > BestQuote.MarketValue * (1000L + SupplierCatalogue.RenewLimits[SupplierCatalogue.Clamp(c.RenewLimit, 0, SupplierCatalogue.RenewLimits.Length - 1)]))
+            if (!Best(s, w, c.Place, c.Weeks, step, c.Renew == RenewRule.Same ? c.Supplier : 0, 0, BestQuote, KindsOf(c)) || !Allowed(s, w, BestQuote, c.Place, c))
             {
                 s.Say(SupplyEventKind.NoCover, c, c.Supplier, 1);
                 return;
             }
-            Contract made = Make(s, w, BestQuote, c.Place, c.PlaceName);
-            made.Renew = c.Renew;
-            made.RenewLimit = c.RenewLimit;
-            made.Cover = c.Cover;
-            made.LeaveRule = c.LeaveRule;
+            Contract made = Make(s, w, BestQuote, c.Place, c.PlaceName, c);
             s.Say(made.Supplier == c.Supplier ? SupplyEventKind.Renewed : SupplyEventKind.Switched, made, made.Supplier, Value(made), made.Due, c.Supplier);
         }
 
@@ -700,6 +852,7 @@ namespace RealLifeOverhaul.Suppliers
             to.Value = from.Value;
             to.MarketValue = from.MarketValue;
             to.Min = from.Min;
+            to.LeftOut = from.LeftOut;
             to.Lines.Clear();
             for (int i = 0; i < from.Lines.Count; i++)
             {
@@ -736,7 +889,7 @@ namespace RealLifeOverhaul.Suppliers
                     continue;
                 }
                 OfferFor(s, w, id, c.Place, Missing, Scratch);
-                if (Scratch.Why == Refusal.None && (Scratch.FirstDay < bestDay || (Scratch.FirstDay == bestDay && Scratch.AgainstMarket < BestQuote.AgainstMarket)))
+                if (Scratch.Why == Refusal.None && Within(Scratch, c) && (Scratch.FirstDay < bestDay || (Scratch.FirstDay == bestDay && Scratch.AgainstMarket < BestQuote.AgainstMarket)))
                 {
                     Copy(Scratch, BestQuote);
                     best = id;
@@ -744,13 +897,12 @@ namespace RealLifeOverhaul.Suppliers
                 }
             }
             Missing.Clear();
-            if (best == 0)
+            if (best == 0 || !Allowed(s, w, BestQuote, c.Place, c))
             {
                 s.Say(SupplyEventKind.NoCover, c, c.Supplier, 0);
                 return;
             }
-            Contract made = Make(s, w, BestQuote, c.Place, c.PlaceName);
-            made.Covering = true;
+            Contract made = Make(s, w, BestQuote, c.Place, c.PlaceName, null, true);
             s.Say(SupplyEventKind.Covered, made, made.Supplier, Value(made), made.Due, c.Supplier);
         }
 
@@ -778,7 +930,7 @@ namespace RealLifeOverhaul.Suppliers
             c.JudgedFor = c.Due;
             if (j.Out == Arrival.Late || j.Out == Arrival.Short)
             {
-                s.Say(SupplyEventKind.Tomorrow, c, c.Supplier, j.Out == Arrival.Late ? j.Days : 1000 - j.Share, c.Due, (int)j.Why);
+                s.Say(SupplyEventKind.Tomorrow, c, c.Supplier, j.Out == Arrival.Late ? j.Days : 1000 - j.Share, c.Due, (int)j.Why + (c.Knew ? SupplyEvent.KnewBit : 0));
                 Cover(s, w, c);
             }
         }
@@ -842,6 +994,13 @@ namespace RealLifeOverhaul.Suppliers
                     EndPlace(s, w, c);
                 }
             }
+            for (int i = 0; i < s.Contracts.Count; i++)
+            {
+                if (!s.Contracts[i].Running)
+                {
+                    PayOutCredit(s, w, s.Contracts[i]);   // an ended contract's credit that a fault kept from its payout
+                }
+            }
             Collect(s, w);
             Snapshot(s);
             for (int i = 0; i < Ids.Count; i++)
@@ -853,20 +1012,16 @@ namespace RealLifeOverhaul.Suppliers
                 }
                 if (c.LeaveRule && MayLeave(c) && w.Buyer(c.Place))
                 {
-                    int supplier = c.Supplier, weeks = c.Weeks, step = ShareStep(c.Share), goods = KindsOf(c);
-                    string place = c.Place, name = c.PlaceName;
-                    RenewRule renew = c.Renew;
-                    int limit = c.RenewLimit;
-                    bool cover = c.Cover;
+                    int supplier = c.Supplier;
                     Leave(s, w, c.Id);
-                    if (Best(s, w, place, weeks, step, 0, supplier, BestQuote, goods))
+                    if (Best(s, w, c.Place, c.Weeks, ShareStep(c.Share), 0, supplier, BestQuote, KindsOf(c)) && Allowed(s, w, BestQuote, c.Place, c))
                     {
-                        Contract made = Make(s, w, BestQuote, place, name);
-                        made.Renew = renew;
-                        made.RenewLimit = limit;
-                        made.Cover = cover;
-                        made.LeaveRule = true;
+                        Contract made = Make(s, w, BestQuote, c.Place, c.PlaceName, c);
                         s.Say(SupplyEventKind.Switched, made, made.Supplier, Value(made), made.Due, supplier);
+                    }
+                    else
+                    {
+                        s.Say(SupplyEventKind.NoCover, c, supplier, 1);   // none inside the limit and the cash: the customer is told, and chooses
                     }
                     continue;
                 }
@@ -939,8 +1094,9 @@ namespace RealLifeOverhaul.Suppliers
             for (int i = 0; i < s.Owed.Count; i++)
             {
                 OwedLine o = s.Owed[i];
-                long pay = Math.Min(o.Cents, Math.Max(0L, w.Cash));
-                if (pay > 0 && w.Pay(pay, OwedKey, null, o.Supplier))
+                Contract c = s.ContractOf(o.Contract);
+                long pay = Math.Min(o.Cents, Math.Max(0L, w.Cash));   // Cash is what may be paid with: never the investors' floor
+                if (pay > 0 && w.Pay(pay, OwedKey, c != null ? c.Place : null, o.Supplier))
                 {
                     o.Cents -= pay;
                     paid += pay;
@@ -950,10 +1106,9 @@ namespace RealLifeOverhaul.Suppliers
                     s.Owed.RemoveAt(i--);
                     continue;
                 }
-                if (w.Day > o.Due && !o.Settlement)
+                if (w.Day > o.Due && !o.Acted)
                 {
-                    o.Settlement = true;   // acted on once: from here it is a debt and nothing more follows from it
-                    Contract c = s.ContractOf(o.Contract);
+                    o.Acted = true;   // acted on once, a delivery's price and a settlement alike: from here it is a debt and the record and the supplier's memory hold it
                     if (c != null && c.Running)
                     {
                         EndUnpaid(s, w, c);
@@ -982,13 +1137,32 @@ namespace RealLifeOverhaul.Suppliers
         /// One shop of the city on its day: what the supply side takes off (or adds to) the day the game valued, and its supplier's count of customers. The caller writes
         /// the cents into the shop's day.
         /// </summary>
-        public static RivalDay RivalShop(SupplierState s, ISupplierWorld w, string shopKey, int kind, int dayCents, int[] customers)
+        /// <param name="entryCount">how many valued days the game holds for the shop; -1 where the caller keeps no count</param>
+        /// <param name="entryBits">the bits of the last of them, the entry the cents would come off</param>
+        public static RivalDay RivalShop(SupplierState s, ISupplierWorld w, string shopKey, int kind, int dayCents, int[] customers, int entryCount = -1, int entryBits = 0)
         {
+            return RivalShop(s, w, SupplierRules.Text(shopKey), kind, dayCents, customers, entryCount, entryBits);
+        }
+
+        /// <summary>The same by the shop's number (<see cref="SupplierRules.ShopId"/>), which needs no string made: the per shop loop allocates nothing.</summary>
+        public static RivalDay RivalShop(SupplierState s, ISupplierWorld w, int shop, int kind, int dayCents, int[] customers, int entryCount = -1, int entryBits = 0)
+        {
+            RivalDay r;
+            if (entryCount >= 0 && s.WasCharged(shop, entryCount, entryBits))
+            {
+                // The entry is the very one charged already (a load in the hour the game's valuation was part done leaves some shops on the day before): it is not charged again.
+                r = new RivalDay { Skipped = true, Firm = SupplierRules.PickFirm(s.Seed, shop, kind, s) };
+                if (r.Firm > 0 && customers != null && r.Firm <= customers.Length)
+                {
+                    customers[r.Firm - 1]++;
+                }
+                return r;
+            }
             for (int k = 0; k < Shortages.Length; k++)
             {
                 Shortages[k] = w.ShortageOn(k, w.Day);
             }
-            RivalDay r = SupplierRules.Rival(s.Seed, SupplierRules.Text(shopKey), kind, s, w.Day, w.Factor(kind), w.Conditions(w.Day), Shortages, dayCents);
+            r = SupplierRules.Rival(s.Seed, shop, kind, s, w.Day, w.Factor(kind), w.Conditions(w.Day), Shortages, dayCents);
             if (r.Firm > 0 && customers != null && r.Firm <= customers.Length)
             {
                 customers[r.Firm - 1]++;
@@ -1003,6 +1177,12 @@ namespace RealLifeOverhaul.Suppliers
                 }
             }
             return r;
+        }
+
+        /// <summary>The cents of a rival shop's day were taken off its last valued day: that entry is remembered, so a day is never charged twice.</summary>
+        public static void RivalCharged(SupplierState s, int shop, int entryCount, int entryBits)
+        {
+            s.Charged(shop, entryCount, entryBits);
         }
 
         /// <summary>The rival shops' day is done: each supplier's customers counted, and a note for the paper when shops were left short.</summary>
@@ -1039,7 +1219,8 @@ namespace RealLifeOverhaul.Suppliers
                 {
                     continue;
                 }
-                RivalDay r = SupplierRules.Rival(s.Seed, SupplierRules.Text(o.Key), o.Kind, s, w.Day, w.Factor(o.Kind), w.Conditions(w.Day), Shortages, goods);
+                RivalDay r = SupplierRules.Rival(s.Seed, SupplierRules.Text(o.Key), o.Kind, s, w.Day, w.Factor(o.Kind), w.Conditions(w.Day), Shortages, goods,
+                    1000);   // their day is valued at calm prices
                 RivalSupply book = s.RivalBooks[o.Tycoon];
                 book.Firm = r.Firm;
                 book.Failures += r.Failed ? 1 : 0;

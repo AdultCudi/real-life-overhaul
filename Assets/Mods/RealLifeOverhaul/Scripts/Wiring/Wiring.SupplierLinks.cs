@@ -1,8 +1,11 @@
 using System;
 using System.Collections.Generic;
 using RealLifeOverhaul.Economy;
+using RealLifeOverhaul.Events;
 using RealLifeOverhaul.Rivals;
+using RealLifeOverhaul.Seasons;
 using RealLifeOverhaul.Suppliers;
+using RealLifeOverhaul.Tech;
 
 namespace RealLifeOverhaul
 {
@@ -12,9 +15,11 @@ namespace RealLifeOverhaul
         /// Suppliers and contracts (Suppliers/SupplierBridges) with the rest of the mod:
         ///
         ///   KindOf             the city's kinds of goods (Economy/City), never a raw material the exchange prices
-        ///   Day                the calendar's season, weather and city event of a day, as the city's economy reads them
+        ///   Day                the calendar's season, the weather (the spells and a summer storm day of the seasons, all of the save's own seed) and city event of a day
         ///   Credit             the credit side's rating
-        ///   Manager            a manager of the company's with stock orders on at a business
+        ///   Manager,
+        ///   Budget             a manager of the company's with stock orders on at a business who is at work or stood in for, and that manager's budget for the month
+        ///   Reserved           the investors' floor of the player's firms (Tech's firm account): a payment to a supplier never takes it
         ///   RivalName,
         ///   RivalMove,
         ///   Outlets            the rival tycoons: their outlets buy by the same rules, out of their worth
@@ -36,6 +41,8 @@ namespace RealLifeOverhaul
                 SupplierBridges.Day = Day;
                 SupplierBridges.Credit = Credit;
                 SupplierBridges.Manager = Manager;
+                SupplierBridges.Budget = Budget;
+                SupplierBridges.Reserved = Reserved;
                 SupplierBridges.RivalName = RivalName;
                 SupplierBridges.RivalMove = RivalMove;
                 SupplierBridges.Outlets = Outlets;
@@ -71,12 +78,17 @@ namespace RealLifeOverhaul
                 }
             }
 
+            // The weather of a day as a delivery is judged by it, the day before and for the rival shops: only what the mod honestly knows of any day, from the save's own seed
+            // and so the same on every load and every machine. The city's economy reads the live sky for today (a storm that is raging); a supplier does not, and a summer
+            // storm is the seasons' own seeded storm day (SeasonLookRules.RainOn), known a day ahead like the spells (Weather.SpellOf).
             private static CityDay Day(int day)
             {
                 try
                 {
                     Func<int, CityDay> conditions = CityBridges.Day;
-                    return conditions != null ? conditions(day) : new CityDay { Season = 1 };
+                    CityDay d = conditions != null ? conditions(day) : new CityDay { Season = 1 };
+                    bool stormDay = Settings.Seasons && EventCalendar.Salt != 0 && SeasonLookRules.RainOn(day, GameCalendar.DaysPerYear, EventCalendar.Salt).Storm;
+                    return SupplierRules.Forecast(d, Settings.WeatherMatters, Settings.Seasons, stormDay);
                 }
                 catch (Exception e)
                 {
@@ -103,12 +115,40 @@ namespace RealLifeOverhaul
                 try
                 {
                     CompanyDirector company = CompanyDirector.Instance;
-                    return company != null && reg != null && company.Manages(CompanyGame.Place(reg), ManagerTask.Stock);
+                    return company != null && reg != null && company.DecidesStock(CompanyGame.Place(reg));
                 }
                 catch (Exception e)
                 {
                     Fault("SupplierLinks.Manager", e);
                     return false;
+                }
+            }
+
+            private static bool Budget(BuildingRegistration reg, long money)
+            {
+                try
+                {
+                    CompanyDirector company = CompanyDirector.Instance;
+                    return company != null && reg != null && company.SpendStock(CompanyGame.Place(reg), money);
+                }
+                catch (Exception e)
+                {
+                    Fault("SupplierLinks.Budget", e);
+                    return false;
+                }
+            }
+
+            private static long Reserved()
+            {
+                try
+                {
+                    TechDirector tech = TechDirector.Instance;
+                    return tech != null ? tech.FloorNow : 0L;   // cents
+                }
+                catch (Exception e)
+                {
+                    Fault("SupplierLinks.Reserved", e);
+                    return 0L;
                 }
             }
 

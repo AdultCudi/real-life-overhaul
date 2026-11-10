@@ -36007,5 +36007,8 @@
   "reallife_supply_test_rivals": "The rival shops' supply day ran: {n} shops read, {moved} paid more or less, {failed} had a late or short delivery.",
   "reallife_supply_test_back": "Suppliers are back as they were before the tests. Money paid and goods delivered stay.",
   "reallife_supply_test_back_none": "There is nothing to put back.",
-  "reallife_supply_test_off": "Suppliers and contracts are switched off or not ready yet."
+  "reallife_supply_test_off": "Suppliers and contracts are switched off or not ready yet.",
+  "reallife_supply_left_out": "{n} more of this business's products are left out. A contract holds {most} products, the best sellers first.",
+  "reallife_supply_note_late_knew": "The delivery from {supplier} to {business} due on day {day} comes {days} days late: {cause}. You signed knowing of its trouble, so no credit is due. Another supplier or a wholesale store can fill the gap.",
+  "reallife_supply_note_short_knew": "The delivery from {supplier} to {business} on day {day} brings {share} less: {cause}. You pay only for what comes. You signed knowing of its trouble, so no credit is due. Another supplier or a wholesale store can fill the gap."
 }

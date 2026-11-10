@@ -58,6 +58,8 @@ Economy/Company/              the first three are game-free and compiled by Econ
 | Weekly rota | Sunday 21 | The rota planner's own fill job (`JobManager`), written only as `ManagerRules.Rota` says (see below), with the week before kept | `RotaPutBack`, while the week is kept (until the game is closed or another save loads) |
 | Replacing staff | 11 | `EmployeeHelper.HireCandidate` of a job board candidate inside the band and the budget | They leave the game's way (`Core/StaffLeave`) for three days |
 
+The month's budget also limits the supply contracts ([suppliers](suppliers.md)) a manager with stock orders on places by the buyer's rules: a renewal, a switch or a cover is ordered only if its first delivery fits what is left of the budget, which it then spends (`CompanyDirector.SpendStock`), and only on a day somebody decides there (`CompanyDirector.DecidesStock`, which asks `Decider`: a manager off sick with nobody to stand in orders nothing that day).
+
 - A figure the player changes in the game after the manager set it (an amount, a price) is taken as the player's: the decision is marked "Changed by you" and the product is left alone until the player hands it back.
 - With a manager answering a kind at a place, the company sends no notice asking the player about it (`ManagerRules.Answers`). A manager's own request or offer is always the player's. With the option off, a post stood down or the kind taken back, the notices ask the player again, and nothing of the game's is left changed by the switch.
 - Money that has moved stays moved.

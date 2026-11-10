@@ -109,6 +109,8 @@ namespace RealLifeOverhaul.Suppliers
         public static readonly int[] GraceDays = { 7, 4, 2 };      // days to pay what is owed, by late policy
         public static readonly int[] LateFee = { 0, 20, 50 };      // thousandths added to what is owed, once, by late policy
         public const int WithheldMost = 2;          // deliveries a strict supplier withholds for want of payment before it ends the contract
+        public const int OwedMost = 10000;          // whole money, at the start's prices, that a customer may owe suppliers in all: past it a supplier brings nothing on account
+        public const int OwedLinesMost = 64;        // lines of what is owed the save keeps: past it a new sum joins the oldest line of its contract
 
         // ---- late and short deliveries (thousandths of chance added to a supplier's own, by cause)
         public const int ChanceMost = 900;
@@ -124,8 +126,7 @@ namespace RealLifeOverhaul.Suppliers
 
         // ---- the remedy when the supplier itself fails (its own unreliability, its trouble, its cash): never for the weather, the streets or the whole market
         public const int ShortCredit = 100;         // thousandths of the value not brought, credited
-        public const int LateCreditADay = 50;       // thousandths of the delivery's value for each day late, credited
-        public const int LateCreditMost = 150;
+        // (a late delivery's credit is the short credit on the days' share of the week it missed: SupplierRules.LateCredit)
         public const int FailuresToLeave = 3;       // failures of the supplier's own in one contract that give the right to leave with nothing to pay
 
         // ---- a supplier's own books
@@ -162,6 +163,8 @@ namespace RealLifeOverhaul.Suppliers
         public const int LogDays = 14;              // days of deliveries the log keeps (a manager's order counts them)
         public const int LogMost = 160;
         public const int RenewAheadDays = 3;        // days before a contract's last delivery that its renewal is looked at
+        public const int RivalFromHour = 1;         // the game values the city's shops at the turn of the day: their books are read from this hour
+        public const int CatchUpDays = 14;          // elapsed days a time skip plays one by one; the days before them are a pause (SupplierEngine.Resume)
         /// <summary>The most a renewal may cost over the day's market price before a manager leaves it to the player, thousandths, by the rule's step; the last is any price.</summary>
         public static readonly int[] RenewLimits = { 0, 50, 100, 200, 100000 };
         public const int RenewLimitDefault = 2;

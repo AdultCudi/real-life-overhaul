@@ -239,6 +239,11 @@ namespace RealLifeOverhaul.Ui
                 right.Add(VentBlock.Row(w.T("reallife_supply_row_delivery", "Each delivery"),
                     w.F("reallife_supply_delivery_value", "{amount} for {n} products", "amount", w.Money(p.Value / 100f), "n", p.Lines.ToString())));
                 right.Add(VentBlock.Row(w.T("reallife_supply_row_price", "Its price"), Against(w, p.Against), p.Against <= 1000 ? UiRole.Ok : UiRole.Text));
+                if (p.LeftOut > 0)
+                {
+                    right.Add(VentBlock.Note(w.F("reallife_supply_left_out", "{n} more of this business's products are left out. A contract holds {most} products, the best sellers first.",
+                        "n", p.LeftOut.ToString(), "most", SupplierCatalogue.LinesMost.ToString()), UiRole.Warn));
+                }
                 right.Add(VentBlock.Note(term > 0
                     ? w.F("reallife_supply_take_or_pay", "Take or pay: every delivery is paid for in full, even when your shelves have no room. Ending early costs {share} of what "
                         + "is still to come.", "share", Percent(SupplierCatalogue.BreakShare))

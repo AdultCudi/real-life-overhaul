@@ -37,6 +37,7 @@ internal static partial class Program
         SupplierPauseChecks();
         SupplierPageChecks();
         SupplierSourceChecks();
+        SupplierFixChecks();
         SupplierTextChecks();
     }
 
@@ -48,6 +49,18 @@ internal static partial class Program
         public static readonly long[] Own = { 1250, 2100, 14000, 240000, 60000, 800 };   // mills a unit at calm prices
         public int DayNow = 100, HourNow = SupplierCatalogue.DeliveryHour, LevelNow = 1000, CreditNow = 700, CycleNow = 1, MonthDays = 5;
         public long CashCents = 100000000;
+        public long Reserve;                                                // what the investors of the player's firms are owed: never paid out
+        public long BudgetCents = long.MaxValue / 4;                        // what is left of the buyer's budget this month
+        public bool Deciding = true;                                        // somebody decides at a buyer's place today (false: the manager is off sick with nobody to stand in)
+        public int Spends;                                                  // times the buyer's budget was asked
+        public double[] Index = { 1, 1, 1, 1, 1, 1 };                       // the game's importers' price index of each product today (0.5 to 1.3, re-rolled every day by the game)
+        public bool LeakIndex;                                              // a broken world: the supplier's list price takes the importers' index
+        public bool SpendThrows;                                            // the buyer's budget call fails
+        public readonly List<string> PayPlaces = new List<string>();        // where each payment was booked: its key and place
+        public bool DeliverThrows;                                          // the game's delivery call fails (the money has been paid by then)
+        public readonly List<long> Pays = new List<long>();                 // every payment asked of the world, cents
+        public long PaidOverCash;                                           // payments asked for more than the cash that may be paid with (the world refuses them)
+        private int _realDay = -1, _realHour;
         public readonly int[] Factors = { 1000, 1000, 1000, 1000, 1000, 1000 };
         public int ShortKind = -1, ShortFrom, ShortUntil, ShortSize;        // a market shortage of a kind over days of the calendar, both counted
         public int EventMille = 1000;                                       // the game's own whole-market event on every price
@@ -73,7 +86,28 @@ internal static partial class Program
         public int Day => DayNow;
         public int Hour => HourNow;
         public int Month => DayNow / MonthDays;
-        public long Cash => CashCents;
+
+        public void Play(int day)
+        {
+            if (day >= 0)
+            {
+                if (_realDay < 0)
+                {
+                    _realDay = DayNow;
+                    _realHour = HourNow;
+                }
+                DayNow = day;
+                HourNow = SupplierCatalogue.DeliveryHour;
+            }
+            else if (_realDay >= 0)
+            {
+                DayNow = _realDay;
+                HourNow = _realHour;
+                _realDay = -1;
+            }
+        }
+
+        public long Cash => Math.Max(0, CashCents - Reserve);
         public int Level => LevelNow;
         public int Credit => CreditNow;
         public int Cycle => CycleNow;
@@ -92,9 +126,13 @@ internal static partial class Program
         }
 
         public CityDay Conditions(int day) => Days.TryGetValue(day, out CityDay d) ? d : new CityDay { Season = 1 };
-        public long Base(string item) => KindOf(item) < 0 ? 0 : Own[KindOf(item)] * LevelNow / 1000 * Factors[KindOf(item)] / 1000;
-        public long Market(string item) => Base(item) * EventMille / 1000;
-        public long Export(string item) => Base(item) * ExportMille / 1000;
+        // What the game's item holds (the wholesale price the city's economy writes), thousandths of a money unit a unit, and what its GetWholesalePrice() gives with the importers' index.
+        public double Wholesale(string item) => KindOf(item) < 0 ? 0 : Own[KindOf(item)] / 1000.0 * LevelNow / 1000 * Factors[KindOf(item)] / 1000;
+        public long GameWholesale(string item) => (long)Math.Round(Wholesale(item) * 1000 * Index[Math.Max(0, KindOf(item))]);
+        // The supplier's side of it is the shipped composition (SupplierRules.ListMills), which leaves the index out.
+        public long Base(string item) => LeakIndex ? GameWholesale(item) : SupplierRules.ListMills((float)Wholesale(item), 1f);
+        public long Market(string item) => LeakIndex ? GameWholesale(item) * EventMille / 1000 : SupplierRules.ListMills((float)Wholesale(item), 1f, EventMille / 1000f);
+        public long Export(string item) => GameWholesale(item) * ExportMille / 1000;
         public bool Backorder(string item) => Backorders.Contains(item);
         public int Most(string item) => Mosts.TryGetValue(item, out int m) ? m : 5000;
         public int Box(string item) => Boxes.TryGetValue(item, out int b) ? b : 12;
@@ -113,6 +151,10 @@ internal static partial class Program
 
         public int Deliver(string place, string item, int units, long mills)
         {
+            if (DeliverThrows)
+            {
+                throw new InvalidOperationException("the game's delivery call failed");
+            }
             int room = Room.TryGetValue(place + "|" + item, out int r) ? r : int.MaxValue / 2;
             int took = Math.Min(units, room);
             Stock[place + "|" + item] = (Stock.TryGetValue(place + "|" + item, out int s) ? s : 0) + took;
@@ -125,10 +167,13 @@ internal static partial class Program
 
         public bool Pay(long cents, string key, string place, int supplier)
         {
-            if (cents > CashCents)
+            Pays.Add(cents);
+            if (cents > Cash)
             {
+                PaidOverCash += cents - Cash;
                 return false;
             }
+            PayPlaces.Add(key + "@" + place);
             CashCents -= cents;
             Book.Add(new KeyValuePair<string, long>(key, -cents));
             return true;
@@ -140,7 +185,23 @@ internal static partial class Program
             Book.Add(new KeyValuePair<string, long>(key, cents));
         }
 
-        public bool Buyer(string place) => Buyers.Contains(place);
+        public bool Buyer(string place) => Deciding && Buyers.Contains(place);
+
+        public bool Spend(string place, long cents)
+        {
+            Spends++;
+            if (SpendThrows)
+            {
+                throw new InvalidOperationException("the buyer's budget could not be read");
+            }
+            if (cents > BudgetCents)
+            {
+                return false;
+            }
+            BudgetCents -= cents;
+            return true;
+        }
+
         public int FarDays(int supplier, string place) => Far;
         public void OwnerGain(int tycoon, long cents) => OwnerGains += cents;
         public void RivalMoved(int tycoon, long cents) => Tycoons[tycoon] -= cents;
@@ -347,10 +408,13 @@ internal static partial class Program
     private sealed class SupplyWorldMany : ISupplierWorld
     {
         private readonly SupplyWorld _w = new SupplyWorld();
+        public SupplyWorld Inner => _w;
         public int Day => _w.Day;
         public int Hour => _w.Hour;
         public int Month => _w.Month;
-        public long Cash => _w.Cash;
+        public void Play(int day) => _w.Play(day);
+        public long CashCents = 100000000;
+        public long Cash => CashCents;
         public int Level => _w.Level;
         public int Credit => _w.Credit;
         public int Cycle => _w.Cycle;
@@ -358,9 +422,11 @@ internal static partial class Program
         public int ShortageOn(int kind, int day) => 0;
         public void ShortAhead(int kind, out int from, out int days, out int size) => from = days = size = 0;
         public CityDay Conditions(int day) => new CityDay { Season = 1 };
-        public long Market(string item) => 2000;
-        public long Base(string item) => 2000;
-        public long Export(string item) => 1300;
+        public static int Index(string item) => int.Parse(item.Substring(4), CultureInfo.InvariantCulture);
+        public static int UnitsOf(int i) => 100 + i * 73 % 400;   // the week's sales of product i: not in the order of the names
+        public long Market(string item) => 1000 + 150 * Index(item);
+        public long Base(string item) => 1000 + 150 * Index(item);
+        public long Export(string item) => 650;
         public bool Backorder(string item) => false;
         public int Most(string item) => 0;
         public int Box(string item) => 1;
@@ -369,13 +435,27 @@ internal static partial class Program
         {
             for (int i = 0; i < 20; i++)
             {
-                into.Add(new ContractLine { Item = "item" + i.ToString("00"), Kind = 1, Units = 500 });
+                into.Add(new ContractLine { Item = "item" + i.ToString("00"), Kind = 1, Units = UnitsOf(i) });
             }
         }
         public int Deliver(string place, string item, int units, long mills) => units;
-        public bool Pay(long cents, string key, string place, int supplier) => true;
-        public void Receive(long cents, string key, string place, int supplier) { }
+        public readonly List<long> Pays = new List<long>();
+        public long PaidOverCash;
+        public bool Pay(long cents, string key, string place, int supplier)
+        {
+            Pays.Add(cents);
+            if (cents > CashCents)
+            {
+                PaidOverCash += cents - CashCents;
+                return false;
+            }
+            CashCents -= cents;
+            return true;
+        }
+
+        public void Receive(long cents, string key, string place, int supplier) { CashCents += cents; }
         public bool Buyer(string place) => false;
+        public bool Spend(string place, long cents) => true;
         public int FarDays(int supplier, string place) => 0;
         public void OwnerGain(int tycoon, long cents) { }
         public void RivalMoved(int tycoon, long cents) { }
@@ -406,7 +486,7 @@ internal static partial class Program
         w.HourNow = 9;
         SupplierEngine.Hour(s, w);
         Check(c.Made == 1 && before - w.CashCents == value, "suppliers delivery: an hour looked at twice, or the next hour, brings nothing again");
-        Check(s.Brought(SupplyShop, "apples", 101, 7) == 240 && s.Brought(SupplyShop, "apples", 101, 8) == 0 && s.Coming(SupplyShop, "apples", 102, 108) == 240 && s.Coming(SupplyShop, "apples", 102, 122) == 720 && s.Coming(SupplyShop, "pens", 102, 122) == 0,
+        Check(s.Brought(SupplyShop, "apples", 101, 7) == 240 && s.Brought(SupplyShop, "apples", 101, 8) == 0 && s.Coming(SupplyShop, "apples", 102, 108, false, long.MaxValue / 4) == 240 && s.Coming(SupplyShop, "apples", 102, 122, false, long.MaxValue / 4) == 720 && s.Coming(SupplyShop, "pens", 102, 122, false, long.MaxValue / 4) == 0,
             "suppliers delivery: what a contract brought and what it is due to bring are counted by place, product and day");
         w.HourNow = 8;
         RunTo(s, w, 122);
@@ -619,8 +699,9 @@ internal static partial class Program
     {
         Check(SupplierRules.Theirs(Cause.Own) && SupplierRules.Theirs(Cause.Trouble) && SupplierRules.Theirs(Cause.Cash) && !SupplierRules.Theirs(Cause.Weather) && !SupplierRules.Theirs(Cause.Streets)
               && !SupplierRules.Theirs(Cause.Season) && !SupplierRules.Theirs(Cause.Shortage) && !SupplierRules.Theirs(Cause.None), "suppliers remedy: only the supplier's own doing, its trouble and its money are its fault");
-        Check(SupplierRules.ShortCredit(100000) == 10000 && SupplierRules.ShortCredit(0) == 0 && SupplierRules.LateCredit(100000, 1) == 5000 && SupplierRules.LateCredit(100000, 3) == 15000 && SupplierRules.LateCredit(100000, 9) == 15000,
-            "suppliers remedy: a tenth of what a short delivery did not bring, a twentieth of a late delivery's value a day up to three");
+        Check(SupplierRules.ShortCredit(100000) == 10000 && SupplierRules.ShortCredit(0) == 0 && SupplierRules.LateCredit(100000, 1) == 1428 && SupplierRules.LateCredit(100000, 3) == 4285 && SupplierRules.LateCredit(100000, 9) == 10000
+              && SupplierRules.LateCredit(100000, 3) == SupplierRules.ShortCredit(100000 * 3 / 7),
+            "suppliers remedy: a tenth of what a short delivery did not bring; a late delivery earns the same tenth on the share of the week its days missed, never more than a short one would");
         // Short by the supplier's own doing: pay only for what comes, less the credit.
         var w = new SupplyWorld();
         SupplierState s = CalmState();
@@ -747,10 +828,13 @@ internal static partial class Program
             foreach (int weeks in SupplierCatalogue.TermWeeks)
             {
                 SupplierEngine.Offer(sg, wg, def.Id, SupplyShop, weeks, 4, q);
-                noLow &= q.Lines.Count > 0 && q.Value > q.MarketValue && q.Lines.All(l => l.Mills >= SupplyWorld.Own[l.Kind] * (def.Level - 20) / 1000 * (1000 - 50 - 20 - 10) / 1000);
+                // The calm price of each product with the supplier's level and the discount this offer earned, to within a mill: a glut's low price is nowhere in it.
+                var calmWorld = new SupplyWorld();
+                noLow &= q.Lines.Count > 0 && q.Value > q.MarketValue
+                         && q.Lines.All(l => Math.Abs(l.Mills - SupplierRules.FixedMills(calmWorld.Base(l.Item), 1000, 1000, q.Level, q.Discount)) <= 1);
             }
         }
-        Check(noLow, "suppliers exploit (a low locked): in a glut every fixed price offered is over the day's market price, written from the calm price");
+        Check(noLow, "suppliers exploit (a low locked): in a glut every fixed price offered is over the day's market price and is the price a calm market writes, to within a mill");
         var wa = new SupplyWorld { ShortKind = 1, ShortFrom = 101, ShortUntil = 106, ShortSize = 400 };
         SupplierState sa = CalmState();
         SupplierEngine.Offer(sa, wa, 1, SupplyShop, 2, 2, q);
@@ -768,25 +852,37 @@ internal static partial class Program
         long cashQ = wq.CashCents;
         RunTo(sq, wq, 122);
         Check(cashQ - wq.CashCents == SupplierEngine.Value(cq) * 4 && cq.NotTaken == 480 * 4 && wq.StockOf(SupplyShop, "apples") == 0, "suppliers exploit (quantities bind): a place kept full pays every delivery of the term in full and takes nothing");
-        // 5. Credits cannot be farmed: over many forced failures a customer gets back less than the goods they did not get were worth.
-        long credits = 0, lost = 0, values = 0;
+        // 5. Credits cannot be farmed, short and late apart: over many forced failures a customer gets back less than the goods they did not get were worth.
+        long shortCredits = 0, shortLost = 0, shortValues = 0, lateCredits = 0, lateLost = 0, lateValues = 0;
         var wf = new SupplyWorld();
         SupplierState sf = CalmState();
         for (int i = 0; i < 40; i++)
         {
-            Contract cf = ForcedContract(sf, wf, 1, 0, i % 2 == 0 ? Arrival.Short : Arrival.Late, Cause.Own, 3, 400);
+            bool isShort = i % 2 == 0;
+            Contract cf = ForcedContract(sf, wf, 1, 0, isShort ? Arrival.Short : Arrival.Late, Cause.Own, 3, 400);
             long value = SupplierEngine.Value(cf), cash = wf.CashCents;
             wf.DayNow = cf.Due + cf.Slip;
             SupplierEngine.Hour(sf, wf);
             long paid = cash - wf.CashCents;
-            long got = i % 2 == 0 ? cf.Lines.Sum(l => SupplierRules.Cents(l.Units * 400 / 1000, l.Mills)) : value;
-            credits += got - paid;
-            lost += value - got;
-            values += value;
+            long got = isShort ? cf.Lines.Sum(l => SupplierRules.Cents(l.Units * 400 / 1000, l.Mills)) : value;
+            if (isShort)
+            {
+                shortCredits += got - paid;
+                shortLost += value - got;
+                shortValues += value;
+            }
+            else
+            {
+                lateCredits += got - paid;
+                lateLost += value * 3 / SupplierCatalogue.WeekDays;   // the three days' share of the week's goods a late delivery missed
+                lateValues += value;
+            }
             wf.DayNow += 1;
         }
-        Check(credits > 0 && credits * 1000 <= values * SupplierCatalogue.LateCreditMost && lost > credits,
-            "suppliers exploit (credits): the credits of forty failed deliveries are never over the most a failure earns, and less than the goods not brought were worth (" + credits + " of " + values + ", " + lost + " not brought)");
+        Check(shortCredits > 0 && shortCredits * 1000 <= shortLost * SupplierCatalogue.ShortCredit + 20 && shortLost > shortCredits * 5,
+            "suppliers exploit (credits, short): the credits of twenty short deliveries are a tenth of the goods not brought and no more (" + shortCredits + " of " + shortLost + " not brought)");
+        Check(lateCredits > 0 && lateCredits * 1000 <= lateLost * SupplierCatalogue.ShortCredit + 20 && lateLost > lateCredits * 5 && lateCredits * 1000 <= lateValues * 150,
+            "suppliers exploit (credits, late): the credits of twenty late deliveries that came whole are a tenth of the three days' share of the week they missed and under a fifteenth of their value (" + lateCredits + " of " + lateValues + ")");
         // 6. The pause: the option off does not stretch a term's price over more deliveries, and nothing is charged for the days away.
         var wp = new SupplyWorld();
         var sp = new SupplierState { Seed = QuietSeed(wp, 1, 143, 4, 3) };
@@ -839,7 +935,7 @@ internal static partial class Program
         RunTo(sf, wf, wf.DayNow + 4);
         Check(cf.Running && sf.Record.Defaults == 0, "suppliers owed: on the last day of grace the contract still runs");
         RunTo(sf, wf, wf.DayNow + 1);
-        long settle = SupplierRules.Settlement(firmValue, 3);
+        long settle = SupplierRules.WithFee(SupplierRules.Settlement(firmValue, 3), LatePolicy.Firm);   // the settlement is owed with the firm supplier's fee on it
         Check(cf.State == ContractState.Unpaid && sf.Record.Defaults == 1 && sf.OwedAll() == owedBefore + settle && sf.Firm(3).SourUntil == wf.DayNow + SupplierCatalogue.SourDays && CountEvents(sf, SupplyEventKind.EndedUnpaid) == 1,
             "suppliers owed: unpaid past its days the contract is ended by the supplier, the settlement owed on top, said, and the supplier offers nothing for a while");
         RunTo(sf, wf, wf.DayNow + 30);
@@ -864,8 +960,9 @@ internal static partial class Program
         Force(cs, Arrival.Whole, Cause.None, 0, 1000);
         ws.DayNow = cs.Due;
         SupplierEngine.Hour(ss, ws);
-        Check(cs.State == ContractState.Unpaid && ss.Owed.Count == 1 && ss.Owed[0].Settlement && ss.Owed[0].Cents == SupplierRules.Settlement(SupplierEngine.Value(cs), 3) && ss.Record.Defaults == 1,
-            "suppliers owed: after two deliveries kept back it ends the contract, and the settlement is owed and listed");
+        Check(cs.State == ContractState.Unpaid && ss.Owed.Count == 1 && ss.Owed[0].Settlement && ss.Owed[0].Cents == SupplierRules.WithFee(SupplierRules.Settlement(SupplierEngine.Value(cs), 3), LatePolicy.Strict) && ss.Record.Defaults == 1
+              && ss.Owed[0].Cents > SupplierRules.Settlement(SupplierEngine.Value(cs), 3) && ss.Owed[0].Acted,
+            "suppliers owed: after two deliveries kept back it ends the contract, and the settlement is owed and listed with the strict supplier's fee on it (the fee that was never charged)");
         // The place closed or sold: the contract ends, the settlement paid or, without the cash, owed and said.
         var wc = new SupplyWorld();
         SupplierState sc = CalmState();
@@ -1090,7 +1187,8 @@ internal static partial class Program
             s.Firm(d.Id).ClosedDay = 5;
         }
         RivalDay left = SupplierRules.Rival(31, 17, 1, s, 200, 1300, fair, none, 100000);
-        Check(SupplierRules.PickFirm(31, 17, 1, s) == 0 && left.Firm == 0 && !left.Contract && left.Cents == 100000 * SupplierCatalogue.RivalGoodsShare / 1000 * 300 / 1000, "suppliers rivals: with no supplier open a shop buys at the wholesale stores, at the market's price of the day");
+        Check(SupplierRules.PickFirm(31, 17, 1, s) == 0 && left.Firm == 0 && !left.Contract && left.Cents == 0,
+            "suppliers rivals: with no supplier open a shop buys at the wholesale stores at the very price its day was valued at, and the supply side takes nothing off it");
         s = CalmState(31);
         // A shortage: the market's price reaches the shops on the day's price and not those on a fixed price.
         long spotCost = 0, fixedCost = 0;
@@ -1118,7 +1216,8 @@ internal static partial class Program
         }
         Check(capped, "suppliers rivals: the supply side never moves a shop's day by more than " + SupplierCatalogue.RivalMost + " thousandths");
         Check(spotShops > 200 && fixedShops > 300 && Math.Abs(fixedShops * 1000 / (spotShops + fixedShops) - SupplierCatalogue.RivalContractShare) < 60, "suppliers rivals: about six shops in ten hold a fixed price (" + fixedShops + " of " + (fixedShops + spotShops) + ")");
-        Check(spotCost / spotShops > 10000 && fixedCost == 0, "suppliers rivals: a shortage raises the price for the shops on the day's price, and a fixed price protects the others, as it does the player (" + spotCost / spotShops + " cents a shop)");
+        Check(Math.Abs(spotCost / spotShops) <= 2 && fixedCost / fixedShops < -10000,
+            "suppliers rivals: a shortage's push is in the shops' valued day already, so a shop on the day's price is charged nothing more for it, and one on a fixed price gains what it saves against the market (" + spotCost / spotShops + " and " + fixedCost / fixedShops + " cents a shop)");
         s.Firm(1).Book[1] = s.Firm(2).Book[1] = s.Firm(3).Book[1] = 1300;
         long burden = 0;
         for (int shop = 1; shop <= 800; shop++)
@@ -1278,7 +1377,7 @@ internal static partial class Program
         var lateOne = new Contract { Id = 1, Supplier = 1, Place = SupplyShop, Weeks = 4, Due = 50, Slip = 2 };
         lateOne.Lines.Add(new ContractLine { Item = "apples", Kind = 0, Units = 100, Mills = 1000 });
         st.Contracts.Add(lateOne);
-        Check(st.Coming(SupplyShop, "apples", 50, 51) == 0 && st.Coming(SupplyShop, "apples", 50, 52) == 100 && st.Coming(SupplyShop, "apples", 53, 57) == 100 && st.Coming(SupplyShop, "apples", 50, 71) == 400 && st.Coming("Other~1", "apples", 50, 71) == 0,
+        Check(st.Coming(SupplyShop, "apples", 50, 51, false, long.MaxValue / 4) == 0 && st.Coming(SupplyShop, "apples", 50, 52, false, long.MaxValue / 4) == 100 && st.Coming(SupplyShop, "apples", 53, 57, false, long.MaxValue / 4) == 100 && st.Coming(SupplyShop, "apples", 50, 71, false, long.MaxValue / 4) == 400 && st.Coming("Other~1", "apples", 50, 71, false, long.MaxValue / 4) == 0,
             "suppliers buyer: a late delivery is counted on the day it comes, and the weeks after it are not moved");
     }
 
@@ -1328,7 +1427,8 @@ internal static partial class Program
         Check(back != null && version == SupplierStore.Version && SupplierStore.Write(back) == line, "suppliers save: every part writes and reads back to the very same line");
         Contract a = back.Contracts[0];
         Check(a.PlaceName == "A shop; with | marks ^ and ~ signs, and commas" && a.Out == Arrival.Short && a.Why == Cause.Own && a.OutShare == 600 && a.OutKind == 1 && a.JudgedFor == a.Due && a.Renew == RenewRule.Best
-              && a.RenewLimit == 3 && a.Cover && a.LeaveRule && a.Lines.Count == 2 && a.Lines[0].Item == "apples" && a.Lines[0].Mills == s.Contracts[0].Lines[0].Mills,
+              && a.RenewLimit == 3 && a.Cover && a.LeaveRule && a.Lines.Count == 2 && a.Lines.Any(l => l.Item == "apples") && a.Lines.First(l => l.Item == "apples").Mills == s.Contracts[0].Lines.First(l => l.Item == "apples").Mills
+              && !a.Knew,
             "suppliers save: a contract in the middle of its term is read back whole: its products and prices, the delivery judged for tomorrow, its rules, a name with marks in it");
         Check(back.Owed.Count == 1 && back.Owed[0].Cents == s.Owed[0].Cents && back.Owed[0].Due == s.Owed[0].Due && back.Record.Late == 1 && back.Record.LateDays.SequenceEqual(s.Record.LateDays) && back.Record.Defaults == 2,
             "suppliers save: what is owed and the payment record are read back");
@@ -1440,7 +1540,7 @@ internal static partial class Program
             "suppliers pause: coming back, a delivery whose day passed is dropped and the contract goes on at its next weekday; one due today and an ended one are left alone");
         Check(SupplierEngine.Resume(s, 130) == 0, "suppliers pause: coming back twice moves nothing twice");
         string director = ModSource(@"Suppliers\SupplierDirector.cs"), settings = ModSource(@"Core\Settings.cs"), rivals = ModSource(@"Suppliers\SupplierDirector.Rivals.cs");
-        Check(director.Contains("public static bool On => Settings.LivingPopulation && Settings.LivingSuppliers;") && director.Contains("public bool Running => _loaded && !_broken && On;") && director.Contains("if (!On)")
+        Check(director.Contains("public static bool On => SupplierRules.On(Settings.LivingPopulation, Settings.LivingSuppliers);") && director.Contains("if (!On)")
               && director.Contains("PutAway();") && settings.Contains("public static bool LivingSuppliers = true;") && settings.Contains("LivingSuppliers = Bool(modId, LivingSuppliersId, LivingSuppliers);"),
             "suppliers pause: the option is on by default under the living economy's master switch, and with either off nothing runs");
         string putAway = director.Substring(director.IndexOf("private void PutAway()", StringComparison.Ordinal), 400);
@@ -1450,10 +1550,10 @@ internal static partial class Program
             "suppliers pause: the save tools know its lines and can forget them");
         string write = director.Substring(director.IndexOf("private void Write()", StringComparison.Ordinal), 700);
         Check(write.IndexOf("RivalsFinish();", StringComparison.Ordinal) > 0 && write.IndexOf("RivalsFinish();", StringComparison.Ordinal) < write.IndexOf("SupplierStore.Write(_state)", StringComparison.Ordinal)
-              && rivals.Contains("if (GoingPublic.IsGuest || _state.RivalDay >= today)") && rivals.Contains("SupplierEngine.RivalsDone(_state, _rivalToday, _customers);"),
+              && rivals.Contains("SupplierRules.RivalsMay(GoingPublic.IsGuest, _state.RivalDay, today, _rivalAt >= 0") && rivals.Contains("SupplierEngine.RivalsDone(_state, _rivalToday, _customers);"),
             "suppliers pause: the rival shops' day, if one is under way, is finished before the save is written, so no shop is gone through twice after a load");
-        Check(director.Contains("if (day != _state.LastDay)") && director.Contains("SupplierEngine.Day(_state, _world);") && director.Contains("if (day != _hourDay || hour != _hour)") && director.Contains("SupplierEngine.Hour(_state, _world);"),
-            "suppliers pause: the director runs the engine's day once a day and its hour once an hour, and nothing between");
+        Check(director.Contains("SupplierRules.DayDue(_state.LastDay, day)") && director.Contains("SupplierEngine.Day(_state, _world);") && director.Contains("SupplierRules.HourDue(_hourDay, _hour, day, hour)")
+              && director.Contains("SupplierEngine.Hour(_state, _world);"), "suppliers pause: the director runs the engine's day and hour when the rules say they are due (driven in the rules' own checks), and nothing between");
     }
 
     // ---- the pages and their buttons
@@ -1584,11 +1684,12 @@ internal static partial class Program
             Check(File.ReadAllLines(file).All(l => l.Length < 200), "suppliers sources: " + name + " keeps its lines under 200 columns");
         }
         string game = ModSource(@"Suppliers\SupplierGame.cs"), director = ModSource(@"Suppliers\SupplierDirector.cs"), engine = ModSource(@"Suppliers\SupplierEngine.cs"), rivals = ModSource(@"Suppliers\SupplierDirector.Rivals.cs");
-        Check(CountOfText(game, "BizBooks.Book(") == 2 && game.Contains("force: false") && game.Contains("if (cents > CashNow || cents > int.MaxValue / 2)"), "suppliers sources: money leaves through the mod's one booking call, never forced, never over the cash in hand");
+        Check(CountOfText(game, "BizBooks.Book(") == 2 && game.Contains("force: false") && game.Contains("SupplierRules.PayMay(cents, Spare)") && game.Contains("public long Cash => Spare;"),
+            "suppliers sources: money leaves through the mod's one booking call, never forced, never over the cash over the investors' floor");
         Check(CountOfText(all, "UnityEngine.Random") == 1 && director.Contains("_state.Seed = UnityEngine.Random.Range(1, int.MaxValue);") && !engine.Contains("Random") && !ModSource(@"Suppliers\SupplierRules.cs").Contains("System.Random"),
             "suppliers sources: the only unseeded draw is the save's own seed, made once and kept; every other draw is a hash of it");
         Check(!all.Contains("SharedCity") && !all.Contains("SendOver") && !all.Contains("MPClient") && !all.Contains("MPServer"), "suppliers session: nothing new goes over the network");
-        Check(game.Contains("GoingPublic.Mine(reg)") && rivals.Contains("GoingPublic.IsGuest") && rivals.Contains("if (read == null || GoingPublic.InSession)") && game.Contains("cents >= 100 && !GoingPublic.InSession"),
+        Check(game.Contains("GoingPublic.Mine(reg)") && rivals.Contains("SupplierRules.RivalsMay(GoingPublic.IsGuest") && rivals.Contains("!SupplierRules.TycoonsMove(GoingPublic.InSession)") && game.Contains("SupplierRules.OwnerGainMay(cents, GoingPublic.InSession)"),
             "suppliers session: only the player's own places are read or delivered to, a guest leaves the city's shops to the host, and the tycoons rest in a session");
         Check(director.Contains("StartCoroutine(Guard.Routine(Tick()))") && director.Contains("catch (Exception e)") && director.Contains("_broken = true;"), "suppliers sources: the timer is a guarded coroutine, once a second, and a fault switches the feature off for the session");
         Check(director.Contains("SupplierEngine.Sign(_state, _world") && director.Contains("SupplierEngine.Break(_state, _world, contract)") && director.Contains("SupplierEngine.Leave(_state, _world, contract)")
@@ -1596,7 +1697,7 @@ internal static partial class Program
               && ModSource(@"Suppliers\SupplierDirector.Facts.cs").Contains("SupplierEngine.Offer(_state, _world"), "suppliers sources: the director decides nothing itself: every press and every pass goes through the engine these checks drive");
         Check(engine.Contains("SupplierRules.Judge(s.Seed, def, f, c.Due, kinds, w.Conditions(c.Due), Shortages)") && engine.Contains("SupplierRules.ChargeMills(line.Mills, w.Export(line.Item), w.Market(line.Item))")
               && engine.Contains("SupplierRules.FirmDay(s.Seed, def, f, day, Factors, w.Cycle)") && engine.Contains("SupplierRules.Rival(s.Seed"), "suppliers sources: the engine judges, charges and runs the suppliers and the rivals by the rules' own functions");
-        Check(game.Contains("ItemHelper.DeliverCargoToBuilding(") && game.Contains("ProductMarketHelper.GetProductExportPrice(item)") && game.Contains("it.GetWholesalePrice()") && game.Contains("ProductMarketHelper.IsProductInMarketEvent(item, MarketEventType.ProductBackorder)")
+        Check(game.Contains("ItemHelper.DeliverCargoToBuilding(") && game.Contains("ProductMarketHelper.GetProductExportPrice(item)") && game.Contains("it.wholesalePrice") && game.Contains("ProductMarketHelper.IsProductInMarketEvent(item, MarketEventType.ProductBackorder)")
               && game.Contains("it.maxWholesaleOrderAmount") && game.Contains("CityEconomy.SupplyFactor(kind)") && game.Contains("CityEconomy.SupplyShockOf("), "suppliers sources: goods, prices, limits and shortages are the game's and the city's own, read where the game reads them");
         Check(CountOfText(ModSource(@"Wiring\Wiring.cs"), "SupplierLinks") == 2, "suppliers sources: the wiring connects and disconnects the feature");
         Check(ModSource(@"Meta\FeatureList.cs").Contains("Suppliers.SupplierGuide.Register()") && ModSource(@"Core\FeatureOwners.cs").Contains("\"RealLifeOverhaul.Suppliers\", \"suppliers\"") && ModSource(@"Meta\OptionsTree.cs").Contains("S(\"suppliers\")")

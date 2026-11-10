@@ -72,7 +72,8 @@ internal static partial class UiSamples
                 Id = def.Id, Kinds = def.Kinds, Level = def.Level, Reliability = def.Reliability, LeadDays = def.LeadDays, Band = def.Id == 2 ? 1 : 0, Size = 1,
                 Customers = 12 + def.Id * 3, Brought = 40 + def.Id, Missed = def.Id == 2 ? 6 : 1, Late = def.Late, Min = def.MinOrder * 100L, Depot = def.Id % 2 == 0 ? "Industry City" : "Midtown",
                 OwnerName = def.Owner == 0 ? "Space Karen" : string.Empty, Why = f.Places.Count == 0 ? Refusal.NoGoods : trades ? Refusal.None : Refusal.Kind,
-                MarketValue = 186000, Lines = 5, FirstDay = f.Day + def.LeadDays
+                MarketValue = 186000, Lines = 5, FirstDay = f.Day + def.LeadDays,
+                LeftOut = def.Id == 2 && state == "suppliers_pick" ? 3 : 0   // a place that sells more than a contract holds
             };
             int discount = termStep > 0 ? SupplierCatalogue.TermDiscount[termStep - 1] : 0;
             firm.Against = def.Level * (1000 - discount) / 1000;

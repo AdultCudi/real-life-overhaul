@@ -218,6 +218,7 @@ namespace RealLifeOverhaul.Suppliers
             public int Day => _w.Day;
             public int Hour => SupplierCatalogue.DeliveryHour;
             public int Month => _w.Month;
+            public void Play(int day) => _w.Play(day);
             public long Cash => _w.Cash;
             public int Level => _w.Level;
             public int Credit => _w.Credit;
@@ -238,6 +239,7 @@ namespace RealLifeOverhaul.Suppliers
             public bool Pay(long cents, string key, string place, int supplier) => _w.Pay(cents, key, place, supplier);
             public void Receive(long cents, string key, string place, int supplier) => _w.Receive(cents, key, place, supplier);
             public bool Buyer(string place) => _w.Buyer(place);
+            public bool Spend(string place, long cents) => _w.Spend(place, cents);
             public int FarDays(int supplier, string place) => _w.FarDays(supplier, place);
             public void OwnerGain(int tycoon, long cents) => _w.OwnerGain(tycoon, cents);
             public void RivalMoved(int tycoon, long cents) => _w.RivalMoved(tycoon, cents);

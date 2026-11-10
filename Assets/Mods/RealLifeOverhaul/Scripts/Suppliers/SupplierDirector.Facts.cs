@@ -24,7 +24,7 @@ namespace RealLifeOverhaul.Suppliers
             }
             f.Ready = true;
             f.Day = SupplierGame.Today;
-            f.Cash = SupplierGame.CashNow;
+            f.Cash = SupplierGame.Spare;   // what may be paid to suppliers: the cash over the investors' floor
             f.Owed = _state.OwedAll();
             f.Session = GoingPublic.InSession;
             f.OnTime = _state.Record.OnTime;
@@ -64,6 +64,7 @@ namespace RealLifeOverhaul.Suppliers
                     fact.Against = _quote.AgainstMarket;
                     fact.FirstDay = _quote.FirstDay;
                     fact.Lines = _quote.Lines.Count;
+                    fact.LeftOut = _quote.LeftOut;
                     fact.LeadDays = _quote.FirstDay > 0 ? _quote.FirstDay - f.Day : def.LeadDays;
                 }
                 else

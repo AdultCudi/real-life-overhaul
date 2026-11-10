@@ -36007,5 +36007,8 @@
   "reallife_supply_test_rivals": "Dzień dostaw sklepów konkurencji się odbył: odczytano {n} sklepów, {moved} zapłaciło więcej lub mniej, u {failed} dostawa była spóźniona lub niepełna.",
   "reallife_supply_test_back": "Dostawcy wrócili do stanu sprzed testów. Zapłacone pieniądze i dostarczone towary pozostają.",
   "reallife_supply_test_back_none": "Nie ma nic do przywrócenia.",
-  "reallife_supply_test_off": "Dostawcy i kontrakty są wyłączone lub jeszcze nieprzygotowane."
+  "reallife_supply_test_off": "Dostawcy i kontrakty są wyłączone lub jeszcze nieprzygotowane.",
+  "reallife_supply_left_out": "Kolejnych {n} produktów tej firmy nie ma w umowie. Kontrakt obejmuje {most} produktów, najlepiej sprzedających się na początku.",
+  "reallife_supply_note_late_knew": "Dostawa od {supplier} do {business}, zaplanowana na dzień {day}, przyjdzie {days} dni później: {cause}. Znałeś problem, więc rekompensaty nie ma. Inny dostawca lub hurtownia może zapełnić lukę.",
+  "reallife_supply_note_short_knew": "Dostawa od {supplier} do {business} w dniu {day} będzie o {share} mniejsza: {cause}. Płacisz tylko za to, co przyjdzie. Znałeś problem, więc rekompensaty nie ma. Inny dostawca lub hurtownia może zapełnić lukę."
 }
