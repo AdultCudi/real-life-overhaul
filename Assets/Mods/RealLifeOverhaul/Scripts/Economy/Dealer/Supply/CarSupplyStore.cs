@@ -8,10 +8,10 @@ namespace RealLifeOverhaul.Economy.Dealership
     /// <summary>
     /// The showroom's suppliers in the save: one line of modData under <see cref="Key"/>, game-free.
     ///
-    ///     v=1^s:0,1,2,0,0,1^d:412^k:place,0,2,0,0,0,1;place,...^o:57=1;58=2
+    ///     v=1^s:0,1,2,0,0,1^k:place,0,2,0,0,0,1,412;place,...^o:57=1;58=2
     ///
-    /// Parts are divided by '^' and begin with a letter and a colon. s is the supplier of each kind, d the day the managers last
-    /// ordered, k each showroom's standing order (its place escaped, then a number a kind), o the deliveries a supplier is bringing
+    /// Parts are divided by '^' and begin with a letter and a colon. s is the supplier of each kind, k each showroom's standing
+    /// order (its place escaped, then a number a kind, then the day its manager last ordered), o the deliveries a supplier is bringing
     /// (the delivery's id and the supplier). A newer version adds a part with a new letter or numbers at the end of a record: this
     /// reader takes what it knows and puts every number inside its bounds. A save from before has no line: every kind comes from
     /// the wholesaler. Numbers are written and read in the invariant culture.
@@ -41,7 +41,6 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 t.Append(k > 0 ? "," : string.Empty).Append(s.Supplier[k].ToString(Inv));
             }
-            t.Append("^d:").Append(s.OrderedDay.ToString(Inv));
             if (s.Keeps.Count > 0)
             {
                 t.Append("^k:");
@@ -52,6 +51,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                     {
                         t.Append(',').Append(s.Keeps[i].Keep[k].ToString(Inv));
                     }
+                    t.Append(',').Append(s.Keeps[i].Day.ToString(Inv));
                 }
             }
             if (s.Orders.Count > 0)
@@ -96,9 +96,6 @@ namespace RealLifeOverhaul.Economy.Dealership
                             s.Supplier[k] = Int(f[k]);
                         }
                         break;
-                    case 'd':
-                        s.OrderedDay = Int(body.Split(',')[0], -1);
-                        break;
                     case 'k':
                         foreach (string record in body.Split(';'))
                         {
@@ -108,6 +105,10 @@ namespace RealLifeOverhaul.Economy.Dealership
                             for (int k = 0; keep != null && k < CarSupplyCatalogue.Kinds && k + 1 < r.Length; k++)
                             {
                                 keep.Keep[k] = Int(r[k + 1]);
+                            }
+                            if (keep != null && r.Length > CarSupplyCatalogue.Kinds + 1)
+                            {
+                                keep.Day = Int(r[CarSupplyCatalogue.Kinds + 1], -1);
                             }
                         }
                         break;

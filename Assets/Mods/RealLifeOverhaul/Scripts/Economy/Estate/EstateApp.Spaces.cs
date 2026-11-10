@@ -31,9 +31,10 @@ namespace RealLifeOverhaul.Economy
             SpaceDirector d = SpacesNow;
             SpacePark picked = null;
             int day = SaveGameManager.Current.Day;
-            for (int i = 0; d != null && i < d.Parks.Count; i++)
+            IReadOnlyList<SpacePark> parks = d != null ? d.Open() : null;   // read again as the page is built
+            for (int i = 0; parks != null && i < parks.Count; i++)
             {
-                SpacePark p = d.Parks[i];
+                SpacePark p = parks[i];
                 SpaceRules.Counts(d.State, p, day, out int player, out int _, out int _, out int free);
                 if (Pick(SpaceRow + p.Number.ToString(CultureInfo.InvariantCulture), ref selected, out TableRow row))
                 {
@@ -41,6 +42,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 row.Kind = KindOf(districts, p.District);
                 row.Kind2 = EstateTables.IsSpace;
+                row.NoTotal = true;   // a car park's space is not a building for sale: the Market's total of prices is the buildings' alone
                 row.Set(0, p.Name);
                 row.Set(1, p.District);
                 row.Set(2, SpaceText.T("reallife_space_kind"));
@@ -54,6 +56,10 @@ namespace RealLifeOverhaul.Economy
         private void WriteSpacesHeld(ref string selected)
         {
             SpaceDirector d = SpacesNow;
+            if (d != null)
+            {
+                d.Open();
+            }
             for (int i = 0; d != null && i < d.State.Held.Count; i++)
             {
                 SpaceHolding h = d.State.Held[i];
@@ -64,6 +70,7 @@ namespace RealLifeOverhaul.Economy
                 }
                 Pick(SpaceRow + p.Number.ToString(CultureInfo.InvariantCulture), ref selected, out TableRow row);
                 row.Kind = EstateTables.OwnSpace;
+                row.NoTotal = true;   // the buildings' worth, rent and year figures are theirs alone
                 row.Set(0, SpaceText.Fill("reallife_space_row_name", "space", SpaceText.Space(h.Slot), "name", p.Name));
                 row.Set(1, SpaceText.T("reallife_space_kind"));
                 row.Set(2, SpaceText.Tenure(h));
@@ -97,6 +104,8 @@ namespace RealLifeOverhaul.Economy
             box.Line(SpaceText.Fill("reallife_space_holders_line", "you", player.ToString(), "rivals", rivals.ToString(), "city", city.ToString(), "free", free.ToString(),
                 "spaces", p.Capacity.ToString()));
             SpaceRefusal buy = d.MayTake(park, false, out int _), rent = d.MayTake(park, true, out int slot);
+            long shownPrice = p.Price, shownRent = p.RentMonth;   // what the question box asks about is what is charged, or nothing is
+            int shownSlot = slot;
             if (p.Owner != SpaceOwner.Player)
             {
                 if (buy != SpaceRefusal.None)
@@ -109,7 +118,7 @@ namespace RealLifeOverhaul.Economy
                     InfoBox.Button(buttons, InfoBox.Positive, "reallife_space_btn_buy", () => AskSpace("reallife_space_q_buy_title",
                         SpaceText.Fill("reallife_space_q_buy", "space", SpaceText.Space(slot), "name", p.Name, "amount", SpaceGame.Money(p.Price), "owner", SpaceText.Owner(p)), () =>
                         {
-                            d.Buy(park);
+                            d.Buy(park, shownPrice, shownSlot);
                             Refresh();
                         }, false));
                 }
@@ -119,7 +128,7 @@ namespace RealLifeOverhaul.Economy
                         SpaceText.Fill("reallife_space_q_rent", "space", SpaceText.Space(slot), "name", p.Name, "amount", SpaceGame.Money(p.RentMonth), "days", SpaceCatalogue.RentDays.ToString()),
                         () =>
                         {
-                            d.Rent(park);
+                            d.Rent(park, shownRent, shownSlot);
                             Refresh();
                         }, false));
                 }
@@ -156,7 +165,7 @@ namespace RealLifeOverhaul.Economy
                         SpaceText.Fill("reallife_space_q_sell", "space", SpaceText.Space(at), "name", p.Name, "amount", SpaceGame.Money(back),
                             "fee", (SpaceCatalogue.BackFee / 10f).ToString("0.#", CultureInfo.InvariantCulture)), () =>
                         {
-                            d.Sell(park, at);
+                            d.Sell(park, at, back);
                             Refresh();
                         }, true));
                 }

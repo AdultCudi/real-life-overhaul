@@ -7,11 +7,13 @@ namespace RealLifeOverhaul.Economy.Dealership
     {
         public string Place;                                            // the showroom, as the dealership writes a place
         public readonly int[] Keep = new int[CarSupplyCatalogue.Kinds];
+        public int Day = -1;                                            // the day this showroom's manager last ordered for it: once a game day, whoever worked the hour
     }
 
     /// <summary>A new car a manager is to order this morning: the market's listing, who supplies it, what it costs and the hour it comes.</summary>
     public struct CarSupplyOrder
     {
+        public string Place;    // the showroom it is for
         public int Listing;
         public int Supplier;
         public int Kind;
@@ -22,7 +24,7 @@ namespace RealLifeOverhaul.Economy.Dealership
 
     /// <summary>
     /// What the save keeps of the showroom's suppliers, game-free: the supplier chosen for each kind of car, each showroom's standing
-    /// order, the day a manager last ordered, and which of the dealership's deliveries are a supplier's (the rest are the trade auction's).
+    /// order and the day its manager last ordered for it, and which of the dealership's deliveries are a supplier's (the rest are the trade auction's).
     /// A save from before has none of it: every kind comes from the wholesaler, as it always did.
     /// </summary>
     public sealed class CarSupplyState
@@ -31,7 +33,6 @@ namespace RealLifeOverhaul.Economy.Dealership
         public readonly List<CarSupplyKeep> Keeps = new List<CarSupplyKeep>(DealerCatalogue.YardsMost);
         public readonly List<int> Orders = new List<int>(DealerCatalogue.DeliveriesMost);      // the ids of the deliveries a supplier is bringing...
         public readonly List<int> OrderFrom = new List<int>(DealerCatalogue.DeliveriesMost);   // ...and beside each, which supplier
-        public int OrderedDay = -1;                                                             // the day the managers last filled the standing orders
 
         public CarSupplyKeep KeepOf(string place, bool make)
         {

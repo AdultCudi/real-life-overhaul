@@ -326,7 +326,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_space_btn_buy", "reallife_space_btn_rent", "reallife_space_btn_sell", "reallife_space_btn_end", "reallife_space_btn_keep",
                 "reallife_space_refuse_off", "reallife_space_refuse_session", "reallife_space_refuse_no_park", "reallife_space_refuse_full",
                 "reallife_space_refuse_limit", "reallife_space_refuse_park_limit", "reallife_space_refuse_cash", "reallife_space_refuse_not_held",
-                "reallife_space_refuse_own_building", "reallife_space_refuse_rented", "reallife_space_refuse_owned"
+                "reallife_space_refuse_own_building", "reallife_space_refuse_rented", "reallife_space_refuse_owned", "reallife_space_refuse_moved"
             };
         }
 

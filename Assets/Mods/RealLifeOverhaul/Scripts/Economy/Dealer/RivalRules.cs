@@ -53,7 +53,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                     known = models[m].Type == c.Type;
                 }
                 var dice = new DealerDice(s.Seed, day, c.Rival * 131 + c.Day * 7 + (DealerRules.Hash(c.Type) % 9973) + c.Ask, 83);   // each car its own roll
-                if (!known || c.Rival < 0 || c.Rival >= dealers || dice.Chance(SoldChance))
+                if (!known || c.Rival < 0 || c.Rival >= dealers || (c.Day < day && dice.Chance(SoldChance)))   // a car still on its way from a supplier is not on the lot to be sold
                 {
                     s.Rivals.RemoveAt(i);
                 }

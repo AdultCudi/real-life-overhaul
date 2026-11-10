@@ -7,7 +7,10 @@ namespace RealLifeOverhaul.Economy.Dealership
     /// <summary>What the showroom's suppliers ask of the rest of the mod, with a default; Wiring fills it in.</summary>
     public static class CarSupplyBridges
     {
-        /// <summary>True where a manager of the company orders the stock of the business at a place (Economy/Company, the Stock orders task). Default: nobody does.</summary>
+        /// <summary>
+        /// True where a manager of the company decides the stock of the business at a place today (Economy/Company, the Stock orders task,
+        /// through the door every decision of a manager passes). Default: nobody does.
+        /// </summary>
         public static Func<string, bool> Manages;
 
         public static void Reset()
@@ -27,6 +30,7 @@ namespace RealLifeOverhaul.Economy.Dealership
     {
         private CarSupplyState _supply = new CarSupplyState();
         private readonly List<CarSupplyOrder> _orders = new List<CarSupplyOrder>(DealerCatalogue.SpotsMost);
+        private Func<DealerYard, bool> _supplyDecides;   // made once: the hour asks every hour
 
         /// <summary>True while the choice of suppliers is in force.</summary>
         internal bool SupplyOn => _running && Settings.EconomyDealerSupply;
@@ -83,7 +87,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         // its place on the lot held until it comes. True if ordered.
         private bool BuyShipped(DealerListing l, DealerYard y, BuildingRegistration reg, int price, int supplier)
         {
-            if (_state.Deliveries.Count >= DealerCatalogue.DeliveriesMost)
+            if (CarSupplyRules.WaysFull(_state))
             {
                 Notifications.ShowError("reallife_carsup_refuse_ways");
                 return false;
@@ -136,7 +140,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         // A delivery as its car goes onto the lot: a supplier's is a new car, another is a lot won at the trade auction.
         private CarSource DeliverySource(DealerDelivery q)
         {
-            return _supply.OrderOf(q.Id) >= 0 ? CarSource.Wholesale : CarSource.Auction;
+            return CarSupplyRules.SourceOf(_supply, q.Id);
         }
 
         // The notice of a delivery: the supplier's own words for a car it brought, the auction's otherwise.
@@ -193,41 +197,30 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
-        // The morning's standing orders, once a game day however often the hour is worked or the save is loaded: each managed showroom's
-        // manager orders what CarSupplyRules.Plan gives, every car through Buy.
+        // The morning's standing orders (CarSupplyRules.Morning), once a game day for each showroom however often the hour is worked or the save is
+        // loaded, and only where somebody decides today: every car through Buy.
         private void SupplyMorning(int day, int now)
         {
-            if (!SupplyOn || _supply.OrderedDay == day || _state.MarketDay != day)
+            if (!SupplyOn || _state.MarketDay != day)
             {
                 return;
             }
-            _supply.OrderedDay = day;
-            SupplyOrders(now, false);
+            _supplyDecides = _supplyDecides ?? SupplyDecides;
+            SupplyOrders(day, now, _supplyDecides);
         }
 
-        private int SupplyOrders(int now, bool whoever)
+        // A showroom the player owns whose manager decides today.
+        private bool SupplyDecides(DealerYard y) => RegOf(y) != null && SupplyManaged(y);
+
+        private int SupplyOrders(int day, int now, Func<DealerYard, bool> decides)
         {
             _orders.Clear();
-            long cash = DealerGame.Cash;
-            int[] ends = new int[_state.Yards.Count];
-            for (int i = 0; i < _state.Yards.Count; i++)
-            {
-                DealerYard y = _state.Yards[i];
-                if (RegOf(y) != null && (whoever || SupplyManaged(y)))
-                {
-                    cash = CarSupplyRules.Plan(_state, _supply, y, _models, cash, now, _orders);
-                }
-                ends[i] = _orders.Count;
-            }
-            int bought = 0, spent = 0, yard = 0;
+            CarSupplyRules.Morning(_state, _supply, _models, day, now, DealerGame.Cash, SupplyOn, decides, _orders);
+            int bought = 0, spent = 0;
             for (int i = 0; i < _orders.Count; i++)
             {
-                while (yard < ends.Length - 1 && i >= ends[yard])
-                {
-                    yard++;
-                }
                 CarSupplyOrder o = _orders[i];
-                if (Buy(o.Listing, _state.Yards[yard].Place, o.Price))
+                if (Buy(o.Listing, o.Place, o.Price))
                 {
                     bought++;
                     spent += o.Price;
@@ -299,7 +292,8 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             int kind = SupplyKind(pick), had = CarSupplyRules.Have(_state, y, _models, kind);
             SetKeep(y.Place, kind, had + 1);
-            int bought = SupplyOrders(Now, true);
+            _supply.KeepOf(y.Place, true).Day = -1;   // the test fills it at once, whatever the day's mark
+            int bought = SupplyOrders(Now / 24, Now, p => p == y && RegOf(p) != null);
             int has = CarSupplyRules.Have(_state, y, _models, kind);
             Notifications.Show(NotificationType.Info, "reallife_carsup_test_manager", new Dictionary<string, string>(2) { { "count", bought.ToString() }, { "name", y.Name } }, 8f);
             Logger?.Info("Dealership check (test, a manager's order): the standing order of kind " + kind + " at '" + y.Name + "' is " + CarSupplyRules.Keep(_supply, y.Place, kind)

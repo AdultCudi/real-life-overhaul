@@ -96,7 +96,10 @@ internal static partial class UiSamples
             }
             int third = SpaceRules.FreeSlot(s, park, SpaceDay);
             SpaceRules.Take(s, park, third, 1, SpaceDay - 5, park.Price, 0);
-            SpaceRules.AddHours(s, park.Number, 14);
+            for (int i = 0; i < 14; i++)
+            {
+                SpaceRules.AddHour(s, SpaceDay, park.Number, "sample car");
+            }
         }
         return s;
     }

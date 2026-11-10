@@ -177,6 +177,7 @@ namespace RealLifeOverhaul.ParkSpaces
             }
             var h = new SpaceHolding { Park = p.Number, Slot = slot, Who = who, Paid = Math.Max(0L, paid), Rent = Math.Max(0L, rent), Day = day };
             h.PaidTo = h.Rented ? day + SpaceCatalogue.RentDays - 1 : 0;
+            h.PriceSeen = h.Rented ? 0L : h.Paid;   // the price it was bought at is the last price seen until the next look
             s.Held.Add(h);
             return h;
         }
@@ -214,7 +215,7 @@ namespace RealLifeOverhaul.ParkSpaces
             {
                 return 0L;
             }
-            return Back(h.Paid, priceNow);
+            return Close(h, SpaceEnd.SoldBack, priceNow, 0);
         }
 
         /// <summary>A rented space is given up (or kept after all): it ends with the term that is paid for, and nothing is paid back.</summary>
@@ -256,6 +257,33 @@ namespace RealLifeOverhaul.ParkSpaces
             h.Missing = there ? 0 : h.Missing > 0 ? h.Missing : Math.Max(1, day);
         }
 
+        /// <summary>
+        /// A holding looked at against its car park as the city has it now: missing if the car park is not there or has fewer spaces
+        /// than its number (a building rebuilt smaller), and for a bought one the price and the owner as last seen, which is what a car
+        /// park that then goes is settled by.
+        /// </summary>
+        public static void Looked(SpaceHolding h, SpacePark p, int day)
+        {
+            Seen(h, p != null && h.Slot <= p.Capacity, day);
+            Noted(h, p);
+        }
+
+        /// <summary>The price and the owner of a bought space's car park, noted whenever the city is read.</summary>
+        public static void Noted(SpaceHolding h, SpacePark p)
+        {
+            if (h != null && p != null && !h.Rented && p.Price > 0)
+            {
+                h.PriceSeen = p.Price;
+                h.OwnSeen = p.Owner == SpaceOwner.Player;
+            }
+        }
+
+        /// <summary>True when the price or the space a question box asked about is not what the city has now: the purchase is refused and asked again. -1 and 0: not asked.</summary>
+        public static bool Moved(long shown, long now, int slotShown, int slotNow)
+        {
+            return (shown >= 0 && shown != now) || (slotShown > 0 && slotShown != slotNow);
+        }
+
         /// <summary>True when a holding's car park has been missing long enough to be taken as gone (demolished, or rebuilt as another).</summary>
         public static bool Gone(SpaceHolding h, int day)
         {
@@ -263,21 +291,29 @@ namespace RealLifeOverhaul.ParkSpaces
         }
 
         /// <summary>
-        /// What the holder of a space gets when its car park has gone: what a bought one was bought for (no fee: it was not their
-        /// doing, and never more than they paid), and the days of a rented one's term not yet used.
+        /// What the holder of a space gets when it ends, one rule for every way. Bought, sold back or settled because the building is
+        /// the player's now (their doing): the lower of what was paid and the price, less the fee. Bought, car park gone (somebody
+        /// else's doing): what was paid, never more; if the building was the player's when last seen, the lower of paid and the last
+        /// price seen, less the fee. Rented: the unused days of the term for a car park gone, nothing otherwise.
         /// </summary>
-        public static long GonePay(SpaceHolding h, int day)
+        public static long Close(SpaceHolding h, SpaceEnd end, long priceNow, int day)
         {
             if (h == null)
             {
                 return 0L;
             }
-            if (!h.Rented)
+            if (h.Rented)
             {
-                return h.Paid;
+                if (end != SpaceEnd.CarParkGone)
+                {
+                    return 0L;
+                }
+                int left = SpaceCatalogue.Clamp(h.PaidTo - (h.Missing > 0 ? h.Missing : day) + 1, 0, SpaceCatalogue.RentDays);
+                return h.Rent * left / SpaceCatalogue.RentDays;
             }
-            int left = SpaceCatalogue.Clamp(h.PaidTo - Math.Max(day, h.Missing) + 1, 0, SpaceCatalogue.RentDays);
-            return h.Rent * left / SpaceCatalogue.RentDays;
+            bool theirs = end != SpaceEnd.CarParkGone || h.OwnSeen;
+            long price = end == SpaceEnd.CarParkGone ? (h.PriceSeen > 0 ? h.PriceSeen : h.Paid) : priceNow;
+            return theirs ? Back(h.Paid, price) : h.Paid;
         }
 
         // ------------------------------------------------------------------ the hour
@@ -292,8 +328,21 @@ namespace RealLifeOverhaul.ParkSpaces
             {
                 return 0;
             }
-            Counts(s, p, day, out int player, out int _, out int _, out int free);
-            return p.Owner == SpaceOwner.Player ? player + free : player;
+            bool own = p.Owner == SpaceOwner.Player;
+            int n = 0;
+            for (int slot = 1; slot <= p.Capacity; slot++)
+            {
+                SpaceHolding h = s.At(p.Number, slot);
+                if (h != null)
+                {
+                    n += h.Players && (own || !RentDue(h, day)) ? 1 : 0;   // a rented space covers the days it is paid for and not one hour more
+                }
+                else if (own && !CityHolds(s.Seed, p.Number, slot, day, p.CityShare))
+                {
+                    n++;
+                }
+            }
+            return n;
         }
 
         /// <summary>The cars of an hour whose charge is paid back: those standing there, as far as the spaces go.</summary>
@@ -302,36 +351,58 @@ namespace RealLifeOverhaul.ParkSpaces
             return Math.Max(0, Math.Min(entitled, cars));
         }
 
-        public static void AddHours(SpaceState s, int park, int hours)
+        /// <summary>One car-hour counted for a vehicle in a car park on a day: at most a day's worth for a vehicle, and a bounded list.</summary>
+        public static void AddHour(SpaceState s, int day, int park, string vehicle)
         {
-            if (hours <= 0)
+            if (string.IsNullOrEmpty(vehicle) || park <= 0)
             {
                 return;
             }
-            int most = 24 * SpaceCatalogue.CapacityMost;   // a day of every space of the largest car park: more than that is never owed
-            int at = s.HourPark.IndexOf(park);
-            if (at < 0)
+            for (int i = 0; i < s.Pending.Count; i++)
             {
-                s.HourPark.Add(park);
-                s.HourCount.Add(Math.Min(hours, most));
+                SpaceHours h = s.Pending[i];
+                if (h.Day == day && h.Park == park && h.Vehicle == vehicle)
+                {
+                    h.Hours = Math.Min(SpaceCatalogue.HoursMost, h.Hours + 1);
+                    return;
+                }
             }
-            else
+            if (s.Pending.Count < SpaceCatalogue.PendingMost)
             {
-                s.HourCount[at] = Math.Min(s.HourCount[at], most) + Math.Min(hours, most - Math.Min(s.HourCount[at], most));
+                s.Pending.Add(new SpaceHours { Day = day, Park = park, Vehicle = vehicle, Hours = 1 });
             }
         }
 
-        /// <summary>The day's car-hours settled: the game's charge for each, as it took it, and the list emptied. Counted once, paid once.</summary>
-        public static long Refund(SpaceState s)
+        /// <summary>
+        /// What the game has really charged for the car-hours counted, in money: the hours of days before <paramref name="day"/> (the game
+        /// takes a day's charges on the morning after it, in ParkingSimulator.RunDaily) for vehicles that are still in the save, since
+        /// one sold or scrapped before that morning was never charged. Nothing is changed.
+        /// </summary>
+        public static long RefundDue(SpaceState s, int day, Func<string, bool> there)
         {
             long hours = 0;
-            for (int i = 0; i < s.HourCount.Count; i++)
+            for (int i = 0; i < s.Pending.Count; i++)
             {
-                hours += Math.Max(0, s.HourCount[i]);
+                SpaceHours h = s.Pending[i];
+                if (h.Day < day && h.Hours > 0 && there != null && there(h.Vehicle))
+                {
+                    hours += Math.Min(h.Hours, SpaceCatalogue.HoursMost);
+                }
             }
-            s.HourPark.Clear();
-            s.HourCount.Clear();
-            long refund = hours * SpaceCatalogue.HourFee;
+            return hours * SpaceCatalogue.HourFee;
+        }
+
+        /// <summary>The car-hours the game has charged are paid back, once: what <see cref="RefundDue"/> says, and the records of those days gone, charged or not.</summary>
+        public static long Refund(SpaceState s, int day, Func<string, bool> there)
+        {
+            long refund = RefundDue(s, day, there);
+            for (int i = s.Pending.Count - 1; i >= 0; i--)
+            {
+                if (s.Pending[i].Day < day)
+                {
+                    s.Pending.RemoveAt(i);
+                }
+            }
             s.RefundedTotal += refund;
             return refund;
         }
@@ -339,11 +410,11 @@ namespace RealLifeOverhaul.ParkSpaces
         // ------------------------------------------------------------------ the rival tycoons
 
         /// <summary>
-        /// The tycoons' look of a day, by the rules the player buys by: every <see cref="SpaceCatalogue.RivalEvery"/> days, each on a
-        /// day of their own, a tycoon in play without a space may buy the lowest free one in a car park drawn for them (never in a
-        /// building of the player's, whose spaces are not sold without the player) at its price, if their worth stays over their
-        /// floor; one who has held a space long enough may sell it back for what the owner pays. <paramref name="worth"/> is each
-        /// tycoon's worth, under nothing for one not in play. The moves are added to <paramref name="into"/> for the caller to book.
+        /// The tycoons' look of a day, by the player's rules: every <see cref="SpaceCatalogue.RivalEvery"/> days, each on a day of
+        /// their own, a tycoon without a space may buy the lowest free one in a car park drawn for them (never in a building of the
+        /// player's) at its price, if their worth stays over their floor; one who has held a space long enough may sell it back for
+        /// what the owner pays. A space bought is worth what was paid, so their worth does not move and the daily growth has nothing
+        /// to refill; a sale loses the fee. <paramref name="worth"/> is under nothing for a tycoon not in play. Moves go to <paramref name="into"/>.
         /// </summary>
         public static void RivalLook(SpaceState s, IList<SpacePark> parks, int day, long[] worth, long[] floor, List<SpaceMove> into)
         {
@@ -383,8 +454,8 @@ namespace RealLifeOverhaul.ParkSpaces
                 {
                     continue;
                 }
-                long back = Sell(s, has, at.Price);
-                into.Add(new SpaceMove { Tycoon = t, Park = has.Park, Slot = has.Slot, Amount = back, Sold = true });
+                long paidFor = has.Paid, back = Sell(s, has, at.Price);
+                into.Add(new SpaceMove { Tycoon = t, Park = has.Park, Slot = has.Slot, Amount = back, Worth = back - paidFor, Sold = true });
             }
         }
 
@@ -420,10 +491,30 @@ namespace RealLifeOverhaul.ParkSpaces
                 h.Rent = h.Paid > 0 ? 0L : Math.Max(0L, h.Rent);
                 h.PaidTo = h.Paid > 0 ? 0 : Math.Max(0, h.PaidTo);
                 h.Missing = Math.Max(0, h.Missing);
+                h.PriceSeen = h.Paid > 0 ? Math.Max(0L, h.PriceSeen) : 0L;
+                h.OwnSeen = h.Paid > 0 && h.OwnSeen;
             }
-            for (int i = s.HourCount.Count - 1; i >= 0; i--)
+            for (int i = s.Pending.Count - 1; i >= 0; i--)
             {
-                s.HourCount[i] = SpaceCatalogue.Clamp(s.HourCount[i], 0, 24 * SpaceCatalogue.CapacityMost);
+                SpaceHours h = s.Pending[i];
+                h.Hours = SpaceCatalogue.Clamp(h.Hours, 0, SpaceCatalogue.HoursMost);
+                if (h.Hours <= 0 || h.Day < 0 || h.Park <= 0 || string.IsNullOrEmpty(h.Vehicle))
+                {
+                    s.Pending.RemoveAt(i);   // what cannot be read is not paid back
+                }
+            }
+            for (int i = s.Pending.Count - 1; i >= 0; i--)
+            {
+                SpaceHours h = s.Pending[i];
+                bool twice = false;
+                for (int k = 0; k < i && !twice; k++)
+                {
+                    twice = s.Pending[k].Day == h.Day && s.Pending[k].Park == h.Park && s.Pending[k].Vehicle == h.Vehicle;
+                }
+                if (twice || i >= SpaceCatalogue.PendingMost)
+                {
+                    s.Pending.RemoveAt(i);   // an hour written twice for a vehicle is kept once
+                }
             }
             s.RefundedTotal = Math.Max(0L, s.RefundedTotal);
         }

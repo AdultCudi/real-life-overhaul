@@ -27,7 +27,7 @@ namespace RealLifeOverhaul.Ui
         {
             null, "reallife_space_refuse_off", "reallife_space_refuse_session", "reallife_space_refuse_no_park", "reallife_space_refuse_full", "reallife_space_refuse_limit",
             "reallife_space_refuse_park_limit", "reallife_space_refuse_cash", "reallife_space_refuse_not_held", "reallife_space_refuse_own_building", "reallife_space_refuse_rented",
-            "reallife_space_refuse_owned"
+            "reallife_space_refuse_owned", "reallife_space_refuse_moved"
         };
 
         private static readonly string[] RefusalEnglish =
@@ -36,7 +36,7 @@ namespace RealLifeOverhaul.Ui
             "Every space in this car park is taken. One comes free when somebody gives theirs up.", "You hold as many spaces as one person may.",
             "You hold as many spaces in this car park as one person may.", "Not enough cash for this space.", "That space is not yours.",
             "This building is yours. Its free spaces are yours already, and there is nobody to buy from or sell to.", "A rented space is not sold. End the rental instead.",
-            "A bought space has no rental to end. Sell it back instead."
+            "A bought space has no rental to end. Sell it back instead.", "The price or the space changed while you were deciding. Nothing was taken. Look at it again."
         };
 
         public static string Fill(string text, params string[] pairs)

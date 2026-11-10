@@ -48,11 +48,13 @@ internal static partial class Program
 
     // ------------------------------------------------------------------------------------------------- the other dealers' cars
 
+    private static bool W4Suppliers;   // the dealers' price checks run again with the suppliers on, as shipped (BizAsksChecks.Day.cs)
+
     private static void W4Rivals()
     {
         IList<MarketModel> models = W4Models();
         DealerState s = W4Dealer();
-        RivalRules.Morning(s, 10, models, 1000);
+        RivalRules.Morning(s, 10, models, 1000, W4Suppliers);
         int dealers = DealerCatalogue.RivalNames.Length;
         var count = new int[dealers];
         bool known = true, priced = true;
@@ -75,7 +77,7 @@ internal static partial class Program
         Check(counts && s.Rivals.Count <= RivalRules.Most, "each of the " + dealers + " dealers keeps " + RivalRules.PerDealerLeast + " to " + RivalRules.PerDealerMost + " cars (" + string.Join(",", count) + ")");
         Check(known && priced, "their cars are the game's own vehicle types, each with a price");
         DealerState again = W4Dealer();
-        RivalRules.Morning(again, 10, models, 1000);
+        RivalRules.Morning(again, 10, models, 1000, W4Suppliers);
         bool same = again.Rivals.Count == s.Rivals.Count;
         for (int i = 0; same && i < s.Rivals.Count; i++)
         {
@@ -86,7 +88,7 @@ internal static partial class Program
         var firstDay = new List<RivalCar>(s.Rivals);
         for (int day = 11; day < 41; day++)
         {
-            RivalRules.Morning(s, day, models, 1000);
+            RivalRules.Morning(s, day, models, 1000, W4Suppliers);
         }
         int changed = 0;
         for (int i = 0; i < s.Rivals.Count; i++)
@@ -109,14 +111,14 @@ internal static partial class Program
         }
         Check(highBias > lowBias, "the dealers do not all price alike");
         DealerState dear = W4Dealer();
-        RivalRules.Morning(dear, 10, models, 1400);
+        RivalRules.Morning(dear, 10, models, 1400, W4Suppliers);
         long sumNow = 0, sumDear = 0;
         for (int i = 0; i < s.Rivals.Count && i < dear.Rivals.Count; i++)
         {
             sumDear += dear.Rivals[i].Ask;
         }
         DealerState base1 = W4Dealer();
-        RivalRules.Morning(base1, 10, models, 1000);
+        RivalRules.Morning(base1, 10, models, 1000, W4Suppliers);
         for (int i = 0; i < base1.Rivals.Count && i < dear.Rivals.Count; i++)
         {
             sumNow += base1.Rivals[i].Ask;
@@ -131,7 +133,7 @@ internal static partial class Program
             lowest &= s.Rivals[i].Type != type || s.Rivals[i].Ask >= cheapest;
         }
         Check(lowest && RivalRules.Cheapest(s, "ba:vehicletype_nothing", out who) == 0 && who == -1, "the cheapest rival price for a type is found, and none says so");
-        RivalRules.Morning(s, 50, new List<MarketModel>(), 1000);
+        RivalRules.Morning(s, 50, new List<MarketModel>(), 1000, W4Suppliers);
         Check(s.Rivals.Count == 0, "with no vehicle types in the game the dealers have no cars to show");
     }
 

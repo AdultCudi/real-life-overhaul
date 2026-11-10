@@ -27,10 +27,12 @@ namespace RealLifeOverhaul.ParkSpaces
 
         private readonly List<SpacePark> _parks = new List<SpacePark>(8);
         private readonly List<SpaceMove> _moves = new List<SpaceMove>(4);
+        private readonly List<string> _cars = new List<string>(8);
+        private readonly ISpaceLedger _books = new Books();
         private SpaceState _state = new SpaceState();
         private bool _loaded, _broken;
         private Action _onSave, _onHour, _hourSeen;
-        private int _revision;
+        private int _revision, _readFrame = -1;
 
         public static void Attach(GameObject root, IModLogger logger)
         {
@@ -124,6 +126,10 @@ namespace RealLifeOverhaul.ParkSpaces
             {
                 Pass(day);
             }
+            else
+            {
+                OwnersLook(day);
+            }
         }
 
         private void Load()
@@ -138,7 +144,7 @@ namespace RealLifeOverhaul.ParkSpaces
             {
                 _state.Seed = UnityEngine.Random.Range(1, int.MaxValue);   // once a save, then kept: the city's holders and the tycoons' looks come from it
             }
-            _state.LastHour = SpaceGame.Now;   // hours that went by without the feature are not counted
+            SpaceDay.Resume(_state, SpaceGame.Now);   // hours that went by without the feature are not counted
             _loaded = true;
             ReadParks();
             _revision++;
@@ -197,17 +203,36 @@ namespace RealLifeOverhaul.ParkSpaces
             _revision++;
         }
 
-        /// <summary>The city's car parks read again, with today's rents and prices: at a load, each day and when the page opens.</summary>
+        /// <summary>The city's car parks read again, with today's rents and prices: at a load, each day, when a page is built, when the hour finds one missing and before a purchase.</summary>
         public void ReadParks()
         {
             SpaceGame.Parks(_parks);
+            _readFrame = Time.frameCount;
+            for (int i = 0; i < _state.Held.Count; i++)
+            {
+                SpaceRules.Noted(_state.Held[i], SpaceRules.Find(_parks, _state.Held[i].Park));   // the price and owner last seen, for a car park that then goes
+            }
+        }
+
+        /// <summary>
+        /// The city's car parks as they are when a page is built: read again (once in a frame at most, and only when a page is built,
+        /// never per frame), so the pages never show the figures of the last day's pass.
+        /// </summary>
+        public IReadOnlyList<SpacePark> Open()
+        {
+            if (_readFrame != Time.frameCount)
+            {
+                ReadParks();
+            }
+            return _parks;
         }
 
         internal SpacePark Park(int number) => SpaceRules.Find(_parks, number);
 
         // ------------------------------------------------------------------ the hour
 
-        // The game's own hour, just before it charges the cars in its car parks: the player's cars standing in one are counted as far as their spaces go.
+        // The game's own hour, just before it charges the cars in its car parks: the player's cars standing in one are counted, each for its vehicle, as far as
+        // their spaces go (SpaceDay.Hour). The city is read again if a car park is not known (one that stood late at a load).
         private void OnHour()
         {
             if (!Running || !SpaceGame.Ready)
@@ -217,25 +242,11 @@ namespace RealLifeOverhaul.ParkSpaces
             using var hotSpot = HotSpots.Time(HotHour);
             try
             {
-                int now = SpaceGame.Now;
-                if (now == _state.LastHour)
+                if (SpaceDay.Stale(_state, _parks))
                 {
-                    return;   // an hour is counted once, whoever raises the event again
+                    ReadParks();
                 }
-                _state.LastHour = now;
-                int day = SpaceGame.Day, counted = 0;
-                for (int i = 0; i < _parks.Count; i++)
-                {
-                    SpacePark p = _parks[i];
-                    if (_state.Count(p.Number, SpaceHolding.PlayerIs) == 0 && p.Owner != SpaceOwner.Player)
-                    {
-                        continue;
-                    }
-                    int cars = SpaceGame.CarsIn(p.Number);
-                    int covered = cars > 0 ? SpaceRules.Covered(SpaceRules.Entitled(_state, p, day), cars) : 0;
-                    SpaceRules.AddHours(_state, p.Number, covered);
-                    counted += covered;
-                }
+                int counted = SpaceDay.Hour(_state, _parks, SpaceGame.Now, SpaceGame.Day, SpaceGame.CarsIn, _cars);
                 if (counted > 0)
                 {
                     _revision++;
@@ -252,79 +263,63 @@ namespace RealLifeOverhaul.ParkSpaces
         private void Pass(int day)
         {
             using var hotSpot = HotSpots.Time(HotDay);
-            _state.LastDay = day;
             ReadParks();
-            long refund = SpaceRules.Refund(_state);
-            if (refund > 0)
-            {
-                SpaceGame.Receive(refund, SpaceGame.RefundKey, string.Empty);
-                _state.PaidTotal -= refund;
-            }
-            int gone = Settle(day), ended = Rents(day), moves = GoingPublic.InSession ? 0 : Rivals(day);
+            bool session = GoingPublic.InSession;
+            SpaceDayResult r = SpaceDay.Pass(_state, _parks, day, session, SpaceGame.HasVehicle, _books);
+            int moves = session ? 0 : Rivals(day);   // the tycoons rest in a shared city
             _revision++;
-            if (Verbose && (refund > 0 || gone > 0 || ended > 0 || moves > 0 || _state.Held.Count > 0))
+            if (Verbose && (r.Refund > 0 || r.Gone > 0 || r.Owned > 0 || r.Ended > 0 || moves > 0 || _state.Held.Count > 0))
             {
                 Logger?.Info("Parking spaces check (day " + day + "): " + _parks.Count + " car park(s), " + _state.Count(0, SpaceHolding.PlayerIs) + " space(s) of the player's, "
-                             + _state.Count(0, -2) + " of the tycoons', " + refund + " of the game's charges paid back, " + gone + " settled for a car park gone, " + ended
-                             + " rented space(s) ended, " + moves + " move(s) of the tycoons: PASS");
+                             + _state.Count(0, -2) + " of the tycoons', " + r.Refund + " of the game's charges paid back, " + r.Gone + " settled for a car park gone, "
+                             + r.Owned + " settled for a building the player owns, " + r.Ended + " rented space(s) ended, " + moves + " move(s) of the tycoons"
+                             + (session ? " (a shared city: none settled)" : string.Empty) + ": PASS");
             }
         }
 
-        // The spaces whose car park is no longer in the city: marked, and after the days of grace settled at what was paid.
-        private int Settle(int day)
+        // The building of a space the player holds has become theirs since the last look: it is settled at once.
+        private void OwnersLook(int day)
         {
-            int settled = 0;
-            for (int i = _state.Held.Count - 1; i >= 0; i--)
+            if (_state.Held.Count == 0 || !SpaceGame.OwnersChanged(_parks, _state))
             {
-                SpaceHolding h = _state.Held[i];
-                SpaceRules.Seen(h, Park(h.Park) != null, day);
-                if (!SpaceRules.Gone(h, day))
-                {
-                    continue;
-                }
-                long pay = SpaceRules.GonePay(h, day);
-                _state.Held.RemoveAt(i);
-                settled++;
-                if (h.Players)
-                {
-                    SpaceGame.Receive(pay, SpaceGame.GoneKey, SpaceText.Space(h.Slot));
-                    _state.PaidTotal -= pay;
-                    SpaceGame.Tell(NotificationType.Warning, "reallife_space_note_gone", SpaceGame.Data("space", SpaceText.Space(h.Slot), "amount", SpaceGame.Money(pay)));
-                }
-                else if (SpaceBridges.RivalMoney != null)
-                {
-                    SpaceBridges.RivalMoney(h.Who, pay);
-                }
-                Logger?.Info("Parking spaces: car park " + h.Park + " is gone; space " + h.Slot + " of " + (h.Players ? "the player's" : "tycoon " + h.Who) + " settled at " + pay + ".");
+                return;
             }
-            return settled;
+            int settled = SpaceDay.Owned(_state, _parks, day, GoingPublic.InSession, _books);
+            if (settled > 0)
+            {
+                _revision++;
+                Logger?.Info("Parking spaces: " + settled + " bought space(s) settled, the building is the player's now.");
+            }
         }
 
-        // The player's rented spaces whose term is over: the next term taken, or the space given back (given up, or the rent not there).
-        private int Rents(int day)
+        // What the day's pass books and says, through the game: the one booking call and the notices.
+        private sealed class Books : ISpaceLedger
         {
-            int ended = 0;
-            for (int i = _state.Held.Count - 1; i >= 0; i--)
+            private static string NameOf(SpaceLine line, SpacePark p, SpaceHolding h)
             {
-                SpaceHolding h = _state.Held[i];
-                SpacePark p = Park(h.Park);
-                if (!h.Players || !SpaceRules.RentDue(h, day) || p == null)
-                {
-                    continue;   // a space whose car park is missing waits for it to stand again or to be settled
-                }
-                bool own = p.Owner == SpaceOwner.Player;   // the building has become the player's: nobody is left to pay rent to, and its spaces are theirs
-                if (!h.Ending && !own && SpaceGame.Pay(h.Rent, SpaceGame.RentKey, p.Name))
-                {
-                    SpaceRules.RentPaid(h, day);
-                    _state.PaidTotal += h.Rent;
-                    continue;
-                }
-                _state.Held.RemoveAt(i);
-                ended++;
-                SpaceGame.Tell(h.Ending || own ? NotificationType.Info : NotificationType.Warning, h.Ending || own ? "reallife_space_note_ended" : "reallife_space_note_unpaid",
-                    SpaceGame.Data("space", SpaceText.Space(h.Slot), "name", p.Name, "amount", SpaceGame.Money(h.Rent)));
+                return line == SpaceLine.Refund ? string.Empty : line == SpaceLine.Gone || p == null ? (h != null ? SpaceText.Space(h.Slot) : string.Empty) : p.Name;
             }
-            return ended;
+
+            public bool Pay(long amount, SpaceLine line, SpacePark park) => SpaceGame.Pay(amount, SpaceDay.KeyOf(line), park != null ? park.Name : string.Empty);
+
+            public void Receive(long amount, SpaceLine line, SpacePark park, SpaceHolding h) => SpaceGame.Receive(amount, SpaceDay.KeyOf(line), NameOf(line, park, h));
+
+            public void Tell(SpaceNote note, SpacePark park, SpaceHolding h, long amount)
+            {
+                string key = note == SpaceNote.Gone ? "reallife_space_note_gone" : note == SpaceNote.Unpaid ? "reallife_space_note_unpaid"
+                    : note == SpaceNote.OwnBuilding ? "reallife_space_note_own" : "reallife_space_note_ended";
+                SpaceGame.Tell(note == SpaceNote.Gone || note == SpaceNote.Unpaid ? NotificationType.Warning : NotificationType.Info, key,
+                    SpaceGame.Data("space", SpaceText.Space(h.Slot), "name", park != null ? park.Name : string.Empty, "amount", SpaceGame.Money(amount)));
+                SpaceDirector.Logger?.Info("Parking spaces: space " + h.Slot + " of car park " + h.Park + " (" + note + ", " + amount + ").");
+            }
+
+            public void Tycoon(int who, long worth)
+            {
+                if (worth != 0 && SpaceBridges.RivalMoney != null)
+                {
+                    SpaceBridges.RivalMoney(who, worth);
+                }
+            }
         }
 
         // The rival tycoons' look, by the player's own rules (SpaceRules.RivalLook); their money moves through the rivals' own worth.
@@ -347,7 +342,7 @@ namespace RealLifeOverhaul.ParkSpaces
             for (int i = 0; i < _moves.Count; i++)
             {
                 SpaceMove m = _moves[i];
-                SpaceBridges.RivalMoney(m.Tycoon, m.Sold ? m.Amount : -m.Amount);
+                SpaceBridges.RivalMoney(m.Tycoon, m.Worth);   // what they own does not change by buying; a sale loses what it lost on the way
                 Logger?.Info("Parking spaces: tycoon " + m.Tycoon + (m.Sold ? " sold space " : " bought space ") + m.Slot + " of car park " + m.Park + " for " + m.Amount + ".");
             }
             return _moves.Count;
@@ -374,13 +369,16 @@ namespace RealLifeOverhaul.ParkSpaces
             return SpaceRules.MayTake(Running ? _state : null, p, SpaceGame.Day, Running, GoingPublic.InSession, SpaceGame.Cash, p != null ? (rent ? p.RentMonth : p.Price) : 0, out slot);
         }
 
-        /// <summary>The player buys a space in a car park from the building's owner, at today's price. Refused before any money moves.</summary>
-        public SpaceRefusal Buy(int park) => Take(park, false);
+        /// <summary>
+        /// The player buys a space in a car park from the building's owner. <paramref name="shown"/> and <paramref name="slotShown"/> are the price and the space the
+        /// question box asked about: if the city has moved since (the price, the space) the purchase is refused, before any money, and the page is asked again.
+        /// </summary>
+        public SpaceRefusal Buy(int park, long shown = -1, int slotShown = 0) => Take(park, false, shown, slotShown);
 
-        /// <summary>The player rents a space in a car park, the first term paid at once. Refused before any money moves.</summary>
-        public SpaceRefusal Rent(int park) => Take(park, true);
+        /// <summary>The player rents a space in a car park, the first term paid at once; asked as <see cref="Buy"/> is.</summary>
+        public SpaceRefusal Rent(int park, long shown = -1, int slotShown = 0) => Take(park, true, shown, slotShown);
 
-        private SpaceRefusal Take(int park, bool rent)
+        private SpaceRefusal Take(int park, bool rent, long shown, int slotShown)
         {
             if (Running)
             {
@@ -393,6 +391,11 @@ namespace RealLifeOverhaul.ParkSpaces
             }
             SpacePark p = Park(park);
             long cost = rent ? p.RentMonth : p.Price;
+            if (SpaceRules.Moved(shown, cost, slotShown, slot))
+            {
+                _revision++;
+                return Say(SpaceRefusal.Moved);   // the price charged is the price shown, or nothing is charged
+            }
             if (!SpaceGame.Pay(cost, rent ? SpaceGame.RentKey : SpaceGame.BuyKey, p.Name))
             {
                 return Say(SpaceRefusal.Cash);
@@ -418,8 +421,8 @@ namespace RealLifeOverhaul.ParkSpaces
             return p != null && h != null && !h.Rented ? SpaceRules.Back(h.Paid, p.Price) : 0L;
         }
 
-        /// <summary>The player sells a bought space back to the building's owner.</summary>
-        public SpaceRefusal Sell(int park, int slot)
+        /// <summary>The player sells a bought space back to the building's owner; <paramref name="shown"/> is what the question box said the owner would pay (-1: not asked).</summary>
+        public SpaceRefusal Sell(int park, int slot, long shown = -1)
         {
             if (Running)
             {
@@ -432,6 +435,11 @@ namespace RealLifeOverhaul.ParkSpaces
             if (r != SpaceRefusal.None)
             {
                 return Say(r);
+            }
+            if (SpaceRules.Moved(shown, SpaceRules.Back(h.Paid, p.Price), 0, 0))
+            {
+                _revision++;
+                return Say(SpaceRefusal.Moved);   // what is paid is what was shown, or nothing is sold
             }
             long back = SpaceRules.Sell(_state, h, p.Price);
             SpaceGame.Receive(back, SpaceGame.SoldKey, p.Name);

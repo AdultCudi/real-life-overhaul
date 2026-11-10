@@ -18,7 +18,7 @@ namespace RealLifeOverhaul
         ///     SpaceLine            the tycoons' line on the rich list and their panel
         ///
         ///   The showroom's suppliers (Economy/Dealer/Supply, CarSupplyBridges)
-        ///     Manages              a manager of the company with the Stock orders task fills a showroom's standing order
+        ///     Manages              a manager of the company with the Stock orders task, able to decide today, fills a showroom's standing order
         ///
         /// Asked on a day's pass, a morning or a press, never per frame; a fault is said once (<see cref="Fault"/>) and the bridge's default answered.
         /// </summary>
@@ -112,7 +112,7 @@ namespace RealLifeOverhaul
                 try
                 {
                     CompanyDirector company = CompanyDirector.Instance;
-                    return company != null && company.Manages(place, ManagerTask.Stock);
+                    return company != null && company.Decides(place, ManagerTask.Stock);   // the same door as every other decision: off sick with nobody standing in, it waits
                 }
                 catch (Exception e)
                 {

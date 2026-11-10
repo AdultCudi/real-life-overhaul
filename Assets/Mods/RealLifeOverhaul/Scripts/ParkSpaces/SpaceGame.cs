@@ -46,11 +46,11 @@ namespace RealLifeOverhaul.ParkSpaces
     /// </summary>
     internal static class SpaceGame
     {
-        public const string BuyKey = "reallife_transaction_space_buy";
-        public const string SoldKey = "reallife_transaction_space_sold";
-        public const string RentKey = "reallife_transaction_space_rent";
-        public const string RefundKey = "reallife_transaction_space_refund";
-        public const string GoneKey = "reallife_transaction_space_gone";
+        public const string BuyKey = SpaceDay.BuyKey;
+        public const string SoldKey = SpaceDay.SoldKey;
+        public const string RentKey = SpaceDay.RentKey;
+        public const string RefundKey = SpaceDay.RefundKey;
+        public const string GoneKey = SpaceDay.GoneKey;
         private const string CarParkStreet = "ba:street_parking";   // the game's street of a car park's vehicles (UndergroundParkingEntrance.Address)
 
         private static GameInstance Save => SaveGameManager.Current;
@@ -113,8 +113,9 @@ namespace RealLifeOverhaul.ParkSpaces
                     Capacity = SpaceRules.Capacity(EstateGame.UseOf(b.BuildingType), b.totalSqm),
                     CityShare = SpaceRules.CityShare(StreetRate(district)),
                     RentMonth = SpaceRules.RentMonth(EstateRules.DistrictValue(income)),
-                    Owner = reg != null && reg.BuildingOwnedByPlayer ? SpaceOwner.Player : reg != null && !string.IsNullOrEmpty(reg.buildingOwnerRivalId) ? SpaceOwner.Rival : SpaceOwner.City,
-                    OwnerName = reg != null && !reg.BuildingOwnedByPlayer && !string.IsNullOrEmpty(reg.buildingOwnerRivalId) ? reg.buildingOwnerRivalId.GetRivalName() ?? string.Empty : string.Empty
+                    Owner = OwnerOf(reg),
+                    OwnerName = reg != null && !reg.BuildingOwnedByPlayer && !string.IsNullOrEmpty(reg.buildingOwnerRivalId) ? reg.buildingOwnerRivalId.GetRivalName() ?? string.Empty : string.Empty,
+                    Source = b
                 };
                 p.Price = SpaceRules.Price(p.RentMonth, year, market);
                 into.Add(p);
@@ -123,6 +124,34 @@ namespace RealLifeOverhaul.ParkSpaces
         }
 
         private static readonly Comparison<SpacePark> ByNumber = (a, b) => a.Number.CompareTo(b.Number);
+
+        private static SpaceOwner OwnerOf(BuildingRegistration reg)
+        {
+            return reg != null && reg.BuildingOwnedByPlayer ? SpaceOwner.Player : reg != null && !string.IsNullOrEmpty(reg.buildingOwnerRivalId) ? SpaceOwner.Rival : SpaceOwner.City;
+        }
+
+        /// <summary>
+        /// Who owns the building of each car park where somebody holds a bought space, read again from the building itself (no walk of
+        /// the city): a building the player has bought since the last look is seen within the second. True if one became the player's.
+        /// </summary>
+        public static bool OwnersChanged(IList<SpacePark> parks, SpaceState s)
+        {
+            bool became = false;
+            for (int i = 0; i < s.Held.Count; i++)
+            {
+                SpaceHolding h = s.Held[i];
+                SpacePark p = h.Rented ? null : SpaceRules.Find(parks, h.Park);
+                var b = p != null ? p.Source as Building : null;
+                if (b == null)
+                {
+                    continue;   // not there, or the game's building has gone
+                }
+                SpaceOwner now = OwnerOf(b.GetRegistration());
+                became |= now == SpaceOwner.Player && p.Owner != SpaceOwner.Player;
+                p.Owner = now;
+            }
+            return became;
+        }
 
         // What an hour at the kerb costs in a district, as the game's data has it; nothing for a district it does not know.
         private static double StreetRate(string district)
@@ -144,24 +173,41 @@ namespace RealLifeOverhaul.ParkSpaces
 
         /// <summary>
         /// The player's cars the game charges this hour for standing in a car park, by the game's own test (ParkingSimulator.RunHourly):
-        /// parked legally at the car park's number, not the one being driven and not a thing carried by hand.
+        /// parked legally at the car park's number, not the one being driven and not a thing carried by hand. Their vehicles' ids are
+        /// added to <paramref name="into"/>, so what is paid back can be tied to what the game really takes.
         /// </summary>
-        public static int CarsIn(int number)
+        public static void CarsIn(int number, List<string> into)
         {
             GameInstance save = Save;
             List<VehicleInstance> all = save != null ? save.VehicleInstances : null;
-            int cars = 0;
             for (int i = 0; all != null && i < all.Count; i++)
             {
                 VehicleInstance v = all[i];
-                if (v == null || v.parkingState != ParkingState.Legal || v.streetName != CarParkStreet || v.streetNumber != number || v.id == save.ActiveVehicleId)
+                if (v == null || string.IsNullOrEmpty(v.id) || v.parkingState != ParkingState.Legal || v.streetName != CarParkStreet || v.streetNumber != number || v.id == save.ActiveVehicleId)
                 {
                     continue;
                 }
                 VehicleType type = v.VehicleType;
-                cars += type != null && !type.spawnInPlayerObject ? 1 : 0;
+                if (type != null && !type.spawnInPlayerObject)
+                {
+                    into.Add(v.id);
+                }
             }
-            return cars;
+        }
+
+        /// <summary>True while a vehicle is in the save: one sold or scrapped (VehicleHelper.Delete) before the morning's charges were taken was never charged.</summary>
+        public static bool HasVehicle(string id)
+        {
+            GameInstance save = Save;
+            List<VehicleInstance> all = save != null ? save.VehicleInstances : null;
+            for (int i = 0; all != null && id != null && i < all.Count; i++)
+            {
+                if (all[i] != null && all[i].id == id)
+                {
+                    return true;
+                }
+            }
+            return false;
         }
 
         /// <summary>Money out of the player's cash, whole money, through the mod's one call; false, nothing taken, if the cash does not cover it.</summary>

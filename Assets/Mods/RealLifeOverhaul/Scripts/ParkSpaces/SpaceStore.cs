@@ -8,10 +8,10 @@ namespace RealLifeOverhaul.ParkSpaces
     /// <summary>
     /// The parking spaces in the save: one line of modData under <see cref="Key"/>, game-free.
     ///
-    ///     v=1^h:seed|lastDay|lastHour|refunded|paid^s:park|slot|who|paid|rent|day|paidTo|ending|missing;...^c:park|hours;...
+    ///     v=1^h:seed|lastDay|lastHour|refunded|paid^s:park|slot|who|paid|rent|day|paidTo|ending|missing|priceSeen|ownSeen;...^p:day|park|vehicle|hours;...
     ///
     /// Parts are divided by '^' and begin with a letter and a colon; records inside a part by ';', fields by '|'. h is the header,
-    /// s the spaces held (the player's and the tycoons'), c the car-hours of today not yet paid back. A newer version adds fields
+    /// s the spaces held (the player's and the tycoons'), p the car-hours counted and not yet paid back (a vehicle's id is escaped). A newer version adds fields
     /// at the end of a record or a part with a new letter: this reader takes what it knows and puts every figure inside its
     /// bounds. A save from before the feature has no line. Numbers are written and read in the invariant culture.
     /// </summary>
@@ -44,16 +44,17 @@ namespace RealLifeOverhaul.ParkSpaces
                 {
                     SpaceHolding h = s.Held[i];
                     t.Append(i > 0 ? ";" : string.Empty);
-                    Join(t, h.Park, h.Slot, h.Who, h.Paid, h.Rent, h.Day, h.PaidTo, h.Ending ? 1 : 0, h.Missing);
+                    Join(t, h.Park, h.Slot, h.Who, h.Paid, h.Rent, h.Day, h.PaidTo, h.Ending ? 1 : 0, h.Missing, h.PriceSeen, h.OwnSeen ? 1 : 0);
                 }
             }
-            if (s.HourPark.Count > 0)
+            if (s.Pending.Count > 0)
             {
-                t.Append("^c:");
-                for (int i = 0; i < s.HourPark.Count; i++)
+                t.Append("^p:");
+                for (int i = 0; i < s.Pending.Count; i++)
                 {
-                    t.Append(i > 0 ? ";" : string.Empty);
-                    Join(t, s.HourPark[i], s.HourCount[i]);
+                    SpaceHours h = s.Pending[i];
+                    t.Append(i > 0 ? ";" : string.Empty).Append(h.Day.ToString(Inv)).Append('|').Append(h.Park.ToString(Inv)).Append('|')
+                        .Append(Uri.EscapeDataString(h.Vehicle ?? string.Empty)).Append('|').Append(h.Hours.ToString(Inv));
                 }
             }
             return t.ToString();
@@ -102,18 +103,17 @@ namespace RealLifeOverhaul.ParkSpaces
                             s.Held.Add(new SpaceHolding
                             {
                                 Park = Int(r, 0), Slot = Int(r, 1), Who = Int(r, 2, SpaceHolding.PlayerIs), Paid = Num(r, 3), Rent = Num(r, 4), Day = Int(r, 5),
-                                PaidTo = Int(r, 6), Ending = Num(r, 7) != 0, Missing = Int(r, 8)
+                                PaidTo = Int(r, 6), Ending = Num(r, 7) != 0, Missing = Int(r, 8), PriceSeen = Num(r, 9), OwnSeen = Num(r, 10) != 0
                             });
                         }
                         break;
-                    case 'c':
+                    case 'p':
                         foreach (string record in body.Split(';'))
                         {
                             string[] r = record.Split('|');
-                            if (r.Length >= 2 && Num(r, 0) > 0 && s.HourPark.IndexOf(Int(r, 0)) < 0)
+                            if (r.Length >= 4 && r[2].Length > 0)
                             {
-                                s.HourPark.Add(Int(r, 0));
-                                s.HourCount.Add(Int(r, 1));
+                                s.Pending.Add(new SpaceHours { Day = Int(r, 0, -1), Park = Int(r, 1), Vehicle = Uri.UnescapeDataString(r[2]), Hours = Int(r, 3) });
                             }
                         }
                         break;

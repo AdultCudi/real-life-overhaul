@@ -29,6 +29,7 @@ internal static partial class Program
         SpaceTakeChecks();
         SpaceRentChecks();
         SpaceHourChecks();
+        SpaceDayChecks();
         SpaceGoneChecks();
         SpaceRivalChecks();
         SpaceStoreChecks();
@@ -37,7 +38,9 @@ internal static partial class Program
         SupplyTableChecks();
         SupplyPriceChecks();
         SupplyPlanChecks();
+        SupplyMorningChecks();
         SupplyRivalChecks();
+        SupplyDealersChecks();
         SupplyStoreChecks();
         SupplyPageChecks();
         SupplySourceChecks();
@@ -87,6 +90,7 @@ internal static partial class Program
         Check(rising && SpaceRules.CityShare(double.NaN) == SpaceCatalogue.CityShareLeast && SpaceRules.CityShare(-4) == SpaceCatalogue.CityShareLeast && SpaceRules.CityShare(15) == 800,
             "parking spaces car park: the city's people hold more where the street costs more, within the least and the most (800 at 15 an hour)");
         int held = 0, all = 0, changed = 0;
+        var answers = new Dictionary<long, bool>();
         for (int park = 1; park <= 40; park++)
         {
             for (int slot = 1; slot <= 50; slot++)
@@ -95,9 +99,20 @@ internal static partial class Program
                 held += now ? 1 : 0;
                 all++;
                 changed += now != SpaceRules.CityHolds(991, park, slot, 100 + SpaceCatalogue.CityTurnDays * 3, 700) ? 1 : 0;
-                Check(now == SpaceRules.CityHolds(991, park, slot, 100, 700) || all > 1, "parking spaces car park: who holds a space on a day is the same whenever it is asked");
+                answers[park * 1000L + slot] = now;
             }
         }
+        // Asked again in the opposite order, after other seeds, days and shares were asked about: a rule with a memory (a counter, a cache, a random) would give other answers.
+        int differ = 0;
+        for (int park = 40; park >= 1; park--)
+        {
+            for (int slot = 50; slot >= 1; slot--)
+            {
+                SpaceRules.CityHolds(12 + slot, park, slot, 7 * park, 100 * (slot % 10));
+                differ += SpaceRules.CityHolds(991, park, slot, 100, 700) != answers[park * 1000L + slot] ? 1 : 0;
+            }
+        }
+        Check(differ == 0 && answers.Count == all, "parking spaces car park: who holds a space on a day is the same whenever and in whatever order it is asked (" + differ + " answers differ)");
         Check(Math.Abs(held * 1000 / all - 700) <= 40, "parking spaces car park: the city's people hold their share of the spaces (" + held * 1000 / all + " of 700 thousandths)");
         Check(changed > all / 10 && changed < all * 6 / 10, "parking spaces car park: spaces change hands over the months, and most do not at once (" + changed + " of " + all + ")");
         Check(!SpaceRules.CityHolds(5, 2, 3, 77, 0) && SpaceRules.CityHolds(5, 2, 3, 77, 1000), "parking spaces car park: no share holds nothing and the whole share holds everything");
@@ -272,27 +287,17 @@ internal static partial class Program
         SpacePark own = BizPark(8, 10, 0, SpaceOwner.Player);
         SpaceRules.Take(s, own, 3, 2, 5, own.Price, 0);
         Check(SpaceRules.Entitled(s, own, 5) == 9 && SpaceRules.Entitled(s, null, 5) == 0, "parking spaces hours: in a building of the player's own every space nobody else holds is theirs");
-        for (int hour = 0; hour < 24; hour++)
-        {
-            SpaceRules.AddHours(s, 2, SpaceRules.Covered(SpaceRules.Entitled(s, p, 5), 2));
-            SpaceRules.AddHours(s, 8, 0);
-        }
-        Check(s.Hours(2) == 24 && s.Hours(8) == 0 && s.HourPark.Count == 1, "parking spaces hours: a day of one covered car is twenty-four car-hours, and an hour with none adds nothing");
-        // A save and a load in the middle of the day keeps the hours counted so far.
-        SpaceState mid = SpaceStore.Read(SpaceStore.Write(s), out int _);
-        long refund = SpaceRules.Refund(s);
-        Check(refund == 24L * SpaceCatalogue.HourFee && s.RefundedTotal == refund && s.HourPark.Count == 0 && SpaceRules.Refund(s) == 0 && s.RefundedTotal == refund,
-            "parking spaces hours: the day's car-hours are paid back at the game's charge, once, and nothing is left to pay twice");
-        Check(mid.Hours(2) == 24 && SpaceRules.Refund(mid) == refund, "parking spaces hours: hours counted before a save are paid back after the load, the same sum");
-        SpaceRules.AddHours(s, 2, int.MaxValue);
-        SpaceRules.AddHours(s, 2, int.MaxValue / 2);
-        Check(s.Hours(2) == 24 * SpaceCatalogue.CapacityMost && SpaceRules.Refund(s) == 24L * SpaceCatalogue.CapacityMost * SpaceCatalogue.HourFee,
-            "parking spaces hours: never more car-hours owed than a day of every space of the largest car park, however much is added");
+        SpaceHolding rented = SpaceRules.Take(s, p, 3, SpaceHolding.PlayerIs, 5, 0, p.RentMonth);
+        Check(SpaceRules.Entitled(s, p, rented.PaidTo) == 2 && SpaceRules.Entitled(s, p, rented.PaidTo + 1) == 1, "parking spaces hours: a rented space covers the days its rent is paid for and not the day after");
+        SpaceState sk = new SpaceState();
+        SpaceRules.AddHour(sk, 5, 2, null);
+        SpaceRules.AddHour(sk, 5, 0, "v");
+        Check(sk.Pending.Count == 0, "parking spaces hours: no hour is counted for no vehicle or no car park");
     }
 
     private static void SpaceGoneChecks()
     {
-        var owned = new SpaceHolding { Park = 5, Slot = 1, Paid = 90000, Day = 10 };
+        var owned = new SpaceHolding { Park = 5, Slot = 1, Paid = 90000, Day = 10, PriceSeen = 90000 };
         SpaceRules.Seen(owned, true, 20);
         Check(owned.Missing == 0 && !SpaceRules.Gone(owned, 500), "parking spaces a car park gone: one that stands is never settled");
         SpaceRules.Seen(owned, false, 20);
@@ -300,10 +305,23 @@ internal static partial class Program
         Check(owned.Missing == 20 && !SpaceRules.Gone(owned, 20 + SpaceCatalogue.GoneDays - 1) && SpaceRules.Gone(owned, 20 + SpaceCatalogue.GoneDays), "parking spaces a car park gone: missing for " + SpaceCatalogue.GoneDays + " days before it is settled");
         SpaceRules.Seen(owned, true, 22);
         Check(owned.Missing == 0 && !SpaceRules.Gone(owned, 400), "parking spaces a car park gone: one that stands again (rebuilt with its number, or stood late at a load) keeps its spaces");
-        Check(SpaceRules.GonePay(owned, 30) == owned.Paid, "parking spaces a car park gone: a bought space is paid back at what was paid, no more and no fee");
+        Check(SpaceRules.Close(owned, SpaceEnd.CarParkGone, 0, 30) == owned.Paid, "parking spaces a car park gone: a bought space whose car park somebody else took away is paid back at what was paid, no more and no fee");
         var rented = new SpaceHolding { Park = 5, Slot = 2, Rent = 3000, Day = 10, PaidTo = 39, Missing = 25 };
-        Check(SpaceRules.GonePay(rented, 28) == 3000L * (39 - 28 + 1) / SpaceCatalogue.RentDays && SpaceRules.GonePay(rented, 60) == 0 && SpaceRules.GonePay(rented, 1) <= rented.Rent && SpaceRules.GonePay(null, 5) == 0,
-            "parking spaces a car park gone: a rented space is paid back for its unused days, never more than a term");
+        Check(SpaceRules.Close(rented, SpaceEnd.CarParkGone, 0, 28) == 3000L * (39 - 25 + 1) / SpaceCatalogue.RentDays && SpaceRules.Close(rented, SpaceEnd.CarParkGone, 0, 60) == 3000L * (39 - 25 + 1) / SpaceCatalogue.RentDays
+              && SpaceRules.Close(new SpaceHolding { Rent = 3000, PaidTo = 5, Missing = 30 }, SpaceEnd.CarParkGone, 0, 60) == 0 && SpaceRules.Close(new SpaceHolding { Rent = 3000, PaidTo = 900, Missing = 1 }, SpaceEnd.CarParkGone, 0, 1) <= 3000
+              && SpaceRules.Close(null, SpaceEnd.CarParkGone, 0, 5) == 0 && SpaceRules.Close(rented, SpaceEnd.OwnBuilding, 0, 28) == 0 && SpaceRules.Close(rented, SpaceEnd.SoldBack, 0, 28) == 0,
+            "parking spaces a car park gone: a rented space is paid back for the days unused since the car park went, never more than a term, nothing when the building became the player's");
+        var seen = new SpaceHolding { Park = 5, Slot = 3, Paid = 90000, Day = 10, PriceSeen = 70000, OwnSeen = true };
+        var unseen = new SpaceHolding { Park = 5, Slot = 4, Paid = 90000, Day = 10 };
+        Check(SpaceRules.Close(seen, SpaceEnd.CarParkGone, 0, 30) == SpaceRules.Back(90000, 70000) && SpaceRules.Close(seen, SpaceEnd.SoldBack, 50000, 30) == SpaceRules.Back(90000, 50000)
+              && SpaceRules.Close(seen, SpaceEnd.OwnBuilding, 120000, 30) == SpaceRules.Back(90000, 120000) && SpaceRules.Close(unseen, SpaceEnd.CarParkGone, 0, 30) == 90000,
+            "parking spaces ending: one rule for every end of a bought space, the lower of paid and the price less the fee where the player did it, the full price paid where somebody else took the car park away");
+        SpacePark noted = BizPark(5, 20, 0, SpaceOwner.Player, 1100);
+        var h = new SpaceHolding { Park = 5, Slot = 1, Paid = 50000 };
+        SpaceRules.Noted(h, noted);
+        SpaceRules.Noted(h, null);
+        Check(h.PriceSeen == noted.Price && h.OwnSeen && !SpaceRules.Moved(-1, 5, 0, 3) && !SpaceRules.Moved(500, 500, 3, 3) && SpaceRules.Moved(500, 501, 3, 3) && SpaceRules.Moved(500, 500, 3, 4) && !SpaceRules.Moved(500, 500, 0, 9),
+            "parking spaces ending: the price and the owner last seen are kept, and a price or a space moved since the question box is told apart from one that is not");
     }
 
     private static void SpaceRivalChecks()
@@ -317,7 +335,8 @@ internal static partial class Program
         var movesAgain = new List<SpaceMove>();
         bool rules = true, same = true;
         int bought = 0, sold = 0;
-        long paid = 0, got = 0;
+        long paid = 0, got = 0, drift = 0;
+        bool noGain = true;
         for (int day = 1; day <= 900; day++)
         {
             int before = moves.Count;
@@ -331,16 +350,19 @@ internal static partial class Program
                 {
                     sold++;
                     got += m.Amount;
-                    rules &= m.Amount == SpaceRules.Back(price, SpaceRules.Find(parks, m.Park).Price) && m.Amount < price;
-                    worth[m.Tycoon] += m.Amount;
+                    rules &= m.Amount == SpaceRules.Back(price, SpaceRules.Find(parks, m.Park).Price) && m.Amount < price && m.Worth == m.Amount - price;
+                    worth[m.Tycoon] += m.Worth;   // what they own: the space left, the money came in, and the fee is lost
+                    drift += m.Worth;
                 }
                 else
                 {
                     bought++;
                     paid += m.Amount;
                     rules &= worth[m.Tycoon] - m.Amount >= floor[m.Tycoon] && m.Amount == SpaceRules.Find(parks, m.Park).Price;
-                    worth[m.Tycoon] -= m.Amount;
+                    noGain &= m.Worth == 0;   // a space bought is worth what was paid: their worth does not move, so the daily growth towards their aim has nothing to refill
+                    worth[m.Tycoon] += m.Worth;
                 }
+                noGain &= m.Worth <= 0;
             }
             for (int t = 0; t < worth.Length; t++)
             {
@@ -363,7 +385,8 @@ internal static partial class Program
         Check(bought >= 2 && sold >= 1, "parking spaces tycoons: over the years they buy spaces and sell some back (" + bought + " bought, " + sold + " sold)");
         Check(rules, "parking spaces tycoons: one space each at most, at the player's price, never under their floor, never a space held, never in a building of the player's, a sale for what the owner pays");
         Check(same, "parking spaces tycoons: the same save and the same days give the same moves on every machine");
-        Check(start[0] + start[1] - worth[0] - worth[1] == paid - got && paid - got >= 0 && worth[2] == -1 && worth[3] == start[3], "parking spaces tycoons: their worth moves by what they paid and got back; one not in play and one who cannot afford a space do nothing");
+        Check(noGain && start[0] + start[1] + drift == worth[0] + worth[1] && drift <= 0 && paid >= got && worth[2] == -1 && worth[3] == start[3],
+            "parking spaces tycoons: buying a space moves no worth (so growth can refill nothing and the space is not free), selling one loses the fee and never gains (" + drift + " in all); one not in play and one who cannot afford a space do nothing");
         var none = new List<SpaceMove>();
         SpaceRules.RivalLook(new SpaceState { Seed = 1 }, new List<SpacePark>(), 20, new long[] { 1000000000 }, null, none);
         SpaceRules.RivalLook(new SpaceState { Seed = 1 }, new List<SpacePark> { BizPark(2, 10, 0, SpaceOwner.Player) }, 20, new long[] { 1000000000 }, null, none);
@@ -378,16 +401,24 @@ internal static partial class Program
     {
         Check(SpaceStore.Load(new Dictionary<string, string>(), out int v0) == null && v0 == 0 && SpaceStore.Load(null, out int _) == null && SpaceStore.Read(string.Empty, out int _) == null
               && SpaceStore.Read("something else", out int _) == null, "parking spaces save: a save from before the feature has no line, and nothing is held");
+        SpaceState oldHours = SpaceStore.Read("v=1^h:5|20|481|0|0^s:3|4|-1|145700|0|250|0|0|0^c:3|17", out int _);
+        Check(oldHours != null && oldHours.Held.Count == 1 && oldHours.Pending.Count == 0 && oldHours.Held[0].PriceSeen == 0 && SpaceRules.Close(oldHours.Held[0], SpaceEnd.CarParkGone, 0, 30) == 145700,
+            "parking spaces save: an earlier line with its hours counted by car park has none to pay back (it cannot be told that the game charged them), and a space with no price seen is settled at what was paid");
         var s = new SpaceState { Seed = 55, LastDay = 301, LastHour = 301 * 24 + 7, RefundedTotal = 12345678901L, PaidTotal = -4321 };
-        s.Held.Add(new SpaceHolding { Park = 3, Slot = 4, Who = SpaceHolding.PlayerIs, Paid = 145700, Day = 250 });
+        s.Held.Add(new SpaceHolding { Park = 3, Slot = 4, Who = SpaceHolding.PlayerIs, Paid = 145700, Day = 250, PriceSeen = 130500, OwnSeen = true });
         s.Held.Add(new SpaceHolding { Park = 1000123, Slot = 9, Who = SpaceHolding.PlayerIs, Rent = 3060, Day = 280, PaidTo = 309, Ending = true, Missing = 300 });
         s.Held.Add(new SpaceHolding { Park = 3, Slot = 5, Who = 2, Paid = 99000, Day = 100 });
-        SpaceRules.AddHours(s, 3, 17);
+        for (int i = 0; i < 17; i++)
+        {
+            SpaceRules.AddHour(s, 301, 3, "vehicle one");
+        }
+        SpaceRules.AddHour(s, 300, 3, "a|b;c^d%e");
         string line = SpaceStore.Write(s);
         SpaceState r = SpaceStore.Read(line, out int version);
         Check(version == SpaceStore.Version && r != null && SpaceStore.Write(r) == line, "parking spaces save: a line written, read and written again is the same line");
         Check(r.Seed == 55 && r.LastDay == 301 && r.LastHour == 301 * 24 + 7 && r.RefundedTotal == 12345678901L && r.PaidTotal == -4321 && r.Held.Count == 3 && r.Held[1].Park == 1000123 && r.Held[1].Rented
-              && r.Held[1].PaidTo == 309 && r.Held[1].Ending && r.Held[1].Missing == 300 && r.Held[2].Who == 2 && r.Held[0].Paid == 145700 && r.Hours(3) == 17, "parking spaces save: every field comes back");
+              && r.Held[1].PaidTo == 309 && r.Held[1].Ending && r.Held[1].Missing == 300 && r.Held[2].Who == 2 && r.Held[0].Paid == 145700 && r.Held[0].PriceSeen == 130500 && r.Held[0].OwnSeen && !r.Held[1].OwnSeen && r.Hours(3) == 18 && r.Pending.Count == 2
+              && r.Pending[0].Day == 301 && r.Pending[0].Vehicle == "vehicle one" && r.Pending[0].Hours == 17 && r.Pending[1].Vehicle == "a|b;c^d%e", "parking spaces save: every field comes back, a vehicle's id of any spelling included");
         CultureInfo before = CultureInfo.CurrentCulture;
         try
         {
@@ -398,11 +429,13 @@ internal static partial class Program
         {
             CultureInfo.CurrentCulture = before;
         }
-        SpaceState newer = SpaceStore.Read("v=9^h:55|301|7231|10|20|77|88^s:3|4|-1|145700|0|250|0|0|0|999|extra;3|6|-1|0|3060|250|279|0|0^c:3|17|5^z:what|ever", out int nine);
-        Check(nine == 9 && newer != null && newer.Seed == 55 && newer.Held.Count == 2 && newer.Held[0].Paid == 145700 && newer.Held[1].Rented && newer.Hours(3) == 17, "parking spaces save: a line from a newer version is read as far as it goes");
-        SpaceState hurt = SpaceStore.Read("v=1^h:x|y^s:3|4|-1|145700|0|250|0|0|0;rubbish;3|4|-1|5|0|1|0|0|0;0|1|-1|5|0|1|0|0|0;3|999|-1|5|0|1|0|0|0;3|7|-9|5|0|1|0|0|0;3|8|-1|0|0|1|0|0|0^c:3|-50;3|4;x|1", out int _);
-        Check(hurt != null && hurt.Held.Count == 1 && hurt.Held[0].Slot == 4 && hurt.Held[0].Paid == 145700 && hurt.Seed == 0 && hurt.Hours(3) == 0,
-            "parking spaces save: a damaged line keeps what can be read, inside its bounds, and a space written twice is held once");
+        SpaceState newer = SpaceStore.Read("v=9^h:55|301|7231|10|20|77|88^s:3|4|-1|145700|0|250|0|0|0|999|1|extra;3|6|-1|0|3060|250|279|0|0^p:301|3|car|17|5^c:3|99^z:what|ever", out int nine);
+        Check(nine == 9 && newer != null && newer.Seed == 55 && newer.Held.Count == 2 && newer.Held[0].Paid == 145700 && newer.Held[0].PriceSeen == 999 && newer.Held[0].OwnSeen && newer.Held[1].Rented && newer.Hours(3) == 17, "parking spaces save: a line from a newer version is read as far as it goes");
+        SpaceState hurt = SpaceStore.Read("v=1^h:x|y^s:3|4|-1|145700|0|250|0|0|0|-5|1;rubbish;3|4|-1|5|0|1|0|0|0;0|1|-1|5|0|1|0|0|0;3|999|-1|5|0|1|0|0|0;3|7|-9|5|0|1|0|0|0;3|8|-1|0|0|1|0|0|0^p:5|3|v|-50;5|3|w;x|1|v|4;5|0|v|4;5|3||4;5|3|v|99;5|3|v|2;7|3|v|99999",
+            out int _);
+        Check(hurt != null && hurt.Held.Count == 1 && hurt.Held[0].Slot == 4 && hurt.Held[0].Paid == 145700 && hurt.Held[0].PriceSeen == 0 && hurt.Seed == 0 && hurt.Pending.Count == 2 && hurt.Pending[0].Hours == SpaceCatalogue.HoursMost
+              && hurt.Pending[1].Day == 7 && hurt.Pending[1].Hours == SpaceCatalogue.HoursMost && hurt.Hours(0) == 2 * SpaceCatalogue.HoursMost,
+            "parking spaces save: a damaged line keeps what can be read, inside its bounds, a space written twice is held once and an hour written twice for a vehicle is kept once");
         var data = new Dictionary<string, string> { { SpaceStore.Key, line } };
         Check(SpaceStore.Load(data, out int loadedVersion) != null && loadedVersion == SpaceStore.Version && SpaceStore.Key == "reallife:parking_spaces", "parking spaces save: the line is the feature's own, under its own key");
     }
@@ -437,13 +470,17 @@ internal static partial class Program
         Check(row.Cells.Length == 6 && row.Cells[0] == park.Name && row.Cells[4] == SpaceWords.RowState(en, park, 2, free) && row.Values[0] == (int)UiIcon.Car, "parking spaces page: a car park's row on the Market tab says how many spaces the player holds there");
         Check(SpaceWords.RowState(en, BizPark(1, 10, 0, SpaceOwner.Player), 0, 3) != SpaceWords.RowState(en, park, 0, 3) && SpaceWords.RowState(en, park, 0, 0) != SpaceWords.RowState(en, park, 0, 3),
             "parking spaces page: a row tells the player's own building, free spaces and a full car park apart");
-        for (int r = 1; r <= (int)SpaceRefusal.Owned; r++)
+        for (int r = 1; r <= (int)SpaceRefusal.Moved; r++)
         {
             Check(SpaceWords.WhyKey((SpaceRefusal)r) != null && SpaceWords.Why(en, (SpaceRefusal)r).Length > 10 && UiScreens.All.First(d => d.Id == "estate").Keys.Contains(SpaceWords.WhyKey((SpaceRefusal)r)), "parking spaces page: the refusal " + (SpaceRefusal)r + " has its words");
         }
         string app = ModSource(@"Economy\Estate\EstateApp.Spaces.cs"), live = ModSource(@"Ui\Estate\EstateLive.Spaces.cs");
-        Check(app.Contains("d.Buy(park)") && app.Contains("d.Rent(park)") && app.Contains("d.Sell(park, at)") && app.Contains("d.SetEnding(park, at, !ending)") && live.Contains("d.Buy(park)") && live.Contains("d.Rent(park)")
-              && live.Contains("d.Sell(park, slot)") && live.Contains("d.SetEnding(park, slot, ending)"), "parking spaces page: the app in the game's frame and the kit's page press the same calls of the director");
+        Check(app.Contains("d.Buy(park, shownPrice, shownSlot)") && app.Contains("d.Rent(park, shownRent, shownSlot)") && app.Contains("d.Sell(park, at, back)") && app.Contains("d.SetEnding(park, at, !ending)")
+              && live.Contains("d.Buy(park, shown, slot)") && live.Contains("d.Rent(park, shown, slot)") && live.Contains("d.Sell(park, slot, back)") && live.Contains("d.SetEnding(park, slot, ending)"),
+            "parking spaces page: the app in the game's frame and the kit's page press the same calls of the director, each with the price the question box asked about");
+        Check(app.Contains("SpaceDirector d = SpacesNow;") && CountOfText(app, "d.Open()") >= 2 && CountOfText(live, "d.Open()") >= 3 && !app.Contains("d.Parks") && !live.Contains("d.Parks")
+              && app.Contains("row.NoTotal = true;   // a car park's space is not a building for sale") && CountOfText(app, "row.NoTotal = true;") == 2,
+            "parking spaces page: every page reads the car parks again as it is built, never the last day's list, and a space is in no total of the Property app's tables");
         Check(CountOfText(app, "AskSpace(") >= 4 && CountOfText(live, "AskSpace(") >= 4 && app.Contains("GameConfirm.Show(") && live.Contains("GameConfirm.Show("), "parking spaces page: buying, renting and selling are asked first in the game's own question box");
         Check(ModSource(@"Economy\Estate\EstateApp.cs").Contains("WriteSpaceRows(districts, ref selected)") && ModSource(@"Economy\Estate\EstateApp.Property.cs").Contains("WriteSpacesHeld(ref selected)")
               && ModSource(@"Ui\Estate\EstateLive.Market.cs").Contains("SpaceRows(rows, keys, locate)") && ModSource(@"Ui\Estate\EstateLive.Mine.cs").Contains("SpaceHeld(rows, keys)"),
@@ -464,22 +501,28 @@ internal static partial class Program
         }
         string director = ModSource(@"ParkSpaces\SpaceDirector.cs"), game = ModSource(@"ParkSpaces\SpaceGame.cs");
         Check(CountOfText(game, "BizBooks.Book(") == 2 && game.Contains("force: false") && !director.Contains("BizBooks.") && !ModSource(@"ParkSpaces\SpaceRules.cs").Contains("Unity"), "parking spaces sources: money moves only through the mod's one booking call, in the one game file");
-        int take = director.IndexOf("private SpaceRefusal Take(int park, bool rent)", StringComparison.Ordinal);
+        int take = director.IndexOf("private SpaceRefusal Take(int park, bool rent, long shown, int slotShown)", StringComparison.Ordinal);
         int asked = take > 0 ? director.IndexOf("MayTake(park, rent, out int slot)", take, StringComparison.Ordinal) : -1, refused = take > 0 ? director.IndexOf("return Say(r);", take, StringComparison.Ordinal) : -1;
+        int moved = take > 0 ? director.IndexOf("SpaceRules.Moved(shown, cost, slotShown, slot)", take, StringComparison.Ordinal) : -1;
         int pays = take > 0 ? director.IndexOf("SpaceGame.Pay(", take, StringComparison.Ordinal) : -1, holds = take > 0 ? director.IndexOf("SpaceRules.Take(_state", take, StringComparison.Ordinal) : -1;
-        Check(take > 0 && asked > take && refused > asked && pays > refused && holds > pays,
-            "parking spaces sources: a purchase is refused before any money is taken, and the space is only held once it is paid for");
+        Check(take > 0 && asked > take && refused > asked && moved > refused && pays > moved && holds > pays && director.Contains("ReadParks();   // today's price and the building's owner as they are now"),
+            "parking spaces sources: the city is read again, a purchase whose price or space is not the one asked about is refused, and every refusal comes before any money is taken; the space is only held once it is paid for");
         Check(director.Contains("SpaceGame.Receive(cost, rent ? SpaceGame.RentKey : SpaceGame.BuyKey, p.Name);"), "parking spaces sources: money taken for a space that could not be had is given back");
-        Check(director.Contains("GoingPublic.InSession, SpaceGame.Cash") && director.Contains("GoingPublic.InSession ? 0 : Rivals(day)") && director.Contains("SpaceRules.MaySell(Running ? _state : null, h, p, Running, GoingPublic.InSession)"),
+        Check(director.Contains("GoingPublic.InSession, SpaceGame.Cash") && director.Contains("int moves = session ? 0 : Rivals(day);") && director.Contains("SpaceRules.MaySell(Running ? _state : null, h, p, Running, GoingPublic.InSession)"),
             "parking spaces sources: in a shared city nothing is bought, rented or sold and the tycoons rest");
         Check(director.Contains("if (!Settings.ParkingSpaces)") && director.Contains("PutAway();") && director.Contains("public bool Running => _loaded && !_broken && Settings.ParkingSpaces;")
               && director.Contains("if (!Running || !SpaceGame.Ready)"), "parking spaces off: with the option off nothing is counted, paid back or taken, and the line is kept");
         Check(director.Contains("EventHold.Keep(ref GlobalEvents.onNewHour, _onHour, ref _hourSeen)") && director.Contains("_onHour = Guard.Wrap(OnHour);") && director.Contains("GlobalEvents.onNewHour -= _onHour;")
-              && director.Contains("StartCoroutine(Guard.Routine(Tick()))") && director.Contains("if (now == _state.LastHour)"), "parking spaces sources: the hour is the game's own event, guarded, taken off again, and counted once");
-        Check(director.Contains("_state.LastHour = SpaceGame.Now;   // hours that went by without the feature are not counted"), "parking spaces sources: hours that went by without the feature are never paid back");
+              && director.Contains("StartCoroutine(Guard.Routine(Tick()))") && director.Contains("SpaceDay.Hour(_state, _parks, SpaceGame.Now, SpaceGame.Day, SpaceGame.CarsIn, _cars)") && director.Contains("if (SpaceDay.Stale(_state, _parks))"),
+            "parking spaces sources: the hour is the game's own event, guarded, taken off again, counted by the rule that counts it once, and the city is read again when a car park is not known");
+        Check(director.Contains("SpaceDay.Resume(_state, SpaceGame.Now);   // hours that went by without the feature are not counted") && director.Contains("SpaceGame.OwnersChanged(_parks, _state)") && director.Contains("OwnersLook(day);"),
+            "parking spaces sources: hours that went by without the feature are never paid back, and a building the player buys is seen within the second");
         Check(game.Contains("GameDlc.Open(InstanceBehavior<CityManager>.Instance)") && game.Contains("v.parkingState != ParkingState.Legal || v.streetName != CarParkStreet || v.streetNumber != number || v.id == save.ActiveVehicleId")
               && game.Contains("!type.spawnInPlayerObject"), "parking spaces sources: the car parks come from the city's own list, and a car is counted by the game's own test for its hourly charge");
-        Check(director.Contains("SpaceRules.Seen(h, Park(h.Park) != null, day);") && director.Contains("SpaceRules.GonePay(h, day)") && director.Contains("SpaceGame.Receive(pay, SpaceGame.GoneKey"), "parking spaces sources: a car park gone is settled on the day's pass");
+        string dayRules = ModSource(@"ParkSpaces\SpaceDay.cs");
+        Check(dayRules.Contains("SpaceRules.Looked(h, p, day);") && dayRules.Contains("SpaceRules.Close(h, SpaceEnd.CarParkGone, 0L, day)") && dayRules.Contains("SpaceRules.Close(h, SpaceEnd.OwnBuilding, p.Price, day)")
+              && director.Contains("SpaceDay.Pass(_state, _parks, day, session, SpaceGame.HasVehicle, _books)") && !director.Contains("GonePay") && !ModSource(@"ParkSpaces\SpaceRules.cs").Contains("Unity"),
+            "parking spaces sources: a car park gone, smaller or the player's now is settled on the day's pass by one rule for every way a space ends");
         Check(CountOfText(ModSource(@"Wiring\Wiring.cs"), "BizAsksLinks") == 2 && ModSource(@"Rivals\RivalPage.cs").Contains("RivalBridges.SpaceLine") && CountOfText(ModSource(@"Rivals\RivalPage.cs"), "RivalBridges.SpaceLine") == 4,
             "parking spaces sources: the wiring connects and disconnects, and a tycoon's space shows on the rich list and their panel");
         Check(ModSource(@"Meta\FeatureList.cs").Contains("ParkSpaces.SpaceGuide.Register()") && ModSource(@"Core\FeatureOwners.cs").Contains("\"RealLifeOverhaul.ParkSpaces\", \"parking_spaces\"")
@@ -671,8 +714,8 @@ internal static partial class Program
         Check(blocked.Count == 3 && blocked.All(o => !o.Ships), "car suppliers standing order: the wholesaler's cars need no delivery and still come");
         Check(CarSupplyRules.Keep(sup, "A~1", 0) == 2 && CarSupplyRules.Keep(sup, "nowhere", 0) == 0 && CarSupplyRules.Keep(sup, "A~1", 9) == 0 && CarSupplyRules.Keep(null, "A~1", 0) == 0, "car suppliers standing order: a number is a showroom's and a kind's own");
         string dir = ModSource(@"Economy\Dealer\Supply\DealerDirector.Supply.cs");
-        Check(dir.Contains("if (!SupplyOn || _supply.OrderedDay == day || _state.MarketDay != day)") && dir.Contains("_supply.OrderedDay = day;") && dir.Contains("if (Buy(o.Listing, _state.Yards[yard].Place, o.Price))")
-              && dir.Contains("whoever || SupplyManaged(y)"), "car suppliers standing order: filled once a game day, by a showroom's manager alone, every car through the one purchase path");
+        Check(dir.Contains("if (!SupplyOn || _state.MarketDay != day)") && dir.Contains("SupplyOrders(day, now, _supplyDecides)") && dir.Contains("private bool SupplyDecides(DealerYard y) => RegOf(y) != null && SupplyManaged(y);"),
+            "car suppliers standing order: asked each hour of the day's market, for the showrooms of the player whose manager decides");
     }
 
     private static void SupplyRivalChecks()
@@ -736,18 +779,19 @@ internal static partial class Program
     {
         Check(CarSupplyStore.Load(new Dictionary<string, string>(), out int v0) == null && v0 == 0 && CarSupplyStore.Read(string.Empty, out int _) == null && CarSupplyStore.Read("nothing of ours", out int _) == null,
             "car suppliers save: a save from before has no line, and every kind comes from the wholesaler");
-        var s = new CarSupplyState { OrderedDay = 311 };
+        var s = new CarSupplyState();
         s.Supplier[0] = 1;
         s.Supplier[3] = 2;
         s.KeepOf("5th%20Avenue~12", true).Keep[0] = 3;
         s.KeepOf("5th%20Avenue~12", true).Keep[5] = 12;
         s.KeepOf("B;road,way^x~7", true).Keep[2] = 1;
+        s.KeepOf("5th%20Avenue~12", true).Day = 311;
         s.Ordered(57, 1);
         s.Ordered(58, 2);
         s.Ordered(57, 2);
         string line = CarSupplyStore.Write(s);
         CarSupplyState r = CarSupplyStore.Read(line, out int version);
-        Check(version == CarSupplyStore.Version && r != null && CarSupplyStore.Write(r) == line && r.Supplier[0] == 1 && r.Supplier[3] == 2 && r.Supplier[1] == 0 && r.OrderedDay == 311 && r.Keeps.Count == 2
+        Check(version == CarSupplyStore.Version && r != null && CarSupplyStore.Write(r) == line && r.Supplier[0] == 1 && r.Supplier[3] == 2 && r.Supplier[1] == 0 && r.KeepOf("5th%20Avenue~12", false).Day == 311 && r.KeepOf("B;road,way^x~7", false).Day == -1 && r.Keeps.Count == 2
               && r.KeepOf("5th%20Avenue~12", false).Keep[5] == 12 && r.KeepOf("B;road,way^x~7", false).Keep[2] == 1 && r.Orders.Count == 2 && r.OrderOf(57) == 1 && r.OrderOf(58) == 2 && r.OrderOf(59) == -1,
             "car suppliers save: a line written, read and written again is the same line, with every field and a place of any spelling");
         CultureInfo before = CultureInfo.CurrentCulture;
@@ -761,10 +805,10 @@ internal static partial class Program
             CultureInfo.CurrentCulture = before;
         }
         CarSupplyState newer = CarSupplyStore.Read("v=7^s:2,1,0,0,0,1,2,2^d:40,9^k:A~1,1,2,3,4,5,6,7,8^o:5=1=9;6=2^q:new", out int seven);
-        Check(seven == 7 && newer != null && newer.Supplier[0] == 2 && newer.Supplier[5] == 1 && newer.OrderedDay == 40 && newer.KeepOf("A~1", false).Keep[5] == 6 && newer.OrderOf(5) == 1 && newer.OrderOf(6) == 2,
+        Check(seven == 7 && newer != null && newer.Supplier[0] == 2 && newer.Supplier[5] == 1 && newer.KeepOf("A~1", false).Day == 7 && newer.KeepOf("A~1", false).Keep[5] == 6 && newer.OrderOf(5) == 1 && newer.OrderOf(6) == 2,
             "car suppliers save: a line from a newer version is read as far as it goes");
         CarSupplyState hurt = CarSupplyStore.Read("v=1^s:9,-4,x^d:y^k:A~1,99,-3;,5^o:0=1;x=2;7=44", out int _);
-        Check(hurt != null && hurt.Supplier[0] == CarSupplyCatalogue.Suppliers - 1 && hurt.Supplier[1] == 0 && hurt.Supplier[2] == 0 && hurt.OrderedDay == -1 && hurt.KeepOf("A~1", false).Keep[0] == CarSupplyCatalogue.KeepMost
+        Check(hurt != null && hurt.Supplier[0] == CarSupplyCatalogue.Suppliers - 1 && hurt.Supplier[1] == 0 && hurt.Supplier[2] == 0 && hurt.KeepOf("A~1", false).Day == -1 && hurt.KeepOf("A~1", false).Keep[0] == CarSupplyCatalogue.KeepMost
               && hurt.KeepOf("A~1", false).Keep[1] == 0 && hurt.Orders.Count == 1 && hurt.OrderOf(7) == CarSupplyCatalogue.Suppliers - 1, "car suppliers save: a damaged line keeps what can be read, every number inside its bounds");
         // A showroom mid order: the mark of a supplier's delivery outlives a save and a load, goes when the car has come, and never outlives its delivery.
         var deals = new DealerState();
@@ -775,7 +819,7 @@ internal static partial class Program
         Check(r.Orders.Count == 0 && r.OrderFrom.Count == 0 && r.OrderOf(57) == -1, "car suppliers mid order: a car that has come is no longer on order");
         string dir = ModSource(@"Economy\Dealer\DealerDirector.Business.cs");
         Check(dir.Contains("Arrive(y, q.Type, q.Colour, q.Km, q.Condition, q.Faults, q.Known, q.Cost, DeliverySource(q), true)") && dir.Contains("_supply.Arrived(q.Id);")
-              && ModSource(@"Economy\Dealer\Supply\DealerDirector.Supply.cs").Contains("return _supply.OrderOf(q.Id) >= 0 ? CarSource.Wholesale : CarSource.Auction;"),
+              && ModSource(@"Economy\Dealer\Supply\DealerDirector.Supply.cs").Contains("return CarSupplyRules.SourceOf(_supply, q.Id);"),
             "car suppliers mid order: a car on order arrives as a new car on the terms it was ordered on, whatever the option says by then");
     }
 
@@ -832,7 +876,7 @@ internal static partial class Program
         }
         string dir = ModSource(@"Economy\Dealer\Supply\DealerDirector.Supply.cs"), actions = ModSource(@"Economy\Dealer\DealerDirector.Actions.cs");
         int shipped = dir.IndexOf("private bool BuyShipped(", StringComparison.Ordinal);
-        int waysFull = shipped > 0 ? dir.IndexOf("_state.Deliveries.Count >= DealerCatalogue.DeliveriesMost", shipped, StringComparison.Ordinal) : -1;
+        int waysFull = shipped > 0 ? dir.IndexOf("CarSupplyRules.WaysFull(_state)", shipped, StringComparison.Ordinal) : -1;
         int taken = shipped > 0 ? dir.IndexOf("DealerGame.Take(price", shipped, StringComparison.Ordinal) : -1, sent = shipped > 0 ? dir.IndexOf("_state.Deliveries.Add(q);", shipped, StringComparison.Ordinal) : -1;
         Check(shipped > 0 && waysFull > shipped && taken > waysFull && sent > taken
               && CountOfText(dir, "DealerGame.Take(") == 1 && !dir.Contains("DealerGame.Give("), "car suppliers sources: an order is refused before any money when no delivery can be taken, paid for once, and only then sent; nothing is ever given back or cancelled");
@@ -845,7 +889,7 @@ internal static partial class Program
             "car suppliers sources: the morning gives the other dealers their suppliers and the managers their orders");
         Check(ModSource(@"Economy\Dealer\DealerDirector.cs").Contains("SupplyLoad(save);") && ModSource(@"Economy\Dealer\DealerDirector.cs").Contains("SupplyWrite(save);") && ModSource(@"Economy\Dealer\DealerDirector.cs").Contains("SupplyForget();"),
             "car suppliers sources: the line is read with the dealership's, written with it and forgotten with it");
-        Check(ModSource(@"Wiring\Wiring.BizAsksLinks.cs").Contains("company.Manages(place, ManagerTask.Stock)") && ModSource(@"Wiring\Wiring.BizAsksLinks.cs").Contains("CarSupplyBridges.Manages = Manages;"), "car suppliers sources: the manager is the company's own, with its Stock orders task");
+        Check(ModSource(@"Wiring\Wiring.BizAsksLinks.cs").Contains("company.Decides(place, ManagerTask.Stock)") && ModSource(@"Wiring\Wiring.BizAsksLinks.cs").Contains("CarSupplyBridges.Manages = Manages;"), "car suppliers sources: the manager is the company's own, with its Stock orders task");
         Check(ModSource(@"Meta\FeatureList.cs").Contains("Economy.Dealership.CarSupplyGuide.Register()") && ModSource(@"Meta\OptionsTree.cs").Contains("S(\"carsupply\")") && ModSource(@"Meta\FeatureCities.cs").Contains("new Line(\"economy_dealer_supply\"")
               && ModSource(@"Core\Settings.cs").Contains("public static bool EconomyDealerSupply = true;") && ModSource(@"Core\RealLifeOverhaulMod.cs").Contains("DealerDirector.Instance?.TestSupplyOrder()")
               && ModSource(@"Core\RealLifeOverhaulMod.cs").Contains("DealerDirector.Instance?.TestSupplyManager()"), "car suppliers sources: the feature has its option (on), its Guide page, its place in the cities list and its tests");

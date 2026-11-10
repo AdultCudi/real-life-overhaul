@@ -35,6 +35,8 @@ namespace RealLifeOverhaul.ParkSpaces
         public const int RivalSellChance = 250;                     // thousandths: a tycoon who has held one long enough sells it back at a look
 
         public const int GoneDays = 3;                              // days a car park must have been missing before its spaces are settled
+        public const int HoursMost = 24;                            // car-hours one vehicle can be charged in a day, so the most that is ever paid back for it
+        public const int PendingMost = 512;                         // car-hour records kept at once: a few vehicles over a day or two, with room to spare
 
         public static int Clamp(int value, int least, int most)
         {

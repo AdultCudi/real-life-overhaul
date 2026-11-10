@@ -46,25 +46,23 @@ namespace RealLifeOverhaul.ParkSpaces
             Logger?.Info("Parking spaces check (test, a space rented): no car park of " + _parks.Count + " has a space the player may take now (none free, a limit, the cash, or a shared city).");
         }
 
-        /// <summary>Options, Tests: the day's pass now, with an hour counted first: the charges for the cars standing in the player's spaces are paid back.</summary>
+        /// <summary>
+        /// Options, Tests: the day's pass now. It counts no hour and makes no money of its own: it pays back only the charges the game has really taken
+        /// for hours already counted (the days before today, for vehicles still in the save), which the morning's pass paid back already if it ran, so
+        /// pressing it again pays nothing more.
+        /// </summary>
         public void TestDay()
         {
             if (!TestReady())
             {
                 return;
             }
-            _state.LastHour = -1;
-            OnHour();
-            long due = 0;
-            for (int i = 0; i < _state.HourCount.Count; i++)
-            {
-                due += (long)_state.HourCount[i] * SpaceCatalogue.HourFee;
-            }
-            long before = _state.RefundedTotal;
-            Pass(SpaceGame.Day);
-            bool right = _state.RefundedTotal - before == due && _state.HourCount.Count == 0;
+            int day = SpaceGame.Day;
+            long due = SpaceRules.RefundDue(_state, day, SpaceGame.HasVehicle), before = _state.RefundedTotal;
+            Pass(day);
+            bool right = _state.RefundedTotal - before == due && SpaceRules.RefundDue(_state, day, SpaceGame.HasVehicle) == 0;
             SpaceGame.Tell(NotificationType.Info, "reallife_space_test_day", SpaceGame.Data("amount", SpaceGame.Money(due)));
-            Logger?.Info("Parking spaces check (test, the day's pass now): " + due + " of the game's charges paid back for the hours counted, none left to pay twice: " + (right ? "PASS" : "FAIL"));
+            Logger?.Info("Parking spaces check (test, the day's pass now): " + due + " of the game's charges paid back for hours it has taken, none left to pay twice: " + (right ? "PASS" : "FAIL"));
         }
 
         /// <summary>Options, Tests: the rival tycoons' look now, on the day each of them looks: one without a space may buy one, by the player's own rules.</summary>

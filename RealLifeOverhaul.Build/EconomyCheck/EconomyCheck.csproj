@@ -828,6 +828,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\ParkSpaces\SpaceState.cs" Link="Mod\ParkSpaces\SpaceState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\ParkSpaces\SpaceRules.cs" Link="Mod\ParkSpaces\SpaceRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\ParkSpaces\SpaceStore.cs" Link="Mod\ParkSpaces\SpaceStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\ParkSpaces\SpaceDay.cs" Link="Mod\ParkSpaces\SpaceDay.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\SpacePages.cs" Link="Mod\ParkSpaces\SpacePages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Designs\DesignCatalogue.cs" Link="Mod\DesignCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Designs\DesignRules.cs" Link="Mod\DesignRules.cs" />

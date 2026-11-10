@@ -5,8 +5,11 @@ namespace RealLifeOverhaul.ParkSpaces
     /// <summary>Who owns the building a car park is under: the seller of its spaces.</summary>
     public enum SpaceOwner { City = 0, Player = 1, Rival = 2 }
 
+    /// <summary>How a bought space ends: sold back by the player, or settled because the building became theirs, or because its car park is gone.</summary>
+    public enum SpaceEnd { SoldBack = 0, OwnBuilding, CarParkGone }
+
     /// <summary>Why something asked of the parking spaces could not be done; the text key says so. Nothing is paid before one of these is ruled out.</summary>
-    public enum SpaceRefusal { None = 0, Off, Session, NoPark, Full, Limit, ParkLimit, Cash, NotHeld, OwnBuilding, Rented, Owned }
+    public enum SpaceRefusal { None = 0, Off, Session, NoPark, Full, Limit, ParkLimit, Cash, NotHeld, OwnBuilding, Rented, Owned, Moved }
 
     /// <summary>A building's car park as the rules see it: read from the game at a load and each day, game-free.</summary>
     public sealed class SpacePark
@@ -20,6 +23,7 @@ namespace RealLifeOverhaul.ParkSpaces
         public int Price;               // a space's price today
         public SpaceOwner Owner;
         public string OwnerName;        // the rival that owns the building, as the game names it; empty otherwise
+        public object Source;           // the game's building, kept so that who owns it can be read again without a walk of the city
     }
 
     /// <summary>A space held: by the player, or by a rival tycoon. Owned for good, or rented by the term.</summary>
@@ -36,6 +40,8 @@ namespace RealLifeOverhaul.ParkSpaces
         public int PaidTo;              // the last day the rent is paid for; 0 for a bought one
         public bool Ending;             // a rented one given up: it ends with the term
         public int Missing;             // the day its car park was first not found; 0 while it stands
+        public long PriceSeen;          // a bought one: the price of a space in its car park when last looked at, what a car park that goes is settled by
+        public bool OwnSeen;            // the building was the player's when last looked at
 
         public bool Rented => Paid <= 0;
         public bool Players => Who == PlayerIs;
@@ -47,7 +53,20 @@ namespace RealLifeOverhaul.ParkSpaces
         public int Tycoon;
         public int Park, Slot;
         public long Amount;             // what the tycoon pays (a purchase) or gets back (a sale)
+        public long Worth;              // what it does to the tycoon's worth: a space bought is worth what was paid, so nothing; a sale loses what the space lost on the way
         public bool Sold;
+    }
+
+    /// <summary>
+    /// Car-hours counted for a vehicle, to be paid back once the game has charged them: the day they were counted (the game takes a
+    /// day's charges on the morning after it), the car park, the vehicle and how many hours.
+    /// </summary>
+    public sealed class SpaceHours
+    {
+        public int Day;
+        public int Park;
+        public string Vehicle;
+        public int Hours;
     }
 
     /// <summary>What the save keeps of the parking spaces, game-free. A save from before has none of it.</summary>
@@ -59,8 +78,7 @@ namespace RealLifeOverhaul.ParkSpaces
         public long RefundedTotal;      // the game's charges paid back in all
         public long PaidTotal;          // what the player has paid for spaces and rent in all, less what came back for them
         public readonly List<SpaceHolding> Held = new List<SpaceHolding>(SpaceCatalogue.HeldMost + 8);
-        public readonly List<int> HourPark = new List<int>(4);     // car parks with car-hours of today not yet paid back...
-        public readonly List<int> HourCount = new List<int>(4);    // ...and beside each, how many
+        public readonly List<SpaceHours> Pending = new List<SpaceHours>(8);   // car-hours counted, not yet paid back
 
         public SpaceHolding At(int park, int slot)
         {
@@ -86,10 +104,15 @@ namespace RealLifeOverhaul.ParkSpaces
             return n;
         }
 
+        /// <summary>The car-hours counted and not yet paid back: in one car park, or in all with 0.</summary>
         public int Hours(int park)
         {
-            int at = HourPark.IndexOf(park);
-            return at >= 0 ? HourCount[at] : 0;
+            int n = 0;
+            for (int i = 0; i < Pending.Count; i++)
+            {
+                n += park == 0 || Pending[i].Park == park ? Pending[i].Hours : 0;
+            }
+            return n;
         }
     }
 }

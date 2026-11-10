@@ -30,11 +30,12 @@ namespace RealLifeOverhaul.Ui
             private void SpaceRows(List<UiDataRow> rows, List<string> keys, List<int> locate)
             {
                 SpaceDirector d = SpacesNow;
-                for (int i = 0; d != null && i < d.Parks.Count; i++)
+                IReadOnlyList<SpacePark> parks = d != null ? d.Open() : null;   // read again as the page is built
+                for (int i = 0; parks != null && i < parks.Count; i++)
                 {
                     locate.Add(-1);
-                    rows.Add(SpacePages.MarketRow(SpaceText.Words, d.State, d.Parks[i], _day, SpaceGame.Money));
-                    keys.Add(SpacePick + d.Parks[i].Number.ToString(Inv));
+                    rows.Add(SpacePages.MarketRow(SpaceText.Words, d.State, parks[i], _day, SpaceGame.Money));
+                    keys.Add(SpacePick + parks[i].Number.ToString(Inv));
                 }
             }
 
@@ -42,6 +43,10 @@ namespace RealLifeOverhaul.Ui
             private void SpaceHeld(List<UiDataRow> rows, List<string> keys)
             {
                 SpaceDirector d = SpacesNow;
+                if (d != null)
+                {
+                    d.Open();
+                }
                 for (int i = 0; d != null && i < d.State.Held.Count; i++)
                 {
                     SpaceHolding h = d.State.Held[i];
@@ -61,6 +66,10 @@ namespace RealLifeOverhaul.Ui
             {
                 string pick = Picked(_v.Pick, SpacePick);
                 SpaceDirector d = SpacesNow;
+                if (d != null && pick != null)
+                {
+                    d.Open();
+                }
                 SpacePark p = pick != null && d != null && int.TryParse(pick, out int number) ? d.Park(number) : null;
                 if (p == null)
                 {
@@ -77,8 +86,9 @@ namespace RealLifeOverhaul.Ui
                 SpacePark p = d != null ? d.Park(park) : null;
                 if (p != null)
                 {
+                    long shown = p.Price;   // what the question box asks about is what is charged, or nothing is
                     Show(() => AskSpace("reallife_space_q_buy_title", SpaceText.Fill("reallife_space_q_buy", "space", SpaceText.Space(slot), "name", p.Name,
-                        "amount", SpaceGame.Money(p.Price), "owner", SpaceText.Owner(p)), () => d.Buy(park), false));
+                        "amount", SpaceGame.Money(shown), "owner", SpaceText.Owner(p)), () => d.Buy(park, shown, slot), false));
                 }
             }
 
@@ -88,8 +98,9 @@ namespace RealLifeOverhaul.Ui
                 SpacePark p = d != null ? d.Park(park) : null;
                 if (p != null)
                 {
+                    long shown = p.RentMonth;
                     Show(() => AskSpace("reallife_space_q_rent_title", SpaceText.Fill("reallife_space_q_rent", "space", SpaceText.Space(slot), "name", p.Name,
-                        "amount", SpaceGame.Money(p.RentMonth), "days", SpaceCatalogue.RentDays.ToString(Inv)), () => d.Rent(park), false));
+                        "amount", SpaceGame.Money(shown), "days", SpaceCatalogue.RentDays.ToString(Inv)), () => d.Rent(park, shown, slot), false));
                 }
             }
 
@@ -100,7 +111,7 @@ namespace RealLifeOverhaul.Ui
                 if (p != null)
                 {
                     Show(() => AskSpace("reallife_space_q_sell_title", SpaceText.Fill("reallife_space_q_sell", "space", SpaceText.Space(slot), "name", p.Name,
-                        "amount", SpaceGame.Money(back), "fee", (SpaceCatalogue.BackFee / 10f).ToString("0.#", Inv)), () => d.Sell(park, slot), true));
+                        "amount", SpaceGame.Money(back), "fee", (SpaceCatalogue.BackFee / 10f).ToString("0.#", Inv)), () => d.Sell(park, slot, back), true));
                 }
             }
 

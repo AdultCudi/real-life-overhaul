@@ -127,6 +127,18 @@ namespace RealLifeOverhaul.Economy.Dealership
             return k != null ? DealerCatalogue.Clamp(k.Keep[kind], 0, CarSupplyCatalogue.KeepMost) : 0;
         }
 
+        /// <summary>True when every delivery the dealership can take is taken: an order from a supplier that delivers later is refused, before any money.</summary>
+        public static bool WaysFull(DealerState s)
+        {
+            return s.Deliveries.Count >= DealerCatalogue.DeliveriesMost;
+        }
+
+        /// <summary>What a delivery is as its car goes onto the lot: a supplier's is a new car from the wholesale market, another is a lot won at the trade auction.</summary>
+        public static CarSource SourceOf(CarSupplyState sup, int delivery)
+        {
+            return sup.OrderOf(delivery) >= 0 ? CarSource.Wholesale : CarSource.Auction;
+        }
+
         /// <summary>The cars of a kind a showroom has: on its lot, and on their way to it.</summary>
         public static int Have(DealerState s, DealerYard y, IReadOnlyList<MarketModel> models, int kind)
         {
@@ -207,6 +219,37 @@ namespace RealLifeOverhaul.Economy.Dealership
             return cash;
         }
 
+        /// <summary>
+        /// The managers' morning: for each showroom with a standing order that has not been filled today, whose manager can decide today
+        /// (<paramref name="decides"/>: the same door every other decision of a manager goes through, so a manager off sick with nobody
+        /// to stand in means the decision waits), the orders of <see cref="Plan"/>. A showroom is marked as ordered for the day only
+        /// when somebody decided, so a day nobody decides is not marked and is asked again at the next hour; and once marked it is not
+        /// asked again that day, however often the hour is worked or the save is loaded. Returns the cash left.
+        /// </summary>
+        public static long Morning(DealerState s, CarSupplyState sup, IReadOnlyList<MarketModel> models, int day, int now, long cash, bool on, Func<DealerYard, bool> decides,
+            List<CarSupplyOrder> into)
+        {
+            for (int i = 0; on && s != null && sup != null && i < s.Yards.Count; i++)
+            {
+                DealerYard y = s.Yards[i];
+                CarSupplyKeep keep = sup.KeepOf(y.Place, false);
+                if (keep == null || keep.Day == day || decides == null || !decides(y))
+                {
+                    continue;
+                }
+                keep.Day = day;
+                int first = into.Count;
+                cash = Plan(s, sup, y, models, cash, now, into);
+                for (int k = first; k < into.Count; k++)
+                {
+                    CarSupplyOrder o = into[k];
+                    o.Place = y.Place;
+                    into[k] = o;
+                }
+            }
+            return cash;
+        }
+
         /// <summary>The supplier of each kind put inside the table, and every standing order inside what a lot holds: what a line read from a save is made to.</summary>
         public static void Bound(CarSupplyState s)
         {
@@ -220,6 +263,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 {
                     s.Keeps[i].Keep[k] = DealerCatalogue.Clamp(s.Keeps[i].Keep[k], 0, CarSupplyCatalogue.KeepMost);
                 }
+                s.Keeps[i].Day = Math.Max(-1, s.Keeps[i].Day);
             }
         }
 
