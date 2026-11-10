@@ -35,6 +35,10 @@ namespace RealLifeOverhaul.Ui
                     HotelForSalePage(slot);
                     return;
                 }
+                if (SpacePage())
+                {
+                    return;   // a building's car park (ParkSpaces)
+                }
                 _v.Pick = null;
                 GameInstance save = SaveGameManager.Current;
                 var rows = new List<UiDataRow>(64);
@@ -80,6 +84,7 @@ namespace RealLifeOverhaul.Ui
                     });
                     keys.Add("htl:" + hs.Id);
                 }
+                SpaceRows(rows, keys, locate);
                 var cols = new[]
                 {
                     new UiDataColumn { Title = EstateText.T("reallife_ui_estate_col_building"), Kind = UiCellKind.Tile, Width = 0f },

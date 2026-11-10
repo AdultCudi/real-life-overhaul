@@ -133,6 +133,10 @@ namespace RealLifeOverhaul.Economy
                 _tab = EstateDirector.TabHire;
                 _pick = null;
             }
+            else if (_tab == EstateDirector.TabMine && _pick.StartsWith(SpaceRow, StringComparison.Ordinal))
+            {
+                _tab = EstateDirector.TabMarket;   // a space held is looked after on its car park's page
+            }
             Refresh();
         }
 
@@ -373,11 +377,16 @@ namespace RealLifeOverhaul.Economy
                 row.Set(3, EstateText.Money(price), price);
                 row.Set(4, EstateText.T("reallife_estate_row_going_concern"));
             }
+            ParkSpaces.SpacePark pickedSpace = WriteSpaceRows(districts, ref selected);   // the buildings with a car park under them (ParkSpaces)
             if (_rows.Count == 0)
             {
                 Say("none", EstateText.T("reallife_estate_row_no_market"));
             }
-            if (picked != null)
+            if (pickedSpace != null)
+            {
+                WriteSpace(box, pickedSpace);
+            }
+            else if (picked != null)
             {
                 WriteListing(box, state, picked, c);
             }

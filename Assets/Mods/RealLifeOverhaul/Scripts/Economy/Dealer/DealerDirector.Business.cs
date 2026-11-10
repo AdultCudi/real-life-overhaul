@@ -231,13 +231,15 @@ namespace RealLifeOverhaul.Economy.Dealership
                 {
                     y = Room(null, out DealerRefusal _);
                 }
-                StockCar car = y != null ? Arrive(y, q.Type, q.Colour, q.Km, q.Condition, q.Faults, q.Known, q.Cost, CarSource.Auction, true) : null;
+                StockCar car = y != null ? Arrive(y, q.Type, q.Colour, q.Km, q.Condition, q.Faults, q.Known, q.Cost, DeliverySource(q), true) : null;
                 if (car != null)
                 {
                     _state.Deliveries.Remove(q);
                     DealerRules.Count(y, DealerCatalogue.TallyDelivered, 1);
-                    Logger?.Info("Dealership: the " + q.Type + " won at auction has arrived at '" + y.Name + "'.");
-                    Tell(NotificationType.Info, "reallife_dealer_note_arrived", new Dictionary<string, string>(2) { { "car", DealerGame.CarName(q.Type) }, { "name", y.Name } }, TabStock, CarRow(car));
+                    Logger?.Info("Dealership: the " + q.Type + " on its way (" + DeliverySource(q) + ") has arrived at '" + y.Name + "'.");
+                    Tell(NotificationType.Info, DeliveryNote(q, "reallife_dealer_note_arrived", "reallife_carsup_note_arrived"),
+                        new Dictionary<string, string>(2) { { "car", DealerGame.CarName(q.Type) }, { "name", y.Name } }, TabStock, CarRow(car));
+                    _supply.Arrived(q.Id);
                     Advance(y);
                     continue;
                 }
@@ -250,7 +252,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 {
                     q.Told = true;
                     DealerYard to = _state.Yard(q.Place);
-                    Tell(NotificationType.Warning, "reallife_dealer_note_no_place", new Dictionary<string, string>(2)
+                    Tell(NotificationType.Warning, DeliveryNote(q, "reallife_dealer_note_no_place", "reallife_carsup_note_no_place"), new Dictionary<string, string>(2)
                         { { "car", DealerGame.CarName(q.Type) }, { "name", to != null ? to.Name : string.Empty } }, TabStock, DeliveryRow(q));
                 }
             }

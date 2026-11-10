@@ -36,7 +36,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         }
 
         /// <summary>The morning's restock: sold cars go, each dealer is topped up to its number, from the game's vehicle types at today's prices.</summary>
-        public static void Morning(DealerState s, int day, IList<MarketModel> models, int level)
+        public static void Morning(DealerState s, int day, IList<MarketModel> models, int level, bool suppliers = false)
         {
             int dealers = DealerCatalogue.RivalNames.Length;
             if (models == null || models.Count == 0)
@@ -74,9 +74,11 @@ namespace RealLifeOverhaul.Economy.Dealership
                     MarketModel m = models[dice.Range(0, models.Count - 1)];
                     int worth = DealerRules.Worth(m.Price, level, TypicalKm, TypicalCondition);
                     int ask = DealerCatalogue.Named(DealerCatalogue.Share(worth, bias + dice.Range(-Spread, Spread)));
+                    int out_ = day;
+                    CarSupplyRules.RivalBuys(ref ask, ref out_, s.Seed, r, m.Kind, suppliers);   // from the kind's supplier, as the player's showroom buys
                     if (ask > 0)
                     {
-                        s.Rivals.Add(new RivalCar { Rival = r, Type = m.Type, Ask = ask, Day = day });
+                        s.Rivals.Add(new RivalCar { Rival = r, Type = m.Type, Ask = ask, Day = out_ });
                     }
                 }
             }
@@ -90,7 +92,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             for (int i = 0; i < s.Rivals.Count; i++)
             {
                 RivalCar c = s.Rivals[i];
-                if (c.Type == type && c.Ask > 0 && (best == 0 || c.Ask < best))
+                if (c.Type == type && c.Ask > 0 && c.Day <= s.MarketDay && (best == 0 || c.Ask < best))   // a car still on its way from a supplier is not on the lot
                 {
                     best = c.Ask;
                     rival = c.Rival;

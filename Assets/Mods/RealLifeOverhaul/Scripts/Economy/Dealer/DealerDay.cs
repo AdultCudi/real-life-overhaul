@@ -10,14 +10,14 @@ namespace RealLifeOverhaul.Economy.Dealership
     public static class DealerDay
     {
         /// <summary>The day's morning if the market has not turned for it yet (once a day, whenever the first hour of it is worked); true when it ran.</summary>
-        public static bool Morning(DealerState s, int day, IList<MarketModel> models, IList<string> colours, int level, bool closeYards = true)
+        public static bool Morning(DealerState s, int day, IList<MarketModel> models, IList<string> colours, int level, bool closeYards = true, bool suppliers = false)
         {
             if (s.MarketDay == day)
             {
                 return false;
             }
             DealerRules.Morning(s, day, models, colours, level);
-            RivalRules.Morning(s, day, models, level);
+            RivalRules.Morning(s, day, models, level, suppliers);
             for (int y = 0; closeYards && y < s.Yards.Count; y++)
             {
                 DealerRules.CloseDay(s, s.Yards[y], day);

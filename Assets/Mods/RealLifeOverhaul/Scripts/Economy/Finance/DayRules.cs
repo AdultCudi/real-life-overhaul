@@ -100,7 +100,9 @@ namespace RealLifeOverhaul.Economy
             // a deposit held and given back
             "util_deposit", "util_deposit_back", "civic_office_deposit", "civic_office_deposit_back", "estate_hire_deposit",
             // a hotel or a school bought or sold
-            "estate_hotel_buy", "estate_hotel_sold", "school_buy", "school_sell"
+            "estate_hotel_buy", "estate_hotel_sold", "school_buy", "school_sell",
+            // a parking space bought, sold back or settled when its car park goes (its rent and the charges paid back are costs and count)
+            "space_buy", "space_sold", "space_gone"
         };
 
         /// <summary>The keys of EconoView's Investments and Loans categories that count: what a loan, a card or a share costs or pays, not the capital.</summary>
