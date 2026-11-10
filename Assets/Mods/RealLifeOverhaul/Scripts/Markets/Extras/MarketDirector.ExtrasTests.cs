@@ -9,6 +9,7 @@ namespace RealLifeOverhaul.Markets
     /// </summary>
     public sealed partial class MarketDirector
     {
+        private static readonly System.Globalization.CultureInfo Inv = System.Globalization.CultureInfo.InvariantCulture;
         private const string TestSplitName = "Stock extras check (a split at the next open)";
         private const string TestReverseName = "Stock extras check (shares put together at the next open)";
         private const string TestFundName = "Stock extras check (the fund against its parts)";
@@ -114,7 +115,7 @@ namespace RealLifeOverhaul.Markets
             }
             bool fair = buy.PriceCents >= buy.NavCents && sell.PriceCents <= sell.NavCents;
             Queue(NotificationType.Info, "reallife_stx_test_fund_note", "nav", MarketText.Price(buy.NavCents), "buy", MarketText.Price(buy.PriceCents), "sell", MarketText.Price(sell.PriceCents));
-            Logger?.Info(TestFundName + ": a unit holds " + buy.NavCents + " cents (the index " + s.IndexLast + " hundredths, the fund " + s.Extras.Track.ToString("0.000000")
+            Logger?.Info(TestFundName + ": a unit holds " + buy.NavCents + " cents (the index " + s.IndexLast + " hundredths, the fund " + s.Extras.Track.ToString("0.000000", Inv)
                          + " of it); 100 units cost " + buy.PriceCents + " and fetch " + sell.PriceCents + " cents each; the player holds " + s.Extras.Units + ": "
                          + (fair ? "PASS" : "FAIL (a unit dealt better than its parts)"));
         }
@@ -211,7 +212,7 @@ namespace RealLifeOverhaul.Markets
             bool own = worth <= capital * ExtrasCatalogue.BankBookMost + 1.0;
             Queue(NotificationType.Info, "reallife_stx_test_bank_note", "bank", f.Name, "worth", MarketText.Money((long)worth), "why", ExtrasText.Why(why));
             Logger?.Info(TestBankName + ": " + f.Name + ", " + quarters + " complete quarter(s) of its own books (" + profitable + " in profit), capital " + (long)capital + ", worth "
-                         + (long)worth + " (never over " + ExtrasCatalogue.BankBookMost + " times its capital), stage " + s.Extras.Bank.Stage + ", " + why + ": "
+                         + (long)worth + " (never over " + ExtrasCatalogue.BankBookMost.ToString("0.#", Inv) + " times its capital), stage " + s.Extras.Bank.Stage + ", " + why + ": "
                          + (own ? "PASS" : "FAIL (worth over its own capital's most)"));
         }
     }

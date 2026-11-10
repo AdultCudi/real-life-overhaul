@@ -135,7 +135,15 @@ namespace RealLifeOverhaul
             // The whole company's books without the bank's days while the bank is a stock of its own: the same takings never feed two stocks.
             private static OwnBooks Books(int from, int to)
             {
-                OwnBooks books = _booksBefore != null ? _booksBefore(from, to) : default(OwnBooks);
+                OwnBooks books = default(OwnBooks);
+                try
+                {
+                    books = _booksBefore != null ? _booksBefore(from, to) : default(OwnBooks);
+                }
+                catch (Exception e)
+                {
+                    Fault("StockExtrasLinks.Books (the books before)", e);
+                }
                 try
                 {
                     MarketDirector m = MarketDirector.Instance;
