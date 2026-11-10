@@ -34,12 +34,16 @@ namespace RealLifeOverhaul
                 StockBridges.Startup = Startup;
                 StockBridges.Show = Show;
                 MarketBridges.FirmDealt = Dealt;
+                MarketBridges.CompanyDealt = CompanyDealt;
+                MarketBridges.CompanyTaken = CompanyTaken;
             }
 
             internal static void Disconnect()
             {
                 StockBridges.Reset();
                 MarketBridges.FirmDealt = null;
+                MarketBridges.CompanyDealt = null;
+                MarketBridges.CompanyTaken = null;
                 Places.Clear();
             }
 
@@ -249,6 +253,39 @@ namespace RealLifeOverhaul
                 catch (Exception e)
                 {
                     Fault("ExitStockLinks.Dealt", e);
+                }
+            }
+
+            // The player dealt in their whole company's shares on the market, or paid for a larger share of it: the tax return follows.
+            private static void CompanyDealt(string name, long shares, int cents, long money, long fee, long held)
+            {
+                try
+                {
+                    TechDirector.Instance?.CompanyDealt(name, shares, money, fee, held);
+                }
+                catch (Exception e)
+                {
+                    Fault("ExitStockLinks.CompanyDealt", e);
+                }
+            }
+
+            // A bid for the player's whole company won: the businesses it hands over still stand, so their stock and furniture are read now, at the game's resale price.
+            private static void CompanyTaken(string name, long founder, long total, int cents, long money)
+            {
+                try
+                {
+                    long fixtures = 0;
+                    var places = new List<string>(16);
+                    MarketBridges.Businesses?.Invoke(places);
+                    for (int i = 0; i < places.Count; i++)
+                    {
+                        fixtures += Math.Max(0, ServicesGame.Fixtures(ServicesGame.Find(places[i]))) * 100L;
+                    }
+                    TechDirector.Instance?.CompanyTaken(name, founder, total, money, fixtures);
+                }
+                catch (Exception e)
+                {
+                    Fault("ExitStockLinks.CompanyTaken", e);
                 }
             }
 

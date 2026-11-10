@@ -23,13 +23,15 @@ namespace RealLifeOverhaul.Tech
             _gains = null;
         }
 
-        private void WriteGains(Dictionary<string, string> data)
+        private void WriteGains(Dictionary<string, string> data) => KeepGains(_gains, data);
+
+        private static void KeepGains(GainFile file, Dictionary<string, string> data)
         {
-            if (_gains == null || data == null)
+            if (file == null || data == null)
             {
                 return;
             }
-            string line = ExitGainStore.Write(_gains);
+            string line = ExitGainStore.Write(file);
             if (line != null)
             {
                 data[ExitGainStore.Key] = line;
@@ -38,6 +40,49 @@ namespace RealLifeOverhaul.Tech
             {
                 data.Remove(ExitGainStore.Key);
             }
+        }
+
+        /// <summary>
+        /// The player dealt in the whole company's shares on the market, or paid for a larger share of it (MarketBridges.CompanyDealt): a sale notes its gain for the return, a
+        /// purchase adds what it cost to the stake's basis. The company is not a firm and has no cap table, so the file is read from the save when the venture part is off, and
+        /// written back at once. Runs on the founder's machine at the deal; nothing per frame.
+        /// </summary>
+        internal void CompanyDealt(string name, long shares, long money, long fee, long held)
+        {
+            if (Save == null)
+            {
+                return;
+            }
+            GainFile file = _gains ?? ExitGainStore.Load(Save.modData) ?? new GainFile();
+            long gain = ExitGains.ForMarketDeal(file, 0L, ExitGains.CompanyPlace, name, money, fee, held, shares, Save.Day, Prices.Level);
+            if (_gains == null)
+            {
+                KeepGains(file, Save.modData);
+            }
+            GainNotice(name, gain);
+            string what = shares < 0 ? "sold " + (-shares) + " share(s) of" : shares > 0 ? "bought " + shares + " share(s) of" : "paid for a larger share of";
+            Logger?.Info("Tech: the player " + what + " their company " + name + " on the market for " + TechText.Cents(ExitGains.CentsOfMarket(money)) + " and "
+                         + TechText.Cents(ExitGains.CentsOfMarket(fee)) + " in fees" + (shares < 0 ? GainLog(gain) : "; the stake's basis grows by it") + ".");
+        }
+
+        /// <summary>
+        /// A bid for the whole company won (MarketBridges.CompanyTaken): the founder's shares were paid <paramref name="money"/>, and the businesses handed over take their stock and
+        /// furniture (<paramref name="fixtures"/>, read while they are still the player's) out of the gain in the founder's part of the company, as a firm sold with its business does.
+        /// </summary>
+        internal void CompanyTaken(string name, long founder, long total, long money, long fixtures)
+        {
+            if (Save == null)
+            {
+                return;
+            }
+            GainFile file = _gains ?? ExitGainStore.Load(Save.modData) ?? new GainFile();
+            long gain = ExitGains.ForTakeover(file, name, money, fixtures, founder, total, Save.Day, Prices.Level);
+            if (_gains == null)
+            {
+                KeepGains(file, Save.modData);
+            }
+            GainNotice(name, gain);
+            Logger?.Info("Tech: the player's company " + name + " was taken over, the founder's " + founder + " share(s) paid " + TechText.Cents(ExitGains.CentsOfMarket(money)) + GainLog(gain) + ".");
         }
 
         /// <summary>The gains of startup stakes sold between two days, both counted, for the return. Read from the save's own line while Startups are off, so turning them off

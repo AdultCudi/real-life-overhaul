@@ -43,6 +43,17 @@ namespace RealLifeOverhaul.Markets
 
         private double PriceLevel => Math.Max(100, State.Env.PriceLevel) / 1000.0;
 
+        /// <summary>
+        /// The founder dealt in the whole company's shares, or put money into the stake without shares (a buy-back, going private), on the founder's machine and not for a test's
+        /// company: its name, the shares (under nothing: sold; nothing: money put in), the price in cents, the money the deal came to after the reserve it moved, the commission and
+        /// what was paid back for a short swing, and the shares the founder held before it. The tax return notes the sale or adds to the stake's cost.
+        /// </summary>
+        public Action<string, long, int, long, long, long> CompanyDealt;
+
+        /// <summary>A bid for the whole company won and every share the founder held paid, on the founder's machine and not for a test's company: its name, the founder's shares, the shares
+        /// in issue, the price in cents and the money paid.</summary>
+        public Action<string, long, long, int, long> CompanyTaken;
+
         // Money of the founder's, on their machine only and never for a test's company.
         private void Pay(Stock s, long amount, string why)
         {
@@ -549,7 +560,12 @@ namespace RealLifeOverhaul.Markets
                 Say(new MarketNews { Day = day, Kind = MarketNewsKind.OwnBidBlocked, Stock = s.Id, A = can ? 0 : 1 });
                 return false;
             }
-            Receive(s, MarketTrading.Value(o.Founder, s.BidCents, false), ListingMoney.Takeover);
+            long paid = MarketTrading.Value(o.Founder, s.BidCents, false);
+            Receive(s, paid, ListingMoney.Takeover);
+            if (Mine(s) && !o.Test)
+            {
+                CompanyTaken?.Invoke(s.Name, o.Founder, s.Shares, s.BidCents, paid);   // before the company leaves: the tax return notes the gain of the sale
+            }
             if (Mine(s))
             {
                 State.Listing.Stage = ListingStage.None;
@@ -754,6 +770,7 @@ namespace RealLifeOverhaul.Markets
                 Pay(s, q.Reserve, ListingMoney.ReserveOut);
             }
             Pay(s, q.Fee, MarketMoney.Commission);
+            long heldBefore = o.Founder;
             o.Founder += shares;
             if (o.Firm)
             {
@@ -773,9 +790,17 @@ namespace RealLifeOverhaul.Markets
             }
             Moved(s, buying, q.Shares, ListingRules.Reading(shares, s.Shares, ListingCatalogue.DealKickBp));
             Say(new MarketNews { Day = State.Day, Kind = MarketNewsKind.OwnDeal, Stock = s.Id, A = (int)Math.Max(int.MinValue, Math.Min(int.MaxValue, shares)), B = q.Cents });
-            if (o.Firm && Mine(s) && !o.Test)
+            if (Mine(s) && !o.Test)
             {
-                FirmDealt?.Invoke(s.Id, shares, q.Cents, q.Value, q.Reserve + q.Fee);   // the tech sector follows its cap table, and notes the sale for the tax
+                long fee = q.Fee + Math.Max(0L, gain);
+                if (o.Firm)
+                {
+                    FirmDealt?.Invoke(s.Id, shares, q.Cents, q.Value - q.Reserve, fee);   // the tech sector follows its cap table, and notes the deal for the tax
+                }
+                else
+                {
+                    CompanyDealt?.Invoke(s.Name, shares, q.Cents, q.Value - q.Reserve, fee, heldBefore);
+                }
             }
         }
 
@@ -783,6 +808,10 @@ namespace RealLifeOverhaul.Markets
         {
             OwnQuote q = Quote(s, OwnAction.BuyBack, shares);
             Pay(s, q.Total, ListingMoney.BuyBack);
+            if (Mine(s) && !s.Own.Test)
+            {
+                CompanyDealt?.Invoke(s.Name, 0L, q.Cents, q.Value - q.Reserve, q.Fee, s.Own.Founder);   // the founder paid for a larger share of the company: it joins the stake's cost
+            }
             long before = s.Shares;
             ListingRules.Count(s.Own, State.Day, Year, 0, 0, ListingRules.Bp(shares, before));
             Reshare(s, -shares);
@@ -813,6 +842,10 @@ namespace RealLifeOverhaul.Markets
         {
             OwnQuote q = Quote(s, OwnAction.Private, 0);
             Pay(s, q.Total, ListingMoney.Private);
+            if (Mine(s) && !s.Own.Test)
+            {
+                CompanyDealt?.Invoke(s.Name, 0L, q.Cents, q.Value - q.Reserve, 0L, s.Own.Founder);   // the other holders' shares bought: the founder's cost
+            }
             if (Mine(s))
             {
                 State.Listing.Stage = ListingStage.None;
