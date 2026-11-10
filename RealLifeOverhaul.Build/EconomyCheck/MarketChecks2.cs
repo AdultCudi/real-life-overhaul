@@ -214,9 +214,11 @@ internal static partial class Program
             }
             var past = new MarketPast { Year = year };
             var pending = new Dictionary<int, long>();   // each company's dividend declared and not yet gone: its record day and cents
+            double partsPaid = 0.0;   // money paid for parts of a share at a consolidation: paid to holders, so counted with what they were paid
             // A split, or shares put together, is no return: the closes and dividends kept so far are restated at the new share count, as a chart's are.
             m.SplitDone = (split, fresh, old, cash) =>
             {
+                partsPaid += cash;
                 foreach (Dictionary<int, List<double>> series in new[] { past.Close, past.Dividend })
                 {
                     if (series.TryGetValue(split.Id, out List<double> kept))
@@ -241,7 +243,8 @@ internal static partial class Program
                 {
                     continue;
                 }
-                double cap = 0.0, paid = 0.0;
+                double cap = 0.0, paid = partsPaid;
+                partsPaid = 0.0;
                 past.Days.Add(d);
                 int at = past.Days.Count - 1;
                 foreach (Stock s in m.State.Stocks)
@@ -400,7 +403,8 @@ internal static partial class Program
                 double e = excess[r] / Math.Max(1, runs), a = alpha[r] / Math.Max(1, runs);
                 Console.WriteLine("  market rule of thumb (" + year + "-day years): " + rules[r] + " against holding " + (e >= 0 ? "+" : string.Empty) + (e * 100).ToString("0.00")
                                   + "% a year, against what its picks should return " + (a >= 0 ? "+" : string.Empty) + (a * 100).ToString("0.00") + "%");
-                Check(a < 0.02, "market: no rule of thumb beats what its picks should return by 2% a year after costs (" + rules[r] + " " + (a * 100).ToString("0.00") + "%, year " + year + ")");
+                Check(a < 0.02, "market: no rule of thumb beats what its picks should return by 2% a year after costs (" + rules[r] + " " + (a * 100).ToString("0.00") + "%, against holding "
+                                + (e >= 0 ? "+" : string.Empty) + (e * 100).ToString("0.00") + "%, year " + year + ")");
             }
         }
     }

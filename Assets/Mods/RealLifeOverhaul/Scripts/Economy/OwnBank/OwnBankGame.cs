@@ -31,8 +31,11 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static Func<long, long> OwnerPart;
 
-        /// <summary>A day of the bank's own books was booked: the day, its income and its profit in cents (the stock market keeps the bank's own quarters). Default: nobody hears.</summary>
-        public static Action<int, long, long> DayBooked;
+        /// <summary>
+        /// A day of the bank's own books was booked: the day, its income and its profit in cents, and the capital it held that evening (the stock market keeps the bank's own
+        /// quarters). Default: nobody hears.
+        /// </summary>
+        public static Action<int, long, long, long> DayBooked;
 
         /// <summary>True if the bank has the qualified person its licence asks for (Careers). Default: yes.</summary>
         public static Func<bool> Qualified;
@@ -204,8 +207,7 @@ namespace RealLifeOverhaul.Economy
         /// </summary>
         public static long Owner(long cents)
         {
-            Func<long, long> part = OwnBankBridges.OwnerPart;
-            return part != null && cents > 0 ? Math.Max(0L, Math.Min(cents, part(cents))) : cents;
+            return OwnBankRules.OwnerShare(cents, OwnBankBridges.OwnerPart);
         }
 
         /// <summary>Money from the player's cash for the bank (the licence, capital put in), only if the cash covers it. False if not.</summary>

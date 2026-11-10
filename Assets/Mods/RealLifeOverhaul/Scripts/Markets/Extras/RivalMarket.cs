@@ -18,11 +18,17 @@ namespace RealLifeOverhaul.Markets
             return MarketRandom.Unit(s.Id, MarketRandom.Extras, tycoon * 16 + what, day);
         }
 
-        /// <summary>True on a tycoon's own day of the month, once.</summary>
-        public static bool Looks(int tycoon, int day, RivalBook b)
+        /// <summary>
+        /// The next day of a tycoon's own, on their day of the month, that they have not yet looked at the market on and that has come: the first one after their
+        /// last look (for a tycoon who has never looked, the latest one within a month), or 0 when none is due. Asked again until 0, so every day that passed
+        /// between two looks of the director (a load, a long sleep, a game left idle) is played, none is skipped, and each look is drawn from the day it is for.
+        /// </summary>
+        public static int NextLook(int tycoon, int day, RivalBook b)
         {
-            int every = ExtrasCatalogue.RivalEveryDays;
-            return day > 0 && day % every == (tycoon * 11 + 5) % every && b.LookDay != day;
+            int every = ExtrasCatalogue.RivalEveryDays, offset = (tycoon * 11 + 5) % every;
+            int from = b.LookDay >= 0 ? b.LookDay + 1 : Math.Max(1, day - every + 1);
+            int due = from + ((offset - from % every) % every + every) % every;
+            return due > 0 && due <= day ? due : 0;
         }
 
         /// <summary>The units of the fund a tycoon buys at a look: a step of their worth, until what they hold is their share of it. Nothing with no fund.</summary>

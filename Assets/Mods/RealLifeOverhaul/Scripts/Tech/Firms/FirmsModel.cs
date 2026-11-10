@@ -19,6 +19,11 @@ namespace RealLifeOverhaul.Tech
         public readonly long[] Days = new long[FirmsCatalogue.MonthDays];   // takings by day, the ring Revenue30 is the sum of
         public long Prev30;              // the month before the ring's, cents: aged a day at a time (TechStatusRules.Age), so the table can say how takings moved
         public int PrevDays;             // the days Prev30 has gathered, up to a month
+        // Of the takings above, what the player's own other businesses paid the firm (a contract with a client that is theirs): money from one pocket to the other, so a
+        // listing never counts it. The same three figures as the takings' own, rolled by the same day.
+        public long Self30;
+        public readonly long[] SelfDays = new long[FirmsCatalogue.MonthDays];
+        public long SelfPrev30;
         // the owner's own minutes at a desk here (OwnDeskRules.Credit): the day being counted and the one before, as a professional's hours are kept
         public int OwnDay = -1, OwnMinutes;
         public int OwnPrevDay = -1, OwnPrevMinutes;

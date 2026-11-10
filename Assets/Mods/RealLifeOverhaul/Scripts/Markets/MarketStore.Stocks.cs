@@ -127,7 +127,7 @@ namespace RealLifeOverhaul.Markets
             {
                 // A firm that listed on its own: after the figures an older version reads, which stop at the founder's deals of the year.
                 t.Append(',').Append('1').Append(',').Append(o.Float.ToString(Inv)).Append(',').Append(o.VestBase.ToString(Inv)).Append(',').Append(o.VestDay.ToString(Inv)).Append(',')
-                    .Append(o.VestCliff.ToString(Inv)).Append(',').Append(o.VestSpan.ToString(Inv));
+                    .Append(o.VestCliff.ToString(Inv)).Append(',').Append(o.VestSpan.ToString(Inv)).Append(',').Append(o.CapCents.ToString(Inv));
             }
             t.Append('|');
             for (int i = 0; i < o.Deals.Count; i++)
@@ -193,6 +193,7 @@ namespace RealLifeOverhaul.Markets
                 o.VestDay = I(f, 37);
                 o.VestCliff = Math.Max(0, I(f, 38));
                 o.VestSpan = Math.Max(0, I(f, 39));
+                o.CapCents = Math.Max(0, L(f, 40));   // a bank's stock: after the figures an older version reads
                 o.Place = S(c, 68);
                 o.Mixed = false;
                 o.Rps = 0.0;   // a firm keeps no reserve here

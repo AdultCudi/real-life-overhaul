@@ -37,8 +37,9 @@ namespace RealLifeOverhaul.Markets
         {
             Dividends(day);
             Income(day);   // the player's bonds (MarketEngine.Bonds.cs)
+            ExtrasDues(day);   // the fund's fee and the dividends its units are owed: before a company leaves on its record day (Extras/MarketEngine.Extras.cs)
             Corporate(day);
-            ExtrasClose(day);   // the fund's fee and distributions, splits by a board's own level (Extras/MarketEngine.Extras.cs)
+            ExtrasCorporate(day);   // splits by a board's own level and shares put together, decided after the companies' own lives
             BuildersClose(day);   // a listed builder's own news (MarketEngine.Builders.cs)
             Derivatives(day);   // the raw materials' prices, the futures and options (MarketEngine.Derivatives.cs)
             Variance();

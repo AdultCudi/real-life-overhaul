@@ -38,14 +38,21 @@ namespace RealLifeOverhaul.Markets
     /// and the one way to list a single firm asked for a tech firm's cap table. Here the bank's own days (its income and its
     /// profit after savers' interest, losses and running costs) are kept as it books them, a day at a time, and make the
     /// quarters a listing is priced on. Its worth is the market's own model on those books and never more than
-    /// <see cref="ExtrasCatalogue.BankBookMost"/> times its own capital: savers' deposits and the cash that covers them
-    /// are in neither figure. The offer's money goes into the bank's capital, never the player's pocket, and from then on
-    /// everything the bank pays its owner is every holder's by their shares. Game-free.
+    /// <see cref="ExtrasCatalogue.BankBookMost"/> times the capital it held throughout (<see cref="Held"/>: the least of its own
+    /// over the last year, read again when the book is priced, and the offer's money once that is in): savers' deposits and the
+    /// cash that covers them are in neither figure, and money put in for a day and taken out again counts for nothing. The offer's
+    /// money goes into the bank's capital, never the player's pocket, and stays there while the stock trades (it cannot be paid
+    /// out); from then on everything the bank pays its owner is every holder's by their shares, and the stock's value never rests
+    /// on more than three times that capital (<see cref="StockCapCents"/>). Game-free.
     /// </summary>
     public static class BankFloatRules
     {
-        /// <summary>A day of the bank's own books, in cents: kept for the market's mornings and added to its quarter. A day booked twice counts once.</summary>
-        public static void AddDay(BankFloat b, int day, long incomeCents, long profitCents, int year)
+        /// <summary>
+        /// A day of the bank's own books, in cents: kept for the market's mornings and added to its quarter. A day booked twice counts once. Days are kept
+        /// for the whole look back a company's listing reads (three game years), so the bank's income is taken out of the company's books for all of it.
+        /// <paramref name="capitalCents"/> is the bank's own capital that evening, the offer's money not in it (under nothing: not known).
+        /// </summary>
+        public static void AddDay(BankFloat b, int day, long incomeCents, long profitCents, int year, long capitalCents = -1L)
         {
             for (int i = b.Days.Count - 1; i >= 0; i--)
             {
@@ -54,8 +61,9 @@ namespace RealLifeOverhaul.Markets
                     return;
                 }
             }
-            b.Days.Add(new BankDayNote { Day = day, Income = incomeCents, Profit = profitCents });
-            while (b.Days.Count > ExtrasCatalogue.BankDaysKept)
+            b.Days.Add(new BankDayNote { Day = day, Income = incomeCents, Profit = profitCents, Capital = capitalCents });
+            int oldest = day - ExtrasCatalogue.BankLookBackYears * Math.Max(8, year) - 1;
+            while (b.Days.Count > ExtrasCatalogue.BankDaysKept || (b.Days.Count > 0 && b.Days[0].Day < oldest))
             {
                 b.Days.RemoveAt(0);
             }
@@ -157,6 +165,12 @@ namespace RealLifeOverhaul.Markets
             return f.Clear ? BankWhy.None : BankWhy.Regulator;
         }
 
+        /// <summary>True when the bank's book may be priced today: it runs, is no test's and is clear of the regulator and of a run. Watched, in breach or in a run, the offer is called off.</summary>
+        public static bool PriceReady(in BankFacts f)
+        {
+            return f.Running && f.Clear && !f.Test;
+        }
+
         /// <summary>The bank's books as a listing's file, for the market's own model: nothing of the player's other businesses in it.</summary>
         public static ListingFile File(BankFloat b, string name)
         {
@@ -176,13 +190,39 @@ namespace RealLifeOverhaul.Markets
         }
 
         /// <summary>
-        /// What the bank is worth, in money: the market's model of a bank on its own books' profit, never over so many times its own
-        /// capital. Deposits are in neither: a bank that took in twice the savings with the same profit and capital is worth the same.
+        /// The capital that counts, cents: the least the bank's own capital stood at over the last year (the four quarters its books are judged on) and now,
+        /// so cash put in to be counted and taken out again counts for nothing, plus the offer's money while it is in the bank (that is kept there). Days
+        /// whose capital was not noted (a save from before) are not counted.
+        /// </summary>
+        public static long Held(BankFloat b, in BankFacts f, int day, int year)
+        {
+            long kept = b.Stage == BankStage.Listed ? Math.Max(0L, b.Raised) * 100L : 0L;   // the offer's money: the public's, locked in the bank
+            long least = Math.Max(0L, f.CapitalCents - kept);
+            int from = day - Math.Max(8, year);
+            for (int i = 0; i < b.Days.Count; i++)
+            {
+                if (b.Days[i].Day > from && b.Days[i].Capital >= 0L)
+                {
+                    least = Math.Min(least, b.Days[i].Capital);
+                }
+            }
+            return least + kept;
+        }
+
+        /// <summary>The most the bank's whole stock may be worth, cents: three times the capital that counts (<see cref="Held"/>).</summary>
+        public static long StockCapCents(long heldCents)
+        {
+            return (long)Math.Floor(Math.Max(0L, heldCents) * ExtrasCatalogue.BankBookMost);
+        }
+
+        /// <summary>
+        /// What the bank is worth, in money: the market's model of a bank on its own books' profit, never over so many times the capital it held throughout
+        /// (<see cref="Held"/>). Deposits are in neither: a bank that took in twice the savings with the same profit and capital is worth the same.
         /// </summary>
         public static double Worth(BankFloat b, in BankFacts f, ulong owner, int day, int year, in MarketEnv env)
         {
             double model = ListingBook.Worth(File(b, f.Name), owner, day, year, env, 0L);
-            double capital = Math.Max(0L, f.CapitalCents) / 100.0;
+            double capital = Held(b, f, day, year) / 100.0;
             return Math.Max(0.0, Math.Min(model, capital * ExtrasCatalogue.BankBookMost));
         }
 
@@ -220,12 +260,18 @@ namespace RealLifeOverhaul.Markets
             return worth;
         }
 
-        /// <summary>The price the book comes to on its day, drawn as any company's is; 0 when it is under the range's bottom and the offer is called off.</summary>
-        public static int Price(BankFloat b, string name, ulong secret, int stockId, int indexMonthBp, int standing)
+        /// <summary>
+        /// The price the book comes to on its day, drawn as any company's is, and cut so the founder's shares are worth no more than three times the capital
+        /// the bank holds now (<paramref name="heldCents"/>, read again on the day: capital taken out since the advisers were engaged cuts the price);
+        /// 0 when that is under the range's bottom and the offer is called off.
+        /// </summary>
+        public static int Price(BankFloat b, string name, ulong secret, int stockId, int indexMonthBp, int standing, long heldCents)
         {
             ListingFile file = File(b, name);
             int price = ListingBook.Price(file, secret, stockId, indexMonthBp, standing, out double _);
-            return price < b.LowCents ? 0 : price;
+            long most = b.OldShares > 0 ? StockCapCents(heldCents) / b.OldShares : 0L;   // cents a share
+            price = (int)Math.Min(price, Math.Min(int.MaxValue, most));
+            return price < b.LowCents || price < 1 ? 0 : price;
         }
 
         /// <summary>The offer's money: what the new shares bring, the underwriters' and the exchange's fees out of it, and what reaches the bank's capital.</summary>
@@ -248,6 +294,52 @@ namespace RealLifeOverhaul.Markets
                 Place = ExtrasCatalogue.BankPlace, Name = name, Sector = (int)MarketSector.Banks, Trade = -1, Shares = b.OldShares + b.NewShares, Founder = b.OldShares,
                 Float = b.NewShares, PriceCents = Math.Max(1, b.PriceCents), LockDay = day + Math.Max(1, Math.Max(8, year) / ListingCatalogue.LockUpYearShare), Books = books
             };
+        }
+
+        /// <summary>
+        /// The stake a listed bank's payouts are shared by: the founder's shares and all the shares in issue, read from the bank's stock when the market holds it, else the
+        /// stake last seen (kept in the save), else the offer's own shares. False, with nothing, while the bank is not listed. Never empty while it is listed: a guest in
+        /// another player's city has the bank's stock set aside, and its payouts are still shared.
+        /// </summary>
+        public static bool Stake(MarketState st, out long founder, out long shares)
+        {
+            founder = shares = 0;
+            BankFloat b = st.Extras.Bank;
+            if (b.Stage != BankStage.Listed)
+            {
+                return false;
+            }
+            for (int i = 0; i < st.Stocks.Count; i++)
+            {
+                Stock k = st.Stocks[i];
+                if (k.Listed && k.Own != null && k.Own.Firm && IsBank(k.Own.Place))
+                {
+                    founder = k.Own.Founder;
+                    shares = k.Shares;
+                    return true;
+                }
+            }
+            shares = b.Shares > 0 ? b.Shares : b.OldShares + b.NewShares;
+            founder = b.Shares > 0 ? b.Founder : b.OldShares;
+            return true;
+        }
+
+        /// <summary>
+        /// Of a sum the bank pays its owner (cents), the owner's part: all of it until the bank's stock trades, then by the founder's shares (<see cref="Stake"/>), rounded down;
+        /// the rest is counted as the other holders' (<see cref="BankFloat.PaidOthers"/>) when <paramref name="count"/>.
+        /// </summary>
+        public static long Payout(MarketState st, long cents, bool count)
+        {
+            if (cents <= 0 || !Stake(st, out long founder, out long shares))
+            {
+                return Math.Max(0L, cents);
+            }
+            long part = OwnerPart(cents, founder, shares);
+            if (count)
+            {
+                st.Extras.Bank.PaidOthers += cents - part;
+            }
+            return part;
         }
 
         /// <summary>Of a sum the bank pays its owner, the owner's own part once other people hold shares of it: by the founder's shares, rounded down.</summary>

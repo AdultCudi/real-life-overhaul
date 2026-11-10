@@ -176,7 +176,7 @@ namespace RealLifeOverhaul.Markets
                 long units = RivalMarket.FundUnits(s, book, worth);
                 book.Units += units;
                 book.UnitsCost += (long)(units * FundRules.Nav(s) / 100.0);
-                string dealt = RivalBuys(s, t, book, holderStock, RivalMarket.Pick(s, t, holderStock, Save.Day, book), worth * ExtrasCatalogue.RivalBlockBp / 10000L);
+                string dealt = RivalBuys(s, t, Save.Day, book, holderStock, RivalMarket.Pick(s, t, holderStock, Save.Day, book), worth * ExtrasCatalogue.RivalBlockBp / 10000L);
                 Queue(NotificationType.Info, "reallife_stx_test_rival_note", "rival", name, "units", units.ToString("N0"), "blocks", book.Stakes.Count.ToString());
                 Logger?.Info(TestRivalName + ": " + name + " (worth " + worth + ") bought " + units + " unit(s) of the fund" + dealt + "; holds " + book.Units + " unit(s) and "
                              + book.Stakes.Count + " block(s) worth " + RivalMarket.Worth(s, book) + ": PASS");
@@ -208,11 +208,11 @@ namespace RealLifeOverhaul.Markets
             MarketState s = _engine.State;
             BankWhy why = BankWhyNow(out double worth);
             int quarters = BankFloatRules.Quarters(s.Extras.Bank, Save.Day, Year, out int profitable);
-            double capital = f.CapitalCents / 100.0;
+            double capital = BankFloatRules.Held(s.Extras.Bank, f, Save.Day, Year) / 100.0;   // what it held throughout, not what it holds this minute
             bool own = worth <= capital * ExtrasCatalogue.BankBookMost + 1.0;
             Queue(NotificationType.Info, "reallife_stx_test_bank_note", "bank", f.Name, "worth", MarketText.Money((long)worth), "why", ExtrasText.Why(why));
-            Logger?.Info(TestBankName + ": " + f.Name + ", " + quarters + " complete quarter(s) of its own books (" + profitable + " in profit), capital " + (long)capital + ", worth "
-                         + (long)worth + " (never over " + ExtrasCatalogue.BankBookMost.ToString("0.#", Inv) + " times its capital), stage " + s.Extras.Bank.Stage + ", " + why + ": "
+            Logger?.Info(TestBankName + ": " + f.Name + ", " + quarters + " complete quarter(s) of its own books (" + profitable + " in profit), capital that counts " + (long)capital + ", worth "
+                         + (long)worth + " (never over " + ExtrasCatalogue.BankBookMost.ToString("0.#", Inv) + " times the capital held), stage " + s.Extras.Bank.Stage + ", " + why + ": "
                          + (own ? "PASS" : "FAIL (worth over its own capital's most)"));
         }
     }

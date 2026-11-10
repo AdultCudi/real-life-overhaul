@@ -20,6 +20,7 @@ namespace RealLifeOverhaul.Markets
         public const int FounderSplitLeastCents = 500;   // at the start's prices: no split takes a share under this
         public const int FounderReverseMostCents = 15000;   // no consolidation takes a share over this: under every board's level, so it is not split again at once
         public const int SplitsKept = 48;                // splits remembered for the charts' notes
+        public const int SplitWaitsKept = 16;            // splits decided on this build and still to take effect that are remembered (they are at most a few days long)
         public const int RatioMost = 50;                 // the largest ratio either way a save's line may hold
 
         // ---- the index fund
@@ -43,12 +44,14 @@ namespace RealLifeOverhaul.Markets
         public const double BankBookMost = 3.0;          // its worth is never counted over this many times its own capital
         public static readonly int[] BankFloatSteps = { 1000, 1500, 2000, 2500, 3000, 4000 };   // bp of the bank offered
         public const int BankFloatDefault = 2000;
-        public const int BankDaysKept = 40;              // days of the bank's own takings and profit kept for the market's mornings
+        public const int BankDaysKept = 600;             // days of the bank's own takings, profit and capital kept at the most (three game years of any length the game has)
+        public const int BankLookBackYears = ListingCatalogue.BooksLookBackYears;  // game years of the bank's days kept: a whole company's listing look back, so no day is in two stocks
         public const int BankQuartersKept = 12;
 
         // ---- the rival tycoons
         public const int RivalEveryDays = 30;            // a tycoon looks at the market once in this many days, on a day of their own
-        public const int RivalFundBp = 150;              // of their worth, what a tycoon keeps in the fund at most
+        public const int RivalLooksMost = 12;            // looks a tycoon makes at once after days passed unseen (a load, a long sleep): every day passed is played, the rest next second
+        public const int RivalFundBp = 150;             // of their worth, what a tycoon keeps in the fund at most
         public const int RivalFundStepBp = 50;           // ...bought this much of their worth at a time
         public const int RivalBlockBp = 100;             // of their worth, a block of another company
         public const int RivalStakesMost = 4;            // companies a tycoon holds blocks of at once

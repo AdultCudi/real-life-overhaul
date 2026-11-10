@@ -53,6 +53,7 @@ namespace RealLifeOverhaul.Markets
         public static readonly int[] PaySteps = { 0, 250, 500, 1000, 1500, 2000, 2500 };   // the founder's pay, bp of each day's profit
         public const int PayRefBp = 500;                  // what the holders take as fair pay
         public const double OwnPayout = 0.95;             // of its profit after tax and pay, counted as its holders'
+        public const int BooksLookBackYears = 3;          // game years of statements the company's quarters are built over (MarketDirector.Books): a listed bank's days are kept as long
         public const int LockUpYearShare = 2;             // the founder sells nothing for a year / this after the listing
         public const int ShortSwingYearShare = 4;         // a gain on shares held under a year / this goes back to the company
         public const int ClosedShare = 3;                 // no dealing in the last 1 / this of a quarter until its results

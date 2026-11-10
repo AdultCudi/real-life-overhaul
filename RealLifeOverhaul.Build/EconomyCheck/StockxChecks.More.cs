@@ -29,8 +29,10 @@ internal static partial class Program
     private static void StockxBankChecks()
     {
         BankFloat b = StockxBank(300, 4000000, 900000);   // 40,000 of income and 9,000 of profit a day
-        Check(b.Days.Count == ExtrasCatalogue.BankDaysKept && b.Books.Count <= ExtrasCatalogue.BankQuartersKept && b.Books.All(q => q.Days == 15 && q.Revenue == 600000 && q.Profit == 135000),
-            "stock extras: the bank's own days make quarters of its own books (15 days of 40,000 and 9,000 each), the last " + ExtrasCatalogue.BankDaysKept + " days kept for the market's mornings");
+        int lookBack = ExtrasCatalogue.BankLookBackYears * 60;   // the whole look back a company's listing reads: three game years of 60 days
+        Check(b.Days.Count <= ExtrasCatalogue.BankDaysKept && b.Days[0].Day <= 300 - lookBack && b.Days.Count >= lookBack && b.Books.Count <= ExtrasCatalogue.BankQuartersKept
+              && b.Books.All(q => q.Days == 15 && q.Revenue == 600000 && q.Profit == 135000),
+            "stock extras: the bank's own days make quarters of its own books (15 days of 40,000 and 9,000 each), and its days are kept over the whole look back of three years (" + b.Days.Count + " days)");
         BankFloatRules.AddDay(b, 300, 999999999, 999999999, 60);
         Check(b.Books[b.Books.Count - 1].Revenue == 600000, "stock extras: a day booked twice counts once");
         BankFloatRules.Sum(b, 291, 301, out long revenue, out long profit);
@@ -84,8 +86,8 @@ internal static partial class Program
         int same = 0, inRange = 0, calledOff = 0;
         for (ulong secret = 1; secret <= 200; secret++)
         {
-            int price = BankFloatRules.Price(b, "Harbour Bank", secret * 7919, 1500, 0, 50);
-            same += price == BankFloatRules.Price(b, "Harbour Bank", secret * 7919, 1500, 0, 50) ? 1 : 0;
+            int price = BankFloatRules.Price(b, "Harbour Bank", secret * 7919, 1500, 0, 50, facts.CapitalCents);
+            same += price == BankFloatRules.Price(b, "Harbour Bank", secret * 7919, 1500, 0, 50, facts.CapitalCents) ? 1 : 0;
             inRange += price == 0 || (price >= b.LowCents && price <= b.HighCents * (1.0 + ListingCatalogue.PriceBeyondRange) + ListingCatalogue.PriceStepCents) ? 1 : 0;
             calledOff += price == 0 ? 1 : 0;
         }
@@ -134,7 +136,7 @@ internal static partial class Program
         long invested = 30000000;   // what the bank was founded with, cents at the start's prices
         long gain = ExitGains.ForMarketDeal(gains, invested, ExtrasCatalogue.BankPlace, "Harbour Bank", dealtMoney, dealtFee, founder, dealtShares, st.Day, 1000);
         long slice = (long)((double)invested * sale / founder);
-        Check(gain == Math.Max(0L, (dealtMoney - dealtFee) * 100 - slice) && ExitGains.Between(gains, st.Day, st.Day) == gain / 100 && ExitGains.Between(gains, st.Day, st.Day) == gain / 100,
+        Check(gain == Math.Max(0L, (dealtMoney - dealtFee) * 100 - slice) && ExitGains.Between(gains, st.Day, st.Day) == gain / 100 && gains.Lines.Count(l => l.Cents != 0) == 1 && ExitGains.Between(gains, st.Day + 1, st.Day + 100) == 0,
             "stock extras: the sale's gain is what it fetched less its part of what the bank was founded with, noted once for the quarter's return (" + gain + " cents)");
         Check(gains.BasisOf(ExtrasCatalogue.BankPlace, false) != null && gains.BasisOf(ExitGains.CompanyPlace, false) == null && gains.BasisOf(ExtrasCatalogue.BankPlace, false).Used == slice,
             "stock extras: ...on the bank's own line of the cost, apart from the whole company's");
@@ -191,11 +193,11 @@ internal static partial class Program
             var book = new RivalBook();
             for (int day = 1; day <= 60; day++)
             {
-                if (RivalMarket.Looks(t, day, book))
+                if (RivalMarket.NextLook(t, day, book) == day)
                 {
                     days[t].Add(day);
                     book.LookDay = day;
-                    Check(!RivalMarket.Looks(t, day, book), "stock extras: tycoon " + t + " looks at the market once on their day " + day);
+                    Check(RivalMarket.NextLook(t, day, book) == 0, "stock extras: tycoon " + t + " looks at the market once on their day " + day);
                 }
             }
         }
@@ -431,8 +433,11 @@ internal static partial class Program
         string session = ModSource(@"Markets\MarketEngine.Session.cs"), close = ModSource(@"Markets\MarketEngine.Close.cs"), engine = ModSource(@"Markets\MarketEngine.cs");
         Check(session.Contains("SplitNow(s, day)") && !session.Contains("MarketLife.Split(State, s, s.SplitRatio)"), "stock extras sources: every split at an open goes through the one place that also puts shares together");
         Check(session.Contains("State.Extras.Fade(fade)") && session.Contains("State.Extras.Fade(Kappa * _openNight)"), "stock extras sources: the player's own push fades at each step and each open, as the mood does");
-        Check(close.Contains("ExtrasClose(day)") && close.Contains("FundRules.Left(State, s, centsEach)") && close.IndexOf("FundRules.Left(State, s, centsEach)", StringComparison.Ordinal)
+        Check(close.Contains("ExtrasDues(day)") && close.Contains("ExtrasCorporate(day)") && close.Contains("FundRules.Left(State, s, centsEach)") && close.IndexOf("FundRules.Left(State, s, centsEach)", StringComparison.Ordinal)
               < close.IndexOf("s.Status = StockStatus.Gone", StringComparison.Ordinal), "stock extras sources: the close runs the fund, and a company that leaves is counted before it is taken out of the index");
+        Check(close.IndexOf("Dividends(day);", StringComparison.Ordinal) < close.IndexOf("ExtrasDues(day);", StringComparison.Ordinal) && close.IndexOf("ExtrasDues(day);", StringComparison.Ordinal)
+              < close.IndexOf("Corporate(day);", StringComparison.Ordinal) && close.IndexOf("Corporate(day);", StringComparison.Ordinal) < close.IndexOf("ExtrasCorporate(day);", StringComparison.Ordinal),
+            "stock extras sources: the fund's dues are counted after the players' own and before any company leaves, and the splits are decided after the companies' own lives");
         Check(engine.Contains("e.Kind == MarketInputs.EventSplit") && engine.Contains("SplitEvent(e)"), "stock extras sources: a split from the tape is applied where every event is");
         Check(ModSource(@"Markets\MarketEngine.Orders.cs").Contains("State.Extras.Push(s.Id, kept)") && ModSource(@"Markets\MarketEngine.Bots.cs").Contains("State.Extras.Push(s.Id, kept)")
               && ModSource(@"Markets\MarketEngine.Own.cs").Contains("State.Extras.Push(s.Id, kept + reading)"), "stock extras sources: every fill of the player's, a bot's and a founder's adds to their own push");
@@ -456,7 +461,7 @@ internal static partial class Program
             "stock extras sources: the bank is read by its own capital alone: no deposit and no reserve reaches the market");
         Check(game.Contains("Book(Owner(d.Pay), OwnBankCatalogue.PayKey") && game.Contains("Book(Owner(d.PaidOut), OwnBankCatalogue.CapitalOutKey") && game.Contains("cents = Owner(cents);")
               && game.Contains("key == OwnBankCatalogue.CapitalOutKey || key == OwnBankCatalogue.SaleKey"), "stock extras sources: the owner's pay, a dividend, a sale and a winding up are all shared with the bank's other holders");
-        Check(bankDirector.Contains("public bool PublicCapital(long cents)") && bankDirector.Contains("OwnBankBridges.DayBooked?.Invoke(day, _day.Income, _day.Profit)") && !bankDirector.Substring(
+        Check(bankDirector.Contains("public bool PublicCapital(long cents)") && bankDirector.Contains("OwnBankBridges.DayBooked?.Invoke(day, _day.Income, _day.Profit, _bank.Capital)") && !bankDirector.Substring(
                   bankDirector.IndexOf("public bool PublicCapital(long cents)", StringComparison.Ordinal), 600).Contains("OwnBankGame.Pay("),
             "stock extras sources: the public's money is put into the bank without touching the player's cash, and each day of the bank's books is told");
         Check(links.Contains("MarketBridges.Books = Books;") && links.Contains("books.Revenue -= revenue;") && ModSource(@"Wiring\Wiring.ExitStockLinks.cs").Contains("m.BankDays(from, day, out long bankRevenue, out long bankProfit)"),

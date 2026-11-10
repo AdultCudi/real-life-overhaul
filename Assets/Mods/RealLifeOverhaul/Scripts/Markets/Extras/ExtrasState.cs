@@ -60,11 +60,18 @@ namespace RealLifeOverhaul.Markets
     /// <summary>Where the player's bank stands on its way to the market. Saved as a number.</summary>
     public enum BankStage { None = 0, Advised = 1, Listed = 2, CalledOff = 3, Ended = 4 }
 
-    /// <summary>One day of the bank's own books, in cents.</summary>
+    /// <summary>One day of the bank's own books, in cents: its income, its profit, and its own capital that evening (the offer's money not in it; under nothing: not known).</summary>
     public struct BankDayNote
     {
         public int Day;
         public long Income, Profit;
+        public long Capital;
+    }
+
+    /// <summary>A split decided on this build and put on the tape, waiting for its day: the stock and the day it is due. Only these wait for a declared dividend to leave the price.</summary>
+    public struct SplitWait
+    {
+        public int Stock, Day;
     }
 
     /// <summary>The player's bank on its way to the market and on it: its own books and the offer. In their save only.</summary>
@@ -81,6 +88,8 @@ namespace RealLifeOverhaul.Markets
         public int StockId;
         public int ListDay;
         public long PaidOthers;                  // cents of the bank's payouts that were the other holders'
+        public long Founder, Shares;             // the founder's shares and all in issue as last seen on this machine's market: what the payouts are shared by when the stock is not there
+        public long HeldCents;                   // the capital that counts while it is listed: the least of its own over the look back, and the offer's money (BankFloatRules.Held)
         public readonly List<BankDayNote> Days = new List<BankDayNote>(ExtrasCatalogue.BankDaysKept + 1);
         public readonly List<BookQuarter> Books = new List<BookQuarter>(ExtrasCatalogue.BankQuartersKept + 1);   // in whole money, as a company's
 
@@ -107,6 +116,7 @@ namespace RealLifeOverhaul.Markets
         public readonly List<FundDue> Dues = new List<FundDue>(8);
 
         public readonly List<SplitNote> Splits = new List<SplitNote>(8);
+        public readonly List<SplitWait> SplitWaits = new List<SplitWait>(4);
         public readonly List<PushNote> Pushes = new List<PushNote>(8);
         public readonly List<StakeTold> Told = new List<StakeTold>(8);
         public readonly RivalBook[] Rivals = { new RivalBook(), new RivalBook(), new RivalBook() };
@@ -123,7 +133,8 @@ namespace RealLifeOverhaul.Markets
                         return false;
                     }
                 }
-                return Units == 0 && Cost == 0 && Realised == 0 && Paid == 0 && Track == 1.0 && OddCents == 0 && Dues.Count == 0 && Splits.Count == 0 && Pushes.Count == 0 && Told.Count == 0
+                return Units == 0 && Cost == 0 && Realised == 0 && Paid == 0 && Track == 1.0 && OddCents == 0 && Dues.Count == 0 && Splits.Count == 0 && SplitWaits.Count == 0
+                       && Pushes.Count == 0 && Told.Count == 0
                        && Bank.Empty;
             }
         }
@@ -176,6 +187,49 @@ namespace RealLifeOverhaul.Markets
                 else
                 {
                     Pushes[i] = p;
+                }
+            }
+        }
+
+        /// <summary>A split decided on this build is due on a day: it will wait for a dividend declared and not yet out of the price.</summary>
+        public void WaitSplit(int stock, int day)
+        {
+            for (int i = 0; i < SplitWaits.Count; i++)
+            {
+                if (SplitWaits[i].Stock == stock)
+                {
+                    SplitWaits[i] = new SplitWait { Stock = stock, Day = day };
+                    return;
+                }
+            }
+            SplitWaits.Add(new SplitWait { Stock = stock, Day = day });
+            while (SplitWaits.Count > ExtrasCatalogue.SplitWaitsKept)
+            {
+                SplitWaits.RemoveAt(0);
+            }
+        }
+
+        /// <summary>True for a split of this company due on this day that this build decided: the old rule's splits, which the tape does not record, never wait.</summary>
+        public bool SplitWaiting(int stock, int day)
+        {
+            for (int i = 0; i < SplitWaits.Count; i++)
+            {
+                if (SplitWaits[i].Stock == stock && SplitWaits[i].Day == day)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>A split took effect or was dropped: it waits no more.</summary>
+        public void SplitWaitDone(int stock)
+        {
+            for (int i = SplitWaits.Count - 1; i >= 0; i--)
+            {
+                if (SplitWaits[i].Stock == stock)
+                {
+                    SplitWaits.RemoveAt(i);
                 }
             }
         }
@@ -257,6 +311,8 @@ namespace RealLifeOverhaul.Markets
             Dues.AddRange(o.Dues);
             Splits.Clear();
             Splits.AddRange(o.Splits);
+            SplitWaits.Clear();
+            SplitWaits.AddRange(o.SplitWaits);
             Pushes.Clear();
             Pushes.AddRange(o.Pushes);
             Told.Clear();
@@ -289,6 +345,9 @@ namespace RealLifeOverhaul.Markets
             k.StockId = f.StockId;
             k.ListDay = f.ListDay;
             k.PaidOthers = f.PaidOthers;
+            k.Founder = f.Founder;
+            k.Shares = f.Shares;
+            k.HeldCents = f.HeldCents;
             k.Days.Clear();
             k.Days.AddRange(f.Days);
             k.Books.Clear();

@@ -16,6 +16,7 @@ namespace RealLifeOverhaul.Tech
         public int People;
         public int Hours;             // the hours its people worked yesterday
         public long Today;            // takings booked today, cents
+        public long TodaySelf;        // ...of which the player's own other businesses paid (a contract whose client is theirs): not counted for a listing
         public int Mbps = NetSpeedRules.Unknown;   // the office's plan speed read for the day's work (TechBridges.PlanMbps)
         public int Net = 1000;        // thousandths of the day's work points its connection gives (FirmsRules.Connection)
         public int OwnMinutes;        // the owner's minutes at a desk here yesterday (OwnDeskRules), as the day's crew read them
@@ -451,8 +452,8 @@ namespace RealLifeOverhaul.Tech
                 }
                 FirmsGame.Cost((long)c.Seats * FirmsCatalogue.SoftwarePerSeat * level / 1000, FirmsGame.SoftwareKey, firm.Reg, file.Name, dated);
                 FirmsGame.Cost(marketing * level / 1000, FirmsGame.MarketingKey, firm.Reg, file.Name, dated);
-                FirmsRules.Roll(file, day, firm.Today);
-                firm.Today = 0;
+                FirmsRules.Roll(file, day, firm.Today, firm.TodaySelf);
+                firm.Today = firm.TodaySelf = 0;
             }
             for (int i = 0; i < _work.Count; i++)
             {
@@ -518,6 +519,7 @@ namespace RealLifeOverhaul.Tech
         private void Paid(FirmPlace firm, Contract w, long cents)
         {
             firm.Today += cents;
+            firm.TodaySelf += string.IsNullOrEmpty(w.OwnPlace) ? 0L : cents;
             ChargeClient(w, firm, cents, Save.Day - 1);
         }
 

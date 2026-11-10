@@ -88,6 +88,7 @@ namespace RealLifeOverhaul.Economy
         public int ScaleFrom = EndScaleRules.Unset;   // the day the end game's scale began to come in
         public readonly int[] Crew = new int[OwnBankCatalogue.CrewKinds];
         public long FoundedLeast;               // the least capital when it was founded, cents at the start's prices (0: the least before the scale)
+        public long Public;                     // of the capital, what an offer of its shares on the stock market raised: kept while the stock trades, never paid out (OwnBankRules.Keep)
 
         public long CounterFees;                // what the branches' counters charged since the last day was run: into the books with the next day
         public int CounterHour = int.MinValue;  // the last hour the branches were worked (day x 24 + hour); int.MinValue: never

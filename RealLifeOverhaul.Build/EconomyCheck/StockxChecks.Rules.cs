@@ -57,14 +57,14 @@ internal static partial class Program
         int next = MarketTrading.NextTradingDay(day);
         RunTo(m, next, MarketCatalogue.PhaseResults);
         RunTo(off, next, MarketCatalogue.PhaseResults);
-        bool stillHigh = high.Listed && high.BidCents <= 0;
-        Check(!stillHigh || (high.SplitDay == MarketTrading.MarketDays(next, MarketCatalogue.SplitNoticeDays) && high.SplitRatio == 2),
+        bool stillHigh = high.Listed && high.BidCents <= 0, stillLow = low.Listed && low.BidCents <= 0;
+        Check(stillHigh && stillLow, "stock extras: the two companies are still on the market with no bid for them, so the rules below are really tried on them");
+        Check(high.SplitDay == MarketTrading.MarketDays(next, MarketCatalogue.SplitNoticeDays) && high.SplitRatio == 2,
             "stock extras: its split is announced at the market's next moment, two for one, with the market's notice (day " + high.SplitDay + ")");
-        Check(!stillHigh || world.Heard.Any(n => n.Kind == MarketNewsKind.Split && n.Stock == high.Id && n.A == 2 && n.B == high.SplitDay), "stock extras: ...and is market news");
-        bool stillLow = low.Listed && low.BidCents <= 0;
-        Check(!stillLow || (low.SplitRatio == -50 && low.SplitDay > next), "stock extras: a sound company under a unit for " + ExtrasCatalogue.ReverseAfterDays
-                                                                         + " market days puts its shares together, 50 into 1 at 40 cents (ratio " + low.SplitRatio + ")");
-        Check(!stillLow || world.Heard.Any(n => n.Kind == MarketNewsKind.Reverse && n.Stock == low.Id && n.A == 50), "stock extras: ...and is market news of its own kind");
+        Check(world.Heard.Any(n => n.Kind == MarketNewsKind.Split && n.Stock == high.Id && n.A == 2 && n.B == high.SplitDay), "stock extras: ...and is market news");
+        Check(low.SplitRatio == -50 && low.SplitDay > next, "stock extras: a sound company under a unit for " + ExtrasCatalogue.ReverseAfterDays
+                                                              + " market days puts its shares together, 50 into 1 at 40 cents (ratio " + low.SplitRatio + ")");
+        Check(world.Heard.Any(n => n.Kind == MarketNewsKind.Reverse && n.Stock == low.Id && n.A == 50), "stock extras: ...and is market news of its own kind");
         Check(weak.SplitDay == 0, "stock extras: a company not yet long enough under a unit puts nothing together");
         Stock offHigh = off.State.Stock(high.Id), offLow = off.State.Stock(low.Id);
         Check(offHigh.SplitDay == 0 && offLow.SplitDay == 0, "stock extras: with the option off no board's own level and no consolidation is decided: the market is as before");
@@ -75,20 +75,18 @@ internal static partial class Program
         replay.ExtrasOn = false;
         RunTo(replay, next, MarketCatalogue.PhaseResults);
         Stock rHigh = replay.State.Stock(high.Id), rLow = replay.State.Stock(low.Id);
-        Check((!stillHigh || (rHigh.SplitDay == high.SplitDay && rHigh.SplitRatio == high.SplitRatio)) && (!stillLow || (rLow.SplitDay == low.SplitDay && rLow.SplitRatio == low.SplitRatio)),
+        Check(rHigh.SplitDay == high.SplitDay && rHigh.SplitRatio == high.SplitRatio && rLow.SplitDay == low.SplitDay && rLow.SplitRatio == low.SplitRatio && high.SplitDay > 0 && low.SplitDay > 0,
             "stock extras: a machine that replays the tape with its own option off announces the same splits on the same days");
 
         // The consolidation takes effect: the price is back over a unit and the penny rule lets the company be.
-        if (stillLow)
         {
             long shares = low.Shares;
             int effect = low.SplitDay;
             RunTo(m, effect, MarketCatalogue.PhaseOpen + 1);
-            bool waited = low.SplitDay > 0;
-            Check(!low.Listed || waited || (low.Shares == Math.Max(1L, shares / 50) && low.Last > MarketCatalogue.PennyCents * 5),
+            Check(low.Listed && low.SplitDay == 0 && low.Shares == Math.Max(1L, shares / 50) && low.Last > MarketCatalogue.PennyCents * 5,
                 "stock extras: on its day the shares are put together and trade far over a unit (" + low.Last + " cents, " + shares + " shares to " + low.Shares + ")");
             RunTo(m, effect, MarketCatalogue.PhaseClose);
-            Check(!low.Listed || waited || low.LowDays == 0, "stock extras: ...so the penny rule counts no more days against it");
+            Check(low.Listed && low.LowDays == 0, "stock extras: ...so the penny rule counts no more days against it");
         }
 
         // A company nearer failing than a consolidation allows is left to the penny rule; one over the old level is the old rule's, option on or off.
@@ -119,7 +117,8 @@ internal static partial class Program
         d.ExtrasOn = false;
         int dDay = d.State.Day;
         RunTo(d, dDay, MarketCatalogue.PhaseClose);
-        Check(!dear.Listed || dear.BidCents > 0 || dear.Last <= MarketCatalogue.SplitAboveCents || dear.SplitDay > 0, "stock extras: with the option off a company over the old level still splits by the old rule");
+        Check(dear.Listed && dear.BidCents <= 0 && dear.Last > MarketCatalogue.SplitAboveCents && dear.SplitDay > 0 && dear.SplitRatio >= 2,
+            "stock extras: with the option off a company over the old level still splits by the old rule (announced for day " + dear.SplitDay + ", " + dear.SplitRatio + " for 1)");
     }
 
     // ---------------------------------------------------------------- the founder's own split
@@ -354,7 +353,10 @@ internal static partial class Program
             product *= 1.0 - fee;
             closes++;
         }
-        Check(st.Extras.Track <= 1.0 + 1e-9 || st.Stocks.Any(k => !k.Listed), "stock extras: over " + closes + " closes the fund never stands over its index but for a company that paid over its price");
+        int leftBy = listed - st.Stocks.Count(k => k.Listed);
+        Check(leftBy > 0 ? st.Extras.Track <= 1.0 + 1e-9 + 0.05 * leftBy : Math.Abs(st.Extras.Track - product) < 1e-9,
+            "stock extras: over " + closes + " closes the fund stands exactly where the days' fees put it when no company left (" + st.Extras.Track.ToString("0.000000000") + " against " + product.ToString("0.000000000")
+            + "), and never over its index but for a company that paid over its price (" + leftBy + " left)");
         Check(Math.Pow(1.0 - fee, year) > 0.9969 && Math.Pow(1.0 - fee, year) < 0.9971, "stock extras: a year of closes takes " + ExtrasCatalogue.FundFeeBp + " bp, no more");
 
         // A dividend: owed to the units held at the record day's close, paid on the company's own payment day, and not to units bought after.

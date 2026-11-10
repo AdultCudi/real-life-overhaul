@@ -13,6 +13,8 @@ namespace RealLifeOverhaul.Markets
     {
         private static long _bankFounder, _bankShares;   // the last stake seen while the market ran: what the bank's payouts are shared by when it does not
         private static object _bankSave;                 // the save that stake is of
+        private static int _bankHeldDay = -1;            // the day and the capital the capital that counts was last worked out for (a comparison a second)
+        private static long _bankHeldCapital = -1;
 
         /// <summary>The bank's way to the market as the save keeps it; null while the market is not running.</summary>
         public BankFloat BankFloat => Running ? _engine.State.Extras.Bank : null;
@@ -109,7 +111,7 @@ namespace RealLifeOverhaul.Markets
             return true;
         }
 
-        // Once a second: the book priced at the open of its day, a bank that is gone taken off the market, and the stake its payouts are shared by.
+        // Once a second: the book priced at the open of its day, a bank that is gone taken off the market, the stake its payouts are shared by, and the capital that counts.
         private void BankSecond()
         {
             MarketState s = _engine.State;
@@ -128,24 +130,43 @@ namespace RealLifeOverhaul.Markets
             {
                 if (!_following && string.IsNullOrEmpty(s.Listing.Suspended) && s.Listing.SuspendedFirms.Count == 0)
                 {
-                    b.Stage = BankStage.Ended;   // its stock is gone (swept, or the market made anew)
+                    BankLeft(b);   // its stock is gone (swept, or the market made anew)
                 }
                 return;
             }
-            _bankFounder = k.Own.Founder;
-            _bankShares = k.Shares;
+            _bankFounder = b.Founder = k.Own.Founder;
+            _bankShares = b.Shares = k.Shares;
             _bankSave = _save;
             BankFacts f = BankNow();
+            if (f.Running && Save != null && (Save.Day != _bankHeldDay || f.CapitalCents != _bankHeldCapital))
+            {
+                // Once a day, or when the capital moved: the capital that counts, and the cap on the stock every machine plays.
+                _bankHeldDay = Save.Day;
+                _bankHeldCapital = f.CapitalCents;
+                long held = BankFloatRules.Held(b, f, Save.Day, Year);
+                b.HeldCents = held;
+                if (k.Own.CapCents != BankFloatRules.StockCapCents(held) && _engine.SetBankCap(k.Id, BankFloatRules.StockCapCents(held)))
+                {
+                    Changes();
+                }
+            }
             if (f.Gone && !_following)
             {
                 // Sold or closed: each share is paid its part of what the bank fetched or left, as the owner was by theirs.
                 int each = (int)Math.Max(0L, Math.Min(int.MaxValue, f.CapitalCents / Math.Max(1L, k.Shares)));
                 EndFirm(k.Id, each > 0 ? GoneReason.TakenOver : GoneReason.Failed, each);
-                b.Stage = BankStage.Ended;
-                _bankSave = null;
+                BankLeft(b);
                 Queue(NotificationType.Info, "reallife_stx_note_bank_ended", "bank", k.Name);
                 Logger?.Info("Stock market: the bank " + k.Name + " is gone; its stock left the market paying " + each + " cents a share.");
             }
+        }
+
+        // The bank's stock is no more: its way ends, and the offer's money the bank was keeping for the public is its own again (nothing is left to keep it for).
+        private void BankLeft(BankFloat b)
+        {
+            b.Stage = BankStage.Ended;
+            _bankSave = null;
+            ExtrasBridges.BankRelease?.Invoke();
         }
 
         // The pricing day's open: the book is drawn as a company's is; the offer's money goes into the bank's capital and the bank becomes a stock of its own.
@@ -153,16 +174,17 @@ namespace RealLifeOverhaul.Markets
         {
             BankFacts f = BankNow();
             double level = Math.Max(100, s.Env.PriceLevel) / 1000.0;
-            bool can = f.Running && f.Clear && !f.Test && ExtrasOpen && FirmsOpen && MyCompany == null && !s.Listing.OnTheWay && ExtrasBridges.BankCapital != null;
+            bool can = BankFloatRules.PriceReady(f) && ExtrasOpen && FirmsOpen && MyCompany == null && !s.Listing.OnTheWay && ExtrasBridges.BankCapital != null;
             int id = can ? _engine.BankStockId() : 0;
             Func<int> standing = ExtrasBridges.Standing;
-            int price = can ? _engine.BankPrice(f.Name, id, standing != null ? standing() : -1) : 0;
+            long held = BankFloatRules.Held(b, f, Save.Day, Year);   // read again today: capital taken out since the advisers were engaged cuts the price, or calls the offer off
+            int price = can ? _engine.BankPrice(f.Name, id, standing != null ? standing() : -1, held) : 0;
             if (price <= 0)
             {
                 b.Stage = BankStage.CalledOff;
                 Queue(NotificationType.Warning, "reallife_stx_note_bank_called_off", "bank", f.Name ?? string.Empty);
                 Logger?.Info("Stock market: the bank's offer was called off on day " + Save.Day
-                             + (can ? ": the book came in under " + b.LowCents + " cents" : ": the bank or the market could not go on")
+                             + (can ? ": the book, cut to three times the capital held (" + held / 100 + "), came in under " + b.LowCents + " cents" : ": the bank or the market could not go on")
                              + "; the retainer is spent.");
                 Moved();
                 return;
@@ -190,6 +212,11 @@ namespace RealLifeOverhaul.Markets
             b.ListDay = s.Day;
             b.Raised = raised;
             b.Fees += underwriting + exchange;
+            b.Founder = b.OldShares;
+            b.Shares = b.OldShares + b.NewShares;
+            BankFacts after = BankNow();   // with the offer's money in: it stays in the bank while the stock trades
+            b.HeldCents = BankFloatRules.Held(b, after, s.Day, Year);
+            _engine.SetBankCap(k.Id, BankFloatRules.StockCapCents(b.HeldCents));
             Queue(NotificationType.Success, "reallife_stx_note_bank_listed", "bank", k.Name, "price", MarketText.Price(price), "amount", MarketText.Money(raised),
                 "stake", MarketText.Percent(k.Own.StakeBp(k)));
             Logger?.Info("Stock market: the bank " + k.Name + " (" + k.Ticker + ") listed on day " + s.Day + " at " + price + " cents: " + b.NewShares + " new shares raised " + raised
@@ -197,12 +224,17 @@ namespace RealLifeOverhaul.Markets
             Changes();
         }
 
-        /// <summary>A day of the bank's own books, as the bank booked it (cents): kept for the market's mornings and its quarters.</summary>
-        public void BankBooked(int day, long incomeCents, long profitCents)
+        /// <summary>
+        /// A day of the bank's own books, as the bank booked it (cents), with the capital it held that evening: kept for the market's mornings and its quarters.
+        /// The offer's money, kept in the bank for the public, is not the bank's own capital here.
+        /// </summary>
+        public void BankBooked(int day, long incomeCents, long profitCents, long capitalCents)
         {
             if (Running)
             {
-                BankFloatRules.AddDay(_engine.State.Extras.Bank, day, incomeCents, profitCents, Year);
+                BankFloat b = _engine.State.Extras.Bank;
+                long kept = b.Stage == BankStage.Listed ? Math.Max(0L, b.Raised) * 100L : 0L;
+                BankFloatRules.AddDay(b, day, incomeCents, profitCents, Year, Math.Max(0L, capitalCents - kept));
             }
         }
 
@@ -220,8 +252,9 @@ namespace RealLifeOverhaul.Markets
         public bool BankListed => Running && _engine.State.Extras.Bank.Stage == BankStage.Listed;
 
         /// <summary>
-        /// Of a sum the bank pays its owner (cents), the owner's part: all of it until the bank's shares trade, then by the founder's shares. With the market
-        /// switched off the last stake seen stands, and a save loaded that way reads it from its own line, so switching the market off shares nothing less.
+        /// Of a sum the bank pays its owner (cents), the owner's part: all of it until the bank's shares trade, then by the founder's shares, always: the stake seen
+        /// on the market, or the last one seen (kept in the save) while the stock cannot be found (a guest's is set aside in another player's city) and with the
+        /// market switched off. The whole sum is never the owner's while the bank is listed.
         /// </summary>
         public static long BankOwnerPart(long cents)
         {
@@ -233,34 +266,18 @@ namespace RealLifeOverhaul.Markets
             }
             if (d != null && d.Running)
             {
-                BankFloat b = d._engine.State.Extras.Bank;
-                Stock k = b.Stage == BankStage.Listed ? d._engine.FirmByPlace(ExtrasCatalogue.BankPlace) : null;
-                if (k == null)
-                {
-                    return cents;
-                }
-                long part = BankFloatRules.OwnerPart(cents, k.Own.Founder, k.Shares);
-                b.PaidOthers += cents - part;
-                return part;
+                return BankFloatRules.Payout(d._engine.State, cents, true);
             }
             if (!ReferenceEquals(_bankSave, save))
             {
-                // The market is not running: what its line holds of the bank's stock (read once a save).
+                // The market is not running: what its line holds of the bank's stock (read once a save), or the stake last seen.
                 _bankSave = save;
                 _bankFounder = _bankShares = 0;
                 MarketState kept = MarketStore.Load(save.modData, out int _);
                 if (kept != null)
                 {
                     ExtrasStore.Load(save.modData, kept);
-                    for (int i = 0; kept.Extras.Bank.Stage == BankStage.Listed && i < kept.Stocks.Count; i++)
-                    {
-                        Stock k = kept.Stocks[i];
-                        if (k.Listed && k.Own != null && k.Own.Firm && BankFloatRules.IsBank(k.Own.Place))
-                        {
-                            _bankFounder = k.Own.Founder;
-                            _bankShares = k.Shares;
-                        }
-                    }
+                    BankFloatRules.Stake(kept, out _bankFounder, out _bankShares);
                 }
             }
             return _bankShares > 0 ? BankFloatRules.OwnerPart(cents, _bankFounder, _bankShares) : cents;
@@ -281,16 +298,17 @@ namespace RealLifeOverhaul.Markets
 
         // ------------------------------------------------------------------------------------------------ the rival tycoons
 
-        // Once a game day, on a market of this machine's own: each tycoon who is forward, on their own day of the month, looks at the market.
-        private void RivalsDay(int day)
+        // Once a game day, on a market of this machine's own: each tycoon who is forward looks at the market on each day of their own, once in 30 days, that has come
+        // since their last look, however long the director was away from the clock (RivalMarket.NextLook). True when every look due is made.
+        private bool RivalsDay(int day)
         {
             RivalLook look = ExtrasBridges.Rival;
             if (look == null)
             {
-                return;
+                return true;
             }
             MarketState s = _engine.State;
-            bool changed = false;
+            bool changed = false, done = true;
             for (int t = 0; t < s.Extras.Rivals.Length; t++)
             {
                 RivalBook book = s.Extras.Rivals[t];
@@ -304,59 +322,70 @@ namespace RealLifeOverhaul.Markets
                     ExtrasBridges.RivalGain?.Invoke(t, swept);
                     changed = true;
                 }
-                if (!RivalMarket.Looks(t, day, book))
+                for (int looks = 0, due = RivalMarket.NextLook(t, day, book); due > 0; due = RivalMarket.NextLook(t, day, book), looks++)
                 {
-                    continue;
-                }
-                book.LookDay = day;
-                changed = true;
-                long units = RivalMarket.FundUnits(s, book, worth);
-                if (units > 0)
-                {
-                    book.Units += units;
-                    book.UnitsCost += (long)(units * FundRules.Nav(s) / 100.0);
-                }
-                string dealt = string.Empty;
-                if (RivalMarket.Sells(s, t, day, book, out int at))
-                {
-                    RivalStake stake = book.Stakes[at];
-                    Stock k = s.Stock(stake.Stock);
-                    if (k != null && k.Listed)
+                    if (looks >= ExtrasCatalogue.RivalLooksMost)
                     {
-                        long paid = MarketTrading.Value(stake.Shares, RivalMarket.Sold(s, k, stake.Shares), false);
-                        ExtrasBridges.RivalGain?.Invoke(t, paid - stake.Cost);
-                        _engine.RivalBlock(holderStock, k.Id, stake.Shares, false, 0);
-                        dealt = "; sold " + stake.Shares + " of " + k.Name + " for " + paid + " (cost " + stake.Cost + ")";
+                        done = false;
+                        break;
                     }
-                    book.Stakes.RemoveAt(at);
+                    RivalLooked(s, t, due, book, worth, holderStock, holding, name, listed);
+                    changed = true;
                 }
-                else
-                {
-                    dealt = RivalBuys(s, t, book, holderStock, RivalMarket.Pick(s, t, holderStock, day, book), worth * ExtrasCatalogue.RivalBlockBp / 10000L);
-                }
-                string arm = string.Empty;
-                if (RivalMarket.ListsArm(s, t, day, book, listed, out int kind))
-                {
-                    string armName = RivalMarket.ArmName(holding, kind);
-                    Stock listedArm = _engine.ListStartup(RivalMarket.Arm(armName, kind, worth, s.Env.PriceLevel), out FirmWhy why);
-                    if (listedArm != null && why == FirmWhy.None)
-                    {
-                        book.ArmStock = listedArm.Id;
-                        book.ArmKind = kind;
-                        book.ArmDay = day;
-                        arm = "; listed " + listedArm.Name + " (" + listedArm.Ticker + ") at " + listedArm.Last + " cents";
-                    }
-                }
-                Logger?.Info("Stock market: " + name + " looked at the market on day " + day + ": " + units + " unit(s) of the fund bought (" + book.Units + " held)" + dealt + arm + ".");
             }
             if (changed)
             {
                 Changes();
             }
+            return done;
+        }
+
+        // One look of a tycoon at the market, for the day it is for: units of the fund, a block sold or bought, an arm listed.
+        private void RivalLooked(MarketState s, int t, int day, RivalBook book, long worth, int holderStock, string holding, string name, bool listed)
+        {
+            book.LookDay = day;
+            long units = RivalMarket.FundUnits(s, book, worth);
+            if (units > 0)
+            {
+                book.Units += units;
+                book.UnitsCost += (long)(units * FundRules.Nav(s) / 100.0);
+            }
+            string dealt = string.Empty;
+            if (RivalMarket.Sells(s, t, day, book, out int at))
+            {
+                RivalStake stake = book.Stakes[at];
+                Stock k = s.Stock(stake.Stock);
+                if (k != null && k.Listed)
+                {
+                    long paid = MarketTrading.Value(stake.Shares, RivalMarket.Sold(s, k, stake.Shares), false);
+                    ExtrasBridges.RivalGain?.Invoke(t, paid - stake.Cost);
+                    _engine.RivalBlock(holderStock, k.Id, stake.Shares, false, 0);
+                    dealt = "; sold " + stake.Shares + " of " + k.Name + " for " + paid + " (cost " + stake.Cost + ")";
+                }
+                book.Stakes.RemoveAt(at);
+            }
+            else
+            {
+                dealt = RivalBuys(s, t, day, book, holderStock, RivalMarket.Pick(s, t, holderStock, day, book), worth * ExtrasCatalogue.RivalBlockBp / 10000L);
+            }
+            string arm = string.Empty;
+            if (RivalMarket.ListsArm(s, t, day, book, listed, out int kind))
+            {
+                string armName = RivalMarket.ArmName(holding, kind);
+                Stock listedArm = _engine.ListStartup(RivalMarket.Arm(armName, kind, worth, s.Env.PriceLevel), out FirmWhy why);
+                if (listedArm != null && why == FirmWhy.None)
+                {
+                    book.ArmStock = listedArm.Id;
+                    book.ArmKind = kind;
+                    book.ArmDay = day;
+                    arm = "; listed " + listedArm.Name + " (" + listedArm.Ticker + ") at " + listedArm.Last + " cents";
+                }
+            }
+            Logger?.Info("Stock market: " + name + " looked at the market on day " + day + ": " + units + " unit(s) of the fund bought (" + book.Units + " held)" + dealt + arm + ".");
         }
 
         // A tycoon's block of a company bought with so much money: within what they may hold of it, on the tape as a trade is. What was done, for the log.
-        private string RivalBuys(MarketState s, int tycoon, RivalBook book, int holderStock, int stock, long money)
+        private string RivalBuys(MarketState s, int tycoon, int day, RivalBook book, int holderStock, int stock, long money)
         {
             Stock k = stock > 0 ? s.Stock(stock) : null;
             long shares = RivalMarket.BlockShares(s, k, money, out int cents);
@@ -365,7 +394,7 @@ namespace RealLifeOverhaul.Markets
                 return string.Empty;
             }
             long cost = MarketTrading.Value(shares, cents, true);
-            book.Stakes.Add(new RivalStake { Stock = k.Id, Shares = shares, Cost = cost, Day = Save.Day });
+            book.Stakes.Add(new RivalStake { Stock = k.Id, Shares = shares, Cost = cost, Day = day });
             _engine.RivalBlock(holderStock, k.Id, shares, true, BlockRules.StakeBp(shares, k.Shares));
             return "; bought " + shares + " of " + k.Name + " at " + cents + " cents for " + cost;
         }
@@ -385,7 +414,7 @@ namespace RealLifeOverhaul.Markets
                 return false;
             }
             RivalBook book = s.Extras.Rivals[tycoon];
-            string dealt = RivalBuys(s, tycoon, book, holderStock, RivalMarket.Pick(s, tycoon, holderStock, Save.Day, book), amount);
+            string dealt = RivalBuys(s, tycoon, Save.Day, book, holderStock, RivalMarket.Pick(s, tycoon, holderStock, Save.Day, book), amount);
             if (dealt.Length == 0)
             {
                 return false;

@@ -310,7 +310,7 @@ namespace RealLifeOverhaul.Economy
             OwnBankGame.BookDay(_day, hq, _bank.Name, dated ? day : Save.Day);
             if (dated && !_bank.Test)
             {
-                OwnBankBridges.DayBooked?.Invoke(day, _day.Income, _day.Profit);   // the bank's own books, for a listing of its own (Markets/Extras)
+                OwnBankBridges.DayBooked?.Invoke(day, _day.Income, _day.Profit, _bank.Capital);   // the bank's own books, for a listing of its own (Markets/Extras)
             }
             if (hq == null && _warnedDay != Save.Day && (_day.Income > 0 || _day.Costs > 0))
             {
@@ -532,18 +532,29 @@ namespace RealLifeOverhaul.Economy
 
         /// <summary>
         /// The money an offer of the bank's shares raised on the stock market (Markets/Extras), in cents: into its capital and its cash as capital put in is, but the
-        /// public's, so nothing leaves the player's cash. False if no bank runs.
+        /// public's, so nothing leaves the player's cash, and it stays in the bank while the stock trades: no pay, dividend or sale takes it (<see cref="OwnBank.Public"/>,
+        /// kept by <see cref="OwnBankRules.Keep"/>). False if no bank runs.
         /// </summary>
         public bool PublicCapital(long cents)
         {
-            if (!Running || _bank == null || !_bank.Running || _bank.Test || cents <= 0)
+            if (!Running || !OwnBankRules.PublicIn(_bank, cents))
             {
                 return false;
             }
-            OwnBankRules.PutIn(_bank, cents);
             Logger?.Info("Own bank: " + cents / 100 + " of capital raised from the public on day " + Save.Day + "; the ratio is " + OwnBankRules.Ratio(_bank) + " thousandths.");
             Changed();
             return true;
+        }
+
+        /// <summary>The bank's stock has left the market: the offer's money it kept for the public is free to be paid out like the rest of the capital.</summary>
+        public void PublicRelease()
+        {
+            if (_bank != null && _bank.Public != 0)
+            {
+                _bank.Public = 0;
+                Logger?.Info("Own bank: the capital kept for the public's shares is free on day " + Save.Day + "; the stock has left the market.");
+                Changed();
+            }
         }
 
         /// <summary>A dividend from the bank's capital into the player's cash, to the step. False with a reason key if it cannot be.</summary>

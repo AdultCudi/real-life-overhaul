@@ -64,6 +64,12 @@ namespace RealLifeOverhaul.Markets
                 Sep(t, i);
                 Join(t, x.Splits[i].Stock, x.Splits[i].Day, x.Splits[i].New, x.Splits[i].Old);
             }
+            t.Append("|w:");
+            for (int i = 0; i < x.SplitWaits.Count; i++)
+            {
+                Sep(t, i);
+                Join(t, x.SplitWaits[i].Stock, x.SplitWaits[i].Day);
+            }
             t.Append("|p:");
             for (int i = 0; i < x.Pushes.Count; i++)
             {
@@ -91,12 +97,12 @@ namespace RealLifeOverhaul.Markets
             BankFloat b = x.Bank;
             t.Append("|b:");
             Join(t, (int)b.Stage, b.AdvisedDay, b.PriceDay, b.FloatBp, b.FairCents, b.LowCents, b.HighCents, b.OldShares, b.NewShares, b.PriceCents, b.Raised, b.Fees, b.StockId, b.ListDay,
-                b.PaidOthers);
+                b.PaidOthers, b.Founder, b.Shares, b.HeldCents);
             t.Append("|k:");
             for (int i = 0; i < b.Days.Count; i++)
             {
                 Sep(t, i);
-                Join(t, b.Days[i].Day, b.Days[i].Income, b.Days[i].Profit);
+                Join(t, b.Days[i].Day, b.Days[i].Income, b.Days[i].Profit, b.Days[i].Capital);
             }
             t.Append("|q:");
             for (int i = 0; i < b.Books.Count; i++)
@@ -167,6 +173,16 @@ namespace RealLifeOverhaul.Markets
                             }
                         }
                         break;
+                    case 'w':
+                        for (int i = 0; i < records.Length && x.SplitWaits.Count < ExtrasCatalogue.SplitWaitsKept; i++)
+                        {
+                            string[] c = records[i].Split(',');
+                            if (L(c, 0) > 0 && L(c, 1) > 0)
+                            {
+                                x.SplitWaits.Add(new SplitWait { Stock = (int)L(c, 0), Day = (int)L(c, 1) });
+                            }
+                        }
+                        break;
                     case 'p':
                         for (int i = 0; i < records.Length && x.Pushes.Count < 256; i++)
                         {
@@ -227,13 +243,16 @@ namespace RealLifeOverhaul.Markets
                         b.StockId = (int)Math.Max(0L, L(c, 12));
                         b.ListDay = (int)L(c, 13);
                         b.PaidOthers = Math.Max(0L, L(c, 14));
+                        b.Founder = Math.Max(0L, L(c, 15));   // a line from before them: the stake is read again from the stock, or from the offer
+                        b.Shares = Math.Max(0L, L(c, 16));
+                        b.HeldCents = Math.Max(0L, L(c, 17));
                         break;
                     }
                     case 'k':
                         for (int i = 0; i < records.Length && x.Bank.Days.Count < ExtrasCatalogue.BankDaysKept; i++)
                         {
                             string[] c = records[i].Split(',');
-                            x.Bank.Days.Add(new BankDayNote { Day = (int)L(c, 0), Income = L(c, 1), Profit = L(c, 2) });
+                            x.Bank.Days.Add(new BankDayNote { Day = (int)L(c, 0), Income = L(c, 1), Profit = L(c, 2), Capital = c.Length > 3 ? Math.Max(-1L, L(c, 3)) : -1L });
                         }
                         break;
                     case 'q':

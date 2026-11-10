@@ -128,6 +128,7 @@ namespace RealLifeOverhaul.Markets
         public long Float;                       // the shares the public holds: the most the founder can buy, and what their sales add to
         public long VestBase;                    // the founder's shares that were vesting when it listed; the part that has vested is theirs to sell
         public int VestDay, VestCliff, VestSpan; // the day the vesting began, the days to its cliff and to its end
+        public long CapCents;                    // a bank's stock only: the most all its shares may be worth, cents (three times the capital that counts); 0 none (Markets/Extras)
 
         public long Others(Stock s)
         {

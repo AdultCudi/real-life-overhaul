@@ -32,6 +32,7 @@ namespace RealLifeOverhaul
                 ExtrasBridges.Bank = Bank;
                 ExtrasBridges.BankCapital = BankCapital;
                 ExtrasBridges.BankPaidIn = BankPaidIn;
+                ExtrasBridges.BankRelease = BankRelease;
                 ExtrasBridges.Standing = () => FameDirector.Instance != null && FameDirector.Instance.File != null ? FameDirector.Instance.File.Overall : -1;
                 ExtrasBridges.Dealt = Dealt;
                 ExtrasBridges.Rival = Rival;
@@ -120,11 +121,24 @@ namespace RealLifeOverhaul
                 }
             }
 
-            private static void DayBooked(int day, long income, long profit)
+            // The bank's stock has left the market: what the bank kept for the public is free.
+            private static void BankRelease()
             {
                 try
                 {
-                    MarketDirector.Instance?.BankBooked(day, income, profit);
+                    OwnBankDirector.Instance?.PublicRelease();
+                }
+                catch (Exception e)
+                {
+                    Fault("StockExtrasLinks.BankRelease", e);
+                }
+            }
+
+            private static void DayBooked(int day, long income, long profit, long capital)
+            {
+                try
+                {
+                    MarketDirector.Instance?.BankBooked(day, income, profit, capital);
                 }
                 catch (Exception e)
                 {

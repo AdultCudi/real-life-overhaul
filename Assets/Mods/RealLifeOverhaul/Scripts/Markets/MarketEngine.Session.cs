@@ -158,6 +158,7 @@ namespace RealLifeOverhaul.Markets
                 s.Sent = s.Sent * (1.0 - Kappa * night) + mood;
                 s.Mis += news + (s.Sent - was);
             }
+            ExtrasCap(s);   // a bank's stock is never worth more than three times the capital it holds (Extras/MarketEngine.Extras.cs)
             if (s.LastBarCount >= 0 && s.BarCount > 0)
             {
                 Array.Copy(s.Bars, s.LastBars, s.BarCount);

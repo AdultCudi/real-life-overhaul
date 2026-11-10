@@ -30,6 +30,9 @@ namespace RealLifeOverhaul.Markets
         /// <summary>What the bank was founded with, cents at the start's prices: the founder's cost of their shares for the tax return.</summary>
         public static Func<long> BankPaidIn;
 
+        /// <summary>The bank's stock is no more: the offer's money the bank was keeping for the public is its own again (Economy/OwnBank, <c>OwnBank.Public</c>).</summary>
+        public static Action BankRelease;
+
         public static RivalLook Rival;
 
         /// <summary>A tycoon's worth moved by a gain or a loss they took on the market, in money.</summary>
@@ -42,6 +45,7 @@ namespace RealLifeOverhaul.Markets
             Standing = null;
             Dealt = null;
             BankPaidIn = null;
+            BankRelease = null;
             Rival = null;
             RivalGain = null;
         }

@@ -25,6 +25,7 @@ internal static partial class Program
         StockxFundPlayChecks();
         StockxBlockChecks();
         StockxBankChecks();
+        StockxFixChecks();
         StockxRivalChecks();
         StockxSaveChecks();
         StockxSourceChecks();
@@ -46,6 +47,12 @@ internal static partial class Program
     }
 
     // A market in session on a day, with money: the city's companies as the game opens them.
+    // The engine's own split at an open for a split that came by the tape (its day and ratio already set by the announcement).
+    private static void StockxSplitTaped(MarketEngine m, Stock s)
+    {
+        StockxSplitNow.Invoke(m, new object[] { s, m.State.Day });
+    }
+
     private static MarketEngine StockxMarket(ulong seed, long money, out MarketWorld world, int step = 10)
     {
         world = new MarketWorld(seed);
@@ -205,18 +212,30 @@ internal static partial class Program
         Check(runs == 12 && exact == 12 && orders == 12 && charts == 12 && saves == 12,
             "stock extras: twelve seeded holdings with open orders split with nothing gained or lost (the largest difference " + worst.ToString("0.0000") + ")");
 
-        // A dividend declared and not yet out of the price: the split waits for the morning after its record day.
+        // A dividend declared and not yet out of the price: a split the board decided on this build (on the tape) waits for the morning after its record day.
         MarketEngine w = StockxMarket(540, 1000000, out MarketWorld _);
         Stock d = StockxCity(w, 2);
         d.DeclaredCents = 35;
         d.ExDone = false;
         d.RecordDay = w.State.Day + 2;
         long was = d.Shares;
-        StockxSplit(w, d, 2);
-        Check(d.Shares == was && d.SplitDay > 0 && d.SplitRatio == 2 && d.DeclaredCents == 35, "stock extras: a split waits while a dividend is declared and has not left the price (35 cents is not halved to 18)");
+        w.Event(MarketInputs.EventSplit, d.Id, 2);
+        RunTo(w, w.State.Day, w.State.Phase + 1);
+        Check(d.SplitDay > 0 && d.SplitRatio == 2 && w.State.Extras.SplitWaiting(d.Id, d.SplitDay), "stock extras: a split from the tape is announced, and marked as one that may wait for a dividend");
+        StockxSplitTaped(w, d);
+        Check(d.Shares == was && d.SplitDay > 0 && d.SplitRatio == 2 && d.DeclaredCents == 35, "stock extras: a split decided on this build waits while a dividend is declared and has not left the price (35 cents is not halved to 18)");
         d.ExDone = true;
-        StockxSplit(w, d, 2);
-        Check(d.Shares == was * 2 && d.SplitDay == 0, "stock extras: ...and takes effect once the dividend has left the price");
+        StockxSplitTaped(w, d);
+        Check(d.Shares == was * 2 && d.SplitDay == 0 && !w.State.Extras.SplitWaiting(d.Id, d.SplitDay) && w.State.Extras.SplitWaits.Count == 0,
+            "stock extras: ...and takes effect once the dividend has left the price, and waits no more");
+        // The old rule's own split is not on the tape, so a day already played is played as it was: it takes effect on its day, dividend or not (a replay of an old tape).
+        Stock olds = StockxCity(w, 4);
+        olds.DeclaredCents = 35;
+        olds.ExDone = false;
+        olds.RecordDay = w.State.Day + 2;
+        long oldShares = olds.Shares;
+        StockxSplit(w, olds, 2);
+        Check(olds.Shares == oldShares * 2 && olds.SplitDay == 0 && w.State.Extras.SplitWaits.Count == 0, "stock extras: the old rule's split takes effect on its day whatever dividend is declared: a day already played does not change");
         Stock u = StockxCity(w, 3);
         long uShares = u.Shares;
         StockxSplit(w, u, 1);

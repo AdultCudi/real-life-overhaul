@@ -246,7 +246,7 @@ namespace RealLifeOverhaul.Markets
             {
                 return;
             }
-            int from = Math.Max(f.BooksDay + 1, day - Year * 3);
+            int from = Math.Max(f.BooksDay + 1, day - Year * ListingCatalogue.BooksLookBackYears);
             for (int d = from; d < day - 1; d++)
             {
                 OwnBooks b = books(d, d + 1);

@@ -22,7 +22,8 @@ namespace RealLifeOverhaul.Markets
 
         // ------------------------------------------------------------------------------------------------ splits
 
-        // A split announced for today takes effect at the open, unless a dividend declared has not left the price yet: then it waits for the morning after the record day.
+        // A split announced for today takes effect at the open. One decided on this build (the tape has it) waits, if a dividend declared has not left the price yet,
+        // for the morning after the record day; the old rule's own, which the tape does not record, never waits, so a day already played is played as it was.
         private void SplitNow(Stock s, int day)
         {
             int ratio = s.SplitRatio;
@@ -30,12 +31,14 @@ namespace RealLifeOverhaul.Markets
             {
                 s.SplitDay = 0;
                 s.SplitRatio = 0;
+                State.Extras.SplitWaitDone(s.Id);
                 return;
             }
-            if (SplitRules.Waits(s))
+            if (SplitRules.Waits(State.Extras, s))
             {
                 return;
             }
+            State.Extras.SplitWaitDone(s.Id);
             if (ratio > 0)
             {
                 MarketLife.Split(State, s, ratio);
@@ -127,6 +130,7 @@ namespace RealLifeOverhaul.Markets
             }
             s.SplitRatio = ratio;
             s.SplitDay = MarketTrading.MarketDays(State.Day, MarketCatalogue.SplitNoticeDays);
+            State.Extras.WaitSplit(s.Id, s.SplitDay);   // decided on this build, on the tape: it may wait for a dividend
             Say(ratio > 0 ? new MarketNews { Day = State.Day, Kind = MarketNewsKind.Split, Stock = s.Id, A = ratio, B = s.SplitDay }
                 : new MarketNews { Day = State.Day, Kind = MarketNewsKind.Reverse, Stock = s.Id, A = -ratio, B = s.SplitDay });
         }
@@ -198,8 +202,9 @@ namespace RealLifeOverhaul.Markets
             return d;
         }
 
-        // A close: the fund's fee for the day, the distributions its companies' record days owe the units held, and those due paid.
-        private void ExtrasClose(int day)
+        // A close, before the companies' own lives: the fund's fee for the day, the distributions its companies' record days owe the units held, and those due
+        // paid. A company that leaves at this close (taken over, delisted, failed) may leave on its record day, and the fund must be owed its dividend first.
+        private void ExtrasDues(int day)
         {
             FundRules.Close(State, day, TradingYear);
             long money = FundRules.Due(State.Extras, day);
@@ -210,7 +215,6 @@ namespace RealLifeOverhaul.Markets
                 State.Account.Dividends += money;
                 FundPaid?.Invoke(money);
             }
-            ExtrasCorporate(day);
         }
 
         // ------------------------------------------------------------------------------------------------ blocks
@@ -247,12 +251,23 @@ namespace RealLifeOverhaul.Markets
                     : order.Why == OrderWhy.BelowMargin ? BlockWhy.BelowMargin : BlockWhy.NoMoney;
                 return q;
             }
-            q.StakeBp = BlockRules.StakeBp(State.Held(s.Id), s.Shares);
-            if (!order.Test && BlockRules.Disclose(State.Extras, s.Id, 0, q.StakeBp, out int step))
-            {
-                Say(new MarketNews { Day = State.Day, Kind = MarketNewsKind.Block, Stock = s.Id, A = Math.Max(step, q.StakeBp), B = buying ? 1 : -1, C = 0 });
-            }
+            q.StakeBp = BlockRules.StakeBp(State.Held(s.Id), s.Shares);   // told by FillNow, as every holding of the player's is
             return q;
+        }
+
+        // A holding of the player's that passed a whole 5% of a company, up or down, however it was built (a block, an order, a worked order, a dividend put back):
+        // the market is told, once for each step it stands on. Called by every fill of the player's own; the step is kept, so a sale tells the way down as well.
+        private void ExtrasHeld(Stock s, Order o)
+        {
+            if (!ExtrasOn || o.Test || State.Following)
+            {
+                return;
+            }
+            int bp = BlockRules.StakeBp(State.Held(s.Id), s.Shares);
+            if (BlockRules.Disclose(State.Extras, s.Id, 0, bp, out int step))
+            {
+                Say(new MarketNews { Day = State.Day, Kind = MarketNewsKind.Block, Stock = s.Id, A = Math.Max(step, bp), B = o.Side == OrderSide.Buy ? 1 : -1, C = 0 });
+            }
         }
 
         /// <summary>
@@ -279,11 +294,43 @@ namespace RealLifeOverhaul.Markets
         // ------------------------------------------------------------------------------------------------ a bank of the player's
 
         /// <summary>The price the bank's book comes to this morning, drawn from the day's secret as a company's is; 0: called off.</summary>
-        public int BankPrice(string name, int stockId, int standing)
+        public int BankPrice(string name, int stockId, int standing, long heldCents)
         {
             Finish();
             Secret(State.Day);
-            return BankFloatRules.Price(State.Extras.Bank, name, _secret, stockId, IndexMonthBp(), standing);
+            return BankFloatRules.Price(State.Extras.Bank, name, _secret, stockId, IndexMonthBp(), standing, heldCents);
+        }
+
+        /// <summary>
+        /// The most the bank's stock may be worth now, cents (three times the capital that counts), told to the stock itself so every machine that plays it
+        /// takes the same cap at each open. 0: none. True if it changed.
+        /// </summary>
+        public bool SetBankCap(int stockId, long capCents)
+        {
+            Finish();
+            Stock s = State.Stock(stockId);
+            if (s == null || !s.Listed || s.Own == null || !s.Own.Firm || !BankFloatRules.IsBank(s.Own.Place) || s.Own.CapCents == capCents)
+            {
+                return false;
+            }
+            s.Own.CapCents = Math.Max(0L, capCents);
+            return true;
+        }
+
+        // At an open: a bank's stock worth more than its cap (three times the capital that counts) is brought back to it, so its value never rests on more than that on any day.
+        private void ExtrasCap(Stock s)
+        {
+            OwnListing o = s.Own;
+            if (o == null || !o.Firm || o.CapCents <= 0 || s.Shares <= 0 || State.Following)
+            {
+                return;
+            }
+            double most = o.CapCents / 100.0 / s.Shares, mid = s.Mid;
+            if (mid > most)
+            {
+                s.Mis += Math.Log(most / mid);
+                s.Last = s.MidCents;
+            }
         }
 
         /// <summary>The id the bank's stock will have: the same hash a firm's has, moved to a free one.</summary>

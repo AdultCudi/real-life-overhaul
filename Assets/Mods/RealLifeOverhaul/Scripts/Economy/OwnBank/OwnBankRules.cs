@@ -346,6 +346,7 @@ namespace RealLifeOverhaul.Economy
             b.Holdings.Clear();
             Array.Clear(b.Crew, 0, b.Crew.Length);
             b.CounterFees = 0;
+            b.Public = 0;
             b.Scare = 0;
             b.Run = false;
             b.RunFrom = 0;
@@ -367,6 +368,30 @@ namespace RealLifeOverhaul.Economy
                 b.Capital += cents;
                 b.Reserves += cents;
             }
+        }
+
+        /// <summary>
+        /// The money an offer of the bank's shares raised from the public, into its capital and its cash as capital put in is, but kept there while the stock trades: no
+        /// pay, dividend or sale takes it (<see cref="OwnBank.Public"/>, <see cref="Keep"/>). Nothing is asked of anyone's cash. False if no bank runs.
+        /// </summary>
+        public static bool PublicIn(OwnBank b, long cents)
+        {
+            if (b == null || !b.Running || b.Test || cents <= 0)
+            {
+                return false;
+            }
+            PutIn(b, cents);
+            b.Public += cents;
+            return true;
+        }
+
+        /// <summary>
+        /// Of a sum the bank pays out of its capital (pay, a dividend, a sale, what a winding up left), what its owner has: all of it for a bank that is theirs alone,
+        /// the part <paramref name="part"/> gives once the bank trades on the stock market, never more than the sum and never under nothing.
+        /// </summary>
+        public static long OwnerShare(long cents, Func<long, long> part)
+        {
+            return part != null && cents > 0 ? Math.Max(0L, Math.Min(cents, part(cents))) : cents;
         }
 
         /// <summary>
@@ -451,6 +476,7 @@ namespace RealLifeOverhaul.Economy
             b.EndCents = cents;
             b.Why = why;
             b.Capital = b.Reserves = 0;
+            b.Public = 0;
             Array.Clear(b.Deposits, 0, b.Deposits.Length);
             Array.Clear(b.Loans, 0, b.Loans.Length);
             Array.Clear(b.Arrears, 0, b.Arrears.Length);

@@ -127,10 +127,12 @@ namespace RealLifeOverhaul.Markets
         /// <summary>
         /// True while a split must wait a morning: a dividend is declared and has not left the price, and a dividend a share
         /// in whole cents cannot be divided without somebody gaining or losing by the rounding. It waits for the record day.
+        /// Only a split this build decided (the tape has it, <see cref="ExtrasState.WaitSplit"/>) waits: the old rule's own, which the tape does
+        /// not record, takes effect on its day as it always did, so a day already played is played again as it was.
         /// </summary>
-        public static bool Waits(Stock s)
+        public static bool Waits(ExtrasState x, Stock s)
         {
-            return s.DeclaredCents > 0 && !s.ExDone && s.RecordDay > 0;
+            return s.DeclaredCents > 0 && !s.ExDone && s.RecordDay > 0 && x.SplitWaiting(s.Id, s.SplitDay);
         }
 
         /// <summary>The player's drawn lines and price alerts on a company follow its split: every price by new over old.</summary>
@@ -369,8 +371,11 @@ namespace RealLifeOverhaul.Markets
                 {
                     continue;
                 }
-                o.Qty /= n;
-                o.Filled = Math.Min(o.Qty, o.Filled / n);
+                // What is left is divided, not the two figures apart: the part filled stays what it was (the holding it made is divided with the rest), and the
+                // part still to fill is the old part over n, towards nothing. An order with nothing whole left is done: the engine cancels it.
+                long left = Math.Max(0L, o.Qty - o.Filled) / n;
+                o.Filled /= n;
+                o.Qty = o.Filled + left;
                 if (o.LimitCents > 0)
                 {
                     o.LimitCents = Times(o.LimitCents, n);

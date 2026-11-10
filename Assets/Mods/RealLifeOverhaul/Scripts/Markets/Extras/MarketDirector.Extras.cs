@@ -44,10 +44,9 @@ namespace RealLifeOverhaul.Markets
             {
                 return;
             }
-            _extrasDay = save.Day;
-            if (ExtrasOpen)
+            if (!ExtrasOpen || RivalsDay(save.Day))
             {
-                RivalsDay(save.Day);
+                _extrasDay = save.Day;   // every day passed is played: when a look is left over (more than the most at once) the next second goes on
             }
         }
 
