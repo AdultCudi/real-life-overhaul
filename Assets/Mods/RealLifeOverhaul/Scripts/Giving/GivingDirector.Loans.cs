@@ -89,6 +89,7 @@ namespace RealLifeOverhaul.Giving
                     SocialLife.Change(person, 0f, -3f, -5f);
                 }
                 GivingGame.Tell(NotificationType.Warning, "reallife_giving_loan_off", GivingGame.Data("name", l.Name, "amount", GivingGame.Money(l.Remaining)));
+                GivingBridges.GaveToPerson?.Invoke(Math.Max(0, l.Remaining));   // what was never paid back was given
                 if (Verbose)
                 {
                     Logger?.Info("Giving check (a loan to " + l.Name + " written off): " + l.Remaining + " of " + l.Principal + " left after " + l.Misses

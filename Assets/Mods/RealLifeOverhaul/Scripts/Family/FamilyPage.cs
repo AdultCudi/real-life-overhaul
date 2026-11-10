@@ -73,6 +73,11 @@ namespace RealLifeOverhaul.Family
             }
             text.Append('\n').Append(FamilyText.T("reallife_family_page_children", new Args { N = FamilyState.AtHome().ToString() }));
             text.Append('\n').Append(FamilyText.T("reallife_family_page_kin", new Args { Text = Relatives.NextOfKin() }));
+            string will = FamilyBridges.WillLine != null ? FamilyBridges.WillLine() : null;   // who carries on (Scripts/Dynasty), while that runs
+            if (!string.IsNullOrEmpty(will))
+            {
+                text.Append('\n').Append(will);
+            }
             return text.ToString();
         }
 

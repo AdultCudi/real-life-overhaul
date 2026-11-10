@@ -48,6 +48,7 @@ namespace RealLifeOverhaul
             { "RealLifeOverhaul.Networking", "networking" },
             { "RealLifeOverhaul.Household", "home_household" },
             { "RealLifeOverhaul.Giving", "giving" },
+            { "RealLifeOverhaul.Dynasty", "dynasty" },
             { "RealLifeOverhaul.Shops", "newshops" },
             { "RealLifeOverhaul.Outlook", "economy_app" },
             { "RealLifeOverhaul.Population", "population" },

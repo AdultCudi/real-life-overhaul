@@ -36,6 +36,9 @@ namespace RealLifeOverhaul.Giving
         /// <summary>A rival tycoon's name. Null: "".</summary>
         public static Func<int, string> RivalName;
 
+        /// <summary>Money given to a person for good, whole money: a gift, or a loan written off (the dynasty counts it in the estate for a time). Null: nobody is told.</summary>
+        public static Action<long> GaveToPerson;
+
         public static void Reset()
         {
             Reserved = null;
@@ -47,6 +50,7 @@ namespace RealLifeOverhaul.Giving
             RivalWorth = null;
             RivalPay = null;
             RivalName = null;
+            GaveToPerson = null;
         }
     }
 }

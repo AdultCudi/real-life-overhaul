@@ -167,6 +167,9 @@ namespace RealLifeOverhaul.Family
             list.Add(Call(new Choice(() => HardTimes.CanEnd, () => FamilyText.Say((Bond)s().BondBefore == Bond.Married ? "reallife_family_do_divorce" : "reallife_family_do_part"),
                 "reallife_family_do_end_yes", HardTimes.EndAsk)));
 
+            // The will and the heir (Scripts/Dynasty): who carries on today, and where it is changed.
+            list.Add(Call(new Choice(() => FamilyBridges.WillLine != null && !string.IsNullOrEmpty(FamilyBridges.WillLine()), () => FamilyText.Built(FamilyBridges.WillLine()),
+                "reallife_family_do_will_yes", () => FamilyTalk.Close("reallife_family_do_will_where"))));
             list.Add(new Choice(null, () => FamilyText.Say("reallife_family_do_page"), "reallife_family_do_page_yes", () => FamilyPage.Page(0)));
             _choices = list;
             _callChoices = call;

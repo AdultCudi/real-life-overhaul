@@ -70,6 +70,7 @@ namespace RealLifeOverhaul.Ui
             Row("Web shop", "Shops tab, rename a shop", "the typed name", AuditWindow.TextInput, Text, "Economy/Online/"),
             Face("Web shop", "Shops, orders and the day", "webshop", "Economy/Online/"),
             Face("Giving", "Charities, loans and the year's giving", "giving", "Giving/"),
+            Face("Legacy", "The will, the estate and the family line", "dynasty", "Dynasty/"),
             Row("Web shop", "Close or sell a shop", "a yes or no box", AuditWindow.Question, Question, "Economy/Online/"),
 
             // ---------------------------------------------------------------------------------------------------- Company, Estate, Services

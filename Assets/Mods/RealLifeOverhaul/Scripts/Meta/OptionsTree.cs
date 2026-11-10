@@ -231,6 +231,7 @@ namespace RealLifeOverhaul.Meta
                     .Also("clothes wardrobe wear skirt"),
                 S("shops").Guide("leisure").Need("leisure").Opts("clothes_shops", "clothes_must_be_bought").Also("wardrobe buy outfit"),
                 S("roommates").For("home_roommates").Opts("home_roommates").Also("flatmate lodger share"),
+                S("dynasty").For("dynasty").Opts("dynasty").Also("will heir inherit inheritance estate tax retire retirement legacy death old age family line"),
                 S("giving").For("giving").Opts("giving").Also("donate donation charity gift lend loan help money food bank training tax deduction"),
                 S("household").For("home_household").Opts("home_household").Also("staff cleaner cook butler maid housekeeper mechanic servant chores car wash"),
                 S("utilities").For("utilities").Main("utilities").Opt("utilities_net_speed", "utilities")

@@ -274,6 +274,9 @@ namespace RealLifeOverhaul.Population
             }
         }
 
+        /// <summary>A household ended with a death, nobody left: its savings and its debt, whole money, as it goes. Set by the wiring; null and nobody is told.</summary>
+        public static Action<long, long> Ended;
+
         // A household that lost a member: with nobody left, or children alone (taken in by family beyond the city), it is gone.
         private static void AfterLoss(PopulationState s, int h, int day)
         {
@@ -296,6 +299,7 @@ namespace RealLifeOverhaul.Population
                 GenerateRules.Leave(s, q);
                 pt.Remove(q);
             }
+            Ended?.Invoke(hh.Savings[h], hh.Debt[h]);   // its estate, counted before it is gone (Scripts/Dynasty)
             Dissolve(s, h);
         }
 
