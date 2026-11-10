@@ -42,7 +42,7 @@ namespace RealLifeOverhaul.RivalsSeen
         // ---- how a business is doing (the week's change of the real figure, per mille)
         public const int OwnerThrive = 80;        // a rival owner's week of takings up by this much: the game's own week of takings moves a few per cent from day to day
         public const int OwnerTrouble = 80;       // ...or down by this much
-        public const int TycoonThrive = 8;        // a tycoon's worth up by this much in a week: a steady city gives about 3, a boom about 5, closing on the player more (Rivals/RivalCatalogue.CycleGrowthBp)
+        public const int TycoonThrive = 8;        // a tycoon's worth up by this much in a week: a steady city gives about 3, a boom about 5, closing on the player more
         public const int TycoonTrouble = 1;       // ...or down by this much: only a recession, a counter of the player's or their own costs do that
 
         // ---- what they can afford (the tiers of means, from the real figure at the start's prices)

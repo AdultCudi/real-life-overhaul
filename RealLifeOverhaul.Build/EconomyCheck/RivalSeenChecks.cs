@@ -241,6 +241,18 @@ internal static partial class Program
         var none = new SeenFile { Seed = 77 };
         SeenDay.Run(none, new List<SeenSubject> { SeenOwner("a", 100000, 100000) }, 1, 1000, new SeenCity());
         Check(none.Of("ga") != null && none.Of("ga").Car.Length == 0 && none.Of("ga").Rung == -1 && none.Notes.Count == 0, "rivals seen: a city with no cars and no eating places gives nobody a car and writes nothing");
+        // somebody who goes while a change of car is due: their record stays as it was and no line is written
+        var left = new SeenFile { Seed = 77 };
+        var leaver = new List<SeenSubject> { SeenOwner("a", 100000, 100000) };
+        SeenDay.Run(left, leaver, 1, 1000, city);
+        for (int day = 2; day <= 40; day++)
+        {
+            leaver[0].Figure = 400000;      // marked thriving on day 8: a dearer car is due when the hold ends on day 15
+            leaver[0].Gone = day > 10;      // ...but they are defeated on day 11
+            SeenDay.Run(left, leaver, day, 1000, city);
+        }
+        Check(left.Of("ga") != null && left.Of("ga").Rung == 2 && left.Of("ga").MarkDay == 8 && !left.Notes.Any(n => n.Day > 10),
+            "rivals seen: a rival defeated while a change of car was due keeps the record they had, and nothing more is written about them");
     }
 
     // ---- the week
@@ -616,6 +628,8 @@ internal static partial class Program
         int nine = SeenDay.Hour(f, 20, 9, post);
         int again = SeenDay.Hour(f, 20, 9, post);
         Check(nine == 1 && again == 0 && sent.Count == 1 && sent[0] == "gb", "rivals seen: a sighting goes out at its hour, once");
+        int earlier = SeenDay.Hour(f, 20, 5, post);
+        Check(earlier == 0 && f.Hour == 9 && sent.Count == 1, "rivals seen: an hour already gone through is not gone through again, and the file's hour never goes back");
         // a save and a load in the middle of the day
         SeenFile loaded = SeenStore.Read(SeenStore.Write(f), out int _);
         int sameHour = SeenDay.Hour(loaded, 20, 9, post);
@@ -858,7 +872,7 @@ internal static partial class Program
                   && !text.Contains("BonePose") && !text.Contains("HairPhysics"), "rivals seen sources: " + name + " makes no character, look, body or animation of its own");
             Check(!text.Contains("GameManager.ChangeMoney") && !text.Contains("BizBooks.Book") && !text.Contains("ChangeMoneySafe"), "rivals seen sources: " + name + " moves no money");
             randoms += CountOfText(text, "UnityEngine.Random");
-            bool gameFree = name == "SeenRules.cs" || name == "SeenDay.cs" || name == "SeenModel.cs" || name == "SeenCatalogue.cs" || name == "SeenStore.cs";
+            bool gameFree = name == "SeenRules.cs" || name == "SeenDay.cs" || name == "SeenFile.cs" || name == "SeenCatalogue.cs" || name == "SeenStore.cs";
             Check(!gameFree || (!text.Contains("UnityEngine") && !text.Contains("BigAmbitions") && !text.Contains("SaveGameManager")), "rivals seen sources: " + name + " is game-free where it must be");
         }
         Check(randoms == 1 && ModSource(@"RivalsSeen\SeenDirector.cs").Contains("seed != 0 ? seed : UnityEngine.Random.Range(1, int.MaxValue)"),

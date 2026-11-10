@@ -40,7 +40,7 @@ namespace RealLifeOverhaul.RivalsSeen
         };
 
         private static readonly Comparison<MarketModel> ByPrice = (a, b) => a.Price != b.Price ? a.Price.CompareTo(b.Price) : string.CompareOrdinal(a.Type, b.Type);
-        private static readonly Comparison<RivalData> ById = (a, b) => string.CompareOrdinal(a.id, b.id);
+        private static readonly Comparison<RivalData> ById = (a, b) => string.CompareOrdinal(a != null ? a.id : null, b != null ? b.id : null);
         private static readonly Predicate<Waypoint> PlainLane = IsPlainLane;
 
         private readonly List<Eating> _eating = new List<Eating>(64);
@@ -277,7 +277,10 @@ namespace RealLifeOverhaul.RivalsSeen
                 {
                     continue;
                 }
-                var s = new SeenSubject { Key = "g" + d.id, Name = d.rivalName, Gone = RivalsHelper.IsRivalDefeated(d.id), Shops = d.ownedBusinesses != null ? d.ownedBusinesses.Count : 0, ShopsBefore = -1 };
+                var s = new SeenSubject
+                {
+                    Key = "g" + d.id, Name = d.rivalName, Gone = RivalsHelper.IsRivalDefeated(d.id), Shops = d.ownedBusinesses != null ? d.ownedBusinesses.Count : 0, ShopsBefore = -1
+                };
                 Takings(d, s);
                 History(d.id, day, s);
                 Home(d, s);
@@ -350,7 +353,7 @@ namespace RealLifeOverhaul.RivalsSeen
             for (int i = 0; d.ownedBuildings != null && i < d.ownedBuildings.Count && !s.Hamptons; i++)
             {
                 BuildingRegistration r = d.ownedBuildings[i];
-                Buildings.Building b = r != null ? r.BuildingCached : null;
+                Buildings.Building b = GameRegistrations.BuildingOf(r);
                 s.Hamptons = b != null && b.IsHamptonsHouse();
             }
         }

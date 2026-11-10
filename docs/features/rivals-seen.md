@@ -13,7 +13,7 @@ Folder [`Scripts/RivalsSeen`](../../Assets/Mods/RealLifeOverhaul/Scripts/RivalsS
 | File | What it is |
 | --- | --- |
 | `SeenCatalogue` | every figure and every locale key: game-free |
-| `SeenModel` | a rival as read today (`SeenSubject`), what is kept of them (`SeenRecord`), a sighting (`SeenNote`), the save's file, what the rules ask of the city (`ISeenCity`): game-free |
+| `SeenFile` | the save's file, with a rival as read today (`SeenSubject`), what is kept of them (`SeenRecord`), a sighting (`SeenNote`), the save's file, what the rules ask of the city (`ISeenCity`): game-free |
 | `SeenRules` | form and means from real figures, the weekly mark, the car, the week (`Where`), who the world may show, a greeting: game-free |
 | `SeenDay` | the day's pass, the hour's pass, the player seen, the paper's lines: game-free, called by the director and by the checks alike |
 | `SeenStore` | the save's line `reallife:rivals_seen`: game-free |

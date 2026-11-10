@@ -396,7 +396,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Household\HouseholdState.cs" Link="Mod\HouseholdState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Home\Household\HouseholdStore.cs" Link="Mod\HouseholdStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\RivalsSeen\SeenCatalogue.cs" Link="Mod\RivalsSeen\SeenCatalogue.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\RivalsSeen\SeenModel.cs" Link="Mod\RivalsSeen\SeenModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\RivalsSeen\SeenFile.cs" Link="Mod\RivalsSeen\SeenFile.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\RivalsSeen\SeenRules.cs" Link="Mod\RivalsSeen\SeenRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\RivalsSeen\SeenDay.cs" Link="Mod\RivalsSeen\SeenDay.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\RivalsSeen\SeenStore.cs" Link="Mod\RivalsSeen\SeenStore.cs" />
