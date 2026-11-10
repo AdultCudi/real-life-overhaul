@@ -23,7 +23,18 @@ namespace RealLifeOverhaul
             {
                 return false;
             }
-            Collider picked = Hits[Random.Range(0, count)];
+            // A random one that does not stand in a bus stop's kerb (no game car stays there; one in the middle of being taken in is not a scene's).
+            int first = Random.Range(0, count);
+            Collider picked = null;
+            for (int i = 0; i < count && picked == null; i++)
+            {
+                Collider one = Hits[(first + i) % count];
+                Vector3 reach = one != null ? one.bounds.extents : Vector3.zero;
+                if (one != null && !BusZones.Holds(one.bounds.center, one.transform.forward, Mathf.Max(reach.x, reach.z), Mathf.Min(reach.x, reach.z)))
+                {
+                    picked = one;
+                }
+            }
             Array.Clear(Hits, 0, count);
             if (picked == null)
             {

@@ -17,7 +17,7 @@ The large types are split into `Type.Part.cs` files, one concern each:
   `.Pointing`, `.Player`, `.Ride`, `.Journey`, `.Tests`.
 - `TransitMap`: `.Stops`, `.Bays`, `.Log`; `TransitStop.cs` holds the stop and line types.
 - `TransitBus`: `.Start`, `.Bay`, `.Held`, `.Away`. `BusRider`: `.Doors`, `.Ride`, `.Hold`.
-- `TransitPlan.Journeys`, `BusZones` (`.Cars`, `.Pieces`), `CarOwnership` (`.Garage`, `.Help`, `.Tests`),
+- `TransitPlan.Journeys`, `BusZones` (`.Cars`, `.Kerb`, `.Pieces`; the rules in `BusZoneRules`), `CarOwnership` (`.Garage`, `.Help`, `.Tests`),
   `Taxi/TaxiDirector` (`.Ending`, `.Tests`).
 
 ## Documentation

@@ -20,11 +20,17 @@ namespace RealLifeOverhaul
         private static readonly List<Vector3> RelayAt = new List<Vector3>(16);                           // and where, the middle of each box
         private static bool _told;      // the player has been told a car of theirs was moved from a bay, once a session
 
-        // The cars in a zone and its margin, each once out of view; a lane come back whole is cut again first. True when none is left.
+        // The cars in a zone and its margin, at once, in view or not (the car in the owner's screenshot of 10 Nov 2026 stood in the bay of 26 1st Street
+        // the whole session because it was in view); a lane come back whole is cut again first. True when none of the player's is left in it.
         private static bool Sweep(TransitStop stop, Vector3 right, out int sent)
         {
             BusZone zone = stop.Zone;
             sent = 0;
+            if (zone.Standing)
+            {
+                sent = TakeIn(stop);   // the lane is left whole: the gate keeps the cars it makes out, this the ones that stood there
+                return true;
+            }
             int left = 0;
             float from = zone.From - Margin;
             float to = zone.To + Margin;
@@ -37,8 +43,9 @@ namespace RealLifeOverhaul
                 {
                     zone.Spots += Shorten(run, keepStart, keepEnd);
                 }
-                sent += SendAway(run, stop, keepStart, keepEnd, ref left);
+                sent += SendAway(run, stop, keepStart, keepEnd);
             }
+            sent += TakeIn(stop);   // what no plain lane of the box brought: a lane of any other kind, whatever stands there
             zone.PlayerCars += MovePlayerCars(stop, right, ref left);
             return left == 0;
         }
@@ -108,8 +115,8 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The game's parked cars in a zone, its margin or beyond the lane's end, handed back out of view; those in view count in left.
-        private static int SendAway(Run run, TransitStop stop, float keepStart, float keepEnd, ref int left)
+        // The game's parked cars in a zone, its margin or beyond the lane's end, handed back to the game's store at once.
+        private static int SendAway(Run run, TransitStop stop, float keepStart, float keepEnd)
         {
             ParkingLaneGenerator lane = run.Lane;
             Transform frame = lane.transform;
@@ -136,17 +143,27 @@ namespace RealLifeOverhaul
                 {
                     continue;
                 }
-                if (CitySpots.InView(car.position))
-                {
-                    left += inZone ? 1 : 0;   // one beyond the lane's end but clear of the zone goes when it can, and holds nothing up
-                    continue;
-                }
-                lane.onReleaseVehicle?.Invoke(car.gameObject);
-                ParkingSimulator.ReleaseParkedVehicle(car.gameObject);
+                Release(car.gameObject, lane);
                 sent++;
             }
             Cars.Clear();
             return sent;
+        }
+
+        // One of the game's parked cars back into its store, as ParkingLaneGenerator.CleanupParkedVehicles does it. A car the store does not know
+        // (a name it has no pool for) is switched off instead, and stays a child of its lane for the game to deal with.
+        private static void Release(GameObject car, ParkingLaneGenerator lane)
+        {
+            try
+            {
+                lane?.onReleaseVehicle?.Invoke(car);
+                ParkingSimulator.ReleaseParkedVehicle(car);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                car.SetActive(false);
+            }
         }
 
         // The player's own cars in the zone, nobody in them, standing still and out of view: each moved to the nearest free space
@@ -205,24 +222,13 @@ namespace RealLifeOverhaul
 
         private static bool InAnyZone(Vector3 place, float half)
         {
-            for (int i = 0; i < TransitMap.Stops.Count; i++)
-            {
-                TransitStop stop = TransitMap.Stops[i];
-                if (!stop.HasBay || stop.Zone == null)
-                {
-                    continue;
-                }
-                Vector3 right = Vector3.Cross(Vector3.up, stop.Along);
-                Vector3 offset = Flat(place - stop.Lane);
-                float aside = Vector3.Dot(offset, right);
-                float along = Vector3.Dot(offset, stop.Along);
-                if (aside > BusBay.LaneHalf - 1f && aside < stop.KerbAside + 0.5f && Mathf.Abs(offset.y) < 3f
-                    && BusBay.CarInZone(along - half, along + half, stop.Zone.From, stop.Zone.To))
-                {
-                    return true;
-                }
-            }
-            return false;
+            return Holds(place, Vector3.forward, half, half);   // every place's zone, bay or not
+        }
+
+        /// <summary>True if a space is in any bus stop's zone or its margin: what a car of the player's is never moved to (VehicleTow.ParkNearby).</summary>
+        public static bool Refuses(Vector3 place)
+        {
+            return InAnyZone(place, 2.5f);
         }
 
         private static float Half(VehicleController vehicle)
@@ -246,7 +252,7 @@ namespace RealLifeOverhaul
             {
                 _watch = (_watch + 1) % count;
                 TransitStop stop = TransitMap.Stops[_watch];
-                if (!stop.HasBay || stop.Zone == null || !stop.Zone.Made)
+                if (stop.Zone == null || !stop.Zone.Made)
                 {
                     continue;
                 }
@@ -256,12 +262,12 @@ namespace RealLifeOverhaul
                     if (sent > 0)
                     {
                         stop.Zone.CarsSent += sent;
-                        Logger?.Info("Transit: " + sent + " of the game's parked car(s) had come back into the bay at " + stop.Name + " and were taken in out of view.");
+                        Logger?.Info("Transit: " + sent + " of the game's parked car(s) had come back into the " + (stop.Zone.Standing ? "kerb" : "bay") + " at " + stop.Name + " and were taken in.");
                     }
                     if (!clear)
                     {
                         stop.Zone.Made = false;
-                        stop.Zone.Waiting = "a car in it is in view";
+                        stop.Zone.Waiting = "a car of the player's in it is in view";
                         stop.ZoneLook = 0f;
                         Pending.Add(stop);
                     }

@@ -73,6 +73,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--bus-kerb")
+        {
+            BusKerb();   // no car but the player's stands in any bus stop: every place's zone, the game's cars gone at once and its lanes gated, every path of the mod asking one question (BusKerbChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--bizpace")
         {
             BizPaceAll();   // BizMan's open, switch and tab change alone (BizPaceChecks.cs): RLO_BIZPACE_REPORT=1 prints the figures
@@ -712,6 +718,7 @@ internal static partial class Program
         ClientHours();  // cleaning and stocking: a client open for the walk and the work, one closing calls the job off, the clock paid up to closing (ClientHoursChecks.cs)
         TechFixes();    // the tech sector: a board that cannot hire, a pitch whose meeting never opened, the utilities asked safely, an interview cut short (TechFixChecks.cs)
         TechMoves();    // a tech firm moved by the moving company: its data follows whole, a save left behind is put back, nothing followed with a doubt (TechMoveChecks.cs)
+        BusKerb();      // no car but the player's stands in any bus stop: every place's zone, the game's cars gone at once and its lanes gated, every path of the mod asking one question (BusKerbChecks.cs)
         LagSecond();    // the stutter every second: which stretch of the mod's clock the engine's frame time is, and the mod never driving the engine's clock (LagSecondChecks.cs)
         BizPaceAll();   // what the mod adds to BizMan's open, switch and tab change: the rules, the book, the registration filter and the start screen's walk timed on a large save, the sources, the texts (BizPaceChecks.cs)
         DaySpreadAll(); // the game's midnight spread over frames: a step queued is played in a later frame, a slice a frame equals the job at once, the save and the next day finish it, the weekly look of the investors (DaySpreadChecks.cs)

@@ -189,7 +189,8 @@ namespace RealLifeOverhaul
                     Vector3 position = spot.transform.position;
                     Quaternion rotation = spot.transform.parent.rotation;
                     float width = spot.visuals != null ? spot.visuals.size.y : 2.4f;
-                    if (IsOccupied(vehicle, position, rotation, width, length) || (refuse != null && refuse(position)))
+                    // Never a space in a bus stop's kerb: when it is the mod that moves a car, the player's included, it does not put it there.
+                    if (IsOccupied(vehicle, position, rotation, width, length) || (refuse != null && refuse(position)) || BusZones.Refuses(position))
                     {
                         continue;
                     }

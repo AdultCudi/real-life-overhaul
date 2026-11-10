@@ -316,7 +316,7 @@ namespace RealLifeOverhaul
                 if (!StreetSpots.OnRoad(place, 0.5f, out _)
                     || OnPavement(place) || OnPavement(place + along * _halfLength + right * _halfWidth) || OnPavement(place + along * _halfLength - right * _halfWidth)
                     || OnPavement(place - along * _halfLength + right * _halfWidth) || OnPavement(place - along * _halfLength - right * _halfWidth)
-                    || !SceneParking.IsFree(place, facing, _halfWidth, _halfLength, Room)
+                    || !SceneParking.Stands(place, facing, _halfWidth, _halfLength, Room)
                     || TrafficTools.ClosestWaypoint(place, OtherLane) != null)
                 {
                     continue;

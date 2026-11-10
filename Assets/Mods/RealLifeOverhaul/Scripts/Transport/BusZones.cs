@@ -25,6 +25,11 @@ namespace RealLifeOverhaul
         public int Spots;           // the game's parking spots given up with them
         public int CarsSent;        // the game's parked cars taken in from it
         public int PlayerCars;      // the player's own cars moved from it to a free space nearby
+        public bool Standing;       // a place without a bay: the length of kerb the standing bus keeps, its parking left whole (BusZoneRules.Standing)
+        public bool Gating;         // its lanes have been gated
+        public int Gated;           // parking lanes whose cars are kept out of it as the game makes them (BusZones.Gate)
+        public int Hushed;          // cars the game made in it, switched off at once
+        public int Others;          // things on the parked-vehicle layer in it that are not one of a lane's cars, for the log
         public string Waiting;      // why it is not made yet, for the log
         public string Note;         // what was found as it was made (a lane no longer plain), for the log
 
@@ -34,8 +39,8 @@ namespace RealLifeOverhaul
             Clear.Clear();
             Meters.Clear();
             Known.Clear();
-            Made = ParkingCut = false;
-            Lanes = Spots = CarsSent = PlayerCars = 0;
+            Made = ParkingCut = Standing = Gating = false;
+            Lanes = Spots = CarsSent = PlayerCars = Gated = Hushed = Others = 0;
             Waiting = Note = null;
         }
 
@@ -50,12 +55,17 @@ namespace RealLifeOverhaul
     }
 
     /// <summary>
-    /// The bus zones: at every stop with a bay, that length of the kerbside strip is the buses' alone. The game's parking box
-    /// is shortened to stop <see cref="BusBay.CarMargin"/> short of it, so the game never parks there again; its parked cars
-    /// there are handed back the way it takes them in and a car of the player's moved, each once out of view; the furniture in
-    /// the strip and on the boarding strips is switched off whole, unless its hole in the navigation mesh is baked in. All put
-    /// back when the buses are switched off or the city is left; nothing saved. On the director's timer, about a millisecond a
-    /// tick. Another player's car is never moved (GoingPublic.MineVehicle).
+    /// The bus zones: at every place the buses stop at, bay or not, that length of the kerbside strip is the buses' alone, and
+    /// no car but the player's stands in it (BusZoneRules; the owner, 10 Nov 2026: "That must not happen anywhere"). Where there
+    /// is a bay the game's parking box is shortened to stop <see cref="BusBay.CarMargin"/> short of it, so the game never parks
+    /// there again; the furniture in the strip and on the boarding strips is switched off whole, unless its hole in the navigation
+    /// mesh is baked in, and a car of the player's is moved, once out of view. For every place, whatever the lane beside it is,
+    /// the game's parked cars in the zone are handed back to the game's store the way it takes them in itself
+    /// (VehicleHelper.DestroyBlockingVehicles does the same to the cars a player's car is put among, in view or not), at once, and
+    /// the lanes beside it are gated: a car the game makes in the zone is switched off as it is made (ParkingLaneGenerator's
+    /// onGenerateVehicle, which the game hides cars by itself). <see cref="Holds"/> is the one question the mod's own paths ask
+    /// before they stand a car at a kerb. All put back when the buses are switched off or the city is left; nothing saved. On
+    /// the director's timer, about a millisecond a tick. Another player's car is never moved (GoingPublic.MineVehicle).
     /// </summary>
     public static partial class BusZones
     {
@@ -369,11 +379,12 @@ namespace RealLifeOverhaul
                 _queuedAt = now;
                 _nextWatch = now + WatchEvery;
                 Pending.Clear();
+                Lay();   // every place has a zone, laid out here once: a table of rectangles, and a standing zone where there is no bay
                 for (int i = 0; i < TransitMap.Stops.Count; i++)
                 {
                     TransitStop stop = TransitMap.Stops[i];
                     stop.ZoneLook = 0f;
-                    if ((stop.HasBay && stop.Zone != null && !stop.Zone.Made) || (stop.Boarding.Count > 0 && !stop.BoardingMade))
+                    if ((stop.Zone != null && !stop.Zone.Made) || (stop.Boarding.Count > 0 && !stop.BoardingMade))
                     {
                         Pending.Add(stop);
                     }
@@ -418,14 +429,14 @@ namespace RealLifeOverhaul
         private static bool Make(TransitStop stop)
         {
             bool unseen = !AnyInView(stop);
-            bool zone = !stop.HasBay || stop.Zone == null || MakeZone(stop, unseen);
+            bool zone = stop.Zone == null || MakeZone(stop, unseen);
             bool boarding = ClearBoarding(stop, unseen);
             return zone && boarding;
         }
 
         private static bool AnyInView(TransitStop stop)
         {
-            BusZone zone = stop.HasBay && stop.Zone != null && !stop.Zone.Made ? stop.Zone : null;
+            BusZone zone = stop.Zone != null && !stop.Zone.Made ? stop.Zone : null;
             return (zone != null && (InView(zone.Clear) || InView(zone.Meters))) || (!stop.BoardingMade && InView(stop.Boarding));
         }
 
@@ -499,25 +510,34 @@ namespace RealLifeOverhaul
                 // The parking, at once: nobody sees a parking box (the cars in it are another matter: Sweep).
                 if (!zone.ParkingCut)
                 {
-                    float from = zone.From - Margin;
-                    float to = zone.To + Margin;
-                    int runs = Beside(stop, right, from, to, out string why);
-                    for (int i = 0; why == null && i < runs; i++)
+                    string why = null;
+                    if (!zone.Standing)   // a standing zone leaves the lane whole: its cars are kept out by the gate and the sweep
                     {
-                        if (BusBay.Keep(Runs[i].Start, Runs[i].End, from, to, out float keepStart, out float keepEnd, out _))
+                        float from = zone.From - Margin;
+                        float to = zone.To + Margin;
+                        int runs = Beside(stop, right, from, to, out why);
+                        for (int i = 0; why == null && i < runs; i++)
                         {
-                            zone.Spots += Shorten(Runs[i], keepStart, keepEnd);
+                            if (BusBay.Keep(Runs[i].Start, Runs[i].End, from, to, out float keepStart, out float keepEnd, out _))
+                            {
+                                zone.Spots += Shorten(Runs[i], keepStart, keepEnd);
+                            }
                         }
                     }
                     zone.ParkingCut = true;
                     zone.Note = why;   // a lane found to be other than plain since the bay was laid out is left as it is, and said
+                }
+                if (!zone.Gating)
+                {
+                    zone.Gating = true;
+                    GateLanes(stop);   // whatever the lane beside it is, the cars it makes from now on are kept out of the zone
                 }
                 bool pieces = HideAll(zone.Clear, stop, unseen);
                 pieces &= HideAll(zone.Meters, stop, unseen);
                 bool cars = Sweep(stop, right, out int sent);
                 zone.CarsSent += sent;
                 zone.Made = pieces && cars;
-                zone.Waiting = zone.Made ? zone.Note : pieces ? "a car in it is in view" : "in view";
+                zone.Waiting = zone.Made ? zone.Note : pieces ? "a car of the player's in it is in view" : "in view";
                 return zone.Made;
             }
             catch (Exception e)
@@ -579,6 +599,7 @@ namespace RealLifeOverhaul
                 Stay.Clear();
                 _obstacles = null;   // the city's list: kept while the buses are switched off and on again
             }
+            Ungate(unloading);
             Originals.Clear();
             Verdicts.Clear();
             Hidden.Clear();
@@ -587,6 +608,7 @@ namespace RealLifeOverhaul
             RelayAt.Clear();
             _queued = false;
             _putBack = 0;
+            _tableCount = 0;   // laid out again by the next Step
             for (int i = 0; i < TransitMap.Stops.Count; i++)
             {
                 TransitStop stop = TransitMap.Stops[i];
@@ -597,7 +619,8 @@ namespace RealLifeOverhaul
                 {
                     zone.Made = false;
                     zone.ParkingCut = false;
-                    zone.Spots = zone.CarsSent = zone.PlayerCars = 0;
+                    zone.Gating = false;
+                    zone.Spots = zone.CarsSent = zone.PlayerCars = zone.Gated = zone.Hushed = zone.Others = 0;
                     zone.Waiting = zone.Note = null;
                 }
             }
@@ -615,12 +638,17 @@ namespace RealLifeOverhaul
                 return "its zone not made yet (" + (zone.Waiting ?? "the network is still being laid out")
                        + (zone.ParkingCut ? "; its parking already cut, " + zone.Spots + " spot(s)" : "") + ")";
             }
+            if (zone.Standing)
+            {
+                return "its zone (the standing bus's kerb, no bay) made: " + zone.Gated + " parking lane(s) gated, " + zone.CarsSent + " parked car(s) taken in, "
+                       + zone.Hushed + " switched off as made" + (zone.Others > 0 ? ", " + zone.Others + " other thing(s) on the parked-vehicle layer left" : "");
+            }
             return "its zone made: " + (zone.Lanes > 0
                        ? zone.Cut.ToString("F0") + " m of parking cut from " + zone.Lanes + " lane(s)"
                          + (zone.Lost > 0.5f ? " (" + zone.Lost.ToString("F0") + " of it beyond the zone)" : "") + ", " + zone.Spots + " spot(s)"
                        : "no parking beside it")
                    + ", " + zone.Clear.Count + " piece(s) of street furniture and " + zone.Meters.Count + " parking meter(s) switched off, " + zone.CarsSent
-                   + " parked car(s) taken in"
+                   + " parked car(s) taken in, " + zone.Gated + " parking lane(s) gated, " + zone.Hushed + " switched off as made"
                    + (zone.PlayerCars > 0 ? ", " + zone.PlayerCars + " of the player's moved to a free space" : "")
                    + (zone.Known.Count > 0 ? ", " + zone.Known.Count + " street tree(s) at the kerb left standing" : "")
                    + (zone.Waiting != null ? " (" + zone.Waiting + ")" : "");
@@ -629,6 +657,7 @@ namespace RealLifeOverhaul
         private static void Report()
         {
             int zones = 0, made = 0, lanes = 0, furniture = 0, meters = 0, cars = 0, players = 0, spots = 0, trees = 0, strips = 0, boarding = 0, waiting = 0;
+            int standing = 0, gated = 0, hushed = 0;
             float cut = 0f, lost = 0f;
             for (int i = 0; i < TransitMap.Stops.Count; i++)
             {
@@ -638,11 +667,14 @@ namespace RealLifeOverhaul
                     boarding += TransitMap.Stops[i].BoardingMade ? TransitMap.Stops[i].Boarding.Count : 0;
                 }
                 BusZone zone = TransitMap.Stops[i].Zone;
-                if (zone == null || !TransitMap.Stops[i].HasBay)
+                if (zone == null)
                 {
                     continue;
                 }
                 zones++;
+                standing += zone.Standing ? 1 : 0;
+                gated += zone.Gated;
+                hushed += zone.Hushed;
                 spots += zone.Spots;
                 cars += zone.CarsSent;
                 players += zone.PlayerCars;
@@ -659,7 +691,8 @@ namespace RealLifeOverhaul
                 meters += zone.Meters.Count;
                 trees += zone.Known.Count;
             }
-            Logger?.Info("Transit check (zones): " + made + " of " + zones + " bus zones made: " + cut.ToString("F0") + " m of the game's parking cut from "
+            Logger?.Info("Transit check (zones): " + made + " of " + zones + " bus zones made (" + standing + " of them the standing bus's kerb of a place with no bay, " + gated
+                         + " parking lane(s) gated, " + hushed + " car(s) switched off as the game made them): " + cut.ToString("F0") + " m of the game's parking cut from "
                          + lanes + " lane(s) (" + lost.ToString("F0") + " m of it beyond the zones), " + furniture + " piece(s) of street furniture and " + meters
                          + " parking meter(s) switched off, " + cars + " parked car(s) taken in, " + trees + " street tree(s) at the kerb left standing; " + boarding
                          + " piece(s) of street furniture switched off on the boarding strips of " + strips + " stop(s) (the kerb by the doors and the ways to them); "
@@ -667,7 +700,8 @@ namespace RealLifeOverhaul
                          + (made == zones ? "PASS" : (zones - made) + " still waiting to be out of view") + ".");
             Logger?.Info("Transit check (bay cars): in " + UnityEngine.SceneManagement.SceneManager.GetActiveScene().name + ", " + zones + " bay(s) checked: " + spots
                          + " of the game's parking spot(s) disabled, " + cars + " parked car(s) taken in, " + players + " of the player's car(s) moved to a free space; "
-                         + (waiting == 0 ? "every bay clear: PASS" : waiting + " bay(s) with a car or a piece in view, taken as soon as it is out of view") + ".");
+                         + (waiting == 0 ? "every bay clear: PASS" : waiting + " zone(s) with a piece of furniture or a car of the player's in view, taken as soon as it is out of view") + ".");
+            Audit();
         }
 
         private static Vector3 Flat(Vector3 vector)

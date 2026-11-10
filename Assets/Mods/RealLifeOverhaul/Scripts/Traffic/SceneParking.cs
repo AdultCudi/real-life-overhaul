@@ -7,7 +7,10 @@ namespace RealLifeOverhaul
 {
     /// <summary>
     /// Where a vehicle may stand: the free-space tests for wrecks, units and the roadside, and the point on a unit's own route
-    /// where it pulls up (in line with its lane, the nearest free one to the scene). Physics box tests, on events only.
+    /// where it pulls up (in line with its lane, the nearest free one to the scene). Physics box tests, on events only. No vehicle the
+    /// mod stands ever stands in a bus stop's kerb (BusZones.Holds): <see cref="IsFree(VehicleComponent, Vector3, Quaternion, HashSet{Rigidbody}, float)"/>,
+    /// <see cref="Stands"/> and <see cref="KerbRoom"/> all say no there, so every path that asks them (patrol cars, wrecks and units,
+    /// the taxi, a rented or bought car handed over at the kerb, the test car) keeps out of one without a line of its own.
     /// </summary>
     public static class SceneParking
     {
@@ -34,7 +37,17 @@ namespace RealLifeOverhaul
         /// <param name="margin">Extra room wanted all round, in metres.</param>
         public static bool IsFree(VehicleComponent car, Vector3 position, Quaternion rotation, HashSet<Rigidbody> except, float margin = 0f)
         {
-            return Touching(car, position, rotation, except, margin) == null;
+            return Touching(car, position, rotation, except, margin) == null
+                   && !BusZones.Holds(position, rotation * Vector3.forward, Mathf.Max(1.5f, car.length * 0.5f) + margin, Mathf.Max(0.8f, car.colliderWidth * 0.5f) + margin);
+        }
+
+        /// <summary>
+        /// True if a vehicle that size may stand there: nothing solid in its box (<see cref="IsFree(Vector3, Quaternion, float, float, float)"/>) and none of it
+        /// in a bus stop's kerb. For every path that stands a car at a kerb; a prop that is no vehicle asks IsFree.
+        /// </summary>
+        public static bool Stands(Vector3 position, Quaternion rotation, float halfWidth, float halfLength, float margin)
+        {
+            return IsFree(position, rotation, halfWidth, halfLength, margin) && !BusZones.Holds(position, rotation * Vector3.forward, halfLength + margin, halfWidth + margin);
         }
 
         /// <summary>What the car would overlap in that pose, apart from itself and the bodies named; null if nothing. For a check and its log line.</summary>
@@ -248,6 +261,8 @@ namespace RealLifeOverhaul
                     Rigidbody hit = Overlaps[i].attachedRigidbody;
                     free &= hit != null && (hit == car.rb || hit == follower);
                 }
+                // Never in to a bus stop's kerb: it stops in its lane there, as it does with no room.
+                free &= !BusZones.Holds(at + forward * 3f + right * over, forward, 15f, halfWidth + 0.2f);
                 if (free)
                 {
                     return over;
