@@ -61,12 +61,24 @@ internal static partial class Program
             if (parts[i].StartsWith("f:", StringComparison.Ordinal))
             {
                 string[] fields = parts[i].Substring(2).Split(';')[0].Split('|');
-                parts[i] = "f:" + string.Join("|", fields, 0, fields.Length - 2);   // the line as it was before the two fields
+                parts[i] = "f:" + string.Join("|", fields, 0, fields.Length - 5);   // the line as it was before the two fields (and the three of what the owner's own businesses paid, after them)
             }
         }
         FirmsFile old = FirmsStore.Read(string.Join("~", parts), out _);
         Firm o = old.FirmAt("Long Rd~7");
-        Check(o != null && o.Prev30 == 0 && o.PrevDays == 0 && o.Revenue30 == firm.Revenue30, "tech change: an old save's firm loads with no month before and plays on");
+        Check(o != null && o.Prev30 == 0 && o.PrevDays == 0 && o.Revenue30 == firm.Revenue30 && o.Self30 == 0 && o.SelfPrev30 == 0, "tech change: an old save's firm loads with no month before and plays on");
+        string[] parts3 = text.Split('~');
+        for (int i = 0; i < parts3.Length; i++)
+        {
+            if (parts3[i].StartsWith("f:", StringComparison.Ordinal))
+            {
+                string[] fields = parts3[i].Substring(2).Split(';')[0].Split('|');
+                parts3[i] = "f:" + string.Join("|", fields, 0, fields.Length - 3);   // the line as it was before what the owner's own businesses paid
+            }
+        }
+        Firm o3 = FirmsStore.Read(string.Join("~", parts3), out _).FirmAt("Long Rd~7");
+        Check(o3 != null && o3.Prev30 == firm.Prev30 && o3.PrevDays == firm.PrevDays && o3.Self30 == 0 && o3.SelfPrev30 == 0 && Array.TrueForAll(o3.SelfDays, d => d == 0),
+            "stock extras fix: a save from before what the owner's own businesses paid loads with the month before kept and none of it counted as their own");
     }
 
     private static void TechLeagueChecks()
