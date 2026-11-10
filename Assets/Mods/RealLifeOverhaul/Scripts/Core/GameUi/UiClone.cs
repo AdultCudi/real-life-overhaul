@@ -11,6 +11,14 @@ using UnityEngine.UI;
 namespace RealLifeOverhaul.GameUi
 {
     /// <summary>
+    /// Marks a component of the mod's that sits on one of the game's interface objects to watch the original (the stations' watch on the game's
+    /// list of stations): <see cref="UiClone.Asleep"/> takes it off every copy, so a copy never carries it and never runs its OnEnable.
+    /// </summary>
+    public interface INotCopied
+    {
+    }
+
+    /// <summary>
     /// Copies of the game's own interface objects, made at run time and never shipped: a live object is copied while
     /// asleep (none of its scripts wake in the copy), the scripts that drive the original are taken off, and what is left
     /// is the game's. See RealLifeOverhaul.Build/docs/game-ui.md.
@@ -42,7 +50,22 @@ namespace RealLifeOverhaul.GameUi
             {
                 copy.tag = "Untagged";   // the game's "UiTemplate" tag marks what Transform.ResetTemplate may destroy
             }
+            TakeOffMarked(copy);
             return copy;
+        }
+
+        // The mod's own components on the original that watch it (marked INotCopied) are not the copy's: a copy is asleep, so none of them has run in it.
+        private static void TakeOffMarked(GameObject copy)
+        {
+            var all = new List<MonoBehaviour>(16);
+            copy.GetComponentsInChildren(true, all);
+            for (int i = 0; i < all.Count; i++)
+            {
+                if (all[i] is INotCopied)
+                {
+                    UnityEngine.Object.DestroyImmediate(all[i]);
+                }
+            }
         }
 
         /// <summary>Takes the game's scripts off a sleeping copy but those <paramref name="keep"/> wants; a script another requires goes after it.</summary>

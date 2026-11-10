@@ -247,7 +247,7 @@ namespace RealLifeOverhaul.Subway
                 director.Drop(ref director._up);
                 director._near = near;
                 director._train = TrainNow();
-                bool came = director.ComeUp(near, IndexOf(site), TimeHelper.CurrentDay, director._train + 7919, Time.unscaledTime);   // another rider than the train's own
+                bool came = director.ComeUp(near, IndexOf(site), TimeHelper.CurrentDay, director._train + 7919, Time.time);   // another rider than the train's own
                 director._nextLook = 0f;
                 Logger?.Info("Subway check (rider): somebody " + (came ? "comes up at " : "could not be put at ") + site.Id
                              + (came ? " and walks off along the pavement: PASS" : " (both people are out, or no pavement to walk off along): FAIL"));

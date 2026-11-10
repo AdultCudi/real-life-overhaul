@@ -164,9 +164,9 @@ namespace RealLifeOverhaul
         /// </summary>
         public static string NameKey(SubwayStation station)
         {
-            if (ReferenceEquals(station, null))
+            if (station == null)
             {
-                return string.Empty;
+                return string.Empty;   // gone (Unity's null): a station of the mod's own that was taken away reads its copied entrance's name from the field below
             }
             string own = OwnStations.KeyOf(station);   // a station the mod stands carries the value of the entrance it was copied from: its name is its own
             if (own != null)

@@ -2,6 +2,8 @@ using System;
 using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
+using System.Reflection.Metadata;
+using System.Reflection.PortableExecutable;
 using System.Text.RegularExpressions;
 using RealLifeOverhaul;
 using RealLifeOverhaul.Schools;
@@ -17,18 +19,92 @@ using RealLifeOverhaul.Uptown;
 // texts in every language.
 internal static partial class Program
 {
-    // The game's twenty stations as its English names them (its locale, Build 3682), in the order the game's own sort gives its list.
-    private static readonly string[] SubwayGameNames =
+    // The game's twenty stations as its own files have them: the members of Enums.SubwayStationName in BigAmbitions.dll (twenty, Midtown four, no Grand Central)
+    // and for each the English name its locale gives under "subwaystation_" and the member in lower case. Null when the game is not there or is not as known.
+    private static List<string> SubwayGameStationNames(out string why)
     {
-        "Garment District - East Station", "Garment District - Harbor Station", "Garment District - West Station", "Hell's Kitchen - East Station", "Hell's Kitchen - North Station",
-        "Hell's Kitchen - South Station", "Hell's Kitchen - West Station", "Industry City - Center Station", "Industry City - Harbor Station", "Industry City - Sunset Park Station",
-        "Lower Manhattan - Center Station", "Lower Manhattan - North Station", "Midtown - Grand Central Station", "Midtown - Madison Park Station", "Midtown - North West Station",
-        "Midtown - St. Patrick Station", "Midtown - Times Square Station", "Murray Hill - East Station", "Murray Hill - North Station", "Murray Hill - South Station"
-    };
+        why = null;
+        string dll = System.IO.Path.Combine(GameManagedFolder(), "BigAmbitions.dll");
+        Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(DesignGameFiles, "locale", "en.json"));
+        if (!System.IO.File.Exists(dll) || words == null)
+        {
+            why = "the game's BigAmbitions.dll or its locale is not at " + GameManagedFolder();
+            return null;
+        }
+        var members = new List<string>();
+        using (var pe = new PEReader(System.IO.File.OpenRead(dll)))
+        {
+            MetadataReader md = pe.GetMetadataReader();
+            foreach (TypeDefinitionHandle handle in md.TypeDefinitions)
+            {
+                TypeDefinition type = md.GetTypeDefinition(handle);
+                if (md.GetString(type.Name) != "SubwayStationName" || md.GetString(type.Namespace) != "Enums")
+                {
+                    continue;
+                }
+                foreach (FieldDefinitionHandle field in type.GetFields())
+                {
+                    string name = md.GetString(md.GetFieldDefinition(field).Name);
+                    if (name != "value__")
+                    {
+                        members.Add(name);
+                    }
+                }
+            }
+        }
+        var names = new List<string>();
+        foreach (string member in members)
+        {
+            if (!words.TryGetValue("subwaystation_" + member.ToLowerInvariant(), out string english))
+            {
+                why = "the game's locale has no name for " + member;
+                return null;
+            }
+            names.Add(english);
+        }
+        return names;
+    }
+
+    // A source with its comments taken out, so a word in a comment can neither trip nor hide a check of what the code does.
+    private static string SubwayCode(string source)
+    {
+        return Regex.Replace(Regex.Replace(source, @"/\*.*?\*/", string.Empty, RegexOptions.Singleline), @"//[^\r\n]*", string.Empty);
+    }
+
+    // The keys of locales.py's ENGLISH_OK (and the languages of ENGLISH_OK_IN) read from the quotes of its code, its comments taken out first:
+    // an apostrophe in a comment pairs with the next quote and drops every key between them.
+    private static HashSet<string> SubwayQuotedKeys(string script, string block)
+    {
+        Match found = Regex.Match(script, block + @" = \{(.*?)\n\}", RegexOptions.Singleline);
+        var keys = new HashSet<string>(StringComparer.Ordinal);
+        var code = new System.Text.StringBuilder();
+        foreach (string line in found.Groups[1].Value.Split('\n'))
+        {
+            bool quoted = false;
+            foreach (char c in line)
+            {
+                if (c == '\'')
+                {
+                    quoted = !quoted;
+                }
+                else if (c == '#' && !quoted)
+                {
+                    break;
+                }
+                code.Append(c);
+            }
+            code.Append('\n');
+        }
+        foreach (Match m in Regex.Matches(code.ToString(), @"'([^']+)'"))
+        {
+            keys.Add(m.Groups[1].Value);
+        }
+        return keys;
+    }
 
     private static readonly string[] SubwaySources =
     {
-        @"Subway\StationsRules.cs", @"Subway\StationsGame.cs", @"Subway\StationEntrance.cs", @"Subway\StationsDirector.cs", @"Subway\StationsDirector.Riders.cs",
+        @"Subway\StationsRules.cs", @"Subway\StationsGoing.cs", @"Subway\StationsGame.cs", @"Subway\StationEntrance.cs", @"Subway\StationsDirector.cs", @"Subway\StationsDirector.Riders.cs",
         @"Subway\StationsDirector.Tests.cs", @"Subway\StationsGuide.cs", @"Subway\StationsText.cs"
     };
 
@@ -36,6 +112,8 @@ internal static partial class Program
     {
         SubwayListChecks();
         SubwayStandChecks();
+        SubwayGoingChecks();
+        SubwayRideChecks();
         SubwayFigureChecks();
         SubwayRiderChecks();
         SubwayCampusChecks();
@@ -48,10 +126,15 @@ internal static partial class Program
     private static void SubwayListChecks()
     {
         Comparison<string> order = (a, b) => string.Compare(a, b, CultureInfo.GetCultureInfo("en-US"), CompareOptions.None);
-        var names = new List<string>(SubwayGameNames);
-        names.Add("The Hamptons Station - Marina");
+        List<string> names = SubwayGameStationNames(out string readWhy);
+        Check(names != null && names.Count == 20, "subway list: the game's own twenty stations are read from its files (the members of its SubwayStationName and its locale's names)" + (readWhy != null ? ": " + readWhy : string.Empty));
+        if (names == null || names.Count != 20)
+        {
+            return;
+        }
         names.Sort(order);
-        Check(names.Count == 21 && names[0].StartsWith("Garment", StringComparison.Ordinal) && names[20].StartsWith("The Hamptons", StringComparison.Ordinal), "subway list: the game's own names, sorted as it sorts them");
+        Check(names[0].StartsWith("Garment", StringComparison.Ordinal) && names[19].StartsWith("The Hamptons", StringComparison.Ordinal) && names.Count(n => n.StartsWith("Midtown", StringComparison.Ordinal)) == 4
+              && !names.Any(n => n.Contains("Grand Central")) && names.Distinct().Count() == 20, "subway list: the game's own names, sorted as it sorts them: Midtown has four and no Grand Central");
         Dictionary<string, string> en = LoadWords(System.IO.Path.Combine(DesignLocales, "en.json"));
         string birchwood = en != null && en.TryGetValue(StationsRules.BirchwoodKey, out string b) ? b : null, summit = en != null && en.TryGetValue(StationsRules.SummitKey, out string s) ? s : null,
             east = en != null && en.TryGetValue(StationsRules.EastKey, out string e) ? e : null;
@@ -71,8 +154,8 @@ internal static partial class Program
         {
             sorted &= order(names[i - 1], names[i]) <= 0;
         }
-        Check(sorted && names.Count == 24, "subway list: with the three stations joined at their names' places the list is still in the order of its names");
-        Check(names.IndexOf(birchwood) == 0 && names.IndexOf(summit) == 1 && names.IndexOf(east) == 23,
+        Check(sorted && names.Count == 23, "subway list: with the three stations joined at their names' places the list of 23 is still in the order of its names");
+        Check(names.IndexOf(birchwood) == 0 && names.IndexOf(summit) == 1 && names.IndexOf(east) == 22,
             "subway list: Cedar Heights' two come first and Uptown's last, by their names (" + names.IndexOf(birchwood) + ", " + names.IndexOf(summit) + ", " + names.IndexOf(east) + ")");
         Check(StationsRules.InsertAt(new List<string>(), "x", order) == 0 && StationsRules.InsertAt(null, "x", order) == 0, "subway list: into an empty list, or none, a station goes first");
         Check(StationsRules.InsertAt(new List<string> { "a", "b", "c" }, "d", order) == 3 && StationsRules.InsertAt(new List<string> { "b", "c" }, "a", order) == 0
@@ -87,6 +170,16 @@ internal static partial class Program
         Check(!StationsRules.Shown(birchwood, "midtown", loose) && !StationsRules.Shown(east, "garment", loose) && !StationsRules.Shown(summit, "birchwood", loose) && !StationsRules.Shown(null, "x", loose),
             "subway search: the name of the game's entrance it was copied from does not show it, nor another station's");
         Check(!StationsRules.Shown(birchwood, "BIRCH", StringComparison.Ordinal), "subway search: the comparison is the caller's (the game's ignores case)");
+        // The listener's order: the mod's is taken off and put on last, once, each time the window is shown, after whatever the game has put on since.
+        var listeners = new List<string> { "game", "mine" };
+        Action off = () => listeners.Remove("mine"), on = () => listeners.Add("mine");
+        StationsRules.HangLast(off, on);
+        bool once = listeners.SequenceEqual(new[] { "game", "mine" });
+        listeners.Insert(0, "game later");
+        listeners.Remove("mine");
+        listeners.Add("game last");
+        StationsRules.HangLast(off, on);
+        Check(once && listeners.SequenceEqual(new[] { "game later", "game", "game last", "mine" }), "subway search: the mod's listener is on once and always after the game's, however many the game has put on since: " + string.Join(", ", listeners));
     }
 
     // ---- standing and going
@@ -97,12 +190,6 @@ internal static partial class Program
         Check(!StationsRules.Wanted(false, true, 20), "subway standing: with the option off they do not stand");
         Check(!StationsRules.Wanted(true, false, 20), "subway standing: with the districts not laid or closed they do not stand");
         Check(!StationsRules.Wanted(true, true, 0) && !StationsRules.Wanted(true, true, -3), "subway standing: with none of the game's own stations there is no network to join");
-        Check(StationsRules.Removal(true, true, false) == StationRemoval.AfterRide && StationsRules.Removal(true, true, true) == StationRemoval.AfterRide,
-            "subway going: a ride that begins or ends at one of them is let finish first");
-        Check(StationsRules.Removal(true, false, false) == StationRemoval.Now, "subway going: a ride between two of the game's own holds nothing back");
-        Check(StationsRules.Removal(false, true, true) == StationRemoval.MapFirst && StationsRules.Removal(false, false, true) == StationRemoval.MapFirst,
-            "subway going: the game's map open on its stations from one of them is shut first");
-        Check(StationsRules.Removal(false, false, false) == StationRemoval.Now && StationsRules.Removal(false, true, false) == StationRemoval.Now, "subway going: otherwise they go at once");
         IReadOnlyList<StationSite> sites = StationsRules.Sites;
         Check(sites.Count == 3 && sites.Select(x => x.Id).Distinct().Count() == 3 && sites.Select(x => x.NameKey).Distinct().Count() == 3 && sites.All(x => Regex.IsMatch(x.Id, "^[a-z]+$")),
             "subway standing: three stations, each with an id of letters and a name of its own");
@@ -110,6 +197,201 @@ internal static partial class Program
             "subway standing: each at a quarter turn, its origin as far into its ground as the game's own stand (" + string.Join(", ", sites.Select(x => StationsRules.GroundOf(x).ToString("F4", CultureInfo.InvariantCulture))) + ")");
         bool lots = sites.All(x => StationsRules.MeetsLot(x, UptownLots.All) == null && StationsRules.MeetsLot(x, UptownLots.Places) == null);
         Check(lots && UptownLots.All.Count > 600 && UptownLots.All.Any(l => l.Open), "subway standing: none on a lot of the plan, of its " + UptownLots.All.Count + " (the open runs the player builds on among them) or its big special places");
+    }
+
+    // ---- going: one rule for every cause, never under a rider
+
+    private static StationHolds Held(bool riding, bool touches, bool taxi, bool map) => new StationHolds(riding, touches, taxi, map);
+
+    private static void SubwayGoingChecks()
+    {
+        // The rule by what holds them: all sixteen states, written out (riding, the ride touches one of theirs, a taxi trip, the map open from one of theirs).
+        StationRemoval N = StationRemoval.Now, M = StationRemoval.MapFirst, R = StationRemoval.AfterRide, T = StationRemoval.AfterTaxi;
+        StationRemoval[] expected = { N, M, T, T, N, M, T, T, N, M, T, T, R, R, R, R };
+        bool table = true;
+        string wrong = string.Empty;
+        for (int bits = 0; bits < 16; bits++)
+        {
+            StationRemoval got = StationsRules.Removal((bits & 8) != 0, (bits & 4) != 0, (bits & 2) != 0, (bits & 1) != 0);
+            if (got != expected[bits])
+            {
+                table = false;
+                wrong += " [" + Convert.ToString(bits, 2).PadLeft(4, '0') + " gave " + got + "]";
+            }
+        }
+        Check(table, "subway going: of the sixteen states of (riding, the ride touches theirs, a taxi trip, the map open from theirs) a ride that touches theirs holds them, a taxi trip holds them, "
+                     + "the map is shut first, and otherwise they go" + wrong);
+        Check(StationsRules.Removal(true, true, true, true) == StationRemoval.AfterRide && StationsRules.Removal(false, false, true, false) == StationRemoval.AfterTaxi,
+            "subway going: a taxi trip under way, to one of theirs or not (the game does not say where), holds them as a ride does");
+
+        // Every cause against every state: the three the director waits on, the director going, and the city going.
+        StationExit[] waits = { StationExit.OptionOff, StationExit.DistrictClosing, StationExit.CleanUp };
+        bool causes = true;
+        string causeWrong = string.Empty;
+        foreach (StationExit cause in waits)
+        {
+            for (int bits = 0; bits < 16; bits++)
+            {
+                var going = new StationsGoing();
+                StationHolds holds = Held((bits & 8) != 0, (bits & 4) != 0, (bits & 2) != 0, (bits & 1) != 0);
+                StationStep step = going.Go(cause, "w", holds);
+                StationStep want = expected[bits] == R || expected[bits] == T ? StationStep.Wait : expected[bits] == M ? StationStep.ShutMapThenRemove : StationStep.Remove;
+                bool right = step == want && going.Waiting == (want == StationStep.Wait) && (!going.Waiting || (going.Cause == cause && going.Why == "w" && going.Holding == expected[bits]));
+                if (!right)
+                {
+                    causes = false;
+                    causeWrong += " [" + cause + " " + Convert.ToString(bits, 2).PadLeft(4, '0') + " gave " + step + "]";
+                }
+                var gone = new StationsGoing();
+                StationStep byDirector = gone.Go(StationExit.DirectorGone, "w", holds);
+                StationStep wantDirector = want == StationStep.Wait ? StationStep.HandOver : want;
+                if (byDirector != wantDirector || gone.Waiting)
+                {
+                    causes = false;
+                    causeWrong += " [DirectorGone " + Convert.ToString(bits, 2).PadLeft(4, '0') + " gave " + byDirector + "]";
+                }
+                var unloading = new StationsGoing();
+                if (unloading.Go(StationExit.CityUnloading, "w", holds) != StationStep.Drop || unloading.Waiting)
+                {
+                    causes = false;
+                    causeWrong += " [CityUnloading " + Convert.ToString(bits, 2).PadLeft(4, '0') + "]";
+                }
+            }
+        }
+        Check(causes, "subway going: the option off, the districts closing and the clean-up wait for a ride or a taxi trip, shut the map first, or go; the director going hands a wait to a watcher; "
+                      + "the city going drops them, whatever is held" + causeWrong);
+
+        // A ride, a taxi trip and the rest over time: asked every look from tick 3; the stations go on the first look nothing holds them, never before.
+        Check(Timeline(StationExit.OptionOff, 3, t => Held(t >= 2 && t <= 8, true, false, false)) == 9, "subway going: the option switched off at tick 3 of a ride (ticks 2 to 8) takes them away at tick 9, the first look after the rider is up");
+        Check(Timeline(StationExit.CleanUp, 5, t => Held(false, false, t >= 4 && t <= 20, false)) == 21, "subway going: the clean-up at tick 5 of a taxi trip (ticks 4 to 20) takes them away at tick 21, when the rider is down");
+        Check(Timeline(StationExit.DistrictClosing, 3, t => Held(t >= 3 && t <= 5, true, t >= 6 && t <= 9, false)) == 10,
+            "subway going: a ride followed at once by a taxi trip holds them through both (ticks 3 to 9), they go at tick 10");
+        Check(Timeline(StationExit.OptionOff, 3, t => Held(t >= 2 && t <= 8, false, false, false)) == 3, "subway going: a ride between two of the game's own stations holds them back no more than none");
+        Check(Timeline(StationExit.OptionOff, 3, t => Held(false, false, false, t >= 1 && t <= 6)) == 3, "subway going: the map open on their list is shut at once and they go in the same look");
+        Check(Timeline(StationExit.DirectorGone, 3, t => Held(t >= 2 && t <= 8, true, false, false)) == 9,
+            "subway going: the director destroyed during a ride hands it to the watcher, which asks the same rule and takes them away at tick 9");
+        Check(Timeline(StationExit.DirectorGone, 3, t => Held(false, false, t >= 2 && t <= 8, false)) == 9, "subway going: the director destroyed during a taxi trip hands it to the watcher too, which takes them away at tick 9");
+        Check(Timeline(StationExit.DirectorGone, 3, t => Held(t >= 2, true, false, false), unloadAt: 6) == -6, "subway going: the city unloading while the watcher waits drops them with the scene at tick 6 and takes nothing out under the ride");
+        // The option switched back on while a ride was let finish: the going is called off and the look asks no more.
+        var back = new StationsGoing();
+        StationStep first = back.Go(StationExit.OptionOff, "off", Held(true, true, false, false));
+        back.Cancel();
+        Check(first == StationStep.Wait && !back.Waiting && back.Why == null && back.Holding == StationRemoval.Now, "subway going: switched back on while a ride is let finish, the going is called off");
+        // The rule's own invariant over many seeded sequences of states: no step that takes them away is ever asked of a state that holds them.
+        var rng = new Random(20261111);
+        int asked = 0;
+        bool never = true;
+        for (int run = 0; run < 3000; run++)
+        {
+            var going = new StationsGoing();
+            StationExit cause = (StationExit)rng.Next(0, 4);
+            bool riding = false, touches = false, taxi = false, map = false;
+            for (int tick = 0; tick < 40; tick++)
+            {
+                riding ^= rng.Next(0, 6) == 0;
+                touches ^= rng.Next(0, 5) == 0;
+                taxi ^= rng.Next(0, 7) == 0;
+                map ^= rng.Next(0, 5) == 0;
+                StationHolds holds = Held(riding, touches, taxi, map);
+                StationStep step = tick == 0 || going.Waiting || cause == StationExit.DirectorGone ? going.Go(cause, "x", holds) : StationStep.Wait;
+                asked++;
+                bool held = (riding && touches) || taxi;
+                never &= !(held && (step == StationStep.Remove || step == StationStep.ShutMapThenRemove));
+                if (step == StationStep.Remove || step == StationStep.ShutMapThenRemove)
+                {
+                    break;
+                }
+            }
+        }
+        Check(never && asked > 5000, "subway going: over 3000 seeded sequences of states (" + asked + " looks) no look takes them away under a ride that touches them or a taxi trip");
+
+        // The order they are let go in: what the game walks or points at first, the entrance itself last.
+        IReadOnlyList<StationsRules.StationPart> order = StationsRules.GoingOrder;
+        int At(StationsRules.StationPart part)
+        {
+            for (int k = 0; k < order.Count; k++)
+            {
+                if (order[k] == part)
+                {
+                    return k;
+                }
+            }
+            return -1;
+        }
+        bool whole = order.Count == Enum.GetValues(typeof(StationsRules.StationPart)).Length && order.Distinct().Count() == order.Count;
+        Check(whole && At(StationsRules.StationPart.Entrance) == order.Count - 1 && At(StationsRules.StationPart.GameList) == 0 && At(StationsRules.StationPart.GameList) < At(StationsRules.StationPart.Registry)
+              && At(StationsRules.StationPart.WindowEntry) < At(StationsRules.StationPart.Entrance) && At(StationsRules.StationPart.HoverCard) < At(StationsRules.StationPart.Entrance)
+              && At(StationsRules.StationPart.MapMarker) < At(StationsRules.StationPart.Entrance) && At(StationsRules.StationPart.TravelCard) < At(StationsRules.StationPart.Entrance),
+            "subway going: a station leaves the game's list first and the entrance is destroyed last, after its window entry, the cards over it and its marker on the map (" + string.Join(", ", order) + ")");
+
+        // A station is not stood on the player.
+        StationSite site = StationsRules.Sites[1];
+        StationsRules.Footprint(site, out float x0, out float z0, out float x1, out float z1);
+        float cx = (x0 + x1) * 0.5f, cz = (z0 + z1) * 0.5f;
+        Check(StationsRules.Occupied(site, cx, cz) && StationsRules.Occupied(site, x0 - 0.4f, cz) && StationsRules.Occupied(site, cx, z1 + 0.4f) && !StationsRules.Occupied(site, x0 - 0.8f, cz)
+              && !StationsRules.Occupied(site, cx, z1 + 0.8f) && !StationsRules.Occupied(site, x1 + 0.8f, z1 + 0.8f),
+            "subway standing: the player on an entrance's ground, or within " + StationsRules.PlayerReach + " m of it, is on it; 0.8 m off they are not");
+    }
+
+    // The tick a going is carried out at, or -1 if never, or the negative of the tick the scene took them: the going is asked from tick `from` (the cause), then every
+    // tick while it waits, as the director's look and the watcher do.
+    private static int Timeline(StationExit cause, int from, Func<int, StationHolds> holds, int unloadAt = -1)
+    {
+        var going = new StationsGoing();
+        bool asking = false;
+        for (int tick = from; tick < 60; tick++)
+        {
+            StationExit by = unloadAt >= 0 && tick >= unloadAt ? StationExit.CityUnloading : cause;
+            StationStep step;
+            if (!asking)
+            {
+                step = going.Go(by, "t", holds(tick));
+                asking = step == StationStep.Wait || step == StationStep.HandOver;
+            }
+            else
+            {
+                step = cause == StationExit.DirectorGone || by == StationExit.CityUnloading ? going.Go(by, "t", holds(tick)) : going.Again(holds(tick));
+            }
+            if (step == StationStep.Drop)
+            {
+                return -tick;
+            }
+            if (step == StationStep.Remove || step == StationStep.ShutMapThenRemove)
+            {
+                return tick;
+            }
+        }
+        return -1;
+    }
+
+    // ---- a ride's record: where it began, its stops
+
+    private static void SubwayRideChecks()
+    {
+        // The game's own order (the frame a ride begins: SubwaySystem.TravelToCoroutine sets IsRiding, then the map's close sets lastSubwayStation to null) leaves the journey
+        // nothing but the camera's start; the origin is found from it, or from the station seen while the map was open.
+        var x = new List<float> { 0f, 400f, 900f, float.NaN };
+        var z = new List<float> { 0f, 0f, 100f, float.NaN };
+        Check(SubwayRideRules.Origin(0f, 0f, x, z, -1) == 0 && SubwayRideRules.Origin(12f, -5f, x, z, -1) == 0 && SubwayRideRules.Origin(400f, 3f, x, z, -1) == 1,
+            "subway ride: with the game's lastSubwayStation already null, the origin is the station at the camera's start, a few metres on or not");
+        Check(SubwayRideRules.Origin(55f, 0f, x, z, -1) == -1 && SubwayRideRules.Origin(200f, 0f, x, z, 0) == -1, "subway ride: a start beyond " + SubwayRideRules.OriginReach + " m from every station is no station's");
+        Check(SubwayRideRules.Origin(10f, 0f, x, z, 1) == 0 && SubwayRideRules.Origin(395f, 0f, x, z, 1) == 1, "subway ride: the station seen while the map was open counts only while the start is near it");
+        Check(SubwayRideRules.Origin(0f, 0f, x, z, 3) == 0 && SubwayRideRules.Origin(0f, 0f, x, z, 9) == 0 && SubwayRideRules.Origin(0f, 0f, null, null, -1) == -1 && SubwayRideRules.Origin(0f, 0f, x, z, -5) == 0,
+            "subway ride: a station that is gone (no position), an index out of range and no list at all do not throw or get chosen");
+        Check(SubwayRideRules.Stops(0f) == 1 && SubwayRideRules.Stops(359f) == 1 && SubwayRideRules.Stops(461f) == 1 && SubwayRideRules.Stops(1023f) == 2 && SubwayRideRules.Stops(2000f) == 3
+              && SubwayRideRules.MetresPerStop == 650f, "subway ride: a stop for every 650 m of the straight line and one at the least (Midtown North West to Birchwood 1, to the east park 2)");
+        string journey = SubwayCode(ModSource(@"Transport\SubwayJourney.cs"));
+        string began = MemberText(journey, "private void Began()"), record = MemberText(journey, "private void RecordRide(CityManager city, SubwaySystem system)"),
+            landed = MemberText(journey, "private void Landed(float now)"), arrived = MemberText(journey, "private void Arrived()"), watch = MemberText(journey, "private void WatchRide(float now)");
+        Check(began.Contains("RecordRide(city, system);") && began.IndexOf("RecordRide(city, system);", StringComparison.Ordinal) < began.IndexOf("Hide();", StringComparison.Ordinal)
+              && record.Contains("SubwaySystem.CurrentPosition") && record.Contains("SubwayRideRules.Origin(start.x, start.z, _stationX, _stationZ, knownAt)")
+              && record.Contains("system.lastSubwayStation != null ? system.lastSubwayStation : _seen") && watch.Contains("_seen = seen != null && seen.subwaySystem != null ? seen.subwaySystem.lastSubwayStation : null;")
+              && !began.Contains("lastSubwayStation"), "subway ride: the origin is taken the frame the ride is seen, from the camera's start or the station seen with the map open, never read from the game's lastSubwayStation alone");
+        Check(!landed.Contains(".transform") && !landed.Contains("OwnStations.LogName") && landed.Contains("JourneyMinutes(_rideFromAt, _rideToAt, out int wait)") && landed.Contains("_toName = _rideToName;")
+              && arrived.Contains("string name = _toName;") && !arrived.Contains("Name(") && record.Contains("_rideToName = to != null ? Name(to) : null;"),
+            "subway ride: the landing asks no station that may be gone: the points and the names were recorded when the ride began, and the arrival note says the recorded name");
+        string members = SubwayCode(ModSource(@"Core\GameMembers.cs"));
+        Check(MemberText(members, "public static string NameKey(SubwayStation station)").Contains("if (station == null)"), "subway ride: a station that is gone reads no name, never the entrance it was copied from");
     }
 
     // ---- every figure, as the documentation states it, and each clearance tried a step inside it and a step outside
@@ -335,16 +617,19 @@ internal static partial class Program
         string rules = ModSource(@"Subway\StationsRules.cs"), game = ModSource(@"Subway\StationsGame.cs"), entranceFile = ModSource(@"Subway\StationEntrance.cs"),
             director = ModSource(@"Subway\StationsDirector.cs"), riders = ModSource(@"Subway\StationsDirector.Riders.cs"), tests = ModSource(@"Subway\StationsDirector.Tests.cs"),
             guide = ModSource(@"Subway\StationsGuide.cs"), own = ModSource(@"Core\OwnStations.cs");
-        string all = string.Concat(SubwaySources.Select(ModSource));
+        string all = SubwayCode(string.Concat(SubwaySources.Select(ModSource)));
         Check(SubwaySources.All(f => ModSource(f).Length > 300) && own.Length > 300, "subway sources: its files are read");
         int cut = entranceFile.IndexOf("public sealed class StationTaxiStop", StringComparison.Ordinal);
         string entrance = cut > 0 ? entranceFile.Substring(0, cut) : entranceFile, stop = cut > 0 ? entranceFile.Substring(cut) : string.Empty;
 
         // The game-free rules have no Unity or game types.
-        Check(!rules.Contains("UnityEngine") && !rules.Contains("using BAModAPI") && !rules.Contains("Vector3") && !rules.Contains("SubwayStation "), "subway sources: the rules are game-free");
+        string going = ModSource(@"Subway\StationsGoing.cs");
+        Check(!rules.Contains("UnityEngine") && !rules.Contains("using BAModAPI") && !rules.Contains("Vector3") && !rules.Contains("SubwayStation ")
+              && !going.Contains("UnityEngine") && !going.Contains("using BAModAPI") && !going.Contains("Vector3") && !going.Contains("SubwayStation ") && !ModSource(@"Transport\SubwayRideRules.cs").Contains("UnityEngine"),
+            "subway sources: the rules, the going's rule and the ride's rules are game-free");
 
         // The fare is the game's own: nothing here books, gives or waives money, and travel is the game's own call.
-        Check(!all.Contains("BizBooks") && !all.Contains("ChangeMoney") && !Regex.IsMatch(all, @"\.Money\s*(=|\+=|-=)[^=]") && !all.Contains("TransactionInfo"),
+        Check(!all.Contains("BizBooks") && !all.Contains("ChangeMoney") && !Regex.IsMatch(all, @"\.Money\s*(=|\+=|-=)[^=]") && !all.Contains("TransactionInfo") && !all.Contains("Book("),
             "subway sources: nothing of the stations books, gives or takes money: the fare is the game's own, taken by its own travel");
         Check(entrance.Contains("public sealed class StationEntrance : SubwayStation") && !entrance.Contains("override bool Interact") && !entrance.Contains("PricePerRide"),
             "subway sources: the entrance is the game's own station and keeps its Interact, which asks for the fare before the map opens");
@@ -384,45 +669,77 @@ internal static partial class Program
             "subway sources: the look for something solid is one box that counts no ground, no zone and no person: somebody standing there in an older save does not cost the station");
         Check(game.Contains("asleep.SetActive(false);") && game.Contains("UnityEngine.Object.DestroyImmediate(copied);") && game.Contains("!drawn.isPartOfStaticBatch"),
             "subway sources: the copy is made asleep, the game's own station on it never wakes, and an entrance drawn in a static batch is never copied");
-        int outOfList = game.IndexOf("city.subwayStations.Remove(station);", StringComparison.Ordinal), destroyed = game.IndexOf("SceneryTrees.Destroy(station.gameObject);", StringComparison.Ordinal),
-            unmarked = game.IndexOf("Unmark(city, station.transform);", StringComparison.Ordinal);
-        Check(outOfList > 0 && unmarked > outOfList && destroyed > unmarked && game.Contains("map.pois.RemoveAt(i);") && game.Contains("map.UpdateNonePermanentPointOfInterests();") && game.Contains("entries?.Remove(stood.Entry);"),
-            "subway sources: a station leaves the game's list, window and map before it is destroyed, since the game walks all three");
+        string removeText = MemberText(game, "private static void Remove(Stood stood, CityManager city, UIs uis, List<CityMapSubwayStationEntry> entries)");
+        Check(removeText.Contains("IReadOnlyList<StationsRules.StationPart> order = StationsRules.GoingOrder;") && removeText.Contains("switch (order[i])")
+              && Enum.GetNames(typeof(StationsRules.StationPart)).All(part => removeText.Contains("case StationsRules.StationPart." + part + ":"))
+              && removeText.Contains("city.subwayStations.Remove(station);") && removeText.Contains("OverlayGuard.Release(station);") && removeText.Contains("Discard(stood.Entry, entries);")
+              && removeText.Contains("Unmark(city, station.transform);") && removeText.Contains("Release(uis, station);") && removeText.Contains("SceneryTrees.Destroy(station.gameObject);")
+              && game.Contains("map.pois.RemoveAt(i);") && game.Contains("map.UpdateNonePermanentPointOfInterests();"),
+            "subway sources: a station is let go of the game's list, window, cards and map in the rules' order, each part by its own case, and destroyed last through SceneryTrees");
+        string addEntry = MemberText(game, "private static CityMapSubwayStationEntry AddEntry(Stood stood, CityMapSubwayStations list, List<CityMapSubwayStationEntry> entries)"),
+            discard = MemberText(game, "private static void Discard(CityMapSubwayStationEntry entry, List<CityMapSubwayStationEntry> entries)");
+        Check(addEntry.Contains("catch (Exception)") && addEntry.IndexOf("Discard(entry, entries);", StringComparison.Ordinal) > addEntry.IndexOf("catch (Exception)", StringComparison.Ordinal)
+              && addEntry.IndexOf("throw;", StringComparison.Ordinal) > addEntry.IndexOf("Discard(entry, entries);", StringComparison.Ordinal)
+              && Regex.Match(addEntry, @"\btry\b").Index > addEntry.IndexOf("Instantiate(", StringComparison.Ordinal) && addEntry.IndexOf("entry.name =", StringComparison.Ordinal) > Regex.Match(addEntry, @"\btry\b").Index
+              && discard.IndexOf("entries?.Remove(entry);", StringComparison.Ordinal) >= 0 && discard.IndexOf("SetActive(false);", StringComparison.Ordinal) > discard.IndexOf("entries?.Remove(entry);", StringComparison.Ordinal)
+              && discard.IndexOf("Destroy(entry.gameObject);", StringComparison.Ordinal) > discard.IndexOf("SetActive(false);", StringComparison.Ordinal),
+            "subway sources: a row of the window that fails to be made is taken out of the list, shut and destroyed there and then, before the failure goes on");
         Check(Regex.Matches(game, @"SceneryTrees\.Destroy\(").Count == 4 && Regex.Matches(game, @"UnityEngine\.Object\.Destroy\(").Count == 3
-              && game.Contains("UnityEngine.Object.Destroy(stood.Entry.gameObject);") && game.Contains("UnityEngine.Object.Destroy(marker.gameObject);") && game.Contains("UnityEngine.Object.Destroy(_watch);")
+              && game.Contains("UnityEngine.Object.Destroy(entry.gameObject);") && game.Contains("UnityEngine.Object.Destroy(marker.gameObject);") && game.Contains("UnityEngine.Object.Destroy(_watch);")
               && !all.Contains("RegisterCullable") && !all.Contains("UnregisterCullable"),
             "subway sources: every copy of the game's entrance is destroyed through SceneryTrees, which takes its lamp out of the game's culling lists first; the three plain destroys are the window's entry, the map's marker and the watch");
         int joinedAt = game.IndexOf("city.subwayStations.Add(station);", StringComparison.Ordinal), backAt = game.IndexOf("Remove(entry, city, uis, entries);", StringComparison.Ordinal);
         Check(joinedAt > 0 && backAt > joinedAt && game.Contains("Standing.Remove(entry);") && game.Contains("entry.Entry = AddEntry(entry, list, entries);")
-              && MemberText(game, "private static void Remove(Stood stood, CityManager city, UIs uis, List<CityMapSubwayStationEntry> entries)").Contains("city.subwayStations.Remove(station);"),
+              && removeText.Contains("city.subwayStations.Remove(station);"),
             "subway sources: a station is joined whole or not at all: one whose entry in the game's window cannot be made is taken out of the game's list again and away");
-        string gone = MemberText(director, "private void OnDestroy()");
-        Check(gone.Contains("if (!GameManager.isCitySceneBeingUnloaded)") && gone.Contains("StationsGame.RemoveAll();") && !director.Contains("SaveTools.Dormant")
-              && gone.IndexOf("StationsGame.RemoveAll();", StringComparison.Ordinal) < gone.IndexOf("StationsGame.Forget();", StringComparison.Ordinal),
-            "subway sources: when the director goes in a city that stays, whoever stopped the mod, the stations leave the game's lists before anything is destroyed");
+        string gone = MemberText(director, "private void OnDestroy()"), leave = MemberText(director, "private void Leave(StationExit cause, string why)"), leaver = MemberText(game, "private IEnumerator Wait(string why)");
+        Check(gone.Contains("_going.Go(cause, \"the mod stopped\", StationsGame.Holds())") && gone.Contains("StationExit.CityUnloading : StationExit.DirectorGone") && gone.Contains("StationsGame.HandOver(_going, \"the mod stopped\");")
+              && gone.Contains("StationsGame.Carry(step);") && !director.Contains("SaveTools.Dormant") && !Regex.IsMatch(director, @"StationsGame\.RemoveAll\(") && !Regex.IsMatch(SubwayCode(game).Replace("public static int RemoveAll()", string.Empty), @"(?<!return )RemoveAll\(\)"),
+            "subway sources: the director destroyed (whoever stopped the mod) asks the same rule as every other cause, hands a ride or a taxi trip to the watcher, and nothing takes the stations away but the rule's own steps");
+        Check(leaver.Contains("_going.Go(cause, why, StationsGame.Holds())") && leaver.Contains("if (step == StationStep.HandOver)") && leaver.Contains("GameManager.isCitySceneBeingUnloaded ? StationExit.CityUnloading : StationExit.DirectorGone")
+              && leaver.Contains("StationsGame.Carry(step);") && leaver.Contains("new WaitForSecondsRealtime(Look)") && game.Contains("StartCoroutine(Guard.Routine(Wait(why)));") && game.Contains("public static bool HandedOver => _leaver != null;")
+              && MemberText(director, "private void Awake()").Contains("if (!StationsGame.HandedOver)"),
+            "subway sources: the watcher that outlives the director asks the rule four times a second on real time, goes on while it says hand over, lets the scene take them when the city unloads, and a new director does not clear what it holds");
+        Check(game.Contains("return new StationHolds(SubwaySystem.IsRiding, RideTouches(), TaxiTravelling(), PickingFromOwn());") && game.Contains("return InstanceBehavior<TaxiSystem>.IsInitialized && TaxiSystem.IsTraveling;"),
+            "subway sources: what holds the stations is the game's ride, a ride that touches them, any taxi trip (the property the taxi director and the private driver's page already ask) and the open map");
+        Check(leave.Contains("_going.Go(cause, why, StationsGame.Holds())") && leave.Contains("if (step == StationStep.Wait)") && leave.Contains("StationsGame.Carry(step);") && !leave.Contains("RemoveAll"),
+            "subway sources: every going of the director's own is the rule's answer carried out");
         string closing = MemberText(director, "public void Close(string why)"), look = MemberText(director, "private void OnUpdate()");
-        Check(closing.Contains("_closed = true;") && closing.Contains("Leave(why);") && !closing.Contains("RemoveAll") && look.Contains("if (_late && _closed)") && look.Contains("Leave(_leaveWhy);"),
+        Check(closing.Contains("_closed = true;") && closing.Contains("Leave(StationExit.CleanUp, why);") && !closing.Contains("RemoveAll") && look.Contains("if (_late && _closed)") && look.Contains("Leave(_going.Cause, _going.Why);"),
             "subway sources: the feature's clean-up leaves by the same rule, never under a rider, and the look takes them away once the rider is up");
-        Check(director.Contains("switch (StationsRules.Removal(SubwaySystem.IsRiding, StationsGame.RideTouches(), StationsGame.PickingFromOwn()))") && director.Contains("case StationRemoval.AfterRide:")
-              && director.Contains("StationsGame.ShutMap();"), "subway sources: the director asks the rule before it takes them away, and waits for a rider");
+        Check(director.Contains("StationsGame.Stands(site)") && MemberText(director, "private void StandAll(string from)").IndexOf("PlayerOn(site)", StringComparison.Ordinal) > 0
+              && MemberText(director, "private void StandAll(string from)").IndexOf("PlayerOn(site)", StringComparison.Ordinal) < MemberText(director, "private void StandAll(string from)").IndexOf("StationsGame.Stand(site, out _)", StringComparison.Ordinal)
+              && MemberText(director, "private static bool PlayerOn(StationSite site)").Contains("StationsRules.Occupied(site, at.x, at.z)") && director.Contains("(_stoodWhy == null || _retry)"),
+            "subway sources: no station is stood on the player (the rule's look first), and the stand is tried again at every look until they have moved");
         Check(director.Contains("bool wanted = StationsRules.Wanted(Settings.UptownSubway, UptownLots.Ready && !UptownLots.Closed, StationsGame.GameStations());")
               && director.Contains("UptownLots.Closing += _onClosing;") && director.Contains("UptownLots.Closing -= _onClosing;"),
             "subway sources: whether they stand is the rule's answer from the option, the districts and the game's network, and the districts' closing takes them away");
         Check(director.Contains("StationsRules.Holds(site, out bool pavement)") && director.Contains("StationsRules.MeetsLot(site, UptownLots.All) ?? StationsRules.MeetsLot(site, UptownLots.Places)")
               && director.Contains("StationsRules.PavementRoom(site, out float behind, out float toKerb)") && director.Contains("StationsRules.Lamps(site, _px, _pz);")
-              && director.Contains("StreetsRules.StopPoles(_px, _pz);") && director.Contains("ParksRules.Pieces(site.Block, _parkPieces);") && director.Contains("why = Plan(site) ?? StationsGame.Stand(site, out _);"),
+              && director.Contains("StreetsRules.StopPoles(_px, _pz);") && director.Contains("ParksRules.Pieces(site.Block, _parkPieces);") && director.Contains("why = Plan(site);") && director.Contains("why = why ?? StationsGame.Stand(site, out _);"),
             "subway sources: the director looks at a station's ground with the rules the checks run before the game's side stands it");
         Check(game.Contains("StationsRules.InsertAt(ListNames, NameOf(stood.Site), Order)") && game.Contains("StationsRules.Shown(NameOf(Standing[i].Site), typed, StringComparison.CurrentCultureIgnoreCase)")
               && game.Contains("StationsRules.Carve(out float ahead, out float across, out float along);") && game.Contains("StationsRules.GroundOf(site)"),
             "subway sources: the window's place, the search, the cut and the height are the rules' own");
-        Check(game.Contains("_search.onValueChanged.RemoveListener(_onSearch);") && game.Contains("_search.onValueChanged.AddListener(_onSearch);") && game.Contains("_onSearch = _onSearch ?? Guard.Listener<string>(OnSearch);")
-              && game.Contains("StationsGame.Rehang();"), "subway sources: the search's listener is made once and put after the game's own each time the window is shown");
+        Check(game.Contains("StationsRules.HangLast(() => _search.onValueChanged.RemoveListener(_onSearch), () => _search.onValueChanged.AddListener(_onSearch));") && game.Contains("_onSearch = _onSearch ?? Guard.Listener<string>(OnSearch);")
+              && game.Contains("StationsGame.Rehang();") && game.Contains("public sealed class StationListWatch : MonoBehaviour, GameUi.INotCopied"),
+            "subway sources: the search's listener is made once and put last by the rule each time the window is shown, by a watch that is marked never to be copied");
+        string clone = SubwayCode(ModSource(@"Core\GameUi\UiClone.cs"));
+        Check(clone.Contains("public interface INotCopied") && MemberText(clone, "public static GameObject Asleep(GameObject original, Transform dormant, string name)").Contains("TakeOffMarked(copy);")
+              && MemberText(clone, "private static void TakeOffMarked(GameObject copy)").Contains("if (all[i] is INotCopied)") && MemberText(clone, "private static void TakeOffMarked(GameObject copy)").Contains("DestroyImmediate(all[i]);"),
+            "subway sources: the game's list of stations is copied for the map picker and the travel list with the mod's marked watch taken off the copy while it is asleep");
+        string hover = MemberText(game, "private static void TakeOffSound(GameObject copy)");
+        Check(hover.Contains("GetComponentsInChildren<SubwaySoundSource>(true)") && hover.Contains("DestroyImmediate(sources[i]);") && game.Contains("carries = Carried(copy);") && game.Contains("TakeOffSound(copy);"),
+            "subway sources: the ambience marker of the game's entrance is taken off the copy asleep (its sound looks for its sources once), and what else the copy carries is named in the check's line");
+        string rider = SubwayCode(ModSource(@"Subway\StationsDirector.Riders.cs"));
+        Check(rider.Contains("float game = Time.time;") && !rider.Contains("unscaledTime") && !rider.Contains("Time.unscaled"), "subway sources: the people's limits run on the game's time, which stops with the game, never on the interface's");
 
         // Nothing saved, nothing sent, nothing by chance, nothing a frame.
         Check(!all.Contains("SaveHook") && !all.Contains("modData") && !all.Contains("reallife:subway") && !all.Contains("PlayerPrefs"), "subway sources: nothing is saved: fixed places laid again at every load");
         Check(!all.Contains("UnityEngine.Random") && !Regex.IsMatch(all, @"\bRandom\.") && !all.Contains("GoingPublicLink") && !all.Contains("System.Random") && !all.Contains("DateTime.Now"),
             "subway sources: nothing is sent and nothing is chance: the same stations and the same people on every machine");
-        Check(!all.Contains("FindObjectsByType") && !all.Contains("FindObjectOfType") && !all.Contains("GameObject.Find("), "subway sources: nothing is searched for in the scene: the game's own list and window alone");
+        Check(!all.Contains("FindObjectsByType") && !all.Contains("FindObjectOfType") && !all.Contains("GameObject.Find(") && !all.Contains("FindWithTag") && !all.Contains("Resources.FindObjects"),
+            "subway sources: nothing is searched for in the scene (the code, without its comments): the game's own list and window alone");
         string update = MemberText(director, "private void OnUpdate()");
         int first = update.IndexOf("if (now < _nextLook)", StringComparison.Ordinal), decide = update.IndexOf("Decide(", StringComparison.Ordinal);
         Check(first > 0 && decide > first && update.Contains("_nextLook = now + (busy ? Look : Idle);") && director.Contains("using var hotSpot = HotSpots.Time(HotUpdate);") && director.Contains("if (FrameGuard.Off)"),
@@ -558,18 +875,27 @@ internal static partial class Program
             }
             if (row != null)
             {
+                var markOf = new Dictionary<string, string> { { "en", "Fixed: " }, { "pt", "Corrigido: " }, { "zh-cn", "已修复：" }, { "de", "Behoben: " }, { "fr", "Corrigé : " }, { "es", "Corregido: " },
+                    { "ru", "Исправлено: " }, { "nl", "Opgelost: " }, { "tr", "Düzeltildi: " }, { "pl", "Naprawiono: " }, { "ko", "수정: " } };
+                string mark = markOf[code];
+                string tail = words.TryGetValue(row, out string whole) && whole.LastIndexOf(mark, StringComparison.Ordinal) >= 0 ? whole.Substring(whole.LastIndexOf(mark, StringComparison.Ordinal)) : string.Empty;
+                Check(tail.Length > 0 && tail.IndexOf(subwayWord[code], StringComparison.OrdinalIgnoreCase) >= 0 && (code != "en" || tail == "Fixed: Subway rides take their time again: the wait for a train and the stops of the journey are added after the game's ride, at every station."),
+                    "subway texts: What's new ends with the fix that subway rides take their time again, in " + code);
                 bool told = words.TryGetValue(row, out string news) && news.IndexOf(subwayWord[code], StringComparison.OrdinalIgnoreCase) >= 0
                             && (news.Contains("Birchwood") || news.Contains("伯奇伍德"));
                 Check(told, "subway texts: What's new has the stations' line in " + code + " (the row English has it in)");
             }
         }
         string localesScript = System.IO.File.ReadAllText(System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\Workshop\locales.py")));
-        var listed = new HashSet<string>(StringComparer.Ordinal);
-        foreach (Match m in Regex.Matches(Regex.Match(localesScript, @"ENGLISH_OK = \{(.*?)\n\}", RegexOptions.Singleline).Groups[1].Value, @"'([^']+)'"))
+        HashSet<string> listed = SubwayQuotedKeys(localesScript, "ENGLISH_OK"), listedIn = SubwayQuotedKeys(localesScript, "ENGLISH_OK_IN");
+        Check(listed.Count > 200 && names.All(n => !listed.Contains(n)) && names.All(listedIn.Contains) && Regex.Matches(localesScript, @"'reallife_subway_station_[a-z]+': \('de',\)").Count == 3,
+            "subway texts: the stations' names are excused from \"not translated\" in German alone (ENGLISH_OK_IN), not in every language, and the list is read from its code with the comments taken out (" + listed.Count + " keys)");
+        foreach (string code in ModLanguages.All)
         {
-            listed.Add(m.Groups[1].Value);
+            Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(DesignLocales, code + ".json"));
+            bool same = words != null && names.Any(n => words.TryGetValue(n, out string v) && english.TryGetValue(n, out string e) && v == e);
+            Check(words != null && (code == "en" || code == "de" ? true : !same), "subway texts: the stations' names are the English unchanged only in English and German, and not in " + code);
         }
-        Check(listed.Count > 200 && names.All(listed.Contains), "subway texts: the stations' names are on the locale check's list of names, and the list is read whole by its quotes (" + listed.Count + " keys)");
         Check(english.TryGetValue("reallife_uptown_streets_subway_done", out string old) && old.Contains("{count}") && !old.Contains("no subway station"),
             "subway texts: the districts' older test no longer says they have no station");
         string coverage = System.IO.File.ReadAllText(System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\StandardCheck\guide-coverage.txt")));

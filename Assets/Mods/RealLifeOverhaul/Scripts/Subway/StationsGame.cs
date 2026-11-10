@@ -1,6 +1,9 @@
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Globalization;
+using System.Runtime.CompilerServices;
+using Buildings;
 using Extensions;
 using Localizor;
 using RealLifeOverhaul.Uptown;
@@ -29,6 +32,7 @@ namespace RealLifeOverhaul.Subway
             public StationSite Site;
             public StationEntrance Station;
             public CityMapSubwayStationEntry Entry;
+            public string Carries;   // the components the copied entrance carries besides the ones the checks know, for the check's line
         }
 
         private const float ShapeSlack = 0.3f;       // m the game's entrance may differ from the plan's measures before it is taken for another model
@@ -43,10 +47,14 @@ namespace RealLifeOverhaul.Subway
         private static TMP_InputField _search;
         private static UnityAction<string> _onSearch;   // made once, hung and taken off by this field
         private static StationListWatch _watch;
+        private static StationsLeaver _leaver;   // asks the going's rule in the director's place when the director went with a ride or a taxi trip still under way
         private static int _solidMask;
 
         /// <summary>How many of the districts' stations stand now.</summary>
         public static int Count => Standing.Count;
+
+        /// <summary>True when the station of a site stands.</summary>
+        public static bool Stands(StationSite site) => Find(site) != null;
 
         public static StationEntrance StationAt(int index) => index >= 0 && index < Standing.Count ? Standing[index].Station : null;
 
@@ -129,6 +137,7 @@ namespace RealLifeOverhaul.Subway
             asleep.SetActive(false);   // nothing of the copy wakes until it is whole: the game's own station on it never does
             StationEntrance station = null;
             GameObject copy = null;
+            string carries = string.Empty;
             try
             {
                 copy = UnityEngine.Object.Instantiate(template.gameObject, asleep.transform);
@@ -139,6 +148,7 @@ namespace RealLifeOverhaul.Subway
                     return "the copy of the game's entrance has no station on it";
                 }
                 Renderer[] pieces = copied.Renderers;
+                carries = Carried(copy);
                 copy.transform.SetPositionAndRotation(at, turn);
                 Transform arrival = new GameObject("Arrival").transform;
                 arrival.SetParent(copy.transform, false);
@@ -163,7 +173,7 @@ namespace RealLifeOverhaul.Subway
                 SceneryTrees.Destroy(asleep);   // with a copy that was refused still under it, or empty
             }
             // Joined whole or not at all: a station the game's list holds has its entry in the game's window, or it is taken out again.
-            var entry = new Stood { Site = site, Station = station };
+            var entry = new Stood { Site = site, Station = station, Carries = carries };
             Standing.Add(entry);
             try
             {
@@ -192,6 +202,48 @@ namespace RealLifeOverhaul.Subway
                 }
             }
             return null;
+        }
+
+        // What the copied entrance carries besides the station, its mesh, its solid box and its lamps: the ambience marker of the game's is taken off the
+        // copy (the game's ambience looks for its sources once, when the city starts, so a copy would sound or not by the order of the load, and sound
+        // on at a place where the station has gone); the rest is named for the check's line.
+        private static string Carried(GameObject copy)
+        {
+            try
+            {
+                TakeOffSound(copy);
+            }
+            catch (Exception e) when (Guard.Missing(e))
+            {
+                Guard.DoesWithout(e, "the ambience marker of a subway entrance", "a copy of the entrance keeps whatever marker it carries");
+            }
+            var seen = new List<string>(8);
+            Component[] all = copy.GetComponentsInChildren<Component>(true);
+            for (int i = 0; i < all.Length; i++)
+            {
+                if (all[i] == null)
+                {
+                    continue;
+                }
+                string name = all[i].GetType().Name;
+                bool known = all[i] is Transform || all[i] is MeshFilter || all[i] is MeshRenderer || all[i] is Collider || all[i] is SubwayStation || all[i] is Light
+                             || all[i] is LODGroup || all[i] is Renderer;
+                if (!known && !seen.Contains(name))
+                {
+                    seen.Add(name);
+                }
+            }
+            return string.Join(", ", seen);
+        }
+
+        [MethodImpl(MethodImplOptions.NoInlining)]
+        private static void TakeOffSound(GameObject copy)
+        {
+            SubwaySoundSource[] sources = copy.GetComponentsInChildren<SubwaySoundSource>(true);
+            for (int i = 0; i < sources.Length; i++)
+            {
+                UnityEngine.Object.DestroyImmediate(sources[i]);   // asleep: nothing of it has run
+            }
         }
 
         // The game's entrance nearest the districts that can be copied: Midtown North West's, at 9th Street and 1st Avenue, in Build 3682.
@@ -313,25 +365,45 @@ namespace RealLifeOverhaul.Subway
         private static CityMapSubwayStationEntry AddEntry(Stood stood, CityMapSubwayStations list, List<CityMapSubwayStationEntry> entries)
         {
             CityMapSubwayStationEntry entry = UnityEngine.Object.Instantiate(list.entryTemplate, list.entryTemplate.transform.parent);
-            entry.name = "RLO " + stood.Site.Id;
-            entry.Setup(stood.Station);   // the game's own: its station, its button, and a label of the copied entrance's name until the next line
-            if (entry.stationNameLabel != null)
+            try
             {
-                entry.stationNameLabel.Key = stood.Site.NameKey;
+                entry.name = "RLO " + stood.Site.Id;
+                entry.Setup(stood.Station);   // the game's own: its station, its button, and a label of the copied entrance's name until the next line
+                if (entry.stationNameLabel != null)
+                {
+                    entry.stationNameLabel.Key = stood.Site.NameKey;
+                }
+                ListNames.Clear();
+                for (int i = 0; i < entries.Count; i++)
+                {
+                    SubwayStation other = entries[i] != null ? entries[i].Station : null;
+                    ListNames.Add(other != null ? GameMembers.NameKey(other).GetLocalization() : string.Empty);
+                }
+                int at = StationsRules.InsertAt(ListNames, NameOf(stood.Site), Order);
+                if (at < entries.Count && entries[at] != null)
+                {
+                    entry.transform.SetSiblingIndex(entries[at].transform.GetSiblingIndex());
+                }
+                entries.Insert(at, entry);
+                return entry;
             }
-            ListNames.Clear();
-            for (int i = 0; i < entries.Count; i++)
+            catch (Exception)
             {
-                SubwayStation other = entries[i] != null ? entries[i].Station : null;
-                ListNames.Add(other != null ? GameMembers.NameKey(other).GetLocalization() : string.Empty);
+                Discard(entry, entries);   // a row that is not whole is not left in the window: its button would travel to a station that is taken away again
+                throw;
             }
-            int at = StationsRules.InsertAt(ListNames, NameOf(stood.Site), Order);
-            if (at < entries.Count && entries[at] != null)
+        }
+
+        // A row of the window taken out of its list, shut at once (the destroy comes at the frame's end) and destroyed.
+        private static void Discard(CityMapSubwayStationEntry entry, List<CityMapSubwayStationEntry> entries)
+        {
+            if (entry == null)
             {
-                entry.transform.SetSiblingIndex(entries[at].transform.GetSiblingIndex());
+                return;
             }
-            entries.Insert(at, entry);
-            return entry;
+            entries?.Remove(entry);
+            entry.gameObject.SetActive(false);
+            UnityEngine.Object.Destroy(entry.gameObject);
         }
 
         // The window's search: the game's own reads a station's name from its name's value, so after it the districts' entries are shown by their own.
@@ -360,8 +432,7 @@ namespace RealLifeOverhaul.Subway
                 return;
             }
             _onSearch = _onSearch ?? Guard.Listener<string>(OnSearch);
-            _search.onValueChanged.RemoveListener(_onSearch);
-            _search.onValueChanged.AddListener(_onSearch);
+            StationsRules.HangLast(() => _search.onValueChanged.RemoveListener(_onSearch), () => _search.onValueChanged.AddListener(_onSearch));   // after the game's own
             OnSearch(_search.text);
         }
 
@@ -389,6 +460,64 @@ namespace RealLifeOverhaul.Subway
             CityManager city = InstanceBehavior<CityManager>.Instance;
             SubwaySystem system = city != null ? city.subwaySystem : null;
             return system != null && (OwnStations.Is(system.lastSubwayStation) || OwnStations.Is(system.destinationSubwayStation));
+        }
+
+        /// <summary>
+        /// True while a taxi trip is under way (a taxi, the private driver): the game's TaxiSystem keeps the place it was sent to until it has put
+        /// its rider down, and on a place that is gone it throws with the player hidden and the screen black.
+        /// </summary>
+        public static bool TaxiTravelling()
+        {
+            return InstanceBehavior<TaxiSystem>.IsInitialized && TaxiSystem.IsTraveling;
+        }
+
+        /// <summary>What of the game's holds the districts' stations now: the one input of the going's rule (<see cref="StationsGoing"/>).</summary>
+        public static StationHolds Holds()
+        {
+            return new StationHolds(SubwaySystem.IsRiding, RideTouches(), TaxiTravelling(), PickingFromOwn());
+        }
+
+        /// <summary>
+        /// Does what the going's rule said. Returns how many stations went; a wait or a hand-over does nothing, a drop only lets go of the mod's own
+        /// record (the city's scene takes what stands).
+        /// </summary>
+        public static int Carry(StationStep step)
+        {
+            switch (step)
+            {
+                case StationStep.ShutMapThenRemove:
+                    ShutMap();
+                    return RemoveAll();
+                case StationStep.Remove:
+                    return RemoveAll();
+                case StationStep.Drop:
+                    Forget();
+                    return 0;
+                default:
+                    return 0;
+            }
+        }
+
+        /// <summary>True while a watcher holds the stations for a ride or a taxi trip that began before the director went.</summary>
+        public static bool HandedOver => _leaver != null;
+
+        /// <summary>
+        /// The director is going while a ride or a taxi trip holds the stations: a watcher on the stations' own object (which outlives the mod's
+        /// root) asks the same rule in its place, and takes them away once the rider is up or down.
+        /// </summary>
+        public static void HandOver(StationsGoing going, string why)
+        {
+            if (Standing.Count == 0)
+            {
+                return;
+            }
+            GameObject holder = Root().gameObject;
+            _leaver = holder.GetComponent<StationsLeaver>();
+            if (_leaver == null)
+            {
+                _leaver = holder.AddComponent<StationsLeaver>();
+            }
+            _leaver.Begin(going, why);
         }
 
         /// <summary>True when the game's map is open on its list of stations from one of the districts'.</summary>
@@ -438,25 +567,49 @@ namespace RealLifeOverhaul.Subway
             return gone;
         }
 
-        // One station out of everything of the game's that holds it, in the order the game walks them, and then away.
+        // One station out of everything of the game's that holds it, in the order the rules give (StationsRules.GoingOrder: all the game walks or points at, then the entrance).
         private static void Remove(Stood stood, CityManager city, UIs uis, List<CityMapSubwayStationEntry> entries)
         {
             StationEntrance station = stood.Station;
-            if (city != null && city.subwayStations != null && !ReferenceEquals(station, null))
+            IReadOnlyList<StationsRules.StationPart> order = StationsRules.GoingOrder;
+            for (int i = 0; i < order.Count; i++)
             {
-                city.subwayStations.Remove(station);
-            }
-            OwnStations.Remove(station);
-            if (stood.Entry != null)
-            {
-                entries?.Remove(stood.Entry);
-                UnityEngine.Object.Destroy(stood.Entry.gameObject);
-            }
-            if (station != null)
-            {
-                Unmark(city, station.transform);
-                Release(uis, station);
-                SceneryTrees.Destroy(station.gameObject);   // its lamp out of the game's culling lists first (RLO-PERF-023), then the entrance with its cut
+                switch (order[i])
+                {
+                    case StationsRules.StationPart.GameList:
+                        if (city != null && city.subwayStations != null && !ReferenceEquals(station, null))
+                        {
+                            city.subwayStations.Remove(station);
+                        }
+                        break;
+                    case StationsRules.StationPart.Registry:
+                        OwnStations.Remove(station);
+                        break;
+                    case StationsRules.StationPart.WindowEntry:
+                        Discard(stood.Entry, entries);
+                        break;
+                    case StationsRules.StationPart.HoverCard:
+                        OverlayGuard.Release(station);   // the game's card over the station it points at, before the station is destroyed (null is safe)
+                        break;
+                    case StationsRules.StationPart.MapMarker:
+                        if (station != null)
+                        {
+                            Unmark(city, station.transform);
+                        }
+                        break;
+                    case StationsRules.StationPart.TravelCard:
+                        if (station != null)
+                        {
+                            Release(uis, station);
+                        }
+                        break;
+                    case StationsRules.StationPart.Entrance:
+                        if (station != null)
+                        {
+                            SceneryTrees.Destroy(station.gameObject);   // its lamp out of the game's culling lists first (RLO-PERF-023), then the entrance with its cut
+                        }
+                        break;
+                }
             }
         }
 
@@ -502,6 +655,7 @@ namespace RealLifeOverhaul.Subway
             OwnStations.Clear();
             SceneryTrees.Destroy(_root);   // null is safe; what still stands under it has its lamps taken out of the game's culling lists first
             _root = null;
+            _leaver = null;
             _search = null;
             _watch = null;
         }
@@ -543,18 +697,27 @@ namespace RealLifeOverhaul.Subway
                 {
                     inWindow += entries[k] != null && ReferenceEquals(entries[k].Station, station) ? 1 : 0;
                 }
+                string own = NameOf(stood.Site);
+                TaxiDestinationData stopData = station.TaxiStop != null ? station.TaxiStop.GetComponent<TaxiDestinationData>() : null;
                 bool named = stood.Entry != null && stood.Entry.stationNameLabel != null && stood.Entry.stationNameLabel.Key == stood.Site.NameKey
-                             && GameMembers.NameKey(station) == stood.Site.NameKey && station.customOverlayHeaderKey == stood.Site.NameKey;
+                             && GameMembers.NameKey(station) == stood.Site.NameKey && station.customOverlayHeaderKey == stood.Site.NameKey
+                             && stopData != null && stopData.nameKey == stood.Site.NameKey && !string.IsNullOrEmpty(own) && own != stood.Site.NameKey;
+                // The window's search: its listener is hung on the field with the watch that hangs it again, and its rule shows the entry by a part of its own name.
+                string part = own.Length > 4 ? own.Substring(own.Length - 4) : own;
+                bool searched = _search != null && _watch != null && StationsRules.Shown(own, part, StringComparison.CurrentCultureIgnoreCase);
                 Vector3 arrive = station.Arrival != null ? station.Arrival.position : station.transform.position;
                 bool player = Sample(arrive, PlayerController.navMeshQueryFilter, StationsRules.ArriveRoom, out _);
                 bool people = Sample(arrive, NavMeshHelper.NpcNavMeshFilter, StationsRules.ArriveRoom, out _);
                 Vector3 middle = station.transform.TransformPoint(new Vector3(0f, StationsRules.Sunk, (StationsRules.Front - StationsRules.Back) * 0.5f));
                 bool cut = !Sample(middle, PlayerController.navMeshQueryFilter, CutLook, out _);
-                bool good = inList == 1 && inWindow == 1 && named && player && people && cut;
+                bool good = inList == 1 && inWindow == 1 && named && searched && player && people && cut;
                 pass &= good;
-                text.Append(stood.Site.Id).Append(": in the game's list ").Append(inList).Append(", in its window ").Append(inWindow).Append(named ? ", named its own" : ", NOT named its own")
+                text.Append(stood.Site.Id).Append(": in the game's list ").Append(inList).Append(", in its window ").Append(inWindow)
+                    .Append(named ? ", named its own (window, header, taxi stop)" : ", NOT named its own")
+                    .Append(searched ? ", found by its own name in the search" : ", NOT found by its own name in the search")
                     .Append(", riders come up on the player's ground ").Append(player ? "yes" : "NO").Append(" and the pedestrians' ").Append(people ? "yes" : "NO")
-                    .Append(", cut out of the walking ground ").Append(cut ? "yes" : "NO").Append("; ");
+                    .Append(", cut out of the walking ground ").Append(cut ? "yes" : "NO")
+                    .Append(stood.Carries.Length > 0 ? ", the copy also carries " + stood.Carries : string.Empty).Append("; ");
             }
             pass &= listed == Standing.Count;
             line = Standing.Count + " standing, " + listed + " of the districts' own in the game's list of " + (city != null && city.subwayStations != null ? city.subwayStations.Count : 0)
@@ -568,7 +731,7 @@ namespace RealLifeOverhaul.Subway
     /// search listener is put after the game's own (which the game adds when its window first wakes), so the districts'
     /// entries are shown by their own names. COST: nothing a frame; one call as the window opens.
     /// </summary>
-    public sealed class StationListWatch : MonoBehaviour
+    public sealed class StationListWatch : MonoBehaviour, GameUi.INotCopied
     {
         private static readonly FeatureGuard FrameGuard = Guard.For("uptown_subway", "StationListWatch", typeof(StationListWatch));
 
@@ -585,6 +748,47 @@ namespace RealLifeOverhaul.Subway
             catch (Exception fault)
             {
                 Guard.Fail(FrameGuard, fault, this);
+            }
+        }
+    }
+
+    /// <summary>
+    /// On the stations' own object (which the mod's root does not own) when the director went while a ride or a taxi trip held the stations:
+    /// it asks the going's rule (<see cref="StationsGoing"/>) four times a second until the rider is up or down, then takes the stations away
+    /// as the director would have, or lets them go with the scene when the city is unloading. COST: four looks a second for the length of a ride.
+    /// </summary>
+    public sealed class StationsLeaver : MonoBehaviour
+    {
+        private const float Look = 0.25f;   // s of real time between two looks: the game's pause stops the ride, not this
+
+        private StationsGoing _going;
+
+        /// <summary>Begins to wait with the going's rule the director used.</summary>
+        public void Begin(StationsGoing going, string why)
+        {
+            _going = going;
+            StationsDirector.Logger?.Info("Subway: the director went with a ride or a taxi trip under way: the stations go once it has ended (" + why + ").");
+            StartCoroutine(Guard.Routine(Wait(why)));
+        }
+
+        private IEnumerator Wait(string why)
+        {
+            while (this != null)
+            {
+                yield return new WaitForSecondsRealtime(Look);
+                StationExit cause = GameManager.isCitySceneBeingUnloaded ? StationExit.CityUnloading : StationExit.DirectorGone;
+                StationStep step = _going.Go(cause, why, StationsGame.Holds());
+                if (step == StationStep.HandOver)
+                {
+                    continue;   // the ride or the taxi trip goes on
+                }
+                int gone = StationsGame.Carry(step);
+                if (gone > 0)
+                {
+                    StationsDirector.Logger?.Info("Subway: " + gone + " station(s) of the districts' own taken away once the ride or the taxi trip had ended (" + why + ").");
+                }
+                StationsGame.Forget();
+                yield break;
             }
         }
     }

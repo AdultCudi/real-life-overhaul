@@ -30,7 +30,8 @@ namespace RealLifeOverhaul.Subway
             public float Until;
         }
 
-        private const float WalkMost = 90f;        // s somebody is given to walk their way before they are taken in all the same
+        // s of the game's time (Time.time: it stops when the game is paused, as the people do) somebody is given to walk their way before they are taken in all the same
+        private const float WalkMost = 90f;
         private const float AtMouth = 0.8f;        // s somebody stands at the mouth before the stairs have them
         private const float PavementFind = 8f;     // m round a place a point of pavement is looked for
 
@@ -52,7 +53,7 @@ namespace RealLifeOverhaul.Subway
         }
 
         // True while somebody is out: the looks then come four a second.
-        private bool RunRiders(float now)
+        private bool RunRiders()
         {
             PlayerController player = PlayerHelper.PlayerController;
             if (!Standing || !Settings.TransitPeople || player == null || BuildingManager.IsInsideBuilding || SubwaySystem.IsRiding || CityMap.IsOpen)
@@ -75,13 +76,14 @@ namespace RealLifeOverhaul.Subway
             {
                 return false;
             }
-            Step(ref _up, now);
-            Step(ref _down, now);
+            float game = Time.time;   // the people walk on the game's time, so their limit runs on it: a paused game does not use it up
+            Step(ref _up, game);
+            Step(ref _down, game);
             int train = TrainNow();
             if (train != _train)
             {
                 _train = train;
-                NewTrain(near, train, now);
+                NewTrain(near, train, game);
             }
             bool anyOut = _up.Step != RiderStep.None || _down.Step != RiderStep.None;
             if (anyOut)

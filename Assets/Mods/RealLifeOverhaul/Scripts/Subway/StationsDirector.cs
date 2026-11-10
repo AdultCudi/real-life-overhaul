@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using BAModAPI;
+using Helpers;
 using RealLifeOverhaul.Uptown;
 using UnityEngine;
 
@@ -13,8 +14,10 @@ namespace RealLifeOverhaul.Subway
     /// copy of one of the game's entrances with the game's own station on it, joined to the game's network, so the game's
     /// travel, its fare, its map and its window of stations treat them as its own twenty. They are stood once the game has
     /// loaded its city (its late call, the loading screen still up) while their option is on and the districts stand, and at
-    /// once when the option is switched on in play; they go at once when it is switched off or the districts close, never
-    /// under a rider (<see cref="StationsRules.Removal"/>). Nothing is saved and nothing is sent: fixed places laid again at
+    /// once when the option is switched on in play (a station is stood only when the player is not on its ground, and tried again
+    /// each second until they are not); they go at once when it is switched off or the districts close, by one rule for every cause
+    /// (<see cref="StationsGoing"/>): never under a rider of the game's ride or of a taxi trip, the director's own destruction included.
+    /// Nothing is saved and nothing is sent: fixed places laid again at
     /// every load, so an old save gets them at its first load and a save loads without them. The city's people come up and
     /// go down at the entrance the player is near, by the trains' clock (StationsDirector.Riders). COST: one time comparison
     /// a frame; four looks a second while its people are out or something is pending, else one a second.
@@ -37,8 +40,8 @@ namespace RealLifeOverhaul.Subway
         private Action<string> _onClosing;   // made once, hung on the districts' closing and taken off by this field
         private bool _late;                  // the game's own start of the city is done: its stations and its window are there
         private bool _closed;                // the feature's clean-up ran: nothing stands again before the next load
-        private bool _leaving;               // a removal waits for a ride to end
-        private string _leaveWhy;
+        private readonly StationsGoing _going = new StationsGoing();   // the one rule by which every cause takes the stations away
+        private bool _retry;                 // a station was not stood because the player stands on its ground: tried again each look
         private string _stoodWhy;            // why the stations do not stand, for the tests
         private float _nextLook;
         private float _checkAt = -1f;
@@ -49,7 +52,10 @@ namespace RealLifeOverhaul.Subway
         private void Awake()
         {
             Instance = this;
-            StationsGame.Forget();   // nothing of an earlier city is held, whichever way it went
+            if (!StationsGame.HandedOver)
+            {
+                StationsGame.Forget();   // nothing of an earlier city is held, whichever way it went
+            }
             _onClosing = Guard.Wrap<string>(FrameGuard, OnDistrictClosing);
             UptownLots.Closing += _onClosing;
             ScenePrewarm.AddLate("subway: the districts' own stations stood and joined to the game's list of stations", AtLoad);
@@ -63,11 +69,19 @@ namespace RealLifeOverhaul.Subway
                 ReleaseRiders();
                 _cast?.Dispose();
                 _cast = null;
-                if (!GameManager.isCitySceneBeingUnloaded)
+                // Whoever stopped the mod, by the one rule: a city that stays loses them out of the game's lists as they came, before anything is destroyed,
+                // but never under a ride or a taxi trip, which a watcher on their own object then waits out; a city that goes takes them with its scene.
+                StationExit cause = GameManager.isCitySceneBeingUnloaded ? StationExit.CityUnloading : StationExit.DirectorGone;
+                StationStep step = StationsGame.Count > 0 ? _going.Go(cause, "the mod stopped", StationsGame.Holds()) : StationStep.Drop;
+                if (step == StationStep.HandOver)
                 {
-                    StationsGame.RemoveAll();   // a city that stays, whoever stopped the mod: out of the game's lists as they came, before anything is destroyed
+                    StationsGame.HandOver(_going, "the mod stopped");
                 }
-                StationsGame.Forget();
+                else
+                {
+                    StationsGame.Carry(step);
+                    StationsGame.Forget();
+                }
             }
             catch (Exception e)
             {
@@ -108,11 +122,11 @@ namespace RealLifeOverhaul.Subway
             bool busy = false;
             if (_late && _closed)
             {
-                if (_leaving)
+                if (_going.Waiting)
                 {
-                    Leave(_leaveWhy);   // the clean-up waited for a rider: asked again until they are up
+                    Leave(_going.Cause, _going.Why);   // the clean-up waited for a rider: asked again until they are up
                 }
-                busy = _leaving;
+                busy = _going.Waiting;
             }
             else if (_late)
             {
@@ -122,7 +136,7 @@ namespace RealLifeOverhaul.Subway
                     _checkAt = -1f;
                     SelfCheck();
                 }
-                busy = _leaving || _checkAt >= 0f || RunRiders(now);
+                busy = _going.Waiting || _checkAt >= 0f || RunRiders();
             }
             _nextLook = now + (busy ? Look : Idle);
         }
@@ -142,21 +156,30 @@ namespace RealLifeOverhaul.Subway
         private void Decide(string from)
         {
             bool wanted = StationsRules.Wanted(Settings.UptownSubway, UptownLots.Ready && !UptownLots.Closed, StationsGame.GameStations());
-            if (wanted && !_leaving && !Standing && _stoodWhy == null)
+            bool missing = StationsGame.Count < StationsRules.Sites.Count;
+            if (wanted && !_going.Waiting && missing && (_stoodWhy == null || _retry))
             {
                 StandAll(from);
             }
-            else if (!wanted && (Standing || _leaving))
+            else if (!wanted && (Standing || _going.Waiting))
             {
-                Leave(!Settings.UptownSubway ? "its option was switched off" : "the districts do not stand");
+                if (!Settings.UptownSubway)
+                {
+                    Leave(StationExit.OptionOff, "its option was switched off");
+                }
+                else
+                {
+                    Leave(StationExit.DistrictClosing, "the districts do not stand");
+                }
             }
-            else if (wanted && _leaving)
+            else if (wanted && _going.Waiting)
             {
-                _leaving = false;   // switched back on while a ride was let finish: they stay
+                _going.Cancel();   // switched back on while a ride was let finish: they stay
             }
             if (!wanted && !Standing)
             {
                 _stoodWhy = null;   // asked afresh the next time they are wanted
+                _retry = false;
             }
         }
 
@@ -169,14 +192,26 @@ namespace RealLifeOverhaul.Subway
         {
             IReadOnlyList<StationSite> sites = StationsRules.Sites;
             var words = new StringBuilder(256);
-            int stood = 0;
+            int stood = 0, fresh = 0;
+            bool waitForPlayer = false;
             for (int i = 0; i < sites.Count; i++)
             {
                 StationSite site = sites[i];
+                if (StationsGame.Stands(site))
+                {
+                    stood++;   // stood by an earlier look, while the player was on another's ground
+                    continue;
+                }
                 string why;
                 try
                 {
-                    why = Plan(site) ?? StationsGame.Stand(site, out _);
+                    why = Plan(site);
+                    if (why == null && PlayerOn(site))
+                    {
+                        why = "the player stands on its ground, or is not placed yet: it is stood once they have moved";
+                        waitForPlayer = true;
+                    }
+                    why = why ?? StationsGame.Stand(site, out _);
                 }
                 catch (Exception e)
                 {
@@ -184,20 +219,39 @@ namespace RealLifeOverhaul.Subway
                     why = "a fault while it was stood (" + e.GetType().Name + ")";
                 }
                 stood += why == null ? 1 : 0;
+                fresh += why == null ? 1 : 0;
                 StationsRules.Arrival(site, out float ax, out float az);
                 words.Append(site.Id).Append(why == null ? " stands at (" : " NOT stood at (").Append(site.X.ToString("F1", Inv)).Append(", ").Append(site.Z.ToString("F1", Inv))
                     .Append("), its riders up at (").Append(ax.ToString("F1", Inv)).Append(", ").Append(az.ToString("F1", Inv)).Append(')')
                     .Append(why != null ? ": " + why : string.Empty).Append("; ");
             }
+            bool again = _retry;
+            _retry = waitForPlayer;   // asked again at every look until the player has moved off
             _stoodWhy = stood == sites.Count ? null : words.ToString();
             if (stood == 0)
             {
                 _stoodWhy = _stoodWhy ?? "none could be stood";
             }
-            _checkAt = stood > 0 ? Time.unscaledTime + CheckAfter : -1f;
+            if (again && fresh == 0)
+            {
+                return;   // a look that stood nothing new says nothing again
+            }
+            _checkAt = fresh > 0 ? Time.unscaledTime + CheckAfter : _checkAt;
             _nextLook = 0f;
             Logger?.Info("Subway: " + stood + " of " + sites.Count + " stations of the districts' own stood at " + from + " and joined to the game's " + StationsGame.GameStations()
                          + ": " + words + "fare and travel the game's own.");
+        }
+
+        // The player standing on an entrance's ground (their body would be inside its solid box), or not placed yet: the rule's look at where they are.
+        private static bool PlayerOn(StationSite site)
+        {
+            PlayerController player = PlayerHelper.PlayerController;
+            if (player == null)
+            {
+                return true;   // not placed yet: where they will stand is not known, so nothing is stood round them
+            }
+            Vector3 at = player.transform.position;
+            return StationsRules.Occupied(site, at.x, at.z);
         }
 
         /// <summary>
@@ -298,30 +352,27 @@ namespace RealLifeOverhaul.Subway
             return null;
         }
 
-        // The stations go: at once, but never under a rider, and the game's map is shut first when it lists stations from one of them.
-        private void Leave(string why)
+        // The stations go by the one rule (StationsGoing): at once, but never under a rider of the game's ride or of a taxi trip, and the game's map is
+        // shut first when it lists stations from one of them. Every cause comes here; the look asks again while one waits.
+        private void Leave(StationExit cause, string why)
         {
-            switch (StationsRules.Removal(SubwaySystem.IsRiding, StationsGame.RideTouches(), StationsGame.PickingFromOwn()))
+            bool waited = _going.Waiting;
+            StationStep step = _going.Go(cause, why, StationsGame.Holds());
+            if (step == StationStep.Wait)
             {
-                case StationRemoval.AfterRide:
-                    if (!_leaving)
-                    {
-                        Logger?.Info("Subway: the districts' stations go once the ride under way has brought its rider up (" + why + ").");
-                    }
-                    _leaving = true;
-                    _leaveWhy = why;
-                    return;
-                case StationRemoval.MapFirst:
-                    StationsGame.ShutMap();
-                    break;
+                if (!waited)
+                {
+                    Logger?.Info("Subway: the districts' stations go once the " + (_going.Holding == StationRemoval.AfterTaxi ? "taxi trip" : "ride") + " under way has brought its rider "
+                                 + (_going.Holding == StationRemoval.AfterTaxi ? "down" : "up") + " (" + why + ").");
+                }
+                return;
             }
-            _leaving = false;
-            _leaveWhy = null;
             _checkAt = -1f;
+            _retry = false;
             ReleaseRiders();
             _near = -1;
             _train = -1;
-            int gone = StationsGame.RemoveAll();
+            int gone = StationsGame.Carry(step);
             _stoodWhy = null;
             if (gone > 0)
             {
@@ -332,7 +383,7 @@ namespace RealLifeOverhaul.Subway
 
         private void OnDistrictClosing(string why)
         {
-            Leave("the districts close: " + why);
+            Leave(StationExit.DistrictClosing, "the districts close: " + why);
         }
 
         /// <summary>
@@ -344,7 +395,7 @@ namespace RealLifeOverhaul.Subway
             _closed = true;
             _nextLook = 0f;
             Logger?.Info("Subway: closed until the next load (" + why + ").");
-            Leave(why);   // by the same rule: at once, or once a ride under way has brought its rider up (the look asks again)
+            Leave(StationExit.CleanUp, why);   // by the same rule: at once, or once a ride or a taxi trip under way has brought its rider (the look asks again)
         }
 
         // ---------------------------------------------------------------- the self-check

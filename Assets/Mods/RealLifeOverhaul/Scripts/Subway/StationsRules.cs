@@ -40,7 +40,8 @@ namespace RealLifeOverhaul.Subway
     {
         Now = 0,          // nothing of the game's holds it
         MapFirst = 1,     // the game's map is open on its list of stations from one of them: the map is shut first, then it goes
-        AfterRide = 2     // a ride of the game's begins or ends at one of them: it goes when the rider has come up
+        AfterRide = 2,    // a ride of the game's begins or ends at one of them: it goes when the rider has come up
+        AfterTaxi = 3     // a taxi trip is under way (the game's taxi holds the place it was sent to until it puts its rider down): it goes when the rider is down
     }
 
     /// <summary>
@@ -379,17 +380,68 @@ namespace RealLifeOverhaul.Subway
         }
 
         /// <summary>
-        /// When a station may be taken away (the option switched off, the district closed, the city going): never under a rider. A ride of the game's
-        /// that begins or ends at one of them is let finish first, since the game brings its rider up at the station's own travel point; a map open on
-        /// the list of stations from one of them is shut first, since the game lights the station the rider stands at.
+        /// When a station may be taken away (the option switched off, the district closed, the clean-up, the mod stopping): never under a rider. A
+        /// ride of the game's that begins or ends at one of them is let finish first, since the game brings its rider up at the station's own travel
+        /// point; a taxi trip of any kind (the game's TaxiSystem keeps the place it was sent to until it has put its rider down, and throws on one
+        /// that is gone, leaving the player hidden and the screen black) is let finish too; a map open on the list of stations from one of them is
+        /// shut first, since the game lights the station the rider stands at. A ride outranks a taxi trip, which outranks the map.
         /// </summary>
-        public static StationRemoval Removal(bool riding, bool rideTouchesOwn, bool pickingFromOwn)
+        public static StationRemoval Removal(bool riding, bool rideTouchesOwn, bool taxiTravelling, bool pickingFromOwn)
         {
             if (riding && rideTouchesOwn)
             {
                 return StationRemoval.AfterRide;
             }
+            if (taxiTravelling)
+            {
+                return StationRemoval.AfterTaxi;
+            }
             return pickingFromOwn ? StationRemoval.MapFirst : StationRemoval.Now;
+        }
+
+        /// <summary>The parts of the game that hold a station of the districts' own, named for the order they are let go in.</summary>
+        public enum StationPart
+        {
+            GameList = 0,      // CityManager.subwayStations, which the game walks at every toggle of its map
+            Registry = 1,      // the mod's own record of which stations are its own
+            WindowEntry = 2,   // the entry in the game's window of stations
+            HoverCard = 3,     // the game's small and large cards over a thing, when one points at the station
+            MapMarker = 4,     // the station's marker on the game's map and the map's list of markers
+            TravelCard = 5,    // the game's card about a place, when it is about the station's taxi stop
+            Entrance = 6       // the entrance itself with its cut
+        }
+
+        private static readonly StationPart[] Order =
+        {
+            StationPart.GameList, StationPart.Registry, StationPart.WindowEntry, StationPart.HoverCard, StationPart.MapMarker, StationPart.TravelCard, StationPart.Entrance
+        };
+
+        /// <summary>
+        /// The order a station is let go of the game's parts in, which StationsGame.Remove walks: everything the game walks or points at first, the
+        /// entrance itself last (a destroyed object found in the game's list, its window, its map or its cards throws every time they are walked).
+        /// </summary>
+        public static IReadOnlyList<StationPart> GoingOrder => Order;
+
+        /// <summary>
+        /// Puts a listener of the mod's last on one of the game's events: first taken off (so it is on once), then put on (so it comes after
+        /// every listener the game has put on since). Asked each time the window is shown.
+        /// </summary>
+        public static void HangLast(Action takeOff, Action putOn)
+        {
+            takeOff();
+            putOn();
+        }
+
+        public const float PlayerReach = 0.6f;     // m round an entrance's ground within which the player counts as standing on it: their body and the cut's reach
+
+        /// <summary>
+        /// True when somebody standing at a point is on an entrance's ground (grown by <see cref="PlayerReach"/>): the entrance is not stood on a
+        /// player, who would be inside its solid box; it is tried again once they have moved.
+        /// </summary>
+        public static bool Occupied(StationSite site, float x, float z)
+        {
+            Footprint(site, out float x0, out float z0, out float x1, out float z1);
+            return x > x0 - PlayerReach && x < x1 + PlayerReach && z > z0 - PlayerReach && z < z1 + PlayerReach;
         }
 
         // ---------------------------------------------------------------- the city's people on the line

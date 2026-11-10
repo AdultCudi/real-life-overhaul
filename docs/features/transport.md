@@ -331,7 +331,7 @@ Service follows the game's clock, the same on every load of the same day: a trai
 In one three-hour window in eight there are delays of 6 to 14 minutes, which arrive as texts from the City Transit contact (it can also be called for the state of the service and a day pass).
 The journey is the wait (a part of the interval, plus delays) and 2 minutes a stop (one per 650 m, at least one).
 
-When the game's ride is over (`SubwaySystem.IsRiding` falls; its two stations are read as it rises), what the journey takes beyond the minutes the game's ride took is run under the bus ride's fade with the time machine (`TransitRide`, without the card's tap), and a note says where the player came up and how long the journey took.
+When the game's ride is over (`SubwaySystem.IsRiding` falls; its two ends are recorded, with their names, as it rises: the game forgets the origin in that same frame, because the map's close sets `lastSubwayStation` to null, so the origin is the station at the ride camera's start (`SubwaySystem.CurrentPosition`, `SubwayRideRules.Origin`) or the one seen while the map was open), what the journey takes beyond the minutes the game's ride took is run under the bus ride's fade with the time machine (`TransitRide`, without the card's tap), and a note says where the player came up and how long the journey took.
 The game's own ride gives its subway mood.
 
 A day pass gives the game's fare back as the ride begins (`reallife_transaction_subway_pass`); civic life counts such a ride as not paid for, and counts no ride while a train is under way.
