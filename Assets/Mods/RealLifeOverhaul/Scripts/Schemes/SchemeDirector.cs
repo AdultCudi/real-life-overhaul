@@ -48,7 +48,7 @@ namespace RealLifeOverhaul.Schemes
         {
             Instance = this;
             _onSave = OnSave;
-            _panel = new SchemePanel(e => Logger?.Error(e));
+            _panel = new SchemePanel(Press, e => Logger?.Error(e));
             StartCoroutine(Guard.Routine(Tick()));
         }
 

@@ -53,7 +53,7 @@ internal static partial class UiSamples
     public static readonly string[] SceneStates =
     {
         "court_plea", "court_tax", "court_charges", "legal_file", "fame_show", "office_door", "interview_round", "interview_over", "pitch_question", "pitch_offer",
-        "venture_pitch", "venture_player"
+        "venture_pitch", "venture_player", "scheme_offer", "scheme_fund"
     };
 
     private const string Bank = "Jensen Capital";
@@ -1060,6 +1060,49 @@ internal static partial class UiSamples
                 }
                 Answer(p, 20, t("reallife_vc_meet_leave", "End the meeting"), null);
                 p.Locked = true;
+                break;
+            }
+            case "scheme_offer":
+            {
+                // A scheme's page as SchemePanel shows it: what it is, the two sizes with what each brings and risks, and the way out.
+                p.Reset(t("reallife_scheme_claim_title", "A loss that never happened"), Bakery);
+                Moment(p, Bakery, UiIcon.Briefcase);
+                p.Notes.Add(new SceneNote
+                {
+                    Name = string.Empty,
+                    Detail = Fill(t("reallife_scheme_claim_body", "{business} is insured. A claim can be put in for a loss that never happened, and the insurer pays it as any other "
+                                                                + "claim.\n\nIf it is looked into, what was paid is taken back with {share} on top, the insurer ends the cover and the "
+                                                                + "file goes to court."), "business", Bakery, "share", "25%")
+                });
+                string hint = t("reallife_scheme_claim_hint", "Claim a loss of {amount}."), gain = t("reallife_scheme_claim_gain", "Up to {amount} from the insurer, less the excess");
+                Answer(p, 0, t("reallife_scheme_size_small", "A small one"), Fill(hint, "amount", "$2,000"));
+                Costs(p, null, Cost(Fill(gain, "amount", "$2,000"), 1), Cost(t("reallife_scheme_risk_small", "Rarely looked into, unless it repeats"), 0));
+                Answer(p, 1, t("reallife_scheme_size_large", "A large one"), Fill(hint, "amount", "$8,000"));
+                Costs(p, null, Cost(Fill(gain, "amount", "$8,000"), 1), Cost(t("reallife_scheme_risk_large", "A sum this size is always looked into"), -1));
+                Answer(p, 2, t("reallife_scheme_leave", "Leave it"), t("reallife_scheme_leave_hint", "Nothing is done."));
+                p.Locked = false;   // the player may always walk away from a scheme
+                break;
+            }
+            case "scheme_fund":
+            {
+                // A rival's fund on offer: put the money in, have it looked at first, or turn it down.
+                const string holding = "Luthor Everything Co.";
+                p.Reset(t("reallife_scheme_fund_title", "A place in a fund"), holding);
+                Moment(p, holding, UiIcon.Briefcase);
+                p.Notes.Add(new SceneNote
+                {
+                    Name = string.Empty,
+                    Detail = Fill(t("reallife_scheme_fund_body", "{rival} offers you a place in a fund of {holding}: put in {amount} and take out {back} after {days} days. The offer "
+                                                               + "stands until day {day}.\n\nSome funds are what they say. Some are not, and their money is gone."),
+                        "rival", "Bald Luthor", "holding", holding, "amount", "$12,000", "back", "$12,960", "days", "30", "day", "418")
+                });
+                Answer(p, 0, Fill(t("reallife_scheme_fund_put", "Put in {amount}"), "amount", "$12,000"), t("reallife_scheme_fund_put_hint", "The money is theirs until the fund pays."));
+                Costs(p, null, Cost(Fill(t("reallife_scheme_fund_put_cost", "{amount} now"), "amount", "$12,000"), UiConsequence.Loss),
+                    Cost(Fill(t("reallife_scheme_fund_put_gain", "{amount} back if the fund is what it says"), "amount", "$12,960"), 0));
+                Answer(p, 1, t("reallife_scheme_fund_look", "Have it looked at first"), t("reallife_scheme_fund_look_hint", "Your counsel reads the fund's papers and says what it is."));
+                Costs(p, null, Cost(Fill(t("reallife_scheme_fund_look_cost", "{amount} for the look"), "amount", "$360"), UiConsequence.Loss));
+                Answer(p, 2, t("reallife_scheme_fund_down", "Turn it down"), t("reallife_scheme_fund_down_hint", "Nothing is paid and the offer is gone."));
+                p.Locked = false;
                 break;
             }
         }

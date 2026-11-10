@@ -1,68 +1,31 @@
 using System;
-using System.Collections.Generic;
 using RealLifeOverhaul.Ui;
 using UnityEngine;
 
 namespace RealLifeOverhaul.Schemes
 {
-    /// <summary>One page of the schemes' panel: what it is about in plain words, and up to three answers, each with what it brings and what it risks.</summary>
-    internal sealed class SchemePage
-    {
-        public string Title;
-        public string Kicker;
-        public string Body;
-        public readonly string[] Choices = new string[SchemePanel.MostChoices];
-        public readonly string[] Hints = new string[SchemePanel.MostChoices];
-        public readonly Action[] Does = new Action[SchemePanel.MostChoices];
-        public readonly List<UiConsequence>[] Lines = new List<UiConsequence>[SchemePanel.MostChoices];
-        public int Count;
-
-        /// <summary>An answer; a null <paramref name="what"/> only closes the page.</summary>
-        public SchemePage Add(string choice, string hint, Action what)
-        {
-            if (Count < SchemePanel.MostChoices)
-            {
-                Choices[Count] = choice;
-                Hints[Count] = hint;
-                Does[Count] = what;
-                Count++;
-            }
-            return this;
-        }
-
-        /// <summary>A line under the answer added last: what it brings (+1), what it risks (-1) or the money it costs (UiConsequence.Loss).</summary>
-        public SchemePage Line(string text, int tone)
-        {
-            if (Count > 0 && !string.IsNullOrEmpty(text))
-            {
-                List<UiConsequence> lines = Lines[Count - 1] ?? (Lines[Count - 1] = new List<UiConsequence>(2));
-                lines.Add(new UiConsequence { Text = text, Tone = tone, Change = tone == UiConsequence.Loss ? -1 : 0 });
-            }
-            return this;
-        }
-    }
-
     /// <summary>
     /// The schemes' one screen, a copy of the game's station list (on the RLO interface the decision card): what the
     /// scheme is, the gain and the risk said plainly, and the answers. The player may always walk away: the cancel key
-    /// closes it and nothing is done. A page is written when shown; nothing runs per frame.
+    /// closes it and nothing is done. A page (<see cref="SchemePage"/>) is written when shown, and an answer hands its
+    /// press to the director; nothing runs per frame.
     /// </summary>
     internal sealed class SchemePanel
     {
-        public const int MostChoices = 3;
-
         private const float InputDelay = 0.4f;   // seconds after a page appears before an answer counts: no double presses
         private const string ButtonChoose = "reallife_scheme_choose";
 
         private readonly SceneDesk _window = new SceneDesk("RealLifeOverhaul Schemes", 1250f, 150f);
         private readonly Action<int> _onPick;
         private readonly Action _onClosed;
+        private readonly Action<SchemePress> _press;
         private readonly Action<Exception> _fault;
         private SchemePage _page;
         private float _shownAt;
 
-        public SchemePanel(Action<Exception> fault)
+        public SchemePanel(Action<SchemePress> press, Action<Exception> fault)
         {
+            _press = press;
             _fault = fault;
             _onPick = Pick;
             _onClosed = Closed;
@@ -121,15 +84,10 @@ namespace RealLifeOverhaul.Schemes
             {
                 return;
             }
-            Action what = page.Does[choice];
-            if (what == null)
-            {
-                Close();
-                return;
-            }
+            SchemePress press = page.Presses[choice];
             try
             {
-                what();
+                _press?.Invoke(press);
             }
             catch (Exception e)
             {

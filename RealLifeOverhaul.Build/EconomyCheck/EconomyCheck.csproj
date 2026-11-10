@@ -619,6 +619,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schemes\SchemeRules.Day.cs" Link="Mod\SchemeRules.Day.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schemes\SchemeRules.Rivals.cs" Link="Mod\SchemeRules.Rivals.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schemes\SchemeStore.cs" Link="Mod\SchemeStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Schemes\SchemePages.cs" Link="Mod\SchemePages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Population\PurseRules.cs" Link="Mod\PurseRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\TalentStore.cs" Link="Mod\TalentStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Tech\People\PlaceRules.cs" Link="Mod\PlaceRules.cs" />
