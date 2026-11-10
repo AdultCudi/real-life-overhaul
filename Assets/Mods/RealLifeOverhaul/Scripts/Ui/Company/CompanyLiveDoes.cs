@@ -82,6 +82,7 @@ namespace RealLifeOverhaul.Ui
         void Bank();
         void Stocks();
         void Options(string section);
+        void Parties();
     }
 
     /// <summary>The map from a press (<see cref="CompanyAct"/>) to the director's call, game-free. The live screen runs exactly this.</summary>
@@ -117,6 +118,9 @@ namespace RealLifeOverhaul.Ui
                     return true;
                 case CompanyDo.OpenOptions:
                     open.Options(string.IsNullOrEmpty(a.S) ? "company" : a.S);
+                    return true;
+                case CompanyDo.OpenParties:
+                    open.Parties();
                     return true;
                 // Questions waiting on the owner.
                 case CompanyDo.Settle:

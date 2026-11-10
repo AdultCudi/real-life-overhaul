@@ -42,6 +42,7 @@ internal static partial class UiSamples
             new[] { "RealLifeBuilders", "reallife_bld_app", "Construction", "0" }, new[] { "RealLifeTechSector", "reallife_tech_app", "Tech", "0" },
             new[] { "RealLifeOverhaulUtilities", "reallife_util_app", "Utilities", "0" }, new[] { "RealLifeGuide", "reallife_guide_app", "Guide", "0" },
             new[] { "RealLifeSettings", "reallife_set_app", "Mod settings", "0" }, new[] { "RealLifeStaff", "reallife_staff_app", "Staff and roles", "0" },
+            new[] { "RealLifeParties", "reallife_party_app", "Parties", "0" },
         };
         foreach (string[] m in mods)
         {

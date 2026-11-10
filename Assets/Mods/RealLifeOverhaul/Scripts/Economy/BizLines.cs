@@ -37,7 +37,7 @@ namespace RealLifeOverhaul.Economy
         // The features whose keys this table keeps: a key of theirs in no list is a mistake.
         private static readonly string[] Domain =
         {
-            P + "tech_", P + "broadband_", P + "ownbank_", P + "bld_", P + "study_academy", P + "fire_repair", P + "holdup_till", P + "trips_"
+            P + "tech_", P + "broadband_", P + "ownbank_", P + "bld_", P + "study_academy", P + "fire_repair", P + "holdup_till", P + "trips_", P + "parties_"
         };
 
         /// <summary>Takings: the sales of the business (a refund is the same key, negative).</summary>
@@ -64,7 +64,8 @@ namespace RealLifeOverhaul.Economy
             P + "ownbank_savers", P + "ownbank_losses", P + "ownbank_wages", P + "ownbank_systems", P + "ownbank_fine",
             P + "bld_crews", P + "bld_plant", P + "bld_fees", P + "bld_interest", P + "bld_land_tax", P + "bld_vacant_tax", P + "bld_cover",
             P + "fire_repair", P + "holdup_till",
-            P + "trips_fuel"   // a delivery trip's fuel, at its warehouse
+            P + "trips_fuel",   // a delivery trip's fuel, at its warehouse
+            P + "parties_staff"   // a company event for the staff, at their business (its refund is the same key, the other way)
         };
 
         /// <summary>Capital, financing, deposits and sales of assets: no income and no running cost, so not in the statement.</summary>

@@ -49,6 +49,7 @@ namespace RealLifeOverhaul.Meta
             Flare.FlareCityGuide.Register();
             Tech.SectorGuide.Register();
             Economy.LogisticsGuide.Register();
+            Parties.PartyGuide.Register();
         }
 
         private static void RegisterGameplay()

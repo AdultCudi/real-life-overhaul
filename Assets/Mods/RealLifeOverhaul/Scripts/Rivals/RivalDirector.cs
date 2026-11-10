@@ -265,6 +265,7 @@ namespace RealLifeOverhaul.Rivals
             int monthDays = Math.Max(1, _world.YearDays / 12), index = Math.Max(10, _world.Level / 10), trend = RivalBridges.LeaseTrend != null ? RivalBridges.LeaseTrend() : 0;
             int before = _file.Outlets.Count;
             long paid = RivalFirms.Day(_file, _file.Seed, day, monthDays, trend, index, RivalBridges.LeaseRenewed, RivalBridges.Seats);
+            paid += RivalBridges.StaffEvents != null ? RivalBridges.StaffEvents(_file, day, _world.Level) : 0L;   // (Parties: the outlets' staff events, by the player's own rule)
             if (_file.Outlets.Count > 0 || before > 0)
             {
                 Logger?.Info("Rivals: " + _file.Outlets.Count + " outlet(s) run by the tycoons paid " + paid + " in wages and rent on day " + day + ".");
@@ -591,6 +592,10 @@ namespace RealLifeOverhaul.Rivals
                     into.Add(new NewsItem { Key = RivalText.PaperDoneKey(c.Kind), Data = RivalText.Data("rival", d.Name, "holding", d.Holding, "quip", RivalText.Quip(c.Tycoon)) });
                     added++;
                 }
+            }
+            if (added < RivalCatalogue.PiecesMost && RivalBridges.StaffEventsPaper != null)
+            {
+                added += RivalBridges.StaffEventsPaper(day, into, RivalCatalogue.PiecesMost - added);   // (Parties: an outlet's staff event of yesterday)
             }
             if (added < RivalCatalogue.PiecesMost && day % 7 == RivalCatalogue.RichListDay && RivalRules.AnyActive(f))
             {

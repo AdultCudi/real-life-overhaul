@@ -43,6 +43,11 @@ namespace RealLifeOverhaul.Rivals
         public static Func<int> LeaseTrend;
         /// <summary>A rival's lease renewed in a district with this rise, per mille over its rent. Default: nobody is told.</summary>
         public static Action<string, int> LeaseRenewed;
+        /// <summary>Parties: the outlets' staff events of a day, by the rule the player's are held by: the file, the day and the price level in, what was paid (already off the fortunes)
+        /// out.</summary>
+        public static Func<RivalFile, int, int, long> StaffEvents;
+        /// <summary>Parties: the paper's pieces about the outlets' staff events for a morning, added to the list, so many at most; how many were added.</summary>
+        public static Func<int, List<NewsItem>, int, int> StaffEventsPaper;
 
         // ---- the stock market (Markets)
         /// <summary>The market runs on this machine on its own (not following another player's). Default: no.</summary>

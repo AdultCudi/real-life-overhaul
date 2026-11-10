@@ -189,6 +189,10 @@ internal static partial class UiSamples
             Chosen = 1, Acts = new[] { CA(CompanyDo.SickPolicy, null, 0), CA(CompanyDo.SickPolicy, null, 1), CA(CompanyDo.SickPolicy, null, 2) }
         });
         blocks.Add(CNote(w.F("reallife_co_staff_sick_flat", "Off sick: paid {share} of a day's pay. Their standing does not change.", "share", "50%")));
+        blocks.Add(new CompanyBlock
+        {
+            Kind = CompanyBlockKind.Link, Text = w.T("reallife_party_co_link", "Staff events"), Value = w.T("reallife_party_co_open", "Hold a staff event"), Act = CA(CompanyDo.OpenParties)
+        });
         c.Blocks = blocks.ToArray();
         return c;
     }

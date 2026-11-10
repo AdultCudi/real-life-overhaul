@@ -21,7 +21,8 @@ namespace RealLifeOverhaul.Ui
             "RealLifeFinance", "RealLifeBanks", "RealLifeGiving", "RealLifeOwnBank", "RealLifeStocks", "RealLifeEconomy",
             "RealLifeCompany", "RealLifeBrands", "RealLifeServices", "RealLifeVentures", "RealLifeOnline", "RealLifeEstate", "RealLifeDealer",
             "RealLifeBuilders", "RealLifeTechSector", "RealLifeOverhaulUtilities",
-            "RealLifeGuide", "RealLifeSettings", "RealLifeStaff"
+            "RealLifeGuide", "RealLifeSettings", "RealLifeStaff",
+            "RealLifeParties"
         };
 
         /// <summary>Each app's glyph, in the order of <see cref="Ids"/>.</summary>
@@ -33,7 +34,8 @@ namespace RealLifeOverhaul.Ui
             UiIcon.Wallet, UiIcon.Bank, UiIcon.Percent, UiIcon.PiggyBank, UiIcon.ChartLineUp, UiIcon.Globe,
             UiIcon.Building, UiIcon.Tag, UiIcon.Headset, UiIcon.Rocket, UiIcon.ShoppingCart, UiIcon.Home, UiIcon.Car,
             UiIcon.Hammer, UiIcon.Cpu, UiIcon.Lightning,
-            UiIcon.Lightbulb, UiIcon.Gear, UiIcon.IdBadge
+            UiIcon.Lightbulb, UiIcon.Gear, UiIcon.IdBadge,
+            UiIcon.ForkKnife
         };
 
         /// <summary>The five folders' glyphs, in the folders' order: money, work and study, social and life, business, settings.</summary>

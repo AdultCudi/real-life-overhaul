@@ -79,7 +79,8 @@ namespace RealLifeOverhaul.Ui
         RegionMove,         // region S's crew moved
         RegionAppoint,      // a regional manager appointed in region S: employee in S2
         SeatAppoint,        // seat A given to professional S
-        SeatStandDown       // seat A emptied
+        SeatStandDown,      // seat A emptied
+        OpenParties         // open the Parties app on its staff events (Parties)
     }
 
     /// <summary>One thing a press does: what, to which place or person, and the figures. Carried by every action's target.</summary>

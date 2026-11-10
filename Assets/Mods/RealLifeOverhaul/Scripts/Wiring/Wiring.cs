@@ -54,6 +54,7 @@ namespace RealLifeOverhaul
             Step("property", EstateLinks.Connect);
             Step("online shops", OnlineLinks.Connect);
             Step("delivery trips", LogisticsLinks.Connect);
+            Step("parties and company events", PartyLinks.Connect);
             Step("the tech sector", TechLinks.Connect);
             Step("the start days of the player's businesses", FoundingLinks.Connect);   // wraps nothing: it only reads the moving companies' messages and the statements
             Step("the pause menu's city card", PauseLinks.Connect);   // wraps nothing: it reads the net worth and the businesses as the Overview counts them
@@ -165,6 +166,7 @@ namespace RealLifeOverhaul
             Step("the pause menu's city card", PauseLinks.Disconnect);
             Step("online shops", OnlineLinks.Disconnect);
             Step("delivery trips", LogisticsLinks.Disconnect);
+            Step("parties and company events", PartyLinks.Disconnect);
             Step("the city's economy", CityLinks.Disconnect);
             Step("credit and debt", DebtLinks.Disconnect);
             Step("the economy", EconomyLinks.Disconnect);

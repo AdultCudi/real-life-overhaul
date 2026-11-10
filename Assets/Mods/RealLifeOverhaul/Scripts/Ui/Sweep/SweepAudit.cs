@@ -149,6 +149,8 @@ namespace RealLifeOverhaul.Ui
             Row("Texts", "The AI texts' model and address", "the typed text", AuditWindow.TextInput, Text, "Texts/"),
 
             // ---------------------------------------------------------------------------------------------------- Planner, Calendar, Photos, Meta
+            Face("Parties", "Host a party, Staff events, Diary", "parties", "Parties/"),
+            Row("Parties", "At the place of a party: begin it, or go in to a friend's", "a yes or no box", AuditWindow.Question, Question, "Parties/"),
             Face("Planner", "Week, Notes, Plans", "planner", "Planner/"),
             Row("Planner", "Notes: add, delete", "a yes or no box", AuditWindow.Question, Question, "Planner/"),
             Row("Planner", "Notes: write one", "the typed note", AuditWindow.TextInput, Text, "Planner/"),

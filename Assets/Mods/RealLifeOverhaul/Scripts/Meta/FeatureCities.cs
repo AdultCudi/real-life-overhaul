@@ -123,6 +123,7 @@ namespace RealLifeOverhaul.Meta
             new Line("ui", CityScope.AnyCity, "the RLO interface: the game's apps it redraws and the overhaul's screens"),
             new Line("studio", CityScope.AnyCity, "the player's game studios and the rival studios' market"),
             new Line("trips", CityScope.AnyCity, "the player's logistics routes, warehouses and places, and the rival shops of whatever city it is"),
+            new Line("parties", CityScope.AnyCity, "the player's home, businesses and the people they know, and venues found among whatever city's open buildings"),
             new Line("firms", CityScope.AnyCity, "the player's tech firms and the shared markets, sized from whatever city the population measures"),
             new Line("population", CityScope.NewYork, "the city's people in New York's buildings, measured and kept by its districts"),
             new Line("flare_city", CityScope.NewYork, "the population's residents as Flare's followers, reviewers and the voices of its feed"),

@@ -206,6 +206,7 @@ public static partial class UiPreviewRunner
         AddServices(screens);
         AddTech(screens);
         AddVentures(screens);
+        AddParties(screens);
         AddWork(screens);
         AddDesigner(screens);
         AddMap(screens);
@@ -254,6 +255,7 @@ public static partial class UiPreviewRunner
     static partial void AddServices(List<Screen> screens);
     static partial void AddTech(List<Screen> screens);
     static partial void AddVentures(List<Screen> screens);
+    static partial void AddParties(List<Screen> screens);
     static partial void AddWork(List<Screen> screens);
     static partial void AddDesigner(List<Screen> screens);
     static partial void AddMap(List<Screen> screens);

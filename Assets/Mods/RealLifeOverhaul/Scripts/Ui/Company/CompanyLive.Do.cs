@@ -64,6 +64,8 @@ namespace RealLifeOverhaul.Ui
 
             public void Stocks() => CompanyGame.OpenListing();
 
+            public void Parties() => RealLifeOverhaul.Parties.PartyDirector.Open(PartyPages.TabStaff);
+
             public void Options(string section)
             {
                 if (Meta.SettingsApp.Installed)

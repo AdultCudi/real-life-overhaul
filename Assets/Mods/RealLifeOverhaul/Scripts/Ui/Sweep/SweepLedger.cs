@@ -69,6 +69,7 @@ namespace RealLifeOverhaul.Ui
             Row("Economy app", SweepState.Kit, "economy", "an app window over the city", "Outlook/OutlookApp.cs", "Outlook/OutlookDirector.App.cs", "Outlook/OutlookKit.cs", "Outlook/OutlookPage.cs"),
             Row("Camera app", SweepState.Kit, "camera", "Decision card, and the viewfinder over the world", "Photos/CameraApp.cs", "Photos/CameraView.cs"),
             Row("Gallery app", SweepState.Kit, "photo_gallery", "an app window over the city", "Photos/GalleryApp.cs", "Photos/GalleryApp.Grid.cs"),
+            Row("Parties app", SweepState.Kit, "parties", "an app window over the city", "Parties/PartyApp.cs"),
             Row("Planner app", SweepState.Kit, "planner", "an app window over the city", "Planner/PlannerDirector.cs"),
             Row("Flare app", SweepState.Kit, "flare", "an app window over the city",
                 "Social/Flare/FlareApp.Sheet.cs", "Social/Flare/FlareDirector.cs", "Social/Flare/FlareKit.cs", "Social/Flare/FlareList.cs"),

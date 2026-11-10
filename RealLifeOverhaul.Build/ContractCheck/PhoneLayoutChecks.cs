@@ -60,7 +60,7 @@ internal static partial class Program
         {
             { "RealLifeFinance", 0 }, { "RealLifeGiving", 0 }, { "RealLifeBanks", 0 }, { "RealLifeOwnBank", 0 }, { "RealLifeStocks", 0 }, { "RealLifeNewsstand", 0 }, { "RealLifeLedger", 0 }, { "RealLifeOverhaulUtilities", 0 },
             { "RealLifeCareer", 1 }, { "RealLifeCampus", 1 }, { "RealLifeOpenRoles", 1 }, { "RealLifeMarketplace", 1 },
-            { "RealLifeCalendar", 2 }, { "RealLifeCamera", 2 }, { "RealLifeGallery", 2 },
+            { "RealLifeCalendar", 2 }, { "RealLifeCamera", 2 }, { "RealLifeGallery", 2 }, { "RealLifeParties", 2 },
             { "RealLifeCompany", 3 }, { "RealLifeBrands", 3 }, { "RealLifeServices", 3 }, { "RealLifeVentures", 3 }, { "RealLifeOnline", 3 }, { "RealLifeEstate", 3 },
             { "RealLifeDealer", 3 }, { "RealLifeTechSector", 3 },
             { "RealLifeGuide", 4 }, { "RealLifeSettings", 4 },
