@@ -45,8 +45,7 @@ namespace RealLifeOverhaul.Economy
                 row.Set(1, p.District);
                 row.Set(2, SpaceText.T("reallife_space_kind"));
                 row.Set(3, SpaceGame.Money(p.Price), p.Price);
-                row.Set(4, p.Owner == SpaceOwner.Player ? SpaceText.T("reallife_space_row_yours") : player > 0 ? SpaceText.Fill("reallife_space_row_held", "count", player.ToString())
-                    : free > 0 ? SpaceText.Fill("reallife_space_row_free", "count", free.ToString()) : SpaceText.T("reallife_space_row_full"));
+                row.Set(4, SpaceText.RowState(p, player, free));
             }
             return picked;
         }

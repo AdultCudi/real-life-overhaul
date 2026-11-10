@@ -4,39 +4,27 @@ using RealLifeOverhaul.Meta;
 
 namespace RealLifeOverhaul.ParkSpaces
 {
-    /// <summary>The words of the parking spaces that are built from the state: a space's number, a building's owner, how a space is held. Every other text is a locale key written whole where it is used.</summary>
+    /// <summary>
+    /// The words of the parking spaces in the game's language: <see cref="Ui.SpaceWords"/>, which the kit's page and the checks use
+    /// too, through the game's localisation. Every other text is a locale key written whole where it is used.
+    /// </summary>
     public static class SpaceText
     {
-        private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+        /// <summary>The game's own text of a key; the English is only what the key stands for.</summary>
+        public static readonly Ui.UiWords Words = (key, english) => key.GetLocalization();
 
         public static string T(string key) => key.GetLocalization();
 
         /// <summary>A text with its names filled in: pairs of a name and what goes in its place.</summary>
-        public static string Fill(string key, params string[] pairs)
-        {
-            string text = key.GetLocalization();
-            for (int i = 0; i + 1 < pairs.Length; i += 2)
-            {
-                text = text.Replace("{" + pairs[i] + "}", pairs[i + 1] ?? string.Empty);
-            }
-            return text;
-        }
+        public static string Fill(string key, params string[] pairs) => Ui.SpaceWords.Fill(key.GetLocalization(), pairs);
 
-        public static string Space(int slot) => Fill("reallife_space_number", "number", slot.ToString(Inv));
+        public static string Space(int slot) => Ui.SpaceWords.Space(Words, slot);
 
-        /// <summary>Who sells a car park's spaces: the rival that owns the building by name, the player, or the building's landlord.</summary>
-        public static string Owner(SpacePark p)
-        {
-            return p.Owner == SpaceOwner.Player ? T("reallife_space_owner_you") : p.Owner == SpaceOwner.Rival && !string.IsNullOrEmpty(p.OwnerName) ? p.OwnerName
-                : T("reallife_space_owner_landlord");
-        }
+        public static string Owner(SpacePark p) => Ui.SpaceWords.Owner(Words, p);
 
-        /// <summary>How a space is held: bought, rented until a day, or rented and given up.</summary>
-        public static string Tenure(SpaceHolding h)
-        {
-            return !h.Rented ? T("reallife_space_tenure_owned")
-                : Fill(h.Ending ? "reallife_space_tenure_ending" : "reallife_space_tenure_rented", "day", Economy.FinanceText.Day(h.PaidTo + 1));
-        }
+        public static string Tenure(SpaceHolding h) => Ui.SpaceWords.Tenure(Words, h, Economy.FinanceText.Day);
+
+        public static string RowState(SpacePark p, int player, int free) => Ui.SpaceWords.RowState(Words, p, player, free);
     }
 
     /// <summary>

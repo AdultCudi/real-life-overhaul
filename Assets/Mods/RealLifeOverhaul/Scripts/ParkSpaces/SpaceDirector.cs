@@ -356,15 +356,8 @@ namespace RealLifeOverhaul.ParkSpaces
 
         // ------------------------------------------------------------------ what the player does
 
-        private static readonly string[] RefusalKeys =
-        {
-            null, "reallife_space_refuse_off", "reallife_space_refuse_session", "reallife_space_refuse_no_park", "reallife_space_refuse_full",
-            "reallife_space_refuse_limit", "reallife_space_refuse_park_limit", "reallife_space_refuse_cash", "reallife_space_refuse_not_held", "reallife_space_refuse_own_building",
-            "reallife_space_refuse_rented", "reallife_space_refuse_owned"
-        };
-
         /// <summary>The text key that says why something was refused; null for nothing refused.</summary>
-        public static string Why(SpaceRefusal r) => RefusalKeys[SpaceCatalogue.Clamp((int)r, 0, RefusalKeys.Length - 1)];
+        public static string Why(SpaceRefusal r) => Ui.SpaceWords.WhyKey(r);
 
         private static SpaceRefusal Say(SpaceRefusal r)
         {

@@ -18,9 +18,9 @@ namespace RealLifeOverhaul.Economy.Dealership
 
         public static readonly string[] NameKeys = { "reallife_carsup_name_0", "reallife_carsup_name_1", "reallife_carsup_name_2" };
         public static readonly string[] AboutKeys = { "reallife_carsup_about_0", "reallife_carsup_about_1", "reallife_carsup_about_2" };
-        public static readonly string[] KindKeys =
+        public static readonly string[] KindKeys =   // the showroom's own names for the kinds
         {
-            "reallife_carsup_kind_0", "reallife_carsup_kind_1", "reallife_carsup_kind_2", "reallife_carsup_kind_3", "reallife_carsup_kind_4", "reallife_carsup_kind_5"
+            "reallife_dealer_carkind_1", "reallife_dealer_carkind_2", "reallife_dealer_carkind_3", "reallife_dealer_carkind_4", "reallife_dealer_carkind_5", "reallife_dealer_carkind_6"
         };
 
         // What each supplier asks for a car of each kind, thousandths of the wholesaler's listed price: a row a supplier, a column a kind.

@@ -1,71 +1,26 @@
 using System.Globalization;
+using Localizor;
 using RealLifeOverhaul.Meta;
 
 namespace RealLifeOverhaul.Economy.Dealership
 {
-    /// <summary>The words of the showroom's suppliers that are built from the tables: a supplier's name, a kind of car, a price against the wholesaler's, a delivery.</summary>
+    /// <summary>The words of the showroom's suppliers in the game's language: <see cref="Ui.SupplyWords"/>, which the kit's page and the checks use too, through the game's localisation.</summary>
     public static class CarSupplyText
     {
-        private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
+        /// <summary>The game's own text of a key; the English is only what the key stands for.</summary>
+        public static readonly Ui.UiWords Words = (key, english) => key.GetLocalization();
 
-        public static string Name(int supplier)
-        {
-            return DealerText.T(CarSupplyCatalogue.NameKeys[DealerCatalogue.Clamp(supplier, 0, CarSupplyCatalogue.Suppliers - 1)]);
-        }
+        public static string Name(int supplier) => Ui.SupplyWords.Name(Words, supplier);
 
-        public static string About(int supplier)
-        {
-            return DealerText.T(CarSupplyCatalogue.AboutKeys[DealerCatalogue.Clamp(supplier, 0, CarSupplyCatalogue.Suppliers - 1)]);
-        }
+        public static string About(int supplier) => Ui.SupplyWords.About(Words, supplier);
 
-        public static string Kind(int kind)
-        {
-            return DealerText.T(CarSupplyCatalogue.KindKeys[DealerCatalogue.Clamp(kind, 0, CarSupplyCatalogue.Kinds - 1)]);
-        }
+        public static string Kind(int kind) => Ui.SupplyWords.Kind(Words, kind);
 
-        /// <summary>A supplier's price for a kind against the wholesaler's: "3.5% under the wholesaler", "1.2% over the wholesaler" or "the wholesaler's price".</summary>
-        public static string Against(int supplier, int kind)
-        {
-            int share = CarSupplyCatalogue.Price[DealerCatalogue.Clamp(supplier, 0, CarSupplyCatalogue.Suppliers - 1)][DealerCatalogue.Clamp(kind, 0, CarSupplyCatalogue.Kinds - 1)];
-            if (share == 1000)
-            {
-                return DealerText.T("reallife_carsup_price_same");
-            }
-            string percent = (System.Math.Abs(share - 1000) / 10f).ToString("0.#", Inv);
-            return DealerText.T(share < 1000 ? "reallife_carsup_price_under" : "reallife_carsup_price_over", "percent", percent);
-        }
+        public static string Delivery(int supplier) => Ui.SupplyWords.Delivery(Words, supplier);
 
-        /// <summary>When a supplier's car comes: at once, or in so many days.</summary>
-        public static string Delivery(int supplier)
-        {
-            int days = CarSupplyRules.Days(supplier);
-            return days <= 0 ? DealerText.T("reallife_carsup_delivery_now") : DealerText.T("reallife_carsup_delivery_days", "days", days.ToString(Inv));
-        }
+        public static string Terms(int supplier, int kind) => Ui.SupplyWords.Terms(Words, supplier, kind);
 
-        /// <summary>A supplier's terms for a kind on one line: its price against the wholesaler's and its delivery.</summary>
-        public static string Terms(int supplier, int kind)
-        {
-            return DealerText.Fill("reallife_carsup_terms", "price", Against(supplier, kind), "delivery", Delivery(supplier));
-        }
-
-        /// <summary>Which supplier each of the other dealers buys a kind from, as one line; the same all game.</summary>
-        public static string Rivals(int seed, int kind)
-        {
-            var t = new System.Text.StringBuilder(160);
-            for (int s = 0; s < CarSupplyCatalogue.Suppliers; s++)
-            {
-                int count = 0;
-                for (int r = 0; r < DealerCatalogue.RivalNames.Length; r++)
-                {
-                    count += CarSupplyRules.RivalSupplier(seed, r, kind) == s ? 1 : 0;
-                }
-                if (count > 0)
-                {
-                    t.Append(t.Length > 0 ? ", " : string.Empty).Append(DealerText.Fill("reallife_carsup_rivals_part", "supplier", Name(s), "count", count.ToString(Inv)));
-                }
-            }
-            return DealerText.T("reallife_carsup_rivals", "list", t.ToString());
-        }
+        public static string Rivals(int seed, int kind) => Ui.SupplyWords.Rivals(Words, seed, kind);
     }
 
     /// <summary>
