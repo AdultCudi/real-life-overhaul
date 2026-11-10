@@ -146,7 +146,7 @@ namespace RealLifeOverhaul.Ui
             }
             switch (id)
             {
-                case "Persona": return UiIcon.Person;
+                case "Persona": return UiIcon.Percent;
                 case "Contacts": return UiIcon.AddressBook;
                 case "MyEmployees": return UiIcon.IdBadge;
                 case "BizMan": return UiIcon.Building;
@@ -170,7 +170,7 @@ namespace RealLifeOverhaul.Ui
                 case "RealLifeOwnBank": return UiIcon.PiggyBank;
                 case "RealLifeStocks": return UiIcon.ChartLineUp;
                 case "RealLifeEconomy": return UiIcon.Globe;
-                case "RealLifeGiving": return UiIcon.Heart;
+                case "RealLifeGiving": return UiIcon.Percent;
                 case "RealLifeCompany": return UiIcon.Presentation;
                 case "RealLifeBrands": return UiIcon.Trophy;
                 case "RealLifeServices": return UiIcon.Handshake;

@@ -74,8 +74,6 @@ namespace RealLifeOverhaul.Giving
         public const int RivalYearShare = 5;       // thousandths of a tycoon's worth given a year on average (Giving USA: individuals' giving is about 2% of income; a fortune is mostly not income)
         public const int RivalSpread = 600;        // thousandths each tycoon's own rate may be off the average, up or down (seeded)
 
-        public static string NameKey(Charity c) => "reallife_giving_charity_" + (int)c + "_name";
-
         public static readonly string[] NameKeys =
         {
             "reallife_giving_charity_0_name", "reallife_giving_charity_1_name", "reallife_giving_charity_2_name"
