@@ -92,7 +92,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             for (int i = 0; i < s.Rivals.Count; i++)
             {
                 RivalCar c = s.Rivals[i];
-                if (c.Type == type && c.Ask > 0 && c.Day <= s.MarketDay && (best == 0 || c.Ask < best))   // a car still on its way from a supplier is not on the lot
+                if (c.Type == type && c.Ask > 0 && (s.MarketDay < 0 || c.Day <= s.MarketDay) && (best == 0 || c.Ask < best))   // a car still on its way from a supplier is not on the lot
                 {
                     best = c.Ask;
                     rival = c.Rival;

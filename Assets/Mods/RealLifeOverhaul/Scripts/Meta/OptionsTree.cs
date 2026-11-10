@@ -448,7 +448,7 @@ namespace RealLifeOverhaul.Meta
                 S("offices").For("office_space").Opts("office_conversion").Also("office offices shop shops empty space building buildings convert vacant"),
                 S("estate").For("economy_estate").Need("economy").Opts("economy_estate", "economy_estate_hotel", "economy_estate_hire", "economy_estate_rent")
                     .Also("buildings landlord tenant letting rent rental income").Also("economy_estate", "rent tenant landlord letting"),
-                S("parkspaces").For("parking_spaces").Opt("parking_spaces", "economy_estate").Also("parking space spaces car park garage underground buy rent bay spot hourly charge"),
+                S("parkspaces").For("parking_spaces").Opt("parking_spaces", "economy_estate").Also("parking space spaces car park garage underground buy bay spot hourly charge"),
                 S("carsupply").For("economy_dealer_supply").Opt("economy_dealer_supply", "economy_dealer")
                     .Also("supplier suppliers wholesaler importer car showroom dealership delivery order standing order manager stock"),
                 S("estateduties").For("economy_estate_duties").Opt("economy_estate_duties", "economy_estate")

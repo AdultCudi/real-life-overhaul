@@ -127,8 +127,9 @@ namespace RealLifeOverhaul.Ui
                 if (yard != null)
                 {
                     int lid = l.Id;
+                    string question = _d.NewQuestion(l, price);   // for a car on order, from whom and when it comes
                     actions.Add(_runs.Button(DealerText.T("reallife_dealer_button_buy"), UiButtonKind.Primary, UiIcon.Check, UiAction.Alt, () => Show(() => Confirm("reallife_dealer_q_buy_title",
-                        _d.NewQuestion(l, price), () =>
+                        question, () =>
                         {
                             if (_d.Buy(lid, yard, price))
                             {

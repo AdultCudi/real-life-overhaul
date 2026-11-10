@@ -35760,7 +35760,7 @@
   "reallife_space_enabled": "可买或租的停车位",
   "reallife_meta_title_parking_spaces": "停车位",
   "reallife_opt_sec_parkspaces": "停车位",
-  "reallife_opt_tip_parking_spaces": "在房产应用中买下或租下某栋建筑停车场里的单个车位。停在那里的车不再按小时付费。关闭时，停车场里的每辆车都照旧按小时付费，你的车位则闲置。",
+  "reallife_opt_tip_parking_spaces": "在房产应用中买下或租下某栋建筑停车场里的一个车位。停在那里的车不再按小时付费。关闭时，车辆照旧按小时付费。",
   "reallife_guide_parking_spaces_about": "买下或租下某栋建筑停车场里的单个车位，无需买下或租下整栋建筑。停在那里的车不再按小时付费。",
   "reallife_guide_parking_spaces": "# 这是什么\n- 城市里有些建筑的下面设有停车场。游戏对停在其中的每辆车收取每小时{space_fee}的费用。如果你在那里有自己的车位，一辆车就不用付费：这笔费用会每晚作为账目中的一项退还给你。\n- 你可以不买或租整栋建筑，只买或租一个车位。它有自己的开关，<b>可买或租的停车位</b>，位于选项中的<b>你的企业</b>之下。关闭时，停车场里的每辆车都照旧按小时付费，你的车位则闲置。\n\n# 买入与租用\n- 在手机上打开<b>房产</b>，进入<b>市场</b>标签页。每栋设有停车场的建筑都会在待售建筑旁边占一行。它的页面显示价格、租金、由谁出售，以及车位由谁持有。\n- <b>购买车位</b>：你一次性向建筑业主支付价格。价格是车位一年的租金按房地产市场的收益率折算，所以会随地区和房地产市场变化。\n- <b>租用车位</b>：中等地区的车位租期{space_rent_days}天，租金{space_rent}，一次性支付，到期时再次支付。如果那天没有现金，车位就会退回。\n- 你在同一个停车场最多可以持有{space_park_most}个车位，总共最多{space_held_most}个。一个停车场的车位数量有限，城市居民和对手也持有他们的车位。没有空位时，你只能等待。\n\n# 使用\n- 把车开进停车场，照常停车。你在那里持有的每个车位，都会在当天结束时退还一辆车的每小时费用。\n- 你的车位会以行的形式显示在<b>我的</b>标签页，以及停车场的页面上。\n\n# 放弃车位\n- <b>转售</b>：业主支付你的购买价与今日价格中较低者，再扣除{space_back_fee}的手续费。你拿到的金额永远不会超过你的购买价。\n- <b>结束租赁</b>：租赁在你已付费的期限结束时终止。不会退还任何费用。\n- 如果建筑被拆除或重建，{space_gone_days}天后，已购车位按你的购买价退还，已租车位按未使用的天数退还。\n- 在你自己的建筑里，每个空车位都归你所有，且不会出售。\n\n# 对手\n- 对手大亨按照相同的规则和价格买卖车位。他们的车位会显示在富豪榜上。\n\n# 在Going Public会话中\n- 在共享城市中无法购买、租用或出售车位，也不收取任何费用。你持有的车位仍然为你自己的车辆提供服务。",
   "reallife_space_kind": "停车位",
@@ -35838,7 +35838,7 @@
   "reallife_carsup_enabled": "汽车展厅的供应商",
   "reallife_meta_title_economy_dealer_supply": "汽车供应商",
   "reallife_opt_sec_carsupply": "汽车供应商",
-  "reallife_opt_tip_economy_dealer_supply": "在汽车展厅为每种新车选择一家供应商，每家都有自己的价格和交货时间，并设置由经理执行的常备订单。关闭时，所有新车都照旧从批发商处采购。",
+  "reallife_opt_tip_economy_dealer_supply": "在汽车展厅为每种新车选择一家供应商，每家都有自己的价格和交货时间。关闭时，所有新车都照旧从批发商处采购。",
   "reallife_guide_economy_dealer_supply_about": "在汽车展厅为每种新车选择一家供应商。每家都有自己的价格和交货时间，经理可以让展位保持有车。",
   "reallife_guide_economy_dealer_supply": "# 这是什么\n- 你的<b>汽车展厅</b>按种类采购新车：经济型车、轿车、豪华车、跑车、SUV和皮卡，以及厢式车。每个种类你可以从三家供应商中选择一家。它有自己的开关，<b>汽车展厅的供应商</b>，位于选项中的<b>你的企业</b>之下。关闭时，所有新车都照旧从批发商处采购，已经订购的车辆仍会送达。\n\n# 供应商\n- <b>城市汽车批发</b>：所有种类均按标价供货，立即上架。\n- <b>港湾进口商行</b>：经济型车{carsup_importer_economy}、轿车{carsup_importer_saloon}和厢式车{carsup_importer_van}低于标价，其他种类最多高于标价{carsup_importer_dear}。车辆{carsup_importer_days}天后送达。\n- <b>金道高端贸易</b>：豪华车{carsup_specialist_luxury}、跑车{carsup_specialist_sports}以及SUV和皮卡{carsup_specialist_utility}低于标价，其他种类最多高于标价{carsup_specialist_dear}。车辆{carsup_specialist_days}天后送达。\n- 已订购的车辆会立即付款，并一直保留展位，直到在{carsup_hour}送达。最多{carsup_ways_most}辆车可以在途中。\n\n# 选择\n- 打开<b>汽车展厅</b>，进入<b>市场</b>标签页，然后是<b>供应商</b>。将每个种类切换到你想要的供应商。一辆新车的页面随后会显示其供应商、价格以及何时到货。\n- 更换供应商从不会改变已订购的车辆。\n- 直接卖给同行总是比任何供应商的报价低，因此在他们之间倒卖车辆没有任何好处。\n\n# 常备订单\n- 在同一页面上，设置每个展厅保留每种新车的数量，最多{carsup_keep_most}辆。每天早上，在该展厅拥有<b>库存订单</b>的经理会从当天清单中，只要有空位且有现金，就向该种类的供应商订购缺少的车辆。\n- 在<b>公司</b>的<b>经理</b>标签页中任命经理。没有经理的话，数量会保留，但你需要手动采购。\n\n# 其他经销商\n- 城市里的其他经销商从同样的供应商处采购。一个精打细算的经销商会为每个种类选择最便宜的一家并等待。页面会显示每个种类有多少家从谁那里购买。",
   "reallife_carsup_name_0": "城市汽车批发",
@@ -35884,5 +35884,10 @@
   "reallife_carsup_test_order": "汽车供应商：从该种类最便宜的供应商订购第一辆新车",
   "reallife_carsup_test_manager_btn": "汽车供应商：立即执行经理的早间订单",
   "reallife_carsup_test_manager": "常备订单已执行。已为{name}订购{count}辆车。",
-  "reallife_carsup_test_none": "今天没有新车上架。"
+  "reallife_carsup_test_none": "今天没有新车上架。",
+  "reallife_transaction_space_buy_label": "购买停车位",
+  "reallife_transaction_space_sold_label": "转售停车位",
+  "reallife_transaction_space_rent_label": "停车位租金",
+  "reallife_transaction_space_refund_label": "停车场费用已退还",
+  "reallife_transaction_space_gone_label": "停车位已结算"
 }

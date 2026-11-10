@@ -35760,7 +35760,7 @@
   "reallife_space_enabled": "구매 또는 임대 가능한 주차 공간",
   "reallife_meta_title_parking_spaces": "주차 공간",
   "reallife_opt_sec_parkspaces": "주차 공간",
-  "reallife_opt_tip_parking_spaces": "부동산 앱에서 건물 주차장의 공간 하나를 사거나 임대합니다. 그곳에 세운 차는 더 이상 시간당 요금을 내지 않습니다. 끄면 주차장의 모든 차가 전처럼 시간당 요금을 내고, 보유한 공간은 대기합니다.",
+  "reallife_opt_tip_parking_spaces": "부동산 앱에서 건물 주차장의 공간 하나를 사거나 임대합니다. 그곳에 세운 차는 시간당 요금을 내지 않습니다. 끄면 차는 전처럼 시간당 요금을 냅니다.",
   "reallife_guide_parking_spaces_about": "건물을 사거나 임대하지 않고, 건물 주차장의 주차 공간 하나를 사거나 임대합니다. 그곳에 세운 차는 시간당 요금을 내지 않습니다.",
   "reallife_guide_parking_spaces": "# 무엇인가요\n- 도시의 일부 건물에는 아래에 주차장이 있습니다. 게임은 그곳에 세워진 차마다 시간당 {space_fee}을 청구합니다. 그곳에 자신의 공간이 있으면 차 한 대는 아무 요금도 내지 않습니다. 요금은 매일 밤 장부에 별도 항목으로 환불됩니다.\n- 건물을 사거나 임대하지 않고 주차 공간만 사거나 빌릴 수 있습니다. 옵션의 <b>귀하의 사업체</b> 아래에 전용 스위치 <b>구매 또는 임대 가능한 주차 공간</b>이 있습니다. 끄면 주차장의 모든 차가 전처럼 시간당 요금을 내고, 보유한 공간은 대기합니다.\n\n# 구매와 임대\n- 휴대폰에서 <b>부동산</b>을 열고 <b>시장</b> 탭을 엽니다. 주차장이 있는 건물은 판매 중인 건물 옆에 한 줄로 표시됩니다. 페이지에는 가격, 임대료, 판매자, 공간 보유자가 나옵니다.\n- <b>공간 구매</b>: 건물 소유자에게 가격을 한 번 지불합니다. 가격은 부동산 시장 수익률로 계산한 공간의 1년 임대료이므로, 지역과 부동산 시장에 따라 달라집니다.\n- <b>공간 임대</b>: 중간 지역에서 {space_rent_days}일 동안 {space_rent}입니다. 즉시 지불하고, 기간이 끝나면 다시 지불합니다. 그날 현금이 없으면 공간은 반환됩니다.\n- 한 주차장에서 {space_park_most}개, 전체로는 {space_held_most}개의 공간을 보유할 수 있습니다. 주차장의 공간 수는 정해져 있고, 도시의 사람들과 경쟁자도 자기 공간을 보유합니다. 빈 공간이 없으면 기다려야 합니다.\n\n# 사용\n- 주차장에 들어가 평소처럼 차를 세우세요. 보유한 공간마다 차 한 대의 시간당 요금이 하루가 끝날 때 환불됩니다.\n- 보유한 공간은 <b>내 건물</b> 탭과 주차장 페이지에 줄로 표시됩니다.\n\n# 포기\n- <b>되팔기</b>: 소유자는 지불한 금액과 오늘 가격 중 낮은 금액에서 {space_back_fee}의 수수료를 뺀 금액을 지불합니다. 지불한 금액보다 많이 받을 수는 없습니다.\n- <b>임대 종료</b>: 지불한 기간이 끝나면 종료됩니다. 환불되는 것은 없습니다.\n- 건물이 철거되거나 재건축되면, {space_gone_days}일 뒤 구매한 공간은 지불한 금액으로, 임대한 공간은 사용하지 않은 날짜만큼 환불됩니다.\n- 자신의 건물에서는 비어 있는 모든 공간이 자신의 것이며, 아무것도 판매되지 않습니다.\n\n# 경쟁자\n- 경쟁 재벌들은 같은 규칙과 가격으로 공간을 사고팝니다. 그들의 공간은 부자 순위에 표시됩니다.\n\n# Going Public 세션에서\n- 공유 도시에서는 공간을 사거나 빌리거나 팔 수 없으며, 돈도 청구되지 않습니다. 보유한 공간은 여전히 자신의 차를 대신합니다.",
   "reallife_space_kind": "주차 공간",
@@ -35838,7 +35838,7 @@
   "reallife_carsup_enabled": "자동차 쇼룸 공급업체",
   "reallife_meta_title_economy_dealer_supply": "자동차 공급업체",
   "reallife_opt_sec_carsupply": "자동차 공급업체",
-  "reallife_opt_tip_economy_dealer_supply": "자동차 쇼룸에서 신차 차종마다 공급업체를 고릅니다. 공급업체마다 가격과 배송이 다르며, 관리자가 처리하는 상시 주문도 설정할 수 있습니다. 끄면 모든 신차가 전처럼 도매상에서 옵니다.",
+  "reallife_opt_tip_economy_dealer_supply": "자동차 쇼룸에서 신차 차종마다 공급업체를 고릅니다. 공급업체마다 가격과 배송이 다릅니다. 끄면 모든 신차가 전처럼 도매상에서 옵니다.",
   "reallife_guide_economy_dealer_supply_about": "자동차 쇼룸에서 신차 차종마다 공급업체를 고르세요. 각 업체마다 가격과 배송이 다르며, 관리자가 재고를 채워 둘 수 있습니다.",
   "reallife_guide_economy_dealer_supply": "# 무엇인가요\n- <b>자동차 쇼룸</b>은 신차를 차종별로 구매합니다: 경차, 세단, 고급차, 스포츠카, SUV와 픽업, 밴. 차종마다 세 공급업체 중 하나를 고릅니다. 옵션의 <b>귀하의 사업체</b> 아래에 전용 스위치 <b>자동차 쇼룸 공급업체</b>가 있습니다. 끄면 모든 신차가 전처럼 도매상에서 오고, 이미 주문한 차는 그대로 도착합니다.\n\n# 공급업체\n- <b>City Motor Wholesale</b>: 모든 차종을 표시 가격으로, 즉시 전시장에 공급합니다.\n- <b>Harbour Line Imports</b>: 경차 {carsup_importer_economy}, 세단 {carsup_importer_saloon}, 밴 {carsup_importer_van}은 표시 가격보다 낮게, 다른 차종은 최대 {carsup_importer_dear} 높게 공급합니다. 차는 {carsup_importer_days}일 후에 도착합니다.\n- <b>Kingsway Prestige Trade</b>: 고급차 {carsup_specialist_luxury}, 스포츠카 {carsup_specialist_sports}, SUV와 픽업 {carsup_specialist_utility}은 표시 가격보다 낮게, 다른 차종은 최대 {carsup_specialist_dear} 높게 공급합니다. 차는 {carsup_specialist_days}일 후에 도착합니다.\n- 주문한 차는 즉시 지불되며, {carsup_hour}에 도착할 때까지 전시장의 자리를 유지합니다. 최대 {carsup_ways_most}대의 차가 이동 중일 수 있습니다.\n\n# 고르기\n- <b>자동차 쇼룸</b>, <b>시장</b> 탭, 그리고 <b>공급업체</b> 순서로 엽니다. 차종마다 원하는 공급업체로 설정하세요. 신차의 페이지에는 공급업체, 가격, 도착 시점이 표시됩니다.\n- 공급업체를 바꿔도 이미 주문한 차는 바뀌지 않습니다.\n- 차를 딜러에게 바로 팔면 어느 공급업체가 요구하는 가격보다도 항상 적게 받으므로, 차를 업체 사이에서 옮겨 이득을 볼 수는 없습니다.\n\n# 상시 주문\n- 같은 페이지에서 각 쇼룸이 차종별로 보관할 신차 수를 정합니다. 최대 {carsup_keep_most}대입니다. 매일 아침, 그 쇼룸에서 <b>재고 주문</b> 권한을 가진 관리자가 빈 자리와 현금이 있는 동안, 그날 목록에서 부족한 차를 해당 차종의 공급업체에 주문합니다.\n- <b>회사</b> 앱의 <b>관리자</b> 탭에서 관리자를 임명하세요. 관리자가 없으면 수량은 유지되지만, 직접 구매해야 합니다.\n\n# 다른 딜러\n- 도시의 다른 딜러들도 같은 공급업체에서 구매합니다. 가격에 민감한 딜러는 차종마다 가장 저렴한 업체를 골라 기다립니다. 이 페이지에는 차종별로 누가 얼마나 구매하는지 표시됩니다.",
   "reallife_carsup_name_0": "City Motor Wholesale",
@@ -35884,5 +35884,10 @@
   "reallife_carsup_test_order": "자동차 공급업체: 차종에서 가장 저렴한 공급업체에 첫 신차를 주문합니다",
   "reallife_carsup_test_manager_btn": "자동차 공급업체: 관리자의 아침 주문을 지금 실행합니다",
   "reallife_carsup_test_manager": "상시 주문을 실행했습니다. {name}을(를) 위해 {count}대를 주문했습니다.",
-  "reallife_carsup_test_none": "오늘 목록에 있는 신차가 없습니다."
+  "reallife_carsup_test_none": "오늘 목록에 있는 신차가 없습니다.",
+  "reallife_transaction_space_buy_label": "주차 공간 구매",
+  "reallife_transaction_space_sold_label": "주차 공간 되팔기",
+  "reallife_transaction_space_rent_label": "주차 공간 임대료",
+  "reallife_transaction_space_refund_label": "주차장 요금 환불",
+  "reallife_transaction_space_gone_label": "주차 공간 정산"
 }

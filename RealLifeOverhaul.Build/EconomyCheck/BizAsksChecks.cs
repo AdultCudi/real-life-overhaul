@@ -439,7 +439,7 @@ internal static partial class Program
             "parking spaces page: a row tells the player's own building, free spaces and a full car park apart");
         for (int r = 1; r <= (int)SpaceRefusal.Owned; r++)
         {
-            Check(SpaceWords.WhyKey((SpaceRefusal)r) != null && SpaceWords.Why(en, (SpaceRefusal)r).Length > 10 && SpacePages.Keys.Contains(SpaceWords.WhyKey((SpaceRefusal)r)), "parking spaces page: the refusal " + (SpaceRefusal)r + " has its words");
+            Check(SpaceWords.WhyKey((SpaceRefusal)r) != null && SpaceWords.Why(en, (SpaceRefusal)r).Length > 10 && UiScreens.All.First(d => d.Id == "estate").Keys.Contains(SpaceWords.WhyKey((SpaceRefusal)r)), "parking spaces page: the refusal " + (SpaceRefusal)r + " has its words");
         }
         string app = ModSource(@"Economy\Estate\EstateApp.Spaces.cs"), live = ModSource(@"Ui\Estate\EstateLive.Spaces.cs");
         Check(app.Contains("d.Buy(park)") && app.Contains("d.Rent(park)") && app.Contains("d.Sell(park, at)") && app.Contains("d.SetEnding(park, at, !ending)") && live.Contains("d.Buy(park)") && live.Contains("d.Rent(park)")
@@ -726,7 +726,9 @@ internal static partial class Program
         lot.Rivals.Add(new RivalCar { Rival = 2, Type = "eco", Ask = 17000, Day = 9 });
         int cheap = RivalRules.Cheapest(lot, "eco", out int who);
         lot.MarketDay = 12;
-        Check(cheap == 17000 && who == 2 && RivalRules.Cheapest(lot, "eco", out int then) == 15000 && then == 1 && waiting.Day <= 10 + DealerCatalogue.DeliveryDaysMost,
+        int later = RivalRules.Cheapest(lot, "eco", out int then);
+        lot.MarketDay = -1;
+        Check(cheap == 17000 && who == 2 && later == 15000 && then == 1 && RivalRules.Cheapest(lot, "eco", out int _) == 15000 && waiting.Day <= 10 + DealerCatalogue.DeliveryDaysMost,
             "car suppliers other dealers: a car still on its way is not compared with the player's until it has come");
     }
 
@@ -813,7 +815,7 @@ internal static partial class Program
               && live.Contains("_d.SetKeep(place, kind, count)"), "car suppliers page: the app in the game's frame and the kit's page press the same calls of the director");
         string market = ModSource(@"Economy\Dealer\DealerApp.Market.cs"), kit = ModSource(@"Ui\Estate\DealerLive.Market.cs"), actions = ModSource(@"Economy\Dealer\DealerDirector.Actions.cs");
         Check(market.Contains("int price = _director.NewPrice(l, to);") && kit.Contains("int price = _d.NewPrice(l, to);") && actions.Contains("price = NewPrice(l, y);") && market.Contains("_director.NewQuestion(l, price)")
-              && kit.Contains("_d.NewQuestion(l, price)"), "car suppliers page: the price a page shows is the price the purchase charges, and the question says when a car on order comes");
+              && kit.Contains("string question = _d.NewQuestion(l, price);"), "car suppliers page: the price a page shows is the price the purchase charges, and the question says when a car on order comes");
     }
 
     private static void SupplySourceChecks()
@@ -839,7 +841,7 @@ internal static partial class Program
         Check(dir.Contains("internal bool SupplyOn => _running && Settings.EconomyDealerSupply;") && dir.Contains("CarSupplyRules.SupplierFor(_supply, SupplyKind(l), SupplyOn)") && dir.Contains("if (!SupplyOn || kind < 0"),
             "car suppliers off: with the option off every new car is the wholesaler's, and no supplier or standing order is set");
         Check(ModSource(@"Economy\Dealer\DealerDirector.Clock.cs").Contains("DealerDay.Morning(_state, day, _models, _colours, level, true, SupplyOn);") && ModSource(@"Economy\Dealer\DealerDirector.Clock.cs").Contains("SupplyMorning(day, now);")
-              && ModSource(@"Economy\Dealer\RivalRules.cs").Contains("CarSupplyRules.RivalBuys(ref ask, ref out_, s.Seed, r, m.Kind, suppliers);") && ModSource(@"Economy\Dealer\RivalRules.cs").Contains("c.Day <= s.MarketDay"),
+              && ModSource(@"Economy\Dealer\RivalRules.cs").Contains("CarSupplyRules.RivalBuys(ref ask, ref out_, s.Seed, r, m.Kind, suppliers);") && ModSource(@"Economy\Dealer\RivalRules.cs").Contains("(s.MarketDay < 0 || c.Day <= s.MarketDay)"),
             "car suppliers sources: the morning gives the other dealers their suppliers and the managers their orders");
         Check(ModSource(@"Economy\Dealer\DealerDirector.cs").Contains("SupplyLoad(save);") && ModSource(@"Economy\Dealer\DealerDirector.cs").Contains("SupplyWrite(save);") && ModSource(@"Economy\Dealer\DealerDirector.cs").Contains("SupplyForget();"),
             "car suppliers sources: the line is read with the dealership's, written with it and forgotten with it");
