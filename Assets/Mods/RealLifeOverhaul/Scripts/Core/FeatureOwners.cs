@@ -43,6 +43,7 @@ namespace RealLifeOverhaul
             { "RealLifeOverhaul.Construction", "construction" },
             { "RealLifeOverhaul.Landmarks", "landmarks" },
             { "RealLifeOverhaul.Schools", "schools" },
+            { "RealLifeOverhaul.Subway", "uptown_subway" },
             { "RealLifeOverhaul.Hustles", "hustles" },
             { "RealLifeOverhaul.Seasons", "seasons" },
             { "RealLifeOverhaul.Networking", "networking" },

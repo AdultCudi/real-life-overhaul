@@ -275,6 +275,7 @@ namespace RealLifeOverhaul.Meta
                     .Also("pedestrians passers-by pavement crowd"),
                 S("newbuildings").For("newbuildings").Main("new_buildings").Also("building buildings new construction copy design district ground plot land street address"),
                 S("uptown").For("uptown").Main("uptown").Also("uptown district north manhattan new streets block lots avenue map expansion"),
+                S("uptown_subway").For("uptown_subway").Opts("uptown_subway").Also("subway metro underground station train line uptown cedar heights birchwood summit park"),
                 S("landmarks").For("landmarks").Main("uptown_landmarks").Also("landmark landmarks skyscraper tower mall galleria stadium football match megaproject uptown"),
                 S("schools").For("schools").Main("uptown_campus").Also("school schools campus birchwood education pupils teachers fees league table inspection results children uptown"),
                 S("events").For("events").Opts("city_fires").Opt("fire_frequency", "city_fires").Opts("weather_matters").Opt("weather_frequency", "weather_matters")

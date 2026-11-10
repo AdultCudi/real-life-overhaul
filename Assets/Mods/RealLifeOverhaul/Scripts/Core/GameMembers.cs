@@ -168,6 +168,11 @@ namespace RealLifeOverhaul
             {
                 return string.Empty;
             }
+            string own = OwnStations.KeyOf(station);   // a station the mod stands carries the value of the entrance it was copied from: its name is its own
+            if (own != null)
+            {
+                return own;
+            }
             if (!_noNameKey)
             {
                 try

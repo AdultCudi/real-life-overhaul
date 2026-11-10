@@ -192,7 +192,7 @@ namespace RealLifeOverhaul
         private void ShowStation()
         {
             int delay = Delay();
-            int key = (int)_at.stationName * 4096 + Frequency() * 64 + delay * 2;
+            int key = (_at.GetInstanceID() & 0x3ffff) * 4096 + Frequency() * 64 + delay * 2;   // the station itself: one of the mod's own shares its name value with the entrance it was copied from
             if (key != _shownKey)
             {
                 _shownKey = key;
@@ -259,8 +259,8 @@ namespace RealLifeOverhaul
                 // The game took its fare in the frame its ride began (SubwaySystem.TravelToCoroutine).
                 RealLifeOverhaul.Economy.BizBooks.Book(SubwayStation.PricePerRide, new TransactionInfo(CivicBridges.FareGivenBack), null, null, force: true, showNotification: true);
             }
-            TransitDirector.Logger?.Info("Transit: the game's subway ride from " + (_rideFrom != null ? _rideFrom.stationName.ToString() : "?") + " to "
-                                         + (_rideTo != null ? _rideTo.stationName.ToString() : "?") + " has begun" + (pass ? "; the day pass gives the game's fare back" : string.Empty) + ".");
+            TransitDirector.Logger?.Info("Transit: the game's subway ride from " + OwnStations.LogName(_rideFrom) + " to "
+                                         + OwnStations.LogName(_rideTo) + " has begun" + (pass ? "; the day pass gives the game's fare back" : string.Empty) + ".");
         }
 
         private void Landed(float now)
@@ -276,7 +276,7 @@ namespace RealLifeOverhaul
             _to = to;
             _minutes = all;
             _more = all - _took;
-            TransitDirector.Logger?.Info("Transit check (subway journey): the game's ride from " + from.stationName + " to " + to.stationName + " came up after " + _took
+            TransitDirector.Logger?.Info("Transit check (subway journey): the game's ride from " + OwnStations.LogName(from) + " to " + OwnStations.LogName(to) + " came up after " + _took
                                          + " game minute(s); the journey takes " + all.ToString("F0") + " (" + StopsBetween(from, to) + " stop(s), a wait of " + wait
                                          + " min, a train every " + Frequency() + ", delays " + Delay() + "): "
                                          + (_more >= 1f ? "the clock moves on " + _more.ToString("F0") + " minutes more" : "nothing more to add") + ": PASS.");
