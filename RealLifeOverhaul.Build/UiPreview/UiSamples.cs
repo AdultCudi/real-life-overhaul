@@ -8,7 +8,25 @@ using RealLifeOverhaul.Ui;
 internal static partial class UiSamples
 {
     /// <summary>The masthead's money, day and time in every preview and check: the game's own bar writes them so.</summary>
-    public const string Status = "$48,210     Tuesday (Day 412)     14:32";
+    public static string Status => "$48,210     " + DayOf(SampleWords, 1, 412) + "     14:32";
+
+    /// <summary>The language the sample status bars are written in: the runner or a check sets it for a shot, English otherwise.</summary>
+    public static UiWords SampleWords = (key, english) => english;
+
+    private static readonly string[] WeekdayKeys =
+        { "common_monday", "common_tuesday", "common_wednesday", "common_thursday", "common_friday", "common_saturday", "common_sunday" };
+    private static readonly string[] WeekdayEnglish = { "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday", "Sunday" };
+    private static readonly string[] SeasonKeys =
+        { "reallife_season_name_winter", "reallife_season_name_spring", "reallife_season_name_summer", "reallife_season_name_autumn" };
+    private static readonly string[] SeasonEnglish = { "Winter", "Spring", "Summer", "Autumn" };
+
+    /// <summary>A weekday (0 Monday) and day number as the game's top bar writes them, in the language's own words.</summary>
+    internal static string DayOf(UiWords t, int weekday, int day) =>
+        t("topbar_date_format", "{DayOfWeek} (Day {CurrentNumberDay})")
+            .Replace("{DayOfWeek}", t(WeekdayKeys[weekday], WeekdayEnglish[weekday])).Replace("{CurrentNumberDay}", day.ToString());
+
+    /// <summary>A season (0 winter .. 3 autumn) in the language's own word.</summary>
+    internal static string SeasonOf(UiWords t, int season) => t(SeasonKeys[season], SeasonEnglish[season]);
 
     /// <summary>A screen of the overhaul drawn from its own view model, with the app it stands in.</summary>
     public sealed class Sample

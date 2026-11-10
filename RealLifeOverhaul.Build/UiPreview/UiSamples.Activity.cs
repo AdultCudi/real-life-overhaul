@@ -233,7 +233,7 @@ internal static partial class UiSamples
     {
         return new UiTimeSkipModel
         {
-            Title = t("playeractivityui_timemachine", "Skip time"), Clock = "14:20", Day = "Monday (Day 2)",
+            Title = t("playeractivityui_timemachine", "Skip time"), Clock = "14:20", Day = DayOf(t, 0, 2),
             Goal = info ? "You're being taken to the closest medical center" : t("reallife_ui_skip_to_end", "Skipping to the end at"), GoalTime = info ? null : "17:00",
             Pace = info ? t("reallife_ui_skip_pace_until", "Fast forward x{speed}. Until {time}, {left} to go").Replace("{speed}", "60").Replace("{time}", "16:00").Replace("{left}", t("reallife_ui_skip_hours_minutes", "{hours} h {minutes} min").Replace("{hours}", "1").Replace("{minutes}", "40"))
                 : t("reallife_ui_skip_pace", "Fast forward x{speed}, {left} to go").Replace("{speed}", "60").Replace("{left}", t("reallife_ui_skip_hours_minutes", "{hours} h {minutes} min").Replace("{hours}", "2").Replace("{minutes}", "40")),
@@ -246,7 +246,7 @@ internal static partial class UiSamples
     {
         UiStatusModel bar = HudBar(t, false, true, false);
         bar.Time = "14:20";
-        bar.Day = "Monday (Day 2)";
+        bar.Day = DayOf(t, 0, 2);
         WithBar(Over(bar), () => UiTimeSkip.Lay(s, ActivitySkip(t, info), f, dark, k));
     }
 

@@ -21,7 +21,7 @@ internal static partial class UiSamples
     /// <summary>The status bar on a Tuesday afternoon: the time and speed, the season, the place, the money and the player's needs.</summary>
     public static UiStatusModel Bar(int app) => new UiStatusModel
     {
-        Time = "14:32", Day = "Tuesday (Day 412)", Speed = 2, Season = "Autumn", Weather = UiIcon.CloudSun, Temperature = "14\u00b0C", Place = "Midtown", Money = "$48,210", MoneyTrend = 1, Energy = 72,
+        Time = "14:32", Day = DayOf(SampleWords, 1, 412), Speed = 2, Season = SeasonOf(SampleWords, 3), Weather = UiIcon.CloudSun, Temperature = "14\u00b0C", Place = "Midtown", Money = "$48,210", MoneyTrend = 1, Energy = 72,
         Hunger = 48, Happiness = 64, Alerts = 3, Apps = Apps, AppTints = AppTints, App = app
     };
 

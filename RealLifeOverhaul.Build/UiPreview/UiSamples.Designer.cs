@@ -139,7 +139,7 @@ internal static partial class UiSamples
         m.StepShown[(int)UiDesignerStep.FloorUp] = floors;
         m.StepOff[(int)UiDesignerStep.Redo] = true;
         m.StepIcons[(int)UiDesignerStep.Walls] = DesignerGlyphs.WallsIcon(0);
-        m.Bar = new UiStatusModel { Time = "08:45", Day = "Monday (Day 2)", DayWidest = "Wednesday (Day 4)", Paused = true, Speed = 1, TimeLocked = true };
+        m.Bar = new UiStatusModel { Time = "08:45", Day = DayOf(t, 0, 2), DayWidest = DayOf(t, 2, 4), Paused = true, Speed = 1, TimeLocked = true };
         m.Balance = "$1.9M";
         m.OnApply = DesignerFill(Of(t, "reallife_ui_designer_on_apply", "{amount} on apply"), "amount", "-$15,140");
         m.OnApplyTrend = -1;

@@ -32,7 +32,7 @@ namespace RealLifeOverhaul.Ui
             "reallife_ui_build_none", "reallife_ui_build_planning", "reallife_ui_build_price", "reallife_ui_build_rent",
             "reallife_ui_build_search", "reallife_ui_build_size", "reallife_ui_build_time",
             "reallife_ui_build_wanted", "reallife_ui_build_wants", "reallife_ui_build_weeks",
-            "reallife_season_name_autumn", "reallife_ui_hud_weather_sunny", "reallife_ui_prompt_back",
+            "reallife_season_name_autumn", "topbar_date_format", "common_monday", "common_tuesday", "common_wednesday", "common_friday", "reallife_ui_hud_weather_sunny", "reallife_ui_prompt_back",
             "reallife_ui_shell_all_apps"
         };
 

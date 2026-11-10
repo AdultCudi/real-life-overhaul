@@ -14,7 +14,7 @@ namespace RealLifeOverhaul.Ui
         // Every label the designer's face writes: the tools and their notes, the info panel, the catalogue, the materials, the item lists, the time, the blueprint and the buttons.
         private static string[] DesignerKeyList() => new[]
         {
-                "reallife_ui_designer_note_palette", "reallife_ui_designer_on_apply", "common_apply",
+                "reallife_ui_designer_note_palette", "reallife_ui_designer_on_apply", "common_apply", "topbar_date_format", "common_monday", "common_wednesday",
                 "common_close", "interior_designer", "reallife_ui_designer_floor",
                 "reallife_ui_designer_edit", "reallife_ui_designer_cost_furniture", "reallife_ui_designer_cost_floor",
                 "reallife_ui_designer_cost_sold", "reallife_ui_designer_cost_total", "bizman_customers_capacity",

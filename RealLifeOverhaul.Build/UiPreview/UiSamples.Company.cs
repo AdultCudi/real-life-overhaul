@@ -152,7 +152,7 @@ internal static partial class UiSamples
     public static string CompanyDayText(string state)
     {
         CompanyWorld w = CompanyWorld.Of(state);
-        return w.Weekday + " (Day " + w.Today + ")";
+        return DayOf(SampleWords, CompanyWorld.WeekdayIndex(w.Today), w.Today);
     }
 
     /// <summary>A skill as the pages write it, through the language's words.</summary>

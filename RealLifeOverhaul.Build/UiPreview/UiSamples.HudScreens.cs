@@ -11,7 +11,7 @@ using RealLifeOverhaul.Ui;
 internal static partial class UiSamples
 {
     // The status bar's own words: its entry (hud) names them, so these scenes give the bar its English as it stands.
-    private static string BarWords(string key, string english) => english;
+    private static string BarWords(string key, string english) => SampleWords(key, english);
 
     /// <summary>
     /// The bar the HUD's pieces stand over: a spring morning, or an autumn night in the rain; with the top bar's small
@@ -21,9 +21,10 @@ internal static partial class UiSamples
     {
         UiStatusModel m = HudBar(BarWords, false, false, night);
         m.Time = night ? "22:47" : "08:45";
-        m.Day = night ? "Friday (Day 415)" : "Monday (Day 2)";
+        m.Day = night ? DayOf(SampleWords, 4, 415) : DayOf(SampleWords, 0, 2);
         m.Temperature = night ? "9°C" : "18°C";
-        m.Season = night ? "Autumn, rain" : "Spring, sunny";
+        m.Season = night ? SeasonOf(SampleWords, 3) + ", " + SampleWords("reallife_ui_hud_weather_rain", "Rain").ToLowerInvariant()
+            : SeasonOf(SampleWords, 1) + ", " + SampleWords("reallife_ui_hud_weather_sunny", "Sunny").ToLowerInvariant();
         m.Place = night ? "1250 Avenue of the Americas" : "7 5th Avenue";
         m.District = night ? "Lower Manhattan" : "Midtown";
         m.MoneyDay = BarWords("reallife_ui_hud_money_today", "{amount} today").Replace("{amount}", night ? "-$385" : "+$1,240");
