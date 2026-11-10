@@ -563,6 +563,13 @@ internal static partial class Program
                 Check(told, "subway texts: What's new has the stations' line in " + code + " (the row English has it in)");
             }
         }
+        string localesScript = System.IO.File.ReadAllText(System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\Workshop\locales.py")));
+        var listed = new HashSet<string>(StringComparer.Ordinal);
+        foreach (Match m in Regex.Matches(Regex.Match(localesScript, @"ENGLISH_OK = \{(.*?)\n\}", RegexOptions.Singleline).Groups[1].Value, @"'([^']+)'"))
+        {
+            listed.Add(m.Groups[1].Value);
+        }
+        Check(listed.Count > 200 && names.All(listed.Contains), "subway texts: the stations' names are on the locale check's list of names, and the list is read whole by its quotes (" + listed.Count + " keys)");
         Check(english.TryGetValue("reallife_uptown_streets_subway_done", out string old) && old.Contains("{count}") && !old.Contains("no subway station"),
             "subway texts: the districts' older test no longer says they have no station");
         string coverage = System.IO.File.ReadAllText(System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\StandardCheck\guide-coverage.txt")));
