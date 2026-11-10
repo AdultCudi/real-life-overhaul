@@ -18,6 +18,7 @@ namespace RealLifeOverhaul.Ui
         OpenBank,           // open the player's own bank
         OpenStocks,         // open the company's line in Stocks
         OpenOptions,        // open the mod's options at the section S ("company", "rota", "managers"): the way to switch a part on
+        Quiet,              // another feature's quiet second choice at place S: matter A (a policy, the return, the books, a campaign), figure B
         // questions waiting on the owner
         Settle,             // escalation A settled with answer B (agree 0, refuse 1, bonus 3, limit 4, haggle 5)
         Dismiss,            // escalation A dismissed

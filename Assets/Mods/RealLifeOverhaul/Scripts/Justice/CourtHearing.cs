@@ -113,7 +113,10 @@ namespace RealLifeOverhaul
             : charge == JusticeLaw.Bribery ? "reallife_justice_court_figure_bribery"
             : charge == JusticeLaw.CampaignFinance ? "reallife_justice_court_figure_campaign"
             : charge == JusticeLaw.BidRigging ? "reallife_justice_court_figure_rigging"
-            : charge == JusticeLaw.InvestorFraud ? "reallife_justice_court_figure_investors" : null;
+            : charge == JusticeLaw.InvestorFraud ? "reallife_justice_court_figure_investors"
+            : charge == JusticeLaw.Fraud || charge == JusticeLaw.FalseAccounting ? "reallife_justice_court_figure_scheme"
+            : charge == JusticeLaw.MoneyLaundering ? "reallife_justice_court_figure_laundering"
+            : charge == JusticeLaw.PervertingJustice ? "reallife_justice_court_figure_perverting" : null;
 
         /// <summary>The first page. The director has already paused the game and holds the player.</summary>
         public void Begin()

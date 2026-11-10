@@ -410,6 +410,9 @@ namespace RealLifeOverhaul.Meta
                 S("firms").For("firms").Opt("living_firms", "living_population")
                     .Also("software studio consultancy cybersecurity security ai lab model web agency design studio data centre cloud market share rivals "
                         + "startups sprint outage tender pitch incident training benchmark capacity power failover portfolio"),
+                S("schemes").For("schemes").Opt("living_schemes", "living_population")
+                    .Also("fraud scam scheme schemes laundering launder bribe bribes bribery gift secret inquiry investigation trial insurance claim expense books club cash "
+                        + "favour judge investigator councillor rival fund"),
                 S("trips").For("trips").Opt("living_trips", "living_population").Opt("living_spoilage", "living_population")
                     .Also("logistics route routes delivery deliveries trip trips van truck vehicle driver fuel departure warehouse spoil spoilage spoiled shelf life fresh fridge freezer food"),
                 S("endscale").For("economy_endscale").Opts("economy_endscale")

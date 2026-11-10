@@ -14,19 +14,18 @@ namespace RealLifeOverhaul.Schemes
         Visit = 5,           // Inquiry
         Dropped = 6,         // Inquiry: no case to answer
         Caution = 7,         // Inquiry: all paid back, and little enough
-        Findings = 8,        // Inquiry: Amount found, FromCash of it seized in hand, Net the surcharge
-        ClaimRefused = 9,    // A: the claim's id, found before the insurer paid
-        Talked = 10,         // Text: who
-        RivalActed = 11,     // Tycoon, A the kind, Amount brought
-        RivalLetter = 12,    // Tycoon, A the kind
-        RivalFound = 13,     // Tycoon, A the kind, Amount taken back with its surcharge
-        RivalDropped = 14,   // Tycoon
-        RivalTried = 15,     // Tycoon, A the kind, B 1 convicted
-        FundOffered = 16,    // Tycoon, Amount
-        FundLapsed = 17,     // Tycoon
-        FundPaid = 18,       // Tycoon, Amount placed, Net what comes back
-        FundLost = 19,       // Tycoon, Amount
-        FundRecovered = 20   // Tycoon, Amount
+        Findings = 8,        // Inquiry: Amount found, FromCash of it seized in hand, Net the surcharge, Text the charge, B 1 for a felony
+        Talked = 9,         // Text: who
+        RivalActed = 10,     // Tycoon, A the kind, Amount brought
+        RivalLetter = 11,    // Tycoon, A the kind
+        RivalFound = 12,     // Tycoon, A the kind, Amount taken back with its surcharge
+        RivalDropped = 13,   // Tycoon
+        RivalTried = 14,     // Tycoon, A the kind, B 1 convicted
+        FundOffered = 15,    // Tycoon, Amount
+        FundLapsed = 16,     // Tycoon
+        FundPaid = 17,       // Tycoon, Amount placed, Net what comes back
+        FundLost = 18,       // Tycoon, Amount
+        FundRecovered = 19   // Tycoon, Amount
     }
 
     /// <summary>One thing a day did. A struct: the list is reused and nothing is allocated for an event.</summary>
@@ -306,6 +305,8 @@ namespace RealLifeOverhaul.Schemes
         // surcharge on top, and the file goes to the court. An invented claim the insurer has not paid yet is refused instead.
         private static void Find(SchemeState s, SchemeInquiry q, int day, SchemeWorld w, List<SchemeEvent> events)
         {
+            string charge = ChargeOf(s, q.Kind, day, w.Level, q.Coop);   // by what the file holds, before its acts are marked as found
+            bool felony = Felony(s, q.Kind, day, w.Level);
             long found = 0, washed = 0, paid = 0;
             for (int i = 0; i < s.Acts.Count; i++)
             {
@@ -318,7 +319,6 @@ namespace RealLifeOverhaul.Schemes
                 if (q.Kind == SchemeKind.Claim && w.Unpaid.Contains(a.Ref))
                 {
                     a.Gain = a.Back;   // never paid: the insurer refuses it, and there is nothing to take back
-                    events.Add(new SchemeEvent { Kind = SchemeEventKind.ClaimRefused, Inquiry = q.Id, A = a.Ref, Text = a.Place });
                     continue;
                 }
                 if (q.Kind == SchemeKind.Wash)
@@ -359,7 +359,10 @@ namespace RealLifeOverhaul.Schemes
             q.Surcharge = SchemeCatalogue.Share(surchargeOn, SchemeCatalogue.SurchargePermille);
             q.Stage = InquiryStage.Charged;
             q.End = InquiryEnd.Charged;
-            events.Add(new SchemeEvent { Kind = SchemeEventKind.Findings, Inquiry = q.Id, A = (int)q.Kind, Amount = found, FromCash = fromCash, Net = q.Surcharge });
+            events.Add(new SchemeEvent
+            {
+                Kind = SchemeEventKind.Findings, Inquiry = q.Id, A = (int)q.Kind, B = felony ? 1 : 0, Amount = found, FromCash = fromCash, Net = q.Surcharge, Text = charge
+            });
         }
 
         /// <summary>
@@ -411,6 +414,39 @@ namespace RealLifeOverhaul.Schemes
             {
                 q.Lost = true;
             }
+        }
+
+        /// <summary>
+        /// For the tests: an inquiry into a kind opens now with its letter, whatever the heat, if none is open and something
+        /// is on file. Null when there is nothing to open.
+        /// </summary>
+        public static SchemeInquiry OpenNow(SchemeState s, SchemeKind kind, int day, List<SchemeEvent> events)
+        {
+            if (s.OpenOf(kind) != null || Count(s, kind, day) == 0)
+            {
+                return null;
+            }
+            SchemeInquiry q = Open(s, kind, day, events);
+            q.Stage = InquiryStage.Letter;
+            events.Add(new SchemeEvent { Kind = SchemeEventKind.Letter, Inquiry = q.Id, A = (int)kind });
+            return q;
+        }
+
+        /// <summary>For the tests: every open inquiry is a day older and plays that day now. How many there were.</summary>
+        public static int Hurry(SchemeState s, int day, SchemeWorld w, List<SchemeEvent> events)
+        {
+            int open = 0;
+            for (int i = 0; i < s.Cases.Count; i++)
+            {
+                SchemeInquiry q = s.Cases[i];
+                if (q.Open && q.Stage != InquiryStage.Charged)
+                {
+                    q.Opened--;
+                    Step(s, q, day, w, events);
+                    open++;
+                }
+            }
+            return open;
         }
 
         // What is too old to be found goes off the trails, and the oldest closed inquiries off the list.

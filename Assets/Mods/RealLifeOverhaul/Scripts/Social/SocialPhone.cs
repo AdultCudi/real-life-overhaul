@@ -44,6 +44,10 @@ namespace RealLifeOverhaul
         public static Func<SocialPerson, DialogEntry> NetworkAsk;
         public static Func<SocialPerson, string> NetworkLine;
 
+        /// <summary>Set by Wiring/SchemeLinks: the call's button for a quiet word with somebody who holds a position (null for none), and what it opens.</summary>
+        public static Func<SocialPerson, string> QuietLabel;
+        public static Func<SocialPerson, DialogEntry> QuietAsk;
+
         public static string IdOf(SocialPerson person)
         {
             return person.Origin == SocialOrigin.Family ? MomId : person.Origin == SocialOrigin.OldFriend ? FriendId : person.Name;

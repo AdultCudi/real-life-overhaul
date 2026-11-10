@@ -144,7 +144,28 @@ namespace RealLifeOverhaul.Economy
             {
                 return;
             }
+            if (SeesThrough(o))
+            {
+                return;
+            }
             Ask(o.Place, o.Price, o.Parts, o.KeepsStaff, o.ClauseDays, o.Buyer, ServicesText.Buyer(o), rival);
+        }
+
+        // A buyer who looks closely before paying may see through dressed books (ServicesBridges.SeesThrough): the offer is withdrawn, and no money has moved.
+        private bool SeesThrough(SaleOffer o)
+        {
+            bool seen = false;
+            SaleGuard("a buyer's look at the books", () =>
+            {
+                seen = ServicesBridges.SeesThrough != null && ServicesBridges.SeesThrough(o.Place, o.Buyer, o.Id);
+                if (seen)
+                {
+                    _state.SaleOffers.Remove(o);
+                    Logger?.Info("Selling a business: " + o.WhoName + " looked at the books of '" + o.Place + "' before paying, saw through them and withdrew the offer.");
+                    Changed();
+                }
+            });
+            return seen;
         }
 
         // The rival of the game's behind an offer, by its id; null for any other buyer, or an offer made before named buyers.

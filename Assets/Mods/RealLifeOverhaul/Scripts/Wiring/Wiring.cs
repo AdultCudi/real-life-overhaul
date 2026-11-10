@@ -101,6 +101,7 @@ namespace RealLifeOverhaul
             Step("Flare's desk session", FlareSessionLinks.Connect);   // after the desk sessions: its kind joins theirs while Flare in the city runs
             Step("the mod's own businesses and the city's people", DemandLinks.Connect);   // wraps nothing: each business's bridge reads the population's demand
             Step("the Economy app", OutlookLinks.Connect);   // wraps nothing: it only reads the economy, the market, the council and the districts
+            Step("the schemes", SchemeLinks.Connect);   // last: its pieces of the paper, its takings and its sale follow the others'
             Logger?.Info("Wiring: the features are connected.");
         }
 
@@ -111,6 +112,7 @@ namespace RealLifeOverhaul
                 return;
             }
             Connected = false;
+            Step("the schemes", SchemeLinks.Disconnect);   // first: what it wrapped goes back before the others take theirs off
             Step("the Economy app", OutlookLinks.Disconnect);
             Step("the mod's own businesses and the city's people", DemandLinks.Disconnect);
             Step("Flare's desk session", FlareSessionLinks.Disconnect);

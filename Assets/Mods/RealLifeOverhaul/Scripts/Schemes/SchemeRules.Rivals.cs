@@ -234,6 +234,38 @@ namespace RealLifeOverhaul.Schemes
             events.Add(new SchemeEvent { Kind = SchemeEventKind.FundOffered, Tycoon = tycoon, Amount = f.Amount });
         }
 
+        /// <summary>For the tests: the wait between two offers is waived and a fund is offered now, if a rival is free to. True if one was.</summary>
+        public static bool FundNow(SchemeState s, int day, SchemeWorld w, List<SchemeEvent> events)
+        {
+            if (s.Fund.State == FundState.Open || s.Fund.State == FundState.Placed)
+            {
+                return false;
+            }
+            s.Fund.Day = day - SchemeCatalogue.FundEveryDays;
+            s.StartDay = Math.Min(s.StartDay, day - SchemeCatalogue.FundFirstDays);
+            FundDay(s, day, w, events);
+            return s.Fund.State == FundState.Open;
+        }
+
+        /// <summary>For the tests: a rival has a full-sized scheme on file and its inquiry makes its findings today. False for a rival already before the court.</summary>
+        public static bool RivalNow(SchemeState s, int tycoon, int day, SchemeWorld w, List<SchemeEvent> events)
+        {
+            if (tycoon < 0 || tycoon >= s.Rival.Length || s.Rival[tycoon].TrialDay > 0)
+            {
+                return false;
+            }
+            SchemeRival r = s.Rival[tycoon];
+            long gain = RivalGain(w.RivalWorth[tycoon], SchemeCatalogue.Large, w.Level);
+            RivalActs(s, r, tycoon, SchemeKind.Claim, SchemeCatalogue.Large, gain, day);
+            events.Add(new SchemeEvent { Kind = SchemeEventKind.RivalActed, Tycoon = tycoon, A = (int)SchemeKind.Claim, Amount = gain });
+            r.Stage = InquiryStage.Letter;
+            r.Since = day - SchemeCatalogue.ChargeAfter;
+            r.Evidence = SchemeCatalogue.EvidenceMost;
+            r.Opened++;
+            RivalInquiry(s, r, tycoon, day, w, events);
+            return true;
+        }
+
         /// <summary>The player puts the money in: true if the offer stood. The caller has paid the sum first.</summary>
         public static bool FundPlace(SchemeState s, int day)
         {

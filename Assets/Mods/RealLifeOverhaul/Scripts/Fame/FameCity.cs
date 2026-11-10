@@ -405,6 +405,20 @@ namespace RealLifeOverhaul.Fame
             return Math.Min(SurfaceMost, SurfaceBase + SurfaceEach * others + f.Recognition / 20);
         }
 
+        /// <summary>An inquiry found the player out: integrity falls by half a scandal's, and a felony is a scandal as a bribe come out is.</summary>
+        public static void Exposed(FameFile f, int day, bool scandal)
+        {
+            FameRules.Move(f, FamePart.Integrity, FameCause.Scandal, scandal ? ScandalIntegrity : ScandalIntegrity / 2, day);
+            if (!scandal)
+            {
+                return;
+            }
+            f.ScandalUntil = Math.Max(f.ScandalUntil, day + ScandalDays);
+            FameRules.Move(f, FamePart.Customers, FameCause.Scandal, ScandalCustomers, day);
+            FameRules.Move(f, FamePart.Workers, FameCause.Scandal, ScandalWorkers, day);
+            FameRules.Publicity(f, ScandalPress, day, FameCause.Scandal);
+        }
+
         /// <summary>The day's look at the bribes, from a roll of 0 to 999: the one that came out and started a scandal, or null.</summary>
         public static FameBribe Surface(FameFile f, int day, int roll)
         {

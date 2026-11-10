@@ -134,10 +134,10 @@ namespace RealLifeOverhaul.Schemes
         public const int ExpenseGapDays = 15;          // days between two
 
         // ---- the books: sales that never happened, shown to a buyer
-        public static readonly int[] LiftSteps = { 0, 100, 200, 300 };   // thousandths the books show over the truth
+        public static readonly int[] LiftSteps = { 0, 100, 300 };   // thousandths the books show over the truth: plain, a little, a lot
         public const int LiftMost = 300;
-        public const int LiftHeatDivisor = 50;         // a day of dressed books adds its lift over this: 2, 4 or 6 against a decay of 4
-        public static readonly int[] Diligence = { 450, 150, 650, 800 };   // how hard a buyer looks, by kind: a rival, the staff, a chain, an investor
+        public const int LiftHeatDivisor = 50;         // a day of dressed books adds its lift over this: 2 or 6 against a decay of 4
+        public static readonly int[] Diligence = { 450, 800, 150, 650 };   // how hard a buyer looks, by kind as selling keeps them: a rival, an investor, the staff, a chain
         public const int HeatWalked = 300;             // a buyer who saw through the books walks away and says why
 
         // ---- the club: a district's households pay a stake each into a club that does not exist
@@ -149,9 +149,9 @@ namespace RealLifeOverhaul.Schemes
         public const int ClubKnowsEvery = 25;          // households to one who complains: people who know
 
         // ---- the till: cash in hand run through a business as sales
-        public static readonly int[] WashSteps = { 0, 50, 100, 200 };    // thousandths of an average day's takings a day: what the business could plausibly sell more
+        public static readonly int[] WashSteps = { 0, 50, 200 };    // thousandths of an average day's takings a day: what the business could plausibly sell more
         public const int WashCut = 150;                // thousandths of the cash lost on the way
-        public const int WashHeatDivisor = 10;         // a day's washing adds its rate over this: 5, 10 or 20 against a decay of 4
+        public const int WashHeatDivisor = 10;         // a day's washing adds its rate over this: 5 or 20 against a decay of 4
         public const int ReportFrom = 2500;            // at the start's prices: a day's cash sales above this are reported by the bank
         public const int HeatReport = 30;
         public const int PatternDays = 30;             // the window the bank adds small deposits up over

@@ -66,6 +66,9 @@ namespace RealLifeOverhaul.Ledger
             K("_news_accident_severe", LedgerSection.City, 90),
             K("_news_story_fire", LedgerSection.City, 85),
             K("_news_story_prison", LedgerSection.City, 84),
+            K("_scheme_news_own", LedgerSection.City, 83),          // an inquiry's findings against the player (Scripts/Schemes)
+            K("_scheme_news_rival_convicted", LedgerSection.Business, 76),
+            K("_scheme_news_rival", LedgerSection.Business, 62),
             K("_news_story_convicted", LedgerSection.City, 82),
             K("_news_story_acquitted", LedgerSection.City, 80),
             K("_news_hitrun", LedgerSection.City, 80),

@@ -41,6 +41,12 @@ namespace RealLifeOverhaul.Economy
         /// <summary>A business sold, by its place, and its whole price, for the player's listed company (Markets/Listing). Default: nobody.</summary>
         public static Action<string, int> Sold;
 
+        /// <summary>Thousandths a business's books show over the truth to whoever values it (Scripts/Schemes). Default: nothing, the books are the game's.</summary>
+        public static Func<BuildingRegistration, int> BooksLift;
+
+        /// <summary>A buyer about to pay sees through dressed books and walks: the place, the kind of buyer, the offer. Default: nobody looks.</summary>
+        public static Func<string, int, int, bool> SeesThrough;
+
         /// <summary>The save's investors by name (Ventures' own), for a buyer of a business. Default: none, and the catalogue's investment firms buy.</summary>
         public static Action<List<string>> Investors;
 

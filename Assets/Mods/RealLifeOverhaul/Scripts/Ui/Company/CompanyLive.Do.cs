@@ -64,6 +64,8 @@ namespace RealLifeOverhaul.Ui
 
             public void Stocks() => CompanyGame.OpenListing();
 
+            public void Quiet(string place, int matter, int figure) => CompanyBridges.QuietPress(matter, place, figure);
+
             public void Options(string section)
             {
                 if (Meta.SettingsApp.Installed)
