@@ -181,8 +181,11 @@ namespace RealLifeOverhaul.Careers
             {
                 _study.Work.DaysWorked++;
                 RecordShift(j, day, shiftMinutes);
+                CareersBridges.ShiftWorked?.Invoke(j.Def.SkillA);
                 return;
             }
+            // Health's sick leave settles the day first (the days running, the note, the paid days), then says below whether it is excused.
+            CareersBridges.DayMissed?.Invoke(day, (int)Math.Min(int.MaxValue / 2, ProRules.Wage(Prices.At(j.Pay), j.Def.Hours * 60)), j.Hired);
             if (Excused(day) || j.OffUntil >= day)
             {
                 ProRules.Excuse(j);

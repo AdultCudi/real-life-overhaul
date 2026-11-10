@@ -232,6 +232,7 @@ namespace RealLifeOverhaul.Meta
                 S("shops").Guide("leisure").Need("leisure").Opts("clothes_shops", "clothes_must_be_bought").Also("wardrobe buy outfit"),
                 S("roommates").For("home_roommates").Opts("home_roommates").Also("flatmate lodger share"),
                 S("giving").For("giving").Opts("giving").Also("donate donation charity gift lend loan help money food bank training tax deduction"),
+                S("health").For("health").Opts("health").Also("ill illness injury doctor gp hospital insurance plan premium sick leave sick pay flu medical debt"),
                 S("household").For("home_household").Opts("home_household").Also("staff cleaner cook butler maid housekeeper mechanic servant chores car wash"),
                 S("utilities").For("utilities").Main("utilities").Opt("utilities_net_speed", "utilities")
                     .Also("power water electricity bills utility office deposit").Also("utilities_net_speed", "internet speed mbps broadband fibre tech online shop orders"),

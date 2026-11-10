@@ -269,9 +269,13 @@ namespace RealLifeOverhaul
             }
         }
 
+        /// <summary>Set by Wiring/Wiring.HealthLinks while Health runs: an injury of so many hours, which Health gives a name and a course. Default: none.</summary>
+        public static Action<int> Hurt;
+
         public void Injure(int hours, float energyLoss, string notificationKey)
         {
             ModState.AddModifier(ModState.Injured, hours);
+            Hurt?.Invoke(hours);
             EnergyHelper.SpentEnergyOnce(energyLoss);
             Notify(NotificationType.Error, notificationKey);
         }

@@ -29,6 +29,12 @@ namespace RealLifeOverhaul
         public static Func<string> MomsDinner;
         public static Func<DialogEntry> GoToMoms;
 
+        /// <summary>
+        /// Set by Wiring/Wiring.HealthLinks while Health runs: the doctor's line's first words, given the line as it was (a paid treatment while sick) to offer beside an
+        /// appointment; null for the line as it was.
+        /// </summary>
+        public static Func<Func<DialogEntry>, DialogEntry> DoctorFirst;
+
         /// <summary>Today's dinner at Mom's by name while her table is set, else null; never throws.</summary>
         internal static string MomsDinnerNow()
         {
@@ -203,18 +209,24 @@ namespace RealLifeOverhaul
         public DoctorCallDialog()
         {
             npcNameKey = "reallife-doctor";
+            DialogEntry first = PhoneContacts.DoctorFirst != null ? PhoneContacts.DoctorFirst(Line) : null;
+            DialogController.current.ShowEntry(Guard.Entry(first ?? Line()));
+        }
+
+        // The line as it always was: nothing for somebody well, a paid treatment for somebody sick.
+        private static DialogEntry Line()
+        {
             if (!ModState.IsSick)
             {
-                DialogController.current.ShowEntry(Guard.Entry(PhoneContacts.Closing("reallife_doctor_healthy")));
-                return;
+                return PhoneContacts.Closing("reallife_doctor_healthy");
             }
-            DialogController.current.ShowEntry(Guard.Entry(new DialogEntry
+            return new DialogEntry
             {
                 messageData = "reallife_doctor_offer".Localize(new { amount = ((float)LifeEvents.DoctorFee).ToCurrencyFormat() }),
                 ConfirmTextOverride = "reallife_doctor_pay".Localize(),
                 OnConfirm = Treat,
                 OnCancel = PhoneContacts.HangUp
-            }.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_pay", "amount", ((float)LifeEvents.DoctorFee).ToCurrencyFormat())));
+            }.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_pay", "amount", ((float)LifeEvents.DoctorFee).ToCurrencyFormat());
         }
 
         private static DialogEntry Treat()

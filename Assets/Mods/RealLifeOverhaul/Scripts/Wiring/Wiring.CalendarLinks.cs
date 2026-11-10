@@ -45,12 +45,12 @@ namespace RealLifeOverhaul
                 private static readonly string[] Ids =
                 {
                     PlannerStore.NoteSourceId, "tax", "work", "profession", "freelance", "study", "court", "cell", "licence", "family", "social", "travel",
-                    "event", "civic", "health", "markets", "listing", "utilities", "newsstand", "ventures", "services", "standing"
+                    "event", "civic", "health", "markets", "listing", "utilities", "newsstand", "ventures", "services", "standing", "healthcare"
                 };
                 private static readonly string[] Apps =
                 {
                     "RealLifePlanner", null, null, "RealLifeCareer", "RealLifeCareer", "RealLifeCampus", null, null, null, null, null, null,
-                    null, null, null, "RealLifeStocks", "RealLifeStocks", "RealLifeOverhaulUtilities", "RealLifeNewsstand", "RealLifeVentures", "RealLifeServices", "RealLifeFinance"
+                    null, null, null, "RealLifeStocks", "RealLifeStocks", "RealLifeOverhaulUtilities", "RealLifeNewsstand", "RealLifeVentures", "RealLifeServices", "RealLifeFinance", "RealLifeHealth"
                 };
                 private static readonly Func<string, bool> Wanted = id => Array.IndexOf(Ids, id) >= 0;   // made once
 

@@ -203,8 +203,16 @@ namespace RealLifeOverhaul.Careers
         /// <summary>The destination marker put on an employer's board (an index of <see cref="Boards"/>): null if done, else a reason key. Default: not possible.</summary>
         public static Func<int, string> ShowBoard;
 
+        /// <summary>A working day of the player's job went by unworked: the day, its pay in cents and the day the job began (Health settles its sick leave). Default: nothing.</summary>
+        public static Action<int, int, int> DayMissed;
+
+        /// <summary>A working day was worked at a profession whose first skill is this one (Health draws an accident at a risky trade). Default: nothing.</summary>
+        public static Action<int> ShiftWorked;
+
         public static void Reset()
         {
+            DayMissed = null;
+            ShiftWorked = null;
             Learners = null;
             Openings = null;
             SchoolsTab = null;

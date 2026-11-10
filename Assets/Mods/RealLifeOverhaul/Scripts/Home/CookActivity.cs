@@ -164,7 +164,7 @@ namespace RealLifeOverhaul
                 return;   // nothing eaten now: a packed portion is eaten later through Meals, without the kitchen's risk
             }
             float poison = (burnt ? HomeBalance.PoisonFromBurnt : 0f) + (HomeState.Tidy < HomeBalance.MessLow ? HomeBalance.PoisonFromFilth : 0f);
-            if (poison > 0f && Random.value < poison * easy)
+            if (poison > 0f && HomeHealth.Draw(8) < poison * easy)
             {
                 HomeHealth.Catch(Illness.FoodPoisoning, burnt ? "reallife_health_cause_burnt" : "reallife_health_cause_dirty_kitchen", false);
             }

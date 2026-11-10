@@ -9,6 +9,7 @@ namespace RealLifeOverhaul
         public WaitingRoomActivity(HomeDirector host) : base(host)
         {
             Total = 20 + Random.Range(0, 4) * 5;
+            Total = DoctorVisit.Wait != null ? DoctorVisit.Wait(Total) : Total;   // Health: an appointment kept on its hour is seen within minutes
         }
 
         public override Doing Kind => Doing.Resting;
