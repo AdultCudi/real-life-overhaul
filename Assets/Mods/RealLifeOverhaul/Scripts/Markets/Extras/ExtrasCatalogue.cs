@@ -62,4 +62,38 @@ namespace RealLifeOverhaul.Markets
 
         public static int Clamp(int v, int lo, int hi) => v < lo ? lo : v > hi ? hi : v;
     }
+
+    /// <summary>The keys of the sentences that say why something of the extras cannot be done, each in its enum's order; the first is never shown. Game-free, so the checks count them.</summary>
+    public static class ExtrasKeys
+    {
+        /// <summary>A sentence for each <see cref="SplitWhy"/>, in its order; the first is never shown.</summary>
+        public static readonly string[] SplitWhyKeys =
+        {
+            "reallife_stx_why_none", "reallife_stx_why_off", "reallife_stx_split_why_not_mine", "reallife_stx_split_why_firm", "reallife_stx_split_why_board",
+            "reallife_stx_split_why_pending", "reallife_stx_split_why_bid", "reallife_stx_split_why_ratio", "reallife_stx_split_why_low", "reallife_stx_split_why_high"
+        };
+
+        /// <summary>A sentence for each <see cref="FundWhy"/>.</summary>
+        public static readonly string[] FundWhyKeys =
+        {
+            "reallife_stx_why_none", "reallife_stx_why_off", "reallife_stx_why_closed", "reallife_stx_why_held", "reallife_stx_fund_why_bad", "reallife_stx_why_money",
+            "reallife_stx_fund_why_units", "reallife_stx_fund_why_large", "reallife_stx_fund_why_limit"
+        };
+
+        /// <summary>A sentence for each <see cref="BlockWhy"/>.</summary>
+        public static readonly string[] BlockWhyKeys =
+        {
+            "reallife_stx_why_none", "reallife_stx_why_off", "reallife_stx_why_closed", "reallife_stx_why_held", "reallife_stx_block_why_listed", "reallife_stx_block_why_founders",
+            "reallife_stx_block_why_bid", "reallife_stx_block_why_young", "reallife_stx_block_why_small", "reallife_stx_block_why_limit", "reallife_stx_block_why_shares",
+            "reallife_stx_why_money", "reallife_stx_block_why_margin"
+        };
+
+        /// <summary>A sentence for each <see cref="BankWhy"/>.</summary>
+        public static readonly string[] BankWhyKeys =
+        {
+            "reallife_stx_why_none", "reallife_stx_why_off", "reallife_stx_bank_why_none", "reallife_stx_bank_why_test", "reallife_stx_bank_why_young", "reallife_stx_bank_why_books",
+            "reallife_stx_bank_why_profit", "reallife_stx_bank_why_regulator", "reallife_stx_bank_why_company", "reallife_stx_bank_why_way", "reallife_stx_bank_why_listed",
+            "reallife_stx_why_money", "reallife_stx_bank_why_float", "reallife_stx_bank_why_full"
+        };
+    }
 }

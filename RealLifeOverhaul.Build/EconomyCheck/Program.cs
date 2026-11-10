@@ -965,6 +965,12 @@ internal static partial class Program
             return _failed == 0 ? 0 : 1;
         }
 
+        if (args.Length == 1 && args[0] == "--stockx")
+        {
+            Stockx();   // (the stock market's extras alone, while working on them: StockxChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--giving")
         {
             Giving();   // (giving alone, while working on it: GivingChecks.cs)
@@ -1429,6 +1435,7 @@ internal static partial class Program
         FurnitureMoves(); // moving furniture: the game's own reason a right click or a place click is refused, whose a thing in the way is, the lines only reading (FurnitureMoveChecks.cs)
         Networking();   // networking: who holds a position (an introduction more often), each position's two favours once, when they are ready, the save, a job lead's name, the texts (NetworkChecks.cs)
         Giving();       // giving: the steps and caps, the charities' months on a city, the deduction, standing and warmth by the sum given, loans, asks, the rivals, the save, the pages, the sources, the texts (GivingChecks.cs)
+        Stockx();       // the stock market's extras: splits with nothing gained or lost, the fund against its parts, blocks, the bank's own books, the rivals, the save, the sources, the texts (StockxChecks.cs)
         Household();    // household staff: the kinds and their hours, wages from the going rate, the cook's dishes, candidates, unpaid visits, the save, money only through the game's call, the texts (HouseholdChecks.cs)
         HeavyLicence(); // the heavy goods licence: which trucks need it, the school's steps and waits, its save part, heavy loads on the courier round, the sources and texts (HeavyLicenceChecks.cs)
         PopulationChecks(); // the city's population: the measure, generation, a day with every cent placed, ten years, the labour market, the anchors, the costs (PopulationChecks.cs)

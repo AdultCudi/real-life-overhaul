@@ -214,7 +214,7 @@ internal static partial class Program
         MarketState back = MarketStore.Read(line, out _);
         Check(back != null && back.News.Count(n => n.Kind == MarketNewsKind.Builder) == m.State.News.Count(n => n.Kind == MarketNewsKind.Builder) && back.Stock(146) != null,
             "builders: the save's line keeps the builders and their news");
-        Check(MarketNewsKind.Builder == (MarketNewsKind)32 && MarketInputs.EventBuilder == MarketInputs.EventCompany + 1 && MarketInputs.EventCount == MarketInputs.EventBuilder + 1
+        Check(MarketNewsKind.Builder == (MarketNewsKind)32 && MarketInputs.EventBuilder == MarketInputs.EventCompany + 1 && MarketInputs.EventCount > MarketInputs.EventBuilder
               && MarketRandom.BuilderNews == 40, "builders: the news kind, the tape's event and the draw have numbers of their own after every other (never renumbered)");
     }
 

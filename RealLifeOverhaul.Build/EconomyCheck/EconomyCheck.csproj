@@ -471,6 +471,15 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\MarketEngine.Invest.cs" Link="Mod\MarketEngine.Invest.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\BrokerWallet.cs" Link="Mod\BrokerWallet.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\InvestRules.cs" Link="Mod\InvestRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Extras\ExtrasCatalogue.cs" Link="Mod\Extras\ExtrasCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Extras\ExtrasState.cs" Link="Mod\Extras\ExtrasState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Extras\ExtrasStore.cs" Link="Mod\Extras\ExtrasStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Extras\SplitRules.cs" Link="Mod\Extras\SplitRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Extras\FundRules.cs" Link="Mod\Extras\FundRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Extras\BlockRules.cs" Link="Mod\Extras\BlockRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Extras\BankFloatRules.cs" Link="Mod\Extras\BankFloatRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Extras\RivalMarket.cs" Link="Mod\Extras\RivalMarket.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Extras\MarketEngine.Extras.cs" Link="Mod\Extras\MarketEngine.Extras.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Bonds\BondCatalogue.cs" Link="Mod\BondCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Bonds\BondModel.cs" Link="Mod\BondModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Markets\Bonds\BondRules.cs" Link="Mod\BondRules.cs" />
