@@ -45,7 +45,7 @@ namespace RealLifeOverhaul.Ui
         public static void Fill(VentModel m, VentView v, DynastyFacts f, IDynastyActions act, VentWords w)
         {
             m.Title = w.T("reallife_dynasty_app", "Legacy");
-            m.Icon = UiIcon.People;
+            m.Icon = UiIcon.Key;
             m.Prompts = VenPages.Prompts(w);
             var runs = new VentRuns();
             m.Nav = new[]

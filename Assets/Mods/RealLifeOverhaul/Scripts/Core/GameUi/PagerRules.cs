@@ -74,9 +74,9 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>The mod's apps in the one order of both phones: the day, work and study, money, business, then the Guide and the options.</summary>
         public static readonly string[] ModOrder =
         {
-            "RealLifePlanner", "RealLifeFlare", "RealLifeCalendar", "RealLifeCamera", "RealLifeGallery", "RealLifeNewsstand", "RealLifeLedger",
+            "RealLifePlanner", "RealLifeFlare", "RealLifeCalendar", "RealLifeCamera", "RealLifeGallery", "RealLifeDynasty", "RealLifeNewsstand", "RealLifeLedger",
             "RealLifeCareer", "RealLifeCampus", "RealLifeOpenRoles", "RealLifeMarketplace",
-            "RealLifeFinance", "RealLifeBanks", "RealLifeGiving", "RealLifeDynasty", "RealLifeOwnBank", "RealLifeStocks", "RealLifeEconomy",
+            "RealLifeFinance", "RealLifeBanks", "RealLifeGiving", "RealLifeOwnBank", "RealLifeStocks", "RealLifeEconomy",
             "RealLifeCompany", "RealLifeBrands", "RealLifeServices", "RealLifeVentures", "RealLifeOnline", "RealLifeEstate", "RealLifeDealer",
             "RealLifeBuilders",
             "RealLifeTechSector", "RealLifeOverhaulUtilities",

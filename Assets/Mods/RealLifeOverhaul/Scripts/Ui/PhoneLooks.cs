@@ -16,9 +16,9 @@ namespace RealLifeOverhaul.Ui
         public static readonly string[] Ids =
         {
             "Persona", "Contacts", "MyEmployees", "BizMan", "EconoView", "VoogleMaps", "MarketInsider", "Rivals",
-            "RealLifePlanner", "RealLifeFlare", "RealLifeCalendar", "RealLifeCamera", "RealLifeGallery", "RealLifeNewsstand", "RealLifeLedger",
+            "RealLifePlanner", "RealLifeFlare", "RealLifeCalendar", "RealLifeCamera", "RealLifeGallery", "RealLifeDynasty", "RealLifeNewsstand", "RealLifeLedger",
             "RealLifeCareer", "RealLifeCampus", "RealLifeOpenRoles", "RealLifeMarketplace",
-            "RealLifeFinance", "RealLifeBanks", "RealLifeGiving", "RealLifeDynasty", "RealLifeOwnBank", "RealLifeStocks", "RealLifeEconomy",
+            "RealLifeFinance", "RealLifeBanks", "RealLifeGiving", "RealLifeOwnBank", "RealLifeStocks", "RealLifeEconomy",
             "RealLifeCompany", "RealLifeBrands", "RealLifeServices", "RealLifeVentures", "RealLifeOnline", "RealLifeEstate", "RealLifeDealer",
             "RealLifeBuilders", "RealLifeTechSector", "RealLifeOverhaulUtilities",
             "RealLifeGuide", "RealLifeSettings", "RealLifeStaff"
@@ -28,9 +28,9 @@ namespace RealLifeOverhaul.Ui
         public static readonly UiIcon[] Glyphs =
         {
             UiIcon.IdCard, UiIcon.AddressBook, UiIcon.People, UiIcon.Briefcase, UiIcon.ChartPie, UiIcon.MapTrifold, UiIcon.Store, UiIcon.Flag,
-            UiIcon.Clock, UiIcon.Fire, UiIcon.Calendar, UiIcon.Camera, UiIcon.Image, UiIcon.Newspaper, UiIcon.Receipt,
+            UiIcon.Clock, UiIcon.Fire, UiIcon.Calendar, UiIcon.Camera, UiIcon.Image, UiIcon.Key, UiIcon.Newspaper, UiIcon.Receipt,
             UiIcon.Trophy, UiIcon.Cap, UiIcon.Handshake, UiIcon.Package,
-            UiIcon.Wallet, UiIcon.Bank, UiIcon.Percent, UiIcon.People, UiIcon.PiggyBank, UiIcon.ChartLineUp, UiIcon.Globe,
+            UiIcon.Wallet, UiIcon.Bank, UiIcon.Percent, UiIcon.PiggyBank, UiIcon.ChartLineUp, UiIcon.Globe,
             UiIcon.Building, UiIcon.Tag, UiIcon.Headset, UiIcon.Rocket, UiIcon.ShoppingCart, UiIcon.Home, UiIcon.Car,
             UiIcon.Hammer, UiIcon.Cpu, UiIcon.Lightning,
             UiIcon.Lightbulb, UiIcon.Gear, UiIcon.IdBadge

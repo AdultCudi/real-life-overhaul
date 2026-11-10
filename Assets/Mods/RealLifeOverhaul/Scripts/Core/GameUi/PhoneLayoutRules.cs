@@ -31,9 +31,9 @@ namespace RealLifeOverhaul.GameUi
         /// <summary>Where each app of <see cref="PagerRules.ModOrder"/> stands until moved: the Planner and Flare first on the home screen, the rest in their group's folder.</summary>
         public static readonly int[] Defaults =
         {
-            Dock, Dock, Life, Life, Life, Money, Money,
+            Dock, Dock, Life, Life, Life, Life, Money, Money,
             Work, Work, Work, Work,
-            Money, Money, Money, Money, Money, Money, Money,
+            Money, Money, Money, Money, Money, Money,
             Business, Business, Business, Business, Business, Business, Business,
             Business,
             Business, Money,

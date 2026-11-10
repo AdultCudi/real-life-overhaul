@@ -171,7 +171,7 @@ namespace RealLifeOverhaul.Ui
                 case "RealLifeStocks": return UiIcon.ChartLineUp;
                 case "RealLifeEconomy": return UiIcon.Globe;
                 case "RealLifeGiving": return UiIcon.Percent;
-                case "RealLifeDynasty": return UiIcon.People;
+                case "RealLifeDynasty": return UiIcon.Key;
                 case "RealLifeCompany": return UiIcon.Presentation;
                 case "RealLifeBrands": return UiIcon.Trophy;
                 case "RealLifeServices": return UiIcon.Handshake;

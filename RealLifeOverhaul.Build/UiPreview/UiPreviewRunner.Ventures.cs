@@ -61,7 +61,7 @@ public static partial class UiPreviewRunner
             string st = UiSamples.DynastyStates[i];
             screens.Add(new Screen
             {
-                Name = "dynasty_" + st, AppName = "Legacy", Icon = UiIcon.People, Backdrop = i % 2 == 0 ? "13.jpg" : "02.jpg", HoverCommand = UiAppWindow.NavCommand, HoverArg = 1,
+                Name = "dynasty_" + st, AppName = "Legacy", Icon = UiIcon.Key, Backdrop = i % 2 == 0 ? "13.jpg" : "02.jpg", HoverCommand = UiAppWindow.NavCommand, HoverArg = 1,
                 Walk = Moves("DDR"), Lay = (s, f, d, k) => VentFace.Lay(s, UiSamples.Dynasty(ModEnglish, st), f, d, k)
             });
         }

@@ -8,7 +8,7 @@ namespace RealLifeOverhaul.Dynasty
     public sealed partial class DynastyDirector
     {
         public const string AppId = "RealLifeDynasty";
-        private static readonly string[] AppGlyphs = { "Icon-Family", "Icon-People", "Icon-Person", "Icon-Heart" };
+        private static readonly string[] AppGlyphs = { "Icon-Key", "Icon-Family", "Icon-People", "Icon-Person" };
 
         private PhoneApp _app;
         private DynastyApp _view;
@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Dynasty
                 Closed = view.Closed,
                 Kit = () => new RealLifeOverhaul.Ui.VentScreen(RealLifeOverhaul.Ui.DynastyLive.Instance, RealLifeOverhaul.Ui.DynastyLive.ScreenId),
                 KitScreen = RealLifeOverhaul.Ui.DynastyLive.ScreenId,
-                KitIcon = RealLifeOverhaul.Ui.UiIcon.People
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Key
             };
             _app = PhoneApp.Install(def, out bool tryAgain);
             if (_app == null)
