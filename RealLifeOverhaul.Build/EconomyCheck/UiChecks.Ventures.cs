@@ -43,6 +43,18 @@ internal static partial class Program
                 });
             }
         }
+        if (def.Id == "health")
+        {
+            foreach (string state in UiSamples.HealthStates)
+            {
+                string st = state;
+                cases.Add(new UiScreenCase
+                {
+                    Def = def, Name = "health (" + st + ")", Title = "Health", Commands = VentFace.Commands,
+                    Lay = (s, f, dark, k, t) => VentFace.Lay(s, UiSamples.Health(t, st), f, dark, k)
+                });
+            }
+        }
         if (def.Id == "ventures")
         {
             foreach (string state in UiSamples.VenturesStates)

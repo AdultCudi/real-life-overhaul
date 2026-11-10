@@ -149,7 +149,10 @@ namespace RealLifeOverhaul.Health
 
         // ---- the policy
 
-        /// <summary>A plan is taken (or changed): a new policy from today, whose first days cover nothing new and which never covers what is under way. The first month is paid by the caller.</summary>
+        /// <summary>
+        /// A plan is taken (or changed): a new policy from today, whose first days cover nothing new and which never covers what is under way. The first month is paid by
+        /// the caller.
+        /// </summary>
         public static void Take(HealthPolicy p, Plan plan, int day, int monthDays)
         {
             p.Plan = plan;

@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Health
         private Action _onSave;
         private int _revision;
         private string _beforeTests;
-        private int _illAtHome, _wave, _staffOff, _pendingNights;
+        private int _illAtHome, _wave, _pendingNights;
         private readonly Func<long, bool> _payPremium, _payBill, _payDebt;
         private readonly Func<int, int> _file;
 
@@ -203,6 +203,11 @@ namespace RealLifeOverhaul.Health
                 HealthGame.Tell(NotificationType.Warning, "reallife_hc_note_lapsed_away", null, OpenAppClick);
             }
             HealthBridges.Credit?.Invoke(-1, 0);   // the medical debt's account on the credit file again
+            // What a day's pass works out and the game does not keep: the wave, who is ill at home, the drain of a serious case and the injury's mood.
+            _wave = HealthRules.Wave(_state.Seed, day, HealthGame.DaysPerYear);
+            PopulationState people = HealthGame.People();
+            _illAtHome = people != null ? HealthPeople.IllAtHome(people, _state.Seed, day) : 0;
+            MirrorHome(day);
             _revision++;
         }
 
@@ -479,7 +484,23 @@ namespace RealLifeOverhaul.Health
             }
             _state.StaffDay = day;
             int policy = HealthBridges.SickPolicy != null ? HealthBridges.SickPolicy() : 1;
-            _staffOff = HealthGame.StaffDay(_state, day, _wave, policy);
+            int off = HealthGame.StaffDay(_state, day, _wave, policy);
+            if (off > 0 && Verbose)
+            {
+                Logger?.Info("Health check (the staff on day " + day + "): the wave at " + _wave + ", policy " + policy + ": " + off + " off tomorrow by the game's own sick day, "
+                             + _state.Staff.Count + " case(s) kept: " + (_state.Staff.Count <= HealthCatalogue.StaffCasesMost ? "PASS" : "FAIL, over the most"));
+            }
+        }
+
+        // The staff off tomorrow with a case of health's.
+        private int StaffOff(int day)
+        {
+            int off = 0;
+            for (int i = 0; i < _state.Staff.Count; i++)
+            {
+                off += day + 1 >= _state.Staff[i].From && day + 1 <= _state.Staff[i].Until ? 1 : 0;
+            }
+            return off;
         }
 
         private Action _openApp;

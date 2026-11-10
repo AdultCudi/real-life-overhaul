@@ -128,7 +128,8 @@ namespace RealLifeOverhaul.Health
             _revision++;
             if (Verbose)
             {
-                Logger?.Info("Health check (an injury on day " + day + "): " + injury + (atWork ? ", at work" : string.Empty) + (c.Serious ? ", needs the hospital" : ", heals by day " + c.Until) + ": PASS");
+                Logger?.Info("Health check (an injury on day " + day + "): " + injury + (atWork ? ", at work" : string.Empty)
+                             + (c.Serious ? ", needs the hospital" : ", heals by day " + c.Until) + ": PASS");
             }
         }
 
@@ -186,7 +187,8 @@ namespace RealLifeOverhaul.Health
             days = HealthRules.StayDays(c.Kind);
             bill = HealthCover.StayBill(days, false, HealthGame.Level);
             Plan employer = EmployerPlan(out int since);
-            long own = HealthCover.Covers(_state.Policy.Plan, _state.Policy.Since, c.Began) ? HealthCover.Claim(_state.Policy.Plan, Care.Hospital, bill, _state.Policy.PaidYear, HealthGame.Level) : 0L;
+            HealthPolicy p = _state.Policy;
+            long own = HealthCover.Covers(p.Plan, p.Since, c.Began) ? HealthCover.Claim(p.Plan, Care.Hospital, bill, p.PaidYear, HealthGame.Level) : 0L;
             long theirs = c.Work ? bill : HealthCover.EmployerCovers(employer, since, c.Began) ? HealthCover.Claim(employer, Care.Hospital, bill, 0L, HealthGame.Level) : 0L;
             pays = Math.Max(own, theirs);
         }

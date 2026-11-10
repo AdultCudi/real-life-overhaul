@@ -104,7 +104,8 @@ namespace RealLifeOverhaul.Ui
             }
             else if (f.Serious)
             {
-                left.Add(VentBlock.Note(w.F("reallife_hc_you_serious", "You have {illness} and it has turned serious. It will not clear up by itself. See the doctor at a hospital or clinic to be admitted.",
+                left.Add(VentBlock.Note(w.F("reallife_hc_you_serious", "You have {illness} and it has turned serious. It will not clear up by itself."
+                    + " See the doctor at a hospital or clinic to be admitted.",
                     "illness", illness), UiRole.Warn));
             }
             else if (f.DaysLeft > 0)
@@ -129,7 +130,8 @@ namespace RealLifeOverhaul.Ui
                     w.F("reallife_hc_row_booked_value", "Day {day} at {hour}:00", "day", f.BookedDay.ToString(), "hour", f.BookedHour.ToString())));
                 right.Add(VentBlock.Row(w.T("reallife_hc_row_where", "Where"), f.Clinic));
             }
-            right.Add(VentBlock.Note(w.F("reallife_hc_doctor_how", "With an appointment you are seen within {wait} minutes of your hour. Go to the hospital or clinic and take a number at the doctor's desk."
+            right.Add(VentBlock.Note(w.F("reallife_hc_doctor_how", "With an appointment you are seen within {wait} minutes of your hour."
+                + " Go to the hospital or clinic and take a number at the doctor's desk."
                 + " An appointment you do not keep costs {fee}.", "wait", HealthCatalogue.AppointmentWait.ToString(), "fee", w.Money(HealthRules.At(HealthCatalogue.MissedFee, f.Level)))));
             if (f.Booked)
             {
@@ -244,7 +246,8 @@ namespace RealLifeOverhaul.Ui
                 right.Add(VentBlock.Row(w.T("reallife_hc_row_called", "Called in sick while well"),
                     w.F("reallife_hc_row_called_value", "{n}, seen through {seen}", "n", f.CalledWell.ToString(), "seen", f.Noticed.ToString()), UiRole.Warn));
             }
-            right.Add(VentBlock.Note(w.F("reallife_hc_leave_how", "Ill, you are excused for {days} working days running. After that you need a doctor's note. A day off sick is paid while paid days are left."
+            right.Add(VentBlock.Note(w.F("reallife_hc_leave_how", "Ill, you are excused for {days} working days running. After that you need a doctor's note."
+                + " A day off sick is paid while paid days are left."
                 + " Call in sick while well and your employer may see through it.", "days", HealthCatalogue.SelfCertDays.ToString())));
             right.Add(VentBlock.Buttons(new UiActionModel { Label = w.T(f.CalledIn ? "reallife_hc_called_in" : "reallife_hc_call_in", f.CalledIn ? "Called in sick today" : "Call in sick today"),
                 Kind = UiButtonKind.Secondary, Icon = UiIcon.Phone, Disabled = f.CalledIn || !f.ShiftOpen, Arg = runs.Add(() => { act.CallInSick(); return true; }) }));

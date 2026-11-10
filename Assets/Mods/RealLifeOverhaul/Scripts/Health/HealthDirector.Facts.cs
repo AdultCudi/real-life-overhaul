@@ -89,7 +89,7 @@ namespace RealLifeOverhaul.Health
             f.LostDays = o.LostDays;
             f.CityBills = o.Bills;
             f.CityDebt = o.Debt;
-            f.StaffOff = _staffOff;
+            f.StaffOff = StaffOff(day);
             f.SickPolicy = HealthBridges.SickPolicy != null ? HealthBridges.SickPolicy() : 1;
             f.RivalLine = string.Empty;
             for (int i = 0; i < _state.RivalCases.Length && f.RivalLine.Length == 0; i++)

@@ -56,6 +56,15 @@ public static partial class UiPreviewRunner
                 Walk = Moves("DDR"), Lay = (s, f, d, k) => VentFace.Lay(s, UiSamples.Giving(ModEnglish, st), f, d, k)
             });
         }
+        for (int i = 0; i < UiSamples.HealthStates.Length; i++)
+        {
+            string st = UiSamples.HealthStates[i];
+            screens.Add(new Screen
+            {
+                Name = "health_" + st, AppName = "Health", Icon = UiIcon.Heart, Backdrop = i % 2 == 0 ? "13.jpg" : "02.jpg", HoverCommand = UiAppWindow.NavCommand, HoverArg = 1,
+                Walk = Moves("DDR"), Lay = (s, f, d, k) => VentFace.Lay(s, UiSamples.Health(ModEnglish, st), f, d, k)
+            });
+        }
         foreach (string lang in new[] { "pt", "zh-cn" })
         {
             UiWords words = ModWords(lang);

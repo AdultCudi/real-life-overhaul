@@ -10,7 +10,10 @@ namespace RealLifeOverhaul.Health
         public Dictionary<string, string> Data;
     }
 
-    /// <summary>The words of health that are built from the state: a condition's name, a plan's, a rival's line, a paper piece. Every other text is a locale key written whole where it is used.</summary>
+    /// <summary>
+    /// The words of health that are built from the state: a condition's name, a plan's, a rival's line, a paper piece. Every other text is a locale key written whole where
+    /// it is used.
+    /// </summary>
     public static class HealthText
     {
         public static string Name(Condition c) => HealthCatalogue.NameKey(c).GetLocalization();
