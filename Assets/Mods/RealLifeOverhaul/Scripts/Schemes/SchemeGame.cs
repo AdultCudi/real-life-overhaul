@@ -15,7 +15,7 @@ namespace RealLifeOverhaul.Schemes
     internal static class SchemeGame
     {
         public const string ExpenseKey = "reallife_transaction_scheme_expense";       // the tax an invented expense saved: money in
-        public const string WashKey = "reallife_transaction_scheme_wash";             // cash sales at a till: a business's takings
+        public const string WashKey = "reallife_transaction_scheme_wash";             // cash sales through a till, after the cut and the tax: money in
         public const string RepayKey = "reallife_transaction_scheme_repay";           // paid back by the player
         public const string FoundKey = "reallife_transaction_scheme_found";           // taken back after an inquiry's findings
         public const string SurchargeKey = "reallife_transaction_scheme_surcharge";   // the penalty on top of it

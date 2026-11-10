@@ -38,6 +38,7 @@ namespace RealLifeOverhaul.Schemes
         public int Closed;                     // the day it ended; 0 while it runs
         public long Found;                     // what was taken back, whole money
         public long Surcharge;                 // ...and on top of it
+        public long Repaid;                    // what the player paid back under this inquiry, whole money: it carries half the surcharge
 
         public bool Open => Stage != InquiryStage.Closed;
         public bool Known => Stage >= InquiryStage.Letter;
@@ -85,6 +86,7 @@ namespace RealLifeOverhaul.Schemes
         public int News;                       // ...and what it was (SchemeRules.RivalNews)
         public SchemeKind NewsKind;
         public long NewsAmount;
+        public long Owes;                      // what a sham fund of theirs took from the player: it comes back when they are found out
     }
 
     /// <summary>A rival's fund offered to the player: honest or a sham, fixed by the seed when it is made.</summary>
@@ -201,7 +203,7 @@ namespace RealLifeOverhaul.Schemes
                 }
                 for (int i = 0; i < Rival.Length; i++)
                 {
-                    if (Rival[i].Stage != InquiryStage.Closed || Rival[i].TrialDay > 0)
+                    if (Rival[i].Stage != InquiryStage.Closed || Rival[i].TrialDay > 0 || (Rival[i].Owes > 0 && Rival[i].Heat > 0))
                     {
                         return true;
                     }

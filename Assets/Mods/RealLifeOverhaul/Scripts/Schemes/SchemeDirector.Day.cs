@@ -39,22 +39,31 @@ namespace RealLifeOverhaul.Schemes
             w.On = On;
             w.Session = SchemeGame.InSession;
             w.Level = SchemeGame.Level;
+            w.TaxPercent = SchemeBridges.GameTax != null ? SchemeBridges.GameTax() : 0;
             w.Worth = Ask(SchemeBridges.Worth, SchemeGame.Cash);
             ReadShops();
             for (int i = 0; i < _shops.Count; i++)
             {
                 w.Tills.Add(new SchemeTill { Place = _shops[i].Place, Average = _shops[i].Average, Cash = _shops[i].Cash && _shops[i].Mine });
             }
+            Unpaid(w.Unpaid);
+            SchemeBridges.Rivals?.Invoke(w);
+            SchemeBridges.Council?.Invoke(w.Council);
+        }
+
+        // The invented claims on file that their insurer has not paid yet, by id: asked afresh, as the insurer pays on its own day.
+        private List<int> Unpaid(List<int> into)
+        {
+            into.Clear();
             for (int i = 0; i < _state.Acts.Count; i++)
             {
                 SchemeAct a = _state.Acts[i];
                 if (a.Kind == SchemeKind.Claim && a.Inquiry == 0 && SchemeBridges.ClaimUnpaid != null && SchemeBridges.ClaimUnpaid(a.Ref))
                 {
-                    w.Unpaid.Add(a.Ref);
+                    into.Add(a.Ref);
                 }
             }
-            SchemeBridges.Rivals?.Invoke(w);
-            SchemeBridges.Council?.Invoke(w.Council);
+            return into;
         }
 
         private void ReadShops()
@@ -86,11 +95,7 @@ namespace RealLifeOverhaul.Schemes
             switch (e.Kind)
             {
                 case SchemeEventKind.Washed:
-                    if (SchemeBridges.Till == null || !SchemeBridges.Till(e.Text, e.Net, day))
-                    {
-                        _state.Dirty += e.Amount;   // the till could not take it: the cash stays in hand, none of it lost
-                        Logger?.Info("Schemes: the till at " + e.Text + " could not take " + e.Amount + " today; it stays in hand.");
-                    }
+                    SchemeGame.Give(e.Net, SchemeGame.WashKey);   // to the player, never into the business's own figures: no buyer, bank or investor reads it
                     break;
                 case SchemeEventKind.BankReport:
                 case SchemeEventKind.Pattern:
@@ -112,7 +117,9 @@ namespace RealLifeOverhaul.Schemes
                     SchemeGame.Tell(NotificationType.Success, "reallife_scheme_note_dropped", Data("what", SchemeText.Kind((SchemeKind)e.A)));
                     break;
                 case SchemeEventKind.Caution:
-                    SchemeGame.Tell(NotificationType.Info, "reallife_scheme_note_caution", Data("what", SchemeText.Kind((SchemeKind)e.A)));
+                    SchemeGame.Take(e.Net, SchemeGame.SurchargeKey);
+                    SchemeGame.Tell(NotificationType.Info, "reallife_scheme_note_caution", Data("what", SchemeText.Kind((SchemeKind)e.A), "more", SchemeText.Money(e.Net)));
+                    Logger?.Info("Schemes: inquiry " + e.Inquiry + " into " + (SchemeKind)e.A + " ended with a caution: " + e.Net + " taken on top of what was paid back.");
                     break;
                 case SchemeEventKind.Findings:
                     Findings(e, day);
@@ -228,11 +235,15 @@ namespace RealLifeOverhaul.Schemes
             {
                 place = _state.Acts[i].Kind == SchemeKind.Club ? _state.Acts[i].Place : place;
             }
-            long took = SchemeBridges.Restore != null ? SchemeBridges.Restore(place, amount) : 0L;
-            if (Verbose || took != amount)
+            bool mine = SchemeBridges.People != null && SchemeBridges.People();
+            long took = mine && SchemeBridges.Restore != null ? SchemeBridges.Restore(place, amount) : 0L;
+            if (!mine)
             {
-                Logger?.Info("Schemes check (restitution): " + amount + " owed back to the households, " + took + " reached their savings: "
-                             + (took == amount ? "PASS" : "FAIL, the city's people are not this machine's to pay"));
+                Logger?.Info("Schemes: " + amount + " was owed back to the households, but the city's people are not this machine's to pay; the city keeps it.");
+            }
+            else if (Verbose || took != amount)
+            {
+                Logger?.Info("Schemes check (restitution): " + amount + " owed back to the households, " + took + " reached their savings: " + (took == amount ? "PASS" : "FAIL"));
             }
         }
 

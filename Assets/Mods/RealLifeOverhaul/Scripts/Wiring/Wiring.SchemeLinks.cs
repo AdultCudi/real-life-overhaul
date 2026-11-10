@@ -19,8 +19,7 @@ namespace RealLifeOverhaul
         /// The schemes with the features they sit in and the ones that catch them:
         ///
         ///   the company     the player's businesses, an invented claim by the insurer's own rules, the game's tax rate, a
-        ///                   visit as business pressure's own audit, washed cash booked as a till's takings, and the quiet
-        ///                   button on its pages (CompanyBridges.Quiet*)
+        ///                   visit as business pressure's own audit, and the quiet button on its pages (CompanyBridges.Quiet*)
         ///   the people      a club's stakes out of a district's households' savings and back into them (Population/PurseRules),
         ///                   only where the city's people are this machine's own
         ///   the courts      a file as a case on a summons, how it ended, the case that comes up next, a judge's weighing
@@ -31,7 +30,7 @@ namespace RealLifeOverhaul
         ///                   friendship cooled by a refusal
         ///   the rivals      who is active and what they are worth, what a scheme, its findings and a conviction do to them
         ///   selling         what dressed books show a buyer, a buyer who sees through them, the sale that goes on the trail
-        ///   the paper       the rivals' pieces, after the others'; the till's sales among a business's takings
+        ///   the paper       the rivals' pieces, after the others'
         ///
         /// Each is called on a press or once a game day; a fault is said once (<see cref="Fault"/>) and the default answer is used.
         /// </summary>
@@ -39,7 +38,6 @@ namespace RealLifeOverhaul
         {
             private static readonly List<Favour> Asked = new List<Favour>(6);
             private static Action<int, List<NewsItem>> _paperBefore;
-            private static Func<string, bool> _takingsBefore;
             private static Action<string, int> _soldBefore;
 
             internal static void Connect()
@@ -51,6 +49,7 @@ namespace RealLifeOverhaul
                 SchemeBridges.ClaimRefuse = id => CompanyDirector.Instance != null && CompanyDirector.Instance.ClaimFoundOut(id);
                 SchemeBridges.TaxPercent = () => CompanyDirector.Instance != null && CompanyDirector.Instance.On(CompanyPart.Tax) ? CompanyGame.TaxPercent : 0;
                 SchemeBridges.Taxed = () => CompanyDirector.Instance != null && CompanyGame.Taxed(CompanyDirector.Instance.Today - 1);
+                SchemeBridges.GameTax = () => CompanyGame.TaxPercent;
                 SchemeBridges.Visit = Visit;
                 SchemeBridges.People = () => CityPopulation.Running && !CityPopulation.Following && !GoingPublic.InSession;
                 SchemeBridges.Club = Club;
@@ -77,7 +76,6 @@ namespace RealLifeOverhaul
                 SchemeBridges.Worth = Books.NetWorth;
                 SchemeBridges.Floor = () => Tech.TechDirector.Instance != null ? Tech.TechDirector.Instance.FloorNow : 0L;
                 SchemeBridges.Story = Paper.Print;
-                SchemeBridges.Till = Till;
                 SchemeBridges.Letter = (key, data) => LegalPhone.Send(key, data);
                 CompanyBridges.QuietLabel = SchemeDirector.QuietLabel;
                 CompanyBridges.Quiet = SchemeDirector.QuietOpen;
@@ -91,8 +89,6 @@ namespace RealLifeOverhaul
                 NetworkBridges.BoughtUsed = SchemeDirector.BoughtUsed;
                 Justice.Bridges.FileLines = SchemeDirector.FileLines;
                 Justice.Bridges.FileActs = SchemeDirector.FileActs;
-                _takingsBefore = EconomyBridges.Takings;
-                EconomyBridges.Takings = Takings;
                 _paperBefore = News.Extra;
                 News.Extra = Pieces;
             }
@@ -112,8 +108,6 @@ namespace RealLifeOverhaul
                 NetworkBridges.BoughtUsed = null;
                 Justice.Bridges.FileLines = null;
                 Justice.Bridges.FileActs = null;
-                EconomyBridges.Takings = _takingsBefore;
-                _takingsBefore = null;
                 News.Extra = _paperBefore;
                 _paperBefore = null;
             }
@@ -172,35 +166,6 @@ namespace RealLifeOverhaul
                     Fault("SchemeLinks.Visit", e);
                     return false;
                 }
-            }
-
-            // A day's washed cash as the business's takings of the day that ended: in its statement, so the game's tax counts it as sales.
-            private static bool Till(string place, long net, int day)
-            {
-                try
-                {
-                    CompanyShop shop = CompanyDirector.Instance != null ? CompanyDirector.Instance.ShopAt(place) : null;
-                    if (shop == null || ReferenceEquals(shop.Address, null) || net <= 0 || (shop.Reg != null && !GoingPublic.Mine(shop.Reg)))
-                    {
-                        return false;
-                    }
-                    if (!BizBooks.Book(net, new TransactionInfo(SchemeGame.WashKey), day - 1, shop.Address))
-                    {
-                        return false;
-                    }
-                    GameBooks.Refresh(day - 1);
-                    return true;
-                }
-                catch (Exception e)
-                {
-                    Fault("SchemeLinks.Till", e);
-                    return false;
-                }
-            }
-
-            private static bool Takings(string type)
-            {
-                return type == SchemeGame.WashKey || (_takingsBefore != null && _takingsBefore(type));
             }
 
             private static bool Club(string district, int club, int households, int level, out long taken, out int joined)

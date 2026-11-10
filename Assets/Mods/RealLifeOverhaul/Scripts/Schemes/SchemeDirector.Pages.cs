@@ -44,7 +44,8 @@ namespace RealLifeOverhaul.Schemes
             if (Shop(place, out SchemeShopInfo shop))
             {
                 SchemeShop kept = _state.Shop(place, false);
-                _panel.Show(SchemePages.Wash(Words, place, shop.Name, shop.Cash, shop.Average, kept != null ? kept.Wash : 0, _state.Dirty, _state.Watched, SchemeGame.Level));
+                _panel.Show(SchemePages.Wash(Words, place, shop.Name, shop.Cash, shop.Average, kept != null ? kept.Wash : 0, _state.Dirty, _state.Watched, SchemeGame.Level,
+                    SchemeBridges.GameTax != null ? SchemeBridges.GameTax() : 0));
             }
         }
 
@@ -61,7 +62,7 @@ namespace RealLifeOverhaul.Schemes
         public bool ShowFund()
         {
             SchemeFund f = Ready("a fund's page") ? _state.Fund : null;
-            if (f == null || f.State != FundState.Open)
+            if (f == null || SchemeGame.InSession || !SchemeRules.FundStands(_state, SchemeGame.Day))
             {
                 return false;
             }

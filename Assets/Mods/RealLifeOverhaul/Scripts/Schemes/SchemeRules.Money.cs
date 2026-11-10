@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Schemes
 {
@@ -199,26 +200,48 @@ namespace RealLifeOverhaul.Schemes
             return Math.Max(0L, Math.Min(SchemeCatalogue.Share(Math.Max(0L, averageTakings), WashStep(rate)), cash));
         }
 
-        /// <summary>What reaches the till of a sum washed: the rest is lost on the way.</summary>
-        public static long WashNet(long amount)
+        /// <summary>What reaches the player of a sum washed: the cut is lost on the way, and the game's tax rate (per cent) is taken off the rest as on any sale.</summary>
+        public static long WashNet(long amount, int taxPercent)
         {
-            return Math.Max(0L, amount) - SchemeCatalogue.Share(amount, SchemeCatalogue.WashCut);
+            long after = Math.Max(0L, amount) - SchemeCatalogue.Share(amount, SchemeCatalogue.WashCut);
+            return after - after * SchemeCatalogue.Clamp(taxPercent, 0, 100) / 100L;
         }
 
-        /// <summary>What paying a kind's file back costs today.</summary>
-        public static long RepayCost(SchemeState s, SchemeKind kind, int day)
+        // An invented claim on file that its insurer has not paid yet: there is nothing of it to pay back, and it is withdrawn instead.
+        private static bool Unpaid(SchemeAct a, List<int> unpaid)
         {
-            return kind == SchemeKind.Wash || kind == SchemeKind.Graft ? 0L : Owed(s, kind, day);
+            return a.Kind == SchemeKind.Claim && unpaid != null && unpaid.Contains(a.Ref);
         }
 
         /// <summary>
-        /// A kind's file is paid back: every act on file is settled, and a club's money goes back to its households. Returns
-        /// what was paid; <paramref name="fromCash"/> is the part of it out of the cash in hand (a club's first), the rest is the wallet's.
+        /// What paying a kind's file back costs today: what its acts still owe, less the claims their insurer has not paid
+        /// yet (<paramref name="unpaid"/>, by id). Cash sales and payments to people cannot be paid back.
         /// </summary>
-        public static long Repay(SchemeState s, SchemeKind kind, int day, out long fromCash)
+        public static long RepayCost(SchemeState s, SchemeKind kind, int day, List<int> unpaid)
+        {
+            if (kind == SchemeKind.Wash || kind == SchemeKind.Graft)
+            {
+                return 0;
+            }
+            long sum = 0;
+            for (int i = 0; i < s.Acts.Count; i++)
+            {
+                SchemeAct a = s.Acts[i];
+                sum += OnFile(a, kind, day) && !Unpaid(a, unpaid) ? a.Owed : 0L;
+            }
+            return sum;
+        }
+
+        /// <summary>
+        /// A kind's file is paid back: every act on file is settled, a claim not yet paid is withdrawn (the caller has its
+        /// insurer refuse it), a club's money goes back to its households, and the open inquiry notes what was paid: it
+        /// carries half the surcharge. Returns what was paid; <paramref name="fromCash"/> is the part of it out of the cash
+        /// in hand (a club's first), the rest is the wallet's.
+        /// </summary>
+        public static long Repay(SchemeState s, SchemeKind kind, int day, List<int> unpaid, out long fromCash)
         {
             fromCash = 0;
-            long cost = RepayCost(s, kind, day);
+            long cost = RepayCost(s, kind, day, unpaid);
             if (cost <= 0)
             {
                 return 0;
@@ -232,10 +255,23 @@ namespace RealLifeOverhaul.Schemes
             for (int i = 0; i < s.Acts.Count; i++)
             {
                 SchemeAct a = s.Acts[i];
-                if (OnFile(a, kind, day))
+                if (!OnFile(a, kind, day))
+                {
+                    continue;
+                }
+                if (Unpaid(a, unpaid))
+                {
+                    a.Gain = a.Back;   // withdrawn before it paid: nothing was had of it
+                }
+                else
                 {
                     a.Back = a.Gain;
                 }
+            }
+            SchemeInquiry q = s.OpenOf(kind);
+            if (q != null)
+            {
+                q.Repaid += cost;
             }
             return cost;
         }

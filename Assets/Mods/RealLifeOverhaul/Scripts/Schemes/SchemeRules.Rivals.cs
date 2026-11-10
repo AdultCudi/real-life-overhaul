@@ -155,10 +155,15 @@ namespace RealLifeOverhaul.Schemes
                 r.TrialDay = day + JusticeLaw.DaysToCourt(ChargeClass.Felony);
                 RivalNews(r, RivalNewsFound, day, taken);
                 events.Add(new SchemeEvent { Kind = SchemeEventKind.RivalFound, Tycoon = tycoon, A = (int)r.NewsKind, Amount = taken });
-                if (s.Fund.Tycoon == tycoon && s.Fund.State == FundState.Lost)
+                if (r.Owes > 0)
                 {
-                    s.Fund.State = FundState.Recovered;   // the sham was among what was found: the player's money comes back
-                    events.Add(new SchemeEvent { Kind = SchemeEventKind.FundRecovered, Tycoon = tycoon, Amount = s.Fund.Amount });
+                    // A sham fund of theirs was among what was found: the player's money comes back, whatever was offered since.
+                    events.Add(new SchemeEvent { Kind = SchemeEventKind.FundRecovered, Tycoon = tycoon, Amount = r.Owes });
+                    r.Owes = 0;
+                    if (s.Fund.Tycoon == tycoon && s.Fund.State == FundState.Lost)
+                    {
+                        s.Fund.State = FundState.Recovered;
+                    }
                 }
             }
             else if (days >= SchemeCatalogue.GiveUpAfter)
@@ -179,6 +184,10 @@ namespace RealLifeOverhaul.Schemes
         // The fund a rival offers the player: made now and then, honest or a sham by the seed, paid or lost on its day.
         private static void FundDay(SchemeState s, int day, SchemeWorld w, List<SchemeEvent> events)
         {
+            if (w.Session)
+            {
+                return;   // the rivals rest in a session: no fund is offered, lapses, pays or fails there
+            }
             SchemeFund f = s.Fund;
             if (f.State == FundState.Open && day > f.Due)
             {
@@ -192,6 +201,7 @@ namespace RealLifeOverhaul.Schemes
                     f.State = FundState.Lost;
                     SchemeRival r = s.Rival[SchemeCatalogue.Clamp(f.Tycoon, 0, s.Rival.Length - 1)];
                     RivalActs(s, r, f.Tycoon, SchemeKind.Club, SchemeCatalogue.Small, f.Amount, day);
+                    r.Owes += f.Amount;
                     events.Add(new SchemeEvent { Kind = SchemeEventKind.FundLost, Tycoon = f.Tycoon, Amount = f.Amount });
                 }
                 else
@@ -266,11 +276,17 @@ namespace RealLifeOverhaul.Schemes
             return true;
         }
 
-        /// <summary>The player puts the money in: true if the offer stood. The caller has paid the sum first.</summary>
+        /// <summary>True while the fund on offer can still be answered today.</summary>
+        public static bool FundStands(SchemeState s, int day)
+        {
+            return s.Fund.State == FundState.Open && day <= s.Fund.Due;
+        }
+
+        /// <summary>The player puts the money in: true if the offer stood. The caller has paid the sum first (asking <see cref="FundStands"/> before it).</summary>
         public static bool FundPlace(SchemeState s, int day)
         {
             SchemeFund f = s.Fund;
-            if (f.State != FundState.Open || day > f.Due)
+            if (!FundStands(s, day))
             {
                 return false;
             }

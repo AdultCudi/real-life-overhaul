@@ -68,7 +68,9 @@ namespace RealLifeOverhaul.Schemes
         /// <summary>
         /// Money is offered to somebody for a favour. Taken: they are kept as somebody who knows, the act goes on the
         /// graft trail (heavier for a payment through the bank account) and the price is owed by the caller. Refused: they
-        /// remember, and some report it. Whoever said no before is not asked again and nothing happens.
+        /// remember, and some report it: a reported offer is on file as a payment would be, with no money moved (a
+        /// judge's report goes to the court as a charge of its own instead, by the caller). Whoever said no before is not
+        /// asked again and nothing happens.
         /// </summary>
         public static OfferResult Offer(SchemeState s, Favour favour, Office office, string who, long price, bool cash, int day)
         {
@@ -85,6 +87,10 @@ namespace RealLifeOverhaul.Schemes
                 if (result.Temper == Temper.Reports)
                 {
                     AddHeat(s, SchemeKind.Graft, SchemeCatalogue.HeatReported);
+                    if (office != Office.Judge)
+                    {
+                        Record(s, SchemeKind.Graft, day, 0, SchemeCatalogue.FavourSize[(int)favour], 1, false, string.Empty, (int)favour);
+                    }
                 }
                 return result;
             }

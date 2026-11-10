@@ -45,6 +45,9 @@ namespace RealLifeOverhaul.Schemes
 
         public static Func<bool> Taxed;
 
+        /// <summary>The game's own tax rate on a business's sales, per cent, whatever the company's pages show: taken off washed cash. Default: none.</summary>
+        public static Func<int> GameTax;
+
         /// <summary>Starts business pressure's own audit or inspection at a place, by its own rules: an inquiry's visit. False if it would not.</summary>
         public static Func<string, bool> Visit;
 
@@ -119,9 +122,6 @@ namespace RealLifeOverhaul.Schemes
         /// <summary>A piece for the paper, by locale key. Default: nothing printed.</summary>
         public static Action<string> Story;
 
-        /// <summary>A day's washed cash booked at a business as its takings, dated on a day: the place, the sum. False if it could not be booked. Default: cannot.</summary>
-        public static Func<string, long, int, bool> Till;
-
         /// <summary>A letter from the player's counsel, by its text's key and what fills it. Default: none is sent.</summary>
         public static Action<string, Dictionary<string, string>> Letter;
 
@@ -134,6 +134,7 @@ namespace RealLifeOverhaul.Schemes
             ClaimRefuse = null;
             TaxPercent = null;
             Taxed = null;
+            GameTax = null;
             Visit = null;
             People = null;
             Club = null;
@@ -160,7 +161,6 @@ namespace RealLifeOverhaul.Schemes
             Worth = null;
             Floor = null;
             Story = null;
-            Till = null;
             Letter = null;
         }
     }

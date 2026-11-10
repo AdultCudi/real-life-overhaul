@@ -333,6 +333,7 @@ namespace RealLifeOverhaul.Schemes
             {
                 return;
             }
+            List<int> unpaid = d.Unpaid(d._unpaid);
             for (int i = 0; i < s.Cases.Count; i++)
             {
                 SchemeInquiry q = s.Cases[i];
@@ -342,7 +343,7 @@ namespace RealLifeOverhaul.Schemes
                 }
                 into.Add(SchemeText.Fill(q.Stage == InquiryStage.Charged ? "reallife_scheme_file_charged" : q.Stage == InquiryStage.Visit ? "reallife_scheme_file_visit"
                     : "reallife_scheme_file_letter", "what", SchemeText.Kind(q.Kind), "day", SchemeText.Whole(q.Opened), "amount",
-                    SchemeText.Money(SchemeRules.RepayCost(s, q.Kind, SchemeGame.Day))));
+                    SchemeText.Money(SchemeRules.RepayCost(s, q.Kind, SchemeGame.Day, unpaid))));
             }
             SchemeFund f = s.Fund;
             if (f.State == FundState.Open || f.State == FundState.Placed || (f.State == FundState.Lost && !f.Reported))
@@ -365,6 +366,7 @@ namespace RealLifeOverhaul.Schemes
                 return;
             }
             int day = SchemeGame.Day;
+            List<int> unpaid = d.Unpaid(d._unpaid);
             for (int i = 0; i < s.Cases.Count; i++)
             {
                 SchemeInquiry q = s.Cases[i];
@@ -374,7 +376,7 @@ namespace RealLifeOverhaul.Schemes
                 }
                 SchemeKind kind = q.Kind;
                 int id = q.Id;
-                long cost = SchemeRules.RepayCost(s, kind, day);
+                long cost = SchemeRules.RepayCost(s, kind, day, unpaid);
                 if (cost > 0)
                 {
                     add(SchemeText.Fill("reallife_scheme_file_repay", "what", SchemeText.Kind(kind), "amount", SchemeText.Money(cost)),
@@ -386,7 +388,11 @@ namespace RealLifeOverhaul.Schemes
                 }
             }
             SchemeFund f = s.Fund;
-            if (f.State == FundState.Open)
+            if (SchemeGame.InSession)
+            {
+                return;   // the rivals rest in a session: a fund of theirs waits, and nothing can be done about it there
+            }
+            if (SchemeRules.FundStands(s, day))
             {
                 string holding = RivalHolding(f.Tycoon);
                 if (!f.Checked)

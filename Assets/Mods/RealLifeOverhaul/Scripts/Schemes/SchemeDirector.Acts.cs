@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UI.Notification;
 
 namespace RealLifeOverhaul.Schemes
@@ -220,9 +221,12 @@ namespace RealLifeOverhaul.Schemes
                          + _state.Heat[(int)SchemeKind.Club] + ".");
         }
 
+        private readonly List<int> _unpaid = new List<int>(8);
+
         /// <summary>
         /// A kind's file is paid back before it is found: out of the cash in hand first for a club, the rest from the
-        /// wallet, refused whole when the wallet cannot cover it. A club's stakes go back to their households. What to say.
+        /// wallet, refused whole when the wallet cannot cover it. A club's stakes go back to their households, and a claim
+        /// its insurer has not paid yet is withdrawn. What to say.
         /// </summary>
         public SchemeSaid Repay(SchemeKind kind)
         {
@@ -231,7 +235,8 @@ namespace RealLifeOverhaul.Schemes
                 return SchemeSaid.Of("reallife_scheme_note_not_now");
             }
             int day = SchemeGame.Day;
-            long cost = SchemeRules.RepayCost(_state, kind, day);
+            List<int> unpaid = Unpaid(_unpaid);
+            long cost = SchemeRules.RepayCost(_state, kind, day, unpaid);
             if (cost <= 0)
             {
                 return SchemeSaid.Of("reallife_scheme_file_repay_nothing");
@@ -241,7 +246,7 @@ namespace RealLifeOverhaul.Schemes
             {
                 return SchemeSaid.Of("reallife_scheme_file_repay_short", "amount", SchemeText.Money(cost - cash));
             }
-            long paid = SchemeRules.Repay(_state, kind, day, out long fromCash);
+            long paid = SchemeRules.Repay(_state, kind, day, unpaid, out long fromCash);
             if (!SchemeGame.Pay(paid - fromCash, SchemeGame.RepayKey))
             {
                 SchemeGame.Take(paid - fromCash, SchemeGame.RepayKey);   // the wallet moved since it was counted: what is settled on the file is paid all the same
@@ -250,7 +255,12 @@ namespace RealLifeOverhaul.Schemes
             {
                 GiveBack(paid);
             }
-            Logger?.Info("Schemes: the " + kind + " file was paid back: " + paid + " (" + fromCash + " of it from the cash in hand).");
+            for (int i = 0; kind == SchemeKind.Claim && i < unpaid.Count; i++)
+            {
+                SchemeBridges.ClaimRefuse?.Invoke(unpaid[i]);   // a claim not yet paid is withdrawn: its insurer never pays it
+            }
+            Logger?.Info("Schemes: the " + kind + " file was paid back: " + paid + " (" + fromCash + " of it from the cash in hand)"
+                         + (kind == SchemeKind.Claim && unpaid.Count > 0 ? ", " + unpaid.Count + " claim(s) withdrawn before they paid." : "."));
             return SchemeSaid.Of("reallife_scheme_file_repay_done", "amount", SchemeText.Money(paid));
         }
 
@@ -316,18 +326,20 @@ namespace RealLifeOverhaul.Schemes
         public SchemeSaid FundPut()
         {
             SchemeFund f = Ready("a fund") ? _state.Fund : null;
-            if (f == null || f.State != FundState.Open)
+            int day = SchemeGame.Day;
+            if (f == null || SchemeGame.InSession || !SchemeRules.FundStands(_state, day))
             {
-                return SchemeSaid.Of("reallife_scheme_note_not_now");
+                return SchemeSaid.Of("reallife_scheme_note_not_now");   // the rivals rest in a session: refused before any money moves
             }
             if (!Affords(f.Amount))
             {
                 return SchemeSaid.Of("reallife_scheme_fund_short", "amount", SchemeText.Money(f.Amount));
             }
-            if (!SchemeRules.FundPlace(_state, SchemeGame.Day) || !SchemeGame.Pay(f.Amount, SchemeGame.FundKey))
+            if (!SchemeGame.Pay(f.Amount, SchemeGame.FundKey))
             {
                 return SchemeSaid.Of("reallife_scheme_note_not_now");
             }
+            SchemeRules.FundPlace(_state, day);   // paid first: the offer stood a moment ago, so the money is always placed
             SchemeBridges.RivalMoney?.Invoke(f.Tycoon, f.Amount);
             Logger?.Info("Schemes: " + f.Amount + " placed in " + RivalHolding(f.Tycoon) + "'s fund until day " + f.Due + (f.Sham ? " (a sham)." : " (honest)."));
             return SchemeSaid.Of("reallife_scheme_fund_put_done", "holding", RivalHolding(f.Tycoon), "amount", SchemeText.Money(f.Amount), "day", SchemeText.Whole(f.Due));
@@ -337,7 +349,7 @@ namespace RealLifeOverhaul.Schemes
         public SchemeSaid FundLook()
         {
             SchemeFund f = Ready("a fund") ? _state.Fund : null;
-            if (f == null || f.State != FundState.Open || f.Checked)
+            if (f == null || SchemeGame.InSession || !SchemeRules.FundStands(_state, SchemeGame.Day) || f.Checked)
             {
                 return SchemeSaid.Of("reallife_scheme_note_not_now");
             }

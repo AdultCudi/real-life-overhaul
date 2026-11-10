@@ -156,11 +156,12 @@ namespace RealLifeOverhaul.Schemes
         }
 
         /// <summary>The till of a business: how much of the cash in hand it takes a day as sales. A business with no counter can take none.</summary>
-        public static SchemePage Wash(SchemeWords w, string place, string business, bool till, long average, int now, long cash, bool watched, int level)
+        public static SchemePage Wash(SchemeWords w, string place, string business, bool till, long average, int now, long cash, bool watched, int level, int taxPercent)
         {
             int little = SchemeCatalogue.WashSteps[1], lot = SchemeCatalogue.WashSteps[SchemeCatalogue.WashSteps.Length - 1];
             string body = w.T(till ? "reallife_scheme_wash_body" : "reallife_scheme_wash_body_no_till", "business", business, "cash", w.M(cash),
-                "cut", SchemeWords.Percent(SchemeCatalogue.WashCut), "report", w.M(SchemeCatalogue.AtPrices(SchemeCatalogue.ReportFrom, level)), "now", SchemeWords.Percent(now));
+                "cut", SchemeWords.Percent(SchemeCatalogue.WashCut), "report", w.M(SchemeCatalogue.AtPrices(SchemeCatalogue.ReportFrom, level)), "now", SchemeWords.Percent(now),
+                "percent", SchemeCatalogue.Clamp(taxPercent, 0, 100).ToString(System.Globalization.CultureInfo.InvariantCulture));
             if (watched)
             {
                 body += "\n\n" + w.T("reallife_scheme_wash_watched");

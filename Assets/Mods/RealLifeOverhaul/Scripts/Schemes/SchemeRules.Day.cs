@@ -6,14 +6,14 @@ namespace RealLifeOverhaul.Schemes
     /// <summary>What a day of the schemes did, for the director to carry out in the game: money, notices, the court, the paper.</summary>
     public enum SchemeEventKind
     {
-        Washed = 0,          // Place, Amount out of the cash in hand, Net into the till
+        Washed = 0,          // Text the place, Amount out of the cash in hand, Net into the wallet after the cut and the tax
         BankReport = 1,      // Place: a day's cash sales the bank reported
         Pattern = 2,         // Place: the window's deposits reported as a pattern
         Opened = 3,          // Inquiry: opened, and nobody is told
         Letter = 4,          // Inquiry
         Visit = 5,           // Inquiry
         Dropped = 6,         // Inquiry: no case to answer
-        Caution = 7,         // Inquiry: all paid back, and little enough
+        Caution = 7,         // Inquiry: all paid back, and little enough; Net what is taken on top of it
         Findings = 8,        // Inquiry: Amount found, FromCash of it seized in hand, Net the surcharge, Text the charge, B 1 for a felony
         Talked = 9,         // Text: who
         RivalActed = 10,     // Tycoon, A the kind, Amount brought
@@ -51,6 +51,7 @@ namespace RealLifeOverhaul.Schemes
         public bool On;            // new schemes may start (the option is on); off, what is open still runs its course
         public bool Session;       // a Going Public session: the rivals rest and no fund is offered
         public int Level = 1000;   // the city's price level, tenths of a point
+        public int TaxPercent;     // the game's tax rate on a business's sales, per cent: taken off washed cash as off any sale
         public long Worth;         // the player's net worth, for the size of a fund's offer
         public readonly List<SchemeTill> Tills = new List<SchemeTill>(16);
         public readonly List<int> Unpaid = new List<int>(8);          // invented claims the insurer has not paid yet, by id
@@ -62,6 +63,7 @@ namespace RealLifeOverhaul.Schemes
         {
             On = Session = false;
             Level = 1000;
+            TaxPercent = 0;
             Worth = 0;
             Tills.Clear();
             Unpaid.Clear();
@@ -159,7 +161,7 @@ namespace RealLifeOverhaul.Schemes
                 {
                     continue;
                 }
-                long net = WashNet(amount);
+                long net = WashNet(amount, w.TaxPercent);
                 s.Dirty -= amount;
                 if (day - shop.WindowFrom >= SchemeCatalogue.PatternDays)
                 {
@@ -281,13 +283,17 @@ namespace RealLifeOverhaul.Schemes
             {
                 return;   // nothing ends before the letter: the player always sees it coming
             }
+            if (Count(s, q.Kind, day) == 0)
+            {
+                Close(s, q, InquiryEnd.Dropped, day);   // everything it was about is older than a file reaches: no case to answer
+                events.Add(new SchemeEvent { Kind = SchemeEventKind.Dropped, Inquiry = q.Id, A = (int)q.Kind });
+                return;
+            }
             bool seen = q.Coop || days >= SchemeCatalogue.LetterAfter + 2;
-            if (seen && !q.Coop && Brought(s, q.Kind, day) > 0 && RepayCost(s, q.Kind, day) == 0 && q.Kind != SchemeKind.Wash && q.Kind != SchemeKind.Graft
+            if (seen && !q.Coop && q.Repaid > 0 && Owed(s, q.Kind, day) == 0 && q.Kind != SchemeKind.Wash && q.Kind != SchemeKind.Graft
                 && !Felony(s, q.Kind, day, w.Level) && (s.Cautioned & (1 << (int)q.Kind)) == 0)
             {
-                s.Cautioned |= 1 << (int)q.Kind;   // a warning is given once: the next file of this kind goes to court, paid back or not
-                Close(s, q, InquiryEnd.Caution, day);
-                events.Add(new SchemeEvent { Kind = SchemeEventKind.Caution, Inquiry = q.Id, A = (int)q.Kind });
+                Caution(s, q, day, events);
                 return;
             }
             if (seen && q.Evidence >= SchemeCatalogue.ChargeFrom && (q.Coop || q.Evidence >= SchemeCatalogue.ChargeAtOnce || days >= SchemeCatalogue.ChargeAfter))
@@ -300,6 +306,24 @@ namespace RealLifeOverhaul.Schemes
                 Close(s, q, InquiryEnd.Dropped, day);
                 events.Add(new SchemeEvent { Kind = SchemeEventKind.Dropped, Inquiry = q.Id, A = (int)q.Kind });
             }
+        }
+
+        // A caution: everything on the file was paid back in time, it is little, and it is the first of its kind. The acts are
+        // dealt with (never found again), half the surcharge is taken on what was paid back, and no court hears of it. A
+        // warning is given once: the next file of the kind goes to court, paid back or not.
+        private static void Caution(SchemeState s, SchemeInquiry q, int day, List<SchemeEvent> events)
+        {
+            s.Cautioned |= 1 << (int)q.Kind;
+            for (int i = 0; i < s.Acts.Count; i++)
+            {
+                if (OnFile(s.Acts[i], q.Kind, day))
+                {
+                    s.Acts[i].Inquiry = q.Id;
+                }
+            }
+            q.Surcharge = SchemeCatalogue.Share(q.Repaid, SchemeCatalogue.SurchargeRepaidPermille);
+            Close(s, q, InquiryEnd.Caution, day);
+            events.Add(new SchemeEvent { Kind = SchemeEventKind.Caution, Inquiry = q.Id, A = (int)q.Kind, Net = q.Surcharge });
         }
 
         // The findings: every act on file is found once, what it still owes is taken back (the cash in hand first) with the
@@ -357,7 +381,7 @@ namespace RealLifeOverhaul.Schemes
                 s.Dirty -= fromCash;
             }
             q.Found = found;
-            q.Surcharge = SchemeCatalogue.Share(surchargeOn, SchemeCatalogue.SurchargePermille);
+            q.Surcharge = SchemeCatalogue.Share(surchargeOn, SchemeCatalogue.SurchargePermille) + SchemeCatalogue.Share(q.Repaid, SchemeCatalogue.SurchargeRepaidPermille);
             q.Stage = InquiryStage.Charged;
             q.End = InquiryEnd.Charged;
             events.Add(new SchemeEvent

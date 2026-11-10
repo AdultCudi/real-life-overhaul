@@ -114,14 +114,15 @@ namespace RealLifeOverhaul.Schemes
         public const int VisitAfter = 8;               // ...to the visit
         public const int ChargeAfter = 14;             // ...to the findings, if the evidence stands
         public const int GiveUpAfter = 30;             // ...to dropping it, if it never did
-        public const int ChargeFrom = 340;             // evidence under this is no case to answer (the prosecutor's own line, JusticeLaw.DismissBelow)
+        public const int ChargeFrom = 350;             // evidence under this is no case to answer: just over the prosecutor's own line (JusticeLaw.DismissBelow)
         public const int ChargeAtOnce = 800;           // evidence this strong is acted on without waiting for ChargeAfter
         public const int LostFile = 400;               // what a bought investigator takes off what the file holds: one act's worth, never a pattern's
         public const int CoopEvidence = 950;           // telling them everything: the file is complete
         public const int TrailDays = 720;              // days an act stays on file: an inquiry reaches back this far
         public const int ActsMost = 24;                // acts kept for a kind
         public const int InquiriesKept = 12;
-        public const int SurchargePermille = 250;      // what is found is taken back with a quarter on top, unless it was paid back first
+        public const int SurchargePermille = 250;      // what is found is taken back with a quarter on top
+        public const int SurchargeRepaidPermille = 125;   // ...and what the player paid back before the findings carries half of that
         public const int FelonyFrom = 5000;            // at the start's prices: a file of this much or more is a felony, under it a misdemeanour and a caution if repaid
         public const int ClearedPermille = 500;        // the trail's heat kept after an inquiry found no case
         public const int GaveUpPermille = 700;         // ...after one was dropped
@@ -150,7 +151,7 @@ namespace RealLifeOverhaul.Schemes
 
         // ---- the till: cash in hand run through a business as sales
         public static readonly int[] WashSteps = { 0, 50, 200 };    // thousandths of an average day's takings a day: what the business could plausibly sell more
-        public const int WashCut = 150;                // thousandths of the cash lost on the way
+        public const int WashCut = 150;                // thousandths of the cash lost on the way; the game's tax rate is then taken off the rest
         public const int WashHeatDivisor = 10;         // a day's washing adds its rate over this: 5 or 20 against a decay of 4
         public const int ReportFrom = 2500;            // at the start's prices: a day's cash sales above this are reported by the bank
         public const int HeatReport = 30;
@@ -169,7 +170,7 @@ namespace RealLifeOverhaul.Schemes
         public const int TalkPressed = 20;             // ...and while an inquiry into graft is open
         public const int HeatTalk = 250;
         public const int EvidenceTalk = 200;           // what somebody who talks adds to an open inquiry
-        public const int HeatReported = 300;           // an offer that was reported
+        public const int HeatReported = 300;           // an offer that was reported, on top of the act it is filed as
         public const int EvidenceReported = 150;       // ...by the investigator of an open inquiry, on that inquiry
         public const int JudgeLean = 200;              // thousandths a bought judge takes off the evidence of each charge
         public const int PaidMost = 16, ColdMost = 64, BoughtMost = 32;

@@ -12,12 +12,12 @@ namespace RealLifeOverhaul.Schemes
     ///     SC1|seed|start day|day|next inquiry|cash in hand|clubs took|clubs gave back|expense day|acts so far|watched|cautioned
     ///     H|heat, a figure a kind|inquiries opened, a figure a kind
     ///     A|kind|day|gain|back|paid|size|knows|paper|inquiry|ref|place                       an act on a trail
-    ///     Q|id|kind|opened|stage|evidence|lost|asked|coop|pressed|case|end|closed|found|surcharge   an inquiry
+    ///     Q|id|kind|opened|stage|evidence|lost|asked|coop|pressed|case|end|closed|found|surcharge|repaid   an inquiry
     ///     P|who|day|amount|what|talked                                                        somebody paid
     ///     C|who                                                                               somebody who said no
     ///     B|person                                                                            a contact whose next favour is bought
     ///     S|place|lift|wash|window|window from|flagged|club day|claim day                     a business's settings
-    ///     R|rival|heat|acts|last act|gained|size|opened|stage|since|evidence|convictions|trial day|found|news day|news|news kind|news amount
+    ///     R|rival|heat|acts|last act|gained|size|opened|stage|since|evidence|convictions|trial day|found|news day|news|news kind|news amount|owes
     ///     F|rival|state|day|due|amount|sham|checked|reported|number                           the fund on offer
     ///
     /// Numbers are in the invariant culture. A later version's line (SC2 and on) is read as far as this one knows it: a
@@ -59,7 +59,7 @@ namespace RealLifeOverhaul.Schemes
                 SchemeInquiry q = s.Cases[i];
                 b.Append("\nQ");
                 Add(b, q.Id).Add(b, (int)q.Kind).Add(b, q.Opened).Add(b, (int)q.Stage).Add(b, q.Evidence).Add(b, q.Lost ? 1 : 0).Add(b, q.Asked ? 1 : 0).Add(b, q.Coop ? 1 : 0)
-                    .Add(b, q.Pressed).Add(b, q.Case).Add(b, (int)q.End).Add(b, q.Closed).Add(b, q.Found).Add(b, q.Surcharge);
+                    .Add(b, q.Pressed).Add(b, q.Case).Add(b, (int)q.End).Add(b, q.Closed).Add(b, q.Found).Add(b, q.Surcharge).Add(b, q.Repaid);
             }
             for (int i = 0; i < s.Paid.Count; i++)
             {
@@ -87,7 +87,7 @@ namespace RealLifeOverhaul.Schemes
                 SchemeRival r = s.Rival[i];
                 b.Append("\nR");
                 Add(b, i).Add(b, r.Heat).Add(b, r.Acts).Add(b, r.LastAct).Add(b, r.Gained).Add(b, r.Size).Add(b, r.Opened).Add(b, (int)r.Stage).Add(b, r.Since).Add(b, r.Evidence)
-                    .Add(b, r.Convictions).Add(b, r.TrialDay).Add(b, r.Found).Add(b, r.NewsDay).Add(b, r.News).Add(b, (int)r.NewsKind).Add(b, r.NewsAmount);
+                    .Add(b, r.Convictions).Add(b, r.TrialDay).Add(b, r.Found).Add(b, r.NewsDay).Add(b, r.News).Add(b, (int)r.NewsKind).Add(b, r.NewsAmount).Add(b, r.Owes);
             }
             SchemeFund f = s.Fund;
             b.Append("\nF");
@@ -208,7 +208,7 @@ namespace RealLifeOverhaul.Schemes
             {
                 Id = id, Kind = (SchemeKind)kind, Opened = I(c, 3, 0), Stage = (InquiryStage)stage, Evidence = SchemeCatalogue.Clamp(I(c, 5, 0), 0, SchemeCatalogue.EvidenceMost),
                 Lost = I(c, 6, 0) != 0, Asked = I(c, 7, 0) != 0, Coop = I(c, 8, 0) != 0, Pressed = Math.Max(0, I(c, 9, 0)), Case = Math.Max(0, I(c, 10, 0)), End = (InquiryEnd)end,
-                Closed = I(c, 12, 0), Found = Math.Max(0L, L(c, 13)), Surcharge = Math.Max(0L, L(c, 14))
+                Closed = I(c, 12, 0), Found = Math.Max(0L, L(c, 13)), Surcharge = Math.Max(0L, L(c, 14)), Repaid = Math.Max(0L, L(c, 15))
             };
             if (q.Open && s.OpenOf(q.Kind) != null)
             {
@@ -255,6 +255,7 @@ namespace RealLifeOverhaul.Schemes
             r.News = SchemeCatalogue.Clamp(I(c, 15, 0), 0, SchemeRules.RivalNewsCleared);
             r.NewsKind = (SchemeKind)SchemeCatalogue.Clamp(kind, 0, SchemeCatalogue.Kinds - 1);
             r.NewsAmount = Math.Max(0L, L(c, 17));
+            r.Owes = Math.Max(0L, L(c, 18));
         }
 
         private static void Fund(SchemeState s, string[] c)
