@@ -3,7 +3,8 @@ using System.Collections.Generic;
 using RealLifeOverhaul.Giving;
 using RealLifeOverhaul.Ui;
 
-// The Giving app's samples: the three charities with a standing gift, two loans out and a tax year's giving. Names are placeholders and never ship.
+// The Giving app's samples: the three charities with a standing gift, two loans out and a tax year's giving. The people are the cast the other pages' samples use and the rich
+// list name is one of the game's own. Names here are placeholders and never ship.
 internal static partial class UiSamples
 {
     public static readonly string[] GivingStates = { "charities", "charities_pick", "charities_broke", "charities_session", "loans", "loans_empty", "year", "off" };
@@ -50,13 +51,13 @@ internal static partial class UiSamples
         f.NeighbourYear = 6400;
         f.NeighbourHelped = 21;
         f.RivalsYear = 18500;
-        f.RivalLine = "Marcus Vane has given $12,000 to the city's charities this year, most lately $1,000 to Harbour Food Bank.";
+        f.RivalLine = "Space Karen has given $12,000 to the city's charities this year, most lately $1,000 to Harbour Food Bank.";
         if (state != "loans_empty")
         {
-            f.Loans.Add(new GiveLoanFact { Name = "Dana Reyes", Principal = 1200, Remaining = 800, Paid = 400, Part = 200, Made = 40, Next = 100, State = LoanState.Open });
-            f.Loans.Add(new GiveLoanFact { Name = "Sam Okafor", Principal = 600, Remaining = 600, Paid = 0, Part = 100, Made = 20, Next = 90, State = LoanState.Open, Misses = 1 });
-            f.Loans.Add(new GiveLoanFact { Name = "Priya Nair", Principal = 500, Remaining = 0, Paid = 500, Part = 100, Made = 5, State = LoanState.Repaid, Closed = 70 });
-            f.Loans.Add(new GiveLoanFact { Name = "Leo Brandt", Principal = 400, Remaining = 300, Paid = 100, Part = 100, Made = 8, State = LoanState.WrittenOff, Closed = 80 });
+            f.Loans.Add(new GiveLoanFact { Name = "Maya Okafor", Principal = 1200, Remaining = 800, Paid = 400, Part = 200, Made = 40, Next = 100, State = LoanState.Open });
+            f.Loans.Add(new GiveLoanFact { Name = "Tom Becker", Principal = 600, Remaining = 600, Paid = 0, Part = 100, Made = 20, Next = 90, State = LoanState.Open, Misses = 1 });
+            f.Loans.Add(new GiveLoanFact { Name = "Hana Sato", Principal = 500, Remaining = 0, Paid = 500, Part = 100, Made = 5, State = LoanState.Repaid, Closed = 70 });
+            f.Loans.Add(new GiveLoanFact { Name = "Nadia Haddad", Principal = 400, Remaining = 300, Paid = 100, Part = 100, Made = 8, State = LoanState.WrittenOff, Closed = 80 });
         }
         if (state == "charities_session")
         {

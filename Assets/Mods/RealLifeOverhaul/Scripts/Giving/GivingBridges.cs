@@ -29,8 +29,9 @@ namespace RealLifeOverhaul.Giving
         /// <summary>A rival tycoon's worth in whole money, or -1 while they are not forward or are out. Null: -1.</summary>
         public static Func<int, long> RivalWorth;
 
-        /// <summary>A rival tycoon gives so much: their worth falls by it. Null: nothing.</summary>
-        public static Action<int, long> RivalPay;
+        /// <summary>A rival tycoon gives so much: their worth falls by it, but never under the floor their worth grows back to (a gift from there would be made up the next day).
+        /// Returns what really left them. Null: nothing.</summary>
+        public static Func<int, long, long> RivalPay;
 
         /// <summary>A rival tycoon's name. Null: "".</summary>
         public static Func<int, string> RivalName;

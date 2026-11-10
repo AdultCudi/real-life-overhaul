@@ -60,7 +60,7 @@ namespace RealLifeOverhaul
                 try
                 {
                     TechDirector tech = TechDirector.Instance;
-                    return tech != null ? Math.Max(0L, tech.FloorNow / 100) : 0L;
+                    return tech != null ? GivingRules.Reserve(tech.FloorNow) : 0L;   // cents to whole money, rounded up: the wallet never ends a cent under the floor
                 }
                 catch (Exception e)
                 {
@@ -99,20 +99,26 @@ namespace RealLifeOverhaul
                 }
             }
 
-            private static void RivalPay(int index, long amount)
+            // A tycoon gives from the worth over their floor, the start's worth at today's prices that the rivals raise a worth to each day and when they come forward
+            // (RivalRules.Grow, Activate); a gift from the floor itself would be made up the next day. Returns what really left them.
+            private static long RivalPay(int index, long amount)
             {
                 try
                 {
                     RivalFile f = RivalDirector.Instance != null ? RivalDirector.Instance.File : null;
                     Tycoon t = f != null && index >= 0 && index < f.Tycoons.Length ? f.Tycoons[index] : null;
-                    if (t != null && t.Active)
+                    if (t == null || !t.Active)
                     {
-                        t.Worth = Math.Max(0L, t.Worth - Math.Max(0L, amount));
+                        return 0L;
                     }
+                    long paid = GivingRules.RivalPaid(amount, t.Worth, RivalRules.At(t.Def.StartWorth, Prices.Level));
+                    t.Worth -= paid;
+                    return paid;
                 }
                 catch (Exception e)
                 {
                     Fault("GivingLinks.RivalPay", e);
+                    return 0L;
                 }
             }
 

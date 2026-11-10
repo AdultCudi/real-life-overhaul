@@ -6,136 +6,65 @@ using UI.Notification;
 namespace RealLifeOverhaul.Giving
 {
     /// <summary>
-    /// The month's pass, one step a second so no frame carries a pass over the city's households: the counters turn over, the standing gifts are paid, the
-    /// rivals give, the charities pay.
+    /// The month's pass, one step a second so no frame carries a pass over the city's households (the steps and what makes each safe to run again are GivingMonth's; this
+    /// answers them with the game): the counters turn over, the standing gifts are paid, the rivals give, the charities pay.
     /// </summary>
-    public sealed partial class GivingDirector
+    public sealed partial class GivingDirector : IMonthWorld
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
         private void MonthStep()
         {
             using var hotSpot = HotSpots.Time(HotDay);
-            int month = _monthNumber;
-            switch (_monthStep)
-            {
-                case 0:
-                    CloseMonth(month);
-                    break;
-                case 1:
-                    StandingGifts();
-                    break;
-                case 2:
-                    RivalGifts(month);
-                    break;
-                case 3:
-                    Payout(Charity.FoodBank, month);
-                    break;
-                case 4:
-                    Payout(Charity.Housing, month);
-                    break;
-                case 5:
-                    Payout(Charity.Training, month);
-                    break;
-                case 6:
-                    Neighbours(month);
-                    break;
-                default:
-                    _monthStep = -1;
-                    _revision++;
-                    return;
-            }
-            _monthStep++;
+            GivingMonth.Step(_state, this);
             _revision++;
         }
 
-        // The month's counters start again. The month is marked done at once, so a save in the middle of the pass never pays a standing gift twice.
-        private void CloseMonth(int month)
-        {
-            _state.Month = month;
-            _state.StandingMonth = month;
-            _state.MonthGiven = 0;
-            _state.StandingDone = 0;
-            _state.PressDone = 0;
-            for (int i = 0; i < _state.Books.Length; i++)
-            {
-                CharityBook b = _state.Books[i];
-                b.PlayerMonth = 0;
-                b.OthersMonth = 0;
-                b.PaidMonth = 0;
-            }
-        }
+        int IMonthWorld.Day => GivingGame.Day;
+
+        int IMonthWorld.Level => GivingGame.Level;
 
         // The first day of a month: each standing gift is paid as a gift of the player's, or skipped, said once, never forced.
-        private void StandingGifts()
+        void IMonthWorld.PayStanding(StandingGift g, int month)
         {
-            for (int i = 0; i < _state.Standing.Count; i++)
+            int amount = GivingRules.At(g.Amount, GivingGame.Level);
+            GiveResult r = GiveToCharity((Charity)g.Charity, amount);
+            if (GivingResults.Moved(r))
             {
-                StandingGift g = _state.Standing[i];
-                int amount = GivingRules.At(g.Amount, GivingGame.Level);
-                GiveResult r = GiveToCharity((Charity)g.Charity, amount);
-                if (GivingResults.Moved(r))
-                {
-                    g.PaidTotal += amount;
-                    g.Skipped = false;
-                    continue;
-                }
-                if (!g.Skipped)
-                {
-                    g.Skipped = true;
-                    GivingGame.Tell(NotificationType.Warning, "reallife_giving_standing_skipped", GivingGame.Data("charity", GivingText.Charity(g.Charity), "amount", GivingGame.Money(amount)));
-                }
-                if (Verbose)
-                {
-                    Logger?.Info("Giving check (a standing gift to " + g.Charity + " of " + amount + " in month " + _monthNumber + "): not paid (" + r + "), said once: PASS");
-                }
+                g.PaidTotal += amount;
+                g.Skipped = false;
+                return;
+            }
+            if (!g.Skipped)
+            {
+                g.Skipped = true;
+                GivingGame.Tell(NotificationType.Warning, "reallife_giving_standing_skipped", GivingGame.Data("charity", GivingText.Charity(g.Charity), "amount", GivingGame.Money(amount)));
+            }
+            if (Verbose)
+            {
+                Logger?.Info("Giving check (a standing gift to " + g.Charity + " of " + amount + " in month " + month + "): not paid (" + r + "), said once: PASS");
             }
         }
 
-        // The rivals' own gifts to the same charities, from their own worth, seeded: one a rival a month.
-        private void RivalGifts(int month)
+        long IMonthWorld.RivalWorth(int tycoon)
         {
             Func<int, long> worthOf = GivingBridges.RivalWorth;
-            if (worthOf == null)
+            return worthOf != null ? worthOf(tycoon) : -1L;
+        }
+
+        long IMonthWorld.RivalPays(int tycoon, long gift)
+        {
+            Func<int, long, long> pay = GivingBridges.RivalPay;
+            long paid = pay != null ? Math.Max(0L, pay(tycoon, gift)) : 0L;
+            if (Verbose)
             {
-                return;
+                Logger?.Info("Giving check (a rival's gift): tycoon " + tycoon + " gave " + paid + " of " + gift + " (nothing from the worth they grow back to): PASS");
             }
-            int day = GivingGame.Day;
-            for (int i = 0; i < _state.RivalBooks.Length; i++)
-            {
-                RivalGiving r = _state.RivalBooks[i];
-                long worth = worthOf(i);
-                if (worth <= 0 || r.Month == month)
-                {
-                    continue;
-                }
-                long gift = GivingRules.RivalGift(_state.Seed, i, worth, 12, out int _);
-                int charity = GivingRules.RivalCharity(_state.Seed, i, month);
-                r.Month = month;
-                if (gift <= 0)
-                {
-                    continue;
-                }
-                GivingBridges.RivalPay?.Invoke(i, gift);
-                Credit((Charity)charity, gift, i);
-                r.Total += gift;
-                r.Year += gift;
-                r.Last = gift;
-                r.LastDay = day;
-                r.LastCharity = charity;
-                if (gift >= GivingRules.At(GivingCatalogue.BigGift, GivingGame.Level))
-                {
-                    _state.Notes.Add(new GivingNote { Day = day, Charity = charity, Amount = gift, Giver = i });
-                }
-                if (Verbose)
-                {
-                    Logger?.Info("Giving check (a rival's gift): tycoon " + i + " worth " + worth + " gave " + gift + " to " + (Charity)charity + " in month " + month + ": PASS");
-                }
-            }
+            return paid;
         }
 
         // A charity pays out what it holds, under its cap for the month, to the people its cause is for.
-        private void Payout(Charity c, int month)
+        void IMonthWorld.PayOut(Charity c, int month)
         {
             CharityBook b = _state.Book(c);
             PopulationState s = GivingGame.People();
@@ -179,10 +108,10 @@ namespace RealLifeOverhaul.Giving
         }
 
         // The people of the city help one another, in the population's own terms (savings to a household in hardship).
-        private void Neighbours(int month)
+        void IMonthWorld.Neighbours(int month)
         {
             PopulationState s = GivingGame.People();
-            if (s == null || _state.NeighbourMonth == month)
+            if (s == null)
             {
                 return;
             }

@@ -26,8 +26,6 @@ namespace RealLifeOverhaul.Giving
         private GivingState _state;
         private bool _loaded, _broken;
         private Action _onSave;
-        private int _monthStep = -1;     // the step of the month's pass under way; -1 for none
-        private int _monthNumber;
         private int _revision;
         private string _beforeTests;
 
@@ -113,9 +111,9 @@ namespace RealLifeOverhaul.Giving
             {
                 Install();
             }
-            if (_monthStep >= 0)
+            if (_state.MonthStep >= 0)
             {
-                MonthStep();
+                MonthStep();   // a pass the save, the load or the option off left in the middle goes on at its step
                 return;
             }
             int day = GivingGame.Day;
@@ -146,7 +144,7 @@ namespace RealLifeOverhaul.Giving
                 }
             }
             _state.LastDay = 0;
-            _monthStep = -1;
+            _state.PeriodStart = GivingYear.FromSaved(_state.PeriodStart, GivingGame.DaysPerYear);
             _beforeTests = save.modData.TryGetValue(TestKey, out string before) && !string.IsNullOrEmpty(before) ? before : null;
             _loaded = true;
             _revision++;
@@ -191,12 +189,13 @@ namespace RealLifeOverhaul.Giving
             }
         }
 
-        // The option was switched off: the line stays as it is, nothing runs, standing gifts stop and loans stay recorded.
+        // The option was switched off: the line stays as it is (a month's pass under way with its step), nothing runs, standing gifts stop, loans stay recorded and the app
+        // leaves the phone.
         private void PutAway()
         {
             Write();
             _loaded = false;
-            _monthStep = -1;
+            RemoveApp();
             _revision++;
             Logger?.Info("Giving: switched off; the gifts, standing gifts and loans are kept in the save and go on when it is on again.");
         }
@@ -213,7 +212,7 @@ namespace RealLifeOverhaul.Giving
             _state = new GivingState();
             _beforeTests = null;
             _loaded = false;
-            _monthStep = -1;
+            RemoveApp();
             _revision++;
         }
 
@@ -224,84 +223,44 @@ namespace RealLifeOverhaul.Giving
             using var hotSpot = HotSpots.Time(HotDay);
             _state.LastDay = day;
             Roll(day);
-            int month = GivingRules.MonthOf(day, GivingGame.MonthDays);
-            if (_state.Month < 0)
-            {
-                _state.Month = month;
-                _state.StandingMonth = month;
-            }
-            else if (month > _state.Month)
-            {
-                _monthNumber = month;
-                _monthStep = 0;
-            }
-            Claim(day);
+            GivingMonth.Begin(_state, GivingRules.MonthOf(day, GivingGame.MonthDays));
+            ClaimNow();
             CollectLoans(day);
             ExpireNotes(day);
             _revision++;
         }
 
-        // The game's tax year turns over: the year's sums start again.
+        // The game's tax year turns over, on the day it clears its list: the year's sums start again. Asked by the day's pass and before every gift.
         private void Roll(int day)
         {
-            int start = GivingRules.PeriodStart(day, GivingGame.DaysPerYear);
-            if (start == _state.PeriodStart)
+            if (GivingYear.Turn(_state, day, GivingGame.DaysPerYear) && Verbose)
             {
-                return;
-            }
-            bool first = _state.PeriodStart == 0;
-            _state.PeriodStart = start;
-            if (first)
-            {
-                return;
-            }
-            _state.TaxGifts = 0;
-            _state.TaxClaimed = 0;
-            _state.NeighbourYear = 0;
-            _state.NeighbourHelped = 0;
-            for (int i = 0; i < _state.Books.Length; i++)
-            {
-                CharityBook b = _state.Books[i];
-                b.PlayerYear = 0;
-                b.OthersYear = 0;
-                b.PaidYear = 0;
-                b.PeopleYear = 0;
-            }
-            for (int i = 0; i < _state.RivalBooks.Length; i++)
-            {
-                _state.RivalBooks[i].Year = 0;
-            }
-            if (Verbose)
-            {
-                Logger?.Info("Giving check (a new tax year from day " + start + "): the year's sums start again: PASS");
+                Logger?.Info("Giving check (a new tax year from day " + _state.PeriodStart + "): the year's sums start again: PASS");
             }
         }
 
-        /// <summary>
-        /// The deduction: the year's gifts to charities, held to the cap on the income so far, less what the game's tax already deducts under giving's name (read from its own
-        /// list, so a claim is never made twice), given to the game's tax. Never on the day the game closes its year and clears its list.
-        /// </summary>
-        private void Claim(int day)
+        // The income the game's tax counts so far this year: the sales of the days after the clearing day up to yesterday.
+        private long YearIncome(int day)
         {
-            int dpy = GivingGame.DaysPerYear;
-            if (GivingRules.Boundary(day, dpy) || _state.TaxGifts <= 0)
+            return GivingBridges.Income != null && GivingYear.Window(_state, day, out int from, out int to) ? GivingBridges.Income(from, to) : 0L;
+        }
+
+        private static readonly Func<long> HoldsNow = GivingGame.Deducted;
+        private static readonly Action<long> DeductNow = GivingGame.Deduct;
+
+        /// <summary>
+        /// The deduction (GivingYear.ClaimToday): the year's gifts to charities, held to the cap on the income so far, less what is claimed already (the game's list under giving's
+        /// name, and giving's own record, whichever is more), given to the game's tax. Made at once for a gift, so one on the last day of the year is in the list before the game reads
+        /// it, and again each day as the income grows.
+        /// </summary>
+        private void ClaimNow()
+        {
+            int day = GivingGame.Day;
+            long due = GivingYear.ClaimToday(_state, day, GivingBridges.Income, HoldsNow, DeductNow);
+            if (due > 0 && Verbose)
             {
-                return;
-            }
-            long income = GivingBridges.Income != null && day - 1 >= _state.PeriodStart ? GivingBridges.Income(_state.PeriodStart, day - 1) : 0L;
-            long deducted = GivingGame.Deducted();
-            long due = GivingRules.DeductionDue(_state.TaxGifts, deducted, income);
-            _state.TaxClaimed = deducted;
-            if (due <= 0)
-            {
-                return;
-            }
-            GivingGame.Deduct(due);
-            _state.TaxClaimed = deducted + due;
-            if (Verbose)
-            {
-                Logger?.Info("Giving check (the deduction on day " + day + "): gifts " + _state.TaxGifts + ", income so far " + income + ", the cap " + GivingRules.DeductionCap(income)
-                             + ", deducted before " + deducted + ", now " + due + " more: PASS");
+                Logger?.Info("Giving check (the deduction on day " + day + "): gifts " + _state.TaxGifts + ", income so far " + YearIncome(day) + ", the cap "
+                             + GivingRules.DeductionCap(YearIncome(day)) + ", " + due + " more claimed, " + _state.TaxClaimed + " in all: PASS");
             }
         }
 

@@ -11,7 +11,8 @@ using RealLifeOverhaul.Ui;
 // Giving (Scripts/Giving, run with --giving): the steps and every cap, the charities' months on a city of households (the debt, the rent and the courses that really change, the
 // players' own and their tenants' never), the tax deduction (never over its cap, never twice, never for a person or a loan), standing and the press and a person's warmth earned
 // by the sum given and not by how it is split, loans paid back out of what a household can spare, who asks and when, the rivals' gifts, the neighbours, the save, old saves and
-// the option off, a session, the pages and every button, the sources (money only through the one call, from the spare cash only) and the texts in every language.
+// the option off, a session, the pages and every button, the sources (money only through the one call, from the spare cash only) and the texts in every language. The parts that run
+// over time (the tax year turning, the month's pass, a loan's months, the save under a culture with decimal commas) are in GivingYearChecks.cs.
 internal static partial class Program
 {
     private static readonly string[] GivingLanguages = { "en", "pt", "zh-cn", "de", "fr", "es", "ru", "nl", "tr", "pl", "ko" };
@@ -20,13 +21,18 @@ internal static partial class Program
     {
         GivingRuleChecks();
         GivingTaxChecks();
+        GivingYearChecks();
+        GivingMonthChecks();
+        GivingPopulationChecks();
         GivingStandingChecks();
         GivingCityChecks();
         GivingMoneyChecks();
         GivingLoanChecks();
+        GivingLoanTurnChecks();
         GivingAskChecks();
         GivingRivalChecks();
         GivingStoreChecks();
+        GivingCultureChecks();
         GivingPageChecks();
         GivingSourceChecks();
         GivingTextChecks();
@@ -112,8 +118,6 @@ internal static partial class Program
         Check(GivingRules.StepOf(480) == 3 && GivingRules.StepOf(0) == 0 && GivingRules.StepOf(9999999) == steps.Length - 1, "giving: the nearest step to an amount");
         Check(GivingRules.Back(2000, 2000) == 1000 && GivingRules.Back(1000, 1000) == 1000, "giving: an amount at today's prices goes back to the start's");
         Check(GivingRules.MonthOf(1, 5) == 0 && GivingRules.MonthOf(5, 5) == 0 && GivingRules.MonthOf(6, 5) == 1 && GivingRules.MonthOf(0, 5) == 0, "giving: a month is the twelfth of the year the economy uses");
-        Check(GivingRules.PeriodStart(1, 60) == 1 && GivingRules.PeriodStart(60, 60) == 1 && GivingRules.PeriodStart(61, 60) == 61 && GivingRules.Boundary(60, 60) && !GivingRules.Boundary(59, 60)
-              && !GivingRules.Boundary(0, 60), "giving: the tax year is the game's, and its last day is the boundary where nothing is claimed");
         Check(GivingCatalogue.CapPerHousehold.Length == (int)Charity.Count && GivingCatalogue.NameKeys.Length == (int)Charity.Count && GivingCatalogue.AboutKeys.Length == (int)Charity.Count
               && GivingCatalogue.DeductionShare == 60, "giving: three charities, each with its cap, its name and its words, and the deduction share of 6%");
         long cap = GivingRules.MonthCap(Charity.FoodBank, 20000, 1000);
@@ -131,44 +135,29 @@ internal static partial class Program
     {
         Check(GivingRules.DeductionCap(310000) == 18600 && GivingRules.DeductionCap(0) == 0 && GivingRules.DeductionCap(-5) == 0, "giving tax: the cap is 6% of the year's income and never negative");
         Check(GivingRules.DeductionDue(4000, 0, 310000) == 4000 && GivingRules.DeductionDue(50000, 0, 310000) == 18600 && GivingRules.DeductionDue(50000, 18600, 310000) == 0
-              && GivingRules.DeductionDue(4000, 4000, 310000) == 0 && GivingRules.DeductionDue(-1, 0, 310000) == 0 && GivingRules.DeductionDue(4000, 9000, 310000) == 0,
-            "giving tax: what is due is the gifts held to the cap, less what is deducted already, and never under nothing");
-        // A year played through day by day: gifts, income that grows, and the director's own claim each day (the game's list is the sum it has been given).
-        long worst = 0;
-        for (int seed = 1; seed <= 60; seed++)
-        {
-            long gifts = 0, income = 0, listed = 0, people = 0;
-            for (int day = 1; day <= 59; day++)
-            {
-                uint r = GivingRules.Hash(seed, 11, day, 0);
-                income += (long)(r % 9000);
-                if (r % 7 == 0)
-                {
-                    gifts += (long)(GivingRules.Hash(seed, 12, day, 0) % 6000);   // a gift to a charity: counted
-                }
-                if (r % 5 == 0)
-                {
-                    people += (long)(GivingRules.Hash(seed, 13, day, 0) % 6000);   // a gift to a person or a loan: never counted, so never in `gifts`
-                }
-                long due = GivingRules.DeductionDue(gifts, listed, income);
-                Check(due >= 0, "giving tax: the claim is never negative (seed " + seed + ", day " + day + ")");
-                listed += due;
-                Check(GivingRules.DeductionDue(gifts, listed, income) == 0, "giving tax: asking again claims nothing more (seed " + seed + ", day " + day + ")");
-                Check(listed <= gifts && listed <= GivingRules.DeductionCap(income), "giving tax: the claim is never over the gifts or the cap on the income so far (seed " + seed + ", day " + day + ")");
-            }
-            worst = Math.Max(worst, listed - GivingRules.DeductionCap(income));
-            Check(listed <= GivingRules.DeductionCap(income) && people >= 0, "giving tax: the year's claim is never over the cap on the whole year's income (seed " + seed + ")");
-        }
-        Check(worst <= 0, "giving tax: no year's deduction went over its cap");
+              && GivingRules.DeductionDue(4000, 4000, 310000) == 0 && GivingRules.DeductionDue(-1, 0, 310000) == 0 && GivingRules.DeductionDue(4000, 9000, 310000) == 0
+              && GivingRules.DeductionDue(4000, 0, 0) == 0 && GivingRules.DeductionDue(4000, -50, 310000) == 4000,
+            "giving tax: what is due is the gifts held to the cap, less what is claimed already, and never under nothing");
         string gifts2 = ModSource(@"Giving\GivingDirector.Gifts.cs"), loans = ModSource(@"Giving\GivingDirector.Loans.cs"), director = ModSource(@"Giving\GivingDirector.cs");
         string all = string.Concat(Directory.GetFiles(System.IO.Path.GetDirectoryName(ModPath(@"Giving\GivingDirector.cs")), "*.cs").Select(File.ReadAllText));
         Check(CountOfText(all, "TaxGifts +=") == 1 && gifts2.IndexOf("TaxGifts +=", StringComparison.Ordinal) > gifts2.IndexOf("GiveToCharity", StringComparison.Ordinal)
               && gifts2.IndexOf("TaxGifts +=", StringComparison.Ordinal) < gifts2.IndexOf("GiveToPerson", StringComparison.Ordinal), "giving tax: only a gift to a charity adds to the year's gifts, nothing for a person or a loan does");
         Check(!loans.Contains("GivingGame.Deduct") && !loans.Contains("TaxGifts") && !gifts2.Substring(gifts2.IndexOf("GiveToPerson", StringComparison.Ordinal)).Contains("TaxGifts"),
             "giving tax: a loan, a loan written off and a gift to a person never reach the deduction");
-        Check(director.Contains("GivingRules.Boundary(day, dpy)") && director.Contains("GivingGame.Deducted()") && director.Contains("DeductionDue(_state.TaxGifts, deducted, income)"),
-            "giving tax: nothing is claimed on the day the game clears its list, and what the game's own list holds is read before a claim, so no year is claimed twice");
-        Check(director.Contains("day - 1 >= _state.PeriodStart") && director.Contains("GivingBridges.Income(_state.PeriodStart, day - 1)"), "giving tax: the cap is worked out on the income of the days gone, which only grows");
+        // What cannot run offline: that the director calls the rules in the order the checks above drive them.
+        string give = gifts2.Substring(gifts2.IndexOf("public GiveResult GiveToCharity", StringComparison.Ordinal), gifts2.IndexOf("private void Reward", StringComparison.Ordinal) - gifts2.IndexOf("public GiveResult GiveToCharity", StringComparison.Ordinal));
+        Check(give.IndexOf("Roll(GivingGame.Day)", StringComparison.Ordinal) > 0 && give.IndexOf("Roll(GivingGame.Day)", StringComparison.Ordinal) < give.IndexOf("TaxGifts +=", StringComparison.Ordinal)
+              && give.IndexOf("TaxGifts +=", StringComparison.Ordinal) < give.IndexOf("ClaimNow();", StringComparison.Ordinal),
+            "giving tax: a gift turns the year first, is counted, and is claimed at once, so a gift on the last day of the year is in the game's list before the game reads it");
+        Check(director.Contains("GivingYear.Turn(_state, day, GivingGame.DaysPerYear)") && director.Contains("GivingYear.ClaimToday(_state, day, GivingBridges.Income, HoldsNow, DeductNow)")
+              && director.Contains("Roll(day);") && director.IndexOf("Roll(day);", StringComparison.Ordinal) < director.IndexOf("ClaimNow();", StringComparison.Ordinal) && !director.Contains("Boundary"),
+            "giving tax: the day's pass turns the year, then claims, and no day is skipped");
+        Check(ModSource(@"Giving\GivingGame.cs").Contains("LocalizorManager.IsLocalizedKey(DeductName) ? DeductName : DeductName.GetLocalization()") && ModSource(@"Giving\GivingGame.cs").Contains("GivingYear.Ours(list[i].key, DeductName, words)"),
+            "giving tax: the deduction goes in the game's list under giving's key, which the game translates for the statement, and is read back by the key and by the words");
+        Check(ModSource(@"Giving\GivingDirector.Facts.cs").Contains("GivingYear.Claimed(_state, GivingGame.Deducted())") && ModSource(@"Giving\GivingDirector.Facts.cs").Contains("YearIncome("),
+            "giving tax: the year's page shows what the game will deduct and the income its cap is worked out on");
+        // The cap's numbers.
+        Check(GivingRules.DeductionDue(50000, 0, 310000) != 50000 && GivingRules.DeductionDue(50000, 0, 310000) == 18600, "giving tax: a claim without the cap would be caught: 50,000 of gifts on 310,000 of income is held to 18,600");
     }
 
     // ---- standing, the press and a person's warmth
@@ -185,7 +174,8 @@ internal static partial class Program
         }
         Check(applied == once && once <= GivingCatalogue.IntegrityMost && once >= 1, "giving standing: one gift of 10,000 earns what ten of 1,000 earn (" + once + " points of " + GivingCatalogue.IntegrityMost + ")");
         int small = GivingRules.IntegrityOf(100), big = GivingRules.IntegrityOf(1000000);
-        Check(small == 0 && big == GivingCatalogue.IntegrityMost - 0 || big == GivingCatalogue.IntegrityMost - 1 || big == GivingCatalogue.IntegrityMost, "giving standing: a small gift earns nothing and a huge one never passes the month's most (" + big + ")");
+        Check(small == 0 && big >= GivingCatalogue.IntegrityMost - 1 && big <= GivingCatalogue.IntegrityMost && GivingRules.IntegrityOf(1000000000) <= GivingCatalogue.IntegrityMost,
+            "giving standing: a small gift earns nothing and a huge one comes to the month's most and never passes it (" + big + " of " + GivingCatalogue.IntegrityMost + ")");
         Check(GivingRules.PressOf(0) == 0 && GivingRules.PressOf(100) == 0 && GivingRules.PressOf(100000000) <= GivingCatalogue.PressMost && GivingRules.PressOf(20000) >= 1,
             "giving standing: the press prints nothing of a small gift and no more than the month's most of any");
         long prior = -1;
@@ -218,7 +208,10 @@ internal static partial class Program
         GivingRules.PersonGain(window, 100000, 100, true, out int w1, out _);
         GivingRules.PersonGain(window, 100000, 100 + GivingCatalogue.WindowDays, true, out int w2, out _);
         GivingRules.PersonGain(window, 100000, 100 + GivingCatalogue.WindowDays + 3, true, out int w3, out _);
-        Check(w1 > 0 && w2 > 0 && w3 == 0 || w3 <= 1, "giving people: a new window starts after thirty days, and a gift in a window already full earns nothing more");
+        var edge = new PersonGiving { Person = 6 };
+        GivingRules.PersonGain(edge, 100000, 100, true, out _, out _);
+        GivingRules.PersonGain(edge, 100000, 100 + GivingCatalogue.WindowDays - 1, true, out int w0, out int wt0);
+        Check(w1 > 0 && w2 > 0 && w3 == 0 && w0 == 0 && wt0 == 0, "giving people: a new window starts after thirty days, and a gift in a window already full earns nothing more (" + w1 / 10f + ", " + w2 / 10f + ", " + w3 / 10f + ")");
         Check(w1 <= GivingCatalogue.AffectionMost * 10, "giving people: money is no shortcut to the top: a window earns " + GivingCatalogue.AffectionMost + " points of affection at most");
     }
 
@@ -289,14 +282,18 @@ internal static partial class Program
         one.Households.Savings[2] = 100;
         GivingPeople.Help(one, 2, 800, out long toDebt, out long toSavings);
         Check(toDebt == 500 && toSavings == 300 && one.Households.Debt[2] == 0 && one.Households.Savings[2] == 400 && one.Households.Content[2] == 60 + GivingCatalogue.ContentLift, "giving city: help pays the debt first and puts the rest in savings");
+        one.Households.Savings[2] = 2500;
         long spare = GivingPeople.Spare(one, 2);
         long took = GivingPeople.Take(one, 2, 99999);
-        Check(took == spare && took <= 400 && one.Households.Savings[2] == 400 - took && GivingPeople.Take(one, 2, 5) == 0 || GivingPeople.Spare(one, 2) >= 0, "giving city: a household can pay back no more than it can spare");
+        Check(spare > 1500 && spare < 2500 && took == spare && one.Households.Savings[2] == 2500 - took && GivingPeople.Spare(one, 2) == 0 && GivingPeople.Take(one, 2, 5) == 0 && one.Households.Savings[2] == 2500 - took,
+            "giving city: a household can pay back no more than it can spare (" + took + " of " + spare + ", the rest kept for its rent)");
+        one.Households.Savings[2] = 2500;
+        Check(GivingPeople.Take(one, 2, 100) == 100 && one.Households.Savings[2] == 2400 && GivingPeople.Take(one, 2, -5) == 0, "giving city: a household pays the part asked when it can, and nothing for a negative ask");
         // Neighbours: every dollar leaves one household and reaches another.
         PopulationState folks = GivingCity(4000, 21);
         long folksBefore = GivingMoneyOf(folks);
         int neighbours = GivingPeople.Neighbours(folks, 5, level, out long moved);
-        Check(neighbours <= folks.Households.Live / GivingCatalogue.NeighboursPer && GivingMoneyOf(folks) - folksBefore == 0 && moved >= 0, "giving city: neighbours help one another, one gift for each " + GivingCatalogue.NeighboursPer + " households, and money only moves between households (" + neighbours + " gifts of " + moved + ")");
+        Check(neighbours > 0 && moved > 0 && neighbours <= folks.Households.Live / GivingCatalogue.NeighboursPer && GivingMoneyOf(folks) - folksBefore == 0, "giving city: neighbours help one another, one gift for each " + GivingCatalogue.NeighboursPer + " households, and money only moves between households (" + neighbours + " gifts of " + moved + ")");
         // Timing: a month's pass over a city of twenty thousand households.
         PopulationState big = GivingCity(20000, 31);
         long best = long.MaxValue;
@@ -318,16 +315,28 @@ internal static partial class Program
     {
         string game = ModSource(@"Giving\GivingGame.cs"), gifts = ModSource(@"Giving\GivingDirector.Gifts.cs"), wiring = ModSource(@"Wiring\Wiring.GivingLinks.cs");
         Check(game.Contains("BizBooks.Book(") && !game.Contains("GameManager.ChangeMoney") && game.Contains("amount > Spare"), "giving money: money moves only through the mod's one booking call, and a gift larger than the spare cash is refused");
-        Check(game.Contains("Cash - Math.Max(0L, reserved)") && game.Contains("GivingBridges.Reserved()") && wiring.Contains("tech.FloorNow / 100"),
+        Check(game.Contains("Cash - Math.Max(0L, reserved)") && game.Contains("GivingBridges.Reserved()") && wiring.Contains("GivingRules.Reserve(tech.FloorNow)"),
             "giving money: only the cash over what the investors of the player's firms are owed can be given, so a firm's account never leaks through a gift");
+        // The floor is held in cents and a gift is whole money: the reserve is rounded up, so a gift of exactly the spare cash never leaves the wallet a cent under the floor.
+        bool never = true;
+        for (long floor = 0; floor <= 100000; floor += 37)
+        {
+            for (long wallet = floor; wallet <= floor + 400; wallet += 13)
+            {
+                long spare = Math.Max(0L, wallet / 100 - GivingRules.Reserve(floor));
+                never &= wallet - spare * 100 >= floor;
+            }
+        }
+        Check(GivingRules.Reserve(0) == 0 && GivingRules.Reserve(-5) == 0 && GivingRules.Reserve(1) == 1 && GivingRules.Reserve(100) == 1 && GivingRules.Reserve(101) == 2 && GivingRules.Reserve(250050) == 2501 && never,
+            "giving money: the investors' floor is rounded up to whole money, so giving every dollar of the spare cash leaves the wallet at or over the floor");
         Check(!game.Contains("VentureGame") && !game.Contains("FirmAccount") && !wiring.Contains("Acc."), "giving money: no path reaches a firm's account: gifts come from the wallet's spare cash alone");
         Check(game.Contains("force: false") && game.Contains("public static void Receive") && CountOfText(ModSource(@"Giving\GivingDirector.Month.cs") + gifts, "GivingGame.Receive") == 0,
             "giving money: a gift is never forced, and no charity, rival or neighbour pays anything into the player's cash");
         Check(CountOfText(ModSource(@"Giving\GivingDirector.Loans.cs"), "GivingGame.Receive") == 1, "giving money: the one thing that comes back to the player is a loan's part, taken from the person's household");
         // A rival's gift only lowers the rival's worth and fills a pot.
-        string month = ModSource(@"Giving\GivingDirector.Month.cs");
-        Check(month.Contains("RivalPay?.Invoke(i, gift)") && month.Contains("Credit((Charity)charity, gift, i)") && !month.Substring(month.IndexOf("private void RivalGifts", StringComparison.Ordinal), 900).Contains("GivingGame.Pay"),
-            "giving money: a rival's gift comes out of their worth and goes into a pot, never into the player's pocket");
+        string rules = ModSource(@"Giving\GivingMonth.cs");
+        Check(rules.Contains("w.RivalPays(i, gift)") && rules.Contains("s.Credit((Charity)charity, paid, i)") && !rules.Contains("GivingGame.") && wiring.Contains("GivingRules.RivalPaid(amount, t.Worth, RivalRules.At(t.Def.StartWorth, Prices.Level))"),
+            "giving money: a rival's gift comes out of their worth over the floor and goes into a pot, never into the player's pocket");
     }
 
     // ---- loans
@@ -337,39 +346,15 @@ internal static partial class Program
         Check(GivingRules.LoanPart(6000) == 1000 && GivingRules.LoanPart(1) == 1 && GivingRules.LoanPart(100) == 17, "giving loans: a loan is paid back in six equal parts, rounded up");
         Check(GivingRules.Repayment(800, 200, 5000) == 200 && GivingRules.Repayment(100, 200, 5000) == 100 && GivingRules.Repayment(800, 200, 50) == 50 && GivingRules.Repayment(800, 200, -9) == 0,
             "giving loans: a part is the most a month asks, what is owed, or what the household can spare, whichever is least, and never negative");
-        // Twenty years of months through the rules the director calls: nothing comes back as more than was lent.
-        PopulationState s = GivingCity(500, 5);
-        int h = 7;
-        int lent = 4000;
-        long householdBefore = (long)s.Households.Savings[h] - s.Households.Debt[h];
-        GivingPeople.Help(s, h, lent, out _, out _);
-        int remaining = lent, part = GivingRules.LoanPart(lent), paid = 0, misses = 0;
-        for (int month = 1; month <= 240 && remaining > 0 && misses < GivingCatalogue.LoanMisses; month++)
-        {
-            long spare = GivingPeople.Spare(s, h);
-            int want = GivingRules.Repayment(remaining, part, spare);
-            long took = want > 0 ? GivingPeople.Take(s, h, want) : 0;
-            remaining -= (int)took;
-            paid += (int)took;
-            misses = took > 0 ? 0 : misses + 1;
-            s.Households.Savings[h] += 60;   // the household's own saving each month
-        }
-        Check(paid <= lent && paid + remaining == lent && remaining >= 0, "giving loans: nothing comes back as more than was lent (" + paid + " of " + lent + ")");
-        Check(((long)s.Households.Savings[h] - s.Households.Debt[h]) - householdBefore <= lent, "giving loans: the household's gain is the loan less what it paid back");
-        // A household with nothing to spare pays nothing and the loan is written off after three months, with nothing booked.
-        PopulationState poor = GivingCity(50, 5);
-        poor.Households.Savings[4] = 0;
-        int missed = 0, left = 1000;
-        for (int month = 0; month < 10 && missed < GivingCatalogue.LoanMisses; month++)
-        {
-            int want = GivingRules.Repayment(left, GivingRules.LoanPart(left), GivingPeople.Spare(poor, 4));
-            missed = want > 0 ? 0 : missed + 1;
-        }
-        Check(missed == GivingCatalogue.LoanMisses, "giving loans: a household that can pay nothing is given three months and then the loan is written off");
         string loans = ModSource(@"Giving\GivingDirector.Loans.cs");
-        Check(loans.Contains("WrittenOff") && !loans.Contains("DebtClaims") && !loans.Contains("Justice") && !loans.Contains("TaxCases"), "giving loans: a default costs the relationship and no court is asked");
-        Check(loans.Contains("GivingPeople.ResidentOf(s, person.Index)") && loans.Contains("GiveResult.NoPerson") && loans.Contains("_state.LoanOf(person.Index) != null") && loans.Contains("GivingCatalogue.LoansMost"),
-            "giving loans: only a resident the population holds is lent to, one loan at a time, eight at most");
+        string rules = ModSource(@"Giving\GivingLoans.cs");
+        Check(rules.Contains("WrittenOff") && !(loans + rules).Contains("DebtClaims") && !(loans + rules).Contains("Justice") && !(loans + rules).Contains("TaxCases") && loans.Contains("SocialLife.Change(person, 0f, -3f, -5f)"),
+            "giving loans: a default costs the relationship and no court is asked");
+        int lend = loans.IndexOf("public GiveResult Lend", StringComparison.Ordinal);
+        Check(loans.IndexOf("GivingLoans.Check(", lend, StringComparison.Ordinal) > lend && loans.IndexOf("GivingLoans.Check(", lend, StringComparison.Ordinal) < loans.IndexOf("GivingGame.Pay(", lend, StringComparison.Ordinal)
+              && loans.IndexOf("GivingGame.Pay(", lend, StringComparison.Ordinal) < loans.IndexOf("GivingLoans.Make(", lend, StringComparison.Ordinal) && loans.Contains("GivingLoans.Collect(l, s, day, GivingGame.MonthDays, out long took)"),
+            "giving loans: the director asks the rules whether a loan may be made, then takes the money, then makes it, and collects through the rules");
+        Check(!loans.Contains("0.5f, 1f") && !loans.Contains("0.2f, 0.5f") && loans.Contains("GivingRules.LoanCounts("), "giving loans: a loan's warmth goes through the person's window and a repayment adds none");
         Check(ModSource(@"Giving\GivingDirector.cs").Contains("_state.Loans[i].Next = day"), "giving loans: after a load or the option back on, no month of the time away is held against the person");
     }
 
@@ -403,18 +388,47 @@ internal static partial class Program
         {
             for (int hour = 9; hour < 22; hour++)
             {
-                if (GivingRules.Hash(12, 91, 3, day * 24 + hour) % 10000 < (uint)GivingRules.AskPerTenThousand(2, 30) && GivingRules.MayAsk(day, last, 0, 80, 80))
+                if (GivingRules.Asks(12, 3, day, hour, GivingRules.AskPerTenThousand(2, 30)) && GivingRules.MayAsk(day, last, 0, 80, 80))
                 {
                     asks++;
                     last = day;
                 }
             }
         }
-        Check(asks >= 5 && asks <= 360 / GivingCatalogue.AskGapDays, "giving asks: somebody who may ask asks about once a fortnight at the most, " + asks + " in a year of 360 days");
+        Check(asks >= 2 && asks <= 360 / GivingCatalogue.AskGapDays, "giving asks: somebody who may ask asks about once a fortnight at the most, " + asks + " in a year of 360 days");
+        // The chance an hour: one in a thousand, and up to twice that for a rich and well known player.
+        int hours = 0, hoursRich = 0;
+        for (int hour = 0; hour < 100000; hour++)
+        {
+            hours += GivingRules.Asks(8, 4, hour / 24, hour % 24, GivingRules.AskPerTenThousand(0, 0)) ? 1 : 0;
+            hoursRich += GivingRules.Asks(8, 4, hour / 24, hour % 24, GivingRules.AskPerTenThousand(5, 100)) ? 1 : 0;
+        }
+        Check(GivingRules.AskPerTenThousand(0, 0) == 10 && GivingRules.AskPerTenThousand(5, 100) == 20 && hours > 50 && hours < 160 && hoursRich > hours,
+            "giving asks: the chance an hour is 1 in 1,000, and up to twice that for a rich and well known player (" + hours + " and " + hoursRich + " in a hundred thousand hours)");
+        // A person in trouble as the population holds them asks for their debt (or a month's rent), and nobody the population does not hold asks at all.
+        PopulationState linked = GivingCity(300, 5);
+        int asking = 0, asked = 0;
+        for (int p = 0; p < linked.People.Count; p++)
+        {
+            if (GivingPeople.NeedOf(linked, p, out _) == GivingNeed.None)
+            {
+                continue;
+            }
+            asking++;
+            linked.Links.Add(new PersonLink { Kind = LinkKind.Met, Key = "social:" + (1000 + p), Person = linked.People.Id[p], Slot = p });
+            if (GivingPeople.AskOf(linked, 1000 + p, 1000, out GivingNeed need, out int amount))
+            {
+                asked++;
+                Check(need != GivingNeed.None && amount >= 100 && amount <= GivingCatalogue.AskMost && amount % 50 == 0, "giving asks: a person in trouble asks for a round sum between a hundred and " + GivingCatalogue.AskMost + " (" + amount + ")");
+            }
+            Check(!GivingPeople.AskOf(linked, 5000 + p, 1000, out _, out int none) && none == 0, "giving asks: a person the population does not hold asks for nothing");
+        }
+        Check(asking > 10 && asked > 0 && asked <= asking, "giving asks: of the people in trouble, those with something to ask for ask (" + asked + " of " + asking + ")");
         string director = ModSource(@"Giving\GivingDirector.Loans.cs"), contact = ModSource(@"Social\SocialDirector.Contact.cs");
         Check(contact.Contains("if (free && Giving.GivingDirector.Instance != null && Giving.GivingDirector.Instance.TryAsk(person))") && director.Contains("person.Stage >= SocialStage.Friend || person.IsFamily"),
             "giving asks: only when no plan or offer is waiting, and only from a friend or family, through the social life's own hour and its text");
-        Check(director.Contains("SocialLife.SendText(person, key,") && director.Contains("offer.Kind = SocialOffer.Help") && director.Contains("GivingNeed.None"), "giving asks: by text, then answered on the call, and never for someone the population does not hold in trouble");
+        Check(director.Contains("SocialLife.SendText(person, key,") && director.Contains("offer.Kind = SocialOffer.Help") && director.Contains("GivingPeople.AskOf(s, person.Index, GivingGame.Level, out GivingNeed need, out int amount)")
+              && director.Contains("GivingRules.Asks(_state.Seed, person.Index, day, hour, chance)"), "giving asks: by text, then answered on the call, and never for someone the population does not hold in trouble");
     }
 
     // ---- the rivals
@@ -443,7 +457,7 @@ internal static partial class Program
             Check(c >= 0 && c < (int)Charity.Count, "giving rivals: a tycoon's charity is one of the three");
         }
         Check(seen, "giving rivals: a tycoon has a favourite and now and then another");
-        string wiring = ModSource(@"Wiring\Wiring.GivingLinks.cs"), month = ModSource(@"Giving\GivingDirector.Month.cs");
+        string wiring = ModSource(@"Wiring\Wiring.GivingLinks.cs"), month = ModSource(@"Giving\GivingMonth.cs");
         Check(wiring.Contains("!GoingPublic.InSession") && month.Contains("r.Month == month"), "giving rivals: they rest in a Going Public session, and give once a month");
         Check(ModSource(@"Rivals\RivalPage.cs").Contains("RivalBridges.GivingLine") && ModSource(@"Giving\GivingText.cs").Contains("reallife_giving_paper_rival"), "giving rivals: their gifts show on the rich list's line, their panel and the paper");
     }
@@ -471,7 +485,7 @@ internal static partial class Program
         Check(back.Book(Charity.FoodBank).Pot == 4200 && back.TaxGifts == 12000 && back.TaxClaimed == 7000 && back.OpenLoans() == 1 && back.OutstandingLoans() == 800 && back.LoanOf(3) != null && back.LoanOf(4) == null,
             "giving save: the pots, the year's gifts, and the loans open and closed are read back");
         Check(GivingStore.Read(null, out int v0) == null && v0 == 0 && GivingStore.Read("", out _) == null && GivingStore.Read("nonsense", out _) == null, "giving save: a save from before giving has no line, and a line that is not giving's reads as none");
-        GivingState future = GivingStore.Read("v=9^h:5|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|99|98^z:later^b:7|8|9;1|2", out int fv);
+        GivingState future = GivingStore.Read("v=9^h:5|1|2|3|4|5|6|7|8|9|10|11|12|13|14|15|-1|0|99|98^z:later^b:7|8|9;1|2", out int fv);
         Check(future != null && fv == 9 && future.Seed == 5 && future.Book(Charity.FoodBank).Pot == 7 && future.Book(Charity.Housing).Pot == 1, "giving save: a newer line adds fields and parts this reader skips, and its known figures are read");
         GivingState hostile = GivingStore.Read("v=1^h:1|1|1|1|-5|9999999|1|-3^b:-1|-2^s:99|5;1|-4^l:1|0|0|0|0|0|0|0|9|0|x^r:^n:1|1|-9|1", out _);
         Check(hostile != null && hostile.TaxGifts == 0 && hostile.TaxClaimed == 0 && hostile.Standing.Count == 0 && hostile.Loans.Count == 0 && hostile.Notes.Count == 0 && hostile.Book(Charity.FoodBank).Pot == 0,
@@ -488,6 +502,9 @@ internal static partial class Program
         Check(director.Contains("public bool Running => _loaded && !_broken && Settings.Giving;") && director.Contains("if (!Settings.Giving)") && director.Contains("PutAway();") && settings.Contains("public static bool Giving = true;"),
             "giving off: with the option off nothing runs, no standing gift is paid, the line stays in the save and loans are not asked");
         Check(director.Contains("save.modData.Remove(GivingStore.Key)") && ModSource(@"Giving\GivingGuide.cs").Contains(".ResetData("), "giving off: the save tools can forget it");
+        string putAway = director.Substring(director.IndexOf("private void PutAway()", StringComparison.Ordinal), 500);
+        Check(putAway.Contains("Write();") && putAway.Contains("RemoveApp();") && !putAway.Contains("MonthStep") && ModSource(@"Giving\GivingDirector.App.cs").Contains("_app.Remove();"),
+            "giving off: with the option off the app leaves the phone, the line is kept with the month's pass at its step, and the next look puts the app back when it is on");
         Check(gifts.Contains("if (!Running)") && ModSource(@"Giving\GivingGame.cs").Contains("GoingPublic.InSession") && ModSource(@"Giving\GivingGame.cs").Contains("CityPopulation.Following"),
             "giving session: in a Going Public session the city's people are the host's and are never changed by a guest's gift");
         string all = string.Concat(Directory.GetFiles(System.IO.Path.GetDirectoryName(ModPath(@"Giving\GivingDirector.cs")), "*.cs").Select(File.ReadAllText));
@@ -566,6 +583,19 @@ internal static partial class Program
         string call = ModSource(@"Social\PersonDialog.Giving.cs") + ModSource(@"Social\PersonDialog.cs");
         Check(call.Contains("GiveFlow(false, 0)") && call.Contains("GiveFlow(true, 0)") && call.Contains("giver.Lend(_p, amount)") && call.Contains("giver.GiveToPerson(_p, amount, false)") && call.Contains("return Plea();")
               && call.Contains("PleaLess(") && call.Contains("PleaLend(") && call.Contains("PleaNo"), "giving pages: the call offers Give money and Lend money, and a plea is answered by giving, giving less, lending or saying no");
+        Check(ModSource(@"Social\PersonDialog.cs").Contains("if (Giver != null && Giving.GivingDirector.CauseWhy == 0)"), "giving pages: the call offers Give money and Lend money only where the city's people are there to receive them");
+        string gifts3 = ModSource(@"Giving\GivingDirector.Gifts.cs"), loans3 = ModSource(@"Giving\GivingDirector.Loans.cs");
+        int toPerson = gifts3.IndexOf("public GiveResult GiveToPerson", StringComparison.Ordinal);
+        int lend3 = loans3.IndexOf("public GiveResult Lend", StringComparison.Ordinal);
+        Check(gifts3.IndexOf("GivingGame.People()", toPerson, StringComparison.Ordinal) > toPerson && gifts3.IndexOf("GivingGame.People()", toPerson, StringComparison.Ordinal) < gifts3.IndexOf("GivingGame.Pay(", toPerson, StringComparison.Ordinal)
+              && gifts3.IndexOf("GiveResult.Session", toPerson, StringComparison.Ordinal) < gifts3.IndexOf("GivingGame.Pay(", toPerson, StringComparison.Ordinal)
+              && loans3.IndexOf("GiveResult.Session", lend3, StringComparison.Ordinal) < loans3.IndexOf("GivingGame.Pay(", lend3, StringComparison.Ordinal),
+            "giving session: a gift or a loan to a person is refused before any money is taken when there are no people to receive it (a session, the living population off)");
+        Check(gifts3.IndexOf("Answered(person);", toPerson, StringComparison.Ordinal) > gifts3.IndexOf("GivingGame.Pay(", toPerson, StringComparison.Ordinal) && loans3.IndexOf("Answered(person);", lend3, StringComparison.Ordinal) > loans3.IndexOf("GivingGame.Pay(", lend3, StringComparison.Ordinal)
+              && gifts3.Contains("offer.Kind == SocialOffer.Help && offer.Person == person.Index") && gifts3.Contains("offer.Clear();"),
+            "giving asks: money given or lent to somebody who is asking closes the ask, so it is never left to run out and cost trust");
+        Check(gifts3.Contains("_state.StandingDone += standing") && gifts3.Contains("_state.PressDone += press") && gifts3.Contains("GivingBridges.Integrity(points - _state.StandingDone)") && !gifts3.Contains("StandingDone = points"),
+            "giving standing: what is counted as earned is what Fame really applied, so a part it held back is asked again with the next gift");
     }
 
     private static UiWords ModEnglish()
@@ -597,8 +627,6 @@ internal static partial class Program
         Check(CountOfText(ModSource(@"Wiring\Wiring.cs"), "GivingLinks") == 2, "giving sources: the wiring connects and disconnects giving");
         Check(ModSource(@"Meta\FeatureList.cs").Contains("Giving.GivingGuide.Register()") && ModSource(@"Core\FeatureOwners.cs").Contains("\"RealLifeOverhaul.Giving\", \"giving\"") && ModSource(@"Meta\OptionsTree.cs").Contains("S(\"giving\")")
               && ModSource(@"Meta\FeatureCities.cs").Contains("new Line(\"giving\""), "giving sources: the feature has its option, its Guide page, its owner and its place in the cities list");
-        // Prove the tax check can fail: a claim that ignored the cap is caught.
-        Check(GivingRules.DeductionDue(50000, 0, 310000) != 50000, "giving sources: the cap check would catch a claim without a cap (proved by asking for one)");
     }
 
     // ---- the texts

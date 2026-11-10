@@ -22,8 +22,8 @@ namespace RealLifeOverhaul.Giving
         // ---- charities
 
         /// <summary>
-        /// A gift to a charity, <paramref name="amount"/> in today's whole money, from the spare cash. It goes in the charity's pot, counts for the year's deduction
-        /// and for standing.
+        /// A gift to a charity, <paramref name="amount"/> in today's whole money, from the spare cash. It goes in the charity's pot, counts for the year's deduction (claimed
+        /// at once, so a gift on the last day of the tax year is in the game's list before the game reads it) and for standing.
         /// </summary>
         public GiveResult GiveToCharity(Charity charity, int amount)
         {
@@ -45,14 +45,15 @@ namespace RealLifeOverhaul.Giving
                 return GiveResult.Broke;
             }
             Roll(GivingGame.Day);
-            Credit(charity, amount, -1);
+            _state.Credit(charity, amount, -1);
             _state.TaxGifts += amount;
             CharityBook b = _state.Book(charity);
             b.PlayerMonth += amount;
             b.PlayerYear += amount;
             b.PlayerTotal += amount;
             _state.MonthGiven += GivingRules.Back(amount, GivingGame.Level);
-            Reward();
+            Reward(out int standing, out int press);
+            ClaimNow();
             if (amount >= GivingRules.At(GivingCatalogue.BigGift, GivingGame.Level))
             {
                 _state.Notes.Add(new GivingNote { Day = GivingGame.Day, Charity = (int)charity, Amount = amount, Giver = -1 });
@@ -60,40 +61,28 @@ namespace RealLifeOverhaul.Giving
             _revision++;
             if (Verbose)
             {
-                Logger?.Info("Giving check (a gift of " + amount + " to " + charity + "): the pot holds " + b.Pot + ", the year's gifts " + _state.TaxGifts + ", standing earned "
-                             + GivingRules.IntegrityOf(_state.MonthGiven) + " point(s) this month: PASS");
+                Logger?.Info("Giving check (a gift of " + amount + " to " + charity + "): the pot holds " + b.Pot + ", the year's gifts " + _state.TaxGifts + ", claimed " + _state.TaxClaimed
+                             + ", standing +" + standing + " and recognition +" + press / 10f + " from it (" + _state.StandingDone + " point(s) and " + _state.PressDone / 10f + " this month): PASS");
             }
             return GiveResult.Done;
         }
 
-        // Any gift into a charity's pot: the player's (giver -1) or a rival's (0 and up); the rival's counts as the others', never the player's.
-        private void Credit(Charity charity, long amount, int giver)
-        {
-            CharityBook b = _state.Book(charity);
-            b.Pot += amount;
-            if (giver >= 0)
-            {
-                b.OthersMonth += amount;
-                b.OthersYear += amount;
-            }
-        }
-
         // Standing and the press earned this month by the player's gifts so far: only what the curve has newly earned is asked, so ten gifts of a tenth earn what one of the whole does.
-        private void Reward()
+        // What Fame really applied is what is counted as earned (it holds a part to a most a day, and recognition to its own top), so a part it left over is asked again by the next gift.
+        private void Reward(out int standing, out int press)
         {
+            standing = press = 0;
             int points = GivingRules.IntegrityOf(_state.MonthGiven);
-            if (points > _state.StandingDone)
+            if (points > _state.StandingDone && GivingBridges.Integrity != null)
             {
-                int delta = points - _state.StandingDone;
-                _state.StandingDone = points;
-                GivingBridges.Integrity?.Invoke(delta);
+                standing = Math.Max(0, GivingBridges.Integrity(points - _state.StandingDone));
+                _state.StandingDone += standing;
             }
-            int press = GivingRules.PressOf(_state.MonthGiven);
-            if (press > _state.PressDone)
+            int tenths = GivingRules.PressOf(_state.MonthGiven);
+            if (tenths > _state.PressDone && GivingBridges.Press != null)
             {
-                int delta = press - _state.PressDone;
-                _state.PressDone = press;
-                GivingBridges.Press?.Invoke(delta);
+                press = Math.Max(0, GivingBridges.Press(tenths - _state.PressDone));
+                _state.PressDone += press;
             }
         }
 
@@ -112,7 +101,7 @@ namespace RealLifeOverhaul.Giving
                 {
                     return false;
                 }
-                g = new StandingGift { Charity = (int)charity, Since = GivingGame.Day };
+                g = new StandingGift { Charity = (int)charity, Since = GivingGame.Day, Month = GivingRules.MonthOf(GivingGame.Day, GivingGame.MonthDays) };   // its first turn is the next month's
                 _state.Standing.Add(g);
             }
             g.Amount = amount;
@@ -141,9 +130,10 @@ namespace RealLifeOverhaul.Giving
         // ---- people
 
         /// <summary>
-        /// A gift of money to a person the player knows. The money lands in their household as the population holds it (its debt first, then its savings); a person the population does
-        /// not hold gets the gift as the relationship alone. It earns affection and trust with diminishing returns over a window, so a gift is no shortcut to friendship, and is never
-        /// deducted from tax.
+        /// A gift of money to a person the player knows. The money lands in their household as the population holds it (its debt first, then its savings). Where there are no
+        /// people for it to reach (a Going Public session, or the living population off) nothing is paid at all. A person the population runs but does not hold as a household that can
+        /// be helped (not yet linked, the player's own household, a tenant) gets the gift as the relationship alone, and the call says so. It earns affection and trust with
+        /// diminishing returns over a window, so a gift is no shortcut to friendship, and is never deducted from tax. A gift to somebody who is asking answers the ask.
         /// </summary>
         public GiveResult GiveToPerson(SocialPerson person, int amount, bool asked)
         {
@@ -155,6 +145,11 @@ namespace RealLifeOverhaul.Giving
             {
                 return GiveResult.Nothing;
             }
+            PopulationState s = GivingGame.People();
+            if (s == null)
+            {
+                return GoingPublic.InSession ? GiveResult.Session : GiveResult.NoCause;   // no people to receive it: no money is taken
+            }
             int level = GivingGame.Level;
             if (amount > GivingRules.At(GivingCatalogue.GiftsMost, level))
             {
@@ -165,8 +160,7 @@ namespace RealLifeOverhaul.Giving
                 return GiveResult.Broke;
             }
             bool landed = false, inNeed = asked;
-            PopulationState s = GivingGame.People();
-            int p = s != null ? GivingPeople.ResidentOf(s, person.Index) : -1;
+            int p = GivingPeople.ResidentOf(s, person.Index);
             int h = p >= 0 ? GivingPeople.HouseholdOf(s, p) : -1;
             if (h >= 0 && GivingPeople.Helpable(s, h))
             {
@@ -179,6 +173,7 @@ namespace RealLifeOverhaul.Giving
             GivingRules.PersonGain(g, GivingRules.Back(amount, level), GivingGame.Day, inNeed, out int affection, out int trust);
             SocialLife.Contacted(person);
             SocialLife.Change(person, 0f, affection / 10f, trust / 10f);
+            Answered(person);
             _revision++;
             if (Verbose)
             {
@@ -186,6 +181,16 @@ namespace RealLifeOverhaul.Giving
                              + "; affection +" + affection / 10f + ", trust +" + trust / 10f + (inNeed ? "" : " (in no need of it, half counted)") + ": PASS");
             }
             return landed ? GiveResult.Done : GiveResult.DoneOnly;
+        }
+
+        // Money given or lent to somebody who is asking is the answer to the ask: it is closed, so it is never left to run out and cost trust for a favour that was done.
+        private static void Answered(SocialPerson person)
+        {
+            SocialOffer offer = SocialState.Offer;
+            if (offer.Active && offer.Kind == SocialOffer.Help && offer.Person == person.Index)
+            {
+                offer.Clear();
+            }
         }
 
         /// <summary>The most a gift or a loan may be to this person now, in today's whole money (the cap, and the spare cash).</summary>

@@ -28,6 +28,7 @@ namespace RealLifeOverhaul.Giving
         public int Since;        // the day it was set
         public bool Skipped;     // the last month could not be paid, and the player was told
         public long PaidTotal;
+        public int Month = -1;   // the last month its turn came, paid or skipped: a month's turn comes once, whatever is saved or switched off in the middle of the pass
     }
 
     /// <summary>The state of a loan.</summary>
@@ -86,8 +87,8 @@ namespace RealLifeOverhaul.Giving
 
         public int Seed;
         public int LastDay;             // the day last gone through
-        public int Month = -1;          // the month last gone through (the day over the month's length)
-        public int PeriodStart;         // the first day of the game's tax year the gifts below are for
+        public int Month = -1;          // the last month whose pass is done, all its steps (the day over the month's length)
+        public int PeriodStart = -1;    // the day the game cleared its list of deductions and the tax year began (a multiple of the year, 0 for the first); -1 before the first look
         public long TaxGifts;           // gifts to charities this tax year, whole money
         public long TaxClaimed;         // ... of which the game's tax already deducts
         public int StandingMonth = -1;  // the month the standing points below were counted for
@@ -100,6 +101,8 @@ namespace RealLifeOverhaul.Giving
         public long NeighbourYear;
         public int NeighbourHelped;     // households helped by neighbours this tax year
         public int PaperDay;            // the last day the paper was written for
+        public int MonthStep = -1;      // the step of the month's pass under way (GivingMonth); -1 for none. Saved, so a save, a load or the option off in the middle goes on at the step
+        public int MonthNumber;         // the month that pass is for
         public readonly CharityBook[] Books = new CharityBook[(int)Charity.Count];
         public readonly List<StandingGift> Standing = new List<StandingGift>(GivingCatalogue.StandingMost);
         public readonly List<LoanOut> Loans = new List<LoanOut>(GivingCatalogue.LoansMost + GivingCatalogue.LoanKept);
@@ -120,6 +123,18 @@ namespace RealLifeOverhaul.Giving
         }
 
         public CharityBook Book(Charity c) => Books[GivingCatalogue.Clamp((int)c, 0, Books.Length - 1)];
+
+        /// <summary>Any gift into a charity's pot: the player's (giver -1) or a rival's (0 and up); a rival's counts as the others', never the player's.</summary>
+        public void Credit(Charity charity, long amount, int giver)
+        {
+            CharityBook b = Book(charity);
+            b.Pot += amount;
+            if (giver >= 0)
+            {
+                b.OthersMonth += amount;
+                b.OthersYear += amount;
+            }
+        }
 
         public StandingGift StandingOf(int charity)
         {

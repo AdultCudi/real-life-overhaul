@@ -228,9 +228,9 @@ namespace RealLifeOverhaul
             {
                 _actions.Add("family");
             }
-            if (Giver != null)
+            if (Giver != null && Giving.GivingDirector.CauseWhy == 0)
             {
-                _actions.Add("give");   // Giving: money for them, given or lent
+                _actions.Add("give");   // Giving: money for them, given or lent; offered only where the city's people are there to receive it (not in a session, not with them off)
                 _actions.Add("lend");
             }
             if (_p.Stage >= SocialStage.Friend && _p.Debt == 0)

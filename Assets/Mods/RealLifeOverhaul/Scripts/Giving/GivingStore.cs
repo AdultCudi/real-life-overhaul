@@ -12,7 +12,8 @@ namespace RealLifeOverhaul.Giving
     ///
     /// Parts are divided by '^' and begin with a letter and a colon; records inside a part by ';', fields by '|'. h is the header, b the charities' books, s the standing
     /// gifts, l the loans, p what was given to each person, r the rivals' giving, n the gifts the paper has still to print. A newer version adds fields at the end of a
-    /// record or a part with a new letter: this reader takes what it knows and puts every figure inside its bounds. A line from before the feature is none at all.
+    /// record or a part with a new letter: this reader takes what it knows and puts every figure inside its bounds. A line from before the feature is none at all. Every
+    /// number is written and read in the invariant culture, so a player whose language writes a decimal comma saves and loads the same line.
     /// </summary>
     public static class GivingStore
     {
@@ -36,7 +37,7 @@ namespace RealLifeOverhaul.Giving
             var t = new StringBuilder(256 + s.Loans.Count * 48);
             t.Append("v=").Append(Version).Append("^h:");
             Join(t, s.Seed, s.LastDay, s.Month, s.PeriodStart, s.TaxGifts, s.TaxClaimed, s.StandingMonth, s.MonthGiven, s.StandingDone, s.PressDone, s.LastAsk,
-                s.NeighbourMonth, s.NeighbourMoney, s.NeighbourYear, s.NeighbourHelped, s.PaperDay);
+                s.NeighbourMonth, s.NeighbourMoney, s.NeighbourYear, s.NeighbourHelped, s.PaperDay, s.MonthStep, s.MonthNumber);
             t.Append("^b:");
             for (int i = 0; i < s.Books.Length; i++)
             {
@@ -52,7 +53,7 @@ namespace RealLifeOverhaul.Giving
                 {
                     StandingGift g = s.Standing[i];
                     t.Append(i > 0 ? ";" : string.Empty);
-                    Join(t, g.Charity, g.Amount, g.Since, g.Skipped ? 1 : 0, g.PaidTotal);
+                    Join(t, g.Charity, g.Amount, g.Since, g.Skipped ? 1 : 0, g.PaidTotal, g.Month);
                 }
             }
             if (s.Loans.Count > 0)
@@ -138,7 +139,7 @@ namespace RealLifeOverhaul.Giving
             s.Seed = I(f, 0);
             s.LastDay = Math.Max(0, I(f, 1));
             s.Month = I(f, 2, -1);
-            s.PeriodStart = Math.Max(0, I(f, 3));
+            s.PeriodStart = Math.Max(-1, I(f, 3, -1));
             s.TaxGifts = Math.Max(0, L(f, 4));
             s.TaxClaimed = GivingCatalogue.Clamp(L(f, 5), 0, s.TaxGifts);
             s.StandingMonth = I(f, 6, -1);
@@ -151,6 +152,9 @@ namespace RealLifeOverhaul.Giving
             s.NeighbourYear = Math.Max(0, L(f, 13));
             s.NeighbourHelped = Math.Max(0, I(f, 14));
             s.PaperDay = Math.Max(0, I(f, 15));
+            int step = I(f, 16, -1);
+            s.MonthStep = step >= 0 && step < GivingMonth.Steps ? step : -1;   // a line from before the month went by steps has no pass under way
+            s.MonthNumber = Math.Max(0, I(f, 17));
         }
 
         private static void Books(GivingState s, string body)
@@ -187,7 +191,7 @@ namespace RealLifeOverhaul.Giving
                 {
                     continue;
                 }
-                s.Standing.Add(new StandingGift { Charity = charity, Amount = I(f, 1), Since = I(f, 2), Skipped = I(f, 3) == 1, PaidTotal = Math.Max(0, L(f, 4)) });
+                s.Standing.Add(new StandingGift { Charity = charity, Amount = I(f, 1), Since = I(f, 2), Skipped = I(f, 3) == 1, PaidTotal = Math.Max(0, L(f, 4)), Month = I(f, 5, -1) });
             }
         }
 

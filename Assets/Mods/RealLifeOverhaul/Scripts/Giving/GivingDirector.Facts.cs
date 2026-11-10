@@ -55,9 +55,8 @@ namespace RealLifeOverhaul.Giving
                 });
             }
             f.TaxGifts = _state.TaxGifts;
-            f.TaxClaimed = GivingGame.Deducted();
-            int day = GivingGame.Day;
-            f.Income = GivingBridges.Income != null && day - 1 >= _state.PeriodStart ? GivingBridges.Income(_state.PeriodStart, day - 1) : 0L;
+            f.TaxClaimed = GivingYear.Claimed(_state, GivingGame.Deducted());   // what the game's tax will deduct under giving's name
+            f.Income = YearIncome(GivingGame.Day);
             f.TaxCap = GivingRules.DeductionCap(f.Income);
             f.NeighbourYear = _state.NeighbourYear;
             f.NeighbourHelped = _state.NeighbourHelped;

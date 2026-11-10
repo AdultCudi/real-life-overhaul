@@ -11,6 +11,12 @@ namespace RealLifeOverhaul.Giving
     {
         // ---- money at today's prices
 
+        /// <summary>
+        /// The cash the investors' floor takes out of what may be given, whole money: the floor is held in cents, and a gift of exactly the spare amount must not leave the wallet a
+        /// cent under it, so the reserve is rounded up.
+        /// </summary>
+        public static long Reserve(long floorCents) => floorCents <= 0 ? 0L : (floorCents + 99) / 100;
+
         /// <summary>An amount written at the start's prices, at the price level (tenths of a point), in whole money.</summary>
         public static int At(int amount, int level) => (int)Math.Round(PriceRules.At((float)amount, level));
 
@@ -36,15 +42,7 @@ namespace RealLifeOverhaul.Giving
         /// <summary>The month a day is in, from 0: a twelfth of the save's year, as the economy's months are.</summary>
         public static int MonthOf(int day, int monthDays) => (Math.Max(1, day) - 1) / Math.Max(1, monthDays);
 
-        /// <summary>The first day of the game's tax year a day is in (the game bills for the days of one year, ending on a day that divides by the year's length).</summary>
-        public static int PeriodStart(int day, int daysPerYear)
-        {
-            int length = Math.Max(1, daysPerYear);
-            return (Math.Max(1, day) - 1) / length * length + 1;
-        }
-
-        /// <summary>True on the day the game closes its tax year and clears its list of deductions: nothing is claimed that day, so a claim never lands in the wrong year.</summary>
-        public static bool Boundary(int day, int daysPerYear) => day > 0 && day % Math.Max(1, daysPerYear) == 0;
+        // (The tax year is GivingYear's: when it turns, and what is claimed.)
 
         // ---- the tax return
 
@@ -52,8 +50,9 @@ namespace RealLifeOverhaul.Giving
         public static long DeductionCap(long income) => Math.Max(0L, income) * GivingCatalogue.DeductionShare / 1000;
 
         /// <summary>
-        /// What is still to be deducted: the year's gifts to charities, held to the cap on the income so far, less what is deducted already. Income only grows, so a claim
-        /// made on the income so far is never over the cap on the whole year's. Never negative.
+        /// What is still to be deducted: the year's gifts to charities, held to the cap on the income so far, less what is claimed already (<see cref="GivingYear.Claimed"/>). Income
+        /// only grows, so a claim made on the income so far is never over the cap on the whole year's; and if it ever fell, the answer would be nothing, never a claim taken back.
+        /// Never negative.
         /// </summary>
         public static long DeductionDue(long gifts, long deducted, long income)
         {
@@ -104,6 +103,9 @@ namespace RealLifeOverhaul.Giving
             g.TrustDone += trust;
         }
 
+        /// <summary>What a loan counts for in a person's window, at the start's prices: a share of a gift of the same size, because it comes back.</summary>
+        public static int LoanCounts(int amountAtStart) => (int)((long)Math.Max(0, amountAtStart) * GivingCatalogue.LoanShare / 1000);
+
         /// <summary>A loan's most a month asks: an equal part of it over the months it is paid back in, never under one.</summary>
         public static int LoanPart(int principal) => Math.Max(1, (principal + GivingCatalogue.LoanParts - 1) / GivingCatalogue.LoanParts);
 
@@ -121,6 +123,9 @@ namespace RealLifeOverhaul.Giving
             int boost = GivingCatalogue.Clamp(wealthTier * 100 + Math.Max(0, recognition) * 5, 0, GivingCatalogue.AskBoostMost);
             return GivingCatalogue.AskChance * 10 * (1000 + boost) / 1000;
         }
+
+        /// <summary>Whether somebody who may ask does in this hour: a seeded draw of the save's seed, the person and the hour, against the chance a ten thousand.</summary>
+        public static bool Asks(int seed, int person, int day, int hour, int chance) => Hash(seed, 91, person, day * 24 + hour) % 10000 < (uint)Math.Max(0, chance);
 
         /// <summary>Whether it may be asked now: the global gap and the person's own gap have both passed, and the person is close enough to ask.</summary>
         public static bool MayAsk(int day, int lastAsk, int personAsk, int affection, int trust)
@@ -155,6 +160,12 @@ namespace RealLifeOverhaul.Giving
             long yearly = worth * GivingCatalogue.RivalYearShare / 1000 * (1000 + spread) / 1000;
             return Math.Max(0L, yearly / Math.Max(1, monthsPerYear));
         }
+
+        /// <summary>
+        /// What of a gift a tycoon really gives: only from worth above the floor their worth grows back to (the rivals raise a worth to at least their start's, each day and
+        /// when they come forward), so what is given is never made up the next day. Nothing at or under the floor.
+        /// </summary>
+        public static long RivalPaid(long gift, long worth, long floor) => Math.Max(0L, Math.Min(gift, worth - Math.Max(0L, floor)));
 
         /// <summary>The charity a tycoon's gift goes to in a month: their own favourite most months, another now and then (seeded).</summary>
         public static int RivalCharity(int seed, int tycoon, int month)

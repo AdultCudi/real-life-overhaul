@@ -52,6 +52,7 @@ namespace RealLifeOverhaul.Giving
         public const int GiftHalf = 1000;          // the gifts in a window that earn half of it, at the start's prices
         public const int WindowDays = 30;          // a person's gifts are counted over this many days from the first
         public const int NoNeedShare = 500;        // thousandths of the gain when the person was in no need of it
+        public const int LoanShare = 500;          // thousandths of a gift's warmth that a loan of the same size earns: it comes back, so it counts half
         public const int GiftsMost = 10000;        // a gift to a person at most, at the start's prices
         public const int LoanMost = 10000;         // a loan at most
         public const int LoansMost = 8;            // loans open at once

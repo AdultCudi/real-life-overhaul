@@ -402,6 +402,9 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GivingPeople.cs" Link="Mod\Giving\GivingPeople.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GiveResult.cs" Link="Mod\Giving\GiveResult.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GiveFacts.cs" Link="Mod\Giving\GiveFacts.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GivingYear.cs" Link="Mod\Giving\GivingYear.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GivingMonth.cs" Link="Mod\Giving\GivingMonth.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GivingLoans.cs" Link="Mod\Giving\GivingLoans.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\GivePages.cs" Link="Mod\Ventures\GivePages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLedger.cs" Link="Mod\RotaLedger.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLadder.cs" Link="Mod\RotaLadder.cs" />

@@ -42,7 +42,6 @@ namespace RealLifeOverhaul.Giving
             GiveResult r = GiveToCharity(c, amount);
             if (GivingResults.Moved(r))
             {
-                Claim(GivingGame.Day);
                 TestSays("reallife_giving_test_gift", GivingGame.Data("amount", GivingGame.Money(amount), "charity", GivingText.Charity((int)c), "year", GivingGame.Money(_state.TaxGifts)));
             }
             else
@@ -59,10 +58,9 @@ namespace RealLifeOverhaul.Giving
             {
                 return;
             }
-            _monthNumber = Math.Max(0, _state.Month) + 1;
-            _monthStep = 0;
+            bool began = GivingMonth.Begin(_state, Math.Max(0, _state.Month) + 1);
             TestSays("reallife_giving_test_month", null);
-            Logger?.Info("Giving check (test, a month's pass now): month " + _monthNumber + " begins: PASS");
+            Logger?.Info("Giving check (test, a month's pass now): " + (began ? "month " + _state.MonthNumber + " begins" : "a pass is under way already") + ": PASS");
         }
 
         private static SocialPerson FirstKnown()

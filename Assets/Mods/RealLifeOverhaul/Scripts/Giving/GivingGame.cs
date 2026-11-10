@@ -102,17 +102,25 @@ namespace RealLifeOverhaul.Giving
 
         // ---- the game's tax
 
-        public static string DeductLabel => DeductName.GetLocalization();
+        /// <summary>
+        /// The name the deduction goes into the game's list under. The game keeps a deduction by the name it was given and writes the statement from it when the tax falls due
+        /// (TaxHelper.GetDeductibleExpenseLabel), translating it if it is a key it knows: its own deductions are keys, so a change of language reaches the statement. Giving's key
+        /// is such a key whenever the game's text tables hold it; if they do not, the words of the language in use are what is left to give.
+        /// </summary>
+        public static string DeductLabel => LocalizorManager.IsLocalizedKey(DeductName) ? DeductName : DeductName.GetLocalization();
 
-        /// <summary>What the game's list of deductions holds under giving's name for the running tax year, whole money.</summary>
+        /// <summary>
+        /// What the game's list of deductions holds under giving's name for the running tax year, whole money. A name in another language's words is not read, which is why giving
+        /// also keeps its own record of what it claimed.
+        /// </summary>
         public static long Deducted()
         {
             List<TaxDeductibleExpense> list = Save != null ? Save.currentTaxPeriodDeductibleExpenses : null;
-            string name = DeductLabel;
+            string words = DeductName.GetLocalization();
             double sum = 0;
             for (int i = 0; list != null && i < list.Count; i++)
             {
-                if (list[i] != null && list[i].key == name)
+                if (list[i] != null && GivingYear.Ours(list[i].key, DeductName, words))
                 {
                     sum += Math.Abs(list[i].amount);
                 }
@@ -120,7 +128,7 @@ namespace RealLifeOverhaul.Giving
             return (long)Math.Min(sum, 1e12);
         }
 
-        /// <summary>Gives the game's tax a deduction for gifts, as it deducts a business's costs (TaxHelper.TrackTransaction); the list is read first, never the same year twice.</summary>
+        /// <summary>Gives the game's tax a deduction for gifts, as it deducts a business's costs (TaxHelper.TrackTransaction); what is due is worked out first (GivingYear.Claim).</summary>
         public static void Deduct(long amount)
         {
             if (amount <= 0 || Save == null)

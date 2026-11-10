@@ -93,6 +93,25 @@ namespace RealLifeOverhaul.Giving
             return RentBurden(s, h) > PopulationCatalogue.RentBurdenMove ? GivingNeed.Rent : GivingNeed.None;
         }
 
+        /// <summary>
+        /// What the social cast's person would ask the player for: their need as the population holds it, and the amount (their debt, or a month's rent for a rent over the line,
+        /// held to the most and rounded to fifty). False when they are in no need, or what they would ask is under a hundred at today's prices.
+        /// </summary>
+        public static bool AskOf(PopulationState s, int socialIndex, int level, out GivingNeed need, out int amount)
+        {
+            amount = 0;
+            int p = ResidentOf(s, socialIndex);
+            need = p >= 0 ? NeedOf(s, p, out _) : GivingNeed.None;
+            if (need == GivingNeed.None)
+            {
+                return false;
+            }
+            int h = HouseholdOf(s, p);
+            long basis = need == GivingNeed.Rent ? MonthRent(s, h) : s.Households.Debt[h];
+            amount = GivingRules.AskAmount(basis, level);
+            return amount >= GivingRules.At(100, level);
+        }
+
         /// <summary>The share of last month's income the rent took, thousandths; 0 for none known or an owner's upkeep.</summary>
         public static int RentBurden(PopulationState s, int h)
         {

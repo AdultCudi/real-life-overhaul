@@ -45,6 +45,16 @@ namespace RealLifeOverhaul.Giving
             RealLifeOverhaul.Ui.UiShell.Face(_app, def);   // the kit's face over the app, once its switch is on
         }
 
+        // The app leaves the phone when the option is switched off or the line is forgotten; the next look puts it back while the option is on.
+        private void RemoveApp()
+        {
+            if (_app != null)
+            {
+                _app.Remove();
+                _app = null;
+            }
+        }
+
         private static Sprite Glyph()
         {
             for (int i = 0; i < AppGlyphs.Length; i++)
