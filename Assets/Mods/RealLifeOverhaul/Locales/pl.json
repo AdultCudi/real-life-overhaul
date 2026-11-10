@@ -35879,5 +35879,7 @@
   "reallife_stx_bank_float": "Oferowana część banku",
   "reallife_stx_bank_retainer": "Zaliczka doradców",
   "reallife_stx_bank_days": "Dni giełdowe do wyceny",
-  "reallife_stx_bank_about": "Pieniądze z oferty idą do kapitału banku, nie na twoją gotówkę. Depozyty oszczędzających nie są częścią jego wartości."
+  "reallife_stx_bank_about": "Pieniądze z oferty idą do kapitału banku, nie na twoją gotówkę. Depozyty oszczędzających nie są częścią jego wartości.",
+  "reallife_opt_sec_stockextras": "Dodatki giełdowe",
+  "reallife_opt_tip_markets_extras": "Podziały według ceny każdej rady, łączenie akcji poniżej jednostki, fundusz indeksowy, transakcje blokowe i twój własny bank, który wchodzi na giełdę sam."
 }

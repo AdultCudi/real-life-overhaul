@@ -35879,5 +35879,7 @@
   "reallife_stx_bank_float": "Part of the bank offered",
   "reallife_stx_bank_retainer": "The advisers' retainer",
   "reallife_stx_bank_days": "Market days to the pricing",
-  "reallife_stx_bank_about": "The offer's money goes into the bank's capital, not your cash. Savers' deposits are no part of its worth."
+  "reallife_stx_bank_about": "The offer's money goes into the bank's capital, not your cash. Savers' deposits are no part of its worth.",
+  "reallife_opt_sec_stockextras": "Stock market extras",
+  "reallife_opt_tip_markets_extras": "Splits at each board's own price, shares put together under a unit, an index fund, block trades, and a bank of your own listed by itself."
 }

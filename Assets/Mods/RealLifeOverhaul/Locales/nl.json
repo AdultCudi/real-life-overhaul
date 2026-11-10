@@ -35879,5 +35879,7 @@
   "reallife_stx_bank_float": "Deel van de bank aangeboden",
   "reallife_stx_bank_retainer": "Het voorschot van de adviseurs",
   "reallife_stx_bank_days": "Beursdagen tot de prijsbepaling",
-  "reallife_stx_bank_about": "Het geld van het aanbod gaat naar het kapitaal van de bank, niet naar je contant geld. Spaartegoeden van spaarders maken geen deel uit van zijn waarde."
+  "reallife_stx_bank_about": "Het geld van het aanbod gaat naar het kapitaal van de bank, niet naar je contant geld. Spaartegoeden van spaarders maken geen deel uit van zijn waarde.",
+  "reallife_opt_sec_stockextras": "Extra's voor de beurs",
+  "reallife_opt_tip_markets_extras": "Splitsingen naar de eigen koers van elke raad, aandelen samengevoegd onder één eenheid, een indexfonds, blokhandel en een eigen bank die zelf noteert."
 }

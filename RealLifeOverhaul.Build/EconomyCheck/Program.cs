@@ -965,6 +965,19 @@ internal static partial class Program
             return _failed == 0 ? 0 : 1;
         }
 
+        if (args.Length == 1 && args[0] == "--markets")
+        {
+            // (the stock market's own checks alone, while working on the market: every rule of it, its pace, the large investor, the listing, the fixes, the builders, the extras)
+            Markets();
+            MarketPace();
+            Invest();
+            Listing();
+            MarketFixes();
+            MarketsBuild();
+            Stockx();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--stockx")
         {
             Stockx();   // (the stock market's extras alone, while working on them: StockxChecks.cs)

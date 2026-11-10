@@ -35879,5 +35879,7 @@
   "reallife_stx_bank_float": "Angebotener Teil der Bank",
   "reallife_stx_bank_retainer": "Das Honorar der Berater",
   "reallife_stx_bank_days": "Börsentage bis zur Bewertung",
-  "reallife_stx_bank_about": "Das Geld des Angebots fließt in das Kapital der Bank, nicht in dein Bargeld. Spareinlagen sind kein Teil ihres Wertes."
+  "reallife_stx_bank_about": "Das Geld des Angebots fließt in das Kapital der Bank, nicht in dein Bargeld. Spareinlagen sind kein Teil ihres Wertes.",
+  "reallife_opt_sec_stockextras": "Extras für die Börse",
+  "reallife_opt_tip_markets_extras": "Aktiensplits nach dem Kursniveau jedes Vorstands, Aktien unter einer Einheit zusammengelegt, ein Indexfonds, Blockhandel und eine eigene Bank, die von selbst an die Börse geht."
 }

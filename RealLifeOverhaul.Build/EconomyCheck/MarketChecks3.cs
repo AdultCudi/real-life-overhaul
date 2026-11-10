@@ -621,6 +621,7 @@ internal static partial class Program
         var world = new MarketWorld(172);
         world.Purse.Money = 100000000;
         MarketEngine e = NewMarket(172, 60, 1, 0, world);
+        e.ExtrasOn = false;   // the penny rule alone: with the extras on a sound company puts its shares together first (StockxChecks.Rules.cs)
         SessionDay(e, 2, 10);
         Stock p = Liquid(e, MarketSize.Small);
         Trade(e, p, OrderSide.Buy, 1000);

@@ -52,11 +52,16 @@ namespace RealLifeOverhaul.Markets
             return s != null && s.Listed && s.Own == null && s.SplitDay <= 0 && s.BidCents <= 0 && s.Last > LevelOf(s.Id) && s.Last <= MarketCatalogue.SplitAboveCents;
         }
 
-        /// <summary>True when a sound company whose shares have closed under a unit for long enough puts them together.</summary>
+        /// <summary>
+        /// True when a sound company whose shares have closed under a unit for long enough puts them together: one not near failing, that pays no dividend
+        /// (a company still paying yesterday's dividend on a collapsed price is left to the penny rule, which takes it off the market before that dividend
+        /// could be collected for years), and early enough for the notice to end before the penny rule's day.
+        /// </summary>
         public static bool WantsReverse(Stock s)
         {
             return s != null && s.Listed && s.Own == null && s.SplitDay <= 0 && s.BidCents <= 0 && s.LowDays >= ExtrasCatalogue.ReverseAfterDays
-                   && s.Distress < ExtrasCatalogue.ReverseDistressMost;
+                   && s.LowDays <= MarketCatalogue.PennyDays - MarketCatalogue.SplitNoticeDays - 1 && s.Distress < ExtrasCatalogue.ReverseDistressMost
+                   && s.DpsCents <= 0 && (s.DeclaredCents <= 0 || s.ExDone);
         }
 
         /// <summary>How many old shares make one new: the smallest ratio that takes the price to the target at today's prices, else the largest.</summary>

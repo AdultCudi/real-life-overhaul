@@ -35879,5 +35879,7 @@
   "reallife_stx_bank_float": "Parte del banco ofrecida",
   "reallife_stx_bank_retainer": "El anticipo de los asesores",
   "reallife_stx_bank_days": "Días de mercado hasta la valoración",
-  "reallife_stx_bank_about": "El dinero de la oferta va al capital del banco, no a tu efectivo. Los depósitos de los ahorradores no forman parte de su valor."
+  "reallife_stx_bank_about": "El dinero de la oferta va al capital del banco, no a tu efectivo. Los depósitos de los ahorradores no forman parte de su valor.",
+  "reallife_opt_sec_stockextras": "Extras de la bolsa",
+  "reallife_opt_tip_markets_extras": "Desdoblamientos según el precio propio de cada consejo, agrupamientos de acciones bajo una unidad, un fondo indexado, operaciones en bloque y un banco propio que cotiza por sí solo."
 }

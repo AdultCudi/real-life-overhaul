@@ -214,6 +214,24 @@ internal static partial class Program
             }
             var past = new MarketPast { Year = year };
             var pending = new Dictionary<int, long>();   // each company's dividend declared and not yet gone: its record day and cents
+            // A split, or shares put together, is no return: the closes and dividends kept so far are restated at the new share count, as a chart's are.
+            m.SplitDone = (split, fresh, old, cash) =>
+            {
+                foreach (Dictionary<int, List<double>> series in new[] { past.Close, past.Dividend })
+                {
+                    if (series.TryGetValue(split.Id, out List<double> kept))
+                    {
+                        for (int i = 0; i < kept.Count; i++)
+                        {
+                            kept[i] = kept[i] * old / fresh;
+                        }
+                    }
+                }
+                if (pending.TryGetValue(split.Id, out long owed) && owed > 0)
+                {
+                    pending[split.Id] = ((owed >> 32) << 32) | (uint)Math.Round((owed & 0xFFFFFFFF) * (double)old / fresh);
+                }
+            };
             double total = 1.0, peak = 1.0, yearStart = 1.0;
             int prevIndex = m.State.IndexLast;
             for (int d = 1; d <= year * years; d++)

@@ -35879,5 +35879,7 @@
   "reallife_stx_bank_float": "Sunulan banka payı",
   "reallife_stx_bank_retainer": "Danışmanların avansı",
   "reallife_stx_bank_days": "Fiyatlamaya kadar borsa günü",
-  "reallife_stx_bank_about": "Teklifin parası bankanın sermayesine gider, nakdinize değil. Mevduat sahiplerinin paraları değerinin bir parçası değildir."
+  "reallife_stx_bank_about": "Teklifin parası bankanın sermayesine gider, nakdinize değil. Mevduat sahiplerinin paraları değerinin bir parçası değildir.",
+  "reallife_opt_sec_stockextras": "Borsa ek özellikleri",
+  "reallife_opt_tip_markets_extras": "Her yönetim kurulunun kendi fiyatına göre bölünmeler, bir birimin altında hisse birleştirme, bir endeks fonu, blok işlemler ve kendi kendine halka arz olan kendi bankanız."
 }

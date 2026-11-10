@@ -35879,5 +35879,7 @@
   "reallife_stx_bank_float": "Parte do banco ofertada",
   "reallife_stx_bank_retainer": "O adiantamento dos assessores",
   "reallife_stx_bank_days": "Dias de mercado até a precificação",
-  "reallife_stx_bank_about": "O dinheiro da oferta vai para o capital do banco, não para o seu caixa. Os depósitos dos poupadores não fazem parte do valor dele."
+  "reallife_stx_bank_about": "O dinheiro da oferta vai para o capital do banco, não para o seu caixa. Os depósitos dos poupadores não fazem parte do valor dele.",
+  "reallife_opt_sec_stockextras": "Extras da bolsa",
+  "reallife_opt_tip_markets_extras": "Desdobramentos pelo preço de cada mesa diretora, ações agrupadas abaixo de uma unidade, um fundo de índice, negociações em bloco e um banco seu listado por conta própria."
 }

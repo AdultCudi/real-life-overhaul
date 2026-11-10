@@ -47,6 +47,8 @@ internal static partial class Program
             StockxPrice(e.State.Stock(high.Id), over);
             StockxPrice(e.State.Stock(low.Id), 0.40);
             e.State.Stock(low.Id).LowDays = ExtrasCatalogue.ReverseAfterDays;
+            e.State.Stock(low.Id).DpsCents = 0;   // it pays no dividend
+            e.State.Stock(low.Id).DeclaredCents = 0;
             StockxPrice(e.State.Stock(weak.Id), 0.40);
             e.State.Stock(weak.Id).LowDays = ExtrasCatalogue.ReverseAfterDays - 5;   // not long enough under a unit yet
         }
@@ -97,7 +99,19 @@ internal static partial class Program
         sick.Distress = 0.9;
         Check(!SplitRules.WantsReverse(sick), "stock extras: a company near failing puts nothing together");
         sick.Distress = 0.1;
-        Check(SplitRules.WantsReverse(sick), "stock extras: ...the same company, sound, does");
+        sick.DpsCents = 0;
+        sick.DeclaredCents = 0;
+        Check(SplitRules.WantsReverse(sick), "stock extras: ...the same company, sound and paying no dividend, does");
+        sick.DpsCents = 3;
+        Check(!SplitRules.WantsReverse(sick), "stock extras: a company still paying a dividend on a collapsed price puts nothing together: the penny rule takes it, as before");
+        sick.DpsCents = 0;
+        sick.DeclaredCents = 3;
+        sick.ExDone = false;
+        Check(!SplitRules.WantsReverse(sick), "stock extras: ...nor one with a dividend declared and not yet out of the price");
+        sick.DeclaredCents = 0;
+        sick.LowDays = MarketCatalogue.PennyDays - MarketCatalogue.SplitNoticeDays;
+        Check(!SplitRules.WantsReverse(sick), "stock extras: ...nor one so long under a unit that the notice would end after the penny rule's day");
+        sick.LowDays = ExtrasCatalogue.ReverseAfterDays + 1;
         sick.BidCents = 50;
         Check(!SplitRules.WantsReverse(sick), "stock extras: ...and never while a bid for it stands");
         StockxPrice(dear, MarketCatalogue.SplitAboveCents / 100.0 * 1.1);

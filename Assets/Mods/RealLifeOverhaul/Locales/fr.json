@@ -35879,5 +35879,7 @@
   "reallife_stx_bank_float": "Part de la banque offerte",
   "reallife_stx_bank_retainer": "La provision des conseillers",
   "reallife_stx_bank_days": "Jours de bourse avant l'évaluation",
-  "reallife_stx_bank_about": "L'argent de l'offre entre dans le capital de la banque, pas dans votre trésorerie. Les dépôts des épargnants ne font pas partie de sa valeur."
+  "reallife_stx_bank_about": "L'argent de l'offre entre dans le capital de la banque, pas dans votre trésorerie. Les dépôts des épargnants ne font pas partie de sa valeur.",
+  "reallife_opt_sec_stockextras": "Compléments de la Bourse",
+  "reallife_opt_tip_markets_extras": "Divisions au cours propre à chaque conseil, regroupements d'actions sous une unité, un fonds indiciel, transactions de bloc et une banque à vous cotée d'elle-même."
 }

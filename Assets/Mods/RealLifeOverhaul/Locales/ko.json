@@ -35879,5 +35879,7 @@
   "reallife_stx_bank_float": "공모된 은행 부분",
   "reallife_stx_bank_retainer": "자문사 착수금",
   "reallife_stx_bank_days": "가격 산정까지 영업일",
-  "reallife_stx_bank_about": "공모 자금은 여러분의 현금이 아니라 은행의 자본으로 들어갑니다. 예금자의 예금은 은행 가치의 일부가 아닙니다."
+  "reallife_stx_bank_about": "공모 자금은 여러분의 현금이 아니라 은행의 자본으로 들어갑니다. 예금자의 예금은 은행 가치의 일부가 아닙니다.",
+  "reallife_opt_sec_stockextras": "주식 시장 추가 기능",
+  "reallife_opt_tip_markets_extras": "이사회마다 다른 주가 수준에서 하는 주식 분할, 1단위 아래 주식 병합, 인덱스 펀드, 블록 거래, 그리고 스스로 상장하는 내 은행입니다."
 }

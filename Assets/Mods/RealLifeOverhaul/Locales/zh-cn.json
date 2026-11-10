@@ -35879,5 +35879,7 @@
   "reallife_stx_bank_float": "发行的银行份额",
   "reallife_stx_bank_retainer": "顾问预付款",
   "reallife_stx_bank_days": "距定价的交易日数",
-  "reallife_stx_bank_about": "发行所得进入银行资本，而不是你的现金。储户存款不计入其价值。"
+  "reallife_stx_bank_about": "发行所得进入银行资本，而不是你的现金。储户存款不计入其价值。",
+  "reallife_opt_sec_stockextras": "股市额外功能",
+  "reallife_opt_tip_markets_extras": "按各董事会自己的股价拆股，股价低于一个单位时并股，一个指数基金，大宗交易，以及一家自行上市的自有银行。"
 }
