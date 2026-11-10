@@ -412,6 +412,8 @@ namespace RealLifeOverhaul.Meta
                         + "startups sprint outage tender pitch incident training benchmark capacity power failover portfolio"),
                 S("trips").For("trips").Opt("living_trips", "living_population").Opt("living_spoilage", "living_population")
                     .Also("logistics route routes delivery deliveries trip trips van truck vehicle driver fuel departure warehouse spoil spoilage spoiled shelf life fresh fridge freezer food"),
+                S("parties").For("parties").Opt("living_parties", "living_population")
+                    .Also("party parties host guests friends invite invitation dinner drinks staff event lunch evening team day morale satisfaction standing company"),
                 S("endscale").For("economy_endscale").Opts("economy_endscale")
                     .Also("end game late scale billions hyperscaler cloud data centre racks broadband network fibre bank maintenance upkeep crews staff payback"),
                 S("brands").For("economy_brands").Need("economy").Opts("economy_brands").Also("chain franchise"),

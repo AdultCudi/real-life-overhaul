@@ -263,6 +263,11 @@ namespace RealLifeOverhaul.Ui
                 AddPeopleWho(blocks, d, s, w, false, w.T("reallife_co_strike_low_sec", "Who stands low"));
             }
             SickBlocks(blocks, s, w);
+            if (RealLifeOverhaul.Parties.PartyDirector.On)
+            {
+                // Parties: the way from the staff's own page to an event for them.
+                blocks.Add(Link(w.T("reallife_party_co_link", "Staff events"), w.T("reallife_party_co_open", "Hold a staff event"), CompanyAct.Of(CompanyDo.OpenParties)));
+            }
             c.Blocks = blocks.ToArray();
             return c;
         }

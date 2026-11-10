@@ -75,6 +75,9 @@ namespace RealLifeOverhaul
         /// <summary>The networking life: the player lost touch with the person in this slot; the position they held goes with them.</summary>
         public static Action<int> NetworkForget;
 
+        /// <summary>Parties: the player lost touch with the person in this slot; their invitations and what parties gave them go with them.</summary>
+        public static Action<int> PartiesForget;
+
         /// <summary>The networking life: somebody has just been met, and who brought them along (null for nobody).</summary>
         public static Action<SocialPerson, SocialPerson> Met;
 

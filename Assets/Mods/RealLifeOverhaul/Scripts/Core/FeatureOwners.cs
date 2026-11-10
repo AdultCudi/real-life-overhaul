@@ -51,6 +51,7 @@ namespace RealLifeOverhaul
             { "RealLifeOverhaul.Outlook", "economy_app" },
             { "RealLifeOverhaul.Population", "population" },
             { "RealLifeOverhaul.Sessions", "living" },
+            { "RealLifeOverhaul.Parties", "parties" },
             { "RealLifeOverhaul.Ui", "ui" },
         };
 

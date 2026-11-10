@@ -36,7 +36,10 @@ namespace RealLifeOverhaul
     {
         None, Met, Coffee, Meal, Drinks, Cinema, Walk, Drive, Workout, Business, Lift, Moving, Loan, Borrowed, Birthday,
         StoodUp, Late, Rude, Arrest, Crash, AskedOut, Official, MovedIn, BreakUp, Introduced, DroppedBy, NotRepaid,
-        Posted     // tagged in a post of the player's on Flare
+        Posted,    // tagged in a post of the player's on Flare
+        Party,     // came to a party the player hosted (Parties)
+        PartyBad,  // ...one that went badly
+        PartyTheirs   // the player came to a party of theirs
     }
 
     /// <summary>

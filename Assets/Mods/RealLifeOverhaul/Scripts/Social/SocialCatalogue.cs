@@ -540,6 +540,9 @@ namespace RealLifeOverhaul
                 case MemoryCode.DroppedBy: return "reallife_social_memory_droppedby";
                 case MemoryCode.NotRepaid: return "reallife_social_memory_notrepaid";
                 case MemoryCode.Posted: return "reallife_social_memory_posted";
+                case MemoryCode.Party: return "reallife_social_memory_party";
+                case MemoryCode.PartyBad: return "reallife_social_memory_party_bad";
+                case MemoryCode.PartyTheirs: return "reallife_social_memory_party_theirs";
                 default: return "reallife_social_memory_met";
             }
         }

@@ -96,6 +96,7 @@ internal static partial class Program
         public void Bank() => Log("OpenBank");
         public void Stocks() => Log("OpenStocks");
         public void Options(string section) => Log("OpenOptions", section);
+        public void Parties() => Log("OpenParties");
     }
 
     private static void CompanyDoesChecks()
@@ -107,6 +108,7 @@ internal static partial class Program
             Pair(CompanyAct.Of(CompanyDo.BizMan, "Elm~7"), "OpenBizMan(Elm~7)"),
             Pair(CompanyAct.Of(CompanyDo.SellBusiness, "Elm~7"), "OpenSale(Elm~7)"),
             Pair(CompanyAct.Of(CompanyDo.OpenCleaning), "OpenCleaning()"),
+            Pair(CompanyAct.Of(CompanyDo.OpenParties), "OpenParties()"),
             Pair(CompanyAct.Of(CompanyDo.OpenBank), "OpenBank()"),
             Pair(CompanyAct.Of(CompanyDo.OpenStocks), "OpenStocks()"),
             Pair(CompanyAct.Of(CompanyDo.OpenOptions, "rota"), "OpenOptions(rota)"),

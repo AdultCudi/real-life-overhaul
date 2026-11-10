@@ -44,6 +44,10 @@ namespace RealLifeOverhaul
         public static Func<SocialPerson, DialogEntry> NetworkAsk;
         public static Func<SocialPerson, string> NetworkLine;
 
+        /// <summary>Set by Wiring/PartyLinks: the People page's button that opens Host a party (its key; null while parties are off), and what it opens.</summary>
+        public static Func<string> PartyLabel;
+        public static Action PartyOpen;
+
         public static string IdOf(SocialPerson person)
         {
             return person.Origin == SocialOrigin.Family ? MomId : person.Origin == SocialOrigin.OldFriend ? FriendId : person.Name;

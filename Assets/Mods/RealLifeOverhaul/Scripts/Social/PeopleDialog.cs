@@ -76,7 +76,26 @@ namespace RealLifeOverhaul
                 entry.ConfirmTextOverride = "reallife_social_btn_next".Localize();
                 entry.OnConfirm = () => Page(0);
             }
+            string party = SocialPhone.PartyLabel != null ? SocialPhone.PartyLabel() : null;
+            if (party != null)
+            {
+                entry.SecondOptionTextOverride = party;
+                entry.OnSecondOption = HostParty;
+            }
             return entry;
+        }
+
+        // Parties: the call ends and the Parties app opens on Host a party.
+        private static DialogEntry HostParty()
+        {
+            DialogEntry closing = PhoneContacts.Closing("reallife_party_people_closing");
+            Action finish = closing.OnVisible;
+            closing.OnVisible = () =>
+            {
+                finish?.Invoke();
+                SocialPhone.PartyOpen?.Invoke();
+            };
+            return closing;
         }
 
         private DialogEntry Page(int at)

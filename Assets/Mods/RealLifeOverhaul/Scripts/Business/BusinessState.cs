@@ -44,7 +44,8 @@ namespace RealLifeOverhaul
     {
         Issue = 0,        // business pressure (and the company through it); also every closure saved before the field
         Utilities = 1,    // kept closed while it lacks power, water or a connection
-        Refit = 2         // closed for a refit of its interior (the construction game), held a few hours at a time while the works go on
+        Refit = 2,        // closed for a refit of its interior (the construction game), held a few hours at a time while the works go on
+        StaffEvent = 3    // closed for the opening hours a company event takes (Parties); it opens again by its hour
     }
 
     /// <summary>Where the protection racket stands.</summary>
@@ -520,7 +521,8 @@ namespace RealLifeOverhaul
                 {
                     // One saved without its maker counts as business pressure's; the utilities and a refit ask again within the hour.
                     int maker = f.Length >= 4 ? Int(f[3]) : 0;
-                    var source = maker == (int)ClosureSource.Utilities || maker == (int)ClosureSource.Refit ? (ClosureSource)maker : ClosureSource.Issue;
+                    var source = maker == (int)ClosureSource.Utilities || maker == (int)ClosureSource.Refit || maker == (int)ClosureSource.StaffEvent
+                        ? (ClosureSource)maker : ClosureSource.Issue;
                     Closures.Add(new Closure { Place = f[0], Day = Int(f[1]), Hour = Int(f[2]), Source = source });
                 }
             }
