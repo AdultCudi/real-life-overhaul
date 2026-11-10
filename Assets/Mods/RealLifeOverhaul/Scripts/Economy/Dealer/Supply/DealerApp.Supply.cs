@@ -23,7 +23,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             for (int k = 0; k < CarSupplyCatalogue.Kinds; k++)
             {
                 int s = CarSupplyRules.SupplierFor(supply, k, true);
-                box.Line(DealerText.Fill("reallife_carsup_line_kind", "kind", CarSupplyText.Kind(k), "supplier", CarSupplyText.Name(s), "terms", CarSupplyText.Terms(s, k)));
+                box.RowWords(CarSupplyText.Kind(k), EstateText.Pair(CarSupplyText.Name(s), CarSupplyText.Terms(s, k)));
             }
             InfoBox.Button(box.ButtonRow(), InfoBox.Additional, "reallife_carsup_button_choose", () =>
             {
@@ -47,7 +47,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             box.Section("reallife_carsup_sec_suppliers");
             for (int s = 0; s < CarSupplyCatalogue.Suppliers; s++)
             {
-                box.Line(DealerText.Fill("reallife_carsup_line_supplier", "supplier", CarSupplyText.Name(s), "terms", CarSupplyText.Terms(s, kind)), s == now ? CellTone.Green : CellTone.Plain);
+                box.RowWords(CarSupplyText.Name(s), CarSupplyText.Terms(s, kind), s == now ? CellTone.Green : CellTone.Plain);
             }
             Transform buttons = box.ButtonRow();
             for (int s = 0; s < CarSupplyCatalogue.Suppliers; s++)

@@ -90,7 +90,7 @@ namespace RealLifeOverhaul.Economy
             box.Chip(free > 0 ? SpaceText.Fill("reallife_space_row_free", "count", free.ToString()) : SpaceText.T("reallife_space_row_full"), free > 0 ? CellTone.Green : CellTone.Yellow);
             box.Section("reallife_ibox_sec_money");
             box.Row("reallife_space_fig_price", SpaceGame.Money(p.Price));
-            box.Line(SpaceText.Fill("reallife_space_rent_line", "amount", SpaceGame.Money(p.RentMonth), "days", SpaceCatalogue.RentDays.ToString()));
+            box.RowWords(SpaceText.Fill("reallife_space_fig_rent", "days", SpaceCatalogue.RentDays.ToString()), SpaceGame.Money(p.RentMonth));
             box.Row("reallife_space_l_seller", SpaceText.Owner(p));
             box.Note(SpaceText.T(p.Owner == SpaceOwner.Player ? "reallife_space_what_yours" : "reallife_space_what"));
             box.Section("reallife_space_sec_holders");
@@ -140,7 +140,7 @@ namespace RealLifeOverhaul.Economy
                 int at = h.Slot;
                 long back = d.BackFor(h);
                 bool ending = h.Ending;
-                box.Line(EstateText.Pair(SpaceText.Space(h.Slot), SpaceText.Tenure(h)));
+                box.RowWords(SpaceText.Space(h.Slot), SpaceText.Tenure(h));
                 Transform own = box.ButtonRow();
                 if (h.Rented)
                 {

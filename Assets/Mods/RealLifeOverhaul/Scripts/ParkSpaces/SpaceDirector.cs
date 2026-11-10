@@ -35,7 +35,6 @@ namespace RealLifeOverhaul.ParkSpaces
         public static void Attach(GameObject root, IModLogger logger)
         {
             Logger = logger;
-            SpaceGame.Logger = logger;
             root.AddComponent<SpaceDirector>();
         }
 

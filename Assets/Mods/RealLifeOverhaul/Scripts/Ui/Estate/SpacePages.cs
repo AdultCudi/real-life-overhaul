@@ -99,7 +99,8 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Every key the row and the page label with: the Property screen's entry names them, so the texts checks see each one translated.</summary>
         public static readonly string[] Keys =
         {
-            "reallife_co_back", "reallife_ui_estate_pair", "reallife_econ_day", "reallife_space_kind", "reallife_space_number", "reallife_space_page_title", "reallife_space_row_free",
+            "reallife_co_back", "reallife_ui_estate_not_now", "reallife_ui_estate_pair", "reallife_econ_day", "reallife_space_kind", "reallife_space_number", "reallife_space_page_title",
+            "reallife_space_row_free",
             "reallife_space_row_full", "reallife_space_row_held", "reallife_space_row_yours", "reallife_space_fig_price", "reallife_space_fig_rent", "reallife_space_fig_fee",
             "reallife_space_fig_spaces", "reallife_space_sec_take", "reallife_space_sec_holders", "reallife_space_sec_mine", "reallife_space_l_seller", "reallife_space_l_you",
             "reallife_space_l_rivals", "reallife_space_l_city", "reallife_space_l_free", "reallife_space_l_hours", "reallife_space_what", "reallife_space_what_yours",
@@ -128,6 +129,8 @@ namespace RealLifeOverhaul.Ui
             bool own = p.Owner == SpaceOwner.Player;
             SpaceRules.Counts(s, p, day, out int player, out int rivals, out int city, out int free);
             m.Shape = EstateShape.Detail;
+            m.Card = true;   // a decision about one thing: a card over the dimmed world, as tall as its words
+            m.FootBack = t("reallife_ui_estate_not_now", "Not now");
             m.Back = t("reallife_co_back", "Back");
             m.DetailIcon = UiIcon.Car;
             m.DetailTitle = SpaceWords.Fill(t("reallife_space_page_title", "Car park, {name}"), "name", p.Name);
@@ -192,9 +195,9 @@ namespace RealLifeOverhaul.Ui
                     ButtonOff = !h.Rented && own
                 });
             }
-            m.RelatedTitle = t("reallife_space_sec_mine", "Your spaces here");
-            m.RelatedCount = mine.Count > 0 ? mine.Count.ToString(Inv) : null;
-            m.Related = mine.ToArray();
+            m.Related2Title = t("reallife_space_sec_mine", "Your spaces here");   // across the card, under both columns
+            m.Related2Count = mine.Count > 0 ? mine.Count.ToString(Inv) : null;
+            m.Related2 = mine.ToArray();
         }
     }
 }

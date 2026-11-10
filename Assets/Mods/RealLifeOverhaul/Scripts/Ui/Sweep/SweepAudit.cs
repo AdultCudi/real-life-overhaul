@@ -77,6 +77,7 @@ namespace RealLifeOverhaul.Ui
             Row("Company", "Rota: fill a shift, raise", "a yes or no box", AuditWindow.Question, Question, "Economy/Company/"),
             Face("Property", "Market, Mortgages, Tenancies, Works", "estate", "Economy/Estate/"),
             Row("Property", "Visit a property", "the card over its door", AuditWindow.Prompt, Prompt, "Economy/Estate/"),
+            Row("Property", "Buy, rent or sell back a parking space", "a yes or no box", AuditWindow.Question, Question, "Economy/Estate/"),
             Face("Car Showroom", "Stock, Lots, Market, Growth, Workshop", "dealer", "Economy/Dealer/"),
             Row("Car Showroom", "Lots, Stock, Market, Growth, Workshop actions", "the mod's question", AuditWindow.ModBox, ModBox, "Economy/Dealer/"),
             Row("Car Showroom", "Sell, scrap, hire out", "a yes or no box", AuditWindow.Question, Question, "Economy/Dealer/"),

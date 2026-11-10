@@ -823,12 +823,12 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\Supply\CarSupplyState.cs" Link="Mod\Supply\CarSupplyState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\Supply\CarSupplyRules.cs" Link="Mod\Supply\CarSupplyRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\Supply\CarSupplyStore.cs" Link="Mod\Supply\CarSupplyStore.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\Supply\SupplyPages.cs" Link="Mod\Supply\SupplyPages.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\SupplyPages.cs" Link="Mod\Supply\SupplyPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\ParkSpaces\SpaceCatalogue.cs" Link="Mod\ParkSpaces\SpaceCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\ParkSpaces\SpaceState.cs" Link="Mod\ParkSpaces\SpaceState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\ParkSpaces\SpaceRules.cs" Link="Mod\ParkSpaces\SpaceRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\ParkSpaces\SpaceStore.cs" Link="Mod\ParkSpaces\SpaceStore.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\ParkSpaces\SpacePages.cs" Link="Mod\ParkSpaces\SpacePages.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\SpacePages.cs" Link="Mod\ParkSpaces\SpacePages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Designs\DesignCatalogue.cs" Link="Mod\DesignCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Designs\DesignRules.cs" Link="Mod\DesignRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Designs\DesignPlan.cs" Link="Mod\DesignPlan.cs" />

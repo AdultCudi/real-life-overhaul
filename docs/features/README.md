@@ -42,6 +42,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [Transport](transport.md): buses, the subway and owning a car.
 - [Taxi by phone](taxi.md): a taxi sent to where you are.
 - [Garage](garage.md): the custom shop, bicycles and motorbikes.
+- [Car suppliers](car-suppliers.md): a supplier for each kind of new car at the Car Showroom, standing orders a manager fills, the other dealers' suppliers.
 - [Walking](walking.md): the walk key on foot.
 - [Minimap and GPS](navigation.md): a minimap and a route along the roads.
 
@@ -75,6 +76,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [New kinds of shop](shops.md): an ice cream parlour, a tea bar and a tobacconist to start in BizMan.
 - [Districts](districts.md): the district view on the city map.
 - [A landlord's duties](landlord.md): tenants' satisfaction, repair calls, the city's inspections, rent owed, lettings agencies and property managers, for the buildings you let.
+- [Parking spaces](parking-spaces.md): a single space bought or rented in a building's car park, the hourly charge paid back, the tycoons' and the city's spaces.
 
 `Scripts/Economy` also has `Brands`, `Dealer` (the Car Showroom), `Estate` (property), `Online` and `Services`, each with a `README.md` in its folder.
 

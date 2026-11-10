@@ -413,7 +413,7 @@ internal static partial class Program
         UiSamples.SpacePressed press = UiSamples.SpacePress;
         EstateModel m = UiSamples.Estate(en, "space");
         SpaceState world = UiSamples.SpaceWorld(false, out SpacePark park);
-        Check(m.Shape == EstateShape.Detail && m.DetailTitle.Contains(park.Name) && m.Strip.Length == 4 && m.Left.Length == 1 && m.Right.Length == 1 && m.Related.Length == 2,
+        Check(m.Shape == EstateShape.Detail && m.DetailTitle.Contains(park.Name) && m.Strip.Length == 4 && m.Left.Length == 1 && m.Right.Length == 1 && m.Related2.Length == 2 && m.Card,
             "parking spaces page: a car park's page has its figures, the card that takes a space, who holds the spaces and the player's two spaces");
         UiActionModel[] acts = m.Left[0].Actions;
         Check(acts.Length == 2 && acts[1].Kind == UiButtonKind.Primary && acts[0].Kind != UiButtonKind.Primary && !acts[0].Disabled && !acts[1].Disabled, "parking spaces page: one primary action, Buy a space, with Rent a space beside it");
@@ -421,7 +421,7 @@ internal static partial class Program
         bool buy = press.Last == "buy" && press.Park == park.Number && press.Slot == SpaceRules.FreeSlot(world, park, 214);
         m.Runs[acts[0].Arg]();
         Check(buy && press.Last == "rent" && press.Park == park.Number, "parking spaces page: Buy a space and Rent a space reach their calls with the car park and the space offered");
-        EstateRow owned = m.Related.First(r => !r.ButtonOff && r.Sub == SpaceWords.Tenure(en, world.Held[0], d => d.ToString())), rented = m.Related.First(r => r.ButtonRun != owned.ButtonRun);
+        EstateRow owned = m.Related2.First(r => !r.ButtonOff && r.Sub == SpaceWords.Tenure(en, world.Held[0], d => d.ToString())), rented = m.Related2.First(r => r.ButtonRun != owned.ButtonRun);
         m.Runs[owned.ButtonRun]();
         bool sell = press.Last == "sell" && press.Slot == world.Held[0].Slot && press.Back == SpaceRules.Back(world.Held[0].Paid, park.Price) && press.Back < world.Held[0].Paid;
         m.Runs[rented.ButtonRun]();
@@ -441,7 +441,7 @@ internal static partial class Program
         {
             Check(SpaceWords.WhyKey((SpaceRefusal)r) != null && SpaceWords.Why(en, (SpaceRefusal)r).Length > 10 && SpacePages.Keys.Contains(SpaceWords.WhyKey((SpaceRefusal)r)), "parking spaces page: the refusal " + (SpaceRefusal)r + " has its words");
         }
-        string app = ModSource(@"ParkSpaces\EstateApp.Spaces.cs"), live = ModSource(@"ParkSpaces\EstateLive.Spaces.cs");
+        string app = ModSource(@"Economy\Estate\EstateApp.Spaces.cs"), live = ModSource(@"Ui\Estate\EstateLive.Spaces.cs");
         Check(app.Contains("d.Buy(park)") && app.Contains("d.Rent(park)") && app.Contains("d.Sell(park, at)") && app.Contains("d.SetEnding(park, at, !ending)") && live.Contains("d.Buy(park)") && live.Contains("d.Rent(park)")
               && live.Contains("d.Sell(park, slot)") && live.Contains("d.SetEnding(park, slot, ending)"), "parking spaces page: the app in the game's frame and the kit's page press the same calls of the director");
         Check(CountOfText(app, "AskSpace(") >= 4 && CountOfText(live, "AskSpace(") >= 4 && app.Contains("GameConfirm.Show(") && live.Contains("GameConfirm.Show("), "parking spaces page: buying, renting and selling are asked first in the game's own question box");
@@ -453,7 +453,8 @@ internal static partial class Program
     private static void SpaceSourceChecks()
     {
         string folder = System.IO.Path.GetDirectoryName(ModPath(@"ParkSpaces\SpaceDirector.cs"));
-        string[] files = Directory.GetFiles(folder, "*.cs");
+        string[] files = Directory.GetFiles(folder, "*.cs").Concat(new[] { ModPath(@"Economy\Estate\EstateApp.Spaces.cs"), ModPath(@"Ui\Estate\EstateLive.Spaces.cs"),
+            ModPath(@"Ui\Estate\SpacePages.cs") }).ToArray();   // the pages stand in the folders of the screens they are part of
         Check(files.Length >= 11, "parking spaces sources: the feature's files are found (" + files.Length + ")");
         foreach (string file in files)
         {
@@ -464,9 +465,9 @@ internal static partial class Program
         string director = ModSource(@"ParkSpaces\SpaceDirector.cs"), game = ModSource(@"ParkSpaces\SpaceGame.cs");
         Check(CountOfText(game, "BizBooks.Book(") == 2 && game.Contains("force: false") && !director.Contains("BizBooks.") && !ModSource(@"ParkSpaces\SpaceRules.cs").Contains("Unity"), "parking spaces sources: money moves only through the mod's one booking call, in the one game file");
         int take = director.IndexOf("private SpaceRefusal Take(int park, bool rent)", StringComparison.Ordinal);
-        Check(take > 0 && director.IndexOf("MayTake(park, rent, out int slot)", take, StringComparison.Ordinal) < director.IndexOf("SpaceGame.Pay(", take, StringComparison.Ordinal)
-              && director.IndexOf("return Say(r);", take, StringComparison.Ordinal) < director.IndexOf("SpaceGame.Pay(", take, StringComparison.Ordinal)
-              && director.IndexOf("SpaceRules.Take(_state", take, StringComparison.Ordinal) > director.IndexOf("SpaceGame.Pay(", take, StringComparison.Ordinal),
+        int asked = take > 0 ? director.IndexOf("MayTake(park, rent, out int slot)", take, StringComparison.Ordinal) : -1, refused = take > 0 ? director.IndexOf("return Say(r);", take, StringComparison.Ordinal) : -1;
+        int pays = take > 0 ? director.IndexOf("SpaceGame.Pay(", take, StringComparison.Ordinal) : -1, holds = take > 0 ? director.IndexOf("SpaceRules.Take(_state", take, StringComparison.Ordinal) : -1;
+        Check(take > 0 && asked > take && refused > asked && pays > refused && holds > pays,
             "parking spaces sources: a purchase is refused before any money is taken, and the space is only held once it is paid for");
         Check(director.Contains("SpaceGame.Receive(cost, rent ? SpaceGame.RentKey : SpaceGame.BuyKey, p.Name);"), "parking spaces sources: money taken for a space that could not be had is given back");
         Check(director.Contains("GoingPublic.InSession, SpaceGame.Cash") && director.Contains("GoingPublic.InSession ? 0 : Rivals(day)") && director.Contains("SpaceRules.MaySell(Running ? _state : null, h, p, Running, GoingPublic.InSession)"),
@@ -807,7 +808,7 @@ internal static partial class Program
         var lines = new List<UiFactLine>();
         SupplyPages.NewLines(lines, en, CarSupplyCatalogue.Specialist);
         Check(lines.Count == 2 && lines[0].Value == SupplyWords.Name(en, CarSupplyCatalogue.Specialist) && lines[1].Value == SupplyWords.Delivery(en, CarSupplyCatalogue.Specialist), "car suppliers page: a new car's page says who supplies it and when it comes");
-        string app = ModSource(@"Economy\Dealer\Supply\DealerApp.Supply.cs"), live = ModSource(@"Economy\Dealer\Supply\DealerLive.Supply.cs");
+        string app = ModSource(@"Economy\Dealer\Supply\DealerApp.Supply.cs"), live = ModSource(@"Ui\Estate\DealerLive.Supply.cs");
         Check(app.Contains("_director.SetSupplier(kind, to)") && app.Contains("_director.SetKeep(place, kind, keep + 1)") && app.Contains("_director.SetKeep(place, kind, keep - 1)") && live.Contains("_d.SetSupplier(kind, supplier)")
               && live.Contains("_d.SetKeep(place, kind, count)"), "car suppliers page: the app in the game's frame and the kit's page press the same calls of the director");
         string market = ModSource(@"Economy\Dealer\DealerApp.Market.cs"), kit = ModSource(@"Ui\Estate\DealerLive.Market.cs"), actions = ModSource(@"Economy\Dealer\DealerDirector.Actions.cs");
@@ -818,7 +819,7 @@ internal static partial class Program
     private static void SupplySourceChecks()
     {
         string folder = System.IO.Path.GetDirectoryName(ModPath(@"Economy\Dealer\Supply\CarSupplyRules.cs"));
-        string[] files = Directory.GetFiles(folder, "*.cs");
+        string[] files = Directory.GetFiles(folder, "*.cs").Concat(new[] { ModPath(@"Ui\Estate\DealerLive.Supply.cs"), ModPath(@"Ui\Estate\SupplyPages.cs") }).ToArray();   // the page stands in the folder of the screen it is part of
         Check(files.Length >= 9, "car suppliers sources: the feature's files are found (" + files.Length + ")");
         foreach (string file in files)
         {
@@ -829,8 +830,9 @@ internal static partial class Program
         }
         string dir = ModSource(@"Economy\Dealer\Supply\DealerDirector.Supply.cs"), actions = ModSource(@"Economy\Dealer\DealerDirector.Actions.cs");
         int shipped = dir.IndexOf("private bool BuyShipped(", StringComparison.Ordinal);
-        Check(shipped > 0 && dir.IndexOf("_state.Deliveries.Count >= DealerCatalogue.DeliveriesMost", shipped, StringComparison.Ordinal) < dir.IndexOf("DealerGame.Take(price", shipped, StringComparison.Ordinal)
-              && dir.IndexOf("DealerGame.Take(price", shipped, StringComparison.Ordinal) < dir.IndexOf("_state.Deliveries.Add(q);", shipped, StringComparison.Ordinal)
+        int waysFull = shipped > 0 ? dir.IndexOf("_state.Deliveries.Count >= DealerCatalogue.DeliveriesMost", shipped, StringComparison.Ordinal) : -1;
+        int taken = shipped > 0 ? dir.IndexOf("DealerGame.Take(price", shipped, StringComparison.Ordinal) : -1, sent = shipped > 0 ? dir.IndexOf("_state.Deliveries.Add(q);", shipped, StringComparison.Ordinal) : -1;
+        Check(shipped > 0 && waysFull > shipped && taken > waysFull && sent > taken
               && CountOfText(dir, "DealerGame.Take(") == 1 && !dir.Contains("DealerGame.Give("), "car suppliers sources: an order is refused before any money when no delivery can be taken, paid for once, and only then sent; nothing is ever given back or cancelled");
         Check(actions.Contains("return BuyShipped(l, y, reg, price, supplier);") && actions.IndexOf("DealerYard y = Room(yardPlace, out DealerRefusal why);", StringComparison.Ordinal) < actions.IndexOf("return BuyShipped(", StringComparison.Ordinal),
             "car suppliers sources: a car on order goes through the purchase path, after the lot's room is found");
@@ -854,9 +856,9 @@ internal static partial class Program
         var keys = new SortedSet<string>(StringComparer.Ordinal);
         string[] sources =
         {
-            @"ParkSpaces\SpaceDirector.cs", @"ParkSpaces\SpaceDirector.Tests.cs", @"ParkSpaces\SpaceGame.cs", @"ParkSpaces\SpaceText.cs", @"ParkSpaces\SpacePages.cs", @"ParkSpaces\EstateApp.Spaces.cs",
-            @"ParkSpaces\EstateLive.Spaces.cs", @"Economy\Dealer\Supply\CarSupplyCatalogue.cs", @"Economy\Dealer\Supply\CarSupplyText.cs", @"Economy\Dealer\Supply\SupplyPages.cs",
-            @"Economy\Dealer\Supply\DealerApp.Supply.cs", @"Economy\Dealer\Supply\DealerLive.Supply.cs", @"Economy\Dealer\Supply\DealerDirector.Supply.cs"
+            @"ParkSpaces\SpaceDirector.cs", @"ParkSpaces\SpaceDirector.Tests.cs", @"ParkSpaces\SpaceGame.cs", @"ParkSpaces\SpaceText.cs", @"Ui\Estate\SpacePages.cs", @"Economy\Estate\EstateApp.Spaces.cs",
+            @"Ui\Estate\EstateLive.Spaces.cs", @"Economy\Dealer\Supply\CarSupplyCatalogue.cs", @"Economy\Dealer\Supply\CarSupplyText.cs", @"Ui\Estate\SupplyPages.cs",
+            @"Economy\Dealer\Supply\DealerApp.Supply.cs", @"Ui\Estate\DealerLive.Supply.cs", @"Economy\Dealer\Supply\DealerDirector.Supply.cs"
         };
         foreach (string source in sources)
         {

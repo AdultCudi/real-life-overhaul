@@ -1,6 +1,5 @@
 using System;
 using System.Collections.Generic;
-using BAModAPI;
 using BigAmbitions.Neighborhoods;
 using BigAmbitions.Rivals;
 using Buildings;
@@ -53,8 +52,6 @@ namespace RealLifeOverhaul.ParkSpaces
         public const string RefundKey = "reallife_transaction_space_refund";
         public const string GoneKey = "reallife_transaction_space_gone";
         private const string CarParkStreet = "ba:street_parking";   // the game's street of a car park's vehicles (UndergroundParkingEntrance.Address)
-
-        public static IModLogger Logger;
 
         private static GameInstance Save => SaveGameManager.Current;
 
