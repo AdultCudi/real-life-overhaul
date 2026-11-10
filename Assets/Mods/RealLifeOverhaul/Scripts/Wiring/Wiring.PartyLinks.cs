@@ -30,11 +30,15 @@ namespace RealLifeOverhaul
                 SocialPhone.PartyOpen = PartyOpen;
                 RivalBridges.StaffEvents = RivalDay;
                 RivalBridges.StaffEventsPaper = RivalPaper;
+                _paperBefore = News.Extra;
+                News.Extra = Paper;
                 PlannerDirector.Instance?.AddSource(Source);
             }
 
             internal static void Disconnect()
             {
+                News.Extra = _paperBefore;
+                _paperBefore = null;
                 RivalBridges.StaffEventsPaper = null;
                 RivalBridges.StaffEvents = null;
                 SocialPhone.PartyOpen = null;
@@ -47,8 +51,42 @@ namespace RealLifeOverhaul
                 PartyBridges.Floor = null;
             }
 
-            /// <summary>The Planner's source, for a Planner made after the wiring (it asks once it stands).</summary>
-            public static IPlannerSource PlannerSource => Source;
+            private static Action<int, List<NewsItem>> _paperBefore;
+
+            // The City Ledger's pieces for a morning: after those of the features before, a large party the player hosted the day before
+            // (PartyCatalogue.LargeFrom guests or more came). Read from the file only, so the same day gives the same piece however often it is asked.
+            private static void Paper(int day, List<NewsItem> into)
+            {
+                try
+                {
+                    _paperBefore?.Invoke(day, into);
+                }
+                catch (Exception e)
+                {
+                    Fault("PartyLinks.Paper (the pieces before)", e);
+                }
+                try
+                {
+                    PartyDirector d = PartyDirector.Instance;
+                    PartyFile f = d != null && PartyDirector.On ? d.File : null;
+                    Party large = f != null ? PartyHosted.Large(f, day - 1) : null;
+                    if (large != null)
+                    {
+                        into.Add(new NewsItem
+                        {
+                            Key = "reallife_party_paper_host",
+                            Data = new Dictionary<string, string>(2)
+                            {
+                                { "place", large.Place == PartyPlace.Home ? large.Street : large.Name }, { "count", PartyText.Whole(large.Came) }
+                            }
+                        });
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("PartyLinks.Paper", e);
+                }
+            }
 
             // What the wallet must keep for the investors of the player's firms, whole money, rounded up.
             private static long Floor()

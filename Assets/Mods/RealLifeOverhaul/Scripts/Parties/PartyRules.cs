@@ -36,7 +36,7 @@ namespace RealLifeOverhaul.Parties
             }
         }
 
-        /// <summary>A text as a number for <see cref="Roll"/>: the same on every machine (never string.GetHashCode).</summary>
+        /// <summary>A text as a number for <see cref="Roll"/>, worked out letter by letter: the same on every machine, which the runtime's own hash of a text is not.</summary>
         public static int Hash(string text)
         {
             unchecked
@@ -52,33 +52,67 @@ namespace RealLifeOverhaul.Parties
 
         // ------------------------------------------------------------------------------------------------- the cap
 
-        /// <summary>What is still counted of a lift on a day, per mille of the cap: it leaks evenly over the window, and a clock set back refills nothing.</summary>
-        public static int Left(Lift lift, int day, int window)
+        /// <summary>
+        /// What counts against the cap on a day, per mille: every gain of the last window of days, in full (a gain dated after
+        /// today, a clock set back, counts too). So the gains of any window of days never come to more than the cap.
+        /// </summary>
+        public static int Counted(Lift lift, int day, int window)
         {
-            if (lift == null || lift.Used <= 0)
+            int sum = 0;
+            for (int i = 0; lift != null && i < lift.Gains.Count; i++)
             {
-                return 0;
+                sum += day - lift.Gains[i].Day < window ? lift.Gains[i].Amount : 0;
             }
-            int used = Math.Min(1000, lift.Used), days = day - lift.Day;
-            if (days <= 0)
+            return Math.Min(1000, sum);
+        }
+
+        /// <summary>What is still felt of a lift on a day, per mille: each gain wears off evenly over the window from the day it was given.</summary>
+        public static int Faded(Lift lift, int day, int window)
+        {
+            long sum = 0;
+            window = Math.Max(1, window);
+            for (int i = 0; lift != null && i < lift.Gains.Count; i++)
             {
-                return used;
+                int age = Math.Max(0, day - lift.Gains[i].Day);
+                sum += age < window ? (long)lift.Gains[i].Amount * (window - age) / window : 0;
             }
-            long leaked = (long)days * 1000 / Math.Max(1, window);
-            return leaked >= used ? 0 : used - (int)leaked;
+            return (int)Math.Min(1000L, sum);
         }
 
         /// <summary>
-        /// Gives what there is room for of a worth (per mille of the cap) and returns it: never more than the cap less what is
-        /// still counted, however many parties or events ask and however the money was split.
+        /// Gives what there is room for of a worth (per mille of the cap) and returns it: never more than the cap less what the
+        /// window already holds, however many parties or events ask and however the money was split.
         /// </summary>
         public static int Give(Lift lift, int day, int window, int worth)
         {
-            int left = Left(lift, day, window);
-            int gain = PartyCatalogue.Clamp(worth, 0, 1000 - left);
-            lift.Used = left + gain;
-            lift.Day = day;
+            int gain = PartyCatalogue.Clamp(worth, 0, 1000 - Counted(lift, day, window));
+            if (gain <= 0)
+            {
+                return 0;
+            }
+            int last = lift.Gains.Count - 1;
+            if (last >= 0 && lift.Gains[last].Day == day)
+            {
+                lift.Gains[last] = new LiftGain { Day = day, Amount = lift.Gains[last].Amount + gain };
+            }
+            else
+            {
+                lift.Gains.Add(new LiftGain { Day = day, Amount = gain });
+            }
             return gain;
+        }
+
+        /// <summary>Drops the gains a window has left behind; true when none is left.</summary>
+        public static bool Prune(Lift lift, int day, int window)
+        {
+            for (int i = lift.Gains.Count - 1; i >= 0; i--)
+            {
+                if (day - lift.Gains[i].Day >= window)
+                {
+                    lift.Gains.RemoveAt(i);
+                }
+            }
+            return lift.Gains.Count == 0;
         }
 
         // ------------------------------------------------------------------------------------------------- money and room

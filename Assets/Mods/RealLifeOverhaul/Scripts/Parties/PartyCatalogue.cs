@@ -79,7 +79,7 @@ namespace RealLifeOverhaul.Parties
 
         // ---- what a party is worth to somebody who came: a share of a week's cap, whatever the money or the number of parties
         public static readonly int[] TierWorth = { 450, 700, 1000 };  // per mille of the cap one party of a tier can give at quality 100
-        public const int WindowDays = 7;              // days over which a person's cap refills
+        public const int WindowDays = 7;              // days a gain counts against a person's cap: no seven days ever give more than the cap
         public const float CapFamiliarity = 8f;       // points of 100 a person can gain from parties in a window: an outing's worth
         public const float CapAffection = 6f;
         public const float CapTrust = 3f;
@@ -112,7 +112,7 @@ namespace RealLifeOverhaul.Parties
         public static readonly int[] EventHourFrom = { 11, 17, 9 };   // the hours a kind can start between
         public static readonly int[] EventHourTo = { 14, 21, 10 };
         public static readonly int[] EventWorth = { 330, 580, 1000 }; // per mille of the cap one event of a kind gives somebody paid fairly
-        public const int StaffWindowDays = 30;        // days over which an employee's cap refills, and the lift fades
+        public const int StaffWindowDays = 30;        // days a gain counts against an employee's cap, and over which its standing wears off
         public const float CapMood = 12f;             // points of the game's satisfaction (0 to 100) events can add to one employee in a window
         public const int CapStanding = 8;             // points of the company's standing (0 to 100) likewise, taken back as the lift fades
         public const int UnderpaidShare = 50;         // per cent of an event's worth to somebody underpaid: no substitute for pay

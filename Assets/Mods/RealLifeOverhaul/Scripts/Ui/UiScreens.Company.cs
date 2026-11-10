@@ -219,7 +219,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_wage_row_game",
                 "common_monday", "common_tuesday", "common_wednesday", "common_thursday", "common_friday", "common_saturday", "common_sunday",
                 "reallife_co_cover_liability", "reallife_pol_unit_day", "reallife_co_post_state", "reallife_co_post_questions", "reallife_talent_role_hr_manager",
-                "reallife_talent_role_recruiter", "reallife_hier_seat_what_chro", "reallife_co_lead_return"
+                "reallife_talent_role_recruiter", "reallife_hier_seat_what_chro", "reallife_co_lead_return", "reallife_party_co_link", "reallife_party_co_open"
                 // KEYS END
             }).Switch(UiScreenSwitches.Company));
         }

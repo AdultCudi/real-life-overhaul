@@ -577,6 +577,7 @@ internal static partial class Program
             UiCasesServices(def, cases);
             UiCasesTech(def, cases);
             UiCasesVentures(def, cases);
+            UiCasesParties(def, cases);
             UiCasesWork(def, cases);
             UiCasesDesigner(def, cases);
             UiCasesMap(def, cases);
@@ -627,6 +628,7 @@ internal static partial class Program
     static partial void UiCasesServices(UiScreenDef def, List<UiScreenCase> cases);
     static partial void UiCasesTech(UiScreenDef def, List<UiScreenCase> cases);
     static partial void UiCasesVentures(UiScreenDef def, List<UiScreenCase> cases);
+    static partial void UiCasesParties(UiScreenDef def, List<UiScreenCase> cases);
     static partial void UiCasesWork(UiScreenDef def, List<UiScreenCase> cases);
     static partial void UiCasesDesigner(UiScreenDef def, List<UiScreenCase> cases);
     static partial void UiCasesMap(UiScreenDef def, List<UiScreenCase> cases);

@@ -7,7 +7,7 @@ namespace RealLifeOverhaul.Parties
     /// <summary>
     /// The one line parties and company events keep in a save: "v=1|seed|next id|day settled|last invitation|off since",
     /// then one "^" part a record, led by a letter and its fields by "#": P a party (its guests as "person:answer:came"
-    /// joined by ","), E a company event, S a manager's schedule, I an invitation, L a lift, R a rival's event. New fields
+    /// joined by ","), E a company event, S a manager's schedule, I an invitation, L a lift (its gains as "day:amount"), R a rival's event. New fields
     /// go at the end of a record and a record with fewer reads the rest as they start, so an older line loads; a part led
     /// by a letter this version does not know, and fields past those it knows, are passed over, so a line from a newer
     /// version is read as far as it goes. Numbers are written and read with the invariant culture. '%', '#', '^', '|',
@@ -60,7 +60,11 @@ namespace RealLifeOverhaul.Parties
             for (int i = 0; i < f.Lifts.Count; i++)
             {
                 Lift l = f.Lifts[i];
-                t.Append("^L#").Append(Escape(l.Id)).Append('#').Append(N(l.Person)).Append('#').Append(N(l.Used)).Append('#').Append(N(l.Day)).Append('#').Append(N(l.Stand));
+                t.Append("^L#").Append(Escape(l.Id)).Append('#').Append(N(l.Person)).Append('#').Append(N(l.Stand)).Append('#');
+                for (int g = 0; g < l.Gains.Count; g++)
+                {
+                    t.Append(g > 0 ? "," : string.Empty).Append(N(l.Gains[g].Day)).Append(':').Append(N(l.Gains[g].Amount));
+                }
             }
             for (int i = 0; i < f.Rivals.Count; i++)
             {
@@ -217,15 +221,26 @@ namespace RealLifeOverhaul.Parties
         private static void ReadLift(PartyFile f, string[] x)
         {
             string id = Text(x, 1);
-            int person = Int(x, 2, -1), used = PartyCatalogue.Clamp(Int(x, 3, 0), 0, 1000);
+            int person = Int(x, 2, -1);
             if ((id.Length == 0) == (person < 0))
             {
                 return;   // neither a person nor an employee, or both
             }
             Lift lift = id.Length > 0 ? f.Of(id, true) : f.Of(person, true);
-            lift.Used = used;
-            lift.Day = Int(x, 4, 0);
-            lift.Stand = PartyCatalogue.Clamp(Int(x, 5, 0), 0, PartyCatalogue.CapStanding);
+            lift.Stand = PartyCatalogue.Clamp(Int(x, 3, 0), 0, PartyCatalogue.CapStanding);
+            lift.Gains.Clear();
+            string[] gains = x.Length > 4 && x[4].Length > 0 ? x[4].Split(',') : new string[0];
+            int sum = 0;
+            for (int g = 0; g < gains.Length; g++)
+            {
+                string[] one = gains[g].Split(':');
+                int amount = PartyCatalogue.Clamp(Int(one, 1, 0), 0, 1000 - sum);   // a line never holds more than the cap
+                if (one.Length >= 2 && amount > 0)
+                {
+                    lift.Gains.Add(new LiftGain { Day = Int(one, 0, 0), Amount = amount });
+                    sum += amount;
+                }
+            }
         }
 
         private static void ReadRival(PartyFile f, string[] x)

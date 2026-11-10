@@ -726,7 +726,7 @@ namespace RealLifeOverhaul.Parties
             for (int i = f.Lifts.Count - 1; i >= 0; i--)
             {
                 Lift lift = f.Lifts[i];
-                if (lift.Used <= 0)
+                if (lift.Gains.Count == 0 && lift.Stand <= 0)
                 {
                     f.Lifts.RemoveAt(i);
                 }

@@ -179,8 +179,9 @@ namespace RealLifeOverhaul.Parties
         }
 
         /// <summary>
-        /// The managers' round, once a day: a business whose schedule is due, with no event planned, has its manager book
-        /// one for the next day by the very rules the player books by. With no manager it waits; a refusal is told once a week.
+        /// The managers' round, once a day: a business whose event falls due tomorrow (so many days after its last one, or
+        /// after the schedule was set) has its manager book it for tomorrow by the very rules the player books by. With no
+        /// manager it waits; a refusal is told once a week.
         /// </summary>
         public static void ManagerDay(PartyFile f, IPartyWorld w)
         {
@@ -192,7 +193,7 @@ namespace RealLifeOverhaul.Parties
             for (int i = 0; i < f.Plans.Count; i++)
             {
                 StaffPlan plan = f.Plans[i];
-                if (plan.Every <= 0 || day < LastAt(f, plan.Place, plan.Since) + plan.Every || !w.Manager(plan.Place))
+                if (plan.Every <= 0 || day + 1 < LastAt(f, plan.Place, plan.Since) + plan.Every || !w.Manager(plan.Place))
                 {
                     continue;
                 }
@@ -226,10 +227,10 @@ namespace RealLifeOverhaul.Parties
         /// <summary>The points of standing a share of the cap is worth.</summary>
         public static int Standing(int used) => PartyCatalogue.CapStanding * PartyCatalogue.Clamp(used, 0, 1000) / 1000;
 
-        // Brings the standing an employee holds from events to what is still counted of their lift: up within the file's room, down as it fades.
-        private static void Level(Lift lift, StaffFile file)
+        // Brings the standing an employee holds from events to what is still felt of their lift today: up within the file's room, down as it fades.
+        private static void Level(Lift lift, StaffFile file, int day)
         {
-            int target = Standing(lift.Used), delta = target - lift.Stand;
+            int target = Standing(PartyRules.Faded(lift, day, PartyCatalogue.StaffWindowDays)), delta = target - lift.Stand;
             if (delta == 0)
             {
                 return;
@@ -271,7 +272,7 @@ namespace RealLifeOverhaul.Parties
                 return 0;
             }
             int gain = PartyRules.Give(lift, day, PartyCatalogue.StaffWindowDays, worth);
-            Level(lift, hand.File);
+            Level(lift, hand.File, day);
             if (gain > 0 && w != null && hand.Mood >= 0)
             {
                 w.Mood(hand.Id, PartyCatalogue.CapMood * gain / 1000f);
@@ -280,8 +281,8 @@ namespace RealLifeOverhaul.Parties
         }
 
         /// <summary>
-        /// The day's fade: every lift is brought to what is still counted of it today, and an employee's standing gives back
-        /// what has faded. The rivals' crews fade in their own day (<see cref="RivalDay"/>). A pass over the lifts, once a day.
+        /// The day's fade: every lift lets go of the gains its window has left behind, and an employee's standing gives back
+        /// what has worn off. The rivals' crews fade in their own day (<see cref="RivalDay"/>). A pass over the lifts, once a day.
         /// </summary>
         public static void Fade(PartyFile f, IPartyWorld w)
         {
@@ -291,20 +292,18 @@ namespace RealLifeOverhaul.Parties
                 Lift lift = f.Lifts[i];
                 if (lift.Person >= 0 && lift.Id.Length == 0)
                 {
-                    lift.Used = PartyRules.Left(lift, day, PartyCatalogue.WindowDays);
-                    lift.Day = day;
+                    PartyRules.Prune(lift, day, PartyCatalogue.WindowDays);
                 }
                 else if (!lift.Id.StartsWith(RivalPrefix, StringComparison.Ordinal))
                 {
-                    lift.Used = PartyRules.Left(lift, day, PartyCatalogue.StaffWindowDays);
-                    lift.Day = day;
-                    Level(lift, w.File(lift.Id));
+                    PartyRules.Prune(lift, day, PartyCatalogue.StaffWindowDays);
+                    Level(lift, w.File(lift.Id), day);
                 }
                 else
                 {
                     continue;
                 }
-                if (lift.Used <= 0 && lift.Stand <= 0)
+                if (lift.Gains.Count == 0 && lift.Stand <= 0)
                 {
                     f.Lifts.RemoveAt(i);
                 }
@@ -448,9 +447,8 @@ namespace RealLifeOverhaul.Parties
                     Lift lift = f.Of(RivalId(key, o.Crew[c].Id), false);
                     if (lift != null)
                     {
-                        lift.Used = PartyRules.Left(lift, day, PartyCatalogue.StaffWindowDays);
-                        lift.Day = day;
-                        Level(lift, o.Crew[c]);
+                        PartyRules.Prune(lift, day, PartyCatalogue.StaffWindowDays);
+                        Level(lift, o.Crew[c], day);
                     }
                 }
                 if (!t.Active || o.Crew.Count == 0)
@@ -526,7 +524,7 @@ namespace RealLifeOverhaul.Parties
             for (int i = f.Lifts.Count - 1; i >= 0; i--)
             {
                 Lift lift = f.Lifts[i];
-                if (lift.Person < 0 && lift.Id.StartsWith(RivalPrefix, StringComparison.Ordinal) && ((lift.Used <= 0 && lift.Stand <= 0) || !CrewStands(rivals, lift.Id)))
+                if (lift.Person < 0 && lift.Id.StartsWith(RivalPrefix, StringComparison.Ordinal) && ((lift.Gains.Count == 0 && lift.Stand <= 0) || !CrewStands(rivals, lift.Id)))
                 {
                     f.Lifts.RemoveAt(i);
                 }

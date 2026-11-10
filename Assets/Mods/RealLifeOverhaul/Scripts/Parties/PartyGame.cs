@@ -122,7 +122,7 @@ namespace RealLifeOverhaul.Parties
                         facts.Number = home.StreetNumber;
                         facts.Name = PartyText.T("reallife_party_place_home_name");
                         facts.Sqm = BuildingHelper.GetBuildingSquareMeters(home.Address);
-                        facts.District = DistrictOf(home.Neighborhood);
+                        facts.District = DistrictOf(GameRegistrations.District(home));
                     }
                     return facts;
                 }
@@ -168,7 +168,7 @@ namespace RealLifeOverhaul.Parties
             facts.Own = reg != null && GoingPublic.Mine(reg);
             facts.Open = OpenThrough(reg, start, minutes);
             facts.Sqm = venue.Building.building != null ? BuildingHelper.GetBuildingSquareMeters(venue.Building.building.Address) : 0;
-            facts.District = reg != null ? DistrictOf(reg.Neighborhood) : -1;
+            facts.District = DistrictOf(GameRegistrations.District(reg));
         }
 
         // A venue is still one of its kind: the business there may have changed since the party was booked.
@@ -427,32 +427,6 @@ namespace RealLifeOverhaul.Parties
                     places.Add(BusinessGame.Place(all[i]));
                 }
             }
-        }
-
-        /// <summary>The door of a party's place, for the game's destination marker; false with none.</summary>
-        public static bool Door(PartyPlace place, string street, int number, out Vector3 door)
-        {
-            door = Vector3.zero;
-            try
-            {
-                if (place == PartyPlace.Home)
-                {
-                    BuildingRegistration home = HomeAt(street, number);
-                    Transform entrance = home != null ? BuildingHelper.GetAddressEntranceTransform(home.Address) : null;
-                    door = entrance != null ? entrance.position : door;
-                    return entrance != null;
-                }
-                if (SocialPlaces.Resolve(street, number, out Venue venue))
-                {
-                    door = venue.Door;
-                    return true;
-                }
-            }
-            catch (Exception e)
-            {
-                Logger?.Error(e);
-            }
-            return false;
         }
 
         /// <summary>

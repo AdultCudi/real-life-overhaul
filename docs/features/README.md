@@ -64,6 +64,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 - [Selling a business](economy-sale.md): its value and quality, named buyers with the game's rivals among them, and the rivals' own sales.
 - [The game studio](game-studio.md): games from a concept pitched at your desk to a life after launch, sold to a real audience with no cap, against rival studios.
 - [The tech firms' markets](tech-firms.md): software, AI, consultancy, security, web, design and data centres in markets sized from the city, against rivals by the same rules, with desk sessions for each kind.
+- [Parties and company events](parties.md): host the people you know at home or in the city, hold a lunch, an evening out or a team day for a business's staff, and be asked to a friend's party, with gains capped by the week and the month, and rival shops holding theirs by the same rule.
 - [Delivery trips and food spoilage](delivery-trips.md): logistics routes run as delivery trips with departure times, vehicles, drivers, drive time and fuel, and fresh food spoils by its kind, longer in a fridge or a freezer.
 - [The staff rota planner](economy-rota.md).
 - [Managers for your empire](economy-managers.md).

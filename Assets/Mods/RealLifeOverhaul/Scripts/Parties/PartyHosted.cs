@@ -57,6 +57,24 @@ namespace RealLifeOverhaul.Parties
             return n;
         }
 
+        /// <summary>
+        /// The party held on a day that the city talks about: the one with the most guests who came, if they were
+        /// <see cref="PartyCatalogue.LargeFrom"/> or more; null with none. For the morning paper's piece.
+        /// </summary>
+        public static Party Large(PartyFile f, int day)
+        {
+            Party large = null;
+            for (int i = 0; f != null && i < f.Parties.Count; i++)
+            {
+                Party p = f.Parties[i];
+                if (p.State == PartyState.Held && p.Day == day && p.Came >= PartyCatalogue.LargeFrom && (large == null || p.Came > large.Came))
+                {
+                    large = p;
+                }
+            }
+            return large;
+        }
+
         internal static void Tell(Party p)
         {
             Action<HostedParty> held = Held;

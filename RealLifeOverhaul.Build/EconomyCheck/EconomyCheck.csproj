@@ -408,6 +408,17 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ManagerState.cs" Link="Mod\ManagerState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\ManagerStore.cs" Link="Mod\ManagerStore.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\PriceStrategy.cs" Link="Mod\PriceStrategy.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Parties\PartyCatalogue.cs" Link="Mod\Parties\PartyCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Parties\PartyFile.cs" Link="Mod\Parties\PartyFile.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Parties\IPartyWorld.cs" Link="Mod\Parties\IPartyWorld.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Parties\PartyRules.cs" Link="Mod\Parties\PartyRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Parties\PartyDesk.cs" Link="Mod\Parties\PartyDesk.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Parties\StaffDesk.cs" Link="Mod\Parties\StaffDesk.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Parties\PartyStore.cs" Link="Mod\Parties\PartyStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Parties\PartyHosted.cs" Link="Mod\Parties\PartyHosted.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Parties\PartyKeys.cs" Link="Mod\Parties\PartyKeys.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Parties\PartyFacts.cs" Link="Mod\Parties\PartyFacts.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Parties\PartyPages.cs" Link="Mod\Parties\PartyPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Logistics\TripRules.cs" Link="Mod\TripRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Logistics\TripState.cs" Link="Mod\TripState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Logistics\TripStore.cs" Link="Mod\TripStore.cs" />

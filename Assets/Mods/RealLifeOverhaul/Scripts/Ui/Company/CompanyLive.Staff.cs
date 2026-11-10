@@ -263,11 +263,7 @@ namespace RealLifeOverhaul.Ui
                 AddPeopleWho(blocks, d, s, w, false, w.T("reallife_co_strike_low_sec", "Who stands low"));
             }
             SickBlocks(blocks, s, w);
-            if (RealLifeOverhaul.Parties.PartyDirector.On)
-            {
-                // Parties: the way from the staff's own page to an event for them.
-                blocks.Add(Link(w.T("reallife_party_co_link", "Staff events"), w.T("reallife_party_co_open", "Hold a staff event"), CompanyAct.Of(CompanyDo.OpenParties)));
-            }
+            StaffEventLink(blocks, w);
             c.Blocks = blocks.ToArray();
             return c;
         }
@@ -305,6 +301,15 @@ namespace RealLifeOverhaul.Ui
             string shown = who.Count > items.Count ? w.F("reallife_rota_blocks_count", "{count} of {most}", "count", items.Count.ToString(), "most", who.Count.ToString()) : who.Count.ToString();
             blocks.Add(Sec(title, shown));
             blocks.Add(new CompanyBlock { Kind = CompanyBlockKind.Items, Items = items.ToArray() });
+        }
+
+        // Parties: the way from the staff's page to an event for them, while parties and company events run. It opens the Parties app on its staff events.
+        private static void StaffEventLink(List<CompanyBlock> blocks, Words w)
+        {
+            if (RealLifeOverhaul.Parties.PartyDirector.On)
+            {
+                blocks.Add(Link(w.T("reallife_party_co_link", "Staff events"), w.T("reallife_party_co_open", "Hold a staff event"), CompanyAct.Of(CompanyDo.OpenParties)));
+            }
         }
 
         // The sick pay policy: one label, its choice, and what the choice does to pay and standing.
@@ -470,6 +475,7 @@ namespace RealLifeOverhaul.Ui
             if (d.State.Staff.Count <= SmallCrew)
             {
                 SickBlocks(blocks, d.State, w);   // a small crew has no summary page: the policy stands under the person
+                StaffEventLink(blocks, w);
             }
             c.Blocks = blocks.ToArray();
             return c;

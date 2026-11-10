@@ -183,7 +183,7 @@ namespace RealLifeOverhaul.Ui
                 case "RealLifeGuide": return UiIcon.Info;
                 case "RealLifeSettings": return UiIcon.Gear;
                 case "RealLifeStaff": return UiIcon.People;
-                case "RealLifeParties": return UiIcon.MusicNotes;
+                case "RealLifeParties": return UiIcon.ForkKnife;
                 case ShellPeople: return UiIcon.People;
                 case ShellFirm: return UiIcon.GameController;
                 default: return UiIcon.Store;

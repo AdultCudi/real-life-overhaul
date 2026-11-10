@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Ui
         public static void Fill(VentModel m, VentView v, PartyFacts f, IPartyActions act, VentWords w)
         {
             m.Title = w.T("reallife_party_app", "Parties");
-            m.Icon = UiIcon.MusicNotes;
+            m.Icon = UiIcon.ForkKnife;
             m.Prompts = VenPages.Prompts(w);
             var runs = new VentRuns();
             m.Nav = new[]

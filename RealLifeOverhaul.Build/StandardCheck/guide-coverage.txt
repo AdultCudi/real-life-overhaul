@@ -19,6 +19,7 @@ startup-terms	reallife_guide_tech_startups	the terms of a round, the board's say
 startup-founding	reallife_guide_tech_startups	founding a startup, niches, co-founders and going to market
 startup-rivals	reallife_guide_tech_startups	competition in niches: rivals that react, bake offs, listed companies buying or coming in
 tech-firms	reallife_guide_firms	the other tech firms rebuilt: shared markets, rivals and desk sessions
+parties	reallife_guide_parties	parties with friends and company events for a business's staff
 delivery-trips	reallife_guide_trips	logistics routes as delivery trips, and food spoilage
 district-save	-	how the save keeps the mod's places: nothing a player sees
 districts	reallife_guide_districtview	the district view

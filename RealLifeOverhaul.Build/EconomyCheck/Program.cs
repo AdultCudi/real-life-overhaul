@@ -958,6 +958,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--parties")
+        {
+            Parties();   // (parties and company events alone, while working on them: PartyChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--networking")
         {
             Networking();   // (networking alone, while working on it: NetworkChecks.cs)
@@ -1116,6 +1122,7 @@ internal static partial class Program
         VenturesUi();   // investors beyond the first deal, their save and a year of days, and the Ventures pages and their buttons (VenturesUiChecks.cs)
         Online();
         Logistics();   // delivery trips and food spoilage: departures, timeline, loads, fuel, wages, the rivals' books, batches, shelf life and both saves (LogisticsChecks.cs)
+        Parties();   // parties and company events: the caps, each refusal before any money, the exploits, the option, the saves, the managers, the rivals, the pages (PartyChecks.cs)
         Services();
         Brands();
         Tables();

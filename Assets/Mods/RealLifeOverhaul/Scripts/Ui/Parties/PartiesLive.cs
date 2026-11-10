@@ -100,7 +100,8 @@ namespace RealLifeOverhaul.Ui
 
         private PartyAsk Ask(IPartyWorld w)
         {
-            return new PartyAsk { Place = _place, Tier = _tier, Day = w.Day + _dayOff, Hour = _hour, Street = _place == PartyPlace.Home ? null : _venueStreet, Number = _venueNumber, Guests = _picked };
+            return new PartyAsk { Place = _place, Tier = _tier, Day = w.Day + _dayOff, Hour = _hour, Street = _place == PartyPlace.Home ? null : _venueStreet, Number = _venueNumber,
+                Guests = _picked };
         }
 
         private void HostFacts(PartyFacts f, PartyFile file, IPartyWorld w)
@@ -247,7 +248,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     Id = v.Id, Kind = PartyPages.RowInvite, Title = PartyText.Fill("reallife_party_row_invite_title", "name", name), Face = name, Icon = UiIcon.Person,
                     Sub = PartyText.Fill("reallife_party_row_invite", "place", v.Name, "when", w.When(v.Day, v.Hour), "state", PartyText.T(PartyKeys.Invite(v.State, v.Began >= 0))),
-                    Chip = PartyText.T(PartyKeys.Invite(v.State, v.Began >= 0)), ChipTone = v.State == InviteState.Asked ? UiRole.Notice : v.Open || v.State == InviteState.Went ? UiRole.Ok : UiRole.Muted,
+                    Chip = PartyText.T(PartyKeys.Invite(v.State, v.Began >= 0)), ChipTone = v.State == InviteState.Asked ? UiRole.Notice : v.Open || v.State == InviteState.Went ? UiRole.Ok
+                        : UiRole.Muted,
                     CanAnswer = v.State == InviteState.Asked && now <= v.Start, CanLocate = v.Open
                 };
                 (v.Open ? coming : past).Add(row);

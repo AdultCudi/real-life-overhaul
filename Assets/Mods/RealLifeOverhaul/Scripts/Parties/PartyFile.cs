@@ -83,18 +83,23 @@ namespace RealLifeOverhaul.Parties
         public int End => Start + PartyCatalogue.EventMinutes[PartyCatalogue.Clamp((int)Kind, 0, PartyCatalogue.EventMinutes.Length - 1)];
     }
 
+    /// <summary>One gain of a lift: the day it was given on and how much, per mille of the cap.</summary>
+    public struct LiftGain
+    {
+        public int Day, Amount;
+    }
+
     /// <summary>
-    /// What is left of what parties or events gave somebody, per mille of their cap, true on <see cref="Day"/>: it leaks away
-    /// over the window, and only the room left can be given again. A person of the cast is keyed by their place in it, an
-    /// employee (the player's or a rival's) by their id.
+    /// What parties or events gave somebody, gain by gain, per mille of their cap: every gain counts in full against the cap
+    /// for a whole window of days, so no window ever holds more than the cap, and only the room left can be given again.
+    /// A person of the cast is keyed by their place in it, an employee (the player's or a rival's) by their id.
     /// </summary>
     public sealed class Lift
     {
         public string Id = string.Empty;       // an employee's id; empty for a person of the cast
         public int Person = -1;                // a person's place in the cast; -1 for an employee
-        public int Used;                       // per mille of the cap still counted
-        public int Day;                        // the day Used was true on
         public int Stand;                      // points of the company's standing an employee holds from it now: taken back as it fades
+        public readonly List<LiftGain> Gains = new List<LiftGain>(4);
     }
 
     /// <summary>A business's manager told to hold an event every so many days.</summary>
