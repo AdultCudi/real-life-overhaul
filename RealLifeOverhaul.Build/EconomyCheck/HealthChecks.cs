@@ -133,9 +133,12 @@ internal static partial class Program
               && HealthRules.ContactChance(5, HealthFactors.Middling) == HealthCatalogue.PlayerContact * HealthCatalogue.PlayerContactMost && HealthRules.ContactChance(0, HealthRunDown) == 0,
             "health living: no wave and nobody ill at home is no chance at all, and at most " + HealthCatalogue.PlayerContactMost + " people at home are counted");
         bool safe = true, same = true;
-        for (int day = 0; day < HealthCatalogue.SafeDays; day++)
+        for (int seed = 1; seed <= 500; seed++)
         {
-            safe &= HealthRules.PlayerCatch(5, day, 1400, 2, HealthRunDown) == Condition.None;
+            for (int day = 0; day < HealthCatalogue.SafeDays; day++)
+            {
+                safe &= HealthRules.PlayerCatch(seed, day, 1400, 2, HealthRunDown) == Condition.None;
+            }
         }
         int careful = 0, runDown = 0, quiet = 0;
         for (int day = 10; day < 20010; day++)
@@ -758,8 +761,11 @@ internal static partial class Program
         int home = one.People.Household[person];
         one.Households.Savings[home] = 0;
         one.Households.Debt[home] = 0;
+        one.People.Pay[person] = 900000;   // a pay so high that the lost days alone are far over the bound
         HealthPeople.Apply(one, oo, 5, person, 200, Condition.BrokenArm, 1000);
-        Check(one.Households.Debt[home] > 0 && one.Households.Debt[home] <= HealthCatalogue.NpcDebtMost && one.Households.Savings[home] == 0 && oo.Serious == 1 && oo.Debt == one.Households.Debt[home],
+        one.People.Pay[person] = 1500;
+        Check(one.Households.Debt[home] == HealthCatalogue.NpcDebtMost && one.Households.Savings[home] == 0 && oo.Serious == 1 && oo.Debt == one.Households.Debt[home]
+              && oo.LostWages + oo.Bills == HealthCatalogue.NpcDebtMost,
             "health people: what a household cannot pay goes on its debt, by no more than " + HealthCatalogue.NpcDebtMost + " a case, and its savings never under nothing");
         one.Households.Savings[home] = 1000000;
         int debtWas = one.Households.Debt[home];
@@ -1271,7 +1277,20 @@ internal static partial class Program
             Check(guide.Contains(".Fact(\"" + fact.Trim('{', '}') + "\""), "health texts: the Guide's " + fact + " is filled from the catalogue");
         }
         // What's new: the feature's line in the next row of every language, before the first fix mark.
-        const string sentence = "You can now fall seriously ill or be hurt and spend days in hospital while your businesses run on";
+        string[] sentences =
+        {
+            "You can now fall seriously ill or be hurt and spend days in hospital while your businesses run on, book the doctor from the new Health app, take a health plan that pays part of the bills, pay a bill off as a medical debt and use sick leave at your job.",
+            "Agora você pode ficar gravemente doente ou se machucar e passar dias no hospital enquanto seus negócios continuam, marcar consulta pelo novo app Saúde, contratar um plano de saúde que paga parte das contas, quitar uma conta como dívida médica e usar licença médica no trabalho.",
+            "你现在可能会重病或受伤，并在医院住上好几天，而你的生意照常运转。",
+            "Du kannst jetzt schwer krank werden oder dich verletzen und Tage im Krankenhaus verbringen, während deine Betriebe weiterlaufen.",
+            "Vous pouvez désormais tomber gravement malade ou être blessé et passer des jours à l'hôpital pendant que vos entreprises continuent, prendre rendez-vous chez le médecin depuis la nouvelle application Santé, souscrire un plan santé qui paie une partie des factures, régler une facture comme dette médicale et prendre un arrêt maladie au travail.",
+            "Ahora puedes enfermar gravemente o lastimarte y pasar días en el hospital mientras tus negocios siguen en marcha, pedir cita al médico desde la nueva aplicación Salud, contratar un plan de salud que paga parte de las facturas, pagar una factura como deuda médica y usar la baja laboral por enfermedad en tu trabajo.",
+            "Теперь вы можете серьёзно заболеть или получить травму и провести дни в больнице, пока ваш бизнес продолжает работать.",
+            "Je kunt nu ernstig ziek worden of gewond raken en dagen in het ziekenhuis doorbrengen terwijl je bedrijven doordraaien, de dokter boeken via de nieuwe app Gezondheid, een zorgplan nemen dat een deel van de rekeningen betaalt, een rekening afbetalen als medische schuld en ziekteverlof gebruiken op je werk.",
+            "Artık işleriniz çalışmaya devam ederken ağır hastalanabilir ya da yaralanabilir ve hastanede günler geçirebilirsiniz; yeni Sağlık uygulamasından doktora randevu alabilir, faturaların bir kısmını ödeyen bir sağlık planı alabilir, bir faturayı tıbbi borç olarak ödeyebilir ve işinizde hastalık izni kullanabilirsiniz.",
+            "Teraz możesz poważnie zachorować albo zostać ranny i spędzić dni w szpitalu, a twoje firmy działają dalej.",
+            "이제 사업이 계속 돌아가는 동안 중병에 걸리거나 다쳐서 며칠을 병원에서 보낼 수 있습니다."
+        };
         string[] marks = { "Fixed: ", "Corrigido: ", "已修复：", "Behoben: ", "Corrigé : ", "Corregido: ", "Исправлено: ", "Opgelost: ", "Düzeltildi: ", "Naprawiono: ", "수정: " };
         for (int i = 0; i < HealthLanguages.Length; i++)
         {
@@ -1279,14 +1298,8 @@ internal static partial class Program
             string next = words != null && words.TryGetValue("reallife_changes_next", out string value) ? value : string.Empty;
             int mark = next.IndexOf(marks[i], StringComparison.Ordinal);
             string before = mark >= 0 ? next.Substring(0, mark) : next;
-            if (i == 0)
-            {
-                Check(next.Contains(sentence) && next.IndexOf(sentence, StringComparison.Ordinal) < (mark < 0 ? int.MaxValue : mark), "health texts: What's new has the feature's line before the first fix mark in en");
-            }
-            else
-            {
-                Check(!next.Contains(sentence) && before.Length > 40, "health texts: What's new has the feature's line, translated, in " + HealthLanguages[i]);
-            }
+            int at = next.IndexOf(sentences[i], StringComparison.Ordinal);
+            Check(at >= 0 && at < (mark < 0 ? int.MaxValue : mark) && before.Length > 40, "health texts: What's new has the feature's line, in its own language, before the first fix mark in " + HealthLanguages[i]);
         }
     }
 }
