@@ -124,7 +124,8 @@ namespace RealLifeOverhaul.Ui
                 pickedCharity = v.Pick == CharityKey + i ? i : pickedCharity;
                 items.Add(new VentItem
                 {
-                    Icon = CharityIcons[i], Title = w.T(GivingCatalogue.NameKeys[i], GivePages.NameEnglish(i)), Sub = w.T("reallife_dynasty_charity_sub", "A charity: what it is left is free of estate tax"),
+                    Icon = CharityIcons[i], Title = w.T(GivingCatalogue.NameKeys[i], GivePages.NameEnglish(i)),
+                    Sub = w.T("reallife_dynasty_charity_sub", "A charity: what it is left is free of estate tax"),
                     Chip = b != null ? Percent(b.Share) : null, Amount = string.Empty, Run = runs.Add(() => { v.Pick = CharityKey + index; return true; })
                 });
             }
@@ -156,7 +157,8 @@ namespace RealLifeOverhaul.Ui
                 }
                 else
                 {
-                    right.Add(VentBlock.Note(w.F("reallife_dynasty_cannot_carry", "Cannot carry on: an heir is one of the family, between {least} and {most} years old. They can still be left a share.",
+                    right.Add(VentBlock.Note(w.F("reallife_dynasty_cannot_carry", "Cannot carry on: an heir is one of the family, between {least} and {most} years old."
+                        + " They can still be left a share.",
                         "least", DynastyCatalogue.HeirLeast.ToString(), "most", DynastyCatalogue.HeirMost.ToString())));
                 }
                 if (!heir)
@@ -178,7 +180,8 @@ namespace RealLifeOverhaul.Ui
             right.Add(VentBlock.Stepper(w.T("reallife_dynasty_step_age", "You may retire from the age of"), d.RetireAge.ToString(), runs.Add(() => { act.RetireAge(-1); return true; }),
                 can && d.RetireAge > DynastyCatalogue.RetireLeast, can && d.RetireAge < DynastyCatalogue.RetireMost));
             runs.Add(() => { act.RetireAge(1); return true; });
-            right.Add(VentBlock.Stepper(w.T("reallife_dynasty_step_keep", "You keep, of the estate"), Percent(DynastyCatalogue.KeepSteps[Math.Max(0, Math.Min(DynastyCatalogue.KeepSteps.Length - 1, d.Keep))]),
+            int keep = Math.Max(0, Math.Min(DynastyCatalogue.KeepSteps.Length - 1, d.Keep));
+            right.Add(VentBlock.Stepper(w.T("reallife_dynasty_step_keep", "You keep, of the estate"), Percent(DynastyCatalogue.KeepSteps[keep]),
                 runs.Add(() => { act.Keep(-1); return true; }), can && d.Keep > 0, can && d.Keep < DynastyCatalogue.KeepSteps.Length - 1));
             runs.Add(() => { act.Keep(1); return true; });
             right.Add(VentBlock.Section(w.T("reallife_dynasty_sec_sign", "Signing")));
@@ -232,7 +235,8 @@ namespace RealLifeOverhaul.Ui
             }
             right.Add(VentBlock.Section(w.T("reallife_dynasty_sec_retire", "Retiring")));
             right.Add(VentBlock.Row(w.T("reallife_dynasty_row_age", "Your age"), f.Age.ToString()));
-            right.Add(VentBlock.Row(w.T("reallife_dynasty_row_retire_from", "Your will lets you retire from"), f.Signed.Written ? f.Signed.RetireAge.ToString() : w.T("reallife_dynasty_no_will_short", "No will")));
+            right.Add(VentBlock.Row(w.T("reallife_dynasty_row_retire_from", "Your will lets you retire from"),
+                f.Signed.Written ? f.Signed.RetireAge.ToString() : w.T("reallife_dynasty_no_will_short", "No will")));
             Statement r = f.RetireToday;
             if (r != null && f.Signed.Written)
             {
@@ -286,13 +290,15 @@ namespace RealLifeOverhaul.Ui
             left.Add(VentBlock.Row(w.T("reallife_dynasty_row_net", "The estate"), w.Money(s.Net)));
             if (s.UnderWater)
             {
-                left.Add(VentBlock.Note(w.T("reallife_dynasty_under_water", "The debts are more than the estate. Nothing is written off: the heir takes it all, debts included, and no bequest is paid."),
+                left.Add(VentBlock.Note(w.T("reallife_dynasty_under_water", "The debts are more than the estate. Nothing is written off: the heir takes it all, debts included,"
+                    + " and no bequest is paid."),
                     UiRole.Warn));
             }
             left.Add(VentBlock.Row(w.F("reallife_dynasty_row_gifts", "Gifts to people in the last {years} years, counted in", "years", f.WindowYears.ToString()), w.Money(s.Gifts)));
             left.Add(VentBlock.Row(w.T("reallife_dynasty_row_charity", "Left to charities, free of tax"), w.Money(-s.Charity)));
             left.Add(VentBlock.Row(w.F("reallife_dynasty_row_spouse", "A married partner's part, free up to {share}", "share", Percent(DynastyCatalogue.SpouseShare)), w.Money(-s.Spouse)));
-            left.Add(VentBlock.Row(w.F("reallife_dynasty_row_threshold", "Free of tax, the first {amount}", "amount", w.Money(DynastyRules.At(DynastyCatalogue.Threshold, s.Level))), w.Money(s.Taxable)));
+            left.Add(VentBlock.Row(w.F("reallife_dynasty_row_threshold", "Counted for tax, the first {amount} of it free", "amount",
+                w.Money(DynastyRules.At(DynastyCatalogue.Threshold, s.Level))), w.Money(s.Taxable)));
             left.Add(VentBlock.Row(w.T("reallife_dynasty_row_tax", "Estate tax"), w.Money(s.Tax), s.Tax > 0 ? UiRole.Warn : UiRole.Text));
             if (s.Loan > 0)
             {
@@ -309,12 +315,14 @@ namespace RealLifeOverhaul.Ui
             {
                 left.Add(VentBlock.Note(w.F("reallife_dynasty_scale_note", "Bequests are paid in cash. The cash left after the tax covers {share} of each.", "share", Percent(s.Scale)), UiRole.Warn));
             }
-            left.Add(VentBlock.Row(w.F("reallife_dynasty_row_residue", "{name} is left", "name", string.IsNullOrEmpty(s.To) ? w.T("reallife_dynasty_fig_nobody", "Nobody") : s.To), w.Money(s.Residue)));
+            left.Add(VentBlock.Row(w.F("reallife_dynasty_row_residue", "{name} is left", "name", string.IsNullOrEmpty(s.To) ? w.T("reallife_dynasty_fig_nobody", "Nobody") : s.To),
+                w.Money(s.Residue)));
         }
 
         private static string ModeWord(HandMode mode, VentWords w)
         {
-            return mode == HandMode.Retire ? w.T("reallife_dynasty_mode_retire", "Retired") : mode == HandMode.Elder ? w.T("reallife_dynasty_mode_elder", "The fund") : w.T("reallife_dynasty_mode_death", "Died");
+            return mode == HandMode.Retire ? w.T("reallife_dynasty_mode_retire", "Retired") : mode == HandMode.Elder ? w.T("reallife_dynasty_mode_elder", "The fund")
+                : w.T("reallife_dynasty_mode_death", "Died");
         }
 
         /// <summary>The key of the line that says whether the founder may retire.</summary>
@@ -383,7 +391,8 @@ namespace RealLifeOverhaul.Ui
                 left.Add(VentBlock.Row(f.Elder.Name, w.F("reallife_dynasty_elder_age", "{age} years old", "age", f.ElderAge.ToString())));
                 left.Add(VentBlock.Row(w.T("reallife_dynasty_row_fund", "Their own fund"), w.Money(f.Elder.Fund)));
                 left.Add(VentBlock.Row(w.T("reallife_dynasty_row_draw", "They live on, a month"), w.Money(f.Elder.Draw)));
-                left.Add(VentBlock.Note(w.F("reallife_dynasty_elder_note", "At {age} what is left of the fund passes to the head of the family, taxed with the estate they handed over if that was within {years} years.",
+                left.Add(VentBlock.Note(w.F("reallife_dynasty_elder_note", "At {age} what is left of the fund passes to the head of the family, taxed with the estate they handed over"
+                    + " if that was within {years} years.",
                     "age", DynastyCatalogue.LastAge.ToString(), "years", f.WindowYears.ToString())));
             }
             if (f.Kin.Count > 0)
@@ -398,7 +407,8 @@ namespace RealLifeOverhaul.Ui
             right.Add(VentBlock.Section(w.T("reallife_dynasty_sec_rivals", "The rivals' families")));
             if (f.RivalLines.Count == 0)
             {
-                right.Add(VentBlock.Note(w.T("reallife_dynasty_rivals_none", "No rival tycoon has come forward yet. When they do, they age, retire and die, and their heirs pay the same estate tax.")));
+                right.Add(VentBlock.Note(w.T("reallife_dynasty_rivals_none", "No rival tycoon has come forward yet. When they do, they age, retire and die,"
+                    + " and their heirs pay the same estate tax.")));
             }
             for (int i = 0; i < f.RivalLines.Count; i++)
             {

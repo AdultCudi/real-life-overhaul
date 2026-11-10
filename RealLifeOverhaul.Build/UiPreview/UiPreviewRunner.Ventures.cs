@@ -56,6 +56,15 @@ public static partial class UiPreviewRunner
                 Walk = Moves("DDR"), Lay = (s, f, d, k) => VentFace.Lay(s, UiSamples.Giving(ModEnglish, st), f, d, k)
             });
         }
+        for (int i = 0; i < UiSamples.DynastyStates.Length; i++)
+        {
+            string st = UiSamples.DynastyStates[i];
+            screens.Add(new Screen
+            {
+                Name = "dynasty_" + st, AppName = "Legacy", Icon = UiIcon.People, Backdrop = i % 2 == 0 ? "13.jpg" : "02.jpg", HoverCommand = UiAppWindow.NavCommand, HoverArg = 1,
+                Walk = Moves("DDR"), Lay = (s, f, d, k) => VentFace.Lay(s, UiSamples.Dynasty(ModEnglish, st), f, d, k)
+            });
+        }
         foreach (string lang in new[] { "pt", "zh-cn" })
         {
             UiWords words = ModWords(lang);

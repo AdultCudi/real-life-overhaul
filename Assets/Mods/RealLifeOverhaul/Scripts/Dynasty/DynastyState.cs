@@ -80,6 +80,13 @@ namespace RealLifeOverhaul.Dynasty
         }
     }
 
+    /// <summary>Who draws a will up: a law firm of the city, or the founder's own (no fee).</summary>
+    public struct Notary
+    {
+        public string Name;
+        public bool Own;
+    }
+
     /// <summary>A gift of money to a person in the founder's life, dated: it counts as part of the estate while it is inside the window.</summary>
     public struct LifeGift
     {

@@ -3,13 +3,6 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Dynasty
 {
-    /// <summary>Who draws a will up: a law firm of the city, or the founder's own (no fee).</summary>
-    public struct Notary
-    {
-        public string Name;
-        public bool Own;
-    }
-
     /// <summary>
     /// What the dynasty asks of the other features, filled in by Wiring/Wiring.DynastyLinks and left empty (the default answer) while a feature is off. Every answer is read on a
     /// day's pass, a handover's step or a press, never per frame.

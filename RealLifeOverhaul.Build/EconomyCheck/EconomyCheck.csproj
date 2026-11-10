@@ -406,6 +406,16 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GivingMonth.cs" Link="Mod\Giving\GivingMonth.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GivingLoans.cs" Link="Mod\Giving\GivingLoans.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\GivePages.cs" Link="Mod\Ventures\GivePages.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Dynasty\DynastyCatalogue.cs" Link="Mod\Dynasty\DynastyCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Dynasty\DynastyState.cs" Link="Mod\Dynasty\DynastyState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Dynasty\DynastyStore.cs" Link="Mod\Dynasty\DynastyStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Dynasty\DynastyRules.cs" Link="Mod\Dynasty\DynastyRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Dynasty\DynastyWill.cs" Link="Mod\Dynasty\DynastyWill.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Dynasty\DynastyHand.cs" Link="Mod\Dynasty\DynastyHand.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Dynasty\DynastyRivals.cs" Link="Mod\Dynasty\DynastyRivals.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Dynasty\DynastyStudy.cs" Link="Mod\Dynasty\DynastyStudy.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Dynasty\DynastyFacts.cs" Link="Mod\Dynasty\DynastyFacts.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\DynastyPages.cs" Link="Mod\Ventures\DynastyPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLedger.cs" Link="Mod\RotaLedger.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLadder.cs" Link="Mod\RotaLadder.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaStock.cs" Link="Mod\RotaStock.cs" />

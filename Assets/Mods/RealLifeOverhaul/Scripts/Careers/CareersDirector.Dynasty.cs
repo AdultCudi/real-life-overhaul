@@ -7,8 +7,9 @@ namespace RealLifeOverhaul.Careers
     {
         /// <summary>
         /// The founder hands over. Their job ends as a retirement (it goes on the record with its reference, as any job that ends), and the working life starts afresh: the
-        /// record of posts, the applications and the benefit were the founder's own. The pension pot is money, so it stays in the family and nothing of it is lost. The study file becomes the heir's (<see cref="DynastyStudy.HandOver"/>):
-        /// their share of the skills, their own degree, none of the founder's qualifications. Returns how many qualifications did not pass on.
+        /// record of posts, the applications and the benefit were the founder's own. The pension pot is money, so it stays in the family and nothing of it is lost. The
+        /// study file becomes the heir's (<see cref="DynastyStudy.HandOver"/>): their share of the skills, their own degree, none of the founder's qualifications.
+        /// Returns how many qualifications did not pass on.
         /// </summary>
         internal int HandOver(string heir, int share, int day)
         {
