@@ -22,6 +22,7 @@ namespace RealLifeOverhaul.Meta
             Roommates.RoommateGuide.Register();
             Household.HouseholdGuide.Register();
             Giving.GivingGuide.Register();
+            RivalsSeen.SeenGuide.Register();
             Permadeath.PermadeathGuide.Register();
             Faults.FaultGuide.Register();
             Texts.TextsGuide.Register();

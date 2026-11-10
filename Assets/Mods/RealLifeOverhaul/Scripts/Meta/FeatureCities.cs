@@ -150,6 +150,7 @@ namespace RealLifeOverhaul.Meta
             new Line("networking", CityScope.AnyCity, "people with positions at the game's businesses picked at each load"),
             new Line("home_household", CityScope.AnyCity, "staff at the player's home"),
             new Line("giving", CityScope.AnyCity, "the city's households and the people the player knows"),
+            new Line("rivals_seen", CityScope.AnyCity, "the rivals, the cars and the eating places of whatever city it is; a weekend in the Hamptons only where the city has them"),
             new Line("newshops", CityScope.AnyCity, "business types of the mod's own in the game's buildings"),
             new Line("careers_ladder", CityScope.AnyCity, "the city's chains and their stores, read from the game's businesses at each load"),
             new Line("economy_hierarchy", CityScope.AnyCity, "the player's own stores and managers, with regions drawn from them"),

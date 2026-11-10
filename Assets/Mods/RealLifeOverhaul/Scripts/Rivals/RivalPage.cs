@@ -203,6 +203,11 @@ namespace RealLifeOverhaul.Rivals
             {
                 box.Line(giving);
             }
+            string seen = RivalBridges.SeenLine != null ? RivalBridges.SeenLine(who) : null;
+            if (!string.IsNullOrEmpty(seen))
+            {
+                box.Line(seen);
+            }
             if (director.HoldingShares(who, out long held, out long most, out long _, out int mid))
             {
                 box.Row("reallife_rival_label_holding", RivalText.Fill("reallife_rival_holding_value", "held", RivalText.N(held), "most", RivalText.N(most), "price", RivalText.MoneyCents(mid)));

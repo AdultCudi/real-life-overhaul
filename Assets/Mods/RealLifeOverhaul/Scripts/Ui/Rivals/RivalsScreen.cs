@@ -354,8 +354,16 @@ namespace RealLifeOverhaul.Ui
                 {
                     chosen = _league.Count;
                 }
+                string car = null, found = null;
+                RivalsSeen.SeenDirector seenBy = you ? null : RivalsSeen.SeenDirector.Instance;
+                if (seenBy != null && seenBy.PageLines("g" + d.rivalId, out string drives, out string _, out string _))
+                {
+                    car = drives;
+                    found = seenBy.FoundShort("g" + d.rivalId);
+                }
                 _league.Add(new RivalEntry
                 {
+                    Car = car, Found = found,
                     Name = d.entryName, You = you, Defeated = d.isDefeated, Rivalry = war != null && war.gameObject.activeSelf, WeeklyIncome = d.weeklyIncome,
                     Businesses = d.ownedBusinesses != null ? d.ownedBusinesses.Count : 0, WeekAgo = WeekAgo(history, today), Age = d.ageInYears,
                     District = string.IsNullOrEmpty(d.mostActiveNeighborhood) ? null : UiText.T(d.mostActiveNeighborhood)
