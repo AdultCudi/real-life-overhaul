@@ -48,8 +48,6 @@ namespace RealLifeOverhaul.RivalsSeen
             return text;
         }
 
-        public static string Form(SeenForm form) => T(SeenCatalogue.FormNames[SeenCatalogue.Clamp((int)form, 0, SeenCatalogue.FormNames.Length - 1)]);
-
         public static string Spot(SeenSpot spot) => T(SeenCatalogue.SpotNames[SeenCatalogue.Clamp((int)spot, 0, SeenCatalogue.SpotNames.Length - 1)]);
 
         /// <summary>Where a rival tends to be found, by how their business is doing.</summary>

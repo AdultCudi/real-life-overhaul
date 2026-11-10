@@ -39,8 +39,9 @@ namespace RealLifeOverhaul.RivalsSeen
             for (int i = 0; i < _due.Count; i++)
             {
                 SeenSubject s = _subjects[_due[i].Subject];
-                string line = s.Name + ": " + SeenText.Spot(_due[i].Where.Spot) + (_venueNames[i].Length > 0 ? " (" + _venueNames[i] + ")" : string.Empty);
-                Logger?.Info("Rivals seen check (who is where, day " + day + ", " + hour + ":00): " + line + (_venues[i] != null ? string.Empty : ", no building of the city to stand at") + ".");
+                string line = s.Name + ": " + SeenText.Spot(_due[i].Where.Spot);
+                Logger?.Info("Rivals seen check (who is where, day " + day + ", " + hour + ":00): " + line + (_venueNames[i].Length > 0 ? " (" + _venueNames[i] + ")" : string.Empty)
+                             + (_venues[i] != null ? string.Empty : ", no building of the city to stand at") + ".");
                 if (i < 3)
                 {
                     names.Append(names.Length > 0 ? "; " : string.Empty).Append(line);

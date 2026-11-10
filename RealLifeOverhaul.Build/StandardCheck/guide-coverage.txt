@@ -15,6 +15,7 @@ desk-sessions	reallife_guide_living	desk sessions and the living economy's maste
 game-studio	reallife_guide_studio	the game studio rebuilt
 flare-city	reallife_guide_flare_city	Flare connected to the city's residents
 giving	reallife_guide_giving	charities, gifts and loans
+rivals-seen	reallife_guide_rivals_seen	rivals seen around the city, their cars, the greeting and the sightings
 startup-money	reallife_guide_tech_startups	investors' money kept by the firm account, the board and the wind down
 startup-terms	reallife_guide_tech_startups	the terms of a round, the board's say over big spends and the skills that read them
 startup-founding	reallife_guide_tech_startups	founding a startup, niches, co-founders and going to market

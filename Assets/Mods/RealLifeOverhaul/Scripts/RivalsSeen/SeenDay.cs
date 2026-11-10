@@ -49,19 +49,20 @@ namespace RealLifeOverhaul.RivalsSeen
                     f.Records.Add(r);
                 }
                 SeenRules.Mark(r, s, day, level);
-                made += Car(f, r, s, day, city) ? 1 : 0;
+                made += Car(f, r, s, day, city, SeenCatalogue.DayMost - made) ? 1 : 0;
             }
             made += Plan(f, subjects, day, city, SeenCatalogue.DayMost - made);
             Prune(f, subjects);
             return made;
         }
 
-        // The car a rival's rung gives them: taken quietly the first time, and as a sighting when it changes after the hold.
-        private static bool Car(SeenFile f, SeenRecord r, SeenSubject s, int day, ISeenCity city)
+        // The car a rival's rung gives them: taken quietly the first time, and as a sighting when it changes after the hold. On a day that already has its sightings a
+        // change waits for the next, so a week in which many figures turn never fills the feed with cars.
+        private static bool Car(SeenFile f, SeenRecord r, SeenSubject s, int day, ISeenCity city, int room)
         {
             int turn = SeenRules.CarTurn(r, day);
             int cars = city != null ? city.Cars : 0;
-            if (turn == 0 || cars <= 0)
+            if (turn == 0 || cars <= 0 || (turn != 2 && room <= 0))
             {
                 return false;
             }
@@ -274,7 +275,7 @@ namespace RealLifeOverhaul.RivalsSeen
             {
                 return null;
             }
-            bool byCar = !string.IsNullOrEmpty(car) && carRung >= SeenCatalogue.PlayerCarRung, atTable = !string.IsNullOrEmpty(place);
+            bool byCar = !string.IsNullOrEmpty(car) && carRung >= SeenCatalogue.PlayerCarRung, atTable = !string.IsNullOrEmpty(place) && !string.IsNullOrEmpty(district);
             if (!byCar && !atTable)
             {
                 return null;

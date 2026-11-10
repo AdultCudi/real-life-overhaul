@@ -35,7 +35,7 @@ namespace RealLifeOverhaul.RivalsSeen
             }
         }
 
-        /// <summary>A rival's key as a number: the same on every machine (never string.GetHashCode, which a runtime may change).</summary>
+        /// <summary>A rival's key as a number: the same on every machine (never the runtime's own hash of a string, which a runtime may change).</summary>
         public static int Who(string key)
         {
             unchecked
