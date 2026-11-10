@@ -351,7 +351,15 @@ internal static partial class Program
     private static void TextBoxCost()
     {
         TextBoxCostRun(1000, out _, out _);
-        TextBoxCostRun(1000000, out double ms, out long bytes);
+        double ms = double.MaxValue;
+        long bytes = long.MaxValue;
+        // The least of three rounds: an allocation in the code shows in every round, the runtime's own few kilobytes now and then in one at most.
+        for (int round = 0; round < 3; round++)
+        {
+            TextBoxCostRun(1000000, out double roundMs, out long roundBytes);
+            ms = Math.Min(ms, roundMs);
+            bytes = Math.Min(bytes, roundBytes);
+        }
         Check(bytes == 0, "text box: the watch's rules allocate nothing (" + bytes + " bytes over a million looks)");
         Check(ms < 200.0, "text box: a million looks of the watch's rules in " + ms.ToString("0.0") + " ms (wanted: under 200 ms)");
     }
