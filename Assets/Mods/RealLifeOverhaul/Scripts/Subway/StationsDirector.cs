@@ -24,7 +24,7 @@ namespace RealLifeOverhaul.Subway
         public const string FeatureId = "uptown_subway";
         public const string RootName = "RLO subway stations";   // its own object outside the mod's root: the entrances stand under it
 
-        private static readonly FeatureGuard FrameGuard = Guard.For(FeatureId, "Subway StationsDirector", typeof(StationsDirector));
+        private static readonly FeatureGuard FrameGuard = Guard.For("uptown_subway", "Subway StationsDirector", typeof(StationsDirector));
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
         private const float Look = 0.25f;          // s of real time between two looks while its people are out or a removal waits
@@ -49,7 +49,6 @@ namespace RealLifeOverhaul.Subway
         private void Awake()
         {
             Instance = this;
-            StationsGame.Logger = Logger;
             StationsGame.Forget();   // nothing of an earlier city is held, whichever way it went
             _onClosing = Guard.Wrap<string>(FrameGuard, OnDistrictClosing);
             UptownLots.Closing += _onClosing;

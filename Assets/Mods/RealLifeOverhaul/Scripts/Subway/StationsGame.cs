@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Globalization;
-using BAModAPI;
 using Extensions;
 using Localizor;
 using RealLifeOverhaul.Uptown;
@@ -25,8 +24,6 @@ namespace RealLifeOverhaul.Subway
     /// </summary>
     internal static class StationsGame
     {
-        public static IModLogger Logger;
-
         private sealed class Stood
         {
             public StationSite Site;
@@ -69,14 +66,14 @@ namespace RealLifeOverhaul.Subway
         {
             if (_root == null)
             {
-                _root = new GameObject("RLO subway stations");
+                _root = new GameObject(StationsDirector.RootName);
             }
             return _root.transform;
         }
 
         private static List<CityMapSubwayStationEntry> Entries(CityMapSubwayStations list)
         {
-            return list != null ? GameContract.OwnStationEntries.Field?.GetValue(list) as List<CityMapSubwayStationEntry> : null;
+            return list != null ? GameContract.MapStationEntries.Field?.GetValue(list) as List<CityMapSubwayStationEntry> : null;
         }
 
         // ---------------------------------------------------------------- standing one
@@ -158,15 +155,12 @@ namespace RealLifeOverhaul.Subway
             }
             catch (Exception)
             {
-                if (copy != null)
-                {
-                    UnityEngine.Object.Destroy(copy);
-                }
+                SceneryTrees.Destroy(copy);   // null is safe; asleep, its lamp never listed itself
                 throw;
             }
             finally
             {
-                UnityEngine.Object.Destroy(asleep);
+                SceneryTrees.Destroy(asleep);   // with a copy that was refused still under it, or empty
             }
             var entry = new Stood { Site = site, Station = station };
             Standing.Add(entry);
@@ -432,7 +426,7 @@ namespace RealLifeOverhaul.Subway
                 {
                     Unmark(city, station.transform);
                     Release(uis, station);
-                    UnityEngine.Object.Destroy(station.gameObject);
+                    SceneryTrees.Destroy(station.gameObject);   // its lamp out of the game's culling lists first (RLO-PERF-023), then the entrance with its cut
                 }
             }
             Standing.Clear();
@@ -489,10 +483,7 @@ namespace RealLifeOverhaul.Subway
         {
             Standing.Clear();
             OwnStations.Clear();
-            if (_root != null)
-            {
-                UnityEngine.Object.Destroy(_root);
-            }
+            SceneryTrees.Destroy(_root);   // null is safe; what still stands under it has its lamps taken out of the game's culling lists first
             _root = null;
             _search = null;
             _watch = null;
@@ -562,7 +553,7 @@ namespace RealLifeOverhaul.Subway
     /// </summary>
     public sealed class StationListWatch : MonoBehaviour
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For(StationsDirector.FeatureId, "StationListWatch", typeof(StationListWatch));
+        private static readonly FeatureGuard FrameGuard = Guard.For("uptown_subway", "StationListWatch", typeof(StationListWatch));
 
         private void OnEnable()
         {

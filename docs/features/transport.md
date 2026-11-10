@@ -73,7 +73,7 @@ What cannot be told from the one log there is: its last transit line is the only
 
 - **The network** (`TransitMap`, `RouteSearch`) is laid out by rule in the first seconds out of doors after a city load and kept in memory only.
   The ends of the routes are the game's subway stations in the order of `SubwayStationName`: up to six times over, the first station not yet used, and the unused station furthest from it (500 m to 2.8 km) that can be driven to **and back from**.
-  After the stations come the termini of the mod's own (`TransitMap.AddTerminus`), sorted by name: a district of the mod's own has no subway station, and the game's station names are a fixed list ([New ground](new-ground.md)). With none, the network is as before.
+  After the stations come the termini of the mod's own (`TransitMap.AddTerminus`), sorted by name. The stations are the game's own twenty alone: the ones the mod stands in Uptown and Cedar Heights ([Subway in Uptown](subway-uptown.md)) are left out (`OwnStations.Is`), so the lines are the same with or without them. With no terminus, the network is as before.
 
   After the paired routes come a district's own (`TransitMap.AddRoute`, `TransitPlan.Route`; Uptown's two, [Uptown](uptown.md)): a way through given points, each stretch the shortest to the kerb lanes round the next point, and its stops where they are wanted, each at the nearest lane point round the place that takes a stop by the rules below (26 m of plain lane either side, or 18 m a little further off, as an avenue between near crossings holds), or shared with a line stopping there. They run as local lines numbered on after the paired ones, so the main lines stay the paired routes they were. `Transit check (district routes): ...` says how many stops were wanted, laid and missed.
 
@@ -338,6 +338,7 @@ A day pass gives the game's fare back as the ride begins (`reallife_transaction_
 The night closure of a station for track work went with the mod's own list: the game's map offers every station and cannot be told that one is shut.
 
 With "Subway journeys take time" off the game's subway is as it is, and a day pass still gives its fare back.
+The three stations the mod stands in Uptown and Cedar Heights ([Subway in Uptown](subway-uptown.md)) are stations of the game's list like the twenty: the panel, the journey's time and the day pass treat them alike, each named by its own key (`GameMembers.NameKey`).
 No late-night crime is tied in: the crime system has no call for staging something on the player other than its test button.
 
 ## Car ownership

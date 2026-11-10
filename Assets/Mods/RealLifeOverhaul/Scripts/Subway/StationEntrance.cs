@@ -14,15 +14,14 @@ namespace RealLifeOverhaul.Subway
     /// value, and SubwayStation.GetNameKey is not virtual), so this one keeps the copied entrance's value and is named
     /// another way everywhere the game shows a name: over the street and on the map by the entity's own header key, in the
     /// list by its entry's label, and as a taxi's destination by a stop of its own (<see cref="StationTaxiStop"/>). The
-    /// game's Start hangs a call on the map's toggle that it never takes off; this one's is its own and goes with it.
-    /// COST: nothing a frame; the game asks only on pointing, clicking and the map's toggle.
+    /// game's Start hangs a call on the map's toggle that it never takes off and that would reach an entrance after it has
+    /// gone; this one hangs nothing on any event of the game's: what that call did (the outline white again once the map
+    /// has shown the stations in the filter's colour) is done in the entity's own leave and enter. COST: nothing a frame;
+    /// the game asks only on pointing, clicking and when its map switches the stations' layer.
     /// </summary>
     public sealed class StationEntrance : SubwayStation
     {
-        private static readonly FeatureGuard FrameGuard = Guard.For(StationsDirector.FeatureId, "StationEntrance", typeof(StationEntrance));   // the game's calls of it
-
-        private Action<bool> _onMap;   // made once, added and taken off by this field
-        private bool _hung;
+        private static readonly FeatureGuard FrameGuard = Guard.For("uptown_subway", "StationEntrance", typeof(StationEntrance));   // the game's calls of it
 
         /// <summary>Which of the plan's stations it is.</summary>
         public StationSite Site { get; private set; }
@@ -33,13 +32,20 @@ namespace RealLifeOverhaul.Subway
         /// <summary>Where a rider comes up.</summary>
         public Transform Arrival { get; private set; }
 
-        /// <summary>Fitted while the copy is asleep: everything the game's Start and its travel read.</summary>
+        /// <summary>Fitted while the copy is asleep: everything the game's travel, its map and its hover box read.</summary>
         public void Fit(StationSite site, SubwayStation copied, Renderer[] pieces, Transform arrival, StationTaxiStop taxiStop, string district)
         {
             Site = site;
             Arrival = arrival;
             TaxiStop = taxiStop;
-            Take(copied);
+            try
+            {
+                Take(copied);
+            }
+            catch (Exception e) when (Guard.Missing(e))
+            {
+                Guard.DoesWithout(e, "what a copied subway entrance shows over itself", "the copy shows the game's plain default");
+            }
             neighbourhood = district;
             primaryInteractionEnabled = true;
             customOverlayHeaderKey = site.NameKey;   // the game's own header over an entity reads this before it asks a station for its name
@@ -57,6 +63,8 @@ namespace RealLifeOverhaul.Subway
             stationName = copied.stationName;
         }
 
+        // The game's two Starts, but for two things: the travel point is not moved (it was put on ground both walking meshes hold, and
+        // checked), and nothing is hung on the map's toggle.
         public override void Start()
         {
             if (FrameGuard.Off)
@@ -65,15 +73,7 @@ namespace RealLifeOverhaul.Subway
             }
             try
             {
-                // The game's two Starts, but for two things: the travel point is not moved (it was put on ground both walking meshes hold, and
-                // checked), and the map's call is one that is taken off again.
                 randomAvailableNavMeshPositionGetter = new RandomAvailableNavMeshPositionGetter(navMeshTargets != null ? navMeshTargets.Length : 0);
-                _onMap = _onMap ?? Guard.Wrap<bool>(FrameGuard, OnMap);
-                if (!_hung)
-                {
-                    GlobalEvents.onCityMapToggle = (Action<bool>)Delegate.Combine(GlobalEvents.onCityMapToggle, _onMap);
-                    _hung = true;
-                }
             }
             catch (Exception fault)
             {
@@ -86,19 +86,55 @@ namespace RealLifeOverhaul.Subway
         {
         }
 
-        // As the game's stations do when its map shuts: the outline back to white and off.
-        private void OnMap(bool open)
+        // Pointed at in the street, the outline is white, as the game's stations' is: its map leaves the filter's colour on what it showed.
+        public override void OnIoEnter()
         {
-            if (open || !this)
+            if (FrameGuard.Off)
             {
                 return;
             }
+            try
+            {
+                if (!CityMap.IsOpen)
+                {
+                    White();
+                }
+                base.OnIoEnter();
+            }
+            catch (Exception fault)
+            {
+                Guard.Failed(FrameGuard, fault, false);
+            }
+        }
+
+        // The game's own leave; and once its map has switched the stations' layer off (it calls this for every station as it does), white again.
+        public override void OnIoExit()
+        {
+            if (FrameGuard.Off)
+            {
+                return;
+            }
+            try
+            {
+                base.OnIoExit();
+                if (!mapFilterIsOn)
+                {
+                    White();
+                }
+            }
+            catch (Exception fault)
+            {
+                Guard.Failed(FrameGuard, fault, false);
+            }
+        }
+
+        private void White()
+        {
             GlobalReferences references = InstanceBehavior<GlobalReferences>.Instance;
             if (references != null)
             {
                 SetOutlineColor(references.colors.white);
             }
-            OnIoExit();
         }
 
         /// <summary>
@@ -126,23 +162,6 @@ namespace RealLifeOverhaul.Subway
             catch (Exception fault)
             {
                 return Guard.Failed(FrameGuard, fault, false);
-            }
-        }
-
-        public override void OnDestroy()
-        {
-            try
-            {
-                if (_hung && _onMap != null)
-                {
-                    GlobalEvents.onCityMapToggle = (Action<bool>)Delegate.Remove(GlobalEvents.onCityMapToggle, _onMap);
-                    _hung = false;
-                }
-                base.OnDestroy();
-            }
-            catch (Exception fault)
-            {
-                Guard.Failed(FrameGuard, fault, false);
             }
         }
     }

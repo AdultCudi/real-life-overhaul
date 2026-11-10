@@ -16,7 +16,7 @@ namespace RealLifeOverhaul.Subway
 
         private static void DescribeFeature()
         {
-            Features.Add(StationsDirector.FeatureId, StationsText.Title)
+            Features.Add("uptown_subway", "reallife_meta_title_uptown_subway")
                 .About(StationsText.About).Help(StationsText.Help)
                 .Row(new ToggleOption(Settings.UptownSubwayId, StationsText.Enabled, true, on => Settings.UptownSubway = on))
                 .Owns(Settings.UptownSubwayId)

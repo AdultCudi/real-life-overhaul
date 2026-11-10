@@ -282,6 +282,24 @@ namespace RealLifeOverhaul.Subway
         }
 
         /// <summary>
+        /// The metres from where a station's rider comes up to the nearest kerb of the avenues and streets round its block: a car stops that near
+        /// (a taxi, a private driver, the player's own). float.MaxValue for a station no block holds.
+        /// </summary>
+        public static float KerbDistance(StationSite site)
+        {
+            int block = Holds(site, out _);
+            if (block == 0)
+            {
+                return float.MaxValue;
+            }
+            Arrival(site, out float ax, out float az);
+            LayoutRules.Block(block / 100, block % 100, out float bx0, out float bz0, out float bx1, out float bz1);
+            float west = ax - (bx0 - (LayoutRules.StreetHalf - LayoutRules.StreetKerbEast)), east = bx1 + (LayoutRules.StreetHalf - LayoutRules.StreetKerbWest) - ax;
+            float south = az - (bz0 - PavementWidth), north = bz1 + PavementWidth - az;
+            return Math.Max(0f, Math.Min(Math.Min(west, east), Math.Min(south, north)));
+        }
+
+        /// <summary>
         /// For an entrance on an avenue's pavement: the metres of pavement left between it and the block's edge behind it (the way past), and the
         /// metres between it and the kerb. Both -1 for an entrance on a park's lawn, which leaves the whole pavement.
         /// </summary>

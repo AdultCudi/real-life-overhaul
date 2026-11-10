@@ -61,6 +61,9 @@ SAME_WORDS = 4                                     # a Latin-script translation 
 NOTICE_MOST = 240                                  # characters: a toast holds about 240 (Workshop/STYLE.md, NoticeCheck)
 # Texts that may stay as the English in any translation: placeholders alone, version numbers, and invented names kept in Latin letters.
 ENGLISH_OK = {
+    # 11 Nov 2026, the subway stations of Uptown and Cedar Heights: a district, a place and the word for station, which German keeps as the English has them
+    # (as the game's own German names of its stations do)
+    'reallife_subway_station_birchwood', 'reallife_subway_station_summit', 'reallife_subway_station_east',
     # 9 Nov 2026, the badge in the designer for fit-out pieces of the mod: its short name, kept in Latin letters in Chinese too
     'reallife_ui_designer_rlo',
     # 4 Nov 2026, the Gallery's fact about Flare: the app's name, kept in Latin letters in Chinese too

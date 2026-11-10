@@ -93,7 +93,18 @@ namespace RealLifeOverhaul
                 return "?";
             }
             int at = IndexOf(station);
-            return at >= 0 ? Names[at] : StationValue(station);
+            if (at >= 0)
+            {
+                return Names[at];
+            }
+            try
+            {
+                return StationValue(station);
+            }
+            catch (System.Exception e) when (Guard.Missing(e))
+            {
+                return station.name;   // a game without the name field: the station's own object name stands in
+            }
         }
 
         [System.Runtime.CompilerServices.MethodImpl(System.Runtime.CompilerServices.MethodImplOptions.NoInlining)]
