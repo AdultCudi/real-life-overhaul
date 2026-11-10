@@ -98,7 +98,7 @@ namespace RealLifeOverhaul.Ui
                 // The market's extras (Stocks/StocksBuild.Extras.cs): the index fund, a block trade, the founder's split, the bank's listing.
                 "reallife_stx_fund", "reallife_stx_fund_sub", "reallife_stx_fund_units", "reallife_stx_cost", "reallife_stx_fund_paid", "reallife_stx_fund_fee", "reallife_stx_deal",
                 "reallife_stx_units", "reallife_stx_fund_price", "reallife_stx_total", "reallife_stx_fund_about", "reallife_stx_fund_buy", "reallife_stx_fund_sell", "reallife_stx_block",
-                "reallife_stk_none", "reallife_stx_block_holding", "reallife_stx_block_held", "reallife_stx_block_most", "reallife_stx_block_order", "reallife_stx_block_price",
+                "reallife_stk_none", "reallife_stx_block_holding", "reallife_stx_block_held", "reallife_stx_block_price",
                 "reallife_stx_block_moves", "reallife_stx_block_after", "reallife_stx_block_about", "reallife_stx_block_buy", "reallife_stx_block_sell", "reallife_stx_split",
                 "reallife_stx_split_yours", "reallife_stx_split_all", "reallife_stx_split_stake", "reallife_stx_split_ratio", "reallife_stx_split_price", "reallife_stx_split_mine",
                 "reallife_stx_split_notice", "reallife_stx_split_about", "reallife_stx_split_ask", "reallife_stx_bank", "reallife_stx_bank_raised", "reallife_stx_bank_others",

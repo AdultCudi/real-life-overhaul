@@ -35851,8 +35851,6 @@
   "reallife_stx_block": "大宗交易",
   "reallife_stx_block_holding": "对手的持仓",
   "reallife_stx_block_held": "你持有",
-  "reallife_stx_block_most": "单一持有者可持有的上限",
-  "reallife_stx_block_order": "单笔订单上限",
   "reallife_stx_block_price": "每股价格",
   "reallife_stx_block_moves": "其规模推动价格",
   "reallife_stx_block_after": "你将持有",

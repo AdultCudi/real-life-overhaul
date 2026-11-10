@@ -107,16 +107,9 @@ namespace RealLifeOverhaul.Ui
             m.Name = k.Name;
             m.Big = MarketText.Price(k.Last);
             m.Sub = k.Ticker + "  " + (k.Def != null && k.Def.Holding ? w("reallife_stx_block_holding", "A rival's holding") : MarketText.Sector(k.Sector));
-            m.SideLabels = new[]
-            {
-                w("reallife_stx_block_held", "You hold"), w("reallife_stx_block_most", "The most one holder may"), w("reallife_stx_block_order", "One order's most"),
-                w("reallife_stk_cash", "Cash")
-            };
-            m.SideValues = new[]
-            {
-                held.ToString("N0") + "  (" + MarketText.Percent(BlockRules.StakeBp(held, k.Shares)) + ")", MarketText.Percent(MarketTrading.MostHeldBp(k)),
-                MarketTrading.MostPerOrder(k).ToString("N0"), Money(d.Cash)
-            };
+            m.SideLabels = new[] { w("reallife_stx_block_held", "You hold"), w("reallife_stk_cash", "Cash") };
+            m.SideValues = new[] { held.ToString("N0") + "  (" + MarketText.Percent(BlockRules.StakeBp(held, k.Shares)) + ")", Money(d.Cash) };
+            string mostWords = " / " + MarketText.Percent(MarketTrading.MostHeldBp(k));   // what would be held against the most one holder may have
             m.Fields = new[]
             {
                 PickField(StocksSheets.BlockPick, w("reallife_mkt_col_company", "Company"), k.Name, companies.Count),
@@ -126,7 +119,7 @@ namespace RealLifeOverhaul.Ui
                 Fact(w("reallife_stx_block_moves", "Its size moves the price"), MarketText.Percent(q.ImpactBp), q.ImpactBp > 0 ? -1 : 0),
                 Fact(w("reallife_stk_sh_fee", "Commission"), Money(q.Fee)),
                 Fact(w("reallife_stx_total", "In all"), Money(q.Total)),
-                Fact(w("reallife_stx_block_after", "You would hold"), MarketText.Percent(q.Cents > 0 ? q.StakeBp : BlockRules.StakeBp(held, k.Shares))),
+                Fact(w("reallife_stx_block_after", "You would hold"), MarketText.Percent(q.Cents > 0 ? q.StakeBp : BlockRules.StakeBp(held, k.Shares)) + mostWords),
                 Note(w("reallife_stx_block_about", "A holding is told to the market at every 5% it passes. A block is no way round the most one holder may have."))
             };
             m.Confirm = buying ? w("reallife_stx_block_buy", "Buy the block") : w("reallife_stx_block_sell", "Sell the block");
