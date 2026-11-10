@@ -218,8 +218,19 @@ namespace RealLifeOverhaul
             // Home's chances with Health running: a draw from the save's seed, the day and the chance's own slot.
             private static float Roll(int slot)
             {
-                HealthDirector d = HealthDirector.Instance;
-                return d != null && d.Running ? HealthRules.Unit(d.State.Seed, HealthGame.Day, slot) : UnityEngine.Random.value;
+                try
+                {
+                    HealthDirector d = HealthDirector.Instance;
+                    if (d != null && d.Running)
+                    {
+                        return HealthRules.Unit(d.State.Seed, HealthGame.Day, slot);
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("HealthLinks.Roll", e);
+                }
+                return UnityEngine.Random.value;   // health is not running: the game's own random number, as before
             }
 
             // The line beside the needs: asked a second, written again only when health's revision moved.
