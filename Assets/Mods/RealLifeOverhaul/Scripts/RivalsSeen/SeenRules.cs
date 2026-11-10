@@ -20,6 +20,100 @@ namespace RealLifeOverhaul.RivalsSeen
         /// <summary>True while the feature does anything at all: its option, the living economy's master option, and no Going Public session (the city's people are the host's).</summary>
         public static bool Runs(bool option, bool living, bool session) => option && living && !session;
 
+        // ---- the save's seed, and when the look may go on
+
+        /// <summary>The rivals' own feature, as the look reads it (SeenBridges.Rivals): not started for this save yet, giving no tycoons, or running and awake.</summary>
+        public const int RivalsWait = 0, RivalsOff = 1, RivalsOn = 2;
+
+        /// <summary>
+        /// The rivals' own feature from what can be read of it: off when it was never made, its option is off or a fault switched it off (no tycoons will come, so
+        /// nothing waits for them); on while it runs and is not at rest in a Going Public session; else not started for this save yet.
+        /// </summary>
+        public static int RivalsState(bool made, bool option, bool broken, bool running, bool resting)
+        {
+            if (!made || !option || broken)
+            {
+                return RivalsOff;
+            }
+            return running && !resting ? RivalsOn : RivalsWait;
+        }
+
+        /// <summary>
+        /// What a look does with the save: nothing before a save is ready; with the feature not wanted, what was loaded is put away; and nothing is loaded, passed
+        /// or put out until the rivals' own feature has made up its mind (running, or off), so a new file, a load's first day and the day after a Going Public
+        /// session all see its tycoons.
+        /// </summary>
+        public static SeenStep Look(bool ready, bool wanted, bool loaded, int rivals)
+        {
+            if (!ready)
+            {
+                return SeenStep.Wait;
+            }
+            if (!wanted)
+            {
+                return loaded ? SeenStep.PutAway : SeenStep.Wait;
+            }
+            return rivals == RivalsWait ? SeenStep.Wait : SeenStep.Go;
+        }
+
+        /// <summary>True when the day's rivals are read again: a new day, or the rivals' own feature come on or gone off since they were read.</summary>
+        public static bool ReadAgain(int day, int readDay, int rivals, int readRivals) => day != readDay || rivals != readRivals;
+
+        /// <summary>
+        /// The seed of a new file: a hash of the playthrough's own id (the game's GameInstance.seed, made once with the save, through SeenBridges.Playthrough), so
+        /// the same save gives the same seed on every machine and every load. Never 0, which is a file that has none yet.
+        /// </summary>
+        public static int SeedOf(string playthrough)
+        {
+            unchecked
+            {
+                uint h = 2166136261u;
+                for (int i = 0; playthrough != null && i < playthrough.Length; i++)
+                {
+                    h = (h ^ playthrough[i]) * 16777619u;
+                }
+                h = (h ^ 0x52534545u) * 2654435761u;   // the feature's own salt: another feature's hash of the same id draws apart from this one
+                h ^= h >> 16;
+                int seed = (int)(h & 0x7FFFFFFF);
+                return seed == 0 ? 1 : seed;
+            }
+        }
+
+        /// <summary>
+        /// A file read from a save, set against the game's day: the day of the player's last line, a car's day or a sighting's day past today (a damaged line, or
+        /// one carried over from a later save) is brought back, so no gap or hold waits for a day that has not come. Returns how many were brought back.
+        /// </summary>
+        public static int Settle(SeenFile f, int today)
+        {
+            if (f == null)
+            {
+                return 0;
+            }
+            int moved = 0;
+            if (f.PlayerDay > today)
+            {
+                f.PlayerDay = today;
+                moved++;
+            }
+            for (int i = 0; i < f.Records.Count; i++)
+            {
+                if (f.Records[i].CarDay > today)
+                {
+                    f.Records[i].CarDay = today;
+                    moved++;
+                }
+            }
+            for (int i = f.Notes.Count - 1; i >= 0; i--)
+            {
+                if (f.Notes[i].Day > today)
+                {
+                    f.Notes.RemoveAt(i);
+                    moved++;
+                }
+            }
+            return moved;
+        }
+
         /// <summary>A number from 0 to 999, the same on every machine for the same inputs.</summary>
         public static int Roll(int seed, int who, int day, int purpose)
         {
@@ -204,7 +298,8 @@ namespace RealLifeOverhaul.RivalsSeen
         /// <summary>
         /// Where a rival is at an hour of a day. A working day: the office, lunch out by a roll that follows how the business is doing, the office again (a thriving
         /// rival leaves an hour early, one in trouble stays late), dinner out by another roll. A Saturday: the Hamptons for a thriving rival with a house there or the
-        /// means for it, an afternoon on the beach for a steady one by a roll, the office for one in trouble. A Sunday: the beach for the thriving, home for the rest.
+        /// means for it, an afternoon on the beach for a steady one by a roll, the office for one in trouble. A Sunday: the beach and the Hamptons for the same
+        /// thriving rival with a house there or the means for it, home for everybody else.
         /// Somebody gone by their source's rules is nowhere, and somebody in the Hamptons is not at lunch in town. In a city without the Hamptons (<paramref name="coast"/>
         /// false) nobody goes there: a weekend is spent in town.
         /// </summary>
@@ -361,6 +456,199 @@ namespace RealLifeOverhaul.RivalsSeen
         /// <summary>True if one more rival may be put in the world: under the cap, and the living city's pool keeps people for its own scenes.</summary>
         public static bool MayPut(int outNow, int poolFree) => outNow >= 0 && outNow < SeenCatalogue.WorldMost && poolFree > SeenCatalogue.PoolKeep;
 
+        /// <summary>
+        /// Who is tried this look, if anybody: the first in the hour's turn whose place has a building, who does not stand already, whose placing has not failed
+        /// this hour, and whose place is in the ring round the player (x, z); nobody at the cap or with the living city's pool short. One a look at most, so a
+        /// street of places with no spot to stand costs one placing a look and each of them once an hour. -1 for nobody.
+        /// </summary>
+        public static int PutPick(IList<SeenSubject> subjects, List<SeenDue> due, string[] outKeys, int outCount, int poolFree, float x, float z)
+        {
+            if (subjects == null || due == null || !MayPut(outCount, poolFree))
+            {
+                return -1;
+            }
+            for (int i = 0; i < due.Count; i++)
+            {
+                SeenDue d = due[i];
+                if (d.Building == null || d.Failed || d.Subject < 0 || d.Subject >= subjects.Count)
+                {
+                    continue;
+                }
+                float dx = d.X - x, dz = d.Z - z;
+                if (InRing(dx * dx + dz * dz) && !IsOut(subjects[d.Subject].Key, outKeys, outCount))
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        /// <summary>A placing failed: that rival is not tried again until the hour turns, when the hour's list is made afresh.</summary>
+        public static void Fail(List<SeenDue> due, int index)
+        {
+            if (due == null || index < 0 || index >= due.Count)
+            {
+                return;
+            }
+            SeenDue d = due[index];
+            d.Failed = true;
+            due[index] = d;
+        }
+
+        /// <summary>True for a key among the first <paramref name="count"/> of those standing.</summary>
+        public static bool IsOut(string key, string[] outKeys, int count)
+        {
+            for (int i = 0; outKeys != null && i < count && i < outKeys.Length; i++)
+            {
+                if (string.Equals(outKeys[i], key, StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>True if somebody may appear at a spot: only where the player is not looking, but for a test button's, which is put in front of the player.</summary>
+        public static bool MayStand(bool inView, bool test) => test || !inView;
+
+        /// <summary>
+        /// Whether somebody standing in the world goes this look: taken back by the living city whatever else; never while the player is talking with them; left
+        /// behind past <see cref="SeenCatalogue.GoneMetres"/>; their hour at the place over (a test's never is) and nobody looking.
+        /// </summary>
+        public static SeenLeave Leaves(bool lost, bool talking, float sqrMetres, bool test, bool still, bool inView)
+        {
+            if (lost)
+            {
+                return SeenLeave.Taken;
+            }
+            if (talking)
+            {
+                return SeenLeave.Stays;
+            }
+            if (LeftBehind(sqrMetres))
+            {
+                return SeenLeave.Behind;
+            }
+            return !test && !still && !inView ? SeenLeave.Over : SeenLeave.Stays;
+        }
+
+        /// <summary>True while the hour's list still has a rival at that place.</summary>
+        public static bool Still(IList<SeenSubject> subjects, List<SeenDue> due, string key, SeenSpot spot)
+        {
+            for (int i = 0; subjects != null && due != null && i < due.Count; i++)
+            {
+                int s = due[i].Subject;
+                if (s >= 0 && s < subjects.Count && string.Equals(subjects[s].Key, key, StringComparison.Ordinal))
+                {
+                    return due[i].Where.Spot == spot;
+                }
+            }
+            return false;
+        }
+
+        /// <summary>
+        /// Tenths of a real second until the greeting's panel is looked at again: <see cref="SeenCatalogue.GlanceTenths"/> while somebody stands within
+        /// <see cref="SeenCatalogue.GlanceMetres"/> of the player (metres squared), else ten, once a second with the rest of the look. A runner covers
+        /// <see cref="SeenCatalogue.RunMetres"/> a second, more than the panel's reach, so a look a second could miss them; nothing is looked at a frame.
+        /// </summary>
+        public static int Glance(float nearestSqr)
+        {
+            return nearestSqr <= (float)SeenCatalogue.GlanceMetres * SeenCatalogue.GlanceMetres ? SeenCatalogue.GlanceTenths : 10;
+        }
+
+        /// <summary>
+        /// The spots by a door in the order they are tried: the side of the pavement point before it (-1 or 1) and how far along the kerb
+        /// (<see cref="SeenCatalogue.DoorAlong"/>, the nearer first). False past the last.
+        /// </summary>
+        public static bool DoorSpot(int attempt, out int side, out float along)
+        {
+            if (attempt < 0 || attempt >= SeenCatalogue.DoorAlong.Length * 2)
+            {
+                side = 0;
+                along = 0f;
+                return false;
+            }
+            side = attempt % 2 == 0 ? -1 : 1;
+            along = SeenCatalogue.DoorAlong[attempt / 2];
+            return true;
+        }
+
+        /// <summary>
+        /// An address key as the rivals' sources write an office ("street#number", the number in invariant digits) taken apart without a string made: where the
+        /// street ends (the last '#') and the number. False for a key that is not one.
+        /// </summary>
+        public static bool Address(string key, out int cut, out int number)
+        {
+            cut = key != null ? key.LastIndexOf('#') : -1;
+            number = 0;
+            int at = cut + 1;
+            bool minus = cut >= 0 && at < key.Length && key[at] == '-';
+            at += minus ? 1 : 0;
+            if (cut < 0 || at >= key.Length || (key[at] == '0' && key.Length - at > 1))
+            {
+                cut = -1;
+                return false;   // no digits, or a leading zero: not how a number is written
+            }
+            long n = 0;
+            for (int i = at; i < key.Length; i++)
+            {
+                char c = key[i];
+                if (c < '0' || c > '9' || n > int.MaxValue)
+                {
+                    cut = -1;
+                    return false;
+                }
+                n = n * 10 + (c - '0');
+            }
+            n = minus ? -n : n;
+            if (n < int.MinValue || n > int.MaxValue)
+            {
+                cut = -1;
+                return false;
+            }
+            number = (int)n;
+            return true;
+        }
+
+        /// <summary>
+        /// Where the name of a car type's model stands in the type's id: the part between its first and second '_', which is the name the game gives the model's
+        /// car (StringIdExtensions.GetIdWithoutType; its private driver loads the car by it). False with none.
+        /// </summary>
+        public static bool CarId(string type, out int from, out int length)
+        {
+            int cut = type != null ? type.IndexOf('_') : -1;
+            int end = cut >= 0 ? type.IndexOf('_', cut + 1) : -1;
+            from = cut + 1;
+            length = cut < 0 ? 0 : (end < 0 ? type.Length : end) - from;
+            return cut >= 0 && length > 0;
+        }
+
+        /// <summary>True if a record's key is that of the game's rival owner with this id ("g" and the id), asked without making the key.</summary>
+        public static bool IsOwnerKey(string key, string gameId)
+        {
+            return key != null && gameId != null && key.Length == gameId.Length + 1 && key[0] == 'g' && string.CompareOrdinal(key, 1, gameId, 0, gameId.Length) == 0;
+        }
+
+        /// <summary>True if a record's key is that of the tycoon at this place of the rich list ("t" and the index), asked without making the key.</summary>
+        public static bool IsTycoonKey(string key, int index)
+        {
+            if (key == null || key.Length < 2 || key[0] != 't' || index < 0 || (key[1] == '0' && key.Length > 2))
+            {
+                return false;
+            }
+            long n = 0;
+            for (int i = 1; i < key.Length; i++)
+            {
+                char c = key[i];
+                if (c < '0' || c > '9' || n > int.MaxValue)
+                {
+                    return false;
+                }
+                n = n * 10 + (c - '0');
+            }
+            return n == index;
+        }
+
         /// <summary>True if a place that far from the player (metres, squared) is near enough for its rival to be put out, and not so near that they would appear beside the player.</summary>
         public static bool InRing(float sqrMetres)
         {
@@ -397,5 +685,21 @@ namespace RealLifeOverhaul.RivalsSeen
 
         /// <summary>Which of a rival's two ways of saying hello today (0 or 1).</summary>
         public static int HelloPick(int seed, int who, int day) => Roll(seed, who, day, PurposeHello) % 2;
+
+        /// <summary>
+        /// The player says hello to a rival standing in the world: the greeting is counted here, once a day by <see cref="Greet"/>, and what the talk is about is
+        /// made before it opens. The talk gets values only, so nothing said in it earns anything. Null for somebody not on record.
+        /// </summary>
+        public static SeenTalk Hello(SeenFile f, string key, string name, int day)
+        {
+            SeenRecord r = f != null && key != null ? f.Of(key) : null;
+            if (r == null)
+            {
+                return null;
+            }
+            bool knew = r.Known >= KnowsFrom;
+            int gained = Greet(r, day, true);
+            return new SeenTalk { Name = string.IsNullOrEmpty(name) ? r.Name : name, Form = r.Form, Known = knew, Car = r.Car, Pick = HelloPick(f.Seed, Who(key), day), Gained = gained };
+        }
     }
 }

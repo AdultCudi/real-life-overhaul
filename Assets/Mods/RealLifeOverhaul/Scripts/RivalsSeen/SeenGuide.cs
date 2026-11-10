@@ -23,7 +23,7 @@ namespace RealLifeOverhaul.RivalsSeen
                 .Fact("seen_world_most", () => SeenCatalogue.WorldMost.ToString(Inv))
                 .Fact("seen_near", () => SeenCatalogue.NearMetres.ToString(Inv))
                 .Fact("seen_car_hold", () => SeenCatalogue.CarHoldDays.ToString(Inv))
-                .Fact("seen_day_most", () => SeenCatalogue.DayMost.ToString(Inv))
+                .Fact("seen_day_most", () => SeenCatalogue.PostsMost.ToString(Inv))
                 .Fact("seen_player_gap", () => SeenCatalogue.PlayerGapDays.ToString(Inv))
                 .Fact("seen_known", () => (SeenRules.KnowsFrom / 10).ToString(Inv))
                 .Fact("seen_gain", () => (SocialRules.Chat(true, true, false, true, true).Familiarity).ToString("0.#", Inv))

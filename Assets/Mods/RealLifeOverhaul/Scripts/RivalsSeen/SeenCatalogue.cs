@@ -33,6 +33,23 @@ namespace RealLifeOverhaul.RivalsSeen
         Count = 5
     }
 
+    /// <summary>What the director's look does with the save this second (<see cref="SeenRules.Look"/>). Never saved.</summary>
+    public enum SeenStep
+    {
+        Wait = 0,       // no save yet, or the rivals' own feature has not made up its mind: nothing is read, written or put out
+        PutAway = 1,    // the feature is not wanted: the line is written, whoever stands goes
+        Go = 2          // load if need be, then the day, the hour and the world
+    }
+
+    /// <summary>Why somebody standing in the world goes (<see cref="SeenRules.Leaves"/>), or that they stay. Never saved.</summary>
+    public enum SeenLeave
+    {
+        Stays = 0,
+        Taken = 1,      // the living city took them back (knocked down, its own clearing)
+        Behind = 2,     // the player left them far behind
+        Over = 3        // their hour at the place is over, and nobody is looking
+    }
+
     /// <summary>
     /// Every figure of the rivals seen around the city, each with its unit and where it comes from; game-free, read by the Guide and the offline checks. Money is whole
     /// money at the start's prices; a share is per mille; hours are the game's own (0 to 23).
@@ -80,15 +97,29 @@ namespace RealLifeOverhaul.RivalsSeen
         public const int NearMetres = 110;        // a rival is put out only at a place this near the player
         public const int LeastMetres = 18;        // ...and never this near: nobody appears beside the player
         public const int GoneMetres = 160;        // a rival this far behind is taken away
-        public const int LookSeconds = 6;         // real seconds between two looks at who is near, while nobody new is due
+        public const int LookSeconds = 6;         // real seconds between two looks at who may be put out: one placing tried a look at most
         public const int TalkMetres = 4;          // the greeting is offered within this distance, on foot
+        public const int GlanceMetres = 12;       // while a rival stands this near, the panel is looked at every GlanceTenths: a runner (6 m/s) cannot cross the 4 m
+        public const int GlanceTenths = 2;        // ...tenths of a real second; further off, once a second with the rest of the look
+        public const int RunMetres = 6;           // the game's run outdoors, metres a second (GlobalReferences.walkingSpeedRun, docs/features/walking.md)
+
+        /// <summary>
+        /// Where a rival stands by a door: this far along the kerb either side of the pavement point before it, the nearer first. CityLife/CitySpots keeps
+        /// <see cref="DoorKeepOut"/> metres round anything the player can use clear of people, and a door's own collider reaches up to <see cref="DoorHalf"/> to
+        /// either side of its middle, so the nearest spot is that far and a little more.
+        /// </summary>
+        public static readonly float[] DoorAlong = { 3.6f, 5f };
+
+        public const float DoorKeepOut = 2.4f;    // metres: CityLife/CitySpots.DoorKeepOut, the same number (the checks read both)
+        public const float DoorHalf = 1.0f;       // metres: half a double door, the widest the city's shopfronts have
 
         // ---- sightings
         public const int DayMost = 3;             // sightings of rivals planned for one day
-        public const int SightingChance = 180;    // per mille a rival who is out somewhere on a day is written about
+        public const int SightingChance = 180;    // per mille at each of the day's hours a sighting may be written at (SeenDay), the first that comes up kept
         public const int NotesKept = 24;          // sightings kept for the pages and the paper, newest last
+        public const int TestNotesKept = 4;       // a test's sightings kept beside those, never in their place (SeenDay.Trim)
         public const int PaperMost = 2;           // society lines in one morning's paper
-        public const int PostsMost = 3;           // posts a day on the City Ledger's Flare account from here
+        public const int PostsMost = 3;           // posts a day on the City Ledger's Flare account from here, the player's own line among them (a test's comes on top)
         public const int PlayerGapDays = 6;       // days at least between two lines about the player
         public const int PlayerChance = 120;      // per mille an hour the player is out in a car or at a table, once the gap is over
         public const int PlayerCarRung = 3;       // the player's car is only worth a line from this rung of the ladder up

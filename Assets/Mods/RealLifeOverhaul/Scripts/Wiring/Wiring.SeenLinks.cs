@@ -11,14 +11,16 @@ namespace RealLifeOverhaul
         /// <summary>
         /// The rivals seen around the city (RivalsSeen/SeenBridges) with the rest of the mod:
         ///
-        ///   Tycoons            the rich list's tycoons who have come forward, each as the rivals' own file has them: worth, the week's mark, a counter that holds them
-        ///                      back, the businesses they run and the game's rival business their first one stands on
-        ///   Seed               the rivals' own seed, for a new file's
+        ///   Rivals             the rivals' own feature: not started for this save yet, off, or running (SeenRules.RivalsState), so nothing is read before its
+        ///                      tycoons can be
+        ///   Tycoons            the rich list's tycoons who have come forward, each as the rivals' own file has them (Wiring.SeenTycoons, game-free)
+        ///   TycoonHere         whether one of them is still there, asked as the hour turns
+        ///   Playthrough        the playthrough's own id, made once with the save, for a new file's seed (as the stock market reads it)
         ///   Post               a society line on the City Ledger's Flare account
         ///   SeenLine           a tycoon's line on their panel and the rich list: their car and where they tend to be found
         ///   News.Extra         the morning's City Ledger: the society lines of the day before
         ///
-        /// Asked on a day's pass, an hour's or a press, never per frame; a fault is said once (<see cref="Fault"/>) and the bridge's default answered.
+        /// Asked on a look, a day's pass, an hour's or a press, never per frame; a fault is said once (<see cref="Fault"/>) and the bridge's default answered.
         /// </summary>
         public static class SeenLinks
         {
@@ -26,8 +28,10 @@ namespace RealLifeOverhaul
 
             internal static void Connect()
             {
+                SeenBridges.Rivals = RivalsNow;
                 SeenBridges.Tycoons = Tycoons;
-                SeenBridges.Seed = Seed;
+                SeenBridges.TycoonHere = TycoonHere;
+                SeenBridges.Playthrough = Playthrough;
                 SeenBridges.Post = (words, hour, minute) => FlareDirector.Instance != null && FlareDirector.Instance.Society(words, hour, minute);
                 RivalBridges.SeenLine = tycoon => SeenDirector.Instance != null ? SeenDirector.Instance.TycoonLine(tycoon) : string.Empty;
                 _paperBefore = News.Extra;
@@ -48,63 +52,60 @@ namespace RealLifeOverhaul
                 return rivals != null && rivals.Running && !rivals.Resting ? rivals.File : null;
             }
 
-            private static int Seed()
+            // The rivals' own feature: off when it was never made, its option is off or a fault switched it off; running; or still to start for this save.
+            private static int RivalsNow()
             {
                 try
                 {
-                    RivalFile f = Rivals();
-                    return f != null ? f.Seed : 0;
+                    RivalDirector rivals = RivalDirector.Instance;
+                    return SeenRules.RivalsState(rivals != null, Settings.Rivals, rivals != null && rivals.Broken, rivals != null && rivals.Running, rivals != null && rivals.Resting);
                 }
                 catch (Exception e)
                 {
-                    Fault("SeenLinks.Seed", e);
-                    return 0;
+                    Fault("SeenLinks.Rivals", e);
+                    return SeenRules.RivalsOff;
                 }
             }
 
-            // Each tycoon who has come forward, taken over or not: somebody taken over is gone, and is seen nowhere. One still to come forward is not on the list at all.
             private static void Tycoons(List<SeenSubject> into)
             {
                 try
                 {
-                    RivalFile f = Rivals();
-                    if (f == null)
-                    {
-                        return;
-                    }
-                    int day = RivalGame.Day;
-                    for (int i = 0; i < f.Tycoons.Length; i++)
-                    {
-                        Tycoon t = f.Tycoons[i];
-                        if (t == null || t.ActiveDay < 0)
-                        {
-                            continue;
-                        }
-                        var s = new SeenSubject
-                        {
-                            Key = "t" + i.ToString(System.Globalization.CultureInfo.InvariantCulture), Name = t.Def.Name, Firm = t.Def.Holding, Tycoon = true, Figure = t.Worth,
-                            Before = t.WeekAgo, ShopsBefore = -1, Pressed = day < t.SlowUntil || day < t.BarredUntil, Gone = !t.Active
-                        };
-                        for (int o = 0; o < f.Outlets.Count; o++)
-                        {
-                            RivalOutlet outlet = f.Outlets[o];
-                            if (outlet == null || outlet.Tycoon != i)
-                            {
-                                continue;
-                            }
-                            s.Shops++;
-                            if (s.Office.Length == 0 && !string.IsNullOrEmpty(outlet.Seat))
-                            {
-                                s.Office = outlet.Seat;   // the game's rival business their outlet stands on: its address, as the city's table writes one
-                                s.District = outlet.District ?? string.Empty;
-                            }
-                        }
-                        into.Add(s);
-                    }
+                    SeenTycoons.Map(Rivals(), RivalGame.Day, into);
                 }
                 catch (Exception e)
                 {
                     Fault("SeenLinks.Tycoons", e);
+                }
+            }
+
+            // With the rivals' file away (switched off this second) nobody is taken to be gone: the next look reads the day's rivals again without them.
+            private static bool TycoonHere(int index)
+            {
+                try
+                {
+                    RivalFile f = Rivals();
+                    return f == null || SeenTycoons.Here(f, index);
+                }
+                catch (Exception e)
+                {
+                    Fault("SeenLinks.TycoonHere", e);
+                    return true;
+                }
+            }
+
+            // The save's own seed, made by the game when the save was (RngHelper.GenerateGameSeed), else its character's id: the stock market's playthrough too.
+            private static string Playthrough()
+            {
+                try
+                {
+                    GameInstance save = SaveGameManager.Current;
+                    return save == null ? null : !string.IsNullOrEmpty(save.seed) ? save.seed : save.characterId ?? "city";
+                }
+                catch (Exception e)
+                {
+                    Fault("SeenLinks.Playthrough", e);
+                    return null;
                 }
             }
 

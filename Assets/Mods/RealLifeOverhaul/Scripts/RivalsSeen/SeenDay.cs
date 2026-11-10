@@ -11,11 +11,32 @@ namespace RealLifeOverhaul.RivalsSeen
     /// </summary>
     public static class SeenDay
     {
-        /// <summary>The hours a sighting may be written at, in the order they are looked at: lunch, dinner, the beach, the Hamptons, late at the office, the office on a Saturday.</summary>
-        private static readonly int[] Hours =
+        /// <summary>
+        /// The hours a sighting may be written at, in the order they are looked at, each once: lunch, dinner, the beach, the Hamptons, late at the office and the
+        /// office on a Saturday, of which the beach's hour is lunch's and late at the office is dinner's (12:00, 19:00, 17:00, 11:00 with the catalogue's hours).
+        /// Where the week has a rival at each says what is seen; an hour asked twice would only roll the same roll again.
+        /// </summary>
+        private static readonly int[] Hours = Once(SeenCatalogue.LunchFrom, SeenCatalogue.DinnerFrom, SeenCatalogue.BeachFrom + 1, SeenCatalogue.BeachTo + 1,
+            SeenCatalogue.WorkTo + 1, SeenCatalogue.WorkFrom + 2);
+
+        /// <summary>The hours a day's sightings are planned at, in their order: for the checks.</summary>
+        public static int HourCount => Hours.Length;
+
+        public static int HourAt(int index) => index >= 0 && index < Hours.Length ? Hours[index] : -1;
+
+        // Each hour once, in the order first given.
+        private static int[] Once(params int[] hours)
         {
-            SeenCatalogue.LunchFrom, SeenCatalogue.DinnerFrom, SeenCatalogue.BeachFrom + 1, SeenCatalogue.BeachTo + 1, SeenCatalogue.WorkTo + 1, SeenCatalogue.WorkFrom + 2
-        };
+            var kept = new List<int>(hours.Length);
+            for (int i = 0; i < hours.Length; i++)
+            {
+                if (!kept.Contains(hours[i]))
+                {
+                    kept.Add(hours[i]);
+                }
+            }
+            return kept.ToArray();
+        }
 
         /// <summary>
         /// A new day: every rival's record is found or opened, marked when its week is over, and their car follows their rung (a change is a sighting, the first car is
@@ -89,8 +110,9 @@ namespace RealLifeOverhaul.RivalsSeen
             return true;
         }
 
-        // The day's sightings: for each rival and each hour a sighting may be written at, where their week has them; a roll says whether somebody saw them, and the
-        // lowest draws are kept. A place with no line for how the business is doing gives nothing, and a meal needs a real eating place to be at.
+        // The day's sightings: for each rival and each hour a sighting may be written at, where their week has them; a roll at each of those hours says whether
+        // somebody saw them there, the first that comes up is theirs for the day, and the lowest draws among the rivals are kept. A place with no line for how the
+        // business is doing gives nothing, the office only on a Saturday, and a meal needs a real eating place to be at.
         private static int Plan(SeenFile f, IList<SeenSubject> subjects, int day, ISeenCity city, int room)
         {
             if (room <= 0)
@@ -111,7 +133,7 @@ namespace RealLifeOverhaul.RivalsSeen
                 {
                     int hour = Hours[k];
                     SeenWhere w = SeenRules.Where(f, r, s, day, hour);
-                    if (w.Spot == SeenSpot.Nowhere || !Writes(w.Spot, r.Form) || SeenRules.Roll(f.Seed, who, day * 24 + hour, SeenRules.PurposeNote) >= SeenCatalogue.SightingChance)
+                    if (w.Spot == SeenSpot.Nowhere || !Writes(w.Spot, r.Form, day) || SeenRules.Roll(f.Seed, who, day * 24 + hour, SeenRules.PurposeNote) >= SeenCatalogue.SightingChance)
                     {
                         continue;
                     }
@@ -122,7 +144,7 @@ namespace RealLifeOverhaul.RivalsSeen
                     }
                     int order = SeenRules.Roll(f.Seed, who, day * 24 + hour, SeenRules.PurposeNote + 100);
                     made += Keep(f, n, order, first, room) ? 1 : 0;
-                    break;   // one sighting of one rival a day
+                    break;   // one sighting of one rival at a place a day (a change of car is news of its own)
                 }
             }
             Orders.Clear();
@@ -160,6 +182,12 @@ namespace RealLifeOverhaul.RivalsSeen
             int s = (int)spot, f = (int)form;
             return s >= 0 && s < SeenCatalogue.PlaceLines.Length && f >= 0 && f < SeenCatalogue.PlaceLines[s].Length && SeenCatalogue.PlaceLines[s][f].Length > 0;
         }
+
+        /// <summary>
+        /// The same on a day: the office's line says a rival was there all Saturday, so it is written on a Saturday only; on a working day the office is where
+        /// everybody is and nothing to write about.
+        /// </summary>
+        public static bool Writes(SeenSpot spot, SeenForm form, int day) => Writes(spot, form) && (spot != SeenSpot.Office || SeenRules.Weekday(day) == SeenRules.Saturday);
 
         // A sighting at a place: a meal names the eating place of their district the week's pick gives them, the office their firm. Null where there is nothing real to name.
         private static SeenNote Note(SeenFile f, SeenRecord r, SeenSubject s, SeenWhere w, int day, int hour, ISeenCity city)
@@ -201,10 +229,7 @@ namespace RealLifeOverhaul.RivalsSeen
         // The sightings kept: the newest, and no record of somebody the day's list no longer has unless the player knows them or a line about them is still kept.
         private static void Prune(SeenFile f, IList<SeenSubject> subjects)
         {
-            while (f.Notes.Count > SeenCatalogue.NotesKept)
-            {
-                f.Notes.RemoveAt(0);
-            }
+            Trim(f);
             for (int i = f.Records.Count - 1; i >= 0; i--)
             {
                 SeenRecord r = f.Records[i];
@@ -226,26 +251,28 @@ namespace RealLifeOverhaul.RivalsSeen
 
         /// <summary>
         /// The hour has turned: every sighting of today whose hour has come, and has not gone out yet, is handed to <paramref name="post"/> (Flare) and marked, at most
-        /// <see cref="SeenCatalogue.PostsMost"/> a day; one of an earlier day is marked without being sent (its day is over). An hour is gone through once, so a save and a
-        /// load in the middle of a day sends nothing twice. Returns how many went out.
+        /// <see cref="SeenCatalogue.PostsMost"/> a day; one of an earlier day is marked without being sent (its day is over). A sighting of a rival the day's list
+        /// no longer has, or has as gone (<paramref name="subjects"/>, asked again at the hour), is dropped unsent: somebody defeated at ten is not seen at lunch at
+        /// noon, nor in the next paper. An hour is gone through once, so a save and a load in the middle of a day sends nothing twice. Returns how many went out.
         /// </summary>
-        public static int Hour(SeenFile f, int day, int hour, Action<SeenNote> post)
+        public static int Hour(SeenFile f, IList<SeenSubject> subjects, int day, int hour, Action<SeenNote> post)
         {
             if (f == null || day != f.Day || hour <= f.Hour)
             {
                 return 0;
             }
             f.Hour = hour;
-            int sent = 0, today = 0;
-            for (int i = 0; i < f.Notes.Count; i++)
-            {
-                today += f.Notes[i].Day == day && f.Notes[i].Posted ? 1 : 0;
-            }
+            int sent = 0, today = Posted(f, day);
             for (int i = 0; i < f.Notes.Count; i++)
             {
                 SeenNote n = f.Notes[i];
                 if (n.Posted)
                 {
+                    continue;
+                }
+                if (n.Key.Length > 0 && !Here(subjects, n.Key))
+                {
+                    f.Notes.RemoveAt(i--);
                     continue;
                 }
                 if (n.Day < day)
@@ -263,15 +290,46 @@ namespace RealLifeOverhaul.RivalsSeen
             return sent;
         }
 
+        /// <summary>The posts of a day that count against <see cref="SeenCatalogue.PostsMost"/>: everything that went out, the player's line too, but a test's.</summary>
+        public static int Posted(SeenFile f, int day)
+        {
+            int count = 0;
+            for (int i = 0; f != null && i < f.Notes.Count; i++)
+            {
+                SeenNote n = f.Notes[i];
+                count += n.Day == day && n.Posted && !n.Test ? 1 : 0;
+            }
+            return count;
+        }
+
+        /// <summary>True while the day's list has a rival and not as gone. With no list to ask, everybody is taken to be there.</summary>
+        public static bool Here(IList<SeenSubject> subjects, string key)
+        {
+            if (subjects == null)
+            {
+                return true;
+            }
+            for (int i = 0; i < subjects.Count; i++)
+            {
+                SeenSubject s = subjects[i];
+                if (s != null && string.Equals(s.Key, key, StringComparison.Ordinal))
+                {
+                    return !s.Gone;
+                }
+            }
+            return false;
+        }
+
         /// <summary>
-        /// The player seen in turn, as the rivals are: out in a car of the ladder's upper rungs, or at a table of an eating place, somebody now and then writes about
-        /// it. Only somebody with a business of their own is known to the column, only once the gap since the last line is over, and only by a roll for the hour.
-        /// The line names the car or the place the player is really in or at. Null when nothing is written.
+        /// The player seen in turn, as the rivals are: out in a car of the ladder's upper rungs, or at a table of somebody else's eating place, somebody now and then
+        /// writes about it. Only somebody with a business of their own is known to the column, only once the gap since the last line is over, only while the day
+        /// has room under <see cref="SeenCatalogue.PostsMost"/> (the line counts among the day's posts), and only by a roll for the hour. The line names the car or
+        /// the place the player is really in or at, and goes to <paramref name="post"/> at once. Null when nothing is written.
         /// </summary>
-        public static SeenNote Player(SeenFile f, int day, int hour, bool known, string name, int carRung, string car, string place, string district)
+        public static SeenNote Player(SeenFile f, int day, int hour, bool known, string name, int carRung, string car, string place, string district, Action<SeenNote> post)
         {
             if (f == null || !known || string.IsNullOrEmpty(name) || day - f.PlayerDay < SeenCatalogue.PlayerGapDays
-                || SeenRules.Roll(f.Seed, 0, day * 24 + hour, SeenRules.PurposePlayer) >= SeenCatalogue.PlayerChance)
+                || SeenRules.Roll(f.Seed, 0, day * 24 + hour, SeenRules.PurposePlayer) >= SeenCatalogue.PlayerChance || Posted(f, day) >= SeenCatalogue.PostsMost)
             {
                 return null;
             }
@@ -283,15 +341,89 @@ namespace RealLifeOverhaul.RivalsSeen
             var n = new SeenNote
             {
                 Day = day, Hour = hour, Kind = atTable ? SeenNoteKind.PlayerPlace : SeenNoteKind.PlayerCar, Spot = SeenSpot.Nowhere, Form = SeenForm.Steady, Name = name,
-                Place = atTable ? place : string.Empty, District = atTable ? district ?? string.Empty : string.Empty, Car = atTable ? string.Empty : car
+                Place = atTable ? place : string.Empty, District = atTable ? district ?? string.Empty : string.Empty, Car = atTable ? string.Empty : car, Posted = true
             };
             f.PlayerDay = day;
             f.Notes.Add(n);
-            while (f.Notes.Count > SeenCatalogue.NotesKept)
-            {
-                f.Notes.RemoveAt(0);
-            }
+            Trim(f);
+            post?.Invoke(n);
             return n;
+        }
+
+        /// <summary>
+        /// A test button's sighting (Options, Tests): of the first rival due now whose place has a line for how their business is doing, where their week has them
+        /// at this hour, a meal only at a real eating place; marked as a test's and as gone out, so it comes on top of the day's posts and "take back what the tests
+        /// did" finds it. Null with nobody to write about.
+        /// </summary>
+        public static SeenNote TestNote(SeenFile f, IList<SeenSubject> subjects, List<SeenDue> due, int day, int hour, ISeenCity city)
+        {
+            for (int i = 0; f != null && subjects != null && due != null && i < due.Count; i++)
+            {
+                SeenSubject s = due[i].Subject >= 0 && due[i].Subject < subjects.Count ? subjects[due[i].Subject] : null;
+                SeenRecord r = s != null ? f.Of(s.Key) : null;
+                SeenSpot spot = due[i].Where.Spot;
+                bool meal = spot == SeenSpot.Lunch || spot == SeenSpot.Dinner;
+                string place = due[i].Place ?? string.Empty;
+                if (r == null || !Writes(spot, r.Form, day) || (meal && place.Length == 0) || ((spot == SeenSpot.Office || spot == SeenSpot.Late) && string.IsNullOrEmpty(s.Firm)))
+                {
+                    continue;
+                }
+                var n = new SeenNote
+                {
+                    Day = day, Hour = hour, Kind = SeenNoteKind.Place, Spot = spot, Form = r.Form, Key = s.Key, Name = s.Name ?? string.Empty, Firm = s.Firm ?? string.Empty,
+                    Place = meal ? place : string.Empty, District = meal ? DistrictOf(f, s, city) : string.Empty, Car = r.Car, Posted = true, Test = true
+                };
+                f.Notes.Add(n);
+                Trim(f);
+                return n;
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// The sightings within their bounds, the oldest going first: the days' and the player's within <see cref="SeenCatalogue.NotesKept"/>, a test's within
+        /// <see cref="SeenCatalogue.TestNotesKept"/> beside them. A test's never pushes out one of the days', so taking the tests back leaves the days' as they were.
+        /// </summary>
+        public static void Trim(SeenFile f)
+        {
+            int tests = 0;
+            for (int i = 0; f != null && i < f.Notes.Count; i++)
+            {
+                tests += f.Notes[i].Test ? 1 : 0;
+            }
+            int days = f != null ? f.Notes.Count - tests : 0;
+            for (int i = 0; f != null && i < f.Notes.Count && (days > SeenCatalogue.NotesKept || tests > SeenCatalogue.TestNotesKept);)
+            {
+                bool test = f.Notes[i].Test;
+                if (test ? tests > SeenCatalogue.TestNotesKept : days > SeenCatalogue.NotesKept)
+                {
+                    f.Notes.RemoveAt(i);
+                    tests -= test ? 1 : 0;
+                    days -= test ? 0 : 1;
+                }
+                else
+                {
+                    i++;
+                }
+            }
+        }
+
+        /// <summary>
+        /// "Take back what the tests did": every sighting a test button wrote goes, and nothing else is touched (the days' marks, cars, sightings and greetings stay
+        /// as the days made them, none of the days' sightings having made room for a test's). Returns how many went.
+        /// </summary>
+        public static int TakeBack(SeenFile f)
+        {
+            int taken = 0;
+            for (int i = f != null ? f.Notes.Count - 1 : -1; i >= 0; i--)
+            {
+                if (f.Notes[i].Test)
+                {
+                    f.Notes.RemoveAt(i);
+                    taken++;
+                }
+            }
+            return taken;
         }
 
         /// <summary>
@@ -341,7 +473,7 @@ namespace RealLifeOverhaul.RivalsSeen
                 case SeenNoteKind.CarDown: return SeenCatalogue.CarDownLine;
                 case SeenNoteKind.PlayerCar: return SeenCatalogue.PlayerCarLine;
                 case SeenNoteKind.PlayerPlace: return SeenCatalogue.PlayerPlaceLine;
-                default: return Writes(n.Spot, n.Form) ? SeenCatalogue.PlaceLines[(int)n.Spot][(int)n.Form] : string.Empty;
+                default: return Writes(n.Spot, n.Form, n.Day) ? SeenCatalogue.PlaceLines[(int)n.Spot][(int)n.Form] : string.Empty;
             }
         }
     }

@@ -7,20 +7,10 @@ using UI.Smartphone.Apps.Contacts;
 
 namespace RealLifeOverhaul.RivalsSeen
 {
-    /// <summary>What a greeting is about, handed to the dialogue by the director: who, how their business is doing, whether they know the player, and their car.</summary>
-    public sealed class SeenTalk
-    {
-        public string Name;
-        public SeenForm Form;
-        public bool Known;      // they knew the player well enough before this greeting to say more
-        public string Car;      // in the game's words; empty with none on record
-        public int Pick;        // which of their two ways of saying hello today
-    }
-
     /// <summary>
     /// A greeting face to face with a rival, in the game's own dialogue panel as the social life's street talk is: a rival doing well is smug, one in trouble is
     /// short. Two things can be asked, the business and the car, and each answer says no more than their real figures do. Opened by the director's panel button;
-    /// what the greeting is worth was counted before it opened (SeenRules.Greet), so nothing said here earns anything.
+    /// what the greeting is worth was counted before it opened (SeenRules.Hello), so nothing said here earns anything.
     /// </summary>
     public sealed class SeenDialog : Dialog
     {
@@ -61,7 +51,10 @@ namespace RealLifeOverhaul.RivalsSeen
 
         private DialogEntry Line(string key, bool last)
         {
-            var data = new Dictionary<string, string>(2) { { "name", _talk != null ? _talk.Name ?? string.Empty : string.Empty }, { "car", _talk != null ? _talk.Car ?? string.Empty : string.Empty } };
+            var data = new Dictionary<string, string>(2)
+            {
+                { "name", _talk != null ? _talk.Name ?? string.Empty : string.Empty }, { "car", _talk != null ? SeenGame.CarName(_talk.Car) : string.Empty }
+            };
             var entry = new DialogEntry { messageData = key.Localize(data) };
             if (last)
             {

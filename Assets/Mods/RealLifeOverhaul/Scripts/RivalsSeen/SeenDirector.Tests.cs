@@ -1,4 +1,3 @@
-using System;
 using System.Collections.Generic;
 using Helpers;
 using UI.Notification;
@@ -8,7 +7,8 @@ namespace RealLifeOverhaul.RivalsSeen
 {
     /// <summary>
     /// Options, Tests: each situation the player would otherwise wait for. Each says what happened in a notice and writes one "Rivals seen check" line. Even a
-    /// test writes only what is so: a sighting made by a button is of somebody where their week has them at this hour.
+    /// test writes only what is so: a sighting made by a button is of somebody where their week has them at this hour. What a test makes is marked as a test's
+    /// (a sighting, a rival put beside the player), so "take back what the tests did" takes back exactly that and nothing the days made.
     /// </summary>
     public sealed partial class SeenDirector
     {
@@ -18,10 +18,6 @@ namespace RealLifeOverhaul.RivalsSeen
             {
                 SeenGame.Tell(NotificationType.Warning, GoingPublic.InSession ? "reallife_seen_test_session" : "reallife_seen_test_off");
                 return false;
-            }
-            if (_beforeTests == null)
-            {
-                _beforeTests = SeenStore.Write(_file);   // what "put the rivals seen back as before" restores
             }
             return true;
         }
@@ -40,8 +36,9 @@ namespace RealLifeOverhaul.RivalsSeen
             {
                 SeenSubject s = _subjects[_due[i].Subject];
                 string line = s.Name + ": " + SeenText.Spot(_due[i].Where.Spot);
-                Logger?.Info("Rivals seen check (who is where, day " + day + ", " + hour + ":00): " + line + (_venueNames[i].Length > 0 ? " (" + _venueNames[i] + ")" : string.Empty)
-                             + (_venues[i] != null ? string.Empty : ", no building of the city to stand at") + ".");
+                string place = _due[i].Place ?? string.Empty;
+                Logger?.Info("Rivals seen check (who is where, day " + day + ", " + hour + ":00): " + line + (place.Length > 0 ? " (" + place + ")" : string.Empty)
+                             + (_due[i].Building != null ? string.Empty : ", no building of the city to stand at") + ".");
                 if (i < 3)
                 {
                     names.Append(names.Length > 0 ? "; " : string.Empty).Append(line);
@@ -95,7 +92,7 @@ namespace RealLifeOverhaul.RivalsSeen
                 city.People.AtNeed = false;
                 if (person != null)
                 {
-                    _out[_outCount++] = new Standing { Person = person, Key = who.Key, Name = who.Name, Place = _venueNames[0] ?? string.Empty, At = at, Spot = _due[0].Where.Spot, Test = true };
+                    _out[_outCount++] = new Standing { Person = person, Key = who.Key, Name = who.Name, Place = _due[0].Place ?? string.Empty, At = at, Spot = _due[0].Where.Spot, Test = true };
                     put = true;
                 }
             }
@@ -104,11 +101,12 @@ namespace RealLifeOverhaul.RivalsSeen
                 TestRefusals.Tell(Logger, "Rivals seen", TestRefusal.NothingFits, 0, "no clear pavement within 7 m, or nobody of the living city's pool could be had");
                 return;
             }
+            _glance = true;   // (beside the player: the panel is looked at from the next glance)
             SeenGame.Tell(NotificationType.Info, "reallife_seen_test_here", new Dictionary<string, string>(1) { { "name", who.Name } });
             Logger?.Info("Rivals seen check (test, a rival here): " + who.Name + " stands beside the player, " + _outCount + " of " + SeenCatalogue.WorldMost + " out: PASS");
         }
 
-        /// <summary>Options, Tests: a sighting of the first rival who is somewhere now with a line for it, written and sent to Flare at once.</summary>
+        /// <summary>Options, Tests: a sighting of the first rival who is somewhere now with a line for it, written and sent to Flare at once, on top of the day's posts.</summary>
         public void TestSighting()
         {
             if (!TestReady())
@@ -117,54 +115,50 @@ namespace RealLifeOverhaul.RivalsSeen
             }
             int day = SeenGame.Day, hour = SeenGame.Hour;
             Places(day, hour);
-            for (int i = 0; i < _due.Count; i++)
+            SeenNote n = SeenDay.TestNote(_file, _subjects, _due, day, hour, SeenGame.City.Table);
+            if (n == null)
             {
-                SeenSubject s = _subjects[_due[i].Subject];
-                SeenRecord r = _file.Of(s.Key);
-                SeenSpot spot = _due[i].Where.Spot;
-                bool meal = spot == SeenSpot.Lunch || spot == SeenSpot.Dinner;
-                if (r == null || !SeenDay.Writes(spot, r.Form) || (meal && _venueNames[i].Length == 0) || ((spot == SeenSpot.Office || spot == SeenSpot.Late) && s.Firm.Length == 0))
-                {
-                    continue;
-                }
-                var n = new SeenNote
-                {
-                    Day = day, Hour = hour, Kind = SeenNoteKind.Place, Spot = spot, Form = r.Form, Key = s.Key, Name = s.Name, Firm = s.Firm, Place = meal ? _venueNames[i] : string.Empty,
-                    District = meal ? SeenDay.DistrictOf(_file, s, SeenGame.City) : string.Empty, Car = r.Car, Posted = true
-                };
-                _file.Notes.Add(n);
-                while (_file.Notes.Count > SeenCatalogue.NotesKept)
-                {
-                    _file.Notes.RemoveAt(0);
-                }
-                Post(n);
-                string line = SeenText.Line(n);
-                SeenGame.Tell(NotificationType.Info, "reallife_seen_test_sighting", new Dictionary<string, string>(1) { { "line", line } });
-                Logger?.Info("Rivals seen check (test, a sighting): " + s.Name + " at " + spot + " as their week has them, form " + r.Form + " from their figures: \"" + line + "\": PASS");
+                SeenGame.Tell(NotificationType.Info, "reallife_seen_test_nothing");
+                Logger?.Info("Rivals seen check (test, a sighting): nobody is anywhere with a line to write at " + hour + ":00, so nothing is written: PASS");
                 return;
             }
-            SeenGame.Tell(NotificationType.Info, "reallife_seen_test_nothing");
-            Logger?.Info("Rivals seen check (test, a sighting): nobody is anywhere with a line to write at " + hour + ":00, so nothing is written: PASS");
+            Post(n);
+            _revision++;
+            string line = SeenText.Line(n);
+            SeenGame.Tell(NotificationType.Info, "reallife_seen_test_sighting", new Dictionary<string, string>(1) { { "line", line } });
+            Logger?.Info("Rivals seen check (test, a sighting): " + n.Name + " at " + n.Spot + " as their week has them, form " + n.Form + " from their figures: \"" + line + "\": PASS");
         }
 
-        /// <summary>Options, Tests: the line as it was before the first test button, and nobody of a test left standing.</summary>
+        /// <summary>
+        /// Options, Tests: what the tests did is taken back: the sightings a test wrote (off the pages, out of the paper) and a rival a test put beside the player. The
+        /// days' marks, cars, sightings and greetings stay as the days made them; a post already on Flare stays there.
+        /// </summary>
         public void TestBack()
         {
-            if (!Running || _beforeTests == null)
+            if (!Running || _file == null)
             {
                 SeenGame.Tell(NotificationType.Info, "reallife_seen_test_back_none");
                 return;
             }
-            SeenFile before = SeenStore.Read(_beforeTests, out int _);
-            ClearWorld("the tests are put back");
-            if (before != null)
+            int notes = SeenDay.TakeBack(_file), people = 0;
+            CityLifeDirector city = CityLifeDirector.Instance;
+            for (int i = _outCount - 1; i >= 0; i--)
             {
-                _file = before;
+                if (_out[i].Test)
+                {
+                    Leave(city, i, "the tests are taken back");
+                    people++;
+                }
             }
-            _beforeTests = null;
-            _subjectsDay = -1;
+            if (notes == 0 && people == 0)
+            {
+                SeenGame.Tell(NotificationType.Info, "reallife_seen_test_back_none");
+                Logger?.Info("Rivals seen check (test, taken back): nothing of the tests to take back: PASS");
+                return;
+            }
+            _revision++;
             SeenGame.Tell(NotificationType.Info, "reallife_seen_test_back");
-            Logger?.Info("Rivals seen check (test, put back): the save's line is as before the tests: " + (before != null ? "PASS" : "FAIL (the copy could not be read)"));
+            Logger?.Info("Rivals seen check (test, taken back): " + notes + " sighting(s) and " + people + " rival(s) of the tests taken back, the rest as the days made it: PASS");
         }
     }
 }

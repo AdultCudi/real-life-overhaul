@@ -8,6 +8,7 @@ using Helpers;
 using Localizor;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Economy.Dealership;
+using UI.Dialog;
 using UI.Notification;
 using UnityEngine;
 
@@ -15,44 +16,32 @@ namespace RealLifeOverhaul.RivalsSeen
 {
     /// <summary>
     /// Everything the rivals seen around the city read from the game, and the one thing they do to it (a car of the traffic pool put on a lane): the game's own rival
-    /// owners with their week of takings and their businesses, the game's cars as a ladder by price, the city's eating places by district and the rent of their address,
-    /// the doors of a rival's own premises, the player's car and table, the game's notifications. A table of the city is made once a game day; nothing is read per frame.
-    /// Nothing of the game's people, businesses or money is changed.
+    /// owners with their weekly income as its Rivals app shows it and their businesses, the game's cars by price, the city's eating places and the buildings of
+    /// the rivals' own premises (fed to the game-free <see cref="SeenTable"/> once a game day), the doors to stand by, the player's car and table, the game's
+    /// dialogue and notifications. Nothing is read per frame. Nothing of the game's people, businesses or money is changed.
     /// </summary>
-    public sealed class SeenGame : ISeenCity
+    public sealed class SeenGame
     {
         public const string Hamptons = "ba:neighborhood_thehamptons";
 
+        // (before City: a static field is made in the order it is written, and the city's table takes this one)
+        private static readonly Func<object, int, int, bool> Opens = (building, day, hour) => building is CityBuildingController c && OpenAt(c.buildingRegistration, day, hour);
+
         public static readonly SeenGame City = new SeenGame();
         public static IModLogger Logger;
-
-        private struct Eating
-        {
-            public string District, Key, Name;
-            public int Rent;
-            public CityBuildingController Building;
-        }
-
-        private static readonly Comparison<Eating> ByDistrictAndRent = (a, b) =>
-        {
-            int d = string.CompareOrdinal(a.District, b.District);
-            return d != 0 ? d : a.Rent != b.Rent ? a.Rent.CompareTo(b.Rent) : string.CompareOrdinal(a.Key, b.Key);
-        };
 
         private static readonly Comparison<MarketModel> ByPrice = (a, b) => a.Price != b.Price ? a.Price.CompareTo(b.Price) : string.CompareOrdinal(a.Type, b.Type);
         private static readonly Comparison<RivalData> ById = (a, b) => string.CompareOrdinal(a != null ? a.id : null, b != null ? b.id : null);
         private static readonly Predicate<Waypoint> PlainLane = IsPlainLane;
 
-        private readonly List<Eating> _eating = new List<Eating>(64);
-        private readonly Dictionary<string, CityBuildingController> _doors = new Dictionary<string, CityBuildingController>(256, StringComparer.Ordinal);
-        private readonly List<string> _cars = new List<string>(16);
-        private readonly List<string> _districts = new List<string>(8);
-        private readonly List<int> _open = new List<int>(16);
+        /// <summary>The city as the rivals need it, made once a game day (game-free: the checks drive the same table).</summary>
+        public readonly SeenTable Table = new SeenTable { Open = Opens };
+
         private readonly List<MarketModel> _models = new List<MarketModel>(16);
         private readonly List<string> _colours = new List<string>(8);
         private static readonly List<BuildingRegistration> Regs = new List<BuildingRegistration>(16);
         private static readonly List<Waypoint> Lane = new List<Waypoint>(96);
-        private int _tableDay = -1;
+        private static bool _incomeFailed;
 
         public static int Day => SaveGameManager.Current != null ? SaveGameManager.Current.Day : 0;
         public static int Hour => TimeHelper.CurrentHour;
@@ -60,33 +49,31 @@ namespace RealLifeOverhaul.RivalsSeen
 
         // ---- the city's table
 
-        /// <summary>The address of a registration as the table writes a place: its street and number.</summary>
+        /// <summary>The address of a registration as the rivals' sources write an office: its street and number.</summary>
         public static string KeyOf(BuildingRegistration r) => (r.StreetName ?? string.Empty) + "#" + r.StreetNumber;
 
-        /// <summary>True for a business people eat at: the game's restaurants, coffee shops and cafes.</summary>
-        public static bool Eats(string type)
+        /// <summary>True once the city's list of buildings is there to read (Core/GameDlc keeps its own copy: asking twice costs nothing).</summary>
+        public static bool CityReady()
         {
-            return !string.IsNullOrEmpty(type) && (type.IndexOf("restaurant", StringComparison.OrdinalIgnoreCase) >= 0 || type.IndexOf("coffeeshop", StringComparison.OrdinalIgnoreCase) >= 0
-                                                    || type.IndexOf("cafe", StringComparison.OrdinalIgnoreCase) >= 0);
+            CityBuildingController[] all = GameDlc.Open(InstanceBehavior<CityManager>.Instance);
+            return all != null && all.Length > 0;
         }
 
         /// <summary>
-        /// Once a game day: the game's cars by price, every business's door by its address, and the eating places by district and rent. One pass over the city's
-        /// buildings (never one a DLC keeps: Core/GameDlc).
+        /// Once a game day, and again when the day's rivals change: the game's cars by price, the city's eating places, and the buildings at the day's rivals'
+        /// offices, in one pass over the city's buildings (never one a DLC keeps: Core/GameDlc). Only an eating place or a building at one of those offices is
+        /// kept, and no string is made for the others. False while the city's list of buildings is not there yet: nothing is kept, and the day's pass waits.
         /// </summary>
-        public void Refresh(int day)
+        public bool Refresh(IList<SeenSubject> subjects)
         {
-            if (day == _tableDay)
-            {
-                return;
-            }
-            _tableDay = day;
-            _eating.Clear();
-            _doors.Clear();
-            _districts.Clear();
-            ReadCars();
             CityBuildingController[] all = GameDlc.Open(InstanceBehavior<CityManager>.Instance);
-            for (int i = 0; all != null && i < all.Length; i++)
+            if (all == null || all.Length == 0)
+            {
+                return false;
+            }
+            Table.Begin(subjects, Hamptons);
+            ReadCars();
+            for (int i = 0; i < all.Length; i++)
             {
                 CityBuildingController c = all[i];
                 BuildingRegistration r = c != null ? c.buildingRegistration : null;
@@ -94,23 +81,21 @@ namespace RealLifeOverhaul.RivalsSeen
                 {
                     continue;
                 }
-                string key = KeyOf(r);
-                _doors[key] = c;
-                string district = c.building.Neighbourhood;
-                if (Eats(r.businessTypeName) && !string.IsNullOrEmpty(district))
+                bool eats = SeenTable.Eats(r.businessTypeName);
+                int office = Table.OfficeAt(r.StreetName, r.StreetNumber);
+                if (!eats && office < 0)
                 {
-                    _eating.Add(new Eating { District = district, Key = key, Name = r.BusinessName, Rent = Mathf.Max(0, Mathf.RoundToInt(r.RentPerDay)), Building = c });
+                    continue;
+                }
+                Vector3 at = c.transform.position;
+                Table.SetOffice(office, c, at.x, at.z);
+                if (eats)
+                {
+                    Table.AddEating(c.building.Neighbourhood, r.StreetName, r.StreetNumber, r.BusinessName, Mathf.Max(0, Mathf.RoundToInt(r.RentPerDay)), at.x, at.z, c);
                 }
             }
-            _eating.Sort(ByDistrictAndRent);
-            for (int i = 0; i < _eating.Count; i++)
-            {
-                string d = _eating[i].District;
-                if (d != Hamptons && (_districts.Count == 0 || _districts[_districts.Count - 1] != d))
-                {
-                    _districts.Add(d);   // (sorted by district, so each comes once)
-                }
-            }
+            Table.Done();
+            return true;
         }
 
         /// <summary>True where the city has the Hamptons (Core/CityCheck): without them nobody weekends there.</summary>
@@ -119,24 +104,19 @@ namespace RealLifeOverhaul.RivalsSeen
         /// <summary>The table is forgotten: the next day's pass makes it again (a city unloading, the feature switched off).</summary>
         public void Forget()
         {
-            _tableDay = -1;
-            _eating.Clear();
-            _doors.Clear();
-            _districts.Clear();
-            _cars.Clear();
+            Table.Forget();
         }
 
         // The game's cars a showroom deals in (Economy/Dealer reads them: no trucks, nothing of another mod's), the cheapest first.
         private void ReadCars()
         {
-            _cars.Clear();
             try
             {
                 DealerGame.Models(_models, _colours);
                 _models.Sort(ByPrice);
                 for (int i = 0; i < _models.Count; i++)
                 {
-                    _cars.Add(_models[i].Type);
+                    Table.AddCar(_models[i].Type);
                 }
             }
             catch (Exception e)
@@ -145,41 +125,6 @@ namespace RealLifeOverhaul.RivalsSeen
             }
             _models.Clear();
             _colours.Clear();
-        }
-
-        public int Cars => _cars.Count;
-
-        public string Car(int index) => index >= 0 && index < _cars.Count ? _cars[index] : string.Empty;
-
-        /// <summary>The place of a car on the ladder; -1 for one that is not on it.</summary>
-        public int CarPlace(string type) => string.IsNullOrEmpty(type) ? -1 : _cars.IndexOf(type);
-
-        public int Districts => _districts.Count;
-
-        public string District(int index) => index >= 0 && index < _districts.Count ? _districts[index] : string.Empty;
-
-        public bool Eatery(string district, int grade, int pick, int day, int hour, out string name)
-        {
-            int at = Find(district, grade, pick, day, hour);
-            name = at >= 0 ? _eating[at].Name : string.Empty;
-            return at >= 0;
-        }
-
-        // The eating place of a district for a grade and a pick, among those open at that hour of that day; -1 with none.
-        private int Find(string district, int grade, int pick, int day, int hour)
-        {
-            _open.Clear();
-            for (int i = 0; i < _eating.Count; i++)
-            {
-                if (_eating[i].District == district && _eating[i].Building != null && OpenAt(_eating[i].Building.buildingRegistration, day, hour))
-                {
-                    _open.Add(i);
-                }
-            }
-            int index = SeenRules.VenueIndex(_open.Count, grade, pick);
-            int found = index >= 0 ? _open[index] : -1;
-            _open.Clear();
-            return found;
         }
 
         // A business's own opening hours for a weekday and an hour; one with no hours on record is taken as open.
@@ -205,34 +150,10 @@ namespace RealLifeOverhaul.RivalsSeen
             return false;
         }
 
-        /// <summary>
-        /// The building a rival is at for a place of their week, and what it is called: their own premises for the office, an eating place of their district for a
-        /// meal, one of the Hamptons' for the beach and the weekend there. Null where the city has no such building, or it is shut at that hour.
-        /// </summary>
-        public CityBuildingController Venue(SeenFile f, SeenSubject s, SeenDue due, int day, int hour, out string name)
+        /// <summary>True if an eating place is open now for a reason no timetable knows (a fire, an inspection): the game's own test, asked as a rival is put out.</summary>
+        public static bool OpenNow(object building)
         {
-            name = string.Empty;
-            switch (due.Where.Spot)
-            {
-                case SeenSpot.Office:
-                case SeenSpot.Late:
-                {
-                    name = s.Firm ?? string.Empty;
-                    return !string.IsNullOrEmpty(s.Office) && _doors.TryGetValue(s.Office, out CityBuildingController office) ? office : null;
-                }
-                case SeenSpot.Lunch:
-                case SeenSpot.Dinner:
-                case SeenSpot.Beach:
-                case SeenSpot.Hamptons:
-                {
-                    bool away = due.Where.Spot == SeenSpot.Beach || due.Where.Spot == SeenSpot.Hamptons;
-                    int at = Find(away ? Hamptons : SeenDay.DistrictOf(f, s, this), away ? due.Pick % SeenCatalogue.Grades : due.Where.Grade, due.Pick, day, hour);
-                    name = at >= 0 ? _eating[at].Name : string.Empty;
-                    return at >= 0 ? _eating[at].Building : null;
-                }
-                default:
-                    return null;
-            }
+            return building is CityBuildingController c && BusinessHelper.IsBusinessOpen(c.buildingRegistration);
         }
 
         // ---- the rivals
@@ -279,7 +200,8 @@ namespace RealLifeOverhaul.RivalsSeen
                 }
                 var s = new SeenSubject
                 {
-                    Key = "g" + d.id, Name = d.rivalName, Gone = RivalsHelper.IsRivalDefeated(d.id), Shops = d.ownedBusinesses != null ? d.ownedBusinesses.Count : 0, ShopsBefore = -1
+                    Key = "g" + d.id, Id = d.id, Name = d.rivalName, Gone = RivalsHelper.IsRivalDefeated(d.id), Shops = d.ownedBusinesses != null ? d.ownedBusinesses.Count : 0,
+                    ShopsBefore = -1
                 };
                 Takings(d, s);
                 History(d.id, day, s);
@@ -288,33 +210,72 @@ namespace RealLifeOverhaul.RivalsSeen
             }
         }
 
-        // The week's takings of everything they run, and their busiest business: its name is their firm, its address their office, its district theirs.
+        // Their weekly income as the game's Rivals app shows it (RivalData.WeeklyIncome: the last seven days of their shops and offices, the figure the game's
+        // weekly history keeps too, so the first mark sets like against like), and the busiest of those shops and offices, or of all they run with none: its
+        // name is their firm, its address their office, its district theirs.
         private static void Takings(RivalData d, SeenSubject s)
         {
-            double all = 0.0, best = -1.0;
-            for (int i = 0; d.ownedBusinesses != null && i < d.ownedBusinesses.Count; i++)
+            List<BuildingRegistration> shops = d.ownedRetailOfficeBusinesses;
+            double weekly = 0.0;
+            try
             {
-                BuildingRegistration r = d.ownedBusinesses[i];
-                if (r == null)
+                weekly = shops != null ? d.WeeklyIncome : 0f;
+            }
+            catch (Exception e)
+            {
+                weekly = Week(shops);   // the same sum, leaving out a business with no days on record
+                if (!_incomeFailed)
+                {
+                    _incomeFailed = true;
+                    Logger?.Warn("Rivals seen: the game's weekly income of a rival could not be read (" + e.GetType().Name + ": " + e.Message
+                                 + "); their shops' and offices' last seven days are summed instead.");
+                }
+            }
+            s.Figure = (long)Math.Max(0.0, Math.Round(weekly));
+            List<BuildingRegistration> from = shops != null && shops.Count > 0 ? shops : d.ownedBusinesses;
+            BuildingRegistration busiest = null;
+            double best = -1.0;
+            for (int i = 0; from != null && i < from.Count; i++)
+            {
+                BuildingRegistration r = from[i];
+                if (r == null || string.IsNullOrEmpty(r.BusinessName))
                 {
                     continue;
                 }
-                double week = 0.0;
-                for (int k = r.dailyIncomes != null ? Math.Max(0, r.dailyIncomes.Count - SeenRules.WeekDays) : 0; r.dailyIncomes != null && k < r.dailyIncomes.Count; k++)
-                {
-                    week += r.dailyIncomes[k];
-                }
-                all += week;
-                string key = KeyOf(r);
-                if (!string.IsNullOrEmpty(r.BusinessName) && (week > best || (week == best && string.CompareOrdinal(key, s.Office) < 0)))
+                double week = Days(r);
+                if (busiest == null || week > best || (week == best && SeenTable.AddressOrder(r.StreetName, r.StreetNumber, busiest.StreetName, busiest.StreetNumber) < 0))
                 {
                     best = week;
-                    s.Office = key;
-                    s.Firm = r.BusinessName;
-                    s.District = GameRegistrations.District(r) ?? string.Empty;
+                    busiest = r;
                 }
             }
-            s.Figure = (long)Math.Max(0.0, Math.Round(all));
+            if (busiest != null)
+            {
+                s.Office = KeyOf(busiest);
+                s.Firm = busiest.BusinessName;
+                s.District = GameRegistrations.District(busiest) ?? string.Empty;
+            }
+        }
+
+        // A business's last seven days of takings, as the game sums them.
+        private static double Days(BuildingRegistration r)
+        {
+            double week = 0.0;
+            for (int k = r.dailyIncomes != null ? Math.Max(0, r.dailyIncomes.Count - SeenRules.WeekDays) : 0; r.dailyIncomes != null && k < r.dailyIncomes.Count; k++)
+            {
+                week += r.dailyIncomes[k];
+            }
+            return week;
+        }
+
+        private static double Week(List<BuildingRegistration> shops)
+        {
+            double sum = 0.0;
+            for (int i = 0; shops != null && i < shops.Count; i++)
+            {
+                sum += shops[i] != null ? Days(shops[i]) : 0.0;
+            }
+            return sum;
         }
 
         // What the game's own history says they took, and how many businesses they ran, about a week ago: the oldest day it keeps within the week.
@@ -358,6 +319,31 @@ namespace RealLifeOverhaul.RivalsSeen
             }
         }
 
+        /// <summary>
+        /// Whether each of the day's rivals is still there, asked again as the hour turns, before anything about them goes out: an owner defeated or taken over
+        /// since the morning (the game's own test, a lookup by id), a tycoon taken over (through their bridge). Somebody gone stays gone for the day. Returns how
+        /// many went.
+        /// </summary>
+        public static int Still(IList<SeenSubject> subjects)
+        {
+            int went = 0;
+            for (int i = 0; subjects != null && i < subjects.Count; i++)
+            {
+                SeenSubject s = subjects[i];
+                if (s == null || s.Gone)
+                {
+                    continue;
+                }
+                bool gone = s.Tycoon ? SeenBridges.TycoonHere != null && !SeenBridges.TycoonHere(s.Index) : !string.IsNullOrEmpty(s.Id) && RivalsHelper.IsRivalDefeated(s.Id);
+                if (gone)
+                {
+                    s.Gone = true;
+                    went++;
+                }
+            }
+            return went;
+        }
+
         // ---- the player, seen in turn
 
         /// <summary>True if the player runs a business of their own: only then does the column know them.</summary>
@@ -389,7 +375,7 @@ namespace RealLifeOverhaul.RivalsSeen
             return car != null && car.controlledByPlayer && car.vehicleInstance != null ? car.vehicleInstance.vehicleTypeName : null;
         }
 
-        /// <summary>The eating place the player is inside now: its name and district; false anywhere else.</summary>
+        /// <summary>The eating place the player is inside now, if it is not their own: its name and district; false anywhere else.</summary>
         public static bool PlayerTable(out string name, out string district)
         {
             name = null;
@@ -397,9 +383,9 @@ namespace RealLifeOverhaul.RivalsSeen
             BuildingManager manager = BuildingManager.IsInsideBuilding ? InstanceBehavior<BuildingManager>.Instance : null;
             Buildings.Building b = manager != null ? manager.building : null;
             BuildingRegistration r = b != null && b.Address != null ? BuildingHelper.GetBuildingRegistration(b.Address) : null;
-            if (r == null || !r.HasEstablishedBusiness || !Eats(r.businessTypeName))
+            if (r == null || !r.HasEstablishedBusiness || !SeenTable.Eats(r.businessTypeName) || GoingPublic.Mine(r))
             {
-                return false;
+                return false;   // (at work in their own restaurant the player is not out to eat)
             }
             name = r.BusinessName;
             district = b.Neighbourhood ?? string.Empty;
@@ -420,6 +406,71 @@ namespace RealLifeOverhaul.RivalsSeen
         public static void Tell(NotificationType type, string key, Dictionary<string, string> data = null)
         {
             Notifications.Show(type, key, data, 10f, null, null, true, false);
+        }
+
+        // ---- the talk
+
+        /// <summary>True while the game's dialogue panel is open with this person, as the game asks of its own staff (SpecialEmployeeController).</summary>
+        public static bool TalkingWith(ThirdPersonCharacter who)
+        {
+            DialogUI ui = Dialogue();
+            return who != null && ui != null && ui.isPanelOpen && ReferenceEquals(ui.npcInDialog, who);
+        }
+
+        /// <summary>
+        /// Our greeting with this person is ended, if it is open, before they are let go: the game's panel then never holds somebody switched off (it would bear it,
+        /// as it only compares its person, but nothing of the mod leaves it to). Another feature's dialogue is never closed from here.
+        /// </summary>
+        public static void EndTalk(ThirdPersonCharacter who)
+        {
+            if (TalkingWith(who) && Dialogue().dialog is SeenDialog)
+            {
+                Dialogue().CancelDialog();
+            }
+        }
+
+        private static DialogUI Dialogue()
+        {
+            UI.UIs uis = InstanceBehavior<UI.UIs>.Instance;
+            return uis != null && uis.playerHUD != null ? uis.playerHUD.dialogUI : null;
+        }
+
+        // ---- a place to stand by a door
+
+        /// <summary>
+        /// The spot to stand by a building's door, if any is free: <see cref="SeenRules.DoorSpot"/>'s spots along the kerb either side of the pavement point
+        /// before the door, in turn, the first on the pavement and clear of everything (CitySpots.Stand, whose door keep-out the spots are far enough along to
+        /// pass); for a rival put out unseen, out of view too. A spot refused is no news: the living city's counts of refusals are left as they were. False with none.
+        /// </summary>
+        public static bool DoorStand(object building, bool test, out Vector3 spot, out Vector3 front, out Vector3 face)
+        {
+            spot = front = face = default;
+            var venue = building as CityBuildingController;
+            if (venue == null || !JobSpots.Front(venue, out front) || !CitySpots.Along(front, out Vector3 along) || !JobSpots.DoorOf(venue, out Vector3 door))
+            {
+                return false;
+            }
+            Vector3 outward = front - door;
+            outward.y = 0f;
+            face = outward.sqrMagnitude > 0.01f ? outward.normalized : along;
+            int off = CitySpots.OffPavement, blocked = CitySpots.Blocked, near = CitySpots.NearDoor;
+            try
+            {
+                for (int attempt = 0; SeenRules.DoorSpot(attempt, out int side, out float metres); attempt++)
+                {
+                    if (CitySpots.Stand(front + along * (side * metres), 0.35f, out spot) && SeenRules.MayStand(CitySpots.InView(spot), test))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+            finally
+            {
+                CitySpots.OffPavement = off;
+                CitySpots.Blocked = blocked;
+                CitySpots.NearDoor = near;
+            }
         }
 
         // ---- their car on the road
@@ -463,16 +514,24 @@ namespace RealLifeOverhaul.RivalsSeen
             return sent;
         }
 
-        // The prefab of the pool's idle cars of a model: the pool's own object, found by the name the game gives a type's traffic car.
+        // The prefab of the pool's idle cars of a model: the pool's own object, found by the name the game gives a type's car, the part of the type's id between
+        // its first and second '_' (StringIdExtensions.GetIdWithoutType, as the private driver loads "Vehicles/" and it).
         private static GameObject PoolCar(string type)
         {
-            int cut = type.IndexOf('_');
-            string id = cut >= 0 && cut + 1 < type.Length ? type.Substring(cut + 1) : null;
-            List<VehicleComponent> pool = id != null ? Manager.GetVehicleList() : null;
+            if (!SeenRules.CarId(type, out int from, out int length))
+            {
+                return null;
+            }
+            List<VehicleComponent> pool = Manager.GetVehicleList();
             for (int i = 0; pool != null && i < pool.Count; i++)
             {
                 VehicleComponent car = pool[i];
-                if (car != null && car.prefab != null && !car.gameObject.activeInHierarchy && string.Equals(car.prefab.name, id, StringComparison.OrdinalIgnoreCase))
+                if (car == null || car.prefab == null || car.gameObject.activeInHierarchy)
+                {
+                    continue;
+                }
+                string name = car.prefab.name;
+                if (name.Length == length && string.Compare(name, 0, type, from, length, StringComparison.OrdinalIgnoreCase) == 0)
                 {
                     return car.prefab;
                 }

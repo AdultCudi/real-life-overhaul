@@ -400,6 +400,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\RivalsSeen\SeenRules.cs" Link="Mod\RivalsSeen\SeenRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\RivalsSeen\SeenDay.cs" Link="Mod\RivalsSeen\SeenDay.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\RivalsSeen\SeenStore.cs" Link="Mod\RivalsSeen\SeenStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\RivalsSeen\SeenTable.cs" Link="Mod\RivalsSeen\SeenTable.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\RivalsSeen\SeenLines.cs" Link="Mod\RivalsSeen\SeenLines.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\RivalsSeen\SeenPage.cs" Link="Mod\RivalsSeen\SeenPage.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Wiring\Wiring.SeenTycoons.cs" Link="Mod\Wiring.SeenTycoons.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GivingCatalogue.cs" Link="Mod\Giving\GivingCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GivingState.cs" Link="Mod\Giving\GivingState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GivingStore.cs" Link="Mod\Giving\GivingStore.cs" />
