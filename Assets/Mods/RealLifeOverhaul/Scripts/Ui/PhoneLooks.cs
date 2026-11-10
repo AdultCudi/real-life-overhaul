@@ -19,8 +19,8 @@ namespace RealLifeOverhaul.Ui
             "RealLifePlanner", "RealLifeFlare", "RealLifeCalendar", "RealLifeCamera", "RealLifeGallery", "RealLifeNewsstand", "RealLifeLedger",
             "RealLifeCareer", "RealLifeCampus", "RealLifeOpenRoles", "RealLifeMarketplace",
             "RealLifeFinance", "RealLifeBanks", "RealLifeGiving", "RealLifeOwnBank", "RealLifeStocks", "RealLifeEconomy",
-            "RealLifeCompany", "RealLifeSuppliers", "RealLifeBrands", "RealLifeServices", "RealLifeVentures", "RealLifeOnline", "RealLifeEstate", "RealLifeDealer",
-            "RealLifeBuilders", "RealLifeTechSector", "RealLifeOverhaulUtilities",
+            "RealLifeCompany", "RealLifeBrands", "RealLifeServices", "RealLifeVentures", "RealLifeOnline", "RealLifeEstate", "RealLifeDealer",
+            "RealLifeBuilders", "RealLifeTechSector", "RealLifeSuppliers", "RealLifeOverhaulUtilities",
             "RealLifeGuide", "RealLifeSettings", "RealLifeStaff"
         };
 
@@ -32,7 +32,7 @@ namespace RealLifeOverhaul.Ui
             UiIcon.Trophy, UiIcon.Cap, UiIcon.Handshake, UiIcon.Package,
             UiIcon.Wallet, UiIcon.Bank, UiIcon.Percent, UiIcon.PiggyBank, UiIcon.ChartLineUp, UiIcon.Globe,
             UiIcon.Building, UiIcon.Tag, UiIcon.Headset, UiIcon.Rocket, UiIcon.ShoppingCart, UiIcon.Home, UiIcon.Car,
-            UiIcon.Hammer, UiIcon.Cpu, UiIcon.Lightning,
+            UiIcon.Hammer, UiIcon.Cpu, UiIcon.ListChecks, UiIcon.Lightning,
             UiIcon.Lightbulb, UiIcon.Gear, UiIcon.IdBadge
         };
 

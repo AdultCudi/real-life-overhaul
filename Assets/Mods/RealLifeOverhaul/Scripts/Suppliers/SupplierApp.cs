@@ -201,7 +201,7 @@ namespace RealLifeOverhaul.Suppliers
                 box.Note(SupplierText.Fill("reallife_supply_wholesalers_about"));
                 return SupplierColumns.Firms;
             }
-            box.Note(SupplierText.Fill("reallife_supply_firm_about_" + p.Id));
+            box.Note(SupplierText.Fill(SupplierKeys.About(p.Id)));
             box.RowWords(SupplierText.Fill("reallife_supply_row_owner"), string.IsNullOrEmpty(p.OwnerName) ? SupplierText.Fill("reallife_supply_owner_own")
                 : SupplierText.Fill("reallife_supply_owner_rival", "rival", p.OwnerName));
             if (!string.IsNullOrEmpty(p.Depot))

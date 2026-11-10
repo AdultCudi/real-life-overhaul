@@ -7,6 +7,16 @@ namespace RealLifeOverhaul.Suppliers
     {
         public const string WholesalersKey = "reallife_supply_firm_0";
 
+        /// <summary>What each supplier is like, in a sentence or two, in the catalogue's order.</summary>
+        public static readonly string[] AboutKeys =
+        {
+            "reallife_supply_firm_about_1", "reallife_supply_firm_about_2", "reallife_supply_firm_about_3", "reallife_supply_firm_about_4", "reallife_supply_firm_about_5",
+            "reallife_supply_firm_about_6", "reallife_supply_firm_about_7", "reallife_supply_firm_about_8", "reallife_supply_firm_about_9"
+        };
+
+        /// <summary>A supplier's sentence by its number.</summary>
+        public static string About(int id) => AboutKeys[SupplierCatalogue.Clamp(id, 1, AboutKeys.Length) - 1];
+
         public static readonly string[] CauseKeys =
         {
             "reallife_supply_cause_none", "reallife_supply_cause_own", "reallife_supply_cause_trouble", "reallife_supply_cause_cash", "reallife_supply_cause_weather",

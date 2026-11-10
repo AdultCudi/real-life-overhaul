@@ -55,7 +55,7 @@ namespace RealLifeOverhaul.Ui
             }
             m.Nav = new[]
             {
-                new UiNavEntry { Icon = UiIcon.Truck, Label = w.T("reallife_supply_tab_suppliers", "Suppliers") },
+                new UiNavEntry { Icon = UiIcon.Truck, Label = w.T("reallife_supply_tab_suppliers", "Offers") },
                 new UiNavEntry { Icon = UiIcon.Briefcase, Label = w.T("reallife_supply_tab_contracts", "Contracts"), Count = running > 0 ? running.ToString() : null },
                 new UiNavEntry { Icon = UiIcon.Chart, Label = w.T("reallife_supply_tab_market", "The market") }
             };
@@ -200,7 +200,7 @@ namespace RealLifeOverhaul.Ui
                 m.Right = right.ToArray();
                 return;
             }
-            right.Add(VentBlock.Note(w.T("reallife_supply_firm_about_" + p.Id, AboutEnglish(p.Id))));
+            right.Add(VentBlock.Note(w.T(SupplierKeys.About(p.Id), AboutEnglish(p.Id))));
             right.Add(VentBlock.Row(w.T("reallife_supply_row_owner", "Owner"),
                 string.IsNullOrEmpty(p.OwnerName) ? w.T("reallife_supply_owner_own", "Its own") : w.F("reallife_supply_owner_rival", "{rival}'s holding", "rival", p.OwnerName)));
             if (!string.IsNullOrEmpty(p.Depot))
@@ -296,7 +296,7 @@ namespace RealLifeOverhaul.Ui
             }
             if (f.Contracts.Count == 0)
             {
-                left.Add(VentBlock.Note(w.T("reallife_supply_contracts_none", "No contracts yet. Choose a supplier on the Suppliers tab.")));
+                left.Add(VentBlock.Note(w.T("reallife_supply_contracts_none", "No contracts yet. Choose a supplier on the Offers tab.")));
                 if (f.Owed > 0)
                 {
                     right.Add(VentBlock.Buttons(new UiActionModel { Label = w.T("reallife_supply_pay_owed", "Pay what is owed"), Kind = UiButtonKind.Primary, Icon = UiIcon.Coin,
@@ -394,9 +394,9 @@ namespace RealLifeOverhaul.Ui
                     limit >= 100000 ? w.T("reallife_supply_limit_any", "Any price") : limit == 0 ? w.T("reallife_supply_limit_market", "The market price")
                         : w.F("reallife_supply_limit_value", "{share} over the market price", "share", Percent(limit)),
                     runs.Add(() => { act.Rule(id, SupplierCatalogue.RuleLimit); return true; }), p.Renew == RenewRule.Off));
-                right.Add(VentBlock.Switch(w.T("reallife_supply_rule_cover", "Cover a late or short delivery from another supplier"), p.Cover,
+                right.Add(VentBlock.Switch(w.T("reallife_supply_rule_cover", "Cover a late or short delivery"), p.Cover,
                     runs.Add(() => { act.Rule(id, SupplierCatalogue.RuleCover); return true; })));
-                right.Add(VentBlock.Switch(w.T("reallife_supply_rule_leave", "Leave and switch when it has failed too often"), p.LeaveRule,
+                right.Add(VentBlock.Switch(w.T("reallife_supply_rule_leave", "Leave after too many failures"), p.LeaveRule,
                     runs.Add(() => { act.Rule(id, SupplierCatalogue.RuleLeave); return true; })));
             }
             var actions = new List<UiActionModel>(3);

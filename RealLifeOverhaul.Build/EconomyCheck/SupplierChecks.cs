@@ -1629,11 +1629,6 @@ internal static partial class Program
                 keys.Add(m.Groups[1].Value);
             }
         }
-        keys.Remove("reallife_supply_firm_about_");
-        for (int i = 1; i <= 9; i++)
-        {
-            keys.Add("reallife_supply_firm_about_" + i);
-        }
         foreach (string k in new[] { "reallife_opt_sec_suppliers", "reallife_opt_tip_living_suppliers", "reallife_ui_screen_suppliers", "reallife_opt_tip_ui_screen_suppliers", "reallife_supply_bizman_label",
                      "reallife_supply_bizman_value", "reallife_supply_bizman_none", "reallife_supply_bizman_open", "reallife_transaction_supply_deliverycontract_label", "reallife_transaction_supply_settlement_label",
                      "reallife_transaction_supply_deliverycontract_owed_label", "reallife_transaction_supply_credit_label" })
