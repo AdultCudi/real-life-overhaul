@@ -203,8 +203,8 @@ namespace RealLifeOverhaul.Schemes
         /// <summary>What reaches the player of a sum washed: the cut is lost on the way, and the game's tax rate (per cent) is taken off the rest as on any sale.</summary>
         public static long WashNet(long amount, int taxPercent)
         {
-            long after = Math.Max(0L, amount) - SchemeCatalogue.Share(amount, SchemeCatalogue.WashCut);
-            return after - after * SchemeCatalogue.Clamp(taxPercent, 0, 100) / 100L;
+            long after = SchemeCatalogue.Share(amount, 1000 - SchemeCatalogue.WashCut);   // what is kept is rounded down, so no day's rounding is the player's
+            return after * (100 - SchemeCatalogue.Clamp(taxPercent, 0, 100)) / 100L;
         }
 
         // An invented claim on file that its insurer has not paid yet: there is nothing of it to pay back, and it is withdrawn instead.

@@ -214,7 +214,7 @@ namespace RealLifeOverhaul.Schemes
                     SchemeGame.Take(price, SchemeGame.FavourKey);   // counted against the wallet and the investors' floor above
                 }
                 answer.Taken = true;
-                answer.Key = SchemeText.FavourTakenKeys[(int)favour];
+                answer.Key = SchemeKeys.Taken[(int)favour];
                 answer.Pairs = new[] { "amount", SchemeText.Money(price) };
                 answer.Words = favour == Favour.Word ? Standing() : null;
                 Logger?.Info("Schemes: " + favour + " bought from " + who + " for " + price + (cash ? " in cash" : " through the account") + "; graft heat "
@@ -281,7 +281,7 @@ namespace RealLifeOverhaul.Schemes
                 SchemeInquiry q = _state.OpenOf(kind);
                 b.Append(k > 0 ? "\n" : string.Empty).Append(SchemeText.Kind(kind)).Append(": ");
                 b.Append(q != null ? SchemeText.Fill("reallife_scheme_word_inquiry", "day", SchemeText.Whole(q.Opened), "share", SchemeText.Percent(q.Evidence))
-                    : SchemeText.T(SchemeText.BandKeys[SchemeRules.Band(_state.Heat[k])]));
+                    : SchemeText.T(SchemeKeys.Bands[SchemeRules.Band(_state.Heat[k])]));
             }
             for (int i = 0; i < _state.Rival.Length; i++)
             {

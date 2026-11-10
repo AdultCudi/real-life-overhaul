@@ -260,13 +260,13 @@ namespace RealLifeOverhaul.Schemes
 
         private static void Fund(SchemeState s, string[] c)
         {
-            int state = I(c, 2, 0);
-            if (c.Length < 10 || state < 0 || state > (int)FundState.Declined)
+            int state = I(c, 2, 0), tycoon = I(c, 1, -1);
+            if (c.Length < 10 || state < 0 || state > (int)FundState.Declined || tycoon >= s.Rival.Length)
             {
-                return;
+                return;   // a state or a rival there is not: no fund is on offer
             }
             SchemeFund f = s.Fund;
-            f.Tycoon = SchemeCatalogue.Clamp(I(c, 1, -1), -1, s.Rival.Length - 1);
+            f.Tycoon = Math.Max(-1, tycoon);
             f.State = f.Tycoon < 0 ? FundState.None : (FundState)state;
             f.Day = I(c, 3, 0);
             f.Due = I(c, 4, 0);

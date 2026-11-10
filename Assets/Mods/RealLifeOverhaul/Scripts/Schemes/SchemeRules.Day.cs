@@ -25,7 +25,7 @@ namespace RealLifeOverhaul.Schemes
         FundLapsed = 16,     // Tycoon
         FundPaid = 17,       // Tycoon, Amount placed, Net what comes back
         FundLost = 18,       // Tycoon, Amount
-        FundRecovered = 19   // Tycoon, Amount
+        FundRecovered = 19   // Tycoon, Amount that comes back
     }
 
     /// <summary>One thing a day did. A struct: the list is reused and nothing is allocated for an event.</summary>

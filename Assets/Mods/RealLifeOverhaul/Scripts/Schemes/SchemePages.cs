@@ -104,13 +104,18 @@ namespace RealLifeOverhaul.Schemes
             return page.Add(w.T("reallife_scheme_leave"), w.T("reallife_scheme_leave_hint"), SchemePress.Of(SchemeDo.Leave));
         }
 
-        // The two sizes and the way out, the same on every page that offers them: a small one is rarely looked into, a large one always.
-        private static SchemePage Sizes(SchemePage page, SchemeWords w, SchemeDo what, string place, int a, string smallHint, string smallGain, string largeHint, string largeGain)
+        // The two sizes and the way out, the same on every page that offers them, each with what it brings and what it risks: how often a
+        // first small one is looked into by the rules' own sum (odds, per cent), and that a large one always is.
+        private static SchemePage Sizes(SchemePage page, SchemeWords w, SchemeDo what, string place, int a, int odds, string smallHint, string smallGain, string largeHint,
+            string largeGain)
         {
-            page.Add(w.T("reallife_scheme_size_small"), smallHint, SchemePress.Of(what, place, a, SchemeCatalogue.Small)).Line(smallGain, Gain).Line(w.T("reallife_scheme_risk_small"), 0)
+            page.Add(w.T("reallife_scheme_size_small"), smallHint, SchemePress.Of(what, place, a, SchemeCatalogue.Small)).Line(smallGain, Gain)
+                .Line(w.T("reallife_scheme_risk_small", "chance", Whole(odds)), 0)
                 .Add(w.T("reallife_scheme_size_large"), largeHint, SchemePress.Of(what, place, a, SchemeCatalogue.Large)).Line(largeGain, Gain).Line(w.T("reallife_scheme_risk_large"), Risk);
             return Leave(page, w);
         }
+
+        private static string Whole(long n) => n.ToString(System.Globalization.CultureInfo.InvariantCulture);
 
         /// <summary>An insurance claim for a loss that never happened, on a cover in force at a business.</summary>
         public static SchemePage Claim(SchemeWords w, string place, string business, int cover, int coverMost)
@@ -118,7 +123,8 @@ namespace RealLifeOverhaul.Schemes
             string small = w.M(SchemeRules.ClaimLoss(coverMost, SchemeCatalogue.Small)), large = w.M(SchemeRules.ClaimLoss(coverMost, SchemeCatalogue.Large));
             SchemePage page = Page(w, "reallife_scheme_claim_title", business,
                 w.T("reallife_scheme_claim_body", "business", business, "share", SchemeWords.Percent(SchemeCatalogue.SurchargePermille)));
-            return Sizes(page, w, SchemeDo.Claim, place, cover, w.T("reallife_scheme_claim_hint", "amount", small), w.T("reallife_scheme_claim_gain", "amount", small),
+            return Sizes(page, w, SchemeDo.Claim, place, cover, SchemeRules.FirstChance(SchemeKind.Claim, SchemeCatalogue.Small, 0, true),
+                w.T("reallife_scheme_claim_hint", "amount", small), w.T("reallife_scheme_claim_gain", "amount", small),
                 w.T("reallife_scheme_claim_hint", "amount", large), w.T("reallife_scheme_claim_gain", "amount", large));
         }
 
@@ -128,7 +134,8 @@ namespace RealLifeOverhaul.Schemes
             long small = SchemeRules.ExpenseAmount(averageTakings, SchemeCatalogue.Small), large = SchemeRules.ExpenseAmount(averageTakings, SchemeCatalogue.Large);
             SchemePage page = Page(w, "reallife_scheme_expense_title", w.T("reallife_scheme_expense_kicker"), w.T("reallife_scheme_expense_body", "percent",
                 taxPercent.ToString(System.Globalization.CultureInfo.InvariantCulture), "share", SchemeWords.Percent(SchemeCatalogue.SurchargePermille)));
-            return Sizes(page, w, SchemeDo.Expense, null, 0, w.T("reallife_scheme_expense_hint", "amount", w.M(small)),
+            return Sizes(page, w, SchemeDo.Expense, null, 0, SchemeRules.FirstChance(SchemeKind.Expense, SchemeCatalogue.Small, 0, true),
+                w.T("reallife_scheme_expense_hint", "amount", w.M(small)),
                 w.T("reallife_scheme_expense_gain", "amount", w.M(SchemeRules.ExpenseGain(small, taxPercent))), w.T("reallife_scheme_expense_hint", "amount", w.M(large)),
                 w.T("reallife_scheme_expense_gain", "amount", w.M(SchemeRules.ExpenseGain(large, taxPercent))));
         }
@@ -149,7 +156,7 @@ namespace RealLifeOverhaul.Schemes
             SchemePage page = Page(w, "reallife_scheme_lift_title", business, w.T("reallife_scheme_lift_body", "business", business, "now", SchemeWords.Percent(now),
                 "share", SchemeWords.Percent(SchemeCatalogue.SurchargePermille)));
             page.Add(w.T("reallife_scheme_lift_set", "share", SchemeWords.Percent(little)), w.T("reallife_scheme_lift_little_hint"), SchemePress.Of(SchemeDo.Lift, place, little))
-                .Line(w.T("reallife_scheme_lift_risk_little"), 0)
+                .Line(w.T("reallife_scheme_lift_risk_little", "chance", Whole(SchemeRules.FirstChance(SchemeKind.Books, little * 1000 / SchemeCatalogue.LiftMost, 0, true))), 0)
                 .Add(w.T("reallife_scheme_lift_set", "share", SchemeWords.Percent(lot)), w.T("reallife_scheme_lift_lot_hint"), SchemePress.Of(SchemeDo.Lift, place, lot))
                 .Line(w.T("reallife_scheme_lift_risk_lot"), Risk);
             return now > 0 ? page.Add(w.T("reallife_scheme_lift_plain"), w.T("reallife_scheme_lift_plain_hint"), SchemePress.Of(SchemeDo.Lift, place, 0)) : Leave(page, w);
@@ -194,7 +201,9 @@ namespace RealLifeOverhaul.Schemes
                 "share", SchemeWords.Percent(SchemeCatalogue.SurchargePermille)));
             string small = SchemeCatalogue.ClubSmall.ToString(System.Globalization.CultureInfo.InvariantCulture);
             string large = SchemeCatalogue.ClubLarge.ToString(System.Globalization.CultureInfo.InvariantCulture);
-            return Sizes(page, w, SchemeDo.Club, place, 0, w.T("reallife_scheme_club_hint", "count", small), w.T("reallife_scheme_club_gain", "amount", w.M(SchemeCatalogue.ClubSmall * stake)),
+            int odds = SchemeRules.FirstChance(SchemeKind.Club, SchemeCatalogue.Small, SchemeCatalogue.ClubSmall / SchemeCatalogue.ClubKnowsEvery, false);
+            return Sizes(page, w, SchemeDo.Club, place, 0, odds, w.T("reallife_scheme_club_hint", "count", small),
+                w.T("reallife_scheme_club_gain", "amount", w.M(SchemeCatalogue.ClubSmall * stake)),
                 w.T("reallife_scheme_club_hint", "count", large), w.T("reallife_scheme_club_gain", "amount", w.M(SchemeCatalogue.ClubLarge * stake)));
         }
 

@@ -94,8 +94,9 @@ namespace RealLifeOverhaul.Schemes
         // An act on a rival's trail: counted, its gain kept to be found, its heat the player's own formula.
         private static void RivalActs(SchemeState s, SchemeRival r, int tycoon, SchemeKind kind, int size, long gain, int day)
         {
-            int recent = day - r.LastAct <= SchemeCatalogue.RepeatDays ? Math.Min(SchemeCatalogue.RepeatMost, r.Acts) : 0;
-            int heat = HeatOf(kind, size, recent, 1, true) + (Spotted(s.Seed ^ (tycoon + 1) * 7919, kind, r.Acts + r.Opened * 31) ? SchemeCatalogue.HeatSpotted : 0);
+            bool lately = day - r.LastAct <= SchemeCatalogue.RepeatDays;   // their schemes on file count as one pattern: recent if the newest is, older if not
+            int heat = HeatOf(kind, size, lately ? r.Acts : 0, lately ? 0 : r.Acts, 1, true)
+                       + (Spotted(s.Seed ^ (tycoon + 1) * 7919, kind, r.Acts + r.Opened * 31) ? SchemeCatalogue.HeatSpotted : 0);
             r.Heat = Math.Min(SchemeCatalogue.HeatMost, r.Heat + heat);
             r.Acts++;
             r.LastAct = day;
@@ -157,8 +158,11 @@ namespace RealLifeOverhaul.Schemes
                 events.Add(new SchemeEvent { Kind = SchemeEventKind.RivalFound, Tycoon = tycoon, A = (int)r.NewsKind, Amount = taken });
                 if (r.Owes > 0)
                 {
-                    // A sham fund of theirs was among what was found: the player's money comes back, whatever was offered since.
-                    events.Add(new SchemeEvent { Kind = SchemeEventKind.FundRecovered, Tycoon = tycoon, Amount = r.Owes });
+                    // A sham fund of theirs was among what was found: what is left of the player's money comes back, whatever was offered since.
+                    events.Add(new SchemeEvent
+                    {
+                        Kind = SchemeEventKind.FundRecovered, Tycoon = tycoon, Amount = SchemeCatalogue.Share(r.Owes, SchemeCatalogue.FundRecoverPermille)
+                    });
                     r.Owes = 0;
                     if (s.Fund.Tycoon == tycoon && s.Fund.State == FundState.Lost)
                     {

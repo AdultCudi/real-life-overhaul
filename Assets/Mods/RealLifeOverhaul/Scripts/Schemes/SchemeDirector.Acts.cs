@@ -286,6 +286,12 @@ namespace RealLifeOverhaul.Schemes
             return shop != null ? shop.Lift : 0;
         }
 
+        /// <summary>A business's recent profit as its books show it to a buyer: the true figure and the lift on top, by the rules; a loss is not dressed up.</summary>
+        public static float BooksShown(string place, float profit)
+        {
+            return SchemeRules.Lifted(profit, BooksLift(place));
+        }
+
         /// <summary>
         /// A buyer is about to pay for a business: true if they see through its dressed books, by how hard their kind looks.
         /// They then walk and say why, the books are plain again, and no money has moved.

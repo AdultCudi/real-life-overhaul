@@ -90,6 +90,8 @@ namespace RealLifeOverhaul.Schemes
         public const int HeatRepeat = 70;              // more for each earlier act of the kind in RepeatDays: splitting is judged as the pattern it is
         public const int RepeatDays = 90;              // days an earlier act counts as part of a pattern
         public const int RepeatMost = 5;               // earlier acts counted at most
+        public const int HeatOnFile = 50;              // more for each older act of the kind still on file: a trail is remembered for as long as a file reaches
+        public const int OnFileMost = 8;               // older acts counted at most
         public const int HeatKnows = 40;               // for each person who knows of it
         public const int HeatPaper = 60;               // paid through the bank account: a paper trail
         public const int HeatSpill = 100;              // thousandths of an act's heat that also falls on every other trail: one known for one thing is watched for others
@@ -160,7 +162,7 @@ namespace RealLifeOverhaul.Schemes
         public const int HeatPattern = 120;
 
         // ---- money to people: what each favour weighs, costs and whom it asks
-        public static readonly int[] FavourSize = { 100, 150, 250, 500, 700, 1000 };          // an act's size, by favour
+        public static readonly int[] FavourSize = { 100, 150, 250, 400, 500, 700 };           // an act's size, by favour: a judge's is looked into most often
         public static readonly int[] FavourPrice = { 1500, 800, 4000, 6000, 5000, 25000 };    // at the start's prices; the investigator's is its least
         public const int InvestigatorShare = 600;      // thousandths of the proceeds on file the investigator asks, if more than the least
         public static readonly int[] TakesPermille = { 550, 400, 250, 200 };      // by office: a contact, a councillor, an investigator, a judge
@@ -176,9 +178,9 @@ namespace RealLifeOverhaul.Schemes
         public const int PaidMost = 16, ColdMost = 64, BoughtMost = 32;
 
         // ---- the rivals: the same schemes by seeded rules
-        public const int RivalEveryDays = 30;          // each rival is looked at once in so many days
+        public const int RivalEveryDays = 60;          // each rival is looked at once in so many days
         public const int RivalCleanPermille = 300;     // rivals in a thousand who never scheme
-        public const int RivalBentLeast = 300, RivalBentSpread = 600;   // a bent rival's chance each look, thousandths
+        public const int RivalBentLeast = 150, RivalBentSpread = 300;   // a bent rival's chance each look, thousandths: a scheme in a hundred to four hundred days
         public const int RivalLargePermille = 300;     // of a rival's schemes that are full-sized
         public const int RivalSmallGain = 5, RivalLargeGain = 40;       // ten-thousandths of their worth a scheme brings them
         public const int RivalGainMost = 250000;       // at the start's prices
@@ -196,7 +198,8 @@ namespace RealLifeOverhaul.Schemes
         public const int FundAnswerDays = 7;
         public const int FundFeePermille = 30;         // of the sum: what having it looked at costs
         public const int FundFeeLeast = 250;           // at the start's prices
-        public const int FundShamShare = 800;          // thousandths of a rival's bent that an offer of theirs is a sham
+        public const int FundShamShare = 1000;         // thousandths of a rival's bent that an offer of theirs is a sham: as likely as a scheme of theirs on a look
+        public const int FundRecoverPermille = 600;    // of a sham's sum that comes back when its rival is found out: the rest was spent
 
         /// <summary>Thousandths of a sum, rounded down, never negative.</summary>
         public static long Share(long amount, int permille)

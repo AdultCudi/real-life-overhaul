@@ -37,7 +37,8 @@ namespace RealLifeOverhaul.Schemes
                 .Fact("scheme_lift_most", () => Percent(SchemeCatalogue.LiftMost))
                 .Fact("scheme_hold_days", () => Whole(SchemeCatalogue.HoldDays))
                 .Fact("scheme_fund_return", () => Percent(SchemeCatalogue.FundReturn))
-                .Fact("scheme_fund_days", () => Whole(SchemeCatalogue.FundDays));
+                .Fact("scheme_fund_days", () => Whole(SchemeCatalogue.FundDays))
+                .Fact("scheme_fund_back", () => Percent(SchemeCatalogue.FundRecoverPermille));
         }
 
         private static string Whole(int value) => value.ToString(Inv);

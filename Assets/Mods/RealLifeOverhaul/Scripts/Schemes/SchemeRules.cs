@@ -54,13 +54,45 @@ namespace RealLifeOverhaul.Schemes
             return Math.Min(SchemeCatalogue.RepeatMost, recent);
         }
 
-        /// <summary>What an act adds to its kind's heat: its kind, its size, the pattern it is part of, who knows, and its paper trail.</summary>
-        public static int HeatOf(SchemeKind kind, int size, int recent, int knows, bool paper)
+        /// <summary>Older acts of a kind still on file, past the days a pattern is read over, as far as they are counted: found ones are dealt with and count no more.</summary>
+        public static int Older(SchemeState s, SchemeKind kind, int day)
+        {
+            int older = 0;
+            for (int i = 0; i < s.Acts.Count; i++)
+            {
+                older += OnFile(s.Acts[i], kind, day) && day - s.Acts[i].Day > SchemeCatalogue.RepeatDays ? 1 : 0;
+            }
+            return Math.Min(SchemeCatalogue.OnFileMost, older);
+        }
+
+        /// <summary>
+        /// What an act adds to its kind's heat: its kind, its size, the pattern it is part of (the recent acts, and the
+        /// older ones still on file), who knows, and its paper trail.
+        /// </summary>
+        public static int HeatOf(SchemeKind kind, int size, int recent, int older, int knows, bool paper)
         {
             int heat = SchemeCatalogue.HeatBase[(int)kind] + SchemeCatalogue.Clamp(size, 0, SchemeCatalogue.Large) * SchemeCatalogue.HeatSize / 1000
-                       + SchemeCatalogue.Clamp(recent, 0, SchemeCatalogue.RepeatMost) * SchemeCatalogue.HeatRepeat + Math.Max(0, knows) * SchemeCatalogue.HeatKnows
+                       + SchemeCatalogue.Clamp(recent, 0, SchemeCatalogue.RepeatMost) * SchemeCatalogue.HeatRepeat
+                       + SchemeCatalogue.Clamp(older, 0, SchemeCatalogue.OnFileMost) * SchemeCatalogue.HeatOnFile + Math.Max(0, knows) * SchemeCatalogue.HeatKnows
                        + (paper ? SchemeCatalogue.HeatPaper : 0);
             return Math.Min(SchemeCatalogue.HeatMost, heat);
+        }
+
+        /// <summary>
+        /// How often a first act of its kind and size is looked into, per cent: the share of saves whose line it passes on
+        /// its own, and of the rest those a routine check carries over it. What a page says before the player commits; an
+        /// act with others on file is looked into more often than this.
+        /// </summary>
+        public static int FirstChance(SchemeKind kind, int size, int knows, bool paper)
+        {
+            int heat = HeatOf(kind, size, 0, 0, knows, paper), plain = Passes(heat), spotted = Passes(heat + SchemeCatalogue.HeatSpotted);
+            return (plain + (spotted - plain) * SchemeCatalogue.SpotPermille / 1000 + 5) / 10;
+        }
+
+        // The share of saves, thousandths, whose line a heat passes: the line is drawn evenly from its least to its most.
+        private static int Passes(int heat)
+        {
+            return SchemeCatalogue.Clamp((heat - SchemeCatalogue.OpenLeast + 1) * 1000 / SchemeCatalogue.OpenSpread, 0, 1000);
         }
 
         /// <summary>Whether an act is spotted by a routine check whatever its size: fixed by the seed and the act's number.</summary>
@@ -89,14 +121,14 @@ namespace RealLifeOverhaul.Schemes
         /// </summary>
         public static SchemeAct Record(SchemeState s, SchemeKind kind, int day, long gain, int size, int knows, bool paper, string place, int reference)
         {
-            int recent = Recent(s, kind, day);
+            int recent = Recent(s, kind, day), older = Older(s, kind, day);
             var act = new SchemeAct
             {
                 Kind = kind, Day = day, Gain = Math.Max(0L, gain), Size = SchemeCatalogue.Clamp(size, 0, SchemeCatalogue.Large), Knows = Math.Max(0, knows), Paper = paper,
                 Place = place ?? string.Empty, Ref = reference
             };
             Keep(s, act);
-            int heat = HeatOf(kind, act.Size, recent, act.Knows, paper);
+            int heat = HeatOf(kind, act.Size, recent, older, act.Knows, paper);
             if (Spotted(s.Seed, kind, s.Acted))
             {
                 heat += SchemeCatalogue.HeatSpotted;

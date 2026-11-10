@@ -79,7 +79,7 @@ namespace RealLifeOverhaul
                 SchemeBridges.Letter = (key, data) => LegalPhone.Send(key, data);
                 CompanyBridges.QuietLabel = SchemeDirector.QuietLabel;
                 CompanyBridges.Quiet = SchemeDirector.QuietOpen;
-                ServicesBridges.BooksLift = reg => reg != null ? SchemeDirector.BooksLift(CompanyGame.Place(reg)) : 0;
+                ServicesBridges.BooksShown = (reg, profit) => reg != null ? SchemeDirector.BooksShown(CompanyGame.Place(reg), profit) : profit;
                 ServicesBridges.SeesThrough = SchemeDirector.SaleSeen;
                 _soldBefore = ServicesBridges.Sold;
                 ServicesBridges.Sold = Sold;
@@ -98,7 +98,7 @@ namespace RealLifeOverhaul
                 SchemeBridges.Reset();
                 CompanyBridges.QuietLabel = null;
                 CompanyBridges.Quiet = null;
-                ServicesBridges.BooksLift = null;
+                ServicesBridges.BooksShown = null;
                 ServicesBridges.SeesThrough = null;
                 ServicesBridges.Sold = _soldBefore;   // the stock market's own takes its off next
                 _soldBefore = null;
@@ -378,7 +378,7 @@ namespace RealLifeOverhaul
                         TycoonDef def = RivalCatalogue.Tycoons[RivalCatalogue.Clamp(i, 0, RivalCatalogue.TycoonCount - 1)];
                         into.Add(new NewsItem
                         {
-                            Key = SchemeText.RivalPaperKeys[r.News - 1],
+                            Key = SchemeKeys.RivalPaper[r.News - 1],
                             Data = SchemeGame.Data("rival", def.Name, "holding", def.Holding, "what", SchemeText.Kind(r.NewsKind), "amount", SchemeText.Money(r.NewsAmount))
                         });
                     }
@@ -428,8 +428,8 @@ namespace RealLifeOverhaul
                     long price = SchemeDirector.PriceOf(favour, out bool cash);
                     data["amount"] = SchemeText.Money(price);
                     data["way"] = SchemeText.T(cash ? "reallife_scheme_way_cash" : "reallife_scheme_way_account");
-                    var entry = new DialogEntry { messageData = SchemeText.FavourAskKeys[(int)favour].Localize(data), OnCancel = PhoneContacts.HangUp };
-                    entry.ConfirmTextOverride = SchemeText.FavourKeys[(int)favour].Localize(data);
+                    var entry = new DialogEntry { messageData = SchemeKeys.Asks[(int)favour].Localize(data), OnCancel = PhoneContacts.HangUp };
+                    entry.ConfirmTextOverride = SchemeKeys.Favours[(int)favour].Localize(data);
                     entry.OnConfirm = () => Answer(p, favour);
                     entry.Pays(DialogButton.Confirm, "reallife_ui_dialog_cost_now", "amount", SchemeText.Money(price));
                     if (Asked.Count > 1)

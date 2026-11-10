@@ -65,19 +65,17 @@ namespace RealLifeOverhaul.Economy
             return i;
         }
 
-        // The recent profit as the business's books show it to a buyer: the game's own, unless another feature dressed them (ServicesBridges.BooksLift). A loss is not dressed up.
+        // The recent profit as the business's books show it to a buyer: the game's own, unless another feature dressed them (ServicesBridges.BooksShown).
         private static float Lifted(BuildingRegistration reg, float profit)
         {
-            int lift = 0;
             try
             {
-                lift = ServicesBridges.BooksLift != null ? Mathf.Clamp(ServicesBridges.BooksLift(reg), 0, 1000) : 0;
+                return ServicesBridges.BooksShown != null ? ServicesBridges.BooksShown(reg, profit) : profit;
             }
             catch (Exception)
             {
-                lift = 0;   // a bridge that throws dresses nothing
+                return profit;   // a bridge that throws dresses nothing
             }
-            return profit > 0f && lift > 0 ? profit * (1000 + lift) / 1000f : profit;
         }
 
         /// <summary>A business's stock and furniture at the price the game itself pays for them when a lease ends.</summary>

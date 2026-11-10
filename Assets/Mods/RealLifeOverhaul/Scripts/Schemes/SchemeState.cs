@@ -86,7 +86,7 @@ namespace RealLifeOverhaul.Schemes
         public int News;                       // ...and what it was (SchemeRules.RivalNews)
         public SchemeKind NewsKind;
         public long NewsAmount;
-        public long Owes;                      // what a sham fund of theirs took from the player: it comes back when they are found out
+        public long Owes;                      // what a sham fund of theirs took from the player: a share of it comes back when they are found out
     }
 
     /// <summary>A rival's fund offered to the player: honest or a sham, fixed by the seed when it is made.</summary>
