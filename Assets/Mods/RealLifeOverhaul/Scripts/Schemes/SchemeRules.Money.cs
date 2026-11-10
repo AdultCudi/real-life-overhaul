@@ -5,6 +5,42 @@ namespace RealLifeOverhaul.Schemes
     // The money: what each scheme brings, what a business could plausibly hide, the cash in hand and the way back.
     public static partial class SchemeRules
     {
+        /// <summary>Whether an invented claim may be put in at a business today: not within the wait since the last one there.</summary>
+        public static bool MayClaim(SchemeShop shop, int day)
+        {
+            return shop == null || day - shop.ClaimDay >= SchemeCatalogue.ClaimGapDays;
+        }
+
+        /// <summary>Whether an invented expense may go on the books today.</summary>
+        public static bool MayExpense(SchemeState s, int day)
+        {
+            return day - s.ExpenseDay >= SchemeCatalogue.ExpenseGapDays;
+        }
+
+        /// <summary>Whether a club may be sold from a business today.</summary>
+        public static bool MayClub(SchemeShop shop, int day)
+        {
+            return shop == null || day - shop.ClubDay >= SchemeCatalogue.ClubGapDays;
+        }
+
+        /// <summary>An invented claim was put in at a business: on the trail with what the insurer will pay, and the wait begins.</summary>
+        public static SchemeAct Claimed(SchemeState s, string place, int day, long payout, int size, int claim)
+        {
+            SchemeShop shop = s.Shop(place, true);
+            if (shop != null)
+            {
+                shop.ClaimDay = day;
+            }
+            return Record(s, SchemeKind.Claim, day, payout, size, 0, true, place, claim);
+        }
+
+        /// <summary>An invented expense went on the books: on the trail with the tax it saved, and the wait begins.</summary>
+        public static SchemeAct Expensed(SchemeState s, int day, long saved, int size)
+        {
+            s.ExpenseDay = day;
+            return Record(s, SchemeKind.Expense, day, saved, size, 0, true, string.Empty, 0);
+        }
+
         /// <summary>The loss an invented claim names: a share of the most the cover counts.</summary>
         public static int ClaimLoss(int coverMost, int size)
         {

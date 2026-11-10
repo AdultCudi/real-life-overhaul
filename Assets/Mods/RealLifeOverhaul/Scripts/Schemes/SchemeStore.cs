@@ -9,7 +9,7 @@ namespace RealLifeOverhaul.Schemes
     /// The schemes in a save: one entry of the save's data, short lines.
     ///
     ///   reallife:schemes
-    ///     SC1|seed|start day|day|next inquiry|cash in hand|clubs took|clubs gave back|expense day|acts so far|watched
+    ///     SC1|seed|start day|day|next inquiry|cash in hand|clubs took|clubs gave back|expense day|acts so far|watched|cautioned
     ///     H|heat, a figure a kind|inquiries opened, a figure a kind
     ///     A|kind|day|gain|back|paid|size|knows|paper|inquiry|ref|place                       an act on a trail
     ///     Q|id|kind|opened|stage|evidence|lost|asked|coop|pressed|case|end|closed|found|surcharge   an inquiry
@@ -37,7 +37,7 @@ namespace RealLifeOverhaul.Schemes
             var b = new StringBuilder(256 + s.Acts.Count * 48 + s.Cases.Count * 48);
             b.Append(Prefix).Append(Version.ToString(Inv));
             Add(b, s.Seed).Add(b, s.StartDay).Add(b, s.Day).Add(b, s.NextInquiry).Add(b, s.Dirty).Add(b, s.ClubTaken).Add(b, s.ClubBack).Add(b, s.ExpenseDay).Add(b, s.Acted)
-                .Add(b, s.Watched ? 1 : 0);
+                .Add(b, s.Watched ? 1 : 0).Add(b, s.Cautioned);
             b.Append("\nH");
             for (int k = 0; k < s.Heat.Length; k++)
             {
@@ -116,7 +116,8 @@ namespace RealLifeOverhaul.Schemes
                 var s = new SchemeState
                 {
                     Seed = I(h, 1, 0), StartDay = I(h, 2, 0), Day = I(h, 3, -1), NextInquiry = Math.Max(1, I(h, 4, 1)), Dirty = Math.Max(0L, L(h, 5)),
-                    ClubTaken = Math.Max(0L, L(h, 6)), ClubBack = Math.Max(0L, L(h, 7)), ExpenseDay = I(h, 8, -1000), Acted = Math.Max(0, I(h, 9, 0)), Watched = I(h, 10, 0) != 0
+                    ClubTaken = Math.Max(0L, L(h, 6)), ClubBack = Math.Max(0L, L(h, 7)), ExpenseDay = I(h, 8, -1000), Acted = Math.Max(0, I(h, 9, 0)), Watched = I(h, 10, 0) != 0,
+                    Cautioned = Math.Max(0, I(h, 11, 0))
                 };
                 for (int i = 1; i < lines.Length; i++)
                 {

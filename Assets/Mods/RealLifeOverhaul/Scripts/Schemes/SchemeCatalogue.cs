@@ -102,7 +102,7 @@ namespace RealLifeOverhaul.Schemes
         public const int OpenPeriodDays = 90;          // days a drawn line stands: none is safe for ever
 
         // ---- an inquiry: evidence gathered over days, then what is found
-        public const int EvidenceBase = 200;           // what investigators start from: the suspicion itself
+        public const int EvidenceBase = 350;           // what investigators start from: the papers that made them look
         public const int EvidenceAct = 90;             // for each act on file
         public const int EvidenceSize = 200;           // for a full-sized act, in proportion
         public const int EvidenceKnows = 40;           // for each person who knows of an act
@@ -116,7 +116,7 @@ namespace RealLifeOverhaul.Schemes
         public const int GiveUpAfter = 30;             // ...to dropping it, if it never did
         public const int ChargeFrom = 340;             // evidence under this is no case to answer (the prosecutor's own line, JusticeLaw.DismissBelow)
         public const int ChargeAtOnce = 800;           // evidence this strong is acted on without waiting for ChargeAfter
-        public const int LostFile = 300;               // what a bought investigator takes off what the file holds
+        public const int LostFile = 400;               // what a bought investigator takes off what the file holds: one act's worth, never a pattern's
         public const int CoopEvidence = 950;           // telling them everything: the file is complete
         public const int TrailDays = 720;              // days an act stays on file: an inquiry reaches back this far
         public const int ActsMost = 24;                // acts kept for a kind

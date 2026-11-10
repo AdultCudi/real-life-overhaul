@@ -283,8 +283,9 @@ namespace RealLifeOverhaul.Schemes
             }
             bool seen = q.Coop || days >= SchemeCatalogue.LetterAfter + 2;
             if (seen && !q.Coop && Brought(s, q.Kind, day) > 0 && RepayCost(s, q.Kind, day) == 0 && q.Kind != SchemeKind.Wash && q.Kind != SchemeKind.Graft
-                && !Felony(s, q.Kind, day, w.Level))
+                && !Felony(s, q.Kind, day, w.Level) && (s.Cautioned & (1 << (int)q.Kind)) == 0)
             {
+                s.Cautioned |= 1 << (int)q.Kind;   // a warning is given once: the next file of this kind goes to court, paid back or not
                 Close(s, q, InquiryEnd.Caution, day);
                 events.Add(new SchemeEvent { Kind = SchemeEventKind.Caution, Inquiry = q.Id, A = (int)q.Kind });
                 return;

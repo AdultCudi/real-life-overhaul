@@ -119,6 +119,7 @@ namespace RealLifeOverhaul.Schemes
         public int ExpenseDay = -1000;         // the day of the last invented expense
         public int Acted;                      // acts so far: each one's own draw
         public bool Watched;                   // the cash in hand is watched: none of it moves
+        public int Cautioned;                  // a bit for each kind an inquiry ended with a caution for: the next file of that kind is charged
         public readonly int[] Heat = new int[SchemeCatalogue.Kinds];
         public readonly int[] Inquiries = new int[SchemeCatalogue.Kinds];   // inquiries opened so far, by kind
         public readonly List<SchemeAct> Acts = new List<SchemeAct>(32);

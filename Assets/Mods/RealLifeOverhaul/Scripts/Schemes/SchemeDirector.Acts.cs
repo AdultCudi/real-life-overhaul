@@ -106,7 +106,7 @@ namespace RealLifeOverhaul.Schemes
                 return;
             }
             SchemeShop kept = _state.Shop(place, true);
-            if (day - kept.ClaimDay < SchemeCatalogue.ClaimGapDays)
+            if (!SchemeRules.MayClaim(kept, day))
             {
                 Say(NotificationType.Warning, "reallife_scheme_note_too_soon", "day", SchemeText.Whole(kept.ClaimDay + SchemeCatalogue.ClaimGapDays));
                 return;
@@ -117,8 +117,7 @@ namespace RealLifeOverhaul.Schemes
                 Say(NotificationType.Warning, "reallife_scheme_note_claim_none");
                 return;
             }
-            kept.ClaimDay = day;
-            SchemeRules.Record(_state, SchemeKind.Claim, day, payout, size, 0, true, place, id);
+            SchemeRules.Claimed(_state, place, day, payout, size, id);
             Say(NotificationType.Info, "reallife_scheme_note_claim_in", "business", shop.Name, "amount", SchemeText.Money(payout), "day", SchemeText.Whole(payDay));
             Logger?.Info("Schemes: an invented claim at " + shop.Name + " (cover " + cover + ", loss " + loss + "): claim " + id + " pays " + payout + " on day " + payDay
                          + "; heat " + _state.Heat[(int)SchemeKind.Claim] + ".");
@@ -133,7 +132,7 @@ namespace RealLifeOverhaul.Schemes
                 Say(NotificationType.Warning, "reallife_scheme_note_expense_no_tax");
                 return;
             }
-            if (day - _state.ExpenseDay < SchemeCatalogue.ExpenseGapDays)
+            if (!SchemeRules.MayExpense(_state, day))
             {
                 Say(NotificationType.Warning, "reallife_scheme_note_too_soon", "day", SchemeText.Whole(_state.ExpenseDay + SchemeCatalogue.ExpenseGapDays));
                 return;
@@ -144,9 +143,8 @@ namespace RealLifeOverhaul.Schemes
                 Say(NotificationType.Warning, "reallife_scheme_note_expense_no_tax");
                 return;
             }
-            _state.ExpenseDay = day;
             SchemeGame.Give(gain, SchemeGame.ExpenseKey);
-            SchemeRules.Record(_state, SchemeKind.Expense, day, gain, size, 0, true, string.Empty, 0);
+            SchemeRules.Expensed(_state, day, gain, size);
             Say(NotificationType.Info, "reallife_scheme_note_expense_in", "amount", SchemeText.Money(amount), "saved", SchemeText.Money(gain));
             Logger?.Info("Schemes: an invented expense of " + amount + " saved " + gain + " of tax at " + percent + "%; heat " + _state.Heat[(int)SchemeKind.Expense] + ".");
         }
@@ -206,7 +204,7 @@ namespace RealLifeOverhaul.Schemes
                 return;
             }
             SchemeShop kept = _state.Shop(place, true);
-            if (day - kept.ClubDay < SchemeCatalogue.ClubGapDays)
+            if (!SchemeRules.MayClub(kept, day))
             {
                 Say(NotificationType.Warning, "reallife_scheme_note_too_soon", "day", SchemeText.Whole(kept.ClubDay + SchemeCatalogue.ClubGapDays));
                 return;
