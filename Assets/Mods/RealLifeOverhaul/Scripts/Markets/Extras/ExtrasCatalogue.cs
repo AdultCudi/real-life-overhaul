@@ -23,7 +23,6 @@ namespace RealLifeOverhaul.Markets
         public const int RatioMost = 50;                 // the largest ratio either way a save's line may hold
 
         // ---- the index fund
-        public const int FundId = 9001;                  // no company has this id: the fund's number where one is needed
         public const string FundName = "City Index Fund";   // a name of its own, as a company's: never translated
         public const string FundTicker = "CIF";
         public const int FundUnitDivisor = 10;           // a unit is the index's points over this, in money: 100 a unit at 1,000 points
@@ -56,7 +55,6 @@ namespace RealLifeOverhaul.Markets
         public const int RivalStakeMostBp = 500;         // of one company, a tycoon's blocks together: under the first disclosure but for a rival's holding
         public const int RivalArmChance = 250;           // per mille a look: a tycoon whose holding is listed puts a bank or a lab of its own on the market
         public const int RivalArmWorthBp = 800;          // of their worth, what the arm is worth when it lists
-        public const int RivalArmsMost = 1;              // arms a tycoon lists in all
         public const int RivalSellChance = 200;          // per mille a look: a tycoon sells a block they hold
         public static readonly string[] ArmWords = { "Bank", "Labs" };   // the arm's name after the holding's first word: never translated
 
