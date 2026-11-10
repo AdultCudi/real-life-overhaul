@@ -116,7 +116,7 @@ namespace RealLifeOverhaul.Schemes
         /// <summary>The player's net worth. Default: the cash.</summary>
         public static Func<long> Worth;
 
-        /// <summary>What the wallet must keep for the investors of the player's firms. Default: nothing.</summary>
+        /// <summary>What the wallet must keep for the investors of the player's firms, whole money, never under what the firms count. Default: nothing.</summary>
         public static Func<long> Floor;
 
         /// <summary>A piece for the paper, by locale key. Default: nothing printed.</summary>

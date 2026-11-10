@@ -74,7 +74,7 @@ namespace RealLifeOverhaul
                 SchemeBridges.RivalMoney = RivalMoney;
                 SchemeBridges.RivalBarred = RivalBarred;
                 SchemeBridges.Worth = Books.NetWorth;
-                SchemeBridges.Floor = () => Tech.TechDirector.Instance != null ? Tech.TechDirector.Instance.FloorNow : 0L;
+                SchemeBridges.Floor = () => Tech.TechDirector.Instance != null ? SchemeRules.FloorOf(Tech.TechDirector.Instance.FloorNow) : 0L;
                 SchemeBridges.Story = Paper.Print;
                 SchemeBridges.Letter = (key, data) => LegalPhone.Send(key, data);
                 CompanyBridges.QuietLabel = SchemeDirector.QuietLabel;

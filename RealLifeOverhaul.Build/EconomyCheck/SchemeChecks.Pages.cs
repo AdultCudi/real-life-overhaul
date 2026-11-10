@@ -341,9 +341,11 @@ internal static partial class Program
                 "SchemeRules.Offer(s, favour, office, who, price, cash, day)",
                 "SchemeGame.Take(price, SchemeGame.FavourKey);"),
             "schemes sources: a favour is refused before any money when the wallet or the investors' floor cannot pay it or it cannot be had, and their own temper is asked before anybody else's");
-        Check(people.Contains("if (!SchemeGame.InSession && d.SeatFor() != null)") && SchemeMethod(acts, "private static bool Affords(").Contains("SchemeGame.Cash - amount >= floor")
-              && links.Contains("SchemeBridges.Floor = () => Tech.TechDirector.Instance != null ? Tech.TechDirector.Instance.FloorNow : 0L;"),
-            "schemes sources: a council vote is not for sale in a Going Public session, and no scheme's money touches what the wallet holds for a firm's investors");
+        Check(people.Contains("if (!SchemeGame.InSession && d.SeatFor() != null)") && SchemeMethod(acts, "private static bool Affords(").Contains("SchemeRules.Affords(SchemeGame.Cash, amount, ")
+              && links.Contains("SchemeBridges.Floor = () => Tech.TechDirector.Instance != null ? SchemeRules.FloorOf(Tech.TechDirector.Instance.FloorNow) : 0L;")
+              && ModSource(@"Tech\TechDirector.Money.cs").Contains("long wallet = (long)(Math.Max(0.0, now) * 100.0), drop = (long)((was - now) * 100.0);"),
+            "schemes sources: a council vote is not for sale in a Going Public session, and no scheme's money touches what the wallet holds for a firm's investors,"
+            + " which the firms count in cents");
         Check(SchemeInOrder(SchemeMethod(day, "private void Findings("), "SchemeGame.Take(e.Amount - e.FromCash, SchemeGame.FoundKey);", "SchemeGame.Take(e.Net, SchemeGame.SurchargeKey);",
                 "GiveBack(e.Amount);", "SchemeBridges.ClaimRefuse?.Invoke(_state.Acts[i].Ref);", "SchemeBridges.Charge(e.Text", "SchemeBridges.Exposed?.Invoke(felony);",
                 "SchemeBridges.Story?.Invoke(")

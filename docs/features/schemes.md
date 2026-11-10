@@ -52,7 +52,7 @@ Each comes in two sizes: small (250 thousandths of the most that is plausible) a
 - **Cash through the till.** A business with customers at a counter takes 5 % or 20 % of an average day's takings a day out of the cash in hand as sales. 15 % is lost on the way and the game's tax rate is taken off the rest at once; what is left is booked to the player, never to the business, so no buyer, bank or investor reads a higher figure from it. The bank reports a day's cash sales over 2,500 (30 heat) and 25,000 within its window of 30 days as a pattern (120 heat, once a window). A window's washing at a business is one act on the trail, growing by the day.
 - **Money to people.** See below.
 
-Money moves only through `BizBooks.Book`, in `SchemeGame`'s three doors (`Pay`, refused when the wallet does not hold it; `Take`, forced; `Give`). No scheme's payment may leave the wallet under what it holds for a firm's investors (`TechDirector.FloorNow`).
+Money moves only through `BizBooks.Book`, in `SchemeGame`'s three doors (`Pay`, refused when the wallet does not hold it; `Take`, forced; `Give`). No scheme's payment may leave the wallet under what it holds for a firm's investors (`SchemeRules.Affords`; the firms keep that floor in cents, `TechDirector.FloorNow`, and the schemes count it in whole money, rounded up). What an inquiry takes by force is not held back by it: if that takes the wallet under the floor, the firms' own rules count it as investors' money taken ([Startup money](startup-money.md)).
 
 ## The trail
 
@@ -146,7 +146,7 @@ Each rival tycoon has a trail kept by the same rules: the player's heat formula,
 | Exploit | How it is closed | Proved by (`--schemes`) |
 | --- | --- | --- |
 | Reloading for another outcome | every draw is a hash of the save's own seed (the game's seed for the playthrough) and what it is about; the court's doubt for a scheme's case is the save's too | `schemes trail`, `schemes people`, `schemes save and load`, the sources |
-| A money machine | repeating heats the trail, and findings take back everything on file with a quarter on top | `schemes sim`: 62 plans over many saves |
+| A money machine | repeating heats the trail, and findings take back everything on file with a quarter on top | `schemes sim`: 63 plans over many saves |
 | Laundering that creates money | the cut and the tax are lost on every unit, rounded against the player; washed money is booked to the player, never into a business's figures | `schemes till`, `schemes sim` (every save sound) |
 | A fraud whose victim is nobody | the insurer pays by its own rules and ends the cover; households' savings fall and rise to the unit; a rival's worth moves with a fund | `schemes money`, `schemes fund` |
 | Taken twice | cash sales and the club share one ledger of what the households are still out | `schemes money` |

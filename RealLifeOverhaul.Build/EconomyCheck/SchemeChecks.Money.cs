@@ -51,6 +51,14 @@ internal static partial class Program
               && SchemeRules.MayExpense(s, 12 + SchemeCatalogue.ExpenseGapDays),
             "schemes money: an invented expense is on the trail with the tax it saved, and the next waits " + SchemeCatalogue.ExpenseGapDays + " days");
 
+        // The investors' floor: no scheme's payment may leave the wallet under it.
+        Check(SchemeRules.FloorOf(700000) == 7000 && SchemeRules.FloorOf(699901) == 7000 && SchemeRules.FloorOf(699900) == 6999 && SchemeRules.FloorOf(1) == 1 && SchemeRules.FloorOf(0) == 0
+              && SchemeRules.FloorOf(-50) == 0,
+            "schemes money: the investors' floor, kept in cents by the firms, is counted in whole money rounded up, so it is never under theirs");
+        Check(SchemeRules.Affords(10000, 3000, 7000) && !SchemeRules.Affords(10000, 3001, 7000) && SchemeRules.Affords(10000, 10000, 0) && !SchemeRules.Affords(10000, 10001, 0)
+              && SchemeRules.Affords(10000, 10000, -5) && SchemeRules.Affords(500, -9, 500) && !SchemeRules.Affords(499, 0, 500),
+            "schemes money: a payment is refused when it would leave the wallet under what it holds for the investors, to the unit");
+
         // The books: a step, the figure a buyer sees, the part of the price the lift made.
         Check(SchemeRules.LiftStep(0) == 0 && SchemeRules.LiftStep(99) == 0 && SchemeRules.LiftStep(100) == 100 && SchemeRules.LiftStep(299) == 100 && SchemeRules.LiftStep(300) == 300
               && SchemeRules.LiftStep(5000) == 300 && SchemeRules.LiftStep(-7) == 0 && SchemeRules.WashStep(49) == 0 && SchemeRules.WashStep(50) == 50 && SchemeRules.WashStep(199) == 50

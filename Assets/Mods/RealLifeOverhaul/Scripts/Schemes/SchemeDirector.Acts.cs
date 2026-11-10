@@ -386,8 +386,7 @@ namespace RealLifeOverhaul.Schemes
         // Whether the wallet can pay a sum and still keep what belongs to the investors of the player's firms.
         private static bool Affords(long amount)
         {
-            long floor = SchemeBridges.Floor != null ? Math.Max(0L, SchemeBridges.Floor()) : 0L;
-            return SchemeGame.Cash - amount >= floor;
+            return SchemeRules.Affords(SchemeGame.Cash, amount, SchemeBridges.Floor != null ? SchemeBridges.Floor() : 0L);
         }
     }
 }

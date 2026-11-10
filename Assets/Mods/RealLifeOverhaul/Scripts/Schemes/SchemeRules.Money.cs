@@ -194,6 +194,18 @@ namespace RealLifeOverhaul.Schemes
             return done;
         }
 
+        /// <summary>The investors' floor as the schemes count it: the firms keep it in cents; whole money, rounded up, so it is never under theirs.</summary>
+        public static long FloorOf(long cents)
+        {
+            return cents <= 0 ? 0L : (cents + 99L) / 100L;
+        }
+
+        /// <summary>Whether a wallet can pay a sum and still keep what belongs to the investors of the player's firms.</summary>
+        public static bool Affords(long cash, long amount, long floor)
+        {
+            return cash - Math.Max(0L, amount) >= Math.Max(0L, floor);
+        }
+
         /// <summary>What a till washes on a day: what the business could plausibly sell more, as far as the cash in hand goes.</summary>
         public static long WashRoom(long averageTakings, int rate, long cash)
         {

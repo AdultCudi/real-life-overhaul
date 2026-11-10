@@ -5,8 +5,8 @@ namespace RealLifeOverhaul.Population
     /// <summary>
     /// Money another feature takes from, or gives back to, the savings of a district's households: the one way in, so
     /// that what leaves a household is what the taker gets and what goes back is what the households gain, to the unit.
-    /// Called on a press or a day's turn on the main thread, never while the population's own day is being worked on a
-    /// save's workers. Game-free.
+    /// Called on a press or a day's turn on the main thread, where the population's own day is worked too (a slice at a
+    /// time), so nothing here ever runs beside it. Game-free.
     /// </summary>
     public static class PurseRules
     {

@@ -543,6 +543,16 @@ internal static partial class Program
         Check(pattern.Caught == pattern.Runs && pattern.Mean < 0 && pattern.Ahead == 0 && pattern.Mean <= pattern.MeanAtHalf,
             "schemes sim: a bought investigator loses one act's worth of a file, never a pattern's: a monthly plan with one is found out in every save and loses (mean " + pattern.Mean + ")");
 
+        // Telling them everything changes the charge, never the money.
+        SchemePlan tells = SchemePlanOf(SchemeKind.Expense, "once", SchemeCatalogue.Large, 0);
+        tells.Tells = true;
+        tells.Name += ", tells everything";
+        SchemeTally told = SchemeTallyOf(tells, 200, onceDays, sound), silent = SchemeTallyOf(SchemePlanOf(SchemeKind.Expense, "once", SchemeCatalogue.Large, 0), 200, onceDays);
+        rows.Add(SchemeRow(tells, told, onceDays));
+        Check(told.Caught == told.Runs && told.Mean == silent.Mean && told.Convicted > silent.Convicted,
+            "schemes sim: telling the investigators everything saves none of what is taken back (mean " + told.Mean + " against " + silent.Mean + " silent) and makes the court's case "
+            + "surer, for the lesser charge where there is one (" + told.Convicted + " convictions against " + silent.Convicted + " in " + told.Runs + " saves)");
+
         Check(unsound == null, "schemes sim: in every save of every plan the cash in hand, the households' money and the till's loss add up, and one inquiry a kind is open at most ("
                                + (unsound ?? "all sound") + ")");
         watch.Stop();

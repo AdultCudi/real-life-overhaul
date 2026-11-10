@@ -134,6 +134,16 @@ internal static partial class Program
         Check(SchemeCatalogue.TrailDays >= 360 && SchemeCatalogue.RepeatDays < SchemeCatalogue.TrailDays && SchemeCatalogue.HoldDays > SchemeCatalogue.GiveUpAfter
               && SchemeCatalogue.OpenPeriodDays > SchemeCatalogue.GiveUpAfter,
             "schemes figures: a file reaches back longer than a pattern is read over, and somebody paid holds what they know longer than an inquiry lasts");
+        Check(SchemeCatalogue.HeatSize == 600 && SchemeCatalogue.HeatRepeat == 70 && SchemeCatalogue.RepeatDays == 90 && SchemeCatalogue.HeatOnFile == 50 && SchemeCatalogue.HeatKnows == 40
+              && SchemeCatalogue.HeatPaper == 60 && SchemeCatalogue.HeatDecay == 4 && SchemeCatalogue.SpotPermille == 60 && SchemeCatalogue.HeatSpotted == 400
+              && SchemeCatalogue.OpenLeast == 250 && SchemeCatalogue.OpenSpread == 400 && SchemeCatalogue.OpenPeriodDays == 90 && SchemeCatalogue.EvidenceBase == 350
+              && SchemeCatalogue.EvidencePace == 45 && SchemeCatalogue.LetterAfter == 3 && SchemeCatalogue.VisitAfter == 8 && SchemeCatalogue.ChargeAfter == 14
+              && SchemeCatalogue.GiveUpAfter == 30 && SchemeCatalogue.ChargeAtOnce == 800 && SchemeCatalogue.LostFile == 400 && SchemeCatalogue.TrailDays == 720
+              && SchemeCatalogue.FelonyFrom == 5000 && SchemeCatalogue.WashCut == 150 && SchemeCatalogue.ReportFrom == 2500 && SchemeCatalogue.PatternFrom == 25000
+              && SchemeCatalogue.PatternDays == 30 && SchemeCatalogue.HoldDays == 180 && SchemeCatalogue.TalkPermille == 2 && SchemeCatalogue.TalkPressed == 20
+              && SchemeCatalogue.FundReturn == 80 && SchemeCatalogue.FundDays == 30 && SchemeCatalogue.FundEveryDays == 60 && SchemeCatalogue.FundRecoverPermille == 600
+              && SchemeCatalogue.RivalEveryDays == 60 && SchemeCatalogue.RivalCleanPermille == 300 && SchemeCatalogue.InvestigatorShare == 600 && SchemeCatalogue.JudgeLean == 200,
+            "schemes figures: the figures are the ones the feature's page, the Guide and the texts were written for: whoever changes one changes those with it");
         Check(SchemeCatalogue.Share(1000, 250) == 250 && SchemeCatalogue.Share(999, 250) == 249 && SchemeCatalogue.Share(-5, 250) == 0 && SchemeCatalogue.Share(100, -5) == 0,
             "schemes figures: a share of a sum is rounded down and never negative");
         Check(SchemeCatalogue.AtPrices(5000, 1000) == 5000 && SchemeCatalogue.AtPrices(5000, 1500) == 7500 && SchemeCatalogue.AtPrices(5000, 0) == 5,
@@ -544,7 +554,7 @@ internal static partial class Program
         while (hq.Stage != InquiryStage.Charged && presses < 60)
         {
             presses++;
-            Check(SchemeRules.Hurry(hurry, 10, w, events) == 1 || hq.Stage == InquiryStage.Charged, "schemes inquiry: the test plays a day of the one open inquiry (press " + presses + ")");
+            Check(SchemeRules.Hurry(hurry, 10, w, events) == 1, "schemes inquiry: the test plays a day of the one open inquiry (press " + presses + ")");
         }
         Check(presses == SchemeCatalogue.ChargeAfter && events[events.Count - 1].Kind == SchemeEventKind.Findings && events[events.Count - 1].Amount == 0
               && SchemeRules.Hurry(hurry, 10, w, events) == 0,
