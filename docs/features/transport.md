@@ -16,7 +16,8 @@ Bus stops and buses the mod drives itself, the game's subway taking a journey's 
 | `BusStopDressing` | one stop's pole, flag, shelter and bench (modelled props when the bundle has them, plain shapes to the same size until then); on the city map every stop is a place of the "Bus stops" row (World/MapLinks) |
 | `TransitBus` | one bus: a van from the traffic pool with a route board, driven by the traffic system on a scripted route, stopped "in point" at the stop |
 | `BusBay` | the geometry of a bus bay and nothing else (game-free: NavCheck drives a model bus through it): where the bus stands, the curves in and out |
-| `TransitBays` | a bay on the street as it is now: whether its length of the strip is free; the game's parked cars standing in it out of view are taken in |
+| `TransitBays` | a bay on the street as it is now: whether its length of the strip is free; the game's parked cars standing in it are taken in |
+| `BusZoneRules`, `BusZones` (`.Cars`, `.Kerb`, `.Pieces`) | every place's kerb that no car but the player's may stand in (game-free rules, checked by `EconomyCheck.dll --bus-kerb`): the zone, the table every path asks (`BusZones.Holds`), the game's cars taken in, its lanes gated |
 | `TransitRide` | the time a ride takes (fade, the game's time machine, put down at the far end), for bus and subway; TransitState: day pass, ride counts, a fare owed back, in modData |
 | `BusRider` | the bus ride seen: the game's walk to the front door, the fare, board_step up, the validator, the aisle, a seat (strap_hang on a full bus), the pull-away; at the far end up and off by the middle door; every way out |
 | `IDrivenVehicle` | what BusDriver drives: the city bus and the tow truck, measured from their own middles |
@@ -141,9 +142,11 @@ What cannot be told from the one log there is: its last transit line is the only
 
   - *Kept free.* The game fills the strip by chance (`ParkingLaneGenerator`: a spot in four or so, again each day and when a business opens or shuts, never within 80 m of the player).
 
-    When a stop is dressed and when a bus is put on the road for it, the game's parked cars for show that stand in the bay **out of view** are handed back to the game's own store of them, the way the game takes them in (the lane's `onReleaseVehicle`, then `ParkingSimulator.ReleaseParkedVehicle`).
+    When a stop is dressed and when a bus is put on the road for it, the game's parked cars for show that stand in the bay are handed back to the game's own store of them, **at once, in view or not**, the way the game takes them in (the lane's `onReleaseVehicle`, then `ParkingSimulator.ReleaseParkedVehicle`; the game itself does the same to the parked cars a player's car is put among, `VehicleHelper.DestroyBlockingVehicles`).
 
-    Nothing in view is touched, and nothing else at all: a vehicle of the player's, a delivery van, a wreck or a cart leaves the bay taken, the bus stops on the lane's line as it used to, and the bay is looked at again for the next bus.
+    (Until 10 Nov 2026 a car in view was left alone, so the bay of 26 1st Street, in view of the player the whole session, kept a car in it.)
+
+    Nothing else at all: a vehicle of the player's, a delivery van, a wreck or a cart leaves the bay taken, the bus stops on the lane's line as it used to, and the bay is looked at again for the next bus.
 
     It is looked at once more as the bus comes up, 16 m before its curve; taken by then, the end of its route is put back on the lane's line.
 
@@ -167,6 +170,13 @@ What cannot be told from the one log there is: its last transit line is the only
     `NavCheck.dll --bays` prints what each run measured.
     In the model the body on its van stands within 3 cm of the bay's line and 1.3 degrees of it, its nearest corner 0.06 m clear of the lane's edge at the narrowest bay, never nearer the kerb than 0.13 m coming in and 0.06 m pulling out.
     The model is not the game's physics: `Transit check (arrival)` says what the real vehicle did.
+
+- **No car but the player's stands in any bus stop** (`BusZoneRules`, `BusZones.Kerb`; the owner, 10 Nov 2026: "That must not happen anywhere"). Every place the buses stop at has a zone, bay or not: the strip from its lane's edge to the kerb, over the bay's length, or over the standing bus's length with the painted box round it (3 m behind, 2 m ahead), and 1 m beyond each end. It is laid out once, when the places are made, into a table of rectangles.
+
+  - *The game's cars.* Taken in at once, whatever lane they stand in (one box over the zone on the parked-vehicle layer), and every parking lane beside a zone, of any kind, is gated: a car it makes in the zone is switched off as it is made, on the lane's own `onGenerateVehicle` (the event the game hides cars by itself). A bay's lane is also cut short of its zone, as before; a place without a bay leaves its lane whole. The one thing the game keeps standing is a delivery job's van at the start of its lane: a stop is never put where one stands.
+  - *The mod's own cars.* Every path that stands a car at a kerb asks `BusZones.Holds` first, by `SceneParking.Stands`, `IsFree` (for a vehicle) or `KerbRoom`: the parked patrol cars, the precinct's, the taxi and the units that pull in, the rented, bought and test cars, a wreck's place, the test's bay, the tow; and the lanes the mod stands (new ground, the uptown modules, made buildings, car parks) are refused over a zone (`ParkingGame.Room`) or gated (`BusZones.Meet`). The scenes that stand beside a parked car pick one outside a zone.
+  - *The player's own car* may stop anywhere; the game does not stop them and the mod does not either.
+  - `Transit check (kerbs)` says, once all are made, how many places have a zone, how many lanes are gated and how many of the game's cars are still in one (none: PASS).
 
 - **A stop is solid** (`BusStopDressing`).
   From 0.2 every stop of the city is put up once, nearest first, two a second, when the network is ready, and stays up while the city is loaded (no waiting for the player to look away, nothing taken in behind them; the navigation mesh is still cut only near a player on foot).

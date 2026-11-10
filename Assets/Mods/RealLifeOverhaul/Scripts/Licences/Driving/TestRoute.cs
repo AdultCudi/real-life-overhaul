@@ -202,7 +202,7 @@ namespace RealLifeOverhaul
                 if (!StreetSpots.OnRoad(place, 0.5f, out _)
                     || OnPavement(place) || OnPavement(place + along * halfLength + right * halfWidth) || OnPavement(place + along * halfLength - right * halfWidth)
                     || OnPavement(place - along * halfLength + right * halfWidth) || OnPavement(place - along * halfLength - right * halfWidth)
-                    || !SceneParking.IsFree(place, facing, halfWidth, halfLength, 0.25f)
+                    || !SceneParking.Stands(place, facing, halfWidth, halfLength, 0.25f)
                     || TrafficTools.ClosestWaypoint(place, 2.1f) != null)
                 {
                     continue;

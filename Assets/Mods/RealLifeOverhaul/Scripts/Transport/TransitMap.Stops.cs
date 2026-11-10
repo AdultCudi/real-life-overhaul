@@ -408,6 +408,12 @@ namespace RealLifeOverhaul
             {
                 FindBoarding(stop, right, edge);
             }
+            // No car but the player's stands in a stop's kerb (BusZones). The game's cars there go, and its lanes are gated; the one thing the game
+            // keeps standing is a delivery job's van at the start of its lane, and a stop is never put where one stands: the stop avoids it.
+            if (!stop.HasBay && BusZones.Unclearable(stop, right) != null)
+            {
+                return null;
+            }
             return stop;
         }
 

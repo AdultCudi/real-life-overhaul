@@ -504,7 +504,7 @@ namespace RealLifeOverhaul
                 flat.y = 0f;
                 float apart = truck ? TruckFromDesk : 5f;
                 if (flat.sqrMagnitude > apart * apart
-                    && SceneParking.IsFree(at, along, truck ? TruckHalfWidth : HalfWidth, truck ? TruckHalfLength : HalfLength, 0.5f))
+                    && SceneParking.Stands(at, along, truck ? TruckHalfWidth : HalfWidth, truck ? TruckHalfLength : HalfLength, 0.5f))
                 {
                     spot = at;
                     heading = along;

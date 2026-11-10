@@ -646,6 +646,7 @@ namespace RealLifeOverhaul.Construction
                 t.localPosition = new Vector3(x, CarParkMesh.SurfaceY + _base - _centreY, z);
                 t.localRotation = Quaternion.Euler(0f, row.Yaw, 0f);
                 t.localScale = Vector3.one;
+                BusZones.Meet(lane);   // a row of bays that reaches into a bus stop's kerb has its cars kept out of it (the lots stand off the road: this is the proof)
                 world.Lanes.Add(lane);
                 world.LaneBays += bays;
             }
