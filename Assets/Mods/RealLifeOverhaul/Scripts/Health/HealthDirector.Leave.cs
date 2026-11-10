@@ -7,18 +7,11 @@ namespace RealLifeOverhaul.Health
     public sealed partial class HealthDirector
     {
         // What is true of a working day, for the leave rules: really ill by the mod's older rules or with a case of health's, a doctor's note, in hospital.
+        // A day gone by is judged by the case as it was on that day: the one open now from its first day, or the last one that ran (the leave book's span), which the working
+        // life's settling of yesterday finds even when health's day has cleared the case that morning.
         private LeaveFacts FactsOf(int day)
         {
-            HealthCase c = _state.Case;
-            HealthStay st = _state.Stay;
-            bool cased = c.Open && c.Began <= day;
-            return new LeaveFacts
-            {
-                Ill = cased || (HealthBridges.WasIll != null && HealthBridges.WasIll(day)),
-                Note = HealthBridges.DoctorNote != null && HealthBridges.DoctorNote(day),
-                InHospital = st.Active && day >= st.From / 1440 && day <= st.Until / 1440,
-                AtWorkInjury = cased && c.Work
-            };
+            return HealthLeave.FactsFor(_state, day, HealthGame.Day, HealthBridges.WasIll != null && HealthBridges.WasIll(day), HealthBridges.DoctorNote != null && HealthBridges.DoctorNote(day));
         }
 
         /// <summary>True if a working day not worked is excused as sick, by the leave rules. Asking changes nothing.</summary>
@@ -31,7 +24,7 @@ namespace RealLifeOverhaul.Health
         /// A working day at the player's job went by unworked (the working life says so once, before it asks whether the day is excused): the leave rules settle it, and
         /// the sick pay due for it is paid.
         /// </summary>
-        public void DayMissed(int day, int dayPayCents, int hiredDay)
+        public void DayMissed(int day, int dayPayCents, int hiredDay, int shiftMinutes, int workedMinutes)
         {
             if (!Running)
             {
@@ -40,7 +33,13 @@ namespace RealLifeOverhaul.Health
             LeaveBook l = _state.Leave;
             LeaveFacts f = FactsOf(day);
             int noticed = l.Noticed;
-            long cents = HealthLeave.Settle(l, f, day, _state.Seed, dayPayCents, hiredDay, HealthGame.DaysPerYear);
+            long cents = HealthLeave.Settle(l, f, day, _state.Seed, dayPayCents, hiredDay, HealthGame.DaysPerYear, shiftMinutes, workedMinutes);
+            int accident = day - f.WorkDays;
+            if (f.AtWorkInjury && !HealthLeave.WorkPaid(f) && l.WorkTold != accident)
+            {
+                l.WorkTold = accident;   // said once for the accident: it is no longer paid as one
+                HealthGame.Tell(NotificationType.Warning, "reallife_hc_note_work_pay_ends", HealthGame.Data("days", HealthCatalogue.WorkFreeDays.ToString()), OpenAppClick);
+            }
             if (cents > 0)
             {
                 HealthGame.ReceiveCents(cents, HealthGame.SickPayKey);
@@ -59,20 +58,30 @@ namespace RealLifeOverhaul.Health
             if (Verbose)
             {
                 Logger?.Info("Health check (the working day " + day + " not worked): " + (f.Ill ? "ill" : f.InHospital ? "in hospital" : l.ClaimDay == day ? "called in while well" : "no reason")
-                             + ", " + (l.LastCovered ? "excused" : "not excused") + ", sick pay " + cents + " cents, paid days " + l.PaidUsed + " of "
-                             + HealthLeave.PaidDays(HealthGame.DaysPerYear) + ": " + (cents <= dayPayCents ? "PASS" : "FAIL, more than the day's pay"));
+                             + ", " + shiftMinutes + " minutes in the shift of which " + workedMinutes + " worked, " + (l.LastCovered ? "excused" : "not excused") + ", sick pay " + cents
+                             + " cents, paid days " + l.PaidUsed + " of " + HealthLeave.PaidDays(HealthGame.DaysPerYear) + ": "
+                             + (cents <= HealthLeave.PayLeft(dayPayCents, shiftMinutes, workedMinutes) ? "PASS" : "FAIL, more than the pay of the part not worked"));
             }
         }
 
-        /// <summary>The player calls in sick for today. False if they did already or have no shift to miss.</summary>
+        // The minute of the day today's open shift ends, or -1: a day is called in sick before its shift is over and never after (a day already missed is not called in).
+        private int ShiftEnd()
+        {
+            return HealthBridges.ShiftEnd != null ? HealthBridges.ShiftEnd() : -1;
+        }
+
+        /// <summary>True while there is a shift today that is not over yet (the page offers calling in sick then).</summary>
+        public bool ShiftLeft() => Running && HealthLeave.ShiftLeft(HealthGame.Minutes % 1440, ShiftEnd());
+
+        /// <summary>The player calls in sick for today. False if they did already, have no shift to miss, or the shift is over.</summary>
         public bool CallInSick()
         {
-            if (!Running || HealthBridges.ShiftOpen == null || !HealthBridges.ShiftOpen())
+            if (!Running)
             {
                 return false;
             }
             int day = HealthGame.Day;
-            bool ok = HealthLeave.CallIn(_state.Leave, day, FactsOf(day).Ill, HealthGame.DaysPerYear);
+            bool ok = HealthLeave.CallIn(_state.Leave, day, FactsOf(day).Ill, HealthGame.DaysPerYear, HealthGame.Minutes % 1440, ShiftEnd());
             _revision++;
             return ok;
         }

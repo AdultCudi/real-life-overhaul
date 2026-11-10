@@ -72,7 +72,7 @@ namespace RealLifeOverhaul.Health
         public const int ElderSeriousShare = 3000;      // thousandths: three times as often past ElderAge
 
         // ---- the flu's wave: one a year, in midwinter, bounded
-        public const int WaveYearShare = 120;           // thousandths of the year the wave lasts (a 60-day year: 7 days; 365: 44)
+        public const int WaveYearShare = 120;           // thousandths of the year the wave lasts (a 60-day year: 7 days; 365: 43)
         public const int WaveDaysLeast = 6;
         public const int WavePeak = 600;                // a hundred thousand a day at the top of an average wave
         public const int WaveSeverityLeast = 600, WaveSeverityMost = 1400;   // thousandths of the peak, drawn for each year
@@ -112,6 +112,7 @@ namespace RealLifeOverhaul.Health
         public const int AppointmentEarly = 20, AppointmentLate = 45;   // minutes round the hour it may be kept in
         public const int AppointmentWait = 5;           // minutes in the waiting room with an appointment
         public const int AppointmentHour = 9, AppointmentLastHour = 16;
+        public const int DrawSlots = 9;                 // Home's chances are numbered 1 to 8; a draw of each is counted a day
 
         // ---- insurance: by plan (none, basic, standard, full)
         public static readonly int[] PremiumMonth = { 0, 60, 140, 290 };
@@ -140,6 +141,8 @@ namespace RealLifeOverhaul.Health
         public const int PaidYearShare = 30;            // thousandths of the year paid sick days are
         public const int PaidDaysLeast = 2;
         public const int QualifyDays = 3;               // in the job before sick pay
+        public const int WorkFreeDays = 3;              // days from an accident at work that are paid before any care is sought
+        public const int WorkPayDays = 14;              // days from an accident at work that are paid at the most, in care or not
         public const int NoticeFirst = 200, NoticeStep = 200, NoticeMost = 800;   // thousandths: a day called in sick while well is seen through
 
         // ---- the player's own staff: only the wave and colleagues add to the game's own sick days

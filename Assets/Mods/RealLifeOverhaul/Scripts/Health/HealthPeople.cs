@@ -12,6 +12,18 @@ namespace RealLifeOverhaul.Health
     /// </summary>
     public static class HealthPeople
     {
+        /// <summary>How the city's people stand for health: running here and free to touch, not ready yet (loading), or away (a Going Public session, a guest, the living population off).</summary>
+        public enum Mode
+        {
+            Ready = 0,
+            NotReady = 1,
+            Away = 2
+        }
+
+        /// <summary>Which of the three the city's people are in. Not ready is only a wait: the pass keeps its place. Away stands down: nobody's people but the host's are touched.</summary>
+        public static Mode ModeOf(bool livingPopulationOn, bool running, bool following, bool inSession) =>
+            !livingPopulationOn || following || inSession ? Mode.Away : running ? Mode.Ready : Mode.NotReady;
+
         // The air of today and the two days before, set once a slice: the wave and the season each housemate's own draw reads.
         private static readonly int[] AirWave = new int[3];
         private static readonly int[] AirSeason = new int[3];
@@ -222,6 +234,45 @@ namespace RealLifeOverhaul.Health
             }
             o.Day = day;
             o.Cursor = 0;
+        }
+
+        /// <summary>
+        /// The day turned: its pass begins now, or waits for the one under way to finish (a pass takes seconds and days can turn faster, in a time skip, so yesterday's is never
+        /// finished in one frame and the days that turn meanwhile are one waiting day, the latest). A day whose pass has begun already is not begun again.
+        /// </summary>
+        public static void Turn(PopHealth o, int day, int month)
+        {
+            if (day <= o.Day)
+            {
+                return;
+            }
+            if (o.Cursor >= 0)
+            {
+                o.Pending = day;
+                return;
+            }
+            o.Pending = 0;
+            Begin(o, day, month);
+        }
+
+        /// <summary>A pass is done: the day that waited for it begins. True if one did.</summary>
+        public static bool Resume(PopHealth o, int monthDays)
+        {
+            if (o.Cursor >= 0 || o.Pending <= 0)
+            {
+                return false;
+            }
+            int day = o.Pending;
+            o.Pending = 0;
+            Begin(o, day, HealthRules.MonthOf(day, monthDays));
+            return true;
+        }
+
+        /// <summary>The people are away: no pass under way and none waiting.</summary>
+        public static void StandDown(PopHealth o)
+        {
+            o.Cursor = -1;
+            o.Pending = 0;
         }
 
         /// <summary>

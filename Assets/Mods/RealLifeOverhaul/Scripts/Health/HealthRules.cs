@@ -51,8 +51,26 @@ namespace RealLifeOverhaul.Health
         /// <summary>A draw from 0 to just under <paramref name="range"/>.</summary>
         public static int Roll(int seed, int a, int b, int c, int range) => range <= 1 ? 0 : (int)(Hash(seed, a, b, c) % (uint)range);
 
-        /// <summary>A draw from 0 to just under 1, for Home's own chances: the same for a day and a slot however often it is asked.</summary>
-        public static float Unit(int seed, int day, int slot) => Roll(seed, day, SlotHome + slot, 7, 1000000) / 1000000f;
+        /// <summary>A draw from 0 to just under 1, for Home's own chances: the same for a day, a slot and the number of the draw of that slot that day.</summary>
+        public static float Unit(int seed, int day, int slot, int number) => Roll(seed, day, SlotHome + slot, 7 + Math.Max(0, number), 1000000) / 1000000f;
+
+        /// <summary>
+        /// One of Home's chances is drawn (slot 1 to 8): the draw is the save's seed, the day, the slot and how many times that chance was drawn that day already, kept in the
+        /// state. Each event of the day (a shower of rain, a meal, a night in the car) gets a draw of its own, as Home's own random number gave it, and a load goes on with the next
+        /// number: a day loaded again changes nothing. The day's first draw of a slot is what it was before the count.
+        /// </summary>
+        public static float Draw(HealthState s, int day, int slot)
+        {
+            if (s.DrawDay != day)
+            {
+                s.DrawDay = day;
+                Array.Clear(s.Draws, 0, s.Draws.Length);
+            }
+            int k = HealthCatalogue.Clamp(slot, 0, HealthCatalogue.DrawSlots - 1);
+            int number = s.Draws[k];
+            s.Draws[k] = Math.Min(1000000, number + 1);
+            return Unit(s.Seed, day, slot, number);
+        }
 
         /// <summary>A text's own number, the same on every machine (a member of staff's id).</summary>
         public static int IdOf(string id)
@@ -200,8 +218,11 @@ namespace RealLifeOverhaul.Health
             return CaseEvent.Worse;
         }
 
-        /// <summary>An illness of Home's begins, or goes on, as the case: a new one is opened on its day, the same one is left as it is.</summary>
-        public static bool Mirror(HealthCase c, Condition home, bool treated, int day)
+        /// <summary>
+        /// An illness of Home's begins, or goes on, as the case: a new one is opened on the day it really began (<paramref name="since"/>, Home's own record; today when that is
+        /// not known), never a later one, so cover bought before it does not wait on the day Health first saw it. The same one is left as it is.
+        /// </summary>
+        public static bool Mirror(HealthCase c, Condition home, bool treated, int day, int since)
         {
             if (home == Condition.None || HealthCatalogue.Is(HealthCatalogue.Injury, home))
             {
@@ -214,7 +235,7 @@ namespace RealLifeOverhaul.Health
             }
             c.Clear();
             c.Kind = home;
-            c.Began = day;
+            c.Began = since > 0 && since < day ? since : day;
             c.Treated = treated;
             return true;
         }

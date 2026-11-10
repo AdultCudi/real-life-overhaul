@@ -6,6 +6,12 @@ namespace RealLifeOverhaul.Health
     /// <summary>What the pages read, filled in one call from the state and the game.</summary>
     public sealed partial class HealthDirector
     {
+        /// <summary>
+        /// One of Home's chances is drawn (slot 1 to 8) while health runs: the save's seed, the day, the slot and which draw of it that day (HealthRules.Draw), so every event of
+        /// the day has a draw of its own and a load goes on with the next number.
+        /// </summary>
+        public float HomeDraw(int slot) => HealthRules.Draw(_state, HealthGame.Day, slot);
+
         /// <summary>Fills the facts of the pages. False while health is not running (the page then says so).</summary>
         public bool Facts(HealthFacts f)
         {
@@ -71,7 +77,7 @@ namespace RealLifeOverhaul.Health
             f.DebtPerDay = _state.Debt.PerDay;
             f.DebtLate = _state.Debt.Late;
             LeaveBook l = _state.Leave;
-            f.ShiftOpen = HealthBridges.ShiftOpen != null && HealthBridges.ShiftOpen();
+            f.ShiftOpen = ShiftLeft();
             f.CalledIn = l.ClaimDay == day;
             f.PaidUsed = l.PaidUsed;
             f.PaidDays = HealthLeave.PaidDays(yearDays);

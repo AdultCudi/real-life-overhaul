@@ -30,13 +30,16 @@ namespace RealLifeOverhaul.Health
         /// <summary>True if the player was ill on a day by the mod's older rules (Home's illness, Life's sickness). Null: no.</summary>
         public static Func<int, bool> WasIll;
 
+        /// <summary>The day the illness the player has now really began, by Home's own record (Life's for a plain sickness); 0 when that is not known. Null: not known.</summary>
+        public static Func<int> IllnessSince;
+
         // ---- the working life
         /// <summary>The plan the player's employer gives (a <see cref="Plan"/> number) and the day the job with it began. Null: none.</summary>
         public static Func<int> EmployerPlan;
         public static Func<int> EmployerSince;
 
-        /// <summary>True if the player has a job with a working day today that is not worked yet. Null: no.</summary>
-        public static Func<bool> ShiftOpen;
+        /// <summary>The minute of the day the hours of today's open shift end (a working day not yet worked or missed), or -1 when there is none. Null: none.</summary>
+        public static Func<int> ShiftEnd;
 
         // ---- the player's firms
         /// <summary>The firm's sick pay policy: 0 none, 1 statutory, 2 generous (the Company's). Null: statutory.</summary>
@@ -78,9 +81,10 @@ namespace RealLifeOverhaul.Health
             Living = null;
             DoctorNote = null;
             WasIll = null;
+            IllnessSince = null;
             EmployerPlan = null;
             EmployerSince = null;
-            ShiftOpen = null;
+            ShiftEnd = null;
             SickPolicy = null;
             Reserved = null;
             Clinic = null;

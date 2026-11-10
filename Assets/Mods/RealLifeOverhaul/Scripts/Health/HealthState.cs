@@ -79,6 +79,13 @@ namespace RealLifeOverhaul.Health
         public int NoteFrom, NoteUntil;   // a hospital's note covers the working days from one day to another
         public int PaidDay;        // the last day sick pay was paid for
         public long PaidMoney;     // sick pay this year
+        public int PrevYear = -1;  // the year before Year, while its paid days can still be counted against (a day settled after the year turned)
+        public int PrevPaidUsed;   // ...and the paid days it had used
+        public int CaseFrom;       // the span of days the player's last case ran, so a day settled later is judged by what was true on it: its first day, 0 none
+        public int CaseTo;         // ...the last day it was seen open
+        public bool CaseWork;      // ...an accident at work
+        public int CareFrom;       // ...the day care began on it (treated, or in hospital); 0 not yet
+        public int WorkTold;       // the accident at work (its first day) whose pay stopping has been said
     }
 
     /// <summary>An appointment with the doctor.</summary>
@@ -123,6 +130,7 @@ namespace RealLifeOverhaul.Health
     {
         public int Day;            // the day the pass under way is for
         public int Cursor = -1;    // the next person's slot; -1 no pass under way
+        public int Pending;        // a day whose pass waits for the one under way to finish; 0 none
         public int IllNow;         // people ill today
         public readonly int[] Ends = new int[HealthCatalogue.CourseLongest + 2];   // by day (modulo): the cases that end on it
         public int Month = -1;
@@ -155,6 +163,8 @@ namespace RealLifeOverhaul.Health
         public int LastBillDay;
         public int Injuries;             // injuries so far: a draw's own number
         public int StaffDay;             // the last day the staff were drawn for
+        public int DrawDay;              // the day Home's chances have been drawn on
+        public readonly int[] Draws = new int[HealthCatalogue.DrawSlots];   // by Home's chance: how many times it was drawn that day (the next draw is the next number)
 
         public readonly HealthCase Case = new HealthCase();
         public readonly HealthPolicy Policy = new HealthPolicy();

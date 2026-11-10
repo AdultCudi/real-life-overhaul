@@ -63,7 +63,8 @@ namespace RealLifeOverhaul.Health
             Join(t, d.Owed, d.PerDay, d.Late, d.Claim, d.LastDay, d.Paid);
             LeaveBook l = s.Leave;
             t.Append("^l:");
-            Join(t, l.Year, l.PaidUsed, l.SpellLast, l.SpellDays, l.LastCovered ? 1 : 0, l.ClaimDay, l.Claims, l.Noticed, l.NoteUntil, l.PaidDay, l.PaidMoney, l.NoteFrom);
+            Join(t, l.Year, l.PaidUsed, l.SpellLast, l.SpellDays, l.LastCovered ? 1 : 0, l.ClaimDay, l.Claims, l.Noticed, l.NoteUntil, l.PaidDay, l.PaidMoney, l.NoteFrom,
+                l.PrevYear, l.PrevPaidUsed, l.CaseFrom, l.CaseTo, l.CaseWork ? 1 : 0, l.CareFrom, l.WorkTold);
             HealthAppointment a = s.Appointment;
             if (a.Booked)
             {
@@ -92,11 +93,19 @@ namespace RealLifeOverhaul.Health
             PopHealth o = s.Pop;
             t.Append("^o:");
             Join(t, o.Day, o.Cursor, o.IllNow, o.Month, o.Cases, o.Serious, o.LostDays, o.LostWages, o.Bills, o.Debt, o.LastCases, o.LastSerious, o.LastLostDays, o.LastLostWages,
-                o.LastBills, o.LastDebt);
+                o.LastBills, o.LastDebt, o.Pending);
             t.Append("^e:");
             for (int i = 0; i < o.Ends.Length; i++)
             {
                 t.Append(i > 0 ? "|" : string.Empty).Append(o.Ends[i].ToString(Inv));
+            }
+            if (s.DrawDay > 0)
+            {
+                t.Append("^w:").Append(s.DrawDay.ToString(Inv));
+                for (int i = 0; i < s.Draws.Length; i++)
+                {
+                    t.Append('|').Append(s.Draws[i].ToString(Inv));
+                }
             }
             if (s.Notes.Count > 0)
             {
@@ -147,6 +156,7 @@ namespace RealLifeOverhaul.Health
                     case 'o': People(s.Pop, f); break;
                     case 'e': Ends(s.Pop, f); break;
                     case 'n': Notes(s, f); break;
+                    case 'w': Draws(s, f); break;
                 }
             }
             return s;
@@ -245,6 +255,13 @@ namespace RealLifeOverhaul.Health
             l.PaidDay = Math.Max(0, I(f, 9));
             l.PaidMoney = Math.Max(0, L(f, 10));
             l.NoteFrom = HealthCatalogue.Clamp(I(f, 11), 0, l.NoteUntil);
+            l.PrevYear = Math.Max(-1, I(f, 12, -1));
+            l.PrevPaidUsed = Math.Max(0, I(f, 13));
+            l.CaseFrom = Math.Max(0, I(f, 14));
+            l.CaseTo = Math.Max(l.CaseFrom, I(f, 15));
+            l.CaseWork = I(f, 16) == 1 && l.CaseFrom > 0;
+            l.CareFrom = l.CaseFrom > 0 ? Math.Max(0, I(f, 17)) : 0;
+            l.WorkTold = Math.Max(0, I(f, 18));
         }
 
         private static void Appointment(HealthAppointment a, string[] f)
@@ -304,6 +321,17 @@ namespace RealLifeOverhaul.Health
             o.LastLostWages = Math.Max(0, L(f, 13));
             o.LastBills = Math.Max(0, L(f, 14));
             o.LastDebt = Math.Max(0, L(f, 15));
+            o.Pending = Math.Max(0, I(f, 16));
+        }
+
+        // Home's chances drawn on a day: how many times each was drawn, so a load goes on with the next number and not the first again.
+        private static void Draws(HealthState s, string[] f)
+        {
+            s.DrawDay = Math.Max(0, I(f, 0));
+            for (int i = 0; i < s.Draws.Length; i++)
+            {
+                s.Draws[i] = HealthCatalogue.Clamp(I(f, 1 + i), 0, 1000000);
+            }
         }
 
         private static void Ends(PopHealth o, string[] f)

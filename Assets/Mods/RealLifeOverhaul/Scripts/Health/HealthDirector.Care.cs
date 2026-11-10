@@ -31,7 +31,8 @@ namespace RealLifeOverhaul.Health
             bool treated = home != Condition.None && HealthBridges.Treated != null && HealthBridges.Treated();
             if (home != Condition.None)
             {
-                HealthRules.Mirror(c, home, treated, day);
+                // the day it really began, by Home's own record: never the day health first saw it (cover bought before it must not wait on that day)
+                HealthRules.Mirror(c, home, treated, day, HealthBridges.IllnessSince != null ? HealthBridges.IllnessSince() : 0);
             }
             else if (c.Open && !c.Serious && !HealthCatalogue.Is(HealthCatalogue.Injury, c.Kind))
             {
@@ -39,6 +40,13 @@ namespace RealLifeOverhaul.Health
             }
             HealthGame.Drain(c.Open && c.Serious && !_state.Stay.Active);
             HealthGame.HoldHurt(c.Open && HealthCatalogue.Is(HealthCatalogue.Injury, c.Kind));
+        }
+
+        // The case is open through a day: kept in the leave book, so a working day settled later is judged by what was true on it, whichever of the working life's day and
+        // health's timer comes first (the working life settles yesterday on the game's own new day event; health's timer, a second at a time, sees the day after that).
+        private void ObserveCase(int last)
+        {
+            HealthLeave.ObserveCase(_state.Leave, _state.Case, _state.Stay.Active, last);
         }
 
         private void CaseDay(int day)
@@ -66,6 +74,7 @@ namespace RealLifeOverhaul.Health
             {
                 Logger?.Info("Health check (the case on day " + day + "): " + was + ", neglect " + c.Neglect + ": " + ev + ": PASS");
             }
+            ObserveCase(day);
             if (c.Open || _state.Stay.Active)
             {
                 return;   // one thing at a time
@@ -120,6 +129,7 @@ namespace RealLifeOverhaul.Health
                 return;
             }
             HealthCase c = _state.Case;
+            ObserveCase(day);
             HealthGame.HoldHurt(true);
             HealthGame.Drain(c.Serious && !_state.Stay.Active);
             HealthGame.Tell(c.Serious ? NotificationType.Error : NotificationType.Warning,
@@ -160,6 +170,7 @@ namespace RealLifeOverhaul.Health
             if (Running)
             {
                 HealthRules.Treat(_state.Case, HealthGame.Day);
+                ObserveCase(HealthGame.Day);
                 _revision++;
             }
         }
@@ -218,23 +229,20 @@ namespace RealLifeOverhaul.Health
             return true;
         }
 
-        // An appointment not kept by the end of its window costs the missed fee, from the cash that is there.
+        // An appointment not kept by the end of its window costs the missed fee, from the cash that is there, unless the player was in hospital (HealthDay.AppointmentDay).
         private void AppointmentLook(int day)
         {
-            HealthAppointment a = _state.Appointment;
-            if (a.Booked && a.Kept && day > a.Day)
+            AppointmentResult r = HealthDay.AppointmentDay(_state.Appointment, day, HealthGame.Minutes % 1440, _state.Stay.Active || HealthGame.InHospitalNight);
+            if (r == AppointmentResult.Fee)
             {
-                a.Clear();   // kept, and the player left before being seen: nothing is owed
-                return;
+                int fee = HealthRules.At(HealthCatalogue.MissedFee, HealthGame.Level);
+                bool paid = HealthGame.Pay(fee, HealthGame.MissedKey);
+                HealthGame.Tell(NotificationType.Warning, paid ? "reallife_hc_note_missed" : "reallife_hc_note_missed_unpaid", HealthGame.Data("amount", HealthGame.Money(fee)));
             }
-            if (!HealthDay.Missed(a, day, HealthGame.Minutes % 1440))
+            if (r != AppointmentResult.None)
             {
-                return;
+                _revision++;
             }
-            int fee = HealthRules.At(HealthCatalogue.MissedFee, HealthGame.Level);
-            bool paid = HealthGame.Pay(fee, HealthGame.MissedKey);
-            a.Clear();
-            HealthGame.Tell(NotificationType.Warning, paid ? "reallife_hc_note_missed" : "reallife_hc_note_missed_unpaid", HealthGame.Data("amount", HealthGame.Money(fee)));
         }
 
         // ---- bills
@@ -297,21 +305,18 @@ namespace RealLifeOverhaul.Health
                 return;   // a night inside a stay of health's own is in that stay's bill
             }
             MirrorHome(HealthGame.Day);
-            BillResult r = SettleBill(Care.Hospital, HealthCatalogue.GameStayBill, true);
-            HealthCase c = _state.Case;
+            BillResult r = HealthDay.GameNight(_state, HealthGame.Minutes, HealthGame.Day, _settleNight, out bool admitted);
+            ObserveCase(HealthGame.Day);
             if (r.Claim > 0)
             {
                 HealthGame.Tell(NotificationType.Info, "reallife_hc_note_claim", HealthGame.Data("amount", HealthGame.Money(r.Claim), "bill", HealthGame.Money(r.Bill),
                     "plan", r.Employer ? HealthText.Fill("reallife_hc_plan_employer") : HealthText.PlanName(r.By)));
             }
-            if (c.Open && c.Serious)
+            if (admitted)
             {
-                Admit(true);
+                BeginStay();
             }
-            else if (c.Open)
-            {
-                HealthRules.Treat(c, HealthGame.Day);   // seen to while they were in
-            }
+            _revision++;
         }
 
         // ---- the stay
@@ -323,22 +328,29 @@ namespace RealLifeOverhaul.Health
             {
                 return false;
             }
+            ObserveCase(HealthGame.Day);
+            BeginStay();
+            return true;
+        }
+
+        // The stay begins: the drain stops, and the days pass, or the stay is over already.
+        private void BeginStay()
+        {
             HealthGame.Drain(false);
             _revision++;
-            if (HealthGame.Minutes >= _state.Stay.Until - 1)
+            if (HealthDay.StayOver(_state.Stay, HealthGame.Minutes))
             {
                 Discharge();
-                return true;
+                return;
             }
             _stayRunning = true;
             StartCoroutine(Guard.Routine(StayRoutine()));
-            return true;
         }
 
         // A save loaded in the middle of a stay: it goes on, or ends if its time has passed.
         private void ResumeStay()
         {
-            if (HealthGame.Minutes >= _state.Stay.Until - 1)
+            if (HealthDay.StayOver(_state.Stay, HealthGame.Minutes))
             {
                 Discharge();
                 return;
@@ -374,11 +386,9 @@ namespace RealLifeOverhaul.Health
                     yield return UiFader.Fade(0.7f, "reallife_hc_stay_fade");
                     _stayResting = true;
                     EnergyHelper.SetCurrentEnergyRegen(EnergyRegen.Hospital);
-                    int rounds = 0;
-                    while (_state.Stay.Active && HealthGame.Minutes < _state.Stay.Until - 1 && rounds++ <= HealthCatalogue.StayMost + 1)
+                    for (int round = 0; HealthDay.NextSkip(_state.Stay, HealthGame.Minutes, round, out int target); round++)
                     {
                         int before = HealthGame.Minutes;
-                        int target = Math.Min(_state.Stay.Until, before + 1440);
                         uis.timeMachine.StartTimeMachine(new Timestamp((float)target), disableCancel: true, "reallife_hc_stay_info");
                         waited = 0f;
                         float nextNeeds = 0f;
@@ -446,10 +456,13 @@ namespace RealLifeOverhaul.Health
             }
             int day = HealthGame.Day, days = st.Days;
             Condition kind = st.Kind;
-            bool illness = !HealthCatalogue.Is(HealthCatalogue.Injury, kind);
-            long bill = HealthDay.StayBill(st, Math.Max(HealthGame.Minutes, GoingPublic.ClockShared ? st.Until : 0), HealthGame.Level);
-            BillResult r = SettleBill(Care.Hospital, bill, false);
-            HealthDay.Discharge(_state, day);
+            BillResult? released = HealthDay.Release(_state, HealthGame.Minutes, day, GoingPublic.ClockShared, HealthGame.Level, _settleStay, out bool illness);
+            if (released == null)
+            {
+                return;
+            }
+            BillResult r = released.Value;
+            ObserveCase(day);
             if (illness)
             {
                 HealthBridges.Cure?.Invoke();

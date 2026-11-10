@@ -30,9 +30,10 @@ namespace RealLifeOverhaul.Health
         private bool _read, _on, _broken;
         private Action _onSave;
         private int _revision;
-        private string _beforeTests;
         private int _illAtHome, _wave, _pendingNights;
+        private int _homeDay = int.MinValue;   // the day _illAtHome was worked out for
         private readonly Func<long, bool> _payPremium, _payBill, _payDebt;
+        private readonly Func<long, BillResult> _settleStay, _settleNight;
         private readonly Func<int, int> _file;
 
         public HealthDirector()
@@ -41,6 +42,8 @@ namespace RealLifeOverhaul.Health
             _payBill = amount => HealthGame.Pay(amount, HealthGame.BillKey);
             _payDebt = amount => HealthGame.Pay(amount, HealthGame.DebtKey);
             _file = amount => HealthBridges.FileClaim != null ? HealthBridges.FileClaim(amount) : 0;
+            _settleStay = bill => SettleBill(Care.Hospital, bill, false);
+            _settleNight = bill => SettleBill(Care.Hospital, bill, true);
         }
 
         public static void Attach(GameObject root, IModLogger logger)
@@ -97,6 +100,7 @@ namespace RealLifeOverhaul.Health
         {
             SaveHook.Drop(_onSave);
             EndStay();
+            HealthGame.DropDrain();   // the game keeps its energy spenders until it is closed: a drain left on would follow the player into another save
             if (Instance == this)
             {
                 Instance = null;
@@ -141,11 +145,7 @@ namespace RealLifeOverhaul.Health
             int day = HealthGame.Day;
             if (!Settings.Health)
             {
-                if (_on)
-                {
-                    PutAway();
-                }
-                DebtDay(day);   // what is owed stays owed, option or no option: nobody hides from a debt behind a switch
+                OptionOff(day);   // what is owed stays owed, option or no option: nobody hides from a debt behind a switch
                 return;
             }
             if (!_on)
@@ -162,6 +162,7 @@ namespace RealLifeOverhaul.Health
                 ResumeStay();
             }
             PeopleSlice();
+            RefreshHome(day);
             if (day != _state.LastDay)
             {
                 Pass(day);
@@ -187,9 +188,11 @@ namespace RealLifeOverhaul.Health
             {
                 _state.Seed = UnityEngine.Random.Range(1, int.MaxValue);   // once a save, then kept: every draw comes from it
             }
-            _beforeTests = save.modData.TryGetValue(TestKey, out string before) && !string.IsNullOrEmpty(before) ? before : null;
+            save.modData.Remove(TestKey);   // (an older version kept a snapshot of the state here for the test that puts health back; it is not used any more)
             _read = true;
             _on = false;
+            _homeDay = int.MinValue;
+            HealthGame.DropDrain();   // (the drain of whatever save was before this one; a serious case here puts its own on again)
             _revision++;
             Logger?.Info("Health: " + (version > 0 ? "read the save's line (version " + version + "): plan " + _state.Policy.Plan + ", " + _state.Debt.Owed + " owed, case "
                          + _state.Case.Kind + (_state.Stay.Active ? ", in hospital" : string.Empty) : "nothing yet") + ".");
@@ -203,11 +206,30 @@ namespace RealLifeOverhaul.Health
                 HealthGame.Tell(NotificationType.Warning, "reallife_hc_note_lapsed_away", null, OpenAppClick);
             }
             HealthBridges.Credit?.Invoke(-1, 0);   // the medical debt's account on the credit file again
-            // What a day's pass works out and the game does not keep: the wave, who is ill at home, the drain of a serious case and the injury's mood.
+            // What a day's pass works out and the game does not keep: the wave, who is ill at home (when the city's people are there), the drain of a serious case and the
+            // injury's mood.
             _wave = HealthRules.Wave(_state.Seed, day, HealthGame.DaysPerYear);
-            PopulationState people = HealthGame.People();
-            _illAtHome = people != null ? HealthPeople.IllAtHome(people, _state.Seed, day) : 0;
+            _homeDay = int.MinValue;
+            RefreshHome(day);
             MirrorHome(day);
+            _revision++;
+        }
+
+        // Who is ill at the player's own home today: worked out once the city's people are there (a load does not wait for them), and nothing while they are away.
+        private void RefreshHome(int day)
+        {
+            if (_homeDay == day)
+            {
+                return;
+            }
+            HealthPeople.Mode mode = HealthGame.PeopleMode();
+            if (mode == HealthPeople.Mode.NotReady)
+            {
+                return;   // asked again at the next look
+            }
+            PopulationState people = mode == HealthPeople.Mode.Ready ? HealthGame.People() : null;
+            _illAtHome = people != null ? HealthPeople.IllAtHome(people, _state.Seed, day) : 0;
+            _homeDay = day;
             _revision++;
         }
 
@@ -238,33 +260,26 @@ namespace RealLifeOverhaul.Health
                 save.modData = new Dictionary<string, string>();
             }
             save.modData[HealthStore.Key] = HealthStore.Write(_state);
-            if (_beforeTests != null)
-            {
-                save.modData[TestKey] = _beforeTests;
-            }
-            else
-            {
-                save.modData.Remove(TestKey);
-            }
+            save.modData.Remove(TestKey);
         }
 
         // The option was switched off: an illness under way ends as far as health goes (Home's own goes on by Home's rules), a stay is cut short and its days billed, the
         // appointment is dropped, the app leaves the phone. The policy's record and what is owed stay in the line, and the debt is still collected.
-        private void PutAway()
+        private void OptionOff(int day)
         {
-            if (_state.Stay.Active)
+            bool was = _on;
+            DebtResult r = HealthDay.WhileOff(_state, was, HealthGame.Minutes, day, HealthGame.Level, _settleStay, _payDebt, _file, out long amount);
+            if (was)
             {
-                long bill = HealthDay.StayBill(_state.Stay, HealthGame.Minutes, HealthGame.Level);
-                SettleBill(Care.Hospital, bill, false);
                 EndStay();
+                HealthGame.DropDrain();
+                Write();
+                _on = false;
+                RemoveApp();
+                _revision++;
+                Logger?.Info("Health: switched off; the policy's record, the leave and what is owed are kept in the save, and the debt is still collected.");
             }
-            HealthDay.Clear(_state);
-            HealthGame.Drain(false);
-            Write();
-            _on = false;
-            RemoveApp();
-            _revision++;
-            Logger?.Info("Health: switched off; the policy's record, the leave and what is owed are kept in the save, and the debt is still collected.");
+            DebtOutcome(r, amount);
         }
 
         /// <summary>Forgets everything of this save. The next look opens the feature afresh.</summary>
@@ -277,9 +292,10 @@ namespace RealLifeOverhaul.Health
                 save.modData.Remove(TestKey);
             }
             EndStay();
-            HealthGame.Drain(false);
+            HealthGame.DropDrain();
             _state = new HealthState();
-            _beforeTests = null;
+            ClearTests();
+            _homeDay = int.MinValue;
             _read = false;
             _on = false;
             RemoveApp();
@@ -298,13 +314,15 @@ namespace RealLifeOverhaul.Health
             _wave = HealthRules.Wave(_state.Seed, day, yearDays);
             PremiumDay(day, yearDays, monthDays);
             DebtDay(day);
-            PopulationState people = HealthGame.People();
-            _illAtHome = people != null ? HealthPeople.IllAtHome(people, _state.Seed, day) : 0;
+            _illAtHome = 0;
+            _homeDay = int.MinValue;
+            RefreshHome(day);
+            ObserveCase(day - 1);   // the case as it was through yesterday, before today's day can clear it: yesterday's working day is settled by it
             CaseDay(day);
             AppointmentLook(day);
             StaffDay(day);
             RivalsDay(day);
-            PeopleBegin(people, day, monthDays);
+            PeopleBegin(day, monthDays);
             ExpireNotes(day);
             _revision++;
         }
@@ -312,6 +330,7 @@ namespace RealLifeOverhaul.Health
         private void HourPass(int day)
         {
             MirrorHome(day);
+            ObserveCase(day);
             AppointmentLook(day);
             _revision++;
         }
@@ -339,6 +358,12 @@ namespace RealLifeOverhaul.Health
                 return;
             }
             DebtResult r = HealthDay.Debt(_state, day, _payDebt, _file, out long amount);
+            DebtOutcome(r, amount);
+        }
+
+        // What the debt's day came to: the credit file hears of it, and the player is told of the big ones.
+        private void DebtOutcome(DebtResult r, long amount)
+        {
             if (r == DebtResult.None)
             {
                 return;
@@ -376,29 +401,11 @@ namespace RealLifeOverhaul.Health
         // Each tycoon's day: a rival off sick makes no move and grows at half the pace until they are back; one in hospital pays its bill from the worth over their floor.
         private void RivalsDay(int day)
         {
-            if (HealthBridges.RivalWorth == null)
+            int began = HealthRivals.Day(_state, day, _wave, HealthGame.Level, HealthBridges.RivalWorth, HealthBridges.RivalPay, HealthBridges.RivalRest);
+            for (int i = 0; began > 0 && Verbose && i < _state.RivalCases.Length; i++)
             {
-                return;
-            }
-            for (int i = 0; i < _state.RivalCases.Length; i++)
-            {
-                if (HealthBridges.RivalWorth(i) < 0)
-                {
-                    continue;   // not forward, out, or resting in a Going Public session
-                }
                 RivalHealth r = _state.RivalCases[i];
-                if (!HealthRules.RivalDay(r, _state.Seed, i, day, _wave))
-                {
-                    continue;
-                }
-                HealthBridges.RivalRest?.Invoke(i, r.Until + 1);
-                if (r.Serious)
-                {
-                    long bill = HealthCover.StayBill(HealthRules.StayDays(r.Kind), false, HealthGame.Level);
-                    r.Bill = HealthBridges.RivalPay != null ? HealthBridges.RivalPay(i, bill) : 0L;
-                    _state.Notes.Add(new HealthNote { Day = day, Rival = i, Kind = r.Kind });
-                }
-                if (Verbose)
+                if (r.Kind != Condition.None && r.Day == day)
                 {
                     Logger?.Info("Health check (rival " + i + " on day " + day + "): " + r.Kind + (r.Serious ? ", in hospital, bill " + r.Bill : string.Empty) + ", off until day "
                                  + r.Until + ": PASS");
@@ -436,33 +443,39 @@ namespace RealLifeOverhaul.Health
 
         // ---- the people and the staff
 
-        private void PeopleBegin(PopulationState people, int day, int monthDays)
+        // The day turned: its pass of the city's people begins, or waits for the one under way (always in slices, a time skip never makes it a spike). Away (a session, a
+        // guest, the living population off) the people are not health's to touch; not ready yet is only a wait, and the pass keeps its place.
+        private void PeopleBegin(int day, int monthDays)
         {
             PopHealth o = _state.Pop;
-            if (people == null)
+            if (HealthGame.PeopleMode() == HealthPeople.Mode.Away)
             {
-                o.Cursor = -1;   // a session, or the living population off: the people are not health's to touch
+                HealthPeople.StandDown(o);
                 return;
             }
-            if (o.Cursor >= 0)
-            {
-                HealthPeople.Slice(people, o, _state.Seed, HealthGame.Level, int.MaxValue / 2);   // yesterday's pass, cut short by the day turning, is finished first
-            }
-            HealthPeople.Begin(o, day, HealthRules.MonthOf(day, monthDays));
+            HealthPeople.Turn(o, day, HealthRules.MonthOf(day, monthDays));
         }
 
         private void PeopleSlice()
         {
             PopHealth o = _state.Pop;
-            if (o.Cursor < 0)
+            HealthPeople.Mode mode = HealthGame.PeopleMode();
+            if (mode == HealthPeople.Mode.Away)
+            {
+                if (o.Cursor >= 0 || o.Pending > 0)
+                {
+                    HealthPeople.StandDown(o);
+                }
+                return;
+            }
+            if (o.Cursor < 0 && !HealthPeople.Resume(o, HealthGame.MonthDays))
             {
                 return;
             }
-            PopulationState people = HealthGame.People();
+            PopulationState people = mode == HealthPeople.Mode.Ready ? HealthGame.People() : null;
             if (people == null)
             {
-                o.Cursor = -1;
-                return;
+                return;   // not there yet: the cursor stays where it is
             }
             using var hotSpot = HotSpots.Time(HotPeople);
             if (HealthPeople.Slice(people, o, _state.Seed, HealthGame.Level, HealthCatalogue.PassSlice))
@@ -473,6 +486,7 @@ namespace RealLifeOverhaul.Health
                     Logger?.Info("Health check (the people's day " + o.Day + "): " + o.IllNow + " ill of " + people.People.Live + ", the month's cases " + o.Cases + ", bills "
                                  + o.Bills + ", onto debts " + o.Debt + ": " + (o.IllNow * 1000L <= (long)people.People.Live * HealthCatalogue.WaveShareMost ? "PASS" : "FAIL, over the bound"));
                 }
+                HealthPeople.Resume(o, HealthGame.MonthDays);   // the day that waited for this one, if any, begins now and is sliced from the next second
             }
         }
 

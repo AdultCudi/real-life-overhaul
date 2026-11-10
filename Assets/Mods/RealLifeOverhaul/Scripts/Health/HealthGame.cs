@@ -156,11 +156,31 @@ namespace RealLifeOverhaul.Health
             }
         }
 
-        /// <summary>The city went or a save loads: the drain is the game's to forget.</summary>
-        public static void Reset()
+        /// <summary>
+        /// The drain comes off whatever the flag says. The game clears its energy spenders only when it starts (EnergyHelper.ResetStaticData), so a drain left on when the city
+        /// goes, or the feature is forgotten or switched off, would follow the player into another save and drain it for ever. Safe more than once.
+        /// </summary>
+        public static void DropDrain()
         {
             _draining = false;
+            try
+            {
+                EnergyHelper.RemoveEnergySpender(SeriousDrain);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);   // (the game has no save to look at: it is asked again when the next save is read)
+            }
         }
+
+        /// <summary>The city went or a save loads: the drain is taken off.</summary>
+        public static void Reset()
+        {
+            DropDrain();
+        }
+
+        /// <summary>True while the game's own night in hospital runs (a collapse, the ambulance, a crash).</summary>
+        public static bool InHospitalNight => EnergyHelper.goingToHospital;
 
         /// <summary>Energy and hunger held up while the hospital's clock runs.</summary>
         public static void HoldNeeds()
@@ -197,15 +217,11 @@ namespace RealLifeOverhaul.Health
             }
         }
 
+        /// <summary>Whether the city's people are there for health: ready, only not yet (a wait), or away (a Going Public session, a guest, the living population off).</summary>
+        public static HealthPeople.Mode PeopleMode() => HealthPeople.ModeOf(Settings.LivingPopulation, CityPopulation.Running, CityPopulation.Following, GoingPublic.InSession);
+
         /// <summary>The living population as health may touch it: running here, this player's own and not in a Going Public session. Null otherwise.</summary>
-        public static PopulationState People()
-        {
-            if (!Settings.LivingPopulation || !CityPopulation.Running || CityPopulation.Following || GoingPublic.InSession)
-            {
-                return null;
-            }
-            return CityPopulation.Live;
-        }
+        public static PopulationState People() => PeopleMode() == HealthPeople.Mode.Ready ? CityPopulation.Live : null;
 
         // ---- the player's own staff
 
@@ -272,9 +288,14 @@ namespace RealLifeOverhaul.Health
             return off;
         }
 
-        /// <summary>Somebody of the player's staff falls ill tomorrow, for the test: the first who counts and has no case. Their name, or null.</summary>
-        public static string StaffTest(HealthState s, int day)
+        /// <summary>
+        /// Somebody of the player's staff falls ill tomorrow, for the test: the first who counts and has no case. Their name, or null; <paramref name="id"/> and
+        /// <paramref name="previous"/> say who and what the game's own next sick day was, so the test can be taken back.
+        /// </summary>
+        public static string StaffTest(HealthState s, int day, out string id, out int previous)
         {
+            id = null;
+            previous = 0;
             List<EmployeeInstance> all = Save != null ? Save.EmployeeInstances : null;
             for (int i = 0; all != null && i < all.Count; i++)
             {
@@ -282,11 +303,33 @@ namespace RealLifeOverhaul.Health
                 if (Counts(e) && CaseOf(s, e.id) == null && s.Staff.Count < HealthCatalogue.StaffCasesMost)
                 {
                     s.Staff.Add(new StaffCase { Id = e.id, From = day + 1, Until = day + 1 });
+                    id = e.id;
+                    previous = e.nextSickDay;
                     e.nextSickDay = Math.Min(e.nextSickDay, day + 1);
                     return e.characterData.name;
                 }
             }
             return null;
+        }
+
+        /// <summary>The staff test taken back: the case is dropped and the game's next sick day is what it was, if nothing has moved it since.</summary>
+        public static void StaffUntest(HealthState s, string id, int day, int previous)
+        {
+            for (int i = s.Staff.Count - 1; i >= 0; i--)
+            {
+                if (s.Staff[i].Id == id && s.Staff[i].From == day + 1 && s.Staff[i].Until == day + 1)
+                {
+                    s.Staff.RemoveAt(i);
+                }
+            }
+            List<EmployeeInstance> all = Save != null ? Save.EmployeeInstances : null;
+            for (int i = 0; all != null && i < all.Count; i++)
+            {
+                if (all[i] != null && all[i].id == id && all[i].nextSickDay == day + 1)
+                {
+                    all[i].nextSickDay = previous;
+                }
+            }
         }
 
         private static bool Counts(EmployeeInstance e)

@@ -11,6 +11,15 @@ namespace RealLifeOverhaul.Health
         Lapsed = 3
     }
 
+    /// <summary>How an appointment's day ended.</summary>
+    public enum AppointmentResult
+    {
+        None = 0,
+        Left = 1,       // kept, and the player left before being seen: nothing is owed
+        Fee = 2,        // not kept: the missed fee is due
+        Excused = 3     // not kept because the player was in hospital: no fee
+    }
+
     /// <summary>How the medical debt's day ended.</summary>
     public enum DebtResult
     {
@@ -62,6 +71,25 @@ namespace RealLifeOverhaul.Health
         /// <summary>True once an appointment not kept can no longer be: its window is past.</summary>
         public static bool Missed(HealthAppointment a, int day, int minuteOfDay) =>
             a.Booked && !a.Kept && (day > a.Day || (day == a.Day && minuteOfDay > a.Hour * 60 + HealthCatalogue.AppointmentLate));
+
+        /// <summary>
+        /// An appointment's day, run on every hour and day: one kept and left is dropped, one not kept by the end of its window costs the missed fee, unless the player was in
+        /// hospital (a stay of Health's, or the game's own night) and could not have gone. Every way the appointment ends clears it.
+        /// </summary>
+        public static AppointmentResult AppointmentDay(HealthAppointment a, int day, int minuteOfDay, bool inHospital)
+        {
+            if (a.Booked && a.Kept && day > a.Day)
+            {
+                a.Clear();
+                return AppointmentResult.Left;
+            }
+            if (!Missed(a, day, minuteOfDay))
+            {
+                return AppointmentResult.None;
+            }
+            a.Clear();
+            return inHospital ? AppointmentResult.Excused : AppointmentResult.Fee;
+        }
 
         // ---- the premium
 
@@ -203,7 +231,108 @@ namespace RealLifeOverhaul.Health
             st.GameNight = gameNight;
             st.From = nowMinutes;
             st.Until = gameNight ? nowMinutes + (st.Days - 1) * 1440 : HealthRules.StayUntil(nowMinutes, st.Days);
+            HealthAppointment a = s.Appointment;
+            if (a.Booked && a.Day * 1440 + a.Hour * 60 <= st.Until)
+            {
+                a.Clear();   // an appointment that falls within the stay is dropped with no fee: nobody keeps it from a hospital bed
+            }
             return true;
+        }
+
+        /// <summary>True once a stay is over: not under way, or its discharge is a minute away. A load in the middle of a stay asks this to know whether to go on.</summary>
+        public static bool StayOver(HealthStay st, int nowMinutes) => !st.Active || nowMinutes >= st.Until - 1;
+
+        /// <summary>
+        /// The time skip of a stay, a day at a time: true with the minute to run the clock to (a day on, or the discharge if that is sooner) while the stay is under way, and
+        /// false once it is over or the rounds (counted from 0 by the caller) are used up: a stay is no longer than its days, so more rounds than that mean the clock is not moving.
+        /// </summary>
+        public static bool NextSkip(HealthStay st, int nowMinutes, int round, out int target)
+        {
+            target = 0;
+            if (StayOver(st, nowMinutes) || round > HealthCatalogue.StayMost + 1)
+            {
+                return false;
+            }
+            target = Math.Min(st.Until, nowMinutes + 1440);
+            return true;
+        }
+
+        /// <summary>The bill of a stay at its end: for the days passed, or for the whole stay when the clock is shared (a Going Public session never moves it, so it is served at once).</summary>
+        public static long DischargeBill(HealthStay st, int nowMinutes, bool clockShared, int level) => StayBill(st, Math.Max(nowMinutes, clockShared ? st.Until : 0), level);
+
+        /// <summary>
+        /// The stay ends: the bill for its days is settled by <paramref name="settle"/> (the plan's part, the cash, the rest owed), then the case is treated, a note covers the
+        /// stay's days and two after, and the stay is closed. Null while no stay is under way. <paramref name="illness"/> says whether it was an illness that is over (Home is
+        /// told by the director).
+        /// </summary>
+        public static BillResult? Release(HealthState s, int nowMinutes, int day, bool clockShared, int level, Func<long, BillResult> settle, out bool illness)
+        {
+            illness = false;
+            HealthStay st = s.Stay;
+            if (!st.Active)
+            {
+                return null;
+            }
+            illness = !HealthCatalogue.Is(HealthCatalogue.Injury, st.Kind);
+            BillResult r = settle(DischargeBill(st, nowMinutes, clockShared, level));
+            Discharge(s, day);
+            return r;
+        }
+
+        /// <summary>
+        /// The game's own night in hospital is over (a collapse, the ambulance, a crash): the plan's part of the game's bill comes back, an appointment the night slept through
+        /// is dropped with no fee, and a serious case stays in for the rest of its days where any other is seen to. <paramref name="settle"/> meets the game's bill, which was
+        /// taken whole already.
+        /// </summary>
+        public static BillResult GameNight(HealthState s, int nowMinutes, int day, Func<long, BillResult> settle, out bool admitted)
+        {
+            BillResult r = settle(HealthCatalogue.GameStayBill);
+            HealthAppointment a = s.Appointment;
+            if (a.Booked && a.Day * 1440 + a.Hour * 60 <= nowMinutes)
+            {
+                a.Clear();
+            }
+            HealthCase c = s.Case;
+            admitted = false;
+            if (c.Open && c.Serious)
+            {
+                admitted = Admit(s, nowMinutes, true);
+            }
+            else if (c.Open)
+            {
+                HealthRules.Treat(c, day);   // seen to while they were in
+            }
+            return r;
+        }
+
+        /// <summary>
+        /// The option is switched off: a stay under way is billed for the days begun (settled by <paramref name="settle"/>), then everything of the case, the stay, the appointment
+        /// and the staff ends (<see cref="Clear"/>). What is owed stays owed. Returns what the stay was billed.
+        /// </summary>
+        public static long SwitchOff(HealthState s, int nowMinutes, int level, Func<long, BillResult> settle)
+        {
+            long bill = 0;
+            if (s.Stay.Active)
+            {
+                bill = StayBill(s.Stay, nowMinutes, level);
+                settle(bill);
+            }
+            Clear(s);
+            return bill;
+        }
+
+        /// <summary>
+        /// A look with the option off: if the feature was on, it is put away first (<see cref="SwitchOff"/>), and the debt's day runs all the same, in the same call, so nobody
+        /// hides from a debt behind the switch.
+        /// </summary>
+        public static DebtResult WhileOff(HealthState s, bool wasOn, int nowMinutes, int day, int level, Func<long, BillResult> settle, Func<long, bool> pay, Func<int, int> file,
+            out long amount)
+        {
+            if (wasOn)
+            {
+                SwitchOff(s, nowMinutes, level, settle);
+            }
+            return Debt(s, day, pay, file, out amount);
         }
 
         /// <summary>The bill of the stay as it stands: every day of it at the discharge, or the days begun so far if it is cut short.</summary>
@@ -243,6 +372,7 @@ namespace RealLifeOverhaul.Health
             s.Appointment.Clear();
             s.Staff.Clear();
             s.Pop.Cursor = -1;
+            s.Pop.Pending = 0;
         }
 
         /// <summary>

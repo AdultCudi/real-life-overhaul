@@ -58,9 +58,10 @@ namespace RealLifeOverhaul
                 HealthBridges.Living = Living;
                 HealthBridges.DoctorNote = DoctorNote;
                 HealthBridges.WasIll = WasIll;
+                HealthBridges.IllnessSince = IllnessSince;
                 HealthBridges.EmployerPlan = () => Employer(out int _);
                 HealthBridges.EmployerSince = () => { Employer(out int since); return since; };
-                HealthBridges.ShiftOpen = ShiftOpen;
+                HealthBridges.ShiftEnd = ShiftEnd;
                 HealthBridges.SickPolicy = SickPolicy;
                 HealthBridges.Reserved = Reserved;
                 HealthBridges.Clinic = Clinic;
@@ -82,7 +83,7 @@ namespace RealLifeOverhaul
                 DoctorVisit.Wait = Wait;
                 LifeEvents.Hurt = hours => Safe("HealthLinks.Hurt", () => HealthDirector.Instance?.Hurt(hours));
                 PhoneContacts.DoctorFirst = DoctorFirst;
-                CareersBridges.DayMissed = (day, pay, hired) => Safe("HealthLinks.DayMissed", () => HealthDirector.Instance?.DayMissed(day, pay, hired));
+                CareersBridges.DayMissed = (day, pay, hired, shift, worked) => Safe("HealthLinks.DayMissed", () => HealthDirector.Instance?.DayMissed(day, pay, hired, shift, worked));
                 CareersBridges.ShiftWorked = skill => Safe("HealthLinks.ShiftWorked", () => HealthDirector.Instance?.ShiftWorked(Risk(skill)));
                 _noteBefore = CareerLinks.Health;
                 CareerLinks.Health = new Leave();
@@ -215,7 +216,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // Home's chances with Health running: a draw from the save's seed, the day and the chance's own slot.
+            // Home's chances with Health running: a draw from the save's seed, the day, the chance's own slot and which draw of that chance it is that day.
             private static float Roll(int slot)
             {
                 try
@@ -223,7 +224,7 @@ namespace RealLifeOverhaul
                     HealthDirector d = HealthDirector.Instance;
                     if (d != null && d.Running)
                     {
-                        return HealthRules.Unit(d.State.Seed, HealthGame.Day, slot);
+                        return d.HomeDraw(slot);
                     }
                 }
                 catch (Exception e)
@@ -315,6 +316,31 @@ namespace RealLifeOverhaul
                 }
             }
 
+            // The day the illness the player has now really began: Home's own record of it, or Life's for a plain sickness; 0 when it is not known (an older save).
+            private static int IllnessSince()
+            {
+                try
+                {
+                    float since = 0f;
+                    if (HomeState.Loaded && HomeHealth.Ill)
+                    {
+                        since = HomeState.IllSince;
+                    }
+                    // A cold or the flu is Life's sickness too, which Home takes up at the next hour: the earlier of the two is when it began (before midnight, say).
+                    bool life = ModState.IsSick && ModState.SickSince > 0f && (!HomeState.Loaded || !HomeHealth.Ill || HomeBalance.Infectious(HomeState.Ill));
+                    if (life && (since <= 0f || ModState.SickSince < since))
+                    {
+                        since = ModState.SickSince;
+                    }
+                    return since > 0f ? (int)(since / 1440f) : 0;
+                }
+                catch (Exception e)
+                {
+                    Fault("HealthLinks.IllnessSince", e);
+                    return 0;
+                }
+            }
+
             // Ill that day by the mod's older rules: sick now, or for a day gone by still sick when that day began.
             private static bool WasIll(int day)
             {
@@ -379,23 +405,29 @@ namespace RealLifeOverhaul
                 return 0;
             }
 
-            private static bool ShiftOpen()
+            // The minute of the day the hours of today's shift end, while there is a shift not yet worked or missed; -1 otherwise. A street career's shift ends where the game's own
+            // no-show begins (the late hours past its hour), a profession's with its hours (ProRules.DayOver): after it the day is as good as missed, and nobody calls in sick.
+            private static int ShiftEnd()
             {
                 try
                 {
                     int day = TimeHelper.CurrentDay;
                     if (CareerState.Loaded && CareerState.ShiftOpen(day))
                     {
-                        return true;
+                        return HealthLeave.StreetShiftEnd(CareerState.RotaHour, CareerCatalogue.LateHours);
                     }
                     CareersDirector c = CareersDirector.Instance;
                     Careers.Job j = c != null && c.Work != null ? c.Work.Job : null;
-                    return j != null && j.Def != null && ProRules.WorkDay(j.Def, day) && day >= j.Hired && j.SettledDay < day && !(j.TodayDay == day && j.TodayMinutes > 0);
+                    if (j != null && j.Def != null && ProRules.WorkDay(j.Def, day) && day >= j.Hired && j.SettledDay < day && !(j.TodayDay == day && j.TodayMinutes > 0))
+                    {
+                        return HealthLeave.ProShiftEnd(j.Def.Hour, j.Def.Hours);
+                    }
+                    return -1;
                 }
                 catch (Exception e)
                 {
-                    Fault("HealthLinks.ShiftOpen", e);
-                    return false;
+                    Fault("HealthLinks.ShiftEnd", e);
+                    return -1;
                 }
             }
 
@@ -568,9 +600,9 @@ namespace RealLifeOverhaul
             {
                 try
                 {
-                    RivalFile f = RivalDirector.Instance != null && !GoingPublic.InSession ? RivalDirector.Instance.File : null;
+                    RivalFile f = RivalDirector.Instance != null ? RivalDirector.Instance.File : null;
                     Tycoon t = f != null && index >= 0 && index < f.Tycoons.Length ? f.Tycoons[index] : null;
-                    return t != null && t.Active ? t.Worth : -1L;
+                    return HealthRivals.WorthIn(GoingPublic.InSession, t != null && t.Active, t != null ? t.Worth : 0L);
                 }
                 catch (Exception e)
                 {

@@ -12,6 +12,11 @@ Three needs the game does not have (hygiene, stress and a tidy home), sleep debt
 ## How it talks to other features
 
 - Social and Careers ask Home through `SocialLinks.Wellbeing` and `CareerLinks.Health` (a sick note), filled in by `Wiring/LifeLinks.cs`.
+- Health ([health.md](health.md)) follows Home's illness as the player's case and reaches Home through hooks in `HomeBridges` and the doctor's desk, filled in by `Wiring/Wiring.HealthLinks.cs` and null (Home as described here) when Health is off:
+  - `HomeBridges.Roll`: each of the eight illness chances below is drawn from the save's seed, the day, the chance and which draw of that chance it is that day, instead of the game's random number, so each event has its own draw with the chance's own odds and loading a day again changes nothing;
+  - `HomeBridges.Held`: a serious illness is not ended by `Over` until the hospital has seen it; `HomeBridges.TooIll`: no hard exercise with a serious case, a broken arm or a concussion; `HomeBridges.StatusNote`: a line beside the needs' bars;
+  - `DoctorVisit.Admission`, `Paid`, `Treated`, `Wait`: the doctor admits a serious case instead of prescribing, a plan pays back its part of a fee, a case is treated, an appointment kept is seen within minutes;
+  - `LifeEvents.Hurt` (every injury gets a name and a course), `PhoneContacts.DoctorFirst` (the doctor's phone line books an appointment) and `ModState.SickSince` (the day a sickness began, so Health dates an illness by Home's and Life's own record).
 - Family shortens an illness and adds broken nights (`Wiring/FamilyLinks.cs`); Travel's hotels act on hygiene and stress.
 - The roommate's links are `Wiring/RoommateLinks.cs`.
 - Household staff ([household.md](household.md)) clean the home through `HomeTidy.Change` and put the cook's portions by as leftovers (`HomeState.PutBy`).

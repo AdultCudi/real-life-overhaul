@@ -131,16 +131,16 @@ namespace RealLifeOverhaul.Health
             return r;
         }
 
-        /// <summary>The year turns: the year's bills and what the plans paid start again, and the policy's cap with them.</summary>
+        /// <summary>The year turns: the year's bills and what the plans paid start again, and the policy's cap with them. The year only moves forward.</summary>
         public static void TurnYear(HealthState s, int day, int yearDays)
         {
             int year = HealthRules.YearOf(day, yearDays);
-            if (s.Year != year)
+            if (year > s.Year)
             {
                 s.Year = year;
                 s.BillsYear = s.ClaimsYear = 0;
             }
-            if (s.Policy.Year != year)
+            if (year > s.Policy.Year)
             {
                 s.Policy.Year = year;
                 s.Policy.PaidYear = 0;
@@ -151,7 +151,8 @@ namespace RealLifeOverhaul.Health
 
         /// <summary>
         /// A plan is taken (or changed): a new policy from today, whose first days cover nothing new and which never covers what is under way. The first month is paid by
-        /// the caller.
+        /// the caller. What plans have paid out this year stays counted against the year's cap: cancelling and taking a plan again, or changing plan, does not give a new cap;
+        /// only the year turning does (<see cref="TurnYear"/>).
         /// </summary>
         public static void Take(HealthPolicy p, Plan plan, int day, int monthDays)
         {
@@ -159,7 +160,6 @@ namespace RealLifeOverhaul.Health
             p.Since = day;
             p.NextDue = day + Math.Max(1, monthDays);
             p.Missed = 0;
-            p.PaidYear = 0;
         }
 
         public static void Cancel(HealthPolicy p)
@@ -169,15 +169,29 @@ namespace RealLifeOverhaul.Health
         }
 
         /// <summary>
-        /// The policy's day: 0 nothing due, 1 a premium due now (the caller takes it and says <see cref="Paid"/> or <see cref="Missed"/>). A day past the due day is still one
-        /// premium: months away are not billed twice.
+        /// True when a premium is due (the caller takes it and says <see cref="Paid"/> or <see cref="Missed"/>). A day past the due day is still one premium: months away are not
+        /// billed twice, and the next is due on the cycle's own day (<see cref="NextDueAfter"/>).
         /// </summary>
         public static bool Due(HealthPolicy p, int day) => p.Plan != Plan.None && p.NextDue > 0 && day >= p.NextDue;
+
+        /// <summary>
+        /// The due day after one on which a premium was taken or missed: the old due day and whole months on from it, the first that is after today. The due days keep to their
+        /// own cycle, so a premium paid late is followed by the next one on the cycle's day, which may be soon when the month was nearly gone.
+        /// </summary>
+        public static int NextDueAfter(int due, int day, int monthDays)
+        {
+            int month = Math.Max(1, monthDays);
+            if (due <= 0)
+            {
+                return day + month;
+            }
+            return due + (day >= due ? (day - due) / month + 1 : 1) * month;
+        }
 
         public static void Paid(HealthPolicy p, int day, int monthDays)
         {
             p.Missed = 0;
-            p.NextDue = Math.Max(p.NextDue, day - Math.Max(1, monthDays) + 1) + Math.Max(1, monthDays);
+            p.NextDue = NextDueAfter(p.NextDue, day, monthDays);
         }
 
         /// <summary>A premium could not be taken; true if the policy lapsed with it.</summary>
@@ -189,7 +203,7 @@ namespace RealLifeOverhaul.Health
                 Cancel(p);
                 return true;
             }
-            p.NextDue = Math.Max(p.NextDue, day - Math.Max(1, monthDays) + 1) + Math.Max(1, monthDays);
+            p.NextDue = NextDueAfter(p.NextDue, day, monthDays);
             return false;
         }
 

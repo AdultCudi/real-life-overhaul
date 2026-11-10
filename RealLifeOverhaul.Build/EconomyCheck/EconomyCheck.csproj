@@ -414,6 +414,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthLeave.cs" Link="Mod\Health\HealthLeave.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthDay.cs" Link="Mod\Health\HealthDay.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthPeople.cs" Link="Mod\Health\HealthPeople.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthRivals.cs" Link="Mod\Health\HealthRivals.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthFacts.cs" Link="Mod\Health\HealthFacts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\HealthPages.cs" Link="Mod\Ventures\HealthPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLedger.cs" Link="Mod\RotaLedger.cs" />

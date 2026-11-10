@@ -36,10 +36,20 @@ internal static partial class Program
         HealthStaffRivalChecks();
         HealthStoreChecks();
         HealthOptionChecks();
+        HealthFixes();
         HealthPageChecks();
         HealthSourceChecks();
         HealthTextChecks();
     }
+
+    // The older checks settle a whole shift of eight hours of which none was worked, and call in sick in the morning of a shift that ends at five.
+    private static long HealthSettle(LeaveBook l, LeaveFacts f, int day, int seed, int dayPayCents, int hiredDay, int yearDays) =>
+        HealthLeave.Settle(l, f, day, seed, dayPayCents, hiredDay, yearDays, 480, 0);
+
+    private static bool HealthCallIn(LeaveBook l, int day, bool ill, int yearDays) => HealthLeave.CallIn(l, day, ill, yearDays, 8 * 60, 17 * 60);
+
+    // Home's illness mirrored with no record of when it began (the day it is seen is its day).
+    private static bool HealthMirror(HealthCase c, Condition home, bool treated, int day) => HealthRules.Mirror(c, home, treated, day, 0);
 
     private static readonly HealthFactors HealthCareful = new HealthFactors { Energy = 80, Hunger = 80, SleepDebt = 0, Diet = 2, Fitness = 80 };
     private static readonly HealthFactors HealthRunDown = new HealthFactors { Energy = 10, Hunger = 10, SleepDebt = 14, Diet = 0, Fitness = 10 };
@@ -54,11 +64,11 @@ internal static partial class Program
         for (int i = 0; i < 5000; i++)
         {
             int r = HealthRules.Roll(31, i, 5, 9, 100000);
-            float u = HealthRules.Unit(31, i, 3);
+            float u = HealthRules.Unit(31, i, 3, 0);
             inside &= r >= 0 && r < 100000 && u >= 0f && u < 1f;
         }
         Check(inside && HealthRules.Roll(1, 2, 3, 4, 1) == 0 && HealthRules.Roll(1, 2, 3, 4, 0) == 0, "health draws: a draw is inside its range, and a range of one or none is nothing");
-        Check(HealthRules.Unit(5, 40, 3) == HealthRules.Unit(5, 40, 3) && HealthRules.Unit(5, 40, 3) != HealthRules.Unit(5, 41, 3) && HealthRules.Unit(5, 40, 3) != HealthRules.Unit(5, 40, 4),
+        Check(HealthRules.Unit(5, 40, 3, 0) == HealthRules.Unit(5, 40, 3, 0) && HealthRules.Unit(5, 40, 3, 0) != HealthRules.Unit(5, 41, 3, 0) && HealthRules.Unit(5, 40, 3, 0) != HealthRules.Unit(5, 40, 4, 0),
             "health draws: Home's chance for a day and a slot is the same however often it is asked (loading the day again changes nothing), and another the next day");
         Check(HealthRules.IdOf("emp-12") == HealthRules.IdOf("emp-12") && HealthRules.IdOf("emp-12") != HealthRules.IdOf("emp-13") && HealthRules.IdOf(null) >= 0 && HealthRules.IdOf("x") >= 0,
             "health draws: a member of staff's own number comes from their id, the same on every machine");
@@ -117,9 +127,21 @@ internal static partial class Program
         Check(winter, "health wave: each year's wave tops in the first tenth of the year, which the calendar counts as winter");
         Check(once, "health wave: one wave a year, no longer than its days, reaching the year's own severity at its top and nothing outside it");
         Check(bounded && pure, "health wave: the wave is never over " + HealthCatalogue.WaveSeverityMost + " thousandths and is the same for a day however often it is asked");
-        int early = HealthRules.WaveTop(11, 1, 60);
-        Check(HealthRules.Wave(11, early, 60) == HealthRules.WaveSeverity(11, 1) && (early - 61 >= 3 || HealthRules.Wave(11, 60, 60) > 0 || HealthRules.WaveDays(60) / 2 <= early - 60),
-            "health wave: a wave that begins before the year turns is read on the last days of the year before (the year's turn does not cut it)");
+        // A year's wave that begins before the year turns is read on the last days of the year before: across many seeds, find the waves that do (their top within a half wave of
+        // the turn) and read one there. For the others the last day of the year is quiet.
+        int half = HealthRules.WaveDays(60) / 2, across = 0, quietLast = 0;
+        bool read = true;
+        for (int seed = 1; seed <= 400; seed++)
+        {
+            int top = HealthRules.WaveTop(seed, 1, 60);
+            int lastDay = HealthRules.Wave(seed, 60, 60), expected = top - 60 < half ? HealthRules.WaveSeverity(seed, 1) * (half - (top - 60)) / half : 0;
+            bool leaks = top - 60 < half;
+            across += leaks ? 1 : 0;
+            quietLast += leaks ? 0 : 1;
+            read &= leaks ? lastDay > 0 && lastDay == expected : lastDay == 0;
+            read &= HealthRules.Wave(seed, top, 60) == HealthRules.WaveSeverity(seed, 1);
+        }
+        Check(across > 20 && quietLast > 20 && read, "health wave: a wave that begins before the year turns is read on the last days of the year before (" + across + " of 400 seeds do, and are read there; the other " + quietLast + " are quiet on the last day)");
     }
 
     // ---- the player's own chances
@@ -162,17 +184,17 @@ internal static partial class Program
     private static HealthCase HealthCaseOf(Condition kind, int day)
     {
         var c = new HealthCase();
-        HealthRules.Mirror(c, kind, false, day);
+        HealthMirror(c, kind, false, day);
         return c;
     }
 
     private static void HealthCaseChecks()
     {
         HealthCase flu = HealthCaseOf(Condition.Flu, 10);
-        Check(flu.Open && flu.Kind == Condition.Flu && flu.Began == 10 && !flu.Serious && !HealthRules.Mirror(flu, Condition.Flu, true, 12) && flu.Began == 10 && flu.Treated,
+        Check(flu.Open && flu.Kind == Condition.Flu && flu.Began == 10 && !flu.Serious && !HealthMirror(flu, Condition.Flu, true, 12) && flu.Began == 10 && flu.Treated,
             "health case: Home's illness opens the case on its day, and the same illness later only brings its prescription");
-        Check(HealthRules.Mirror(flu, Condition.Cold, false, 20) && flu.Kind == Condition.Cold && flu.Began == 20 && !flu.Treated && !HealthRules.Mirror(new HealthCase(), Condition.None, false, 5)
-              && !HealthRules.Mirror(new HealthCase(), Condition.Sprain, false, 5), "health case: another illness is another case, and nothing or an injury is never mirrored from Home");
+        Check(HealthMirror(flu, Condition.Cold, false, 20) && flu.Kind == Condition.Cold && flu.Began == 20 && !flu.Treated && !HealthMirror(new HealthCase(), Condition.None, false, 5)
+              && !HealthMirror(new HealthCase(), Condition.Sprain, false, 5), "health case: another illness is another case, and nothing or an injury is never mirrored from Home");
         // Rest against neglect.
         HealthCase c = HealthCaseOf(Condition.Flu, 10);
         Check(HealthRules.CaseDay(c, HealthRunDown, 5, 11) == CaseEvent.None && c.Neglect == 1 && HealthRules.CaseDay(c, HealthRunDown, 5, 11) == CaseEvent.None && c.Neglect == 1,
@@ -231,7 +253,7 @@ internal static partial class Program
         Check(HealthRules.Injure(arm, Condition.BrokenArm, 3, 50, 1, true) && arm.Serious && arm.Work && arm.Until == 0 && !HealthRules.Injure(arm, Condition.Sprain, 3, 51, 2, false)
               && arm.Kind == Condition.BrokenArm && !HealthRules.Injure(arm, Condition.Concussion, 3, 51, 3, false), "health injury: a broken arm needs the hospital at once, and nothing takes a serious case's place");
         HealthCase ill = HealthCaseOf(Condition.Cold, 40);
-        Check(HealthRules.Injure(ill, Condition.Sprain, 3, 41, 4, false) && ill.Kind == Condition.Sprain && !HealthRules.Mirror(ill, Condition.Flu, false, 42) && ill.Kind == Condition.Sprain
+        Check(HealthRules.Injure(ill, Condition.Sprain, 3, 41, 4, false) && ill.Kind == Condition.Sprain && !HealthMirror(ill, Condition.Flu, false, 42) && ill.Kind == Condition.Sprain
               && !HealthRules.Injure(ill, Condition.Cold, 3, 41, 5, false), "health injury: an injury takes the place of a mild illness, is kept while Home's illness runs, and an illness is never an injury");
         var half = new HealthCase();
         HealthRules.Injure(half, Condition.Sprain, 8, 50, 6, false);
@@ -507,17 +529,17 @@ internal static partial class Program
             "health leave: paid sick days are 3% of the year, two at least (2 of 60, 10 of 365)");
         var l = new LeaveBook();
         Check(HealthLeave.Covers(l, HealthIll, 100, 5) && !HealthLeave.Covers(l, HealthWell, 100, 5), "health leave: a day off ill is excused, a day off well is not");
-        long pay1 = HealthLeave.Settle(l, HealthIll, 100, 5, 12000, 50, 60);
-        long again = HealthLeave.Settle(l, HealthIll, 100, 5, 12000, 50, 60);
+        long pay1 = HealthSettle(l, HealthIll, 100, 5, 12000, 50, 60);
+        long again = HealthSettle(l, HealthIll, 100, 5, 12000, 50, 60);
         Check(pay1 == 12000 && again == 0 && l.PaidUsed == 1 && l.SpellDays == 1 && HealthLeave.Covers(l, HealthWell, 100, 5), "health leave: a sick day is paid the day's pay, once, and stays excused as it was settled");
-        long pay2 = HealthLeave.Settle(l, HealthIll, 101, 5, 12000, 50, 60);
+        long pay2 = HealthSettle(l, HealthIll, 101, 5, 12000, 50, 60);
         Check(pay2 == 12000 && l.PaidUsed == 2 && l.SpellDays == 2 && !HealthLeave.Covers(l, HealthIll, 102, 5), "health leave: after " + HealthCatalogue.SelfCertDays + " sick working days running a doctor's note is needed");
-        long pay3 = HealthLeave.Settle(l, HealthIll, 102, 5, 12000, 50, 60);
+        long pay3 = HealthSettle(l, HealthIll, 102, 5, 12000, 50, 60);
         Check(pay3 == 0 && !l.LastCovered && l.SpellDays == 3, "health leave: the third day without a note is not excused and not paid");
         var noted = new LeaveBook();
-        HealthLeave.Settle(noted, HealthIll, 100, 5, 12000, 50, 365);
-        HealthLeave.Settle(noted, HealthIll, 101, 5, 12000, 50, 365);
-        Check(HealthLeave.Covers(noted, new LeaveFacts { Ill = true, Note = true }, 102, 5) && HealthLeave.Settle(noted, new LeaveFacts { Ill = true, Note = true }, 102, 5, 12000, 50, 365) == 12000,
+        HealthSettle(noted, HealthIll, 100, 5, 12000, 50, 365);
+        HealthSettle(noted, HealthIll, 101, 5, 12000, 50, 365);
+        Check(HealthLeave.Covers(noted, new LeaveFacts { Ill = true, Note = true }, 102, 5) && HealthSettle(noted, new LeaveFacts { Ill = true, Note = true }, 102, 5, 12000, 50, 365) == 12000,
             "health leave: with a doctor's note the spell goes on excused and paid");
         Check(HealthLeave.Covers(new LeaveBook(), new LeaveFacts { InHospital = true }, 100, 5), "health leave: a day in hospital is excused");
         var hosp = new LeaveBook();
@@ -527,14 +549,14 @@ internal static partial class Program
         HealthLeave.Note(hosp, 103, 108);
         Check(hosp.NoteFrom == 100 && hosp.NoteUntil == 108, "health leave: a second stay's note joins the first's and never shortens it");
         var gap = new LeaveBook();
-        HealthLeave.Settle(gap, HealthIll, 100, 5, 0, 50, 60);
-        HealthLeave.Settle(gap, HealthIll, 101, 5, 0, 50, 60);
+        HealthSettle(gap, HealthIll, 100, 5, 0, 50, 60);
+        HealthSettle(gap, HealthIll, 101, 5, 0, 50, 60);
         Check(HealthLeave.SpellBefore(gap, 104) == 2 && HealthLeave.SpellBefore(gap, 105) == 0 && HealthLeave.Covers(gap, HealthIll, 105, 5), "health leave: a spell ends after " + HealthCatalogue.SpellGap + " days back at work, and a new one begins");
         // Sick pay is never farmed.
         var early = new LeaveBook();
-        Check(HealthLeave.Settle(early, HealthIll, 52, 5, 12000, 50, 60) == 0 && early.LastCovered && early.PaidUsed == 0, "health exploit: no sick pay in a job's first " + HealthCatalogue.QualifyDays + " days (excused, unpaid)");
+        Check(HealthSettle(early, HealthIll, 52, 5, 12000, 50, 60) == 0 && early.LastCovered && early.PaidUsed == 0, "health exploit: no sick pay in a job's first " + HealthCatalogue.QualifyDays + " days (excused, unpaid)");
         var shut = new LeaveBook();
-        Check(HealthLeave.Settle(shut, HealthWell, 100, 5, 12000, 50, 60) == 0 && shut.SpellLast == 0 && shut.SpellDays == 0 && shut.PaidUsed == 0,
+        Check(HealthSettle(shut, HealthWell, 100, 5, 12000, 50, 60) == 0 && shut.SpellLast == 0 && shut.SpellDays == 0 && shut.PaidUsed == 0,
             "health leave: a day missed for no sick reason (the place shut, the internet down) is nothing of the leave's: no spell, no pay");
         bool bounded = true;
         long most = 0;
@@ -552,8 +574,8 @@ internal static partial class Program
                         year = HealthRules.YearOf(day, yearDays);
                         inYear = paidInYear = 0;
                     }
-                    HealthLeave.CallIn(farm, day, false, yearDays);   // every single day, well
-                    long cents = HealthLeave.Settle(farm, HealthWell, day, seed, 12000, 10, yearDays);
+                    HealthCallIn(farm, day, false, yearDays);   // every single day, well
+                    long cents = HealthSettle(farm, HealthWell, day, seed, 12000, 10, yearDays);
                     paid += cents;
                     paidInYear += cents > 0 ? 1 : 0;
                     excused += farm.LastCovered ? 1 : 0;
@@ -575,7 +597,7 @@ internal static partial class Program
         }
         Check(seen > 650 && seen < 950, "health leave: the first such day of a year is seen through about one time in five (" + seen + " of 4,000)");
         var call = new LeaveBook();
-        Check(HealthLeave.CallIn(call, 100, false, 60) && !HealthLeave.CallIn(call, 100, false, 60) && call.Claims == 1 && HealthLeave.CallIn(call, 101, true, 60) && call.Claims == 1,
+        Check(HealthCallIn(call, 100, false, 60) && !HealthCallIn(call, 100, false, 60) && call.Claims == 1 && HealthCallIn(call, 101, true, 60) && call.Claims == 1,
             "health leave: calling in sick is once a day, and a day called in while really ill is no mark against the player");
         var seenBook = new LeaveBook();
         int markDay = 0;
@@ -583,21 +605,20 @@ internal static partial class Program
         {
             markDay = HealthLeave.SeenThrough(5, day, 0) ? day : 0;
         }
-        HealthLeave.CallIn(seenBook, markDay, false, 365);
-        Check(markDay > 0 && !HealthLeave.Covers(seenBook, HealthWell, markDay, 5) && HealthLeave.Settle(seenBook, HealthWell, markDay, 5, 12000, 10, 365) == 0 && seenBook.Noticed == 1 && !seenBook.LastCovered,
+        HealthCallIn(seenBook, markDay, false, 365);
+        Check(markDay > 0 && !HealthLeave.Covers(seenBook, HealthWell, markDay, 5) && HealthSettle(seenBook, HealthWell, markDay, 5, 12000, 10, 365) == 0 && seenBook.Noticed == 1 && !seenBook.LastCovered,
             "health leave: a day seen through is not excused, not paid, and counted");
         var turn = new LeaveBook();
-        HealthLeave.Settle(turn, HealthIll, 58, 5, 12000, 10, 60);
-        HealthLeave.Settle(turn, HealthIll, 59, 5, 12000, 10, 60);
-        Check(turn.PaidUsed == 2 && HealthLeave.Settle(turn, new LeaveFacts { Ill = true, Note = true }, 60, 5, 12000, 10, 60) == 0
-              && HealthLeave.Settle(turn, new LeaveFacts { Ill = true, Note = true }, 61, 5, 12000, 10, 60) == 12000 && turn.PaidUsed == 1 && turn.Year == 1,
+        HealthSettle(turn, HealthIll, 58, 5, 12000, 10, 60);
+        HealthSettle(turn, HealthIll, 59, 5, 12000, 10, 60);
+        Check(turn.PaidUsed == 2 && HealthSettle(turn, new LeaveFacts { Ill = true, Note = true }, 60, 5, 12000, 10, 60) == 0
+              && HealthSettle(turn, new LeaveFacts { Ill = true, Note = true }, 61, 5, 12000, 10, 60) == 12000 && turn.PaidUsed == 1 && turn.Year == 1,
             "health leave: the paid days start again when the year turns, and not a day before");
         var work = new LeaveBook();
-        var hurt = new LeaveFacts { Ill = true, AtWorkInjury = true };
         long workPaid = 0;
         for (int day = 100; day < 106; day++)
         {
-            workPaid += HealthLeave.Settle(work, hurt, day, 5, 12000, 10, 60);
+            workPaid += HealthSettle(work, new LeaveFacts { Ill = true, AtWorkInjury = true, InCare = true, WorkDays = day - 100 }, day, 5, 12000, 10, 60);
         }
         Check(workPaid == 6 * 12000 && work.PaidUsed == 0 && HealthCatalogue.CourseMost[(int)Condition.BrokenArm] <= HealthCatalogue.CourseLongest,
             "health work: the days off an accident at work are paid outside the year's paid days, for as long as the injury lasts and no longer");
@@ -959,6 +980,16 @@ internal static partial class Program
         s.Leave.NoteUntil = 64;
         s.Leave.PaidDay = 87;
         s.Leave.PaidMoney = 120;
+        s.Leave.PrevYear = 0;
+        s.Leave.PrevPaidUsed = 2;
+        s.Leave.CaseFrom = 84;
+        s.Leave.CaseTo = 88;
+        s.Leave.CaseWork = true;
+        s.Leave.CareFrom = 86;
+        s.Leave.WorkTold = 84;
+        s.DrawDay = 88;
+        s.Draws[1] = 3;
+        s.Draws[8] = 7;
         HealthDay.Book(s.Appointment, 88, 9, "Park Avenue; 5th | Street ^ x", 12);
         s.Staff.Add(new StaffCase { Id = "emp|1;a^b", From = 89, Until = 90 });
         s.Staff.Add(new StaffCase { Id = "emp-2", From = 90, Until = 92 });
@@ -978,6 +1009,7 @@ internal static partial class Program
         s.Pop.LostWages = 40000;
         s.Pop.Bills = 60000;
         s.Pop.Debt = 7000;
+        s.Pop.Pending = 89;
         s.Pop.LastCases = 280;
         s.Pop.LastBills = 55000;
         for (int i = 0; i < s.Pop.Ends.Length; i++)
@@ -1000,6 +1032,8 @@ internal static partial class Program
         Check(r.Stay.Active && r.Stay.Until == 90 * 1440 + 480 && r.Stay.GameNight && r.Debt.Owed == 1500 && r.Debt.PerDay == 150 && r.Debt.Late == 2 && r.Debt.Paid == 300 && r.Leave.PaidUsed == 1
               && r.Leave.SpellDays == 2 && r.Leave.LastCovered && r.Leave.Claims == 2 && r.Leave.Noticed == 1 && r.Leave.NoteFrom == 60 && r.Leave.NoteUntil == 64 && r.Leave.PaidMoney == 120,
             "health save: the stay, the debt and the sick leave come back");
+        Check(r.Leave.PrevYear == 0 && r.Leave.PrevPaidUsed == 2 && r.Leave.CaseFrom == 84 && r.Leave.CaseTo == 88 && r.Leave.CaseWork && r.Leave.CareFrom == 86 && r.Leave.WorkTold == 84 && r.DrawDay == 88 && r.Draws[1] == 3
+              && r.Draws[8] == 7 && r.Draws[0] == 0 && r.Pop.Pending == 89, "health save: the year before's paid days, the span of the last case, the accident said and the day's draws come back");
         Check(r.Appointment.Booked && r.Appointment.Street == "Park Avenue; 5th | Street ^ x" && r.Appointment.Number == 12 && r.Staff.Count == 2 && r.Staff[0].Id == "emp|1;a^b" && r.Staff[1].Until == 92
               && r.RivalCases[1].Kind == Condition.Flu && r.RivalCases[1].Serious && r.RivalCases[1].Bill == 2600 && r.RivalCases[0].Kind == Condition.None && r.Pop.Cursor == 24000 && r.Pop.IllNow == 900
               && r.Pop.Ends[5] == 15 && r.Pop.LastBills == 55000 && r.Notes.Count == 1 && r.Notes[0].Rival == 1,
@@ -1057,18 +1091,13 @@ internal static partial class Program
         var away = new HealthState();
         HealthDay.TakePlan(away, HPlan.Full, 10, 30, 60, 5, 1000, amount => true, out int _);
         Check(HealthDay.BackOn(away, 20, 0, 5) && away.Policy.Plan == HPlan.None, "health exploit: a plan whose premiums were not taken for a month has ended, so cover is not kept by switching the option off between bills");
-        // Going Public and the living population off: the director stands down where the people are not its own.
+        // Going Public and the living population off, and the option off with a debt: the rules are driven in HealthFixChecks (HealthSessionChecks, HealthPeopleDayChecks,
+        // HealthStayRunChecks). What is left here is the wiring they cannot run: the look with the option off hands over to the one step, and the people and the clock are asked
+        // through the rules.
         string dir = ModSource(@"Health\HealthDirector.cs"), game = ModSource(@"Health\HealthGame.cs"), care = ModSource(@"Health\HealthDirector.Care.cs"), wiring = ModSource(@"Wiring\Wiring.HealthLinks.cs");
-        Check(game.Contains("!Settings.LivingPopulation || !CityPopulation.Running || CityPopulation.Following || GoingPublic.InSession") && dir.Contains("if (people == null)") && dir.Contains("o.Cursor = -1;"),
-            "health session: in a Going Public session, as a guest, or with the living population off, the people's pass does not run");
-        Check(wiring.Contains("RivalDirector.Instance != null && !GoingPublic.InSession ? RivalDirector.Instance.File : null") && dir.Contains("if (HealthBridges.RivalWorth(i) < 0)"),
-            "health session: the rivals rest in a session");
-        Check(game.Contains("GoingPublic.Mine(reg)") && care.Contains("if (!GoingPublic.ClockShared)") && care.Contains("GoingPublic.ClockShared ? st.Until : 0"),
-            "health session: only the player's own staff are drawn, and a shared clock is never moved by a stay (it is billed in full without the days passing)");
-        int offAt = dir.IndexOf("if (!Settings.Health)", StringComparison.Ordinal);
-        Check(offAt > 0 && dir.IndexOf("DebtDay(day);", offAt, StringComparison.Ordinal) > offAt && dir.IndexOf("DebtDay(day);", offAt, StringComparison.Ordinal) < dir.IndexOf("return;", offAt, StringComparison.Ordinal)
-              && dir.IndexOf("PutAway();", offAt, StringComparison.Ordinal) < dir.IndexOf("return;", offAt, StringComparison.Ordinal),
-            "health option: with the option off the director puts the feature away and still runs the debt's day, before it returns");
+        Check(dir.Contains("OptionOff(day);") && dir.Contains("HealthDay.WhileOff(") && game.Contains("HealthPeople.ModeOf(Settings.LivingPopulation, CityPopulation.Running, CityPopulation.Following, GoingPublic.InSession)")
+              && wiring.Contains("HealthRivals.WorthIn(GoingPublic.InSession,") && care.Contains("HealthDay.Release(_state, HealthGame.Minutes, day, GoingPublic.ClockShared,"),
+            "health wiring: the option off, the city's people, the rivals and a shared clock are decided by the rules that are driven above");
     }
 
     // ---- the pages
@@ -1166,18 +1195,20 @@ internal static partial class Program
         Check(dir.Contains("StartCoroutine(Guard.Routine(Tick()))") && dir.Contains("catch (Exception e)") && care.Contains("StartCoroutine(Guard.Routine(StayRoutine()))"),
             "health sources: the timer and the stay are guarded coroutines, and a fault switches the feature off for the session");
         Check(game.Contains("BizBooks.Book(") && game.Contains("amount > Spare") && game.Contains("force: false"), "health sources: money leaves only through the mod's one booking call, from the spare cash, never by force");
-        Check(dir.Contains("HealthDay.Premium(") && dir.Contains("HealthDay.Debt(") && dir.Contains("HealthDay.BackOn(") && dir.Contains("HealthDay.Clear(") && dir.Contains("HealthRules.RivalDay(") && dir.Contains("HealthPeople.Slice(")
-              && dir.Contains("HealthPeople.Begin(") && dir.Contains("HealthPeople.IllAtHome(") && care.Contains("HealthRules.CaseDay(") && care.Contains("HealthRules.PlayerCatch(") && care.Contains("HealthRules.Mirror(")
-              && care.Contains("HealthRules.InjuryOf(") && care.Contains("HealthRules.Injure(") && care.Contains("HealthRules.WorkAccident(") && care.Contains("HealthDay.Bill(") && care.Contains("HealthDay.Admit(")
-              && care.Contains("HealthDay.Discharge(") && care.Contains("HealthDay.StayBill(") && care.Contains("HealthDay.Book(") && care.Contains("HealthDay.InWindow(") && care.Contains("HealthDay.Missed(")
-              && leave.Contains("HealthLeave.Covers(") && leave.Contains("HealthLeave.Settle(") && leave.Contains("HealthLeave.CallIn(") && leave.Contains("HealthDay.TakePlan(") && leave.Contains("HealthDay.PayOff(")
-              && game.Contains("HealthPeople.StaffCourse(") && game.Contains("HealthPeople.StaffFrom("), "health sources: the director runs the very rules these checks drive, every one of them");
+        Check(dir.Contains("HealthDay.Premium(") && dir.Contains("HealthDay.Debt(") && dir.Contains("HealthDay.BackOn(") && dir.Contains("HealthDay.WhileOff(") && dir.Contains("HealthRivals.Day(") && dir.Contains("HealthPeople.Slice(")
+              && dir.Contains("HealthPeople.Turn(") && dir.Contains("HealthPeople.Resume(") && dir.Contains("HealthPeople.StandDown(") && dir.Contains("HealthPeople.IllAtHome(") && care.Contains("HealthRules.CaseDay(")
+              && care.Contains("HealthRules.PlayerCatch(") && care.Contains("HealthRules.Mirror(") && care.Contains("HealthRules.InjuryOf(") && care.Contains("HealthRules.Injure(") && care.Contains("HealthRules.WorkAccident(")
+              && care.Contains("HealthDay.Bill(") && care.Contains("HealthDay.Admit(") && care.Contains("HealthDay.GameNight(") && care.Contains("HealthDay.Release(") && care.Contains("HealthDay.NextSkip(")
+              && care.Contains("HealthDay.StayOver(") && care.Contains("HealthDay.AppointmentDay(") && care.Contains("HealthDay.Book(") && care.Contains("HealthDay.InWindow(") && care.Contains("HealthLeave.ObserveCase(")
+              && leave.Contains("HealthLeave.Covers(") && leave.Contains("HealthLeave.Settle(") && leave.Contains("HealthLeave.CallIn(") && leave.Contains("HealthLeave.FactsFor(") && leave.Contains("HealthDay.TakePlan(")
+              && leave.Contains("HealthDay.PayOff(") && game.Contains("HealthPeople.StaffCourse(") && game.Contains("HealthPeople.StaffFrom(") && ModSource(@"Health\HealthDirector.Facts.cs").Contains("HealthRules.Draw("),
+            "health wiring: the director calls the very rules these checks drive, every one of them (the rules themselves are run in this file and in HealthFixChecks)");
         Check(game.Contains("e.nextSickDay = Math.Min(e.nextSickDay, day + 1);") && !game.Contains("isAbsent = "), "health sources: a member of staff is off through the game's own sick day, never marked absent by hand");
         Check(care.Contains("new Timestamp((float)target), disableCancel: true") && care.Contains("finally") && care.Contains("EndStay();") && dir.Contains("EndStay();"),
             "health sources: a stay moves the clock by the game's own time skip, and whatever it changed is put back on every way out");
         string home = ModSource(@"Home\HomeHealth.cs"), cook = ModSource(@"Home\CookActivity.cs"), wiring = ModSource(@"Wiring\Wiring.HealthLinks.cs");
-        Check(!home.Contains("Random.value <") && CountOfText(home, "Random.value") == 1 && CountOfText(home, "Draw(") == 8 && cook.Contains("HomeHealth.Draw(8)") && wiring.Contains("HealthRules.Unit(d.State.Seed, HealthGame.Day, slot)"),
-            "health reload: every one of Home's illness chances is drawn through the one door, which with Health on is the save's seed and the day");
+        Check(!home.Contains("Random.value <") && CountOfText(home, "Random.value") == 1 && CountOfText(home, "Draw(") == 8 && cook.Contains("HomeHealth.Draw(8)") && wiring.Contains("return d.HomeDraw(slot);"),
+            "health reload: every one of Home's illness chances is drawn through the one door, which with Health on is the save's seed, the day, the chance and which draw of it that day (HealthRules.Draw, driven above)");
         Check(home.Contains("HomeBridges.Held != null && HomeBridges.Held()") && home.Contains("HomeBridges.TooIll != null && HomeBridges.TooIll()"), "health sources: a serious illness is held on in Home, and rules out hard exercise");
         string life = ModSource(@"Life\LifeEvents.cs"), doctor = ModSource(@"Home\DoctorVisit.cs"), phone = ModSource(@"Phone\PhoneContacts.cs"), work = ModSource(@"Careers\CareersDirector.Work.cs");
         Check(life.Contains("Hurt?.Invoke(hours);") && doctor.Contains("DoctorVisit.Admission != null ? DoctorVisit.Admission() : null") && doctor.Contains("DoctorVisit.Paid?.Invoke(HomeBalance.ConsultationFee)")
@@ -1186,26 +1217,18 @@ internal static partial class Program
         int missed = work.IndexOf("CareersBridges.DayMissed?.Invoke(", StringComparison.Ordinal), excused = work.IndexOf("if (Excused(day) || j.OffUntil >= day)", StringComparison.Ordinal);
         int worked = work.IndexOf("if (worked)", StringComparison.Ordinal);
         Check(missed > worked && missed < excused && worked > 0 && work.Contains("CareersBridges.ShiftWorked?.Invoke(j.Def.SkillA);"),
-            "health exploit: sick pay is asked for only once a working day is settled as not worked, before it is excused: a day worked is never paid twice");
+            "health wiring: health hears of a working day only once it is settled as not worked, before it is excused (what it pays for the day is driven in HealthPartDayChecks)");
         Check(wiring.Contains("CareerLinks.Health = new Leave();") && wiring.Contains("CareerLinks.Health = _noteBefore;") && wiring.Contains("return d.Covers(day);"),
             "health sources: with Health on the leave rules answer whether a day off is excused, and the answer as it was is put back with the option off");
-        Check(wiring.Contains("EconomyBridges.OtherDebts = Debts;") && wiring.Contains("EconomyBridges.OtherAccounts = Accounts;") && wiring.Contains("CreditKind.Missed") && wiring.Contains("CreditKind.ClaimFiled")
-              && wiring.Contains("EconomyBridges.FileClaim(amount)"), "health sources: the medical debt is in the Finance app's debts, on the credit file and before the mod's court");
+        Check(wiring.Contains("CreditKind.Missed") && wiring.Contains("CreditKind.ClaimFiled") && wiring.Contains("CreditKind.PaidOff"),
+            "health wiring: the credit file is told of the debt's missed instalments, its claim and its paying off (the account, the court and the score are run in HealthCreditChecks)");
         Check(!wiring.Contains("Justice.") && !ModSource(@"Health\HealthLeave.cs").Contains("Court") && !care.Contains("Custody"),
             "health exploit: being ill excuses a working day and nothing else: no debt, trial or deadline of the mod's asks health anything");
         Check(CountOfText(ModSource(@"Wiring\Wiring.cs"), "HealthLinks") == 2, "health sources: the wiring connects and disconnects health");
         Check(ModSource(@"Meta\FeatureList.cs").Contains("Health.HealthGuide.Register()") && ModSource(@"Core\FeatureOwners.cs").Contains("\"RealLifeOverhaul.Health\", \"health\"") && ModSource(@"Meta\OptionsTree.cs").Contains("S(\"health\")")
               && ModSource(@"Meta\FeatureCities.cs").Contains("new Line(\"health\"") && ModSource(@"Core\Settings.cs").Contains("public static bool Health = true;"),
             "health sources: the feature has its option (on by default), its Guide page, its owner and its place in the cities list");
-        string perma = ModSource(@"Permadeath\PermadeathRules.cs") + ModSource(@"Permadeath\Mortality.cs");
-        bool deathless = !perma.Contains("HealthDirector") && !perma.Contains("RealLifeOverhaul.Health");
-        foreach (string file in files)
-        {
-            string text = File.ReadAllText(file);
-            deathless &= !text.Contains("Mortality") && !text.Contains("PlayerDead") && !text.Contains("Permadeath") && !text.Contains("FuneralHelper");
-        }
-        Check(deathless,
-            "health unwinnable: health ends nobody's life: Permadeath keeps its own rules and health never calls them");
+        // (Health never calls Permadeath, and what a flu held on can do under Permadeath's rules, are in HealthDeathChecks.)
     }
 
     // ---- the texts
@@ -1279,27 +1302,30 @@ internal static partial class Program
         // What's new: the feature's line in the next row of every language, before the first fix mark.
         string[] sentences =
         {
-            "You can now fall seriously ill or be hurt and spend days in hospital while your businesses run on, book the doctor from the new Health app, take a health plan that pays part of the bills, pay a bill off as a medical debt and use sick leave at your job.",
-            "Agora você pode ficar gravemente doente ou se machucar e passar dias no hospital enquanto seus negócios continuam, marcar consulta pelo novo app Saúde, contratar um plano de saúde que paga parte das contas, quitar uma conta como dívida médica e usar licença médica no trabalho.",
-            "你现在可能会重病或受伤，并在医院住上好几天，而你的生意照常运转。",
-            "Du kannst jetzt schwer krank werden oder dich verletzen und Tage im Krankenhaus verbringen, während deine Betriebe weiterlaufen.",
-            "Vous pouvez désormais tomber gravement malade ou être blessé et passer des jours à l'hôpital pendant que vos entreprises continuent, prendre rendez-vous chez le médecin depuis la nouvelle application Santé, souscrire un plan santé qui paie une partie des factures, régler une facture comme dette médicale et prendre un arrêt maladie au travail.",
-            "Ahora puedes enfermar gravemente o lastimarte y pasar días en el hospital mientras tus negocios siguen en marcha, pedir cita al médico desde la nueva aplicación Salud, contratar un plan de salud que paga parte de las facturas, pagar una factura como deuda médica y usar la baja laboral por enfermedad en tu trabajo.",
-            "Теперь вы можете серьёзно заболеть или получить травму и провести дни в больнице, пока ваш бизнес продолжает работать.",
-            "Je kunt nu ernstig ziek worden of gewond raken en dagen in het ziekenhuis doorbrengen terwijl je bedrijven doordraaien, de dokter boeken via de nieuwe app Gezondheid, een zorgplan nemen dat een deel van de rekeningen betaalt, een rekening afbetalen als medische schuld en ziekteverlof gebruiken op je werk.",
-            "Artık işleriniz çalışmaya devam ederken ağır hastalanabilir ya da yaralanabilir ve hastanede günler geçirebilirsiniz; yeni Sağlık uygulamasından doktora randevu alabilir, faturaların bir kısmını ödeyen bir sağlık planı alabilir, bir faturayı tıbbi borç olarak ödeyebilir ve işinizde hastalık izni kullanabilirsiniz.",
-            "Teraz możesz poważnie zachorować albo zostać ranny i spędzić dni w szpitalu, a twoje firmy działają dalej.",
-            "이제 사업이 계속 돌아가는 동안 중병에 걸리거나 다쳐서 며칠을 병원에서 보낼 수 있습니다."
+            "You can now fall seriously ill or be hurt and spend days in hospital while your businesses run on, book the doctor from the new Health app, take a health plan that pays part of the bills, pay a bill off as a medical debt and use sick leave at your job, while your staff, the rivals and the city's people fall ill by the same rules and the flu goes round in midwinter.",
+            "Agora você pode adoecer gravemente ou se machucar e passar dias no hospital enquanto seus negócios continuam, marcar consulta pelo novo app Saúde, contratar um plano de saúde que paga parte das contas, quitar uma conta como dívida médica e usar a licença médica no trabalho, enquanto seus funcionários, os rivais e a população da cidade adoecem pelas mesmas regras e a gripe circula no meio do inverno.",
+            "你现在可能会重病或受伤并住院好几天，而你的生意照常运转，你可以在新的“健康”应用中预约医生，购买一份能支付部分账单的健康方案，把一笔账单作为医疗欠款慢慢还清，并在工作中使用病假，而你的员工、对手和城里的居民也按同样的规则生病，隆冬时流感还会四处传播。",
+            "Du kannst jetzt ernsthaft krank werden oder dich verletzen und Tage im Krankenhaus verbringen, während deine Geschäfte weiterlaufen, du den Arzt in der neuen App Gesundheit buchst, einen Gesundheitstarif nimmst, der einen Teil der Rechnungen zahlt, eine Rechnung als Arztschuld begleichst und bei der Arbeit Krankmeldung nutzt, während deine Mitarbeiter, die Rivalen und die Leute der Stadt nach denselben Regeln krank werden und im Winter die Grippe umgeht.",
+            "Vous pouvez désormais tomber gravement malade ou être blessé et passer des jours à l'hôpital pendant que vos entreprises continuent, prendre rendez-vous depuis l'application Santé, souscrire un plan santé qui paie une partie des factures, régler une facture comme dette médicale et prendre un arrêt maladie au travail, tandis que votre personnel, vos rivaux et les habitants de la ville tombent malades selon les mêmes règles et que la grippe circule en plein hiver.",
+            "Ahora puedes enfermar gravemente o lesionarte y pasar días en el hospital mientras tus negocios siguen funcionando, pedir cita con el médico desde la nueva app Salud, contratar un plan de salud que paga parte de las facturas, pagar una factura como deuda médica y usar la baja laboral en tu trabajo, mientras tu personal, tus rivales y la gente de la ciudad enferman con las mismas reglas y la gripe circula en pleno invierno.",
+            "Теперь вы можете серьёзно заболеть или получить травму и провести дни в больнице, пока ваш бизнес продолжает работать, записаться к врачу в новом приложении Здоровье, оформить страховой план, который покрывает часть счетов, погасить счёт как медицинский долг и брать больничный на работе, а сотрудники, конкуренты и жители города заболевают по тем же правилам, и зимой по городу ходит грипп.",
+            "Je kunt nu ernstig ziek worden of gewond raken en dagen in het ziekenhuis doorbrengen terwijl je bedrijven doordraaien, de dokter boeken in de nieuwe app Gezondheid, een zorgplan nemen dat een deel van de rekeningen betaalt, een rekening als medische schuld afbetalen en ziekteverlof gebruiken op je werk, terwijl je personeel, de rivalen en de mensen in de stad volgens dezelfde regels ziek worden en de griep in het midden van de winter rondgaat.",
+            "Artık işletmeleriniz çalışmaya devam ederken ağır hastalanabilir ya da yaralanabilir ve hastanede günler geçirebilirsiniz; yeni Sağlık uygulamasından doktora randevu alabilir, faturaların bir kısmını ödeyen bir sağlık planı edinebilir, bir faturayı tıbbi borç olarak kapatabilir ve işinizde hastalık izni kullanabilirsiniz; personeliniz, rakipleriniz ve şehrin insanları da aynı kurallarla hastalanırken kışın ortasında grip de yayılır.",
+            "Teraz możesz poważnie zachorować albo ulec wypadkowi i spędzić dni w szpitalu, podczas gdy twoje firmy działają dalej, umówić wizytę u lekarza w nowej aplikacji Zdrowie, wykupić plan zdrowotny, który płaci część rachunków, spłacić rachunek jako dług medyczny i wziąć zwolnienie chorobowe w pracy, a twoi pracownicy, rywale i mieszkańcy miasta chorują na tych samych zasadach, a zimą krąży grypa.",
+            "이제 회사를 계속 운영하는 동안 중병에 걸리거나 다쳐 며칠씩 입원하실 수 있으며, 새 건강 앱에서 의사 진료를 예약하고, 청구서 일부를 대신 내주는 건강 플랜에 가입하고, 청구서를 의료 부채로 갚고, 직장에서 병가를 쓸 수 있으며, 직원, 경쟁자, 도시 주민도 같은 규칙으로 병에 걸리고 한겨울에는 독감이 유행합니다."
         };
         string[] marks = { "Fixed: ", "Corrigido: ", "已修复：", "Behoben: ", "Corrigé : ", "Corregido: ", "Исправлено: ", "Opgelost: ", "Düzeltildi: ", "Naprawiono: ", "수정: " };
         for (int i = 0; i < HealthLanguages.Length; i++)
         {
             Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(DesignLocales, HealthLanguages[i] + ".json"));
+            // (any row of What's new, the version step moves the next row into a numbered one) in its own language, as ONE sentence: one full stop, at the end
+            bool there = words != null && WhatsNewHas(words, sentences[i]);
+            int stops = sentences[i].Count(ch => ch == '.' || ch == '。');
+            Check(there && stops == 1 && (sentences[i].EndsWith(".", StringComparison.Ordinal) || sentences[i].EndsWith("。", StringComparison.Ordinal)),
+                "health texts: What's new has the feature's line as one sentence, in its own language, in " + HealthLanguages[i]);
             string next = words != null && words.TryGetValue("reallife_changes_next", out string value) ? value : string.Empty;
-            int mark = next.IndexOf(marks[i], StringComparison.Ordinal);
-            string before = mark >= 0 ? next.Substring(0, mark) : next;
-            int at = next.IndexOf(sentences[i], StringComparison.Ordinal);
-            Check(at >= 0 && at < (mark < 0 ? int.MaxValue : mark) && before.Length > 40, "health texts: What's new has the feature's line, in its own language, before the first fix mark in " + HealthLanguages[i]);
+            int at = next.IndexOf(sentences[i], StringComparison.Ordinal), mark = next.IndexOf(marks[i], StringComparison.Ordinal);
+            Check(next.Length == 0 || at < 0 || mark < 0 || at < mark, "health texts: in the next row the feature's line is before the first fix mark in " + HealthLanguages[i]);
         }
     }
 }

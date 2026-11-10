@@ -6,20 +6,31 @@ namespace RealLifeOverhaul.Health
 {
     /// <summary>
     /// Options, Tests: each situation the player would otherwise wait for. Each says what happened in a notice and writes one "Health check" line. Bills are real: a test
-    /// stay is billed as any other.
+    /// stay is billed as any other. What a test changed in the player's own case and in the staff is noted as it is done, and the last test button takes back exactly that and
+    /// nothing else: never a bill, a debt, a plan, the leave or any money.
     /// </summary>
     public sealed partial class HealthDirector
     {
+        // What the tests did, noted as they are pressed: the case a test opened, the case a test turned serious (and how it stood), the member of staff made ill tomorrow.
+        private bool _testIll, _testSerious, _testSeriousTreated;
+        private Condition _testIllKind, _testSeriousKind;
+        private int _testIllBegan, _testSeriousBegan, _testStaffDay, _testStaffPrevious;
+        private string _testStaffId;
+
+        private void ClearTests()
+        {
+            _testIll = _testSerious = _testSeriousTreated = false;
+            _testIllKind = _testSeriousKind = Condition.None;
+            _testIllBegan = _testSeriousBegan = _testStaffDay = _testStaffPrevious = 0;
+            _testStaffId = null;
+        }
+
         private bool TestReady()
         {
             if (!Running)
             {
                 HealthGame.Tell(NotificationType.Warning, "reallife_hc_test_off", null);
                 return false;
-            }
-            if (_beforeTests == null)
-            {
-                _beforeTests = HealthStore.Write(_state);   // what "put health back as before" restores
             }
             return true;
         }
@@ -51,6 +62,12 @@ namespace RealLifeOverhaul.Health
             {
                 TakeInjury(Condition.Sprain, false);
             }
+            if (_state.Case.Open)
+            {
+                _testIll = true;
+                _testIllKind = _state.Case.Kind;
+                _testIllBegan = _state.Case.Began;
+            }
             TestSays("reallife_hc_test_ill", HealthGame.Data("illness", HealthText.Name(_state.Case.Kind)));
             Logger?.Info("Health check (test, falling ill): " + _state.Case.Kind + ": " + (_state.Case.Open ? "PASS" : "FAIL, no case was opened"));
         }
@@ -67,6 +84,13 @@ namespace RealLifeOverhaul.Health
             {
                 TestSays("reallife_hc_test_nothing", null);
                 return;
+            }
+            if (!c.Serious)
+            {
+                _testSerious = true;
+                _testSeriousKind = c.Kind;
+                _testSeriousBegan = c.Began;
+                _testSeriousTreated = c.Treated;
             }
             c.Serious = true;
             c.Treated = false;
@@ -123,37 +147,65 @@ namespace RealLifeOverhaul.Health
             {
                 return;
             }
-            string name = HealthGame.StaffTest(_state, HealthGame.Day);
+            string name = HealthGame.StaffTest(_state, HealthGame.Day, out string id, out int previous);
+            if (name != null)
+            {
+                _testStaffId = id;
+                _testStaffDay = HealthGame.Day;
+                _testStaffPrevious = previous;
+            }
             TestSays(name != null ? "reallife_hc_test_staff" : "reallife_hc_test_no_staff", HealthGame.Data("name", name ?? string.Empty));
             Logger?.Info("Health check (test, a member of staff off tomorrow): " + (name != null ? name + ": PASS" : "nobody to make ill"));
         }
 
-        /// <summary>Options, Tests: health as it was before the first test. Money that moved stays moved.</summary>
+        /// <summary>
+        /// Options, Tests: takes back what the test buttons did to the player's own case and to the staff, and nothing else. An illness or injury a test opened goes if it is still
+        /// that one; a case a test turned serious is as it was if it is still that one and not in hospital; the member of staff a test made ill is well again tomorrow. A real
+        /// case that came since is left alone, and no bill, debt, plan, leave or money is touched.
+        /// </summary>
         public void TestBack()
         {
-            if (!Running || _beforeTests == null)
+            if (!Running)
             {
                 HealthGame.Tell(NotificationType.Info, "reallife_hc_test_back_none", null);
                 return;
             }
-            HealthState before = HealthStore.Read(_beforeTests, out int _);
-            if (before != null)
+            HealthCase c = _state.Case;
+            bool undone = false;
+            if (_testStaffId != null)
             {
-                EndStay();
-                before.GameStays = HealthGame.GameStays;
-                before.LastDay = _state.LastDay;
-                before.LastHour = _state.LastHour;
-                _state = before;
+                HealthGame.StaffUntest(_state, _testStaffId, _testStaffDay, _testStaffPrevious);
+                undone = true;
+            }
+            if (_testSerious && c.Open && c.Kind == _testSeriousKind && c.Began == _testSeriousBegan && c.Serious && !_state.Stay.Active)
+            {
+                c.Serious = false;
+                c.Treated = _testSeriousTreated;
                 HealthGame.Drain(false);
-                if (HomeIllness() != Condition.None && !_state.Case.Open)
+                undone = true;
+            }
+            if (_testIll && c.Open && c.Kind == _testIllKind && c.Began == _testIllBegan && !_state.Stay.Active)
+            {
+                bool illness = !HealthCatalogue.Is(HealthCatalogue.Injury, c.Kind);
+                LeaveBook l = _state.Leave;
+                if (l.CaseFrom == c.Began)
+                {
+                    l.CaseFrom = l.CaseTo = l.CareFrom = 0;   // the days of a case that never was are not sick days
+                    l.CaseWork = false;
+                }
+                c.Clear();
+                HealthGame.Drain(false);
+                if (illness)
                 {
                     HealthBridges.Cure?.Invoke();   // the test's flu goes with the test
                 }
+                undone = true;
             }
-            _beforeTests = null;
+            ClearTests();
             _revision++;
-            HealthGame.Tell(NotificationType.Info, "reallife_hc_test_back", null);
-            Logger?.Info("Health check (test, put back): the state as before the tests: " + (before != null ? "PASS" : "FAIL, the kept line could not be read"));
+            HealthGame.Tell(NotificationType.Info, undone ? "reallife_hc_test_back" : "reallife_hc_test_back_none", null);
+            Logger?.Info("Health check (test, taken back): "
+                         + (undone ? "what the tests did to the case and the staff is undone, no money touched" : "nothing of the tests is left to undo") + ": PASS");
         }
     }
 }

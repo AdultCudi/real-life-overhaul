@@ -260,6 +260,7 @@ namespace RealLifeOverhaul
         /// <param name="notificationKey">Null when the caller says it itself (Home/HomeHealth names the illness).</param>
         public void MakeSick(int hours, string notificationKey = "reallife_event_sick")
         {
+            ModState.SickSince = ModState.IsSick && ModState.SickSince > 0f ? ModState.SickSince : TimeHelper.NowInMinutes();   // (a sickness that goes on keeps the day it began)
             ModState.SickUntil = TimeHelper.NowInMinutes() + hours * 60f;
             ModState.AddModifier(ModState.Sick, hours);
             SetSickDrain(true);
@@ -284,6 +285,7 @@ namespace RealLifeOverhaul
         {
             bool wasSick = ModState.SickUntil > 0f;
             ModState.SickUntil = 0f;
+            ModState.SickSince = 0f;
             ModState.RemoveModifier(ModState.Sick);
             SetSickDrain(false);
             if (wasSick && notificationKey != null)
