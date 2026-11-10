@@ -639,6 +639,14 @@ internal static partial class Program
         DynastyRivals.Begin(x, 11, 0, 500, year);
         DynastyRivals.Begin(y, 12, 0, 500, year);
         Check(x.Born != y.Born || x.RetireAge != y.RetireAge || x.DeathAge != y.DeathAge, "dynasty rivals: another save has other ages");
+        var began = new HashSet<int>();
+        for (int seed = 1; seed <= 300; seed++)
+        {
+            var one = new RivalLine();
+            DynastyRivals.Begin(one, seed, 0, 500, year);
+            began.Add(DynastyRivals.Age(one, 500, year));
+        }
+        Check(began.Count >= DynastyCatalogue.RivalAgeSpan - 2, "dynasty rivals: the age a tycoon begins at comes from the save's seed (" + began.Count + " ages over 300 saves)");
 
         // two centuries of a line: every head hands over once, the generation counts on, the tax is the founder's own bands' and never takes a fortune under its floor
         int handovers = 0, retired = 0, died = 0, elders = 0;
@@ -1079,7 +1087,8 @@ internal static partial class Program
             }
             else
             {
-                Check(!next.Contains(sentence) && before.Length > 40, "dynasty texts: What's new has the feature's line, translated, in " + DynastyLanguages[i]);
+                string app = words != null && words.TryGetValue("reallife_dynasty_app", out string name) ? name : "(no name)";
+                Check(!next.Contains(sentence) && before.Contains(app), "dynasty texts: What's new has the feature's line, translated and naming the app, before the first fix mark in " + DynastyLanguages[i]);
             }
         }
     }
