@@ -47,6 +47,15 @@ public static partial class UiPreviewRunner
                 Walk = Moves("DDR"), Lay = (s, f, d, k) => VentFace.Lay(s, UiSamples.Shop(ModEnglish, st), f, d, k)
             });
         }
+        for (int i = 0; i < UiSamples.SuppliersStates.Length; i++)
+        {
+            string st = UiSamples.SuppliersStates[i];
+            screens.Add(new Screen
+            {
+                Name = "suppliers_" + st, AppName = "Suppliers", Icon = UiIcon.Truck, Backdrop = i % 2 == 0 ? "13.jpg" : "02.jpg", HoverCommand = UiAppWindow.NavCommand, HoverArg = 1,
+                Walk = Moves("DDR"), Lay = (s, f, d, k) => VentFace.Lay(s, UiSamples.Suppliers(ModEnglish, st), f, d, k)
+            });
+        }
         for (int i = 0; i < UiSamples.GivingStates.Length; i++)
         {
             string st = UiSamples.GivingStates[i];

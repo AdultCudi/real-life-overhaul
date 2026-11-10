@@ -53,7 +53,7 @@ namespace RealLifeOverhaul.Suppliers
             .WithPrice(cents => SupplierGame.Money(cents));
         private AppShell _shell;
         private DataTable _table;
-        private int _tab, _place, _term = SupplyLive.TermDefault, _share = SupplierCatalogue.ShareDefault, _pick;
+        private int _tab, _place, _term = SupplyPages.TermDefault, _share = SupplierCatalogue.ShareDefault, _pick;
         private bool _writing;
 
         /// <summary>The app's panel, asleep; null if the game's parts are not as expected (each has said so in Player.log).</summary>
@@ -213,7 +213,7 @@ namespace RealLifeOverhaul.Suppliers
             box.RowWords(SupplierText.Fill("reallife_supply_row_lead"), SupplierText.Fill("reallife_supply_lead_value", "n", Mathf.Max(1, p.LeadDays).ToString()));
             box.RowWords(SupplierText.Fill("reallife_supply_row_min"), SupplierGame.Money(p.Min));
             box.RowWords(SupplierText.Fill("reallife_supply_row_late"), SupplyPages.Late(w, p.Late));
-            box.RowWords(SupplierText.Fill("reallife_supply_row_health"), SupplierText.Fill(SupplierText.HealthKeys[Mathf.Clamp(p.Band, 0, 2)]),
+            box.RowWords(SupplierText.Fill("reallife_supply_row_health"), SupplierText.Fill(SupplierKeys.HealthKeys[Mathf.Clamp(p.Band, 0, 2)]),
                 p.Band == 2 ? CellTone.Yellow : CellTone.Plain);
             box.RowWords(SupplierText.Fill("reallife_supply_row_customers"), p.Customers.ToString());
             if (!p.Open)
@@ -222,7 +222,7 @@ namespace RealLifeOverhaul.Suppliers
             }
             else if (p.TroubleKind != 0)
             {
-                box.Line(SupplierText.Fill("reallife_supply_trouble_note", "trouble", SupplierText.Fill(SupplierText.TroubleKeys[Mathf.Clamp(p.TroubleKind, 0, 2)]),
+                box.Line(SupplierText.Fill("reallife_supply_trouble_note", "trouble", SupplierText.Fill(SupplierKeys.TroubleKeys[Mathf.Clamp(p.TroubleKind, 0, 2)]),
                     "day", p.TroubleUntil.ToString()), CellTone.Yellow);
             }
             box.Selector(SupplierCatalogue.TermWeeks.Length + 1, f.TermStep, i => SupplyPages.Term(w, i), i => { _term = i; Refresh(); });
@@ -246,7 +246,7 @@ namespace RealLifeOverhaul.Suppliers
             }
             else
             {
-                box.Line(SupplierText.Fill(SupplierText.RefusalKeys[Mathf.Clamp((int)p.Why, 0, SupplierText.RefusalKeys.Length - 1)]), CellTone.Yellow);
+                box.Line(SupplierText.Fill(SupplierKeys.RefusalKeys[Mathf.Clamp((int)p.Why, 0, SupplierKeys.RefusalKeys.Length - 1)]), CellTone.Yellow);
             }
             return SupplierColumns.Firms;
         }
@@ -334,11 +334,11 @@ namespace RealLifeOverhaul.Suppliers
             {
                 box.Line(SupplierText.Fill(p.Buyer ? "reallife_supply_rules_buyer" : "reallife_supply_rules_no_buyer"), p.Buyer ? CellTone.Plain : CellTone.Yellow);
                 Transform rules = box.ButtonRow();
-                InfoBox.Button(rules, InfoBox.Additional, SupplierText.RenewKeys[(int)p.Renew], () => { SupplyLive.Instance.Rule(id, SupplierDirector.RuleRenew); Refresh(); });
+                InfoBox.Button(rules, InfoBox.Additional, SupplierKeys.RenewKeys[(int)p.Renew], () => { SupplyLive.Instance.Rule(id, SupplierCatalogue.RuleRenew); Refresh(); });
                 InfoBox.Button(rules, InfoBox.Additional, p.Cover ? "reallife_supply_rule_cover_on" : "reallife_supply_rule_cover_off",
-                    () => { SupplyLive.Instance.Rule(id, SupplierDirector.RuleCover); Refresh(); });
+                    () => { SupplyLive.Instance.Rule(id, SupplierCatalogue.RuleCover); Refresh(); });
                 InfoBox.Button(rules, InfoBox.Additional, p.LeaveRule ? "reallife_supply_rule_leave_on" : "reallife_supply_rule_leave_off",
-                    () => { SupplyLive.Instance.Rule(id, SupplierDirector.RuleLeave); Refresh(); });
+                    () => { SupplyLive.Instance.Rule(id, SupplierCatalogue.RuleLeave); Refresh(); });
                 if (p.Renew != RenewRule.Off)
                 {
                     int limit = SupplierCatalogue.RenewLimits[Mathf.Clamp(p.RenewLimit, 0, SupplierCatalogue.RenewLimits.Length - 1)];
@@ -348,7 +348,7 @@ namespace RealLifeOverhaul.Suppliers
                         Contract c = now != null && now.Running ? now.State.ContractOf(id) : null;
                         for (int n = 0; c != null && c.RenewLimit != i && n < SupplierCatalogue.RenewLimits.Length; n++)
                         {
-                            SupplyLive.Instance.Rule(id, SupplierDirector.RuleLimit);
+                            SupplyLive.Instance.Rule(id, SupplierCatalogue.RuleLimit);
                         }
                         Refresh();
                     });

@@ -333,8 +333,6 @@ namespace RealLifeOverhaul.Suppliers
             return paid;
         }
 
-        public const int RuleRenew = 0, RuleLimit = 1, RuleCover = 2, RuleLeave = 3;
-
         /// <summary>Moves one of a contract's rules for its buyer to its next value: what to do at the term's end, the price limit, covering, leaving by right.</summary>
         public void Rule(int contract, int rule)
         {
@@ -345,10 +343,10 @@ namespace RealLifeOverhaul.Suppliers
             }
             switch (rule)
             {
-                case RuleRenew: c.Renew = (RenewRule)(((int)c.Renew + 1) % 3); break;
-                case RuleLimit: c.RenewLimit = (c.RenewLimit + 1) % SupplierCatalogue.RenewLimits.Length; break;
-                case RuleCover: c.Cover = !c.Cover; break;
-                case RuleLeave: c.LeaveRule = !c.LeaveRule; break;
+                case SupplierCatalogue.RuleRenew: c.Renew = (RenewRule)(((int)c.Renew + 1) % 3); break;
+                case SupplierCatalogue.RuleLimit: c.RenewLimit = (c.RenewLimit + 1) % SupplierCatalogue.RenewLimits.Length; break;
+                case SupplierCatalogue.RuleCover: c.Cover = !c.Cover; break;
+                case SupplierCatalogue.RuleLeave: c.LeaveRule = !c.LeaveRule; break;
             }
             _revision++;
         }

@@ -13,45 +13,16 @@ namespace RealLifeOverhaul.Suppliers
     /// <summary>The words of suppliers and contracts that are built from the state: a supplier's name, a cause, a notice for what the engine did, a paper piece, a rival's line.</summary>
     public static class SupplierText
     {
-        public const string WholesalersKey = "reallife_supply_firm_0";
-
-        public static readonly string[] CauseKeys =
-        {
-            "reallife_supply_cause_none", "reallife_supply_cause_own", "reallife_supply_cause_trouble", "reallife_supply_cause_cash", "reallife_supply_cause_weather",
-            "reallife_supply_cause_streets", "reallife_supply_cause_season", "reallife_supply_cause_shortage"
-        };
-
-        public static readonly string[] RefusalKeys =
-        {
-            "reallife_supply_refuse_none", "reallife_supply_refuse_off", "reallife_supply_refuse_shut", "reallife_supply_refuse_kind", "reallife_supply_refuse_no_goods",
-            "reallife_supply_refuse_small", "reallife_supply_refuse_owes", "reallife_supply_refuse_sour", "reallife_supply_refuse_credit", "reallife_supply_refuse_full",
-            "reallife_supply_refuse_held"
-        };
-
-        public static readonly string[] StateKeys =
-        {
-            "reallife_supply_state_running", "reallife_supply_state_done", "reallife_supply_state_broken", "reallife_supply_state_left", "reallife_supply_state_failed",
-            "reallife_supply_state_unpaid", "reallife_supply_state_closed"
-        };
-
-        public static readonly string[] LateKeys = { "reallife_supply_late_lenient", "reallife_supply_late_firm", "reallife_supply_late_strict" };
-
-        public static readonly string[] HealthKeys = { "reallife_supply_health_sound", "reallife_supply_health_stretched", "reallife_supply_health_trouble" };
-
-        public static readonly string[] TroubleKeys = { "reallife_supply_trouble_none", "reallife_supply_trouble_strike", "reallife_supply_trouble_fire" };
-
-        public static readonly string[] RenewKeys = { "reallife_supply_renew_off", "reallife_supply_renew_same", "reallife_supply_renew_best" };
-
         /// <summary>A supplier's name in the language in use; the city's wholesale stores for 0.</summary>
         public static string Firm(int id)
         {
             SupplierDef def = SupplierCatalogue.Firm(id);
-            return (def != null ? def.NameKey : WholesalersKey).GetLocalization();
+            return (def != null ? def.NameKey : SupplierKeys.WholesalersKey).GetLocalization();
         }
 
         public static string Kind(int kind) => SupplierCatalogue.KindKeys[SupplierCatalogue.Clamp(kind, 0, SupplierCatalogue.Kinds - 1)].GetLocalization();
 
-        public static string Cause(Cause why) => CauseKeys[SupplierCatalogue.Clamp((int)why, 0, CauseKeys.Length - 1)].GetLocalization();
+        public static string Cause(Cause why) => SupplierKeys.CauseKeys[SupplierCatalogue.Clamp((int)why, 0, SupplierKeys.CauseKeys.Length - 1)].GetLocalization();
 
         /// <summary>A text with its names filled in: pairs of a name and what goes in its place.</summary>
         public static string Fill(string key, params string[] pairs)
@@ -147,7 +118,7 @@ namespace RealLifeOverhaul.Suppliers
                     return "reallife_supply_note_left";
                 case SupplyEventKind.FirmTrouble:
                     warn = true;
-                    data = SupplierGame.Data("supplier", firm, "trouble", TroubleKeys[SupplierCatalogue.Clamp((int)e.A, 0, 2)].GetLocalization(), "day", e.B.ToString());
+                    data = SupplierGame.Data("supplier", firm, "trouble", SupplierKeys.TroubleKeys[SupplierCatalogue.Clamp((int)e.A, 0, 2)].GetLocalization(), "day", e.B.ToString());
                     return e.C > 0 ? "reallife_supply_note_firm_trouble" : null;
                 case SupplyEventKind.FirmUnder:
                     warn = true;
@@ -181,7 +152,7 @@ namespace RealLifeOverhaul.Suppliers
                     return new SupplyStory
                     {
                         Key = "reallife_supply_paper_trouble",
-                        Data = SupplierGame.Data("supplier", firm, "trouble", TroubleKeys[SupplierCatalogue.Clamp(n.A, 0, 2)].GetLocalization(), "day", n.B.ToString())
+                        Data = SupplierGame.Data("supplier", firm, "trouble", SupplierKeys.TroubleKeys[SupplierCatalogue.Clamp(n.A, 0, 2)].GetLocalization(), "day", n.B.ToString())
                     };
                 case NoteKind.Under:
                     return new SupplyStory { Key = "reallife_supply_paper_under", Data = SupplierGame.Data("supplier", firm, "n", n.A.ToString()) };

@@ -116,7 +116,8 @@ namespace RealLifeOverhaul.Suppliers
         /// What a supplier offers a place for a term (0: one delivery at the day's price) at a share of its week's sales. The goods are what the place sells of the kinds
         /// the supplier trades, in whole boxes, inside the game's own weekly limit.
         /// </summary>
-        public static void Offer(SupplierState s, ISupplierWorld w, int supplier, string place, int weeks, int shareStep, Quote q)
+        /// <param name="kinds">the kinds of goods the offer is held to, a bit each; -1 for every kind the supplier trades</param>
+        public static void Offer(SupplierState s, ISupplierWorld w, int supplier, string place, int weeks, int shareStep, Quote q, int kinds = -1)
         {
             q.Lines.Clear();
             q.Supplier = supplier;
@@ -140,7 +141,10 @@ namespace RealLifeOverhaul.Suppliers
             bool any = Wanted.Count > 0;
             for (int i = 0; i < Wanted.Count; i++)
             {
-                Add(w, def, q, Wanted[i], ((long)Wanted[i].Units * q.Share + 999) / 1000);
+                if ((kinds & (1 << Wanted[i].Kind)) != 0)
+                {
+                    Add(w, def, q, Wanted[i], ((long)Wanted[i].Units * q.Share + 999) / 1000);
+                }
             }
             Wanted.Clear();
             Price(s, w, def, f, place, q, any);
@@ -433,9 +437,9 @@ namespace RealLifeOverhaul.Suppliers
                 {
                     continue;
                 }
-                if (c.JudgedFor != c.Due)
+                if (c.JudgedFor != c.Due && day >= c.Due)
                 {
-                    JudgeNext(s, w, c);   // a day's pass that never came (a long sleep): judged by the same draw before anything is brought
+                    JudgeNext(s, w, c);   // its day came with no day's pass before it (a long sleep): judged by the same draw before anything is brought
                 }
                 int arrives = c.Due + c.Slip;
                 if (day > arrives || (day == arrives && hour >= SupplierCatalogue.DeliveryHour))
@@ -633,7 +637,7 @@ namespace RealLifeOverhaul.Suppliers
                 return;
             }
             int step = ShareStep(c.Share);
-            if (!Best(s, w, c.Place, c.Weeks, step, c.Renew == RenewRule.Same ? c.Supplier : 0, 0, BestQuote)
+            if (!Best(s, w, c.Place, c.Weeks, step, c.Renew == RenewRule.Same ? c.Supplier : 0, 0, BestQuote, KindsOf(c))
                 || BestQuote.Value * 1000 > BestQuote.MarketValue * (1000L + SupplierCatalogue.RenewLimits[SupplierCatalogue.Clamp(c.RenewLimit, 0, SupplierCatalogue.RenewLimits.Length - 1)]))
             {
                 s.Say(SupplyEventKind.NoCover, c, c.Supplier, 1);
@@ -650,17 +654,18 @@ namespace RealLifeOverhaul.Suppliers
         /// <summary>
         /// The cheapest offer a place can have for a term: of one supplier (<paramref name="only"/>) or of all but one (<paramref name="not"/>). False when nobody offers.
         /// </summary>
-        public static bool Best(SupplierState s, ISupplierWorld w, string place, int weeks, int shareStep, int only, int not, Quote into)
+        /// <param name="kinds">the kinds of goods the offer must bring, a bit each (a renewal brings what the contract brought, from a supplier that trades all of it); -1 for any</param>
+        public static bool Best(SupplierState s, ISupplierWorld w, string place, int weeks, int shareStep, int only, int not, Quote into, int kinds = -1)
         {
             bool found = false;
             for (int i = 0; i < SupplierCatalogue.Firms.Length; i++)
             {
                 int id = SupplierCatalogue.Firms[i].Id;
-                if ((only != 0 && id != only) || id == not)
+                if ((only != 0 && id != only) || id == not || (kinds != -1 && (SupplierCatalogue.Firms[i].Kinds & kinds) != kinds))
                 {
                     continue;
                 }
-                Offer(s, w, id, place, weeks, shareStep, Scratch);
+                Offer(s, w, id, place, weeks, shareStep, Scratch, kinds);
                 // The cheapest for the goods it brings: by its price against the market's, so a supplier that brings less is not taken for cheaper.
                 if (Scratch.Why == Refusal.None && (!found || Scratch.AgainstMarket < into.AgainstMarket))
                 {
@@ -669,6 +674,17 @@ namespace RealLifeOverhaul.Suppliers
                 }
             }
             return found;
+        }
+
+        /// <summary>The kinds of goods a contract brings, a bit each.</summary>
+        public static int KindsOf(Contract c)
+        {
+            int kinds = 0;
+            for (int i = 0; i < c.Lines.Count; i++)
+            {
+                kinds |= 1 << c.Lines[i].Kind;
+            }
+            return kinds;
         }
 
         private static void Copy(Quote from, Quote to)
@@ -747,11 +763,7 @@ namespace RealLifeOverhaul.Suppliers
             }
             SupplierDef def = SupplierCatalogue.Firm(c.Supplier);
             FirmState f = s.Firm(c.Supplier);
-            int kinds = 0;
-            for (int i = 0; i < c.Lines.Count; i++)
-            {
-                kinds |= 1 << c.Lines[i].Kind;
-            }
+            int kinds = KindsOf(c);
             for (int k = 0; k < Shortages.Length; k++)
             {
                 Shortages[k] = w.ShortageOn(k, c.Due);
@@ -840,13 +852,13 @@ namespace RealLifeOverhaul.Suppliers
                 }
                 if (c.LeaveRule && MayLeave(c) && w.Buyer(c.Place))
                 {
-                    int supplier = c.Supplier, weeks = c.Weeks, step = ShareStep(c.Share);
+                    int supplier = c.Supplier, weeks = c.Weeks, step = ShareStep(c.Share), goods = KindsOf(c);
                     string place = c.Place, name = c.PlaceName;
                     RenewRule renew = c.Renew;
                     int limit = c.RenewLimit;
                     bool cover = c.Cover;
                     Leave(s, w, c.Id);
-                    if (Best(s, w, place, weeks, step, 0, supplier, BestQuote))
+                    if (Best(s, w, place, weeks, step, 0, supplier, BestQuote, goods))
                     {
                         Contract made = Make(s, w, BestQuote, place, name);
                         made.Renew = renew;
@@ -1030,11 +1042,12 @@ namespace RealLifeOverhaul.Suppliers
                 RivalSupply book = s.RivalBooks[o.Tycoon];
                 book.Firm = r.Firm;
                 book.Failures += r.Failed ? 1 : 0;
-                if (r.Cents != 0)
+                long money = r.Cents / 100;   // whole money, the very figure the month's sum keeps
+                if (money != 0)
                 {
-                    book.Month += r.Cents / 100;
-                    book.Total += r.Cents / 100;
-                    w.RivalMoved(o.Tycoon, r.Cents);
+                    book.Month += money;
+                    book.Total += money;
+                    w.RivalMoved(o.Tycoon, money * 100);
                 }
             }
         }

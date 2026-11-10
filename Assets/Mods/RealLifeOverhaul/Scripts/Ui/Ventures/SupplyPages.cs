@@ -19,7 +19,7 @@ namespace RealLifeOverhaul.Ui
         /// <summary>Pays what is owed to suppliers as far as the cash goes.</summary>
         void PayOwed();
 
-        /// <summary>Moves one of a contract's rules for its buyer to its next value (SupplierDirector.RuleRenew and the rest).</summary>
+        /// <summary>Moves one of a contract's rules for its buyer to its next value (SupplierCatalogue.RuleRenew and the rest).</summary>
         void Rule(int contract, int rule);
     }
 
@@ -32,6 +32,13 @@ namespace RealLifeOverhaul.Ui
     {
         public const int TabSuppliers = 0, TabContracts = 1, TabMarket = 2;
         public const string FirmKey = "f:", ContractKey = "c:";
+        public const int TermDefault = 2;   // the term step a page starts at: the catalogue's second term, four weeks
+
+        /// <summary>The term step a view's figure stands for: nothing chosen yet is the default.</summary>
+        public static int TermOf(int b) => b > 0 ? b - 1 : TermDefault;
+
+        /// <summary>The share step a view's figure stands for: nothing chosen yet is the week's sales.</summary>
+        public static int ShareOf(int c) => c > 0 ? c - 1 : SupplierCatalogue.ShareDefault;
 
         private static readonly UiIcon[] KindIcons = { UiIcon.Sun, UiIcon.Store, UiIcon.Person, UiIcon.Spark, UiIcon.Sofa, UiIcon.Briefcase };
 
@@ -117,14 +124,14 @@ namespace RealLifeOverhaul.Ui
         public static string FirmName(VentWords w, int id)
         {
             SupplierDef def = SupplierCatalogue.Firm(id);
-            return def != null ? w.T(def.NameKey, FirmEnglish(id)) : w.T(SupplierText.WholesalersKey, FirmEnglish(0));
+            return def != null ? w.T(def.NameKey, FirmEnglish(id)) : w.T(SupplierKeys.WholesalersKey, FirmEnglish(0));
         }
 
         /// <summary>How a supplier treats a customer who cannot pay on the day, in words, with the catalogue's own days and fee.</summary>
         public static string Late(VentWords w, LatePolicy late)
         {
             int at = Math.Max(0, Math.Min(2, (int)late));
-            return w.F(SupplierText.LateKeys[at], LateEnglish(late), "days", SupplierCatalogue.GraceDays[at].ToString(), "fee", Percent(SupplierCatalogue.LateFee[at]),
+            return w.F(SupplierKeys.LateKeys[at], LateEnglish(late), "days", SupplierCatalogue.GraceDays[at].ToString(), "fee", Percent(SupplierCatalogue.LateFee[at]),
                 "most", SupplierCatalogue.WithheldMost.ToString());
         }
 
@@ -205,7 +212,7 @@ namespace RealLifeOverhaul.Ui
             right.Add(VentBlock.Row(w.T("reallife_supply_row_lead", "First delivery"), w.F("reallife_supply_lead_value", "in {n} days", "n", Math.Max(1, p.LeadDays).ToString())));
             right.Add(VentBlock.Row(w.T("reallife_supply_row_min", "Smallest delivery"), w.Money(p.Min / 100f)));
             right.Add(VentBlock.Row(w.T("reallife_supply_row_late", "If you cannot pay on the day"), Late(w, p.Late)));
-            right.Add(VentBlock.Row(w.T("reallife_supply_row_health", "Its books"), w.T(SupplierText.HealthKeys[Math.Max(0, Math.Min(2, p.Band))], HealthEnglish(p.Band)),
+            right.Add(VentBlock.Row(w.T("reallife_supply_row_health", "Its books"), w.T(SupplierKeys.HealthKeys[Math.Max(0, Math.Min(2, p.Band))], HealthEnglish(p.Band)),
                 p.Band == 2 ? UiRole.Warn : UiRole.Text));
             right.Add(VentBlock.Row(w.T("reallife_supply_row_customers", "Shops of the city it serves"), p.Customers.ToString()));
             if (!p.Open)
@@ -215,7 +222,7 @@ namespace RealLifeOverhaul.Ui
             else if (p.TroubleKind != 0)
             {
                 right.Add(VentBlock.Note(w.F("reallife_supply_trouble_note", "{trouble} until day {day}. Its deliveries are more often late or short meanwhile.",
-                    "trouble", w.T(SupplierText.TroubleKeys[Math.Max(0, Math.Min(2, p.TroubleKind))], TroubleEnglish(p.TroubleKind)), "day", p.TroubleUntil.ToString()), UiRole.Warn));
+                    "trouble", w.T(SupplierKeys.TroubleKeys[Math.Max(0, Math.Min(2, p.TroubleKind))], TroubleEnglish(p.TroubleKind)), "day", p.TroubleUntil.ToString()), UiRole.Warn));
             }
             int term = Math.Max(0, Math.Min(SupplierCatalogue.TermWeeks.Length, f.TermStep)), share = Math.Max(0, Math.Min(SupplierCatalogue.Shares.Length - 1, f.ShareStep));
             right.Add(VentBlock.Stepper(w.T("reallife_supply_step_term", "Term"), Term(w, term), runs.Add(() => { v.B = Math.Max(0, term - 1) + 1; return true; }), term > 0,
@@ -238,7 +245,7 @@ namespace RealLifeOverhaul.Ui
             }
             else
             {
-                right.Add(VentBlock.Note(w.T(SupplierText.RefusalKeys[Math.Max(0, Math.Min(SupplierText.RefusalKeys.Length - 1, (int)p.Why))], RefusalEnglish(p.Why)), UiRole.Warn));
+                right.Add(VentBlock.Note(w.T(SupplierKeys.RefusalKeys[Math.Max(0, Math.Min(SupplierKeys.RefusalKeys.Length - 1, (int)p.Why))], RefusalEnglish(p.Why)), UiRole.Warn));
             }
             int supplier = p.Id, weeks = SupplyFacts.Weeks(term);
             string placeKey = at.Key;
@@ -260,7 +267,7 @@ namespace RealLifeOverhaul.Ui
             if (!c.Running)
             {
                 tone = c.State == ContractState.Done || c.State == ContractState.Left ? UiRole.None : UiRole.Warn;
-                return w.T(SupplierText.StateKeys[Math.Max(0, Math.Min(6, (int)c.State))], StateEnglish(c.State));
+                return w.T(SupplierKeys.StateKeys[Math.Max(0, Math.Min(6, (int)c.State))], StateEnglish(c.State));
             }
             if (c.Owed > 0)
             {
@@ -328,12 +335,12 @@ namespace RealLifeOverhaul.Ui
                 if (p.Out == Arrival.Late)
                 {
                     right.Add(VentBlock.Note(w.F("reallife_supply_next_late", "It comes {days} days late: {cause}.", "days", p.Slip.ToString(),
-                        "cause", w.T(SupplierText.CauseKeys[(int)p.Why], CauseEnglish(p.Why))), UiRole.Warn));
+                        "cause", w.T(SupplierKeys.CauseKeys[(int)p.Why], CauseEnglish(p.Why))), UiRole.Warn));
                 }
                 else if (p.Out == Arrival.Short)
                 {
                     right.Add(VentBlock.Note(w.F("reallife_supply_next_short", "It brings {share} less: {cause}.", "share", Percent(1000 - p.OutShare),
-                        "cause", w.T(SupplierText.CauseKeys[(int)p.Why], CauseEnglish(p.Why))), UiRole.Warn));
+                        "cause", w.T(SupplierKeys.CauseKeys[(int)p.Why], CauseEnglish(p.Why))), UiRole.Warn));
                 }
             }
             right.Add(VentBlock.Row(w.T("reallife_supply_row_delivery", "Each delivery"), w.Money(p.Value / 100f)));
@@ -377,17 +384,17 @@ namespace RealLifeOverhaul.Ui
                 right.Add(VentBlock.Note(p.Buyer ? w.T("reallife_supply_rules_buyer", "A manager who orders stock here follows these rules for you.")
                     : w.T("reallife_supply_rules_no_buyer", "Nobody orders stock here, so the rules wait: appoint a manager with stock orders on, and you are told what to decide meanwhile."),
                     p.Buyer ? UiRole.None : UiRole.Warn));
-                right.Add(VentBlock.Choice(w.T("reallife_supply_rule_renew", "When the term ends"), w.T(SupplierText.RenewKeys[(int)p.Renew], RenewEnglish(p.Renew)),
-                    runs.Add(() => { act.Rule(id, SupplierDirector.RuleRenew); return true; })));
+                right.Add(VentBlock.Choice(w.T("reallife_supply_rule_renew", "When the term ends"), w.T(SupplierKeys.RenewKeys[(int)p.Renew], RenewEnglish(p.Renew)),
+                    runs.Add(() => { act.Rule(id, SupplierCatalogue.RuleRenew); return true; })));
                 int limit = SupplierCatalogue.RenewLimits[Math.Max(0, Math.Min(SupplierCatalogue.RenewLimits.Length - 1, p.RenewLimit))];
                 right.Add(VentBlock.Choice(w.T("reallife_supply_rule_limit", "Renew only up to"),
                     limit >= 100000 ? w.T("reallife_supply_limit_any", "Any price") : limit == 0 ? w.T("reallife_supply_limit_market", "The market price")
                         : w.F("reallife_supply_limit_value", "{share} over the market price", "share", Percent(limit)),
-                    runs.Add(() => { act.Rule(id, SupplierDirector.RuleLimit); return true; }), p.Renew == RenewRule.Off));
+                    runs.Add(() => { act.Rule(id, SupplierCatalogue.RuleLimit); return true; }), p.Renew == RenewRule.Off));
                 right.Add(VentBlock.Switch(w.T("reallife_supply_rule_cover", "Cover a late or short delivery from another supplier"), p.Cover,
-                    runs.Add(() => { act.Rule(id, SupplierDirector.RuleCover); return true; })));
+                    runs.Add(() => { act.Rule(id, SupplierCatalogue.RuleCover); return true; })));
                 right.Add(VentBlock.Switch(w.T("reallife_supply_rule_leave", "Leave and switch when it has failed too often"), p.LeaveRule,
-                    runs.Add(() => { act.Rule(id, SupplierDirector.RuleLeave); return true; })));
+                    runs.Add(() => { act.Rule(id, SupplierCatalogue.RuleLeave); return true; })));
             }
             var actions = new List<UiActionModel>(3);
             if (f.Owed > 0)

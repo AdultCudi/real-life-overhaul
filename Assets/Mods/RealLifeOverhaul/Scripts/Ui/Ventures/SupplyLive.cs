@@ -12,7 +12,6 @@ namespace RealLifeOverhaul.Ui
     {
         public static readonly SupplyLive Instance = new SupplyLive();
         public const string ScreenId = "suppliers";
-        public const int TermDefault = 2;   // the term a page starts at: the catalogue's second, four weeks
 
         private readonly SupplyFacts _facts = new SupplyFacts();
         private readonly VentWords _words = new VentWords((key, english) => key.GetLocalization(), x => SupplierGame.Money((long)System.Math.Round(x * 100.0)))
@@ -36,18 +35,12 @@ namespace RealLifeOverhaul.Ui
         {
             SupplierDirector d = SupplierDirector.Instance;
             Want(_facts, v);
-            if (d == null || !d.Facts(_facts, v.A, TermOf(v.B), ShareOf(v.C)))
+            if (d == null || !d.Facts(_facts, v.A, SupplyPages.TermOf(v.B), SupplyPages.ShareOf(v.C)))
             {
                 _facts.Ready = false;
             }
             SupplyPages.Fill(m, v, _facts, this, _words);
         }
-
-        /// <summary>The term step a view's figure stands for: nothing chosen yet is the default.</summary>
-        public static int TermOf(int b) => b > 0 ? b - 1 : TermDefault;
-
-        /// <summary>The share step a view's figure stands for: nothing chosen yet is the week's sales.</summary>
-        public static int ShareOf(int c) => c > 0 ? c - 1 : SupplierCatalogue.ShareDefault;
 
         // BizMan's Deliveries page asked for a business: the page opens on it, on the Suppliers tab.
         private static void Want(SupplyFacts facts, VentView view)
@@ -59,7 +52,7 @@ namespace RealLifeOverhaul.Ui
             }
             SupplierDirector.WantPlace = null;
             SupplierDirector d = SupplierDirector.Instance;
-            if (d == null || !d.Facts(facts, 0, TermDefault, SupplierCatalogue.ShareDefault))
+            if (d == null || !d.Facts(facts, 0, SupplyPages.TermDefault, SupplierCatalogue.ShareDefault))
             {
                 return;
             }
@@ -84,7 +77,7 @@ namespace RealLifeOverhaul.Ui
             Contract c = d.Sign(supplier, place, weeks, shareStep, out Refusal why);
             if (c == null)
             {
-                SupplierGame.Tell(NotificationType.Warning, SupplierText.RefusalKeys[SupplierCatalogue.Clamp((int)why, 0, SupplierText.RefusalKeys.Length - 1)], null);
+                SupplierGame.Tell(NotificationType.Warning, SupplierKeys.RefusalKeys[SupplierCatalogue.Clamp((int)why, 0, SupplierKeys.RefusalKeys.Length - 1)], null);
             }
             _local++;
         }

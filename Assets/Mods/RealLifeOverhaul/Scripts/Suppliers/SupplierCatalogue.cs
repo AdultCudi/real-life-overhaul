@@ -166,6 +166,9 @@ namespace RealLifeOverhaul.Suppliers
         public static readonly int[] RenewLimits = { 0, 50, 100, 200, 100000 };
         public const int RenewLimitDefault = 2;
 
+        // ---- a contract's rules for its buyer, as a page names them when it moves one to its next value
+        public const int RuleRenew = 0, RuleLimit = 1, RuleCover = 2, RuleLeave = 3;
+
         public static SupplierDef Firm(int id) => id >= 1 && id <= Firms.Length ? Firms[id - 1] : null;
 
         public static int Clamp(int value, int least, int most) => value < least ? least : value > most ? most : value;

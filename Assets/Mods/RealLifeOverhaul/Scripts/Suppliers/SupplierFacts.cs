@@ -2,6 +2,39 @@ using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Suppliers
 {
+    /// <summary>The locale keys of the feature's tables of words, by the number each enum is saved as. Game-free: the pages and the checks read them.</summary>
+    public static class SupplierKeys
+    {
+        public const string WholesalersKey = "reallife_supply_firm_0";
+
+        public static readonly string[] CauseKeys =
+        {
+            "reallife_supply_cause_none", "reallife_supply_cause_own", "reallife_supply_cause_trouble", "reallife_supply_cause_cash", "reallife_supply_cause_weather",
+            "reallife_supply_cause_streets", "reallife_supply_cause_season", "reallife_supply_cause_shortage"
+        };
+
+        public static readonly string[] RefusalKeys =
+        {
+            "reallife_supply_refuse_none", "reallife_supply_refuse_off", "reallife_supply_refuse_shut", "reallife_supply_refuse_kind", "reallife_supply_refuse_no_goods",
+            "reallife_supply_refuse_small", "reallife_supply_refuse_owes", "reallife_supply_refuse_sour", "reallife_supply_refuse_credit", "reallife_supply_refuse_full",
+            "reallife_supply_refuse_held"
+        };
+
+        public static readonly string[] StateKeys =
+        {
+            "reallife_supply_state_running", "reallife_supply_state_done", "reallife_supply_state_broken", "reallife_supply_state_left", "reallife_supply_state_failed",
+            "reallife_supply_state_unpaid", "reallife_supply_state_closed"
+        };
+
+        public static readonly string[] LateKeys = { "reallife_supply_late_lenient", "reallife_supply_late_firm", "reallife_supply_late_strict" };
+
+        public static readonly string[] HealthKeys = { "reallife_supply_health_sound", "reallife_supply_health_stretched", "reallife_supply_health_trouble" };
+
+        public static readonly string[] TroubleKeys = { "reallife_supply_trouble_none", "reallife_supply_trouble_strike", "reallife_supply_trouble_fire" };
+
+        public static readonly string[] RenewKeys = { "reallife_supply_renew_off", "reallife_supply_renew_same", "reallife_supply_renew_best" };
+    }
+
     /// <summary>A place of the player's that goods can be brought to.</summary>
     public sealed class SupplyPlaceFact
     {
