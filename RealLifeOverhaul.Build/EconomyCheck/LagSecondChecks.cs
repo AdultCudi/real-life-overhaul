@@ -122,17 +122,35 @@ internal static partial class Program
             { "nl", "Opgelost: met de ontwikkelaarsdiagnose aan" }, { "tr", "Düzeltildi: Geliştirici Tanılama açıkken" }, { "pl", "Naprawiono: przy włączonej diagnostyce dla programistów" },
             { "ko", "수정: 개발자 진단을 켜면" }
         };
+        // The next row before a release; once the version script has numbered it, that version's row. Found by the English line, since
+        // a language's opening words alone also start older rows.
+        string rowKey = null;
+        int enRows = 0;
+        Dictionary<string, string> english = LoadWords(System.IO.Path.Combine(DesignLocales, "en.json"));
+        if (english != null)
+        {
+            foreach (KeyValuePair<string, string> row in english)
+            {
+                if (row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && !row.Key.EndsWith("_title", StringComparison.Ordinal)
+                    && row.Value.Contains(starts["en"]))
+                {
+                    rowKey = row.Key;
+                    enRows++;
+                }
+            }
+        }
+        Check(enRows == 1, "lag second texts: one English What's new row has the fix (" + enRows + " row(s))");
         foreach (KeyValuePair<string, string> start in starts)
         {
             Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(DesignLocales, start.Key + ".json"));
-            int rows = 0;
-            bool plain = true;
-            if (words != null && words.TryGetValue("reallife_changes_next", out string next))
+            int times = 0;
+            bool plain = false;
+            if (words != null && rowKey != null && words.TryGetValue(rowKey, out string row))
             {
-                rows = next.Contains(start.Value) ? 1 : 0;
-                plain = !next.Contains("  ") && !next.Contains((char)0x2014) && !next.Contains((char)0x2013) && !next.Contains('!');
+                times = row.Split(new[] { start.Value }, StringSplitOptions.None).Length - 1;
+                plain = !row.Contains("  ") && !row.Contains((char)0x2014) && !row.Contains((char)0x2013) && !row.Contains('!');
             }
-            Check(rows == 1 && plain, "lag second texts: the next version's What's new has the fix once in " + start.Key + ", with no double space, dash or exclamation mark (" + rows + " row(s))");
+            Check(times == 1 && plain, "lag second texts: that What's new row has the fix once in " + start.Key + ", with no double space, dash or exclamation mark (" + times + " time(s))");
         }
     }
 }

@@ -1,11 +1,8 @@
-0.63.10
+0.63.11
+
+New
+- Other mods can read Flare's citizens, the people and bodies RLO holds, and the road lanes it slows, through a stable interface.
 
 Fixed
-- The screens at desks in tech and web development firms stayed black while you worked at them, and for the staff sitting there. They now light when someone sits down to work and go dark when they stand up.
-- A card saying that new buildings north of Manhattan were not yet whole buildings of the game came up at every load, with a number that kept growing. It was only a note for the log, so it no longer shows.
-- The day-end profit or loss and the figure at the top took off the cost of stock bought at a wholesaler or brought in by an importer on the day you bought it, and the game took it off again when the stock sold. It now counts once, when the stock sells.
-- The routine buttons in the mod settings (stretching, push-ups, sit-ups, a run, tidying and the rest) always answered Not now, because the settings menu was open. They now wait until you close the menu and then start. The Guide now says how to start them in play, by calling the Wellbeing contact on the phone, and the Not now message names what is in the way.
-- Community service no longer ends after the first piece of litter, and a street event, crime scene or accident can no longer start in the middle of a shift and wipe the litter away.
-- A guest in Going Public who asked for a driving lesson was told there was no traffic on the roads, and when you stood up from a desk at Crest Motors the chairs could trap you. The school now says that only the host can take a lesson, before any fee is asked, and a player left with no way out is put at the door.
-- When someone said it was too early to make things official or to go out, that option disappeared from the conversation without a word. It now stays, and they tell you how many days to wait.
-- Strangers in the street often gave an age of up to 80 to a face that looked much younger. The game draws faces no older than 60, so the oldest strangers now say 60 to 64, and each person says the same age every day.
+- With Developer diagnostics on, a long frame was blamed on the wrong frame when the game's time jumped or a wait was counted one frame late. The session record now says which one it was.
+- Parked cars no longer stand in bus stops, in any district. The game's parked cars at a stop's kerb are taken in at once, even in view, and no car the mod places stops there. Your own car can still stop anywhere.
