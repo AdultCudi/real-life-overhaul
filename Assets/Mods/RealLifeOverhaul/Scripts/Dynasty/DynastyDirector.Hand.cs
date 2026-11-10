@@ -43,7 +43,7 @@ namespace RealLifeOverhaul.Dynasty
         {
             int year = DynastyGame.DaysPerYear;
             int age = DynastyGame.AgeDays;
-            if (age < DynastyRules.LastDays(year) || !DynastyGame.Ageing)
+            if (!DynastyRules.InLastDays(age, year, _state.Held) || !DynastyGame.Ageing)
             {
                 return;
             }
@@ -55,6 +55,7 @@ namespace RealLifeOverhaul.Dynasty
             }
             if (DynastyRules.Holds(hold))
             {
+                _state.Held = true;
                 if (age > DynastyRules.HeldAge(year))
                 {
                     DynastyGame.SetAgeDays(DynastyRules.HeldAge(year));
@@ -120,6 +121,7 @@ namespace RealLifeOverhaul.Dynasty
                 return;
             }
             _draft = null;
+            _state.Held = false;
             _revision++;
             Logger?.Info("Dynasty: " + (mode == HandMode.Retire ? "the founder retires" : "the founder's last days") + ": the estate of " + s.Net + " passes to " + s.To + " ("
                          + (byLaw ? "by the law's order" : "by the will") + "); tax " + s.Tax + " (" + s.TaxCash + " from the cash, " + s.Loan + " owed), bequests " + s.Paid + ", kept "

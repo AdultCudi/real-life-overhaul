@@ -450,6 +450,9 @@ internal static partial class Program
                 "dynasty last days: at " + year + " days a year the estate passes before the game's own end, and a held age stays short of it");
         }
         Check(DynastyCatalogue.LastAge == 90, "dynasty last days: the last age is the game's own (FuneralHelper.DeathAge)");
+        Check(!DynastyRules.InLastDays(DynastyRules.LastDays(60) - 1, 60, false) && DynastyRules.InLastDays(DynastyRules.LastDays(60), 60, false)
+              && DynastyRules.InLastDays(DynastyRules.HeldAge(60), 60, true) && !DynastyRules.InLastDays(DynastyRules.HeldAge(60) - 1, 60, true) && !DynastyRules.InLastDays(18 * 60, 60, true),
+            "dynasty last days: an estate that was held back passes the moment it can, from the age it was held at");
     }
 
     // ---- a handover in its steps
@@ -740,7 +743,7 @@ internal static partial class Program
 
     private static DynastyState DynastyFullState()
     {
-        var s = new DynastyState { Seed = 4242, LastDay = 400, Generation = 3, RetireTold = 60, HeldTold = 399, PaperDay = 398, Will = DynastyWillSample() };
+        var s = new DynastyState { Seed = 4242, LastDay = 400, Generation = 3, RetireTold = 60, HeldTold = 399, PaperDay = 398, Held = true, Will = DynastyWillSample() };
         s.Will.Day = 310;
         s.Will.Fees = 1500;
         s.Will.Firm = "Hud|son; Le^gal, & Co: v=1";
@@ -786,7 +789,7 @@ internal static partial class Program
               && back.Hand.S.Tax == s.Hand.S.Tax, "dynasty save: a handover under way is kept with its step and its statement");
         Check(back.Will.Written && back.Will.HeirName == "Tom" && back.Will.Bequests.Count == 3 && back.Will.RetireAge == 60 && back.Will.Keep == 1 && back.Gifts.Count == 2 && back.Gifts[1].Amount == 250
               && back.Loan.Owed == s.Loan.Owed && back.Loan.Late == 2 && back.Elder.Fund == 386000 && back.Elder.Month == 79 && back.RivalLines[0].Generation == 2 && back.RivalLines[0].HandTax == 31000000
-              && !back.RivalLines[1].Ready && back.RivalLines[2].Ready && back.City.Count == 1 && back.Line[0].Tax == 1470000 && back.Generation == 3 && back.Seed == 4242,
+              && !back.RivalLines[1].Ready && back.RivalLines[2].Ready && back.City.Count == 1 && back.Line[0].Tax == 1470000 && back.Generation == 3 && back.Seed == 4242 && back.Held,
             "dynasty save: the will, the gifts, the debt, the elder, the rivals, the city and the lineage are all there");
         // a newer version: fields added at the end of records and a part this version does not know
         string newer = line.Replace("v=1^", "v=7^").Replace("^c:", "^z:new|part^c:").Replace("^h:4242|", "^h:4242|") + "|99|future^q:1|2|3";
@@ -951,7 +954,7 @@ internal static partial class Program
         Check(retire > 0 && hand.IndexOf("RetireWhyNow(out", retire, StringComparison.Ordinal) < hand.IndexOf("Begin(HandMode.Retire", retire, StringComparison.Ordinal)
               && hand.Contains("GoingPublic.InSession, Ask(DynastyBridges.LawOpen)") && hand.Contains("if (why == RetireWhy.Ok)"), "dynasty sources: retiring is refused before the estate is frozen or any money booked");
         Check(hand.Contains("DynastyRules.Hold(Running, Ask(DynastyBridges.Final), GoingPublic.InSession, Ask(DynastyBridges.Custody), heir != null)") && hand.Contains("DynastyGame.SetAgeDays(DynastyRules.HeldAge(year))")
-              && hand.Contains("if (DynastyRules.Holds(hold))"), "dynasty sources: the last day is held only by the rule, in a session or a cell; Permadeath's death and the game's own end are left alone");
+              && hand.Contains("if (DynastyRules.Holds(hold))") && hand.Contains("if (!DynastyRules.InLastDays(age, year, _state.Held) || !DynastyGame.Ageing)"), "dynasty sources: the last day is held only by the rule, in a session or a cell; Permadeath's death and the game's own end are left alone");
         Check(dir.Contains("if (_state.Hand != null)") && dir.Contains("HandStep();") && hand.Contains("DynastyHand.Step(_state, this,"), "dynasty sources: a handover under way goes on at its step after a load");
         string putAway = dir.Substring(dir.IndexOf("private void PutAway()", StringComparison.Ordinal), 400);
         Check(putAway.Contains("Write();") && putAway.Contains("RemoveApp();") && !putAway.Contains("new DynastyState") && !putAway.Contains("Hand = null"), "dynasty sources: with the option off the line stays as it is");

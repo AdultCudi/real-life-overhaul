@@ -567,6 +567,12 @@ namespace RealLifeOverhaul.Dynasty
         /// <summary>The age in days a founder whose handover is held back is kept at, so the game's own end does not come first.</summary>
         public static int HeldAge(int yearDays) => DynastyCatalogue.LastAge * Math.Max(1, yearDays) - 5;
 
+        /// <summary>
+        /// Whether the founder is in their last days: from the age they begin at, and, once the last day has been held back, from the age it is held at, so the estate
+        /// passes the moment what held it is over and not days later.
+        /// </summary>
+        public static bool InLastDays(int ageDays, int yearDays, bool held) => ageDays >= LastDays(yearDays) || (held && ageDays >= HeldAge(yearDays));
+
         /// <summary>What holds the last day back, the first reason; None and the estate passes today.</summary>
         public static DeathHold Hold(bool running, bool final, bool session, bool custody, bool heir)
         {

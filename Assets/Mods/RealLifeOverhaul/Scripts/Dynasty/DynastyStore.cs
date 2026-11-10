@@ -38,7 +38,7 @@ namespace RealLifeOverhaul.Dynasty
         {
             var t = new StringBuilder(512);
             t.Append("v=").Append(Version).Append("^h:");
-            Join(t, s.Seed, s.LastDay, s.Generation, s.RetireTold, s.HeldTold, s.PaperDay);
+            Join(t, s.Seed, s.LastDay, s.Generation, s.RetireTold, s.HeldTold, s.PaperDay, s.Held ? 1 : 0);
             Will w = s.Will;
             t.Append("^w:");
             Join(t, w.Written ? 1 : 0, w.Day, (int)w.HeirKind, w.HeirId, w.RetireAge, w.Keep, w.Fees);
@@ -212,6 +212,7 @@ namespace RealLifeOverhaul.Dynasty
             s.RetireTold = Math.Max(0, I(f, 3));
             s.HeldTold = Math.Max(0, I(f, 4));
             s.PaperDay = Math.Max(0, I(f, 5));
+            s.Held = I(f, 6) != 0;
         }
 
         private static void WillOf(DynastyState s, string body)

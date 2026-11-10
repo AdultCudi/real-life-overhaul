@@ -259,6 +259,7 @@ namespace RealLifeOverhaul.Dynasty
         public int Generation = 1;             // of the head being played
         public int RetireTold;                 // the age the player was last reminded at that they may retire
         public int HeldTold;                   // the day the player was last told the last day is held back
+        public bool Held;                      // the last day is being held back (a session, a cell): the estate passes as soon as that is over
         public int PaperDay;
         public Will Will = new Will();
         public Handover Hand;                  // null: none under way
