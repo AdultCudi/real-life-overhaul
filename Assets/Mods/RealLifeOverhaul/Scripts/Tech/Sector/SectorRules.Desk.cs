@@ -222,11 +222,12 @@ namespace RealLifeOverhaul.Tech
         // ---------------------------------------------------------------- the AI lab: a training run
 
         /// <summary>
-        /// A training run: ten days of the model's training at once on the lab's own cloud (its accelerators, at the price the
-        /// player's firms pay their own cloud) or rented, or half a run; licensed data makes it sounder and costs, scraped data
+        /// A training run: ten days of the model's training at once on the player's own AI racks (at the price the player's firms
+        /// pay their own cloud) or rented, or half a run; licensed data makes it sounder and costs, scraped data
         /// is free and may bring a claim, synthetic is between; full safety checks hold the next training for days and earn a
         /// name, skipped ones risk an incident at its launch. Its benchmark against the rival labs of its market: a win earns
-        /// a name and a piece in the paper. Returns the run's cost and its score.
+        /// a name and a piece in the paper. A rented run takes no more a day than a model may rent (<see cref="InfraCatalogue.RentedMost"/>),
+        /// as the day's training does. Returns the run's cost and its score.
         /// </summary>
         public static DeskResult Training(SectorFile f, Product p, SectorProduct sp, Firm firm, int compute, int data, int safety, bool ownGpu, int seed, int day, int strength = 1000)
         {
@@ -236,7 +237,12 @@ namespace RealLifeOverhaul.Tech
             {
                 c = ComputeRented;   // no accelerators of the player's to run it on
             }
-            long units = (long)InfraRules.TrainLevels[Math.Max(2, Clamp(p.Train, 0, InfraRules.TrainLevels.Length - 1))] * SectorCatalogue.TrainRunDays * SectorCatalogue.TrainCompute[c] / 1000
+            long daily = InfraRules.TrainLevels[Math.Max(2, InfraRules.TrainLevel(p.Train))];
+            if (c != ComputeOwn)
+            {
+                daily = Math.Min(daily, InfraCatalogue.RentedMost);
+            }
+            long units = daily * SectorCatalogue.TrainRunDays * SectorCatalogue.TrainCompute[c] / 1000
                          * Clamp(strength, 0, 1000) / 1000;   // a manager's run makes less of the same compute
             p.Compute += units;
             r.Cost = units * InfraCatalogue.GpuUnitDay * (c == ComputeOwn ? InfraCatalogue.OwnHostingShare : InfraCatalogue.RentedGpuShare) / 1000 + SectorCatalogue.DataCost[d];

@@ -368,8 +368,91 @@ namespace RealLifeOverhaul.Tech
             return need;
         }
 
-        /// <summary>The training a model gets a day at a level (0 to 4), AI compute unit-days.</summary>
-        public static readonly int[] TrainLevels = { 0, 20, 50, 100, 200 };
+        /// <summary>
+        /// The training a model gets a day at a level, AI compute unit-days. Levels 0 to 4 are those of before: every model may rent
+        /// the fifth's (<see cref="InfraCatalogue.RentedMost"/>). Each level past it about doubles the last and is reached only with the
+        /// compute of the player's own AI racks (<see cref="TrainMost"/>), so a lab well equipped trains a generation in days and one
+        /// without racks waits as before. A saved level means what it meant.
+        /// </summary>
+        public static readonly int[] TrainLevels = { 0, 20, 50, 100, 200, 400, 750, 1500, 3000, 6000, 12000, 24000, 48000, 96000, 192000, 384000, 768000, 1536000, 3072000 };
+
+        /// <summary>A saved level read safely: none to the top.</summary>
+        public static int TrainLevel(int train) => TalentCatalogue.Clamp(train, 0, TrainLevels.Length - 1);
+
+        /// <summary>A level's training a day past what a model may rent: the part only the player's own AI racks can give it.</summary>
+        public static long TrainBeyond(int train) => Math.Max(0L, TrainLevels[TrainLevel(train)] - (long)InfraCatalogue.RentedMost);
+
+        /// <summary>
+        /// The highest level a model may be set to with so much own AI compute for it a day: the levels its own compute and
+        /// <see cref="InfraCatalogue.RentedMost"/> rented on top cover. With none of its own, level 4, as before.
+        /// </summary>
+        public static int TrainMost(long own)
+        {
+            long most = Math.Max(0L, own) + InfraCatalogue.RentedMost;
+            int level = 0;
+            while (level + 1 < TrainLevels.Length && TrainLevels[level + 1] <= most)
+            {
+                level++;
+            }
+            return level;
+        }
+
+        /// <summary>The AI compute an AI rack bought today gives a day: the new kind at the scale's share, the old kind with the scale off (<see cref="Buy"/>).</summary>
+        public static int GpuRackUnits(int share) =>
+            (int)EndScaleRules.Mix(InfraCatalogue.GpuUnitsPerRack, (long)InfraCatalogue.GpuUnitsPerRackScale * InfraCatalogue.IncomeAtScale / 1000, share);
+
+        /// <summary>The AI compute the player's AI racks give a day at full work (no outage, the crews full): what a model's highest level is reckoned on.</summary>
+        public static long GpuOwned(IList<DataCentre> centres, int share)
+        {
+            long units = 0;
+            for (int i = 0; centres != null && i < centres.Count; i++)
+            {
+                units += GpuUnits(centres[i], share);
+            }
+            return units;
+        }
+
+        /// <summary>
+        /// The own AI compute a model may train on: the racks' less what the player's other models still being built or on sale take of
+        /// them past what they may rent. Each model's part past the rent is kept for it, so raising one model never takes another's.
+        /// </summary>
+        public static long TrainOwnFor(IList<Product> products, Product p, long racks)
+        {
+            long others = 0;
+            for (int i = 0; products != null && i < products.Count; i++)
+            {
+                Product q = products[i];
+                if (q != p && q.K == ProductKind.Model && q.Stage < 2)
+                {
+                    others += TrainBeyond(q.Train);
+                }
+            }
+            return Math.Max(0L, Math.Max(0L, racks) - others);
+        }
+
+        /// <summary>
+        /// A model's day of training: its level's units from the own AI compute left (<paramref name="free"/>, lowered by what it takes),
+        /// keeping for the models after it their parts past what they may rent (<paramref name="reserve"/>), then rented up to
+        /// <see cref="InfraCatalogue.RentedMost"/>. Short of own compute (an outage, a crew short, a throttled day) it trains on less
+        /// that day rather than rent past the most. Returns the units trained; <paramref name="rented"/> is the part rented.
+        /// </summary>
+        public static long TrainDay(int train, ref long free, long reserve, out long rented)
+        {
+            long units = TrainLevels[TrainLevel(train)], left = Math.Max(0L, free);
+            long first = Math.Min(Math.Max(0L, units - InfraCatalogue.RentedMost), left);   // its part past the rent comes first, in the products' order while compute is short
+            long own = Math.Min(units, Math.Max(first, left - Math.Max(0L, reserve)));
+            free = left - own;
+            rented = Math.Min(units - own, InfraCatalogue.RentedMost);
+            return own + rented;
+        }
+
+        /// <summary>A lab with one model and its own AI compute (a rival's): it trains at the highest level that compute covers.
+        /// Returns the units a day; <paramref name="rented"/>, the part rented.</summary>
+        public static long TrainAlone(long own, out long rented)
+        {
+            long free = Math.Max(0L, own);
+            return TrainDay(TrainMost(own), ref free, 0, out rented);
+        }
 
         /// <summary>A model's customers' use of AI compute a day, units.</summary>
         public static int Inference(Product p) => (int)Math.Min(int.MaxValue, (p.Users + p.Free / 20) * InfraCatalogue.InferencePerCustomer / 1000);

@@ -228,10 +228,10 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // True when the player's cloud has AI accelerators to run a lab's training on.
+        // True when the player has AI racks to run a lab's training on, with a cloud or without, as the day's training does.
         private bool OwnGpu()
         {
-            if (_infra == null || !_infra.Cloud.Open)
+            if (_infra == null)
             {
                 return false;
             }

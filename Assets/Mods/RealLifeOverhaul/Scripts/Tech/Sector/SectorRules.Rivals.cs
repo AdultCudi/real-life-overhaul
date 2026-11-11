@@ -179,7 +179,7 @@ namespace RealLifeOverhaul.Tech
                 bool lab = r.Market >= (int)SectorMarket.ConsumerAi;
                 if (lab)
                 {
-                    r.Compute += r.Startups ? SectorCatalogue.StartupLabCompute : SectorCatalogue.RivalLabCompute;
+                    r.Compute += InfraRules.TrainAlone(LabOwn(r), out _);   // its own racks first and the rest rented, as the player's labs train
                 }
                 while (r.Features < SectorCatalogue.FeaturesMost && r.Progress >= FirmsRules.FeatureCost(r.Features) && (!lab || r.Compute >= InfraRules.TrainNeed(r.Features)))
                 {

@@ -468,8 +468,14 @@ namespace RealLifeOverhaul.Tech
             int working = EndScaleRules.Working(EndScaleRules.Cover(c.Ops, ops));
             capacity = (int)((long)capacity * working / 1000);
             gpu = (int)((long)gpu * working / 1000);
-            // the AI labs train and run their models on the cloud's accelerators while it has them, else rented ones
-            long rented = 0;
+            // the AI labs train and run their models on the player's own AI racks first, a cloud or not, then on rented accelerators: a model's
+            // training past what it may rent is kept for it on the racks (InfraRules.TrainDay), and its customers' use is always served
+            long rented = 0, free = Math.Max(0, gpu), reserve = 0;
+            for (int i = 0; _firmsOn && i < _firmsFile.Products.Count; i++)
+            {
+                Product q = _firmsFile.Products[i];
+                reserve += q.K == ProductKind.Model && q.Stage < 2 ? InfraRules.TrainBeyond(q.Train) : 0;
+            }
             for (int i = 0; _firmsOn && i < _firmsFile.Products.Count; i++)
             {
                 Product p = _firmsFile.Products[i];
@@ -477,12 +483,13 @@ namespace RealLifeOverhaul.Tech
                 {
                     continue;
                 }
-                int want = InfraRules.TrainLevels[TalentCatalogue.Clamp(p.Train, 0, InfraRules.TrainLevels.Length - 1)] + (p.Live ? InfraRules.Inference(p) : 0);
-                int own = open ? Math.Min(gpu, want) : 0;
-                gpu -= own;
-                int bought = want - own;
-                p.Compute += InfraRules.TrainLevels[TalentCatalogue.Clamp(p.Train, 0, InfraRules.TrainLevels.Length - 1)];
-                long cost = (long)bought * InfraCatalogue.GpuUnitDay * InfraCatalogue.RentedGpuShare / 1000 * level / 1000;
+                reserve -= InfraRules.TrainBeyond(p.Train);
+                p.Compute += InfraRules.TrainDay(p.Train, ref free, reserve, out long bought);
+                int running = p.Live ? InfraRules.Inference(p) : 0;
+                long own = Math.Min(running, Math.Max(0L, free - reserve));
+                free -= own;
+                bought += running - own;
+                long cost = bought * InfraCatalogue.GpuUnitDay * InfraCatalogue.RentedGpuShare / 1000 * level / 1000;
                 if (cost > 0)
                 {
                     FirmPlace lab = FirmOf(p.Place);
@@ -490,6 +497,7 @@ namespace RealLifeOverhaul.Tech
                     rented += cost;
                 }
             }
+            gpu = (int)free;   // what the labs left, for the cloud to sell
             if (!open)
             {
                 c.Sold = c.GpuSold = c.Own = 0;
@@ -735,14 +743,31 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        /// <summary>
+        /// A model's training level, set from its page: down freely, up to the highest its compute covers (<see cref="TrainingMost"/>). A level
+        /// set before racks were sold stays until it is lowered; the day then trains it on what the compute gives.
+        /// </summary>
         internal void SetTraining(int product, int level)
         {
             Product p = _firmsOn ? _firmsFile.ProductOf(product) : null;
             if (p != null && p.K == ProductKind.Model)
             {
-                p.Train = TalentCatalogue.Clamp(level, 0, InfraRules.TrainLevels.Length - 1);
+                p.Train = TalentCatalogue.Clamp(level, 0, Math.Max(InfraRules.TrainLevel(p.Train), TrainingMost(p, out _, out _)));
                 ChangedTech();
             }
+        }
+
+        /// <summary>
+        /// The highest training level a model may be set to, the own AI compute it is reckoned on (the AI racks' at full work, less what
+        /// the player's other models take of them past what they may rent, <see cref="InfraRules.TrainOwnFor"/>) and what an AI rack
+        /// bought today would add. COST: a pass over the data centres and the products, when a page is written or a level is set.
+        /// </summary>
+        internal int TrainingMost(Product p, out long own, out int perRack)
+        {
+            int share = _infra != null && Save != null ? EndScaleRules.Share(Settings.EndScale, _infra.ScaleFrom, Save.Day) : 0;
+            own = _infra != null && _firmsOn ? InfraRules.TrainOwnFor(_firmsFile.Products, p, InfraRules.GpuOwned(_infra.Centres, share)) : 0;
+            perRack = InfraRules.GpuRackUnits(EndScaleRules.Buying(Settings.EndScale));
+            return InfraRules.TrainMost(own);
         }
 
         /// <summary>The steps of the way up after the firms' own (a data centre, a cloud, a hyperscaler, an AI lab), for the Firms tab.</summary>

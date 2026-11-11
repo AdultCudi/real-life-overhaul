@@ -253,11 +253,16 @@ namespace RealLifeOverhaul.Ui
                     Do(() => _d.SetProduct(id, -1, p.Marketing + 1, -1)));
                 if (p.K == ProductKind.Model)
                 {
-                    string TrainWords(int i) => TechText.Fill("reallife_tech_product_train", "units", InfraRules.TrainLevels[i].ToString(Inv),
-                        "cost", Cents(_d.Level((long)InfraRules.TrainLevels[i] * InfraCatalogue.GpuUnitDay * InfraCatalogue.RentedGpuShare / 1000)));
-                    int last = InfraRules.TrainLevels.Length - 1;
-                    card.Step(TechText.T("reallife_ui_tech_training"), TrainWords(p.Train), null, p.Train > 0, p.Train < last, Do(() => _d.SetTraining(id, p.Train - 1)),
-                        Do(() => _d.SetTraining(id, p.Train + 1)));
+                    // up to the highest level its compute covers, then what holds it there and what raises it, with the way to the AI racks
+                    int most = _d.TrainingMost(p, out long own, out int perRack), train = InfraRules.TrainLevel(p.Train);
+                    card.Step(TechText.T("reallife_ui_tech_training"), Words(TrainingViews.Level(train, own, W)), null, train > 0, train < most, Do(() => _d.SetTraining(id, train - 1)),
+                        Do(() => _d.SetTraining(id, train + 1)));
+                    ViewLine room = TrainingViews.Room(train, own, perRack);
+                    card.Say(Words(room), Ink(room.Tone));
+                    if (TrainingViews.WantsRacks(train, own))
+                    {
+                        card.Go(TechText.T("reallife_ui_tech_open_infra"), Go(v => v.Open("tab:" + TabInfra)));
+                    }
                 }
                 int at = 0;
                 for (int i = 0; i < Shares.Length; i++)

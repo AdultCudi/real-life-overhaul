@@ -58,7 +58,7 @@ namespace RealLifeOverhaul.Tech
         public int LastRelease;               // day
         public long Carry;                    // millionths of a customer carried from one day's growth to the next
         public long Compute;                  // an AI model's training so far towards its next generation, AI compute unit-days
-        public int Train;                     // how hard an AI model is trained, 0 to 4 (InfraRules.TrainLevels)
+        public int Train;                     // how hard an AI model is trained, a level of InfraRules.TrainLevels: past 4 only with the player's own AI racks (InfraRules.TrainMost)
 
         public ProductKind K => (ProductKind)Kind;
         public Segment S => (Segment)Segment;

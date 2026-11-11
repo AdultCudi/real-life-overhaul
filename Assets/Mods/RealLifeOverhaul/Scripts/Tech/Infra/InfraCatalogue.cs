@@ -53,6 +53,7 @@ namespace RealLifeOverhaul.Tech
         public const int TrainBase = 400;             // AI compute unit-days the first generation of a model takes
         public const int TrainGrowth = 2000;          // thousandths: each generation takes twice the last
         public const int RentedGpuShare = 1300;       // thousandths of the list price the player pays a rival cloud for AI compute
+        public const int RentedMost = 200;            // AI compute units a day a model may rent for its training: the rest of a higher level comes from the player's own AI racks
         public const int InferencePerCustomer = 60;   // AI compute unit-thousandths a customer of a model uses a day
 
         // At scale (Core/EndScale: real figures, mixed in by its share): a data centre costs about ten million a megawatt,
