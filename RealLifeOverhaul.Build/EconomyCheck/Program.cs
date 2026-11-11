@@ -1083,6 +1083,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--cop-caps")
+        {
+            CopCaps();   // (the police caps option alone, while working on it: CopCapChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--furniture")
         {
             Meals();            // (moving furniture and the seat a meal is taken to, alone, while working on them: FurnitureMoveChecks.cs, MealsChecks.cs)
@@ -1556,6 +1562,7 @@ internal static partial class Program
         RivalSeen();    // rivals seen around the city: form, car, the seeded week, the world's cap and cost, honest sightings, a greeting's cap, the save, the pages, the texts (RivalSeenChecks.cs)
         Dynasty();      // the dynasty: the tax and its bands, the gifts' window, the will, who carries on, an estate settled to the last unit, the debt, the retired founder, a handover in its steps, the rivals, the city, the save, the pages, the sources, the texts (DynastyChecks.cs)
         Household();    // household staff: the kinds and their hours, wages from the going rate, the cook's dishes, candidates, unpaid visits, the save, money only through the game's call, the texts (HouseholdChecks.cs)
+        CopCaps();      // the police caps option: the rules for an officer's head, the one place that dresses them and the shelf that follows the option, the option and its texts (CopCapChecks.cs)
         HeavyLicence(); // the heavy goods licence: which trucks need it, the school's steps and waits, its save part, heavy loads on the courier round, the sources and texts (HeavyLicenceChecks.cs)
         PopulationChecks(); // the city's population: the measure, generation, a day with every cent placed, ten years, the labour market, the anchors, the costs (PopulationChecks.cs)
         FlareResidentChecks();  // Flare in the city: residents who follow and hear, attention that moves people between rivals and never makes them, the lift, reviews from real customers, ads, the save, the costs (FlareResidentChecks.cs)

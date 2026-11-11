@@ -192,6 +192,12 @@ namespace RealLifeOverhaul
                     v => Settings.PolicePresence = v, Meta.SettingsTable.SliderValue)
                 .AddToggle(Settings.PolicePursuitId, "reallife_police_pursuit", Settings.PolicePursuit,
                     v => Settings.PolicePursuit = v)
+                .AddToggle(Settings.PoliceCapsId, "reallife_police_caps", Settings.PoliceCaps,
+                    v =>
+                    {
+                        Settings.PoliceCaps = v;
+                        ActorPool.Instance?.CapsChanged();   // idle officers are dressed again for the new value, unseen
+                    })
                 .AddToggle(Settings.SirenId, "reallife_siren", Settings.Siren,
                     v => Settings.Siren = v)
                 .AddToggle(Settings.PeopleId, "reallife_people", Settings.People,

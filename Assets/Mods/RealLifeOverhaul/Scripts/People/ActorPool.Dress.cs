@@ -18,6 +18,7 @@ namespace RealLifeOverhaul
         // Everyone's age, build, face and hair are rolled; officers and paramedics then get their uniform and its equipment.
         private static void Dress(StreetActor actor, ActorLook look)
         {
+            actor.CapsOn = Settings.PoliceCaps;   // first: whatever follows, this look is not made again for the same value
             Looks.Count("people: a street character's look being built (a mesh merge)");   // named for the long-frame line of the session record
             actor.Look = look;
             actor.Stale = false;
@@ -37,10 +38,14 @@ namespace RealLifeOverhaul
                 Gender gender = Random.value < 0.5f ? Gender.Male : Gender.Female;
                 appearance.RandomizeElements(gender, SkinColorHelper.GetRandom(), CasualWear);
             }
-            bool cap = look == ActorLook.Officer && ServiceKit.CapToBeHad;
+            // What an officer wears on the head: nothing with the option off, else the modelled cap or, without it, the game's
+            // hat. The kit is asked for the cap only when it is the modelled one.
+            bool modelled = ServiceKit.CapToBeHad;
+            OfficerHead head = look == ActorLook.Officer ? OfficerCapRules.First(actor.CapsOn, modelled) : OfficerHead.Bare;
+            bool cap = head == OfficerHead.ModelledCap;
             if (Uniforms.Has(look))
             {
-                Uniforms.Wear(appearance, look, actor.Dyes, cap, ref actor.Shirt);
+                Uniforms.Wear(appearance, look, actor.Dyes, head != OfficerHead.GameHat, ref actor.Shirt);
             }
             appearance.UpdateVisuals();   // the one mesh merge for this outfit
             Looks.Done();
@@ -48,7 +53,7 @@ namespace RealLifeOverhaul
             {
                 // Too much hair for the modelled cap, which hides none: the game's own hat after all, a second merge.
                 Uniforms.Restore(actor.Dyes);
-                Uniforms.Wear(appearance, look, actor.Dyes, false, ref actor.Shirt);
+                Uniforms.Wear(appearance, look, actor.Dyes, OfficerCapRules.AfterRefusal(head) != OfficerHead.GameHat, ref actor.Shirt);
                 Looks.Count("people: an officer's look being built again (the cap did not fit)");
                 appearance.UpdateVisuals();
                 Looks.Done();
@@ -57,6 +62,31 @@ namespace RealLifeOverhaul
             if (Uniforms.Has(look))
             {
                 Heighten(actor, look, appearance.data.gender == Gender.Male);
+            }
+            if (look == ActorLook.Officer && Meta.Dev.Verbose)
+            {
+                HeadCheck(actor, appearance, modelled);
+            }
+        }
+
+        // Self-check, one line for each officer dressed, with Developer diagnostics on: what the caps option asked for against
+        // what is on the head (the modelled cap on the kit, the game's hat in its slot).
+        private static void HeadCheck(StreetActor actor, AppearanceSetter appearance, bool modelledToBeHad)
+        {
+            try
+            {
+                bool fitted = actor.Kit != null && actor.Kit.CapFitted;
+                bool hat = Uniforms.HatOn(appearance, out string slot);
+                string wanted = !actor.CapsOn ? "a bare head"
+                    : modelledToBeHad ? "the modelled cap, or the game's hat if it did not fit" : "the game's hat";
+                bool ok = OfficerCapRules.Matches(actor.CapsOn, modelledToBeHad, fitted, hat);
+                Logger?.Info("People check (an officer's head): the caps option is " + (actor.CapsOn ? "on" : "off") + ", wanted " + wanted
+                             + "; the modelled cap is " + (fitted ? "fitted" : "not fitted") + " and the game's hat slot holds '" + slot
+                             + "': " + (ok ? "PASS" : "FAIL"));
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);   // a diagnostic never breaks the dressing
             }
         }
 
