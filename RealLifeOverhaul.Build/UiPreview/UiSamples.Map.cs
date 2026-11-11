@@ -149,7 +149,9 @@ internal static partial class UiSamples
             case "taxi":
                 m.Note = t("reallife_map_taxi_note", "Pick a place to ride to. The taxi shows its price and time.");
                 m.Picked = true;
-                m.Place.DestinationLabel = "Taxi, 12 min, $14";   // the game's own words on its button
+                // The game's own words on its button, on its two lines (BuildingResume.SetClickLabels)
+                m.Place.DestinationLabel = t("ba:buildingresume_taxi_travel", "Travel here\n({info})")
+                    .Replace("{info}", t("bizman_factory_production_time_per_product_label", "{minutes} minutes").Replace("{minutes}", "12") + ", $14");
                 break;
             case "subway":
                 m.Page = MapPage.Subway;

@@ -54,9 +54,21 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>The words on one line: the breaks of <see cref="Plain"/> as a middle dot, empty lines left out.</summary>
-        public static string OneLine(string raw)
+        public static string OneLine(string raw) => Lines(Plain(raw), Join);
+
+        /// <summary>
+        /// The taxi button's words as the game writes them on its own button (BuildingResume.SetClickLabels): "Travel here" over the minutes and the fare in brackets,
+        /// on the game's two lines, each kept whole; <paramref name="none"/> when the game wrote none. A button draws the lines one over the other.
+        /// </summary>
+        public static string TaxiLabel(string raw, string none)
         {
-            string plain = Plain(raw);
+            string words = Plain(raw);
+            return string.IsNullOrWhiteSpace(words) ? none : Lines(words, "\n");
+        }
+
+        // A plain text's lines, each trimmed, the empty ones left out, joined by a mark: the text itself when it has one line.
+        private static string Lines(string plain, string join)
+        {
             if (string.IsNullOrEmpty(plain) || plain.IndexOf('\n') < 0)
             {
                 return plain;
@@ -72,7 +84,7 @@ namespace RealLifeOverhaul.Ui
                 }
                 if (b.Length > 0)
                 {
-                    b.Append(Join);
+                    b.Append(join);
                 }
                 b.Append(line);
             }
