@@ -180,8 +180,9 @@ namespace RealLifeOverhaul
     /// the springs, an axle's ride, the game's own car in a turn, one speed of the search for its hardest turn, the tyres'
     /// knee, rolling over, or the pitch and the brakes: a tenth to half a millisecond each offline (NavCheck times every
     /// one). With a ride asked of the car (a car of another mod, <see cref="HandlingTarget.RideHz"/>) it begins with one or two
-    /// steps for each ride tried (its dive, then, if the dive is carried, its roll), which soften the car's springs in place as far
-    /// as their travel carries (<see cref="HandlingModel.Soften"/>, <see cref="HandlingModel.RideCarries"/>).
+    /// steps for each ride tried (its dive, then, if the dive is carried, its roll and the brakes' worst moments), which soften the
+    /// car's springs and dampers in place as far as their travel and the brakes carry (<see cref="HandlingModel.Soften"/>,
+    /// <see cref="HandlingModel.RideCarries"/>).
     /// The car, the target and the setup are the caller's and must not change while a design is under way. Nothing allocated.
     /// </summary>
     public sealed class HandlingDesign
@@ -195,7 +196,8 @@ namespace RealLifeOverhaul
         internal bool SoftAsked;                 // the ride being tried is the one asked (the first)
         internal float SoftRide;                 // Hz: the ride on the car's springs whose dive was carried, its roll tried in the next step
         internal float SoftZeta;                 // and the damping ratio the front's dampers came to on it, for the swing of a sudden turn
-        internal readonly float[] Stock = new float[6];   // each axle's spring force, length and force point as its mod made them (front, then rear)
+        internal float SoftBump, SoftRebound;    // and those dampers' rates, for the brakes' worst moments
+        internal readonly float[] Stock = new float[10];   // each axle's spring force, length, force point and dampers' two rates as its mod made them (front, then rear)
         private int _next = HandlingModel.DesignDone;
 
         /// <summary>Why the car cannot have the handling, once the design is over; null: it can (or none was made).</summary>
@@ -219,6 +221,8 @@ namespace RealLifeOverhaul
             SoftAsked = false;
             SoftRide = 0f;
             SoftZeta = 1f;
+            SoftBump = 0f;
+            SoftRebound = 0f;
             s.Softened = false;
             s.SoftHeld = false;
             car.Front.OwnFrequency = 0f;
@@ -285,6 +289,9 @@ namespace RealLifeOverhaul
         public const float FrontKeep = 0.33f;         // the share of its travel at rest the front springs keep at the peak of the full pedal's dive, and a softened car's outer
                                                       // springs in the hardest turn its tyres hold: a bump on the way is not their stops
         public const float TravelSpare = 0.001f;      // m: the front's travel is read to a millimetre (the model steps the corner, it does not measure it)
+        public const float MostLag = 2f;              // times its settled share of the tyres either axle of a softened car may ask at its worst moment as the brakes come
+                                                      // on (the game's own cars' limit): past it a corner's load swings so far that its wheel all but leaves the road,
+                                                      // and the car stops metres further than the custom shop says
         private const int DiveSteps = 75;             // physics steps (1.5 s) the full pedal's dive is stepped for: the body's first swing is over by then
         private const int DiveSplits = 12;            // halvings of the search for the nose dive the front springs' travel allows
         private const int FirmSplits = 10;            // halvings of the search for the compression damping that keeps the front springs' travel
@@ -330,7 +337,7 @@ namespace RealLifeOverhaul
         internal const int DesignTip = 6;     // rolling over
         internal const int DesignBrakes = 7;  // the pitch and the brakes
         internal const int DesignSoft = 8;    // only where a ride is asked, before DesignStart: a ride put on the car's springs and its dive tried
-        internal const int DesignSoftRoll = 9;   // and, where the dive was carried, its roll
+        internal const int DesignSoftRoll = 9;   // and, where the dive was carried, its roll and the brakes' worst moments
         internal const int DesignDone = -1;
 
         // One step of a design; the step after it, or DesignDone. A step reads nothing an earlier one left in the shared
@@ -492,10 +499,11 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// Each axle of a car that rides stiffer than <paramref name="rideHz"/> given a softer spring on its own curve, at the same
-        /// height at rest (the same travel left to compress, the spring longer): a car of another mod, sprung for the track, made
-        /// as the game's soft cars are. An axle within <see cref="SoftenFrom"/> times the ride, or one the design would refuse, is
-        /// left as it is; <see cref="AxleData.OwnFrequency"/> says what a softened one rode at. True if an axle was softened.
-        /// Not an entry point: the design asks for the softest ride the car's travel carries (<see cref="RideCarries"/>), never this alone.
+        /// height at rest (the same travel left to compress, the spring longer), and its dampers with it, keeping the car's own damping:
+        /// a car of another mod, sprung for the track, made as the game's soft cars are. An axle within <see cref="SoftenFrom"/> times
+        /// the ride, or one the design would refuse, is left as it is; <see cref="AxleData.OwnFrequency"/> says what a softened one rode
+        /// at. True if an axle was softened. Not an entry point: the design asks for the softest ride the car carries
+        /// (<see cref="RideCarries"/>), never this alone.
         /// </summary>
         internal static bool Soften(CarChassis car, float rideHz)
         {
@@ -549,21 +557,30 @@ namespace RealLifeOverhaul
             float scale = rideHz / own;
             SpringAt(axle.Spring, load, rest, rate * scale * scale, out float force, out float length);
             axle.Application = axle.Application * axle.SpringLength / length;   // the force points stand as high above the road as they did
+            // The dampers go with the spring by the root of its factor (scale squared), as the Garage's springs part takes them, so the car keeps its own damping
+            // ratio. Dampers made for a spring several times as stiff, left on, are more than the game's physics step carries on a light corner, whose load then
+            // jitters (the BMW M4 G82 of a player's log, 28 000 N s/m on a 400 kg rear corner), and the design, reading no damping ratio there, kept them.
+            axle.Bump *= scale;
+            axle.Rebound *= scale;
             axle.OwnFrequency = own;
             axle.SpringForce = force;
             axle.SpringLength = length;
             return true;
         }
 
-        // The springs as their mod made them, kept (Keep) and put back on the car (Restock) between the rides tried.
+        // The springs and dampers as their mod made them, kept (Keep) and put back on the car (Restock) between the rides tried.
         private static void Keep(CarChassis car, float[] stock)
         {
             stock[0] = car.Front.SpringForce;
             stock[1] = car.Front.SpringLength;
             stock[2] = car.Front.Application;
-            stock[3] = car.Rear.SpringForce;
-            stock[4] = car.Rear.SpringLength;
-            stock[5] = car.Rear.Application;
+            stock[3] = car.Front.Bump;
+            stock[4] = car.Front.Rebound;
+            stock[5] = car.Rear.SpringForce;
+            stock[6] = car.Rear.SpringLength;
+            stock[7] = car.Rear.Application;
+            stock[8] = car.Rear.Bump;
+            stock[9] = car.Rear.Rebound;
         }
 
         private static void Restock(CarChassis car, float[] stock)
@@ -571,16 +588,21 @@ namespace RealLifeOverhaul
             car.Front.SpringForce = stock[0];
             car.Front.SpringLength = stock[1];
             car.Front.Application = stock[2];
-            car.Rear.SpringForce = stock[3];
-            car.Rear.SpringLength = stock[4];
-            car.Rear.Application = stock[5];
+            car.Front.Bump = stock[3];
+            car.Front.Rebound = stock[4];
+            car.Rear.SpringForce = stock[5];
+            car.Rear.SpringLength = stock[6];
+            car.Rear.Application = stock[7];
+            car.Rear.Bump = stock[8];
+            car.Rear.Rebound = stock[9];
         }
 
         // One step of the search for the softest ride the car's springs carry, before the design proper (DesignSoft); the step to go on with.
         // The first softens the car to the ride asked and tries it; if its travel carries that (RideCarries), that is all. If not, each ride after
         // halves the range between that ride and the car's own (which is the car as its mod made it), and the last puts the softest ride that
         // carried it on the car. A car whose own ride the travel does not carry either is left as it came. A ride is tried in this step for its
-        // dive (DiveCarried) and, where the dive is carried, in the next for its roll (DesignSoftRoll, RollCarried), so that no step does both.
+        // dive (DiveCarried) and, where the dive is carried, in the next for its roll and the brakes' worst moments (DesignSoftRoll, RollCarried,
+        // LagsCarried), so that no step does both.
         private static int SoftStep(HandlingDesign d)
         {
             CarChassis car = d.Car;
@@ -612,21 +634,24 @@ namespace RealLifeOverhaul
             return Dived(d, middle);
         }
 
-        // The ride now on the car's springs tried for the full pedal's dive: carried, its roll is tried in the next step; not, it is judged at once.
+        // The ride now on the car's springs tried for the full pedal's dive: carried, its roll is tried in the next step, the front's dampers kept for
+        // it; not, it is judged at once.
         private static int Dived(HandlingDesign d, float ride)
         {
             if (DiveCarried(d.Car, d.Target, Trial, out d.SoftZeta))
             {
                 d.SoftRide = ride;
+                d.SoftBump = Trial.Front.Bump;
+                d.SoftRebound = Trial.Front.Rebound;
                 return DesignSoftRoll;
             }
             return Judged(d, ride, false);
         }
 
-        // The roll of the ride whose dive the step before carried, on the car's springs as that step left them (DesignSoftRoll).
+        // The roll and the brakes' worst moments of the ride whose dive the step before carried, on the car's springs as that step left them (DesignSoftRoll).
         private static int SoftRoll(HandlingDesign d)
         {
-            return Judged(d, d.SoftRide, RollCarried(d.Car, d.Target, Trial, d.SoftZeta));
+            return Judged(d, d.SoftRide, RollCarried(d.Car, d.Target, Trial, d.SoftZeta) && LagsCarried(d.Car, d.Target, Trial, d.SoftBump, d.SoftRebound));
         }
 
         // A ride tried: the one asked, carried, stays on the car and that is all. Otherwise the range narrows on it (carried: its high end, not: its
@@ -667,14 +692,22 @@ namespace RealLifeOverhaul
         /// <summary>
         /// Whether the car, its springs as they stand, carries the handling on the travel they have, on the design's own sums (in
         /// <paramref name="trial"/>): at the peak of the full pedal's dive at the game's own angle the front keeps <see cref="FrontKeep"/>
-        /// of its travel at rest (<see cref="DiveCarries"/>), and in the hardest turn the car can take, the body's swing in a sudden turn
-        /// counted, so does each axle's outer spring (<see cref="RollCarries"/>, <see cref="RollKept"/>). A spring softer than this lets the
-        /// nose, or the body in a turn, down onto the springs' stops. The design asks the two in steps of their own (DesignSoft,
-        /// DesignSoftRoll); this is both at once, for the checks.
+        /// of its travel at rest (<see cref="DiveCarries"/>), so does each axle's outer spring in the hardest turn the car can take, a sudden
+        /// turn's swing counted (<see cref="RollCarries"/>, <see cref="RollKept"/>), and at the full pedal neither axle asks more than
+        /// <see cref="MostLag"/> times its settled share of its tyres at its worst moment. The design asks these in steps of their own
+        /// (DesignSoft, DesignSoftRoll); this is all at once, for the checks.
         /// </summary>
         public static bool RideCarries(CarChassis car, in HandlingTarget t, HandlingSetup trial)
         {
-            return DiveCarried(car, t, trial, out float zeta) && RollCarried(car, t, trial, zeta);
+            // A spring softer than this lets the nose, or the body in a turn, down onto the springs' stops, or the brakes ask an axle's tyres for far more than its
+            // share as the body dives: the design then tries a stiffer ride, or leaves the car as it came.
+            if (!DiveCarried(car, t, trial, out float zeta))
+            {
+                return false;
+            }
+            float bump = trial.Front.Bump;
+            float rebound = trial.Front.Rebound;
+            return RollCarried(car, t, trial, zeta) && LagsCarried(car, t, trial, bump, rebound);
         }
 
         /// <summary>The dive half of <see cref="RideCarries"/> alone: the front keeps <see cref="FrontKeep"/> of its travel at the peak of the full pedal's dive.</summary>
@@ -746,6 +779,33 @@ namespace RealLifeOverhaul
             float tipping = HandlingTurn.Rollover(Own, 0f) * car.PartsGrip / TipMargin;
             trial.Hold = hold < tipping ? hold : tipping;
             return RollKept(car, trial, trial.Hold);
+        }
+
+        // At the full pedal the design builds the car for (Brakes: the game's own times the level's share) neither axle asks more than MostLag times its settled share
+        // of its tyres at its worst moment (BrakeLag): the rear's load swinging below its share as the nose goes down, the front's lagging the brakes as they come on.
+        // The body dives as the level asks, as far as the anti-squat gives it with the force points where Roll brings them for the roll asked: the most a design of
+        // these springs dives, for a design only raises the force points from there and holds the dive back for the front's travel, which both press the axles less;
+        // and the weight it moves is held where the rear keeps RearKeep of its load, as the design holds its brakes (PartsBrakes). The front on the dampers the dive's
+        // step set it (bump, rebound), the rear on those RollCarried set it; reads the trial, the game's own car (Game) and the car in a turn (Own) as RollCarried left
+        // them in the same step, and fills Felt. A corner whose dampers the physics step cannot carry (its load jitters) asks far more.
+        private static bool LagsCarried(CarChassis car, in HandlingTarget t, HandlingSetup trial, float bump, float rebound)
+        {
+            float a = car.Front.Z - car.ComZ;
+            float b = car.ComZ - car.Rear.Z;
+            trial.GameRollCentre = trial.ComHeight - HandlingTurn.Arm(Game);
+            float game = GameDive(car, trial, a, b) / Radian;
+            float hold = PitchHold(car, trial);
+            float weight = trial.Mass * G;
+            float radius = 0.5f * (car.Front.Radius + car.Rear.Radius);
+            float arm = HandlingTurn.Arm(Own);
+            float dive = Within(game * t.DiveScale, DiveOf(arm - radius, weight, hold), DiveOf(arm + radius, weight, hold));
+            float moved = DiveMoved(car, hold, GameBrakeG(car, trial.ComHeight, trial.GameRollCentre) * t.BrakeFactor, dive);
+            float lift = (1f - RearKeep) * trial.Rear.Load;
+            moved = moved < lift ? moved : lift;
+            BrakeRamp(t.BrakeRise, GameBrakeOnset, InputRate, 99f, Felt);
+            trial.Front.Bump = bump;
+            trial.Front.Rebound = rebound;
+            return BrakeLag(car.Front, trial.Front, 1f, moved) <= MostLag && BrakeLag(car.Rear, trial.Rear, 1f, -moved) <= MostLag;
         }
 
         /// <summary>
@@ -1484,8 +1544,13 @@ namespace RealLifeOverhaul
         // The length the front spring comes down to at the peak of the full pedal's dive when the body dives dive radians per g (Felt filled).
         private static float DiveLeft(CarChassis car, HandlingSetup s, float hold, float plan, float dive)
         {
-            float moved = dive * hold / ((1f + dive) * 2f * (car.Front.Z - car.Rear.Z)) * plan;   // N pressed onto a front wheel when the pedal is full
-            return TravelLeft(car.Front, s.Front.Load, s.Front.SpringForce, s.Front.SpringLength, s.Front.Bump, s.Front.Rebound, moved);
+            return TravelLeft(car.Front, s.Front.Load, s.Front.SpringForce, s.Front.SpringLength, s.Front.Bump, s.Front.Rebound, DiveMoved(car, hold, plan, dive));
+        }
+
+        // The N pressed onto a front wheel, and taken off a rear one, at a full pedal of plan g when the body dives dive radians per g on springs holding hold N m per radian.
+        private static float DiveMoved(CarChassis car, float hold, float plan, float dive)
+        {
+            return dive * hold / ((1f + dive) * 2f * (car.Front.Z - car.Rear.Z)) * plan;
         }
 
         // The same for the game's own car: its springs and dampers, its dive (radians per g) and its full pedal, the brake ramp as Felt has it.
