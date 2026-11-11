@@ -210,6 +210,8 @@
         public const string TechSiteOfficesId = "tech_site_offices";
         public const string EconomyDealerId = "economy_dealer";
         public const string EconomyDealerFloorId = "economy_dealer_floor";
+        public const string EconomyDealerSupplyId = "economy_dealer_supply";
+        public const string ParkingSpacesId = "parking_spaces";
         public const string EconomyCleaningId = "economy_cleaning";
         public const string EconomySaleId = "economy_sale";
         public const string OfficeConversionId = "office_conversion";
@@ -592,6 +594,8 @@
         public static bool EconomyOnlineWaitNotes = true; // ...a notification after three opening hours of orders nobody is on shift to pick
         public static bool EconomyDealer = true;         // the car dealership (off: its dealerships do not trade; their cars stay on the lots)
         public static bool EconomyDealerFloor = true;    // visitors on the Car Showroom's floor
+        public static bool EconomyDealerSupply = true;   // a supplier for each kind of car at the Car Showroom (off: every new car from the wholesaler, as before)
+        public static bool ParkingSpaces = true;         // a parking space bought or rented in a building's car park (off: every car there pays by the hour, as before)
         public static bool EconomyCleaning = true;       // the cleaning service (off: no round, no contracts, nothing cleaned or charged by it)
         public static bool OfficeConversion = true;      // some empty shops in the districts with offices are offices to rent while the mod runs
         public static bool EconomySale = true;           // selling a business (off: nothing is offered, paid or charged by it)
@@ -1028,6 +1032,8 @@
             TechSiteOffices = Bool(modId, TechSiteOfficesId, TechSiteOffices);
             EconomyDealer = Bool(modId, EconomyDealerId, EconomyDealer);
             EconomyDealerFloor = Bool(modId, EconomyDealerFloorId, EconomyDealerFloor);
+            EconomyDealerSupply = Bool(modId, EconomyDealerSupplyId, EconomyDealerSupply);
+            ParkingSpaces = Bool(modId, ParkingSpacesId, ParkingSpaces);
             EconomyCleaning = Bool(modId, EconomyCleaningId, EconomyCleaning);
             EconomySale = Bool(modId, EconomySaleId, EconomySale);
             OfficeConversion = Bool(modId, OfficeConversionId, OfficeConversion);

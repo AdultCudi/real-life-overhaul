@@ -23,6 +23,8 @@ namespace RealLifeOverhaul.Meta
             Household.HouseholdGuide.Register();
             Giving.GivingGuide.Register();
             Health.HealthGuide.Register();
+            ParkSpaces.SpaceGuide.Register();
+            Economy.Dealership.CarSupplyGuide.Register();
             Permadeath.PermadeathGuide.Register();
             Faults.FaultGuide.Register();
             Texts.TextsGuide.Register();

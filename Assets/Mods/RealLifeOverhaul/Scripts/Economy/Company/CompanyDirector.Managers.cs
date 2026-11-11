@@ -251,6 +251,18 @@ namespace RealLifeOverhaul.Economy
             return ManagerRules.Answers(ManagersOn, OwnOf(place), task, employee) && PolicyAllows(ManagedAt(place), task);
         }
 
+        /// <summary>
+        /// True where a manager of the company decides this kind of thing at a place today: the gates every decision of a manager passes
+        /// (CompanyDay.Deciding: the managers' switch, a manager with this work, the policy, the company's own place, and somebody who
+        /// can decide today, the manager or the regional manager standing in for one off sick). Off sick with nobody to stand in, the
+        /// decision waits. For the features that act for a manager outside the company's own rounds.
+        /// </summary>
+        internal bool Decides(string place, ManagerTask task)
+        {
+            ManagedPlace mp = _mgr != null && !_mgrBroken && place != null ? ManagedAt(place) : null;
+            return mp != null && CompanyDay.Deciding(this, mp.Place.Place, mp.Kind, mp.Own, task, out _, out _, out _);
+        }
+
         // Who decides at a place today: its manager, or the district's regional manager standing in for one off sick.
         private bool Decider(ManagedPlace mp, out int skill, out int review, out string who)
         {

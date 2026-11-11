@@ -33,6 +33,8 @@ namespace RealLifeOverhaul.Rivals
         public static Func<int, string> GivingLine;
         /// <summary>A line on a tycoon (by index) who is off sick or in hospital; empty while they are well (Health). Default: none.</summary>
         public static Func<int, string> HealthLine;
+        /// <summary>A line on the parking space a tycoon (by index) holds in a building's car park; empty for none (ParkSpaces). Default: none.</summary>
+        public static Func<int, string> SpaceLine;
         /// <summary>The player's net worth as the Finance app shows it. Default: the game's own figure.</summary>
         public static Func<long> Worth;
         /// <summary>The city's cycle: 0 boom, 1 steady, 2 slowdown, 3 recession (Economy/City). Default: steady.</summary>
@@ -121,6 +123,7 @@ namespace RealLifeOverhaul.Rivals
             Seats = null;
             GivingLine = null;
             HealthLine = null;
+            SpaceLine = null;
             LeaseTrend = null;
             LeaseRenewed = null;
             Worth = null;

@@ -384,7 +384,10 @@ namespace RealLifeOverhaul
             Check(rent.Any(r => r.Id == "home_roommates"), "'rent' does not find the roommate");
             Check(rent.Any(r => r.Id == "economy_products"), "'rent' does not find the mortgage");
             Check(rent.Any(r => r.Id == "economy_estate"), "'rent' does not find property");
-            Check(rent.Count <= 8, "'rent' finds " + rent.Count + " rows: it is found inside other words");
+            Check(rent.Any(r => r.Id == "parking_spaces"), "'rent' does not find the parking spaces, which are rented too");
+            var rentRows = new[] { "home_roommates", "utilities", "district_view", "economy_products", "economy_estate", "economy_estate_hotel", "economy_estate_hire", "economy_estate_rent", "parking_spaces" };
+            Check(rent.Count == rentRows.Length && rentRows.All(id => rent.Any(r => r.Id == id)),
+                "'rent' finds exactly the nine rows that are about renting (" + string.Join(", ", rentRows) + "), not " + rent.Count + ": " + string.Join(", ", rent.Select(r => r.Id)));
             Check(rent.Select(r => OptionsTree.SectionOf(r.Id).Group.Id).Distinct().Count() >= 3, "'rent' is not found in three groups");
             Check(Find("fps").Count > 0 && Find("fps").All(r => OptionsTree.SectionOf(r.Id).Group.Id == "performance" || OptionsTree.SectionOf(r.Id).Group.Id == OptionsTree.TroubleId), "'fps' does not find the performance rows");
             Check(Find("police chase").Any(r => r.Id == "police_pursuit"), "'police chase' does not find the pursuit");

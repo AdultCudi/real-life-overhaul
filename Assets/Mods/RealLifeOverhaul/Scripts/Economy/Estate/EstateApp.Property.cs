@@ -111,6 +111,7 @@ namespace RealLifeOverhaul.Economy
                 row.Set(6, EstateText.Money(state.Hire.TakingsYear), state.Hire.TakingsYear);
                 row.Set(7, EstateText.Money(state.Hire.CostsYear), state.Hire.CostsYear);
             }
+            WriteSpacesHeld(ref selected);   // the parking spaces held (ParkSpaces)
             if (_rows.Count == 0)
             {
                 Say("none", EstateText.T("reallife_estate_row_nothing_owned"));

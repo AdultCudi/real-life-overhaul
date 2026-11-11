@@ -98,6 +98,10 @@ internal static partial class UiSamples
                 m = DealerBase(t, 2, DealerWorld("std"));
                 DealerUsed(t, m, runs, DealerWorld("std"));
                 break;
+            case "suppliers":
+                m = DealerBase(t, 2, DealerWorld("std"));
+                SupplySample(t, m, runs, DealerWorld("std"));   // the suppliers of each kind of car (UiSamples.BizAsks.cs)
+                break;
             case "auction":
             case "auction_new":
                 m = DealerBase(t, 2, DealerWorld("std"));

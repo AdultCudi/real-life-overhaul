@@ -61,9 +61,10 @@ namespace RealLifeOverhaul.Economy.Dealership
         {
             int day = now / 24, level = Prices.Level;
             _working = day;
-            DealerDay.Morning(_state, day, _models, _colours, level);
+            DealerDay.Morning(_state, day, _models, _colours, level, true, SupplyOn);
             Auction(now, level);
             Arrivals(now);
+            SupplyMorning(day, now);
             int financeLeast = Prices.At(DealerCatalogue.FinanceLeast);
             for (int i = 0; i < _state.Yards.Count; i++)
             {

@@ -292,6 +292,7 @@ The test buttons and "Bring it here" use `BikePlaces.SpotAhead`: 2.2 m in front 
 - "My vehicles" gives every two-wheeler its address, district and distance, with **Show me** and **Bring it here** (on foot, out of doors; free from within 25 m, otherwise 20; one the game no longer has in the world is made again, the same sort and colour).
 - An owned one found behind a building's wall when a save loads (`BikePlaces.Walled`: pavement near it, a wall between) is said once, with the way out.
 - Parking: a two-wheeler's `parkingState` is `Undefined`, so the game's hourly public-parking charge and its parking tickets ("electric scooter") skip it.
+- A car's own space in the car park under a building, bought or rented without the building, is [Parking spaces](parking-spaces.md); the Car Showroom's suppliers by kind of car are [Car suppliers](car-suppliers.md).
 - The log says everything about one that is made, and again two seconds on ("Two-wheelers: made ...", "two seconds on ..."): position, heading, tilt, the ground found under it, pavement or not, how many of the body's renderers are drawn, forced off or without a material, their bounds, how many of the scooter's own are hidden or still drawn, active state, layer, scale, collider layer, rigidbody, physics, map marker.
 
   One that is no longer where it was put (fallen, flown, on its side) is stood back once and held as the game holds a parked scooter.

@@ -199,6 +199,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             DealerGame.Models(_models, _colours);
             int gone = ReadYards(), lost = Reconcile();
             DealerExtraStore.Read(_state, save.modData);
+            SupplyLoad(save);
             if (_state.Rivals.Count == 0)
             {
                 RivalRules.Morning(_state, save.Day, _models, Prices.Level);   // a save from before has no rival cars yet: they are put out at once
@@ -556,6 +557,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
             save.modData[DealerStore.Key] = DealerStore.Write(_state);
             DealerExtraStore.Write(_state, save.modData);
+            SupplyWrite(save);
             WriteBays(save);
             if (_beforeTests != null)
             {
@@ -669,6 +671,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                 Fault("the save tools", e);
             }
             _state = null;
+            SupplyForget();
             _beforeTests = null;
             _ids.Clear();
             _bays.Clear();

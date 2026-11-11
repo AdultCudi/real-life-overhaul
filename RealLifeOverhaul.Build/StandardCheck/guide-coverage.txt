@@ -16,6 +16,7 @@ game-studio	reallife_guide_studio	the game studio rebuilt
 flare-city	reallife_guide_flare_city	Flare connected to the city's residents
 giving	reallife_guide_giving	charities, gifts and loans
 health	reallife_guide_health	illness, the doctor, hospital stays, health plans and sick leave
+parking-spaces	reallife_guide_parking_spaces	a parking space bought or rented in a building's car park
 startup-money	reallife_guide_tech_startups	investors' money kept by the firm account, the board and the wind down
 startup-terms	reallife_guide_tech_startups	the terms of a round, the board's say over big spends and the skills that read them
 startup-founding	reallife_guide_tech_startups	founding a startup, niches, co-founders and going to market
@@ -42,6 +43,7 @@ economy-rota	reallife_guide_economy_rota	the staff rota planner
 family	reallife_guide_family	family
 floors	-	how the mod's places share a building's floors: nothing a player sees
 garage	reallife_guide_garage	the custom shop
+car-suppliers	reallife_guide_economy_dealer_supply	the Car Showroom's suppliers by kind of car
 home	reallife_guide_home	home life and health
 household	reallife_guide_household	household staff
 hustles	reallife_guide_hustles	the Marketplace

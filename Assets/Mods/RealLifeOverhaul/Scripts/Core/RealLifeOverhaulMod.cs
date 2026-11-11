@@ -1254,6 +1254,11 @@ namespace RealLifeOverhaul
                 .AddSlider(Settings.EstateRentId, "reallife_estate_opt_rent", 50, 300, Settings.EstateRent, v => Settings.EstateRent = v, Meta.SettingsTable.SliderPercent)
                 .AddToggle(Settings.EstateDutiesId, "reallife_estate_opt_duties", Settings.EstateDuties,
                     v => Settings.EstateDuties = v)
+                .AddToggle(Settings.ParkingSpacesId, "reallife_space_enabled", Settings.ParkingSpaces,
+                    v => Settings.ParkingSpaces = v)
+                .AddButton("reallife_space_test_btn_buy", () => ParkSpaces.SpaceDirector.Instance?.TestBuy())
+                .AddButton("reallife_space_test_btn_day", () => ParkSpaces.SpaceDirector.Instance?.TestDay())
+                .AddButton("reallife_space_test_btn_rival", () => ParkSpaces.SpaceDirector.Instance?.TestRival())
                 .AddButton("reallife_estate_test_applicant", () => Economy.EstateDirector.Instance?.TestApplicant())
                 .AddButton("reallife_estate_test_arrears", () => Economy.EstateDirector.Instance?.TestArrears())
                 .AddButton("reallife_estate_test_works", () => Economy.EstateDirector.Instance?.TestWorks())
@@ -1353,6 +1358,10 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_dealer_test_mission", () => Economy.Dealership.DealerDirector.Instance?.TestMission())
                 .AddButton("reallife_dealer_test_back", () => Economy.Dealership.DealerDirector.Instance?.TestBack())
                 .AddButton("reallife_showroom_test_floor", () => Economy.Dealership.ShowroomFloor.Instance?.TestFloor())
+                .AddToggle(Settings.EconomyDealerSupplyId, "reallife_carsup_enabled", Settings.EconomyDealerSupply,
+                    v => Settings.EconomyDealerSupply = v)
+                .AddButton("reallife_carsup_test_order", () => Economy.Dealership.DealerDirector.Instance?.TestSupplyOrder())
+                .AddButton("reallife_carsup_test_manager_btn", () => Economy.Dealership.DealerDirector.Instance?.TestSupplyManager())
                 .AddButton("reallife_svc_test_round", () => Economy.ServicesDirector.Instance?.TestRound())
                 .AddButton("reallife_svc_test_contract", () => Economy.ServicesDirector.Instance?.TestContractOffer())
                 .AddButton("reallife_svc_test_week", () => Economy.ServicesDirector.Instance?.TestContractWeek())
@@ -1854,6 +1863,7 @@ namespace RealLifeOverhaul
             Guard.Step("household staff", () => Household.HouseholdDirector.Attach(_root, context.Logger));
             Guard.Step("giving", () => Giving.GivingDirector.Attach(_root, context.Logger));
             Guard.Step("health", () => Health.HealthDirector.Attach(_root, context.Logger));
+            Guard.Step("parking spaces", () => ParkSpaces.SpaceDirector.Attach(_root, context.Logger));
             Guard.Step("Flare.FlareDirector", () => Flare.FlareDirector.Logger = context.Logger);
             Guard.Step("Flare.FlareApp", () => Flare.FlareApp.Logger = context.Logger);
             Guard.Step("Flare.FlareDirector", () => Guard.Add<Flare.FlareDirector>(_root));   // after the company and the brands, so that its day follows theirs

@@ -19,6 +19,13 @@ namespace RealLifeOverhaul.Ui
                     Hotel();
                     return;
                 }
+                if (pick != null && pick.StartsWith(SpacePick, StringComparison.Ordinal))
+                {
+                    _v.Tab = Array.IndexOf(NavTab, EstateDirector.TabMarket);   // a space held is looked after on its car park's page
+                    _m.Tab = _v.Tab;
+                    Market();
+                    return;
+                }
                 if (pick != null && pick.StartsWith("lot:", StringComparison.Ordinal))
                 {
                     _v.Tab = Array.IndexOf(NavTab, EstateDirector.TabHire);
@@ -170,6 +177,7 @@ namespace RealLifeOverhaul.Ui
                         0, EstateText.T("reallife_estate_kind_lot"), UiRole.None));
                     keys.Add("lot:");
                 }
+                SpaceHeld(rows, keys);
                 RollTotals roll = EstateFigures.Roll(lines, _monthDays);
                 long due = roll.Due, owed = roll.Owed, empty = roll.EmptyAsking;
                 int let = roll.Let;

@@ -315,7 +315,18 @@ namespace RealLifeOverhaul.Ui
                 "reallife_estate_tenant_offices_7",
                 "reallife_estate_fault_0",
                 "reallife_estate_own_made_of",
-                "reallife_estate_own_made_of_2"
+                "reallife_estate_own_made_of_2",
+                // a building's car park (Ui/Estate/SpacePages)
+                "reallife_ui_estate_pair", "reallife_econ_day", "reallife_space_kind", "reallife_space_number", "reallife_space_page_title",
+                "reallife_space_row_free", "reallife_space_row_full", "reallife_space_row_held", "reallife_space_row_yours", "reallife_space_fig_price",
+                "reallife_space_fig_rent", "reallife_space_fig_fee", "reallife_space_fig_spaces", "reallife_space_sec_take", "reallife_space_sec_holders",
+                "reallife_space_sec_mine", "reallife_space_l_seller", "reallife_space_l_you", "reallife_space_l_rivals", "reallife_space_l_city",
+                "reallife_space_l_free", "reallife_space_l_hours", "reallife_space_what", "reallife_space_what_yours", "reallife_space_owner_you",
+                "reallife_space_owner_landlord", "reallife_space_tenure_owned", "reallife_space_tenure_rented", "reallife_space_tenure_ending",
+                "reallife_space_btn_buy", "reallife_space_btn_rent", "reallife_space_btn_sell", "reallife_space_btn_end", "reallife_space_btn_keep",
+                "reallife_space_refuse_off", "reallife_space_refuse_session", "reallife_space_refuse_no_park", "reallife_space_refuse_full",
+                "reallife_space_refuse_limit", "reallife_space_refuse_park_limit", "reallife_space_refuse_cash", "reallife_space_refuse_not_held",
+                "reallife_space_refuse_own_building", "reallife_space_refuse_rented", "reallife_space_refuse_owned", "reallife_space_refuse_moved"
             };
         }
 
@@ -506,7 +517,15 @@ namespace RealLifeOverhaul.Ui
                 "reallife_dealer_state_inspected",
                 "reallife_dealer_state_driving",
                 "reallife_dealer_state_event_on",
-                "reallife_ui_dealer_deal_looked_once"
+                "reallife_ui_dealer_deal_looked_once",
+                // the suppliers of each kind of car (Ui/Estate/SupplyPages)
+                "reallife_carsup_title", "reallife_carsup_sub", "reallife_carsup_kept_terms", "reallife_carsup_sec_suppliers", "reallife_carsup_sec_standing",
+                "reallife_carsup_sec_rivals", "reallife_carsup_l_showroom", "reallife_carsup_l_supplier", "reallife_carsup_l_delivery", "reallife_carsup_has",
+                "reallife_carsup_standing_managed", "reallife_carsup_standing_unmanaged", "reallife_carsup_fig_on_order", "reallife_carsup_price_same",
+                "reallife_carsup_price_under", "reallife_carsup_price_over", "reallife_carsup_delivery_now", "reallife_carsup_delivery_days",
+                "reallife_carsup_terms", "reallife_carsup_rivals_part", "reallife_carsup_name_0", "reallife_carsup_name_1", "reallife_carsup_name_2",
+                "reallife_carsup_about_0", "reallife_carsup_about_1", "reallife_carsup_about_2", "reallife_carsup_link", "reallife_dealer_carkind_1",
+                "reallife_dealer_carkind_2", "reallife_dealer_carkind_3", "reallife_dealer_carkind_4", "reallife_dealer_carkind_5", "reallife_dealer_carkind_6"
             };
         }
     }

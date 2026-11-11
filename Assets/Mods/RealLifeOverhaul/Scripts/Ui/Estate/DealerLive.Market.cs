@@ -47,6 +47,10 @@ namespace RealLifeOverhaul.Ui
                         default: NewPage(picked); return;
                     }
                 }
+                if (SupplyPage())
+                {
+                    return;   // the suppliers of each kind (DealerLive.Supply)
+                }
                 _v.Pick = null;
                 var rows = new List<UiDataRow>(16);
                 var keys = new List<string>(16);
@@ -93,6 +97,7 @@ namespace RealLifeOverhaul.Ui
                 _m.FigLabels = new[] { DealerText.T("reallife_dealer_cash"), DealerText.T("reallife_ui_dealer_fig_new"),
                     DealerText.T("reallife_ui_dealer_fig_used"), DealerText.T("reallife_ui_dealer_fig_lots") };
                 _m.FigValues = new[] { Money(DealerGame.Cash), news.ToString(Inv), used.ToString(Inv), lots.ToString(Inv) };
+                SupplyLink();
             }
 
             private static bool Parse(string pick, string prefix, out int id)
@@ -108,8 +113,9 @@ namespace RealLifeOverhaul.Ui
                 var lines = new List<UiFactLine> { UiFactLine.Row(DealerText.T("reallife_ui_dealer_l_km"), DealerText.Km(l.Km)) };
                 string yard = YardStep(lines);
                 DealerYard to = yard != null ? _s.Yard(yard) : null;
-                int price = to != null ? DealerRules.WholesalePrice(l.Asking, to.Rep) : l.Asking;
-                if (price < l.Asking)
+                int price = _d.NewPrice(l, to);   // the kind's supplier and a respected showroom's perk, as the director charges it
+                SupplyLines(lines, l);
+                if (to != null && DealerRules.WholesalePrice(l.Asking, to.Rep) < l.Asking)
                 {
                     lines.Add(UiFactLine.Say(DealerText.T("reallife_dealer_new_perk", "price", Money(l.Asking)), UiRole.OkText));
                 }
@@ -121,8 +127,9 @@ namespace RealLifeOverhaul.Ui
                 if (yard != null)
                 {
                     int lid = l.Id;
+                    string question = _d.NewQuestion(l, price);   // for a car on order, from whom and when it comes
                     actions.Add(_runs.Button(DealerText.T("reallife_dealer_button_buy"), UiButtonKind.Primary, UiIcon.Check, UiAction.Alt, () => Show(() => Confirm("reallife_dealer_q_buy_title",
-                        DealerText.T("reallife_dealer_q_buy", "car", DealerGame.CarName(l.Type), "price", Money(price)), () =>
+                        question, () =>
                         {
                             if (_d.Buy(lid, yard, price))
                             {

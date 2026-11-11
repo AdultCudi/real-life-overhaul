@@ -36,7 +36,7 @@ namespace RealLifeOverhaul.Economy.Dealership
         }
 
         /// <summary>The morning's restock: sold cars go, each dealer is topped up to its number, from the game's vehicle types at today's prices.</summary>
-        public static void Morning(DealerState s, int day, IList<MarketModel> models, int level)
+        public static void Morning(DealerState s, int day, IList<MarketModel> models, int level, bool suppliers = false)
         {
             int dealers = DealerCatalogue.RivalNames.Length;
             if (models == null || models.Count == 0)
@@ -53,7 +53,7 @@ namespace RealLifeOverhaul.Economy.Dealership
                     known = models[m].Type == c.Type;
                 }
                 var dice = new DealerDice(s.Seed, day, c.Rival * 131 + c.Day * 7 + (DealerRules.Hash(c.Type) % 9973) + c.Ask, 83);   // each car its own roll
-                if (!known || c.Rival < 0 || c.Rival >= dealers || dice.Chance(SoldChance))
+                if (!known || c.Rival < 0 || c.Rival >= dealers || (c.Day < day && dice.Chance(SoldChance)))   // a car still on its way from a supplier is not on the lot to be sold
                 {
                     s.Rivals.RemoveAt(i);
                 }
@@ -74,9 +74,11 @@ namespace RealLifeOverhaul.Economy.Dealership
                     MarketModel m = models[dice.Range(0, models.Count - 1)];
                     int worth = DealerRules.Worth(m.Price, level, TypicalKm, TypicalCondition);
                     int ask = DealerCatalogue.Named(DealerCatalogue.Share(worth, bias + dice.Range(-Spread, Spread)));
+                    int out_ = day;
+                    CarSupplyRules.RivalBuys(ref ask, ref out_, s.Seed, r, m.Kind, suppliers);   // from the kind's supplier, as the player's showroom buys
                     if (ask > 0)
                     {
-                        s.Rivals.Add(new RivalCar { Rival = r, Type = m.Type, Ask = ask, Day = day });
+                        s.Rivals.Add(new RivalCar { Rival = r, Type = m.Type, Ask = ask, Day = out_ });
                     }
                 }
             }
@@ -90,7 +92,7 @@ namespace RealLifeOverhaul.Economy.Dealership
             for (int i = 0; i < s.Rivals.Count; i++)
             {
                 RivalCar c = s.Rivals[i];
-                if (c.Type == type && c.Ask > 0 && (best == 0 || c.Ask < best))
+                if (c.Type == type && c.Ask > 0 && (s.MarketDay < 0 || c.Day <= s.MarketDay) && (best == 0 || c.Ask < best))   // a car still on its way from a supplier is not on the lot
                 {
                     best = c.Ask;
                     rival = c.Rival;

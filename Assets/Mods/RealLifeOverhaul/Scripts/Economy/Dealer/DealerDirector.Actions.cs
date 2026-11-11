@@ -101,7 +101,12 @@ namespace RealLifeOverhaul.Economy.Dealership
             BuildingRegistration reg = RegOf(y);
             if (l.Kind == ListingKind.Wholesale)
             {
-                price = DealerRules.WholesalePrice(l.Asking, y.Rep);   // a respected showroom's perk; the app shows the same
+                int supplier = SupplierOf(l);
+                price = NewPrice(l, y);   // the kind's supplier, and a respected showroom's perk; the app shows the same
+                if (CarSupplyRules.Ships(supplier))
+                {
+                    return BuyShipped(l, y, reg, price, supplier);   // it comes in a few days: its place is held (DealerDirector.Supply)
+                }
             }
             if (!DealerGame.Take(price, DealerLines.BoughtType, DealerGame.Bought(l.Type), reg, false))
             {
