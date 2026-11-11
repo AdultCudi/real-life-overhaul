@@ -55,6 +55,7 @@ namespace RealLifeOverhaul.Ui
             Row("Car Showroom app", SweepState.Kit, "dealer", "an app window over the city", "Economy/Dealer/DealerDirector.cs", "Economy/Dealer/DealerReportPage.cs"),
             Row("Property app", SweepState.Kit, "estate", "an app window over the city", "Economy/Estate/EstateDirector.cs"),
             Row("Giving app", SweepState.Kit, "giving", "an app window over the city", "Giving/GivingDirector.App.cs"),
+            Row("Insurance app", SweepState.Kit, "insurance", "an app window over the city", "Insurance/InsuranceDirector.App.cs"),
             Row("Health app", SweepState.Kit, "health", "an app window over the city", "Health/HealthDirector.App.cs"),
             Row("Suppliers app", SweepState.Kit, "suppliers", "an app window over the city", "Suppliers/SupplierDirector.App.cs"),
             Row("Legacy app", SweepState.Kit, "dynasty", "an app window over the city", "Dynasty/DynastyDirector.App.cs"),

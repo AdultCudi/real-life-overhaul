@@ -18,6 +18,9 @@ namespace RealLifeOverhaul
     {
         public static int Fee => Prices.At(180);
 
+        /// <summary>What a car's policy pays of a tow's fee (Insurance, wired in Wiring/InsuranceLinks), asked once the car is towed and before the fee is taken. Null: nothing.</summary>
+        public static Func<string, int, int> Cover;
+
         private const float SearchRadius = 80f;
 
         public static IModLogger Logger;
@@ -54,14 +57,36 @@ namespace RealLifeOverhaul
             return null;
         }
 
-        /// <summary>Moves the car to a space near the given point and bills the tow. Safe to call with null.</summary>
-        public static void BringNear(VehicleInstance instance, Vector3 near)
+        /// <summary>
+        /// Moves the car to a space near the given point and bills the tow. Safe to call with null. A tow after a crash is one a car's policy may pay
+        /// its part of (<paramref name="insured"/>); one after a stay in prison is not.
+        /// </summary>
+        public static void BringNear(VehicleInstance instance, Vector3 near, bool insured = true)
         {
-            BringNear(instance, near, Fee, "reallife_event_car_towed", "reallife_event_car_towed_shop", "reallife_event_car_not_towed", "reallife_transaction_towing");
+            BringNear(instance, near, Fee, "reallife_event_car_towed", "reallife_event_car_towed_shop", "reallife_event_car_not_towed", "reallife_transaction_towing", insured);
         }
 
-        /// <summary>The same for somebody else's reasons (the police impound): another fee, and the messages of where the car went.</summary>
-        public static void BringNear(VehicleInstance instance, Vector3 near, int fee, string parkedKey, string shopKey, string leftKey, string transactionKey)
+        /// <summary>The part of a tow's fee a car's policy pays: never under nothing, never over the fee, and nothing where no policy answers.</summary>
+        public static int Covered(string id, int fee)
+        {
+            Func<string, int, int> cover = Cover;
+            if (cover == null || fee <= 0 || string.IsNullOrEmpty(id))
+            {
+                return 0;
+            }
+            try
+            {
+                return Mathf.Clamp(cover(id, fee), 0, fee);
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+                return 0;
+            }
+        }
+
+        /// <summary>The same for somebody else's reasons (the police impound): another fee, and the messages of where the car went. No policy pays for those.</summary>
+        public static void BringNear(VehicleInstance instance, Vector3 near, int fee, string parkedKey, string shopKey, string leftKey, string transactionKey, bool insured = false)
         {
             if (instance == null)
             {
@@ -83,8 +108,9 @@ namespace RealLifeOverhaul
 
                 if (TryParkNear(vehicle, near))
                 {
-                    Charge(fee, transactionKey);
-                    Notify(parkedKey, null, fee);
+                    int paid = insured ? Covered(instance.id, fee) : 0;
+                    Charge(fee - paid, transactionKey);
+                    Notify(paid > 0 ? parkedKey + CoveredSuffix : parkedKey, null, fee - paid, paid);
                     return;
                 }
 
@@ -92,8 +118,9 @@ namespace RealLifeOverhaul
                 Address shop = VehicleHelper.TowVehicle(instance, "ba:towdestination_autorepairshop");
                 if (shop != null && !shop.IsUndefined())
                 {
-                    Charge(fee, transactionKey);
-                    Notify(shopKey, shop.ToFormattedString(), fee);
+                    int paid = insured ? Covered(instance.id, fee) : 0;
+                    Charge(fee - paid, transactionKey);
+                    Notify(paid > 0 ? shopKey + CoveredSuffix : shopKey, shop.ToFormattedString(), fee - paid, paid);
                 }
                 else
                 {
@@ -272,17 +299,27 @@ namespace RealLifeOverhaul
             return false;
         }
 
+        /// <summary>Added to a tow's message key when a policy paid part of the fee: the message then says what it paid.</summary>
+        public const string CoveredSuffix = "_covered";
+
         private static void Charge(int fee, string transactionKey)
         {
-            RealLifeOverhaul.Economy.BizBooks.Book(-fee, new TransactionInfo(transactionKey), null, null, force: true);
+            if (fee > 0)
+            {
+                RealLifeOverhaul.Economy.BizBooks.Book(-fee, new TransactionInfo(transactionKey), null, null, force: true);
+            }
         }
 
-        private static void Notify(string key, string address, int fee)
+        private static void Notify(string key, string address, int fee, int paid = 0)
         {
             var data = new Dictionary<string, string> { { "amount", ((float)fee).ToCurrencyFormat() } };
             if (address != null)
             {
                 data["address"] = address;
+            }
+            if (paid > 0)
+            {
+                data["payout"] = ((float)paid).ToCurrencyFormat();
             }
             Notifications.Show(NotificationType.Info, key, data, 10f);
         }

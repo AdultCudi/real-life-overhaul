@@ -1574,6 +1574,7 @@ namespace RealLifeOverhaul
                 .Guarded(o => o.AddRoommates())
                 .Guarded(o => Household.HouseholdOptions.AddHousehold(o))
                 .Guarded(o => Giving.GivingOptions.AddGiving(o))
+                .Guarded(o => Insurance.InsuranceOptions.AddInsurance(o))
                 .Guarded(o => Health.HealthOptions.AddHealth(o))
                 .Guarded(o => RivalsSeen.SeenOptions.AddSeen(o))
                 .Guarded(o => Dynasty.DynastyOptions.AddDynasty(o))
@@ -1940,6 +1941,7 @@ namespace RealLifeOverhaul
             Guard.Step("the roommate", () => Roommates.RoommateDirector.Attach(_root, context.Logger));
             Guard.Step("household staff", () => Household.HouseholdDirector.Attach(_root, context.Logger));
             Guard.Step("giving", () => Giving.GivingDirector.Attach(_root, context.Logger));
+            Guard.Step("insurance", () => Insurance.InsuranceDirector.Attach(_root, context.Logger));
             Guard.Step("health", () => Health.HealthDirector.Attach(_root, context.Logger));
             Guard.Step("parking spaces", () => ParkSpaces.SpaceDirector.Attach(_root, context.Logger));
             Guard.Step("suppliers", () => Suppliers.SupplierDirector.Attach(_root, context.Logger));

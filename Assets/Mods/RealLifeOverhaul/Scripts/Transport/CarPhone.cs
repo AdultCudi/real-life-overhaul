@@ -74,7 +74,7 @@ namespace RealLifeOverhaul
         }
 
         // A motor vehicle of the player's to run. A dealership's stock car is the dealership's to sell and has no Garage page.
-        private static bool Runs(VehicleInstance car)
+        internal static bool Runs(VehicleInstance car)
         {
             return car != null && car.VehicleType != null && car.VehicleType.IsMotorVehicle && !Dealerships.Stock(car) && !Family.PartnerCar.Is(car);
         }
@@ -100,12 +100,13 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// A car's premium for a month's policy, rounded as it is charged. The Garage page, Insure all and the monthly renewal all
-        /// read it here, so what a page shows is what is charged.
+        /// A car's premium for a month's policy, rounded as it is charged. The Garage page, Insure all, the monthly renewal and the
+        /// Calendar all read it here, so what a page shows is what is charged. With Insurance on it is the premium of the tier
+        /// chosen for the car at the driver's record (CarCover); otherwise the Garage's own.
         /// </summary>
         public static float PremiumOf(VehicleInstance car, CarRecord record)
         {
-            return PremiumOf(car.VehicleType.price, record.Claims, GarageBridges.InsuranceOf(car.id));
+            return CarCover.PremiumOf(car.id, PremiumOf(car.VehicleType.price, record.Claims, GarageBridges.InsuranceOf(car.id)));
         }
 
         /// <summary>
@@ -129,7 +130,9 @@ namespace RealLifeOverhaul
             {
                 return -1f;
             }
+            bool fresh = record.InsuredUntil < TimeHelper.CurrentDay;   // it had no policy: Insurance counts its first days and the damage it has from today
             record.InsuredUntil = TimeHelper.CurrentDay + CarRules.PolicyDays - 1;
+            CarCover.Bought?.Invoke(car.id, car.damage, fresh, premium);
             return premium;
         }
 
@@ -412,9 +415,18 @@ namespace RealLifeOverhaul
                 {
                     return PhoneContacts.Closing("reallife_roadside_tow_none");
                 }
-                RealLifeOverhaul.Economy.BizBooks.Book(-CarRules.TowFee, new TransactionInfo("reallife_transaction_towing"), null, null, force: true);
-                CarOwnership.Logger?.Info("Roadside: the car was towed to the repair shop at " + shop.ToFormattedString() + ".");
-                return PhoneContacts.Closing("reallife_roadside_towed", new { address = shop.ToFormattedString(), amount = TransitText.Money(CarRules.TowFee) });
+                // The car's policy pays its part of the fee where its tier covers a tow (Insurance): the fee is taken less it.
+                float fee = CarRules.TowFee, covered = VehicleTow.Covered(car.vehicleInstance.id, VehicleTow.Fee);
+                if (fee - covered > 0f)
+                {
+                    RealLifeOverhaul.Economy.BizBooks.Book(-(fee - covered), new TransactionInfo("reallife_transaction_towing"), null, null, force: true);
+                }
+                CarOwnership.Logger?.Info("Roadside: the car was towed to the repair shop at " + shop.ToFormattedString()
+                                         + (covered > 0f ? "; its policy paid " + covered.ToString("F0") + " of the fee." : "."));
+                return covered > 0f
+                    ? PhoneContacts.Closing("reallife_roadside_towed_covered", new { address = shop.ToFormattedString(), amount = TransitText.Money(fee - covered),
+                        payout = TransitText.Money(covered) })
+                    : PhoneContacts.Closing("reallife_roadside_towed", new { address = shop.ToFormattedString(), amount = TransitText.Money(fee) });
             }
             catch (Exception e)
             {

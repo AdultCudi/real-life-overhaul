@@ -378,7 +378,7 @@ namespace RealLifeOverhaul
                 // The game's own repair shows as the damage figure dropping.
                 if (_record.LastDamage >= 0f && damage < _record.LastDamage - 0.03f)
                 {
-                    Repaired(VehicleCostRules.Repair(_record.LastDamage - damage, _price));
+                    Repaired(_record.LastDamage, damage);
                 }
                 _record.LastDamage = damage;
 
@@ -536,11 +536,22 @@ namespace RealLifeOverhaul
             Notifications.Show(NotificationType.Error, "reallife_car_breakdown", null, 10f);
         }
 
-        private void Repaired(float bill)
+        // The game mended the car from one damage figure to another. An insured car's policy pays its part of the game's bill: by the tier chosen for the
+        // car where Insurance answers (CarCover.Repair: its excess and share, its first days, the damage from before the cover, the year's limits), and by
+        // the Garage's own terms otherwise.
+        private void Repaired(float before, float after)
         {
+            float bill = VehicleCostRules.Repair(before - after, _price);
             bool insured = _record.InsuredUntil >= TimeHelper.CurrentDay;
             bool reported = insured && CarGarage.Waives(TimeHelper.CurrentDay);   // a police report on the break-in or the accident: no excess
-            float payout = insured ? CarRules.Payout(bill, reported) : 0f;
+            float payout = 0f, excess = reported ? 0f : CarRules.Excess;
+            CarCover.RepairClaim claim = CarCover.Repair;
+            string id = _car != null && _car.vehicleInstance != null ? _car.vehicleInstance.id : null;
+            if (insured && (claim == null || id == null || !claim(id, _carName, _price, before, after, reported, out payout, out excess)))
+            {
+                payout = CarRules.Payout(bill, reported);
+                excess = reported ? 0f : CarRules.Excess;
+            }
             Logger?.Info("Car ownership: a repair of about " + bill.ToString("F0") + " noticed; " + (insured ? "the insurer pays " + payout.ToString("F0") : "the car is not insured") + ".");
             if (payout < 1f)
             {
@@ -554,7 +565,7 @@ namespace RealLifeOverhaul
             _record.Claims++;
             _record.LastClaimDay = TimeHelper.CurrentDay;
             Notifications.Show(NotificationType.Success, "reallife_car_insurance_paid",
-                new Dictionary<string, string>(2) { { "amount", TransitText.Money(payout) }, { "excess", TransitText.Money(reported ? 0f : CarRules.Excess) } }, 10f);
+                new Dictionary<string, string>(2) { { "amount", TransitText.Money(payout) }, { "excess", TransitText.Money(excess) } }, 10f);
         }
 
         private string Note(bool easy)
@@ -606,7 +617,12 @@ namespace RealLifeOverhaul
                     if (RealLifeOverhaul.Economy.BizBooks.Book(-premium, new TransactionInfo("reallife_transaction_car_insurance"), null, null, force: false))
                     {
                         record.InsuredUntil = today + CarRules.PolicyDays - 1;
+                        CarCover.Renewed?.Invoke(instance.id, premium);
                         Notifications.Show(NotificationType.Info, "reallife_car_insurance_renewed", data, 9f);
+                    }
+                    else if (CarCover.Missed != null && CarCover.Missed(instance.id, name, premium))
+                    {
+                        record.InsuredUntil = today;   // Insurance's days of grace: the cover holds today and the premium is asked for again tomorrow (it has told the player)
                     }
                     else
                     {

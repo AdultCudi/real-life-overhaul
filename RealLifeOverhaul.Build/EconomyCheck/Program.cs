@@ -1130,6 +1130,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--insurance")
+        {
+            Insurance();   // (insurance alone, while working on it: InsuranceChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--giving")
         {
             Giving();   // (giving alone, while working on it: GivingChecks.cs)
@@ -1657,6 +1663,7 @@ internal static partial class Program
         Networking();   // networking: who holds a position (an introduction more often), each position's two favours once, when they are ready, the save, a job lead's name, the texts (NetworkChecks.cs)
         BizAsks();      // the smaller business asks: a parking space in a building's car park and the showroom's suppliers, their rules, caps, saves, pages, sources and texts (BizAsksChecks.cs)
         Suppliers();    // suppliers and contracts: prices and terms, take or pay, the judging of a delivery, the remedy, what is owed, the suppliers' own books, the rivals, the buyer's rules, the save, the pages, the sources, the texts (SupplierChecks.cs)
+        Insurance();    // insurance: a car's tier and the driver's record on the Garage's premium, a home's premium, what a claim pays and never pays, the first days, the year's limits, the days of grace, the rivals' cover, the save, the pages, the sources, the texts (InsuranceChecks.cs)
         Giving();       // giving: the steps and caps, the charities' months on a city, the deduction, standing and warmth by the sum given, loans, asks, the rivals, the save, the pages, the sources, the texts (GivingChecks.cs)
         Health();       // health: the draws and the wave, a case's days, plans and claims, bills and the debt, sick leave, the people's day, the staff, the rivals, the save, the option, the pages, the sources, the texts (HealthChecks.cs)
         Subway();       // the districts' subway stations: their place in the game's sorted list, the search, when they stand and when they may go, the people of the line, the campus's gates, the sources (fare, save, session, frame) and the texts (SubwayChecks.cs)

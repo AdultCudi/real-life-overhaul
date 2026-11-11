@@ -154,6 +154,7 @@ namespace RealLifeOverhaul.Meta
             new Line("networking", CityScope.AnyCity, "people with positions at the game's businesses picked at each load"),
             new Line("home_household", CityScope.AnyCity, "staff at the player's home"),
             new Line("giving", CityScope.AnyCity, "the city's households and the people the player knows"),
+            new Line("insurance", CityScope.AnyCity, "the player's own cars, homes and businesses, read from the save at each look"),
             new Line("health", CityScope.AnyCity, "the player, their staff, the rivals and the city's households, and the game's own hospitals and clinics where a city has them"),
             new Line("parking_spaces", CityScope.AnyCity, "the car parks under the city's buildings, read at each load"),
             new Line("economy_dealer_supply", CityScope.AnyCity, "the player's showroom and the game's vehicle types"),

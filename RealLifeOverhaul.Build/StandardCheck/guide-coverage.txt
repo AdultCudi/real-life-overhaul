@@ -15,6 +15,7 @@ desk-sessions	reallife_guide_living	desk sessions and the living economy's maste
 game-studio	reallife_guide_studio	the game studio rebuilt
 flare-city	reallife_guide_flare_city	Flare connected to the city's residents
 giving	reallife_guide_giving	charities, gifts and loans
+insurance	reallife_guide_insurance	cover for cars, health, homes and businesses
 health	reallife_guide_health	illness, the doctor, hospital stays, health plans and sick leave
 parking-spaces	reallife_guide_parking_spaces	a parking space bought or rented in a building's car park
 suppliers	reallife_guide_suppliers	a choice of suppliers, fixed price contracts, late or short deliveries

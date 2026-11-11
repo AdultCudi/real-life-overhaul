@@ -144,7 +144,13 @@ namespace RealLifeOverhaul
             int amount = RollMoney(outcome, save.Money);
             if (amount != 0)
             {
-                LifeEvents.ChangeMoney(amount, LifeEvent.TransactionPrefix + outcome.Txn);
+                // A repair bill is met in part by a home's policy where one covers it (Insurance): the bill is taken less that part, and the insurer's own notice
+                // says what it paid beside the event's words, which name the whole bill.
+                int covered = amount < 0 && outcome.Txn == LifeEvents.RepairTxn ? LifeEvents.Covered(-amount, (lifeEvent.Needs & Need.HasHome) != 0) : 0;
+                if (amount + covered != 0)
+                {
+                    LifeEvents.ChangeMoney(amount + covered, LifeEvent.TransactionPrefix + outcome.Txn);
+                }
                 if (amount > 0 && outcome.Via == Via.Mom)
                 {
                     ModState.LastMomGiftDay = TimeHelper.CurrentDay;

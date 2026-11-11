@@ -49,6 +49,7 @@ namespace RealLifeOverhaul
             { "RealLifeOverhaul.Networking", "networking" },
             { "RealLifeOverhaul.Household", "home_household" },
             { "RealLifeOverhaul.Giving", "giving" },
+            { "RealLifeOverhaul.Insurance", "insurance" },
             { "RealLifeOverhaul.Health", "health" },
             { "RealLifeOverhaul.ParkSpaces", "parking_spaces" },
             { "RealLifeOverhaul.Suppliers", "suppliers" },
