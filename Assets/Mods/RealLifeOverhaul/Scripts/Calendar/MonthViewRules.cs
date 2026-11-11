@@ -79,26 +79,6 @@ namespace RealLifeOverhaul.Calendar
             return today + (year - over) % year;
         }
 
-        /// <summary>
-        /// Days until a child's next birthday, at least one. Counted a day at a time in the same single-precision sums as
-        /// Family/Children.Grow, which adds 1 / <paramref name="yearDays"/> a day, so the day matches its own.
-        /// </summary>
-        public static int ChildBirthdayIn(float age, int yearDays)
-        {
-            yearDays = Math.Max(1, yearDays);
-            float step = 1 / (float)yearDays;
-            int now = (int)Math.Floor(age);
-            for (int days = 1; days <= yearDays * 2 + 2; days++)
-            {
-                age += step;
-                if ((int)Math.Floor(age) > now)
-                {
-                    return days;
-                }
-            }
-            return yearDays;
-        }
-
         /// <summary>Today in today's month, else the month's first day.</summary>
         public static int ChosenDay(int today, int firstDay, int lastDay)
         {

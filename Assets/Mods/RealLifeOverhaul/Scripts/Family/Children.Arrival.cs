@@ -262,7 +262,7 @@ namespace RealLifeOverhaul.Family
         {
             FamilySave s = FamilyState.S;
             int day = TimeHelper.CurrentDay;
-            int length = Mathf.Max(6, Mathf.RoundToInt(FamilyBalance.AdoptionYears * DaysPerYear));
+            int length = ChildYearRules.Span(FamilyBalance.AdoptionYears, DaysPerYear);
             s.PStep = 1;
             s.PStartDay = day;
             s.PDueDay = day + length;

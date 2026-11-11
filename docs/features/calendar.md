@@ -62,7 +62,7 @@ Every source reads and changes nothing. Asked only when the app is shown.
 | Court, custody, licences, family appointments, plans with friends, a checkout, sick notes | The Planner's sources |
 | City events, elections, the council | The Planner's event and civic sources |
 | Deliveries | The game's `FurnitureDeliveryContracts` (paid on delivery) and `vehicleDeliveryContracts` |
-| Birthdays | The player: `CharacterData.ageInDays` as `PlayerHelper.IncreasePlayerAge` counts it; people met: `SocialPerson.Birthday`; children: `ChildRecord.Age` as `Children.Grow` grows it |
+| Birthdays | The player: `CharacterData.ageInDays` as `PlayerHelper.IncreasePlayerAge` counts it; people met: `SocialPerson.Birthday`; children: `ChildYearRules.BirthdayIn`, the day count `Children.Grow` ages them by (the Family page names the same day), up to the birthday at which they grow up |
 | The children's week | `FamilySave.LastWeekDay` + 7, `Children.WeekCharges` |
 | The player's own entries | The Planner's notes |
 
@@ -92,4 +92,4 @@ Everything is read from the local save and the mod's own state: each player sees
 
 ## Offline checks
 
-`EconomyCheck/CalendarAppChecks.cs`: the months of every year length from 8 to 400 days (they make up the year, each a twelfth, the market's months every day); the day each month ends on; the grid (one to six weeks, each day in one cell of its weekday); each schedule's days against the feature's own daily rule run day by day (the tax year, the bills, the card's statements by `AccountRules.RunDay`, a managed service by `FirmsRules.Work`, the tax quarter by `TaxRules`, the central bank by the city's count, the player's, people's and children's birthdays, the profit share, the bots' statements); an empty month; the list's limit and order; no allocation on a look again; the sources' use of the rules; the texts in every language. `ContractCheck/PhoneLayoutChecks.cs`: the folder.
+`EconomyCheck/CalendarAppChecks.cs`: the months of every year length from 8 to 400 days (they make up the year, each a twelfth, the market's months every day); the day each month ends on; the grid (one to six weeks, each day in one cell of its weekday); each schedule's days against the feature's own daily rule run day by day (the tax year, the bills, the card's statements by `AccountRules.RunDay`, a managed service by `FirmsRules.Work`, the tax quarter by `TaxRules`, the central bank by the city's count, the player's, people's and children's birthdays (a child's at every length of year from 1 to 52 weeks), the profit share, the bots' statements); an empty month; the list's limit and order; no allocation on a look again; the sources' use of the rules; the texts in every language. `ContractCheck/PhoneLayoutChecks.cs`: the folder.

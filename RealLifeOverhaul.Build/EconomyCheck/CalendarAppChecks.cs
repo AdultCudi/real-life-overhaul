@@ -8,6 +8,7 @@ using RealLifeOverhaul.Calendar;
 using RealLifeOverhaul.Economy;
 using RealLifeOverhaul.Markets;
 using RealLifeOverhaul.Tech;
+using ChildYearRules = RealLifeOverhaul.Family.ChildYearRules;
 
 // The Calendar app (Scripts/Calendar, its sources in Scripts/Wiring/Wiring.Calendar*.cs): the months of every year length
 // (Core/CalendarRules), the grid of weeks, the day each month ends on, the days each schedule is marked on against the
@@ -192,36 +193,7 @@ internal static partial class Program
             }
         }
 
-        // A child's birthday, as the family grows its children a day's share at a time in single-precision sums.
-        bool children = true;
-        string late = null;
-        foreach (int weeks in new[] { 1, 2, 4, 8, 12 })
-        {
-            int yearDays = weeks * 7;
-            float step = 1 / (float)yearDays;
-            foreach (float start in new[] { 0f, 0.3f, 1f, 2.9f, 4.5f, 11.99f })
-            {
-                float age = start;
-                for (int day = 0; day < yearDays * 3; day++)
-                {
-                    int predicted = MonthViewRules.ChildBirthdayIn(age, yearDays);
-                    float a = age;
-                    int real = 0;
-                    for (int k = 1; k <= yearDays * 2 + 2 && real == 0; k++)
-                    {
-                        a += step;
-                        real = (int)Math.Floor(a) > (int)Math.Floor(age) ? k : 0;
-                    }
-                    if (predicted != real)
-                    {
-                        children = false;
-                        late = late ?? weeks + " weeks a year, age " + age + ": " + predicted + " against " + real;
-                    }
-                    age += step;
-                }
-            }
-        }
-        Check(children, "calendar app: a child's next birthday is the day the family's own sums make them a year older (" + (late ?? "every case") + ")");
+        CalendarChildren();   // a child's birthday at every length of year the option has
 
         // A card: a statement every so many days from its next one (AccountRules.RunDay), its minimum taken three days later.
         foreach (int opened in new[] { 1, 4, 30 })
@@ -329,6 +301,41 @@ internal static partial class Program
             }
             Check(bots, "calendar app: the trading bots' statement falls on the last trading day of each month of the calendar (" + year + "-day year)");
         }
+    }
+
+    private static void CalendarChildren()
+    {
+        // A child's birthday, as the family ages its children a day at a time (ChildYearRules.Aged, the call Children.Grow makes), at
+        // every length of year the option has: the Calendar marks the day they next become a year older, never a day either side.
+        bool children = true;
+        string late = null;
+        for (int weeks = ChildYearRules.WeeksLeast; weeks <= ChildYearRules.WeeksMost; weeks++)
+        {
+            int yearDays = ChildYearRules.Days(weeks);
+            float step = 1 / (float)yearDays;   // Children.Daily's elapsed / (float)DaysPerYear, for one day
+            foreach (float start in new[] { 0f, 0.3f, 1f, 2.9f, 4.5f, 11.99f })
+            {
+                var ages = new float[yearDays * 4 + 2];
+                ages[0] = ChildYearRules.Aged(start, 0f, yearDays);
+                for (int day = 1; day < ages.Length; day++)
+                {
+                    ages[day] = ChildYearRules.Aged(ages[day - 1], step, yearDays);
+                }
+                int rise = -1;   // the first day after this one on which the age's whole years rise
+                for (int day = ages.Length - 2; day >= 0; day--)
+                {
+                    rise = (int)Math.Floor(ages[day + 1]) > (int)Math.Floor(ages[day]) ? day + 1 : rise;
+                    int predicted = ChildYearRules.BirthdayIn(ages[day], yearDays);
+                    if (day < yearDays * 3 && predicted != rise - day)
+                    {
+                        children = false;
+                        late = late ?? weeks + " weeks a year, age " + ages[day] + ": " + predicted + " against " + (rise - day);
+                    }
+                }
+            }
+        }
+        Check(children, "calendar app: a child's next birthday is the day the family's ageing makes them a year older, at every length of year from "
+                        + ChildYearRules.WeeksLeast + " to " + ChildYearRules.WeeksMost + " weeks (" + (late ?? "every case") + ")");
     }
 
     // The days a feature's own daily rule fires on, from 1 to 'days', against those the calendar marks for the same days.
@@ -485,7 +492,8 @@ internal static partial class Program
               && work.Contains("t.QuarterFrom + quarter") && work.Contains("CityModel.DaysToTurn(director.State, month)") && work.Contains("MonthViewRules.FirstFrom(j.Hired + 6, 7")
               && work.Contains("MarketCatalogue.MonthOf(MarketTrading.NextTradingDay(day), year) == MarketCatalogue.MonthOf(day, year)"),
             "calendar app: the invoices, the quarter, the central bank, the profit share and the bots' statements are read by the rules checked above");
-        Check(people.Contains("MonthViewRules.DayOfYearFrom(p.Birthday, fromDay, year)") && people.Contains("MonthViewRules.ChildBirthdayIn(c.Age, year)")
+        Check(people.Contains("MonthViewRules.DayOfYearFrom(p.Birthday, fromDay, year)") && people.Contains("ChildYearRules.BirthdayIn(c.Age, year)")
+              && people.Contains("ChildYearRules.Turning(c.Age, year)") && people.Contains("age <= (int)FamilyBalance.GrownUp") && !people.Contains("ChildBirthdayIn")
               && people.Contains("Children.WeekCharges(") && game.Contains("MonthViewRules.OwnBirthdayFrom(today, data.ageInDays, year)")
               && game.Contains("MonthViewRules.FirstFrom(year, year, Math.Max(1, fromDay))"),
             "calendar app: birthdays, the children's week and the tax year are read by the rules checked above");
