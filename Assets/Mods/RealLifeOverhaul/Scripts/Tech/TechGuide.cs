@@ -253,6 +253,7 @@ namespace RealLifeOverhaul.Tech
                 .Fact("hire_offer_days", () => Whole(HiringCatalogue.OfferDays))
                 .Fact("hire_lapse", () => Whole(HiringCatalogue.ApplicantDays))
                 .Fact("hire_buyout", () => Factor(HiringCatalogue.BuyoutBp))
+                .Fact("hire_rush", () => Bp(HiringCatalogue.SearchRushBp))
                 .Fact("hire_search_fee", () => Bp(HiringCatalogue.SearchFeeBp))
                 .Fact("hire_search_retainer", () => Whole(HiringCatalogue.SearchRetainerShare / 10) + "%")
                 .Fact("hire_search_count", () => Whole(HiringCatalogue.SearchCandidates))

@@ -437,8 +437,8 @@ namespace RealLifeOverhaul.Meta
                     .Also("rival rivals tycoon tycoons competitor competitors rich list richest takeover outbid poach lobby lawsuit sue press end game late game pressure"),
                 S("online").For("economy_online").Need("economy").Opts("economy_online").Opt("economy_online_wait_notes", "economy_online").Also("web shop orders delivery internet"),
                 S("people").For("tech_people").Opts("tech_people").Also("professionals staff employees skills skill percent role promotion review course certificate notice severance lay off poach"),
-                S("jobsboard").For("tech_jobs").Opt("tech_jobs", "tech_people")
-                    .Also("jobs board hire hiring recruit recruitment applicants interview offer headhunter search labour market candidates"),
+                S("jobsboard").For("tech_jobs").Opt("tech_jobs", "tech_people").Opt("tech_search_rush", "tech_jobs")
+                    .Also("jobs board hire hiring recruit recruitment applicants interview offer headhunter search labour market candidates rush rushed faster sooner quicker expedite days saved"),
                 S("techsector").For("tech_sector").Opt("tech_sector", "tech_people").Opt("tech_offer_notes", "tech_sector").Opt("tech_infra_offer", "tech_sector")
                     .Also("tech software saas app game studio consultancy cybersecurity security breach outage product subscription contract tender developer"),
                 S("startups").For("tech_startups").Opt("tech_startups", "tech_sector")

@@ -32,6 +32,19 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
+        // Whether a search has candidates still in play: the applicants the firm brought and the player has not turned down, hired or lost.
+        private static bool SearchHasLive(HiringFile h, JobAd search)
+        {
+            for (int i = 0; i < h.Applicants.Count; i++)
+            {
+                if (h.Applicants[i].Ad == search.Id && h.Applicants[i].Live)
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+
         // The mean of the main skill of the player's own people, whole points; 0 with nobody on the payroll.
         private static int TeamAverage(TechDirector d)
         {
@@ -55,9 +68,9 @@ namespace RealLifeOverhaul.Ui
             var roleAds = new List<JobAd>(8);
             for (int i = 0; i < h.Ads.Count; i++)
             {
-                if (!h.Ads[i].Search)
+                if (!h.Ads[i].Search || SearchHasLive(h, h.Ads[i]))
                 {
-                    roleAds.Add(h.Ads[i]);
+                    roleAds.Add(h.Ads[i]);   // a search firm's candidates are applicants too, listed under the search once it has brought them
                 }
             }
             for (int i = 0; i < roleAds.Count; i++)
@@ -68,7 +81,8 @@ namespace RealLifeOverhaul.Ui
                 {
                     came += h.Applicants[k].Ad == ad.Id && h.Applicants[k].Live ? 1 : 0;
                 }
-                aside.Rows.Add(new WorkRow { Id = ad.Id, Icon = RoleGlyph(ad.Role), Name = TechText.Role(ad.Role), Sub = TalentGame.NameOf(TalentGame.Find(ad.Place)), Status = came.ToString(Inv) });
+                string asideName = ad.Search ? TechText.T("reallife_hire_row_for_search", "role", TechText.Role(ad.Role)) : TechText.Role(ad.Role);
+                aside.Rows.Add(new WorkRow { Id = ad.Id, Icon = RoleGlyph(ad.Role), Name = asideName, Sub = TalentGame.NameOf(TalentGame.Find(ad.Place)), Status = came.ToString(Inv) });
             }
             aside.Count = roleAds.Count.ToString(Inv);
             aside.ListTitle = w.T("reallife_work_hired_month", "Hired this month");
@@ -103,7 +117,7 @@ namespace RealLifeOverhaul.Ui
                 Applicant a = h.Applicants[i];
                 Seeker s = h.SeekerOf(a.Seeker);
                 JobAd ad = h.AdOf(a.Ad);
-                if (s == null || !a.Live || ad == null || ad.Search != false || (roleAds.Count > 0 && ad.Id != roleAds[roleIndex].Id))
+                if (s == null || !a.Live || ad == null || (roleAds.Count > 0 && ad.Id != roleAds[roleIndex].Id))
                 {
                     continue;
                 }
@@ -137,7 +151,10 @@ namespace RealLifeOverhaul.Ui
                 }
                 var fit = new WorkSection { Part = WorkPart.Checks, Title = w.T("reallife_work_fit_for_role", "Fit for the role") };
                 fit.Checks.Add(new WorkNeed { Words = w.F("reallife_work_fit_craft", "Craft above your team's average of {n}", "n", teamAverage.ToString(Inv)), Met = s.CvMain > teamAverage });
-                fit.Checks.Add(new WorkNeed { Words = w.F("reallife_work_fit_pay", "Asks less than the {pay} you set", "pay", TechText.Rate(ad.PayMost)), Met = s.Ask <= ad.PayMost });
+                if (!ad.Search)   // a search sets no top pay
+                {
+                    fit.Checks.Add(new WorkNeed { Words = w.F("reallife_work_fit_pay", "Asks less than the {pay} you set", "pay", TechText.Rate(ad.PayMost)), Met = s.Ask <= ad.PayMost });
+                }
                 fit.Checks.Add(new WorkNeed { Words = w.T("reallife_work_fit_refs", "References checked"), Met = a.Refs });
                 r.Sections.Add(fit);
                 if (competing)
@@ -207,8 +224,9 @@ namespace RealLifeOverhaul.Ui
                 RoleIcon = RoleGlyph(s.P.Role), Employer = string.IsNullOrEmpty(s.Employer) ? null : s.Employer, EmployerIcon = UiIcon.Store,
                     Status = competing ? w.T("reallife_work_competing_offer", "Competing offer") : StageName(a),
                 StatusTone = competing ? UiRole.Warn : UiRole.Ok, FactLabels = new[] { w.T("reallife_work_col_asks", "Asks"),
-                    w.T("reallife_work_notice", "Notice"), w.T("reallife_work_your_top_pay", "Your top pay") },
-                FactValues = new[] { TechText.Rate(s.Ask), w.F("reallife_work_n_days", "{n} days", "n", s.Notice.ToString(Inv)), TechText.Rate(ad.PayMost) } } };
+                    w.T("reallife_work_notice", "Notice"), ad.Search ? w.T("reallife_work_ad_going", "Going rate") : w.T("reallife_work_your_top_pay", "Your top pay") },
+                FactValues = new[] { TechText.Rate(s.Ask), w.F("reallife_work_n_days", "{n} days", "n", s.Notice.ToString(Inv)),
+                    TechText.Rate(ad.Search ? d.GoingFor(ad.Role, ad.Level) : ad.PayMost) } } };
             t.Form = form;
             if (view.PageTab == 0)
             {
@@ -565,6 +583,11 @@ namespace RealLifeOverhaul.Ui
                 running.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = w.T("reallife_work_no_searches", "No search is running. A brief brings three candidates in a few days.") });
             }
             form.Right.Add(running);
+            WorkFormBand rush = RushBand(d, h, day, w);
+            if (rush != null)
+            {
+                form.Right.Add(rush);
+            }
             int goingRole = d.GoingFor(roleAt, level);
             var line = new WorkFormBand { Title = w.T("reallife_work_band_the_line_briefed", "The line you brief") };
             line.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_ad_going", "Going rate"), Value = goingRole > 0 ? TechText.Rate(goingRole) : WorkBuilder.None(w) });
@@ -603,6 +626,35 @@ namespace RealLifeOverhaul.Ui
                 form.Right.Add(office);
             }
             return t;
+        }
+
+        // The searches that can still be rushed, each with the price of bringing its candidates to tomorrow on its button; with none, what a rush is.
+        // Left off with the option off.
+        private static WorkFormBand RushBand(TechDirector d, HiringFile h, int day, UtilitiesWords w)
+        {
+            if (!Settings.TechSearchRush)
+            {
+                return null;
+            }
+            var band = new WorkFormBand { Title = w.T("reallife_work_rush_title", "Rush a search") };
+            for (int i = 0; i < h.Ads.Count; i++)
+            {
+                JobAd ad = h.Ads[i];
+                if (ad.Search && d.RushRefusal(ad) == null)
+                {
+                    band.Rows.Add(new WorkFormRow { Field = WorkField.Button,
+                        Label = TechText.Role(ad.Role) + (ad.CrewSearch ? " x" + ad.Crew.ToString(Inv) : string.Empty) + ", " + TechText.Level(ad.Level),
+                        Act = Act(Rush, ad.Id, w.F("reallife_work_rush_for", "Rush for {n}", "n", TechText.Cents(HiringRules.RushQuote(ad, day))), UiButtonKind.Secondary, UiIcon.FastForward) });
+                }
+            }
+            band.Count = band.Rows.Count.ToString(Inv);
+            if (band.Rows.Count == 0)
+            {
+                band.Rows.Add(new WorkFormRow { Field = WorkField.Text, Value = w.F("reallife_hire_rush_about",
+                    "A search that has not brought its candidates yet can be rushed for {share} of its fee for each day saved, so they come tomorrow.",
+                    "share", TechText.Bp(HiringCatalogue.SearchRushBp)) });
+            }
+            return band;
         }
 
         // ------------------------------------------------------------------------------------------------- Team
@@ -928,6 +980,25 @@ namespace RealLifeOverhaul.Ui
                         () =>
                         {
                             d.BuyOutNotice(id);
+                            _local++;
+                        }, null, null, null, true, false);
+                    return true;
+                }
+                case Rush:
+                {
+                    JobAd search = h.AdOf(act.Arg);
+                    if (search == null || d.RushRefusal(search) != null)
+                    {
+                        return d.RushSearch(act.Arg);   // refused, with its reason told
+                    }
+                    int day = SaveGameManager.Current.Day, id = search.Id;
+                    string role = TechText.Role(search.Role), amount = TechText.Cents(HiringRules.RushQuote(search, day)), when = HiringRules.RushDelivery(day).ToString();
+                    string was = search.Due.ToString(), share = TechText.Bp(HiringCatalogue.SearchRushBp);
+                    GameConfirm.Show("reallife_hire_rush_title".Localize(new { role }),
+                        "reallife_hire_rush_body".Localize(new { amount, day = when, was, share }),
+                        () =>
+                        {
+                            d.RushSearch(id);
                             _local++;
                         }, null, null, null, true, false);
                     return true;

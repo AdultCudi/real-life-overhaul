@@ -170,6 +170,42 @@ namespace RealLifeOverhaul.Tech
         }
 
         /// <summary>
+        /// Test: the oldest search that has not brought its candidates is made one that can be rushed (due three days from today if it was due
+        /// sooner), and the notice gives the price to be paid on its page in the Search tab. Says why not with the option off or no search running.
+        /// </summary>
+        public void TestSearchRush()
+        {
+            if (!_hiringOn || Save == null)
+            {
+                Notifications.ShowError("reallife_hire_test_off");
+                return;
+            }
+            if (!Settings.TechSearchRush)
+            {
+                Notifications.ShowError("reallife_hire_rush_off");
+                return;
+            }
+            for (int i = 0; i < _hiring.Ads.Count; i++)
+            {
+                JobAd ad = _hiring.Ads[i];
+                if (!ad.Search || ad.Came > 0)
+                {
+                    continue;
+                }
+                int delivery = HiringRules.RushDelivery(Save.Day);
+                ad.Due = Math.Max(ad.Due, delivery + 2);
+                int price = HiringRules.RushQuote(ad, Save.Day);
+                Logger?.Info("Tech check (search rush test, " + TechText.Role(ad.Role) + "): due on day " + ad.Due + ", " + HiringRules.RushDays(ad.Due, delivery)
+                             + " day(s) to save for " + price + " cents: " + (price > 0 && RushRefusal(ad) == null ? "PASS" : "FAIL"));
+                Tell(NotificationType.Info, "reallife_hire_test_rush_ready", Data("role", TechText.Role(ad.Role), "day", ad.Due.ToString(), "amount", TechText.Cents(price)),
+                    TabSearch, null);
+                Changed();
+                return;
+            }
+            Notifications.ShowError("reallife_hire_test_no_search");
+        }
+
+        /// <summary>
         /// Test: the newest accepted hire who has not started is made one whose notice can be bought out, in work with their level's notice
         /// counted from today, as a search firm's candidate is. Their page on the Applicants tab, opened by the notice, then offers the buy
         /// out at its price. Says why not when nobody has accepted.

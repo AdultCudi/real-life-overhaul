@@ -20,8 +20,8 @@ namespace RealLifeOverhaul.Ui
 
         // the actions of this app, from 100 (the screen's own are 1 to 3)
         private const int Shortlist = 100, Offer = 101, Counter = 102, Walk = 103, Close = 104, NewAd = 105, PostAd = 107, OpenApplicant = 110, OpenPerson = 111, Interview = 112,
-            Refs = 113, Background = 114, Reject = 115, Buyout = 116, Brief = 120, BriefCrew = 121, Match = 130, LetThem = 131, GiveRise = 132, RefuseRise = 133, Promote = 134, SetRole = 141,
-            SetWork = 142, Clause = 143, LayOff = 144, Dismiss = 145, CourseA = 146, CourseB = 147, Degree = 148, Exam = 149;
+            Refs = 113, Background = 114, Reject = 115, Buyout = 116, Rush = 117, Brief = 120, BriefCrew = 121, Match = 130, LetThem = 131, GiveRise = 132, RefuseRise = 133, Promote = 134,
+            SetRole = 141, SetWork = 142, Clause = 143, LayOff = 144, Dismiss = 145, CourseA = 146, CourseB = 147, Degree = 148, Exam = 149;
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
         private static readonly int[] PayBands = { 900, 1000, 1100, 1200, 1350 };   // thousandths of the going rate an ad's top pay can be set at
         private int _local, _wanted = -1, _readGeneration = -1;
