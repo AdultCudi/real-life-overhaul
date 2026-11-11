@@ -128,10 +128,10 @@ namespace RealLifeOverhaul
             }
         }
 
-        // Drink at the wheel goes on the bill of whatever the stop was for.
+        // Drink at the wheel goes on the bill of whatever the stop was for, unless the switch for drink driving is off.
         private void Breathalyse()
         {
-            if (Leisure.LeisureDirector.Tipsy)
+            if (Leisure.LeisureDirector.Tipsy && Settings.Offences.Allows(Offence.DrunkDriving))
             {
                 Book(Offence.DrunkDriving);
             }
@@ -184,7 +184,7 @@ namespace RealLifeOverhaul
             // Anything else they do wrong while the police are watching goes on the bill.
             if (_driving && (_state == State.Signalled || _state == State.Fleeing))
             {
-                Offence more = _offences.Driving(_body, now);
+                Offence more = _offences.Driving(_body, now, Settings.Offences);
                 if (more != Offence.None)
                 {
                     Book(more);

@@ -1,0 +1,55 @@
+using GleyTrafficSystem;
+using Helpers;
+using UnityEngine;
+
+namespace RealLifeOverhaul
+{
+    /// <summary>
+    /// Reads from the game the signs that something carries the player (<see cref="OffenceRules.Carried"/>), so that nobody
+    /// sitting in a vehicle is taken for a walker in the road. The game's own cars, its taxi and private driver, the mod's bus and
+    /// another mod's ride each show at least one. COST: called twice a second for a foot look, never in a frame of its own: a few
+    /// field reads and, with none of them, a walk up the player's two or three parents. Nothing is allocated or searched.
+    /// </summary>
+    internal static class PlayerRide
+    {
+        /// <summary>
+        /// The signs now. <paramref name="movedSqr"/> (square metres) and <paramref name="seconds"/> are the player's move since the
+        /// last foot look.
+        /// </summary>
+        public static RideFacts Read(PlayerController player, float movedSqr, float seconds)
+        {
+            return new RideFacts(PlayerHelper.IsUsingVehicle, TaxiTrip(), Seated(player), Blocked(player), UnderVehicle(player.transform),
+                OffenceRules.TooFast(movedSqr, seconds));
+        }
+
+        // The game's taxi or private driver trip: the player is a passenger, hidden, until it has put them down.
+        private static bool TaxiTrip()
+        {
+            return InstanceBehavior<TaxiSystem>.IsInitialized && TaxiSystem.IsTraveling;
+        }
+
+        private static bool Seated(PlayerController player)
+        {
+            return player.Character != null && player.Character.isSittingOn != null;
+        }
+
+        // The game keeps a set of reasons the player may not walk; a ride that carries them sets one, or they could walk off it.
+        private static bool Blocked(PlayerController player)
+        {
+            return player.NavigationDisabled;
+        }
+
+        // The game parents the player under the car they drive; a ride that seats them in a traffic car does the same.
+        private static bool UnderVehicle(Transform body)
+        {
+            for (Transform up = body.parent; up != null; up = up.parent)
+            {
+                if (up.TryGetComponent(out VehicleComponent _) || up.TryGetComponent(out VehicleController _))
+                {
+                    return true;
+                }
+            }
+            return false;
+        }
+    }
+}

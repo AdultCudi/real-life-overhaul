@@ -606,7 +606,7 @@ namespace RealLifeOverhaul
         // next is fined (Crime.Fine).
         private void Police(Vector3 at, int rages, float now)
         {
-            if (!Settings.Police || !Settings.PlayerOffences || now < _nextPenalty)
+            if (!Settings.Police || !Settings.OffenceHorn || now < _nextPenalty)
             {
                 return;
             }

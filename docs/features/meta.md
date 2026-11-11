@@ -128,7 +128,14 @@ Today:
 | option | Relaxed | Standard | Realistic | Hardcore |
 |---|---|---|---|---|
 | `crime_against_player` | off | on | on | on |
-| `player_offences` | off | on | on | on |
+| `offence_red_light` | off | on | on | on |
+| `offence_speeding` | off | on | on | on |
+| `offence_pavement` | off | on | on | on |
+| `offence_wrong_way` | off | on | on | on |
+| `offence_drink` | off | on | on | on |
+| `offence_jaywalk` | off | on | on | on |
+| `offence_cross_red` | off | on | on | on |
+| `offence_horn` | off | on | on | on |
 | `crime_frequency` | 1 | 2 | 3 | 5 |
 | `job_pay` | 125 | 100 | 100 | 80 |
 | `economy_estate_rent` | 150 | 100 | 100 | 80 |

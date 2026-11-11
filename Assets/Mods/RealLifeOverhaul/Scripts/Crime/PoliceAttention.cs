@@ -163,7 +163,7 @@ namespace RealLifeOverhaul
             }
             if (_state == State.Idle)
             {
-                if (Settings.PlayerOffences && ModState.Loaded && TrafficTools.Ready)
+                if (Settings.Offences.Any && ModState.Loaded && TrafficTools.Ready)
                 {
                     Detect(now);
                 }
@@ -196,13 +196,14 @@ namespace RealLifeOverhaul
             {
                 return;
             }
+            OffenceSwitches on = Settings.Offences;
             if (_driving)
             {
-                if (!RoadMap.Ensure())
+                if (!on.Driving || !RoadMap.Ensure())
                 {
                     return;
                 }
-                Offence offence = _offences.Driving(_body, now);
+                Offence offence = _offences.Driving(_body, now, on);
                 // Speeding, possible on every straight, is looked at once and then not for a while, seen or not.
                 if (offence != Offence.None && now >= _nextOffence && (offence != Offence.Speeding || now >= _nextSpeeding)
                     && !IsBusy && LifeEvents.IsSafeForEvent())
@@ -220,11 +221,12 @@ namespace RealLifeOverhaul
                 return;
             }
 
-            if (PlayerHelper.IsUsingVehicle || now < _nextFootOffence)
+            // On foot: the foot look itself leaves alone anyone a vehicle carries, whoever made the ride (PlayerRide).
+            if (now < _nextFootOffence)
             {
                 return;
             }
-            Offence onFoot = _offences.OnFoot(player.transform.position, now);
+            Offence onFoot = _offences.OnFoot(player, now, on);
             if (onFoot != Offence.None)
             {
                 _nextFootOffence = now + FootCooldown;
@@ -275,14 +277,14 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// An offence the road data cannot show (drink: Leisure), seen or not as any other. Safe to call every second: false
-        /// during a stop or within 25 s of the last look.
+        /// during a stop, within 25 s of the last look, or when the switch of that kind of offence is off.
         /// </summary>
         internal static bool Report(Offence offence)
         {
             PoliceAttention attention = Instance;
             float now = Time.time;
-            if (attention == null || !attention.isActiveAndEnabled || !attention._driving || attention._body == null || now < attention._nextOffence
-                || IsBusy || !LifeEvents.IsSafeForEvent())
+            if (!Settings.Offences.Allows(offence) || attention == null || !attention.isActiveAndEnabled || !attention._driving
+                || attention._body == null || now < attention._nextOffence || IsBusy || !LifeEvents.IsSafeForEvent())
             {
                 return false;
             }
@@ -303,6 +305,9 @@ namespace RealLifeOverhaul
             {
                 pool.ShowEmoji(officer, CharacterEmojiName.CommonRedAngry, 3f);
             }
+            // What the foot look knew of a ride at this moment, in a player's log whatever the diagnostics switch says: if a ride is
+            // ever fined, it shows which sign the ride did not give. Once per offence, and an offence on foot waits two minutes.
+            Meta.Dev.Always(Logger, "Police attention: " + offence + " found on foot, signs of a ride: " + OffenceRules.Signs(_offences.Ride) + ".");
             if (Random.value < CrimeLaw.JaywalkFineChance || (Settings.LawReputation && Law.Reputation.NoWarnings))
             {
                 Crime.Fine(CrimeLaw.JaywalkFine, offence == Offence.CrossOnRed ? "reallife_crime_jaywalk_fine_red" : "reallife_crime_jaywalk_fine");

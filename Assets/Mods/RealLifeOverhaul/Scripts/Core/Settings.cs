@@ -117,7 +117,15 @@
         public const string CharacterNewLooksId = "character_new_looks";
         public const string CharacterSkinId = "character_skin";
         public const string CrimeAgainstPlayerId = "crime_against_player";
-        public const string PlayerOffencesId = "player_offences";
+        public const string OffenceRedLightId = "offence_red_light";
+        public const string OffenceSpeedingId = "offence_speeding";
+        public const string OffencePavementId = "offence_pavement";
+        public const string OffenceWrongWayId = "offence_wrong_way";
+        public const string OffenceDrinkId = "offence_drink";
+        public const string OffenceJaywalkId = "offence_jaywalk";
+        public const string OffenceCrossRedId = "offence_cross_red";
+        public const string OffenceHornId = "offence_horn";
+        private const string OffencesOlderSwitch = "player_offences";   // the one switch an older version had for all of these: each starts as it was set
         public const string PolicePresenceId = "police_presence";
         public const string CityLifeId = "city_life";
         public const string CityDensityId = "city_density";
@@ -507,8 +515,20 @@
         public static bool CharacterNewLooks = true;     // the mod's own hair, beards and clothes on the player (picked on the options page)
         public static bool CharacterSkin = false;        // skin finish on the player (off: a small change, close up only)
         public static bool CrimeAgainstPlayer = true;    // pickpockets, muggers, break-ins, scam calls: all capped, all with days of rest between
-        public static bool PlayerOffences = true;        // red lights, speeding and reckless driving can get the player pulled over
+        public static bool OffenceRedLight = true;       // running a red light can get the player pulled over
+        public static bool OffenceSpeeding = true;       // so can speeding
+        public static bool OffencePavement = true;       // so can driving fast on the pavement
+        public static bool OffenceWrongWay = true;       // so can driving fast against the traffic
+        public static bool OffenceDrink = true;          // driving after drinks (Leisure reports it) can start a stop, and adds a fine to any stop
+        public static bool OffenceJaywalk = true;        // an officer shouts at the player walking in the road, and now and then fines them
+        public static bool OffenceCrossRed = true;       // and at the player crossing against the light
+        public static bool OffenceHorn = true;           // the horn at people with the right of way earns a warning, then a fine (People/HornReactions)
         public static int PolicePresence = 5;            // 0 = no police standing or walking about; 10 = somebody nearly always in sight
+
+        /// <summary>The traffic offences the police act on now, one switch each. Read from the fields: nothing is allocated.</summary>
+        internal static OffenceSwitches Offences =>
+            new OffenceSwitches(OffenceRedLight, OffenceSpeeding, OffencePavement, OffenceWrongWay, OffenceJaywalk, OffenceCrossRed, OffenceDrink);
+
         public static bool CityLife = true;              // people at work and going about their day on the pavements near the player
         public static int CityDensity = 5;               // 1 = one site now and then, 10 = three sites nearly always (never more than eight people)
         public static bool CityWorkers = true;           // sweepers, road crews, window cleaners, leaflets, the coffee cart
@@ -948,7 +968,14 @@
             CharacterSkin = Bool(modId, CharacterSkinId, CharacterSkin);
             CharacterCatalogue.Load();
             CrimeAgainstPlayer = Bool(modId, CrimeAgainstPlayerId, CrimeAgainstPlayer);
-            PlayerOffences = Bool(modId, PlayerOffencesId, PlayerOffences);
+            OffenceRedLight = OffenceSwitch(modId, OffenceRedLightId, OffenceRedLight);
+            OffenceSpeeding = OffenceSwitch(modId, OffenceSpeedingId, OffenceSpeeding);
+            OffencePavement = OffenceSwitch(modId, OffencePavementId, OffencePavement);
+            OffenceWrongWay = OffenceSwitch(modId, OffenceWrongWayId, OffenceWrongWay);
+            OffenceDrink = OffenceSwitch(modId, OffenceDrinkId, OffenceDrink);
+            OffenceJaywalk = OffenceSwitch(modId, OffenceJaywalkId, OffenceJaywalk);
+            OffenceCrossRed = OffenceSwitch(modId, OffenceCrossRedId, OffenceCrossRed);
+            OffenceHorn = OffenceSwitch(modId, OffenceHornId, OffenceHorn);
             PolicePresence = Int(modId, PolicePresenceId, PolicePresence);
             CityLife = Bool(modId, CityLifeId, CityLife);
             CityDensity = Int(modId, CityDensityId, CityDensity);
@@ -1298,6 +1325,16 @@
                 return global::RealLifeOverhaul.Interiors.InteriorRules.Was(was, UnityEngine.PlayerPrefs.GetInt(old, 0));
             }
             return Bool(modId, switchWas, true) ? fallback : 0;
+        }
+
+        /// <summary>
+        /// A traffic offence's switch: its saved value, else the one switch an older version had for all of them, else the
+        /// default (OffenceRules.Seeded). Nothing is written.
+        /// </summary>
+        private static bool OffenceSwitch(string modId, string id, bool fallback)
+        {
+            return OffenceRules.Seeded(UnityEngine.PlayerPrefs.HasKey(Key(modId, id)), Bool(modId, id, fallback),
+                UnityEngine.PlayerPrefs.HasKey(Key(modId, OffencesOlderSwitch)), Bool(modId, OffencesOlderSwitch, fallback), fallback);
         }
 
         // The key format the game uses when it saves mod options.
