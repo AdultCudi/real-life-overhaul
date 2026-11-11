@@ -304,7 +304,7 @@ internal static partial class Program
         before.Listings.Add(s.Listings[0]);
         before.SaleOffers.Add(new SaleOffer { Id = 9, Place = "Main%20St~12", Buyer = 3, Price = 60000, Ceiling = 61000, Deadline = 48, Face = 2 });
         string now = ServicesStore.Write(before);
-        string old = now.Replace("|2|||0", "|2").Replace("^v:", string.Empty);
+        string old = now.Replace("|2|||0|0", "|2").Replace("^v:", string.Empty);
         int h = old.IndexOf("^h:", StringComparison.Ordinal), hEnd = old.IndexOf('^', h + 1);
         string header = old.Substring(h, hEnd - h);
         old = old.Substring(0, h) + header.Substring(0, header.LastIndexOf('|')) + old.Substring(hEnd);
