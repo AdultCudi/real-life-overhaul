@@ -497,7 +497,6 @@ namespace RealLifeOverhaul.Tech
             }
             FirmPlace firm = _director.FirmOf(p.Place);
             int id = p.Id;
-            int rival = FirmsCatalogue.RivalStock(p.K, p.S);
             box.Title(p.Name);
             box.Subtitle(TechText.ProductName(p.K));
             box.Chip(State(p));
@@ -511,15 +510,15 @@ namespace RealLifeOverhaul.Tech
             else if (_director.SectorOn)
             {
                 // under the sector a product has no rival of its own and no top on its features: its market's section below names the rivals
-                box.Line(TechText.Fill("reallife_tech_mkt_product_build", "features", p.Features.ToString(), "next", (FirmsRules.FeatureCost(p.Features) - p.Progress).ToString()));
+                box.Line(TechText.NextFeature(p, true));
                 box.Line(TechText.Fill("reallife_tech_product_sales", "customers", TechText.Whole(p.Users), "free", TechText.Whole(p.Free),
                     "monthly", TechText.Cents(Level(FirmsRules.MonthlyRevenue(p))),
                     "support", FirmsRules.SupportNeeded(p).ToString(), "have", firm != null ? firm.Crew.Support.ToString() : "0"));
+                SayOffSale(box, p);
             }
             else
             {
-                box.Line(TechText.Fill("reallife_tech_product_build", "features", p.Features.ToString(), "rival", FirmsCatalogue.RivalName(rival), "theirs", p.RivalFeatures.ToString(),
-                    "next", (FirmsRules.FeatureCost(p.Features) - p.Progress).ToString()));
+                box.Line(TechText.NextFeature(p, false));
                 if (p.Features >= FirmsCatalogue.FeaturesMost)
                 {
                     box.Line(TechText.Fill("reallife_tech_product_features_full", "most", FirmsCatalogue.FeaturesMost.ToString()), CellTone.Yellow);
@@ -527,6 +526,7 @@ namespace RealLifeOverhaul.Tech
                 box.Line(TechText.Fill("reallife_tech_product_sales", "customers", TechText.Whole(p.Users), "free", TechText.Whole(p.Free),
                     "monthly", TechText.Cents(Level(FirmsRules.MonthlyRevenue(p))),
                     "support", FirmsRules.SupportNeeded(p).ToString(), "have", firm != null ? firm.Crew.Support.ToString() : "0"));
+                SayOffSale(box, p);
                 if (p.K == ProductKind.Licence && p.Stage < 2 && firm != null)
                 {
                     // How often it sells as things stand: a licence's deals are few and large, so the page says when to expect the next.
@@ -539,6 +539,18 @@ namespace RealLifeOverhaul.Tech
             {
                 box.Line(TechText.Fill("reallife_tech_product_training", "done", TechText.Whole(p.Compute),
                     "need", TechText.Whole(InfraRules.TrainNeed(p.Features)), "inference", InfraRules.Inference(p).ToString()));
+                string training = TechText.TrainingWait(p);
+                if (training != null)
+                {
+                    if (FirmsRules.Wait(p).Days < 0)
+                    {
+                        box.Line(training, CellTone.Yellow);   // switched off: nothing will come until the level is raised
+                    }
+                    else
+                    {
+                        box.Note(training);
+                    }
+                }
             }
             if (_director.SectorOn)
             {
@@ -584,6 +596,16 @@ namespace RealLifeOverhaul.Tech
             }
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);
             Meta.Guide.Point(box, SectorGuide);
+        }
+
+        // Why a product that is not on sale yet has no customers: it has to be launched first.
+        private static void SayOffSale(InfoBox box, Product p)
+        {
+            string words = TechText.OffSale(p);
+            if (words != null)
+            {
+                box.Line(words);
+            }
         }
 
         private void TenderRivals(InfoBox box, FirmsFile f, Contract t)

@@ -172,7 +172,9 @@ namespace RealLifeOverhaul.Ui
                 "reallife_rival_line_backed", "reallife_rival_line_entered", "reallife_rival_line_bought", "reallife_rival_card_bake",
                 "reallife_rival_bake_none", "reallife_rival_bake_open_line", "reallife_rival_bake_entered_line",
                 "reallife_rival_bake_won_line", "reallife_rival_bake_lost_line", "reallife_rival_bake_missed_line",
-                "reallife_rival_bake_about", "reallife_tech_desk_bake_c0", "reallife_tech_desk_bake_c1", "reallife_tech_desk_bake_c2"
+                "reallife_rival_bake_about", "reallife_tech_desk_bake_c0", "reallife_tech_desk_bake_c1", "reallife_tech_desk_bake_c2",
+                "reallife_tech_product_build_wait", "reallife_tech_mkt_product_build_wait", "reallife_tech_product_training_days", "reallife_tech_product_training_off",
+                "reallife_tech_product_off_sale_ready", "reallife_tech_product_off_sale_short", "reallife_tech_mkt_product_deals_full"
                 // KEYS END
             }, TechExitKeys())).Switch(UiScreenSwitches.Tech));
         }

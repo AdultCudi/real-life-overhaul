@@ -191,18 +191,19 @@ namespace RealLifeOverhaul.Ui
                         "support", FirmsRules.SupportNeeded(p).ToString(Inv), "have", firm != null ? firm.Crew.Support.ToString(Inv) : "0");
                     if (_d.SectorOn)
                     {
-                        card.Say(TechText.Fill("reallife_tech_mkt_product_build", "features", p.Features.ToString(Inv), "next", (FirmsRules.FeatureCost(p.Features) - p.Progress).ToString(Inv)));
+                        card.Say(TechText.NextFeature(p, true));
                         card.Say(support);
+                        card.Say(TechText.OffSale(p));
                     }
                     else
                     {
-                        card.Say(TechText.Fill("reallife_tech_product_build", "features", p.Features.ToString(Inv), "rival", FirmsCatalogue.RivalName(FirmsCatalogue.RivalStock(p.K, p.S)),
-                            "theirs", p.RivalFeatures.ToString(Inv), "next", (FirmsRules.FeatureCost(p.Features) - p.Progress).ToString(Inv)));
+                        card.Say(TechText.NextFeature(p, false));
                         if (p.Features >= FirmsCatalogue.FeaturesMost)
                         {
                             card.Say(TechText.Fill("reallife_tech_product_features_full", "most", FirmsCatalogue.FeaturesMost.ToString()), UiRole.WarnText);
                         }
                         card.Say(support);
+                        card.Say(TechText.OffSale(p));
                         if (p.K == ProductKind.Licence && p.Stage < 2 && firm != null)
                         {
                             long rate = FirmsRules.LicenceRate(FirmsRules.Appeal(p, firm.File, firm.Crew), FirmsRules.CycleSpend[TalentCatalogue.Clamp(HiringGame.Cycle, 0, 3)], firm.Crew.Selling);
@@ -214,6 +215,7 @@ namespace RealLifeOverhaul.Ui
                 {
                     card.Say(TechText.Fill("reallife_tech_product_training", "done", TechText.Whole(p.Compute), "need", TechText.Whole(InfraRules.TrainNeed(p.Features)), "inference",
                         InfraRules.Inference(p).ToString(Inv)));
+                    card.Say(TechText.TrainingWait(p), FirmsRules.Wait(p).Days < 0 ? UiRole.WarnText : UiRole.Text2);
                 }
                 if (_d.SectorOn)
                 {

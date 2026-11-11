@@ -237,8 +237,7 @@ namespace RealLifeOverhaul.Ui
                     return hero;
                 }
                 hero.Icon = TechGlyphs.Of(TechGlyphs.Product, best.Kind);
-                int need = Math.Max(1, FirmsRules.FeatureCost(best.Features));
-                int percent = Math.Max(0, Math.Min(100, best.Progress * 100 / need));
+                int percent = FirmsRules.Wait(best).Done / 10;   // a model's feature is done only when its training is in too
                 hero.Progress = best.K == ProductKind.Game ? Math.Max(0, Math.Min(100, (int)Math.Min(100L,
                     (long)best.Progress * 100 / FirmsCatalogue.GameScope[TalentCatalogue.Clamp(best.Scope, 0, 2)]))) : percent;
                 hero.Line = TechText.Fill("reallife_ui_tech_hero_product", "kind", TechText.ProductName(best.K), "features", best.Features.ToString(Inv), "percent", hero.Progress.ToString(Inv));

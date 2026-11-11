@@ -608,7 +608,7 @@ namespace RealLifeOverhaul.Tech
             int at = _firmsFile.Products.IndexOf(p);
             int appeal = at >= 0 && at < _appeals.Length && _appeals[at] > 0 ? _appeals[at] : firm != null ? SectorRules.Appeal(p, firm.File, firm.Crew, _sector.Markets[SectorRules.MarketOf(p)]) : 0;
             int aware = at >= 0 && at < _aware.Length && _aware[at] > 0 ? _aware[at] : 0;
-            return SectorViews.Market(_sector, p, appeal, aware, fmt);
+            return SectorViews.Market(_sector, p, appeal, aware, fmt, firm != null ? firm.Crew.Selling : -1);
         }
 
         /// <summary>The data centres' markets as a section of the Infra tab under the sector; null while the sector is off.</summary>

@@ -101,6 +101,31 @@ namespace RealLifeOverhaul.Tech
         public long Affected, Fine;
     }
 
+    /// <summary>
+    /// What a product's next feature still waits for (<see cref="FirmsRules.Wait"/>): the work still to put in, the work already past
+    /// the feature's cost, and for an AI model the training still to come. Nothing here is below zero.
+    /// </summary>
+    public readonly struct FeatureWait
+    {
+        public readonly int Points;      // work points still to put in; 0 once the feature's cost is in
+        public readonly int Ahead;       // work points in beyond the cost: kept for the features after it, while a model waits for its training
+        public readonly long Training;   // AI compute unit-days a model's generation still needs; 0 for any other product, or once it is trained
+        public readonly int Days;        // days that training takes at the model's daily level; 0 when none is to come, -1 when the level gives none
+        public readonly int Done;        // thousandths of the feature done: the lesser of its work and its training
+
+        public FeatureWait(int points, int ahead, long training, int days, int done)
+        {
+            Points = points;
+            Ahead = ahead;
+            Training = training;
+            Days = days;
+            Done = done;
+        }
+
+        /// <summary>The work is in and the feature waits for its training alone.</summary>
+        public bool Trains => Points == 0 && Training > 0;
+    }
+
     /// <summary>What a firm's people can do on a day, counted from their files.</summary>
     public struct Crew
     {
