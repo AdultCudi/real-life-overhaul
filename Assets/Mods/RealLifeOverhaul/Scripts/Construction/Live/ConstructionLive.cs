@@ -361,9 +361,14 @@ namespace RealLifeOverhaul.Construction
         // A question of the game's before something that costs or cannot be undone; the answer after.
         private void Confirm(string headerKey, string bodyKey, string name, long amount, Func<string> act, bool negative)
         {
+            Confirm(headerKey, bodyKey, new Dictionary<string, string> { { "name", name ?? string.Empty }, { "amount", ConstructionText.Money(amount) } }, act, negative);
+        }
+
+        // The same with the body's words given by the caller, for a question that names more than a name and a sum.
+        private void Confirm(string headerKey, string bodyKey, Dictionary<string, string> words, Func<string> act, bool negative)
+        {
             LanguageChangeEventDataHolder header = headerKey.Localize();
-            LanguageChangeEventDataHolder body = bodyKey.Localize(new Dictionary<string, string> { { "name", name ?? string.Empty }, { "amount",
-                ConstructionText.Money(amount) } });
+            LanguageChangeEventDataHolder body = bodyKey.Localize(words);
             GameConfirm.Show(header, body, () => UiClone.Safe(() => Answer(act())), null, null, null, true, negative);
         }
 

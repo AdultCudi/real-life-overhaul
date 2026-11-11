@@ -176,7 +176,7 @@ namespace RealLifeOverhaul.Construction
                 var actions = new List<UiActionModel>(3);
                 if (office)
                 {
-                    actions.Add(_runs.Button(ConstructionText.T("reallife_bld_button_found"), UiButtonKind.Primary, UiIcon.None, UiAction.Alt, () => Answer(Director.Found())));
+                    actions.Add(_runs.Button(ConstructionText.T("reallife_bld_button_found"), UiButtonKind.Primary, UiIcon.None, UiAction.Alt, Found));
                 }
                 actions.Add(_runs.Button(ConstructionText.T("reallife_bld_button_land"), UiButtonKind.Secondary, UiIcon.None, office ? UiAction.Option : UiAction.Alt,
                     () => ShowTab(ConstructionDirector.TabLand)));

@@ -18,7 +18,7 @@ internal static partial class Program
 
     // The pages the sidebar gives, by name, in their order; the other states are a sub page or a tab in another condition.
     private static readonly string[] ConstructionTabNames = { "overview", "land", "projects", "tenders", "crews", "company", "rivals", "city" };
-    private static readonly string[] ConstructionSubStates = { "land_plot", "project_plans", "project_ready", "project_site", "project_quotes", "tender_bid", "crew", "licence" };
+    private static readonly string[] ConstructionSubStates = { "land_plot", "project_plans", "project_ready", "project_site", "project_quotes", "tender_bid", "crew", "licence", "speciality" };
 
     static partial void UiCasesConstruction(UiScreenDef def, List<UiScreenCase> cases)
     {

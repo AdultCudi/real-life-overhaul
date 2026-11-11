@@ -15,7 +15,7 @@ namespace RealLifeOverhaul.Construction
         public bool LicenceReminded;
         public int Reputation = BuildCatalogue.ReputationStart;
         public Speciality Speciality;
-        public int SpecialSince;
+        public int SpecialSince;                     // the day the speciality was last set; 0 until the first choice, which has no wait (FirmRules.SpecialityWait)
         public CoverLevel Cover;
         public int Finished, OnTime, Late, Defects, TendersWon, TendersLost;
         public long Earned, Spent;                   // money from and into its works

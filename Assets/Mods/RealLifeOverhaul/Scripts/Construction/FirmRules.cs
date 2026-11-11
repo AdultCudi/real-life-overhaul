@@ -11,10 +11,18 @@ namespace RealLifeOverhaul.Construction
         public int Rate;   // money a working day, at today's prices
     }
 
+    /// <summary>What asking the company to be known for something comes to.</summary>
+    public enum SpecialityChoice
+    {
+        Same = 0,    // it is known for that already: nothing is set and nothing is spent
+        Waits = 1,   // a change inside the wait that follows the last choice
+        Set = 2      // set from the day asked
+    }
+
     /// <summary>
-    /// The company: its reputation from what it hands over, the speciality's effect, the insurance's premium and what it
-    /// pays, the crews the labour market offers and a rival's offer to one of them, the plant's resale and upkeep, and the
-    /// role an employee of the office is given by their skill. Game-free.
+    /// The company: its reputation from what it hands over, the speciality's effect and its choice, the insurance's
+    /// premium and what it pays, the crews the labour market offers and a rival's offer to one of them, the plant's
+    /// resale and upkeep, and the role an employee of the office is given by their skill. Game-free.
     /// </summary>
     public static class FirmRules
     {
@@ -80,6 +88,30 @@ namespace RealLifeOverhaul.Construction
                 return BuildCatalogue.SpecialPacePermille * 3;
             }
             return Special(speciality, model, use, civicKind) ? BuildCatalogue.SpecialPacePermille : 0;
+        }
+
+        /// <summary>
+        /// Days still to wait before the speciality may change. The first choice, with nothing chosen yet
+        /// (<paramref name="since"/> 0), is free of the wait; every choice after it waits
+        /// <see cref="BuildCatalogue.SpecialityRest"/> days from the day it was made, never more. 0 where it may change now.
+        /// </summary>
+        public static int SpecialityWait(int since, int day)
+        {
+            return since <= 0 ? 0 : BuildCatalogue.Clamp(BuildCatalogue.SpecialityRest - (day - since), 0, BuildCatalogue.SpecialityRest);
+        }
+
+        /// <summary>
+        /// Asking the company to be known for <paramref name="to"/>. For what it is known for already nothing is set and
+        /// nothing is spent, so asking for it never uses up the first choice; a change inside the wait is refused; any
+        /// other is set from <paramref name="day"/>.
+        /// </summary>
+        public static SpecialityChoice ChooseSpeciality(Speciality now, int since, Speciality to, int day)
+        {
+            if (now == to)
+            {
+                return SpecialityChoice.Same;
+            }
+            return SpecialityWait(since, day) > 0 ? SpecialityChoice.Waits : SpecialityChoice.Set;
         }
 
         /// <summary>A day's insurance: a share of the works under way, at least the floor, at today's prices; nothing without cover.</summary>

@@ -114,6 +114,9 @@ namespace RealLifeOverhaul.Construction
 
             public void Note(string words) => _lines.Add(UiFactLine.Say(words));
 
+            /// <summary>A line the player presses, in cyan with an arrow: it runs <paramref name="click"/> like a button.</summary>
+            public void Link(string words, Action click) => _lines.Add(_runs.Link(words, click));
+
             /// <summary>A choice among a few things as a step: the chosen one's words between a minus and a plus, and in full under them where they are long.</summary>
             public bool Selector(int count, int index, Func<int, string> text, Action<int> changed)
             {

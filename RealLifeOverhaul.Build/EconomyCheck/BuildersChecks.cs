@@ -26,6 +26,7 @@ internal static partial class Program
         BuildFrameChecks();
         SiteFitChecks();
         BuildStoreChecks();
+        SpecialityChecks();   // the speciality's first choice, its wait, its list on both apps' pages and the founding that opens it (SpecialityChecks.cs)
         BuildSourceChecks();
         BuildTextChecks();
     }
