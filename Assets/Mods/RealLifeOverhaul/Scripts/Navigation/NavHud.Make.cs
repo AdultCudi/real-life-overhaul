@@ -43,25 +43,61 @@ namespace RealLifeOverhaul.Nav
                 backdrop.raycastTarget = true;   // the card, drawn over the kit's HUD, is what the pointer hits over it: a click there reaches neither the world nor a piece under it
             }
 
+            // The headline is the card's own band (NavHeadRules): inside the card's drawn edge, the strip's dark plate, its texts laid out by the mod alone.
+            // The game's headline was a light picture coloured by its button and laid out by its group; with those gone it stood light and wider than
+            // the card's drawn edge, so its texts went past the card and the band's colours did not hold.
             _head = (RectTransform)panel.transform.Find("Headline");
             Take<Button>(_head.gameObject);
             Take<LayoutElement>(_head.gameObject);
+            Take<LayoutGroup>(_head.gameObject);
+            Take<ContentSizeFitter>(_head.gameObject);
             _head.anchorMin = new Vector2(0f, 1f);
             _head.anchorMax = new Vector2(1f, 1f);
             _head.pivot = new Vector2(0.5f, 1f);
-            _head.offsetMin = new Vector2(Side, -Head);
-            _head.offsetMax = new Vector2(-Side, 0f);
+            _head.offsetMin = new Vector2(NavHeadRules.Inset, -Head + NavHeadRules.BandGap);
+            _head.offsetMax = new Vector2(-NavHeadRules.Inset, -NavHeadRules.Inset);
+            for (int i = 0; i < _head.childCount; i++)
+            {
+                Transform part = _head.GetChild(i);
+                if (part.name != "Label")
+                {
+                    part.gameObject.SetActive(false);   // the task panel's fold arrows and the rest of its headline: this panel does not fold
+                }
+            }
+            if (_head.GetComponent<Image>() is Image gameBand)
+            {
+                gameBand.enabled = false;
+            }
+            RectTransform band = Child("Band", _head);
+            Stretch(band);
+            band.SetAsFirstSibling();
+            Image bandImage = band.gameObject.AddComponent<Image>();
+            bandImage.color = Colour(NavHeadRules.Band);
+            bandImage.raycastTarget = false;
             Transform label = _head.Find("Label");
             _title = label != null ? label.GetComponent<TMP_Text>() : null;
-            Transform fold = _head.Find("Icon");
-            if (fold != null)
-            {
-                fold.gameObject.SetActive(false);   // the task panel's fold arrows: this panel does not fold
-            }
             if (_title is TMP_Text titleText)
             {
+                Take<LayoutElement>(label.gameObject);
+                Take<ContentSizeFitter>(label.gameObject);
+                if (lineLike != null && lineLike.GetComponent<TMP_Text>() is TMP_Text lettering && lettering.font != null)
+                {
+                    // The game's lettering of the task entries, whose material takes a colour: the headline's own drew dark whatever it was given.
+                    titleText.font = lettering.font;
+                    titleText.fontSharedMaterial = lettering.fontSharedMaterial;
+                }
+                titleText.enableVertexGradient = false;
+                titleText.overrideColorTags = false;
+                titleText.color = Colour(NavHeadRules.Name);
+                titleText.fontStyle = FontStyles.Bold | FontStyles.UpperCase;
+                titleText.alignment = TextAlignmentOptions.MidlineLeft;
+                titleText.margin = Vector4.zero;
                 titleText.textWrappingMode = TextWrappingModes.NoWrap;
                 titleText.overflowMode = TextOverflowModes.Ellipsis;
+                titleText.enableAutoSizing = true;   // a long name first gets smaller lettering, and is shortened only when that does not fit
+                titleText.fontSizeMax = 28f;
+                titleText.fontSizeMin = 21f;
+                titleText.fontSize = 28f;
             }
 
             _view = (RectTransform)panel.transform.Find("Viewport");
@@ -216,6 +252,12 @@ namespace RealLifeOverhaul.Nav
             rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(0.5f, 0.5f);
             rect.anchoredPosition = Vector2.zero;
             return rect;
+        }
+
+        // One of the headline's colours (0xRRGGBBAA, NavHeadRules).
+        private static Color32 Colour(uint rgba)
+        {
+            return new Color32((byte)(rgba >> 24), (byte)(rgba >> 16), (byte)(rgba >> 8), (byte)rgba);
         }
 
         private static void Stretch(RectTransform rect)

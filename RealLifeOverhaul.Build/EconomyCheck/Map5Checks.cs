@@ -17,6 +17,7 @@ internal static partial class Program
     private static void Map5Checks()
     {
         Map5MinimapChecks();
+        Map5HeadChecks();   // the minimap's headline band and district strip (Map5HeadChecks.cs)
         Map5RuleChecks();
         Map6Checks();
         Map5TextChecks();   // the game's words on the place card: no tag drawn as text, and the chips whole

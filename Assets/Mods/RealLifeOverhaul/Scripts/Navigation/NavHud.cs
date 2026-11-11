@@ -244,6 +244,8 @@ namespace RealLifeOverhaul.Nav
             PlaceLine(_line2, Foot + 4f, lines);
             _px = float.MaxValue;   // another size: everything in the view is written again
             _scale = 0f;
+            HeadLayout();   // the band's texts for the card's new width
+            StripFit();     // and the district strip for the view's
         }
 
         /// <summary>
@@ -495,6 +497,13 @@ namespace RealLifeOverhaul.Nav
                 {
                     gx /= over;
                     gy /= over;
+                }
+                if (_strip != null && _strip.gameObject.activeSelf)
+                {
+                    // and clear of the district strip and the compass and switch: it slides in along its line, so it still points the way
+                    float radius = GoalSize * 0.5f;
+                    NavHeadRules.KeepClear(ref gx, ref gy, ViewWidth * 0.5f, _mapHeight * 0.5f, StripPad + StripHeight + radius,
+                                           StripPad + CompassSize + radius, StripPad + CompassSize * 2f + SwitchGap + radius);
                 }
                 _goal.anchoredPosition = new Vector2(gx, gy);
             }
