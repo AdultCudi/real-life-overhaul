@@ -477,7 +477,7 @@ internal static partial class Program
         {
             keys.Add(JusticeLaw.Find(charge).NameKey);
         }
-        Check(keys.Count >= 200 && transactions.Count == 9 && code.Contains("\"reallife_scheme_news_own_\" + kind.ToString().ToLowerInvariant()"),
+        Check(keys.Count >= 200 && transactions.Count == 9 && code.Contains("SchemeKeys.NewsOwn[(int)kind]"),
             "schemes texts: the keys the code names are found: " + keys.Count + ", nine of them the lines of a bank statement");
 
         Dictionary<string, string> english = LoadWords(System.IO.Path.Combine(DesignLocales, "en.json"));
