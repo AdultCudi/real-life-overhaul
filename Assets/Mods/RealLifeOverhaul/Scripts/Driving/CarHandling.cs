@@ -50,7 +50,6 @@ namespace RealLifeOverhaul
         private readonly StringBuilder _line = new StringBuilder(1400);
 
         private NwhVehicle _vehicle;     // the car the handling is on, or null
-        private bool _softened;          // the car being designed or on had its springs softened to the game's ride (it is another mod's and rode stiffer)
         private CarController _car;
         private Rigidbody _body;
         private VariableCenterOfMass _centre;
@@ -103,7 +102,6 @@ namespace RealLifeOverhaul
         public bool Begin(CarController car, NwhVehicle vehicle, HandlingLevel level, in HandlingTuning tuning)
         {
             Restore();
-            _softened = false;
             if (level == HandlingLevel.Off || car == null || vehicle == null || car.vehicleType == null || vehicle.vehicleRigidbody == null)
             {
                 Refusal = "the option is off, or it is not a car";
@@ -124,10 +122,19 @@ namespace RealLifeOverhaul
                 return false;
             }
             string why;
+            float torqueUnder = 0f;
+            float massUnder = 0f;
+            float gripUnder = 0f;
             LiftParts(car);
             try
             {
                 why = Read(car, vehicle, body, type.maxSpeed);   // the car under the Garage's parts
+                if (why == null)
+                {
+                    torqueUnder = vehicle.brakes.maxTorque;   // what lies under the Garage's parts, to tell their brakes, weight and tyres by
+                    massUnder = body.mass;
+                    gripUnder = AnyGrip(vehicle);
+                }
             }
             finally
             {
@@ -138,10 +145,13 @@ namespace RealLifeOverhaul
                 Refused(type.vehicleTypeName, why);
                 return false;
             }
-            // A car of another mod that rides stiffer than the game's cars of its kind is given the kind's ride before its design,
-            // so that its roll, dive and damping come out as the game's cars' do (the option, on by default).
-            HandlingTarget target = HandlingRules.Target(spec.Kind, level, tuning, Settings.HandlingOtherMods && !CarCatalogue.IsGameCar(type.vehicleTypeName));
-            _softened = HandlingModel.Soften(_chassis, target.RideHz);
+            // The Garage's parts on the car now: the nose dive is planned for the full pedal they give (BrakesForParts shares the brakes out for them after).
+            _chassis.PartsBrakes = HandlingModel.PartsFactor(vehicle.brakes.maxTorque, torqueUnder, 1f);
+            _chassis.PartsMass = HandlingModel.PartsFactor(body.mass, massUnder, 1f);
+            _chassis.PartsGrip = HandlingModel.PartsFactor(AnyGrip(vehicle), gripUnder, 0.01f);
+            // A car of another mod that rides stiffer than the game's cars of its kind is given the kind's ride in the first steps of its design,
+            // as far as its springs' travel carries it, so that its roll, dive and damping come out as the game's cars' do (the option, on by default).
+            HandlingTarget target = HandlingRules.Target(spec.Kind, level, tuning, HandlingRules.SoftensCar(type.vehicleTypeName, Settings.HandlingOtherMods));
             _design.Begin(_chassis, target, _setup);
             _designCar = car;
             _designVehicle = vehicle;
@@ -320,6 +330,12 @@ namespace RealLifeOverhaul
             _chassis.BrakeTorque = torque;
             _chassis.SteerLock = vehicle.steering.maximumSteerAngle;
             return null;
+        }
+
+        // A wheel's grip along: the Garage's tyres part multiplies it on every wheel alike, so any wheel of a car Read has passed will do.
+        private static float AnyGrip(NwhVehicle vehicle)
+        {
+            return vehicle.powertrain.wheelGroups[0].Wheels[0].wheelUAPI.LongitudinalFrictionGrip;
         }
 
         private static float AxleZ(Transform space, WheelGroup group)
@@ -589,9 +605,9 @@ namespace RealLifeOverhaul
         // writes it back with the rest.
         private void BrakesForParts(NwhVehicle vehicle, Rigidbody body, float torqueUnder, float massUnder, float gripUnder)
         {
-            _partsBrakes = torqueUnder > 1f ? vehicle.brakes.maxTorque / torqueUnder : 1f;
-            _partsMass = massUnder > 1f ? body.mass / massUnder : 1f;
-            _partsGrip = gripUnder > 0.01f ? _wheels[0].Wheel.LongitudinalFrictionGrip / gripUnder : 1f;
+            _partsBrakes = HandlingModel.PartsFactor(vehicle.brakes.maxTorque, torqueUnder, 1f);
+            _partsMass = HandlingModel.PartsFactor(body.mass, massUnder, 1f);
+            _partsGrip = HandlingModel.PartsFactor(_wheels[0].Wheel.LongitudinalFrictionGrip, gripUnder, 0.01f);
             _partsBrakeG = HandlingModel.PartsBrakes(_chassis, _setup, _partsBrakes, _partsMass, _partsGrip, out _partsFront, out _partsRear, out _partsUse);
             for (int g = 0; g < _groups.Count; g++)
             {
@@ -826,6 +842,12 @@ namespace RealLifeOverhaul
             {
                 why = "the brakes' shares did not take";
             }
+            float left = HandlingModel.PartsFrontLeft(_chassis, _setup, _partsMass, _partsBrakeG);
+            if (why == null && !HandlingModel.TravelKept(_setup, left))
+            {
+                why = "the front springs keep " + Num(left * 100f) + " of " + Num(_setup.Front.RestLength * 100f) + " cm at the full pedal's dive, under the "
+                      + Num(HandlingModel.TravelNeeded(_setup) * 100f) + " cm they are held to";
+            }
 
             float lockDegrees = _chassis.SteerLock;
             _line.Clear();
@@ -834,7 +856,7 @@ namespace RealLifeOverhaul
                 .Append(tuning.Steering).Append('/').Append(tuning.Brakes).Append(" %): ")
                 .Append(Num(_mass)).Append(" -> ").Append(Num(_setup.Mass)).Append(" kg, centre of mass ").Append(Num(_setup.ComHeight)).Append(" m up, the game's; springs ")
                 .Append(Num(f.GameRate)).Append(" -> ").Append(Num(f.Rate)).Append(" N/m front, ").Append(Num(r.GameRate)).Append(" -> ").Append(Num(r.Rate))
-                .Append(" rear, ride ").Append(Num(f.GameFrequency)).Append(" -> ").Append(Num(f.Frequency)).Append(" Hz").Append(_softened ? Softened(gf, gr) : string.Empty)
+                .Append(" rear, ride ").Append(Num(f.GameFrequency)).Append(" -> ").Append(Num(f.Frequency)).Append(" Hz").Append(Softened(gf, gr))
                 .Append("; the body's swings die away at a damping ratio of ")
                 .Append(Num(f.GameZeta)).Append(" -> ").Append(Num(zeta)).Append(" (").Append(swings).Append(" swings you can see), a ").Append(Num(HandlingModel.Kerb * 100f))
                 .Append(" cm kerb leaves ").Append(Num(kerb * 100f)).Append(" cm of travel (the game's ").Append(Num(gameKerb * 100f)).Append("); roll ")
@@ -842,7 +864,7 @@ namespace RealLifeOverhaul
                 .Append(" -> ").Append(Num(_setup.RollCentre)).Append(" m up")
                 .Append(_setup.Raised > 0.0005f ? ", raised " + Num(_setup.Raised * 100f) + " cm so it slides before it tips" : string.Empty)
                 .Append(", bars ").Append(Num(gf.AntiRoll)).Append('/').Append(Num(gr.AntiRoll)).Append(" -> ").Append(Num(f.AntiRoll)).Append('/').Append(Num(r.AntiRoll))
-                .Append(" N/m), dive ").Append(Num(_setup.GameDivePerG)).Append(" -> ").Append(Num(_setup.DivePerG)).Append(" degrees per g").Append(Travel())
+                .Append(" N/m), dive ").Append(Num(_setup.GameDivePerG)).Append(" -> ").Append(Num(_setup.DivePerG)).Append(" degrees per g").Append(Travel(left))
                 .Append("; rolls over at ")
                 .Append(Num(_setup.TipG)).Append(" g (the game's ").Append(Num(_setup.GameTipG)).Append(") where its tyres hold ").Append(Num(_setup.Hold))
                 .Append(" g (the game's ").Append(Num(_setup.GameHold)).Append(" sideways on); tyres the game's own curve to ").Append(Num(_setup.KneeDegrees))
@@ -862,19 +884,28 @@ namespace RealLifeOverhaul
             return _line.ToString();
         }
 
-        // What the car's springs rode at as its mod made them, for the line of a car softened to the game's ride (Soften).
+        // For the line of a car of another mod asked for the game's ride (Soften): what its springs rode at as its mod made them, and whether the
+        // travel they have at rest carried the whole ride asked or only a stiffer one (or none: the springs are then as their mod made them).
         private string Softened(AxleData front, AxleData rear)
         {
+            if (!_setup.Softened)
+            {
+                return _setup.SoftHeld ? " (another mod's springs stiffer than the game gives a car of its kind, kept: the travel they have at rest carries no softer ride)" : string.Empty;
+            }
             float f = front.OwnFrequency > 0f ? front.OwnFrequency : _setup.Front.GameFrequency;
             float r = rear.OwnFrequency > 0f ? rear.OwnFrequency : _setup.Rear.GameFrequency;
-            return " (softened from " + Num(f) + "/" + Num(r) + " Hz, as another mod's springs stiffer than the game gives a car of its kind)";
+            return " (softened from " + Num(f) + "/" + Num(r) + " Hz, as another mod's springs stiffer than the game gives a car of its kind"
+                   + (_setup.SoftHeld ? ", no further than the travel they have at rest carries" : string.Empty) + ")";
         }
 
-        // What the full pedal's dive leaves of the front springs' travel at its peak, and whether the extra dive was held back for it.
-        private string Travel()
+        // What the full pedal's dive leaves of the front springs' travel at its peak, the custom shop's parts counted, against the game's own car;
+        // whether the extra dive was held back for it, and the front dampers firmed.
+        private string Travel(float left)
         {
-            return " (the front springs keep " + Num(_setup.FrontLeft * 100f) + " of " + Num(_setup.Front.RestLength * 100f) + " cm at the full pedal's dive"
-                   + (_setup.DiveHeld ? ", the extra dive held back" : string.Empty) + ")";
+            return " (the front springs keep " + Num(left * 100f) + " of " + Num(_setup.Front.RestLength * 100f) + " cm at the full pedal's dive, the game's own car "
+                   + Num(_setup.GameFrontLeft * 100f)
+                   + (_setup.DiveHeld ? ", the extra dive held back" : string.Empty)
+                   + (_setup.FrontFirm > 1.001f ? ", the front dampers' compression firmed " + Num(_setup.FrontFirm) + " times" : string.Empty) + ")";
         }
 
         // Once, getting out: every value the handling wrote, read back from the car against the game's own.
