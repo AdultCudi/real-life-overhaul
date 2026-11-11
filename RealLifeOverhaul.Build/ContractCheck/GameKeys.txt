@@ -6,6 +6,7 @@ amountoption_all
 amountoption_negative
 amountoption_positive
 auto_tow_service_ny
+ba:buildingresume_taxi_travel
 ba:buildingtype_cinema
 ba:buildingtype_office
 ba:buildingtype_residential
@@ -367,6 +368,7 @@ bizman_factory_produce_continuously
 bizman_factory_produce_up_to
 bizman_factory_production_flow_title
 bizman_factory_production_machines
+bizman_factory_production_time_per_product_label
 bizman_factory_running
 bizman_factory_total_production_per_hour_title
 bizman_factory_workstation_name_placeholder
