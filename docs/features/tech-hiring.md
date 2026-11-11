@@ -50,7 +50,7 @@ Nothing per frame. A rush is a click: one pass over the player's ads (twelve job
 
 ## Checks
 
-`EconomyCheck --search-rush` (`SearchRushChecks.cs`, also in the full run): the price and its edges; which searches can be rushed; that a rush only ever brings a search forward, to tomorrow, by the days it saved, and never twice; that a rushed senior and crew search deliver by the day's own rules; that no rival or startup holds a search; the sources (one place decides, paid before the day moves, the question on every page, the kit's list of a search's candidates); the option, the money's key, the test, the Guide's figure and the texts.
+`EconomyCheck --search-rush` (`SearchRushChecks.cs`, also in the full run): the price and its edges; which searches can be rushed; that a rush only ever brings a search forward, to tomorrow, by the days it saved, and never twice; that a rushed senior and crew search deliver by the day's own rules; that no rival or startup holds a search; the sources (one place decides, paid before the day moves, the question on every page, the kit's list of a search's candidates); the option, the money's key, the test, the Guide's figure and the texts; and, in all eleven languages, the names the texts send the reader to: the Guide's page on hiring bolds Open Roles' Jobs, Applicants and Search tabs, the Hire technicians button and the Infra tab as the language's own texts of them (and no other name), and the option's tip, the test's notice and What's new's sentence name Open Roles and its Search tab as the screen does (StandardCheck's RLO-TXT-013 reads the Guide's bold names in English only).
 
 ## Not seen in the game
 

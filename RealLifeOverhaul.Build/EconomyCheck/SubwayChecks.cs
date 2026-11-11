@@ -878,14 +878,26 @@ internal static partial class Program
                 var markOf = new Dictionary<string, string> { { "en", "Fixed: " }, { "pt", "Corrigido: " }, { "zh-cn", "已修复：" }, { "de", "Behoben: " }, { "fr", "Corrigé : " }, { "es", "Corregido: " },
                     { "ru", "Исправлено: " }, { "nl", "Opgelost: " }, { "tr", "Düzeltildi: " }, { "pl", "Naprawiono: " }, { "ko", "수정: " } };
                 string mark = markOf[code];
-                string tail = words.TryGetValue(row, out string whole) && whole.LastIndexOf(mark, StringComparison.Ordinal) >= 0 ? whole.Substring(whole.LastIndexOf(mark, StringComparison.Ordinal)) : string.Empty;
-                Check(tail.Length > 0 && tail.IndexOf(subwayWord[code], StringComparison.OrdinalIgnoreCase) >= 0 && (code != "en" || tail == "Fixed: Subway rides take their time again: the wait for a train and the stops of the journey are added after the game's ride, at every station."),
-                    "subway texts: What's new ends with the fix that subway rides take their time again, in " + code);
+                // The fix is looked for as a sentence of its own, wherever it stands in the row: the work that comes after it appends its sentences to the same row, so the row
+                // does not end with it (a check of the row's last fix, or of its tail, fails on every one of them).
+                string fix = SubwayFixSentence(words.TryGetValue(row, out string whole) ? whole : string.Empty, mark, subwayWord[code]);
+                Check(fix.Length > 0 && (code != "en" || fix == SubwayFixEnglish),
+                    "subway texts: What's new has the fix that subway rides take their time again, as a sentence of its own wherever it stands in the row, in " + code);
                 bool told = words.TryGetValue(row, out string news) && news.IndexOf(subwayWord[code], StringComparison.OrdinalIgnoreCase) >= 0
                             && (news.Contains("Birchwood") || news.Contains("伯奇伍德"));
                 Check(told, "subway texts: What's new has the stations' line in " + code + " (the row English has it in)");
             }
         }
+        // The finder, on rows of its own: it takes the fix where it stands among other sentences, and nothing but the fix; a row without it, with it unmarked, or with it changed has none to match.
+        Check(SubwayFixSentence("A feature's line. " + SubwayFixEnglish + " A suggestion.", "Fixed: ", "subway") == SubwayFixEnglish
+              && SubwayFixSentence("Fixed: Trains run late. " + SubwayFixEnglish + " Fixed: Doors open. A search can be rushed.", "Fixed: ", "subway") == SubwayFixEnglish
+              && SubwayFixSentence(SubwayFixEnglish, "Fixed: ", "subway") == SubwayFixEnglish
+              && SubwayFixSentence("已修复：别的修复。 已修复：地铁乘车的用时重新变得合理：在每个车站加上等车时间。 猎头可以加急。", "已修复：", "地铁") == "已修复：地铁乘车的用时重新变得合理：在每个车站加上等车时间。",
+            "subway texts: the fix is found as its own sentence wherever it stands in a What's new row, with sentences before and after it, in English and in Chinese");
+        Check(SubwayFixSentence("A feature's line. Fixed: Trains run late.", "Fixed: ", "subway").Length == 0 && SubwayFixSentence("Subway rides take their time again.", "Fixed: ", "subway").Length == 0
+              && SubwayFixSentence("Fixed: Train rides take their time again.", "Fixed: ", "subway").Length == 0 && SubwayFixSentence(string.Empty, "Fixed: ", "subway").Length == 0
+              && SubwayFixSentence("Fixed: Subway rides take their time again: the wait for a train is added.", "Fixed: ", "subway") != SubwayFixEnglish,
+            "subway texts: a row with no marked sentence about the subway has none to find, and the English fix changed in its words no longer equals the one it must be");
         string localesScript = System.IO.File.ReadAllText(System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\Workshop\locales.py")));
         HashSet<string> listed = SubwayQuotedKeys(localesScript, "ENGLISH_OK"), listedIn = SubwayQuotedKeys(localesScript, "ENGLISH_OK_IN");
         Check(listed.Count > 200 && names.All(n => !listed.Contains(n)) && names.All(listedIn.Contains) && Regex.Matches(localesScript, @"'reallife_subway_station_[a-z]+': \('de',\)").Count == 3,
@@ -900,5 +912,28 @@ internal static partial class Program
             "subway texts: the districts' older test no longer says they have no station");
         string coverage = System.IO.File.ReadAllText(System.IO.Path.GetFullPath(System.IO.Path.Combine(AppContext.BaseDirectory, @"..\..\..\..\StandardCheck\guide-coverage.txt")));
         Check(coverage.Contains("subway-uptown\treallife_guide_uptown_subway,reallife_guide_uptown_subway_about\t"), "subway texts: its page of the documentation is on the Guide's coverage list");
+    }
+
+    // The English fix of the subway rides: What's new must hold this sentence whole, wherever in its row it stands.
+    private const string SubwayFixEnglish = "Fixed: Subway rides take their time again: the wait for a train and the stops of the journey are added after the game's ride, at every station.";
+
+    // The subway fix in a What's new row: the sentence that begins at one of the row's fix marks and has the subway word in it, up to its full stop (a full stop and a space, the Chinese
+    // full stop, or the row's end), so that the sentences other work appends after it are no part of it. Empty when the row has no such sentence.
+    private static string SubwayFixSentence(string row, string mark, string word)
+    {
+        for (int begin = row.IndexOf(mark, StringComparison.Ordinal); begin >= 0; begin = row.IndexOf(mark, begin + mark.Length, StringComparison.Ordinal))
+        {
+            int end = begin + mark.Length;
+            while (end < row.Length && row[end] != '\u3002' && !(row[end] == '.' && (end + 1 == row.Length || row[end + 1] == ' ')))
+            {
+                end++;
+            }
+            string sentence = row.Substring(begin, Math.Min(end + 1, row.Length) - begin);
+            if (sentence.IndexOf(word, StringComparison.OrdinalIgnoreCase) >= 0)
+            {
+                return sentence;
+            }
+        }
+        return string.Empty;
     }
 }

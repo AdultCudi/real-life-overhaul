@@ -1,5 +1,7 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Text.RegularExpressions;
 using RealLifeOverhaul.Tech;
 
 // Rushing a search firm's search (Tech/Hiring). A player asked (25 Oct 2026, the suggestions forum) to pay an extra fee, by the days saved, to have the
@@ -8,7 +10,9 @@ using RealLifeOverhaul.Tech;
 // each day saved to have its candidates tomorrow, and the price and the new day are asked before anything is paid. Checked here: the price, which
 // searches can be rushed, that a rushed search delivers on the day it now says and is never rushed or charged twice, the one place that decides, the
 // question each page asks, the option, the money's key, the test and the texts; and that no rival or startup waits on a search firm, so there is no
-// search of theirs to rush (the notice a rival buys out is bought by the player's own rule, BuyoutChecks.cs).
+// search of theirs to rush (the notice a rival buys out is bought by the player's own rule, BuyoutChecks.cs). The texts are also held, in all eleven
+// languages, to the names the screen has: the Guide's page bolds Open Roles' tabs, the hire button and the Infra tab as the language's own texts of them,
+// and the tip, the test's notice and What's new's sentence name the app and its Search tab so (SearchRushLabels).
 internal static partial class Program
 {
     private static void SearchRush()
@@ -20,6 +24,7 @@ internal static partial class Program
         SearchRushSources();
         SearchRushOption();
         SearchRushTexts();
+        SearchRushLabels();
     }
 
     private static void SearchRushPrice()
@@ -239,5 +244,127 @@ internal static partial class Program
               && page.Contains("{hire_rush}") && page.Contains("The price and the new day are asked before you pay"),
             "search rush texts: the Guide's page on hiring tells of the rush for both kinds of search, its share and that the price is asked first");
         Check(WhatsNewHas(en, "A search firm's search can now be rushed from its page in Open Roles"), "search rush texts: What's new tells of it (any of its rows)");
+    }
+
+    // The texts of the screen that the Guide's page on hiring bolds by name: Open Roles' Jobs, Applicants and Search tabs, the Hire technicians button on a data centre's page and the Tech app's Infra tab.
+    private static readonly string[] RushPageLabels =
+    {
+        "reallife_roles_tab_jobs", "reallife_roles_tab_applicants", "reallife_roles_tab_search", "reallife_infra_button_hire", "reallife_tech_tab_infra"
+    };
+
+    // The word for a tab in each language, as the stem its forms begin with (Polish and Russian bend it), and whether it stands after a tab's name ("the Search tab") or before it ("Reiter Suche").
+    private static readonly Dictionary<string, (bool After, string[] Stems)> RushTabWords = new Dictionary<string, (bool After, string[] Stems)>(StringComparer.Ordinal)
+    {
+        { "en", (true, new[] { "tab" }) }, { "pt", (false, new[] { "aba" }) }, { "zh-cn", (true, new[] { "标签" }) }, { "de", (false, new[] { "Reiter" }) }, { "fr", (false, new[] { "onglet" }) },
+        { "es", (false, new[] { "pestaña" }) }, { "ru", (false, new[] { "вкладк" }) }, { "nl", (false, new[] { "tabblad" }) }, { "tr", (true, new[] { "sekme" }) },
+        { "pl", (false, new[] { "zakład", "kart", "karc" }) }, { "ko", (true, new[] { "탭" }) }
+    };
+
+    // A piece of What's new's sentence on the rush in each language, the words that send the reader to the app: the check holds each piece to the app's own name, and the row to the piece.
+    private static readonly Dictionary<string, string> RushNewsPieces = new Dictionary<string, string>(StringComparer.Ordinal)
+    {
+        { "en", "from its page in Open Roles" }, { "pt", "pela página dela no app Cargos abertos" }, { "zh-cn", "在“职位空缺”中该搜寻的页面上加急" }, { "de", "auf ihrer Seite unter Offene Stellen" },
+        { "fr", "depuis sa page dans Postes ouverts" }, { "es", "desde su página en Puestos vacantes" }, { "ru", "с её страницы в приложении «Вакансии»" }, { "nl", "vanaf de pagina in Vacatures" },
+        { "tr", "Açık Pozisyonlar içindeki sayfasından" }, { "pl", "z jej strony w aplikacji Wolne stanowiska" }, { "ko", "채용 공고의 해당 페이지에서" }
+    };
+
+    // The names the rush's texts send the reader to. Open Roles, its tabs, the Tech app's Infra tab and the button on a data centre's page are on the screen under the language's own words
+    // (RolesLive's title and tabs, TechLive's tab and button), and a reader looks for what a page names. So the Guide's page on hiring bolds each of them as the language's own text of it, and
+    // the option's tip, the test's notice and What's new's sentence name the app and its Search tab as the screen does. A translator's own word for one (Bolsa for the Jobs tab in Spanish,
+    // Infra where Spanish says Infraestructura, Poszukiwania for Poszukiwanie in Polish, an app called Puestos abiertos where it is Puestos vacantes) sends the reader to nothing, and no other
+    // check reads a Guide page's bold names in any language but English (StandardCheck's RLO-TXT-013).
+    private static void SearchRushLabels()
+    {
+        string[] pageEn = LocaleFile("en").TryGetValue("reallife_guide_tech_jobs", out string englishPage) ? englishPage.Split('\n') : new string[0];
+        foreach (string code in RealLifeOverhaul.ModLanguages.All)
+        {
+            Dictionary<string, string> words = LocaleFile(code);
+            var labels = new List<string>();
+            foreach (string key in RushPageLabels)
+            {
+                labels.Add(words.TryGetValue(key, out string label) ? label : string.Empty);
+            }
+            string app = words.TryGetValue("reallife_roles_app", out string appName) ? appName : string.Empty;
+            string tab = words.TryGetValue("reallife_roles_tab_search", out string tabName) ? tabName : string.Empty;
+            Check(app.Length > 0 && !labels.Contains(string.Empty), "search rush labels: " + code + " has the texts of Open Roles, its tabs, the hire button and the Infra tab");
+            // The Guide's page: its bold names are those five texts, each of them, and no other name; and it keeps the English page's lines, heads, points and figures.
+            string page = words.TryGetValue("reallife_guide_tech_jobs", out string pageText) ? pageText : string.Empty;
+            List<string> bold = Regex.Matches(page, "<b>(.*?)</b>").Cast<Match>().Select(m => m.Groups[1].Value).ToList();
+            string odd = string.Join(", ", bold.Where(b => !labels.Contains(b)).Distinct());
+            string absent = string.Join(", ", labels.Where(l => !bold.Contains(l)));
+            Check(odd.Length == 0 && absent.Length == 0,
+                "search rush labels: the Guide's page on hiring names the Jobs, Applicants and Search tabs, the Hire technicians button and the Infra tab in bold as " + code + " has them, and no other name (not a label: "
+                + odd + "; not named: " + absent + ")");
+            string[] lines = page.Split('\n');
+            bool shaped = pageEn.Length > 0 && lines.Length == pageEn.Length;
+            for (int i = 0; shaped && i < lines.Length; i++)
+            {
+                shaped &= string.CompareOrdinal(lines[i], 0, pageEn[i], 0, 2) == 0 && RushFields(lines[i]) == RushFields(pageEn[i]);
+            }
+            Check(shaped, "search rush labels: the Guide's page on hiring has the English page's lines, heads, points and figures in " + code + " (" + lines.Length + " lines)");
+            // The page's line on the rush names the Search tab in bold and the app by its own name.
+            string rush = lines.FirstOrDefault(l => l.Contains("{hire_rush}")) ?? string.Empty;
+            Check(rush.Contains("<b>" + tab + "</b>") && NamesRushLabel(rush, app, code, false),
+                "search rush labels: the Guide's line on the rush names the Search tab in bold and Open Roles as " + code + " has them (" + tab + ", " + app + ")");
+            // The option's tip, the test's notice and What's new's sentence.
+            string tip = words.TryGetValue("reallife_opt_tip_tech_search_rush", out string tipText) ? tipText : string.Empty;
+            string ready = words.TryGetValue("reallife_hire_test_rush_ready", out string readyText) ? readyText : string.Empty;
+            Check(NamesRushLabel(tip, app, code, false) && NamesRushLabel(tip, tab, code, true),
+                "search rush labels: the option's tip names Open Roles and its Search tab as " + code + " has them (" + app + ", " + tab + ")");
+            Check(NamesRushLabel(ready, tab, code, true), "search rush labels: the test's notice names the Search tab as " + code + " has it (" + tab + ")");
+            Check(RushNewsPieces.TryGetValue(code, out string piece) && NamesRushLabel(piece, app, code, false) && WhatsNewHas(words, piece),
+                "search rush labels: What's new's sentence on the rush names Open Roles as " + code + " has it (" + app + "), in any of its rows");
+        }
+        // The finder, on texts of its own so that it can fail: a label is named only as itself (Turkish Ara is no part of Arama), a tab only beside the word for a tab (a Polish sentence that opens
+        // with the noun Poszukiwanie, or a Korean one that has 헤드헌팅 회사, names no tab), and another name for the app is no name for it.
+        Check(NamesRushLabel("Açık Pozisyonlar uygulamasının Ara sekmesinden", "Ara", "tr", true) && !NamesRushLabel("Açık Pozisyonlar ekranının Arama sekmesinden", "Ara", "tr", true)
+              && NamesRushLabel("Przyspieszenie kosztuje 5, z jego strony w zakładce Poszukiwanie.", "Poszukiwanie", "pl", true)
+              && !NamesRushLabel("Poszukiwanie roli przyniesie kandydatów. Kosztuje 5, w zakładce Poszukiwania.", "Poszukiwanie", "pl", true)
+              && NamesRushLabel("헤드헌팅 탭에서, 아낀 날마다 수수료의 일부를 내고", "헤드헌팅", "ko", true) && !NamesRushLabel("검색 탭에서 헤드헌팅 회사 수수료의 일부를 내고", "헤드헌팅", "ko", true)
+              && NamesRushLabel("在“职位空缺”的猎头标签页中", "猎头", "zh-cn", true) && !NamesRushLabel("在空缺职位的搜寻标签页中，猎头公司", "猎头", "zh-cn", true)
+              && NamesRushLabel("Desde la pestaña Búsqueda de Puestos vacantes, pagas", "Búsqueda", "es", true) && NamesRushLabel("Desde la pestaña Búsqueda de Puestos vacantes, pagas", "Puestos vacantes", "es", false)
+              && !NamesRushLabel("Desde la pestaña Búsqueda de Puestos abiertos, pagas", "Puestos vacantes", "es", false) && !NamesRushLabel("Desde la pestaña Búsqueda de Puestos abiertos, pagas", "Puestos vacantes", "es", true)
+              && NamesRushLabel("From the Search tab of Open Roles, pay", "Search", "en", true) && !NamesRushLabel("From the Search page of Open Roles, pay", "Search", "en", true),
+            "search rush labels: a text names a label only as the label itself, a tab only beside the word for a tab, and not by another name");
+    }
+
+    // Whether a text names a label as its language writes it: the label as a word of its own (it is not the start of a longer word), and, for a tab, with the word for a tab within sixteen characters
+    // of it on the side the language puts it. Korean and Chinese write no spaces and join their particles to a name, so there the label is looked for as it stands.
+    private static bool NamesRushLabel(string text, string label, string code, bool asTab)
+    {
+        if (label.Length == 0)
+        {
+            return false;
+        }
+        bool spaced = code != "ko" && code != "zh-cn";
+        for (int at = text.IndexOf(label, StringComparison.Ordinal); at >= 0; at = text.IndexOf(label, at + 1, StringComparison.Ordinal))
+        {
+            int end = at + label.Length;
+            if (spaced && ((at > 0 && char.IsLetter(text[at - 1])) || (end < text.Length && char.IsLetter(text[end]))))
+            {
+                continue;
+            }
+            if (!asTab)
+            {
+                return true;
+            }
+            (bool after, string[] stems) = RushTabWords[code];
+            int lo = Math.Max(0, at - 16);
+            string near = after ? text.Substring(end, Math.Min(16, text.Length - end)) : text.Substring(lo, at - lo);
+            foreach (string stem in stems)
+            {
+                if (near.IndexOf(stem, StringComparison.Ordinal) >= 0)
+                {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    // The {figures} of a Guide line, by name, as one string.
+    private static string RushFields(string line)
+    {
+        return string.Join(" ", Regex.Matches(line, @"\{[a-z0-9_]+\}").Cast<Match>().Select(m => m.Value).OrderBy(v => v, StringComparer.Ordinal));
     }
 }
