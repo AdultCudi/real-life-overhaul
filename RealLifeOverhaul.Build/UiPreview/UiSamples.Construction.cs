@@ -9,7 +9,7 @@ internal static partial class UiSamples
     public static readonly string[] ConstructionStates =
     {
         "overview", "overview_new", "overview_empty", "land", "land_plot", "projects", "project_plans", "project_ready", "project_site", "project_quotes", "tenders", "tender_bid", "crews", "crew", "company",
-        "licence", "rivals", "city", "off"
+        "licence", "speciality", "rivals", "city", "off"
     };
 
     private static UiPrompt[] ConstructionPrompts(UiWords t) => new[]
@@ -111,6 +111,10 @@ internal static partial class UiSamples
             case "licence":
                 m.Tab = 5;
                 ConsCompany(t, runs, m, state == "licence");
+                break;
+            case "speciality":
+                m.Tab = 5;
+                ConsSpeciality(t, runs, m);
                 break;
             case "rivals":
                 m.Tab = 6;
@@ -631,6 +635,34 @@ internal static partial class UiSamples
                 }
             };
         }
+    }
+
+    // The speciality's page of a company that has chosen nothing yet, as the page writes it: what it is known for now under the title, the note, the words that say the first
+    // choice has no wait, and every other speciality as a line of its own that is pressed (the game's question box names the wait before it is set).
+    private static void ConsSpeciality(UiWords t, ConstructionRuns runs, ConstructionModel m)
+    {
+        m.Shape = ConstructionShape.Detail;
+        m.Back = W(t, "reallife_bld_back", "Back");
+        m.DetailIcon = UiIcon.Briefcase;
+        m.DetailTitle = W(t, "reallife_bld_co_speciality", "Speciality");
+        m.DetailSub = W(t, "reallife_bld_spec_none", "Nothing in particular");
+        m.Cards = new[]
+        {
+            new UiFactCardModel
+            {
+                Lines = new[]
+                {
+                    UiFactLine.Say(W(t, "reallife_bld_speciality_note", "A speciality makes its kind of work faster and its materials cheaper, and wins its tenders more often. It can change once in {days} days.")
+                        .Replace("{days}", "30")),
+                    UiFactLine.Say(W(t, "reallife_bld_speciality_first", "Pick what your company is known for. The first choice has no wait.")),
+                    runs.Link(W(t, "reallife_bld_spec_homes", "Homes"), () => { }),
+                    runs.Link(W(t, "reallife_bld_spec_offices", "Offices"), () => { }),
+                    runs.Link(W(t, "reallife_bld_spec_roads", "Roads and utilities"), () => { }),
+                    runs.Link(W(t, "reallife_bld_spec_renovation", "Rebuilds and refits"), () => { }),
+                    runs.Link(W(t, "reallife_bld_spec_demolition", "Demolition and groundworks"), () => { })
+                }
+            }
+        };
     }
 
     private static void ConsRivals(UiWords t, ConstructionRuns runs, ConstructionModel m)

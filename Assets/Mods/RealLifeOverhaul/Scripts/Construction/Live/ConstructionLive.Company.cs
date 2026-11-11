@@ -118,8 +118,20 @@ namespace RealLifeOverhaul.Construction
                 return;
             }
             box.Note(ConstructionText.T("reallife_bld_glance_found", "name", place.Name));
-            KitBox.Button(box.ButtonRow(), KitBox.Positive, "reallife_bld_button_found", () => Answer(Director.Found()));
+            KitBox.Button(box.ButtonRow(), KitBox.Positive, "reallife_bld_button_found", Found);
             Guide(box);
+        }
+
+        // Founds the company. The first choice of what it is known for has no wait, so its page opens at once.
+        private void Found()
+        {
+            FirmFile firm = Director.State?.Firm;
+            bool before = firm != null && firm.Founded > 0;
+            Answer(Director.Found());
+            if (!before && firm != null && firm.Founded > 0)
+            {
+                Jump(ConstructionDirector.TabCompany, "co:speciality");
+            }
         }
 
         private void WriteLicence(KitBox box, BuildState state)
@@ -179,20 +191,53 @@ namespace RealLifeOverhaul.Construction
             BackButton(box);
         }
 
+        // What the company is known for. Every speciality but the one it has is a line of its own, and one press names it:
+        // the game's question box says what the choice costs (the wait before the company can change again) and only its
+        // Yes sets it. A pair of arrows would set each speciality it stepped through, so the page has none. The first
+        // choice has no wait; inside the wait the page says when the company can change again and offers no choice.
         private void WriteSpeciality(KitBox box, BuildState state)
         {
             FirmFile f = state.Firm;
+            if (f.Founded <= 0)
+            {
+                box.Note(ConstructionText.T("reallife_bld_company_found_first"));
+                BackButton(box);
+                return;
+            }
+            int wait = FirmRules.SpecialityWait(f.SpecialSince, ConstructionGame.Day);
+            box.Subtitle(ConstructionText.T(BuildCatalogue.SpecialityKeys[(int)f.Speciality]));
             if (f.SpecialSince > 0)
             {
                 box.Row("reallife_bld_row_since", ConstructionText.Day(f.SpecialSince));
             }
-            if (f.Founded > 0)
+            if (wait > 0)
             {
-                box.Selector((int)Speciality.Count, (int)f.Speciality, i => ConstructionText.T(BuildCatalogue.SpecialityKeys[i]),
-                    i => Answer(Director.SetSpeciality((Speciality)i)));
+                box.Row("reallife_bld_row_change_again", ConstructionText.Day(f.SpecialSince + BuildCatalogue.SpecialityRest));
             }
             box.Note(ConstructionText.T("reallife_bld_speciality_note", "days", BuildCatalogue.SpecialityRest.ToString()));
+            if (wait == 0)
+            {
+                box.Note(ConstructionText.T(f.SpecialSince > 0 ? "reallife_bld_speciality_change" : "reallife_bld_speciality_first"));
+                for (int i = 0; i < (int)Speciality.Count; i++)
+                {
+                    if (i == (int)f.Speciality)
+                    {
+                        continue;
+                    }
+                    var chosen = (Speciality)i;
+                    box.Link(ConstructionText.T(BuildCatalogue.SpecialityKeys[i]), () => AskSpeciality(chosen));
+                }
+            }
             BackButton(box);
+        }
+
+        // The question before the speciality is set: it names the speciality and the days the company then waits.
+        private void AskSpeciality(Speciality s)
+        {
+            Confirm("reallife_bld_confirm_speciality", "reallife_bld_confirm_speciality_body", new Dictionary<string, string>
+            {
+                { "name", ConstructionText.T(BuildCatalogue.SpecialityKeys[(int)s]) }, { "days", BuildCatalogue.SpecialityRest.ToString() }
+            }, () => Director.SetSpeciality(s), false);
         }
 
         private void WriteCover(KitBox box, BuildState state)
