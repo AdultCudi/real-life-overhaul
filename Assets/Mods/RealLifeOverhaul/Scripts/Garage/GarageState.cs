@@ -270,6 +270,13 @@ namespace RealLifeOverhaul
         /// <summary>Weather: is the road wet? Null: wet while the game's rain is falling.</summary>
         public static Func<bool> RoadIsWet;
 
+        /// <summary>
+        /// Driving: the handling parts on one of the player's cars were laid on it or taken off by the Garage itself (a build
+        /// put on or off, the road turning wet or dry, the custom shop's preview), not lifted for a moment by Driving. Null:
+        /// nobody is told.
+        /// </summary>
+        public static Action<VehicleController> PartsLaid;
+
         /// <summary>Crime: the police noticed something ("exhaust", "helmet") with the Garage's fine. False or null: the Garage fines.</summary>
         public static Func<string, int, bool> PoliceNotice;
 

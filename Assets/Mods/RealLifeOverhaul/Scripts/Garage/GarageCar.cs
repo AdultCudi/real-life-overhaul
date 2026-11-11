@@ -106,6 +106,7 @@ namespace RealLifeOverhaul
             {
                 return;
             }
+            bool laid = false;   // the handling parts were laid on the car or taken off it
             try
             {
                 if (looks)
@@ -141,10 +142,12 @@ namespace RealLifeOverhaul
                     if (!_handling || wet != _wet || !Same(m, _handled))
                     {
                         Handling(m, wet);
+                        laid = true;
                     }
                 }
                 else
                 {
+                    laid = _handling;
                     ClearHandling();
                 }
                 _shown.Take(build);
@@ -153,18 +156,44 @@ namespace RealLifeOverhaul
             catch (Exception e)
             {
                 Logger?.Warn("Garage: a build could not be put on " + _vehicle.name + "; the car is back as the game made it. " + e);
-                Clear();
+                laid |= Cleared();
+            }
+            if (laid)
+            {
+                Laid();
             }
         }
 
         /// <summary>The car exactly as the game made it.</summary>
         public void Clear()
         {
+            if (Cleared())
+            {
+                Laid();
+            }
+        }
+
+        // The car exactly as the game made it; true if handling parts were taken off it.
+        private bool Cleared()
+        {
+            bool had = _handling;
             ClearLooks();
             _lifted = false;
             ClearHandling();
             _shown.Take(new GarageBuild());
             _any = false;
+            return had;
+        }
+
+        // The handling parts on the car changed: Driving is told, so that what they change in the handling of the car being driven is
+        // worked out with it left on (its brake shares and design are for the parts that were on it when it went on; parts laid after
+        // would brake unheld on them). Not from LiftHandling or LayHandling, which Driving itself calls while it changes the car.
+        private void Laid()
+        {
+            if (_vehicle != null && GarageBridges.PartsLaid != null)
+            {
+                GarageBridges.PartsLaid(_vehicle);
+            }
         }
 
         private void OnDestroy()

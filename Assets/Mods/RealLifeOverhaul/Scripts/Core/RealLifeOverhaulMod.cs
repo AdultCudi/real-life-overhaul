@@ -121,6 +121,8 @@ namespace RealLifeOverhaul
                 .AddDropdown(Settings.HandlingId, "reallife_car_handling",
                     new[] { "reallife_car_handling_0", "reallife_car_handling_1", "reallife_car_handling_2", "reallife_car_handling_3" }, Settings.Handling,
                     v => Settings.Handling = v)
+                .AddToggle(Settings.HandlingOtherModsId, "reallife_car_handling_modded", Settings.HandlingOtherMods,
+                    v => Settings.HandlingOtherMods = v)
                 .AddSlider(Settings.HandlingSoftnessId, "reallife_car_handling_softness", HandlingTuning.Least, HandlingTuning.Most, Settings.HandlingSoftness,
                     v => { Settings.HandlingSoftness = v; CarTuning.TuningChanged(); }, Meta.SettingsTable.SliderPercent)
                 .AddSlider(Settings.HandlingBounceId, "reallife_car_handling_bounce", HandlingTuning.Least, HandlingTuning.Most, Settings.HandlingBounce,

@@ -20,8 +20,10 @@ namespace RealLifeOverhaul
     /// after the player gets in or an option changes, a slice of <see cref="SliceMs"/> ms a frame and a step more at most,
     /// the car driving as the game made it meanwhile (some 15 frames): done whole they were a frame of 15 ms (the owner's
     /// log of 28 Oct 2026, beta 6). The last car's numbers are taken off in a frame of their own before them, and the code
-    /// of all of it is compiled behind the loading screen (Core/MomentWarm). Per frame: one reference and two numbers
-    /// compared; while a car's sums are under way, that slice.
+    /// of all of it is compiled behind the loading screen (Core/MomentWarm). When the Garage lays its parts on the car or
+    /// takes them off (<see cref="PartsLaid"/>), nothing is taken off: what they change is worked out with everything left on
+    /// (<see cref="HandlingRules.Frame"/>, <see cref="CarHandling.Relaid"/>). Per frame: one reference, two numbers and a
+    /// flag compared; while a car's sums are under way, that slice.
     /// </summary>
     public class CarTuning : MonoBehaviour
     {
@@ -47,6 +49,7 @@ namespace RealLifeOverhaul
             TuningOn,        // the power, gearing and drag put on the car, and its line (a frame of its own)
             Ease,            // the eased pedals on
             Said,            // with Developer diagnostics on, the self-check line of the spread (a frame of its own)
+            Relaid,          // the Garage's parts laid on the car again, read off it and what they call for begun, everything left on (a frame of its own)
             PutBack          // not a step: the line's name for the frame that took the last car's numbers off, before the first step
         }
 
@@ -79,6 +82,7 @@ namespace RealLifeOverhaul
         private NwhVehicle _seen;        // the vehicle last looked at, tuned or not
         private int _options = -1;       // the options it was looked at with
         private long _handled = -1;      // and the handling's level and sliders
+        private bool _partsLaid;         // the Garage laid its parts on that car or took them off since: what they change is worked out, nothing taken off
         private NwhVehicle _tuned;       // the vehicle that carries the mod's numbers, if any
         private Stock _stock;
         private CarDrag _drag;
@@ -95,6 +99,8 @@ namespace RealLifeOverhaul
         private CarController _sumsCar;
         private NwhVehicle _sumsVehicle;
         private bool _tuneWanted;        // the power is worked out after the handling (the option is on)
+        private bool _relay;             // the sums under way are the Garage's parts laid again: the handling's alone, nothing taken off for them
+        private PartsRelay _relaid;      // and what those parts called for, for the line
         private HandlingLevel _sumsLevel;
         private HandlingTuning _sumsTuning;
         private string _tuneType;
@@ -160,22 +166,24 @@ namespace RealLifeOverhaul
                 : 1 | (Settings.SmoothThrottle ? 2 : 0) | (Mathf.Clamp(Settings.CarTopSpeed, 70, 150) << 2) | (Mathf.Clamp(Settings.CarAcceleration, 70, 150) << 10) | (GarageTuning.Stamp << 18);
             long handled = HandlingStamp();
             bool same = vehicle == _seen && options == _options && handled == _handled;
-            if (same && _sums == Sums.None)
+            TuningFrame frame = HandlingRules.Frame(same, _partsLaid, _sums != Sums.None);
+            if (frame == TuningFrame.Rest)
             {
-                return;   // same car or none, same options, no sums under way
+                return;   // same car or none, same options, the same parts on it, no sums under way
             }
 
             long began = System.Diagnostics.Stopwatch.GetTimestamp();
             WorkSlice slice = WorkSlice.Of(SliceMs, 1);
             try
             {
-                if (!same)
+                if (frame == TuningFrame.Again)
                 {
                     bool held = _tuned != null || _pedalOn != null || _handling.On;   // something of the mod's is on a car: taking it off is a frame's work
                     Restore();
                     _seen = vehicle;
                     _options = options;
                     _handled = handled;
+                    _partsLaid = false;
                     if (vehicle == null || (options == 0 && handled == 0) || _failed)
                     {
                         return;
@@ -188,6 +196,14 @@ namespace RealLifeOverhaul
                         _spread.Item((int)Sums.PutBack, began);
                         _spread.Frame(began);
                         return;
+                    }
+                }
+                else if (frame == TuningFrame.Relay)
+                {
+                    _partsLaid = false;
+                    if (!Relay(car, vehicle))
+                    {
+                        return;   // no handling of the mod's on the car: the parts change nothing it carries
                     }
                 }
                 Carry(ref slice, began);
@@ -206,6 +222,7 @@ namespace RealLifeOverhaul
             _sumsCar = car;
             _sumsVehicle = vehicle;
             _tuneWanted = options != 0;
+            _relay = false;
             _sumsLevel = HandlingRules.Level(Settings.Handling);
             _sumsTuning = Tuning();
             _tuneType = null;
@@ -213,6 +230,27 @@ namespace RealLifeOverhaul
             _solveSteps = 0;
             _spread.Begin();
             _sums = handled != 0 ? Sums.HandlingBegin : _tuneWanted ? Sums.TuningBegin : Sums.Ease;
+        }
+
+        // The Garage laid its parts on the car again or took them off: what they call for is begun with everything of the mod's left on
+        // the car (CarHandling.Relaid, the first item, in a frame of its own). The power, gearing, drag and eased pedals stand: the engine
+        // is the same on a wet road as on a dry one, and while car tuning is on a part bought changes its options (GarageTuning.Stamp), which
+        // begins everything again.
+        private bool Relay(CarController car, NwhVehicle vehicle)
+        {
+            if (_failed || car == null || vehicle == null || !_handling.On)
+            {
+                return false;
+            }
+            _sumsCar = car;
+            _sumsVehicle = vehicle;
+            _relay = true;
+            _relaid = PartsRelay.Nothing;
+            _designSteps = 0;
+            _solveSteps = 0;
+            _spread.Begin();
+            _sums = Sums.Relaid;
+            return true;
         }
 
         // The car's sums carried on as far as the slice goes, an item a call: the handling first (the power is found for the
@@ -247,6 +285,10 @@ namespace RealLifeOverhaul
                     case Sums.HandlingSaid:
                         _handling.SayOn();
                         _sums = AfterHandling();
+                        break;
+                    case Sums.Relaid:
+                        _relaid = _handling.Relaid(_sumsCar);
+                        _sums = _relaid == PartsRelay.Design ? Sums.Handling : _relaid == PartsRelay.Brakes && Meta.Dev.Verbose ? Sums.HandlingSaid : AfterHandling();
                         break;
                     case Sums.TuningBegin:
                         _sums = TuneBegin(_sumsCar, _sumsVehicle) ? Sums.Tuning : Sums.Ease;
@@ -285,8 +327,13 @@ namespace RealLifeOverhaul
             }
         }
 
+        // After the handling: the power, then the eased pedals; for the Garage's parts laid again, nothing more (the self-check line at most).
         private Sums AfterHandling()
         {
+            if (_relay)
+            {
+                return Meta.Dev.Verbose ? Sums.Said : Sums.None;
+            }
             return _tuneWanted ? Sums.TuningBegin : Sums.Ease;
         }
 
@@ -295,7 +342,7 @@ namespace RealLifeOverhaul
         private static bool Heavy(Sums item)
         {
             return item == Sums.HandlingBegin || item == Sums.HandlingMade || item == Sums.HandlingOn || item == Sums.HandlingSaid || item == Sums.TuningBegin
-                   || item == Sums.TuningOn || item == Sums.Said;
+                   || item == Sums.TuningOn || item == Sums.Said || item == Sums.Relaid;
         }
 
         // With Developer diagnostics on, once a car's sums are done: their steps and frames, and the slowest frame against 2 ms.
@@ -304,8 +351,12 @@ namespace RealLifeOverhaul
             if (Meta.Dev.Verbose)
             {
                 string type = _tuneType ?? (_sumsCar != null && _sumsCar.vehicleType != null ? _sumsCar.vehicleType.vehicleTypeName : "the car");
-                Logger?.Info("Car tuning check (spread over frames): " + type + ": the handling's design in " + _designSteps + " step(s) and the search for its power in "
-                             + _solveSteps + ", " + _spread.Said(ItemNames) + ": " + _spread.Verdict(false) + ".");
+                string what = !_relay ? "the handling's design in " + _designSteps + " step(s) and the search for its power in " + _solveSteps
+                    : _relaid == PartsRelay.Design ? "the Garage's parts laid again, the handling's design made again for them in " + _designSteps
+                                                     + " step(s) beside the one on the car, nothing taken off"
+                    : _relaid == PartsRelay.Brakes ? "the Garage's parts laid again, the brakes shared out again for them, nothing taken off"
+                    : "the Garage's parts laid again, nothing the handling was made for changed";
+                Logger?.Info("Car tuning check (spread over frames): " + type + ": " + what + ", " + _spread.Said(ItemNames) + ": " + _spread.Verdict(false) + ".");
             }
         }
 
@@ -314,7 +365,8 @@ namespace RealLifeOverhaul
         {
             "nothing", "the car read for the handling", "a step of the handling's design", "the handling's own tyres and curves made", "the handling put on the car",
             "the handling's self-check line", "the car read for its power", "a step of the search for its power", "the quicker gear change driven again",
-            "the power, gearing and drag put on the car", "the eased pedals put on", "the self-check line", "the last car's numbers taken off"
+            "the power, gearing and drag put on the car", "the eased pedals put on", "the self-check line", "the Garage's parts read again",
+            "the last car's numbers taken off"
         };
 
         private void OnDestroy()
@@ -327,11 +379,11 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The handling's level and its sliders as one number; 0 with the handling off.
+        // The handling's level, its sliders and the soft ride for other mods' cars as one number; 0 with the handling off.
         private static long HandlingStamp()
         {
             HandlingLevel level = HandlingRules.Level(Settings.Handling);
-            return level == HandlingLevel.Off ? 0L : (long)level + (Tuning().Stamp << 4);
+            return level == HandlingLevel.Off ? 0L : (long)level + (Tuning().Stamp << 4) + (Settings.HandlingOtherMods ? 1L << 56 : 0L);
         }
 
         private static HandlingTuning Tuning()
@@ -359,6 +411,23 @@ namespace RealLifeOverhaul
         public static void PutBack()
         {
             Instance?.Restore();
+        }
+
+        /// <summary>
+        /// The Garage laid its handling parts on a car or took them off (a build bought or put back, the road turning wet or
+        /// dry, the custom shop's preview; the Garage's bridge, wired in Wiring.DrivingLinks). If it is the car being driven,
+        /// what they change is worked out from the next frame with everything of the mod's left on it, never as an option
+        /// changed (<see cref="HandlingRules.Frame"/>): the brake shares and the full pedal held to the front springs' travel
+        /// (<see cref="HandlingModel.HeldForTravel"/>) for the parts on the car, and the design made again only if it was made
+        /// for other parts (<see cref="CarHandling.Relaid"/>). A bool set, nothing else.
+        /// </summary>
+        public static void PartsLaid(VehicleController vehicle)
+        {
+            CarTuning tuning = Instance;
+            if (tuning != null && tuning._seen != null && vehicle is CarController car && car.vehicleController == tuning._seen)
+            {
+                tuning._partsLaid = true;
+            }
         }
 
         /// <summary>The test button: what the car being driven has from the handling, in a notice and in full in Player.log.</summary>
@@ -732,6 +801,7 @@ namespace RealLifeOverhaul
         private void Restore()
         {
             _sums = Sums.None;   // a car's sums under way dropped: the handling's design with the handling below
+            _relay = false;
             _solve.Cancel();
             _sumsCar = null;
             _sumsVehicle = null;

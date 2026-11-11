@@ -54,6 +54,12 @@ namespace RealLifeOverhaul
     {
         private const string Prefix = "ba:vehicletype_";
 
+        /// <summary>True for a vehicle type of the game itself ("ba:vehicletype_bima320"); any other name is a car another mod brought.</summary>
+        public static bool IsGameCar(string typeName)
+        {
+            return typeName != null && typeName.StartsWith(Prefix, System.StringComparison.Ordinal);
+        }
+
         /// <summary>The spec for a vehicle type name such as "ba:vehicletype_bima320".</summary>
         public static CarSpec For(string typeName, in CarTraits traits)
         {

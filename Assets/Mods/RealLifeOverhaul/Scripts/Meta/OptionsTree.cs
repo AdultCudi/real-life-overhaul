@@ -322,8 +322,9 @@ namespace RealLifeOverhaul.Meta
                     .Opt("car_camera").Opt("car_camera_distance", "car_camera").Also("view third person zoom"),
                 S("carperf").For("driving").Main("car_tuning").Opts("car_top_speed", "car_acceleration").Buttons("reallife_car_measure").Also("speed fast engine"),
                 S("wheel").Guide("driving").Opts("smooth_throttle", "speedometer", "auto_signals", "radio_hud").Also("pedal dashboard speed music indicator blinker"),
-                S("handling").Guide("driving").Opts("car_handling")
-                    .Also("weight heavy suspension springs bounce body roll lean dive brakes abs grip slide sliding tyres tires steering"),
+                S("handling").Guide("driving").Opts("car_handling", "car_handling_modded")
+                    .Also("weight heavy suspension springs bounce body roll lean dive brakes abs grip slide sliding tyres tires steering")
+                    .Also("car_handling_modded", "vehicle vehicles mod mods modded add-on stiff wobble wobbly"),
                 S("owning").Guide("transport").Main("car_ownership").Opts("car_easy").Also("fuel petrol service insurance breakdown wear"),
                 S("garage").For("garage").Main("garage").Opts("garage_cosmetics", "garage_tuning", "garage_underglow", "garage_police", "garage_sounds", "garage_resale")
                     .Buttons("reallife_garage_test_vehicles")
