@@ -91,14 +91,23 @@ namespace RealLifeOverhaul.Ui
             s.Begin("notices", frame.Width, frame.Height, dark);
             s.Pointer = true;   // the keys stay the player's: a card is pressed by pointing
             s.Floats = true;
-            float y = UiDraw.Snap(m.Top);
             int from = Math.Max(0, m.CardCount - MostCards);
-            float x = UiDraw.SnapDown(frame.Width - UiTokens.S4 - CardWidth);
-            UiHudRules.Clear(ref x, ref y, CardWidth, StackHeight(m, from), frame.Width, m.AvoidX, m.AvoidY, m.AvoidW, m.AvoidH);
+            StackBox(m, frame, out float x, out float y, out _, out _);
             for (int i = from; i < m.CardCount; i++)
             {
                 y += Card(s, ref m.Cards[i], i, x, y) + UiTokens.S2;
             }
+        }
+
+        /// <summary>Where the stack of cards stands, px of the layout: at the top right under the game's stack top, off the minimap's card; 0 high for none.</summary>
+        public static void StackBox(UiNoticeCardsModel m, UiFrame frame, out float x, out float y, out float w, out float h)
+        {
+            int from = Math.Max(0, m.CardCount - MostCards);
+            y = UiDraw.Snap(m.Top);
+            x = UiDraw.SnapDown(frame.Width - UiTokens.S4 - CardWidth);
+            w = CardWidth;
+            h = StackHeight(m, from);
+            UiHudRules.Clear(ref x, ref y, w, h, frame.Width, m.AvoidX, m.AvoidY, m.AvoidW, m.AvoidH);
         }
 
         // The cards shown, the steps between them included: what the stack covers, to keep it off the minimap's card.

@@ -15,7 +15,7 @@ internal static partial class UiSamples
 {
     public static readonly string[] CheckoutStates = { "goods", "goods_page2", "taxes", "queue", "ticket", "empty", "goods_fr" };
     public static readonly string[] VehicleBuyStates = { "car", "car_delivery", "boat", "car_fr" };
-    public static readonly string[] ItemPanelStates = { "vehicle", "vehicle_foreign", "hand_truck", "mop", "basket", "minigame", "vehicle_fr", "vehicle_parked", "paper_bag", "paper_bag_minimap" };
+    public static readonly string[] ItemPanelStates = { "vehicle", "vehicle_foreign", "hand_truck", "mop", "basket", "minigame", "vehicle_fr", "vehicle_parked", "paper_bag", "paper_bag_minimap", "vehicle_driving", "vehicle_driving_fr" };
     public static readonly string[] CargoStates = { "truck", "truck_unpaid", "empty", "truck_fr" };
     public static readonly string[] WardrobeStates = { "clothes", "wardrobe", "hair", "surgery", "surgery_face", "clothes_fr" };
     public static readonly string[] GarageStates = { "main", "paint", "figures" };
@@ -314,6 +314,29 @@ internal static partial class UiSamples
                     m.AvoidW = MinimapW;
                     m.AvoidH = MinimapH;
                 }
+                break;
+            case "vehicle_driving":
+            case "vehicle_driving_fr":
+                // The owner's screenshot (12 Nov): driving the Ferdinand 112 over the limit on a street of illegal parking,
+                // as the small card: its name and whose, the speed, the parking zone, Park and Sell as key chips.
+                m.Compact = true;
+                m.Name = "Ferdinand 112";
+                m.Owner = t("reallife_ui_buy_yours", "Yours");
+                m.OwnerTone = UiRole.Ok;
+                m.Readings = new[]
+                {
+                    new UiReading
+                    {
+                        Icon = UiIcon.FastForward, Label = t("reallife_ui_buy_speed", "Speed"), Share = 1f, Tone = UiRole.Warn,
+                        Value = t("reallife_ui_buy_speed_of", "{speed} of {limit} {unit}").Replace("{speed}", "68").Replace("{limit}", "50").Replace("{unit}", "km/h")
+                    }
+                };
+                m.Facts = new[] { new UiInfoRow { Label = t("itempanelui_vehicle_parkingzone", "Parking Zone"), Value = t("itempanelui_parkingzone_illegal", "ILLEGAL") } };
+                m.Actions = new[]
+                {
+                    new UiItemAction { Label = t("itempanelui_buttons_park_vehicle", "Park Vehicle"), Key = park, Main = true },
+                    new UiItemAction { Label = t("reallife_ui_buy_sell_for", "Sell for {price}").Replace("{price}", "$104K"), Key = new UiGameKey { Name = "BACKSPACE" }, Danger = true }
+                };
                 break;
             case "minigame":
                 m.Title = t("reallife_ui_buy_minigame", "Playing");

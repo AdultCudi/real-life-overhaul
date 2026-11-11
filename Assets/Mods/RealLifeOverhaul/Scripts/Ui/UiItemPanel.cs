@@ -42,13 +42,16 @@ namespace RealLifeOverhaul.Ui
         public UiItemAction[] Actions = new UiItemAction[0];
         public string More;                                    // another mod's button in the game's panel: opens the game's own view; null for none
         public bool Hidden;                                    // the game has the panel faded out (a menu over the world): nothing is drawn
-        public float AvoidX, AvoidY, AvoidW, AvoidH;           // px of the layout: the mod's minimap card, which the panel stands over; 0 wide for none
+        public float AvoidX, AvoidY, AvoidW, AvoidH;           // px of the layout: the mod's minimap card (or the map's dock), kept clear of; 0 wide for none
         public float KeysX, KeysY, KeysW, KeysH;               // px of the layout: the HUD's key chips over the bar (the game's control hints), kept clear of; 0 wide for none
+        public float PhoneX, PhoneY, PhoneW, PhoneH;           // px of the layout: the kit's phone card (its part on the screen), which the panel stands over; 0 wide for none
+        public float NoticesX, NoticesY, NoticesW, NoticesH;   // px of the layout: the notice cards' stack at the top right; 0 wide for none
+        public bool Compact;                                   // the player drives it: the small card (its name, the speed, the parking, the keys as chips)
     }
 
     /// <summary>
-    /// The item panel (the game's ItemPanelUI): a compact info panel for the thing in hand or the vehicle, in the left
-    /// column over the mod's minimap card (docked at the bottom left above the status bar with no card): its strip, its
+    /// The item panel (the game's ItemPanelUI): a compact info panel for the thing in hand or the vehicle, at the bottom
+    /// right over the kit's phone card (above the status bar with no phone): its strip, its
     /// picture with its name, state and whose it is, a vehicle's readings (fuel, condition, the mod's speed and what the
     /// car needs) as meters with their glyphs, its cargo as a tile a stack under how many of its slots are used, and the
     /// game's actions with the game's own key caps. It is as wide as what it holds needs (narrower with no readings) and
@@ -63,7 +66,10 @@ namespace RealLifeOverhaul.Ui
         public const float Narrow = 360f;               // px: a thing in hand, its name, its cargo and its buttons
 
         /// <summary>The panel's width: the info panel's with readings or facts to show, narrower for a thing in hand.</summary>
-        public static float WidthOf(UiItemPanelModel m) => m.Readings.Length > 0 || m.Facts.Length > 0 ? Width : Narrow;
+        public static float WidthOf(UiItemPanelModel m) => m.Compact ? CompactWidth : m.Readings.Length > 0 || m.Facts.Length > 0 ? Width : Narrow;
+
+        /// <summary>px: the driving card's width, no wider than the kit phone's folded card it stands over.</summary>
+        public const float CompactWidth = 308f;
         private const float HeadH = UiTokens.S16 + UiTokens.S4;
         private const float PicW = UiTokens.S16 + UiTokens.S6, PicH = UiTokens.S12;
         private const float ReadingH = UiTokens.PairRow + UiTokens.S1;
@@ -94,6 +100,10 @@ namespace RealLifeOverhaul.Ui
             {
                 return 0f;
             }
+            if (m.Compact)
+            {
+                return CompactHeight(m);
+            }
             float h = UiFrame.Strip + HeadH;
             if (m.Readings.Length > 0 || m.Facts.Length > 0)
             {
@@ -116,7 +126,7 @@ namespace RealLifeOverhaul.Ui
             return UiDraw.Snap(h);
         }
 
-        /// <summary>The panel over the world, over the minimap's card or docked above the status bar at the left (<see cref="Place"/>); no bar of its own, as the HUD draws it.</summary>
+        /// <summary>The panel over the world at the bottom right, over the phone's card or above the status bar (<see cref="Place"/>); no bar of its own, as the HUD draws it.</summary>
         public static void Lay(UiScene s, UiItemPanelModel m, UiFrame frame, bool dark, IUiKeys keys)
         {
             s.Begin("item_panel", frame.Width, frame.Height, dark);
@@ -131,56 +141,44 @@ namespace RealLifeOverhaul.Ui
         }
 
         /// <summary>
-        /// Where the panel's top left stands: over the minimap's card in the left column, a grid step above it (the owner's
-        /// choice, 11 Nov 2026: the middle of the screen and the key hints' row clear); beside the card where the screen is
-        /// too short for over; at the bottom left with no card. Its foot always keeps over the HUD's key chips. The
-        /// objectives are not read: a panel taller than the room under them stands over their lower part (ItemPanelKit.Lift
-        /// keeps its canvas over the HUD's). Feature page: docs/features/navigation.md.
+        /// Where the panel's top left stands: at the bottom right, over the phone's card (right edges lined up, a grid step
+        /// above it) or above the bar where no phone shows (the owner's choice, 12 Nov 2026: the map, the objectives and the
+        /// key hints clear). Its foot keeps over the key chips and off the minimap's card; it stays as low as that allows, so
+        /// where the notice cards reach down to it, it stands over the stack's lower part only as far as it must.
         /// </summary>
         public static void Place(UiItemPanelModel m, UiFrame frame, out float x, out float y)
         {
             float h = Height(m), w = WidthOf(m);
-            x = UiTokens.S4;
-            y = UiDraw.SnapDown(frame.BandY - UiTokens.S4 - h);
-            bool card = m.AvoidW > 0f && m.AvoidH > 0f;
-            if (card)
-            {
-                // Its left edge the card's, no nearer the screen's edge than the HUD's column (the card's rect starts at the
-                // edge); beside the card at the same foot where its top would pass the top margin, or at the top margin over
-                // it where the screen is too narrow for beside.
-                float above = UiDraw.SnapDown(m.AvoidY - UiTokens.S2 - h);
-                if (above >= UiTokens.S4)
-                {
-                    x = Math.Max(UiTokens.S4, Math.Min(m.AvoidX, frame.Width - UiTokens.S4 - w));
-                    y = above;
-                }
-                else if (UiHudRules.Overlaps(x, y, w, h, m.AvoidX, m.AvoidY, m.AvoidW, m.AvoidH))
-                {
-                    float beside = UiDraw.Snap(m.AvoidX + m.AvoidW + UiTokens.S2);
-                    if (beside + w <= frame.Width - UiTokens.S4)
-                    {
-                        x = beside;
-                    }
-                    else
-                    {
-                        y = UiTokens.S4;
-                    }
-                }
-            }
+            bool phone = m.PhoneW > 0f && m.PhoneH > 0f;
+            float right = phone ? m.PhoneX + m.PhoneW : frame.Width - UiTokens.S4;
+            x = UiDraw.SnapDown(Math.Max(UiTokens.S4, right - w));
+            y = UiDraw.SnapDown((phone ? m.PhoneY - UiTokens.S2 : frame.BandY - UiTokens.S4) - h);
             // The chips stand in the lane over the bar (UiFrame.PromptLane, theirs: a window ends above it) from the phone
-            // leftwards, and the game's seven driving hints reach far across it: the foot keeps over them wherever they meet.
+            // leftwards: the foot keeps over them wherever they meet (with no phone they run under the bottom right).
             if (m.KeysW > 0f && m.KeysH > 0f && UiHudRules.Overlaps(x, y, w, h, m.KeysX, m.KeysY, m.KeysW, m.KeysH))
             {
-                y = Math.Max(UiTokens.S4, UiDraw.SnapDown(m.KeysY - UiTokens.S2 - h));
-                if (card && UiHudRules.Overlaps(x, y, w, h, m.AvoidX, m.AvoidY, m.AvoidW, m.AvoidH))
-                {
-                    y = Math.Max(UiTokens.S4, UiDraw.SnapDown(Math.Min(m.AvoidY, m.KeysY) - UiTokens.S2 - h));   // lifted into the card's way: over both
-                }
+                y = UiDraw.SnapDown(m.KeysY - UiTokens.S2 - h);
             }
+            if (m.AvoidW > 0f && m.AvoidH > 0f && UiHudRules.Overlaps(x, y, w, h, m.AvoidX, m.AvoidY, m.AvoidW, m.AvoidH))
+            {
+                y = UiDraw.SnapDown(m.AvoidY - UiTokens.S2 - h);   // a map dock dragged to the right: over it
+            }
+            y = Math.Max(UiTokens.S4, y);
+        }
+
+        /// <summary>Whether the panel where <see cref="Place"/> stands it meets the notice cards' stack (it is then drawn over the stack's lower part).</summary>
+        public static bool OverNotices(UiItemPanelModel m, UiFrame frame)
+        {
+            Place(m, frame, out float x, out float y);
+            return m.NoticesW > 0f && m.NoticesH > 0f && UiHudRules.Overlaps(x, y, WidthOf(m), Height(m), m.NoticesX, m.NoticesY, m.NoticesW, m.NoticesH);
         }
 
         public static float Draw(UiScene s, UiItemPanelModel m, float x, float y)
         {
+            if (m.Compact)
+            {
+                return DrawCompact(s, m, x, y);
+            }
             float h = Height(m), w = WidthOf(m);
             int panel = UiDraw.Box(s, UiAt.Screen, x, y, w, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt on = UiAt.Screen.In(panel);
@@ -213,6 +211,135 @@ namespace RealLifeOverhaul.Ui
             }
             Actions(s, on, m, ix, cy + UiTokens.S3, iw);
             return y + h;
+        }
+
+        // ------------------------------------------------------------------------------------------------- the driving card
+
+        private const float CompactPad = UiTokens.S2, CompactSide = UiTokens.S2, CompactHead = UiTokens.PairRow, ChipH = UiTokens.KeyCap;
+        private const float CompactValueW = 104f, CompactLabelMost = 96f;
+
+        // The driving card's height: its head line, a line a reading and a fact, and the game's keys as chips, a row each
+        // while they wrap.
+        private static float CompactHeight(UiItemPanelModel m)
+        {
+            float h = CompactPad + CompactHead + (m.Readings.Length + m.Facts.Length) * UiTokens.PairRow;
+            int rows = CompactChipRows(m, CompactWidth - CompactSide * 2f);
+            if (rows > 0)
+            {
+                h += UiTokens.S2 + rows * ChipH + (rows - 1) * UiTokens.S2;
+            }
+            return UiDraw.Snap(h + CompactPad);
+        }
+
+        // An action's chip width: the game's key on its cap and the words, as the HUD's key chips stand; no wider than the row.
+        private static float CompactChipWidth(UiItemPanelModel m, int i, float most)
+        {
+            string label = i < m.Actions.Length ? m.Actions[i].Label : m.More;
+            float kw = i < m.Actions.Length ? UiDraw.GameKeyWidth(m.Actions[i].Key) : 0f;
+            float w = UiDraw.Snap((kw > 0f ? kw + UiTokens.S2 : UiTokens.S2) + UiTextRules.Width(label, UiStyle.SmallStrong) + UiTokens.S1 * 2f);
+            return Math.Min(w, most);
+        }
+
+        private static int CompactChipRows(UiItemPanelModel m, float w)
+        {
+            int count = m.Actions.Length + (string.IsNullOrEmpty(m.More) ? 0 : 1), rows = 0;
+            float used = w;
+            for (int i = 0; i < count; i++)
+            {
+                float cw = CompactChipWidth(m, i, w);
+                if (used + (used > 0f ? UiTokens.S2 : 0f) + cw > w)
+                {
+                    rows++;
+                    used = cw;
+                }
+                else
+                {
+                    used += UiTokens.S2 + cw;
+                }
+            }
+            return rows;
+        }
+
+        // The driving card: the car's name with whose it is, its readings and facts a line each, and the game's keys as
+        // small chips in the HUD's key chips' style, wrapping when they need the room. Commands as the full panel's.
+        private static float DrawCompact(UiScene s, UiItemPanelModel m, float x, float y)
+        {
+            float h = CompactHeight(m), w = CompactWidth;
+            int panel = UiDraw.Box(s, UiAt.Screen, x, y, w, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
+            UiAt on = UiAt.Screen.In(panel);
+            float ix = x + CompactSide, iw = w - CompactSide * 2f, cy = y + CompactPad, right = ix + iw;
+            if (!string.IsNullOrEmpty(m.Owner))
+            {
+                float cw = Math.Min(UiDraw.ChipWidth(m.Owner), UiDraw.SnapDown(iw / 2f));
+                UiDraw.Chip(s, on, right - cw, cy, m.Owner, m.OwnerTone, cw);   // its height is the head line's
+                right -= cw + UiTokens.S2;
+            }
+            UiDraw.TextMiddle(s, on, ix, cy, CompactHead, right - ix, UiStyle.BodyStrong, UiRole.Text, m.Name, UiFlags.Truncate);
+            cy += CompactHead;
+            for (int i = 0; i < m.Readings.Length; i++)
+            {
+                CompactReading(s, on, ref m.Readings[i], ix, cy, iw);
+                cy += UiTokens.PairRow;
+            }
+            for (int i = 0; i < m.Facts.Length; i++)
+            {
+                UiDraw.InfoRow(s, on, ix, cy, iw, m.Facts[i].Label, m.Facts[i].Value, false, -1, 0, m.Facts[i].Ink == UiRole.None ? UiRole.Text : m.Facts[i].Ink);
+                cy += UiTokens.PairRow;
+            }
+            int count = m.Actions.Length + (string.IsNullOrEmpty(m.More) ? 0 : 1);
+            float cx = ix, ry = cy + UiTokens.S2;
+            for (int i = 0; i < count; i++)
+            {
+                float cw = CompactChipWidth(m, i, iw);
+                if (cx > ix && cx + cw > ix + iw)
+                {
+                    cx = ix;
+                    ry += ChipH + UiTokens.S2;
+                }
+                CompactChip(s, on, m, i, cx, ry, cw);
+                cx += cw + UiTokens.S2;
+            }
+            return y + h;
+        }
+
+        // A reading on one line: its glyph, its name as wide as its words, its meter and its figure at the right.
+        private static void CompactReading(UiScene s, UiAt at, ref UiReading r, float x, float y, float w)
+        {
+            float h = UiTokens.PairRow;
+            UiDraw.Icon(s, at, x, y + (h - UiTokens.Icon) / 2f, UiTokens.Icon, r.Icon, r.Tone == UiRole.None ? UiRole.Text2 : r.Tone, UiFlags.Middle);
+            float lx = x + UiTokens.Icon + UiTokens.S2, lw = Math.Min(CompactLabelMost, UiDraw.Snap(UiTextRules.Width(r.Label, UiStyle.Body) + UiTokens.S1));
+            UiDraw.TextMiddle(s, at, lx, y, h, lw, UiStyle.Body, UiRole.Text2, r.Label, UiFlags.Truncate | UiFlags.Label);
+            float vx = x + w - CompactValueW;
+            UiRole ink = r.Tone == UiRole.Danger ? UiRole.DangerText : r.Tone == UiRole.Warn ? UiRole.WarnText : UiRole.Text;
+            UiDraw.TextMiddle(s, at, vx, y, h, CompactValueW, UiStyle.BodyStrong, ink, r.Value, UiFlags.Right | UiFlags.Truncate);
+            float mx = lx + lw + UiTokens.S2, mw = vx - UiTokens.S2 - mx, mh = UiTokens.S2;
+            if (r.Share >= 0f && mw >= UiTokens.S4)
+            {
+                UiDraw.Meter(s, at, mx, y + (h - mh) / 2f, mw, mh, (int)Math.Round(Math.Max(0f, Math.Min(1f, r.Share)) * 100f), r.Tone == UiRole.None ? UiRole.Accent : r.Tone);
+            }
+        }
+
+        // An action as a small key chip: the game's key on its cap and its words, a parting one's words in the danger's red.
+        private static void CompactChip(UiScene s, UiAt at, UiItemPanelModel m, int i, float x, float y, float w)
+        {
+            bool more = i >= m.Actions.Length;
+            bool disabled = !more && m.Actions[i].Disabled, danger = !more && m.Actions[i].Danger;
+            int drawn = s.ItemCount;
+            int face = UiDraw.Box(s, at, x, y, w, ChipH, UiRole.StatusBar, UiRole.None, UiTokens.RadiusMedium, disabled ? UiFlags.Disabled : UiFlags.None);
+            UiAt inside = at.In(face);
+            float kx = x, kw = more ? 0f : UiDraw.GameKeyWidth(m.Actions[i].Key);
+            float tx = kx + (kw > 0f ? kw : 0f) + UiTokens.S2;
+            UiDraw.TextMiddle(s, inside, tx, y, ChipH, x + w - UiTokens.S1 - tx, UiStyle.SmallStrong, danger ? UiRole.DangerText : more ? UiRole.AccentText : UiRole.PromptInk,
+                more ? m.More : m.Actions[i].Label, UiFlags.Label | UiFlags.Truncate);
+            int node = UiDraw.Node(s, at, x, y, w, ChipH, more ? MoreCommand : ActionCommand, more ? 0 : i, face, disabled);
+            if (!more)
+            {
+                UiDraw.GameKey(s, inside, kx, y, m.Actions[i].Key, false, disabled);   // the cap is the chip's left end
+            }
+            if (disabled)
+            {
+                UiDraw.Dim(s, drawn, node);
+            }
         }
 
         // The thing's picture on a tile, its name over its state, and whose it is as a chip at the right.

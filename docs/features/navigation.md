@@ -103,9 +103,8 @@ Read in the decompiled game and in its scene data (`evidence/uitools`, and a stu
 
   While the interface kit's HUD is up, the panel also stands above its bottom bar (as the bar is laid out, whatever its height), under its left column and clear of its key chips, and is drawn over the kit's HUD (its own canvas, one order over it) and under every window; the kit's notice cards, objectives, world prompt and activity strip keep clear of it.
 
-  The kit's item panel (what the player holds or drives, the Vehicle panel while driving) stands over the card in the left column, its left edge the column's and a grid step (8 px) above the card, so the middle of the screen and the key chips stay clear (`UiItemPanel.Place`).
-  With no card it stands at the bottom left where the card would, its foot over the key chips wherever they reach under it.
-  A panel taller than the room between the card and the objectives stands over the objectives' lower part (its canvas is kept at the card's order, over the HUD's: `ItemPanelKit.Lift`); where even the whole height over the card is too little (a short screen), it stands beside the card at the bottom, over the chips.
+  The kit's item panel (what the player holds or drives) stands at the bottom right, away from the card: over the kit phone's card, right edges lined up and a grid step (8 px) above it, or above the bar where no phone shows; its foot keeps over the key chips, and it stays as low as that allows, so notice cards that reach down to it are covered only at their lower part (`UiItemPanel.Place`; the chips, the phone and the notices are read four times a second, `ItemPanelKit`).
+  While the player drives, it is a small card no wider than the phone's (308 by 120 px at 1920 x 1080): the car's name and whose it is, the speed with its meter, the parking zone, and the game's keys (Park, Sell for its short price, Sleep or Auto park when the game offers them) as key chips in the HUD's style. A parked car walked up to or clicked keeps the full panel.
 
   When a long task list leaves less than 240 units for the map there, the panel stands at the bottom beside the column instead, lifted over the address labels or the item panel if it would reach them (a 4:3 screen).
   With no room in either place it is hidden and one line says so.
