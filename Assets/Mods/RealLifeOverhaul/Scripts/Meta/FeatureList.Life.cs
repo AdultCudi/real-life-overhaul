@@ -256,6 +256,8 @@ namespace RealLifeOverhaul.Meta
                 .Fact("ledger_mile_big", () => Guide.Money(Ledger.LedgerStories.Ladder[Ledger.LedgerStories.BigRung - 1]))
                 .Fact("ledger_mile_city", () => Guide.Money(Ledger.LedgerStories.Ladder[Ledger.LedgerStories.CityRung - 1]))
                 .Fact("ledger_top_lead", () => Guide.Percent(Ledger.LedgerStories.TopLeadBp / 10000f))
+                .Fact("ledger_lead_margin", () => Guide.Percent(Ledger.LedgerLeads.LeadBp / 10000f))
+                .Fact("ledger_lead_most", () => Whole(Ledger.LedgerLeads.CityMost))
                 .Cleanup(() => Ledger.LedgerDirector.Instance?.StopAll())
                 .ResetData(() => Ledger.LedgerDirector.Instance?.Forget());   // the director reads the (now empty) save again on its next second
 

@@ -767,7 +767,7 @@
         public static bool LedgerKiosks = true;          // newspaper kiosks near the player's home sell the paper (off: subscribers only)
         public static bool LedgerOnline = true;          // Newsstand
         public static bool LedgerOnlineNotes = true;     // a notification each morning the online editions are in
-        public static bool LedgerStories = true;         // the paper's stories of a rival taken over, a company's stock milestones and the city's most valuable
+        public static bool LedgerStories = true;         // the paper's stories of a rival taken over, a company's stock milestones, the city's most valuable and a sector's leader
         public static bool Hotels = true;                // eight places to stay: reception at the door, the room as a panel
         public static bool Holidays = true;              // trips bought at the game's travel agencies; burnout after weeks without a break
         public static bool TravelExtras = true;          // suitcase, travel insurance, a companion, trade fair invitations

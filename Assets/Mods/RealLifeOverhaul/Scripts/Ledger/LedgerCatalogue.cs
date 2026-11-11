@@ -137,15 +137,22 @@ namespace RealLifeOverhaul.Ledger
             K("_news_shop_good", LedgerSection.Business, 25),
             K("_news_shop_none", LedgerSection.Business, 10),
 
-            // the markets' milestones (LedgerStories): a player's company leads the markets page, at a billion or as the most
-            // valuable it leads the front page; the city's companies lead the markets page on a quiet day
+            // the markets' milestones (LedgerStories) and a sector's lead changing hands (LedgerLeads): a player's company leads
+            // the markets page, at a billion or as the most valuable it leads the front page; a rival tycoon's holding comes
+            // next; the city's companies lead the markets page on a quiet day
             K("_ledger_top_first", LedgerSection.Markets, 95, "top_first"),
             K("_ledger_mile_big", LedgerSection.Markets, 94, "mile_big"),
             K("_ledger_top_again", LedgerSection.Markets, 88, "top_again"),
             K("_ledger_mile_own", LedgerSection.Markets, 85, "mile_own"),
+            K("_ledger_lead_own", LedgerSection.Markets, 84, "lead_own"),
             K("_ledger_top_lost", LedgerSection.Markets, 84, "top_lost"),
+            K("_ledger_top_rival", LedgerSection.Markets, 80, "top_rival"),
+            K("_ledger_lead_lost", LedgerSection.Markets, 79, "lead_lost"),
+            K("_ledger_mile_rival", LedgerSection.Markets, 76, "mile_rival"),
             K("_ledger_top_city", LedgerSection.Markets, 72, "top_city"),
+            K("_ledger_lead_rival", LedgerSection.Markets, 68, "lead_rival"),
             K("_ledger_mile_city", LedgerSection.Markets, 62, "mile_city"),
+            K("_ledger_lead_city", LedgerSection.Markets, 54, "lead_city"),
 
             // the markets (MarketText), a player's own company's first
             K("_mkt_news_own_meeting_revolt", LedgerSection.Markets, 80, "own_revolt"),
