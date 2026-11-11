@@ -17,6 +17,7 @@ flare-city	reallife_guide_flare_city	Flare connected to the city's residents
 giving	reallife_guide_giving	charities, gifts and loans
 health	reallife_guide_health	illness, the doctor, hospital stays, health plans and sick leave
 parking-spaces	reallife_guide_parking_spaces	a parking space bought or rented in a building's car park
+loyalty	reallife_guide_loyalty	loyalty cards for the player's shops
 suppliers	reallife_guide_suppliers	a choice of suppliers, fixed price contracts, late or short deliveries
 rivals-seen	reallife_guide_rivals_seen	rivals seen around the city, their cars, the greeting and the sightings
 dynasty	reallife_guide_dynasty	the will, estate tax, retiring and the heir who carries on

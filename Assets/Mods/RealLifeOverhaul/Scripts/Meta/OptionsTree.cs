@@ -496,6 +496,8 @@ namespace RealLifeOverhaul.Meta
                 S("interiorstd").For("interiors_standard").Need("interiors").Opts("interiors_standard_strength", "interiors_basket")
                     .Also("district standard minimum complaints basket products reward strength slider income customers"),
                 S("interiordecor").For("interiors_decor").Need("interiors").Opts("interiors_decor_strength").Also("decor ambience customers footfall clients office strength slider"),
+                S("loyalty").For("loyalty").Opts("loyalty")
+                    .Also("loyalty card cards members points rewards scheme repeat customers regulars sign up members day bizman tab chain brand"),
                 S("designs").For("designs").Opts("designs")
                     .Also("ready made design designs interior installation installer firm layout furniture fit out showroom studio academy office shop"),
                 S("newshops").For("newshops").Opts("new_shops")

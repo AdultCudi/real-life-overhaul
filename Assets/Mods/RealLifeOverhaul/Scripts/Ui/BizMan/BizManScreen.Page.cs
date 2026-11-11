@@ -182,6 +182,7 @@ namespace RealLifeOverhaul.Ui
                 case BizManRules.HrManagers: return UiText.T("reallife_ui_bizman_tab_hr");
                 case BizManRules.Headhunters: return UiText.T("bizman_menu_headhunters");
                 case BizManRules.Interiors: return UiText.T("reallife_interior_tab");
+                case BizManRules.Loyalty: return UiText.T("reallife_loyalty_tab");
                 default: return Label(tab) ?? UiText.T("reallife_ui_bizman_foreign_tab");
             }
         }
@@ -384,6 +385,7 @@ namespace RealLifeOverhaul.Ui
                 case BizManRules.Factory: case BizManRules.Drivers: case BizManRules.Inventory: return sig * 31 + PlantSignature(b);
                 case BizManRules.Presentation: return sig * 31 + PresentationSignature(b);
                 case BizManRules.Interiors: return sig * 31 + InteriorSignature();
+                case BizManRules.Loyalty: return sig * 31 + LoyaltySignature();
                 case BizManRules.Insight:
                 {
                     Extensions.ChartController chart = Get<Extensions.ChartController>(GameContract.SeeChart, b.bizManInsight);

@@ -427,6 +427,7 @@
         public const string InteriorsStaffId = "interiors_staff";
         public const string DesignsId = "designs";
         public const string NewShopsId = "new_shops";
+        public const string LoyaltyId = "loyalty";
         public const string PermadeathId = "permadeath";
         public const string NewGroundTestRoadId = "newground_test_road";   // NewGround: a developer's test road, read at each load
         public const string UptownId = "uptown";   // Uptown, north of Manhattan: its ground laid at each load
@@ -857,6 +858,7 @@
         public static bool InteriorsBasket = true;          // over the standard each customer takes more of the shop's stock (off with Meaningful Interiors)
         public static bool InteriorsStanding = true;        // a well kept place lifts its brand's standards and Standing's customers, and makes the news; a shabby one the other way
         public static bool Designs = true;                  // the interior installation firms offer the mod's business types ready-made designs
+        public static bool Loyalty = true;                  // loyalty cards for the player's shops (off: no scheme runs, none costs or brings anything, and the tab is gone)
         public static bool NewShops = true;                 // the ice cream parlour, tea bar and tobacconist are offered when a business is started
         public static bool InteriorsStaff = true;           // plants, good light and a rest corner lift staff; a good office helps hiring and a firm's bids
         public static bool Permadeath = false;           // what the options page shows; the switch itself is kept per save, off unless switched on
@@ -1320,6 +1322,7 @@
             Landmarks = Bool(modId, LandmarksId, Landmarks);
             Schools = Bool(modId, SchoolsId, Schools);
             NewShops = Bool(modId, NewShopsId, NewShops);
+            Loyalty = Bool(modId, LoyaltyId, Loyalty);
         }
 
         /// <summary>

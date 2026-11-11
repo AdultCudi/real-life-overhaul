@@ -59,6 +59,8 @@ internal static partial class Program
             "notes the day seen: one assignment"),
         ("Districts/DistrictView.cs", "Districts/DistrictView.cs", "OnDay", "kept",
             "prunes its log and redraws only while the district map is showing"),
+        ("Loyalty/LoyaltyDirector.cs", "Loyalty/LoyaltyDirector.Day.cs", "OnDay", "kept",
+            "a scheme's rewards and card costs are money booked into yesterday's statement before the game's tax and daily summary read it, and its lift is written for the day's customers; one comparison without a scheme"),
         ("Diagnostics/SessionWatch.Midnight.cs", "Diagnostics/SessionWatch.Midnight.cs", "NewDay", "kept",
             "diagnostics: one frame number written")
     };

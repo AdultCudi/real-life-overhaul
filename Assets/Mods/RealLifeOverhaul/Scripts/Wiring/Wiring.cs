@@ -88,6 +88,7 @@ namespace RealLifeOverhaul
             Step("the calendar", CalendarLinks.Connect);   // its sources read the others' schedules when it is shown
             Step("the Marketplace", HustleLinks.Connect);
             Step("rival tycoons", RivalLinks.Connect);   // after the economy, the company, Flare and the interiors: what it wraps is theirs already
+            Step("loyalty cards", LoyaltyLinks.Connect);   // after the brands', the interiors' and the rivals': its part of footfall goes on top of theirs
             Step("the public city read API", ModApiLinks.Connect);
             Step("standing", StandingLinks.Connect);   // last: what it wraps of the others' is theirs already
             Step("companion reporting", CompanionLinks.Connect);   // wraps nothing: it only reads what the others own
@@ -145,6 +146,7 @@ namespace RealLifeOverhaul
             Step("the calendar", CalendarLinks.Disconnect);
             Step("the Marketplace", HustleLinks.Disconnect);
             Step("the seasons", SeasonLinks.Disconnect);
+            Step("loyalty cards", LoyaltyLinks.Disconnect);   // before the rivals': what it wrapped of footfall goes back first
             Step("rival tycoons", RivalLinks.Disconnect);   // next, for the same reason
             Step("the player's bank", OwnBankLinks.Disconnect);   // before running a business: what it wrapped of the paper goes back first
             Step("the tech firms' markets and sessions", SectorLinks.Disconnect);

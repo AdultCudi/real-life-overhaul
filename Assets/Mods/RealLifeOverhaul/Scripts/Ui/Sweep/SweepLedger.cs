@@ -96,6 +96,7 @@ namespace RealLifeOverhaul.Ui
                 "Home/HomeFridgeButton.cs", "Careers/ComputerButtons.cs"),
             Row("The mod's clothes in the clothes screen", SweepState.Follows, "wardrobe", "the mod's tiles are read with the game's", "Character/GridLooks.cs"),
             Row("The Interior tab in BizMan", SweepState.Follows, "bizman", "a page of the BizMan screen", "Interiors/InteriorTab.cs"),
+            Row("The Loyalty tab in BizMan", SweepState.Follows, "bizman", "a page of the BizMan screen", "Loyalty/LoyaltyTab.cs"),
             Row("The claimed buildings' refusals", SweepState.NotScreen, null, "watchers on the game's pages; they draw nothing", "Core/ClaimedOffers.cs"),
             Row("The garage shop's turntable", SweepState.Follows, "world_picker", "the shop's pages are the picker's list", "Garage/GarageShop.View.cs"),
             Row("Build mode, its tour and its design list", SweepState.Kit, "build_mode", "the old bar, legend and window are the way back",

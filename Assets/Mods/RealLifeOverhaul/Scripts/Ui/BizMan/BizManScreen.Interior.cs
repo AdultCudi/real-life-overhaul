@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using RealLifeOverhaul.GameUi;
 using RealLifeOverhaul.Interiors;
+using RealLifeOverhaul.Loyalty;
 using UI.Smartphone.Apps.BizMan;
 
 namespace RealLifeOverhaul.Ui
@@ -25,6 +26,11 @@ namespace RealLifeOverhaul.Ui
             _page = _page ?? new KitLines(_lineActs);
             _scores.Clear();
             _page.Clear();
+            if (_shown == BizManRules.Loyalty)
+            {
+                LoyaltyLines(b);
+                return;
+            }
             InteriorTab.Lines(b.buildingRegistration, _scores, _page);
             _m.Pages = new string[InteriorTab.Pages];
             for (int i = 0; i < _m.Pages.Length; i++)
@@ -43,6 +49,22 @@ namespace RealLifeOverhaul.Ui
 
         private long InteriorSignature() => InteriorTab.Shown * 7919L + _interiorTick;
 
+        // The mod's own Loyalty tab, written as the Interior tab is: the week's figures into the left column, the scheme and its buttons into the right. One page.
+        private void LoyaltyLines(BizManBusiness b)
+        {
+            LoyaltyTab.Lines(b.buildingRegistration, _scores, _page);
+            _m.Pages = new[] { UiText.T("reallife_loyalty_head_scheme") };
+            Untitle(_scores.Lines, _m.Head != null ? _m.Head.Name : null);
+            _m.Lines = _scores.Lines.ToArray();
+            _m.SecondLines = _page.Lines.ToArray();   // its title stays: one page has no tab to say it
+            _m.PageShown = 0;
+            _m.PagesOpen = false;
+            _m.Actions = _page.Actions.ToArray();
+        }
+
+        // A press on the tab, a day's turn or a choice confirmed in the game's question box moves what the tab says.
+        private long LoyaltySignature() => (LoyaltyDirector.Instance != null ? LoyaltyDirector.Instance.Revision : 0) * 7919L + _interiorTick;
+
         private static void Untitle(List<BizManLine> lines, string said)
         {
             if (lines.Count > 0 && lines[0].Kind == BizManLineKind.Title && string.Equals(lines[0].Words, said, StringComparison.Ordinal))
@@ -54,6 +76,10 @@ namespace RealLifeOverhaul.Ui
         // A page of the right column chosen, as the game's own selector chooses it.
         private bool InteriorPage(int page)
         {
+            if (_shown == BizManRules.Loyalty)
+            {
+                return false;   // one page: nothing to choose
+            }
             InteriorTab.Shown = page;
             _pagesOpen = false;
             _m.SecondOffset = 0f;   // a new page starts at its top

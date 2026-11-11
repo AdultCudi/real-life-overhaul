@@ -46,6 +46,7 @@ namespace RealLifeOverhaul.Meta
             Meals.MealsGuide.Register();
             Networking.NetworkGuide.Register();
             Shops.ShopsGuide.Register();
+            Loyalty.LoyaltyGuide.Register();
             Outlook.OutlookGuide.Register();
             Population.PopulationGuide.Register();
             Population.PopDemandGuide.Register();

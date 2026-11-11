@@ -28,6 +28,17 @@ internal static partial class Program
         ("Interiors/InteriorTab.Pages.cs", "WriteScores", false, false),
         ("Interiors/InteriorTab.Pages.cs", "WriteNow", false, false),
         ("Interiors/InteriorTab.Pages.cs", "WriteEffects", false, false),
+        ("Loyalty/LoyaltyTab.cs", "Fix", true, true),
+        ("Loyalty/LoyaltyTab.cs", "OnLateUpdate", false, true),
+        ("Loyalty/LoyaltyTab.cs", "OnEnable", false, true),
+        ("Loyalty/LoyaltyTab.cs", "Clicked", false, false),
+        ("Loyalty/LoyaltyTab.Pages.cs", "Write", true, false),
+        ("Loyalty/LoyaltyTab.Pages.cs", "Written", false, true),
+        ("Loyalty/LoyaltyTab.Pages.cs", "Rewrite", false, false),
+        ("Loyalty/LoyaltyTab.Pages.cs", "Lines", false, false),
+        ("Loyalty/LoyaltyTab.Pages.cs", "WriteWeek", false, false),
+        ("Loyalty/LoyaltyTab.Pages.cs", "WriteScheme", false, false),
+        ("Loyalty/LoyaltyTab.Pages.cs", "WriteTerms", false, false),
         ("Core/ClaimedOffers.cs", "OnLateUpdate", false, true),
         ("Core/ClaimedOffers.cs", "Look", true, false),
         ("Core/ClaimedOffers.cs", "Hold", false, true),
@@ -70,7 +81,7 @@ internal static partial class Program
     // objects of their own: the city map's plots, the phone's apps.
     private static readonly string[] BizPageFiles =
     {
-        "Core/ClaimedOffers.cs", "Interiors/InteriorTab.cs", "Tech/Firms/StartCards.cs", "BizPace/BizPaceGame.cs",
+        "Core/ClaimedOffers.cs", "Interiors/InteriorTab.cs", "Loyalty/LoyaltyTab.cs", "Tech/Firms/StartCards.cs", "BizPace/BizPaceGame.cs",
         "Construction/BuildModeGame.Plots.cs", "Core/GameUi/PhoneApps.cs"
     };
 
