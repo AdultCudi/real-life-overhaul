@@ -99,7 +99,7 @@ Unverified (the game could not be run): how the name plate looks beside a marker
 | Places to study (`study`) | the game's school and the hospitals' wards | Star | yes |
 | Tech companies (`tech_hq`) | the city's tech companies' headquarters (`Tech/Sites`) | Tower | yes |
 | Your cloud (`tech_cloud`) | the player's data centres: the cloud's regions | Cloud | no |
-| Employers' offices (`job_offices`) | each employer's office (its help-wanted board) by the employer's name, where reviews are held and shifts clocked on to | Briefcase | no |
+| Employers' offices (`job_offices`) | each employer's office (its help-wanted board) by the employer's name, where reviews are held and shifts clocked on to, and the architects' practice by the door of the building its floor is in, with the floor (`TradesDirector.PracticePin`) | Briefcase | no |
 | Newspaper kiosks (`newspaper_kiosks`) | the City Ledger's kiosks near the home (`LedgerDirector`) | Paper | yes |
 | City Offices (`floors`) | a building taken by the floors core for places that found no spare floor ([Floors](../features/floors.md)), registered by `Floors/FloorsDirector.Book`, there only while one is taken | Briefcase | yes |
 

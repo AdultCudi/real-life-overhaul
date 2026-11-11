@@ -85,8 +85,8 @@ internal static partial class Program
         string bridges = ModSource(@"Careers\CareersBridges.cs");
         string wiring = ModSource(@"Wiring\CareersLinks.cs");
         Check(bridges.Contains("public static Action<List<BoardEmployer>> Boards;") && bridges.Contains("Boards = null;") && bridges.Contains("ShowBoard = null;")
-              && wiring.Contains("CareersBridges.Boards = BoardEmployers;") && wiring.Contains("CareersBridges.ShowBoard = ShowBoard;") && wiring.Contains("Premises.Length == 0"),
-            "employers fix: the Career app learns the boards through two bridges, wired in Wiring and given back at Reset, and the building trades (no board) are not listed");
+              && wiring.Contains("CareersBridges.Boards = BoardEmployers;") && wiring.Contains("CareersBridges.ShowBoard = ShowBoard;") && wiring.Contains("employer.Place != EmployerPlace.Board"),
+            "employers fix: the Career app learns the boards through two bridges, wired in Wiring and given back at Reset, and the building trades (no board) are listed with their place");
 
         string links = ModSource(@"World\MapLinks.cs");
         int offices = links.IndexOf("Id = \"job_offices\"", StringComparison.Ordinal);

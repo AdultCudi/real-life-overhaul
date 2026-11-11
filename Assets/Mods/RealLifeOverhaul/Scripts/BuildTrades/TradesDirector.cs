@@ -306,7 +306,7 @@ namespace RealLifeOverhaul.BuildTrades
                 {
                     if (!director.Career.ClockOn(out string reason))
                     {
-                        JobText.Toast(NotificationType.Warning, reason ?? "reallife_job_no_now");
+                        Notifications.Show(NotificationType.Warning, reason ?? "reallife_job_no_now", director.Career.OfficeData(CareerState.EmployerIndex), 8f);
                     }
                     return;
                 }
@@ -327,6 +327,55 @@ namespace RealLifeOverhaul.BuildTrades
 
         // ---- the career's doors (Jobs/CareerLinks) ----
 
+        /// <summary>Where the practice stands now (its building and floor); false while its option is off or the floors core has given it no floor.</summary>
+        public bool PracticeWhere(out FloorWhere where)
+        {
+            where = default;
+            return Settings.Trades && Settings.TradesOffice && FloorsDirector.Where(_office, out where);
+        }
+
+        // The building's address as the game writes it with the practice's floor ("12 Fifth Avenue, floor 7"): which button to press at the door.
+        private static string Floored(FloorWhere where)
+        {
+            string address = TradesGame.Address(where.Street, where.Number);
+            return string.IsNullOrEmpty(address) ? null : JobText.T("reallife_career_workplace_floor", "address", address, "floor", where.Floor.ToString());
+        }
+
+        /// <summary>
+        /// The practice for the city map's Job offices row: the door of its building, the building and its address with the floor; false
+        /// while it has no floor. Read when the map's row is made, never per frame.
+        /// </summary>
+        public bool PracticePin(out Vector3 door, out CityBuildingController building, out string address)
+        {
+            door = default;
+            building = null;
+            address = null;
+            if (!PracticeWhere(out FloorWhere where))
+            {
+                return false;
+            }
+            door = where.Door;
+            building = where.Building;
+            address = Floored(where);
+            return address != null;
+        }
+
+        /// <summary>Changes when the practice's place does (a floor given or taken, another building): the map's three-second look compares it. No allocation.</summary>
+        public long PracticeStamp
+        {
+            get
+            {
+                if (!PracticeWhere(out FloorWhere where))
+                {
+                    return 0L;
+                }
+                unchecked
+                {
+                    return ((where.Street.GetHashCode() * 1000003L + where.Number) * 64L + where.Floor) | 1L;
+                }
+            }
+        }
+
         bool ICareerWorkplace.Depot(string employerId, Vector3 near, out Vector3 at, out string address)
         {
             at = default;
@@ -337,12 +386,12 @@ namespace RealLifeOverhaul.BuildTrades
             }
             if (employerId == CareerCatalogue.Architects)
             {
-                if (!Settings.TradesOffice || !FloorsDirector.Where(_office, out FloorWhere where))
+                if (!PracticeWhere(out FloorWhere where))
                 {
                     return false;
                 }
                 at = TradeOffice.Desk(out Vector3 desk, out _) ? desk : where.Door;
-                address = TradesGame.Address(where.Street, where.Number);
+                address = Floored(where);
                 return true;
             }
             if (employerId == CareerCatalogue.Builders || employerId == CareerCatalogue.Inspection)

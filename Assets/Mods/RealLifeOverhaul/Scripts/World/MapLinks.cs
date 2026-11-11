@@ -381,7 +381,7 @@ namespace RealLifeOverhaul
                     }
                 }
             });
-            // Jobs and careers: each employer's office (its help-wanted board), by the employer's name.
+            // Jobs and careers: each employer's office (its help-wanted board), by the employer's name; and the architects' practice, on its floor.
             _links.Add(new Link
             {
                 Id = "job_offices", TitleKey = "reallife_map_row_job_offices", Colour = new Color(0.20f, 0.62f, 0.95f), Icon = MapIcon.Briefcase, Found = true,
@@ -398,7 +398,8 @@ namespace RealLifeOverhaul
                     {
                         stamp = stamp * 9 + jobs.Career.DepotOf(e) + 2;
                     }
-                    return stamp;
+                    BuildTrades.TradesDirector trades = BuildTrades.TradesDirector.Instance;
+                    return trades != null ? stamp * 31 + trades.PracticeStamp : stamp;   // the practice comes and goes with its floor
                 },
                 Fill = places =>
                 {
@@ -418,6 +419,7 @@ namespace RealLifeOverhaul
                             });
                         }
                     }
+                    PracticePlace(places);
                 }
             });
             // Careers: the buildings with a professional post open today, by the employer's name (a shop, an office, a public building).
@@ -605,6 +607,25 @@ namespace RealLifeOverhaul
                 }
                 places.Add(new MapPlace(door, isSchool ? school : At(ward, b.building.Address.ToFormattedString())) { Lit = b });
             }
+        }
+
+        // The architects' practice, on a floor of one of the mod's buildings: its building's door under the employer's name with the floor, the
+        // building lit on the open map, and the employer's name found in the map's search. Nothing while it has no floor.
+        private static void PracticePlace(List<MapPlace> places)
+        {
+            BuildTrades.TradesDirector trades = BuildTrades.TradesDirector.Instance;
+            Employer practice = CareerCatalogue.Find(CareerCatalogue.Architects);
+            if (trades == null || practice == null || !trades.PracticePin(out Vector3 door, out CityBuildingController building, out string address))
+            {
+                return;
+            }
+            string employer = T(practice.NameKey);
+            places.Add(new MapPlace(door, At(employer, address))
+            {
+                Lit = building,   // (the building keeps its holder's card; the practice is one of its floors)
+                Alias = employer,
+                AliasUnder = At(T("reallife_map_row_job_offices"), address)
+            });
         }
 
         // The buildings with a post open: one marker each, under the employer's name and the number of posts, its building lit on the open map.

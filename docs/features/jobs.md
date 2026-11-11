@@ -35,7 +35,7 @@ Gigs the player takes from the **Gig Line** contact or a help-wanted board (flye
 | `Kinds/` | the jobs: FlyerJob, CourierJob, TaxiJob, CleanerJob, StockerJob, VendorJob, BuskerJob; the two an employer's rank gives: DispatchJob (the planning desk), LeadJob (a shift in charge); and the building trades' (TradeJob at a works site, DesignJob and TenderJob at the architects' practice: [Building trades](trades.md)) |
 | `CareerCatalogue` | employers, ranks, rotas and every figure of the career ladder (game-free) |
 | `CareerState` | per-save employer, rank, rota, marks, review figures, employment history: one line in modData (game-free) |
-| `CareerDirector` | where each employer is (a help-wanted board), its boss by the board, the rota, clocking on, payslip, reviews, booked sets |
+| `CareerDirector` | where each employer is (a help-wanted board, the practice's floor, the nearest works site: [finding the place of work](careers.md#finding-the-place-of-work)), its boss by the board, the rota, clocking on, payslip, reviews, booked sets |
 | `CareerPhone` | the Work contact and its texts |
 | `CareerDialog` | the Work contact's conversation, by phone or face to face with a boss: sign on, rota, clock on, sick, notice, CV |
 | `CareerLinks` | the optional doors to other features: acquaintances (offered), law record and sick notes (asked for) |
