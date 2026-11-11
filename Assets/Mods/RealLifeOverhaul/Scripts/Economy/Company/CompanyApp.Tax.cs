@@ -69,6 +69,11 @@ namespace RealLifeOverhaul.Economy
                 box.Row("reallife_co_tax_quarter", CompanyText.T("reallife_co_tax_quarter_value", "quarter", t.Quarter.ToString(), "day",
                     (t.QuarterFrom + _director.QuarterDays).ToString()));
                 box.Row("reallife_co_tax_costs", CompanyText.Money(TaxRules.CostsSum(t)));
+                long estate = EconomyBridges.EstateTax != null ? EconomyBridges.EstateTax() : -1L;   // the estate statement is the Legacy app's (Scripts/Dynasty)
+                if (estate >= 0)
+                {
+                    box.Row("reallife_dynasty_tax_row", CompanyText.Money(estate));
+                }
                 box.Row("reallife_co_row_accountant", CompanyText.Accountant(t.Accountant));
                 box.Section("reallife_ibox_sec_how");
                 box.Note(CompanyText.T("reallife_co_tax_game", "percent", CompanyGame.TaxPercent.ToString()));

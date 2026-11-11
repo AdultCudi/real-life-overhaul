@@ -75,6 +75,7 @@ namespace RealLifeOverhaul.Ui
             Row("Suppliers", "End a contract early", "a yes or no box", AuditWindow.Question, Question, "Suppliers/"),
             Row("Rivals seen", "A rival standing in the city", "the card over them", AuditWindow.Prompt, Prompt, "RivalsSeen/"),
             Row("Rivals seen", "Say hello to a rival", "the dialogue", AuditWindow.Dialog, Dialog, "RivalsSeen/"),
+            Face("Legacy", "The will, the estate and the family line", "dynasty", "Dynasty/"),
             Row("Web shop", "Close or sell a shop", "a yes or no box", AuditWindow.Question, Question, "Economy/Online/"),
 
             // ---------------------------------------------------------------------------------------------------- Company, Estate, Services

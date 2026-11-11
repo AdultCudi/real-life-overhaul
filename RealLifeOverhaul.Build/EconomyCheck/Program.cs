@@ -1020,6 +1020,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--dynasty")
+        {
+            Dynasty();   // (the dynasty alone, while working on it: DynastyChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--giving")
         {
             Giving();   // (giving alone, while working on it: GivingChecks.cs)
@@ -1491,6 +1497,7 @@ internal static partial class Program
         Subway();       // the districts' subway stations: their place in the game's sorted list, the search, when they stand and when they may go, the people of the line, the campus's gates, the sources (fare, save, session, frame) and the texts (SubwayChecks.cs)
         Stockx();       // the stock market's extras: splits with nothing gained or lost, the fund against its parts, blocks, the bank's own books, the rivals, the save, the sources, the texts (StockxChecks.cs)
         RivalSeen();    // rivals seen around the city: form, car, the seeded week, the world's cap and cost, honest sightings, a greeting's cap, the save, the pages, the texts (RivalSeenChecks.cs)
+        Dynasty();      // the dynasty: the tax and its bands, the gifts' window, the will, who carries on, an estate settled to the last unit, the debt, the retired founder, a handover in its steps, the rivals, the city, the save, the pages, the sources, the texts (DynastyChecks.cs)
         Household();    // household staff: the kinds and their hours, wages from the going rate, the cook's dishes, candidates, unpaid visits, the save, money only through the game's call, the texts (HouseholdChecks.cs)
         HeavyLicence(); // the heavy goods licence: which trucks need it, the school's steps and waits, its save part, heavy loads on the courier round, the sources and texts (HeavyLicenceChecks.cs)
         PopulationChecks(); // the city's population: the measure, generation, a day with every cent placed, ten years, the labour market, the anchors, the costs (PopulationChecks.cs)

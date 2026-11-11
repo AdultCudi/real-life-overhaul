@@ -27,6 +27,7 @@ namespace RealLifeOverhaul.Meta
             Economy.Dealership.CarSupplyGuide.Register();
             Suppliers.SupplierGuide.Register();
             RivalsSeen.SeenGuide.Register();
+            Dynasty.DynastyGuide.Register();
             Permadeath.PermadeathGuide.Register();
             Faults.FaultGuide.Register();
             Texts.TextsGuide.Register();

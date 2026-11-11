@@ -67,6 +67,18 @@ internal static partial class Program
                 });
             }
         }
+        if (def.Id == "dynasty")
+        {
+            foreach (string state in UiSamples.DynastyStates)
+            {
+                string st = state;
+                cases.Add(new UiScreenCase
+                {
+                    Def = def, Name = "dynasty (" + st + ")", Title = "Legacy", Commands = VentFace.Commands,
+                    Lay = (s, f, dark, k, t) => VentFace.Lay(s, UiSamples.Dynasty(t, st), f, dark, k)
+                });
+            }
+        }
         if (def.Id == "ventures")
         {
             foreach (string state in UiSamples.VenturesStates)

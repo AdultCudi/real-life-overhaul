@@ -208,6 +208,40 @@ namespace RealLifeOverhaul.Ui
                 "reallife_supply_wholesalers_about", "reallife_ui_prompt_back", "reallife_ui_prompt_move", "reallife_ui_prompt_select"
                 // KEYS END
             }).Switch(UiScreenSwitches.Ventures));
+            screens.Add(new UiScreenDef("dynasty", UiTemplate.AppWindow, "VentScreen", new[]
+            {
+                // KEYS BEGIN
+                "reallife_dynasty_app", "reallife_dynasty_bequest_lapsed", "reallife_dynasty_cannot_carry", "reallife_dynasty_charity_sub",
+                "reallife_dynasty_chip_head", "reallife_dynasty_chip_heir", "reallife_dynasty_choice_heir", "reallife_dynasty_choice_no",
+                "reallife_dynasty_choice_yes", "reallife_dynasty_city_note", "reallife_dynasty_discard", "reallife_dynasty_elder_age",
+                "reallife_dynasty_elder_note", "reallife_dynasty_fee_own", "reallife_dynasty_fig_estate", "reallife_dynasty_fig_heir",
+                "reallife_dynasty_fig_nobody", "reallife_dynasty_fig_tax", "reallife_dynasty_handing", "reallife_dynasty_handing_note",
+                "reallife_dynasty_head_now", "reallife_dynasty_head_past", "reallife_dynasty_heir_rest", "reallife_dynasty_kin_note",
+                "reallife_dynasty_kind_child", "reallife_dynasty_kind_friend", "reallife_dynasty_kind_partner", "reallife_dynasty_kind_relative",
+                "reallife_dynasty_law_note", "reallife_dynasty_loan_note", "reallife_dynasty_mode_death", "reallife_dynasty_mode_elder",
+                "reallife_dynasty_mode_retire", "reallife_dynasty_no_will", "reallife_dynasty_no_will_short", "reallife_dynasty_notary",
+                "reallife_dynasty_off_body", "reallife_dynasty_off_title", "reallife_dynasty_person_sub", "reallife_dynasty_retire",
+                "reallife_dynasty_retire_elder", "reallife_dynasty_retire_law", "reallife_dynasty_retire_no_heir", "reallife_dynasty_retire_no_will",
+                "reallife_dynasty_retire_off", "reallife_dynasty_retire_ok", "reallife_dynasty_retire_running", "reallife_dynasty_retire_session",
+                "reallife_dynasty_retire_young", "reallife_dynasty_rivals_none", "reallife_dynasty_row_age", "reallife_dynasty_row_bequest",
+                "reallife_dynasty_row_cash", "reallife_dynasty_row_charity", "reallife_dynasty_row_city_last", "reallife_dynasty_row_city_now",
+                "reallife_dynasty_row_city_tax", "reallife_dynasty_row_city_tax_value", "reallife_dynasty_row_city_unpaid", "reallife_dynasty_row_city_value",
+                "reallife_dynasty_row_draw", "reallife_dynasty_row_fee", "reallife_dynasty_row_firm", "reallife_dynasty_row_fund",
+                "reallife_dynasty_row_gifts", "reallife_dynasty_row_keep", "reallife_dynasty_row_left", "reallife_dynasty_row_left_value",
+                "reallife_dynasty_row_net", "reallife_dynasty_row_other", "reallife_dynasty_row_owed", "reallife_dynasty_row_per_day",
+                "reallife_dynasty_row_reserved", "reallife_dynasty_row_residue", "reallife_dynasty_row_retire_from", "reallife_dynasty_row_retire_tax",
+                "reallife_dynasty_row_spouse", "reallife_dynasty_row_tax", "reallife_dynasty_row_tax_owed", "reallife_dynasty_row_threshold",
+                "reallife_dynasty_row_upbringing", "reallife_dynasty_scale_note", "reallife_dynasty_sec_city", "reallife_dynasty_sec_elder",
+                "reallife_dynasty_sec_kin", "reallife_dynasty_sec_line", "reallife_dynasty_sec_loan", "reallife_dynasty_sec_people",
+                "reallife_dynasty_sec_retire", "reallife_dynasty_sec_retire_terms", "reallife_dynasty_sec_rivals", "reallife_dynasty_sec_sign",
+                "reallife_dynasty_sec_statements", "reallife_dynasty_sec_today", "reallife_dynasty_sign", "reallife_dynasty_statement_sub",
+                "reallife_dynasty_statement_title", "reallife_dynasty_statements_none", "reallife_dynasty_step_age", "reallife_dynasty_step_keep",
+                "reallife_dynasty_step_share", "reallife_dynasty_tab_estate", "reallife_dynasty_tab_line", "reallife_dynasty_tab_will",
+                "reallife_dynasty_under_water", "reallife_giving_charity_0_about", "reallife_giving_charity_0_name", "reallife_giving_charity_1_about",
+                "reallife_giving_charity_1_name", "reallife_giving_charity_2_about", "reallife_giving_charity_2_name", "reallife_ui_prompt_back",
+                "reallife_ui_prompt_move", "reallife_ui_prompt_select"
+                // KEYS END
+            }).Switch(UiScreenSwitches.Ventures));
         }
     }
 }

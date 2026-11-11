@@ -35,7 +35,7 @@ internal static partial class UiSamples
             new[] { "RealLifeOpenRoles", "reallife_roles_app", "Open Roles", "0" }, new[] { "RealLifeMarketplace", "reallife_hustle_app", "Marketplace", "0" },
             new[] { "RealLifeFinance", "reallife_econ_app", "Finance", "0" }, new[] { "RealLifeBanks", "reallife_banks_app", "Banks", "0" },
             new[] { "RealLifeOwnBank", "reallife_ob_app", "Your bank", "0" }, new[] { "RealLifeStocks", "reallife_mkt_app", "Stocks", "0" },
-            new[] { "RealLifeEconomy", "reallife_econapp_app", "Economy", "0" }, new[] { "RealLifeGiving", "reallife_giving_app", "Giving", "0" }, new[] { "RealLifeHealth", "reallife_hc_app", "Health", "0" }, new[] { "RealLifeCompany", "reallife_co_app", "Company", "1" },
+            new[] { "RealLifeEconomy", "reallife_econapp_app", "Economy", "0" }, new[] { "RealLifeGiving", "reallife_giving_app", "Giving", "0" }, new[] { "RealLifeHealth", "reallife_hc_app", "Health", "0" }, new[] { "RealLifeDynasty", "reallife_dynasty_app", "Legacy", "0" }, new[] { "RealLifeCompany", "reallife_co_app", "Company", "1" },
             new[] { "RealLifeBrands", "reallife_brand_app", "Brands", "0" }, new[] { "RealLifeServices", "reallife_svc_app", "Services", "0" },
             new[] { "RealLifeVentures", "reallife_ven_app", "Ventures", "3" }, new[] { "RealLifeOnline", "reallife_online_app", "Web shop", "0" },
             new[] { "RealLifeEstate", "reallife_estate_app", "Property", "0" }, new[] { "RealLifeDealer", "reallife_dealer_app", "Car Showroom", "0" },

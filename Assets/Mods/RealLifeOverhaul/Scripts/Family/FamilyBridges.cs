@@ -126,6 +126,8 @@ namespace RealLifeOverhaul.Family
         public static ILeisureBridge Leisure;
         public static ILawBridge Law;
         public static ISchoolBridge School;
+        /// <summary>Who carries on after the player, in a sentence (the dynasty's will or the law's order); null or empty while there is none to say.</summary>
+        public static Func<string> WillLine;
 
         public static void Reset()
         {
@@ -135,6 +137,7 @@ namespace RealLifeOverhaul.Family
             Leisure = null;
             Law = null;
             School = null;
+            WillLine = null;
         }
     }
 

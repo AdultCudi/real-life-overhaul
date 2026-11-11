@@ -170,6 +170,7 @@ namespace RealLifeOverhaul.Giving
             }
             PersonGiving g = _state.PersonOf(person.Index, true);
             g.GivenTotal = (int)Math.Min(int.MaxValue / 2, (long)g.GivenTotal + amount);
+            GivingBridges.GaveToPerson?.Invoke(amount);
             GivingRules.PersonGain(g, GivingRules.Back(amount, level), GivingGame.Day, inNeed, out int affection, out int trust);
             SocialLife.Contacted(person);
             SocialLife.Change(person, 0f, affection / 10f, trust / 10f);
@@ -191,6 +192,49 @@ namespace RealLifeOverhaul.Giving
             {
                 offer.Clear();
             }
+        }
+
+        /// <summary>
+        /// A bequest from an estate (Scripts/Dynasty) into a charity's pot, whole money; the estate books the money itself. It is the estate's gift, exempt from estate tax, so it
+        /// is no deduction from the income tax, earns the heir no standing and is not counted as the player's giving. Returns what went in: nothing while giving does not run or
+        /// the charities cannot work (a session, the city's people not running).
+        /// </summary>
+        public long Bequest(Charity charity, long amount)
+        {
+            if (!Running || CauseWhy != 0 || amount <= 0)
+            {
+                return 0L;
+            }
+            _state.Credit(charity, amount, 0);   // counted with the others' gifts, never the player's
+            _revision++;
+            return amount;
+        }
+
+        /// <summary>
+        /// Somebody the player lent to has become the played head of the family (Scripts/Dynasty): nobody owes themselves, so their open loan is closed as it stands, and their
+        /// record of gifts goes with them. Nothing is booked.
+        /// </summary>
+        public void Merged(int person)
+        {
+            if (!_loaded || _state == null)
+            {
+                return;
+            }
+            LoanOut loan = _state.LoanOf(person);
+            if (loan != null)
+            {
+                loan.State = LoanState.Repaid;
+                loan.Remaining = 0;
+                loan.Closed = GivingGame.Day;
+            }
+            for (int i = _state.People.Count - 1; i >= 0; i--)
+            {
+                if (_state.People[i].Person == person)
+                {
+                    _state.People.RemoveAt(i);
+                }
+            }
+            _revision++;
         }
 
         /// <summary>The most a gift or a loan may be to this person now, in today's whole money (the cap, and the spare cash).</summary>

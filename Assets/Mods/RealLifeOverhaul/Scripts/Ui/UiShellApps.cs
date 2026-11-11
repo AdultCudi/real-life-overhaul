@@ -172,6 +172,7 @@ namespace RealLifeOverhaul.Ui
                 case "RealLifeEconomy": return UiIcon.Globe;
                 case "RealLifeGiving": return UiIcon.Percent;
                 case "RealLifeHealth": return UiIcon.Thermometer;
+                case "RealLifeDynasty": return UiIcon.Key;
                 case "RealLifeCompany": return UiIcon.Presentation;
                 case "RealLifeSuppliers": return UiIcon.Truck;
                 case "RealLifeBrands": return UiIcon.Trophy;
