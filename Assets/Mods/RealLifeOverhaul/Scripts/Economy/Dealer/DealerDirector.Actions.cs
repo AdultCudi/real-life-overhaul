@@ -57,17 +57,18 @@ namespace RealLifeOverhaul.Economy.Dealership
             return null;
         }
 
-        // A car onto a free place of a lot as a game vehicle; null if it cannot be made. Places held for deliveries stay free unless
-        // it is one (held).
-        private StockCar Arrive(DealerYard y, string type, string colour, int km, int condition, int faults, int known, int cost, CarSource source, bool held = false)
+        // A car onto a free place of a lot as a game vehicle; null if it cannot be made, and why (CarStandRules: no place, or a model the game cannot
+        // stand as it was paid for). Places held for deliveries stay free unless it is one (held).
+        private StockCar Arrive(DealerYard y, string type, string colour, int km, int condition, int faults, int known, int cost, CarSource source, out CarMaking why, bool held = false)
         {
             BuildingRegistration reg = RegOf(y);
             int spot = y.FreeSpot();
             if (reg == null || spot < 0 || (!held && _state.Room(y) <= 0))
             {
+                why = CarMaking.NoPlace;
                 return null;
             }
-            string id = DealerGame.MakeCar(reg, y, spot, type, colour, condition);
+            string id = DealerGame.MakeCar(reg, y, spot, type, colour, condition, out why);
             if (id == null)
             {
                 return null;
@@ -98,6 +99,10 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 return Refuse(why);
             }
+            if (!DealerGame.Knows(l.Type))
+            {
+                return Unavailable(l.Type);   // the game has not the model: nothing is charged, for a car at once or one on order
+            }
             BuildingRegistration reg = RegOf(y);
             if (l.Kind == ListingKind.Wholesale)
             {
@@ -112,12 +117,13 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 return Refuse(DealerRefusal.Cash);
             }
-            StockCar car = Arrive(y, l.Type, l.Colour, l.Km, l.Condition, l.Faults, l.Inspected ? l.Faults : 0, price, l.Kind == ListingKind.Wholesale ? CarSource.Wholesale : CarSource.Used);
+            StockCar car = Arrive(y, l.Type, l.Colour, l.Km, l.Condition, l.Faults, l.Inspected ? l.Faults : 0, price, l.Kind == ListingKind.Wholesale ? CarSource.Wholesale : CarSource.Used,
+                out CarMaking making);
             if (car == null)
             {
-                DealerGame.Give(price, DealerLines.BoughtType, DealerGame.Bought(l.Type), reg);   // the money back: the car could not be made
-                Logger?.Warn("Dealership: the game could not make a '" + l.Type + "' on the lot of '" + y.Name + "'; the money was given back.");
-                return Refuse(DealerRefusal.Busy);
+                DealerGame.Give(CarStandRules.Refund(price), DealerLines.BoughtType, DealerGame.Bought(l.Type), reg);   // the whole price back: the car paid for could not be made
+                Logger?.Warn("Dealership: the game could not stand a '" + l.Type + "' on the lot of '" + y.Name + "' (" + making + "); the money was given back.");
+                return StandNot(l.Type, price, making);
             }
             l.Gone = true;
             Book(y, 0, price, 0, 0);
@@ -367,10 +373,10 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 var faultDice = new DealerDice(_state.Seed, d.Id, 89);
                 int faults = DealerRules.DrawFaults(d.TradeKm, d.TradeCondition, ref faultDice);
-                swapped = Arrive(y, d.TradeType, d.TradeColour, d.TradeKm, d.TradeCondition, faults, 0, m.Allowance, CarSource.TradeIn);
+                swapped = Arrive(y, d.TradeType, d.TradeColour, d.TradeKm, d.TradeCondition, faults, 0, m.Allowance, CarSource.TradeIn, out CarMaking _);
                 if (swapped == null)
                 {
-                    // No place for it after all: it goes straight to the trade.
+                    // No place for it after all, or the game cannot stand it: it goes straight to the trade.
                     int trade = DealerRules.TradePrice(DealerRules.Worth(DealerGame.ListPrice(d.TradeType), Prices.Level, d.TradeKm, d.TradeCondition));
                     DealerGame.Give(trade, DealerLines.SoldType, DealerGame.Sold(d.TradeType, reg), reg);
                     Book(y, trade, 0, 0, trade - m.Allowance);
@@ -642,8 +648,9 @@ namespace RealLifeOverhaul.Economy.Dealership
             {
                 y.Cars[c].Spot = c < y.Spots.Count ? c : -1;
             }
-            DealerGame.Park(y, _lost, _bays);
+            DealerGame.Park(y, _lost, _wrong, _bays);
             DropLost(y);
+            DropWrong(y);
             Logger?.Info("Dealership: the lot of '" + y.Name + "' laid out again: " + had + " place(s) before, " + y.Spots.Count + " now.");
             Changed();
             return true;

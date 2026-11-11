@@ -818,7 +818,7 @@ internal static partial class Program
         r.Arrived(57);
         Check(r.Orders.Count == 0 && r.OrderFrom.Count == 0 && r.OrderOf(57) == -1, "car suppliers mid order: a car that has come is no longer on order");
         string dir = ModSource(@"Economy\Dealer\DealerDirector.Business.cs");
-        Check(dir.Contains("Arrive(y, q.Type, q.Colour, q.Km, q.Condition, q.Faults, q.Known, q.Cost, DeliverySource(q), true)") && dir.Contains("_supply.Arrived(q.Id);")
+        Check(dir.Contains("Arrive(y, q.Type, q.Colour, q.Km, q.Condition, q.Faults, q.Known, q.Cost, DeliverySource(q), out making, true)") && dir.Contains("_supply.Arrived(q.Id);")
               && ModSource(@"Economy\Dealer\Supply\DealerDirector.Supply.cs").Contains("return CarSupplyRules.SourceOf(_supply, q.Id);"),
             "car suppliers mid order: a car on order arrives as a new car on the terms it was ordered on, whatever the option says by then");
     }

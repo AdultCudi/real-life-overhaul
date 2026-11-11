@@ -172,6 +172,12 @@ namespace RealLifeOverhaul.Economy.Dealership
             return t != null ? t.price : 0f;
         }
 
+        /// <summary>True when the game has this model: a listing of a car it does not have (a car mod taken out, a changed game) is refused before any money moves.</summary>
+        public static bool Knows(string type)
+        {
+            return !string.IsNullOrEmpty(type) && VehicleTypeHelper.GetVehicleType(type) != null;
+        }
+
         /// <summary>What a showroom's hour has to go on, read from the game: open, customer count, promotion, satisfaction and staff on shift.</summary>
         public static YardHour Hour(BuildingRegistration reg)
         {
@@ -309,12 +315,13 @@ namespace RealLifeOverhaul.Economy.Dealership
         }
 
         /// <summary>
-        /// The lot's cars held still on their bays (ShowroomFloorRules.Arrange); cars the save lost go into <paramref name="lost"/>.
-        /// Returns the cars placed.
+        /// The lot's cars held still on their bays (ShowroomFloorRules.Arrange); cars the save lost go into <paramref name="lost"/>, and cars whose vehicle
+        /// is not the model paid for (the save's entry or the object the game stood) into <paramref name="wrong"/>, which are not shown. Returns the cars placed.
         /// </summary>
-        public static int Park(DealerYard y, List<StockCar> lost, ShowroomBays bays)
+        public static int Park(DealerYard y, List<StockCar> lost, List<StockCar> wrong, ShowroomBays bays)
         {
             lost?.Clear();
+            wrong?.Clear();
             int n = y.Cars.Count;
             if (_current.Length < n)
             {
@@ -325,9 +332,12 @@ namespace RealLifeOverhaul.Economy.Dealership
             for (int c = 0; c < n; c++)
             {
                 StockCar car = y.Cars[c];
-                if (Vehicle(car.VehicleId) == null)
+                VehicleInstance own = Vehicle(car.VehicleId);
+                if (own == null || !Stands(car, own))
                 {
-                    lost?.Add(car);
+                    // The save lost it, or the model paid for is not the car that stands: no bay for it.
+                    List<StockCar> list = own == null ? lost : wrong;
+                    list?.Add(car);
                     _current[c] = ShowroomFloorRules.Absent;
                     _chosen[c] = -1;
                     continue;
@@ -364,6 +374,12 @@ namespace RealLifeOverhaul.Economy.Dealership
             return placed;
         }
 
+        // True when the vehicle of a car of the stock is the model that was paid for: the save's entry and, where the game has stood it, its object.
+        private static bool Stands(StockCar car, VehicleInstance own)
+        {
+            return CarStandRules.Verdict(car.Type, own.vehicleTypeName) == CarMaking.Made && CarStandRules.Verdict(car.Type, ModelOf(Controller(car.VehicleId))) == CarMaking.Made;
+        }
+
         // A car on show: on its place, still, not to be driven off, no pin on the map.
         private static void Hold(VehicleController controller, Vector3 at, Quaternion facing)
         {
@@ -382,12 +398,23 @@ namespace RealLifeOverhaul.Economy.Dealership
             }
         }
 
-        /// <summary>A new car of the stock on a place, damaged by what its condition lacks; spawned now if the player is inside. Its id, or null.</summary>
-        public static string MakeCar(BuildingRegistration reg, DealerYard y, int spot, string type, string colour, int condition)
+        /// <summary>
+        /// A new car of the stock on a place, damaged by what its condition lacks; spawned now if the player is inside. Its id, or null with
+        /// <paramref name="why"/>: the game has not the model, the place is not there, the game stood another model than the one asked for, or it
+        /// would not make it. The one place a car paid for becomes a vehicle, so whatever it makes is the model that was paid for or is taken out again.
+        /// </summary>
+        public static string MakeCar(BuildingRegistration reg, DealerYard y, int spot, string type, string colour, int condition, out CarMaking why)
         {
-            VehicleType t = VehicleTypeHelper.GetVehicleType(type);
-            if (t == null || spot < 0 || spot >= y.Spots.Count || Save == null)
+            why = CarMaking.Made;
+            VehicleType t = Knows(type) ? VehicleTypeHelper.GetVehicleType(type) : null;
+            if (t == null)
             {
+                why = CarMaking.UnknownModel;
+                return null;
+            }
+            if (spot < 0 || spot >= y.Spots.Count || Save == null)
+            {
+                why = CarMaking.NoPlace;
                 return null;
             }
             LotSpot s = y.Spots[spot];
@@ -405,19 +432,78 @@ namespace RealLifeOverhaul.Economy.Dealership
             v.SetStreetData(reg.StreetName, reg.StreetNumber);
             if (Inside(reg))
             {
-                VehicleController made = VehicleHelper.CreateAndSpawnVehicle(v, At(s), Facing(s));   // it adds the vehicle to the save
-                if (made != null)
+                why = Spawn(v, s);
+                return why == CarMaking.Made ? v.id : null;
+            }
+            v.position = At(s);
+            v.rotation = Facing(s);
+            Save.VehicleInstances.Add(v);   // the game stands it, from its model's name, when the player walks in (Park reads it then)
+            return v.id;
+        }
+
+        // A car made in the room the player stands in, the game's own way, and read back: the model that stands is the model asked for. One that is not,
+        // and one the game throws on, is taken out again whole (its object and the save's entry), so that nothing half made is left on the lot.
+        private static CarMaking Spawn(VehicleInstance v, LotSpot s)
+        {
+            VehicleController made = null;
+            try
+            {
+                made = VehicleHelper.CreateAndSpawnVehicle(v, At(s), Facing(s));   // it adds the vehicle to the save
+                string stood = ModelOf(made);
+                CarMaking verdict = made != null ? CarStandRules.Verdict(v.vehicleTypeName, stood) : CarMaking.Failed;
+                if (verdict == CarMaking.Made)
                 {
                     Hold(made, At(s), Facing(s));
+                    if (Meta.Dev.Verbose)
+                    {
+                        DealerDirector.Logger?.Info("Dealership check (a car made): the '" + v.vehicleTypeName + "' paid for stands as '" + (stood ?? "(not said)") + "': PASS");
+                    }
+                    return CarMaking.Made;
+                }
+                DealerDirector.Logger?.Warn("Dealership check (a car made): the '" + v.vehicleTypeName + "' paid for stands as '" + (stood ?? "(nothing)")
+                                            + "' in the game; it was taken out again: FAIL");
+                Unmake(v, made);
+                return verdict;
+            }
+            catch (Exception e)
+            {
+                DealerDirector.Logger?.Error(e);
+                Unmake(v, made);
+                return CarMaking.Failed;
+            }
+        }
+
+        // The model a spawned car is, as its object says; null where the game says nothing.
+        private static string ModelOf(VehicleController car)
+        {
+            return car != null && car.vehicleType != null ? car.vehicleType.vehicleTypeName : null;
+        }
+
+        /// <summary>The model a car of the stock is as the game has it, for the log: the save's entry, and the object where the game has stood it.</summary>
+        public static string StoodAs(string vehicleId)
+        {
+            VehicleInstance v = Vehicle(vehicleId);
+            return (v != null ? v.vehicleTypeName : "no entry") + " in the save, " + (ModelOf(Controller(vehicleId)) ?? "nothing said") + " on the floor";
+        }
+
+        // A car made and not to stand: its object destroyed and its entry taken out of the save, the game's own way. A make that threw after the object
+        // stood is found by its vehicle. Never throws.
+        private static void Unmake(VehicleInstance v, VehicleController made)
+        {
+            try
+            {
+                VehicleController controller = made != null ? made : Controller(v.id);
+                OverlayGuard.Release(controller);
+                v.Delete(controller);
+                if (Save != null)
+                {
+                    Save.VehicleInstances.Remove(v);
                 }
             }
-            else
+            catch (Exception e)
             {
-                v.position = At(s);
-                v.rotation = Facing(s);
-                Save.VehicleInstances.Add(v);
+                DealerDirector.Logger?.Error(e);
             }
-            return v.id;
         }
 
         /// <summary>A car leaves the stock: its vehicle is deleted the game's own way.</summary>
