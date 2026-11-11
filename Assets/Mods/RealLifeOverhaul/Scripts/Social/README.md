@@ -7,6 +7,7 @@ The people in the player's life, outings with them, texts and calls, and the mor
 - `SocialDirector.cs`: load and save, the hour and the day, the one scene.
 - `SocialModel.cs`: the records and the rules (game-free).
 - `SocialCatalogue.cs`: names, outings and every line (game-free).
+- `RomanceRules.cs`: who the player can fall for, by the sex they are interested in and an age near their own (game-free).
 - `News.cs`: the log any feature reports to, and the paper.
 - `SocialFollowRules.cs` and `SocialFollowCatalogue.cs`: a call back opens on what the person just texted about, read from their thread; the text the day after an outing (game-free).
 

@@ -192,8 +192,11 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The cast is made from <paramref name="seed"/> if the save has none this version can read.</summary>
-        public static void Load(Dictionary<string, string> data, int day, int daysPerYear, int districts, int seed)
+        /// <summary>
+        /// The cast is made from <paramref name="seed"/> if the save has none this version can read, whoever in it is open to a
+        /// romance made to fit the player (<see cref="SocialCatalogue.MakeCast"/>: their age and what they are interested in).
+        /// </summary>
+        public static void Load(Dictionary<string, string> data, int day, int daysPerYear, int districts, int seed, int playerAge = 0, int interest = RomanceRules.Anyone)
         {
             Reset();
             bool read = false;
@@ -221,7 +224,7 @@ namespace RealLifeOverhaul
             {
                 Reset();
                 CastSeed = seed;
-                SocialCatalogue.MakeCast(People, seed, day, daysPerYear, districts);
+                SocialCatalogue.MakeCast(People, seed, day, daysPerYear, districts, playerAge, interest);
                 Count = SocialRules.BaseCast;
                 Day = day;
             }

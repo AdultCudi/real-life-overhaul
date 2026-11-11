@@ -81,7 +81,7 @@ namespace RealLifeOverhaul.Street
         public SocialTrait Traits;
         public int Mood;           // -2 a rough day ... +2 a great one: today's
         public int Style;          // into StreetRules.Styles: how they talk
-        public bool Compatible;    // a romance would be possible, if the player wants one
+        public bool Compatible;    // open to a romance; it is possible with the player if their sex and age fit (RomanceRules.Fits)
         public bool Taken;         // with somebody else
         public bool Commuter;      // on their way to or from work at the rush hours
         public bool Humour;        // laughs at a joke
@@ -142,13 +142,15 @@ namespace RealLifeOverhaul.Street
         public string Player;            // the player's name
         public readonly List<string> Shops = new List<string>(4);   // the player's own businesses, by name
         public string EventWords;        // RLO Texts' card (data v6): the street event in the card's English words, whatever the game's language
+        public int Interest;             // who the player is interested in: RomanceRules.Anyone, Women or Men
+        public int PlayerAge;            // the player's age in years; 0 when the game does not say (nobody is ruled out for their age then)
 
         public void Clear()
         {
             Day = Hour = Minute = 0;
             Weekend = Raining = Record = Wanted = Unwashed = PoliceNear = SocialOn = Election = false;
             Standing = 55;
-            Recognition = PriceTrend = RateMove = 0;
+            Recognition = PriceTrend = RateMove = Interest = PlayerAge = 0;
             EventToday = NewsDistrict = Player = EventWords = null;
             Candidates.Clear();
             Shops.Clear();

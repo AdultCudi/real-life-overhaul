@@ -13,6 +13,7 @@ Up to 400 people the player knows (Mom, an old friend, and everybody met in the 
 | --- | --- |
 | `SocialModel` | the cast's records, the plan, what waits for an answer: game-free |
 | `SocialRules` | stages, what things are worth, neglect: game-free |
+| `RomanceRules` | who the player can fall for: the sex they are interested in, an age near their own: game-free |
 | `SocialState` | the social part of the save: game-free |
 | `SocialCatalogue` | names, jobs, traits, outings, every line anybody says: game-free |
 | `SocialLife` | what happens between the player and a person, with its consequences in the game; the optional links (ISocialLaw, ISocialWellbeing) |
@@ -115,6 +116,55 @@ The answers are written lines in every RLO Texts pack (`StreetCards.Aged`): no d
 
 Test: Options, Street talk, "Street talk: ask the nearest passer-by their age" (`StreetDirector.TestAge`) stops the nearest person within 8 m with time to talk, today's answer forgotten, and the blue button asks their age. The answer writes `Street talk check (age)`: the age said and how, and for somebody the player knows the People page's age, PASS or FAIL; swapping numbers afterwards writes the same check against their new People page.
 
+## Who the player can fall for (`RomanceRules`)
+
+Players found that the people they could ask out were often twice their age, that more men than women came up whatever they were, and that asking out worked for one character and not for another.
+The cause was one roll.
+Whether somebody "could become more than a friend" (`SocialPerson.Compatible`) was made when the person was dealt, from a coin flip and an age under 50, so it ignored their sex, the player's wish and the player's own age.
+A person met as a street figure or a Flare face kept it while their sex and age were replaced by the figure's (up to 64 in the street, 82 on Flare).
+A stranger's answer to a flirt in the street was a second, unrelated roll (`StreetStranger.Compatible`, adults 21 to 60) that never reached their record, so a warm answer to a flirt could be followed by no Ask them out, ever.
+The sex roll itself is even: about half of everybody dealt is a woman (EconomyCheck `--romance`: 18,000 people of first casts and 16,000 later ones for each wish), so nothing deals men more often.
+What a player sees is a first cast of six, where four of one sex is common, and a roll for being open that did not care which.
+
+One rule now judges everybody, every time it is asked (`SocialRules.Romantic`, game-free; `SocialLife.Romantic` asks it with the player's wish and age of today):
+
+| they are | rule |
+|---|---|
+| open to a romance | `SocialPerson.Compatible`: a roll made when they were dealt, or (a street figure) talked to; nothing else about them follows from it |
+| of a sex the player is interested in | the option **Who you are interested in** (Options, Friends and social life; `family_interest`, saved under the id it had as Family's option; anyone by default): `RomanceRules.SexFits`, a woman for "women", a man for "men", everybody for "anyone" |
+| near the player's age | `RomanceRules.AgeFits`: an adult (`AgeLeast`, 18) no more than `RomanceRules.AgeGap` (8) years above or below the player's age in years (`SocialLife.PlayerYears`), their age being the one the People page shows today (`SocialRules.AgeOn`); with the player's age not known nobody is ruled out for it |
+
+The gap is the one the city's own people pair up by (`Population/LifeRules.AgeGapMost`, which `RomanceRules.AgeGap` reads), so the player is held to what the city's couples keep.
+They pair only within it, and a few in a hundred are of the same sex (`LifeRules.SameSexShare`), as the player's "anyone" allows.
+EconomyCheck runs the population for two years and holds every couple, generated and formed, to the gap.
+
+Where it is asked:
+
+- **The phone.**
+  Ask them out is offered only to a friend or closer the rule allows (`PersonDialog.Menu`), and asking decides by it (`SocialRules.WouldDate(person, romantic)`), then by affection 60 and trust 45 as before.
+  A person's page in People (`PeopleDialog.Page`) says "They could be more than a friend." while the player has no partner and the rule allows, so a player who cannot move on from friends can see who can.
+  Somebody the player is already dating or with is never parted from them because the rule would now say no: only affection and trust end it.
+- **The street.**
+  A stranger is open with `StreetRules.CompatiblePercent` (45 in a hundred), of any age.
+  `StreetRules.Romantic(stranger, facts)` weighs their sex and age against `StreetFacts.Interest` and `PlayerAge`, which `StreetLinks.Facts` fills.
+  The flirt is on offer only for people of the sex the player is interested in (`StreetRules.Offered`) and works only with somebody the rule allows (`StreetRules.Answer`); typed flirting at anyone else gets the usual no.
+  A stranger who swaps numbers brings their roll (`StreetMeet.Compatible`, set on the record in `StreetLinks.MeetInStreet`), so what the phone allows is what the talk showed.
+- **Flare.**
+  `FlarePerson.Compatible` is the rule's answer (`FlareLinks.People`): a post that tags somebody the player could fall for makes a partner jealous, as before.
+- **New people.**
+  `SocialCatalogue.MakeCast`, `MakeNew` and `MakeRolled` take the player's age and wish (the load of a new cast, `SocialDirector.Newcomer`, losing touch with somebody), and whoever is open to a romance is made to fit (`FitToPlayer`): of the sex the player asked for when the caller left the sex open, and of an age from the gap under the player's to the gap over it.
+  The age is rolled from the person's own seed on a stream apart, so no other roll of the cast moves: a cast dealt without the player's age and wish is the cast every version dealt, and the first eight still hold at least two people open to a romance.
+  Everybody not open is a man or a woman as the roll fell, whatever the wish, so the world is not all one sex.
+  When the caller asks for a man or a woman (a figure in the street, a face on Flare), that is who they are.
+- **Saves.**
+  Nothing in a record is changed or saved for it: people already in the cast are judged as they are today, so one who does not fit the player is a friend only (an heir who takes over, an older player and a changed wish work the same way).
+  Going Public: nothing here is shared or sent; the wish, the player's age and the cast are this machine's.
+
+Not changed: Family's own stand-in partner (the "Someone special" contact while Social does not keep the partner) is still 24 to 37, drawn from its seed, but follows the wish (`Partner.Meet(Settings.FamilyInterest)`).
+
+Self-check (Developer diagnostics): `Social check (romance)` for each new person open to a romance, with their sex and age, the player's and the wish, PASS or FAIL.
+The test "Move the chosen person one stage closer" (`SocialDirector.TestAdvance`) asks the same rule before it starts a dating.
+
 ## The relationship model (`SocialRules`)
 
 Per person: familiarity, affection, trust (0 to 100), today's mood, last contact, up to six memories, what they would like to do.
@@ -125,7 +175,7 @@ The People page (`reallife-people`, a contact that is called) shows all of it.
 | acquaintance | numbers were swapped | (drifts: familiarity under 8 and ten days without a word; a call brings them back) |
 | friend | familiarity 30, affection 30, trust 20, two things done together | any of the three 10 below that |
 | close friend | 60 / 60 / 55, five things done together, known ten days | any of the three 10 below that |
-| dating | asked on the phone; they say yes at affection 60 and trust 45, only people marked compatible (half of the six, never fewer than two), one at a time | affection under 35 or trust under 25: they end it |
+| dating | asked on the phone; they say yes at affection 60 and trust 45, only somebody the player could fall for ([the rule](#who-the-player-can-fall-for-romancerules); about half of a new cast of six are open to it, never fewer than two), one at a time | affection under 35 or trust under 25: they end it |
 | partner | asked; yes at affection 80, trust 70, fourteen days of dating and four dates | as above |
 | living together | asked; yes at trust 85 and twenty-one days as partners. Text and state only: a daily mood, their texts | with the break-up |
 

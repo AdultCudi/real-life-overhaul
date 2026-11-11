@@ -238,11 +238,13 @@ namespace RealLifeOverhaul.Meta
                 S("utilities").For("utilities").Main("utilities").Opt("utilities_net_speed", "utilities")
                     .Also("power water electricity bills utility office deposit").Also("utilities_net_speed", "internet speed mbps broadband fibre tech online shop orders"),
                 S("family").For("family").Main("family").Opts("family_at_home", "family_wedding", "family_children", "family_relatives", "family_friction",
-                    "family_interest", "family_year_weeks").Buttons("reallife_family_test_page").Also("partner spouse wife husband marriage kids baby"),
+                    "family_year_weeks").Buttons("reallife_family_test_page").Also("partner spouse wife husband marriage kids baby"),
                 S("partner").Guide("family").Need("family").Opts("family_work", "family_wealth_mood", "family_expect").Also("partner money rich wealth job work half days part time"),
                 S("social").For("social").Main("social").Opts("social_meetings", "social_relationships", "social_outings", "social_contact", "social_texts")
                     .Opt("social_texts_max", "social_texts").Opt("social_composer", "texts", "texts_people")
-                    .Opt("texts_city", "texts", "texts_people").Also("friends dating date people calls typing staff gossip"),
+                    .Opt("texts_city", "texts", "texts_people").FreeOpts("family_interest")
+                    .Also("friends dating date people calls typing staff gossip")
+                    .Also("family_interest", "sexuality orientation preference gay straight bisexual men women both anyone romance romantic flirt ask out date partner someone special"),
                 S("networking").For("networking").Need("social").Opts("social_networking")
                     .Also("networking contacts position recruiter importer wholesaler lawyer investor landlord official favour job lead tip"),
                 S("street").For("street").Main("street_talk").Opts("street_brush").Also("talk passer-by stranger chat directions conversation pedestrian"),

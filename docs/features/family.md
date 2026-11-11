@@ -45,7 +45,7 @@ A partner who moves in, an engagement and a wedding, children, the wider family 
 A partner who moves in, an engagement and a wedding, children, the wider family, and the hard times (`Scripts/Family`).
 Everything is optional: the group "Family" on the options page has a switch for the whole of it and one each for the partner being shown at home, engagement and wedding, children, relatives, and hard times (chores, arguments, separation, divorce: off, and none of them ever happen).
 
-Nothing depends on who anybody is: the partner is whoever the player is seeing, in any pairing, and the default introduction follows the "introduces you to" choice (anyone / women / men).
+Nothing depends on who anybody is: the partner is whoever the player is seeing, in any pairing, and the default introduction follows the "Who you are interested in" choice (anyone / women / men), which the social life follows too.
 
 **What family life puts on screen.** Everything is the game's own interface; the mod draws nothing of its own.
 A prompt ("buy a pushchair", "talk to Sam", "go in to the scan") is the game's panel over a place (`GameUi.DoorPanel`, a `WorldPanel` with one button): over the partner when the prompt is about them (`Follow`), otherwise over the player.
@@ -331,6 +331,7 @@ A screenshot of the partner on a sofa and one of the two on a bench settle the l
 - **Family**: five short pages (household, the family, coming up, memories, budget) and "things to do", one at a time with "do it", "something else" and leaving, which is every decision above.
 - **The partner's texts** come from Family's stand-in partner contact while Social does not keep the partner, and from the partner's own contact in People while it does (`FamilyPhone.PartnerContact`, through `ISocialBridge.PartnerContact`), so they are always a text in a thread and never only a notice.
 - **Someone special** (only while Social does not keep the partner): ask a friend to introduce you to someone, and from then on ring them: a chat a day, an evening out, and the same things to do.
+  Who they introduce follows the option **Who you are interested in** (anyone, women or men: `Settings.FamilyInterest`), which is the social life's too (see [Social life](social.md#who-the-player-can-fall-for-romancerules)).
 - **The in-laws**: a chat, advice, or the favour they asked.
   With the phone contacts option off, "Test: open the Family page" opens the same page face to face.
 

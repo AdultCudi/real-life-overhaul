@@ -193,7 +193,7 @@ namespace RealLifeOverhaul
                 {
                     save.modData = new Dictionary<string, string>();
                 }
-                SocialState.Load(save.modData, save.Day, SocialPlaces.DaysPerYear, SocialPlaces.Districts, Random.Range(1, int.MaxValue));
+                SocialState.Load(save.modData, save.Day, SocialPlaces.DaysPerYear, SocialPlaces.Districts, Random.Range(1, int.MaxValue), SocialLife.PlayerYears(), SocialLife.Interest);
                 News.Load(save.modData);
                 SocialLines.Forget();
                 if (SocialState.Plan.Active && (SocialState.Get(SocialState.Plan.Person) == null || !SocialState.Get(SocialState.Plan.Person).Met))

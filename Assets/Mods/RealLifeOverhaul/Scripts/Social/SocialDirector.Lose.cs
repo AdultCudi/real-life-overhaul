@@ -96,7 +96,7 @@ namespace RealLifeOverhaul
             }
             int index = person.Index;
             SocialPerson next = SocialCatalogue.MakeRolled(index, SocialRules.ReplaceSeed(SocialState.CastSeed, index, person.Seed), origin, -1, SocialLife.Day,
-                SocialPlaces.DaysPerYear, SocialPlaces.Districts, SocialState.People, SocialState.Count);
+                SocialPlaces.DaysPerYear, SocialPlaces.Districts, SocialState.People, SocialState.Count, SocialLife.PlayerYears(), SocialLife.Interest);
             int contacts = SocialPhone.Remove(person);
             Forget(index);
             Instance?.LetGo(person);

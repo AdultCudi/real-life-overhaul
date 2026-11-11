@@ -188,7 +188,7 @@ namespace RealLifeOverhaul.Street
                 case StreetAsk.Directions: return true;
                 case StreetAsk.Compliment: return !done && (m == null || !m.Complimented);
                 case StreetAsk.Joke: return !done && (m == null || !m.Joked);
-                case StreetAsk.Flirt: return !done && (m == null || !m.Flirted);
+                case StreetAsk.Flirt: return !done && (m == null || !m.Flirted) && RomanceRules.SexFits(f.Interest, c.Who.Female);   // (not with those the player is not interested in)
                 case StreetAsk.Number: return !done && c.Turns >= 1 && f.SocialOn && (m == null || !m.Swapped);
                 case StreetAsk.Invite: return !done && c.Turns >= 1 && f.SocialOn && (m == null || !m.Invited);
                 case StreetAsk.Election: return !done && f.Election;
@@ -235,7 +235,7 @@ namespace RealLifeOverhaul.Street
                     o.Rapport = o.Line == StreetLine.JokeYes ? 1 : -1;
                     break;
                 case StreetAsk.Flirt:
-                    o.Line = s.Taken ? StreetLine.FlirtTaken : s.Compatible && score + luck >= 1 ? StreetLine.FlirtYes : StreetLine.FlirtNo;
+                    o.Line = s.Taken ? StreetLine.FlirtTaken : Romantic(s, f) && score + luck >= 1 ? StreetLine.FlirtYes : StreetLine.FlirtNo;
                     o.Rapport = o.Line == StreetLine.FlirtYes ? 2 : o.Line == StreetLine.FlirtTaken ? 0 : -1;
                     break;
                 case StreetAsk.Election:

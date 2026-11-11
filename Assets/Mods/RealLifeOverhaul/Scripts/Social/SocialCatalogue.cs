@@ -165,9 +165,10 @@ namespace RealLifeOverhaul
         /// <summary>
         /// Rolls the first <see cref="SocialRules.BaseCast"/> people of a new save into the start of
         /// <paramref name="people"/>: Mom, Alex and one person to be met at each place. The same people for a seed, whatever
-        /// the array's length; the slots after them are left as they are.
+        /// the array's length; the slots after them are left as they are. Whoever is open to a romance is then made to fit the
+        /// player (<see cref="FitToPlayer"/>): of the sex <paramref name="interest"/> asks for, near <paramref name="playerAge"/>.
         /// </summary>
-        public static void MakeCast(SocialPerson[] people, int seed, int day, int daysPerYear, int districts)
+        public static void MakeCast(SocialPerson[] people, int seed, int day, int daysPerYear, int districts, int playerAge = 0, int interest = RomanceRules.Anyone)
         {
             var random = new Random(seed);
             daysPerYear = Math.Max(8, daysPerYear);
@@ -240,6 +241,10 @@ namespace RealLifeOverhaul
                         if (p.Compatible)
                         {
                             romances++;
+                            if (FitToPlayer(p, true, playerAge, interest))
+                            {
+                                p.Name = (p.Female ? Women[first[i]] : Men[first[i]]) + " " + Surnames[last[i]];   // (named for the sex they now are)
+                            }
                         }
                         break;
                 }
@@ -279,12 +284,13 @@ namespace RealLifeOverhaul
         /// (<paramref name="sex"/> 1), a man (0) or either (-1), with a full name none of the first <paramref name="count"/>
         /// of <paramref name="people"/> has. Everything else is rolled from the cast's seed and the slot, so the same slot of
         /// a save is the same person on every machine. Never the gym's trainer or retired: the first eight hold those.
-        /// Allocates the person and a few name strings; made once, when somebody is about to be met.
+        /// Open to a romance, they are made to fit the player (<see cref="FitToPlayer"/>). Allocates the person and a few name
+        /// strings; made once, when somebody is about to be met.
         /// </summary>
         public static SocialPerson MakeNew(int index, SocialOrigin origin, int sex, int castSeed, int day, int daysPerYear, int districts,
-            SocialPerson[] people, int count)
+            SocialPerson[] people, int count, int playerAge = 0, int interest = RomanceRules.Anyone)
         {
-            return MakeRolled(index, SocialRules.SlotSeed(castSeed, index), origin, sex, day, daysPerYear, districts, people, count);
+            return MakeRolled(index, SocialRules.SlotSeed(castSeed, index), origin, sex, day, daysPerYear, districts, people, count, playerAge, interest);
         }
 
         /// <summary>
@@ -292,7 +298,7 @@ namespace RealLifeOverhaul
         /// the slot of somebody the player lost touch with (<see cref="SocialRules.ReplaceSeed"/>).
         /// </summary>
         public static SocialPerson MakeRolled(int index, int seed, SocialOrigin origin, int sex, int day, int daysPerYear, int districts,
-            SocialPerson[] people, int count)
+            SocialPerson[] people, int count, int playerAge = 0, int interest = RomanceRules.Anyone)
         {
             var random = new Random(seed);
             daysPerYear = Math.Max(8, daysPerYear);
@@ -317,11 +323,40 @@ namespace RealLifeOverhaul
             p.FreeFrom = shape == 0 ? 17 : shape == 1 ? 14 : 11;
             p.FreeTo = shape == 0 ? 23 : shape == 1 ? 22 : 18;
             p.Compatible = p.Age < 50 && random.Next(2) == 0;
+            FitToPlayer(p, sex < 0, playerAge, interest);   // (before the name: it is of the sex they now are)
             p.Name = FreeName(random, p.Female, people, count);
             p.LastContactDay = day;
             p.StageDay = day;
             p.AgeDay = day;
             return p;
+        }
+
+        private const int FitSalt = 7001;   // theirs alone: the roll of an age near the player's, apart from every roll the cast makes
+
+        /// <summary>
+        /// Makes somebody open to a romance fit the player they will be met by: of the sex the player is interested in (only when
+        /// <paramref name="sexOpen"/>: nobody has asked for one in particular), and near the player's age. The age is rolled from the
+        /// person's own seed and a stream of its own, so no other roll of the cast moves. True if their sex or age changed. With the
+        /// player's age not known (0) and anyone wanted nothing changes. Allocates one generator; made once a person.
+        /// </summary>
+        internal static bool FitToPlayer(SocialPerson p, bool sexOpen, int playerAge, int interest)
+        {
+            if (p == null || !p.Compatible)
+            {
+                return false;
+            }
+            bool changed = false;
+            if (sexOpen && !RomanceRules.SexFits(interest, p.Female))
+            {
+                p.Female = interest == RomanceRules.Women;
+                changed = true;
+            }
+            if (playerAge > 0 && !RomanceRules.AgeFits(p.Age, playerAge))
+            {
+                p.Age = RomanceRules.AgeNear(playerAge, new Random(SocialRules.SlotSeed(p.Seed, FitSalt)).Next());
+                changed = true;
+            }
+            return changed;
         }
 
         // A first name and a surname from both lists that nobody of the cast has yet.

@@ -73,7 +73,7 @@ namespace RealLifeOverhaul
         public int FreeFrom = 17;    // hours of a weekday they can be met between; weekends are 10 to 23 for everyone
         public int FreeTo = 23;
         public int Birthday = 1;     // day of the year, 1 to the game's days per year
-        public bool Compatible;      // a romance is possible
+        public bool Compatible;      // open to a romance, a roll when they were made or met; with this player it is SocialRules.Romantic
 
         public bool Met;
         public int MetDay;

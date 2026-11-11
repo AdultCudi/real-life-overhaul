@@ -145,9 +145,22 @@ namespace RealLifeOverhaul
             return person.Together && (person.Affection < BreakUpAffection || person.Trust < BreakUpTrust);
         }
 
-        public static bool WouldDate(SocialPerson person)
+        /// <summary>
+        /// Whether a romance with them is possible for the player now: they are open to one (<see cref="SocialPerson.Compatible"/>, rolled
+        /// when they were made or met), of a sex the player is interested in and near the player's age today (<see cref="RomanceRules"/>).
+        /// Worked out when asked, from saved numbers and the player's own, so a person met under another face, or a player grown older,
+        /// is judged as they are now. <paramref name="playerAge"/> 0: not known, and no age rules anybody out.
+        /// </summary>
+        public static bool Romantic(SocialPerson person, int interest, int playerAge, int day, int daysPerYear)
         {
-            return person.Compatible && !person.Together && person.Stage >= SocialStage.Friend
+            return person != null && person.Compatible
+                   && RomanceRules.Fits(interest, person.Female, AgeOn(person.Age, person.AgeDay, person.Birthday, day, daysPerYear), playerAge);
+        }
+
+        /// <summary><paramref name="romantic"/> is <see cref="Romantic"/>: only somebody the player could fall for says yes, and then at their figures.</summary>
+        public static bool WouldDate(SocialPerson person, bool romantic)
+        {
+            return romantic && !person.Together && person.Stage >= SocialStage.Friend
                    && person.Affection >= DateAffection && person.Trust >= DateTrust;
         }
 
