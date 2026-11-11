@@ -16,8 +16,11 @@ namespace RealLifeOverhaul.GameUi
     /// Notifications.onShow (NotificationsUI.ShowNotification, at the maker's own place in the list, so every other listener
     /// keeps its order: BikeNames first, NoticeLook and the RLO interface after). The gate hands every notification on to the
     /// maker unchanged but one kept back (<see cref="NoticeMuteRules.Muted"/>), which it writes into the game's notification
-    /// list as the maker would: the save's notifications, with its type, key, words and time, when its sender asked for that,
-    /// and not while one with its duplicate id is up. No copy of the template, no text laid out, no sound, fade or coroutine.
+    /// list as the maker would: the save's notifications, with its type, key, words and time, and not while one with its
+    /// duplicate id is up. It goes there whatever its sender asked, as the list is where one that did not pop up is found (a
+    /// sender keeps a toast out of the list because it was seen; the list gets a copy of such a one's words, <see
+    /// cref="NoticeMuteRules.ListData"/>); only a click it carried is not kept, as the list has none. No copy of the template,
+    /// no text laid out, no sound, fade or coroutine.
     /// With every kind on, the gate is not there at all and the game's event is the game's own. A notification held for the
     /// morning line (MorningNews) is not held while its kind is off: it goes straight into the list. No Harmony; nothing sent
     /// and nothing saved of its own, so each Going Public player's switches are their own and the game's list is as it was.
@@ -159,7 +162,8 @@ namespace RealLifeOverhaul.GameUi
 
         /// <summary>
         /// Options > Tests: the samples of every kind, a little apart; then how many popped up and how many went straight into the
-        /// notification list, and a log line that sets what the gate kept back against what the switches say (PASS or FAIL).
+        /// notification list, and a log line that sets what the gate kept back against what the switches say, and the toasts the
+        /// game's maker made against what the gate kept back (none for a kept one, one for each other), PASS or FAIL.
         /// </summary>
         public static void Test()
         {
@@ -185,13 +189,21 @@ namespace RealLifeOverhaul.GameUi
             {
                 expected += NoticeMuteRules.Muted(samples[i], false, mask) ? 1 : 0;
             }
-            int kept = 0;
+            int kept = 0, wrong = 0, counted = 0;
             var gap = new WaitForSecondsRealtime(TestGap);
             for (int i = 0; i < samples.Length; i++)
             {
+                Transform stack = _maker != null ? _maker.container : null;   // the game's toasts: the maker puts each it makes in here at once
+                int toasts = stack != null ? stack.childCount : 0;
                 int before = _kept;   // the event is called at once: what the gate keeps back in this call is this sample, whatever else comes meanwhile
                 Notifications.Show(NotificationType.Info, samples[i], null, TestSeconds);
-                kept += _kept > before ? 1 : 0;
+                bool held = _kept > before;
+                kept += held ? 1 : 0;
+                if (stack != null)
+                {
+                    counted++;
+                    wrong += stack.childCount - toasts == (held ? 0 : 1) ? 0 : 1;   // none made for one kept back, one for one passed on
+                }
                 yield return gap;
             }
             _test = null;
@@ -202,8 +214,13 @@ namespace RealLifeOverhaul.GameUi
                 { "kept", kept.ToString(CultureInfo.InvariantCulture) }
             };
             Notifications.Show(NotificationType.Info, DoneKey, data, DoneSeconds);
+            bool pass = kept == expected && wrong == 0 && counted == samples.Length;
             Logger?.Info("Notice mute test: " + samples.Length + " samples sent, " + kept + " kept from popping up, " + (samples.Length - kept) + " popped up; the switches keep back "
-                         + expected + " (" + Kinds(mask) + ")" + (kept == expected ? ": PASS." : ": FAIL (the gate did not stand in the maker's place; see the lines above)."));
+                         + expected + " (" + Kinds(mask) + "); toasts made as the gate said for " + (counted - wrong) + " of " + samples.Length
+                         + (pass ? ": PASS."
+                             : kept != expected ? ": FAIL (the gate did not stand in the maker's place; see the lines above)."
+                             : counted < samples.Length ? ": FAIL (the game's toast maker was not found, so its toasts were not counted)."
+                             : ": FAIL (a toast was made for a notification kept back, or none for one passed on)."));
         }
 
         // The gate, in the maker's place: every notification goes on to the maker but one kept back. The maker is called after the
@@ -244,8 +261,9 @@ namespace RealLifeOverhaul.GameUi
             }
         }
 
-        // As the game's PlayNotification records one (one with the duplicate id of a toast that is up is dropped, the rest go into
-        // the save's list when the sender asked), with nothing made and no sound.
+        // As the game's PlayNotification records one (one with the duplicate id of a toast that is up is dropped), with nothing made
+        // and no sound; into the save's list whatever its sender asked, since it did not pop up (a copy of the words of one its
+        // sender kept out of the list, NoticeMuteRules.ListData).
         private static void Keep(NotificationsUI maker, NotificationType type, string key, Dictionary<string, string> data, float seconds, string same, bool track)
         {
             _kept++;
@@ -261,16 +279,18 @@ namespace RealLifeOverhaul.GameUi
                 _sameNext = (_sameNext + 1) % SameSlots;
             }
             GameInstance save = SaveGameManager.Current;
-            if (track && save != null && save.notifications != null)
+            if (save != null && save.notifications != null)
             {
-                save.notifications.Enqueue(new Notification { type = type, key = key, notificationData = data, date = TimeHelper.Now() });
+                save.notifications.Enqueue(new Notification { type = type, key = key, notificationData = NoticeMuteRules.ListData(data, track), date = TimeHelper.Now() });
             }
             if (Meta.Dev.Verbose && !_keptSaid)
             {
                 _keptSaid = true;
-                Logger?.Info("Notice check (mute): " + key + " (" + NoticeKinds.Of(key) + ") kept from popping up, "
-                             + (track ? "written into the game's notification list (" + (save != null && save.notifications != null ? save.notifications.Count : 0) + " there)"
-                                      : "kept out of the list as its sender asked") + ": PASS.");
+                bool listed = save != null && save.notifications != null;
+                Logger?.Info("Notice check (mute): " + key + " (" + NoticeKinds.Of(key) + ") kept from popping up"
+                             + (listed ? ", written into the game's notification list (" + save.notifications.Count + " there"
+                                         + (track ? ")" : "; its sender kept it out of the list, which holds a copy of its words)") + ": PASS."
+                                       : ": FAIL (no save's list to write it in)."));
             }
         }
 
