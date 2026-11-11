@@ -103,6 +103,7 @@
         public const string HandlingGripId = "car_handling_grip";
         public const string HandlingSteeringId = "car_handling_steering";
         public const string HandlingBrakesId = "car_handling_brakes";
+        public const string HandlingOtherModsId = "car_handling_modded";
         public const string VisualsEnabledId = "visuals_enabled";
         public const string SaturationId = "visuals_saturation";
         public const string ContrastId = "visuals_contrast";
@@ -487,6 +488,7 @@
         public static int HandlingGrip = 100;        // ...the tyres' grip
         public static int HandlingSteering = 100;    // ...the steering's reach at speed
         public static int HandlingBrakes = 100;      // ...how quickly the brakes build
+        public static bool HandlingOtherMods = true; // a car of another mod that rides stiffer than the game's cars of its kind is given their soft ride
         public static bool PhoneSkin = true;         // modern phone body, wallpaper and status bar
         public static bool PhoneFolders = true;      // the mod's apps in folders on the home screen, and a dock; off, the plain pages of before
         public static bool NoticeLook = true;        // the mod's notifications carry a picture of their kind on a disc of the mod's colour
@@ -933,6 +935,7 @@
             HandlingGrip = Int(modId, HandlingGripId, HandlingGrip);
             HandlingSteering = Int(modId, HandlingSteeringId, HandlingSteering);
             HandlingBrakes = Int(modId, HandlingBrakesId, HandlingBrakes);
+            HandlingOtherMods = Bool(modId, HandlingOtherModsId, HandlingOtherMods);
             VisualsEnabled = Bool(modId, VisualsEnabledId, VisualsEnabled);
             Saturation = Int(modId, SaturationId, Saturation);
             Contrast = Int(modId, ContrastId, Contrast);

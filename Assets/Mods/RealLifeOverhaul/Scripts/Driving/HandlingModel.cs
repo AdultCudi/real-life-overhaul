@@ -27,6 +27,7 @@ namespace RealLifeOverhaul
         public float ReboundKnee;
         public float Application;     // the game's force application point distance (a share of the spring's length)
         public float AntiSquat;       // the game's anti-squat figure
+        public float OwnFrequency;    // Hz the springs rode at as the car came, when they were softened to the game's ride (HandlingModel.Soften); 0 if they were not
     }
 
     /// <summary>What <see cref="HandlingModel.Design"/> needs to know about one car, read once when the player gets in.</summary>
@@ -97,6 +98,8 @@ namespace RealLifeOverhaul
         public float GameRollPerG;
         public float DivePerG;        // degrees of nose dive per g of braking (the same tail squat per g of pull)
         public float GameDivePerG;
+        public float FrontLeft;       // m of length the front springs come down to at the peak of the full pedal's dive, the body's first swing counted; 0 or less: on their stops
+        public bool DiveHeld;         // the level's extra nose dive was held back so that the front springs keep their travel (HandlingModel.FrontKeep)
         public float Overshoot;       // how far past its steady lean a sudden turn swings the body, at this ride's damping
         public float TipG;            // the cornering at which the car would roll over, the swing counted, g
         public float GameTipG;
@@ -201,6 +204,10 @@ namespace RealLifeOverhaul
         public const float GameBrakeOnset = 0.1f;     // s: the game's own brakes.actuationTime on its cars
         public const float InputRate = 60f;           // frames a second the eased pedal moves at (the car's input runs once a frame)
         public const float StopFrom = 100f / 3.6f;    // m/s: the speed the stopping distances are measured from
+        public const float SoftenFrom = 1.1f;         // a car of another mod riding up to this many times the ride asked is left as it is: a change that small shows nothing
+        public const float FrontKeep = 0.33f;         // the share of its travel at rest the front springs keep at the peak of the full pedal's dive: a bump on the way is not their stops
+        private const int DiveSteps = 75;             // physics steps (1.5 s) the full pedal's dive is stepped for: the body's first swing is over by then
+        private const int DiveSplits = 12;            // halvings of the search for the nose dive the front springs' travel allows
         public const int SteerKeys = 11;
 
         // m/s at which a steering curve the slider moved is written: close together where the lock falls away.
@@ -360,26 +367,7 @@ namespace RealLifeOverhaul
             }
             else
             {
-                // The compression at rest for the softer (or firmer) rate on the same rest travel: rate = load x slope / (share x length).
-                float wanted = gameRate * ratio / softness;
-                float low = 0.001f;
-                float high = 0.999f;
-                for (int i = 0; i < 40; i++)
-                {
-                    float c = 0.5f * (low + high);
-                    float rate = load * axle.Spring.Slope(c) * (1f - c) / (axle.Spring.Evaluate(c) * gameRest);
-                    if (rate > wanted)
-                    {
-                        low = c;
-                    }
-                    else
-                    {
-                        high = c;
-                    }
-                }
-                float compression = 0.5f * (low + high);
-                s.SpringLength = gameRest / (1f - compression);
-                s.SpringForce = load / axle.Spring.Evaluate(compression);
+                SpringAt(axle.Spring, load, gameRest, gameRate * ratio / softness, out s.SpringForce, out s.SpringLength);
             }
             float settled = RestCompression(axle.Spring, s.SpringForce, load);
             s.Rate = s.SpringForce * axle.Spring.Slope(settled) / s.SpringLength;
@@ -387,6 +375,80 @@ namespace RealLifeOverhaul
             s.RestLength = s.SpringLength - s.Sag;
             s.Frequency = Frequency(s.Rate, load);
             return s.Rate > 1f;
+        }
+
+        // The spring of the curve's shape that holds a load on the travel left to compress at rest and has the rate asked there:
+        // its force fully compressed and its length (the compression at rest for it: rate = load x slope x (1 - c) / (share x rest)).
+        private static void SpringAt(CurveKeys curve, float load, float rest, float rate, out float force, out float length)
+        {
+            float low = 0.001f;
+            float high = 0.999f;
+            for (int i = 0; i < 40; i++)
+            {
+                float c = 0.5f * (low + high);
+                float at = load * curve.Slope(c) * (1f - c) / (curve.Evaluate(c) * rest);
+                if (at > rate)
+                {
+                    low = c;
+                }
+                else
+                {
+                    high = c;
+                }
+            }
+            float compression = 0.5f * (low + high);
+            length = rest / (1f - compression);
+            force = load / curve.Evaluate(compression);
+        }
+
+        /// <summary>
+        /// A car that rides stiffer than the game's cars of its kind (a car of another mod, sprung for the track) given the
+        /// ride of the softest of them: each axle's spring made softer on its own curve to <paramref name="rideHz"/>, at the
+        /// same height at rest (the same travel left to compress, the spring longer), as if the game had built the car so.
+        /// Everything the design takes from the game's own car (roll, dive, turns, damping) is then taken from this softer
+        /// one, so the car wobbles as the game's cars do. An axle within <see cref="SoftenFrom"/> times the ride asked, or
+        /// one the design would refuse, is left as it is. True if an axle was softened. Once a car, before its design.
+        /// </summary>
+        public static bool Soften(CarChassis car, float rideHz)
+        {
+            car.Front.OwnFrequency = 0f;
+            car.Rear.OwnFrequency = 0f;
+            float wheelbase = car.Front.Z - car.Rear.Z;
+            if (!(rideHz > 0.1f) || !(car.Mass > 100f) || !(wheelbase > 1f))
+            {
+                return false;
+            }
+            float weight = car.Mass * G;
+            bool front = SoftenAxle(car.Front, weight * (car.ComZ - car.Rear.Z) / (2f * wheelbase), rideHz);
+            bool rear = SoftenAxle(car.Rear, weight * (car.Front.Z - car.ComZ) / (2f * wheelbase), rideHz);
+            return front || rear;
+        }
+
+        private static bool SoftenAxle(AxleData axle, float load, float rideHz)
+        {
+            if (!Usable(axle) || !(load > 100f))
+            {
+                return false;
+            }
+            float compression = RestCompression(axle.Spring, axle.SpringForce, load);
+            if (!(compression < 0.999f))
+            {
+                return false;
+            }
+            float rate = axle.SpringForce * axle.Spring.Slope(compression) / axle.SpringLength;
+            float own = Frequency(rate, load);
+            if (!(rate > 1f) || !(own > rideHz * SoftenFrom))
+            {
+                return false;
+            }
+            float rest = axle.SpringLength * (1f - compression);
+            float scale = rideHz / own;
+            SpringAt(axle.Spring, load, rest, rate * scale * scale, out float force, out float length);
+            axle.Application = axle.Application * axle.SpringLength / length;   // the force points stand as high above the road as they did
+            axle.OwnFrequency = own;
+            axle.SpringForce = force;
+            axle.SpringLength = length;
+            return true;
         }
 
         private static float Frequency(float rate, float load)
@@ -934,9 +996,9 @@ namespace RealLifeOverhaul
             float gameWeight = car.Mass * G;
             s.GameDivePerG = gameHold - gameWeight * gameArm > 1f ? gameWeight * gameArm / (gameHold - gameWeight * gameArm) * Radian : 90f;
             float game = s.GameDivePerG > 0f ? s.GameDivePerG : 0f;
-            float wanted = game * t.DiveScale / Radian;
             float hold = 2f * s.Front.Rate * a * a + 2f * s.Rear.Rate * b * b;
             float weight = s.Mass * G;
+            float wanted = DiveForTravel(car, t, s, hold, game / Radian, game * t.DiveScale / Radian);
             float arm = wanted * hold / (weight * (1f + wanted));
             float squat = (s.ComHeight - s.RollCentre - arm) / radius;
             squat = squat > 1f ? 1f : squat < -1f ? -1f : squat;
@@ -944,6 +1006,103 @@ namespace RealLifeOverhaul
             s.Rear.AntiSquat = squat;
             float armNow = PitchArm(car, s);
             s.DivePerG = hold - weight * armNow > 1f ? weight * armNow / (hold - weight * armNow) * Radian : 90f;
+        }
+
+        // The level's nose dive per g (radians), held back towards the game's own (floor) where the full pedal's dive would leave the
+        // front springs less than FrontKeep of their travel at rest at the peak of the body's first swing. The handling's lighter dampers
+        // let that swing go further than the game's, and with the extra dive the Vord V150's front end came within 2 cm of its stops at the
+        // game's own brakes (7 cm in the game's own car). Never below the game's own dive. FrontLeft and DiveHeld say what it came to.
+        private static float DiveForTravel(CarChassis car, in HandlingTarget t, HandlingSetup s, float hold, float floor, float wanted)
+        {
+            BrakeRamp(t.BrakeRise, GameBrakeOnset, InputRate, 99f, Felt);
+            float plan = DivePlan(car, t, s);
+            float keep = FrontKeep * s.Front.RestLength;
+            s.DiveHeld = false;
+            s.FrontLeft = DiveLeft(car, s, hold, plan, wanted);
+            if (!(wanted > floor) || s.FrontLeft >= keep)
+            {
+                return wanted;
+            }
+            s.DiveHeld = true;
+            float leftAtFloor = DiveLeft(car, s, hold, plan, floor);
+            if (leftAtFloor <= keep)
+            {
+                s.FrontLeft = leftAtFloor;
+                return floor;
+            }
+            float low = floor;
+            float high = wanted;
+            for (int i = 0; i < DiveSplits; i++)
+            {
+                float middle = 0.5f * (low + high);
+                if (DiveLeft(car, s, hold, plan, middle) >= keep)
+                {
+                    low = middle;
+                }
+                else
+                {
+                    high = middle;
+                }
+            }
+            s.FrontLeft = DiveLeft(car, s, hold, plan, low);
+            return low;
+        }
+
+        // The full pedal the car is built for in g (the game's own on it times the level's share), and the rolling resistance's share of the slowing.
+        private static float DivePlan(CarChassis car, in HandlingTarget t, HandlingSetup s)
+        {
+            float rolling = 2f * (s.Front.Rolling / car.Front.Radius + s.Rear.Rolling / car.Rear.Radius) / (s.Mass * G);
+            return GameBrakeG(car, s.ComHeight, s.GameRollCentre) * t.BrakeFactor + rolling;
+        }
+
+        // The pitch the springs hold, N m per radian.
+        private static float PitchHold(CarChassis car, HandlingSetup s)
+        {
+            float a = car.Front.Z - car.ComZ;
+            float b = car.ComZ - car.Rear.Z;
+            return 2f * s.Front.Rate * a * a + 2f * s.Rear.Rate * b * b;
+        }
+
+        // The length the front spring comes down to at the peak of the full pedal's dive when the body dives dive radians per g (Felt filled).
+        private static float DiveLeft(CarChassis car, HandlingSetup s, float hold, float plan, float dive)
+        {
+            float moved = dive * hold / ((1f + dive) * 2f * (car.Front.Z - car.Rear.Z)) * plan;   // N pressed onto a front wheel when the pedal is full
+            return TravelLeft(car.Front, s.Front, moved);
+        }
+
+        // A front corner stepped as BrakeLag steps it, the weight pressed on it growing with the brake as Felt has it: the least length its
+        // spring comes to. 0 or below is the spring on its stop.
+        private static float TravelLeft(AxleData shape, AxleSetup s, float moved)
+        {
+            float mass = s.Load / G;
+            if (!(mass > 1f))
+            {
+                return s.RestLength;
+            }
+            float at = SettledLength(shape, s.SpringForce, s.SpringLength, s.Load);
+            float previous = at;
+            float speed = 0f;
+            float least = at;
+            for (int i = 0; i < DiveSteps; i++)
+            {
+                float load = Corner(shape, s.SpringForce, s.SpringLength, s.Bump, s.Rebound, at, (previous - at) / Step);
+                previous = at;
+                speed += ((load - moved * Felt[i]) / mass - G) * Step;
+                at += speed * Step;
+                least = at < least ? at : least;
+            }
+            return least;
+        }
+
+        /// <summary>
+        /// The length, in m, the front springs come down to at the peak of the full pedal's dive when the body dives
+        /// <paramref name="degreesPerG"/> degrees per g of braking, on the springs and dampers of a finished design
+        /// (<see cref="Design"/>): 0 or below is the springs on their stops. For the offline checks.
+        /// </summary>
+        public static float FrontLeftAt(CarChassis car, in HandlingTarget t, HandlingSetup s, float degreesPerG)
+        {
+            BrakeRamp(t.BrakeRise, GameBrakeOnset, InputRate, 99f, Felt);
+            return DiveLeft(car, s, PitchHold(car, s), DivePlan(car, t, s), degreesPerG / Radian);
         }
 
         /// <summary>The deceleration in g at which the rear, the body settled in its dive, keeps only <see cref="RearKeep"/> of its load (99 if never).</summary>

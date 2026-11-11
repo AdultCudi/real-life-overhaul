@@ -810,6 +810,10 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Buy\FuelUseRules.cs" Link="Mod\FuelUseRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Buy\CargoMoveRules.cs" Link="Mod\CargoMoveRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Driving\CarCatalogue.cs" Link="Mod\CarCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Driving\HandlingRules.cs" Link="Mod\HandlingRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Driving\HandlingModel.cs" Link="Mod\HandlingModel.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Driving\HandlingTurn.cs" Link="Mod\HandlingTurn.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Driving\CurveKeys.cs" Link="Mod\CurveKeys.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\ProPath.cs" Link="Mod\ProPath.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\WorkModel.cs" Link="Mod\WorkModel.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Careers\Work\OpenHoursRules.cs" Link="Mod\OpenHoursRules.cs" />

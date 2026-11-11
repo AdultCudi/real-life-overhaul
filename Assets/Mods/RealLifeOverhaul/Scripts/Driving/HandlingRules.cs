@@ -59,6 +59,7 @@ namespace RealLifeOverhaul
         public float Steering;       // the steering's reach at speed, times it (the steering slider): 1 is the game's own curve
         public float BrakeFactor;    // the full pedal's deceleration against the game's own brakes on this car
         public float BrakeRise;      // s from nothing to the full pedal, held down
+        public float RideHz;         // the stiffest ride, in Hz, a car of another mod is left with: softer springs are put on a stiffer car (0: it keeps its own)
     }
 
     /// <summary>
@@ -70,6 +71,8 @@ namespace RealLifeOverhaul
         public const float GameMass = 1400f;        // kg: what the game's own cars weigh (the Vord Pony 1200), for the Guide
         public const float BrakeFall = 0.12f;       // s for the brake pedal to come back up from full
         public const float PedalDeadZone = 0.06f;   // just over the 0.05 the game's gearbox reads as "no pedal"
+        public const float SportsRide = 1.7f;       // Hz: the softest ride the game gives a sports car (the Anselmo AF90's 1.71, the Mersaidi MGA GT's 1.74)
+        public const float SoftRide = 0.8f;         // Hz: and a car of any other kind (the Vord V150's 0.76, the limousine's 0.81, the Honza Mimic's 0.79)
 
         /// <summary>The level a choice of the option stands for; anything else is the default.</summary>
         public static HandlingLevel Level(int choice)
@@ -91,10 +94,33 @@ namespace RealLifeOverhaul
             }
         }
 
-        /// <summary>The figures one kind of car is given at one level, with the tuning sliders folded in. Untouched kinds get none.</summary>
-        public static HandlingTarget Target(CarKind kind, HandlingLevel level, in HandlingTuning tuning)
+        /// <summary>
+        /// The stiffest ride, in Hz, a car of another mod keeps at a level: the softest ride the game gives a car of its kind. A
+        /// stiffer one is given softer springs (<see cref="HandlingModel.Soften"/>), so that it wobbles as the game's cars do.
+        /// 0 for Light, which leaves a car's springs as its mod made them, and for a kind the handling leaves alone.
+        /// </summary>
+        public static float RideCeiling(CarKind kind, HandlingLevel level)
+        {
+            if (level != HandlingLevel.Full && level != HandlingLevel.Heavy)
+            {
+                return 0f;
+            }
+            switch (kind)
+            {
+                case CarKind.Untouched: return 0f;
+                case CarKind.Sports: return SportsRide;
+                default: return SoftRide;
+            }
+        }
+
+        /// <summary>
+        /// The figures one kind of car is given at one level, with the tuning sliders folded in. Untouched kinds get none.
+        /// <paramref name="softRide"/> is for a car of another mod: it is also given the kind's ride (<see cref="RideCeiling"/>).
+        /// </summary>
+        public static HandlingTarget Target(CarKind kind, HandlingLevel level, in HandlingTuning tuning, bool softRide = false)
         {
             var t = new HandlingTarget { Mass = KindMass(kind), DamperScale = 1f, RollScale = 1f, DiveScale = 1f, Softness = 1f, Grip = 1f, Steering = 1f, BrakeFactor = 1f };
+            t.RideHz = softRide ? RideCeiling(kind, level) : 0f;
             switch (level)
             {
                 case HandlingLevel.Light:

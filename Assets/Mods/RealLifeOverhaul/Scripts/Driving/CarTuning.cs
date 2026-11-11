@@ -327,11 +327,11 @@ namespace RealLifeOverhaul
             }
         }
 
-        // The handling's level and its sliders as one number; 0 with the handling off.
+        // The handling's level, its sliders and the soft ride for other mods' cars as one number; 0 with the handling off.
         private static long HandlingStamp()
         {
             HandlingLevel level = HandlingRules.Level(Settings.Handling);
-            return level == HandlingLevel.Off ? 0L : (long)level + (Tuning().Stamp << 4);
+            return level == HandlingLevel.Off ? 0L : (long)level + (Tuning().Stamp << 4) + (Settings.HandlingOtherMods ? 1L << 56 : 0L);
         }
 
         private static HandlingTuning Tuning()

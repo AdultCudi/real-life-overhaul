@@ -172,7 +172,7 @@ namespace RealLifeOverhaul.Meta
             Features.Add("driving", "reallife_meta_title_driving")
                 .About("reallife_guide_driving_about").Help("reallife_guide_driving")
                 .Fact("car_examples", () => CarExamples())
-                .Owns(Settings.CarTuningId, Settings.CarTopSpeedId, Settings.CarAccelerationId, Settings.SmoothThrottleId, Settings.SpeedometerId)
+                .Owns(Settings.CarTuningId, Settings.CarTopSpeedId, Settings.CarAccelerationId, Settings.SmoothThrottleId, Settings.SpeedometerId, Settings.HandlingOtherModsId)
                 .Rows("reallife_car_measure")
                 .Fact("throttle_rise", () => Guide.Number(CarModel.ThrottleRise))
                 .Fact("throttle_fall", () => Guide.Number(CarModel.ThrottleFall))

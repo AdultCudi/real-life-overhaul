@@ -231,6 +231,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--vehicle-feel")
+        {
+            VehicleFeelAll();   // a car of another mod given the game's soft ride, and the front springs' travel kept at the full pedal (VehicleFeelChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--bizpace")
         {
             BizPaceAll();   // BizMan's open, switch and tab change alone (BizPaceChecks.cs): RLO_BIZPACE_REPORT=1 prints the figures
@@ -1399,6 +1405,7 @@ internal static partial class Program
         TechFixes();    // the tech sector: a board that cannot hire, a pitch whose meeting never opened, the utilities asked safely, an interview cut short (TechFixChecks.cs)
         TechMoves();    // a tech firm moved by the moving company: its data follows whole, a save left behind is put back, nothing followed with a doubt (TechMoveChecks.cs)
         BusKerb();      // no car but the player's stands in any bus stop: every place's zone, the game's cars gone at once and its lanes gated, every path of the mod asking one question (BusKerbChecks.cs)
+        VehicleFeelAll(); // a car of another mod given the game's soft ride, the front springs' travel kept at the full pedal: the rules, the model, the sources, the texts (VehicleFeelChecks.cs)
         LagSecond();    // the stutter every second: which stretch of the mod's clock the engine's frame time is, and the mod never driving the engine's clock (LagSecondChecks.cs)
         TestShopsAll();   // the test tool that takes businesses over: the pick, the notice, the refusals, the texts (TestShopsChecks.cs)
         BizFactsAll();  // a business and a building on every card of the kit with the valuation and the market value (BizFactsChecks.cs)
