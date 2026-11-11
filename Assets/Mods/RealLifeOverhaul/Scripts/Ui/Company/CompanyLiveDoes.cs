@@ -166,7 +166,7 @@ namespace RealLifeOverhaul.Ui
                     d.AnswerOvertime(a.S, a.A != 0);
                     return true;
                 case CompanyDo.RaisesAll:
-                    d.AnswerAllRaises(a.A == 0 ? RaiseAnswer.Agree : RaiseAnswer.Refuse);
+                    d.AnswerAllRaises(a.A == 0 ? RaiseAnswer.Agree : a.A == 2 ? RaiseAnswer.Less : RaiseAnswer.Refuse);
                     return true;
                 case CompanyDo.SickPolicy:
                     d.SetSickPolicy(a.A);

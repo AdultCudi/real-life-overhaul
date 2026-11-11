@@ -998,6 +998,8 @@ namespace RealLifeOverhaul
                     v => Settings.EconomyCompany = v)
                 .AddToggle(Settings.EconomyCompanyStaffId, "reallife_co_opt_staff", Settings.EconomyCompanyStaff,
                     v => Settings.EconomyCompanyStaff = v)
+                .AddSlider(Settings.EconomyCompanyAgreeUpToId, "reallife_co_opt_agree_up_to", 0, Economy.CompanyCatalogue.AgreeUpToMost, Settings.EconomyCompanyAgreeUpTo,
+                    v => Settings.EconomyCompanyAgreeUpTo = v, Meta.SettingsTable.SliderPercent)
                 .AddToggle(Settings.EconomyCompanyCoverId, "reallife_co_opt_cover", Settings.EconomyCompanyCover,
                     v => Settings.EconomyCompanyCover = v)
                 .AddToggle(Settings.EconomyCompanyMarketingId, "reallife_co_opt_marketing", Settings.EconomyCompanyMarketing,
@@ -1215,6 +1217,7 @@ namespace RealLifeOverhaul
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCompanyLevel,
                     v => Settings.EconomyCompanyLevel = v)
                 .AddButton("reallife_co_test_raise", () => Economy.CompanyDirector.Instance?.TestRaise())
+                .AddButton("reallife_co_test_agree", () => Economy.CompanyDirector.Instance?.TestAgree())
                 .AddButton("reallife_co_test_picked_raise", () => Economy.CompanyDirector.Instance?.TestPickedRaise())
                 .AddButton("reallife_co_test_offer", () => Economy.CompanyDirector.Instance?.TestOffer())
                 .AddButton("reallife_co_test_strike", () => Economy.CompanyDirector.Instance?.TestStrike())

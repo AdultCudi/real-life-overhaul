@@ -62,6 +62,7 @@ The month's budget also limits the supply contracts ([suppliers](suppliers.md)) 
 
 - A figure the player changes in the game after the manager set it (an amount, a price) is taken as the player's: the decision is marked "Changed by you" and the product is left alone until the player hands it back.
 - With a manager answering a kind at a place, the company sends no notice asking the player about it (`ManagerRules.Answers`). A manager's own request or offer is always the player's. With the option off, a post stood down or the kind taken back, the notices ask the player again, and nothing of the game's is left changed by the switch.
+- The company's own agreement of small raises (the option `economy_company_agree_up_to`, [running a business](economy-company.md)) leaves a request to the manager wherever the manager answers raises, so a manager keeps the post whatever the slider says.
 - Money that has moved stays moved.
 
 ## The directory

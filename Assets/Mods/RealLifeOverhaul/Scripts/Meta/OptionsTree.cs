@@ -391,9 +391,12 @@ namespace RealLifeOverhaul.Meta
                     .Also("builder builders construction contractor tender shares stock cement steel bricks timber hedge hedging materials project exposure")),
 
             G("business",
-                S("company").For("economy_company").Need("economy").Main("economy_company").Opts("economy_company_staff", "economy_company_cover",
-                    "economy_company_marketing", "economy_company_tax", "economy_company_hide", "economy_company_licences", "economy_company_level")
-                    .Also("shop wages insurance advertising accountant permits"),
+                S("company").For("economy_company").Need("economy").Main("economy_company").Opts("economy_company_staff")
+                    .Opt("economy_company_agree_up_to", "economy_company_staff")
+                    .Opts("economy_company_cover", "economy_company_marketing", "economy_company_tax", "economy_company_hide", "economy_company_licences", "economy_company_level")
+                    .Also("shop wages insurance advertising accountant permits")
+                    .Also("economy_company_agree_up_to", "raise raises rise pay automatic automatically approve approved accept request requests percent share "
+                        + "manager executive hr staff"),
                 S("rota").For("economy_rota").Opt("economy_rota", "economy_company").Also("schedule shifts opening hours staff"),
                 S("managers").For("economy_managers").Opt("economy_managers", "economy_company")
                     .Also("manager managers regional bureaucracy delegate automate restock orders prices raises hiring report"),

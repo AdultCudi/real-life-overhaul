@@ -170,6 +170,61 @@ namespace RealLifeOverhaul.Economy
             return true;
         }
 
+        // ---------------------------------------------------------------- a request agreed by itself
+
+        /// <summary>
+        /// Whether a manager of the company answers this kind of thing for somebody at a place, so that the company asks nobody: the managers are on, one is there
+        /// and found at work with the kind of work (never for their own request or offer), and the policy lets managers answer it.
+        /// </summary>
+        public static bool Manages(ICompanyDay w, string place, ManagerTask task, string employee)
+        {
+            return w.ManagersOn && w.Managers != null && place != null && ManagerRules.Answers(w.ManagersOn, w.Managers.At(place), task, employee)
+                   && w.PolicyAllows(place, task);
+        }
+
+        /// <summary>
+        /// Whether somebody else of the company answers this request for a raise, so that the option that agrees small ones by itself leaves it be: the place's manager
+        /// where one answers raises (<see cref="Manages"/>), the approver an exception to the pay band waits for, or, where the hierarchy runs and the place has a manager
+        /// at work, the people executive in post, who settles what waits unmet there.
+        /// </summary>
+        public static bool RaiseWithOthers(ICompanyDay w, StaffFile f)
+        {
+            if (Manages(w, f.Place, ManagerTask.Raises, f.Id))
+            {
+                return true;
+            }
+            HierarchyState h = w.Hierarchy;   // null while the hierarchy is off
+            ManagerFile own = h != null && w.Managers != null ? w.Managers.At(f.Place) : null;
+            return h != null && (OpenExceptionFor(h, f.Id)
+                                 || (own != null && own.Seen && w.Managed(f.Place) && w.ExecutiveInPost(EscalationRules.AreaOf(EscalationKind.Demand))));
+        }
+
+        /// <summary>
+        /// Whether a waiting request is agreed by itself under a limit (per cent of the pay, 0 is off): the staff part is on, it asks that share or less and nobody
+        /// else answers it.
+        /// </summary>
+        public static bool AgreesByItself(ICompanyDay w, StaffFile f, int limit)
+        {
+            return w.On(CompanyPart.Staff) && f.AskDay > 0 && limit > 0 && StaffRules.WithinLimit(f, limit) && !RaiseWithOthers(w, f);
+        }
+
+        /// <summary>
+        /// A request agreed by itself, as the player's own Agree is (<see cref="StaffRules.Answer"/>: the going rate, the standing and the rest). The one step the
+        /// director's morning and the run of the checks both take, after the person's day. False, with nothing written, where it is not agreed; else
+        /// <paramref name="raise"/> is what it gave, hundredths an hour.
+        /// </summary>
+        public static bool AgreeByItself(ICompanyDay w, StaffFile f, int limit, int day, out int raise)
+        {
+            raise = 0;
+            if (!AgreesByItself(w, f, limit))
+            {
+                return false;
+            }
+            raise = StaffRules.RaiseFor(f, RaiseAnswer.Agree);
+            StaffRules.Answer(f, RaiseAnswer.Agree, day);
+            return true;
+        }
+
         /// <summary>
         /// The gates a manager's decision of a kind at a place passes, in the director's order: the managers' switch, a manager at the place who has the kind of
         /// work for this kind of place, the policy, the place the company's own, and somebody who can decide today. False at the first that does not.

@@ -111,7 +111,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_co_sick_statutory", "reallife_co_skill_n", "reallife_co_sort_business", "reallife_co_sort_name", "reallife_co_sort_pay",
                 "reallife_co_sort_skill", "reallife_co_sort_standing", "reallife_co_sort_waiting", "reallife_co_staff_agree_all",
                 "reallife_co_staff_answer_by", "reallife_co_staff_asks", "reallife_co_staff_asks_sec", "reallife_co_staff_count_n",
-                "reallife_co_staff_list", "reallife_co_staff_people",
+                "reallife_co_staff_less_all", "reallife_co_staff_list", "reallife_co_staff_people",
                 "reallife_co_staff_refuse_all", "reallife_co_staff_sick", "reallife_co_staff_sick_flat", "reallife_co_staff_title",
                 "reallife_co_staff_under_sec", "reallife_co_strike_called", "reallife_co_strike_do_payment", "reallife_co_strike_do_raise",
                 "reallife_co_strike_do_sit", "reallife_co_strike_effect", "reallife_co_strike_low_sec", "reallife_co_strike_sit",

@@ -118,7 +118,7 @@ namespace RealLifeOverhaul.Ui
             return true;
         }
 
-        // What the panel says changes with the minute, the mood, the week's hours, the pay and whether they are followed.
+        // What the panel says changes with the minute, the mood, the week's hours, the pay (the wage paid, Core/PaidWage) and whether they are followed.
         private int PersonKey(EmployeeInstance who)
         {
             unchecked
@@ -127,7 +127,7 @@ namespace RealLifeOverhaul.Ui
                 k = k * 31 + TimeHelper.CurrentHour * 60 + (int)TimeHelper.CurrentMinute;
                 k = k * 31 + (int)who.satisfaction;
                 k = k * 31 + who.workedHoursThisWeek;
-                k = k * 31 + (int)(who.hourlyWage * 100f);
+                k = k * 31 + WageShown.PaidCents(who);
                 k = k * 31 + (EmployeeFollowLive.Following(who) ? 1 : 0);
                 k = k * 31 + (who.isAbsent ? 1 : 0);
                 return k;
@@ -200,13 +200,14 @@ namespace RealLifeOverhaul.Ui
             }
             sections[1] = new UiInfoSection { Label = UiText.T("reallife_ui_overlay_how"), Rows = how.ToArray() };
 
+            float paid = WageShown.PaidMoney(who);   // what the employee costs an hour at the city's prices with any raise agreed, as My Employees and the Staff page name it
             sections[2] = new UiInfoSection
             {
                 Label = UiText.T("reallife_ui_overlay_pay"),
                 Rows = new[]
                 {
-                    new UiInfoRow { Label = UiText.T("reallife_ui_overlay_wage"), Value = UiText.Fill("reallife_ui_overlay_per_hour_money", "amount", UiText.Money(who.hourlyWage)) },
-                    new UiInfoRow { Label = UiText.T("reallife_ui_overlay_earned"), Value = UiText.Money(OverlayRules.Earned(who.workedHoursThisWeek, who.hourlyWage)) },
+                    new UiInfoRow { Label = UiText.T("reallife_ui_overlay_wage"), Value = UiText.Fill("reallife_ui_overlay_per_hour_money", "amount", UiText.Money(paid)) },
+                    new UiInfoRow { Label = UiText.T("reallife_ui_overlay_earned"), Value = UiText.Money(OverlayRules.Earned(who.workedHoursThisWeek, paid)) },
                     new UiInfoRow { Label = UiText.T("reallife_ui_overlay_page"), Value = UiText.Fill("reallife_ui_overlay_open_page", "name", OverlayRules.Short(name)), Link = true },
                 },
             };

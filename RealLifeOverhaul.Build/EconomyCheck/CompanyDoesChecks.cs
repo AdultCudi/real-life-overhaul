@@ -130,6 +130,7 @@ internal static partial class Program
             Pair(CompanyAct.Of(CompanyDo.OvertimeAnswer, "Elm~7", 1), "AnswerOvertime(Elm~7,True)"),
             Pair(CompanyAct.Of(CompanyDo.RaisesAll, null, 0), "AnswerAllRaises(Agree)"),
             Pair(CompanyAct.Of(CompanyDo.RaisesAll, null, 1), "AnswerAllRaises(Refuse)"),
+            Pair(CompanyAct.Of(CompanyDo.RaisesAll, null, 2), "AnswerAllRaises(Less)"),
             Pair(CompanyAct.Of(CompanyDo.SickPolicy, null, 2), "SetSickPolicy(2)"),
             Pair(CompanyAct.Of(CompanyDo.CoverBuy, "Elm~7", 1, 2), "BuyCover(Elm~7,1,2)"),
             Pair(CompanyAct.Of(CompanyDo.CoverCancel, "Elm~7", 1), "CancelCover(Elm~7,1)"),

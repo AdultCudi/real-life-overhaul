@@ -816,9 +816,9 @@ namespace RealLifeOverhaul.Ui
 
         private static bool Shown(Button b) => b != null && b.gameObject.activeInHierarchy;
 
-        // What a person is paid an hour: the game's wage at the city's prices and any agreed raise (Core/PaidWage), or the
-        // game's own figure for another player's employee, whose pay this machine neither pays nor knows (Going Public).
-        private static float PaidMoney(EmployeeInstance e) => WageShown.Ours(e) ? PaidWage.NowMoney(e.hourlyWage, e.id) : e.hourlyWage;
+        // What a person is paid an hour: the one figure every screen of the mod names (WageShown.PaidMoney: the game's wage at the city's prices
+        // and any agreed raise, or the game's own for another player's employee, Going Public).
+        private static float PaidMoney(EmployeeInstance e) => WageShown.PaidMoney(e);
 
         private static string Wage(EmployeeInstance e) => PaidMoney(e).ToCurrencyFormat();
 

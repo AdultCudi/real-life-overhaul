@@ -940,6 +940,18 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--staff-raises")
+        {
+            StaffRaiseAnswers();   // (Offer less to all, the option that agrees raises by itself and the wage in My Employees' review before hiring, alone: StaffRaiseChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
+        if (args.Length == 1 && args[0] == "--staff-wage")
+        {
+            StaffWageChecks();   // (one wage everywhere, alone: what a page, the game's screens and an employee's panel show is what a day charges: StaffWageChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--hierarchy")
         {
             Hierarchy();   // (the company's hierarchy alone, while working on it: HierarchyChecks.cs)
@@ -1379,6 +1391,7 @@ internal static partial class Program
         Rivals();       // the rival tycoons: growth, pace, bounds, counters, a takeover, a seed, the save and the texts (RivalChecks.cs)
         Wages();        // wages the mod raises: the report's 30 days reproduced, the cap, one rise a period, the repair on load, every write bounded (WageChecks.cs)
         StaffWageChecks();   // one wage everywhere: what every page and the game's own screens show is what a day charges (StaffWageChecks.cs)
+        StaffRaiseAnswers();   // raises answered together and by themselves, and the wage in My Employees' review before hiring (StaffRaiseChecks.cs)
         BrandRec();     // three gyms' recognition over 20 days, tenths shown, mornings missed, a quit influencer's paid posts, paid posts counted and saved (BrandRecChecks.cs)
         DayRoll();      // the game's night kept whole: the report's growing payroll and stuck brand reproduced, unknown goods taken out of the market, hours a stopped night left put right (DayRollChecks.cs)
         Founding();     // the start days of the player's businesses kept across a moving company's move: the report's 0.3 years reproduced, a moved business keeping its age, an unknown one not day 0, estimates, the save line, every feature asking the one place (FoundingChecks.cs)

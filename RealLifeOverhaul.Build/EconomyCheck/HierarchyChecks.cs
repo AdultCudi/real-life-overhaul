@@ -518,7 +518,8 @@ internal static partial class Program
             "hierarchy wiring: raises, offers and hires read the pay band, the largest raise, the days between, the cap and the floor in force, and send what is past them to the approver");
         Check(MemberText(managers, "private void Round(int day, int hour, ManagerTask task)").Contains("CompanyDay.Deciding(")
               && MemberText(dayCode, "public static bool Deciding(").Contains("w.PolicyAllows(place, task)")
-              && MemberText(managers, "internal bool Manages(").Contains("PolicyAllows(ManagedAt(place), task)")
+              && MemberText(managers, "internal bool Manages(").Contains("CompanyDay.Manages(this, place, task, employee)") && MemberText(dayCode, "public static bool Manages(").Contains("w.PolicyAllows(place, task)")
+              && MemberText(ModSource(@"Economy\Company\CompanyDirector.DayWorld.cs"), "bool ICompanyDay.PolicyAllows(").Contains("PolicyAllows(ManagedAt(place), task)")
               && MemberText(managers, "internal int BudgetOf(").Contains("TopUpOf(m)") && MemberText(managers, "private void Hour(int day, int hour)").Contains("HierarchyRules.DigestDue(")
               && MemberText(managers, "public void ManagerLimit(").Contains("StoreOwn(place, "),
             "hierarchy wiring: a switch of the policy stops its kind in every round and asks you again, the budget counts its top-up, the day's notice follows the reports' rule, and a manager's band is the store's rule");

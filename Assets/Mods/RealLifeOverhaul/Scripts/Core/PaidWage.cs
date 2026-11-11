@@ -57,6 +57,15 @@ namespace RealLifeOverhaul
             return Now(hourlyWage, id) / 100f;
         }
 
+        /// <summary>
+        /// What a screen shows somebody costs an hour, hundredths: the paid wage of somebody this machine pays, and the game's own figure for another player's
+        /// (Going Public), whose wage and raise this machine neither pays nor knows.
+        /// </summary>
+        public static int Shown(float hourlyWage, string id, bool ours)
+        {
+            return ours ? Now(hourlyWage, id) : Base(hourlyWage);
+        }
+
         /// <summary>True when what is paid differs from the game's own figure, so a screen showing the game's figure is wrong.</summary>
         public static bool Differs(int baseCents, int paidCents)
         {

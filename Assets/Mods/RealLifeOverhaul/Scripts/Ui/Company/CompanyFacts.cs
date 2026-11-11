@@ -31,7 +31,7 @@ namespace RealLifeOverhaul.Ui
         OfferAnswer,        // the rival's offer to employee S: match (A 1) or let go (A 0)
         StrikeAnswer,       // the strike at place S: raise for all (0), a one-off payment (1), sit it out (2)
         OvertimeAnswer,     // the overtime offered at place S: agree (1) or refuse (0)
-        RaisesAll,          // every raise asked at once: agree (A 0) or refuse (A 1)
+        RaisesAll,          // every raise asked at once: agree (A 0), refuse (A 1) or offer less (A 2)
         SickPolicy,         // sick pay: policy A
         // cover
         CoverBuy,           // cover kind A at place S from insurer B

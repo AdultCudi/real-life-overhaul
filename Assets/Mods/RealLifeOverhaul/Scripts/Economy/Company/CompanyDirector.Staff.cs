@@ -10,6 +10,7 @@ namespace RealLifeOverhaul.Economy
         private readonly List<StaffFile> _fit = new List<StaffFile>(8);      // who a rival would want, this morning
         private readonly List<StaffFile> _leaving = new List<StaffFile>(2);
         private int[] _raisePay = new int[16], _sickPay = new int[16];        // by business, for the day's pass
+        private int _lowTold = -1;      // the limit and strictness (limit * 10 + strictness) the player was last told are under the smallest request, this session
 
         /// <summary>The raise agreed for an employee on top of the game's wage, hundredths an hour; 0 for none or with the staff part off.</summary>
         public int RaiseOf(string id)
@@ -18,11 +19,27 @@ namespace RealLifeOverhaul.Economy
             return f != null ? f.Raise : 0;
         }
 
+        /// <summary>The share of the pay, per cent, up to which a request for a raise is agreed by itself: the option, held to its ends. 0 is off.</summary>
+        private static int AgreeLimit()
+        {
+            return CompanyCatalogue.Clamp(Settings.EconomyCompanyAgreeUpTo, 0, CompanyCatalogue.AgreeUpToMost);
+        }
+
+        /// <summary>The line a request agreed by itself writes with Developer diagnostics on: what was asked against the pay and the limit, and the standing it moved.</summary>
+        private void AgreedLine(StaffFile f, int limit, int raise, int standing)
+        {
+            int paid = System.Math.Max(1, f.Paid - raise);
+            Logger?.Info("Company check (staff, " + f.Name + "): the request for " + raise + " an hour more (hundredths) on " + paid + " is " + raise * 100L / paid
+                         + "% of the pay, inside the limit of " + limit + "%, and nobody else answers it: agreed by itself, standing " + standing + " to " + f.Standing + ": PASS");
+        }
+
         partial void StaffDay(int day)
         {
             CompanyState s = _state;
             int yesterday = day - 1, asked = 0;
             StaffFile firstAsked = null;
+            int limit = AgreeLimit(), agreed = 0, agreedRaise = 0;   // the option that agrees a request by itself (0 is off), and what it did on this pass
+            StaffFile firstAgreed = null;
             if (_raisePay.Length < _shops.Count)
             {
                 _raisePay = new int[_shops.Count * 2];
@@ -57,7 +74,16 @@ namespace RealLifeOverhaul.Economy
                 }
                 int standing = f.Standing;
                 StaffNote note = StaffRules.Day(f, _level, day, CompanyBridges.ComfortAt(f.Place));
-                if (note == StaffNote.Asked && !Manages(f.Place, ManagerTask.Raises, f.Id))   // a manager answers it: nobody is asked
+                if (Verbose && note != StaffNote.None)
+                {
+                    Logger?.Info("Company check (staff, " + f.Name + "): the game's wage at today's prices " + f.Wage + ", agreed raise " + f.Raise
+                                 + ", the going rate " + f.Going + " (hundredths an hour), " + StaffRules.Gap(f.Going, f.Paid) + " thousandths under it for "
+                                 + f.UnderDays + " day(s), strictness " + _level + ", standing " + standing + " to " + f.Standing + ": " + note + ": PASS");
+                }
+                // A request waiting, today's or an older one the going rate has brought inside the limit, that nobody else answers: agreed here, as the player's Agree is.
+                int standingNow = f.Standing, raise;
+                bool agree = CompanyDay.AgreeByItself(this, f, limit, day, out raise);
+                if (!agree && note == StaffNote.Asked && !Manages(f.Place, ManagerTask.Raises, f.Id))   // a manager answers it: nobody is asked
                 {
                     asked++;
                     firstAsked = firstAsked ?? f;
@@ -67,11 +93,15 @@ namespace RealLifeOverhaul.Economy
                     Tell(NotificationType.Warning, "reallife_co_note_raise_lapsed", new Dictionary<string, string> { { "name", f.Name } },
                         TabStaff, "emp:" + f.Id);
                 }
-                if (Verbose && note != StaffNote.None)
+                if (agree)
                 {
-                    Logger?.Info("Company check (staff, " + f.Name + "): the game's wage at today's prices " + f.Wage + ", agreed raise " + f.Raise
-                                 + ", the going rate " + f.Going + " (hundredths an hour), " + StaffRules.Gap(f.Going, f.Paid) + " thousandths under it for "
-                                 + f.UnderDays + " day(s), strictness " + _level + ", standing " + standing + " to " + f.Standing + ": " + note + ": PASS");
+                    agreedRaise += raise;
+                    agreed++;
+                    firstAgreed = firstAgreed ?? f;
+                    if (Verbose)
+                    {
+                        AgreedLine(f, limit, raise, standingNow);
+                    }
                 }
                 if (StaffRules.OfferLapsed(f, day))
                 {
@@ -110,6 +140,33 @@ namespace RealLifeOverhaul.Economy
             else if (asked > 1)
             {
                 Tell(NotificationType.Info, "reallife_co_note_raise_many", new Dictionary<string, string> { { "count", asked.ToString() } }, TabStaff, null);
+            }
+            if (agreed > 0)
+            {
+                Logger?.Info("Company: " + agreed + " request(s) for a raise agreed by themselves on day " + day + ", each asking " + limit
+                             + "% of the pay or less and answered by nobody else: " + agreedRaise + " more an hour in all (hundredths); no wage of the game's is changed.");
+            }
+            if (agreed == 1)
+            {
+                Tell(NotificationType.Success, "reallife_co_note_raise_auto_one", new Dictionary<string, string>
+                {
+                    { "name", firstAgreed.Name }, { "raise", CompanyText.Wage(agreedRaise) }, { "limit", CompanyText.Share(limit * 10) }, { "standing", firstAgreed.Standing.ToString() }
+                }, TabStaff, "emp:" + firstAgreed.Id);
+            }
+            else if (agreed > 1)
+            {
+                Tell(NotificationType.Success, "reallife_co_note_raise_auto_many", new Dictionary<string, string>
+                {
+                    { "count", agreed.ToString() }, { "raise", CompanyText.Wage(agreedRaise) }, { "limit", CompanyText.Share(limit * 10) }
+                }, TabStaff, null);
+            }
+            if (asked > 0 && StaffRules.AgreesNothing(limit, _level) && _lowTold != limit * 10 + _level)
+            {
+                _lowTold = limit * 10 + _level;   // a limit under every request there can be agrees nothing: said once for each limit at each strictness
+                Tell(NotificationType.Info, "reallife_co_note_raise_auto_low", new Dictionary<string, string>
+                {
+                    { "limit", CompanyText.Share(limit * 10) }, { "least", CompanyText.Share(StaffRules.LimitLeast(_level) * 10) }
+                }, TabStaff, null);
             }
             for (int i = 0; i < _leaving.Count; i++)
             {
@@ -434,23 +491,18 @@ namespace RealLifeOverhaul.Economy
             return waiting;
         }
 
+        /// <summary>
+        /// Every request for a raise waiting answered at once, as each one's own answer is: agree, offer less (half of what was asked) or refuse.
+        /// A bonus is paid one by one, so it is not an answer for all.
+        /// </summary>
         public void AnswerAllRaises(RaiseAnswer answer)
         {
             if (!On(CompanyPart.Staff))
             {
                 return;
             }
-            int count = 0, raise = 0;
-            for (int i = 0; i < _state.Staff.Count; i++)
-            {
-                StaffFile f = _state.Staff[i];
-                if (f.AskDay > 0)
-                {
-                    raise += StaffRules.RaiseFor(f, answer);
-                    StaffRules.Answer(f, answer, Save.Day);
-                    count++;
-                }
-            }
+            int raise;
+            int count = StaffRules.AnswerAll(_state.Staff, answer, Save.Day, out raise);
             if (count == 0)
             {
                 return;
@@ -458,7 +510,8 @@ namespace RealLifeOverhaul.Economy
             Logger?.Info("Company: " + count + " request(s) for a raise answered together: " + answer + ", " + raise
                          + " more an hour in all (hundredths); no wage of the game's is changed.");
             Notify(answer == RaiseAnswer.Refuse ? NotificationType.Warning : NotificationType.Success,
-                answer == RaiseAnswer.Refuse ? "reallife_co_note_raise_all_refused" : "reallife_co_note_raise_all_agreed",
+                answer == RaiseAnswer.Refuse ? "reallife_co_note_raise_all_refused"
+                    : answer == RaiseAnswer.Less ? "reallife_co_note_raise_all_less" : "reallife_co_note_raise_all_agreed",
                 new Dictionary<string, string> { { "count", count.ToString() }, { "raise", CompanyText.Wage(raise) } }, 8f);
             Recount();
             Changed();

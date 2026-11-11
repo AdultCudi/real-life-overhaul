@@ -168,6 +168,7 @@ internal static partial class UiSamples
             blocks.Add(CSec(w.T("reallife_co_staff_asks_sec", "Asking for a raise")));
             blocks.Add(CNote(w.F("reallife_co_staff_asks", "{count} people ask for a raise, {amount} an hour between them.", "count", asking.Count.ToString(), "amount", CompanyWorld.Wage(total)), UiRole.WarnText));
             blocks.Add(CBtns(CB(w.T("reallife_co_staff_agree_all", "Agree to all"), UiButtonKind.Primary, UiAction.Alt, CA(CompanyDo.RaisesAll, null, 0), UiIcon.Check),
+                CB(w.T("reallife_co_staff_less_all", "Offer less to all"), UiButtonKind.Secondary, UiAction.Option, CA(CompanyDo.RaisesAll, null, 2)),
                 CB(w.T("reallife_co_staff_refuse_all", "Refuse all"), UiButtonKind.Secondary, UiAction.Count, CA(CompanyDo.RaisesAll, null, 1), UiIcon.Close, false, null, true)));
             var asks = new List<CompanyItem>();
             foreach (CPerson p in asking)

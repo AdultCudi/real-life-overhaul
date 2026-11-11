@@ -235,6 +235,7 @@ namespace RealLifeOverhaul.Ui
                 blocks.Add(Note(CompanyText.T("reallife_co_staff_asks", "count", asks.ToString(), "amount", CompanyText.Wage(perHour)), UiRole.WarnText));
                 blocks.Add(Buttons(
                     Btn(CompanyText.T("reallife_co_staff_agree_all"), UiButtonKind.Primary, CompanyAct.Of(CompanyDo.RaisesAll, null, 0), UiAction.Alt, UiIcon.Check),
+                    Btn(CompanyText.T("reallife_co_staff_less_all"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.RaisesAll, null, 2), UiAction.Option),
                     Btn(CompanyText.T("reallife_co_staff_refuse_all"), UiButtonKind.Secondary, CompanyAct.Of(CompanyDo.RaisesAll, null, 1), UiAction.Count, UiIcon.Close, true)));
                 var asking = new List<CompanyItem>(5);
                 for (int i = 0; i < s.Staff.Count && asking.Count < 5; i++)

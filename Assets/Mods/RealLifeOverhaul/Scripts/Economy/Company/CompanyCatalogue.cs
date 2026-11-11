@@ -95,6 +95,7 @@ namespace RealLifeOverhaul.Economy
         public const int RaiseAnswerDays = 4;                               // days; no answer is a refusal
         public const int RaiseRestDays = 14;                                // days before the same employee asks again
         public const int RaiseLessShare = 50;                               // per cent of the gap "offer less" closes
+        public const int AgreeUpToMost = 50;                                // per cent of the pay: the most the option that agrees a request by itself can be set to (0 is off)
         // A raise for several picked employees at once (the game's My Employees, its mass actions): what can be chosen.
         public static readonly int[] PickedRaisePercents = { 2, 5, 10, 15, 20 };   // per cent of what each is paid an hour
         public static readonly int[] PickedRaiseAmounts = { 25, 50, 100, 200 };    // hundredths an hour, the same for each

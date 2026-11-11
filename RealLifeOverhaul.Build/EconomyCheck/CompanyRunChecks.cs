@@ -50,6 +50,9 @@ internal static partial class Program
         public int Day, Hour;
         public bool ManagersOn = true, HierarchyOn = true;           // the switches (CompanyDay's gates)
         public bool Broke;                                            // the cash is not there today: nothing can be paid
+        public int AgreeLimit;                                        // the option that agrees a request by itself, per cent of the pay: 0 is off (CompanyDay.AgreeByItself)
+        public int Agreed;                                            // requests the option agreed
+        public readonly HashSet<string> Unmanaged = new HashSet<string>();   // places the company does not manage (a business gone public or sold)
         public readonly bool[] PartOff = new bool[5];                // the options of the parts, off
         // What the days did: the changes of state the run asserts, and the NPC side's acts.
         public int LateCounted, LetGo, Hired, Asked, Answered, Bonuses, Speeds, LeaseSpeeds, Offers, Renewals, Holds, ManagerLeases, OwnerLeases, CityRenewals, TrendKept;
@@ -192,6 +195,7 @@ internal static partial class Program
     // The staff part's day: the day's lateness counted from the hours worked against the plan, a person underpaid long enough asks for a raise.
     private static void CoStaff(CoWorld w, int day)
     {
+        var world = new CoDayWorld(w);
         for (int i = 0; i < w.S.Staff.Count; i++)
         {
             StaffFile f = w.S.Staff[i];
@@ -202,6 +206,8 @@ internal static partial class Program
             w.LateCounted += f.LateDays > lateBefore ? 1 : 0;
             StaffNote note = StaffRules.Day(f, 1, day);
             w.Asked += note == StaffNote.Asked ? 1 : 0;
+            int raise;
+            w.Agreed += CompanyDay.AgreeByItself(world, f, w.AgreeLimit, day, out raise) ? 1 : 0;   // the very step the director's morning takes after the person's day
             w.Cash -= StaffRules.Pay(f.Paid, 800);
         }
     }
@@ -855,9 +861,9 @@ internal static partial class Program
             "company run pins: a manager's answer is CompanyDay.Raise (a bonus where a refusal would be, OrBonus, and its wait in the ring, AddSpeed), the let-go is CompanyDay.LetGo, the hire CompanyDay.Hire, lateness is counted by StaffRules.LateDay and an ask comes from StaffRules.Day");
         // The director and the run call the very same entries: each is called from the director's source and from the run's, so that neither can do it another way.
         string runText = RunSource();
-        string[] entries = { "Deciding", "Raise", "Lease", "LeaseShop", "LetGo", "Hire", "HandDownRound", "HandleRound", "Approve", "OwnerAnswers", "OwnerHaggles", "LeaseClosed" };
+        string[] entries = { "Deciding", "Raise", "Lease", "LeaseShop", "LetGo", "Hire", "HandDownRound", "HandleRound", "Approve", "OwnerAnswers", "OwnerHaggles", "LeaseClosed", "AgreeByItself" };
         string missing = string.Empty;
-        string directors = decisions + leases + esc + managers + SourceText(dir, "CompanyDirector.DayWorld.cs");
+        string directors = decisions + leases + esc + managers + staff + SourceText(dir, "CompanyDirector.DayWorld.cs");
         foreach (string entry in entries)
         {
             missing += directors.Contains("CompanyDay." + entry + "(") && runText.Contains("CompanyDay." + entry + "(") ? string.Empty : " " + entry;
