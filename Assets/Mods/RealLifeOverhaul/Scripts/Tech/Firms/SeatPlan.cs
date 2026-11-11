@@ -12,6 +12,16 @@ namespace RealLifeOverhaul.Tech
     public delegate int SeatJudge(SeatShift[] week, int count);
 
     /// <summary>
+    /// A week that fits the desks, as a plan found it: the days it works (a bit each, 0 Monday), the hours of a shift, early or late in the open hours, shortened to
+    /// fit a free run or not, and the weight of the demands it breaks as planned in the open hours alone. <c>Tried</c> is set once it has been placed.
+    /// </summary>
+    public struct SeatWeek
+    {
+        public int Mask, Hours, Score;
+        public bool Late, Shrink, Tried;
+    }
+
+    /// <summary>
     /// One business's week as the seat rule reads it: the hours it is open, the stations (desks) there are and when each is taken, which of them
     /// the hire may stand at and how well each suits their demands (rank 0 is best). Arrays are kept and made again only when they must grow.
     /// Game-free; cost: a few passes over seven days of twenty-four hours for each station, when a hire is seated, never per frame.
@@ -19,12 +29,16 @@ namespace RealLifeOverhaul.Tech
     public sealed class SeatSpace
     {
         public const int Days = 7, Hours = 24, Cells = Days * Hours;
+        public const int WeeksMost = 400;   // the most weeks a plan can find: two passes over seven day counts, two lengths of shift, early and late, and seven starting days (392)
 
         public int Stations;
         public readonly bool[] Open = new bool[Cells];           // [day * 24 + hour] the business is open that hour
         public readonly bool[] DayOpen = new bool[Days];         // the day has an open hour (set by Seal)
         public readonly int[] RunMost = new int[Days];           // scratch: the longest free run on each day over the stations the hire may use
         public readonly int[] Seen = new int[Days];              // scratch: the day sets a plan has tried with one length of shift
+        public readonly SeatWeek[] Weeks = new SeatWeek[WeeksMost];   // scratch: the weeks a plan found that fit the desks, in the order found
+        public readonly SeatShift[] Best = new SeatShift[Days];       // scratch: the week placed so far that breaks the least
+        public int WeekCount, BestCount, BestBroken;                  // scratch: the weeks found, the shifts of the best, the weight of the demands it breaks
         public bool[] Taken = new bool[0];                       // [station * Cells + cell] a shift of somebody stands there
         public bool[] Usable = new bool[0];                      // [station] the hire has the skill and the desk lacks nothing
         public int[] Rank = new int[0];                          // [station] 0 where every wish of the hire for an item is met, else 1
@@ -32,6 +46,7 @@ namespace RealLifeOverhaul.Tech
         /// <summary>Makes room for so many stations and clears everything: no hours, nothing taken, nothing usable.</summary>
         public void Size(int stations)
         {
+            WeekCount = 0;
             Stations = Math.Max(0, stations);
             Array.Clear(Open, 0, Open.Length);
             Array.Clear(DayOpen, 0, DayOpen.Length);
@@ -94,9 +109,11 @@ namespace RealLifeOverhaul.Tech
     /// shift, and nothing gave a hire one (the rota planner refuses a business of over 64 stations or 120 staff, and its managers wrote rotas only
     /// for businesses it reads). Weeks are tried in a fixed order, the usual first (five days of eight hours, then four of ten, six of seven and so
     /// on, the days starting on each weekday, early in the open hours and then late), each asked of the hire's demands through a judge
-    /// (the game's own test of each), and the first that keeps every demand and has a free desk is placed; if none can, the one that breaks the
-    /// least. Nothing of another person's is moved: a hire gets only hours at a desk that nobody has. Game-free, the same answer for the same
-    /// business and hire. Cost: on an event, a pass over the stations and a few dozen weeks tried; never per frame.
+    /// (the game's own test of each), and the first that keeps every demand and has a free desk is placed; if none can, of the weeks that do fit
+    /// the desks the one that breaks the least, as placed. Whether there is a seat never depends on the demands, only on the free hours of the
+    /// desks the hire may use: a demand chooses between the weeks that fit, and is broken, and told, when it must be. Nothing of another person's
+    /// is moved: a hire gets only hours at a desk that nobody has. Game-free, the same answer for the same business and hire. Cost: on an event,
+    /// a pass over the stations and a few dozen weeks tried; never per frame.
     /// </summary>
     public static class SeatPlan
     {
@@ -105,8 +122,8 @@ namespace RealLifeOverhaul.Tech
         public const int TestMost = 200;    // hires the test in Options seats in one press
         public const int ShiftLeast = 2;    // hours: the shortest shift worth writing
         public const int ShiftMost = 12;    // hours in one shift at most (the game's ScheduleHelper.ShiftLengthCap)
-        public const int Tries = 12;        // places tried for weeks that keep every demand, before the best that can be kept is placed
-        public const int DayStart = 8;      // the hour a day's shift starts at where the open hours leave room, so the first hire of a business open all day is not put on the night
+        public const int Tries = 12;        // weeks placed at most for a hire: first those that keep every demand, then the rest from the one that breaks the least
+        public const int DayStart = 8;      // the hour a day's shift starts at where the open hours leave room, so a hire of a business open all day gets a day while any desk has one
 
         public const int Seated = 0, Closed = 1, NoDesk = 2, Full = 3;   // what a plan came to
 
@@ -116,7 +133,8 @@ namespace RealLifeOverhaul.Tech
         /// <summary>
         /// Plans a week for a hire in a space. Returns <see cref="Seated"/> with the shifts in <paramref name="into"/> (at least seven long) and their
         /// number, or why not: <see cref="Closed"/> (the business has no open hour), <see cref="NoDesk"/> (no desk the hire may use) or
-        /// <see cref="Full"/> (desks, but no free run of two hours on any). <paramref name="unmet"/> is the weight of the demands the week breaks.
+        /// <see cref="Full"/> (desks, but the hours free at them hold no week of at least half the hours wanted, whatever the demands).
+        /// <paramref name="unmet"/> is the weight of the demands the week breaks.
         /// </summary>
         public static int Plan(SeatSpace space, int weekHours, SeatJudge judge, SeatShift[] into, out int count, out int unmet)
         {
@@ -146,8 +164,10 @@ namespace RealLifeOverhaul.Tech
                 return Full;
             }
             weekHours = Math.Max(ShiftLeast, weekHours);
-            int bestScore = int.MaxValue, bestMask = 0, bestHours = 0, tried = 0;
-            bool bestLate = false, bestShrink = false;
+            int tried = 0;
+            space.WeekCount = 0;
+            space.BestCount = 0;
+            space.BestBroken = int.MaxValue;
             for (int pass = 0; pass < 2; pass++)
             {
                 bool shrink = pass == 1;
@@ -179,54 +199,92 @@ namespace RealLifeOverhaul.Tech
                                     continue;
                                 }
                                 space.Seen[seen++] = mask;
-                                int n = Nominal(space, mask, hours, late, shrink, into);
-                                if (n == 0)
+                                if (!Fits(space, mask, hours, shrink))
                                 {
-                                    continue;
+                                    continue;   // a day of it has no desk with a free run for the shift: whatever its demands, it cannot be placed
+                                }
+                                int n = Nominal(space, mask, hours, late, shrink, into);
+                                if (n == 0 || !Reaches(space, into, n, weekHours, shrink))
+                                {
+                                    continue;   // or it would hold under half the hours wanted, as placed
                                 }
                                 int score = judge(into, n);
-                                if (score < bestScore)
-                                {
-                                    bestScore = score;
-                                    bestMask = mask;
-                                    bestHours = hours;
-                                    bestLate = late;
-                                    bestShrink = shrink;
-                                }
-                                if (score == 0 && tried < Tries && Fits(space, mask, hours, shrink))
+                                bool placed = false;
+                                if (score == 0 && tried < Tries)
                                 {
                                     tried++;
-                                    if (Place(space, into, n, shrink, late) && Enough(weekHours, into, n) && judge(into, n) == 0)   // the start may have moved to find a free desk
+                                    placed = true;
+                                    if (Place(space, into, n, shrink, late) && Enough(weekHours, into, n))
                                     {
-                                        count = n;
-                                        return Seated;
+                                        int broken = judge(into, n);   // the start may have moved to find a free desk
+                                        if (broken == 0)
+                                        {
+                                            count = n;
+                                            return Seated;
+                                        }
+                                        Keep(space, into, n, broken);
                                     }
+                                }
+                                if (space.WeekCount < SeatSpace.WeeksMost)
+                                {
+                                    space.Weeks[space.WeekCount++] = new SeatWeek { Mask = mask, Hours = hours, Score = score, Late = late, Shrink = shrink, Tried = placed };
                                 }
                             }
                         }
                     }
                 }
             }
-            if (bestScore == int.MaxValue)
+            return Fallback(space, weekHours, judge, into, out count, out unmet);
+        }
+
+        // No week that keeps every demand could be placed: the weeks that fit the desks are placed from the one that breaks the least as planned (the first found
+        // of equals), at most Tries of them, and the one that breaks the least as placed, among these and the weeks placed above, is the answer. Full only if no
+        // week fits at all, so whether there is a seat never depends on the demands.
+        private static int Fallback(SeatSpace space, int weekHours, SeatJudge judge, SeatShift[] into, out int count, out int unmet)
+        {
+            count = 0;
+            unmet = 0;
+            for (int attempt = 0; attempt < Tries && space.BestBroken > 0; attempt++)
             {
-                return Full;
-            }
-            for (int attempt = 0; attempt < 2; attempt++)
-            {
-                bool shrink = attempt == 1 || bestShrink;
-                if (attempt == 1 && bestShrink)
+                int pick = -1;
+                for (int k = 0; k < space.WeekCount; k++)
+                {
+                    if (!space.Weeks[k].Tried && (pick < 0 || space.Weeks[k].Score < space.Weeks[pick].Score))
+                    {
+                        pick = k;
+                    }
+                }
+                if (pick < 0)
                 {
                     break;
                 }
-                int n = Nominal(space, bestMask, bestHours, bestLate, shrink, into);
-                if (n > 0 && Place(space, into, n, shrink, bestLate) && Enough(weekHours, into, n))
+                space.Weeks[pick].Tried = true;
+                SeatWeek w = space.Weeks[pick];
+                int n = Nominal(space, w.Mask, w.Hours, w.Late, w.Shrink, into);
+                if (n > 0 && Place(space, into, n, w.Shrink, w.Late) && Enough(weekHours, into, n))
                 {
-                    count = n;
-                    unmet = judge(into, n);
-                    return Seated;
+                    Keep(space, into, n, judge(into, n));
                 }
             }
-            return Full;
+            if (space.BestCount == 0)
+            {
+                return Full;
+            }
+            Array.Copy(space.Best, into, space.BestCount);
+            count = space.BestCount;
+            unmet = space.BestBroken;
+            return Seated;
+        }
+
+        // A week placed that breaks a demand is an answer if no week keeps them all: of those placed, the one that breaks the least is kept (the first of equals).
+        private static void Keep(SeatSpace space, SeatShift[] week, int count, int broken)
+        {
+            if (broken < space.BestBroken)
+            {
+                space.BestBroken = broken;
+                space.BestCount = count;
+                Array.Copy(week, space.Best, count);
+            }
         }
 
         // True if a week holds at least half the hours wanted: less is a few shifts and not a seat, and the player is better told that no desk is free.
@@ -236,6 +294,20 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; i < count; i++)
             {
                 total += week[i].To - week[i].From;
+            }
+            return total * 2 >= weekHours;
+        }
+
+        // True if a week planned in the open hours would hold at least half the hours wanted once it is placed. Placed, a shift is as long as planned, or with shrink as
+        // long as the longest free run on its day if that is shorter, so this is the total Place will come to and Enough will ask of: a week that cannot reach it is no
+        // candidate, and the weeks tried are weeks that can be written.
+        private static bool Reaches(SeatSpace space, SeatShift[] week, int count, int weekHours, bool shrink)
+        {
+            int total = 0;
+            for (int i = 0; i < count; i++)
+            {
+                int length = week[i].To - week[i].From;
+                total += shrink ? Math.Min(length, space.RunMost[week[i].Day]) : length;
             }
             return total * 2 >= weekHours;
         }
@@ -343,6 +415,7 @@ namespace RealLifeOverhaul.Tech
             {
                 SeatShift w = week[i];
                 int want = w.To - w.From, station = -1, from = 0, length = 0, rank = int.MaxValue;
+                bool planned = false;
                 if (keep >= 0 && FindRun(space, keep, w.Day, want, shrink, late, out int heldFrom, out int heldLength) && heldLength >= want)
                 {
                     station = keep;
@@ -357,13 +430,16 @@ namespace RealLifeOverhaul.Tech
                         {
                             continue;
                         }
-                        if (len > length || (len == length && space.Rank[s] < rank))   // the longest shift, then the best-ranked desk, then the first
+                        bool here = f == w.From;   // free at the hours the week was planned at, which its demands were asked of
+                        // the longest shift, then the best-ranked desk, then one free at the planned hours, then the first
+                        if (len > length || (len == length && (space.Rank[s] < rank || (space.Rank[s] == rank && here && !planned))))
                         {
                             station = s;
                             from = f;
                             length = len;
                             rank = space.Rank[s];
-                            if (rank == 0 && length >= want)
+                            planned = here;
+                            if (rank == 0 && length >= want && planned)
                             {
                                 break;
                             }

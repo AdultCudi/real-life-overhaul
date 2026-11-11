@@ -9,9 +9,12 @@ using RealLifeOverhaul.Tech;
 // refused until somebody left: the file is now kept for every professional the game holds, with no bound to be met as a save grows. And no hire was
 // ever given a shift, the rota planner refusing a business of over 64 stations or 120 staff: a professional at a tech firm is now seated at a free desk
 // with a week of shifts that keeps to their demands (Tech/Firms/SeatPlan, SeatShifts, SeatRound), whenever they were hired and for every way of
-// hiring, as the hour's rounds find them, newest first, a business with no room asked once a day and not for each hire waiting. The reviewers'
-// faults in that work are held too: the studio's genre experience that stopped at 1,200 people, the rounds and the files at a save's scale, the
-// candidate files that dropped a hire's role, and the texts that promised a seat the pass did not give. The rules, the sources and the texts.
+// hiring, as the hour's rounds find them, newest first, a business with no room asked once a day for a kind of hire and not for each hire waiting.
+// What that work answers for is held too: whether there is a seat never depends on a hire's demands, a business's answer holds for a kind of hire and
+// no other (a part-timer is not told what a full week was), a professional the game moves to another business or assigns later is seated there, a
+// second hire of a business open round the clock has another desk's day and not the night of the first, the studio's genre experience that stopped at
+// 1,200 people, the rounds and the files at a save's scale, the candidate files that dropped a hire's role, and the texts, the Guide's included, that
+// promised a seat the pass did not give or denied one it does. The rules, the sources and the texts.
 internal static partial class Program
 {
     private static void TechStaff()
@@ -73,10 +76,10 @@ internal static partial class Program
         Check(v2 == TalentStore.Version && kept.People.Count == 3 && kept.People[0].Id == "emp_0" && kept.People[1].Id == "emp_1" && kept.People[2].Id == "emp_2",
             "tech staff: a file's id twice leaves the first, and a record with no id is dropped, as before");
 
-        // A read is a pass over the line with a set of the ids, not a search of the files read so far for each (it was a square of the number of files).
-        // A limit on the time cannot tell the two apart at ten thousand short ids (the square read measured 99 ms in a scratch harness, well under any limit a
-        // machine under load allows), so the read is timed at two sizes of ids that share a long stem, where each compare of the square costs most: four times
-        // the files is about four times the time for a pass over the line, and sixteen times for the square.
+        // A read is a pass over the line with a set of the ids, not a search of the files read so far for each (that is a square of the number of files).
+        // A limit on the time cannot tell the two apart at ten thousand short ids (the square read takes well under any limit a machine under load allows),
+        // so the read is timed at two sizes of ids that share a long stem, where each compare of the square costs most: four times the files is about
+        // four times the time for a pass over the line, and sixteen times for the square.
         TalentStore.Read(TalentStore.Write(TechStaffStemmed(2000)), out _);   // (the code compiled and the allocator warm)
         string small = TalentStore.Write(TechStaffStemmed(5000)), large = TalentStore.Write(TechStaffStemmed(20000));
         double fast = TechStaffReadMs(small), slow = TechStaffReadMs(large);
@@ -213,6 +216,22 @@ internal static partial class Program
         }
     }
 
+    // A demand to be free on a weekday (0 Monday): a week with a shift on it breaks the demand, by the weight given.
+    private static SeatJudge TechStaffFreeOn(int day, int weight)
+    {
+        return (w, n) =>
+        {
+            for (int i = 0; i < n; i++)
+            {
+                if (w[i].Day == day)
+                {
+                    return weight;
+                }
+            }
+            return 0;
+        };
+    }
+
     private static void TechStaffSeatRules()
     {
         SeatJudge any = TechStaffJudge(0);
@@ -343,6 +362,76 @@ internal static partial class Program
         }
         Check(same && firstResult == SeatPlan.Seated, "tech staff, seat rule: the same business and hire give the same week every time");
 
+        // a business open round the clock with several desks: the first hires each have a day (8 to 16) on a desk of their own, the same desk and hours every day, and not the
+        // night or the evening of the first desk while another is free for a day; the next, with every day taken, has a night
+        SeatSpace clock = TechStaffRoom(3, 0, 6, 0, 24);
+        var clockDesks = new int[4];
+        var clockStarts = new int[4];
+        bool eachDay = true;
+        for (int hire = 0; hire < 4; hire++)
+        {
+            int got = TechStaffSeat(clock, 40, any, week, out int count, out int broke);
+            eachDay &= got == SeatPlan.Seated && count == 5 && broke == 0 && TechStaffHours(week, count) == 40;
+            clockDesks[hire] = week[0].Station;
+            clockStarts[hire] = week[0].From;
+            for (int i = 1; i < count; i++)
+            {
+                eachDay &= week[i].Station == week[0].Station && week[i].From == week[0].From;
+            }
+        }
+        Check(eachDay && clockStarts[0] == 8 && clockStarts[1] == 8 && clockStarts[2] == 8 && clockDesks[0] == 0 && clockDesks[1] == 1 && clockDesks[2] == 2 && clockStarts[3] != 8
+              && TechStaffTaken(clock) == 4 * 5 * 8,
+            "tech staff, seat rule: at three desks open round the clock the first three hires each have the day (8 to 16) on a desk of their own, desks " + clockDesks[0] + ", " + clockDesks[1] + " and "
+            + clockDesks[2] + " from " + clockStarts[0] + ", " + clockStarts[1] + " and " + clockStarts[2] + ", and only the fourth has a night (from " + clockStarts[3] + "), nothing doubled");
+
+        // a seat never depends on the hire's demands: one desk open Monday to Friday from 8 to 16 with Monday and Friday taken. The hire who must be free on Tuesdays cannot have
+        // the week that suits the desk best, and is seated on the three days left, breaking the demand by its weight; one with no demands is seated on the same days
+        SeatSpace gap = TechStaffRoom(1, 0, 4, 8, 16);
+        gap.Take(0, 0, 8, 16);
+        gap.Take(0, 4, 8, 16);
+        r = TechStaffSeat(gap, 40, TechStaffFreeOn(1, 5), week, out n, out unmet);
+        bool gapDays = r == SeatPlan.Seated && n == 3 && unmet == 5 && TechStaffHours(week, n) == 24;
+        for (int i = 0; i < n; i++)
+        {
+            gapDays &= week[i].Day >= 1 && week[i].Day <= 3 && week[i].Station == 0 && week[i].From == 8 && week[i].To == 16;
+        }
+        SeatSpace gapPlain = TechStaffRoom(1, 0, 4, 8, 16);
+        gapPlain.Take(0, 0, 8, 16);
+        gapPlain.Take(0, 4, 8, 16);
+        int plainResult = SeatPlan.Plan(gapPlain, 40, any, week, out int plainCount, out int plainUnmet);
+        Check(gapDays && plainResult == SeatPlan.Seated && plainCount == 3 && plainUnmet == 0,
+            "tech staff, seat rule: where the week that keeps a hire's demand has no free desk, the hire is seated on the days that are free, breaking it (" + unmet + "), and is not told that every desk is taken");
+
+        // a part-timer fits where a full week does not: sixteen hours are free at the desk, a week of forty needs twenty of them, a week of twenty-four needs twelve
+        SeatSpace few = TechStaffRoom(1, 0, 4, 8, 16);
+        for (int d = 0; d < 3; d++)
+        {
+            few.Take(0, d, 8, 16);
+        }
+        int fullTime = SeatPlan.Plan(few, 40, any, week, out int fullCount, out int fullUnmet);
+        int partResult = TechStaffSeat(few, 24, any, week, out int partCount, out int partUnmet);
+        Check(fullTime == SeatPlan.Full && fullCount == 0 && partResult == SeatPlan.Seated && partCount == 2 && TechStaffHours(week, partCount) == 16 && partUnmet == 0,
+            "tech staff, seat rule: sixteen free hours seat a hire who wants twenty-four a week and not one who wants forty (" + TechStaffHours(week, partCount) + " hours given)");
+
+        // a seat never depends on the demands, not even where every week planned to keep a demand breaks it once it is placed at a desk: a business open on two days and a demand that only a
+        // week at desks breaks. Every week that fits is such a week; the hire is seated all the same, breaking the demand
+        SeatSpace twoDays = TechStaffRoom(1, 5, 6, 8, 16);
+        SeatJudge atDesks = (w, c) =>
+        {
+            for (int i = 0; i < c; i++)
+            {
+                if (w[i].Station >= 0)
+                {
+                    return 3;
+                }
+            }
+            return 0;
+        };
+        r = SeatPlan.Plan(twoDays, 24, atDesks, week, out n, out unmet);
+        int twoPlain = SeatPlan.Plan(twoDays, 24, any, week, out int twoCount, out int twoUnmet);
+        Check(r == SeatPlan.Seated && n == 2 && unmet == 3 && twoPlain == SeatPlan.Seated && twoCount == 2 && twoUnmet == 0,
+            "tech staff, seat rule: where every week planned to keep a demand breaks it once placed at a desk, the hire is still seated, breaking it (" + unmet + "), and is not told that every desk is taken");
+
         // what the hour's pass seats, the one question the start note, the hire form and the pass itself ask: a hire under a skill the tech firm hires under
         // (a lawyer, an HR manager, an account manager at the game's web development agency, and anyone at a firm that is no tech firm, are left to the player)
         int software = (int)FirmKind.Software, games = (int)FirmKind.Games, web = (int)FirmKind.WebAgency, design = (int)FirmKind.Design;
@@ -380,10 +469,11 @@ internal static partial class Program
     private static void TechStaffSeatRandom()
     {
         var rng = new Random(2026);
-        int seated = 0, other = 0;
+        int seated = 0, other = 0, demandsAsked = 0;
         string fault = string.Empty;
         var week = new SeatShift[SeatSpace.Days];
         var again = new SeatShift[SeatSpace.Days];
+        var third = new SeatShift[SeatSpace.Days];
         for (int round = 0; round < 300 && fault.Length == 0; round++)
         {
             int desks = 1 + rng.Next(6);
@@ -419,6 +509,20 @@ internal static partial class Program
                 fault = "round " + round + ": not the same twice";
                 break;
             }
+            for (int kind = 0; kind < 4; kind++)
+            {
+                int whatever = SeatPlan.Plan(room, wanted, TechStaffJudge(kind), third, out int thirdCount, out int thirdUnmet);
+                if (whatever != result)
+                {
+                    fault = "round " + round + ": the answer is " + whatever + " for one demand and " + result + " for another";
+                    break;
+                }
+                demandsAsked++;
+            }
+            if (fault.Length > 0)
+            {
+                break;
+            }
             if (result != SeatPlan.Seated)
             {
                 other++;
@@ -443,32 +547,45 @@ internal static partial class Program
                 fault = ok ? string.Empty : "round " + round + ": shift " + i + " on day " + w.Day + " from " + w.From + " to " + w.To + " at desk " + w.Station;
             }
         }
-        Check(fault.Length == 0 && seated >= 20 && other >= 1,
+        Check(fault.Length == 0 && seated >= 20 && other >= 1 && demandsAsked == 4 * 300,
             "tech staff, seat rule, 300 random businesses: every week is inside the open hours, on a free desk the hire may use, one shift a day of 2 to 12 hours, at least half the hours wanted, "
-            + "and the same twice (" + seated + " seated, " + other + " not; " + (fault.Length == 0 ? "no fault" : fault) + ")");
+            + "the same twice, and whether there is a seat the same whatever the hire's demand (" + seated + " seated, " + other + " not, " + demandsAsked + " demands asked; "
+            + (fault.Length == 0 ? "no fault" : fault) + ")");
     }
 
     // ---------------------------------------------------------------- the hour's rounds
 
-    // The professionals of a pretend save as the rounds look at them, oldest first: where each is assigned, their skill, whether they hold a shift, and what
-    // each business has room for. A business with no room answers that every desk is taken; one with room gives a seat each and loses the room.
+    // The professionals of a pretend save as the rounds look at them, oldest first: where each is assigned (null: nowhere), their skill, the hours a week they want, whether they
+    // hold a shift, what the seating remembers of them (the real SeatMemory, asked the way the game side asks it), and what each business has room for. A business with no room
+    // answers that every desk is taken; one with room gives a seat each and loses the room. A business in Leave is one the seating leaves its people at to the player.
     private sealed class SeatFake : ISeatBoard
     {
         public readonly List<string> Places = new List<string>(), Skills = new List<string>();
-        public readonly List<bool> Shift = new List<bool>(), Known = new List<bool>();
+        public readonly List<bool> Shift = new List<bool>();
+        public readonly List<int> Needs = new List<int>();
+        public readonly List<SeatMemory> Memory = new List<SeatMemory>();
         public readonly Dictionary<string, int> Room = new Dictionary<string, int>(), Tries = new Dictionary<string, int>(), Given = new Dictionary<string, int>();
+        public readonly HashSet<string> Leave = new HashSet<string>();
         public int Begun, Ended, Opened;
         private string _place;
 
-        public void Add(string place, string skill, int hires, bool shift)
+        public void Add(string place, string skill, int hires, bool shift, int need = 40)
         {
             for (int i = 0; i < hires; i++)
             {
                 Places.Add(place);
                 Skills.Add(skill);
                 Shift.Add(shift);
-                Known.Add(false);
+                Needs.Add(need);
+                Memory.Add(new SeatMemory());
             }
+        }
+
+        // What the game does when the player moves somebody to another business (or to none: null): every shift of theirs is taken and the new address is set.
+        public void Move(int i, string place)
+        {
+            Shift[i] = false;
+            Places[i] = place;
         }
 
         public int Count => Places.Count;
@@ -476,21 +593,33 @@ internal static partial class Program
         public bool Open(int i, bool everyone)
         {
             Opened++;
-            return everyone || !Known[i];
+            if (Memory[i].LeftAt(Places[i]) && !Leave.Contains(Places[i]))
+            {
+                Memory[i].Reopen();   // the business is one the seating seats at now
+            }
+            return !Memory[i].Settled(Places[i], everyone);
         }
 
         public string Place(int i) => Places[i];
 
         public string Skill(int i) => Skills[i];
 
+        public int Need(int i) => Needs[i];
+
         public bool Idle(int i, out string place)
         {
-            place = Places[i];
-            if (Shift[i])
+            place = null;
+            if (Leave.Contains(Places[i]))
             {
-                Known[i] = true;
+                Memory[i].Left(Places[i]);
                 return false;
             }
+            if (Shift[i])
+            {
+                Memory[i].Seated(Places[i]);
+                return false;
+            }
+            place = Places[i];
             return true;
         }
 
@@ -507,7 +636,7 @@ internal static partial class Program
             {
                 Room[_place] = room - 1;
                 Shift[i] = true;
-                Known[i] = true;
+                Memory[i].Seated(Places[i]);
                 Given[_place] = (Given.TryGetValue(_place, out int given) ? given : 0) + 1;
                 return SeatPlan.Seated;
             }
@@ -524,7 +653,85 @@ internal static partial class Program
         public int GivenAt(string place) => Given.TryGetValue(place, out int g) ? g : 0;
     }
 
-    // The reviewers' case, both ways round: a large firm with hundreds of hires waiting and not a desk free, and a firm beside it with desks.
+    // One business with real desks, the seat rule itself behind the rounds: each hire is planned by SeatPlan.Plan against the desks, with the hours a week they want and the demands
+    // they hold, and the hours given are taken. Nothing of the game, nothing copied of the rule.
+    private sealed class SeatDesks : ISeatBoard
+    {
+        private const string Here = "ba:street_desks~9";
+        public readonly SeatSpace Space;
+        public readonly List<int> Hours = new List<int>(), Broken = new List<int>();
+        public readonly List<SeatJudge> Judges = new List<SeatJudge>();
+        public readonly List<bool> Shift = new List<bool>();
+        public readonly List<SeatMemory> Memory = new List<SeatMemory>();
+        public readonly List<SeatShift[]> Weeks = new List<SeatShift[]>();
+        private readonly SeatShift[] _week = new SeatShift[SeatSpace.Days];
+        public int Asked;
+
+        public SeatDesks(SeatSpace space)
+        {
+            Space = space;
+        }
+
+        public void Add(int hours, SeatJudge judge)
+        {
+            Hours.Add(hours);
+            Judges.Add(judge);
+            Shift.Add(false);
+            Memory.Add(new SeatMemory());
+            Weeks.Add(new SeatShift[0]);
+            Broken.Add(0);
+        }
+
+        public int Count => Hours.Count;
+
+        public bool Open(int i, bool everyone) => !Memory[i].Settled(Here, everyone);
+
+        public string Place(int i) => Here;
+
+        public string Skill(int i) => TalentCatalogue.Programmer;
+
+        public int Need(int i) => Hours[i];
+
+        public bool Idle(int i, out string place)
+        {
+            place = Shift[i] ? null : Here;
+            if (Shift[i])
+            {
+                Memory[i].Seated(Here);
+            }
+            return !Shift[i];
+        }
+
+        public void Begin(string place)
+        {
+        }
+
+        public int Seat(int i)
+        {
+            Asked++;
+            int result = SeatPlan.Plan(Space, Hours[i], Judges[i], _week, out int count, out int unmet);
+            if (result == SeatPlan.Seated)
+            {
+                var kept = new SeatShift[count];
+                Array.Copy(_week, kept, count);
+                for (int k = 0; k < count; k++)
+                {
+                    Space.Take(_week[k].Station, _week[k].Day, _week[k].From, _week[k].To);
+                }
+                Shift[i] = true;
+                Memory[i].Seated(Here);
+                Weeks[i] = kept;
+                Broken[i] = unmet;
+            }
+            return result;
+        }
+
+        public void End(string place)
+        {
+        }
+    }
+
+    // A large firm with hundreds of hires waiting and not a desk free, and a firm beside it with desks, both ways round; a hire the game moves; a business that answers one kind of hire no.
     private static void TechStaffSeatRounds()
     {
         const string A = "ba:street_first~1", B = "ba:street_second~2";
@@ -621,15 +828,103 @@ internal static partial class Program
         SeatRound.Run(skills, new SeatLedger(), day, SeatPlan.Batch, SeatPlan.Look, false);
         Check(skills.TriesAt(A) == 2, "tech staff, rounds: a firm with no desk for one skill is asked again for another (" + skills.TriesAt(A) + " asked)");
 
+        // a different number of hours a week is its own question too: a business that has no week of forty for the programmers is still asked for one who wants twenty-four
+        var hours = new SeatFake();
+        hours.Add(A, skill, 5, false, 24);
+        hours.Add(A, skill, 5, false, 40);
+        hours.Room[A] = 0;
+        SeatRound.Run(hours, new SeatLedger(), day, SeatPlan.Batch, SeatPlan.Look, false);
+        Check(hours.TriesAt(A) == 2, "tech staff, rounds: a firm with no week of forty for a programmer is asked again for one who wants twenty-four, once for each (" + hours.TriesAt(A) + " asked)");
+
         // what is told: once for a business until it seats somebody, and what a business answered today is not today's tomorrow
         var l = new SeatLedger();
         bool toldFirst = l.Tell(A, SeatPlan.Full), toldAgain = l.Tell(A, SeatPlan.Full), toldOther = l.Tell(A, SeatPlan.NoDesk), toldElse = l.Tell(B, SeatPlan.Full);
         l.Seated(A);
         bool toldAfter = l.Tell(A, SeatPlan.Full);
-        l.Answer(A, skill, 5, SeatPlan.Full);
-        Check(toldFirst && !toldAgain && toldOther && toldElse && toldAfter && l.Answered(A, skill, 5) == SeatPlan.Full && l.Answered(A, skill, 6) == SeatPlan.Seated
-              && l.Answered(B, skill, 5) == SeatPlan.Seated && l.Answered(A, TalentCatalogue.CustomerService, 5) == SeatPlan.Seated,
-            "tech staff, rounds: the player is told once for a business (not for every twenty hires), told again only after it has seated somebody, and its answer holds for the day and one skill");
+        l.Answer(A, skill, 40, 5, SeatPlan.Full);
+        Check(toldFirst && !toldAgain && toldOther && toldElse && toldAfter && l.Answered(A, skill, 40, 5) == SeatPlan.Full && l.Answered(A, skill, 40, 6) == SeatPlan.Seated
+              && l.Answered(B, skill, 40, 5) == SeatPlan.Seated && l.Answered(A, TalentCatalogue.CustomerService, 40, 5) == SeatPlan.Seated && l.Answered(A, skill, 24, 5) == SeatPlan.Seated,
+            "tech staff, rounds: the player is told once for a business (not for every twenty hires), told again only after it has seated somebody, and its answer holds for the day and one kind of hire, a skill and the hours a week");
+
+        // a professional the game moves is looked at where they are now, whatever the seating knew of them at the first business: seated at one firm and moved to another with desks (the
+        // game takes every shift of theirs and sets the new address), left alone at a law firm and moved to a firm, and assigned nowhere and assigned later. The real SeatMemory is what asks.
+        const string L = "ba:street_law~3";
+        var moved = new SeatFake();
+        moved.Leave.Add(L);
+        moved.Add(A, skill, 3, false);      // 0, 1 and 2 at A
+        moved.Add(L, skill, 1, false);      // 3 at the law firm, which the seating leaves to the player
+        moved.Add(null, skill, 1, false);   // 4 assigned to no business
+        moved.Room[A] = 3;
+        moved.Room[B] = 5;
+        var ledgerMoved = new SeatLedger();
+        SeatTally hourOne = SeatRound.Run(moved, ledgerMoved, day, SeatPlan.Batch, SeatPlan.Look, false);
+        bool seatedAtA = hourOne.Seated == 3 && moved.GivenAt(A) == 3 && moved.Shift[0] && moved.Shift[1] && moved.Shift[2] && !moved.Shift[3] && !moved.Shift[4] && hourOne.Looked == 4;
+        moved.Move(1, B);   // the player moves one of them to B with My Employees
+        moved.Move(3, B);   // and the one at the law firm
+        moved.Move(4, B);   // and assigns the one with no business
+        SeatTally hourTwo = SeatRound.Run(moved, ledgerMoved, day, SeatPlan.Batch, SeatPlan.Look, false);
+        Check(seatedAtA && hourTwo.Seated == 3 && hourTwo.Looked == 3 && moved.GivenAt(B) == 3 && moved.Shift[1] && moved.Shift[3] && moved.Shift[4] && moved.GivenAt(A) == 3,
+            "tech staff, rounds: a professional the game moves to another firm, one left alone at a law firm and moved, and one assigned later are each seated where they are now, and the two still at the first firm are not looked at ("
+            + hourTwo.Seated + " seated, " + hourTwo.Looked + " looked at)");
+
+        // while they stay where they are, a shift the player takes away is not given back, and one left alone stays left; the test asks about the first again and not the second
+        var stays = new SeatFake();
+        stays.Leave.Add(L);
+        stays.Add(A, skill, 2, false);
+        stays.Add(L, skill, 1, false);
+        stays.Room[A] = 5;
+        var ledgerStays = new SeatLedger();
+        SeatRound.Run(stays, ledgerStays, day, SeatPlan.Batch, SeatPlan.Look, false);
+        stays.Shift[0] = false;   // the player takes away their shifts in BizMan, without moving them
+        stays.Shift[1] = false;
+        SeatTally later = SeatRound.Run(stays, ledgerStays, day + 1, SeatPlan.Batch, SeatPlan.Look, false);
+        SeatTally again = SeatRound.Run(stays, ledgerStays, day + 1, SeatPlan.TestMost, int.MaxValue, true);
+        Check(later.Seated == 0 && later.Looked == 0 && stays.GivenAt(A) == 4 && again.Seen == 2 && again.Seated == 2 && again.Looked == 2 && !stays.Shift[2],
+            "tech staff, rounds: shifts the player takes away from professionals who stay where they are are not given back by the hour, are by the test, and the one left alone at a law firm is left alone by both ("
+            + later.Seated + " by the hour, " + again.Seated + " by the test)");
+
+        // one left alone at a business is looked at again when the business has become one the seating seats at, with no move: the same address, a business of another type
+        var typed = new SeatFake();
+        typed.Leave.Add(L);
+        typed.Add(L, skill, 1, false);
+        typed.Room[L] = 1;
+        var ledgerTyped = new SeatLedger();
+        SeatTally untyped = SeatRound.Run(typed, ledgerTyped, day, SeatPlan.Batch, SeatPlan.Look, false);
+        SeatTally untypedAgain = SeatRound.Run(typed, ledgerTyped, day, SeatPlan.Batch, SeatPlan.Look, false);
+        typed.Leave.Remove(L);   // the player makes it a tech firm
+        SeatTally retyped = SeatRound.Run(typed, ledgerTyped, day, SeatPlan.Batch, SeatPlan.Look, false);
+        Check(untyped.Seated == 0 && untyped.Looked == 1 && untypedAgain.Looked == 0 && retyped.Seated == 1 && typed.Shift[0] && typed.GivenAt(L) == 1,
+            "tech staff, rounds: a professional left alone at a business is not looked at again while it stays one the seating leaves alone, and is seated when it becomes a tech firm ("
+            + untypedAgain.Looked + " looks while it stayed, " + retyped.Seated + " seated after)");
+
+        // the rounds and the seat rule together, on one business with real desks, open Monday to Friday from 8 to 16. Monday and Friday are taken; the newer hire must be free on Tuesdays and
+        // the older has no demands. The week that suits the newer hire best cannot be placed: they are seated on the three days that are free, breaking the demand, and the older hire is then
+        // asked too (and finds no day left), not skipped for the newer hire's answer
+        SeatSpace gapSpace = TechStaffRoom(1, 0, 4, 8, 16);
+        gapSpace.Take(0, 0, 8, 16);
+        gapSpace.Take(0, 4, 8, 16);
+        var gap = new SeatDesks(gapSpace);
+        gap.Add(40, TechStaffJudge(0));
+        gap.Add(40, TechStaffFreeOn(1, 5));
+        SeatTally gapDay = SeatRound.Run(gap, new SeatLedger(), day, SeatPlan.Batch, SeatPlan.Look, false);
+        Check(gapDay.Seated == 1 && gap.Shift[1] && gap.Broken[1] == 5 && gap.Weeks[1].Length == 3 && !gap.Shift[0] && gap.Asked == 2 && gapDay.Full == 1,
+            "tech staff, rounds: with the days that suit a hire's demand taken, the hire who must be free on Tuesdays is seated on the three days that are free, and the older hire is asked and told that every desk is taken, not skipped ("
+            + gapDay.Seated + " seated, " + gap.Asked + " asked)");
+
+        // a part-timer behind a full week: sixteen free hours seat the hire who wants twenty-four a week, and the hires who want forty are told no once between them
+        SeatSpace fewSpace = TechStaffRoom(1, 0, 4, 8, 16);
+        for (int d = 0; d < 3; d++)
+        {
+            fewSpace.Take(0, d, 8, 16);
+        }
+        var few = new SeatDesks(fewSpace);
+        few.Add(24, TechStaffJudge(0));
+        few.Add(40, TechStaffJudge(0));
+        few.Add(40, TechStaffJudge(0));
+        SeatTally fewDay = SeatRound.Run(few, new SeatLedger(), day, SeatPlan.Batch, SeatPlan.Look, false);
+        Check(fewDay.Seated == 1 && few.Shift[0] && !few.Shift[1] && !few.Shift[2] && fewDay.Full == 2 && few.Asked == 2 && few.Weeks[0].Length == 2,
+            "tech staff, rounds: the hire who wants twenty-four hours a week is seated at the desk with sixteen free hours behind two who want forty, who are asked once between them ("
+            + fewDay.Seated + " seated, " + few.Asked + " asked)");
 
         // a save's worth of hours: 6,000 professionals, an hour with nobody to seat
         var big = new SeatFake();
@@ -914,9 +1209,9 @@ internal static partial class Program
             "tech staff sources: the place's cache asks the same bridges the day asked for each professional");
 
         // the Team tab: whether a professional has a desk and a shift is asked of the business's set of who has one, read once for a page, and its desks counted once
-        Check(teamSource.Contains("TalentGame.StationHolders(person.At, read.Holders)") && teamSource.Contains("read.Desks.For(person.Game)") && !teamSource.Contains("SeatGame.DesksFor(")
+        Check(teamSource.Contains("TalentGame.StationHolders(person.At, read.Holders)") && teamSource.Contains("read.Desks.For(person.Game)") && !deskSource.Contains("DesksFor(")
               && !teamSource.Contains("TalentGame.StationShift(") && !deskSource.Contains("Array.Exists(") && deskSource.Contains("_lists.IndexOf(item.suitableSkills)") && talentGame.Contains("public static void StationHolders("),
-            "tech staff sources: the Team tab reads a business's shifts and desks once for a page and asks them of each row, with no delegate made for a desk of a professional");
+            "tech staff sources: the Team tab reads a business's shifts and desks once for a page and asks them of each row, with no delegate made for a desk of a professional, and the pass over a business's items for one professional is gone");
 
         // the game studio's people have no bound either, and the experience of those who left is let go
         string catalogue = ModSource(@"Tech\Studio\StudioCatalogue.cs"), rules = ModSource(@"Tech\Studio\StudioRules.cs"), studioStore = ModSource(@"Tech\Studio\StudioStore.cs");
@@ -936,6 +1231,22 @@ internal static partial class Program
               && seating.Contains("TalentGame.StationHolders(at, set)") && seating.Contains("SeatShifts.Begin(_reg);") && seating.Contains("SeatShifts.End();") && seating.Contains("_d._seatLedger.Tell(place, reason)")
               && pass.Contains("finally"),
             "tech staff sources: the pass seats from the newest back whenever they were hired, takes its batch as hires seated, asks a business with no room once a day, tells the player once for it, and reads each business's shifts once");
+        // what the pass remembers of a professional is asked of the address the game has on the employee now, kept for that business and no other (SeatMemory, held above by the
+        // rounds); the people's last read, which a move does not make again, is not what the hour looks at, and the file carries no flag for it
+        string openText = TechStaffNested(seating, "public bool Open(int i, bool everyone)");
+        string idleText = TechStaffNested(seating, "public bool Idle(int i, out string place)");
+        string seatText = TechStaffNested(seating, "public int Seat(int i)");
+        string needText = TechStaffNested(seating, "public int Need(int i)");
+        Check(openText.Contains("person.Remembered.Settled(e.assignedAddress, everyone)") && !openText.Contains("person.At") && !openText.Contains(".Place")
+              && openText.Contains("person.Remembered.LeftAt(e.assignedAddress) && SeatsAt(TalentGame.Business(e), person.Skill)") && openText.Contains("person.Remembered.Reopen();")
+              && Occurs(idleText, "person.Remembered.Seated(e.assignedAddress)") == 2 && idleText.Contains("person.Remembered.Left(e.assignedAddress)")
+              && seatText.Contains("person.Remembered.Seated(e.assignedAddress)") && seatText.Contains("person.SeatNeed = week;") && needText.Contains("SeatShifts.WeekHoursFor(person.Game)")
+              && seating.Contains("public string Place(int i) => PlaceOf(_d._people[i]);") && seating.Contains("object.Equals(e.assignedAddress, person.Assigned)")
+              && !seating.Contains("SeatKnown") && !seating.Contains("SeatNoAt") && !ModSource(@"Tech\People\TalentModel.cs").Contains("SeatKnown") && people.Contains("person.Assigned = e.assignedAddress;"),
+            "tech staff sources: the hour asks the address the game has on each professional now, not the last read of the people, and what it remembers of them holds for that business only");
+        Check(game.Contains("public static int WeekHoursFor(EmployeeInstance e)") && Occurs(game, "return HoursOf(least, most);") == 2 && Occurs(game, "BoundHours(hoursWanted, ref least, ref most);") == 2
+              && Occurs(game, "DemandOf(") == 3 && game.Contains("week = ReadDemands(e);"),
+            "tech staff sources: the hours a week a hire's week is planned for and the hours the rounds remember a business's answer by are read from the demands by one rule");
         Check(seating.Contains("SeatRules.Seats(FirmsGame.KindOf(TalentGame.TypeOf(at)), skill)") && seating.Contains("SeatsHire(at, TalentGame.Skill(e))") && seating.Contains("SeatsAt(at, person.Skill)")
               && !seating.Contains("Array.IndexOf(SeatRules.PrimaryOf(kind)") && techText.Contains("director.SeatsHire(place, role.GameSkill)")
               && Occurs(roleForm, "TechText.SeatDesk(_places[_adPlace], r)") == 2 && workForm.Contains("TechText.SeatDesk(_places[place], r)") && !roleForm.Contains("TechText.SeatDesk()") && !workForm.Contains("TechText.SeatDesk()"),
@@ -1052,27 +1363,45 @@ internal static partial class Program
         }
         Check(translated, "tech staff texts: a language that has the notices keeps the same {names} as the English");
 
-        // What's new tells of the fixes, with their fix marks, in some row
-        string[] lines =
+        // What's new tells of the fix in one sentence with its fix mark, in some row, and no row still holds the three sentences it was first told in
+        const string told = "Fixed: programmers and other professionals hired at your tech firms are now given a role, a free desk and a week of shifts automatically, in a firm of any size, "
+                            + "and a data centre crew found through a search firm now starts, however many professionals your save holds.";
+        bool clean = true, once = false, old = false;
+        foreach (KeyValuePair<string, string> row in en)
         {
-            "Fixed: programmers and other professionals hired at your tech firms had no role once your save held 600 of them",
-            "Fixed: a data centre crew found through a search firm never started once your save held 600 professionals",
-            "Fixed: tech staff hired before the update who still have no shift are now seated too"
-        };
-        bool every = true, clean = true;
-        foreach (string line in lines)
-        {
-            every &= WhatsNewHas(en, line);
-            foreach (KeyValuePair<string, string> row in en)
+            if (!row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal))
             {
-                if (row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) && row.Value.Contains(line))
-                {
-                    clean &= !row.Value.Contains("  ") && !row.Value.Contains("!") && !row.Value.Contains("—") && !row.Value.Contains("–") && Occurs(row.Value, line) == 1;
-                }
+                continue;
+            }
+            old |= row.Value.Contains("had no role once your save held 600 of them") || row.Value.Contains("never started once your save held 600 professionals")
+                   || row.Value.Contains("tech staff hired before the update who still have no shift");
+            if (row.Value.Contains(told))
+            {
+                once = Occurs(row.Value, told) == 1;
+                clean &= !row.Value.Contains("  ") && !row.Value.Contains("!") && !row.Value.Contains("—") && !row.Value.Contains("–");
             }
         }
-        Check(every, "tech staff texts: What's new tells of the three fixes, with their fix marks, in some row of the English");
-        Check(clean, "tech staff texts: each fix line is said once in its row, with no double spaces, exclamation marks or dashes");
+        Check(WhatsNewHas(en, told) && once && !old, "tech staff texts: What's new tells of the work in one sentence with its fix mark, said once, in some row of the English");
+        Check(clean, "tech staff texts: the row that tells of it has no double spaces, exclamation marks or dashes");
+
+        // the Guide's three pages say that new tech hires are seated automatically and name the option as the options page spells it, and none still says that nobody works until the
+        // player gives a shift by hand
+        bool guided = true;
+        foreach (string key in new[] { "reallife_guide_tech_sector", "reallife_guide_tech_people", "reallife_guide_tech_jobs" })
+        {
+            guided &= en.TryGetValue(key, out string page) && Occurs(page, "<b>" + label + "</b>") == 1 && page.Contains("seated automatically");
+        }
+        string sector = en.TryGetValue("reallife_guide_tech_sector", out string sectorPage) ? sectorPage : string.Empty;
+        Check(guided && label.Length > 0 && sector.Contains("nobody works without a shift") && !sector.Contains("nobody works until they have a shift"),
+            "tech staff texts: the Guide's tech sector, people and jobs pages each say that a tech hire is seated automatically and name the option \"" + label + "\", and the sector page no longer says that nobody works until a shift is given by hand");
+    }
+
+    // The text of a method of a class nested in the director (its closing brace on a line of its own, indented twelve spaces), from its signature; empty if it is not there.
+    private static string TechStaffNested(string source, string signature)
+    {
+        int at = source.IndexOf(signature, StringComparison.Ordinal);
+        int end = at < 0 ? -1 : source.IndexOf("\n            }", at, StringComparison.Ordinal);
+        return end < 0 ? string.Empty : source.Substring(at, end - at);
     }
 
     private static int TechStaffWords(string text)

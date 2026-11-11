@@ -6,7 +6,7 @@ namespace RealLifeOverhaul.Tech
     /// <summary>
     /// What a day of the people part asks of the rest of the mod about a place of work: the comfort of its office, the burnout its team meeting pushed, and
     /// how hard the rivals pull at its people. They are the same for everyone who works at the place, so each is asked once for a place and a day and kept, not
-    /// once for each of the thousands of professionals on file (the day was a bridge call, and a pass over the market and the rivals, for every one of them).
+    /// once for each of the thousands of professionals on file (each ask is a bridge call and a pass over the market and the rivals, which thousands would repeat).
     /// The pull is asked only when somebody there can be approached. Game-free; a dictionary look for each professional, the bridges once for each place.
     /// </summary>
     public sealed class PlaceDays

@@ -21,10 +21,12 @@ namespace RealLifeOverhaul.Tech
     /// as the player would otherwise do by hand in BizMan for each of them (the rota planner refuses a business of over 64 stations or 120 staff, so a
     /// large firm could not be planned at all). It runs on the game's hour, the newest hires first, at most SeatPlan.Batch hires seated (those seated:
     /// a hire for whom there is no room does not use the batch up) and SeatPlan.Look looked at in an hour (SeatRound). A business that has no room for a
-    /// skill is asked once a day, not for each hire waiting there, and the player is told once for it (SeatLedger). One who is found with a shift is not
-    /// looked at again in the session, so the shifts the player takes away afterwards stay taken away. Nothing of anyone else's schedule is moved, only the
-    /// player's own firms are read, and it is switched off by its option. No frame cost: nothing runs per frame, and an hour with nobody to seat costs one
-    /// look at each professional's flags; the first hours after a load read each business's shifts once (a pass over its week) and look at a thousand at most.
+    /// kind of hire (a skill and the hours a week) is asked once a day, not for each hire of the kind waiting there, and the player is told once for it
+    /// (SeatLedger). One who is found with a shift is not looked at again while the game has them assigned to that business (SeatMemory), so the shifts the
+    /// player takes away afterwards stay taken away; one the game moves to another business, or takes off every business as it does to train them, is looked
+    /// at there, wherever the people were last read. Nothing of anyone else's schedule is moved, only the player's own firms are read, and it is switched
+    /// off by its option. No frame cost: nothing runs per frame, and an hour with nobody to seat costs one comparison for each professional; the first hours
+    /// after a load read each business's shifts once (a pass over its week) and look at a thousand at most.
     /// </summary>
     public sealed partial class TechDirector
     {
@@ -174,15 +176,36 @@ namespace RealLifeOverhaul.Tech
 
             public int Count => _d._people.Count;
 
+            // Where the game has them assigned now (the address on the employee), not where the people were last read: a professional the player moved with My Employees,
+            // or assigned after they were hired, is looked at the next hour. One left to the player is asked again only when the business has become one the pass seats at.
             public bool Open(int i, bool everyone)
             {
                 Person person = _d._people[i];
-                return person.Game != null && person.At != null && !ReferenceEquals(person.SeatNoAt, person.At) && (everyone || !person.File.SeatKnown);
+                EmployeeInstance e = person.Game;
+                if (e == null)
+                {
+                    return false;
+                }
+                if (person.Remembered.LeftAt(e.assignedAddress) && SeatsAt(TalentGame.Business(e), person.Skill))
+                {
+                    person.Remembered.Reopen();
+                }
+                return !person.Remembered.Settled(e.assignedAddress, everyone);
             }
 
-            public string Place(int i) => _d._people[i].File.Place;
+            public string Place(int i) => PlaceOf(_d._people[i]);
 
             public string Skill(int i) => _d._people[i].Skill;
+
+            public int Need(int i)
+            {
+                Person person = _d._people[i];
+                if (person.SeatNeed <= 0)
+                {
+                    person.SeatNeed = SeatShifts.WeekHoursFor(person.Game);
+                }
+                return person.SeatNeed;
+            }
 
             public bool Idle(int i, out string place)
             {
@@ -196,19 +219,19 @@ namespace RealLifeOverhaul.Tech
                 BuildingRegistration at = TalentGame.Business(e);   // where they are assigned now: the read of the people may be an hour old
                 if (!SeatsAt(at, person.Skill))
                 {
-                    person.SeatNoAt = at;   // not a hire the pass seats, until they are somewhere else
+                    person.Remembered.Left(e.assignedAddress);   // not a hire the pass seats, until the game has them somewhere else
                     return false;
                 }
                 string key = TalentGame.Place(at);
                 HashSet<string> holders = HoldersOf(key, at);
                 if (holders.Contains(e.id))
                 {
-                    person.File.SeatKnown = true;
+                    person.Remembered.Seated(e.assignedAddress);
                     return false;
                 }
                 if (TalentGame.StationShift(e, at))
                 {
-                    person.File.SeatKnown = true;   // given one since the day's read (by the player, or the game's rota)
+                    person.Remembered.Seated(e.assignedAddress);   // given one since the day's read (by the player, or the game's rota)
                     holders.Add(e.id);
                     return false;
                 }
@@ -230,7 +253,8 @@ namespace RealLifeOverhaul.Tech
             {
                 Person person = _d._people[i];
                 EmployeeInstance e = person.Game;
-                int result = SeatShifts.Seat(e, out int n, out int h, out int broken);
+                int result = SeatShifts.Seat(e, out int n, out int h, out int broken, out int week);
+                person.SeatNeed = week;   // read again from their demands: the hours the answer is remembered by
                 _group++;
                 if (result == SeatPlan.Seated)
                 {
@@ -238,7 +262,7 @@ namespace RealLifeOverhaul.Tech
                     _shifts += n;
                     _hours += h;
                     _unmet += broken;
-                    person.File.SeatKnown = true;
+                    person.Remembered.Seated(e.assignedAddress);
                     if (_d._seatHolders.TryGetValue(_place, out HashSet<string> holders))
                     {
                         holders.Add(e.id);
@@ -318,6 +342,14 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        // The place key of the business a professional of the game's is assigned to now: the key the people were read with while the game still has them at the
+        // address they were read at (a comparison), else the business of their address looked up afresh (a player's move since).
+        private static string PlaceOf(Person person)
+        {
+            EmployeeInstance e = person.Game;
+            return e == null || object.Equals(e.assignedAddress, person.Assigned) ? person.File.Place : TalentGame.Place(TalentGame.Business(e));
+        }
+
         // How many professionals of a business the pass would seat have no shift at a desk now: the number the player is told. One pass over the people, once for a business.
         private int SeatWaiting(string place, BuildingRegistration reg)
         {
@@ -327,7 +359,7 @@ namespace RealLifeOverhaul.Tech
             for (int i = 0; i < _people.Count; i++)
             {
                 Person person = _people[i];
-                if (person.Game != null && person.File.Place == place && SeatRules.Seats(kind, person.Skill) && (holders == null || !holders.Contains(person.Game.id)))
+                if (person.Game != null && PlaceOf(person) == place && SeatRules.Seats(kind, person.Skill) && (holders == null || !holders.Contains(person.Game.id)))
                 {
                     n++;
                 }

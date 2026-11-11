@@ -7,8 +7,8 @@ namespace RealLifeOverhaul.Tech
     /// The professionals in the save: one line under <see cref="Key"/> in <see cref="TechWriter"/>'s format, a header (h) and
     /// the files (p) and the moves followed (m, which an older version of the mod passes over), fields in the order
     /// <see cref="Write"/> writes them. A file is kept for every professional the game holds, however many (a save of a player's own grows by some forty
-    /// employees a day, so any number would be one a game reached in the end: it was 600, then 10,000), and a read of the line stays linear in its
-    /// size. Only the mod's own payroll, which the player adds to one decision at a time, is bounded, by <see cref="PayrollMost"/>.
+    /// employees a day, so any bound would be met in the end, and in silence), and a read of the line stays linear in its size. Only the mod's own
+    /// payroll, which the player adds to one decision at a time, is bounded, by <see cref="PayrollMost"/>.
     /// </summary>
     public static class TalentStore
     {

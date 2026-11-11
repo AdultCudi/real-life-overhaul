@@ -92,19 +92,21 @@ namespace RealLifeOverhaul.Tech
 
         /// <summary>
         /// Seats one employee in the business last read: <see cref="SeatPlan.Seated"/> with their shifts written, or <see cref="SeatPlan.Closed"/> (no open
-        /// hour), <see cref="SeatPlan.NoDesk"/> (no desk they may use) or <see cref="SeatPlan.Full"/> (no free run of hours), with nothing written.
-        /// <paramref name="unmet"/> is the weight of the schedule demands the week breaks, 0 when it keeps every one.
+        /// hour), <see cref="SeatPlan.NoDesk"/> (no desk they may use) or <see cref="SeatPlan.Full"/> (no week of enough hours in the hours free), with nothing
+        /// written. <paramref name="unmet"/> is the weight of the schedule demands the week breaks, 0 when it keeps every one. <paramref name="week"/> is the
+        /// hours a week the plan was made for (their demands read again), which the answer is remembered by.
         /// </summary>
-        public static int Seat(EmployeeInstance e, out int shifts, out int hours, out int unmet)
+        public static int Seat(EmployeeInstance e, out int shifts, out int hours, out int unmet, out int week)
         {
             shifts = 0;
             hours = 0;
             unmet = 0;
+            week = 0;
             _who = e;
             int result = SeatPlan.Full;
             try
             {
-                int week = ReadDemands(e);
+                week = ReadDemands(e);
                 for (int s = 0; s < Stations.Count; s++)
                 {
                     Item data = Stations[s].ItemCached;
@@ -147,8 +149,49 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // The employee's demands sorted: the schedule demands the judge asks, the wishes to work at an item, and the hours a week the demands leave
-        // (a full week of the usual forty, held between the least and the most any demand of hours allows).
+        /// <summary>
+        /// The hours a week the employee's demands leave, which the week for them is planned for: a full week of the usual forty, held between the least and the most
+        /// any demand of hours allows. Read from the demands alone, with no business and no schedule, so it can be asked of each of thousands of professionals;
+        /// the rounds remember what a business answered by it, since a seat for a part-timer is not a seat for a full week.
+        /// </summary>
+        public static int WeekHoursFor(EmployeeInstance e)
+        {
+            int least = 0, most = int.MaxValue;
+            for (int i = 0; e != null && e.demands != null && i < e.demands.Count; i++)
+            {
+                var hoursWanted = DemandOf(e.demands[i]) as HoursWorkingPerWeek;
+                if (hoursWanted != null)
+                {
+                    BoundHours(hoursWanted, ref least, ref most);
+                }
+            }
+            return HoursOf(least, most);
+        }
+
+        // The game's demand of a name, null for one this build does not know: the week is made without it.
+        private static JobDemand DemandOf(string name)
+        {
+            try
+            {
+                return JobDemandHelper.GetByName(name);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+
+        // What a demand of hours a week asks of the week: no less than its least, no more than its most.
+        private static void BoundHours(HoursWorkingPerWeek demand, ref int least, ref int most)
+        {
+            least = Math.Max(least, demand.MinHours);
+            most = demand.MaxHours > 0 ? Math.Min(most, demand.MaxHours) : most;
+        }
+
+        // A full week of the usual forty, held between the least and the most the demands of hours allow.
+        private static int HoursOf(int least, int most) => Math.Min(Math.Max(TalentCatalogue.WeekHours, least), Math.Max(least, most));
+
+        // The employee's demands sorted: the schedule demands the judge asks, the wishes to work at an item, and the hours a week the demands leave.
         private static int ReadDemands(EmployeeInstance e)
         {
             Kept.Clear();
@@ -156,15 +199,7 @@ namespace RealLifeOverhaul.Tech
             int least = 0, most = int.MaxValue;
             for (int i = 0; e.demands != null && i < e.demands.Count; i++)
             {
-                JobDemand demand;
-                try
-                {
-                    demand = JobDemandHelper.GetByName(e.demands[i]);
-                }
-                catch (Exception)
-                {
-                    demand = null;   // a demand this build does not know: the week is made without it
-                }
+                JobDemand demand = DemandOf(e.demands[i]);
                 if (demand == null)
                 {
                     continue;
@@ -182,11 +217,10 @@ namespace RealLifeOverhaul.Tech
                 var hoursWanted = demand as HoursWorkingPerWeek;
                 if (hoursWanted != null)
                 {
-                    least = Math.Max(least, hoursWanted.MinHours);
-                    most = hoursWanted.MaxHours > 0 ? Math.Min(most, hoursWanted.MaxHours) : most;
+                    BoundHours(hoursWanted, ref least, ref most);
                 }
             }
-            return Math.Min(Math.Max(TalentCatalogue.WeekHours, least), Math.Max(least, most));
+            return HoursOf(least, most);
         }
 
         // 0 for a desk that every wish of the employee to work at an item accepts, 1 for one that one of them refuses (still a desk they may use).

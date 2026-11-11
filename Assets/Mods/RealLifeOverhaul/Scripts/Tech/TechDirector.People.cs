@@ -7,17 +7,19 @@ using UnityEngine;
 
 namespace RealLifeOverhaul.Tech
 {
-    /// <summary>One professional with what was read from the game for them today. Nothing of this is saved.</summary>
+    /// <summary>One professional with what was read from the game for them today, and what the hour's seating knows of them. Nothing of this is saved.</summary>
     public sealed class Person
     {
         public Profile File;
         public EmployeeInstance Game;   // null for a professional on the mod's own payroll
         public BuildingRegistration At;
+        public Address Assigned;        // the address the game had them assigned to when they were read (null: none, or on the mod's payroll)
         public string Name = string.Empty, Business = string.Empty, Skill = string.Empty;
         public int MainPoints;
         public int HoursYesterday;
         public bool Mentored;
-        public BuildingRegistration SeatNoAt;   // the business the hour's seating found them at and left them to the player (kept between reads: asked again only if they move)
+        public readonly SeatMemory Remembered = new SeatMemory();   // where the hour's seating found them with a shift, or left them to the player; kept between reads, for the business only
+        public int SeatNeed;            // the hours a week their demands leave, which seating plans their week for (0 until asked)
     }
 
     /// <summary>The people part: each professional's file, worked through each game day and counted on the hour; and the rises given.</summary>
@@ -202,12 +204,14 @@ namespace RealLifeOverhaul.Tech
             person.File = p;
             person.Game = e;
             person.At = null;
+            person.Assigned = null;
             person.Name = person.Business = person.Skill = string.Empty;
             person.MainPoints = 0;
             person.HoursYesterday = 0;
             person.Mentored = false;
             if (e != null)
             {
+                person.Assigned = e.assignedAddress;
                 person.At = TalentGame.Business(e);
                 person.Name = TalentGame.NameOf(e);
                 person.Skill = TalentGame.Skill(e);

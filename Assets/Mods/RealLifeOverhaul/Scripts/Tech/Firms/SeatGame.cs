@@ -89,18 +89,10 @@ namespace RealLifeOverhaul.Tech
             return back;
         }
 
-        /// <summary>How many placed workstations of a business list a skill of the employee: the desks the game could seat them at. 0 if it cannot be read.</summary>
-        public static int DesksFor(EmployeeInstance employee, BuildingRegistration business)
-        {
-            var desks = new Desks();
-            desks.Read(business);
-            return desks.For(employee);
-        }
-
         /// <summary>
         /// A business's placed workstations by the skills they list, read once in a pass over its items: how many desks each list of skills stands for (the
         /// game's items share one list among all of a kind). Asked of each of thousands of professionals on a page, it is a few comparisons for each, with
-        /// nothing made, where a pass over the items with a delegate made for each was millions of both.
+        /// nothing made; a pass over the items with a delegate made for each would be millions of both.
         /// </summary>
         public sealed class Desks
         {

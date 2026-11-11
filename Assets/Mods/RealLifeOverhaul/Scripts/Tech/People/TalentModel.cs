@@ -50,7 +50,6 @@ namespace RealLifeOverhaul.Tech
         public int Going;                // the going rate for the role and skill, cents an hour
         public int WeekHours;            // hours worked this week, as the game counts them
         public bool Seen;
-        public bool SeatKnown;           // found with a shift at a desk, or given one, in this session: the hour's seating does not look at them again
 
         public bool Payroll => Id.StartsWith("pro:", System.StringComparison.Ordinal);
 
