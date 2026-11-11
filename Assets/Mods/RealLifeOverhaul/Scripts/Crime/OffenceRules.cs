@@ -51,7 +51,8 @@ namespace RealLifeOverhaul
 
     /// <summary>
     /// What shows that the player is carried and not walking, each a cheap read of the game (PlayerRide.Read). One sign is enough:
-    /// the game's own vehicles, its taxi and private driver, the mod's own bus and another mod's ride each set a different one.
+    /// the game's own vehicles, its taxi and private driver and the mod's own bus each set a different one, and a ride of another mod
+    /// shows whichever of them it borrows. A ride that shows none is not told.
     /// </summary>
     internal readonly struct RideFacts
     {
@@ -134,8 +135,8 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// True when something carries the player and they cannot be walking, whoever made the ride: any one sign is enough, so a
-        /// ride is told whichever of them its maker set. No offence on foot is looked for then.
+        /// True when the game shows that something carries the player: any one sign is enough, so a ride is told whichever of them
+        /// its maker set, and one that sets none is not told. No offence on foot is looked for then.
         /// </summary>
         public static bool Carried(RideFacts ride)
         {

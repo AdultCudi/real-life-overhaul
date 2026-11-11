@@ -145,6 +145,7 @@ namespace RealLifeOverhaul.Meta
                 .Fact("car_repair_most", () => Guide.Money(Prices.At(OffscreenCrimes.CarRepairCap)))
                 .Fact("scam_most", () => Guide.Money(Prices.At(OffscreenCrimes.ScamLossMost)))
                 .Fact("fine_drunk", () => Guide.Money(CrimeLaw.DrunkDrivingFine))
+                .Fact("ride_speed", () => Guide.Number(OffenceRules.FootMost * 3.6f))   // km/h: the speed no walker reaches
                 .Owns(Settings.StreetCrimeId)
                 .Preset(Settings.CrimeAgainstPlayerId, 0, 1, 1)
                 .Preset(Settings.OffenceRedLightId, 0, 1, 1)

@@ -5,9 +5,9 @@ namespace RealLifeOverhaul
 {
     /// <summary>
     /// Notices what the player does wrong on the road: the stop line ten times a second, speed and position twice a second,
-    /// and on foot twice a second, but only while nothing carries the player (<see cref="PlayerRide"/>: a few field reads). A
-    /// kind of offence whose switch is off (<see cref="OffenceSwitches"/>) is not looked for. Each look is a few subtractions
-    /// against RoadMap; the one physics query (a crossing?) runs only on foot, with an officer near.
+    /// and on foot twice a second, but only while the game shows nothing carrying the player (<see cref="PlayerRide"/>: a few
+    /// field reads). A kind of offence whose switch is off (<see cref="OffenceSwitches"/>) is not looked for. Each look is a few
+    /// subtractions against RoadMap; the one physics query (a crossing?) runs only on foot, with an officer near.
     /// </summary>
     internal sealed class PlayerOffences
     {
@@ -216,9 +216,10 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
-        /// Looks at the player on foot with an officer close enough to see: against the lights, or in the road. Not while
-        /// something carries them: the seat of a taxi, a private driver's car or a bus is not the road, whoever made the ride.
-        /// A kind whose switch is off is not looked for.
+        /// Looks at the player on foot with an officer close enough to see: against the lights, or in the road. Not while the
+        /// game shows that something carries them (<see cref="PlayerRide"/>): the seat of a taxi, a private driver's car or a bus
+        /// is not the road. A ride of another mod that shows none of the signs is taken for a walk. A kind whose switch is off is
+        /// not looked for.
         /// </summary>
         public Offence OnFoot(PlayerController player, float now, OffenceSwitches on)
         {

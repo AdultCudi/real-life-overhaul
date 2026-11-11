@@ -6,10 +6,11 @@ using UnityEngine.AI;
 namespace RealLifeOverhaul
 {
     /// <summary>
-    /// Reads from the game the signs that something carries the player (<see cref="OffenceRules.Carried"/>), so that nobody
-    /// sitting in a vehicle is taken for a walker in the road. The game's own cars, its taxi and private driver, the mod's bus and
-    /// another mod's ride each show at least one. COST: called twice a second for a foot look, never in a frame of its own: a few
-    /// field reads and, with none of them, a walk up the player's two or three parents. Nothing is allocated or searched.
+    /// Reads from the game the signs that something carries the player (<see cref="OffenceRules.Carried"/>), so that nobody the
+    /// game shows as carried is taken for a walker in the road. The game's own cars, its taxi and private driver and the mod's bus
+    /// each show at least one, and a ride of another mod shows those it borrows from them; one that shows none is taken for a walk,
+    /// which the Guide's Known limits say. COST: called twice a second for a foot look, never in a frame of its own: a few field
+    /// reads and, with none of them, a walk up the player's two or three parents. Nothing is allocated or searched.
     /// </summary>
     internal static class PlayerRide
     {

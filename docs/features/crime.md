@@ -62,7 +62,7 @@ Any one of seven signs is enough, because each ride sets a different one:
 | the save's active vehicle (`PlayerHelper.IsUsingVehicle`) | the game's own cars, bikes and scooters |
 | `TaxiSystem.IsTraveling` | the game's taxi and private driver |
 | the player sits on a seat of the game's (`Character.isSittingOn`) | any seat |
-| `PlayerController.NavigationDisabled` | any ride that blocks walking, as the game's taxi and the mod's own bus and taxi rides do, and any other ride must or the player could walk off it |
+| `PlayerController.NavigationDisabled` (any of the game's walking blockers is set, or its debug log window is open) | any ride that blocks walking, as the game's taxi and the mod's own bus and taxi rides do, and any other ride must or the player could walk off it; a panel or an activity sets one too, and nobody walks then either |
 | the player's NavMeshAgent is off (`Character.navmeshAgent.enabled`) | the game's seats (`SitOnChair`), `AttachToObject`, and a hidden player (`ToggleVisibility(false)`, as the taxi and `EnterVehicle` do): each switches it off, and with it off nobody can walk, so a ride of another mod that borrows any of them is told without a blocker |
 | a vehicle among the player's parents (`VehicleComponent` or `VehicleController`) | a ride that seats the player in a car the way the game does |
 | a move faster than anyone on foot (`OffenceRules.FootMost`, 8 m/s) since the last look | a ride that sets none of the above |
@@ -71,6 +71,10 @@ While carried, the road timer is dropped, no officer is looked for and no offenc
 The save's active vehicle cannot tell alone: a taxi or private driver from another mod, and the mod's own bus, never set it, and without the other signs every crossing the car passed against the walk light and every second in the road would be a shout and now and then a fine.
 With Developer diagnostics on, one log line says when a ride begins and what showed it, and one when it ends; a foot offence always writes the signs it found (none, if a ride went unseen), so a player's Player.log shows which sign a fined ride did not give.
 The signs are a heuristic: a ride of another mod that moves the player by a route that sets none of the seven, below 8 m/s, is still taken for a walk (the Guide's Known limits says so). EconomyCheck's `TrafficOffenceChecks` read each step from the game to the decision in its own text (`PlayerRide.Read` and its helpers, `PlayerOffences.Carried`, `OnFoot`, `Rest`, `Reset`) and show each to fail when one piece of it is changed.
+
+The Guide's Crime page and the What's new line say what this covers in a player's words, one phrase for each sign (the game's walking block and its walking switched off are one phrase to a player), and say that a ride of another mod counts only if it shows one of them.
+The speed in the Guide is the `ride_speed` fact (`OffenceRules.FootMost` in km/h, from `Meta/FeatureList.cs`).
+`TrafficOffenceChecks` read both texts for every sign `RideFacts` holds and fail on a sign that has no phrase, so a sign added later is not left out of what a player is told.
 
 ## How it talks to other features
 

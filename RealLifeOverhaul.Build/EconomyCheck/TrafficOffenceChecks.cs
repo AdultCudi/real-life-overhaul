@@ -20,7 +20,9 @@ using RealLifeOverhaul;
 // (Presets.Import). The sequence is played here against a pretend PlayerPrefs and a pretend options page (OffenceMoveRules), the first
 // version of the fix included, to show that it is caught. (2) The checks of the foot look read the text of the call, so a part of
 // the change could be lost with them passing: each step from the game to the decision is now read in its own body (PlayerRide.Read,
-// its helpers, PlayerOffences.Carried, Rest, Reset), and each is shown to fail when changed (CatchesChange).
+// its helpers, PlayerOffences.Carried, Rest, Reset), and each is shown to fail when changed (CatchesChange). (3) The ride test is a heuristic,
+// so the Guide and What's new say exactly what it covers: each sign the rule holds has a phrase in both, and a text that claims every vehicle
+// of every mod fails (OffenceRideWords).
 internal static partial class Program
 {
     // The kinds, in the order OffenceSwitches takes its switches.
@@ -553,6 +555,8 @@ internal static partial class Program
         Check(attention.Contains("Meta.Dev.Always(Logger, \"Police attention: \" + offence + \" found on foot")
               && attention.Contains("OffenceRules.Signs(_offences.Ride)"),
             "ride: a foot offence always writes the signs it found, so a ride the signs missed shows in a player's Player.log");
+        Check(list.Contains(".Fact(\"ride_speed\", () => Guide.Number(OffenceRules.FootMost * 3.6f))"),
+            "ride: the speed the Guide gives is the rule's own, in km/h, a fact of the crime feature");
 
         // The rides of the mod's own that the player sits in are among those the signs tell: each sets the game's walking blocker.
         string bus = ModSource(@"Transport\BusRider.cs"), busRide = ModSource(@"Transport\BusRider.Ride.cs"), transit = ModSource(@"Transport\TransitRide.cs");
@@ -849,12 +853,87 @@ internal static partial class Program
         Check(en.TryGetValue("reallife_opt_sec_offences", out string title) && title == "Traffic offences", "traffic offences: the section is called Traffic offences");
         Check(en.TryGetValue("reallife_offence_jaywalk", out string jay) && jay.Contains("jaywalking") && en.TryGetValue("reallife_offence_cross_red", out string cross) && cross.Contains("crossing on red"),
             "traffic offences: jaywalking and crossing on red are two switches, each named for what it is");
-        Check(en.TryGetValue("reallife_guide_crime", out string guide) && guide.Contains("<b>Traffic offences</b>") && !guide.Contains("Police stop you for traffic offences")
-              && guide.Contains("Each kind has its own switch under") && guide.Contains("None of this applies while a vehicle carries you, whoever drives it")
-              && guide.Contains("A ride from another mod is told by what the game shows of it"),
-            "traffic offences: the Crime page of the Guide names the section, says each kind has its own switch, says a vehicle that carries you counts for nothing on foot, and states the limit of how a ride is told");
-        Check(AnyChangesRow(en, "Each traffic offence now has its own switch in the options, under Traffic offences")
-              && AnyChangesRow(en, "Fixed: You are no longer fined for jaywalking or crossing on red while a taxi, a private driver or any other vehicle carries you, including one from another mod."),
-            "traffic offences: What's new has the feature's line and the fix, each in a row (any row, as the version step moves the next row into its own)");
+        OffenceRideWords(en);
+    }
+
+    // What the Guide and What's new tell a player of a ride, one phrase for each sign RideFacts holds, in its order. To a player the game's
+    // walking block and its walking switched off are one thing, so those two share a phrase; {ride_speed} is the Guide's fact for the speed.
+    private static readonly string[] GuideRidePhrases =
+    {
+        "using one of the game's vehicles", "in its taxi or with a private driver", "on a seat", "stopped from walking by the game", "stopped from walking by the game",
+        "inside a vehicle (whoever put you there)", "moving faster than {ride_speed} km/h"
+    };
+
+    private static readonly string[] NewsRidePhrases =
+    {
+        "using one of the game's vehicles", "in its taxi or with a private driver", "on a seat", "stopped from walking by the game", "stopped from walking by the game",
+        "inside a vehicle (whoever put you there)", "moving faster than anyone walks"
+    };
+
+    // The phrases a text does not hold, each named once; empty when it holds them all.
+    private static string PhrasesLacking(string text, string[] phrases)
+    {
+        string lacking = string.Empty;
+        foreach (string phrase in phrases)
+        {
+            if (!text.Contains(phrase) && !lacking.Contains(phrase))
+            {
+                lacking += " [" + phrase + "]";
+            }
+        }
+        return lacking;
+    }
+
+    // The What's new line that begins as given, up to the next fix or the end of its row; empty if no row has it. Any row, as the version
+    // step moves the next row into its own.
+    private static string ChangesLine(Dictionary<string, string> words, string beginning)
+    {
+        foreach (KeyValuePair<string, string> row in words)
+        {
+            if (!row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) || row.Key.EndsWith("_title", StringComparison.Ordinal))
+            {
+                continue;
+            }
+            int at = row.Value.IndexOf(beginning, StringComparison.Ordinal);
+            if (at < 0)
+            {
+                continue;
+            }
+            int next = row.Value.IndexOf(" Fixed: ", at + beginning.Length, StringComparison.Ordinal);
+            return next < 0 ? row.Value.Substring(at) : row.Value.Substring(at, next - at);
+        }
+        return string.Empty;
+    }
+
+    // The ride test is a heuristic, so the Guide and What's new say exactly what it covers: a phrase for each sign the rule holds, and that a
+    // ride of another mod that shows none of them is still taken for a walk. A text that claims every vehicle of every mod fails.
+    private static void OffenceRideWords(Dictionary<string, string> en)
+    {
+        en.TryGetValue("reallife_guide_crime", out string guide);
+        guide = guide ?? string.Empty;
+        Check(guide.Contains("<b>Traffic offences</b>") && !guide.Contains("Police stop you for traffic offences") && guide.Contains("Each kind has its own switch under"),
+            "traffic offences: the Crime page of the Guide names the section and says each kind has its own switch");
+
+        int signs = OffenceRules.Signs(RideWith(127)).Split(',').Length;
+        Check(GuideRidePhrases.Length == signs && NewsRidePhrases.Length == signs,
+            "ride: the Guide and What's new have a phrase for each of the " + signs + " signs a ride is told by, so a sign added to the rule fails here until they say it");
+        string onFoot = Between(guide, "- On foot, crossing on red", "\n- Fines are charged in full");
+        string lackGuide = PhrasesLacking(onFoot, GuideRidePhrases);
+        Check(onFoot.Length > 0 && lackGuide.Length == 0, "ride: the Guide's bullet on foot says in a player's words each thing a ride is told by:" + lackGuide);
+
+        const string FixBegins = "Fixed: You are no longer warned or fined for jaywalking or crossing on red";
+        string fix = ChangesLine(en, FixBegins);
+        string lackNews = PhrasesLacking(fix, NewsRidePhrases);
+        Check(fix.Length > 0 && lackNews.Length == 0 && fix.Contains("a ride from another mod that shows none of these is still taken for a walk"),
+            "ride: What's new says in a player's words each thing a ride is told by, and that a ride of another mod that shows none of them is still taken for a walk:" + lackNews);
+
+        int limitsAt = guide.IndexOf("# Known limits", StringComparison.Ordinal);
+        string limits = limitsAt < 0 ? string.Empty : guide.Substring(limitsAt);
+        Check(limits.Contains("A ride from another mod counts only if it does one of the things listed under Being pulled over") && limits.Contains("One that does none is taken for a walk"),
+            "ride: the Guide's Known limits say that a ride of another mod counts only if it does one of the things listed, and that any other is taken for a walk");
+        Check(!guide.Contains("whoever drives it") && !guide.Contains("a bus or another mod's car") && !AnyChangesRow(en, "while a taxi, a private driver or any other vehicle carries you"),
+            "ride: neither the Guide nor What's new claims that every vehicle of every mod is covered");
+        Check(AnyChangesRow(en, "Each traffic offence now has its own switch in the options, under Traffic offences"),
+            "traffic offences: What's new has the feature's line (any row, as the version step moves the next row into its own)");
     }
 }
