@@ -246,7 +246,7 @@ namespace RealLifeOverhaul
             else
             {
                 Logger?.Info("Turn signal check (the turn made): the " + side + " signal was up " + Num(onFor, "F1") + " s, the nose swung " + Num(swing, "F0")
-                             + " degrees against " + Num(TurnSignalRules.TurnDone, "F0") + " and the car ran straight or backed, the " + side + " signal "
+                             + " degrees against " + Num(TurnSignalRules.TurnDone, "F0") + " and the wheel came back, the car backed or the signal was given up, the " + side + " signal "
                              + (shows ? "still shows" : "is off") + ": " + end + ".");
             }
         }

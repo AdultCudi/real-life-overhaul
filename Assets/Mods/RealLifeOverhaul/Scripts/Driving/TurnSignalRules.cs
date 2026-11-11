@@ -32,7 +32,8 @@ namespace RealLifeOverhaul
         public float OnFor;         // seconds the signal in Own has been on
         public float Swing;         // degrees the nose has swung the signalled way since the turn began
         public float StraightFor;   // seconds the wheel has been straight and the nose steady
-        public float RunFor;        // seconds of straight running at a pace, with the wheel straight
+        public float CentredFor;    // seconds the wheel has been back near the middle with the car under way, however the nose swings
+        public float RunFor;        // seconds under way, while the signal is up, without turning the signalled way
         public float RestFor;       // seconds since the rules last put a signal off
         public int Yielded;         // the side the driver put off, or went away from, in this turn: not raised again until the car runs straight
 
@@ -51,6 +52,7 @@ namespace RealLifeOverhaul
             OnFor = 0f;
             Swing = 0f;
             StraightFor = 0f;
+            CentredFor = 0f;
             RunFor = 0f;
             RestFor = TurnSignalRules.Rest;
             Yielded = 0;
@@ -59,7 +61,9 @@ namespace RealLifeOverhaul
 
     /// <summary>
     /// When the car the player drives signals a turn by itself: the signal of the side it is turning to comes on once it has
-    /// been turning a moment and goes off when the turn is made, and a signal the driver switched on is never touched.
+    /// been turning a moment and goes off when the turn is made, as a real car's stalk cancels itself: once the wheel is back
+    /// near the middle, whatever the road does after (the game's angle assist keeps the nose following a bending road with the
+    /// keys let go). A signal the driver switched on is never touched.
     /// Game-free: EconomyCheck compiles this file. A pure function of the looks it is given, so the same drive gives the
     /// same signals on every machine. Cost: a few comparisons a look, no allocation.
     /// </summary>
@@ -73,13 +77,13 @@ namespace RealLifeOverhaul
         public const float TurnSteer = 0.5f;       // of full lock: the wheel a turn needs; a correction in a lane is less or shorter
         public const float TurnRate = 9f;          // degrees a second the nose must swing: the car is really turning, not only steered
         public const float TurnHold = 0.4f;        // seconds a turn must last before its signal comes on
-        public const float StraightSteer = 0.2f;   // of full lock: under this the wheel is straight
+        public const float StraightSteer = 0.2f;   // of full lock: under this the wheel is back near the middle (the keys let go read 0)
         public const float StraightRate = 5f;      // degrees a second: under this the nose is steady
-        public const float StraightHold = 0.8f;    // seconds straight after the turn before the signal goes off
+        public const float CentreHold = 0.35f;     // seconds the wheel is back near the middle, under way, before a made turn's signal goes off: four looks
         public const float TurnDone = 20f;         // degrees the nose must have swung the signalled way for the turn to count as made
-        public const float LeastOn = 4f;           // seconds a signal stays up once on: two full flashes of the game's own (its cycle is 2 s)
+        public const float LeastOn = 2f;           // seconds a signal stays up once on: one full flash of the game's own (its cycle is 2 s: 1 s lit, 1 s dark)
         public const float SwitchAfter = 2f;       // seconds a signal stays on its side before the car turning the other way puts it over: a weave does not make it flicker
-        public const float GiveUp = 6f;            // seconds of straight running, the turn never made, after which a signal that came on for nothing goes off
+        public const float GiveUp = 4.5f;          // seconds under way without turning the signalled way, the turn never made, after which a signal that came on for nothing goes off
         public const float Rest = 1f;              // seconds between a signal going off and the next coming on
         public const float ReArm = 0.5f;           // seconds straight before a signal the driver put off may be raised again
         private const float Cap = 60f;             // seconds: a timer is held here, so a long drive never grows one without end
@@ -118,7 +122,7 @@ namespace RealLifeOverhaul
                 state.HeldSwing = turning != 0 ? rate * dt : 0f;
             }
             state.StraightFor = straight ? Math.Min(state.StraightFor + dt, Cap) : 0f;
-            state.RunFor = straight && look.Speed >= MinSpeed ? Math.Min(state.RunFor + dt, Cap) : 0f;
+            state.CentredFor = wheel < StraightSteer && look.Speed >= MinSpeed ? Math.Min(state.CentredFor + dt, Cap) : 0f;
             state.RestFor = Math.Min(state.RestFor + dt, Rest);
             if (state.Yielded != 0 && state.StraightFor >= ReArm)
             {
@@ -139,6 +143,7 @@ namespace RealLifeOverhaul
             }
             state.Own = turning;
             state.OnFor = 0f;
+            state.RunFor = 0f;
             state.Swing = state.HeldSwing;
             return turning < 0 ? TurnSignalCommand.LeftOn : TurnSignalCommand.RightOn;
         }
@@ -162,8 +167,19 @@ namespace RealLifeOverhaul
             {
                 state.Swing += along * dt;
             }
+            // Turning the signalled way: the wheel over that way as for a turn, or the nose swinging that way as fast as in one.
+            // Any other time under way counts towards giving up a signal that came on for nothing; a stop neither counts nor clears it.
+            float steerAlong = state.Own > 0 ? look.Steer : -look.Steer;
+            if (steerAlong >= TurnSteer || along >= TurnRate)
+            {
+                state.RunFor = 0f;
+            }
+            else if (look.Speed >= MinSpeed)
+            {
+                state.RunFor = Math.Min(state.RunFor + dt, Cap);
+            }
             bool backing = look.Speed <= ReverseSpeed;
-            bool made = state.Swing >= TurnDone && state.StraightFor >= StraightHold && state.OnFor >= LeastOn;
+            bool made = state.Swing >= TurnDone && state.CentredFor >= CentreHold && state.OnFor >= LeastOn;
             if (backing || made || state.RunFor >= GiveUp)
             {
                 TurnSignalCommand off = state.Own < 0 ? TurnSignalCommand.LeftOff : TurnSignalCommand.RightOff;
@@ -177,6 +193,7 @@ namespace RealLifeOverhaul
             {
                 state.Own = turning;
                 state.OnFor = 0f;
+                state.RunFor = 0f;
                 state.Swing = state.HeldSwing;
                 return turning < 0 ? TurnSignalCommand.LeftOn : TurnSignalCommand.RightOn;
             }

@@ -133,16 +133,19 @@ internal static partial class Program
         Check(TurnSignalRules.TurnHold > 2f * TurnSignalRules.LookEvery && TurnSignalRules.TurnHold <= 0.6f && TurnSignalRules.MostGap < TurnSignalRules.TurnHold,
             "turn signals: a turn must last more than two looks and under a second to bring its signal on, and a late look alone never counts as that long (hold "
             + TurnSignalRules.TurnHold + " s, one look at most " + TurnSignalRules.MostGap + " s)");
-        Check(TurnSignalRules.LeastOn >= 4f && TurnSignalRules.SwitchAfter < TurnSignalRules.LeastOn,
-            "turn signals: a signal stays up two full flashes of the game's own (its cycle is 2 s) at least, and a weave may put it over sooner than that (" + TurnSignalRules.LeastOn + " s)");
+        Check(TurnSignalRules.LeastOn >= 2f && TurnSignalRules.LeastOn <= 2.5f && TurnSignalRules.SwitchAfter <= TurnSignalRules.LeastOn,
+            "turn signals: a signal stays up one full flash of the game's own (its cycle is 2 s) at least and not much more, and a weave may put it over no later than that (" + TurnSignalRules.LeastOn + " s)");
+        Check(TurnSignalRules.CentreHold > 2f * TurnSignalRules.LookEvery && TurnSignalRules.CentreHold <= 0.4f,
+            "turn signals: the wheel back near the middle for more than two looks and at most 0.4 s puts a made turn's signal off, as a real car's stalk cancels itself (" + TurnSignalRules.CentreHold + " s)");
         Check(TurnSignalRules.MinSpeed >= 2f && TurnSignalRules.MinSpeed > TurnSignalRules.StaySpeed && TurnSignalRules.StaySpeed > 0f && TurnSignalRules.ReverseSpeed < 0f,
             "turn signals: parking pace brings no signal, a stop in a turn keeps one, and only backing takes it off");
-        Check(TurnSignalRules.GiveUp > TurnSignalRules.StraightHold && TurnSignalRules.Rest >= 1f && TurnSignalRules.ReArm > 0f && TurnSignalRules.TurnDone > 0f,
-            "turn signals: a signal that came on for nothing outlasts a turn's straight run, and one signal rests a second before the next");
-        var used = new TurnSignalState { Own = -1, Held = 1, HeldFor = 3f, HeldSwing = 40f, OnFor = 9f, Swing = 50f, StraightFor = 2f, RunFor = 7f, RestFor = 0f, Yielded = 1 };
+        Check(TurnSignalRules.GiveUp > TurnSignalRules.LeastOn + TurnSignalRules.CentreHold && TurnSignalRules.GiveUp >= 4f && TurnSignalRules.GiveUp <= 5f
+              && TurnSignalRules.Rest >= 1f && TurnSignalRules.ReArm > 0f && TurnSignalRules.TurnDone > 0f,
+            "turn signals: a signal that came on for nothing outlasts a made turn's (4 to 5 s against " + (TurnSignalRules.LeastOn + TurnSignalRules.CentreHold) + " s), and one signal rests a second before the next");
+        var used = new TurnSignalState { Own = -1, Held = 1, HeldFor = 3f, HeldSwing = 40f, OnFor = 9f, Swing = 50f, StraightFor = 2f, CentredFor = 2f, RunFor = 7f, RestFor = 0f, Yielded = 1 };
         used.Reset();
         var fresh = new TurnSignalState();
-        Check(used.Own == 0 && used.Held == 0 && used.HeldFor == 0f && used.HeldSwing == 0f && used.OnFor == 0f && used.Swing == 0f && used.StraightFor == 0f && used.RunFor == 0f
+        Check(used.Own == 0 && used.Held == 0 && used.HeldFor == 0f && used.HeldSwing == 0f && used.OnFor == 0f && used.Swing == 0f && used.StraightFor == 0f && used.CentredFor == 0f && used.RunFor == 0f
               && used.Yielded == 0 && used.RestFor == TurnSignalRules.Rest && fresh.Own == 0 && fresh.RestFor == TurnSignalRules.Rest && fresh.Yielded == 0,
             "turn signals: a car taken fresh, or let go and taken again, has nothing on, nothing held and may signal at once");
         Check(TurnSignalRules.Step(new TurnSignalState(), new TurnSignalLook { Speed = 10f, Steer = -1f, Turning = -40f }, 0f) == TurnSignalCommand.None
@@ -163,8 +166,8 @@ internal static partial class Program
             "turn signals: a left turn begun at look 11 brings the left signal on 0.4 s into it, at look " + on + " (" + string.Join(", ", left.Said) + ")");
         Check(inTurn && left.Raised == 1 && left.Dropped == 1 && !left.Both,
             "turn signals: the left signal shows through the left turn and the right one never does");
-        Check(off >= 54 && off <= 57 && (off - on) * TurnSignalRules.LookEvery >= TurnSignalRules.LeastOn - 0.15f && !left.Left && !left.Right,
-            "turn signals: the left signal goes off once the turn is made, after its least time (on at look " + on + ", off at " + off + ")");
+        Check(off >= 34 && off <= 36 && (off - on) * TurnSignalRules.LookEvery >= TurnSignalRules.LeastOn - 0.15f && !left.Left && !left.Right,
+            "turn signals: the left signal goes off once the turn is made and the wheel back, after its least time (wheel back at look 31, on at look " + on + ", off at " + off + ")");
 
         var right = new TurnSignalCar();
         right.Run(1f, 10f, 0f, 0f);
@@ -232,14 +235,14 @@ internal static partial class Program
         Check(weave.Closest >= (int)Math.Round(TurnSignalRules.SwitchAfter / TurnSignalRules.LookEvery) && !weave.Both,
             "turn signals: a weave of half-second presses puts the signal over no sooner than " + TurnSignalRules.SwitchAfter + " s after it came on (nearest commands " + weave.Closest + " looks apart)");
 
-        // A signal that came on for nothing: the wheel over for half a second, then 20 seconds straight. It goes off after six seconds of straight running.
+        // A signal that came on for nothing: the wheel over for half a second, then 20 seconds straight. It goes off after the give-up time of driving on.
         var falseStart = new TurnSignalCar();
         falseStart.Run(1f, 10f, 0f, 0f);
         falseStart.Run(0.5f, 10f, -1f, -12f);
         falseStart.Run(20f, 10f, 0f, 0f);
         int falseOff = TurnSignalTick(falseStart, "LeftOff");
         Check(falseStart.Raised == 1 && falseOff > 0 && (falseOff - 16) * TurnSignalRules.LookEvery >= TurnSignalRules.GiveUp - 0.25f && falseOff <= 80 && !falseStart.Left,
-            "turn signals: a signal that came on for a turn never made goes off after " + TurnSignalRules.GiveUp + " s of straight running (off at look " + falseOff + ")");
+            "turn signals: a signal that came on for a turn never made goes off after " + TurnSignalRules.GiveUp + " s of driving on without turning its way (off at look " + falseOff + ")");
 
         // Held up in the middle of a turn: the signal stays through a long stop, then goes when the car is away straight.
         var queue = new TurnSignalCar();
@@ -250,7 +253,7 @@ internal static partial class Program
         queue.Run(5f, 10f, 0f, 0f);
         Check(kept && queue.Dropped == 1 && !queue.Left, "turn signals: a stop of half a minute in the middle of a turn keeps the left signal on; it goes off after the car is away");
 
-        // A turn that was never made, waiting straight at a junction: the signal is kept while the car does not move, then goes after six seconds of straight running.
+        // A turn that was never made, waiting straight at a junction: the signal is kept while the car does not move, then goes after the give-up time of running.
         var wait = new TurnSignalCar();
         wait.Run(1f, 10f, 0f, 0f);
         wait.Run(0.5f, 10f, -1f, -12f);
@@ -297,6 +300,61 @@ internal static partial class Program
             car.Run(6f, 12f, 0f, 0f);
         }
         Check(string.Join(",", one.Said) == string.Join(",", two.Said) && one.Said.Count == 3, "turn signals: the same drive gives the same commands every time");
+
+        TurnSignalCancels();
+    }
+
+    // Signals that stayed on long after the turn (12 Nov 2026): like a real car's self-cancelling stalk, the signal of a turn made goes off once
+    // the wheel is back near the middle, however the road bends after it (the game's angle assist keeps the nose following the road with the
+    // keys let go), and a signal that came on for nothing goes off after a while of driving on without turning its way, bend or no bend.
+    private static void TurnSignalCancels()
+    {
+        // A left turn, then the wheel let go on a road that keeps bending gently (7 degrees a second either way): off within a second of the wheel centring.
+        foreach (float bending in new[] { -7f, 7f })
+        {
+            var bendAfter = new TurnSignalCar();
+            bendAfter.Run(1f, 10f, 0f, 0f);
+            bendAfter.Run(2.2f, 10f, -1f, -40f);
+            int centred = bendAfter.Tick + 1;
+            bendAfter.Run(10f, 10f, 0f, bending);
+            int bendOff = TurnSignalTick(bendAfter, "LeftOff");
+            Check(bendOff > 0 && bendOff - centred <= 10 && bendAfter.Raised == 1 && bendAfter.Dropped == 1 && !bendAfter.Left && !bendAfter.Right,
+                "turn signals: after a left turn the signal goes off within a second of the wheel centring, with the road bending on at " + bending
+                + " degrees a second (wheel centred at look " + centred + ", off at " + bendOff + "; " + string.Join(", ", bendAfter.Said) + ")");
+        }
+
+        // A short clean 90 degree turn (45 degrees a second for two seconds): off within 2.5 s of coming on, one flash of the game's own and the wheel back.
+        var corner = new TurnSignalCar();
+        corner.Run(1f, 10f, 0f, 0f);
+        corner.Run(2f, 10f, -1f, -45f);
+        corner.Run(6f, 10f, 0f, 0f);
+        int cornerOn = TurnSignalTick(corner, "LeftOn"), cornerOff = TurnSignalTick(corner, "LeftOff");
+        Check(cornerOn > 0 && cornerOff > cornerOn && (cornerOff - cornerOn) * TurnSignalRules.LookEvery <= 2.5f + 0.05f && corner.Raised == 1 && corner.Dropped == 1 && !corner.Left,
+            "turn signals: a short clean 90 degree turn has its signal off within 2.5 s of it coming on (on at look " + cornerOn + ", off at " + cornerOff + ")");
+
+        // A signal that came on for nothing, then a road bending gently its way (the wheel a third over, 6 degrees a second): off within the fallback.
+        var bendNothing = new TurnSignalCar();
+        bendNothing.Run(1f, 10f, 0f, 0f);
+        bendNothing.Run(0.5f, 10f, -1f, -12f);
+        int bendFrom = bendNothing.Tick + 1;
+        bendNothing.Run(20f, 10f, -0.3f, -6f);
+        int nothingOff = TurnSignalTick(bendNothing, "LeftOff");
+        Check(nothingOff > 0 && (nothingOff - bendFrom) * TurnSignalRules.LookEvery <= TurnSignalRules.GiveUp + 0.25f && TurnSignalRules.GiveUp <= 5f
+              && bendNothing.Raised == 1 && !bendNothing.Left,
+            "turn signals: a signal that came on for nothing goes off within " + TurnSignalRules.GiveUp + " s on a road bending gently its way, the wheel a third over (bend from look "
+            + bendFrom + ", off at " + nothingOff + ")");
+
+        // The same with the wheel let go and the nose following a bend the other way.
+        var driftNothing = new TurnSignalCar();
+        driftNothing.Run(1f, 10f, 0f, 0f);
+        driftNothing.Run(0.5f, 10f, -1f, -12f);
+        int driftFrom = driftNothing.Tick + 1;
+        driftNothing.Run(20f, 10f, 0f, 7f);
+        int driftOff = TurnSignalTick(driftNothing, "LeftOff");
+        Check(driftOff > 0 && (driftOff - driftFrom) * TurnSignalRules.LookEvery <= TurnSignalRules.GiveUp + 0.25f && TurnSignalRules.GiveUp <= 5f
+              && driftNothing.Raised == 1 && !driftNothing.Left,
+            "turn signals: a signal that came on for nothing goes off within " + TurnSignalRules.GiveUp + " s on a road bending gently the other way, the wheel let go (bend from look "
+            + driftFrom + ", off at " + driftOff + ")");
     }
 
     private static void TurnSignalDriver()
