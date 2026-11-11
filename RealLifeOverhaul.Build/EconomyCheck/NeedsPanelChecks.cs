@@ -9,6 +9,8 @@ using RealLifeOverhaul;
 // (HomeDirector.Strip), so a new game away from home (hygiene 80, stress 20, no home yet) showed nothing; they came when hygiene fell under 35,
 // and a shower put it back over 35 and took them away again. They now stand whenever the game's top bar does (HomeBarRules); the home bar
 // waits for a home of the player's own. Offline: run with --needs-panel.
+// The fix's texts in the ten other languages are held too (NeedsPanelLanguages): the first translation of them translated the Guide's whole Home
+// page again, spoke to a French player as "tu", to a Polish player in masculine forms, and turned the old rule round in Turkish and Russian.
 internal static partial class Program
 {
     private static void NeedsPanel()
@@ -16,6 +18,7 @@ internal static partial class Program
         NeedsPanelRules();
         NeedsPanelSources();
         NeedsPanelTexts();
+        NeedsPanelLanguages();
     }
 
     private static void NeedsPanelRules()
@@ -90,7 +93,7 @@ internal static partial class Program
 
     private static void NeedsPanelTexts()
     {
-        // What the player reads: the option's sentence, the Guide's Home page and What's new. English only here; the other languages are filled in after.
+        // What the player reads: the option's sentence, the Guide's Home page and What's new. English here; the other languages in NeedsPanelLanguages.
         Dictionary<string, string> en = LoadWords(System.IO.Path.Combine(DesignLocales, "en.json"));
         Check(en != null, "needs panel texts: en.json was read");
         if (en == null)
@@ -126,5 +129,178 @@ internal static partial class Program
         Check(docs.Contains("The three are shown all the time the game's top bar is") && docs.Contains("HomeBarRules.Shows(Settings.HomeStrip, Settings.HomeNeeds)")
               && !docs.Contains("The three are shown at home, while hygiene is under 35"),
             "needs panel texts: the Home page of docs/features says when the bars show");
+    }
+
+    private const string HomePageKey = "reallife_guide_home", HomeTipKey = "reallife_opt_tip_home_strip";
+
+    private static readonly Regex GuideBold = new Regex("<b>(.*?)</b>", RegexOptions.Singleline);
+
+    // The Guide, the option tips and What's new speak to a French player as "vous" (translate/GUIDE.md rule 13); "tu", "toi", "ton", "ta", "tes", "te" and "t'" are the other register.
+    private static readonly Regex FrenchTu = new Regex(@"\b(tu|toi|ton|ta|tes|te)\b|\bt['’]", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+    private static readonly Regex FrenchVous = new Regex(@"\b(vous|votre|vos)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+    // Polish past tense and "ready" forms carry the player's gender (byłeś, spałeś, miał, gotów); GUIDE.md's Polish rule "No gender in the player" asks for the imperative, the infinitive or an impersonal sentence.
+    private static readonly Regex PolishGender = new Regex(@"\b\w+(łeś|łaś)\b|\b(miał|miała|gotów|gotowa)\b", RegexOptions.IgnoreCase | RegexOptions.CultureInvariant);
+
+    // The fix's sentence in each language of ModLanguages.All: how it begins (that finds it in What's new, in whichever row holds it) and the clause that says when the bars used to
+    // vanish, which is where a translation turned the rule round: "unless you were at home or a need was running low" (read in Turkish as "while at home or as long as no need ran
+    // low", in Russian as "if you were not at home or the need did not fall").
+    private static readonly Dictionary<string, string[]> NeedsPanelFix = new Dictionary<string, string[]>(StringComparer.Ordinal)
+    {
+        { "en", new[] { "Fixed: The bars for hygiene, stress and home now show all the time",
+                         "unless you were at home or a need was running low" } },
+        { "pt", new[] { "Corrigido: As barras de higiene, estresse e casa agora aparecem sempre",
+                         "a menos que você estivesse em casa ou uma necessidade estivesse baixa" } },
+        { "zh-cn", new[] { "已修复：卫生、压力和居家状态条现在会始终显示",
+                         "以前只有在家或某项需求很低时它们才会出现" } },
+        { "de", new[] { "Behoben: Die Balken für Hygiene, Stress und Zuhause werden jetzt immer",
+                         "außer wenn du zu Hause warst oder ein Bedürfnis knapp wurde" } },
+        { "fr", new[] { "Corrigé : Les barres d'hygiène, de stress et de logement s'affichent désormais en permanence",
+                         "sauf si vous étiez chez vous ou si un besoin était bas" } },
+        { "es", new[] { "Corregido: Las barras de higiene, estrés y casa ahora se muestran siempre",
+                         "salvo que estuvieras en casa o una necesidad estuviera bajando mucho" } },
+        { "ru", new[] { "Исправлено: Шкалы гигиены, стресса и дома теперь всегда показываются",
+                         "если вы были не дома и ни одна потребность не была на исходе" } },
+        { "nl", new[] { "Opgelost: De balken voor hygiëne, stress en thuis staan nu altijd",
+                         "tenzij je thuis was of een behoefte laag stond" } },
+        { "tr", new[] { "Düzeltildi: Hijyen, stres ve ev çubukları artık oyunun üst çubuğunun altında her zaman görünür",
+                         "evde değilseniz ve hiçbir ihtiyaç azalmamışsa" } },
+        { "pl", new[] { "Naprawiono: Paski higieny, stresu i domu pokazują się teraz stale",
+                         "poza domem, gdy żadna potrzeba nie była nisko" } },
+        { "ko", new[] { "수정: 위생, 스트레스, 집 막대가 이제 게임 상단 막대 아래에 항상 표시됩니다",
+                         "집에 있거나 욕구가 낮아질 때가 아니면" } }
+    };
+
+    // What a player of each language reads of the fix, in all eleven files: the Guide's Home page, the option's sentence and the fix's sentence in What's new.
+    private static void NeedsPanelLanguages()
+    {
+        string folder = LocalesFolder();
+        Dictionary<string, string> en = LoadWords(System.IO.Path.Combine(folder, "en.json"));
+        string pageEn = null;
+        if (en == null || !en.TryGetValue(HomePageKey, out pageEn))
+        {
+            Check(false, "needs panel languages: en.json and the Guide's Home page were read from " + folder);
+            return;
+        }
+        MatchCollection namesEn = GuideBold.Matches(pageEn);
+        string[] linesEn = pageEn.Split('\n');
+
+        // Each name in bold on the English page stands for the texts of the mod that read exactly so (an option, a button, a tab, a page). The page in another language names it by what
+        // one of those says in that language (translate/GUIDE.md rule 12), so that the player finds on the options page the words the Guide gave.
+        var standFor = new List<string>[namesEn.Count];
+        bool every = namesEn.Count > 0;
+        for (int i = 0; i < namesEn.Count; i++)
+        {
+            standFor[i] = new List<string>();
+            foreach (KeyValuePair<string, string> kv in en)
+            {
+                if (kv.Value == namesEn[i].Groups[1].Value && !kv.Key.StartsWith("reallife_guide_", StringComparison.Ordinal) && !kv.Key.StartsWith("reallife_changes_", StringComparison.Ordinal))
+                {
+                    standFor[i].Add(kv.Key);
+                }
+            }
+            every &= standFor[i].Count > 0;
+        }
+        Check(every, "needs panel languages: every name in bold on the English Home page is a text of the mod, which the page in each language is held to");
+
+        foreach (string code in ModLanguages.All)
+        {
+            Dictionary<string, string> words = LoadWords(System.IO.Path.Combine(folder, code + ".json"));
+            Check(words != null, "needs panel languages: " + code + ".json was read");
+            if (words == null)
+            {
+                continue;
+            }
+            string page = words.TryGetValue(HomePageKey, out string pageText) ? pageText : string.Empty;
+            string tip = words.TryGetValue(HomeTipKey, out string tipText) ? tipText : string.Empty;
+            string fix = NeedsPanelSentence(words, code, out int times);
+
+            // The page has the English page's lines: its headings, its points and the figures in curly brackets.
+            string[] lines = page.Split('\n');
+            bool shaped = lines.Length == linesEn.Length;
+            for (int i = 0; shaped && i < lines.Length; i++)
+            {
+                shaped = lines[i].StartsWith("# ", StringComparison.Ordinal) == linesEn[i].StartsWith("# ", StringComparison.Ordinal)
+                         && lines[i].StartsWith("- ", StringComparison.Ordinal) == linesEn[i].StartsWith("- ", StringComparison.Ordinal)
+                         && NamesOf(lines[i]) == NamesOf(linesEn[i]);
+            }
+            Check(shaped, "needs panel languages: the Home page in " + code + " has the English page's " + linesEn.Length + " lines, with their headings, points and figures (" + lines.Length + " lines)");
+
+            // It names its options and buttons as the language shows them, word for word: the first translation of the fix translated the whole page again, and in six languages
+            // "Easy needs" and other names came out as words the options page does not use.
+            MatchCollection names = GuideBold.Matches(page);
+            var off = new List<string>();
+            for (int i = 0; i < namesEn.Count; i++)
+            {
+                bool held = false;
+                if (i < names.Count)
+                {
+                    foreach (string key in standFor[i])
+                    {
+                        held |= words.TryGetValue(key, out string label) && label == names[i].Groups[1].Value;
+                    }
+                }
+                if (!held)
+                {
+                    off.Add("<b>" + (i < names.Count ? names[i].Groups[1].Value : "?") + "</b> for <b>" + namesEn[i].Groups[1].Value + "</b>");
+                }
+            }
+            Check(names.Count == namesEn.Count && off.Count == 0,
+                "needs panel languages: the Home page in " + code + " names its options and buttons as " + code + " shows them, word for word ("
+                + names.Count + " names in bold, the English " + namesEn.Count + "; not the language's own: " + string.Join(", ", off) + ")");
+
+            // The fix's sentence is in What's new once, and says when the bars used to vanish as the English does.
+            Check(NeedsPanelFix.TryGetValue(code, out string[] sentence), "needs panel languages: " + code + " has its pieces of the fix's sentence in NeedsPanelFix");
+            if (sentence != null)
+            {
+                Check(times == 1, "needs panel languages: What's new in " + code + " has the fix's sentence once, in one row (" + times + " time(s))");
+                Check(fix.Contains(sentence[1]), "needs panel languages: the fix's sentence in " + code + " says when the bars used to vanish: \"" + sentence[1] + "\"");
+            }
+
+            // Register and gender, in the three texts of the fix.
+            string[] texts = { tip, page, fix };
+            string[] kinds = { "option's sentence", "Home page", "What's new sentence" };
+            for (int i = 0; i < texts.Length; i++)
+            {
+                Check(texts[i].Length > 0, "needs panel languages: the " + kinds[i] + " in " + code + " is there");
+                if (code == "fr")
+                {
+                    Check(!FrenchTu.IsMatch(texts[i]) && FrenchVous.IsMatch(texts[i]),
+                        "needs panel languages: the French " + kinds[i] + " speaks to the player as \"vous\", with no \"tu\", \"ton\", \"te\" or \"toi\" (found: \"" + FrenchTu.Match(texts[i]).Value + "\")");
+                }
+                if (code == "pl")
+                {
+                    Check(!PolishGender.IsMatch(texts[i]),
+                        "needs panel languages: the Polish " + kinds[i] + " has no form of the player's gender (found: \"" + PolishGender.Match(texts[i]).Value + "\")");
+                }
+            }
+        }
+    }
+
+    // The fix's sentence as one language's What's new has it: from its first words, in whichever row holds them (the next row, or a numbered one after a release), to the language's
+    // next fix mark or the end of the row. times is how often the first words stand in all the rows; the sentence is empty unless that is exactly once.
+    private static string NeedsPanelSentence(Dictionary<string, string> words, string code, out int times)
+    {
+        times = 0;
+        string found = string.Empty;
+        if (!NeedsPanelFix.TryGetValue(code, out string[] sentence) || !FixMarks.TryGetValue(code, out string mark))
+        {
+            return found;
+        }
+        foreach (KeyValuePair<string, string> row in words)
+        {
+            if (!row.Key.StartsWith("reallife_changes_", StringComparison.Ordinal) || row.Key.EndsWith("_title", StringComparison.Ordinal))
+            {
+                continue;
+            }
+            int at = row.Value.IndexOf(sentence[0], StringComparison.Ordinal);
+            if (at >= 0)
+            {
+                times += Occurs(row.Value, sentence[0]);
+                int next = row.Value.IndexOf(mark, at + mark.Length, StringComparison.Ordinal);
+                found = row.Value.Substring(at, (next < 0 ? row.Value.Length : next) - at);
+            }
+        }
+        return times == 1 ? found : string.Empty;
     }
 }
