@@ -64,6 +64,7 @@ namespace RealLifeOverhaul
         internal readonly List<Uniforms.Dye> Dyes = new List<Uniforms.Dye>(4);
         internal Uniforms.Shirt Shirt;
         internal ServiceKit Kit;
+        internal bool CapsOn = true;   // the caps option when dressed; an officer is dressed again if it moves
 
         private readonly Vector3 _scale;   // the character's own scale, as the game made it
 

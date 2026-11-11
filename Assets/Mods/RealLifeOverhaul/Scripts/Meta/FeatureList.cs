@@ -285,7 +285,7 @@ namespace RealLifeOverhaul.Meta
 
             Features.Add("people", "reallife_meta_title_people")
                 .About("reallife_guide_people_about").Help("reallife_guide_people")
-                .Owns(Settings.PeopleId, Settings.OfficersOnPatrolId)
+                .Owns(Settings.PeopleId, Settings.OfficersOnPatrolId, Settings.PoliceCapsId)
                 .StandsAside(GoingPublic.TrafficSentence, Settings.OfficersOnPatrolId, Settings.PolicePresenceId, Settings.PatrolFrequencyId)   // their patrol cars are the traffic's
                 .Preset(Settings.PolicePresenceId, 4, 6, 8)
                 .Preset(Settings.PatrolFrequencyId, 2, 4, 6)

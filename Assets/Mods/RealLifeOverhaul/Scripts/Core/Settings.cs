@@ -73,6 +73,7 @@
         public const string SirenId = "siren";
         public const string PoliceId = "police";
         public const string PolicePursuitId = "police_pursuit";
+        public const string PoliceCapsId = "police_caps";
         public const string PeopleId = "people";
         public const string OfficersOnPatrolId = "patrol_officers";
         public const string PatrolFrequencyId = "patrol_frequency";
@@ -461,6 +462,7 @@
         public static bool Siren = true;
         public static bool Police = true;            // patrol cars attend accidents and chase hit-and-run drivers
         public static bool PolicePursuit = true;     // the player is chased after hitting a car and driving off
+        public static bool PoliceCaps = true;        // officers wear a cap; off, every officer goes bare headed (People/OfficerCapRules)
         public static bool People = true;            // drivers, paramedics and officers on foot at accidents and traffic stops
         public static bool OfficersOnPatrol = true;  // one or two officers walking a beat near the player now and then
         public static int PatrolFrequency = 3;       // 1 = rare, 10 = nearly always one about
@@ -901,6 +903,7 @@
             Siren = Bool(modId, SirenId, Siren);
             Police = Bool(modId, PoliceId, Police);
             PolicePursuit = Bool(modId, PolicePursuitId, PolicePursuit);
+            PoliceCaps = Bool(modId, PoliceCapsId, PoliceCaps);
             People = Bool(modId, PeopleId, People);
             OfficersOnPatrol = Bool(modId, OfficersOnPatrolId, OfficersOnPatrol);
             PatrolFrequency = Int(modId, PatrolFrequencyId, PatrolFrequency);

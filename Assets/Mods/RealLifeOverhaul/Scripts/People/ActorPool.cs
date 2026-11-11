@@ -15,7 +15,8 @@ namespace RealLifeOverhaul
     /// <summary>
     /// The mod's people: twelve street characters shared by every scene, made once and handed out again in the same outfit,
     /// as building a look is the costly part (Looks). Four may be out only to be seen; they give way the instant a scene
-    /// needs somebody. Cost: a handful of comparisons a frame while somebody is out, hiding whoever cannot be seen.
+    /// needs somebody. Cost: a handful of comparisons a frame while somebody is out, hiding whoever cannot be seen. An
+    /// officer is dressed again, unseen and at the pace of <see cref="Looks"/>, only when the caps option has moved.
     /// </summary>
     public partial class ActorPool : MonoBehaviour
     {
@@ -48,6 +49,7 @@ namespace RealLifeOverhaul
         private Coroutine _refresh;   // looking after the shelf (making the uniformed, new looks for civilians); null when there is nothing to do
         private bool _uniformsDue;    // the officers and paramedics of the ready pool are still to be made
         private float _uniformsSince;
+        private Action _onSettings;   // the options read again (a preset, an import, a reset): the caps option may have moved
 
         /// <summary>How many more people a scene could put out now; whoever is only there to be seen counts as free.</summary>
         public int Free => MaxActors - Count(yielding: false);
@@ -69,11 +71,14 @@ namespace RealLifeOverhaul
         private void Awake()
         {
             Instance = this;
+            _onSettings = Guard.Wrap(CapsChanged);
+            Settings.Changed += _onSettings;
             enabled = false;   // nobody to look after yet
         }
 
         private void OnDestroy()
         {
+            Settings.Changed -= _onSettings;
             foreach (StreetActor actor in _actors)
             {
                 try
@@ -309,12 +314,44 @@ namespace RealLifeOverhaul
         {
             for (int i = 0; i < _actors.Count; i++)
             {
-                if (_actors[i].Stale && !_actors[i].InUse)
+                if (!_actors[i].InUse && Due(_actors[i]))
                 {
                     return true;
                 }
             }
             return false;
+        }
+
+        /// <summary>
+        /// The caps option moved (the page's switch, or a preset, an import or a reset): idle officers dressed for the
+        /// other value are dressed again, one look at a time and unseen. A pass over the shelf, and a coroutine only
+        /// if one is due.
+        /// </summary>
+        public void CapsChanged()
+        {
+            Tend();
+        }
+
+        // An officer dressed for the other value of the caps option, and so due a new look. A destroyed one never is.
+        private static bool CapsOutOfDate(StreetActor actor)
+        {
+            return actor.IsValid && actor.Look == ActorLook.Officer && OfficerCapRules.Redress(actor.CapsOn, Settings.PoliceCaps);
+        }
+
+        // Due a new look: a civilian worn out (Stale), or an officer whose cap is not what the option says.
+        private static bool Due(StreetActor actor)
+        {
+            return actor.Stale || CapsOutOfDate(actor);
+        }
+
+        // Who is about to be handed to a scene is never in the wrong cap: dressed again here, as a scene cannot wait.
+        private static void CapsUpToDate(StreetActor actor)
+        {
+            if (CapsOutOfDate(actor))
+            {
+                actor.Character.gameObject.SetActive(true);
+                Dress(actor, actor.Look);
+            }
         }
 
         // Runs only while the shelf has something to see to: one look at a time, when Looks says one may be built.
@@ -363,6 +400,11 @@ namespace RealLifeOverhaul
                 if (actor.Stale && !actor.InUse && actor.IsValid && actor.Look == ActorLook.Civilian)
                 {
                     Redress(actor);
+                    return;
+                }
+                if (!actor.InUse && CapsOutOfDate(actor))
+                {
+                    Redress(actor);   // the officer's look is made again for the option's value now
                     return;
                 }
                 if (actor.Stale && !actor.InUse)
@@ -566,7 +608,7 @@ namespace RealLifeOverhaul
                     idleParamedics++;
                 }
                 // Dressed for the part: sooner one whose look is not yet due a change, then whoever came back longest ago.
-                if (actor.Look == look && (ready == null || (ready.Stale && !actor.Stale) || (ready.Stale == actor.Stale && actor.ReleasedAt < ready.ReleasedAt)))
+                if (actor.Look == look && (ready == null || (Due(ready) && !Due(actor)) || (Due(ready) == Due(actor) && actor.ReleasedAt < ready.ReleasedAt)))
                 {
                     ready = actor;
                 }
@@ -585,6 +627,10 @@ namespace RealLifeOverhaul
                     {
                         Equip(ready, look, false);
                     }
+                }
+                else
+                {
+                    CapsUpToDate(ready);
                 }
                 return ready;
             }
@@ -620,6 +666,7 @@ namespace RealLifeOverhaul
                 Release(yielding);
                 if (yielding.Look == look)
                 {
+                    CapsUpToDate(yielding);
                     return yielding;
                 }
                 spare = yielding;

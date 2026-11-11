@@ -39,6 +39,7 @@ The rule since 0.1.1:
 - **A look is kept.** A civilian's look is "worn" after three outings or ten minutes (`Looks.Worn`) and is then changed on the shelf through the slow path.
   Whoever came back longest ago goes out first, so with six (or eight) on the shelf the same face is not handed out twice running, and one character is never two people at once.
 - **Dressed for a part, kept for it.** `ActorPool.Take` hands out somebody already dressed for the part; only when nobody is (more officers wanted than exist, say) is a look built on the spot, and then on one of the part there are most of on the shelf.
+  An officer dressed for the other value of **Police officers wear caps** is due a new look as a worn civilian's is: made again on the shelf by `ActorPool.Tending`, one at a time at this pace, and on the spot only if a scene needs them before the shelf has caught up.
 
   The living city's pool goes further (`CityPeople.Thrifty`): when nobody on its shelf is dressed for a part, `Take` says no, as it does when nobody is free, and the look is made ready on the shelf (`Want`); the director tries that site again first on a later look (`_retry`).
   A site with two parts nobody has takes two or three tries, six seconds apart, out of view.
