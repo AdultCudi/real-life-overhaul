@@ -57,8 +57,7 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             _picturesOn = true;
-            Func<string, Sprite> before = UiPictures.Find;
-            UiPictures.Find = key => key != null && key.StartsWith(PictureKey, StringComparison.Ordinal) ? Picture(key.Substring(PictureKey.Length)) : before?.Invoke(key);
+            UiPictures.Answer(key => key != null && key.StartsWith(PictureKey, StringComparison.Ordinal) ? Picture(key.Substring(PictureKey.Length)) : null);
         }
 
         private static Sprite Picture(string type)

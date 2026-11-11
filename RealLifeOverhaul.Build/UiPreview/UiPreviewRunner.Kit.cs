@@ -20,7 +20,7 @@ public static partial class UiPreviewRunner
             screens.Add(new Screen { Name = "gallery_" + page, AppName = "Interface gallery", Lay = (s, f, d, k) => UiGallery.Lay(s, UiSamples.Gallery(English, p), f, d, k),
                 Walk = new[] { Down, Down, Right, Down, Right, Down, Left }, Backdrop = "13.jpg" });
         }
-        UiPictures.Find = Picture;
+        UiPictures.Answer(Picture);
         for (int i = 0; i < UiSamples.PartStates.Length; i++)
         {
             string state = UiSamples.PartStates[i];

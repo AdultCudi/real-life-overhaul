@@ -557,8 +557,8 @@ internal static partial class Program
         Check(cache.Contains("Most = 120") && cache.Contains("Task.Run(") && cache.Contains("BudgetMs = 1.0") && Regex.IsMatch(cache, @"if \(_held\.Count <= Most\)") && Read(@"Ui\Life\GalleryScreen.cs").Contains("d.Thumbs.Want(d, d.Folder, _shown, _album.ViewFirst, _album.ViewLast)")
               && Read(@"Ui\Flare\FlareScreen.Photos.cs").Contains("d.Thumbs.Want(d, d.Folder, _pickShown, album.ViewFirst, album.ViewLast)"),
             "gallery thumbnails: the kit's Gallery and Flare's picker ask for the photos in view only, read on a worker, made textures within a millisecond a frame, at most 120 kept");
-        Check(Regex.Matches(Read(@"Ui\Life\GalleryPictures.cs"), @"UiPictures\.Find = ").Count == 1 && !Regex.IsMatch(Read(@"Ui\Life\GalleryScreen.cs"), @"UiPictures\.Find ="),
-            "gallery pictures: one hook into the kit's picture finder, made once a session, so no screen's hook can wrap another's round in a ring");
+        Check(Regex.Matches(Read(@"Ui\Life\GalleryPictures.cs"), @"UiPictures\.Answer\(Find\);").Count == 1 && !Regex.IsMatch(Read(@"Ui\Life\GalleryScreen.cs"), @"UiPictures\.(?:Answer|Find)\b"),
+            "gallery pictures: one answer among the kit's pictures, added once a session, and none from the Gallery's screen, so nothing can wrap another round in a ring");
         // The edit saves a new photo and never touches the original.
         string edit = Between(director, "internal IEnumerator SaveEdit(", "/// <summary>A token for a worker's answer");
         Check(edit.Contains("PhotoStore.NewPath(") && edit.Contains("PhotosGame.Finish(edit, path)") && edit.Contains("side.Original = original.Name") && !edit.Contains("File.Delete") && !edit.Contains("WriteWhole(System.IO.Path.Combine(folder, original"),

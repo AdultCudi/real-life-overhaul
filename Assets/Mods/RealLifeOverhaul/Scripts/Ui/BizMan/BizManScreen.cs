@@ -37,10 +37,9 @@ namespace RealLifeOverhaul.Ui
             if (!_picturesOn)
             {
                 // The game's own pictures (logos, the building's photo, the kinds of business) by the keys this screen gives them;
-                // any other key goes to whoever asked before.
+                // any other key is another part's.
                 _picturesOn = true;
-                Func<string, Sprite> before = UiPictures.Find;
-                UiPictures.Find = key => key != null && key.StartsWith(PictureKey, StringComparison.Ordinal) ? Picture(key) : before?.Invoke(key);
+                UiPictures.Answer(key => key != null && key.StartsWith(PictureKey, StringComparison.Ordinal) ? Picture(key) : null);
             }
         }
 

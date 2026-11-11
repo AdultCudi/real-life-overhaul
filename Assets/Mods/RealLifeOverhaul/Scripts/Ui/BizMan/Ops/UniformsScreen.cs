@@ -47,10 +47,9 @@ namespace RealLifeOverhaul.Ui
             _editor = editor;
             if (!_picturesOn)
             {
-                // The game's own pictures of the pieces and colours by the keys this screen gives them; any other key goes to whoever asked before.
+                // The game's own pictures of the pieces and colours by the keys this screen gives them; any other key is another part's.
                 _picturesOn = true;
-                Func<string, Sprite> before = UiPictures.Find;
-                UiPictures.Find = key => key != null && key.StartsWith(PictureKey, StringComparison.Ordinal) ? Picture(key) : before?.Invoke(key);
+                UiPictures.Answer(key => key != null && key.StartsWith(PictureKey, StringComparison.Ordinal) ? Picture(key) : null);
             }
         }
 

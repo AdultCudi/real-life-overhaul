@@ -47,6 +47,7 @@ namespace RealLifeOverhaul.Ui
         private int _order;
         private bool _classic, _held, _shown;
         private bool _underMenu;      // a panel of the HUD put away under the game's pause menu, brought back as it closes
+        private readonly UiReentry _opening = new UiReentry();   // an opening under way: one the game sets off from inside it is refused (Opened)
         private Func<bool> _back;     // while the game runs something in its own view: true once it is over and the kit may come back
         private bool _gaveUp, _stopped;
         private int _misses;
@@ -423,10 +424,18 @@ namespace RealLifeOverhaul.Ui
             _state = "the game's own after a fault of the kit's screen";
         }
 
+        // The game's screen came on (UiGameWatch.OnEnable, or the bind): the kit brought over it. An opening set off from inside one
+        // (the game's screen switched off and on again by something the bringing calls) is refused: the opening under way brings the
+        // kit, and the two can never go round until the stack runs out.
         internal void Opened()
         {
             if (_root == null || _classic)
             {
+                return;
+            }
+            if (!_opening.Enter())
+            {
+                UiReentry.Refused("UiGameHost.Opened", _screen.Name);
                 return;
             }
             try
@@ -442,6 +451,10 @@ namespace RealLifeOverhaul.Ui
             {
                 Guard.Fail(FrameGuard, e, null);
                 Fallback(e);
+            }
+            finally
+            {
+                _opening.Leave();
             }
         }
 

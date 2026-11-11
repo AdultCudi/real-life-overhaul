@@ -14,8 +14,8 @@ namespace RealLifeOverhaul.Ui
         private static UiHost _host;
         private static ViewfinderScreen _screen;
         private static bool _up;
+        private static bool _picturesOn;   // the newest photo's key answered among the kit's pictures, added once a session
 
-        private static Func<string, Sprite> _next;
         private static Sprite _latest;
         private static Texture _latestOf;
 
@@ -59,10 +59,12 @@ namespace RealLifeOverhaul.Ui
                 _host.Exclusive = false;
             }
             _screen.Actions = actions;
-            if (UiPictures.Find != Find)
+            if (!_picturesOn)
             {
-                _next = UiPictures.Find;
-                UiPictures.Find = Find;
+                // Once a session: it once took the answer before it again at each opening and read it from a field as it
+                // answered, so a screen's answer added between two openings closed a ring.
+                _picturesOn = true;
+                UiPictures.Answer(Find);
             }
             _root.SetActive(true);
             _host.Show();
@@ -106,11 +108,12 @@ namespace RealLifeOverhaul.Ui
         public const string LatestKey = "viewfinder:latest";
 
         // The thumbnail's sprite, cut from the small copy once and made again when the newest photo changes; let go when the chrome hides.
+        // Any other key is another part's.
         private static Sprite Find(string key)
         {
             if (key != LatestKey)
             {
-                return _next != null ? _next(key) : null;
+                return null;
             }
             Texture texture = Newest != null ? Newest() : null;
             if (texture == null)

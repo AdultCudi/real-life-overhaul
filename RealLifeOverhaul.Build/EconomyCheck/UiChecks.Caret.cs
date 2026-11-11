@@ -378,7 +378,7 @@ internal static partial class Program
             && host.Contains("BeginTyping(box, box.TypingCommand, 0);")
               && end.Contains("_typeCommand = -1;") && end.Contains("_laidSize = Vector2.zero;"),
             "ui caret: the host tells the scene which target takes the keys, from the press to the end of the typing");
-        string layout = UiCaretMember(host, "private void Layout()") ?? string.Empty;
+        string layout = UiCaretMember(host, "private void LayAndDraw()") ?? string.Empty;   // the layout's work, behind its guard against coming back into itself (Layout)
         Check(layout.Contains("_caretOn = true;") && layout.Contains("_blinkAt = Time.unscaledTime + SolidFor"), "ui caret: a layout (a key typed) leaves the caret solid for a moment");
         string hide = UiCaretMember(host, "public void Hide()") ?? string.Empty, hold = UiCaretMember(host, "public void Hold(bool hold)") ?? string.Empty;
         string pointer = UiCaretMember(host, "private void PointerPressed(int node)") ?? string.Empty, ended = UiCaretMember(host, "private void TypingEnded(string text)") ?? string.Empty;

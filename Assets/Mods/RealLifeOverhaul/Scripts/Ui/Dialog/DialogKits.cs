@@ -105,7 +105,7 @@ namespace RealLifeOverhaul.Ui
             return key;
         }
 
-        // The keys this area gives its pictures, answered here; any other key goes to whoever asked before.
+        // The keys this area gives its pictures, answered here; any other key is another part's.
         private static void PicturesOn()
         {
             if (_picturesOn)
@@ -113,10 +113,9 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             _picturesOn = true;
-            Func<string, Sprite> before = UiPictures.Find;
-            UiPictures.Find = key => key != null && (key.StartsWith(DialogRules.SwatchKey, StringComparison.Ordinal) || key.StartsWith(DialogRules.PictureKey, StringComparison.Ordinal))
+            UiPictures.Answer(key => key != null && (key.StartsWith(DialogRules.SwatchKey, StringComparison.Ordinal) || key.StartsWith(DialogRules.PictureKey, StringComparison.Ordinal))
                 ? Picture(key)
-                : before?.Invoke(key);
+                : null);
         }
 
         // A colour's swatch is a square of that colour, made once a colour a city; a face is the game's own sprite.

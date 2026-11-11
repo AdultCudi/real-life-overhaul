@@ -53,10 +53,9 @@ namespace RealLifeOverhaul.Ui
             _model.Buttons = new MapButtonsModel();
             if (!_picturesOn)
             {
-                // The game's own pictures (a line's icon, a building's kind) by the keys the dock gives them; any other key goes to whoever asked before.
+                // The game's own pictures (a line's icon, a building's kind) by the keys the dock gives them; any other key is another part's.
                 _picturesOn = true;
-                Func<string, Sprite> before = UiPictures.Find;
-                UiPictures.Find = key => key != null && key.StartsWith("map:", StringComparison.Ordinal) ? PictureOf(key) : before?.Invoke(key);
+                UiPictures.Answer(key => key != null && key.StartsWith("map:", StringComparison.Ordinal) ? PictureOf(key) : null);
             }
         }
 

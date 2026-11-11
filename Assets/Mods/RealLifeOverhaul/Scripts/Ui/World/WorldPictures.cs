@@ -7,9 +7,8 @@ namespace RealLifeOverhaul.Ui
 {
     /// <summary>
     /// The pictures the world's windows show: the game's own sprites (a car, a sofa, a box of goods) by a key made once a
-    /// sprite, and squares of one colour for a row of colours (UiDraw.SwatchKey). Hooked into UiPictures.Find once a session
-    /// before whoever answered before, which still answers every other key. Cost: a key a new sprite; a small texture a new
-    /// colour.
+    /// sprite, and squares of one colour for a row of colours (UiDraw.SwatchKey). Added to the kit's pictures (UiPictures.Answer)
+    /// once a session, answering its own keys only. Cost: a key a new sprite; a small texture a new colour.
     /// </summary>
     internal static class WorldPictures
     {
@@ -18,7 +17,7 @@ namespace RealLifeOverhaul.Ui
         private static readonly Dictionary<int, Sprite> Sprites = new Dictionary<int, Sprite>(64);
         private static readonly Dictionary<int, string> Keys = new Dictionary<int, string>(64);
         private static readonly Dictionary<int, Sprite> Squares = new Dictionary<int, Sprite>(32);
-        private static Func<string, Sprite> _mine;
+        private static bool _on;
 
         /// <summary>A sprite of the game's as a picture key; null for none. The key stays the same for the same sprite.</summary>
         public static string Of(Sprite sprite)
@@ -62,15 +61,15 @@ namespace RealLifeOverhaul.Ui
             Squares.Clear();
         }
 
+        // Once a session: it once wrapped the answers before it again whenever another stood over it, each time a new link round them.
         private static void On()
         {
-            if (_mine != null && UiPictures.Find == _mine)
+            if (_on)
             {
                 return;
             }
-            Func<string, Sprite> before = UiPictures.Find;
-            _mine = key => Find(key) ?? before?.Invoke(key);
-            UiPictures.Find = _mine;
+            _on = true;
+            UiPictures.Answer(Find);
         }
 
         private static Sprite Find(string key)

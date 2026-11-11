@@ -222,24 +222,25 @@ namespace RealLifeOverhaul.Ui
                                     + Keys.Label(KeyAction.Phone) + ").");
         }
 
-        private static System.Func<string, Sprite> _picturesBefore;
-        private static System.Func<string, Sprite> _pictures;
+        private static bool _picturesOn;
 
-        // The phone answers its own pictures' keys (other mods' app icons) and hands every other key to whoever answered
-        // before (a catalogue's goods), so the kit has one way to find a picture. Hooked once a session.
+        // The phone answers its own pictures' keys (other mods' app icons, by their handles) among the kit's pictures, once a
+        // session: the handles are this city's items (PhoneItemsGame), so a later city adds nothing. It once took the answer
+        // before it again at each city's phone and read it from a field as it answered, which closed a ring in a second city.
         private static void HookPictures()
         {
-            if (_pictures != null && UiPictures.Find == _pictures)
+            if (_picturesOn)
             {
                 return;
             }
-            _picturesBefore = UiPictures.Find;
-            _pictures = key =>
-            {
-                int handle = UiDraw.PictureHandle(key);
-                return handle > 0 ? PhoneItemsGame.Picture(handle) : _picturesBefore != null ? _picturesBefore(key) : null;
-            };
-            UiPictures.Find = _pictures;
+            _picturesOn = true;
+            UiPictures.Answer(PhonePicture);
+        }
+
+        private static Sprite PhonePicture(string key)
+        {
+            int handle = UiDraw.PictureHandle(key);
+            return handle > 0 ? PhoneItemsGame.Picture(handle) : null;
         }
 
         // Another pager of the phone, or another mod's screen drawn on it: theirs, and the classic phone with them.

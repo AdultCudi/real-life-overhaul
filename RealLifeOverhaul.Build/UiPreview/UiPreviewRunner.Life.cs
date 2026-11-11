@@ -20,8 +20,7 @@ public static partial class UiPreviewRunner
 
     static partial void AddLife(List<Screen> screens)
     {
-        Func<string, Sprite> before = UiPictures.Find;
-        UiPictures.Find = key => key != null && (key.StartsWith("photo:", StringComparison.Ordinal) || key == "viewfinder:latest" || key == "photoedit:preview") ? LifePicture(key) : before?.Invoke(key);
+        UiPictures.Answer(key => key != null && (key.StartsWith("photo:", StringComparison.Ordinal) || key == "viewfinder:latest" || key == "photoedit:preview") ? LifePicture(key) : null);
         screens.Add(new Screen { Name = "planner_today", AppName = "Planner", Icon = UiIcon.Clock, Backdrop = "13.jpg",
             Lay = (s, f, d, k) => UiSamples.PlannerToday(s, f, d, k, ModEnglish, false), HoverCommand = UiBoard.ShiftCommand, HoverArg = 1, Walk = Moves("DRR") });
         screens.Add(new Screen { Name = "planner_today_empty", AppName = "Planner", Icon = UiIcon.Clock, Backdrop = "02.jpg",

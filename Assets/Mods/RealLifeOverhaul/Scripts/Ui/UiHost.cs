@@ -58,6 +58,8 @@ namespace RealLifeOverhaul.Ui
         private int _laidFaces;   // UiFaces.Version at the last layout: a game picture that arrived since lays the screen out again
         private int _heldX, _heldY;
         private int _laid;   // layouts made, so a press can tell that its own focus laid the screen out again
+        private readonly UiReentry _laying = new UiReentry();   // a layout under way: one asked for from inside it is refused (Layout)
+        private bool _layAgain;                                 // a layout was refused while one was under way: the screen is laid again next frame
         private float _nextRepeat;
         private UiInputState _state;
         private bool _dragging;      // a target is held by the pointer (IUiDragging)
@@ -611,11 +613,36 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        // Lays the screen out and draws it; focus stays on the same target (by its command and argument) where it still is.
+        // Lays the screen out and draws it; focus stays on the same target (by its command and argument) where it still is. A layout
+        // asked for from inside one (anything the screen's laying or drawing calls that comes back here) is refused and the screen laid
+        // again next frame, from the state the layout under way leaves, so no way round can lay it out until the stack runs out.
         private void Layout()
         {
+            if (!_laying.Enter())
+            {
+                _layAgain = true;
+                UiReentry.Refused("UiHost.Layout", _screen != null ? _screen.Id : null);
+                return;
+            }
+            try
+            {
+                using var cost = Measured(UiWork.Layout);
+                LayAndDraw();
+            }
+            finally
+            {
+                _laying.Leave();
+                if (_layAgain)
+                {
+                    _layAgain = false;
+                    _laidSize = Vector2.zero;   // laid out again next frame, with what the refused layout was asked for
+                }
+            }
+        }
+
+        private void LayAndDraw()
+        {
             _laid++;
-            using var cost = Measured(UiWork.Layout);
             var rect = (RectTransform)transform;
             Vector2 size = rect.rect.size;
             float scale = _view.Scale;

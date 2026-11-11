@@ -425,7 +425,7 @@ namespace RealLifeOverhaul.Ui
         private const string ItemPicture = "designer:item:", MaterialPicture = "designer:mat:";
         private static bool _picturesOn;
 
-        // The keys of the designer's pictures answered here first, once a session; any other key, and the swatches of colour (the world's), go to whoever answered before.
+        // The keys of the designer's pictures answered here, once a session; any other key is another part's, the swatches of colour the world's.
         private static void PicturesOn()
         {
             if (_picturesOn)
@@ -433,9 +433,8 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             _picturesOn = true;
-            WorldPictures.Of(Color.white);   // puts the world's answer for swatches in the chain first, so ours stands over it
-            Func<string, Sprite> before = UiPictures.Find;
-            UiPictures.Find = key => Picture(key) ?? before?.Invoke(key);
+            WorldPictures.Of(Color.white);   // the world's answer for the swatches is in before the designer's first picture is asked for
+            UiPictures.Answer(Picture);
         }
 
         internal static string MaterialPictureKey(string uuid, int variant) => MaterialPicture + uuid + ":" + UiText.Whole(variant);

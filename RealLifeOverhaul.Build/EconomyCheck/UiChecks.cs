@@ -37,6 +37,7 @@ internal static partial class Program
         UiSourceChecks();
         UiBindChecks();
         UiHostChecks();
+        UiPictureRingChecks();   // the pictures asked of their parts in turn, a layout and an opening refused inside their own (UiChecks.PictureRing.cs)
         UiClickChecks();
         UiClickBehindAllChecks();
         ToastChecks();

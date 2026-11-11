@@ -11,8 +11,7 @@ public static partial class UiPreviewRunner
     // backdrops), as the game shows one it has loaded.
     static partial void AddBlueprints(List<Screen> screens)
     {
-        Func<string, Sprite> before = UiPictures.Find;
-        UiPictures.Find = key => BlueprintThumb(key) ?? before?.Invoke(key);
+        UiPictures.Answer(BlueprintThumb);
         string[] blueprintBack = { "13.jpg", "02.jpg", "13.jpg", "02.jpg", "13.jpg", "02.jpg", "13.jpg", "02.jpg" };
         for (int i = 0; i < UiSamples.BlueprintStates.Length; i++)
         {

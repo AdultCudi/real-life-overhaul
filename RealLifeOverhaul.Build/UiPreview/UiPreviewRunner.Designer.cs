@@ -11,8 +11,7 @@ public static partial class UiPreviewRunner
     // Pictures: the mockups' thumbnails of the game's furniture and floors (local only, like the backdrops), and a swatch's colour flat.
     static partial void AddDesigner(List<Screen> screens)
     {
-        Func<string, Sprite> before = UiPictures.Find;
-        UiPictures.Find = key => DesignerPicture(key) ?? before?.Invoke(key);
+        UiPictures.Answer(DesignerPicture);
         string[] backdrops = { "00.jpg", "03.jpg", "05.jpg" };
         for (int i = 0; i < UiSamples.DesignerStates.Length; i++)
         {

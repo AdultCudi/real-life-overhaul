@@ -50,6 +50,7 @@ namespace RealLifeOverhaul.Ui
         {
             Instance = this;
             UiFonts.Said = line => Logger?.Warn(line);
+            UiReentry.Said = line => Logger?.Warn(line);   // a call refused for coming back into itself: once a session at each place, with its stack
             UiFonts.Begin(Path.Combine(ModRoot ?? string.Empty, UiFonts.BundlePath));
             LoadHold.Add("ui: the interface's fonts", UiFonts.Step, done => { });
             if (UiTweens.Instance == null)

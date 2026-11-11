@@ -286,6 +286,14 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--picture-ring")
+        {
+            UiPictureRingChecks();   // (the kit's pictures asked of their parts in turn, a layout and an opening refused inside their own: UiChecks.PictureRing.cs)
+            CgSources();             // (the Gallery's sources, its answer among the kit's pictures: CameraGalleryChecks.cs)
+            UiCaretBlink();          // (the caret's rules over the host's layout, which now stands behind its guard: UiChecks.Caret.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--map-drag")
         {
             UiMapDragChecks();   // (a kit window let go after a drag, so the map camera is free again: UiChecks.MapDrag.cs)
