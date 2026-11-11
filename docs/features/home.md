@@ -40,6 +40,7 @@ Scripts/Home/
   HomePhone      the "Wellbeing" contact and its call (WellbeingDialog)
   DoctorVisit    the doctor's consultation (ClinicDialog)
   HomeNeedsBar   hygiene, stress and home as three more of the game's bars, in a tab under its top bar
+  HomeBarRules   when those bars stand and how many of them (game-free)
 ```
 
 ## What the game already does (and the mod leaves alone)
@@ -71,7 +72,9 @@ The director looks at the game's own panel once a second (`ReadDoing`) and takes
 
   *Home*: the tidiness of the player's home, which is **the game's own floor dirt** where the home has floor cells (living there puts a little on a third of the cells, never more than 60 a cell; the game's own mop takes it off; tidying up takes it off everywhere) and a figure in the mod's state where it has none. -1.6 an hour at home awake.
 
-  The three are shown at home, while hygiene is under 35 or stress over 65, and while ill, as three more of the game's own bars (`HomeNeedsBar`, below).
+  The three are shown all the time the game's top bar is, as three more of the game's own bars (`HomeNeedsBar`, below), wherever the player is and however well they are.
+  They used to stand only at home, while hygiene was under 35 or stress over 65, and while ill, so a player away from home with every need in the clear saw nothing: a new game, or a shower that put hygiene back over 35.
+  With no home of the player's own the home bar is left out, as the interface HUD leaves out its home need (`HomeBarRules`).
   "Easy needs" halves what wears a need down and every chance of illness.
 
 - **Consequences** are mood only, each one of the mod's happiness modifiers held on while its cause lasts: Unwashed -6 (under 25), Stressed -8 (over 75), Relaxed +4 (under 15), The flat is a mess -5 / A tidy home +4 (at home), Short of sleep -8 (more than 8 h owed), In good shape +4 (fitness 70), Eating well +4 / Living on junk food -5.
@@ -222,16 +225,25 @@ The game's energy, hunger and happiness are three objects of 412 x 56 in `Topbar
 The mod's three are a copy of that tab holding a copy of `PlayerStats`, hung under the game's bars (beside the accessories tab while that is open: its place is measured), with their own colours, pictures and a word each (the game's bars have no word; three new ones without would have to be guessed).
 The copy is a child of the game's top bar and goes with it.
 
+**When they show.** `HomeDirector.Strip` asks `HomeBarRules.Shows(Settings.HomeStrip, Settings.HomeNeeds)` once a second and nothing else: not where the player is, nor hygiene, stress or an illness.
+The tab is switched off only when that option or the needs are off, while the interface HUD shows the needs in its own bar (`HomeNeedsBar.Held`), and when home life goes.
+Every screen that hides the game's top bar hides the tab with it and gives it back with it, because the game switches `Topbar`'s own object: the full menu, a time skip (the game's time machine, which a shower or a sleep can start), a building preview, the interior designer and the mod's photograph.
+The tab's own state is not touched for them.
+
+`HomeBarRules.Count` is 3 with a home of the player's own (`HomeTidy.HasHome`) and 2 without.
+With 2 the third bar is switched off, the tab is as wide as the first two bars reach (`Reach`, measured from the game's own bars when the tab is built) and the illness line moves in after them.
+
 A bar is written when its whole number changes, at most once a second; the illness and how long it has to run is a line beside the bars in the game's yellow.
 
 Test buttons: "Test: open the cooking list" and "Test: cook the first dish the fridges allow".
 Pressed on the options page, both wait up to 20 seconds for the menus to be closed.
 `Player.log` gets "Home: cooking list opened: 1 fridge(s), 1 cooker(s); food by kind: Meat 2 Vegetable 3; size 1; 3 dish(es) possible, 1 one short, 0 wanting a cooker, leftovers 0." and a line when a dish is done.
 
-With "Developer diagnostics" on: `Home check (offer)` when the click actions and the fridge's button are in and for each piece of furniture marked, `(cooking list)` when the list opens (what it holds, the time it took) and closes (with why), `(choice)` for a click on a cooker, a coffee machine or the fridge's button, for the size and for the dish, `(needs bars)` when the bars are built, shown and hidden, `(doctor panel)` when the game's panel comes up or goes, `(run)` per checkpoint.
+With "Developer diagnostics" on: `Home check (offer)` when the click actions and the fridge's button are in and for each piece of furniture marked, `(cooking list)` when the list opens (what it holds, the time it took) and closes (with why), `(choice)` for a click on a cooker, a coffee machine or the fridge's button, for the size and for the dish, `(needs bars)` when the bars are built, shown and hidden and when the home bar comes or goes, `(doctor panel)` when the game's panel comes up or goes, `(run)` per checkpoint.
 
 Not verified in the game (it could not be run): how the list reads at 1,100 wide with entries of three lines.
 How the tab of three bars looks under the top bar and beside the accessories tab, and which of the game's pictures the bars got.
+How the tab of two bars (no home of the player's own) and its illness line sit, and that the tab is back with the top bar after a time skip.
 That the fridge's button lays out under the items.
 
 That a routine now always sets off (the order of two end-of-frame coroutines started in the same frame is assumed to be the order they were started in, which the game's own activities rely on too; the second attempt does not depend on it).

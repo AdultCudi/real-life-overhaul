@@ -135,17 +135,18 @@ namespace RealLifeOverhaul
             }
         }
 
-        private void Strip(bool atHome)
+        // The bars of hygiene, stress and home under the game's top bar stand whenever that bar does (Home/HomeBarRules), once a second. They used to
+        // wait for the player to be at home, hygiene to fall under 35, stress to pass 65 or an illness, so a new game away from home showed none and
+        // a shower took them away again. Nothing here switches them off for a screen: they are children of the top bar, which the game hides itself.
+        private void Strip()
         {
-            string other = HomeBridges.StatusNote != null ? HomeBridges.StatusNote() : null;   // Health: an injury or a serious case, said before Home's own illness
-            bool show = Settings.HomeStrip && Settings.HomeNeeds && (atHome || HomeState.Hygiene < 35f || HomeState.Stress > 65f || HomeHealth.Ill || other != null);
-            if (!show)
+            if (!HomeBarRules.Shows(Settings.HomeStrip, Settings.HomeNeeds))
             {
                 HomeNeedsBar.Hide();
                 return;
             }
-            string note = other;
-            if (other == null && HomeHealth.Ill)
+            string note = HomeBridges.StatusNote != null ? HomeBridges.StatusNote() : null;   // Health: an injury or a serious case, said before Home's own illness
+            if (note == null && HomeHealth.Ill)
             {
                 int hoursLeft = Mathf.Max(0, Mathf.CeilToInt((HomeState.IllUntil - TimeHelper.NowInMinutes()) / 60f));
                 int code = (int)HomeState.Ill * 100000 + hoursLeft * 2 + (HomeState.IllTreated ? 1 : 0);

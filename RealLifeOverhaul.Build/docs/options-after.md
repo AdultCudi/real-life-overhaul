@@ -37,7 +37,7 @@ The tree: 10 groups, 59 sections, 216 options and 31 buttons of the player's. Te
 | --- | --- | --- | --- | --- | --- |
 | main switch | `home_life` | Home life and health | Home life and health |  | Needs, routines at home, sleep, illness and fitness. Off, none of it runs. |
 | switch | `home_needs` | Hygiene, stress and a tidy home | Needs: hygiene, stress and a tidy home | `home_life` | Hygiene, stress and the state of your home wear down and have to be looked after. |
-| switch | `home_strip` | Bars for hygiene, stress and home | Show hygiene, stress and home as bars under the game's own (at home, or when a need runs low) | `home_life` | Three more bars appear under the game's own, at home or when a need runs low. |
+| switch | `home_strip` | Bars for hygiene, stress and home | Show hygiene, stress and home as bars under the game's own (at home, or when a need runs low) | `home_life` | Three more bars show under the game's own all the time, and the home bar waits until you have a home. |
 | switch | `home_easy` | Easy needs | Easy needs: needs wear down half as fast, illness is half as likely | `home_life` | Needs wear down half as fast and illness is half as likely. |
 | switch | `home_sleep` | Sleep quality and sleep debt | Sleep quality and sleep debt | `home_life` | How well you slept counts, and sleep you miss has to be caught up. |
 | switch | `home_morning` | Morning summary after a night's sleep | Morning summary after a night's sleep | `home_life` | After a night's sleep a short summary says how you are. |

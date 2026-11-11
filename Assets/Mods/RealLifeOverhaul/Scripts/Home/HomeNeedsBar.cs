@@ -10,8 +10,10 @@ namespace RealLifeOverhaul
 {
     /// <summary>
     /// Hygiene, stress and home as three more of the game's needs bars, in a copy of its accessories tab under the top bar,
-    /// so it goes wherever the top bar goes. The director calls <see cref="Show"/> once a second; a bar is touched only when
-    /// its whole number changes. A fault removes the tab for the session.
+    /// so it goes wherever the top bar goes and shows whenever the top bar does (Home/HomeBarRules): the tab is never switched
+    /// off for how the player is doing or where they are, and the game's own hiding of the top bar hides it and gives it back.
+    /// The director calls <see cref="Show"/> once a second; a bar is touched only when its whole number changes, and the home
+    /// bar is left out while the player has no home. A fault removes the tab for the session.
     /// </summary>
     public static class HomeNeedsBar
     {
@@ -30,15 +32,18 @@ namespace RealLifeOverhaul
 
         public static IModLogger Logger;
 
-        private static readonly Image[] Fill = new Image[3];
+        private static readonly Image[] Fill = new Image[HomeBarRules.Most];
         private static readonly int[] Shown = { -1, -1, -1 };
+        private static readonly float[] Reach = new float[HomeBarRules.Most];   // from the first bar's left edge to the right edge of the first, of the first two and of all three
         private static GameObject _tab;
+        private static GameObject _home;
         private static RectTransform _tabRect;
         private static RectTransform _accessories;
+        private static RectTransform _noteRect;
         private static Component _note;
         private static string _noteShown;
         private static float _alignedX;
-        private static float _barsWidth;
+        private static int _count = HomeBarRules.Most;   // how many bars stand now (Home/HomeBarRules.Count)
         private static bool _on;
         private static bool _noteOn;
         private static bool _beside;
@@ -70,15 +75,25 @@ namespace RealLifeOverhaul
                         return;
                     }
                 }
+                int count = HomeBarRules.Count(hasHome);
                 Bar(0, hygiene);
                 Bar(1, stress);
-                Bar(2, hasHome ? home : 0f);
+                if (count == HomeBarRules.Most)
+                {
+                    Bar(2, home);
+                }
                 bool noteOn = note != null;
                 bool beside = _accessories != null && _accessories.gameObject.activeSelf;
-                if (noteOn != _noteOn || beside != _beside || !_on)
+                if (noteOn != _noteOn || beside != _beside || count != _count || !_on)
                 {
+                    if (_on && count != _count && Meta.Dev.Verbose)
+                    {
+                        Logger?.Info("Home check (needs bars): the home bar is "
+                                     + (count == HomeBarRules.Most ? "back, the player has a home of their own" : "left out, the player has no home of their own") + ".");
+                    }
                     _noteOn = noteOn;
                     _beside = beside;
+                    _count = count;
                     Place();
                 }
                 if (noteOn && !ReferenceEquals(note, _noteShown))
@@ -92,8 +107,10 @@ namespace RealLifeOverhaul
                     _tab.SetActive(true);
                     if (Meta.Dev.Verbose)
                     {
-                        Logger?.Info("Home check (needs bars): shown under the game's top bar, " + (beside ? "beside the open accessories tab" : "under the game's three bars")
-                                     + ": hygiene " + Shown[0] + ", stress " + Shown[1] + ", home " + Shown[2] + (noteOn ? ", with the illness line" : string.Empty) + ".");
+                        Logger?.Info("Home check (needs bars): shown with the game's top bar, " + (beside ? "beside the open accessories tab" : "under the game's three bars")
+                                     + ": hygiene " + Shown[0] + ", stress " + Shown[1]
+                                     + (count == HomeBarRules.Most ? ", home " + Shown[2] : ", no home bar (the player has no home of their own)")
+                                     + (noteOn ? ", with the illness line" : string.Empty) + ".");
                     }
                 }
             }
@@ -114,7 +131,7 @@ namespace RealLifeOverhaul
                 }
                 if (Meta.Dev.Verbose)
                 {
-                    Logger?.Info("Home check (needs bars): hidden (not at home, no need in its warning zone and not ill, or a screen is open).");
+                    Logger?.Info("Home check (needs bars): hidden (their option or the needs are switched off, the interface's HUD shows the needs in its own bar, or home life is going).");
                 }
             }
         }
@@ -133,12 +150,15 @@ namespace RealLifeOverhaul
         private static void Forget()
         {
             _tab = null;
+            _home = null;
             _tabRect = null;
             _accessories = null;
+            _noteRect = null;
             _note = null;
             _noteShown = null;
             _on = false;
             _noteOn = false;
+            _count = HomeBarRules.Most;
             for (int i = 0; i < 3; i++)
             {
                 Fill[i] = null;
@@ -182,11 +202,21 @@ namespace RealLifeOverhaul
             {
                 x = Mathf.Max(x, _accessories.localPosition.x + _accessories.rect.xMax + Gap);
             }
+            float bars = Reach[_count - 1];
             _tabRect.anchoredPosition = new Vector2(x, _tabRect.anchoredPosition.y);
-            _tabRect.sizeDelta = new Vector2(Pad + _barsWidth + Pad + (_noteOn ? NoteWidth : 0f), _tabRect.sizeDelta.y);
-            if (_note != null && _note.gameObject.activeSelf != _noteOn)
+            _tabRect.sizeDelta = new Vector2(Pad + bars + Pad + (_noteOn ? NoteWidth : 0f), _tabRect.sizeDelta.y);
+            bool homeOn = _count == HomeBarRules.Most;
+            if (_home != null && _home.activeSelf != homeOn)
             {
-                _note.gameObject.SetActive(_noteOn);
+                _home.SetActive(homeOn);
+            }
+            if (_note != null)
+            {
+                _noteRect.anchoredPosition = new Vector2(Pad + bars + Pad, _noteRect.anchoredPosition.y);   // after the bars that stand
+                if (_note.gameObject.activeSelf != _noteOn)
+                {
+                    _note.gameObject.SetActive(_noteOn);
+                }
             }
         }
 
@@ -219,9 +249,12 @@ namespace RealLifeOverhaul
                 GameObject copy = UiClone.Asleep(stats.gameObject, tab.transform, "Bars");
                 UiClone.StripGameScripts(copy, null);
                 var first = (RectTransform)stats.GetChild(0);
-                var last = (RectTransform)stats.GetChild(2);
                 float firstLeft = first.localPosition.x + first.rect.xMin;
-                float lastRight = last.localPosition.x + last.rect.xMax;
+                for (int i = 0; i < HomeBarRules.Most; i++)
+                {
+                    var game = (RectTransform)stats.GetChild(i);
+                    Reach[i] = game.localPosition.x + game.rect.xMax - firstLeft;   // where the tab's bars end when this is the last that stands
+                }
                 for (int i = 0; i < 3; i++)
                 {
                     Transform one = copy.transform.GetChild(i);
@@ -281,7 +314,6 @@ namespace RealLifeOverhaul
                 copyRect.pivot = ((RectTransform)stats).pivot;
                 copyRect.sizeDelta = ((RectTransform)stats).rect.size;
                 copyRect.anchoredPosition = new Vector2(Pad - firstLeft, 4f);   // (the game's tab keeps its content 4 above its middle: the sprite has a shadow below)
-                _barsWidth = lastRight - firstLeft;
 
                 GameObject note = UnityEngine.Object.Instantiate(word.gameObject, tab.transform, false);
                 note.name = "Note";
@@ -289,7 +321,7 @@ namespace RealLifeOverhaul
                 noteRect.anchorMin = noteRect.anchorMax = new Vector2(0f, 0.5f);
                 noteRect.pivot = new Vector2(0f, 0.5f);
                 noteRect.sizeDelta = new Vector2(NoteWidth - Pad, 60f);
-                noteRect.anchoredPosition = new Vector2(Pad + _barsWidth + Pad, 4f);
+                noteRect.anchoredPosition = new Vector2(Pad + Reach[HomeBarRules.Most - 1] + Pad, 4f);   // (Place moves it in when the home bar is left out)
                 var noteText = note.GetComponent<TMP_Text>();
                 if (noteText != null)
                 {
@@ -303,6 +335,9 @@ namespace RealLifeOverhaul
                 UiClone.Words(note.transform, string.Empty);
                 note.SetActive(false);
                 _note = note.transform;
+                _noteRect = noteRect;
+                _home = copy.transform.GetChild(HomeBarRules.Most - 1).gameObject;
+                _count = HomeBarRules.Most;
 
                 // Under the game's bars: the tab's first bar under the game's first.
                 _alignedX = bar.InverseTransformPoint(first.TransformPoint(new Vector3(first.rect.xMin, 0f, 0f))).x - Pad;
@@ -317,8 +352,8 @@ namespace RealLifeOverhaul
                 UnityEngine.Object.DestroyImmediate(holder.gameObject);
                 if (Meta.Dev.Verbose)
                 {
-                    Logger?.Info("Home check (needs bars): built from the game's top bar: a copy of its accessories tab holding a copy of its three bars (" + _barsWidth.ToString("F0")
-                                 + " wide, first bar " + (_alignedX + Pad).ToString("F0") + " from the bar's left edge): PASS.");
+                    Logger?.Info("Home check (needs bars): built from the game's top bar: a copy of its accessories tab holding a copy of its three bars ("
+                                 + Reach[HomeBarRules.Most - 1].ToString("F0") + " wide, first bar " + (_alignedX + Pad).ToString("F0") + " from the bar's left edge): PASS.");
                 }
                 return true;
             }
