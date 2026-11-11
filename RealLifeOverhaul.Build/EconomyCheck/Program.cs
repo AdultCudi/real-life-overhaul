@@ -933,6 +933,15 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--work-place")
+        {
+            WorkPlace();   // (where each employer's work is done, found: the practice, the works sites and the boards, alone: WorkPlaceChecks.cs)
+            MeetingPlaces();   // (and the checks of the sources it changed: a review's place, the employers on the map, the rota's shut doors)
+            DriveMap();
+            ShiftOpen();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
 
         if (args.Length == 1 && args[0] == "--staff-centres")
         {
@@ -1458,6 +1467,7 @@ internal static partial class Program
         CityReady();    // DLC and update readiness: the city check's table, New York's districts and their order, every table by district with one it does not know (CityReadyChecks.cs)
         FloorsCore();   // the floors of the mod's buildings: floors a building holds, spare floors and a building taken for places, the panel's pages, every way in and out given back, the sources, the words (FloorsChecks.cs)
         BuildTrades();  // the building trades: the trades and what each asks, the courses and ladders, the bar, the match, the inspection and its bribe, the design game and its score, the tender, the book, the sources, the texts (BuildTradesChecks.cs)
+        WorkPlace();    // every employer's place of work found: the clock on that names the practice or the site, the marker that stays up, the pin and the pages, the sources, the texts (WorkPlaceChecks.cs)
         NewBuildingsChecks(); // the mod's own buildings: the design picked and where it stands, the lot taken, what refuses one, nothing of them saved, none destroyed in a session, the texts (NewBuildingsChecks.cs)
         SpecialServiceChecks(); // a made building with one of the game's special services: the special type only with one, the registration as the game fills one, the lists in and out, a branch's contact (SpecialServiceChecks.cs)
         Builders();     // the construction game: the catalogue, the land, the plans and planning, a site, the money, tenders and rivals, the developers, the frame, the store's line, the sources and wiring, the texts (BuildersChecks.cs)

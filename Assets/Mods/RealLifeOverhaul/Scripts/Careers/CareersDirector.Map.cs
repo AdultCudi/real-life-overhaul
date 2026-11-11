@@ -17,7 +17,10 @@ namespace RealLifeOverhaul.Careers
             return post == null ? "reallife_work_why_gone" : ShowPlace(post.Employer, post.Street, post.Number);
         }
 
-        /// <summary>Show on map for an employer that hires at a help-wanted board (the gig work's own). Null if done, else a reason key.</summary>
+        /// <summary>
+        /// Show on map for an employer of the gig work (a help-wanted board outside a shop) or of the building trades (the practice's floor,
+        /// the nearest works site). Null if done, else a reason key. The notice names the board and the shop, or the works address.
+        /// </summary>
         internal string ShowBoard(BoardEmployer board)
         {
             Func<int, string> show = CareersBridges.ShowBoard;
@@ -27,7 +30,9 @@ namespace RealLifeOverhaul.Careers
                 return why;
             }
             CloseApps();
-            Notifications.Show(NotificationType.Success, "reallife_career_office_shown", Data("employer", board.Name, "address", board.Address ?? string.Empty), 6f);
+            Notifications.Show(NotificationType.Success,
+                board.Works ? "reallife_career_office_shown_at" : board.Place != null ? "reallife_career_office_shown_board" : "reallife_career_office_shown",
+                Data("employer", board.Name, "address", board.Address ?? string.Empty, "place", board.Place ?? string.Empty), 6f);
             return null;
         }
 

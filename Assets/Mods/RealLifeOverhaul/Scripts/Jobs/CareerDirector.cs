@@ -18,7 +18,6 @@ namespace RealLifeOverhaul
     public sealed partial class CareerDirector
     {
         private const float DeskReach = 45f;        // metres: desk and lead shifts are clocked on to this near the depot
-        private const float OfficeNear = 25f;       // metres: the office's mark comes off once the player is this near the board
         private const float OfficeSeconds = 900f;   // real seconds the office's mark stays up if the player never gets there
         private const string WageKey = "reallife_transaction_career_wage";
         private const string SalaryCategory = "ba:transactioncategory_salaryincome";
@@ -31,7 +30,9 @@ namespace RealLifeOverhaul
         private readonly StringBuilder _text = new StringBuilder(256);
         private readonly GuideMark _officeMark = new GuideMark("the career's office");   // the game's destination marker, for "Show me the office"
         private float _officeUntil;       // unscaled time the mark comes off; 0 while it is not up
-        private int _officeBoard = -1;
+        private int _officeBoard = -1;    // the board the mark is on, or -1 for a works site or the practice (the building trades have none)
+        private Vector3 _officeAt;        // where the mark stands
+        private float _officeReach;       // metres from it within which it comes off (CareerOfficeRules.MarkReach)
         private bool _mapped;
         private bool _failed;
 
@@ -175,7 +176,10 @@ namespace RealLifeOverhaul
             return CareerOfficeRules.Key(key, where);
         }
 
-        /// <summary>"Show me the office": the game's destination marker on the board until the player is near or 15 minutes pass. False without a board or with the marker in use.</summary>
+        /// <summary>
+        /// "Show me the office": the game's destination marker on the employer's place (its board, the practice's door, the nearest works
+        /// site) until the player is near or 15 minutes pass. False with no place standing or with the marker in use.
+        /// </summary>
         public bool ShowOffice(int employer)
         {
             if (!DepotPlace(employer, out Vector3 place, out string address))
@@ -189,6 +193,8 @@ namespace RealLifeOverhaul
             if (shown)
             {
                 _officeBoard = DepotOf(employer);
+                _officeAt = place;
+                _officeReach = CareerOfficeRules.MarkReach(WhereOf(employer));
                 _officeUntil = Time.unscaledTime + OfficeSeconds;
             }
             if (Meta.Dev.Verbose)
@@ -199,14 +205,15 @@ namespace RealLifeOverhaul
             return shown;
         }
 
-        // Once a second, and only while the mark is up: comes off when the player is near the board or the time is up.
+        // Once a second, and only while the mark is up: comes off when the player has come to its place (a board, the practice's door, a
+        // works site), its board has gone or the time is up. The building trades have no board, so the place is read from where the mark stands.
         private void OfficeMark(Vector3 player, JobBoards boards)
         {
             if (_officeUntil <= 0f)
             {
                 return;
             }
-            if (Time.unscaledTime >= _officeUntil || _officeBoard < 0 || _officeBoard >= boards.Count || FlatSqr(boards.Front(_officeBoard) - player) < OfficeNear * OfficeNear)
+            if (CareerOfficeRules.MarkOff(Time.unscaledTime, _officeUntil, CareerOfficeRules.BoardGone(_officeBoard, boards.Count), FlatSqr(_officeAt - player), _officeReach))
             {
                 HideOffice();
             }
@@ -474,6 +481,7 @@ namespace RealLifeOverhaul
                     _logger?.Info("Careers: turned away from the shift of day " + day + " at " + TimeHelper.CurrentHour.ToString("00")
                                   + ":00, nobody near open to work for; a later start is on time and the day missed is excused.");
                 }
+                reasonKey = AtPlace(reasonKey, CareerState.Employer, CareerState.CurrentRank);   // away from where the work is done, the refusal says where
                 return false;
             }
             Employer employer = CareerState.Employer;
@@ -493,10 +501,55 @@ namespace RealLifeOverhaul
             return true;
         }
 
-        /// <summary>Test buttons: a shift at the current employer's rank (or the courier firm's desk) that goes on no record.</summary>
+        // The job a rank's shift is: the planning desk, a shift in charge, the rank's own trade, or the employer's own gig.
+        private static JobDef RotaJob(Employer employer, CareerRank rank)
+        {
+            return JobCatalogue.Find(rank.Work == CareerWork.Dispatch ? JobCatalogue.Dispatch : rank.Work == CareerWork.Lead ? JobCatalogue.Lead : rank.JobId ?? employer.Job);
+        }
+
+        // A refusal that sends the player to where the work is done (the practice's desk, a works site) says where: the address and floor
+        // of the practice, the nearest site's address, or that none stands. Asked at the press of a clock on, never per frame.
+        private string AtPlace(string reasonKey, Employer employer, CareerRank rank)
+        {
+            JobDef def = employer != null && rank != null ? RotaJob(employer, rank) : null;
+            string place = CareerOfficeRules.PlaceRefusal(reasonKey, def != null && (def.Needs & JobNeed.Office) != 0);
+            if (place == null)
+            {
+                return reasonKey;
+            }
+            if (!Settings.Trades)
+            {
+                return "reallife_trades_off";   // the building trades are switched off: there is no place to send anyone to
+            }
+            return CareerOfficeRules.PlaceKey(place, WhereOf(CareerCatalogue.IndexOf(employer.Id)));
+        }
+
+        /// <summary>
+        /// What the texts of an employer's place and shift are filled with: its shift's time, the address of its place (the board's,
+        /// the practice's with its floor, the nearest works site's) and the shop a board stands outside; empty where there is none.
+        /// </summary>
+        public Dictionary<string, string> OfficeData(int employer)
+        {
+            return new Dictionary<string, string>(3)
+            {
+                { "time", CareerState.Employed ? CareerClock.Span(CareerState.RotaHour) : string.Empty },
+                { CareerOfficeRules.AddressField, OfficeAddress(employer) ?? string.Empty },
+                { CareerOfficeRules.PlaceField, OfficePlace(employer) ?? string.Empty }
+            };
+        }
+
+        /// <summary>
+        /// Test buttons: a shift at the current employer's rank (or the courier firm's desk) that goes on no record. A refusal reads as a clock
+        /// on's does, so the test shows what a player would be told away from the practice or a works site.
+        /// </summary>
         public bool TestShift(Employer employer, CareerRank rank, out string reasonKey)
         {
-            return Begin(employer, rank, rank.Hourly, CareerCatalogue.PieceWith(rank, 0), false, false, out reasonKey);
+            if (Begin(employer, rank, rank.Hourly, CareerCatalogue.PieceWith(rank, 0), false, false, out reasonKey))
+            {
+                return true;
+            }
+            reasonKey = AtPlace(reasonKey, employer, rank);
+            return false;
         }
 
         private bool Begin(Employer employer, CareerRank rank, float hourly, float piece, bool late, bool counts, out string reasonKey)
@@ -525,7 +578,7 @@ namespace RealLifeOverhaul
                 reasonKey = "reallife_career_cart_no_money";
                 return false;
             }
-            JobDef def = JobCatalogue.Find(rank.Work == CareerWork.Dispatch ? JobCatalogue.Dispatch : rank.Work == CareerWork.Lead ? JobCatalogue.Lead : rank.JobId ?? employer.Job);
+            JobDef def = RotaJob(employer, rank);
             if (def == null)
             {
                 reasonKey = "reallife_job_no_now";

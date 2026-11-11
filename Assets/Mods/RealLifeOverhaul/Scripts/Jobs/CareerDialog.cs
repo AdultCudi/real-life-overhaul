@@ -150,7 +150,9 @@ namespace RealLifeOverhaul
                         return PhoneContacts.Closing("reallife_career_no_off");
                     }
                     career.SignOn(at, rota, false);
-                    return PhoneContacts.Closing(employer.Welcome, new { rota = rota.NameKey.GetLocalization() });
+                    // the practice's welcome says where it is (its address and floor); the text message sent at signing on says it for the rest
+                    return PhoneContacts.Closing(CareerOfficeRules.WelcomeKey(employer.Welcome, employer.Place, career.WhereOf(at)),
+                        new { rota = rota.NameKey.GetLocalization(), address = career.OfficeAddress(at) ?? string.Empty });
                 }),
                 SecondOptionTextOverride = "reallife_career_rota_other",
                 OnSecondOption = G(() => Rota(at, index + 1)),
@@ -196,6 +198,11 @@ namespace RealLifeOverhaul
                 : CareerState.OnNotice
                     ? "reallife_career_note_notice".GetLocalization().Replace("{left}", CareerState.NoticeShiftsLeft.ToString())
                     : string.Empty;
+            string where = WhereText(career, employer);   // and where the work is done, so it is never to be looked for
+            if (where.Length > 0)
+            {
+                note = note.Length > 0 ? note + " " + where : where;
+            }
             var entry = new DialogEntry
             {
                 headerKey = inPerson ? employer.BossKey : null,
@@ -241,15 +248,48 @@ namespace RealLifeOverhaul
                 return PhoneContacts.Closing("reallife_career_no_off");
             }
             // Asked again now: the hour may have turned while they talked.
-            return career.ClockOn(out string reason)
-                ? PhoneContacts.Closing(CareerState.Employer != null && CareerState.Employer.Job == JobCatalogue.Vendor && CareerState.CurrentRank.Work == CareerWork.Gig
-                    ? "reallife_career_clocked_on_cart" : "reallife_career_clocked_on_time", new { time = CareerClock.Span(CareerState.RotaHour) })
-                : PhoneContacts.Closing(reason ?? "reallife_job_no_now", new
-                {
-                    time = CareerClock.Span(CareerState.RotaHour),
-                    address = career.OfficeAddress(CareerState.EmployerIndex) ?? string.Empty,
-                    place = career.OfficePlace(CareerState.EmployerIndex) ?? string.Empty
-                });
+            bool clocked = career.ClockOn(out string reason);
+            if (clocked)
+            {
+                return PhoneContacts.Closing(CareerState.Employer != null && CareerState.Employer.Job == JobCatalogue.Vendor && CareerState.CurrentRank.Work == CareerWork.Gig
+                    ? "reallife_career_clocked_on_cart" : "reallife_career_clocked_on_time", new { time = CareerClock.Span(CareerState.RotaHour) });
+            }
+            var words = new
+            {
+                time = CareerClock.Span(CareerState.RotaHour),
+                address = career.OfficeAddress(CareerState.EmployerIndex) ?? string.Empty,
+                place = career.OfficePlace(CareerState.EmployerIndex) ?? string.Empty
+            };
+            if (!CareerOfficeRules.NamesPlace(reason))
+            {
+                return PhoneContacts.Closing(reason ?? "reallife_job_no_now", words);
+            }
+            // The refusal names where the work is done (the practice's address and floor, the nearest works site, the board): the way is one press away.
+            int employer = CareerState.EmployerIndex;
+            return new DialogEntry
+            {
+                messageData = reason.Localize(words),
+                ConfirmTextOverride = "reallife_career_office_show".Localize(),
+                OnConfirm = G(() => ShowOffice(employer)),
+                OnCancel = PhoneContacts.HangUp
+            };
+        }
+
+        // Where the work is done, in the words for the employer's place and filled in; empty while no place stands and the phone is the place.
+        private static string WhereText(CareerDirector career, Employer employer)
+        {
+            int index = CareerState.EmployerIndex;
+            string key = CareerOfficeRules.WhereKey(employer.Place, career.WhereOf(index));
+            if (key == null)
+            {
+                return string.Empty;
+            }
+            string text = key.GetLocalization();
+            foreach (KeyValuePair<string, string> field in career.OfficeData(index))
+            {
+                text = text.Replace("{" + field.Key + "}", field.Value);
+            }
+            return text;
         }
 
         private static DialogEntry Other(bool inPerson)

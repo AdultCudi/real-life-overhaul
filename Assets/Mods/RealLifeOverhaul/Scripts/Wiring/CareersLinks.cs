@@ -98,9 +98,9 @@ namespace RealLifeOverhaul
                 _paperBefore = null;
             }
 
-            // The gig work's own employers (Scripts/Jobs) and where each one's help-wanted board stands, for the Career app's Show on map.
-            // An employer with a board has an address; one without has none in this city and is hired through the phone. The building trades
-            // (no board: their works sites and floors) are not listed.
+            // Every employer of the gig work and the building trades (Scripts/Jobs) and where its work is done, for the Career app's Show on
+            // map: a help-wanted board outside a shop, the practice's floor, or the nearest works site. One with a place standing has an
+            // address; one without has none in this city and is hired through the phone. The building trades are listed with a line of their own.
             private static void BoardEmployers(List<BoardEmployer> into)
             {
                 try
@@ -114,11 +114,12 @@ namespace RealLifeOverhaul
                     for (int e = 0; e < CareerCatalogue.All.Length; e++)
                     {
                         Employer employer = CareerCatalogue.All[e];
-                        if (employer.Premises.Length == 0)
+                        bool works = employer.Place != EmployerPlace.Board;
+                        into.Add(new BoardEmployer
                         {
-                            continue;
-                        }
-                        into.Add(new BoardEmployer { Index = e, Name = JobText.T(employer.NameKey), Address = career.OfficeAddress(e), Place = career.OfficePlace(e) });
+                            Index = e, Name = JobText.T(employer.NameKey), Address = career.OfficeAddress(e), Place = career.OfficePlace(e), Works = works,
+                            Line = works ? CareerOfficeRules.WorksListKey(employer.Place, career.WhereOf(e)) : null
+                        });
                     }
                 }
                 catch (Exception e)
@@ -127,7 +128,7 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // The destination marker on an employer's board: the employer's own show-me-the-office, the phone closed so the marker shows.
+            // The destination marker on an employer's place: the employer's own show-me-the-office, the phone closed so the marker shows.
             private static string ShowBoard(int employer)
             {
                 try
@@ -140,7 +141,8 @@ namespace RealLifeOverhaul
                     }
                     if (!career.ShowOffice(employer))
                     {
-                        return career.OfficeAddress(employer) == null ? "reallife_career_why_no_board" : "reallife_career_why_board_busy";
+                        bool works = CareerCatalogue.All[employer].Place != EmployerPlace.Board;
+                        return career.OfficeAddress(employer) == null ? "reallife_career_why_no_board" : works ? "reallife_career_why_works_busy" : "reallife_career_why_board_busy";
                     }
                     return null;
                 }
