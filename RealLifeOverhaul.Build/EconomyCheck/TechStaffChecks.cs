@@ -619,6 +619,7 @@ internal static partial class Program
                 Memory[i].Seated(Places[i]);
                 return false;
             }
+            Memory[i].Unseated();
             place = Places[i];
             return true;
         }
@@ -640,6 +641,7 @@ internal static partial class Program
                 Given[_place] = (Given.TryGetValue(_place, out int given) ? given : 0) + 1;
                 return SeatPlan.Seated;
             }
+            Memory[i].Unseated();
             return SeatPlan.Full;
         }
 
@@ -698,6 +700,10 @@ internal static partial class Program
             if (Shift[i])
             {
                 Memory[i].Seated(Here);
+            }
+            else
+            {
+                Memory[i].Unseated();
             }
             return !Shift[i];
         }
@@ -866,6 +872,35 @@ internal static partial class Program
         Check(seatedAtA && hourTwo.Seated == 3 && hourTwo.Looked == 3 && moved.GivenAt(B) == 3 && moved.Shift[1] && moved.Shift[3] && moved.Shift[4] && moved.GivenAt(A) == 3,
             "tech staff, rounds: a professional the game moves to another firm, one left alone at a law firm and moved, and one assigned later are each seated where they are now, and the two still at the first firm are not looked at ("
             + hourTwo.Seated + " seated, " + hourTwo.Looked + " looked at)");
+
+        // what the seating remembers of a professional is gone with their seat: seated at A, moved to B with My Employees (the game takes every shift), B has no room, and moved back to A,
+        // they are looked at again at A and given a shift there, as the memory of A made before the move is not what they are known by now
+        var back = new SeatFake();
+        back.Add(A, skill, 1, false);
+        back.Room[A] = 1;
+        var ledgerBack = new SeatLedger();
+        SeatRound.Run(back, ledgerBack, day, SeatPlan.Batch, SeatPlan.Look, false);
+        back.Move(0, B);   // B has no room: the answer is that every desk is taken
+        SeatTally atFull = SeatRound.Run(back, ledgerBack, day, SeatPlan.Batch, SeatPlan.Look, false);
+        back.Move(0, A);
+        back.Room[A] = 1;
+        SeatTally atBack = SeatRound.Run(back, ledgerBack, day + 1, SeatPlan.Batch, SeatPlan.Look, false);
+        Check(back.GivenAt(A) == 2 && atFull.Full == 1 && atBack.Seated == 1 && back.Shift[0],
+            "tech staff, rounds: a professional seated at a firm, moved to one with no room and moved back is given a shift at the first again, as what was remembered of the first does not outlive the move ("
+            + atFull.Full + " found no room, " + atBack.Seated + " seated on return)");
+
+        // and without a move: the player takes the shifts away and the test finds no room for them again; once the firm has room the hour seats them, as nothing is held of a seat they do not have
+        var still = new SeatFake();
+        still.Add(A, skill, 1, false);
+        still.Room[A] = 1;
+        var ledgerStill = new SeatLedger();
+        SeatRound.Run(still, ledgerStill, day, SeatPlan.Batch, SeatPlan.Look, false);
+        still.Shift[0] = false;
+        SeatRound.Run(still, ledgerStill, day, SeatPlan.TestMost, int.MaxValue, true);   // the test finds no desk for them
+        still.Room[A] = 1;
+        SeatTally stillLater = SeatRound.Run(still, ledgerStill, day + 1, SeatPlan.Batch, SeatPlan.Look, false);
+        Check(stillLater.Seated == 1 && still.Shift[0] && still.GivenAt(A) == 2,
+            "tech staff, rounds: a professional the test found no room for, whose shifts the player had taken, is looked at by the next hour and seated once the firm has room (" + stillLater.Seated + " seated)");
 
         // while they stay where they are, a shift the player takes away is not given back, and one left alone stays left; the test asks about the first again and not the second
         var stays = new SeatFake();
@@ -1239,7 +1274,7 @@ internal static partial class Program
         string needText = TechStaffNested(seating, "public int Need(int i)");
         Check(openText.Contains("person.Remembered.Settled(e.assignedAddress, everyone)") && !openText.Contains("person.At") && !openText.Contains(".Place")
               && openText.Contains("person.Remembered.LeftAt(e.assignedAddress) && SeatsAt(TalentGame.Business(e), person.Skill)") && openText.Contains("person.Remembered.Reopen();")
-              && Occurs(idleText, "person.Remembered.Seated(e.assignedAddress)") == 2 && idleText.Contains("person.Remembered.Left(e.assignedAddress)")
+              && Occurs(idleText, "person.Remembered.Seated(e.assignedAddress)") == 2 && idleText.Contains("person.Remembered.Left(e.assignedAddress)") && idleText.Contains("person.Remembered.Unseated();") && seatText.Contains("person.Remembered.Unseated();")
               && seatText.Contains("person.Remembered.Seated(e.assignedAddress)") && seatText.Contains("person.SeatNeed = week;") && needText.Contains("SeatShifts.WeekHoursFor(person.Game)")
               && seating.Contains("public string Place(int i) => PlaceOf(_d._people[i]);") && seating.Contains("object.Equals(e.assignedAddress, person.Assigned)")
               && !seating.Contains("SeatKnown") && !seating.Contains("SeatNoAt") && !ModSource(@"Tech\People\TalentModel.cs").Contains("SeatKnown") && people.Contains("person.Assigned = e.assignedAddress;"),

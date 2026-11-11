@@ -75,7 +75,8 @@ namespace RealLifeOverhaul.Tech
         /// <summary>
         /// True if the pass has nothing to ask of a professional assigned to <paramref name="at"/>: they were found with a shift there (not for <paramref name="everyone"/>,
         /// the test, which asks about them again) or left to the player there. Null is no business: nothing to ask, and what was known of them is let go, so that
-        /// wherever they are assigned next they are looked at.
+        /// wherever they are assigned next they are looked at. Any other business than the one a memory was made at lets that memory go too (the game took their shifts
+        /// when it moved them), so a return to the first is looked at afresh.
         /// </summary>
         public bool Settled(object at, bool everyone)
         {
@@ -85,19 +86,35 @@ namespace RealLifeOverhaul.Tech
                 _left = null;
                 return true;
             }
-            return object.Equals(at, _left) || (!everyone && object.Equals(at, _seated));
+            if (!object.Equals(at, _seated))
+            {
+                _seated = null;
+            }
+            if (!object.Equals(at, _left))
+            {
+                _left = null;
+            }
+            return _left != null || (!everyone && _seated != null);
         }
 
         /// <summary>They were found with a shift at a desk at the business, or given one there.</summary>
         public void Seated(object at)
         {
             _seated = at;
+            _left = null;
         }
 
         /// <summary>They were found to be none of the pass's business at the business.</summary>
         public void Left(object at)
         {
             _left = at;
+            _seated = null;
+        }
+
+        /// <summary>They have no shift at a desk where they are (none found, or none to be had): what was remembered of a seat is let go, so that they are looked at next hour.</summary>
+        public void Unseated()
+        {
+            _seated = null;
         }
     }
 

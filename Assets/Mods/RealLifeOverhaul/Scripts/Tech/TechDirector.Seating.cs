@@ -235,6 +235,7 @@ namespace RealLifeOverhaul.Tech
                     holders.Add(e.id);
                     return false;
                 }
+                person.Remembered.Unseated();   // no shift at a desk now, whatever was remembered: they are looked at again until they have one
                 place = key;
                 return true;
             }
@@ -274,6 +275,7 @@ namespace RealLifeOverhaul.Tech
                     }
                     return result;
                 }
+                person.Remembered.Unseated();   // no room (closed, no desk, every desk taken): nothing is held of a seat they do not have
                 _d._seatQuiet.Remove(e.id);   // the start note said a desk would follow and none was free: a later seat is told
                 _closed += result == SeatPlan.Closed ? 1 : 0;
                 _noDesk += result == SeatPlan.NoDesk ? 1 : 0;
