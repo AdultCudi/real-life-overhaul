@@ -28,6 +28,7 @@ internal static partial class Program
         DynastySettleChecks();
         DynastyExploitChecks();
         DynastyGateChecks();
+        DynastyFixChecks();
         DynastyHandChecks();
         DynastyLoanChecks();
         DynastyElderChecks();
@@ -209,7 +210,7 @@ internal static partial class Program
     {
         return new List<KinPerson>
         {
-            new KinPerson { Kind = KinKind.Partner, Name = "Maya", Age = 58, Married = true, Closeness = 80 },
+            new KinPerson { Kind = KinKind.Partner, Name = "Maya", Age = 58, Married = true, Relief = true, Closeness = 80 },
             new KinPerson { Kind = KinKind.Child, Name = "Tom", Age = 24, School = 2, FundMille = 1000, Closeness = 100 },
             new KinPerson { Kind = KinKind.Child, Name = "Ann", Age = 31, School = 1, FundMille = 0, Closeness = 20 },
             new KinPerson { Kind = KinKind.Child, Name = "Hana", Age = 15, School = 1, Closeness = 60 },
@@ -343,14 +344,18 @@ internal static partial class Program
         Check(room.Lines[2].Asked == 1200 && room.Lines[2].Amount == 1200, "dynasty estate: a household is left no more than it has room for");
     }
 
-    // Thousands of seeded estates: every one adds up, pays out no more cash than there is over the floor, and bears the tax its own figures give.
+    // Thousands of seeded estates: every one adds up, pays out no more cash than there is over the floor, and bears a tax that the exemptions can only lower, never past what they
+    // allow. Half of them have a partner who has not been married for the window (no relief), which must then be exactly nothing.
     private static void DynastyExploitChecks()
     {
-        List<KinPerson> people = DynastyFamily();
-        bool balanced = true, cashOk = true, taxOk = true, exemptOk = true, giftsOk = true, debtOk = true, linesOk = true;
-        int cases = 0;
+        List<KinPerson> married = DynastyFamily();
+        List<KinPerson> single = DynastyFamily();
+        single[0].Relief = false;
+        bool balanced = true, cashOk = true, taxOk = true, exemptOk = true, giftsOk = true, giftsExact = true, debtOk = true, linesOk = true;
+        int cases = 0, exactCases = 0, reliefCases = 0;
         for (int i = 0; i < 6000; i++)
         {
+            List<KinPerson> people = i % 2 == 0 ? married : single;
             long cash = DynastyRules.Hash(31, 1, i, 0) % 9000000u;
             long reserved = DynastyRules.Hash(31, 2, i, 0) % 3 == 0 ? DynastyRules.Hash(31, 3, i, 0) % 3000000u : 0;
             long other = (long)(DynastyRules.Hash(31, 4, i, 0) % 30000000u) - 6000000;
@@ -376,19 +381,29 @@ internal static partial class Program
             Statement s = DynastyRules.Settle(e, w, heir, byLaw, people);
             cases++;
             long spare = Math.Max(0, cash - Math.Min(cash, reserved));
+            long passes = s.UnderWater ? 0 : s.Net - s.Keep;
             balanced &= DynastyRules.Balanced(s) && s.Net == spare + other;
             cashOk &= DynastyRules.CashOut(s) <= spare && s.TaxCash <= spare - s.Keep;
-            taxOk &= s.Tax == DynastyRules.Tax(s.Taxable, level) && s.Taxable == Math.Max(0, (s.UnderWater ? 0 : s.Net - s.Keep) - s.Charity - s.Spouse) + gifts;
-            exemptOk &= s.Charity == s.Lines.Where(l => l.Landing == Landing.Pot).Sum(l => l.Amount) && s.Spouse <= Math.Max(0, (s.Net - s.Keep) / 2) && s.Spouse >= 0
-                        && (s.Spouse == 0 || people[0].Married);
-            linesOk &= s.Lines.All(l => l.Amount >= 0 && l.Amount <= l.Asked && (l.Landing != Landing.None || l.Amount == 0)) && s.Paid <= Math.Max(0, (s.Net - s.Keep) / 2) + 4
+            // the tax is never over the bands' on the whole estate with the gifts, which no exemption can raise, and never under the bands' on what no exemption can free (half of the
+            // estate at the most for a partner, nothing for a stranger, whatever the charities took)
+            taxOk &= s.Tax >= 0 && s.Tax <= DynastyRules.Tax(Math.Max(0, passes) + gifts, level) && s.Taxable >= gifts && s.Tax == DynastyRules.Tax(s.Taxable, level)
+                     && s.Tax >= DynastyRules.Tax(Math.Max(0, passes - passes / 2 - s.Charity) + gifts, level);
+            exemptOk &= s.Charity == s.Lines.Where(l => l.Landing == Landing.Pot).Sum(l => l.Amount) && s.Spouse >= 0 && s.Spouse <= passes / 2 && (people == married || s.Spouse == 0)
+                        && (s.Spouse == 0 || (heir != null && heir.Kind == KinKind.Partner) || s.Lines.Any(l => l.Relief));
+            reliefCases += s.Spouse > 0 ? 1 : 0;
+            linesOk &= s.Lines.All(l => l.Amount >= 0 && l.Amount <= l.Asked && (l.Landing != Landing.None || l.Amount == 0) && (!l.Relief || l.Kind == KinKind.Partner)) && s.Paid <= Math.Max(0, passes) * DynastyCatalogue.OthersMost / 1000
                        && (!s.UnderWater || (s.Paid == 0 && s.Keep == 0 && s.Residue == s.Net - s.Tax));
-            // the same estate with a further gift of 100,000 made out of its cash just before: never less tax
+            // the same estate with a further gift of 100,000 made out of its cash just before: never less tax; exactly the same where nothing is exempt, so that giving it away saved nothing
             if (cash - reserved >= 100000)
             {
                 var g = new EstateIn { Day = 500, Level = level, Mode = mode, Cash = cash - 100000, Reserved = reserved, Other = other, Gifts = gifts + 100000, Keep = e.Keep, Charities = e.Charities, Session = e.Session };
                 Statement after = DynastyRules.Settle(g, w, heir, byLaw, people);
                 giftsOk &= after.Tax >= s.Tax;
+                if (s.Charity == 0 && s.Spouse == 0 && !s.UnderWater && s.Keep == 0 && after.Charity == 0 && after.Spouse == 0 && !after.UnderWater && after.Scale == s.Scale)
+                {
+                    giftsExact &= after.Tax == s.Tax;
+                    exactCases++;
+                }
             }
             // ... and with 100,000 more debt: exactly that much less estate
             var d = new EstateIn { Day = 500, Level = level, Mode = mode, Cash = cash, Reserved = reserved, Other = other - 100000, Gifts = gifts, Keep = e.Keep, Charities = e.Charities, Session = e.Session };
@@ -396,11 +411,28 @@ internal static partial class Program
         }
         Check(balanced, "dynasty exploits: " + cases + " seeded estates each come to what is kept, the tax, the bequests paid and what the heir is left, to the last unit");
         Check(cashOk, "dynasty exploits: none pays out more cash than there is over the investors' floor");
-        Check(taxOk, "dynasty exploits: each bears the bands' tax on its own figures: the estate less the exempt parts, the gifts counted in");
-        Check(exemptOk, "dynasty exploits: only what really goes to a charity is exempt, and a married partner's relief is never over half");
-        Check(linesOk, "dynasty exploits: no bequest is over its share, all together never over the heir's reserved half, and an estate under water pays none");
-        Check(giftsOk, "dynasty exploits: giving money away just before never lowers the tax (the gift is counted back in)");
+        Check(taxOk, "dynasty exploits: each bears the bands' tax on what is counted: never over the tax on the whole estate with its gifts, never under what no exemption can free");
+        Check(exemptOk && reliefCases > 400, "dynasty exploits: only what really goes to a charity is exempt, a partner's relief is never over half and is nothing without the window's marriage (" + reliefCases + " estates with relief)");
+        Check(linesOk, "dynasty exploits: no bequest is over its share, all together never over the heir's reserved half exactly, and an estate under water pays none");
+        Check(giftsOk && giftsExact && exactCases > 300, "dynasty exploits: giving money away just before never lowers the tax, and where nothing is exempt it changes it not at all (" + exactCases + " estates)");
         Check(debtOk, "dynasty exploits: a debt lowers the estate by exactly itself: none is wiped");
+
+        // figures worked out by hand
+        Will none = new Will();
+        List<KinPerson> family = DynastyFamily();
+        Statement stranger = DynastyRules.Settle(DynastyEstate(3000000, 0, 0), none, family[1], true, family);
+        Check(stranger.Taxable == 3000000 && stranger.Tax == 200000 + 300000, "dynasty exploits: three millions to a child bear 20% of the first million over the free one and 30% of the next: 500,000 (" + stranger.Tax + ")");
+        Statement spouse = DynastyRules.Settle(DynastyEstate(10000000, 0, 0), none, family[0], true, family);
+        Check(spouse.Spouse == 5000000 && spouse.Taxable == 5000000 && spouse.Tax == 200000 + 900000, "dynasty exploits: ten millions to a partner married for the window: half is free, the rest bears 1,100,000 (" + spouse.Tax + ")");
+        Statement withGifts = DynastyRules.Settle(DynastyEstate(3000000, 0, 0, 2000000), none, family[1], true, family);
+        Check(withGifts.Taxable == 5000000 && withGifts.Tax == 200000 + 900000 && withGifts.Tax > stranger.Tax, "dynasty exploits: two millions given inside the window are counted back: 1,100,000 where 500,000 was due");
+        Statement debts = DynastyRules.Settle(DynastyEstate(8000000, 0, -5000000), none, family[1], true, family);
+        Check(debts.Net == 3000000 && debts.Tax == 500000, "dynasty exploits: eight millions in cash less five owed is three: 500,000");
+        Statement everything = DynastyRules.Settle(DynastyEstate(8000000, 0, 2000000), DynastyWillSample(), family[1], false, family);
+        Check(everything.Charity == 1000000 && everything.Spouse == 2000000 && everything.Taxable == 7000000 && everything.Tax == 200000 + 1200000 + 400000, "dynasty exploits: with a charity's tenth and the partner's fifth free, seven millions bear 1,800,000");
+        Statement stale = DynastyRules.Settle(DynastyEstate(3000000, 0, 0), DynastyWillSample(), family[1], false, family.Select(c => c.Kind == KinKind.Partner ? new KinPerson { Kind = c.Kind, Name = c.Name, Age = c.Age, Married = true, Relief = false } : c).ToList());
+        Check(stale.Spouse == 0 && stale.Lines[0].Relief == false && stale.Taxable == 3000000 - 300000, "dynasty exploits: a part left to a partner married a few days is not free: the charity's tenth is the only relief");
+        // splitting: ten gifts of a tenth against one gift, a gift on the last day of the window against the first
         // splitting: ten gifts of a tenth against one gift, a gift on the last day of the window against the first
         var one = new List<LifeGift>();
         var ten = new List<LifeGift>();
@@ -409,7 +441,6 @@ internal static partial class Program
         {
             DynastyRules.Gift(ten, 291 + i, 200000);
         }
-        Will none = new Will();
         long tOne = DynastySettle(DynastyEstate(3000000, 0, 0, DynastyRules.GiftsInWindow(one, 300, 60)), none, DynastyFamily()).Tax;
         long tTen = DynastySettle(DynastyEstate(3000000, 0, 0, DynastyRules.GiftsInWindow(ten, 300, 60)), none, DynastyFamily()).Tax;
         long tKept = DynastySettle(DynastyEstate(5000000, 0, 0), none, DynastyFamily()).Tax;
@@ -424,6 +455,43 @@ internal static partial class Program
 
     // ---- what holds a handover back and what refuses retiring
 
+    // The game's clock for the last days, hour by hour as it runs them (GameManager.RunMainGameTick): an hour strikes; at midnight the age goes up by a day and, at the last age,
+    // the game's own end comes; then the hourly event, where the dynasty looks again. Run with the shipped rule, LastDaysAct, deciding at each hour. A hold is given per age.
+    private static void DynastySkip(int startAge, int hours, int year, bool looks, Func<DeathHold> hold, out bool died, out bool began, out int endAge, out int actedAt)
+    {
+        int age = startAge, hour = 12;
+        died = began = false;
+        actedAt = -1;
+        for (int h = 0; h < hours && !died && !began; h++)
+        {
+            if (++hour >= 24)
+            {
+                hour = 0;
+                age++;   // NewDay: the age first
+                if (age >= DynastyCatalogue.LastAge * year)
+                {
+                    died = true;   // FuneralHelper.HandlePlayerAgeChange: the game's end in old age
+                    break;
+                }
+            }
+            if (!looks)
+            {
+                continue;
+            }
+            switch (DynastyRules.LastDaysAct(age, year, true, hold()))
+            {
+                case LastAct.Begin:
+                    began = true;
+                    actedAt = age;
+                    break;
+                case LastAct.Hold:
+                    age = DynastyRules.Pinned(age, year);
+                    break;
+            }
+        }
+        endAge = age;
+    }
+
     private static void DynastyGateChecks()
     {
         Will w = DynastyWillSample();
@@ -434,57 +502,205 @@ internal static partial class Program
             "dynasty retiring: not under the age the will sets, and not without a will");
         Check(DynastyRules.MayRetire(true, false, w, 60, false, false, false, false) == RetireWhy.NoHeir, "dynasty retiring: not with nobody to carry on");
         Check(DynastyRules.MayRetire(true, false, w, 60, true, true, false, false) == RetireWhy.Session, "dynasty retiring: not in a Going Public session");
-        Check(DynastyRules.MayRetire(true, false, w, 60, true, false, true, false) == RetireWhy.Law, "dynasty retiring: not while the law has anything open: it is no way out of a sentence, a case or a ban");
         Check(DynastyRules.MayRetire(true, false, w, 60, true, false, false, true) == RetireWhy.Elder, "dynasty retiring: one retired founder at a time");
-        Check(DynastyRules.Hold(true, false, false, false, true) == DeathHold.None, "dynasty last days: with an heir and nothing in the way the estate passes");
-        Check(DynastyRules.Hold(true, true, true, true, true) == DeathHold.Final && DynastyRules.Hold(true, false, true, true, false) == DeathHold.NoHeir,
-            "dynasty last days: Permadeath's death is its own, and with no heir the game's own end stands");
-        Check(DynastyRules.Hold(true, false, true, true, true) == DeathHold.Session && DynastyRules.Hold(true, false, false, true, true) == DeathHold.Custody && DynastyRules.Hold(false, false, false, false, true) == DeathHold.Off,
-            "dynasty last days: a session and a cell hold the estate back");
+
+        // what the law has open, composed by the rule the wiring calls: each matter alone refuses retiring, and nothing open lets it be
+        var clear = new LawFacts { Read = true };
+        Check(!DynastyGate.LawOpen(clear) && DynastyRules.MayRetire(true, false, w, 60, true, false, DynastyGate.LawOpen(clear), false) == RetireWhy.Ok, "dynasty retiring: with nothing open against them the founder may retire");
+        string[] matters = { "an open case", "a warrant", "a warrant to serve", "prison", "jail hours pending", "probation", "a suspended licence", "a suspended driving licence", "community hours", "wanted by the police" };
+        for (int i = 0; i < matters.Length; i++)
+        {
+            LawFacts f = clear;
+            switch (i)
+            {
+                case 0: f.OpenCount = 1; break;
+                case 1: f.HasWarrant = true; break;
+                case 2: f.ServeWarrant = true; break;
+                case 3: f.InPrison = true; break;
+                case 4: f.JailPending = true; break;
+                case 5: f.Probation = true; break;
+                case 6: f.Suspended = true; break;
+                case 7: f.DrivingSuspended = true; break;
+                case 8: f.CommunityHours = 3; break;
+                default: f.WantedCharges = 2; break;
+            }
+            Check(DynastyGate.LawOpen(f) && DynastyRules.MayRetire(true, false, w, 60, true, false, DynastyGate.LawOpen(f), false) == RetireWhy.Law,
+                "dynasty retiring: " + matters[i] + " alone refuses retiring: it is no way out of it");
+        }
+        Check(DynastyGate.LawOpen(default(LawFacts)), "dynasty retiring: a state of the law that cannot be read counts as open");
+        Check(!DynastyGate.LawOpen(new LawFacts { Read = true, HearNow = true, Staged = true }), "dynasty retiring: being before the court or in a scene is custody, which holds a death back but is not an open matter");
+
+        // held: in prison, before the court, or in the middle of something staged
+        Check(!DynastyGate.Custody(clear) && DynastyGate.Custody(new LawFacts { Read = true, InPrison = true }) && DynastyGate.Custody(new LawFacts { Read = true, HearNow = true })
+              && DynastyGate.Custody(new LawFacts { Read = true, Staged = true }) && !DynastyGate.Custody(new LawFacts { Read = true, OpenCount = 3, Probation = true, WantedCharges = 1 }),
+            "dynasty last days: a cell, a court and a scene hold the estate back, an open matter does not");
+        Check(DynastyGate.Final(true, true) && !DynastyGate.Final(true, false) && !DynastyGate.Final(false, true) && !DynastyGate.Final(false, false), "dynasty last days: Permadeath's death is final only when it is on and armed");
+        Check(DynastyGate.Hold(true, false, false, false, clear, true) == DeathHold.None, "dynasty last days: with an heir and nothing in the way the estate passes");
+        Check(DynastyGate.Hold(true, true, true, false, clear, true) == DeathHold.Final && DynastyGate.Hold(true, true, false, false, clear, true) == DeathHold.None
+              && DynastyGate.Hold(true, false, true, false, clear, true) == DeathHold.None, "dynasty last days: Permadeath's death is its own only while it is on and armed");
+        Check(DynastyGate.Hold(true, false, false, false, clear, false) == DeathHold.NoHeir, "dynasty last days: with no heir the game's own end stands");
+        Check(DynastyGate.Hold(true, false, false, true, clear, true) == DeathHold.Session && DynastyGate.Hold(true, false, false, false, new LawFacts { Read = true, InPrison = true }, true) == DeathHold.Custody
+              && DynastyGate.Hold(true, false, false, false, new LawFacts { Read = true, Staged = true }, true) == DeathHold.Custody && DynastyGate.Hold(false, false, false, false, clear, true) == DeathHold.Off,
+            "dynasty last days: a session, a cell and a scene hold the estate back; the option off holds it for good");
+        Check(DynastyGate.Hold(true, false, false, false, new LawFacts { Read = true, OpenCount = 2, Probation = true, HasWarrant = true, WantedCharges = 1 }, true) == DeathHold.None,
+            "dynasty last days: a death is not put off for an open case or a sentence: they stay open for whoever leads the family, and the death is nobody's way out");
         Check(DynastyRules.Holds(DeathHold.Session) && DynastyRules.Holds(DeathHold.Custody) && !DynastyRules.Holds(DeathHold.Final) && !DynastyRules.Holds(DeathHold.NoHeir) && !DynastyRules.Holds(DeathHold.None)
               && !DynastyRules.Holds(DeathHold.Off), "dynasty last days: the age is held only for a session or a cell, never to cheat Permadeath or the game's own end");
+        Check(DynastyRules.LastDaysAct(60 * 89, 60, true, DeathHold.None) == LastAct.Nothing && DynastyRules.LastDaysAct(60 * 90 - 10, 60, true, DeathHold.None) == LastAct.Begin
+              && DynastyRules.LastDaysAct(60 * 90 - 10, 60, false, DeathHold.None) == LastAct.Nothing && DynastyRules.LastDaysAct(60 * 90 - 9, 60, true, DeathHold.Session) == LastAct.Hold
+              && DynastyRules.LastDaysAct(60 * 90 - 9, 60, true, DeathHold.Final) == LastAct.Tell && DynastyRules.LastDaysAct(60 * 90 - 9, 60, true, DeathHold.NoHeir) == LastAct.Tell
+              && DynastyRules.LastDaysAct(60 * 90 - 9, 60, true, DeathHold.Off) == LastAct.Tell, "dynasty last days: from ten days before the end the estate passes, is held back, or the game's end is left to come");
+
         foreach (int year in new[] { 8, 60, 120, 365 })
         {
             int end = DynastyCatalogue.LastAge * year;
-            Check(DynastyRules.HeldAge(year) + 2 < DynastyRules.LastDays(year) + 1 && DynastyRules.LastDays(year) < end && DynastyRules.HeldAge(year) > end - year,
-                "dynasty last days: at " + year + " days a year the estate passes before the game's own end, and a held age stays short of it");
+            Check(DynastyRules.LastDays(year) == end - DynastyCatalogue.LeadDays && DynastyRules.LastDays(year) < DynastyRules.HeldAge(year) && DynastyRules.HeldAge(year) < end
+                  && DynastyRules.Pinned(end + 3, year) == DynastyRules.HeldAge(year) && DynastyRules.Pinned(end - 20, year) == end - 20,
+                "dynasty last days: at " + year + " days a year the last days begin " + DynastyCatalogue.LeadDays + " days before the game's own end, and a held age stays short of it");
         }
-        Check(DynastyCatalogue.LastAge == 90, "dynasty last days: the last age is the game's own (FuneralHelper.DeathAge)");
-        Check(!DynastyRules.InLastDays(DynastyRules.LastDays(60) - 1, 60, false) && DynastyRules.InLastDays(DynastyRules.LastDays(60), 60, false)
-              && DynastyRules.InLastDays(DynastyRules.HeldAge(60), 60, true) && !DynastyRules.InLastDays(DynastyRules.HeldAge(60) - 1, 60, true) && !DynastyRules.InLastDays(18 * 60, 60, true),
-            "dynasty last days: an estate that was held back passes the moment it can, from the age it was held at");
+        Check(DynastyCatalogue.LastAge == 90 && DynastyCatalogue.LeadDays == 10, "dynasty last days: the last age is the game's own (FuneralHelper.DeathAge), and the estate passes ten days before it");
+
+        // a time skip passes through every hour: begun in time the founder never dies, and a skip that was not looked at hour by hour is the very thing it is built against
+        int y = 60, last = DynastyRules.LastDays(y), end2 = DynastyCatalogue.LastAge * y;
+        foreach (int lead in new[] { 200, 40, 11, 10, 3 })
+        {
+            DynastySkip(last - lead, 24 * (lead + 40), y, true, () => DeathHold.None, out bool died, out bool began, out int _, out int at);
+            Check(!died && began && at == last, "dynasty time skip: a skip across the last days that starts " + lead + " days short hands the estate over at the first hour after " + last + " (" + at + ") and never reaches " + end2);
+        }
+        DynastySkip(last - 200, 24 * 300, y, false, () => DeathHold.None, out bool blind, out bool blindBegan, out int _, out int _);
+        Check(blind && !blindBegan, "dynasty time skip: with no look at the hours a long skip reaches the game's own end: the check can fail");
+        foreach (DeathHold why in new[] { DeathHold.Session, DeathHold.Custody })
+        {
+            DynastySkip(last - 5, 24 * 400, y, true, () => why, out bool d1, out bool b1, out int age1, out int _);
+            Check(!d1 && !b1 && age1 == DynastyRules.HeldAge(y), "dynasty time skip: held back by " + why + " through " + 400 + " days the age is kept at " + age1 + ", short of " + end2);
+        }
+        int goes = 0;
+        DynastySkip(last - 5, 24 * 400, y, true, () => goes++ < 24 * 30 ? DeathHold.Custody : DeathHold.None, out bool d2, out bool b2, out int _, out int at2);
+        Check(!d2 && b2 && at2 <= DynastyRules.HeldAge(y), "dynasty time skip: when what held it back is over the estate passes at once, from the age it was held at (" + at2 + ")");
+        DynastySkip(last - 5, 24 * 400, y, true, () => DeathHold.Final, out bool d3, out bool b3, out int _, out int _);
+        Check(d3 && !b3, "dynasty time skip: with Permadeath on, or with nobody to carry on, the game's own end comes as it always did");
     }
 
     // ---- a handover in its steps
 
+    // The wallet as the game keeps it: whole money booked in the chunks the director's booking makes, every chunk checked to be one a float holds exactly, and the Nth chunk
+    // refused when asked to. Land puts a bequest where it goes; Refuse makes a line of that amount land only half; Closed makes charities and households take nothing (a Going
+    // Public session that began mid handover).
     private sealed class DynastyWorld : IHandWorld
     {
-        public long Tax, Keep, Landed;
-        public int TaxCalls, KeepCalls, LandCalls, Succeeded;
+        public decimal Wallet;
+        public long Tax, Keep, Booked, Landed, Back;
+        public int TaxCalls, KeepCalls, BookCalls, LandCalls, RefundCalls, SucceedCalls, SucceedDone, BecomeCalls, BecomeDone;
         public int Age = 3600;
-        public long Refuse = -1;   // a line of this amount lands only half
+        public long Refuse = -1;       // a line of this amount lands only half
+        public int RefuseChunk = -1;   // the Nth chunk booked out is refused (counted from 1 across the whole run)
+        public int Chunks;
+        public long BiggestChunk;
+        public bool ChunkExact = true;
+        public bool Closed;            // charities and households take nothing
+        public bool ThrowOnLand, ThrowOnSucceed, ThrowOnBecome;
+        public long MostLanded;        // the most that ever landed beyond what had been booked at that moment (money made): must stay 0
 
         public int FounderAgeDays => Age;
-        public void PayTax(long amount) { Tax += amount; TaxCalls++; }
-        public void PayKeep(long amount) { Keep += amount; KeepCalls++; }
-        public long Land(BequestLine line)
+
+        private long Out(long amount)
+        {
+            return DynastyBooking.Units(amount, chunk =>
+            {
+                Chunks++;
+                if (Chunks == RefuseChunk)
+                {
+                    return false;
+                }
+                ChunkExact &= (decimal)chunk == (decimal)(long)chunk && (long)chunk <= DynastyCatalogue.ChunkMost && (float)(long)chunk == chunk;
+                BiggestChunk = Math.Max(BiggestChunk, (long)chunk);
+                Wallet -= (decimal)chunk;
+                return true;
+            });
+        }
+
+        public long PayTax(long amount)
+        {
+            TaxCalls++;
+            long paid = Out(amount);
+            Tax += paid;
+            return paid;
+        }
+
+        public long PayKeep(long amount)
+        {
+            KeepCalls++;
+            long paid = Out(amount);
+            Keep += paid;
+            return paid;
+        }
+
+        public long Book(BequestLine line, long amount)
+        {
+            BookCalls++;
+            long paid = Out(amount);
+            Booked += paid;
+            return paid;
+        }
+
+        public long Land(BequestLine line, long amount)
         {
             LandCalls++;
-            long landed = line.Amount == Refuse ? line.Amount / 2 : line.Amount;
+            if (ThrowOnLand)
+            {
+                throw new InvalidOperationException("the household could not be reached");
+            }
+            long landed = Closed && line.Landing != Landing.Family ? 0L : amount == Refuse ? amount / 2 : amount;
             Landed += landed;
+            MostLanded = Math.Max(MostLanded, Landed - Booked);
             return landed;
         }
-        public void Succeed(Statement s) { Succeeded++; }
+
+        public long Refund(BequestLine line, long amount)
+        {
+            RefundCalls++;
+            Wallet += amount;
+            Back += amount;
+            return amount;
+        }
+
+        public void Succeed(Statement s)
+        {
+            SucceedCalls++;
+            if (ThrowOnSucceed)
+            {
+                throw new InvalidOperationException("the family could not be told");
+            }
+            SucceedDone++;
+        }
+
+        public void Become(Statement s)
+        {
+            BecomeCalls++;
+            if (ThrowOnBecome)
+            {
+                throw new InvalidOperationException("the played person could not be changed");
+            }
+            BecomeDone++;
+        }
     }
 
-    private static DynastyState DynastyRun(Statement s, DynastyWorld world, bool saveBetween, out int steps)
+    private static DynastyState DynastyStart(Statement s)
     {
         var st = new DynastyState { Generation = 2, Will = DynastyWillSample() };
         st.Gifts.Add(new LifeGift { Day = 390, Amount = 5000 });
         s.Generation = 2;
         DynastyHand.Begin(st, s);
+        return st;
+    }
+
+    // Steps until the handover is over, a save and a load between every two when asked; a step that throws is tried again.
+    private static DynastyState DynastyRun(Statement s, DynastyWorld world, bool saveBetween, out int steps)
+    {
+        DynastyState st = DynastyStart(s);
+        world.Wallet = s.Cash;
         steps = 0;
-        for (int guard = 0; guard < 40 && st.Hand != null; guard++)
+        for (int guard = 0; guard < 60 && st.Hand != null; guard++)
         {
             if (saveBetween)
             {
@@ -499,24 +715,37 @@ internal static partial class Program
     private static void DynastyHandChecks()
     {
         List<KinPerson> p = DynastyFamily();
+        List<KinPerson> single = DynastyFamily();   // a partner who has not been married for the window: no relief
+        single[0].Relief = false;
         Will w = DynastyWillSample();
         var world = new DynastyWorld();
         Statement s = DynastySettle(DynastyEstate(8000000, 0, 2000000), w, p);
         DynastyState st = DynastyRun(s, world, false, out int steps);
-        Check(st.Hand == null && steps == 6 && world.TaxCalls == 1 && world.KeepCalls == 0 && world.LandCalls == 3 && world.Succeeded == 1, "dynasty handover: a death passes in its steps: the tax, each bequest, the heir (" + steps + ")");
-        Check(world.Tax == s.TaxCash && world.Landed == s.Paid && world.Tax + world.Landed == DynastyRules.CashOut(s), "dynasty handover: what leaves the wallet is the statement's cash, once");
+        Check(st.Hand == null && steps == 9 && world.TaxCalls == 1 && world.KeepCalls == 0 && world.BookCalls == 3 && world.LandCalls == 3 && world.SucceedDone == 1 && world.BecomeDone == 1,
+            "dynasty handover: a death passes in its steps: the tax, each bequest, the tax again, the features, the played person, the lineage (" + steps + ")");
+        Check(world.Tax == s.TaxCash && world.Landed == s.Paid && world.Booked == s.Paid && world.Tax + world.Booked == DynastyRules.CashOut(s) && world.Wallet == 8000000 - DynastyRules.CashOut(s),
+            "dynasty handover: what leaves the wallet is the statement's cash, once, to the unit (" + world.Wallet + " left)");
         Check(st.Generation == 3 && !st.Will.Written && st.Gifts.Count == 0 && st.Line.Count == 1 && st.Line[0].Name == "Sam" && st.Line[0].Generation == 2 && st.Statements.Count == 1
               && st.Notes.Count == 1 && st.Notes[0].Who == -1 && st.Notes[0].To == "Tom", "dynasty handover: the heir is the head, the will and the gifts were the founder's, the statement and the lineage are kept");
         Check(st.KinOf(KinKind.Partner, "Maya", false) != null && st.KinOf(KinKind.Partner, "Maya", false).Held == 2000000 && st.Elder == null && st.Loan.Owed == 0,
             "dynasty handover: what a relative is left is on the family's ledger");
         var again = new DynastyWorld();
-        Check(DynastyHand.Step(st, again, 401, 60, 5) && again.TaxCalls + again.LandCalls + again.Succeeded == 0, "dynasty handover: once over, a further step does nothing");
+        Check(DynastyHand.Step(st, again, 401, 60, 5) && again.TaxCalls + again.LandCalls + again.SucceedCalls + again.BecomeCalls == 0, "dynasty handover: once over, a further step does nothing");
         Check(!DynastyHand.Begin(new DynastyState { Hand = new Handover() }, s), "dynasty handover: a second handover cannot begin while one is under way");
 
         var world2 = new DynastyWorld();
         DynastyState st2 = DynastyRun(DynastySettle(DynastyEstate(8000000, 0, 2000000), w, p), world2, true, out int steps2);
-        Check(steps2 == steps && world2.Tax == world.Tax && world2.Landed == world.Landed && world2.TaxCalls == 1 && world2.LandCalls == 3 && world2.Succeeded == 1
-              && DynastyStore.Write(st2) == DynastyStore.Write(st), "dynasty handover: saved and loaded between every two steps it ends exactly the same, nothing paid twice");
+        Check(steps2 == steps && world2.Tax == world.Tax && world2.Landed == world.Landed && world2.TaxCalls == 1 && world2.BookCalls == 3 && world2.LandCalls == 3 && world2.SucceedDone == 1
+              && world2.BecomeDone == 1 && world2.Wallet == world.Wallet && DynastyStore.Write(st2) == DynastyStore.Write(st),
+            "dynasty handover: saved and loaded between every two steps it ends exactly the same, nothing paid twice");
+
+        // every step in one call (a death is settled before anything else can happen) is the same as step by step
+        var world2b = new DynastyWorld();
+        Statement fs = DynastySettle(DynastyEstate(8000000, 0, 2000000), w, p);
+        DynastyState stF = DynastyStart(fs);
+        world2b.Wallet = 8000000;
+        Check(DynastyHand.Finish(stF, world2b, 400, 60, 5) && stF.Hand == null && DynastyStore.Write(stF) == DynastyStore.Write(st) && world2b.Wallet == world.Wallet,
+            "dynasty handover: all the steps in one call end exactly as one step at a time");
 
         // retiring: the fund, the elder
         var world3 = new DynastyWorld();
@@ -524,21 +753,170 @@ internal static partial class Program
         DynastyState st3 = DynastyRun(r, world3, true, out int _);
         Check(world3.KeepCalls == 1 && world3.Keep == 1000000 && st3.Elder != null && st3.Elder.Fund == 1000000 && st3.Elder.Name == "Sam" && st3.Elder.Born == 400 - 3600
               && st3.Elder.Taxable == r.Taxable && st3.Elder.Draw > 0, "dynasty handover: a retiring founder's part leaves the wallet for their own fund, and they stay as the family's elder");
-        Check(world3.Tax + world3.Keep + world3.Landed == DynastyRules.CashOut(r), "dynasty handover: retiring takes the statement's cash, once");
+        Check(world3.Tax + world3.Keep + world3.Booked == DynastyRules.CashOut(r) && world3.Wallet == 8000000 - DynastyRules.CashOut(r), "dynasty handover: retiring takes the statement's cash, once");
         // the tax the cash does not cover goes onto the debt
         var world4 = new DynastyWorld();
         Statement owed = DynastySettle(DynastyEstate(300000, 0, 9700000), w, p);
         DynastyState st4 = DynastyRun(owed, world4, true, out int _);
         Check(world4.Tax == 300000 && st4.Loan.Principal == owed.Loan && st4.Loan.Owed == owed.Loan * 100 && st4.Loan.PerDay > 0, "dynasty handover: the tax the cash does not cover is owed, to the unit (" + owed.Loan + ")");
-        // a bequest that lands short stays with the heir
+
+        // a bequest that lands short comes back to the wallet and stays with the heir
         var world5 = new DynastyWorld { Refuse = 500000 };
         Statement part = DynastySettle(DynastyEstate(8000000, 0, 2000000), w, p);
         long residue = part.Residue;
         DynastyState st5 = DynastyRun(part, world5, false, out int _);
         Statement kept = st5.Statements[0];
-        Check(kept.Lines[2].Amount == 250000 && kept.Residue == residue + 250000 && kept.Paid == 3250000 && DynastyRules.Balanced(kept) && world5.Landed == 3250000,
-            "dynasty handover: a bequest that lands short costs the estate only what landed, and the rest stays with the heir");
+        Check(kept.Lines[2].Amount == 250000 && kept.Residue == residue + 250000 && kept.Paid == 3250000 && DynastyRules.Balanced(kept) && world5.Landed == 3250000 && world5.Back == 250000
+              && world5.Wallet == 8000000 - DynastyRules.CashOut(kept), "dynasty handover: a bequest that lands short comes back to the wallet and costs the estate only what landed");
         Check(DynastyHand.Steps(null) == 0 && DynastyHand.Done(null) == 0, "dynasty handover: no steps while none runs");
+
+        // the tax is worked again on what really landed: a charity's bequest that cannot land (a session began part way) is no longer exempt, and the difference is owed
+        var closed = new DynastyWorld();
+        Statement cs = DynastySettle(DynastyEstate(8000000, 0, 2000000), w, p);
+        DynastyState stC = DynastyStart(cs);
+        closed.Wallet = 8000000;
+        long taxBefore = cs.Tax;
+        DynastyHand.Step(stC, closed, 400, 60, 5);
+        DynastyHand.Step(stC, closed, 400, 60, 5);
+        closed.Closed = true;   // a Going Public session began between the tax and the bequests
+        DynastyHand.Finish(stC, closed, 400, 60, 5);
+        Statement kc = stC.Statements[0];
+        Check(kc.Charity == 0 && kc.Lines[1].Amount == 0 && kc.Lines[2].Amount == 0 && closed.Back == 1500000 && kc.Taxable == 7000000 + 1000000 && kc.Tax == DynastyRules.Tax(8000000, 1000)
+              && kc.Tax - taxBefore == 400000 && kc.Loan == 400000 && stC.Loan.Principal == 400000 && DynastyRules.Balanced(kc),
+            "dynasty handover: a bequest that lands short is taxed after all: the exemption goes with it and the difference is owed (" + (kc.Tax - taxBefore) + ")");
+        Check(closed.Wallet == 8000000 - closed.Tax - closed.Booked + closed.Back && closed.Wallet == 8000000 - DynastyRules.CashOut(kc) && closed.MostLanded <= 0,
+            "dynasty handover: what could not land came back to the wallet and nothing landed that had not left it");
+        // the partner's relief goes the same way when their part cannot land
+        List<KinPerson> housed = DynastyFamily();
+        housed[0].Household = true;
+        housed[0].Room = 900000000;
+        housed[0].Id = 3;
+        var w2 = new Will { Written = true, HeirKind = KinKind.Child, HeirName = "Tom" };
+        w2.Bequests.Add(new Bequest { Kind = KinKind.Partner, Name = "Maya", Share = 300 });
+        Statement hs = DynastySettle(DynastyEstate(8000000, 0, 2000000), w2, housed);
+        var worldH = new DynastyWorld { Refuse = hs.Lines[0].Amount };
+        worldH.Wallet = 8000000;
+        DynastyState stH = DynastyStart(hs);
+        DynastyHand.Finish(stH, worldH, 400, 60, 5);
+        Statement kh = stH.Statements[0];
+        Check(hs.Lines[0].Relief && hs.Spouse == 3000000 && kh.Lines[0].Amount == 1500000 && kh.Spouse == 1500000 && kh.Tax - hs.Tax == DynastyRules.Tax(10000000 - 1500000, 1000) - DynastyRules.Tax(10000000 - 3000000, 1000)
+              && kh.Tax - hs.Tax > 0 && DynastyRules.Balanced(kh), "dynasty handover: the married partner's relief is only for what really landed (" + (kh.Tax - hs.Tax) + " more tax)");
+
+        // a throw inside a step: the steps already done stay done and the one that threw is done once when it is tried again
+        var throws = new DynastyWorld { ThrowOnSucceed = true };
+        Statement ts = DynastySettle(DynastyEstate(8000000, 0, 2000000), w, p);
+        DynastyState stT = DynastyStart(ts);
+        throws.Wallet = 8000000;
+        bool threw = false;
+        try
+        {
+            DynastyHand.Finish(stT, throws, 400, 60, 5);
+        }
+        catch (InvalidOperationException)
+        {
+            threw = true;
+        }
+        Check(threw && stT.Hand != null && !stT.Hand.Succeeded && stT.Hand.TaxOut && stT.Hand.Retaxed && throws.BecomeCalls == 0 && throws.TaxCalls == 1 && throws.BookCalls == 3,
+            "dynasty handover: a throw while the features are told stops the handover there: the money is paid and the played person is not yet changed");
+        throws.ThrowOnSucceed = false;
+        stT = DynastyStore.Read(DynastyStore.Write(stT), out int _);   // a save and a load after the error
+        DynastyHand.Finish(stT, throws, 400, 60, 5);
+        Check(stT.Hand == null && throws.SucceedDone == 1 && throws.SucceedCalls == 2 && throws.BecomeDone == 1 && throws.TaxCalls == 1 && throws.BookCalls == 3 && throws.LandCalls == 3
+              && throws.Wallet == 8000000 - DynastyRules.CashOut(stT.Statements[0]) && stT.Generation == 3, "dynasty handover: tried again after the error and a reload, the features are told once, the heir becomes the head once, nothing is paid twice");
+        var throwsB = new DynastyWorld { ThrowOnBecome = true };
+        Statement tb = DynastySettle(DynastyEstate(8000000, 0, 2000000), w, p);
+        DynastyState stB = DynastyStart(tb);
+        throwsB.Wallet = 8000000;
+        try
+        {
+            DynastyHand.Finish(stB, throwsB, 400, 60, 5);
+        }
+        catch (InvalidOperationException)
+        {
+        }
+        throwsB.ThrowOnBecome = false;
+        stB = DynastyStore.Read(DynastyStore.Write(stB), out int _);
+        DynastyHand.Finish(stB, throwsB, 400, 60, 5);
+        Check(stB.Hand == null && throwsB.SucceedCalls == 1 && throwsB.BecomeCalls == 2 && throwsB.BecomeDone == 1, "dynasty handover: a throw while the played person is changed does not tell the other features again");
+        // a throw while a bequest lands, after its money has left: on the next try it is landed, not booked again
+        var throwsL = new DynastyWorld { ThrowOnLand = true };
+        Statement tl = DynastySettle(DynastyEstate(8000000, 0, 2000000), w, p);
+        DynastyState stL = DynastyStart(tl);
+        throwsL.Wallet = 8000000;
+        try
+        {
+            DynastyHand.Finish(stL, throwsL, 400, 60, 5);
+        }
+        catch (InvalidOperationException)
+        {
+        }
+        long bookedAtThrow = throwsL.Booked;
+        stL = DynastyStore.Read(DynastyStore.Write(stL), out int _);
+        throwsL.ThrowOnLand = false;
+        DynastyHand.Finish(stL, throwsL, 400, 60, 5);
+        Check(bookedAtThrow == 2000000 && throwsL.BookCalls == 3 && throwsL.Booked == tl.Paid && throwsL.Landed == tl.Paid && throwsL.MostLanded <= 0 && throwsL.Wallet == 8000000 - DynastyRules.CashOut(stL.Statements[0]),
+            "dynasty handover: a bequest that threw as it landed had left the wallet once and is landed on the next try");
+
+        // payments above what one booking holds are made in chunks, exact to the unit; none creates money
+        var big = new DynastyWorld();
+        Statement bs = DynastySettle(DynastyEstate(6000000000L, 0, 0), new Will(), single);
+        DynastyState stBig = DynastyRun(bs, big, true, out int _);
+        Check(bs.TaxCash > int.MaxValue && big.Tax == bs.TaxCash && big.Chunks == (int)((bs.TaxCash + DynastyCatalogue.ChunkMost - 1) / DynastyCatalogue.ChunkMost) && big.BiggestChunk == DynastyCatalogue.ChunkMost
+              && big.ChunkExact && big.Wallet == 6000000000L - DynastyRules.CashOut(bs) && stBig.Hand == null,
+            "dynasty handover: a tax of " + bs.TaxCash + " is booked in " + big.Chunks + " chunks of at most " + DynastyCatalogue.ChunkMost + ", exact to the unit");
+        var cents = new List<float>();
+        long done = DynastyBooking.Cents(2123456789012L + 37, c => { cents.Add(c); return true; });
+        decimal sum = 0;
+        foreach (float c in cents)
+        {
+            sum += (decimal)Math.Round((double)c, 2);
+        }
+        Check(done == 2123456789049L && cents.Take(cents.Count - 1).All(c => c == (float)Math.Floor(c)) && cents.Max() <= DynastyCatalogue.ChunkMost && sum == 21234567890.49m,
+            "dynasty handover: cents are booked as whole chunks and one last part under a unit, to the cent (" + cents.Count + " bookings)");
+        Check(DynastyBooking.Cents(0, c => throw new InvalidOperationException()) == 0 && DynastyBooking.Cents(-50, c => throw new InvalidOperationException()) == 0 && DynastyBooking.Units(0, c => true) == 0,
+            "dynasty handover: nothing is booked for nothing");
+
+        // a booking refused part way stops the step loudly, keeps what was taken, and goes on from there
+        var refused = new DynastyWorld { RefuseChunk = 2 };
+        Statement rs = DynastySettle(DynastyEstate(12000000, 0, 28000000), new Will(), single);
+        DynastyState stR = DynastyStart(rs);
+        refused.Wallet = 12000000;
+        bool fault = false;
+        try
+        {
+            DynastyHand.Step(stR, refused, 400, 60, 5);
+        }
+        catch (HandFault)
+        {
+            fault = true;
+        }
+        Check(fault && rs.TaxCash > DynastyCatalogue.ChunkMost && rs.Loan > 0 && stR.Hand != null && !stR.Hand.TaxOut && stR.Hand.TaxPaid == DynastyCatalogue.ChunkMost
+              && refused.Wallet == 12000000 - DynastyCatalogue.ChunkMost && stR.Loan.Principal == rs.Loan, "dynasty handover: a refused booking stops the step with a fault and keeps what was taken (" + stR.Hand.TaxPaid + ")");
+        stR = DynastyStore.Read(DynastyStore.Write(stR), out int _);
+        refused.RefuseChunk = -1;
+        DynastyHand.Finish(stR, refused, 400, 60, 5);
+        Check(stR.Hand == null && refused.Tax == rs.TaxCash && refused.Wallet == 12000000 - DynastyRules.CashOut(stR.Statements[0]) && refused.Wallet == 0 && stR.Loan.Principal == rs.Loan,
+            "dynasty handover: after a reload the rest is taken once: the debt is not borrowed twice and no money is made (" + refused.Wallet + " left)");
+        // the same for what a retiring founder keeps and for a bequest
+        Statement rk = DynastySettle(DynastyEstate(60000000, 0, 0, 0, HandMode.Retire, 4), w, single);
+        var refusedK = new DynastyWorld { RefuseChunk = (int)((rk.TaxCash + DynastyCatalogue.ChunkMost - 1) / DynastyCatalogue.ChunkMost) + 2 };   // the keep's second chunk
+        DynastyState stK = DynastyStart(rk);
+        refusedK.Wallet = 60000000;
+        bool faultK = false;
+        try
+        {
+            DynastyHand.Finish(stK, refusedK, 400, 60, 5);
+        }
+        catch (HandFault)
+        {
+            faultK = true;
+        }
+        Check(faultK && rk.Keep > DynastyCatalogue.ChunkMost && stK.Hand != null && stK.Elder == null && stK.Hand.TaxOut && !stK.Hand.KeepOut && stK.Hand.KeepPaid == DynastyCatalogue.ChunkMost,
+            "dynasty handover: a refused booking of what the founder keeps stops it before they become an elder");
+        refusedK.RefuseChunk = -1;
+        DynastyHand.Finish(stK, refusedK, 400, 60, 5);
+        Check(stK.Hand == null && stK.Elder != null && stK.Elder.Fund == rk.Keep && refusedK.Keep == rk.Keep && refusedK.Wallet == 60000000 - DynastyRules.CashOut(stK.Statements[0]),
+            "dynasty handover: tried again the elder has exactly what was kept, once");
     }
 
     // ---- the debt for tax
@@ -757,6 +1135,15 @@ internal static partial class Program
         DynastyHand.Begin(s, DynastySettle(DynastyEstate(2000000, 0, 8000000), s.Will, DynastyFamily()));
         s.Hand.TaxOut = true;
         s.Hand.Step = DynastyHand.StepKeep;
+        s.Hand.TaxPaid = 123456;
+        s.Hand.KeepPaid = 789;
+        s.Hand.Retaxed = true;
+        s.Hand.Succeeded = true;
+        s.Hand.S.Lines[0].Booked = 2000000;
+        s.Hand.S.Lines[0].Credited = true;
+        s.Hand.S.Lines[0].Landed = 1999999;
+        s.Hand.S.Lines[0].Relief = true;
+        s.Wed = DynastyCatalogue.WedOld;
         s.Kin.Add(new Kin { Kind = KinKind.Child, Name = "Jo; x|y", Held = 320000, Day = 120 });
         s.Elder = new Elder { Name = "Al^ex", Born = -4800, Since = 120, Fund = 386000, Draw = 3900, Taxable = 5400000, Tax = 1470000, Month = 79 };
         DynastyRules.Borrow(s.Loan, 900000, 120, 60);
@@ -787,12 +1174,15 @@ internal static partial class Program
               && back.Elder.Name == "Al^ex" && back.Notes[0].To == "C|D" && back.Grown[0].Name == "To;m", "dynasty save: a name cannot break a record, whatever is in it");
         Check(back.Hand != null && back.Hand.TaxOut && !back.Hand.KeepOut && back.Hand.Step == DynastyHand.StepKeep && back.Hand.S.Lines.Count == 3 && DynastyRules.Balanced(back.Hand.S)
               && back.Hand.S.Tax == s.Hand.S.Tax, "dynasty save: a handover under way is kept with its step and its statement");
+        Check(back.Hand.TaxPaid == 123456 && back.Hand.KeepPaid == 789 && back.Hand.Retaxed && back.Hand.Succeeded && !back.Hand.Became && back.Hand.S.Lines[0].Booked == 2000000 && back.Hand.S.Lines[0].Credited
+              && back.Hand.S.Lines[0].Landed == 1999999 && back.Hand.S.Lines[0].Relief && !back.Hand.S.Lines[1].Credited && back.Wed == DynastyCatalogue.WedOld,
+            "dynasty save: what a handover has taken and done so far, each bequest's progress and the wedding day are in the line");
         Check(back.Will.Written && back.Will.HeirName == "Tom" && back.Will.Bequests.Count == 3 && back.Will.RetireAge == 60 && back.Will.Keep == 1 && back.Gifts.Count == 2 && back.Gifts[1].Amount == 250
               && back.Loan.Owed == s.Loan.Owed && back.Loan.Late == 2 && back.Elder.Fund == 386000 && back.Elder.Month == 79 && back.RivalLines[0].Generation == 2 && back.RivalLines[0].HandTax == 31000000
               && !back.RivalLines[1].Ready && back.RivalLines[2].Ready && back.City.Count == 1 && back.Line[0].Tax == 1470000 && back.Generation == 3 && back.Seed == 4242 && back.Held,
             "dynasty save: the will, the gifts, the debt, the elder, the rivals, the city and the lineage are all there");
         // a newer version: fields added at the end of records and a part this version does not know
-        string newer = line.Replace("v=1^", "v=7^").Replace("^c:", "^z:new|part^c:").Replace("^h:4242|", "^h:4242|") + "|99|future^q:1|2|3";
+        string newer = line.Replace("v=1^", "v=7^").Replace("^c:", "^u:new|part^c:").Replace("^h:4242|", "^h:4242|") + "|99|future^q:1|2|3";
         string headed = Regex.Replace(newer, @"\^w:([^\^]*)", m => "^w:" + m.Groups[1].Value + "|77|more");
         DynastyState later = DynastyStore.Read(headed, out int v7);
         Check(v7 == 7 && later != null && later.Will.HeirName == "Tom" && later.Will.Firm == s.Will.Firm && later.Statements.Count == 2 && later.City.Count == 1 && later.Grown.Count == 1,
@@ -923,6 +1313,9 @@ internal static partial class Program
     }
 
     // ---- the sources
+    //
+    // What can only be seen in the game's own code (that the wiring asks each feature where it keeps a thing, that money moves only through the one call, that nothing touches how a
+    // character looks) is read from the source. Every rule a decision rests on is run above, by the very function the director and the wiring call.
 
     private static void DynastySourceChecks()
     {
@@ -944,26 +1337,45 @@ internal static partial class Program
             Check(!text.Contains("UnityEngine.Random") || name == "DynastyDirector.cs", "dynasty sources: " + name + " draws nothing at random (the one seed of a save apart)");
         }
         string game = ModSource(@"Dynasty\DynastyGame.cs"), hand = ModSource(@"Dynasty\DynastyDirector.Hand.cs"), dir = ModSource(@"Dynasty\DynastyDirector.cs");
-        Check(CountOfText(all, "BizBooks.Book(") == 3 && CountOfText(game, "BizBooks.Book(") == 3, "dynasty sources: money moves only through the mod's one call, in the one file that touches the game");
-        Check(CountOfText(all, "DynastyGame.Receive(") == 1 && hand.Contains("DynastyGame.Receive(s.Residue, DynastyGame.FundKey)"), "dynasty sources: the one thing that comes into the wallet is what a retired founder's own fund leaves");
-        Check(CountOfText(game, "c.name = name") == 1 && CountOfText(game, "ageInDays = ") == 4 && game.Contains("d.minutesStudied = DynastyRules.Passed(had, share)") && game.Contains("skill.value = DynastyRules.Passed(skill.value, share)"),
-            "dynasty sources: the heir takes the name, the age and their share of the game's skills and courses, and nothing else of the character");
+        Check(CountOfText(all, "BizBooks.Book(") == 3 && CountOfText(game, "BizBooks.Book(") == 3, "dynasty sources: money moves only through the mod's one call, in the one file that touches the game, always in chunks (DynastyBooking)");
+        Check(CountOfText(game, "DynastyBooking.") == 3 && !game.Contains("int.MaxValue"), "dynasty sources: every booking is chunked, and none is cut at what an int holds");
+        Check(CountOfText(all, "DynastyGame.Receive(") == 3 && hand.Contains("DynastyGame.Receive(draw, DynastyGame.FundKey)") && hand.Contains("DynastyGame.Receive(s.Residue, DynastyGame.FundKey)")
+              && hand.Contains("DynastyGame.Receive(amount, line.Landing == Landing.Pot"), "dynasty sources: what comes into the wallet is the retired founder's living and what is left of their fund, and a bequest that did not land");
+        Check(CountOfText(game, "c.name = name") == 1 && CountOfText(game, "ageInDays = ") == 4 && game.Contains("DynastyRules.CourseMinutes(hours, done, share)")
+              && game.Contains("skill.value = DynastyRules.Passed(had, share)"), "dynasty sources: the heir takes the name, the age and their share of the game's skills and courses, and nothing else of the character");
         Check(CountOfText(dir, "UnityEngine.Random.Range(1, int.MaxValue)") == 1 && dir.Contains("if (_state.Seed == 0)"), "dynasty sources: one seed a save, drawn once and kept");
         Check(dir.Contains("StartCoroutine(Guard.Routine(Tick()))") && dir.Contains("catch (Exception e)") && dir.Contains("WaitForSecondsRealtime(1f)"), "dynasty sources: the timer is a guarded coroutine, once a second");
+        // the clock: every hour the game strikes, and nothing under the death scene
+        Check(dir.Contains("EventHold.Keep(ref GlobalEvents.onNewHour, _onHour, ref _hourSeen)") && dir.Contains("_onHour = Guard.Wrap(HourStruck);") && dir.Contains("GlobalEvents.onNewHour -= _onHour;")
+              && hand.Contains("private void HourStruck()") && hand.Contains("DynastyGame.PlayerDead") && dir.IndexOf("DynastyGame.PlayerDead", StringComparison.Ordinal) < dir.IndexOf("ReadLine();   // the line is read", StringComparison.Ordinal),
+            "dynasty sources: the last days are looked at every hour the game strikes, a time skip's too, and nothing runs under the death scene");
+        Check(hand.Contains("switch (DynastyRules.LastDaysAct(age, year, DynastyGame.Ageing, hold))") && hand.Contains("DynastyGame.SetAgeDays(DynastyRules.Pinned(age, year))")
+              && hand.Contains("Begin(HandMode.Death, heir, byLaw);") && hand.Contains("if (mode == HandMode.Death)") && hand.Contains("FinishNow(true);") && hand.Contains("DynastyHand.Finish(_state, this,"),
+            "dynasty sources: the director does what the rule says in the last days, and a death is settled in the very call that begins it");
+        Check(dir.Contains("if (DynastyGame.Skipping)") || dir.Contains("if (!DynastyGame.Skipping)"), "dynasty sources: a handover's paced steps wait for a time skip to end");
         int retire = hand.IndexOf("public RetireWhy Retire()", StringComparison.Ordinal);
         Check(retire > 0 && hand.IndexOf("RetireWhyNow(out", retire, StringComparison.Ordinal) < hand.IndexOf("Begin(HandMode.Retire", retire, StringComparison.Ordinal)
-              && hand.Contains("GoingPublic.InSession, Ask(DynastyBridges.LawOpen)") && hand.Contains("if (why == RetireWhy.Ok)"), "dynasty sources: retiring is refused before the estate is frozen or any money booked");
-        Check(hand.Contains("DynastyRules.Hold(Running, Ask(DynastyBridges.Final), GoingPublic.InSession, Ask(DynastyBridges.Custody), heir != null)") && hand.Contains("DynastyGame.SetAgeDays(DynastyRules.HeldAge(year))")
-              && hand.Contains("if (DynastyRules.Holds(hold))") && hand.Contains("if (!DynastyRules.InLastDays(age, year, _state.Held) || !DynastyGame.Ageing)"), "dynasty sources: the last day is held only by the rule, in a session or a cell; Permadeath's death and the game's own end are left alone");
+              && hand.Contains("DynastyGate.LawOpen(LawNow())") && hand.Contains("if (why == RetireWhy.Ok)"), "dynasty sources: retiring is refused before the estate is frozen or any money booked");
+        Check(hand.Contains("DynastyGate.Hold(Running, Ask(DynastyBridges.Permadeath), Ask(DynastyBridges.Armed), GoingPublic.InSession, LawNow(), heir != null)"), "dynasty sources: the last day is held by the rule's composition of Permadeath, a session and the law");
         Check(dir.Contains("if (_state.Hand != null)") && dir.Contains("HandStep();") && hand.Contains("DynastyHand.Step(_state, this,"), "dynasty sources: a handover under way goes on at its step after a load");
         string putAway = dir.Substring(dir.IndexOf("private void PutAway()", StringComparison.Ordinal), 400);
         Check(putAway.Contains("Write();") && putAway.Contains("RemoveApp();") && !putAway.Contains("new DynastyState") && !putAway.Contains("Hand = null"), "dynasty sources: with the option off the line stays as it is");
-        Check(dir.Contains("DynastyRules.Gift(kept.Gifts, DynastyGame.Day, amount);") && dir.Contains("save.modData[DynastyStore.Key] = DynastyStore.Write(kept);"), "dynasty sources: a gift is dated in the save's line with the option off too, so the option is no way round the window");
+        Check(dir.Contains("DynastyGifts.Keep(save.modData") && dir.Contains("DynastyGifts.Merge(save.modData, _state)") && dir.Contains("save.modData[DynastyStore.Key] = DynastyStore.Write(_state);"),
+            "dynasty sources: a gift is dated whatever the option and whatever the line, and counted when the dynasty next runs");
         string wiring = ModSource(@"Wiring\Wiring.DynastyLinks.cs"), gifts = ModSource(@"Giving\GivingDirector.Gifts.cs");
-        Check(wiring.Contains("Settings.Permadeath && PermadeathState.Armed") && wiring.Contains("JusticeState.OnProbation(day)") && wiring.Contains("JusticeState.Suspended(day)") && wiring.Contains("JusticeState.OpenCount > 0")
-              && wiring.Contains("Licences.Driving.Suspended") && wiring.Contains("LawState.WantedCharges != 0"), "dynasty sources: Permadeath's switch, and every open matter of the law, are asked where they are kept");
-        Check(wiring.Contains("JusticeState.Seal();") && !wiring.Contains("JusticeState.Clear()") && !wiring.Contains("Debts.Clear") && !wiring.Contains("Cases.Clear") && !wiring.Contains("ProbationUntil =")
-              && !wiring.Contains("SuspendedUntil =") && !wiring.Contains("CommunityHours ="), "dynasty sources: the closed record is sealed; no case, fine, sentence or ban is touched");
+        Check(wiring.Contains("DynastyBridges.Law = LawNow;") && wiring.Contains("f.Probation = JusticeState.OnProbation(day)") && wiring.Contains("f.Suspended = JusticeState.Suspended(day)") && wiring.Contains("f.OpenCount = JusticeState.OpenCount")
+              && wiring.Contains("f.DrivingSuspended = Licences.Driving.Suspended") && wiring.Contains("f.WantedCharges = Law.LawState.WantedCharges") && wiring.Contains("f.HearNow = JusticeState.HearNow != 0")
+              && wiring.Contains("f.Staged = EconomyBridges.Held != null && EconomyBridges.Held()") && wiring.Contains("DynastyBridges.Permadeath = () => Settings.Permadeath;") && wiring.Contains("DynastyBridges.Armed = () => PermadeathState.Armed;"),
+            "dynasty sources: every open matter of the law, the scene and Permadeath's switch are asked where they are kept");
+        Check(!wiring.Contains("JusticeState.Seal") && !wiring.Contains("Record.Clear") && !wiring.Contains("JusticeState.Clear()") && !wiring.Contains("Debts.Clear") && !wiring.Contains("Cases.Clear")
+              && !wiring.Contains("ProbationUntil =") && !wiring.Contains("SuspendedUntil =") && !wiring.Contains("JusticeState.CommunityHours ="), "dynasty sources: the record is not touched: nothing sealed, cleared or closed at a handover");
+        Check(wiring.Contains("company.Tax.Reserve") && wiring.Contains("company.Tax.Owed") && wiring.Contains("OwnBankRules.CapitalNow(bank)") && wiring.Contains("giving.Loans[i].State == LoanState.Open")
+              && wiring.Contains("p.Loan") && wiring.Contains("p.Debt") && wiring.Contains("EconomyBridges.OtherAccounts?.Invoke(Credit)") && wiring.Contains("save.currentUnpaidTaxes.totalToPay") && wiring.Contains("save.currentBackTaxes"),
+            "dynasty sources: the estate reads the tax reserve, the own bank, loans out, what friends owe and are owed, the student and construction loans and the game's taxes where each is kept");
+        Check(wiring.Contains("EstateLoan l = d != null ? d.LoanOwed : null;") && !wiring.Contains("d.Running ? d.State.Loan"), "dynasty sources: the debt for estate tax is shown among the Finance app's whatever the option");
+        Check(wiring.Contains("DynastyRules.WedLongEnough(wed != null ? wed.WedDay : 0, day, year)") && wiring.Contains("FamilyState.S.MarriedDay"), "dynasty sources: the partner's relief goes by the wedding day family life keeps");
+        Check(wiring.Contains("s.HeirKind == KinKind.Child ? s.To : null") && ModSource(@"Family\FamilyDirector.Succession.cs").Contains("DynastyRules.Staying(all, c => c.Name, heirName)")
+              && ModSource(@"Family\FamilyDirector.Succession.cs").Contains("FamilyState.S.Children.AddRange(children);"), "dynasty sources: a child who carries on leaves the other children with their schools and funds in the family");
         Check(wiring.Contains("GoingPublic.InSession ? RivalDirector.Instance.File : null") && wiring.Contains("DynastyRivals.Paid(tax, t.Worth, RivalRules.At(t.Def.StartWorth, Prices.Level))") && wiring.Contains("t.Worth -= paid;"),
             "dynasty sources: the rivals rest in a session, and what leaves a fortune is exactly what the rule says was paid");
         Check(wiring.Contains("GivingGame.People()") && wiring.Contains("GivingPeople.Helpable(pop, h)") && wiring.Contains("GivingPeople.Help(pop, h, lands, out long _, out long _);"), "dynasty sources: a bequest reaches a household through the population's own fields, where the city's people are this player's");
@@ -973,7 +1385,8 @@ internal static partial class Program
             "dynasty sources: a charity's bequest goes in its pot and is no deduction from the income tax: it is exempt once, from the estate");
         Check(gifts.Contains("GivingBridges.GaveToPerson?.Invoke(amount);") && ModSource(@"Giving\GivingDirector.Loans.cs").Contains("GivingBridges.GaveToPerson?.Invoke(Math.Max(0, l.Remaining));")
               && wiring.Contains("GivingBridges.GaveToPerson = amount => DynastyDirector.Instance?.Gave(amount);"), "dynasty sources: every gift to a person, and a loan written off, is told for the window");
-        Check(ModSource(@"Population\LifeRules.cs").Contains("Ended?.Invoke(hh.Savings[h], hh.Debt[h]);") && wiring.Contains("Population.LifeRules.Ended = "), "dynasty sources: the population tells a household that ended with a death");
+        Check(ModSource(@"Population\LifeRules.cs").Contains("Ended?.Invoke(hh.Savings[h], hh.Debt[h]);") && ModSource(@"Population\LifeRules.cs").Contains("AfterLoss(s, h, day, true);") && ModSource(@"Population\LifeRules.cs").Contains("AfterLoss(s, h, day, false);")
+              && wiring.Contains("Population.LifeRules.Ended = "), "dynasty sources: the population tells a household that ended with a death, and only that");
         Check(CountOfText(ModSource(@"Wiring\Wiring.cs"), "DynastyLinks") == 2, "dynasty sources: the wiring connects and disconnects the dynasty");
         Check(ModSource(@"Meta\FeatureList.cs").Contains("Dynasty.DynastyGuide.Register()") && ModSource(@"Core\FeatureOwners.cs").Contains("\"RealLifeOverhaul.Dynasty\", \"dynasty\"") && ModSource(@"Meta\OptionsTree.cs").Contains("S(\"dynasty\")")
               && ModSource(@"Meta\FeatureCities.cs").Contains("new Line(\"dynasty\"") && ModSource(@"Core\Settings.cs").Contains("public static bool Dynasty = true;"),
@@ -982,6 +1395,9 @@ internal static partial class Program
         Check(tests.Contains("public void TestStatement()") && tests.Contains("public void TestRetireAge()") && tests.Contains("public void TestLastDays()") && tests.Contains("public void TestRival()")
               && guide.Contains("TestStatement()") && guide.Contains("TestRetireAge()") && guide.Contains("TestLastDays()") && guide.Contains("TestRival()") && CountOfText(tests, "Dynasty check (test") == 5,
             "dynasty sources: Options, Tests has its four entries, each with its check line");
+        // the runtime self-check lines can fail: each one is a test of something that is read from the game after the work, and there is no unconditional PASS
+        int lines = CountOfText(all, "Dynasty check ("), pass = CountOfText(all, "PASS"), tested = CountOfText(all, "? \"PASS\" : \"FAIL\"");
+        Check(lines >= 11 && pass == tested && lines - tested <= 1, "dynasty sources: the runtime check lines say PASS only when a test holds: " + tested + " of " + lines + " lines carry a test, and no PASS is written outright");
     }
 
     // ---- the texts
@@ -1018,7 +1434,7 @@ internal static partial class Program
             "reallife_dynasty_retire_elder", "reallife_dynasty_retire_no_will", "reallife_dynasty_test_statement", "reallife_dynasty_test_age", "reallife_dynasty_test_last", "reallife_dynasty_test_rival",
             "reallife_dynasty_test_no_rival", "reallife_dynasty_test_off", "reallife_dynasty_retire_ask" };
         string[] facts = { "{dynasty_threshold}", "{dynasty_rate_low}", "{dynasty_rate_mid}", "{dynasty_rate_top}", "{dynasty_band_low}", "{dynasty_band_mid}", "{dynasty_window}", "{dynasty_spouse}",
-            "{dynasty_others}", "{dynasty_fee}", "{dynasty_change_fee}", "{dynasty_retire_least}", "{dynasty_keep_most}", "{dynasty_last_age}", "{dynasty_loan_rate}", "{dynasty_loan_years}", "{dynasty_fame}" };
+            "{dynasty_others}", "{dynasty_fee}", "{dynasty_change_fee}", "{dynasty_retire_least}", "{dynasty_keep_most}", "{dynasty_last_age}", "{dynasty_lead}", "{dynasty_loan_rate}", "{dynasty_loan_years}", "{dynasty_fame}" };
         Dictionary<string, string> english = LoadWords(System.IO.Path.Combine(DesignLocales, "en.json"));
         foreach (string code in DynastyLanguages)
         {

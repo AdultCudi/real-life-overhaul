@@ -6,6 +6,7 @@ using Entities;
 using Extensions;
 using Helpers;
 using RealLifeOverhaul.Economy;
+using UI;
 using UI.Notification;
 using UnityEngine;
 
@@ -130,22 +131,28 @@ namespace RealLifeOverhaul.Dynasty
 
         public static long Spare => Math.Max(0L, Cash - Reserved);
 
-        /// <summary>The Finance app's net worth, every debt taken off; the cash alone where it cannot be asked.</summary>
-        public static long NetWorth
+        /// <summary>What the estate is made of besides the cash (DynastyHoldings); the cash alone where it cannot be asked.</summary>
+        public static Holdings Holdings
         {
             get
             {
                 try
                 {
-                    return DynastyBridges.NetWorth != null ? DynastyBridges.NetWorth() : Cash;
+                    if (DynastyBridges.Holdings != null)
+                    {
+                        return DynastyBridges.Holdings();
+                    }
                 }
                 catch (Exception e)
                 {
                     Logger?.Error(e);
-                    return Cash;
                 }
+                return new Holdings { Wealth = Cash };
             }
         }
+
+        /// <summary>The net worth the estate is made from: the Finance app's with what it leaves out, every debt taken off.</summary>
+        public static long NetWorth => Holdings.NetWorth;
 
         /// <summary>The estate as it stands now, for a settlement: read once, at the freeze.</summary>
         public static EstateIn Estate(HandMode mode, DynastyState s)
@@ -160,42 +167,37 @@ namespace RealLifeOverhaul.Dynasty
             };
         }
 
-        /// <summary>Money out of the wallet, whole money, through the mod's one call. A settlement's sums were fixed against the cash at the freeze, so they are taken whatever
-        /// was spent since (<paramref name="force"/>); a fee is only taken when the cash over the investors' floor covers it.</summary>
-        public static bool Pay(long amount, string key, bool force)
+        /// <summary>
+        /// Money out of the wallet, whole money, through the mod's one call, in chunks the wallet's float holds exactly (DynastyBooking). A settlement's sums were fixed against the
+        /// cash at the freeze, so they are taken whatever was spent since (<paramref name="force"/>); a fee is only taken when the cash over the investors' floor covers it.
+        /// Returns the whole money really booked: it is all of it unless the game refused a chunk, and then nothing is booked beyond that chunk.
+        /// </summary>
+        public static long PayUnits(long amount, string key, bool force)
         {
-            if (amount <= 0)
+            if (amount <= 0 || (!force && amount > Spare))
             {
-                return true;
+                return 0L;
             }
-            if (amount > int.MaxValue || (!force && amount > Spare))
-            {
-                return false;
-            }
-            return BizBooks.Book(-(float)amount, new TransactionInfo(key), null, null, force: force, showNotification: false);
+            return DynastyBooking.Units(amount, chunk => BizBooks.Book(-chunk, new TransactionInfo(key), null, null, force: force, showNotification: false));
         }
 
-        /// <summary>A part of the tax debt, in cents.</summary>
-        public static bool PayCents(long cents, string key, bool force)
+        /// <summary>As <see cref="PayUnits"/>: true when all of it was booked (a fee).</summary>
+        public static bool Pay(long amount, string key, bool force) => amount <= 0 || PayUnits(amount, key, force) >= amount;
+
+        /// <summary>A part of the tax debt, in cents. Returns the cents really booked.</summary>
+        public static long PayCents(long cents, string key, bool force)
         {
-            if (cents <= 0)
+            if (cents <= 0 || (!force && cents > Spare * 100))
             {
-                return true;
+                return 0L;
             }
-            if (!force && cents > Spare * 100)
-            {
-                return false;
-            }
-            return BizBooks.Book(-(float)(cents / 100.0), new TransactionInfo(key), null, null, force: force, showNotification: false);
+            return DynastyBooking.Cents(cents, chunk => BizBooks.Book(-chunk, new TransactionInfo(key), null, null, force: force, showNotification: false));
         }
 
-        /// <summary>Money into the wallet, whole money: what a retired founder's fund leaves the head of the family.</summary>
-        public static void Receive(long amount, string key)
+        /// <summary>Money into the wallet, whole money, in the same chunks: a retired founder's fund and a bequest that did not land. Returns what came in.</summary>
+        public static long Receive(long amount, string key)
         {
-            if (amount > 0)
-            {
-                BizBooks.Book((float)Math.Min(amount, int.MaxValue), new TransactionInfo(key), null, null, force: true);
-            }
+            return amount <= 0 ? 0L : DynastyBooking.Units(amount, chunk => BizBooks.Book(chunk, new TransactionInfo(key), null, null, force: true, showNotification: false));
         }
 
         /// <summary>
@@ -210,11 +212,13 @@ namespace RealLifeOverhaul.Dynasty
             {
                 return;
             }
+            string was = c.name;
             if (!string.IsNullOrEmpty(name))
             {
                 c.name = name;
             }
-            c.ageInDays = DynastyCatalogue.Clamp(ageYears, DynastyCatalogue.HeirLeast, DynastyCatalogue.HeirMost) * DaysPerYear;
+            int days = DynastyCatalogue.Clamp(ageYears, DynastyCatalogue.HeirLeast, DynastyCatalogue.HeirMost) * DaysPerYear;
+            c.ageInDays = days;
             CharacterData kept = Kept();
             if (kept != null)
             {
@@ -222,12 +226,15 @@ namespace RealLifeOverhaul.Dynasty
                 kept.ageInDays = c.ageInDays;
             }
             int skills = 0, courses = 0;
+            bool ok = true;
             for (int i = 0; c.skills != null && i < c.skills.Count; i++)
             {
                 Skill skill = c.skills[i];
                 if (skill != null)
                 {
-                    skill.value = DynastyRules.Passed(skill.value, share);
+                    float had = skill.value;
+                    skill.value = DynastyRules.Passed(had, share);
+                    ok &= Math.Abs(skill.value - Math.Max(0f, had) * DynastyCatalogue.Clamp(share, 0, 1000) / 1000f) < 0.0001f && skill.value <= Math.Max(0f, had) + 0.0001f;
                     skills++;
                 }
             }
@@ -239,17 +246,41 @@ namespace RealLifeOverhaul.Dynasty
                 {
                     continue;
                 }
-                int had = d.minutesStudied;
-                d.minutesStudied = DynastyRules.Passed(had, share);
-                d.completed = d.completed && d.minutesStudied >= had;
+                int hours = d.minutesStudied;
+                bool done = d.completed;
+                d.minutesStudied = DynastyRules.CourseMinutes(hours, done, share);   // a course the founder finished stays finished (DynastyRules.CourseMinutes)
+                ok &= d.completed == done && (done ? d.minutesStudied == Math.Max(0, hours) : d.minutesStudied <= hours && d.minutesStudied == DynastyRules.Passed(hours, share));
                 courses++;
             }
             if (Meta.Dev.Verbose)
             {
+                ok &= c.name == (string.IsNullOrEmpty(name) ? was : name) && c.ageInDays == days && (kept == null || (kept.name == c.name && kept.ageInDays == days));
                 Logger?.Info("Dynasty check (the heir takes over): played as " + c.name + ", " + ageYears + " years old (" + c.ageInDays + " days); " + skills + " skill(s) and " + courses
-                             + " course(s) at " + share / 10f + "% of the founder's; the look is untouched: PASS");
+                             + " course(s) at " + share / 10f + "% of the founder's, the courses the founder finished still finished: " + (ok ? "PASS" : "FAIL"));
             }
         }
+
+        // ---- the clock and the death scene
+
+        /// <summary>The game's time machine is running (a sleep, a skip, a stay in a cell): days pass faster than the director looks.</summary>
+        public static bool Skipping
+        {
+            get
+            {
+                try
+                {
+                    UIs uis = InstanceBehavior<UIs>.Instance;
+                    return uis != null && uis.timeMachine != null && uis.timeMachine.isRunning;
+                }
+                catch (Exception)
+                {
+                    return false;
+                }
+            }
+        }
+
+        /// <summary>The game's death scene has begun (FuneralHelper.PlayerDead): nothing of the dynasty runs under it.</summary>
+        public static bool PlayerDead => GameMembers.PlayerDead;
 
         // ---- words
 

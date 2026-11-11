@@ -27,6 +27,7 @@ namespace RealLifeOverhaul.Dynasty
         // ---- the estate today
         public Statement Today;                    // the estate if it passed today; null with nobody to value it
         public bool HeirKnown;
+        public string HeirName = string.Empty;     // who carries on today, whichever tab is shown
         public RetireWhy Retire = RetireWhy.Off;
         public Statement RetireToday;              // ... and if the founder retired today
         public DeathHold Hold;

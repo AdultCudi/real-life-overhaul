@@ -24,7 +24,8 @@ namespace RealLifeOverhaul.Dynasty
 
         private DynastyState _state;
         private bool _loaded, _broken;
-        private Action _onSave;
+        private bool _read, _lineOk, _fresh;   // the save's line has been read (whatever the option says); it was readable; there was none before
+        private Action _onSave, _onHour, _hourSeen;
         private int _revision;
         private readonly List<KinPerson> _people = new List<KinPerson>(24);
         private readonly List<string> _names = new List<string>(4);
@@ -51,6 +52,7 @@ namespace RealLifeOverhaul.Dynasty
         {
             Instance = this;
             _onSave = OnSave;
+            _onHour = Guard.Wrap(HourStruck);
             GameSprites.Want(AppGlyphs);   // asked for before the one look behind the loading screen (GameSprites.Prewarm)
             StartCoroutine(Guard.Routine(Tick()));
         }
@@ -58,6 +60,7 @@ namespace RealLifeOverhaul.Dynasty
         private void OnDestroy()
         {
             SaveHook.Drop(_onSave);
+            GlobalEvents.onNewHour -= _onHour;
             if (Instance == this)
             {
                 Instance = null;
@@ -94,6 +97,14 @@ namespace RealLifeOverhaul.Dynasty
             {
                 return;
             }
+            if (DynastyGame.PlayerDead)
+            {
+                return;   // the game's death scene: nothing of the dynasty runs under it
+            }
+            if (!_read)
+            {
+                ReadLine();   // the line is read whatever the option says: the debt for estate tax is the Finance app's to show with the option off too
+            }
             if (!Settings.Dynasty)
             {
                 if (_loaded)
@@ -107,13 +118,17 @@ namespace RealLifeOverhaul.Dynasty
                 Load();
             }
             SaveHook.Keep(_onSave);
+            EventHold.Keep(ref GlobalEvents.onNewHour, _onHour, ref _hourSeen);   // every hour the game strikes, a time skip's too (the last days are looked at again)
             if (_app == null && !_gaveUp)
             {
                 Install();
             }
             if (_state.Hand != null)
             {
-                HandStep();   // a handover the save, the load or the option off left in the middle goes on at its step
+                if (!DynastyGame.Skipping)
+                {
+                    HandStep();   // a handover the save, the load or the option off left in the middle goes on at its step
+                }
                 return;
             }
             int day = DynastyGame.Day;
@@ -121,17 +136,32 @@ namespace RealLifeOverhaul.Dynasty
             {
                 Pass(day);
             }
-            LastDays(day);
+            if (!DynastyGame.Skipping)
+            {
+                LastDays(day);   // (while the time machine runs the hours do it)
+            }
         }
 
-        private void Load()
+        // The save's line, read once (whatever the option says). A line that cannot be read is left exactly as it is (SaveLines) and the feature starts with an empty one.
+        private void ReadLine()
         {
             GameInstance save = SaveGameManager.Current;
             if (save.modData == null)
             {
                 save.modData = new Dictionary<string, string>();
             }
-            _state = DynastyStore.Load(save.modData, out int version) ?? new DynastyState();
+            DynastyState read = DynastyStore.Load(save.modData, out int version);
+            _lineOk = read != null || !save.modData.ContainsKey(DynastyStore.Key);
+            _fresh = version == 0 && read == null && !save.modData.ContainsKey(DynastyStore.Key);
+            _state = read ?? new DynastyState();
+            _read = true;
+            _revision++;
+        }
+
+        private void Load()
+        {
+            GameInstance save = SaveGameManager.Current;
+            int gifts = DynastyGifts.Merge(save.modData, _state);   // gifts told while the line could not take them
             if (_state.Seed == 0)
             {
                 _state.Seed = UnityEngine.Random.Range(1, int.MaxValue);   // once a save, then kept: every rival's age comes from it
@@ -140,8 +170,9 @@ namespace RealLifeOverhaul.Dynasty
             _draft = null;
             _loaded = true;
             _revision++;
-            Logger?.Info("Dynasty: " + (version > 0 ? "read the save's line (version " + version + "): generation " + _state.Generation + ", " + (_state.Will.Written ? "a will" : "no will")
-                         + (_state.Hand != null ? ", a handover under way at step " + _state.Hand.Step : string.Empty) : "no will yet") + ".");
+            Logger?.Info("Dynasty: " + (!_fresh ? "read the save's line: generation " + _state.Generation + ", " + (_state.Will.Written ? "a will" : "no will")
+                         + (_state.Hand != null ? ", a handover under way at step " + _state.Hand.Step : string.Empty) : "no will yet")
+                         + (gifts > 0 ? "; " + gifts + " gift(s) kept aside were added" : string.Empty) + ".");
         }
 
         private void OnSave()
@@ -180,6 +211,8 @@ namespace RealLifeOverhaul.Dynasty
             Write();
             _loaded = false;
             _draft = null;
+            GlobalEvents.onNewHour -= _onHour;
+            _hourSeen = null;
             RemoveApp();
             _revision++;
             Logger?.Info("Dynasty: switched off; the will and the statements are kept in the save and count again when it is on.");
@@ -196,6 +229,9 @@ namespace RealLifeOverhaul.Dynasty
             _state = new DynastyState();
             _draft = null;
             _loaded = false;
+            _read = false;
+            GlobalEvents.onNewHour -= _onHour;
+            _hourSeen = null;
             RemoveApp();
             _revision++;
         }
@@ -208,6 +244,7 @@ namespace RealLifeOverhaul.Dynasty
             _state.LastDay = day;
             int year = DynastyGame.DaysPerYear;
             DynastyRules.ForgetOld(_state.Gifts, day, year);
+            NoteWedding(day);
             SeeGrown(day);
             LoanDays(day, year);
             ElderDay(day, year);
@@ -217,6 +254,27 @@ namespace RealLifeOverhaul.Dynasty
             ExpireNotes(day);
             _revision++;
         }
+
+        // When the present marriage began, as the dynasty knows it (DynastyRules.NoteWedding): the relief for a married partner is for a marriage of the window's length.
+        private void NoteWedding(int day)
+        {
+            int wedding = -1;
+            try
+            {
+                wedding = DynastyBridges.Wedding != null ? DynastyBridges.Wedding() : -1;
+            }
+            catch (Exception e)
+            {
+                Logger?.Error(e);
+            }
+            _state.Wed = DynastyRules.NoteWedding(_state.Wed, wedding >= 0, Math.Max(0, wedding), _fresh, day);
+        }
+
+        /// <summary>The wedding day as the dynasty knows it, for the people it reads; 0 not married or not read.</summary>
+        internal int WedDay => _loaded ? _state.Wed : 0;
+
+        /// <summary>The debt for estate tax, for the Finance app: shown whatever the option says, once the save's line is read. Null while there is none.</summary>
+        internal EstateLoan LoanOwed => _read && _state != null && _state.Loan.Open ? _state.Loan : null;
 
         // A child seen grown for the first time: family life stops counting their years at eighteen, so the day is kept and their age goes on from it.
         private void SeeGrown(int day)
@@ -281,22 +339,22 @@ namespace RealLifeOverhaul.Dynasty
             {
                 return;
             }
-            if (!_loaded)
+            if (save.modData == null)
             {
-                // The option is off or the line is not read yet: the gift is dated in the save's line all the same, so switching the option off is no way round the window.
-                if (save.modData == null)
-                {
-                    save.modData = new Dictionary<string, string>();
-                }
-                DynastyState kept = DynastyStore.Load(save.modData, out int _) ?? (save.modData.ContainsKey(DynastyStore.Key) ? null : new DynastyState());
-                if (kept != null)
-                {
-                    DynastyRules.Gift(kept.Gifts, DynastyGame.Day, amount);
-                    save.modData[DynastyStore.Key] = DynastyStore.Write(kept);
-                }
+                save.modData = new Dictionary<string, string>();
+            }
+            if (!_read || !_lineOk)
+            {
+                // The line is not read yet, or cannot be read: the gift is dated in the line when it can take it and in a line of its own when it cannot, and counts all the same, so
+                // that neither the option nor a damaged line is a way round the window. A gift is never dropped.
+                DynastyGifts.Keep(save.modData, DynastyGame.Day, amount);
                 return;
             }
             DynastyRules.Gift(_state.Gifts, DynastyGame.Day, amount);
+            if (!_loaded)
+            {
+                save.modData[DynastyStore.Key] = DynastyStore.Write(_state);   // the option is off: nothing writes the line at a save, so the gift is written now
+            }
             _revision++;
         }
     }

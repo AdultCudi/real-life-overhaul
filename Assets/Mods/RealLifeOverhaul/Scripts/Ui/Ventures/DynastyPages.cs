@@ -69,7 +69,7 @@ namespace RealLifeOverhaul.Ui
                 new UiFigureModel { Label = w.T("reallife_dynasty_fig_estate", "Your estate today"), Value = w.Money(t != null ? t.Net : 0) },
                 new UiFigureModel { Label = w.T("reallife_dynasty_fig_tax", "Estate tax if it passed today"), Value = w.Money(t != null ? t.Tax : 0) },
                 new UiFigureModel { Label = w.T("reallife_dynasty_fig_heir", "Who carries on"),
-                    Value = t != null && f.HeirKnown ? t.To : w.T("reallife_dynasty_fig_nobody", "Nobody") }
+                    Value = f.HeirKnown ? f.HeirName : w.T("reallife_dynasty_fig_nobody", "Nobody") }
             };
             switch (m.Tab)
             {

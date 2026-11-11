@@ -6,8 +6,33 @@ namespace RealLifeOverhaul.Dynasty
     /// <summary>What the pages read: filled when a page is written (the revision moved, or a press), never a frame.</summary>
     public sealed partial class DynastyDirector
     {
-        /// <summary>Fills the facts. False, with Ready off, while the dynasty does not run for this save.</summary>
-        public bool Facts(DynastyFacts f)
+        private readonly DynastyEstateCache<EstatePair> _estateCache = new DynastyEstateCache<EstatePair>();
+
+        /// <summary>Times the estate was valued for a page or the tax side (it is kept for a day, a revision and the cash).</summary>
+        public int EstatesWorked => _estateCache.Worked;
+
+        // The estate as it would pass today, in both ways, worked out once for the day, the director's revision and the cash: a page rebuilt often, or the tax side's row, is
+        // answered from memory. One reading of the game's holdings serves both.
+        private EstatePair EstateNow()
+        {
+            return _estateCache.Get(DynastyGame.Day, _revision, DynastyGame.Cash, () =>
+            {
+                List<KinPerson> people = ReadPeople();
+                KinPerson heir = DynastyRules.Choose(_state.Will, people, out bool byLaw);
+                EstateIn e = DynastyGame.Estate(HandMode.Death, _state);
+                return new EstatePair
+                {
+                    Death = DynastyRules.Settle(e, _state.Will, heir, byLaw, people),
+                    Retire = DynastyRules.Settle(e.For(HandMode.Retire, _state.Will.Keep), _state.Will, heir, byLaw, people)
+                };
+            });
+        }
+
+        /// <summary>
+        /// Fills the facts. False, with Ready off, while the dynasty does not run for this save. The estate is valued once for a day, a revision and the cash (EstateNow) whatever the
+        /// tab; only the Estate tab (<paramref name="estate"/>) asks the law what holds a handover or refuses retiring.
+        /// </summary>
+        public bool Facts(DynastyFacts f, bool estate = true)
         {
             f.Ready = Running;
             f.People.Clear();
@@ -16,6 +41,9 @@ namespace RealLifeOverhaul.Dynasty
             f.Kin.Clear();
             f.RivalLines.Clear();
             f.Today = f.RetireToday = null;
+            f.HeirName = string.Empty;
+            f.Retire = RetireWhy.Off;
+            f.Hold = DeathHold.Off;
             if (!Running)
             {
                 return false;
@@ -41,11 +69,17 @@ namespace RealLifeOverhaul.Dynasty
             f.People.AddRange(people);
             KinPerson heir = DynastyRules.Choose(_state.Will, people, out bool byLaw);
             f.HeirKnown = heir != null;
-            f.Today = DynastyRules.Settle(DynastyGame.Estate(HandMode.Death, _state), _state.Will, heir, byLaw, people);
-            f.RetireToday = DynastyRules.Settle(DynastyGame.Estate(HandMode.Retire, _state), _state.Will, heir, byLaw, people);
-            f.Retire = DynastyRules.MayRetire(Running, _state.Hand != null, _state.Will, f.Age, heir != null, f.Session, Ask(DynastyBridges.LawOpen), _state.Elder != null);
-            f.Hold = DynastyRules.Hold(Running, Ask(DynastyBridges.Final), f.Session, Ask(DynastyBridges.Custody), heir != null);
-            f.LastDays = DynastyGame.AgeDays >= DynastyRules.LastDays(year);
+            f.HeirName = heir != null ? heir.Name ?? string.Empty : string.Empty;
+            EstatePair pair = EstateNow();   // from memory unless the day, the revision or the cash moved
+            f.Today = pair.Death;
+            f.RetireToday = pair.Retire;
+            if (estate)
+            {
+                LawFacts law = LawNow();
+                f.Retire = DynastyRules.MayRetire(Running, _state.Hand != null, _state.Will, f.Age, heir != null, f.Session, DynastyGate.LawOpen(law), _state.Elder != null);
+                f.Hold = DynastyGate.Hold(Running, Ask(DynastyBridges.Permadeath), Ask(DynastyBridges.Armed), f.Session, law, heir != null);
+            }
+            f.LastDays = DynastyRules.InLastDays(DynastyGame.AgeDays, year);
             f.Handing = _state.Hand != null;
             f.Step = DynastyHand.Done(_state.Hand);
             f.Steps = DynastyHand.Steps(_state.Hand);
@@ -77,9 +111,7 @@ namespace RealLifeOverhaul.Dynasty
             {
                 return -1L;
             }
-            List<KinPerson> people = ReadPeople();
-            KinPerson heir = DynastyRules.Choose(_state.Will, people, out bool byLaw);
-            return DynastyRules.Settle(DynastyGame.Estate(HandMode.Death, _state), _state.Will, heir, byLaw, people).Tax;
+            return EstateNow().Death.Tax;
         }
 
         /// <summary>One line on the will and the heir for the family side: who carries on, and whether a will says so.</summary>

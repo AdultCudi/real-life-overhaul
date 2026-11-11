@@ -26,7 +26,8 @@ namespace RealLifeOverhaul.Dynasty
         /// <summary>True when somebody is the heir the draft names.</summary>
         public static bool IsHeir(Will draft, KinKind kind, int id, string name)
         {
-            return draft.HeirKind != KinKind.None && kind == draft.HeirKind && (kind == KinKind.Person ? id == draft.HeirId : (name ?? string.Empty) == draft.HeirName);
+            return draft.HeirKind != KinKind.None && kind == draft.HeirKind && (kind == KinKind.Person ? id == draft.HeirId && (name ?? string.Empty) == draft.HeirName
+                : (name ?? string.Empty) == draft.HeirName);
         }
 
         /// <summary>

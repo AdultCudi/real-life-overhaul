@@ -12,7 +12,21 @@ namespace RealLifeOverhaul.Dynasty
 
         public Bequest Copy() => new Bequest { Kind = Kind, Id = Id, Name = Name, Share = Share };
 
-        public bool Same(KinKind kind, int id, string name) => Kind == kind && (kind == KinKind.Child || kind == KinKind.Partner ? Name == name : Id == id);
+        /// <summary>The same person: a partner or a child by name, a person of the cast by their place AND their name (a place the cast gave to
+        /// somebody else is not them), a charity by its number.</summary>
+        public bool Same(KinKind kind, int id, string name)
+        {
+            if (Kind != kind)
+            {
+                return false;
+            }
+            switch (kind)
+            {
+                case KinKind.Charity: return Id == id;
+                case KinKind.Person: return Id == id && (Name ?? string.Empty) == (name ?? string.Empty);
+                default: return (Name ?? string.Empty) == (name ?? string.Empty);
+            }
+        }
     }
 
     /// <summary>The will: who carries on, what the others are left, when the founder means to retire and what they keep then.</summary>
@@ -114,6 +128,10 @@ namespace RealLifeOverhaul.Dynasty
         public long Amount;                    // ... and what is paid (less when the cash does not cover every bequest, or the receiver has no room)
         public Landing Landing;
         public bool Paid;
+        public bool Relief;                    // a married partner's bequest that the relief covers (worked out when the estate was frozen)
+        public long Booked;                    // of Amount, taken out of the wallet so far
+        public bool Credited;                  // it has been put where it lands
+        public long Landed;                    // ... and what really landed
     }
 
     /// <summary>
@@ -159,6 +177,8 @@ namespace RealLifeOverhaul.Dynasty
         public readonly Statement S = new Statement();
         public int Step;                       // DynastyHand's steps
         public bool LoanIn, TaxOut, KeepOut, Passed;
+        public long TaxPaid, KeepPaid;         // of the tax's cash part and of what is kept, taken out of the wallet so far
+        public bool Retaxed, Succeeded, Became; // the tax worked again on what really landed; the features told; the played person changed
     }
 
     /// <summary>What a relative was left, in all: it left the estate for good.</summary>
@@ -260,6 +280,7 @@ namespace RealLifeOverhaul.Dynasty
         public int RetireTold;                 // the age the player was last reminded at that they may retire
         public int HeldTold;                   // the day the player was last told the last day is held back
         public bool Held;                      // the last day is being held back (a session, a cell): the estate passes as soon as that is over
+        public int Wed;                        // the day the present marriage began as the dynasty knows it: 0 not married, WedOld before this build first saw the save
         public int PaperDay;
         public Will Will = new Will();
         public Handover Hand;                  // null: none under way

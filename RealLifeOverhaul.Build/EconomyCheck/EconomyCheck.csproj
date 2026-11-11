@@ -415,6 +415,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Dynasty\DynastyRivals.cs" Link="Mod\Dynasty\DynastyRivals.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Dynasty\DynastyStudy.cs" Link="Mod\Dynasty\DynastyStudy.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Dynasty\DynastyFacts.cs" Link="Mod\Dynasty\DynastyFacts.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Dynasty\DynastyBooking.cs" Link="Mod\Dynasty\DynastyBooking.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\DynastyPages.cs" Link="Mod\Ventures\DynastyPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLedger.cs" Link="Mod\RotaLedger.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLadder.cs" Link="Mod\RotaLadder.cs" />

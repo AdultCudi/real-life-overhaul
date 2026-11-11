@@ -11,6 +11,7 @@ namespace RealLifeOverhaul.Dynasty
         public string Name = string.Empty;
         public int Age;                 // years; 0 where nobody keeps it
         public bool Married;            // a partner: married to the founder
+        public bool Relief;             // ... and for at least the window (DynastyRules.WedLongEnough): only then is their part free of tax
         public bool Family;             // a person: one of the family (the social life's origin)
         public int School;              // a child: 0 none, 1 public, 2 private
         public int FundMille;           // a child: thousandths of the college fund paid in
@@ -35,6 +36,21 @@ namespace RealLifeOverhaul.Dynasty
         public long Prior;              // an earlier taxable estate of the same founder to count with this one
         public bool Session;            // a Going Public session: the city's people and the charities are the host's
         public bool Charities;          // Giving runs and its pots can take a bequest
+
+        /// <summary>The same estate as it would pass in another way (a retiring founder's, with what they keep): nothing is read from the game again.</summary>
+        public EstateIn For(HandMode mode, int keep)
+        {
+            EstateIn e = (EstateIn)MemberwiseClone();
+            e.Mode = mode;
+            e.Keep = keep;
+            return e;
+        }
+    }
+
+    /// <summary>The estate as it would pass today in both ways: at a death and at a retirement.</summary>
+    public sealed class EstatePair
+    {
+        public Statement Death, Retire;
     }
 
     /// <summary>Why the founder cannot retire now.</summary>
@@ -64,6 +80,15 @@ namespace RealLifeOverhaul.Dynasty
         Same = 7,       // nothing changed
         Broke = 8,      // the fee is not there
         Off = 9
+    }
+
+    /// <summary>What the director does in the founder's last days, hour after hour.</summary>
+    public enum LastAct
+    {
+        Nothing = 0,    // not in the last days, or the game does not age the player
+        Begin = 1,      // the estate passes now, every step in this call
+        Hold = 2,       // held back (a session, a cell): the age is kept short of the end
+        Tell = 3        // nothing will be handed over (Permadeath's death, nobody to carry on): the game's own end stands, and the player is told
     }
 
     /// <summary>What holds the last day back.</summary>
@@ -253,7 +278,7 @@ namespace RealLifeOverhaul.Dynasty
                 for (int i = 0; i < people.Count; i++)
                 {
                     KinPerson c = people[i];
-                    if (c.Kind == w.HeirKind && (c.Kind == KinKind.Person ? c.Id == w.HeirId : c.Name == w.HeirName) && CanCarryOn(c))
+                    if (c.Kind == w.HeirKind && (c.Kind == KinKind.Person ? c.Id == w.HeirId && c.Name == w.HeirName : c.Name == w.HeirName) && CanCarryOn(c))
                     {
                         byLaw = false;
                         return c;
@@ -313,6 +338,27 @@ namespace RealLifeOverhaul.Dynasty
         /// <summary>What the heir has of a figure of the founder's learning (minutes studied, a skill's thousandths).</summary>
         public static int Passed(int value, int share) => (int)((long)Math.Max(0, value) * DynastyCatalogue.Clamp(share, 0, 1000) / 1000);
 
+        /// <summary>
+        /// The hours of a course the heir has. A course the founder finished stays finished with all its hours: the family's businesses are run on it (the recruitment agency asks for
+        /// the human resources course, headquarters and offices for theirs, the market for its own), and the game has no way to run them without. A course only part done is the
+        /// heir's share of the hours, to be finished at the game's school.
+        /// </summary>
+        public static int CourseMinutes(int minutes, bool completed, int share) => completed ? Math.Max(0, minutes) : Passed(minutes, share);
+
+        /// <summary>Who stays with the family when a child or a relative becomes its head: everybody but the heir (by name), each as they are, with their school and college fund.</summary>
+        public static List<T> Staying<T>(IList<T> all, Func<T, string> name, string heirName) where T : class
+        {
+            var kept = new List<T>(all != null ? all.Count : 0);
+            for (int i = 0; all != null && i < all.Count; i++)
+            {
+                if (all[i] != null && (string.IsNullOrEmpty(heirName) || name(all[i]) != heirName))
+                {
+                    kept.Add(all[i]);
+                }
+            }
+            return kept;
+        }
+
         /// <summary>The same of a skill the game keeps as a fraction.</summary>
         public static float Passed(float value, int share) => Math.Max(0f, value) * DynastyCatalogue.Clamp(share, 0, 1000) / 1000f;
 
@@ -336,7 +382,7 @@ namespace RealLifeOverhaul.Dynasty
             KinPerson c = null;
             for (int i = 0; i < people.Count; i++)
             {
-                if (people[i].Kind == b.Kind && (b.Kind == KinKind.Person ? people[i].Id == b.Id : people[i].Name == b.Name))
+                if (b.Same(people[i].Kind, people[i].Id, people[i].Name))
                 {
                     c = people[i];
                     break;
@@ -379,7 +425,7 @@ namespace RealLifeOverhaul.Dynasty
                 s.HeirId = heir.Id;
                 s.HeirAge = heir.Age;
                 s.Upbringing = Upbringing(heir);
-                s.SpouseHeir = heir.Kind == KinKind.Partner && heir.Married;
+                s.SpouseHeir = heir.Kind == KinKind.Partner && heir.Married && heir.Relief;
             }
             s.UnderWater = s.Net <= 0;
             long passes = s.UnderWater ? 0L : s.Net;
@@ -399,9 +445,10 @@ namespace RealLifeOverhaul.Dynasty
                 line.Landing = LandingOf(b, heir, people, e, out long room, out int id);
                 line.Id = id;
                 line.Asked = line.Landing == Landing.None ? 0L : Math.Min(passes * b.Share / 1000, room);
-                if (b.Kind == KinKind.Partner && line.Landing != Landing.None && Married(people))
+                if (b.Kind == KinKind.Partner && line.Landing != Landing.None && Relieved(people))
                 {
                     spouseLine = s.Lines.Count;
+                    line.Relief = true;
                 }
                 s.Lines.Add(line);
             }
@@ -438,16 +485,79 @@ namespace RealLifeOverhaul.Dynasty
             return s;
         }
 
-        private static bool Married(IList<KinPerson> people)
+        // Whether the partner is married to the founder for at least the window: only then is a part left to them free of tax.
+        private static bool Relieved(IList<KinPerson> people)
         {
             for (int i = 0; i < people.Count; i++)
             {
                 if (people[i].Kind == KinKind.Partner)
                 {
-                    return people[i].Married;
+                    return people[i].Married && people[i].Relief;
                 }
             }
             return false;
+        }
+
+        /// <summary>
+        /// Whether a marriage that began on <paramref name="wed"/> (0: not married; <see cref="DynastyCatalogue.WedOld"/>: began before this build first saw the save) has lasted at
+        /// least the window by <paramref name="day"/>. The relief for a married partner is only for such a marriage, so a line cannot marry its way out of the tax at the last hour.
+        /// </summary>
+        public static bool WedLongEnough(int wed, int day, int yearDays)
+        {
+            return wed == DynastyCatalogue.WedOld || (wed > 0 && day - wed >= WindowDays(yearDays));
+        }
+
+        /// <summary>
+        /// The dynasty's note of when the present marriage began, from what family life says (<paramref name="married"/>, and <paramref name="recorded"/>, the wedding day it kept;
+        /// 0 where none was kept, as in a save from before it was). Not married: nothing. Married with a day kept: that day. Married with none: the first day the dynasty saw it, or,
+        /// when the dynasty has never seen this save before (<paramref name="fresh"/>), <see cref="DynastyCatalogue.WedOld"/>: that marriage began before this build.
+        /// </summary>
+        public static int NoteWedding(int wed, bool married, int recorded, bool fresh, int day)
+        {
+            if (!married)
+            {
+                return 0;
+            }
+            if (recorded > 0)
+            {
+                return recorded;
+            }
+            return wed != 0 ? wed : fresh ? DynastyCatalogue.WedOld : Math.Max(1, day);
+        }
+
+        /// <summary>
+        /// The estate worked again on what the bequests really were: a bequest that landed short is no longer exempt for what did not land (a charity's) or counted in the partner's
+        /// relief. Returns the tax added, which the estate owes as a debt (the cash part was taken at the first step). Nothing changes if every bequest landed whole.
+        /// </summary>
+        public static long Retax(Statement s)
+        {
+            long passes = s.UnderWater ? 0L : s.Net - s.Keep;
+            long sum = 0, charity = 0, line = -1;
+            for (int i = 0; i < s.Lines.Count; i++)
+            {
+                BequestLine l = s.Lines[i];
+                sum += l.Amount;
+                charity += l.Landing == Landing.Pot ? l.Amount : 0L;
+                if (l.Relief && line < 0)
+                {
+                    line = i;
+                }
+            }
+            long half = passes * DynastyCatalogue.SpouseShare / 1000;
+            long spouse = s.SpouseHeir ? Math.Min(passes - sum, half) : line >= 0 ? Math.Min(s.Lines[(int)line].Amount, half) : 0L;
+            long taxable = Math.Max(0L, passes - charity - Math.Max(0L, spouse)) + s.Gifts;
+            long tax = TaxOn(taxable, s.Prior, s.Level);
+            s.Charity = charity;
+            s.Spouse = Math.Max(0L, spouse);
+            s.Taxable = taxable;
+            long extra = Math.Max(0L, tax - s.Tax);
+            if (extra > 0)
+            {
+                s.Tax += extra;
+                s.Loan += extra;
+                s.Residue -= extra;
+            }
+            return extra;
         }
 
         /// <summary>True when a statement adds up: the estate is what was kept, the tax, the bequests paid and what the heir is left, and the tax is the cash part and the debt.</summary>
@@ -484,6 +594,22 @@ namespace RealLifeOverhaul.Dynasty
             long draw = Math.Min(e.Draw, e.Fund);
             e.Fund -= draw;
             return draw;
+        }
+
+        /// <summary>
+        /// A month's living drawn from the fund and paid to the head of the family through <paramref name="receive"/> (whole money in, whole money that really came in out). What did
+        /// not come in goes back into the fund, so none of it is lost. Returns what came in.
+        /// </summary>
+        public static long ElderPaid(Elder e, int month, Func<long, long> receive)
+        {
+            long draw = ElderMonth(e, month);
+            if (draw <= 0)
+            {
+                return 0L;
+            }
+            long came = Math.Max(0L, Math.Min(draw, receive(draw)));
+            e.Fund += draw - came;
+            return came;
         }
 
         public static int ElderAge(Elder e, int day, int yearDays) => (day - e.Born) / Math.Max(1, yearDays);
@@ -559,19 +685,61 @@ namespace RealLifeOverhaul.Dynasty
             return due;
         }
 
+        /// <summary>
+        /// Every day since the last one the debt went through, up to <paramref name="day"/>, however many (a time skip, a save loaded after years, the option off for a long while):
+        /// each is charged one by one. <paramref name="pay"/> books the cents of a part and returns the cents really booked; a part it could not book is still owed. The spare cash
+        /// is taken down as parts are paid. <paramref name="told"/> hears each day's cents, whether it was forced and the late days in a row. Returns the days charged.
+        /// </summary>
+        public static int LoanDays(EstateLoan l, int day, long spareCents, int yearDays, Func<long, long> pay, Action<long, bool, int> told)
+        {
+            int days = 0;
+            for (int d = Math.Max(l.LastDay + 1, 1); d <= day && l.Open; d++)
+            {
+                long cents = LoanDay(l, spareCents, yearDays, out bool forced);
+                l.LastDay = d;
+                days++;
+                if (cents > 0)
+                {
+                    long paid = Math.Max(0L, Math.Min(cents, pay(cents)));
+                    if (paid < cents)
+                    {
+                        l.Owed += cents - paid;
+                        l.PaidCents -= cents - paid;
+                    }
+                    spareCents = Math.Max(0L, spareCents - paid);
+                }
+                told?.Invoke(cents, forced, l.Late);
+            }
+            return days;
+        }
+
         // ---- when a handover may happen
 
         /// <summary>The age in days from which the founder is in their last days: the handover is made then, before the game's own end comes.</summary>
-        public static int LastDays(int yearDays) => DynastyCatalogue.LastAge * Math.Max(1, yearDays) - 2;
+        public static int LastDays(int yearDays) => DynastyCatalogue.LastAge * Math.Max(1, yearDays) - DynastyCatalogue.LeadDays;
 
         /// <summary>The age in days a founder whose handover is held back is kept at, so the game's own end does not come first.</summary>
         public static int HeldAge(int yearDays) => DynastyCatalogue.LastAge * Math.Max(1, yearDays) - 5;
 
         /// <summary>
-        /// Whether the founder is in their last days: from the age they begin at, and, once the last day has been held back, from the age it is held at, so the estate
-        /// passes the moment what held it is over and not days later.
+        /// Whether the founder is in their last days: from the age they begin at, which is ahead of the game's own end by the lead, so a held age (<see cref="HeldAge"/>) is
+        /// always inside them and the estate passes the moment what held it is over.
         /// </summary>
-        public static bool InLastDays(int ageDays, int yearDays, bool held) => ageDays >= LastDays(yearDays) || (held && ageDays >= HeldAge(yearDays));
+        public static bool InLastDays(int ageDays, int yearDays) => ageDays >= LastDays(yearDays);
+
+
+        /// <summary>What to do with the founder's age at an hour, from the age, whether the game ages the player and what holds a handover (<see cref="Hold"/>).</summary>
+        public static LastAct LastDaysAct(int ageDays, int yearDays, bool ageing, DeathHold hold)
+        {
+            if (!ageing || !InLastDays(ageDays, yearDays))
+            {
+                return LastAct.Nothing;
+            }
+            return hold == DeathHold.None ? LastAct.Begin : Holds(hold) ? LastAct.Hold : LastAct.Tell;
+        }
+
+        /// <summary>The age a held founder is kept at: never past <see cref="HeldAge"/>, so the game's own end does not come while the estate waits.</summary>
+        public static int Pinned(int ageDays, int yearDays) => Math.Min(ageDays, HeldAge(yearDays));
 
         /// <summary>What holds the last day back, the first reason; None and the estate passes today.</summary>
         public static DeathHold Hold(bool running, bool final, bool session, bool custody, bool heir)
@@ -605,6 +773,16 @@ namespace RealLifeOverhaul.Dynasty
                 return RetireWhy.Young;
             }
             return !heir ? RetireWhy.NoHeir : session ? RetireWhy.Session : law ? RetireWhy.Law : elder ? RetireWhy.Elder : RetireWhy.Ok;
+        }
+
+        /// <summary>
+        /// Whether the wallet moved by what was booked: the game keeps the wallet as a float, whose steps grow with its size (one in 2^23 of it), so a few of those are allowed.
+        /// False means a booking was made twice, or not at all.
+        /// </summary>
+        public static bool WalletMatches(long before, long out_, long after)
+        {
+            long slack = 2 + Math.Max(0L, before) / 4000000L;
+            return Math.Abs(before - out_ - after) <= slack;
         }
 
         /// <summary>A fixed hash of a seed and three numbers: the same on every machine.</summary>

@@ -32,7 +32,7 @@ namespace RealLifeOverhaul.Ui
         public void Fill(VentModel m, VentView v)
         {
             DynastyDirector d = DynastyDirector.Instance;
-            if (d == null || !d.Facts(_facts))
+            if (d == null || !d.Facts(_facts, v.Tab == DynastyPages.TabEstate))
             {
                 _facts.Ready = false;
             }

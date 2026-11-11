@@ -34,6 +34,7 @@ namespace RealLifeOverhaul.Dynasty
                 .Fact("dynasty_retire_least", () => DynastyCatalogue.RetireLeast.ToString(Inv))
                 .Fact("dynasty_keep_most", () => (DynastyCatalogue.KeepSteps[DynastyCatalogue.KeepSteps.Length - 1] / 10).ToString(Inv) + "%")
                 .Fact("dynasty_last_age", () => DynastyCatalogue.LastAge.ToString(Inv))
+                .Fact("dynasty_lead", () => DynastyCatalogue.LeadDays.ToString(Inv))
                 .Fact("dynasty_loan_rate", () => (DynastyCatalogue.LoanRate / 10).ToString(Inv) + "%")
                 .Fact("dynasty_loan_years", () => DynastyCatalogue.LoanYears.ToString(Inv))
                 .Fact("dynasty_fame", () => (DynastyCatalogue.FameShare / 10).ToString(Inv) + "%")

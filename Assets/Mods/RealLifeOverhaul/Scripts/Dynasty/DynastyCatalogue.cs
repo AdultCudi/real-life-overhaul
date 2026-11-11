@@ -68,6 +68,9 @@ namespace RealLifeOverhaul.Dynasty
         /// <summary>The share of the estate a retiring founder may keep as their own fund, thousandths: it is not passed on, so it is not taxed until they die.</summary>
         public static readonly int[] KeepSteps = { 0, 50, 100, 150, 200 };
         public const int LastAge = 90;             // years: the game's own end in old age (FuneralHelper.DeathAge); the retired founder's too
+        public const int LeadDays = 10;            // days before the last age the estate passes: a time skip or a second's step cannot jump past the start
+        public const long ChunkMost = 8000000;     // whole money in one booking: a float holds every whole number to 16,777,216 exactly, and the wallet is a float
+        public const int WedOld = -1;              // the wedding day of a marriage that began before this build first saw the save: it counts as long enough
 
         // ---- the debt for tax the cash did not cover
         public const int LoanRate = 60;            // thousandths a year on what is still owed (the US lets estate tax on a business be paid over years with interest, IRC 6166)

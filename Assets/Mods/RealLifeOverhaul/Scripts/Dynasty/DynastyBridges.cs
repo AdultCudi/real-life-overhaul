@@ -12,8 +12,12 @@ namespace RealLifeOverhaul.Dynasty
         /// <summary>Whole money the wallet must keep for the investors of the founder's firms (Tech's firm account): it is not the estate's. Null: none.</summary>
         public static Func<long> Reserved;
 
-        /// <summary>The founder's net worth as the Finance app shows it, shares on the market counted, every debt taken off. Null: the cash alone.</summary>
-        public static Func<long> NetWorth;
+        /// <summary>What the estate is made of: the Finance app's net worth (shares on the market counted, every debt it knows taken off)
+        /// and what it leaves out, line by line. Null: the cash alone.</summary>
+        public static Func<Holdings> Holdings;
+
+        /// <summary>The day the present marriage began as family life kept it: -1 not married, 0 married with no day kept (a save from before it was). Null: -1.</summary>
+        public static Func<int> Wedding;
 
         /// <summary>The people who may carry on or be left something, into the list (cleared): the partner, the children, the people the founder knows. The founder's
         /// age in years and the day are given. Null: nobody.</summary>
@@ -25,14 +29,11 @@ namespace RealLifeOverhaul.Dynasty
         /// <summary>Who draws a will up. Null: a notary with no name.</summary>
         public static Func<Notary> Notary;
 
-        /// <summary>True while the law has anything open against the founder: a case, a warrant, prison, probation, hours owed, a suspended licence, wanted. Null: no.</summary>
-        public static Func<bool> LawOpen;
+        /// <summary>What the law has open against the founder and whether they are held (DynastyGate composes the answers). Null: nothing read, which counts as open.</summary>
+        public static Func<LawFacts> Law;
 
-        /// <summary>True while the founder is in a cell, in prison or before the court. Null: no.</summary>
-        public static Func<bool> Custody;
-
-        /// <summary>True while a death ends the save (Permadeath is on for it). Null: no.</summary>
-        public static Func<bool> Final;
+        /// <summary>The Permadeath option is on, and it is armed for the save: a death then ends the save (DynastyGate.Final). Null: no.</summary>
+        public static Func<bool> Permadeath, Armed;
 
         /// <summary>True while Giving's charities can take a bequest. Null: no.</summary>
         public static Func<bool> Charities;
@@ -61,13 +62,14 @@ namespace RealLifeOverhaul.Dynasty
         public static void Reset()
         {
             Reserved = null;
-            NetWorth = null;
+            Holdings = null;
+            Wedding = null;
             People = null;
             GrownChildren = null;
             Notary = null;
-            LawOpen = null;
-            Custody = null;
-            Final = null;
+            Law = null;
+            Permadeath = null;
+            Armed = null;
             Charities = null;
             ToCharity = null;
             ToHousehold = null;

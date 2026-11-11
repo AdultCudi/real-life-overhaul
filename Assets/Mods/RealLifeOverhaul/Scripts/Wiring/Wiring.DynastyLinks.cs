@@ -19,11 +19,12 @@ namespace RealLifeOverhaul
         /// <summary>
         /// The dynasty (Dynasty/DynastyBridges) with the rest of the mod:
         ///
-        ///   Reserved, NetWorth    the investors' floor of the founder's firms (Tech) and the Finance app's net worth, shares on the market counted
+        ///   Reserved, Holdings    the investors' floor of the founder's firms (Tech); the Finance app's net worth, shares on the market counted, with what it leaves out (DynastyHoldings)
+        ///   Wedding               the day the marriage began, as family life kept it
         ///   People, GrownChildren the partner and the children (Family) and the people the founder knows (the social life), with the household the population holds for each
         ///   Notary                the best law firm of the city, or the founder's own (Justice)
-        ///   LawOpen, Custody      whether the law still wants the founder, and whether they are held now
-        ///   Final                 Permadeath is on for the save: a death is its own
+        ///   Law                   what the law has open against the founder and whether they are held now (DynastyGate says what that means)
+        ///   Permadeath, Armed     Permadeath is on for the save: a death is its own
         ///   Charities, ToCharity  Giving's pots take a bequest
         ///   ToHousehold           a bequest lands in a household as the population holds it
         ///   Succeed               the heir becomes the head in Family, the social life, Careers, Standing and the record
@@ -48,13 +49,14 @@ namespace RealLifeOverhaul
             internal static void Connect()
             {
                 DynastyBridges.Reserved = Reserved;
-                DynastyBridges.NetWorth = NetWorth;
+                DynastyBridges.Holdings = HoldingsNow;
+                DynastyBridges.Wedding = () => FamilyApi.Active && FamilyState.Bond == Bond.Married ? Math.Max(0, FamilyState.S.MarriedDay) : -1;
                 DynastyBridges.People = People;
                 DynastyBridges.GrownChildren = GrownChildren;
                 DynastyBridges.Notary = NotaryNow;
-                DynastyBridges.LawOpen = LawOpen;
-                DynastyBridges.Custody = Custody;
-                DynastyBridges.Final = () => Settings.Permadeath && PermadeathState.Armed;
+                DynastyBridges.Law = LawNow;
+                DynastyBridges.Permadeath = () => Settings.Permadeath;
+                DynastyBridges.Armed = () => PermadeathState.Armed;
                 DynastyBridges.Charities = () => GivingDirector.Instance != null && GivingDirector.Instance.Running && GivingDirector.CauseWhy == 0;
                 DynastyBridges.ToCharity = ToCharity;
                 DynastyBridges.ToHousehold = ToHousehold;
@@ -104,19 +106,112 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // The Finance app's net worth (the game's wealth less every debt the mod knows) with what is held on the stock market, where that runs.
-            private static long NetWorth()
+            private static readonly List<ICreditAccount> Credit = new List<ICreditAccount>(4);
+
+            // What the estate is made of: the Finance app's net worth (the game's wealth less every debt the mod knows, with what is held on the stock market where that runs) and what
+            // that figure leaves out. Each part is read from its own feature, in a guard of its own, so one that fails is said once and counts as nothing while the rest still count.
+            // Assets are rounded down and debts up. Read on a handover's freeze, and for a page or the tax side once a day, a revision and a change of cash (never a frame).
+            private static Holdings HoldingsNow()
             {
+                var h = new Holdings();
                 try
                 {
                     MarketDirector market = MarketDirector.Instance;
-                    return market != null && market.Running ? market.PlayerWorth() : Books.NetWorth();
+                    h.Wealth = market != null && market.Running ? market.PlayerWorth() : Books.NetWorth();
                 }
                 catch (Exception e)
                 {
-                    Fault("DynastyLinks.NetWorth", e);
-                    return Books.NetWorth();
+                    Fault("DynastyLinks.Holdings (the net worth)", e);
+                    h.Wealth = DynastyGame.Cash;
                 }
+                try
+                {
+                    CompanyState company = CompanyDirector.Instance != null ? CompanyDirector.Instance.State : null;
+                    if (company != null)
+                    {
+                        h.TaxReserve = Math.Max(0, company.Tax.Reserve);   // set aside out of the cash for the year's tax bill; it is the founder's until it is paid
+                        h.AuditOwed = Math.Max(0, company.Tax.Owed);       // back tax and fines an audit found
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("DynastyLinks.Holdings (the company)", e);
+                }
+                try
+                {
+                    OwnBank bank = OwnBankDirector.Instance != null ? OwnBankDirector.Instance.Bank : null;
+                    if (bank != null && bank.Running && !bank.Test)
+                    {
+                        h.BankCapital = Math.Max(0L, OwnBankRules.CapitalNow(bank)) / 100L;   // the capital as the regulator counts it, retained earnings with it; cents to whole money, down
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("DynastyLinks.Holdings (the bank)", e);
+                }
+                try
+                {
+                    GivingState giving = GivingDirector.Instance != null ? GivingDirector.Instance.State : null;
+                    for (int i = 0; giving != null && i < giving.Loans.Count; i++)
+                    {
+                        if (giving.Loans[i].State == LoanState.Open)
+                        {
+                            h.LoansOut += Math.Max(0, giving.Loans[i].Remaining);
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("DynastyLinks.Holdings (loans out)", e);
+                }
+                try
+                {
+                    for (int i = 0; SocialState.Loaded && i < SocialState.Count; i++)
+                    {
+                        SocialPerson p = SocialState.People[i];
+                        if (p != null)
+                        {
+                            h.FriendsOwe += Math.Max(0, p.Loan);     // what they owe the player
+                            h.FriendsOwed += Math.Max(0, p.Debt);    // what the player owes them
+                        }
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("DynastyLinks.Holdings (the people)", e);
+                }
+                try
+                {
+                    // The credit accounts of other features that the Finance app's net worth does not take off: the student loan, the construction loans.
+                    Credit.Clear();
+                    EconomyBridges.OtherAccounts?.Invoke(Credit);
+                    for (int i = 0; i < Credit.Count; i++)
+                    {
+                        h.CreditLoans += (long)Math.Ceiling(Math.Max(0f, Credit[i].Balance));
+                    }
+                    Credit.Clear();
+                }
+                catch (Exception e)
+                {
+                    Fault("DynastyLinks.Holdings (the loans)", e);
+                }
+                try
+                {
+                    GameInstance save = SaveGameManager.Current;
+                    if (save != null)
+                    {
+                        if (save.currentUnpaidTaxes != null)
+                        {
+                            h.UnpaidTaxes = (long)Math.Ceiling(Math.Max(0f, save.currentUnpaidTaxes.totalToPay) * (save.currentUnpaidTaxes.lateFeeApplied ? 1.1 : 1.0));   // as the game asks it
+                        }
+                        h.BackTaxes = (long)Math.Ceiling(Math.Max(0f, save.currentBackTaxes));
+                    }
+                }
+                catch (Exception e)
+                {
+                    Fault("DynastyLinks.Holdings (the game's taxes)", e);
+                }
+                return h;
             }
 
             // The debt for estate tax among the debts the Finance app counts, so the net worth (and the next estate) has it taken off.
@@ -133,7 +228,7 @@ namespace RealLifeOverhaul
                 try
                 {
                     DynastyDirector d = DynastyDirector.Instance;
-                    EstateLoan l = d != null && d.Running ? d.State.Loan : null;
+                    EstateLoan l = d != null ? d.LoanOwed : null;   // shown whatever the option says: the debt is owed all the same
                     if (l != null && l.Open)
                     {
                         into.Add(new DebtLine
@@ -187,9 +282,12 @@ namespace RealLifeOverhaul
                     {
                         FamilySave s = FamilyState.S;
                         bool same = partner != null && partner.Met && partner.Name == Partner.Name;
+                        DynastyDirector wed = DynastyDirector.Instance;
+                        bool married = FamilyState.Bond == Bond.Married;
                         var c = new KinPerson
                         {
-                            Kind = KinKind.Partner, Name = Partner.Name ?? string.Empty, Married = FamilyState.Bond == Bond.Married, Closeness = (int)Math.Round(s.PAffection),
+                            Kind = KinKind.Partner, Name = Partner.Name ?? string.Empty, Married = married, Closeness = (int)Math.Round(s.PAffection),
+                            Relief = married && DynastyRules.WedLongEnough(wed != null ? wed.WedDay : 0, day, year),   // only a marriage of the window's length frees a part
                             Age = DynastyRules.PartnerAge(same ? SocialRules.AgeOn(partner.Age, partner.AgeDay, partner.Birthday, day, year) : 0, founderAge)
                         };
                         if (same)
@@ -292,36 +390,39 @@ namespace RealLifeOverhaul
                 }
             }
 
-            // Anything the law still has open against the founder: retiring is refused while it is, so it is no way out of any of it.
-            private static bool LawOpen()
+            // What the law has open against the founder, and whether they are held or in the middle of something staged: DynastyGate says what it means (retiring is refused while
+            // anything is open, so it is no way out of any of it; the estate does not pass in a cell, in prison, before the court or during a scene). A state that cannot be read is
+            // open and held.
+            private static LawFacts LawNow()
             {
+                var f = new LawFacts();
                 try
                 {
                     int day = TimeHelper.CurrentDay;
-                    bool courts = JusticeState.Loaded && (JusticeState.OpenCount > 0 || JusticeState.HasWarrant || JusticeState.ServeWarrant || JusticeState.InPrison
-                                                         || JusticeState.JailHoursPending > 0 || JusticeState.OnProbation(day) || JusticeState.CommunityHours > 0
-                                                         || JusticeState.Suspended(day));
-                    return courts || Licences.Driving.Suspended || Law.LawState.WantedCharges != 0;
+                    if (JusticeState.Loaded)
+                    {
+                        f.OpenCount = JusticeState.OpenCount;
+                        f.HasWarrant = JusticeState.HasWarrant;
+                        f.ServeWarrant = JusticeState.ServeWarrant;
+                        f.JailPending = JusticeState.JailHoursPending > 0;
+                        f.Probation = JusticeState.OnProbation(day);
+                        f.CommunityHours = JusticeState.CommunityHours;
+                        f.Suspended = JusticeState.Suspended(day);
+                    }
+                    f.InPrison = JusticeState.InPrison;
+                    f.HearNow = JusticeState.HearNow != 0;
+                    f.DrivingSuspended = Licences.Driving.Suspended;
+                    f.WantedCharges = Law.LawState.WantedCharges;
+                    f.Staged = EconomyBridges.Held != null && EconomyBridges.Held();
+                    f.Read = true;
                 }
                 catch (Exception e)
                 {
-                    Fault("DynastyLinks.LawOpen", e);
-                    return true;   // not known: nobody retires past it
+                    Fault("DynastyLinks.Law", e);
+                    f.Read = false;
+                    f.Staged = true;
                 }
-            }
-
-            // Held now, or in the middle of something staged: the estate does not pass in a cell, in prison, before the court or during a scene.
-            private static bool Custody()
-            {
-                try
-                {
-                    return JusticeState.InPrison || JusticeState.HearNow != 0 || (EconomyBridges.Held != null && EconomyBridges.Held());
-                }
-                catch (Exception e)
-                {
-                    Fault("DynastyLinks.Custody", e);
-                    return true;
-                }
+                return f;
             }
 
             // ---- where a bequest lands
@@ -411,7 +512,7 @@ namespace RealLifeOverhaul
                 // The family after the people: it reads who the partner is from the social life, which has just been told.
                 try
                 {
-                    FamilyDirector.Instance?.NewHead(s.HeirKind == KinKind.Partner, s.From);
+                    FamilyDirector.Instance?.NewHead(s.HeirKind == KinKind.Partner, s.From, s.HeirKind == KinKind.Child ? s.To : null);
                 }
                 catch (Exception e)
                 {
@@ -441,23 +542,9 @@ namespace RealLifeOverhaul
                 {
                     Fault("DynastyLinks.Succeed (the standing)", e);
                 }
-                try
-                {
-                    // A record is a person's own: the founder's convictions are sealed and the police's lines closed. Nothing open is touched: a case, a fine, a plan to pay,
-                    // probation and a suspension stay exactly as they are and are answered by whoever leads the family.
-                    if (JusticeState.Loaded)
-                    {
-                        JusticeState.Seal();
-                    }
-                    if (!JusticeState.InPrison && Law.LawState.Loaded)
-                    {
-                        Law.Record.Clear();
-                    }
-                }
-                catch (Exception e)
-                {
-                    Fault("DynastyLinks.Succeed (the record)", e);
-                }
+                // The record is not touched: the convictions, the police's lines and everything open (a case, a fine, a plan to pay, probation, a suspension, a warrant) stay exactly as
+                // they are and are answered by whoever leads the family. Justice seals a record by its own clean days, and the credit file reads the police's lines by their own
+                // days, so a handover neither wipes a past nor improves a rating.
             }
 
             // ---- the rivals

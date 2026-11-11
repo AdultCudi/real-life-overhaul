@@ -147,7 +147,7 @@ namespace RealLifeOverhaul.Dynasty
                 InfoBox box = _shell.Box;
                 box.Clear();
                 DynastyDirector d = DynastyDirector.Instance;
-                bool ready = d != null && d.Facts(_facts);
+                bool ready = d != null && d.Facts(_facts, _tab == DynastyPages.TabEstate);
                 TableSpec spec = DynastyColumns.Off;
                 UiClone.Words(_shell.Header, T("reallife_dynasty_app_head", "estate", DynastyGame.Money(ready && _facts.Today != null ? _facts.Today.Net : 0),
                     "tax", DynastyGame.Money(ready && _facts.Today != null ? _facts.Today.Tax : 0)));

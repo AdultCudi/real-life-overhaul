@@ -43,7 +43,7 @@ internal static partial class UiSamples
     {
         return new List<KinPerson>
         {
-            new KinPerson { Kind = KinKind.Partner, Name = "Maya Okafor", Age = 58, Married = true, Closeness = 80 },
+            new KinPerson { Kind = KinKind.Partner, Name = "Maya Okafor", Age = 58, Married = true, Relief = true, Closeness = 80 },
             new KinPerson { Kind = KinKind.Child, Name = "Tom", Age = 24, School = 2, FundMille = 1000, Closeness = 85 },
             new KinPerson { Kind = KinKind.Child, Name = "Hana", Age = 15, School = 1, FundMille = 400, Closeness = 60 },
             new KinPerson { Kind = KinKind.Person, Id = 4, Name = "Nadia Haddad", Age = 44, Family = true, Closeness = 55, Household = true, Room = 900000000 },
@@ -109,6 +109,7 @@ internal static partial class UiSamples
         }
         KinPerson heir = DynastyRules.Choose(f.Signed, f.People, out bool byLaw);
         f.HeirKnown = heir != null;
+        f.HeirName = heir != null ? heir.Name : string.Empty;
         f.Today = DynastyRules.Settle(e, f.Signed, heir, byLaw, f.People);
         e.Mode = HandMode.Retire;
         e.Keep = f.Signed.Keep;

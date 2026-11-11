@@ -38,7 +38,7 @@ namespace RealLifeOverhaul.Dynasty
         {
             var t = new StringBuilder(512);
             t.Append("v=").Append(Version).Append("^h:");
-            Join(t, s.Seed, s.LastDay, s.Generation, s.RetireTold, s.HeldTold, s.PaperDay, s.Held ? 1 : 0);
+            Join(t, s.Seed, s.LastDay, s.Generation, s.RetireTold, s.HeldTold, s.PaperDay, s.Held ? 1 : 0, s.Wed);
             Will w = s.Will;
             t.Append("^w:");
             Join(t, w.Written ? 1 : 0, w.Day, (int)w.HeirKind, w.HeirId, w.RetireAge, w.Keep, w.Fees);
@@ -69,6 +69,17 @@ namespace RealLifeOverhaul.Dynasty
                 Join(t, s.Hand.Step, s.Hand.LoanIn ? 1 : 0, s.Hand.TaxOut ? 1 : 0, s.Hand.KeepOut ? 1 : 0, s.Hand.Passed ? 1 : 0);
                 t.Append('|');
                 WriteStatement(t, s.Hand.S);
+                // what a handover keeps of its own progress: the amounts taken so far and the steps done, then for each bequest what left the wallet, whether it has landed, how much
+                // and whether the partner's relief covers it
+                t.Append("^z:");
+                Handover h = s.Hand;
+                Join(t, h.TaxPaid, h.KeepPaid, h.Retaxed ? 1 : 0, h.Succeeded ? 1 : 0, h.Became ? 1 : 0);
+                for (int i = 0; i < h.S.Lines.Count; i++)
+                {
+                    BequestLine b = h.S.Lines[i];
+                    t.Append(';');
+                    Join(t, b.Booked, b.Credited ? 1 : 0, b.Landed, b.Relief ? 1 : 0);
+                }
             }
             if (s.Statements.Count > 0)
             {
@@ -188,6 +199,7 @@ namespace RealLifeOverhaul.Dynasty
                     case 'b': Bequests(s, body); break;
                     case 'g': Gifts(s, body); break;
                     case 'x': Hand(s, body); break;
+                    case 'z': HandMore(s, body); break;
                     case 't': Statements(s, body); break;
                     case 'k': KinOf(s, body); break;
                     case 'e': ElderOf(s, body); break;
@@ -213,6 +225,7 @@ namespace RealLifeOverhaul.Dynasty
             s.HeldTold = Math.Max(0, I(f, 4));
             s.PaperDay = Math.Max(0, I(f, 5));
             s.Held = I(f, 6) != 0;
+            s.Wed = I(f, 7);
         }
 
         private static void WillOf(DynastyState s, string body)
@@ -268,6 +281,32 @@ namespace RealLifeOverhaul.Dynasty
             var h = new Handover { Step = Math.Max(0, I(f, 0)), LoanIn = I(f, 1) != 0, TaxOut = I(f, 2) != 0, KeepOut = I(f, 3) != 0, Passed = I(f, 4) != 0 };
             ReadStatement(h.S, f, 5);
             s.Hand = h;
+        }
+
+        // The progress a handover keeps (written after it). A line from before it has none: the amounts then start at nothing, which only means a part may be asked for again.
+        private static void HandMore(DynastyState s, string body)
+        {
+            Handover h = s.Hand;
+            if (h == null)
+            {
+                return;
+            }
+            string[] records = body.Split(';');
+            string[] f = records[0].Split('|');
+            h.TaxPaid = Math.Max(0L, L(f, 0));
+            h.KeepPaid = Math.Max(0L, L(f, 1));
+            h.Retaxed = I(f, 2) != 0;
+            h.Succeeded = I(f, 3) != 0;
+            h.Became = I(f, 4) != 0;
+            for (int i = 0; i < h.S.Lines.Count && i + 1 < records.Length; i++)
+            {
+                string[] b = records[i + 1].Split('|');
+                BequestLine l = h.S.Lines[i];
+                l.Booked = Math.Max(0L, L(b, 0));
+                l.Credited = I(b, 1) != 0;
+                l.Landed = Math.Max(0L, L(b, 2));
+                l.Relief = I(b, 3) != 0;
+            }
         }
 
         private static void Statements(DynastyState s, string body)
