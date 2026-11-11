@@ -65,6 +65,7 @@ namespace RealLifeOverhaul.Ui
         private const float TabStrip = 56f; // px: the icon tabs' column, a round tab with two grid steps either side for its focus ring
         private const float TabSize = 40f;  // px: a round tab
         private const float Portrait = 64f; // px
+        private const int FooterLines = 4;  // the most lines the footer's main button grows to for a long translation
 
         public static void Lay(UiScene s, UiInfoModel m, UiFrame frame, bool dark, IUiKeys keys)
         {
@@ -106,17 +107,19 @@ namespace RealLifeOverhaul.Ui
                 UiDraw.Box(s, at, px, cy, Width, UiTokens.Hairline, UiRole.Line, UiRole.None, 0f, UiFlags.Decor);
                 float bx = ix - UiTokens.S1;
                 int first = s.NodeCount;
+                float fh = FooterHeight(m);
                 if (!string.IsNullOrEmpty(m.FooterLabel))
                 {
-                    // The panel's one main action, as wide as the icons leave it, before them.
-                    float lw = UiDraw.SnapDown(iw - m.Footer.Length * (UiTokens.Control + UiTokens.S2));
-                    UiDraw.Button(s, at, ix, cy + UiTokens.S2, lw, UiTokens.Control, UiButtonKind.Primary, m.FooterLabel, UiIcon.None,
+                    // The panel's one main action, as wide as the icons leave it, before them; as tall as its words' lines (the game's taxi: "Travel here" over the minutes and fare).
+                    float lw = FooterLabelWidth(m);
+                    UiDraw.Button(s, at, ix, cy + UiTokens.S2, lw, fh, UiButtonKind.Primary, m.FooterLabel, UiIcon.None,
                         UiAction.Count, UiDefaultKeys.Keyboard, FooterCommand, -1, m.FooterLabelOff);
                     bx = ix + lw + UiTokens.S2 - UiTokens.S1;
                 }
+                float by = cy + UiTokens.S2 + UiDraw.Snap((fh - UiTokens.Control) / 2f);   // the icons on the main button's middle
                 for (int i = 0; i < m.Footer.Length; i++)
                 {
-                    UiDraw.IconButton(s, at, bx, cy + UiTokens.S2, UiTokens.Control, m.Footer[i], i < m.FooterTints.Length ? m.FooterTints[i] : UiRole.None, FooterCommand, i);
+                    UiDraw.IconButton(s, at, bx, by, UiTokens.Control, m.Footer[i], i < m.FooterTints.Length ? m.FooterTints[i] : UiRole.None, FooterCommand, i);
                     bx += UiTokens.Control + UiTokens.S2;
                 }
                 s.Nodes[first].Left = first;   // the footer is a row: its ends go nowhere sideways, not across the panel
@@ -146,8 +149,16 @@ namespace RealLifeOverhaul.Ui
             {
                 h += SectionHeight(ref m.Sections[i]) + UiTokens.S1;
             }
-            return UiDraw.Snap(h + (m.Footer.Length > 0 || !string.IsNullOrEmpty(m.FooterLabel) ? UiTokens.Control + UiTokens.S4 : UiTokens.S2));
+            return UiDraw.Snap(h + (m.Footer.Length > 0 || !string.IsNullOrEmpty(m.FooterLabel) ? FooterHeight(m) + UiTokens.S4 : UiTokens.S2));
         }
+
+        // The footer's main button: as wide as its icons leave it.
+        private static float FooterLabelWidth(UiInfoModel m) => UiDraw.SnapDown(Width - UiTokens.S4 * 2f - m.Footer.Length * (UiTokens.Control + UiTokens.S2));
+
+        // The footer's height: a control's, or the main button's words' lines where they take more than one (it has no key cap).
+        private static float FooterHeight(UiInfoModel m) => string.IsNullOrEmpty(m.FooterLabel)
+            ? UiTokens.Control
+            : UiDraw.ButtonHeight(UiButtonKind.Primary, m.FooterLabel, UiAction.Count, null, FooterLabelWidth(m), UiTokens.Control, FooterLines);
 
         // The round tabs down the panel's left edge, the shown one filled cyan, as a game joins a person to their household.
         private static void Tabs(UiScene s, UiInfoModel m, float x, float y)

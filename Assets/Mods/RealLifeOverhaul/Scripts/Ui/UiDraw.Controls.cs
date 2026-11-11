@@ -21,13 +21,20 @@ namespace RealLifeOverhaul.Ui
 
         /// <summary>
         /// A button: its face, the bound key's cap at its left when it has one (as a game shows "[F] Call"), an icon and its
-        /// label; width from its words when <paramref name="w"/> is 0. Returns the focus target.
+        /// label; width from its words when <paramref name="w"/> is 0. Words that do not fit one line, or that carry a line break of their own (the game's taxi
+        /// writes "Travel here" over its minutes and fare), are drawn on their lines, as many as the button's height holds (<see cref="ButtonHeight"/>).
+        /// Returns the focus target.
         /// </summary>
         public static int Button(UiScene s, UiAt at, float x, float y, float w, float h, UiButtonKind kind, string label, UiIcon icon, UiAction key,
             IUiKeys keys, int command, int arg, bool disabled = false)
         {
             bool cap = !disabled && !s.Held && UiKeyGlyphs.Ownable(key) && HasKey(key, keys);   // a held button, or one under a layer with the keys, shows no cap
-            float inner = UiTextRules.Width(label, UiStyle.Button);
+            bool broken = Broken(label);
+            if (broken)
+            {
+                icon = UiIcon.None;   // lines one over the other take the room, as the game's own button shows them
+            }
+            float inner = broken ? WidestLine(label) : UiTextRules.Width(label, UiStyle.Button);
             int firstItem = s.ItemCount;
             float capW = cap ? KeyCapWidth(key, keys) : 0f;
             float iconW = icon != UiIcon.None ? UiTokens.Icon : 0f;
@@ -43,7 +50,7 @@ namespace RealLifeOverhaul.Ui
                 icon = UiIcon.None;
                 content = inner + (cap ? capW + UiTokens.S2 : 0f);
             }
-            bool two = content > w - pad * 2f;
+            bool two = broken || content > w - pad * 2f;
             if (two)
             {
                 inner = w - pad * 2f - (cap ? capW + UiTokens.S2 : 0f);
@@ -79,9 +86,11 @@ namespace RealLifeOverhaul.Ui
             }
             if (two)
             {
+                // Two lines in a control's height; more where the button was made as tall as its words need (ButtonHeight with more lines).
                 float lh = UiTextRules.LineHeight(UiStyle.Button);
-                Text(s, inside, cx, y + (h - lh * 2f) / 2f, inner, UiStyle.Button, ink, label,
-                    UiFlags.Label | UiFlags.Wrap | UiFlags.Centre | UiFlags.Middle | (disabled ? UiFlags.Disabled : UiFlags.None), 2);
+                int lines = Math.Max(2, Math.Min(UiTextRules.Lines(label, UiStyle.Button, inner, 0, out float _), (int)((h - UiTokens.S2 * 2f) / lh)));
+                Text(s, inside, cx, y + (h - lh * lines) / 2f, inner, UiStyle.Button, ink, label,
+                    UiFlags.Label | UiFlags.Wrap | UiFlags.Centre | UiFlags.Middle | (disabled ? UiFlags.Disabled : UiFlags.None), lines);
             }
             else
             {
@@ -113,21 +122,41 @@ namespace RealLifeOverhaul.Ui
             }
         }
 
-        /// <summary>The height a button of a fixed width needs: a control's, or two lines' when its words take two there.</summary>
-        public static float ButtonHeight(UiButtonKind kind, string label, UiAction key, IUiKeys keys, float w, float height)
+        /// <summary>
+        /// The height a button of a fixed width needs: a control's, or its lines' when its words take more than one there or carry a break of their own:
+        /// two, or up to <paramref name="most"/> where a screen gives a long translation the lines it wraps to.
+        /// </summary>
+        public static float ButtonHeight(UiButtonKind kind, string label, UiAction key, IUiKeys keys, float w, float height, int most = 2)
         {
             bool cap = key != UiAction.Move && key != UiAction.Count && keys != null;
             float pad = kind == UiButtonKind.Chip ? UiTokens.S4 : UiTokens.S5;
             float room = w - pad * 2f - (cap ? KeyCapWidth(key, keys) + UiTokens.S2 : 0f);
-            return UiTextRules.Width(label, UiStyle.Button) <= room ? height : Math.Max(height, Snap(UiTextRules.LineHeight(UiStyle.Button) * 2f + UiTokens.S3 * 2f));
+            if (!Broken(label) && UiTextRules.Width(label, UiStyle.Button) <= room)
+            {
+                return height;
+            }
+            int lines = most <= 2 ? 2 : Math.Max(2, Math.Min(most, UiTextRules.Lines(label, UiStyle.Button, room, 0, out float _)));
+            return Math.Max(height, Snap(UiTextRules.LineHeight(UiStyle.Button) * lines + UiTokens.S3 * 2f));
         }
 
         /// <summary>A button's width before it is drawn, for a row of buttons laid out from the right.</summary>
         public static float ButtonWidth(UiButtonKind kind, string label, UiIcon icon, UiAction key, IUiKeys keys)
         {
             bool cap = key != UiAction.Move && key != UiAction.Count && keys != null;
-            float content = UiTextRules.Width(label, UiStyle.Button) + (cap ? KeyCapWidth(key, keys) + UiTokens.S2 : 0f) + (icon != UiIcon.None ? UiTokens.Icon + UiTokens.S2 : 0f);
+            bool broken = Broken(label);
+            float content = (broken ? WidestLine(label) : UiTextRules.Width(label, UiStyle.Button)) + (cap ? KeyCapWidth(key, keys) + UiTokens.S2 : 0f)
+                + (icon != UiIcon.None && !broken ? UiTokens.Icon + UiTokens.S2 : 0f);
             return Snap(content + (kind == UiButtonKind.Chip ? UiTokens.S4 : UiTokens.S5) * 2f);
+        }
+
+        // Whether a button's words carry a line break of their own (the game's taxi writes "Travel here" over its minutes and fare): they are drawn on their lines, never run into one.
+        private static bool Broken(string label) => label != null && label.IndexOf('\n') >= 0;
+
+        // The widest of the lines of such words, px in the buttons' style.
+        private static float WidestLine(string label)
+        {
+            UiTextRules.Lines(label, UiStyle.Button, float.MaxValue, 0, out float widest);
+            return widest;
         }
 
         /// <summary>

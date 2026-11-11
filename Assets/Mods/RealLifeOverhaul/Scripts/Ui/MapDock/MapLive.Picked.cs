@@ -82,12 +82,8 @@ namespace RealLifeOverhaul.Ui
             return text != null ? MapText.Plain(text.text) : null;
         }
 
-        // The taxi button's own words ("Travel here" over the fare and the minutes), as the game writes them.
-        private static string TaxiWords(BuildingResume card)
-        {
-            string words = LabelLines(card.taxiTravelButtonText);
-            return string.IsNullOrWhiteSpace(words) ? UiText.T("common_setdestination") : words.Replace("\n", ", ").Trim();
-        }
+        // The taxi button's own words ("Travel here" over the minutes and the fare), on their two lines as the game writes them.
+        private static string TaxiWords(BuildingResume card) => MapText.TaxiLabel(LabelLines(card.taxiTravelButtonText), UiText.T("common_setdestination"));
 
         private static Vector3 PositionOf(EntityController target, CityBuildingController building)
         {

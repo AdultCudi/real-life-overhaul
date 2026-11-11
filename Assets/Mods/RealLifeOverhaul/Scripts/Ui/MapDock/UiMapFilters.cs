@@ -167,6 +167,7 @@ namespace RealLifeOverhaul.Ui
         private const float ResultRow = 44f;
         private const float Tile = 32f;                  // a line's glyph tile
         private const float PickedTile = 64f;
+        private const int PickedLines = 4;               // the most lines the picked place's destination button grows to for a long translation
         private const byte RailRegion = 1, PanelRegion = 2;
         private const int ResultsMost = 5;
         private const int MostRows = 12;                   // rows in view at most: a taller screen gets a dock no taller, so the d-pad has few enough targets (UiCheckRules.MostTargets)
@@ -197,8 +198,8 @@ namespace RealLifeOverhaul.Ui
                 Rail(s, at.InRegion(RailRegion), m, x, y);
                 px = x + Menu + UiTokens.S2;
             }
-            float full = Math.Min(PanelHeight(frame), Needed(m, frame));
-            float h = Fit(m, full);
+            float full = Math.Min(PanelHeight(frame), Needed(m, frame, keys));
+            float h = Fit(m, full, keys);
             UiAt column = at.InRegion(PanelRegion);
             int panel = UiDraw.Box(s, column, px, y, Width, h, UiRole.Panel, UiRole.None, UiTokens.RadiusPanel, UiFlags.Panel);
             UiAt on = column.In(panel);
@@ -214,7 +215,7 @@ namespace RealLifeOverhaul.Ui
             int search = UiDraw.Search(s, on, ix, cy, iw, m.SearchPlaceholder, m.Search, null, SearchCommand);
             cy += UiTokens.Control + UiTokens.S2;
             cy = Results(s, on, m, ix, cy, iw);
-            float picked = m.Picked ? PickedHeight(m) + UiTokens.S2 : 0f;
+            float picked = m.Picked ? PickedHeight(m, keys) + UiTokens.S2 : 0f;
             float foot = !string.IsNullOrEmpty(m.FooterLabel) ? UiTokens.Control + UiTokens.S4 + UiTokens.S2 : 0f;
             float stepTail = m.ShowAll ? UiTokens.Control + UiTokens.S1 : 0f;
             // Quick chips only where the list keeps at least five rows: on a short screen the lines come first.
@@ -235,7 +236,7 @@ namespace RealLifeOverhaul.Ui
             List(s, on, m, px, cy, Width, listBottom);
             if (m.Picked)
             {
-                Picked(s, on, m, px, y + h - PickedHeight(m) - foot, ix, iw, keys);
+                Picked(s, on, m, px, y + h - PickedHeight(m, keys) - foot, ix, iw, keys);
             }
             if (!string.IsNullOrEmpty(m.FooterLabel))
             {
@@ -254,7 +255,7 @@ namespace RealLifeOverhaul.Ui
 
         // A list that scrolls shows whole rows; what its room leaves over short of one more row is taken off the panel's foot, so the picked place
         // and the button under the list stand against it with no hole between, and a longer translation of the note above does not open one.
-        private static float Fit(MapPanelModel m, float height)
+        private static float Fit(MapPanelModel m, float height, IUiKeys keys)
         {
             float iw = Width - UiTokens.S4 * 2f, step = RowStep(m);
             if (m.Rows.Length == 0)
@@ -269,7 +270,7 @@ namespace RealLifeOverhaul.Ui
             cy += UiTokens.Control + UiTokens.S2;
             int results = Math.Min(ResultsMost, m.Results.Length);
             cy += results > 0 ? results * ResultRow + UiTokens.S2 : !string.IsNullOrEmpty(m.ResultsNone) ? UiDraw.Snap(UiTextRules.LineHeight(UiStyle.Small)) + UiTokens.S2 : 0f;
-            float picked = m.Picked ? PickedHeight(m) + UiTokens.S2 : 0f;
+            float picked = m.Picked ? PickedHeight(m, keys) + UiTokens.S2 : 0f;
             float foot = !string.IsNullOrEmpty(m.FooterLabel) ? UiTokens.Control + UiTokens.S4 + UiTokens.S2 : 0f;
             float stepTail = m.ShowAll ? UiTokens.Control + UiTokens.S1 : 0f;
             if (m.Chips.Length > 0)
@@ -294,7 +295,7 @@ namespace RealLifeOverhaul.Ui
         /// The height the page needs for what it holds: a short list (a search that found little, a few stops) makes a short panel, never a tall one with a hole
         /// under its rows. A long list takes the frame's whole height and scrolls.
         /// </summary>
-        public static float Needed(MapPanelModel m, UiFrame frame)
+        public static float Needed(MapPanelModel m, UiFrame frame, IUiKeys keys)
         {
             float iw = Width - UiTokens.S4 * 2f;
             float need = UiFrame.Strip + UiTokens.S3;
@@ -320,7 +321,7 @@ namespace RealLifeOverhaul.Ui
             need += UiTokens.S2;
             if (m.Picked)
             {
-                need += PickedHeight(m) + UiTokens.S2;
+                need += PickedHeight(m, keys) + UiTokens.S2;
             }
             if (!string.IsNullOrEmpty(m.FooterLabel))
             {
@@ -616,18 +617,26 @@ namespace RealLifeOverhaul.Ui
         // ------------------------------------------------------------------------------------------------- the picked place
 
         /// <summary>The picked block's height.</summary>
-        public static float PickedHeight(MapPanelModel m)
+        public static float PickedHeight(MapPanelModel m, IUiKeys keys)
         {
             bool chips = m.Place.Chips != null && m.Place.Chips.Length > 0;
             float chipRows = chips ? UiTokens.S2 + UiMapPlace.ChipsHeight(m.Place.Chips, Width - UiTokens.S4 * 2f) : 0f;
             float more = m.Place.CanBizMan ? UiTokens.S2 + UiTokens.Control : 0f;
-            return UiTokens.S3 + UiTokens.PairRow + UiTokens.S1 + PickedTile + chipRows + UiTokens.S3 + UiTokens.Control + more + UiTokens.S3;
+            return UiTokens.S3 + UiTokens.PairRow + UiTokens.S1 + PickedTile + chipRows + UiTokens.S3 + PickedRow(m, keys) + more + UiTokens.S3;
+        }
+
+        // The locate and destination row's height: a control's, or the destination's words' lines where they take more than one (the game's taxi writes
+        // "Travel here" over its minutes and fare; a long translation of the minutes may wrap once more in the half row).
+        private static float PickedRow(MapPanelModel m, IUiKeys keys)
+        {
+            float iw = Width - UiTokens.S4 * 2f, half = UiDraw.SnapDown((iw - UiTokens.S2) / 2f);
+            return UiDraw.ButtonHeight(UiButtonKind.Primary, m.Place.DestinationLabel, UiAction.Alt, keys, iw - half - UiTokens.S2, UiTokens.Control, PickedLines);
         }
 
         private static void Picked(UiScene s, UiAt at, MapPanelModel m, float px, float y, float ix, float iw, IUiKeys keys)
         {
             ref MapPicked p = ref m.Place;
-            float h = PickedHeight(m);
+            float h = PickedHeight(m, keys);
             UiDraw.Band(s, at, px, y, Width, h);
             float cy = y + UiTokens.S3;
             float clear = UiDraw.Snap(UiTextRules.Width(p.ClearLabel, UiStyle.SmallStrong) + UiTokens.S3 * 2f);
@@ -676,13 +685,13 @@ namespace RealLifeOverhaul.Ui
                 cy += UiMapPlace.Chips(s, at, p.Chips, ix, cy, iw);
             }
             cy += UiTokens.S3;
-            float half = UiDraw.SnapDown((iw - UiTokens.S2) / 2f);
-            UiDraw.Button(s, at, ix, cy, half, UiTokens.Control, UiButtonKind.Secondary, p.LocateLabel, UiIcon.Locate, UiAction.Option, keys, PickedLocateCommand, 0);
-            UiDraw.Button(s, at, ix + half + UiTokens.S2, cy, iw - half - UiTokens.S2, UiTokens.Control, UiButtonKind.Primary, p.DestinationLabel, UiIcon.Navigation, UiAction.Alt, keys,
+            float half = UiDraw.SnapDown((iw - UiTokens.S2) / 2f), row = PickedRow(m, keys);   // both buttons of the row as tall as the taxi's words need
+            UiDraw.Button(s, at, ix, cy, half, row, UiButtonKind.Secondary, p.LocateLabel, UiIcon.Locate, UiAction.Option, keys, PickedLocateCommand, 0);
+            UiDraw.Button(s, at, ix + half + UiTokens.S2, cy, iw - half - UiTokens.S2, row, UiButtonKind.Primary, p.DestinationLabel, UiIcon.Navigation, UiAction.Alt, keys,
                 PickedDestinationCommand, 0, !p.CanDestination);
             if (p.CanBizMan)
             {
-                UiDraw.Button(s, at, ix, cy + UiTokens.Control + UiTokens.S2, iw, UiTokens.Control, UiButtonKind.Secondary, p.BizManLabel, UiIcon.Briefcase, UiAction.Count, null,
+                UiDraw.Button(s, at, ix, cy + row + UiTokens.S2, iw, UiTokens.Control, UiButtonKind.Secondary, p.BizManLabel, UiIcon.Briefcase, UiAction.Count, null,
                     PickedBizManCommand, 0);
             }
         }
