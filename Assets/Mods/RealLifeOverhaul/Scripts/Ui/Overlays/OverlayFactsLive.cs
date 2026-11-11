@@ -112,6 +112,13 @@ namespace RealLifeOverhaul.Ui
                     }
                 }
             }
+            // A supply contract's delivery of the product (Scripts/Suppliers), where it comes sooner.
+            Suppliers.SupplierDirector supply = Suppliers.SupplierDirector.Instance;
+            if (supply != null && supply.NextDelivery(manager.buildingRegistration, item, out int supplied)
+                && (supplied > today || (supplied == today && TimeHelper.CurrentHour < Suppliers.SupplierCatalogue.DeliveryHour)) && (day < 0 || supplied < day))
+            {
+                day = supplied;
+            }
             return day >= 0;
         }
 

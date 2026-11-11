@@ -6,7 +6,7 @@ using RealLifeOverhaul.Economy.Dealership;
 namespace RealLifeOverhaul.Ui
 {
     /// <summary>What the suppliers' page asks for when a step is pressed; the live page gives the director's calls, the checks and previews a recorder.</summary>
-    public interface ISupplyActions
+    public interface ICarSupplyActions
     {
         void SetSupplier(int kind, int supplier);
         void SetKeep(string place, int kind, int count);
@@ -106,14 +106,14 @@ namespace RealLifeOverhaul.Ui
     /// <summary>
     /// The Car Showroom's suppliers as a page of the kit, game-free so the checks and previews lay out exactly what ships: a step a
     /// kind for its supplier with its terms under it, a showroom's standing order with a step a kind, and where the other dealers
-    /// buy. Every step runs one call of <see cref="ISupplyActions"/>.
+    /// buy. Every step runs one call of <see cref="ICarSupplyActions"/>.
     /// </summary>
-    public static class SupplyPages
+    public static class CarSupplyPages
     {
         private static readonly CultureInfo Inv = CultureInfo.InvariantCulture;
 
         public static void Fill(EstateModel m, EstateRuns runs, UiWords t, DealerState s, CarSupplyState supply, IReadOnlyList<MarketModel> models, string yardPlace,
-            Func<DealerYard, bool> managed, ISupplyActions act)
+            Func<DealerYard, bool> managed, ICarSupplyActions act)
         {
             m.Shape = EstateShape.Detail;
             m.DetailFace = null;

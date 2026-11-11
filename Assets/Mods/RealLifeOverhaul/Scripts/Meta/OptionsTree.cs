@@ -417,6 +417,8 @@ namespace RealLifeOverhaul.Meta
                     .Also("logistics route routes delivery deliveries trip trips van truck vehicle driver fuel departure warehouse spoil spoilage spoiled shelf life fresh fridge freezer food"),
                 S("parties").For("parties").Opt("living_parties", "living_population")
                     .Also("party parties host guests friends invite invitation dinner drinks staff event lunch evening team day morale satisfaction standing company"),
+                S("suppliers").For("suppliers").Opt("living_suppliers", "living_population")
+                    .Also("supplier suppliers wholesaler wholesale contract contracts fixed price take or pay delivery deliveries late short shortage stock order goods buyer"),
                 S("endscale").For("economy_endscale").Opts("economy_endscale")
                     .Also("end game late scale billions hyperscaler cloud data centre racks broadband network fibre bank maintenance upkeep crews staff payback"),
                 S("brands").For("economy_brands").Need("economy").Opts("economy_brands").Also("chain franchise"),

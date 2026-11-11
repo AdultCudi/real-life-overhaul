@@ -518,7 +518,7 @@ namespace RealLifeOverhaul.Ui
                 "reallife_dealer_state_driving",
                 "reallife_dealer_state_event_on",
                 "reallife_ui_dealer_deal_looked_once",
-                // the suppliers of each kind of car (Ui/Estate/SupplyPages)
+                // the suppliers of each kind of car (Ui/Estate/CarSupplyPages)
                 "reallife_carsup_title", "reallife_carsup_sub", "reallife_carsup_kept_terms", "reallife_carsup_sec_suppliers", "reallife_carsup_sec_standing",
                 "reallife_carsup_sec_rivals", "reallife_carsup_l_showroom", "reallife_carsup_l_supplier", "reallife_carsup_l_delivery", "reallife_carsup_has",
                 "reallife_carsup_standing_managed", "reallife_carsup_standing_unmanaged", "reallife_carsup_fig_on_order", "reallife_carsup_price_same",

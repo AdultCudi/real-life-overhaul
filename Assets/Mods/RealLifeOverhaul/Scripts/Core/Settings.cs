@@ -228,6 +228,7 @@
         public const string LivingTripsId = "living_trips";
         public const string LivingSpoilageId = "living_spoilage";
         public const string LivingPartiesId = "living_parties";
+        public const string LivingSuppliersId = "living_suppliers";
         public const string EconomyBrandsId = "economy_brands";
         public const string EconomyBanksId = "economy_banks";
         public const string MinimapId = "nav_minimap";
@@ -613,6 +614,7 @@
         public static bool LivingTrips = true;           // ...logistics routes run as delivery trips: departure times, vehicles and drivers, drive time, fuel (Economy/Logistics)
         public static bool LivingSpoilage = true;        // ...food spoils: shelf life by kind, longer in a fridge or freezer, oldest sold first (Economy/Logistics)
         public static bool LivingParties = true;         // ...parties with friends and company events for a business's staff, the rivals' too (Parties)
+        public static bool LivingSuppliers = true;       // ...a choice of wholesalers, fixed price contracts under take or pay, late or short deliveries, the rivals by the same rules (Suppliers)
         public static bool EconomyBrands = true;         // brands and franchises (off: none of it runs, nothing is paid and footfall is without it)
         public static bool EconomyBanks = true;          // the Banks app
         public static bool Minimap = true;               // the minimap on the HUD while out in the city
@@ -1053,6 +1055,7 @@
             LivingTrips = Bool(modId, LivingTripsId, LivingTrips);
             LivingSpoilage = Bool(modId, LivingSpoilageId, LivingSpoilage);
             LivingParties = Bool(modId, LivingPartiesId, LivingParties);
+            LivingSuppliers = Bool(modId, LivingSuppliersId, LivingSuppliers);
             EconomyBrands = Bool(modId, EconomyBrandsId, EconomyBrands);
             EconomyBanks = Bool(modId, EconomyBanksId, EconomyBanks);
             Minimap = Bool(modId, MinimapId, Minimap);

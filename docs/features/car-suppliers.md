@@ -17,10 +17,10 @@ CarSupplyRules          game-free: a supplier's price and delivery, a showroom's
 CarSupplyState          the supplier of each kind, each showroom's standing order and the day its manager last ordered for it, the deliveries a supplier is bringing
 CarSupplyStore          the save's one line, "reallife:dealer_supply"
 DealerDirector.Supply   the director's part: the price and the hour a new car comes, an order that is sent, SetSupplier, SetKeep, the morning's standing orders, the tests; CarSupplyBridges
-Ui/Estate/SupplyPages   game-free: the suppliers' page on the kit and the words built from the table (SupplyWords); the checks and previews lay out the same page
+Ui/Estate/CarSupplyPages   game-free: the suppliers' page on the kit and the words built from the table (SupplyWords); the checks and previews lay out the same page
 CarSupplyText           the same words in the game's language, and the feature's entry with its Guide facts (CarSupplyGuide)
 DealerApp.Supply        the Car Showroom app in the game's frame: the Market tab's summary and a page a kind
-Ui/Estate/DealerLive.Supply   the Car Showroom app on the kit: the link over the market's table and SupplyPages' page
+Ui/Estate/DealerLive.Supply   the Car Showroom app on the kit: the link over the market's table and CarSupplyPages' page
 ```
 
 Hooks in the showroom's own files, each a line or a few: `DealerDirector.Actions.cs` (`Buy`: the price and the order), `DealerDirector.Business.cs` (a delivery's source and notice), `DealerDirector.Clock.cs` and `DealerDay.cs` (the morning), `RivalRules.cs` (the other dealers), `DealerDirector.cs` (the save), `DealerApp.Market.cs` and `Ui/Estate/DealerLive.Market.cs` (a new car's page), `UiScreens.Estate.cs` (the page's keys), `Wiring/Wiring.BizAsksLinks.cs`.

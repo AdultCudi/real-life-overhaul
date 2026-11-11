@@ -162,6 +162,52 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_prompt_select"
                 // KEYS END
             }).Switch(UiScreenSwitches.Ventures));
+            screens.Add(new UiScreenDef("suppliers", UiTemplate.AppWindow, "VentScreen", new[]
+            {
+                // KEYS BEGIN
+                "reallife_supply_app", "reallife_supply_at_market", "reallife_supply_calm_sub", "reallife_supply_cause_cash",
+                "reallife_supply_cause_none", "reallife_supply_cause_own", "reallife_supply_cause_season", "reallife_supply_cause_shortage",
+                "reallife_supply_cause_streets", "reallife_supply_cause_trouble", "reallife_supply_cause_weather", "reallife_supply_chip_glut",
+                "reallife_supply_chip_late", "reallife_supply_chip_owes", "reallife_supply_chip_short", "reallife_supply_chip_shortage",
+                "reallife_supply_chip_shortage_soon", "reallife_supply_chip_shut", "reallife_supply_chip_trouble", "reallife_supply_contracts_none",
+                "reallife_supply_delivery_value", "reallife_supply_end", "reallife_supply_failures_value", "reallife_supply_fig_owed",
+                "reallife_supply_fig_running", "reallife_supply_fig_week", "reallife_supply_firm_0", "reallife_supply_firm_1",
+                "reallife_supply_firm_2", "reallife_supply_firm_3", "reallife_supply_firm_4", "reallife_supply_firm_5", "reallife_supply_firm_6",
+                "reallife_supply_firm_7", "reallife_supply_firm_8", "reallife_supply_firm_9", "reallife_supply_firm_about_1",
+                "reallife_supply_firm_about_2", "reallife_supply_firm_about_3", "reallife_supply_firm_about_4", "reallife_supply_firm_about_5",
+                "reallife_supply_firm_about_6", "reallife_supply_firm_about_7", "reallife_supply_firm_about_8", "reallife_supply_firm_about_9",
+                "reallife_supply_health_sound", "reallife_supply_health_stretched", "reallife_supply_health_trouble", "reallife_supply_item_sub",
+                "reallife_supply_item_sub_ended", "reallife_supply_kind_0", "reallife_supply_kind_1", "reallife_supply_kind_2",
+                "reallife_supply_kind_3", "reallife_supply_kind_4", "reallife_supply_kind_5", "reallife_supply_late_firm",
+                "reallife_supply_late_lenient", "reallife_supply_late_strict", "reallife_supply_lead_value", "reallife_supply_leave",
+                "reallife_supply_left_out",
+                "reallife_supply_limit_any", "reallife_supply_limit_market", "reallife_supply_limit_value", "reallife_supply_line_value",
+                "reallife_supply_market_note", "reallife_supply_news_none", "reallife_supply_next_late", "reallife_supply_next_short",
+                "reallife_supply_next_value", "reallife_supply_no_places", "reallife_supply_off_body", "reallife_supply_off_title",
+                "reallife_supply_once_note", "reallife_supply_ontime_value", "reallife_supply_order", "reallife_supply_over_market",
+                "reallife_supply_owed_note", "reallife_supply_owner_own", "reallife_supply_owner_rival", "reallife_supply_pay_owed",
+                "reallife_supply_refuse_credit", "reallife_supply_refuse_full", "reallife_supply_refuse_held", "reallife_supply_refuse_kind",
+                "reallife_supply_refuse_no_goods", "reallife_supply_refuse_none", "reallife_supply_refuse_off", "reallife_supply_refuse_owes",
+                "reallife_supply_refuse_shut", "reallife_supply_refuse_small", "reallife_supply_refuse_sour", "reallife_supply_renew_best",
+                "reallife_supply_renew_off", "reallife_supply_renew_same", "reallife_supply_rivals_none", "reallife_supply_rivals_session",
+                "reallife_supply_row_credit", "reallife_supply_row_customers", "reallife_supply_row_defaults", "reallife_supply_row_delivery",
+                "reallife_supply_row_depot", "reallife_supply_row_failures", "reallife_supply_row_health", "reallife_supply_row_late",
+                "reallife_supply_row_lead", "reallife_supply_row_min", "reallife_supply_row_next", "reallife_supply_row_not_taken",
+                "reallife_supply_row_on_time", "reallife_supply_row_ontime", "reallife_supply_row_owed", "reallife_supply_row_owner",
+                "reallife_supply_row_paid", "reallife_supply_row_paid_late", "reallife_supply_row_price", "reallife_supply_row_term",
+                "reallife_supply_rule_cover", "reallife_supply_rule_leave", "reallife_supply_rule_limit", "reallife_supply_rule_renew",
+                "reallife_supply_rules_buyer", "reallife_supply_rules_no_buyer", "reallife_supply_sec_contract", "reallife_supply_sec_contracts",
+                "reallife_supply_sec_market", "reallife_supply_sec_news", "reallife_supply_sec_place", "reallife_supply_sec_record",
+                "reallife_supply_sec_rivals", "reallife_supply_sec_rules", "reallife_supply_share_value", "reallife_supply_shock_sub",
+                "reallife_supply_shut_note", "reallife_supply_sign", "reallife_supply_state_broken", "reallife_supply_state_closed",
+                "reallife_supply_state_done", "reallife_supply_state_failed", "reallife_supply_state_left", "reallife_supply_state_running",
+                "reallife_supply_state_unpaid", "reallife_supply_step_place", "reallife_supply_step_share", "reallife_supply_step_term",
+                "reallife_supply_tab_contracts", "reallife_supply_tab_market", "reallife_supply_tab_suppliers", "reallife_supply_take_or_pay",
+                "reallife_supply_term_done", "reallife_supply_term_once", "reallife_supply_term_weeks", "reallife_supply_trouble_fire",
+                "reallife_supply_trouble_none", "reallife_supply_trouble_note", "reallife_supply_trouble_strike", "reallife_supply_under_market",
+                "reallife_supply_wholesalers_about", "reallife_ui_prompt_back", "reallife_ui_prompt_move", "reallife_ui_prompt_select"
+                // KEYS END
+            }).Switch(UiScreenSwitches.Ventures));
         }
     }
 }

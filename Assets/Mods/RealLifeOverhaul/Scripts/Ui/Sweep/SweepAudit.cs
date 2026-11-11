@@ -71,6 +71,8 @@ namespace RealLifeOverhaul.Ui
             Face("Web shop", "Shops, orders and the day", "webshop", "Economy/Online/"),
             Face("Giving", "Charities, loans and the year's giving", "giving", "Giving/"),
             Face("Health", "How you are, the plans, the bills and the city", "health", "Health/"),
+            Face("Suppliers", "Suppliers, contracts and the market", "suppliers", "Suppliers/"),
+            Row("Suppliers", "End a contract early", "a yes or no box", AuditWindow.Question, Question, "Suppliers/"),
             Row("Web shop", "Close or sell a shop", "a yes or no box", AuditWindow.Question, Question, "Economy/Online/"),
 
             // ---------------------------------------------------------------------------------------------------- Company, Estate, Services

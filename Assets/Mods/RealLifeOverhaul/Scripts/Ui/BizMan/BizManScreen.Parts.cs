@@ -515,6 +515,9 @@ namespace RealLifeOverhaul.Ui
             _m.GoodsTitle = UiText.T("common_products");
             _m.ItemsEmpty = UiText.T("reallife_ui_bizman_contracts_none");
             _m.ItemsEmptyBody = UiText.T("reallife_ui_bizman_contracts_none_body");
+            // Suppliers and contracts (Scripts/Suppliers): the business's supply contracts as a fact that opens the app, and a button to it where the list is empty.
+            string supply = SupplyWords(b.buildingRegistration);
+            _m.ItemsEmptyAction = supply != null ? UiText.T("reallife_supply_bizman_open") : null;
             int n = entries != null ? entries.Count : 0;
             var items = new List<BizManItem>(n);
             for (int i = 0; i < n; i++)
@@ -539,7 +542,11 @@ namespace RealLifeOverhaul.Ui
                 return;
             }
             _m.PartTitle = Words(set.contractTitleLabel);
-            _m.Facts = new[] { Fact("bizman_purchasingagents_next_delivery", Words(set.nextDeliveryDayLabel)), Fact("common_total", TextOf(set.totalCostLabel)) };
+            _m.Facts = new[]
+            {
+                Fact("bizman_purchasingagents_next_delivery", Words(set.nextDeliveryDayLabel)), Fact("common_total", TextOf(set.totalCostLabel)),
+                new BizManFact { Label = UiText.T("reallife_supply_bizman_label"), Value = supply, Link = true, Arg = BizManPages.FactSuppliers }
+            };
             _m.Lead = Words(set.lockTimeLabel);
             _m.HasRepeat = set.repeatingOrderToggle != null && set.repeatingOrderToggle.gameObject.activeInHierarchy;
             _m.Repeat = set.repeatingOrderToggle != null && set.repeatingOrderToggle.isOn;
@@ -580,6 +587,18 @@ namespace RealLifeOverhaul.Ui
             }
             t.RowCount = count;
             _m.Goods = t;
+        }
+
+        // The supply contracts running at a business, in words; null while Suppliers and contracts is not running (nothing of it shows then).
+        private static string SupplyWords(BuildingRegistration reg)
+        {
+            Suppliers.SupplierDirector supply = Suppliers.SupplierDirector.Instance;
+            if (supply == null || !supply.Running || reg == null)
+            {
+                return null;
+            }
+            int n = supply.At(reg, out int next);
+            return n > 0 ? UiText.Fill("reallife_supply_bizman_value", "n", UiText.Whole(n), "day", UiText.Whole(next)) : UiText.T("reallife_supply_bizman_none");
         }
 
         // ------------------------------------------------------------------------------------------------- marketing

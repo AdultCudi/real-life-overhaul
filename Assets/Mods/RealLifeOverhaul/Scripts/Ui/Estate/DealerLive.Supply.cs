@@ -5,11 +5,11 @@ namespace RealLifeOverhaul.Ui
 {
     /// <summary>
     /// The Car Showroom's suppliers on the kit's Market page: a link over the market's table opens the suppliers' page
-    /// (<see cref="SupplyPages"/>, the same page the checks and previews lay out), and every step goes to the director's own call.
+    /// (<see cref="CarSupplyPages"/>, the same page the checks and previews lay out), and every step goes to the director's own call.
     /// </summary>
     public sealed partial class DealerLive
     {
-        private sealed partial class Page : ISupplyActions
+        private sealed partial class Page : ICarSupplyActions
         {
             private const string SupplyPick = "sup";
             private static string _supplyYard;   // the showroom whose standing order the page shows
@@ -31,22 +31,22 @@ namespace RealLifeOverhaul.Ui
                 {
                     return false;
                 }
-                SupplyPages.Fill(_m, _runs, CarSupplyText.Words, _s, _d.Supply, _d.Models, _supplyYard, _d.SupplyManaged, this);
+                CarSupplyPages.Fill(_m, _runs, CarSupplyText.Words, _s, _d.Supply, _d.Models, _supplyYard, _d.SupplyManaged, this);
                 return true;
             }
 
-            void ISupplyActions.SetSupplier(int kind, int supplier) => Show(() => _d.SetSupplier(kind, supplier));
+            void ICarSupplyActions.SetSupplier(int kind, int supplier) => Show(() => _d.SetSupplier(kind, supplier));
 
-            void ISupplyActions.SetKeep(string place, int kind, int count) => Show(() => _d.SetKeep(place, kind, count));
+            void ICarSupplyActions.SetKeep(string place, int kind, int count) => Show(() => _d.SetKeep(place, kind, count));
 
-            void ISupplyActions.ShowYard(string place) => Show(() => _supplyYard = place);
+            void ICarSupplyActions.ShowYard(string place) => Show(() => _supplyYard = place);
 
             // A new car's page: who supplies its kind and when it would come.
             private void SupplyLines(List<UiFactLine> lines, DealerListing l)
             {
                 if (_d.SupplyOn)
                 {
-                    SupplyPages.NewLines(lines, CarSupplyText.Words, _d.SupplierOf(l));
+                    CarSupplyPages.NewLines(lines, CarSupplyText.Words, _d.SupplierOf(l));
                 }
             }
         }

@@ -852,7 +852,7 @@ internal static partial class Program
         Check(SupplyWords.Against(en, 0, 0) != SupplyWords.Against(en, 1, 0) && SupplyWords.Against(en, 1, 0).Contains("3.5") && SupplyWords.Against(en, 1, 3).Contains("1.5") && SupplyWords.Against(en, 1, 0) != SupplyWords.Against(en, 1, 3)
               && SupplyWords.Delivery(en, 0) != SupplyWords.Delivery(en, 1) && SupplyWords.Delivery(en, 1).Contains("3"), "car suppliers page: a price under and over the wholesaler's and a delivery read as the table has them");
         var lines = new List<UiFactLine>();
-        SupplyPages.NewLines(lines, en, CarSupplyCatalogue.Specialist);
+        CarSupplyPages.NewLines(lines, en, CarSupplyCatalogue.Specialist);
         Check(lines.Count == 2 && lines[0].Value == SupplyWords.Name(en, CarSupplyCatalogue.Specialist) && lines[1].Value == SupplyWords.Delivery(en, CarSupplyCatalogue.Specialist), "car suppliers page: a new car's page says who supplies it and when it comes");
         string app = ModSource(@"Economy\Dealer\Supply\DealerApp.Supply.cs"), live = ModSource(@"Ui\Estate\DealerLive.Supply.cs");
         Check(app.Contains("_director.SetSupplier(kind, to)") && app.Contains("_director.SetKeep(place, kind, keep + 1)") && app.Contains("_director.SetKeep(place, kind, keep - 1)") && live.Contains("_d.SetSupplier(kind, supplier)")
@@ -865,7 +865,7 @@ internal static partial class Program
     private static void SupplySourceChecks()
     {
         string folder = System.IO.Path.GetDirectoryName(ModPath(@"Economy\Dealer\Supply\CarSupplyRules.cs"));
-        string[] files = Directory.GetFiles(folder, "*.cs").Concat(new[] { ModPath(@"Ui\Estate\DealerLive.Supply.cs"), ModPath(@"Ui\Estate\SupplyPages.cs") }).ToArray();   // the page stands in the folder of the screen it is part of
+        string[] files = Directory.GetFiles(folder, "*.cs").Concat(new[] { ModPath(@"Ui\Estate\DealerLive.Supply.cs"), ModPath(@"Ui\Estate\CarSupplyPages.cs") }).ToArray();   // the page stands in the folder of the screen it is part of
         Check(files.Length >= 9, "car suppliers sources: the feature's files are found (" + files.Length + ")");
         foreach (string file in files)
         {
@@ -903,7 +903,7 @@ internal static partial class Program
         string[] sources =
         {
             @"ParkSpaces\SpaceDirector.cs", @"ParkSpaces\SpaceDirector.Tests.cs", @"ParkSpaces\SpaceGame.cs", @"ParkSpaces\SpaceText.cs", @"Ui\Estate\SpacePages.cs", @"Economy\Estate\EstateApp.Spaces.cs",
-            @"Ui\Estate\EstateLive.Spaces.cs", @"Economy\Dealer\Supply\CarSupplyCatalogue.cs", @"Economy\Dealer\Supply\CarSupplyText.cs", @"Ui\Estate\SupplyPages.cs",
+            @"Ui\Estate\EstateLive.Spaces.cs", @"Economy\Dealer\Supply\CarSupplyCatalogue.cs", @"Economy\Dealer\Supply\CarSupplyText.cs", @"Ui\Estate\CarSupplyPages.cs",
             @"Economy\Dealer\Supply\DealerApp.Supply.cs", @"Ui\Estate\DealerLive.Supply.cs", @"Economy\Dealer\Supply\DealerDirector.Supply.cs"
         };
         foreach (string source in sources)

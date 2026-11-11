@@ -420,6 +420,13 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthRivals.cs" Link="Mod\Health\HealthRivals.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthFacts.cs" Link="Mod\Health\HealthFacts.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\HealthPages.cs" Link="Mod\Ventures\HealthPages.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Suppliers\SupplierCatalogue.cs" Link="Mod\Suppliers\SupplierCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Suppliers\SupplierState.cs" Link="Mod\Suppliers\SupplierState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Suppliers\SupplierStore.cs" Link="Mod\Suppliers\SupplierStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Suppliers\SupplierRules.cs" Link="Mod\Suppliers\SupplierRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Suppliers\SupplierEngine.cs" Link="Mod\Suppliers\SupplierEngine.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Suppliers\SupplyFacts.cs" Link="Mod\Suppliers\SupplyFacts.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\SupplyPages.cs" Link="Mod\Ventures\SupplyPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLedger.cs" Link="Mod\RotaLedger.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLadder.cs" Link="Mod\RotaLadder.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaStock.cs" Link="Mod\RotaStock.cs" />
@@ -848,7 +855,7 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\Supply\CarSupplyState.cs" Link="Mod\Supply\CarSupplyState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\Supply\CarSupplyRules.cs" Link="Mod\Supply\CarSupplyRules.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Dealer\Supply\CarSupplyStore.cs" Link="Mod\Supply\CarSupplyStore.cs" />
-    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\SupplyPages.cs" Link="Mod\Supply\SupplyPages.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Estate\CarSupplyPages.cs" Link="Mod\Supply\CarSupplyPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\ParkSpaces\SpaceCatalogue.cs" Link="Mod\ParkSpaces\SpaceCatalogue.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\ParkSpaces\SpaceState.cs" Link="Mod\ParkSpaces\SpaceState.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\ParkSpaces\SpaceRules.cs" Link="Mod\ParkSpaces\SpaceRules.cs" />

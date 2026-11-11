@@ -16,7 +16,8 @@ namespace RealLifeOverhaul.Ui
         public const int Section = UiAppWindow.NavCommand;
         public const int Action = 300, Type = 301, Less = 302, More = 303, FilterOption = 304, Period = 305, Item = 306, ItemLink = 307, Toggle = 308,
             Repeat = 309, Kind = 310, KindOption = 311, Font = 312, FontOption = 313, Uniforms = 314, FactLink = 315, Slider = 316, Classic = 317,
-            Cancel = 319, Page = 320, Heading = 321, Pages = 322;
+            Cancel = 319, Page = 320, Heading = 321, Pages = 322, Suppliers = 323;
+        public const int FactSuppliers = 1;           // a fact's link that opens the Suppliers app at the business, its argument
         public const int SecondColumn = 1000;         // a heading of the right column: its argument from here, the left's from 0
 
         // The logo editor's commands (this job's block 9600 to 9619; used 9600 to 9603 and 9610 to 9612).
@@ -37,7 +38,7 @@ namespace RealLifeOverhaul.Ui
         public static readonly int[] Commands =
         {
             Section, Action, Type, Less, More, FilterOption, Period, Item, ItemLink, Toggle, Repeat, Kind, KindOption, Font, FontOption, Uniforms, FactLink, Slider,
-            Classic, Cancel, Page, Heading, Pages, LogoShape, LogoOwn, LogoColourAdd, LogoTab, LogoColour, LogoColour + 1, LogoColour + 2,
+            Classic, Cancel, Page, Heading, Pages, Suppliers, LogoShape, LogoOwn, LogoColourAdd, LogoTab, LogoColour, LogoColour + 1, LogoColour + 2,
             UiFirmHead.First + UiFirmHead.Name, UiFirmHead.First + UiFirmHead.Option, UiFirmHead.First + UiFirmHead.Place, UiFirmHead.First + UiFirmHead.Switch,
             UiFirmHead.First + UiFirmHead.Todo, UiFirmHead.First + UiFirmHead.Action,
             UiDataTable.First + UiDataTable.Head, UiDataTable.First + UiDataTable.Filter, UiDataTable.First + UiDataTable.Search, UiDataTable.First + UiDataTable.Row,

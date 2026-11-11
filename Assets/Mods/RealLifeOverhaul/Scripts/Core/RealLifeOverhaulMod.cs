@@ -1200,6 +1200,7 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_party_test_now", () => Parties.PartyDirector.Instance?.TestNow())
                 .AddButton("reallife_party_test_round", () => Parties.PartyDirector.Instance?.TestRound())
                 .AddButton("reallife_spoil_test", () => Economy.LogisticsDirector.Instance?.TestSpoilage())
+                .Guarded(o => Suppliers.SupplierOptions.AddSuppliers(o))   // suppliers and contracts, under the living economy (Scripts/Suppliers)
                 .Guarded(o => Population.PopulationOptions.AddPopulation(o))   // the population's tests (Scripts/Population)
                 .AddDropdown(Settings.EconomyCompanyLevelId, "reallife_co_level",
                     new[] { "reallife_meta_preset_relaxed", "reallife_meta_preset_standard", "reallife_meta_preset_realistic", "reallife_meta_preset_hardcore" }, Settings.EconomyCompanyLevel,
@@ -1864,6 +1865,7 @@ namespace RealLifeOverhaul
             Guard.Step("giving", () => Giving.GivingDirector.Attach(_root, context.Logger));
             Guard.Step("health", () => Health.HealthDirector.Attach(_root, context.Logger));
             Guard.Step("parking spaces", () => ParkSpaces.SpaceDirector.Attach(_root, context.Logger));
+            Guard.Step("suppliers", () => Suppliers.SupplierDirector.Attach(_root, context.Logger));
             Guard.Step("Flare.FlareDirector", () => Flare.FlareDirector.Logger = context.Logger);
             Guard.Step("Flare.FlareApp", () => Flare.FlareApp.Logger = context.Logger);
             Guard.Step("Flare.FlareDirector", () => Guard.Add<Flare.FlareDirector>(_root));   // after the company and the brands, so that its day follows theirs

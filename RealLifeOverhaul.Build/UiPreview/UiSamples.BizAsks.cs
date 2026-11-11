@@ -6,7 +6,7 @@ using RealLifeOverhaul.ParkSpaces;
 using RealLifeOverhaul.Ui;
 
 // The smaller business asks' samples: a building's car park on the Property app and the suppliers on the Car Showroom's Market tab. Both pages are the shipped ones
-// (SpacePages, SupplyPages) over a sample state made by the shipped rules, so nothing a live page works out is typed here; a press is kept by a recorder the checks read.
+// (SpacePages, CarSupplyPages) over a sample state made by the shipped rules, so nothing a live page works out is typed here; a press is kept by a recorder the checks read.
 internal static partial class UiSamples
 {
     /// <summary>What the car park's page was last asked to do.</summary>
@@ -42,7 +42,7 @@ internal static partial class UiSamples
     }
 
     /// <summary>What the suppliers' page was last asked to do.</summary>
-    internal sealed class SupplyPressed : ISupplyActions
+    internal sealed class SupplyPressed : ICarSupplyActions
     {
         public string Last = string.Empty, Place = string.Empty;
         public int Kind, Value;
@@ -155,7 +155,7 @@ internal static partial class UiSamples
     private static void SupplySample(UiWords t, EstateModel m, List<Func<bool>> runs, DealerState s)
     {
         var mine = new EstateRuns();
-        SupplyPages.Fill(m, mine, t, s, SupplyWorld(s), SupplyModels(), s.Yards.Count > 0 ? s.Yards[0].Place : null, y => y == s.Yards[0], SupplyPress);
+        CarSupplyPages.Fill(m, mine, t, s, SupplyWorld(s), SupplyModels(), s.Yards.Count > 0 ? s.Yards[0].Place : null, y => y == s.Yards[0], SupplyPress);
         runs.AddRange(mine.ToArray());
     }
 }

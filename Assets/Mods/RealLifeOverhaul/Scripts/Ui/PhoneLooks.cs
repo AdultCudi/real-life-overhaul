@@ -20,7 +20,7 @@ namespace RealLifeOverhaul.Ui
             "RealLifeCareer", "RealLifeCampus", "RealLifeOpenRoles", "RealLifeMarketplace",
             "RealLifeFinance", "RealLifeBanks", "RealLifeGiving", "RealLifeOwnBank", "RealLifeStocks", "RealLifeEconomy",
             "RealLifeCompany", "RealLifeBrands", "RealLifeServices", "RealLifeVentures", "RealLifeOnline", "RealLifeEstate", "RealLifeDealer",
-            "RealLifeBuilders", "RealLifeTechSector", "RealLifeOverhaulUtilities",
+            "RealLifeBuilders", "RealLifeTechSector", "RealLifeSuppliers", "RealLifeOverhaulUtilities",
             "RealLifeGuide", "RealLifeSettings", "RealLifeStaff",
             "RealLifeParties"
         };
@@ -33,7 +33,7 @@ namespace RealLifeOverhaul.Ui
             UiIcon.Trophy, UiIcon.Cap, UiIcon.Handshake, UiIcon.Package,
             UiIcon.Wallet, UiIcon.Bank, UiIcon.Percent, UiIcon.PiggyBank, UiIcon.ChartLineUp, UiIcon.Globe,
             UiIcon.Building, UiIcon.Tag, UiIcon.Headset, UiIcon.Rocket, UiIcon.ShoppingCart, UiIcon.Home, UiIcon.Car,
-            UiIcon.Hammer, UiIcon.Cpu, UiIcon.Lightning,
+            UiIcon.Hammer, UiIcon.Cpu, UiIcon.ListChecks, UiIcon.Lightning,
             UiIcon.Lightbulb, UiIcon.Gear, UiIcon.IdBadge,
             UiIcon.ForkKnife
         };

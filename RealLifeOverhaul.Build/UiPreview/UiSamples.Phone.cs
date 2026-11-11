@@ -39,7 +39,7 @@ internal static partial class UiSamples
             new[] { "RealLifeBrands", "reallife_brand_app", "Brands", "0" }, new[] { "RealLifeServices", "reallife_svc_app", "Services", "0" },
             new[] { "RealLifeVentures", "reallife_ven_app", "Ventures", "3" }, new[] { "RealLifeOnline", "reallife_online_app", "Web shop", "0" },
             new[] { "RealLifeEstate", "reallife_estate_app", "Property", "0" }, new[] { "RealLifeDealer", "reallife_dealer_app", "Car Showroom", "0" },
-            new[] { "RealLifeBuilders", "reallife_bld_app", "Construction", "0" }, new[] { "RealLifeTechSector", "reallife_tech_app", "Tech", "0" },
+            new[] { "RealLifeBuilders", "reallife_bld_app", "Construction", "0" }, new[] { "RealLifeTechSector", "reallife_tech_app", "Tech", "0" }, new[] { "RealLifeSuppliers", "reallife_supply_app", "Suppliers", "0" },
             new[] { "RealLifeOverhaulUtilities", "reallife_util_app", "Utilities", "0" }, new[] { "RealLifeGuide", "reallife_guide_app", "Guide", "0" },
             new[] { "RealLifeSettings", "reallife_set_app", "Mod settings", "0" }, new[] { "RealLifeStaff", "reallife_staff_app", "Staff and roles", "0" },
             new[] { "RealLifeParties", "reallife_party_app", "Parties", "0" },

@@ -51,6 +51,7 @@ namespace RealLifeOverhaul
             { "RealLifeOverhaul.Giving", "giving" },
             { "RealLifeOverhaul.Health", "health" },
             { "RealLifeOverhaul.ParkSpaces", "parking_spaces" },
+            { "RealLifeOverhaul.Suppliers", "suppliers" },
             { "RealLifeOverhaul.Shops", "newshops" },
             { "RealLifeOverhaul.Outlook", "economy_app" },
             { "RealLifeOverhaul.Population", "population" },

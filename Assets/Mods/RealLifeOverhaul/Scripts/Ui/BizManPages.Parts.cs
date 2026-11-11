@@ -218,7 +218,7 @@ namespace RealLifeOverhaul.Ui
         {
             if (m.Items.Length == 0)
             {
-                UiDraw.EmptyState(s, at, x, y, w, bottom - y, UiIcon.Truck, m.ItemsEmpty, m.ItemsEmptyBody, null, -1, keys);
+                UiDraw.EmptyState(s, at, x, y, w, bottom - y, UiIcon.Truck, m.ItemsEmpty, m.ItemsEmptyBody, m.ItemsEmptyAction, Suppliers, keys);
                 return;
             }
             float half = Half(w), rx = x + half + UiTokens.S8;
