@@ -414,6 +414,11 @@ internal static partial class UiSamples
         var running = new WorkFormBand { Title = w.T("reallife_work_running_searches", "Searches running"), Count = "1" };
         running.Rows.Add(new WorkFormRow { Field = WorkField.Tile, Label = RRole(w, "network_engineer") + ", " + RLevel(w, "senior"), Hint = w.F("reallife_work_fee_n", "Fee {n}", "n", "$16,800"), Value = SDay(w, 416), Icon = UiIcon.Search });
         form.Right.Add(running);
+        // a search still looking, due in 416 against today's 412: three days to save, at a twentieth of its fee a day
+        var rush = new WorkFormBand { Title = w.T("reallife_work_rush_title", "Rush a search"), Count = "1" };
+        rush.Rows.Add(new WorkFormRow { Field = WorkField.Button, Label = RRole(w, "network_engineer") + ", " + RLevel(w, "senior"),
+            Act = WkAct(117, w.F("reallife_work_rush_for", "Rush for {n}", "n", "$2,520"), UiButtonKind.Secondary, UiIcon.FastForward) });
+        form.Right.Add(rush);
         var line = new WorkFormBand { Title = w.T("reallife_work_band_the_line_briefed", "The line you brief") };
         line.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_ad_going", "Going rate"), Value = "$44.00" });
         line.Rows.Add(new WorkFormRow { Field = WorkField.Label, Label = w.T("reallife_work_shortage", "Shortage"), Value = "3.1%" });

@@ -859,6 +859,74 @@ namespace RealLifeOverhaul.Tech
             ad.FeePaid += due;
         }
 
+        /// <summary>
+        /// Why a search cannot be rushed now, a text's key, or null when it can: the option or the hiring switched off, its candidates already in,
+        /// or its candidates due tomorrow with no day left to save.
+        /// </summary>
+        internal string RushRefusal(JobAd ad)
+        {
+            if (!_hiringOn || Save == null || !Settings.TechSearchRush)
+            {
+                return "reallife_hire_rush_off";
+            }
+            switch (HiringRules.CanRush(ad, Save.Day))
+            {
+                case HiringRules.Rushable: return null;
+                case HiringRules.RushTooSoon: return "reallife_hire_rush_soon";
+                default: return "reallife_hire_rush_delivered";
+            }
+        }
+
+        /// <summary>
+        /// A search rushed: its candidates are brought forward to tomorrow, and the business it is for (headquarters, for a crew) pays the firm a share
+        /// of the fee for each day saved, refused whole if its cash does not cover it. The price is worked out again here, never taken from the page: a
+        /// day that passed while the question was open saves a day less and costs less, never more. False, with the reason told, when it cannot be done.
+        /// </summary>
+        internal bool RushSearch(int id)
+        {
+            JobAd ad = _hiringOn && _hiring != null ? _hiring.AdOf(id) : null;
+            string role = ad != null ? TechText.Role(ad.Role) : "-";
+            string refusal = RushRefusal(ad);
+            if (refusal != null)
+            {
+                Notifications.Show(NotificationType.Error, refusal, Data("role", role), 6f);
+                return false;
+            }
+            BuildingRegistration centre = TalentGame.Find(ad.Place);
+            BuildingRegistration at = ad.CrewSearch ? (HiringGame.Headquarters() ?? centre) : centre;
+            if (at == null)
+            {
+                Notifications.Show(NotificationType.Error, "reallife_hire_rush_gone", Data("role", role), 6f);   // the business is no longer the player's
+                return false;
+            }
+            int day = Save.Day, was = ad.Due;
+            int price = HiringRules.RushQuote(ad, day);
+            if (!HiringGame.Pay(price, HiringGame.RushKey, at, role))
+            {
+                Notifications.Show(NotificationType.Error, "reallife_hire_rush_short", Data("role", role, "amount", TechText.Cents(price), "business", TalentGame.NameOf(at)), 6f);
+                return false;
+            }
+            HiringRules.Rush(ad, day);
+            Tell(NotificationType.Success, "reallife_hire_note_rush", Data("role", role, "amount", TechText.Cents(price), "day", ad.Due.ToString()), TabSearch, null);
+            RushCheck(role, day, was, ad.Due, HiringRules.RushDelivery(day), price, ad.Fee);
+            Changed();
+            return true;
+        }
+
+        // One line a rush: the days the search was brought forward by, the price booked against the rule's price for those days at its fee, and the
+        // day its candidates now come against the day wanted.
+        private void RushCheck(string role, int day, int was, int now, int wanted, int price, int fee)
+        {
+            if (!Verbose)
+            {
+                return;
+            }
+            int saved = HiringRules.RushDays(was, now), rule = HiringRules.RushPrice(fee, saved);
+            bool ok = saved > 0 && now == wanted && price == rule;
+            Logger?.Info("Tech check (search rush, " + role + ", day " + day + "): " + saved + " day(s) saved, day " + was + " to day " + now + " (" + wanted + " wanted), "
+                         + price + " cents booked against " + rule + " by the rule at a fee of " + fee + " cents: " + (ok ? "PASS" : "FAIL"));
+        }
+
         internal int ShortageOf(Family family) => _hiringOn && Save != null ? HiringRules.Shortage(_hiring, family, Save.Day) : 1000;
     }
 }

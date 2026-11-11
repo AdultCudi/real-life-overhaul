@@ -663,6 +663,59 @@ namespace RealLifeOverhaul.Tech
             return (int)((long)fee * HiringCatalogue.SearchRetainerShare / 1000);
         }
 
+        public const int Rushable = 0, RushNotSearch = 1, RushDelivered = 2, RushTooSoon = 3;
+
+        /// <summary>The day a rushed search delivers: tomorrow, the soonest any search does, since the day's own run for today has passed.</summary>
+        public static int RushDelivery(int day) => day + HiringCatalogue.StartLeast;
+
+        /// <summary>The days a rush saves: from the day the search was to deliver to the day it delivers instead; none if that is not sooner.</summary>
+        public static int RushDays(int due, int instead) => Math.Max(0, due - instead);
+
+        /// <summary>
+        /// What rushing a search costs, cents: a share of its fee (<see cref="HiringCatalogue.SearchRushBp"/>) for each day saved. One rule for a
+        /// senior search and a crew search, the same on every machine.
+        /// </summary>
+        public static int RushPrice(int fee, int days)
+        {
+            long price = (long)Math.Max(0, fee) * Math.Max(0, days) * HiringCatalogue.SearchRushBp / 10000;
+            return (int)Math.Min(int.MaxValue, price);
+        }
+
+        /// <summary>
+        /// Whether a search can be rushed today: <see cref="Rushable"/>, or why not. Only a search that has brought no candidates and is due
+        /// after tomorrow has a day to save.
+        /// </summary>
+        public static int CanRush(JobAd search, int day)
+        {
+            if (search == null || !search.Search)
+            {
+                return RushNotSearch;
+            }
+            if (search.Came > 0)
+            {
+                return RushDelivered;
+            }
+            return search.Due > RushDelivery(day) ? Rushable : RushTooSoon;
+        }
+
+        /// <summary>The price of rushing a search today, cents, at its fee; 0 when it cannot be rushed.</summary>
+        public static int RushQuote(JobAd search, int day)
+        {
+            return CanRush(search, day) == Rushable ? RushPrice(search.Fee, RushDays(search.Due, RushDelivery(day))) : 0;
+        }
+
+        /// <summary>A search rushed: it delivers tomorrow. Returns the days saved; 0, with nothing changed, when it cannot be.</summary>
+        public static int Rush(JobAd search, int day)
+        {
+            if (CanRush(search, day) != Rushable)
+            {
+                return 0;
+            }
+            int saved = RushDays(search.Due, RushDelivery(day));
+            search.Due = RushDelivery(day);
+            return saved;
+        }
+
         /// <summary>A search delivers passive candidates in work, in the role at its level or one over, each applying to the brief.</summary>
         public static int Deliver(HiringFile f, JobAd search, int day, RateOf rate, int shortage, IList<string> districts)
         {

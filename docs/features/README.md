@@ -55,6 +55,7 @@ Every feature runs in the New York the mod knows, a New York with districts a fr
 
 - [Jobs](jobs.md): gigs from the Gig Line and the help-wanted boards.
 - [Careers](careers.md): the employers' ranks, and education and the professions.
+- [Hiring professionals](tech-hiring.md): the jobs board, applicants and offers in Open Roles, a search firm's search for senior people and for a data centre's crew, and paying to bring a hire's start forward: a search rushed, a notice bought out.
 - [Building trades](trades.md): the trades at the city's works sites, each with a game of its own, the architects' practice on a floor (the floor plan, the facade and the frame), the trades' courses and three ladders.
 - [Legal hustles](hustles.md): the Marketplace, used goods and cars to fix up and sell on, and freelance visits for clients.
 

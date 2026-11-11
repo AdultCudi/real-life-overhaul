@@ -90,12 +90,13 @@ namespace RealLifeOverhaul.Tech
             Meta.Guide.Point(box, JobsGuide);
         }
 
-        private void WriteCrewSearch(InfoBox box, JobAd ad)
+        private void WriteCrewSearch(InfoBox box, JobAd ad, int day)
         {
             BuildingRegistration centre = TalentGame.Find(ad.Place);
             box.Title(TechText.T("reallife_crew_search_title", "centre", centre != null ? TalentGame.NameOf(centre) : "-"));
             box.Line(TechText.Fill("reallife_crew_terms", "role", TechText.Role(ad.Role), "level", TechText.Level(ad.Level), "count", ad.Crew.ToString(), "hired", ad.Hired.ToString(),
                 "fee", TechText.Cents(ad.Fee), "paid", TechText.Cents(ad.FeePaid), "day", ad.Due.ToString()));
+            WriteRush(box, ad, day);
             Transform buttons = box.ButtonRow();
             InfoBox.Button(buttons, InfoBox.Additional, "reallife_hire_button_applicants", () => ShowTab(TechDirector.TabApplicants));
             InfoBox.Button(buttons, InfoBox.Additional, "common_close", ClosePick);

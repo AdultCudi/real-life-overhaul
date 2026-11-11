@@ -84,6 +84,7 @@ namespace RealLifeOverhaul.Tech
         public const int SearchDaysLeast = 4, SearchDaysMost = 8;
         public const int SearchCandidates = 3;
         public const int SearchLeastLevel = TalentCatalogue.Senior;
+        public const int SearchRushBp = 500;        // basis points of a search's fee for each day its candidates are brought forward to tomorrow
 
         // A data centre's crew by a search firm, briefed from the player's headquarters: juniors to staff level, a fee a hire
         public const string Headquarters = "ba:businesstype_headquarters";      // the game's business type of a company's headquarters

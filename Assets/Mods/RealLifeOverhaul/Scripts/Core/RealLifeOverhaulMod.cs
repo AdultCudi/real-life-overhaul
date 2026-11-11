@@ -1292,9 +1292,12 @@ namespace RealLifeOverhaul
                 .AddButton("reallife_names_test", () => Tech.TechDirector.Instance?.TestNames())
                 .AddToggle(Settings.TechJobsId, "reallife_hire_enabled", Settings.TechJobs,
                     v => Settings.TechJobs = v)
+                .AddToggle(Settings.TechSearchRushId, "reallife_hire_rush_enabled", Settings.TechSearchRush,
+                    v => Settings.TechSearchRush = v)
                 .AddButton("reallife_hire_test_applicants", () => Tech.TechDirector.Instance?.TestApplicants())
                 .AddButton("reallife_hire_test_market", () => Tech.TechDirector.Instance?.TestMarketDay())
                 .AddButton("reallife_hire_test_search", () => Tech.TechDirector.Instance?.TestSearch())
+                .AddButton("reallife_hire_test_rush", () => Tech.TechDirector.Instance?.TestSearchRush())
                 .AddButton("reallife_hire_test_buyout", () => Tech.TechDirector.Instance?.TestBuyout())
                 .AddButton("reallife_talent_test_buyout", () => Tech.TechDirector.Instance?.TestRivalBuyout())
                 .AddButton("reallife_crew_test", () => Tech.TechDirector.Instance?.TestCrewSearch())

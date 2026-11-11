@@ -897,6 +897,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--search-rush")
+        {
+            SearchRush();   // (a search firm's search rushed for the days saved, alone, while working on it: SearchRushChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--markets-build")
         {
             MarketsBuild();   // (the city's builders on the market and a project's hedge alone, while working on them: MarketsBuildChecks.cs)
@@ -1301,6 +1307,7 @@ internal static partial class Program
         SoldBack();     // a building sold and put back as the player's for nothing goes back to its buyer, a purchase since stays the player's (SoldBackChecks.cs)
         Hiring();
         Buyout();       // buying out a notice: the price, who can be bought out, the rival's seeded once-only choice, the sources and texts (BuyoutChecks.cs)
+        SearchRush();   // rushing a search firm's search: the price, which searches can be rushed, the one place that decides, the option and the texts (SearchRushChecks.cs)
         Tech();
         ListSector();   // a listed company's sector from what it earns now: the mix, the review, the load, the save (ListSectorChecks.cs)
         ExitStockChecks();   // a firm that listed on its own is a stock: the shares kept once, the lock-up one, the money lawful, every ending, the city's startups, the saves (ExitStockChecks.cs)
