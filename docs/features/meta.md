@@ -149,7 +149,7 @@ Today:
 | `police_pursuit` | off | on | on | on |
 
 A preset writes the PlayerPrefs keys the options page writes, calls `Settings.Reload()` (which is `Load` and then the `Settings.Changed` event) and has the page drawn again.
-The settings as they were go to `<persistentDataPath>/RealLifeOverhaul/settings_before_preset.txt` first; "Export" writes `settings.txt` there and "Import" reads it (`id=value` lines, key bindings included).
+The settings as they were go to `<persistentDataPath>/RealLifeOverhaul/settings_before_preset.txt` first; "Export" writes `settings.txt` there and "Import" reads it (`id=value` lines, key bindings included). A file an older version wrote has one `player_offences` line for the traffic offences, which Import reads as that value for each of the eight `offence_*` options (see [Crime](crime.md)).
 
 ## Save tools: what is removed, and how that was checked against the game
 

@@ -59,23 +59,38 @@ namespace RealLifeOverhaul
         public readonly bool TaxiTrip;       // the game's taxi or private driver trip is under way
         public readonly bool Seated;         // sitting on a seat of the game's
         public readonly bool Blocked;        // the game does not let the player steer: every ride sets one of its walking blockers
+        public readonly bool AgentOff;       // the player's NavMeshAgent is switched off: every seat, car and hidden player of the game's does it, and nobody walks without it
         public readonly bool UnderVehicle;   // the player's body hangs under a vehicle in the scene
         public readonly bool TooFast;        // moved faster than anyone on foot goes since the last look
 
-        public RideFacts(bool ownVehicle, bool taxiTrip, bool seated, bool blocked, bool underVehicle, bool tooFast)
+        public RideFacts(bool ownVehicle, bool taxiTrip, bool seated, bool blocked, bool agentOff, bool underVehicle, bool tooFast)
         {
             OwnVehicle = ownVehicle;
             TaxiTrip = taxiTrip;
             Seated = seated;
             Blocked = blocked;
+            AgentOff = agentOff;
             UnderVehicle = underVehicle;
             TooFast = tooFast;
         }
     }
 
+    /// <summary>Where the saved offence options are kept, by id: the game's PlayerPrefs in the game, a table in the checks. A value is 0 or 1.</summary>
+    internal interface IOffenceStore
+    {
+        bool Has(string id);
+
+        int Get(string id);
+
+        void Set(string id, int value);
+
+        void Clear(string id);
+    }
+
     /// <summary>
-    /// The rules of the player's traffic offences, with no Unity or game types: what a new switch starts from, and when the
-    /// player is carried and so cannot be walking in a road. Checked offline (EconomyCheck, TrafficOffenceChecks).
+    /// The rules of the player's traffic offences, with no Unity or game types: what becomes of the one switch an older version had
+    /// for all of them, and when the player is carried and so cannot be walking in a road. Checked offline (EconomyCheck,
+    /// TrafficOffenceChecks).
     /// </summary>
     internal static class OffenceRules
     {
@@ -83,13 +98,30 @@ namespace RealLifeOverhaul
         public const float LookStale = 2f;   // seconds: a look this long ago (a menu, a cooldown) is no measure of a speed
 
         /// <summary>
-        /// A traffic offence's switch when the options are read: the player's own saved choice, else the choice the one switch that
-        /// came before them had, else the default. Nothing is written, so a switch the player has not touched follows the older
-        /// one until they do.
+        /// Once, when the options are read: the one switch an older version had for all the traffic offences (<paramref name="older"/>)
+        /// becomes the saved value of each offence option (<paramref name="ids"/>) that has none of its own, and is deleted. It must be
+        /// written: the game's control on the options page shows an option with no saved value as the shipped "on" and sets it so, and
+        /// its reset clears the options' values but not a key that is no option. Kept in memory only, the seed was undone when the page
+        /// opened and came back after a reset. A value the player saved is never changed. Returns how many were written.
         /// </summary>
-        public static bool Seeded(bool hasOwn, bool own, bool hasOlder, bool older, bool fallback)
+        public static int TakeOlderSwitch(IOffenceStore store, string older, string[] ids)
         {
-            return hasOwn ? own : hasOlder ? older : fallback;
+            if (!store.Has(older))
+            {
+                return 0;
+            }
+            int value = store.Get(older) != 0 ? 1 : 0;
+            int written = 0;
+            for (int i = 0; i < ids.Length; i++)
+            {
+                if (!store.Has(ids[i]))
+                {
+                    store.Set(ids[i], value);
+                    written++;
+                }
+            }
+            store.Clear(older);
+            return written;
         }
 
         /// <summary>
@@ -107,7 +139,7 @@ namespace RealLifeOverhaul
         /// </summary>
         public static bool Carried(RideFacts ride)
         {
-            return ride.OwnVehicle || ride.TaxiTrip || ride.Seated || ride.Blocked || ride.UnderVehicle || ride.TooFast;
+            return ride.OwnVehicle || ride.TaxiTrip || ride.Seated || ride.Blocked || ride.AgentOff || ride.UnderVehicle || ride.TooFast;
         }
 
         /// <summary>The signs that are on, for the log; "no sign of a ride" when none is. Allocates: for a log line written once per event.</summary>
@@ -117,6 +149,7 @@ namespace RealLifeOverhaul
             signs = Add(signs, ride.TaxiTrip, "a taxi trip");
             signs = Add(signs, ride.Seated, "seated");
             signs = Add(signs, ride.Blocked, "walking blocked");
+            signs = Add(signs, ride.AgentOff, "NavMeshAgent off");
             signs = Add(signs, ride.UnderVehicle, "under a vehicle");
             signs = Add(signs, ride.TooFast, "faster than anyone walks");
             return signs.Length == 0 ? "no sign of a ride" : signs;

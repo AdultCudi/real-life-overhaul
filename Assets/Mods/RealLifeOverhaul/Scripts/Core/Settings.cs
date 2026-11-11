@@ -125,7 +125,16 @@
         public const string OffenceJaywalkId = "offence_jaywalk";
         public const string OffenceCrossRedId = "offence_cross_red";
         public const string OffenceHornId = "offence_horn";
-        private const string OffencesOlderSwitch = "player_offences";   // the one switch an older version had for all of these: each starts as it was set
+        internal const string OffencesOlderSwitch = "player_offences";   // the one switch an older version had for all of these: each takes its value (MoveOffences) and it is deleted
+
+        /// <summary>
+        /// The ids of the eight traffic offence options, the horn last: what the older switch's value is handed to (MoveOffences),
+        /// and what an older settings file's line for it stands for (Presets.Import).
+        /// </summary>
+        internal static readonly string[] OffenceIds =
+        {
+            OffenceRedLightId, OffenceSpeedingId, OffencePavementId, OffenceWrongWayId, OffenceDrinkId, OffenceJaywalkId, OffenceCrossRedId, OffenceHornId
+        };
         public const string PolicePresenceId = "police_presence";
         public const string CityLifeId = "city_life";
         public const string CityDensityId = "city_density";
@@ -968,14 +977,15 @@
             CharacterSkin = Bool(modId, CharacterSkinId, CharacterSkin);
             CharacterCatalogue.Load();
             CrimeAgainstPlayer = Bool(modId, CrimeAgainstPlayerId, CrimeAgainstPlayer);
-            OffenceRedLight = OffenceSwitch(modId, OffenceRedLightId, OffenceRedLight);
-            OffenceSpeeding = OffenceSwitch(modId, OffenceSpeedingId, OffenceSpeeding);
-            OffencePavement = OffenceSwitch(modId, OffencePavementId, OffencePavement);
-            OffenceWrongWay = OffenceSwitch(modId, OffenceWrongWayId, OffenceWrongWay);
-            OffenceDrink = OffenceSwitch(modId, OffenceDrinkId, OffenceDrink);
-            OffenceJaywalk = OffenceSwitch(modId, OffenceJaywalkId, OffenceJaywalk);
-            OffenceCrossRed = OffenceSwitch(modId, OffenceCrossRedId, OffenceCrossRed);
-            OffenceHorn = OffenceSwitch(modId, OffenceHornId, OffenceHorn);
+            MoveOffences(modId);   // before the eight are read: the older single switch becomes their own saved values
+            OffenceRedLight = Bool(modId, OffenceRedLightId, OffenceRedLight);
+            OffenceSpeeding = Bool(modId, OffenceSpeedingId, OffenceSpeeding);
+            OffencePavement = Bool(modId, OffencePavementId, OffencePavement);
+            OffenceWrongWay = Bool(modId, OffenceWrongWayId, OffenceWrongWay);
+            OffenceDrink = Bool(modId, OffenceDrinkId, OffenceDrink);
+            OffenceJaywalk = Bool(modId, OffenceJaywalkId, OffenceJaywalk);
+            OffenceCrossRed = Bool(modId, OffenceCrossRedId, OffenceCrossRed);
+            OffenceHorn = Bool(modId, OffenceHornId, OffenceHorn);
             PolicePresence = Int(modId, PolicePresenceId, PolicePresence);
             CityLife = Bool(modId, CityLifeId, CityLife);
             CityDensity = Int(modId, CityDensityId, CityDensity);
@@ -1328,13 +1338,33 @@
         }
 
         /// <summary>
-        /// A traffic offence's switch: its saved value, else the one switch an older version had for all of them, else the
-        /// default (OffenceRules.Seeded). Nothing is written.
+        /// Once: the one switch an older version kept for all the traffic offences is written as the saved value of each of the eight
+        /// that has none of its own, and deleted (OffenceRules.TakeOlderSwitch). Written, because the game's toggle on the options page
+        /// shows an option with no saved value as the shipped "on" and sets it so, and its reset deletes the eight but not a key that
+        /// is no option. Nothing is written for a new player, or at any start after the first.
         /// </summary>
-        private static bool OffenceSwitch(string modId, string id, bool fallback)
+        private static void MoveOffences(string modId)
         {
-            return OffenceRules.Seeded(UnityEngine.PlayerPrefs.HasKey(Key(modId, id)), Bool(modId, id, fallback),
-                UnityEngine.PlayerPrefs.HasKey(Key(modId, OffencesOlderSwitch)), Bool(modId, OffencesOlderSwitch, fallback), fallback);
+            OffenceRules.TakeOlderSwitch(new OffencePrefs(modId), OffencesOlderSwitch, OffenceIds);
+        }
+
+        // The offence options in PlayerPrefs, under the key the game's own controls use.
+        private readonly struct OffencePrefs : IOffenceStore
+        {
+            private readonly string _modId;
+
+            public OffencePrefs(string modId)
+            {
+                _modId = modId;
+            }
+
+            public bool Has(string id) => UnityEngine.PlayerPrefs.HasKey(Key(_modId, id));
+
+            public int Get(string id) => UnityEngine.PlayerPrefs.GetInt(Key(_modId, id), 0);
+
+            public void Set(string id, int value) => UnityEngine.PlayerPrefs.SetInt(Key(_modId, id), value);
+
+            public void Clear(string id) => UnityEngine.PlayerPrefs.DeleteKey(Key(_modId, id));
         }
 
         // The key format the game uses when it saves mod options.

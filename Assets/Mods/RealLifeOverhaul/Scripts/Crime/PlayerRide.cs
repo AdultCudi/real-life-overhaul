@@ -1,6 +1,7 @@
 using GleyTrafficSystem;
 using Helpers;
 using UnityEngine;
+using UnityEngine.AI;
 
 namespace RealLifeOverhaul
 {
@@ -14,12 +15,18 @@ namespace RealLifeOverhaul
     {
         /// <summary>
         /// The signs now. <paramref name="movedSqr"/> (square metres) and <paramref name="seconds"/> are the player's move since the
-        /// last foot look.
+        /// last foot look. Every sign has a line of its own, named, so that one left out or answered with false shows at once.
         /// </summary>
         public static RideFacts Read(PlayerController player, float movedSqr, float seconds)
         {
-            return new RideFacts(PlayerHelper.IsUsingVehicle, TaxiTrip(), Seated(player), Blocked(player), UnderVehicle(player.transform),
-                OffenceRules.TooFast(movedSqr, seconds));
+            return new RideFacts(
+                ownVehicle: PlayerHelper.IsUsingVehicle,
+                taxiTrip: TaxiTrip(),
+                seated: Seated(player),
+                blocked: Blocked(player),
+                agentOff: AgentOff(player),
+                underVehicle: UnderVehicle(player.transform),
+                tooFast: OffenceRules.TooFast(movedSqr, seconds));
         }
 
         // The game's taxi or private driver trip: the player is a passenger, hidden, until it has put them down.
@@ -37,6 +44,14 @@ namespace RealLifeOverhaul
         private static bool Blocked(PlayerController player)
         {
             return player.NavigationDisabled;
+        }
+
+        // The player's NavMeshAgent, which walks them, is switched off by every seat, car and hidden player of the game's (SitOnChair,
+        // AttachToObject, ToggleVisibility), and a ride that borrows one of them does the same. With it off nobody can walk.
+        private static bool AgentOff(PlayerController player)
+        {
+            NavMeshAgent agent = player.Character != null ? player.Character.navmeshAgent : null;
+            return agent != null && !agent.enabled;
         }
 
         // The game parents the player under the car they drive; a ride that seats them in a traffic car does the same.
