@@ -406,6 +406,17 @@
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GivingMonth.cs" Link="Mod\Giving\GivingMonth.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Giving\GivingLoans.cs" Link="Mod\Giving\GivingLoans.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\GivePages.cs" Link="Mod\Ventures\GivePages.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthCatalogue.cs" Link="Mod\Health\HealthCatalogue.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthState.cs" Link="Mod\Health\HealthState.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthStore.cs" Link="Mod\Health\HealthStore.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthRules.cs" Link="Mod\Health\HealthRules.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthCover.cs" Link="Mod\Health\HealthCover.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthLeave.cs" Link="Mod\Health\HealthLeave.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthDay.cs" Link="Mod\Health\HealthDay.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthPeople.cs" Link="Mod\Health\HealthPeople.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthRivals.cs" Link="Mod\Health\HealthRivals.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Health\HealthFacts.cs" Link="Mod\Health\HealthFacts.cs" />
+    <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Ui\Ventures\HealthPages.cs" Link="Mod\Ventures\HealthPages.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLedger.cs" Link="Mod\RotaLedger.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaLadder.cs" Link="Mod\RotaLadder.cs" />
     <Compile Include="..\..\Assets\Mods\RealLifeOverhaul\Scripts\Economy\Company\RotaStock.cs" Link="Mod\RotaStock.cs" />

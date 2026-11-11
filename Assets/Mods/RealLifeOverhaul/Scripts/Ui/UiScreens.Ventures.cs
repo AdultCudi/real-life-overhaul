@@ -129,6 +129,39 @@ namespace RealLifeOverhaul.Ui
                 "reallife_ui_prompt_select"
                 // KEYS END
             }).Switch(UiScreenSwitches.Ventures));
+            screens.Add(new UiScreenDef("health", UiTemplate.AppWindow, "VentScreen", new[]
+            {
+                // KEYS BEGIN
+                "reallife_hc_app", "reallife_hc_book", "reallife_hc_call_in", "reallife_hc_called_in",
+                "reallife_hc_cancel_booking", "reallife_hc_cancel_plan", "reallife_hc_cond_arm", "reallife_hc_cond_back",
+                "reallife_hc_cond_cold", "reallife_hc_cond_concussion", "reallife_hc_cond_exhaustion", "reallife_hc_cond_flu",
+                "reallife_hc_cond_food", "reallife_hc_cond_none", "reallife_hc_cond_sprain", "reallife_hc_debt_how",
+                "reallife_hc_doctor_how", "reallife_hc_employer_note", "reallife_hc_fig_owed", "reallife_hc_fig_plan",
+                "reallife_hc_fig_you", "reallife_hc_leave_how", "reallife_hc_living_fair", "reallife_hc_living_good",
+                "reallife_hc_living_poor", "reallife_hc_not_covered", "reallife_hc_now_hospital", "reallife_hc_now_well",
+                "reallife_hc_off_body", "reallife_hc_off_title", "reallife_hc_pay_off", "reallife_hc_plan_basic",
+                "reallife_hc_plan_employer", "reallife_hc_plan_full", "reallife_hc_plan_month", "reallife_hc_plan_none",
+                "reallife_hc_plan_standard", "reallife_hc_plan_sub", "reallife_hc_plan_yours", "reallife_hc_policy_generous",
+                "reallife_hc_policy_none", "reallife_hc_policy_statutory", "reallife_hc_rivals_none", "reallife_hc_row_bills",
+                "reallife_hc_row_booked", "reallife_hc_row_booked_value", "reallife_hc_row_called", "reallife_hc_row_called_value",
+                "reallife_hc_row_cap", "reallife_hc_row_cases", "reallife_hc_row_city_bills", "reallife_hc_row_city_debt",
+                "reallife_hc_row_claims", "reallife_hc_row_doctor", "reallife_hc_row_excess", "reallife_hc_row_home",
+                "reallife_hc_row_hospital", "reallife_hc_row_ill_now", "reallife_hc_row_ill_now_value", "reallife_hc_row_last",
+                "reallife_hc_row_last_value", "reallife_hc_row_living", "reallife_hc_row_lost", "reallife_hc_row_next",
+                "reallife_hc_row_next_value", "reallife_hc_row_note", "reallife_hc_row_owed", "reallife_hc_row_paid_days",
+                "reallife_hc_row_paid_days_value", "reallife_hc_row_per_day", "reallife_hc_row_policy", "reallife_hc_row_premium",
+                "reallife_hc_row_serious", "reallife_hc_row_sick_pay", "reallife_hc_row_spell", "reallife_hc_row_spell_value",
+                "reallife_hc_row_staff_off", "reallife_hc_row_wave", "reallife_hc_row_where", "reallife_hc_sec_bills",
+                "reallife_hc_sec_city", "reallife_hc_sec_doctor", "reallife_hc_sec_leave", "reallife_hc_sec_plans",
+                "reallife_hc_sec_rivals", "reallife_hc_sec_staff", "reallife_hc_sec_you", "reallife_hc_staff_how",
+                "reallife_hc_tab_bills", "reallife_hc_tab_city", "reallife_hc_tab_cover", "reallife_hc_tab_you",
+                "reallife_hc_take_plan", "reallife_hc_wave_high", "reallife_hc_wave_low", "reallife_hc_wave_none",
+                "reallife_hc_wave_round", "reallife_hc_why_people", "reallife_hc_why_session", "reallife_hc_you_hospital",
+                "reallife_hc_you_ill", "reallife_hc_you_ill_treated", "reallife_hc_you_injury", "reallife_hc_you_injury_treated",
+                "reallife_hc_you_serious", "reallife_hc_you_well", "reallife_ui_prompt_back", "reallife_ui_prompt_move",
+                "reallife_ui_prompt_select"
+                // KEYS END
+            }).Switch(UiScreenSwitches.Ventures));
         }
     }
 }

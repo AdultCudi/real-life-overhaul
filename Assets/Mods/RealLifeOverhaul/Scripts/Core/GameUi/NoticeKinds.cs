@@ -47,7 +47,7 @@ namespace RealLifeOverhaul.GameUi
             // police and crime
             "crime_", "law_", "justice_", "police_", "pursuit_", "chase_", "streets_", "patrol_", "fine_", "records_", "911_",
             // health and the hospital
-            "health_", "doctor_", "pd_", "ragdolls_",
+            "health_", "doctor_", "hc_", "pd_", "ragdolls_",
             // money and bills
             "econ_", "bank_", "lender_", "mkt_", "lst_", "ven_", "vc_", "ob_", "util_", "net_", "advice_", "collect_",
             // property and rent

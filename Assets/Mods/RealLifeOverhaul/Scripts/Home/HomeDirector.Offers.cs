@@ -137,14 +137,15 @@ namespace RealLifeOverhaul
 
         private void Strip(bool atHome)
         {
-            bool show = Settings.HomeStrip && Settings.HomeNeeds && (atHome || HomeState.Hygiene < 35f || HomeState.Stress > 65f || HomeHealth.Ill);
+            string other = HomeBridges.StatusNote != null ? HomeBridges.StatusNote() : null;   // Health: an injury or a serious case, said before Home's own illness
+            bool show = Settings.HomeStrip && Settings.HomeNeeds && (atHome || HomeState.Hygiene < 35f || HomeState.Stress > 65f || HomeHealth.Ill || other != null);
             if (!show)
             {
                 HomeNeedsBar.Hide();
                 return;
             }
-            string note = null;
-            if (HomeHealth.Ill)
+            string note = other;
+            if (other == null && HomeHealth.Ill)
             {
                 int hoursLeft = Mathf.Max(0, Mathf.CeilToInt((HomeState.IllUntil - TimeHelper.NowInMinutes()) / 60f));
                 int code = (int)HomeState.Ill * 100000 + hoursLeft * 2 + (HomeState.IllTreated ? 1 : 0);
