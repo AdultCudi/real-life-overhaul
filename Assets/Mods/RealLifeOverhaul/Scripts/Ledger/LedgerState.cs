@@ -30,6 +30,13 @@ namespace RealLifeOverhaul.Ledger
         public bool Topped;              // it has been the city's most valuable company
     }
 
+    /// <summary>The company that led a sector of the market at the last edition (<see cref="LedgerLeads"/>).</summary>
+    public struct LedgerLead
+    {
+        public int Sector;               // the market's sector, as a number
+        public int Id;                   // the company's id on the market
+    }
+
     /// <summary>What the City Ledger keeps of a save (<see cref="LedgerStore"/>). Game-free.</summary>
     public sealed class LedgerState
     {
@@ -56,5 +63,10 @@ namespace RealLifeOverhaul.Ledger
         public bool MarksKept;
         public int TopId;                // the city's most valuable company at the last edition; 0 none
         public readonly List<LedgerMark> Marks = new List<LedgerMark>(LedgerStories.MarksMost);
+
+        // The sectors' leaders, kept the same way: false for a save without them (or with the stories off), whose first morning
+        // sets every sector where it stands without a story.
+        public bool LeadsKept;
+        public readonly List<LedgerLead> Leads = new List<LedgerLead>(LedgerLeads.SectorsMost);
     }
 }

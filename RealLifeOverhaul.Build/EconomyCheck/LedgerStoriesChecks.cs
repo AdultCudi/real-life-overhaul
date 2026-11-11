@@ -30,6 +30,7 @@ internal static partial class Program
         LedgerStoriesSources();
         LedgerStoriesTexts();
         Console.WriteLine("  the City Ledger's milestone and rival stories: " + (_run - before) + " checks, " + (_failed - failedBefore) + " failed, " + watch.ElapsedMilliseconds + " ms");
+        LedgerLeadsChecks();   // a sector's lead changing hands, and a rival tycoon's holding told as a player's company is (LedgerLeadsChecks.cs)
     }
 
     private static void LedgerStoriesKinds()
@@ -413,12 +414,13 @@ internal static partial class Program
                 keys.Add(k.Head);
             }
         }
-        Check(keys.Count == 6 + 2 * 13, "milestones' texts: every story kind has its text and its headline (" + keys.Count + " keys)");
+        Check(keys.Count == 6 + 2 * 19, "milestones' texts: every story kind has its text and its headline (" + keys.Count + " keys)");
         // Each text names what its piece carries, and nothing it does not.
         var carries = new Dictionary<string, string[]>
         {
             { "beaten", new[] { "rival", "holding", "buyer", "owner", "cost", "back", "days", "quip" } }, { "bought", new[] { "bidder", "name", "price" } },
-            { "mile", new[] { "name", "mark", "value" } }, { "top", new[] { "name", "value", "other", "other_value" } }
+            { "mile", new[] { "name", "mark", "value" } }, { "top", new[] { "name", "value", "other", "other_value" } },
+            { "lead", new[] { "name", "value", "other", "other_value", "sector" } }
         };
         for (int l = 0; l < 3; l++)
         {

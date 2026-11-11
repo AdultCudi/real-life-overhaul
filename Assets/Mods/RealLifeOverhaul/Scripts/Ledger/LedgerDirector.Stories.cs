@@ -4,10 +4,10 @@ using System.Collections.Generic;
 namespace RealLifeOverhaul.Ledger
 {
     /// <summary>
-    /// The director's part for the market's big moments (LedgerStories): a rival tycoon taken over, a company's milestones
-    /// and a new most valuable company, read when an edition is first printed and kept when it is written again; a guest
-    /// following the host's paper keeps its record in step and sends its own rival's story to the host. The cost: nothing
-    /// per frame; one pass over the listed companies a morning.
+    /// The director's part for the market's big moments (LedgerStories, LedgerLeads): a rival tycoon taken over, a company's
+    /// milestones, a new most valuable company and a sector's lead changing hands, read when an edition is first printed and
+    /// kept when it is written again; a guest following the host's paper keeps its record in step and sends its own rival's
+    /// story to the host. The cost: nothing per frame; two passes over the listed companies a morning.
     /// </summary>
     public sealed partial class LedgerDirector
     {
@@ -27,7 +27,7 @@ namespace RealLifeOverhaul.Ledger
             OpenedInto(e, since, day, fresh);
             if (!Settings.LedgerStories)
             {
-                if (_state.MarksKept)
+                if (_state.MarksKept || _state.LeadsKept)
                 {
                     LedgerStories.Forget(_state);   // switched on again, the market is taken as it stands then
                 }
@@ -39,6 +39,7 @@ namespace RealLifeOverhaul.Ledger
                 BeatenInto(e.Pieces, since, day);
                 if (CompaniesRead())
                 {
+                    LedgerLeads.Pass(_state, _companies, false, Large, LedgerBridges.SectorName, e.Pieces, ref _count);   // first: it asks the milestones' record who was on the market
                     LedgerStories.Marks(_state, _companies, false, Large, e.Pieces, ref _count);
                 }
             }
@@ -122,7 +123,7 @@ namespace RealLifeOverhaul.Ledger
         {
             if (!Settings.LedgerStories)
             {
-                if (_state.MarksKept)
+                if (_state.MarksKept || _state.LeadsKept)
                 {
                     LedgerStories.Forget(_state);
                 }
@@ -132,13 +133,15 @@ namespace RealLifeOverhaul.Ledger
             BeatenInto(into, day - 1, day);
             if (CompaniesRead())
             {
+                LedgerLeads.Pass(_state, _companies, true, Large, LedgerBridges.SectorName, into, ref _count);
                 LedgerStories.Marks(_state, _companies, true, Large, into, ref _count);
             }
         }
 
-        // The test's two stories, ready for the next print: a rival's takeover (the wiring's made-up facts) and a milestone.
-        // Returns the rival's piece; the milestone's, whose it is and its company's name come out.
-        private LedgerPiece TestStoriesReady(int day, out LedgerPiece mark, out bool own, out string name)
+        // The test's three stories, ready for the next print: a rival's takeover (the wiring's made-up facts), a milestone and a
+        // sector's lead changing hands. Returns the rival's piece; the milestone's, whose it is and its company's name come out,
+        // and the lead's with the company that takes it.
+        private LedgerPiece TestStoriesReady(int day, out LedgerPiece mark, out bool own, out string name, out LedgerPiece lead, out string leadName)
         {
             _testPieces.Clear();
             LedgerPiece rival = LedgerStories.Beaten(LedgerBridges.TestBeat != null ? LedgerBridges.TestBeat(day) : null, Large);
@@ -148,10 +151,17 @@ namespace RealLifeOverhaul.Ledger
             }
             own = false;
             name = null;
-            mark = CompaniesRead() ? LedgerStories.TestMark(_companies, Large, out own, out name) : null;
+            leadName = null;
+            bool market = CompaniesRead();
+            mark = market ? LedgerStories.TestMark(_companies, Large, out own, out name) : null;
             if (mark != null)
             {
                 _testPieces.Add(mark);
+            }
+            lead = market ? LedgerLeads.Test(_companies, Large, LedgerBridges.SectorName, out leadName) : null;
+            if (lead != null)
+            {
+                _testPieces.Add(lead);
             }
             return rival;
         }
@@ -164,12 +174,12 @@ namespace RealLifeOverhaul.Ledger
                 return;
             }
             int printed = LedgerStories.Count(e.Pieces);
-            int bought = found - _count.Beaten - _count.Milestones - _count.Top;
+            int bought = found - _count.Beaten - _count.Milestones - _count.Top - _count.Leads;
             Logger?.Info("City Ledger check (milestones and rivals): " + printed + " of " + found + " stories printed in the edition of day " + e.Day + " (read this morning: "
-                         + _count.Beaten + " rival(s) taken over, " + _count.Milestones + " milestone(s), " + _count.Top + " new most valuable; " + Math.Max(0, bought)
-                         + " kept, tested or a takeover by a listed company"
+                         + _count.Beaten + " rival(s) taken over, " + _count.Milestones + " milestone(s), " + _count.Top + " new most valuable, " + _count.Leads + " new sector leader(s); "
+                         + Math.Max(0, bought) + " kept, tested or a takeover by a listed company"
                          + (_count.Seeded > 0 ? "; " + _count.Seeded + " companies set where they stand without a story, the record being new" : string.Empty) + "; "
-                         + _state.Marks.Count + " companies in the record): "
+                         + _state.Marks.Count + " companies and " + _state.Leads.Count + " sector leaders in the record): "
                          + (printed == found ? "PASS"
                              : e.Pieces.Count >= LedgerCatalogue.PiecesMost ? (found - printed) + " of the lightest cut, the edition being full at " + LedgerCatalogue.PiecesMost + " pieces"
                              : "FAIL, " + (found - printed) + " lost with room left"));
