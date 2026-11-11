@@ -103,6 +103,10 @@ Read in the decompiled game and in its scene data (`evidence/uitools`, and a stu
 
   While the interface kit's HUD is up, the panel also stands above its bottom bar (as the bar is laid out, whatever its height), under its left column and clear of its key chips, and is drawn over the kit's HUD (its own canvas, one order over it) and under every window; the kit's notice cards, objectives, world prompt and activity strip keep clear of it.
 
+  The kit's item panel (what the player holds or drives, the Vehicle panel while driving) stands over the card in the left column, its left edge the column's and a grid step (8 px) above the card, so the middle of the screen and the key chips stay clear (`UiItemPanel.Place`).
+  With no card it stands at the bottom left where the card would, its foot over the key chips wherever they reach under it.
+  A panel taller than the room between the card and the objectives stands over the objectives' lower part (its canvas is kept at the card's order, over the HUD's: `ItemPanelKit.Lift`); where even the whole height over the card is too little (a short screen), it stands beside the card at the bottom, over the chips.
+
   When a long task list leaves less than 240 units for the map there, the panel stands at the bottom beside the column instead, lifted over the address labels or the item panel if it would reach them (a 4:3 screen).
   With no room in either place it is hidden and one line says so.
 

@@ -38,7 +38,7 @@ namespace RealLifeOverhaul.Ui
         private static CanvasGroup _face;    // the kit's own fade, following the game's
         private static UiHost _host;
         private static ItemPanelKeeper _keeper;
-        private static int _order;
+        private static int _order, _want;   // the canvas's order as made, and as Lift wants it now
         private static float _nextLook;
         private static bool _shown, _classic, _gaveUp;
         private static string _state = "not looked at yet";
@@ -87,6 +87,7 @@ namespace RealLifeOverhaul.Ui
             _root = rect.gameObject;
             _canvas = _root.GetComponent<Canvas>();
             _order = _canvas.sortingOrder;
+            _want = _order;
             _face = _root.AddComponent<CanvasGroup>();
             _host = _root.AddComponent<UiHost>();
             _host.Bind(new ItemPanelScreen(ui), UiGame.Instance, UiGame.Instance, UiDirector.Dark, UiDirector.Motion, UiFrame.MastheadHeight, UiFrame.BandHeight,
@@ -134,6 +135,27 @@ namespace RealLifeOverhaul.Ui
             if (UiDirector.Logger != null && why != null && Meta.Dev.Verbose)
             {
                 UiDirector.Logger.Info("UI: the item panel is the game's own again (" + why + ").");
+            }
+        }
+
+        /// <summary>
+        /// The panel's canvas over the kit HUD's, at the minimap card's order (UiHostRules.MinimapOrder): it stands in the
+        /// left column over the card, and a panel taller than the room under the objectives stands over their lower part,
+        /// which it must be drawn over (the HUD lifts its own order over the phone's, which can leave the panel under it). The
+        /// card and the panel never meet, the game's dialogs and the kit's windows stay over both. With the HUD not up, the
+        /// order it was made at. Four times a second with the panel's readings, never a frame; writes only a change.
+        /// </summary>
+        internal static void Lift()
+        {
+            if (_canvas == null)
+            {
+                return;
+            }
+            HudHost hud = HudHost.Instance;
+            _want = hud != null && hud.isActiveAndEnabled ? Math.Max(_order, UiHostRules.MinimapOrder(hud.CanvasOrder)) : _order;
+            if (_shown && _canvas.sortingOrder != _want)
+            {
+                _canvas.sortingOrder = _want;
             }
         }
 
@@ -194,7 +216,7 @@ namespace RealLifeOverhaul.Ui
                 if (shows)
                 {
                     _canvas.overrideSorting = true;
-                    _canvas.sortingOrder = _order;
+                    _canvas.sortingOrder = _want;
                     _root.SetActive(true);
                     _root.transform.SetAsLastSibling();
                     _host.Show();
@@ -681,10 +703,10 @@ namespace RealLifeOverhaul.Ui
             _actions[last] = a;
         }
 
-        // The mod's minimap card (Navigation) where it stands, in px of the layout, so the panel keeps clear of it wherever it
+        // The mod's minimap card (Navigation) where it stands, in px of the layout, so the panel stands over it wherever it
         // is and whichever HUD shows; nothing while it is hidden. With it the HUD's key chips over the bar, which the panel's
-        // foot keeps over (they stand on a canvas of their own and know nothing of the panel). Read with the panel, four
-        // times a second; whole px.
+        // foot keeps over (they stand on a canvas of their own and know nothing of the panel), and the panel's canvas order
+        // over the HUD's. Read with the panel, four times a second; whole px.
         private void Minimap()
         {
             UiMinimapBox.Read(_frameW, _frameH, out _m.AvoidX, out _m.AvoidY, out _m.AvoidW, out _m.AvoidH);
@@ -693,6 +715,7 @@ namespace RealLifeOverhaul.Ui
                 _sb.Append(_m.AvoidX).Append(',').Append(_m.AvoidY).Append(',').Append(_m.AvoidW).Append(',').Append(_m.AvoidH).Append('|');
             }
             HudHost.KeysBox(_frameW, _frameH, out _m.KeysX, out _m.KeysY, out _m.KeysW, out _m.KeysH);
+            ItemPanelKit.Lift();
             if (_m.KeysW > 0f)
             {
                 _sb.Append(_m.KeysX).Append(',').Append(_m.KeysY).Append(',').Append(_m.KeysW).Append(',').Append(_m.KeysH).Append('|');
