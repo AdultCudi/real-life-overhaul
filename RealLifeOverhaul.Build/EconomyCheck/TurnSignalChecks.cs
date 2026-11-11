@@ -402,7 +402,7 @@ internal static partial class Program
         string rules = ModSource(@"Driving\TurnSignalRules.cs");
         Check(settings.Contains("AutoSignalsId = \"auto_signals\"") && settings.Contains("public static bool AutoSignals = true;") && settings.Contains("AutoSignals = Bool(modId, AutoSignalsId, AutoSignals);")
               && mod.Contains("AddToggle(Settings.AutoSignalsId, \"reallife_car_auto_signals\", Settings.AutoSignals,") && mod.Contains("v => Settings.AutoSignals = v)")
-              && tree.Contains("\"speedometer\", \"auto_signals\", \"radio_hud\"") && list.Contains("Settings.SpeedometerId, Settings.AutoSignalsId)"),
+              && tree.Contains("\"speedometer\", \"auto_signals\", \"radio_hud\"") && list.Contains("Settings.SpeedometerId, Settings.AutoSignalsId"),
             "turn signals: the option is saved, on by default, on the options page in the wheel's section and among the driving feature's");
         Check(mod.Contains("Guard.Add<TurnSignals>(_root)") && mod.Contains("TurnSignals.Logger = context.Logger"), "turn signals: the component is added at the city's start and given the mod's log");
 
