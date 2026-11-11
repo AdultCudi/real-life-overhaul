@@ -315,6 +315,20 @@ namespace RealLifeOverhaul
         }
 
         /// <summary>
+        /// Gives somebody of the cast the age they have on game <paramref name="day"/>: <paramref name="years"/>, true that day, so
+        /// <see cref="AgeOn"/> adds only the birthdays after it. For a seat that takes the age of a face it is met by (a stranger in
+        /// the street, a city person on Flare, a roommate who moves in): setting <see cref="SocialPerson.Age"/> alone leaves the day it
+        /// is true on at the day the seat was dealt, and every birthday since is added to an age that is already today's (a woman of
+        /// 30 on Flare, a seat dealt ten years before, shows as 40 and is out of the player's window). Every place that replaces a
+        /// person's age does it here. The day is never before the first.
+        /// </summary>
+        public static void SetAge(SocialPerson person, int years, int day)
+        {
+            person.Age = years;
+            person.AgeDay = Math.Max(1, day);
+        }
+
+        /// <summary>
         /// Whether a report made indoors names the player's own place: an interior's coordinates say nothing of the city, so it
         /// is moved to the building's door. Any other place (a parked car's break-in, a crash down the street) is in the city.
         /// </summary>

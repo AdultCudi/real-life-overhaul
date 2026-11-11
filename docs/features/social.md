@@ -152,10 +152,15 @@ Where it is asked:
 - **Flare.**
   `FlarePerson.Compatible` is the rule's answer (`FlareLinks.People`): a post that tags somebody the player could fall for makes a partner jealous, as before.
 - **New people.**
-  `SocialCatalogue.MakeCast`, `MakeNew` and `MakeRolled` take the player's age and wish (the load of a new cast, `SocialDirector.Newcomer`, losing touch with somebody), and whoever is open to a romance is made to fit (`FitToPlayer`): of the sex the player asked for when the caller left the sex open, and of an age from the gap under the player's to the gap over it.
+  `SocialCatalogue.MakeCast`, `MakeNew` and `MakeRolled` take the player's age and wish (the load of a new cast, `SocialDirector.Newcomer`, losing touch with somebody), and whoever is open to a romance is made to fit (`FitToPlayer`): of the sex the player asked for when the caller left the sex open, and of an age one year inside the gap, from 7 under the player's to 7 over it (`RomanceRules.AgeNear`, `AgeMargin`; never under 18).
+  Never on the gap's edge: the person's birthday and the player's are different days, so somebody made exactly 8 years away would be 9 years away from their birthday to the player's, and out of the window for part of every year, with Ask them out and the People line going and coming back.
+  Somebody rolled on the edge is made again like somebody beyond it (`RomanceRules.AgeSteady`), so nobody the mod makes for the player ever leaves the window at a birthday (EconomyCheck `--romance` runs three years of days for every pair of birthdays).
   The age is rolled from the person's own seed on a stream apart, so no other roll of the cast moves: a cast dealt without the player's age and wish is the cast every version dealt, and the first eight still hold at least two people open to a romance.
   Everybody not open is a man or a woman as the roll fell, whatever the wish, so the world is not all one sex.
   When the caller asks for a man or a woman (a figure in the street, a face on Flare), that is who they are.
+- **A face met.**
+  A seat of the cast that takes the age of a face (a stranger who swaps numbers in the street, a city person who says yes on Flare, a roommate who moves in) takes it as of the day it is taken, through `SocialRules.SetAge`: `SocialPerson.Age` is years on `AgeDay`, and an age set alone would leave `AgeDay` on the day the seat was dealt, with every birthday since added to an age that is already today's (a woman of 30 on Flare shown as 40 on People, out of the window of a player of 28).
+  `StreetLinks.MeetInStreet`, `FlareInviteLinks.MeetOnline` and `RoommateLinks.MakeFriend` all call it, and EconomyCheck reads the wiring for any other place that sets a person's age alone.
 - **Saves.**
   Nothing in a record is changed or saved for it: people already in the cast are judged as they are today, so one who does not fit the player is a friend only (an heir who takes over, an older player and a changed wish work the same way).
   Going Public: nothing here is shared or sent; the wish, the player's age and the cast are this machine's.

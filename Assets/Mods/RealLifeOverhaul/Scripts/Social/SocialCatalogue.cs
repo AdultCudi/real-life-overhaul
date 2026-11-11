@@ -335,9 +335,11 @@ namespace RealLifeOverhaul
 
         /// <summary>
         /// Makes somebody open to a romance fit the player they will be met by: of the sex the player is interested in (only when
-        /// <paramref name="sexOpen"/>: nobody has asked for one in particular), and near the player's age. The age is rolled from the
-        /// person's own seed and a stream of its own, so no other roll of the cast moves. True if their sex or age changed. With the
-        /// player's age not known (0) and anyone wanted nothing changes. Allocates one generator; made once a person.
+        /// <paramref name="sexOpen"/>: nobody has asked for one in particular), and of an age that stays near the player's through
+        /// every birthday (<see cref="RomanceRules.AgeSteady"/>: one on the edge of the gap is made again like one beyond it, since
+        /// a birthday on either side would take them out of it for part of every year). The age is rolled from the person's own seed
+        /// and a stream of its own, so no other roll of the cast moves. True if their sex or age changed. With the player's age not
+        /// known (0) and anyone wanted nothing changes. Allocates one generator; made once a person.
         /// </summary>
         internal static bool FitToPlayer(SocialPerson p, bool sexOpen, int playerAge, int interest)
         {
@@ -351,7 +353,7 @@ namespace RealLifeOverhaul
                 p.Female = interest == RomanceRules.Women;
                 changed = true;
             }
-            if (playerAge > 0 && !RomanceRules.AgeFits(p.Age, playerAge))
+            if (playerAge > 0 && !RomanceRules.AgeSteady(p.Age, playerAge))
             {
                 p.Age = RomanceRules.AgeNear(playerAge, new Random(SocialRules.SlotSeed(p.Seed, FitSalt)).Next());
                 changed = true;

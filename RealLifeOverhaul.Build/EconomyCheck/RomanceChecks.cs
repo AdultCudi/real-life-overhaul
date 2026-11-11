@@ -22,6 +22,8 @@ internal static partial class Program
         RomanceCastFits();
         RomanceCastMix();
         RomanceVerdict();
+        RomanceSteady();
+        RomanceMeetings();
         RomanceStreet();
         RomanceCouples();
         RomanceSources();
@@ -63,25 +65,46 @@ internal static partial class Program
             "romance: when the game does not say the player's age (0) nobody is ruled out for their age");
         Check(gap == LifeRules.AgeGapMost && gap > 0, "romance: the player's age gap is the gap the city's own couples keep (" + gap + " years, Population/LifeRules.AgeGapMost)");
 
-        bool near = true, covered = true, same = true;
+        int margin = RomanceRules.AgeMargin;
+        bool near = true, steady = true, inside = true, covered = true, same = true;
         for (int player = 18; player <= 93; player++)
         {
             var seen = new HashSet<int>();
+            int lowest = Math.Max(RomanceRules.AgeLeast, player - gap + margin), highest = Math.Min(RomanceRules.AgeMost, player + gap - margin);
+            bool room = highest >= lowest;   // an age is left inside the gap (a player past 92 is older than anybody kept: the nearest age there is)
             for (int roll = 0; roll < 200; roll++)
             {
                 int age = RomanceRules.AgeNear(player, roll);
                 near &= RomanceRules.AgeFits(age, player) && age >= RomanceRules.AgeLeast && age <= RomanceRules.AgeMost;
+                steady &= !room || RomanceRules.AgeSteady(age, player);
+                inside &= !room || Math.Abs(age - player) < gap;   // never on the gap's edge: a birthday on either side would take them out of it
                 same &= age == RomanceRules.AgeNear(player, roll);
                 seen.Add(age);
             }
             foreach (int roll in new[] { -1, int.MinValue, int.MaxValue, 123456789 })
             {
-                near &= RomanceRules.AgeFits(RomanceRules.AgeNear(player, roll), player);
+                int age = RomanceRules.AgeNear(player, roll);
+                near &= RomanceRules.AgeFits(age, player);
+                steady &= !room || RomanceRules.AgeSteady(age, player);
+                inside &= !room || Math.Abs(age - player) < gap;
             }
-            covered &= seen.Count == Math.Min(RomanceRules.AgeMost, player + gap) - Math.Max(RomanceRules.AgeLeast, player - gap) + 1;
+            covered &= seen.Count == (room ? highest - lowest + 1 : 1);
         }
         Check(near && same, "romance: an age made to fit a player always fits, whatever the roll (even a negative one), between 18 and " + RomanceRules.AgeMost + ", the same every time");
-        Check(covered, "romance: the ages made to fit a player cover the whole window, not one age (for every player of 18 to 93)");
+        Check(inside && steady && margin >= 1,
+            "romance: an age made to fit a player is never on the edge of the gap, " + (gap - margin) + " years from the player's at most (a birthday on either side takes somebody on the edge out of the window)");
+        Check(covered, "romance: the ages made to fit a player cover the whole window inside the gap, not one age (for every player of 18 to 93)");
+        bool table = true;
+        foreach (int player in new[] { 18, 19, 25, 26, 40, 70, 92 })
+        {
+            for (int age = 0; age <= 100; age++)
+            {
+                table &= RomanceRules.AgeSteady(age, player) == (age >= RomanceRules.AgeLeast && Math.Abs(age - player) <= gap - margin);
+            }
+        }
+        Check(table && RomanceRules.AgeSteady(30, 0) && RomanceRules.AgeSteady(90, -4) && RomanceRules.AgeSteady(18 + gap - margin, 18) && !RomanceRules.AgeSteady(18 + gap, 18)
+              && !RomanceRules.AgeSteady(17, 18),
+            "romance: an age stays near a player's through every birthday when it is an adult no more than " + (gap - margin) + " years from it, and the player's age not known rules nobody out");
         Check(RomanceRules.AgeNear(120, 5) == RomanceRules.AgeMost && RomanceRules.AgeNear(3, 5) >= RomanceRules.AgeLeast,
             "romance: a player older than the cast keeps anybody gets the nearest age there is, and nobody is made younger than eighteen");
     }
@@ -95,7 +118,7 @@ internal static partial class Program
         var plain = new SocialPerson[SocialRules.BaseCast];
         var cast = new SocialPerson[SocialRules.BaseCast];
         var again = new SocialPerson[SocialRules.BaseCast];
-        bool fit = true, two = true, named = true, rest = true, adultsOnly = true;
+        bool fit = true, two = true, named = true, rest = true, adultsOnly = true, inner = true;
         string fault = string.Empty;
         for (int seed = 1; seed <= 400; seed++)
         {
@@ -115,6 +138,7 @@ internal static partial class Program
                         {
                             bool ok = RomanceRules.Fits(interest, p.Female, p.Age, player);
                             fit &= ok;
+                            inner &= RomanceRules.AgeSteady(p.Age, player);
                             adultsOnly &= p.Age >= RomanceRules.AgeLeast;
                             if (!ok && fault.Length == 0)
                             {
@@ -133,8 +157,8 @@ internal static partial class Program
                 }
             }
         }
-        Check(fit && adultsOnly, "romance: everybody of a new cast who is open to a romance fits the player (their sex for what the player is interested in, their age near the player's, an adult): "
-                                 + "400 seeds, five ages, three wishes" + (fault.Length > 0 ? "; " + fault : string.Empty));
+        Check(fit && adultsOnly && inner, "romance: everybody of a new cast who is open to a romance fits the player (their sex for what the player is interested in, their age near the player's, "
+                                          + "inside the gap and not on its edge, an adult): 400 seeds, five ages, three wishes" + (fault.Length > 0 ? "; " + fault : string.Empty));
         Check(two, "romance: at least two of a new cast's first eight are still open to a romance, whatever the player's age and wish");
         Check(named, "romance: whoever is made to fit keeps a first name of the sex they are");
         Check(rest, "romance: nothing else of the cast moves: the same seed deals the same people, and whoever is not open is the same person with or without the player's age and wish");
@@ -152,7 +176,7 @@ internal static partial class Program
                     foreach (int interest in interests)
                     {
                         SocialPerson p = SocialCatalogue.MakeNew(index, SocialOrigin.Street, -1, castSeed, 40, RomanceYear, RomanceDistricts, nobody, 0, player, interest);
-                        bool ok = !p.Compatible || RomanceRules.Fits(interest, p.Female, p.Age, player);
+                        bool ok = !p.Compatible || (RomanceRules.Fits(interest, p.Female, p.Age, player) && RomanceRules.AgeSteady(p.Age, player));
                         newFit &= ok;
                         if (!ok && faultNew.Length == 0)
                         {
@@ -295,6 +319,197 @@ internal static partial class Program
         var partner = new SocialPerson { Met = true, Compatible = true, Female = true, Age = 70, AgeDay = day, Birthday = 10, Stage = SocialStage.Partner, Affection = 90f, Trust = 90f };
         Check(!SocialRules.Romantic(partner, RomanceRules.Men, 25, day, year) && !SocialRules.BrokenUp(partner) && SocialRules.Earned(partner, day) == SocialStage.Partner,
             "romance: somebody the player is already with is not parted from them because their sex or age would no longer fit: only affection and trust end it");
+    }
+
+    // ---------------------------------------------------------------- nobody made for the player leaves the window at a birthday
+
+    // Whether somebody (their age true on the day they were made, their birthday) fits a player of that age on that day (the player's
+    // own birthday) on every day of the next three years: their birthday and the player's are different days, so the two are a year
+    // further apart, or nearer, for the weeks between them.
+    private static bool RomanceKeepsFitting(SocialPerson p, int player, int playerBirthday, int year)
+    {
+        for (int day = p.AgeDay; day <= p.AgeDay + year * 3; day++)
+        {
+            if (!RomanceRules.AgeFits(SocialRules.AgeOn(p.Age, p.AgeDay, p.Birthday, day, year), SocialRules.AgeOn(player, p.AgeDay, playerBirthday, day, year)))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    private static void RomanceSteady()
+    {
+        const int day = 600, year = 60, gap = RomanceRules.AgeGap;
+        // The report: somebody exactly the gap older than the player is out of the window from their own birthday to the player's, and
+        // back in, every year. Ask them out and the People line went and came back with it, for roughly half of the year.
+        var edge = new SocialPerson { Compatible = true, Female = true, Age = 28 + gap, AgeDay = day, Birthday = 3 };   // turns 37 on day 603, a year more every 60 days
+        bool Near(int d) => SocialRules.Romantic(edge, RomanceRules.Anyone, SocialRules.AgeOn(28, day, 40, d, year), d, year);   // a player of 28 who turns 29 on day 640
+        Check(Near(day + 2) && !Near(day + 3) && !Near(day + 39) && Near(day + 40) && Near(day + 62) && !Near(day + 63) && Near(day + 100),
+            "romance: somebody exactly " + gap + " years from the player leaves the window at their own birthday and is back at the player's, each year (why nobody is made on the edge)");
+
+        // Whoever the draw gives keeps fitting for three years, whatever the two birthdays are.
+        bool drawn = true, cast = true, fresh = true;
+        string fault = string.Empty;
+        foreach (int player in new[] { 18, 19, 24, 25, 26, 27, 33, 52, 70, 85 })
+        {
+            for (int roll = 0; roll <= 2 * gap; roll++)
+            {
+                int age = RomanceRules.AgeNear(player, roll);
+                for (int birthday = 1; birthday <= RomanceYear; birthday++)
+                {
+                    var p = new SocialPerson { Compatible = true, Age = age, AgeDay = 1, Birthday = birthday };
+                    for (int mine = 1; mine <= RomanceYear; mine += 3)
+                    {
+                        bool ok = RomanceKeepsFitting(p, player, mine, RomanceYear);
+                        drawn &= ok;
+                        if (!ok && fault.Length == 0)
+                        {
+                            fault = "a player of " + player + " (birthday " + mine + "), somebody of " + age + " (birthday " + birthday + ")";
+                        }
+                    }
+                }
+            }
+        }
+        Check(drawn, "romance: somebody of an age made to fit a player is still within the gap on every day of three years, whatever the two birthdays" + (fault.Length > 0 ? "; " + fault : string.Empty));
+
+        // The same of whole casts and of the people met later: nobody open to a romance who is made for the player leaves it at a birthday.
+        var people = new SocialPerson[SocialRules.BaseCast];
+        var nobody = new SocialPerson[1];
+        string faultCast = string.Empty;
+        foreach (int player in new[] { 18, 24, 31, 45, 63 })
+        {
+            for (int seed = 1; seed <= 120; seed++)
+            {
+                SocialCatalogue.MakeCast(people, seed, 1, RomanceYear, RomanceDistricts, player, RomanceRules.Anyone);
+                for (int i = 0; i < people.Length; i++)
+                {
+                    for (int mine = 1; people[i].Compatible && mine <= RomanceYear; mine += 9)
+                    {
+                        bool ok = RomanceKeepsFitting(people[i], player, mine, RomanceYear);
+                        cast &= ok;
+                        if (!ok && faultCast.Length == 0)
+                        {
+                            faultCast = "seed " + seed + ", player " + player + ", " + people[i].Name + " of " + people[i].Age;
+                        }
+                    }
+                }
+            }
+            for (int index = 8; index < 48; index++)
+            {
+                SocialPerson p = SocialCatalogue.MakeNew(index, SocialOrigin.Street, -1, 5, 40, RomanceYear, RomanceDistricts, nobody, 0, player, RomanceRules.Anyone);
+                for (int mine = 1; p.Compatible && mine <= RomanceYear; mine += 9)
+                {
+                    fresh &= RomanceKeepsFitting(p, player, mine, RomanceYear);
+                }
+            }
+        }
+        Check(cast && fresh, "romance: nobody of a new cast, or met later, who is open to a romance leaves the player's window at a birthday of theirs or the player's" + (faultCast.Length > 0 ? "; " + faultCast : string.Empty));
+
+        // Somebody rolled on the edge is made again like somebody beyond it; one a year inside is left as rolled.
+        var onEdge = new SocialPerson { Compatible = true, Female = true, Age = 30 + gap, Seed = 41 };
+        bool redrawn = SocialCatalogue.FitToPlayer(onEdge, false, 30, RomanceRules.Anyone) && RomanceRules.AgeSteady(onEdge.Age, 30) && onEdge.Age != 30 + gap;
+        var inner = new SocialPerson { Compatible = true, Female = true, Age = 30 + gap - RomanceRules.AgeMargin, Seed = 41 };
+        bool left = !SocialCatalogue.FitToPlayer(inner, false, 30, RomanceRules.Anyone) && inner.Age == 30 + gap - RomanceRules.AgeMargin;
+        var below = new SocialPerson { Compatible = true, Female = true, Age = 30 - gap, Seed = 41 };
+        redrawn &= SocialCatalogue.FitToPlayer(below, false, 30, RomanceRules.Anyone) && RomanceRules.AgeSteady(below.Age, 30);
+        Check(redrawn && left, "romance: a person rolled exactly " + gap + " years from the player, over or under, is made again inside the gap, and one a year inside it is left as rolled");
+    }
+
+    // ---------------------------------------------------------------- a face that brings its age
+
+    // Somebody met in the street, on Flare or as a roommate is a seat of the cast that takes the age of a face. The seat was dealt long
+    // before: its AgeDay is the day of the cast, so an age set alone has every birthday since added to it (SocialRules.SetAge keeps the
+    // day with the age). A woman of 30 on Flare showed as 40 on the People page, out of the window of a player of 28, and a face of 18 as 28.
+    private static void RomanceMeetings()
+    {
+        const int year = 60, dealt = 1, meet = 601;   // a new save; ten years later the player, 18 then, is 28
+        var cast = new SocialPerson[SocialRules.BaseCast];
+        SocialCatalogue.MakeCast(cast, 11, dealt, year, RomanceDistricts, 18, RomanceRules.Anyone);
+        SocialPerson seat = null;
+        for (int i = (int)SocialOrigin.Gym; i < cast.Length && seat == null; i++)
+        {
+            seat = cast[i] != null && cast[i].Compatible && !cast[i].Met ? cast[i] : null;
+        }
+        SocialPerson Seat(int birthday) => new SocialPerson { Compatible = true, Female = true, Age = seat.Age, AgeDay = seat.AgeDay, Birthday = birthday, Origin = seat.Origin };
+        bool made = seat != null && seat.AgeDay == dealt;
+        bool faceOf30 = made, faceOf18 = made, wasStale = made, grows = made;
+        for (int birthday = 1; made && birthday <= year; birthday++)
+        {
+            // What the wiring does: the face's age, true the day it is taken.
+            SocialPerson flare = Seat(birthday), young = Seat(birthday);
+            SocialRules.SetAge(flare, 30, meet);
+            SocialRules.SetAge(young, 18, meet);
+            faceOf30 &= SocialRules.AgeOn(flare.Age, flare.AgeDay, flare.Birthday, meet, year) == 30 && SocialRules.Romantic(flare, RomanceRules.Anyone, 28, meet, year);
+            faceOf18 &= SocialRules.AgeOn(young.Age, young.AgeDay, young.Birthday, meet, year) == 18 && !SocialRules.Romantic(young, RomanceRules.Anyone, 28, meet, year);
+            // ...and what it did: the age alone, ten years of birthdays more on it.
+            SocialPerson stale = Seat(birthday), staleYoung = Seat(birthday);
+            stale.Age = 30;
+            staleYoung.Age = 18;
+            wasStale &= SocialRules.AgeOn(stale.Age, stale.AgeDay, stale.Birthday, meet, year) == 40 && !SocialRules.Romantic(stale, RomanceRules.Anyone, 28, meet, year)
+                        && SocialRules.AgeOn(staleYoung.Age, staleYoung.AgeDay, staleYoung.Birthday, meet, year) == 28 && SocialRules.Romantic(staleYoung, RomanceRules.Anyone, 28, meet, year);
+            // From that day the age goes up by the birthdays after it, and by no others.
+            int birthdays = 0;
+            for (int d = meet; d <= meet + year * 2; d++)
+            {
+                birthdays += d > meet && IsBirthday(birthday, d, year) ? 1 : 0;
+                grows &= SocialRules.AgeOn(flare.Age, flare.AgeDay, flare.Birthday, d, year) == 30 + birthdays;
+            }
+        }
+        Check(faceOf30, "romance, a face met: a woman of 30 met on Flare ten years into a save is 30 on the People page that day and a woman a player of 28 can ask out, whatever her seat's birthday (SetAge)");
+        Check(faceOf18, "romance, a face met: a face of 18 is 18 that day, not 28, and so not somebody a player of 28 can ask out");
+        Check(wasStale, "romance, a face met: the age set alone, as the Flare and roommate paths did, showed 40 for the 30 and 28 for the 18 (the sequence the fix is for)");
+        Check(grows, "romance, a face met: from the day it is taken a face's age goes up by the birthdays after it and by no others");
+        var early = new SocialPerson();
+        SocialRules.SetAge(early, 33, 0);
+        var before = new SocialPerson();
+        SocialRules.SetAge(before, 33, -5);
+        var later = new SocialPerson();
+        SocialRules.SetAge(later, 33, 1500);
+        Check(early.Age == 33 && early.AgeDay == 1 && before.AgeDay == 1 && later.Age == 33 && later.AgeDay == 1500, "romance, a face met: the day an age is true on is the day it is taken, never before the first");
+
+        // The wiring: every place that gives a seat the age of a face goes through it.
+        string flareLinks = ModSource(@"Wiring\FlareInviteLinks.cs"), roomLinks = ModSource(@"Wiring\RoommateLinks.cs"), streetLinks = ModSource(@"Wiring\StreetLinks.cs");
+        string online = RomanceLinkMember(flareLinks, "private static void MeetOnline("), friend = RomanceLinkMember(roomLinks, "private static int MakeFriend(");
+        string street = RomanceLinkMember(streetLinks, "private static void MeetInStreet(");
+        Check(online.Contains("SocialRules.SetAge(p, Mathf.Clamp(b.Age, 18, 85), SocialLife.Day);") && !online.Contains("p.Age ="),
+            "romance, a face met: somebody met on Flare takes the age Flare shows as of today (FlareInviteLinks.MeetOnline)");
+        Check(friend.Contains("SocialRules.SetAge(p, m.Age, SocialLife.Day);") && !friend.Contains("p.Age ="),
+            "romance, a face met: a roommate who moves in takes their age as of today (RoommateLinks.MakeFriend)");
+        Check(street.Contains("SocialRules.SetAge(p, Mathf.Clamp(m.Age, 18, 85), SocialLife.Day);") && !street.Contains("p.Age ="),
+            "romance, a face met: somebody met in the street takes the age they had there as of today (StreetLinks.MeetInStreet)");
+        var stray = new List<string>();
+        string wiring = System.IO.Path.GetFullPath(System.IO.Path.Combine(LocalesFolder(), "..", "Scripts", "Wiring"));
+        if (System.IO.Directory.Exists(wiring))
+        {
+            foreach (string file in System.IO.Directory.GetFiles(wiring, "*.cs", System.IO.SearchOption.AllDirectories))
+            {
+                if (System.Text.RegularExpressions.Regex.IsMatch(System.IO.File.ReadAllText(file), @"\bp\.Age\s*=[^=]"))
+                {
+                    stray.Add(System.IO.Path.GetFileName(file));
+                }
+            }
+        }
+        string model = ModSource(@"Social\SocialRules.cs");
+        Check(stray.Count == 0 && model.Contains("person.Age = years;") && model.Contains("person.AgeDay = Math.Max(1, day);"),
+            "romance, a face met: no place in the wiring sets a person's age on its own, without the day it is true on (" + string.Join(", ", stray) + ")");
+    }
+
+    // A member of a class nested in Wiring (twelve spaces in) from its signature to the next member there; empty if the signature is not there.
+    private static string RomanceLinkMember(string code, string signature)
+    {
+        int at = code.IndexOf(signature, StringComparison.Ordinal);
+        if (at < 0)
+        {
+            return string.Empty;
+        }
+        int end = code.Length;
+        foreach (string next in new[] { "\n            public ", "\n            private ", "\n            internal ", "\n            // ", "\n            /// " })
+        {
+            int found = code.IndexOf(next, at + signature.Length, StringComparison.Ordinal);
+            end = found >= 0 && found < end ? found : end;
+        }
+        return code.Substring(at, end - at);
     }
 
     // ---------------------------------------------------------------- the street
@@ -522,5 +737,49 @@ internal static partial class Program
               && AnyChangesRow(en, " The new option Who you are interested in, under Friends and social life, decides whether the people who can fall for you,")
               && !AnyChangesRow(en, "Fixed: The new option"),
             "romance: What's new says both fixes (each with its mark) and the new option (with none), in some row");
+
+        // In every language the Guide's bullet on who Ask them out is for names the option, the button and the contact by that language's
+        // own texts (a translation that wrote the English label, or another name for the contact, sends the player to nothing).
+        var wrong = new List<string>();
+        string pt = string.Empty;
+        foreach (string code in ModLanguages.All)
+        {
+            Dictionary<string, string> own = LoadWords(System.IO.Path.Combine(LocalesFolder(), code + ".json"));
+            if (own == null)
+            {
+                if (Array.IndexOf(ModLanguages.All, code) < ModLanguages.Required)
+                {
+                    wrong.Add(code + " (not read)");
+                }
+                continue;   // a language without a file is read in English
+            }
+            var shown = new Dictionary<string, string>(en, StringComparer.Ordinal);   // a key a later language lacks reads in English
+            foreach (KeyValuePair<string, string> row in own)
+            {
+                shown[row.Key] = row.Value;
+            }
+            string bullet = string.Empty;
+            foreach (string part in shown["reallife_guide_social"].Split('\n'))
+            {
+                bullet = part.Contains("{social_age_gap}") ? part : bullet;
+            }
+            if (!(shown["reallife_family_interest"].Length > 0 && bullet.Contains(shown["reallife_family_interest"])
+                  && bullet.Contains("<b>" + shown["reallife_social_btn_askout"] + "</b>") && bullet.Contains("<b>" + shown["reallife-people"] + "</b>")))
+            {
+                wrong.Add(code);
+            }
+            pt = code == "pt" ? shown["reallife_social_people_romance"] : pt;
+        }
+        Check(wrong.Count == 0, "romance: the Guide's bullet on who Ask them out is for names the option, the button and the People contact as each of the eleven languages writes them (not so in: " + string.Join(", ", wrong) + ")");
+
+        // The line is on the page of every person the player could fall for, men and women alike: no language words it for one sex.
+        Check(pt.Length > 0 && !System.Text.RegularExpressions.Regex.IsMatch(pt, @"\b(Elas|elas|amiga|amigas)\b"),
+            "romance: Portuguese says it of a man as much as of a woman (the line was 'Elas poderiam ser mais que amigas.', for women alone) (" + pt + ")");
+
+        // The Guide's People page is read by other features' checks too: what a call back, more people and Flare's crowd keep on it, in
+        // every language. The quick check does not run those groups, so a page mended here is held to them in this run.
+        CallBackTexts();
+        MoreTexts();
+        CrowdTexts();
     }
 }

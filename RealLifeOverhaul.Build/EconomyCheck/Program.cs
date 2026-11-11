@@ -911,7 +911,7 @@ internal static partial class Program
         }
         if (args.Length == 1 && args[0] == "--romance")
         {
-            Romance();   // (who the player can fall for: their sex and age, the street's flirt, the city's couples, alone: RomanceChecks.cs)
+            Romance();   // (who the player can fall for: their sex and age, nobody made on the edge of the gap, the age a face brings, the street's flirt, the city's couples, the People page in every language and the checks of other features that read it, alone: RomanceChecks.cs)
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
@@ -1394,7 +1394,7 @@ internal static partial class Program
         SocialSteps();  // a step asked too early says how many days to wait and stays; the age a stranger is told matches the face (SocialStepChecks.cs)
         PeopleAge();    // the People page: each person's age, a year more at each birthday, in every language; the Guide names People as a contact (PeopleAgeChecks.cs)
         MorePeople();   // more people to meet: the first eight kept, every place bringing somebody new up to 400, the later people's own record, the circle (MorePeopleChecks.cs)
-        Romance();      // who the player can fall for: their sex and age against the player's, the cast and the street made and judged by one rule, the city's couples, the option (RomanceChecks.cs)
+        Romance();      // who the player can fall for: their sex and age against the player's, the cast and the street made and judged by one rule, nobody made on the edge of the gap, the age a face brings, the city's couples, the option, the People page's texts (RomanceChecks.cs)
         LoseTouch();    // losing touch: who can go and why not, the slot given to somebody new, a full cast making room, Flare letting go (LoseTouchChecks.cs)
         OnePerson();    // one face for one person: Alex and Mom fixed, a roommate's copy following the record, an old save mended once, every scene reading it (OnePersonChecks.cs)
         CinemaFixes();  // a film with a friend: rested as in the game's own cinema seat, given back on every way out (CinemaFixChecks.cs)
