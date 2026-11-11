@@ -434,7 +434,7 @@ internal static partial class UiSamples
             f.NextLevel = null;
             f.DepositsMost = -1;
             f.LoansMost = -1;
-            f.BranchesMost = 40;
+            f.BranchesMost = 27;
             f.Stage = 1;
             f.StageWords = "The regulator is watching it: its ratio is under 12.5%";
             f.Crews = "Tellers 120 of 140, managers 12 of 12, officers 30 of 31, compliance 14 of 14; wages $18,400 a day.";

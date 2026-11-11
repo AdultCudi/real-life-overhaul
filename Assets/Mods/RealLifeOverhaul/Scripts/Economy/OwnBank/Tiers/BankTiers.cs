@@ -26,7 +26,7 @@ namespace RealLifeOverhaul.Economy
 
         // What each level may hold: its branches; its loans, performing and in arrears; its deposits. NoLimit: none but the ratio.
         public const long NoLimit = long.MaxValue;
-        public static readonly int[] BranchesMost = { 2, 6, BranchCatalogue.BranchesMost };
+        public static readonly int[] BranchesMost = { 2, 6, BranchCatalogue.BranchesMost };   // a national bank's is the city's: so many for each district (BranchCatalogue)
         public static readonly long[] LoansCents = { 250000000L, 1200000000L, NoLimit };           // $2,500,000, $12,000,000
         public static readonly long[] LoansCentsScale = { 1500000000L, 7000000000L, NoLimit };     // $15,000,000, $70,000,000
         public static readonly long[] DepositsCents = { 400000000L, 2000000000L, NoLimit };        // $4,000,000, $20,000,000
