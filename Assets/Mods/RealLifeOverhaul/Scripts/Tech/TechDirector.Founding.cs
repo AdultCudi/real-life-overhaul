@@ -541,7 +541,7 @@ namespace RealLifeOverhaul.Tech
             var offers = Cofounders();
             CofounderOffer offer = d.Cofounder >= 0 && d.Cofounder < offers.Count ? offers[d.Cofounder] : default(CofounderOffer);
             bool partner = d.Cofounder >= 0 && d.Cofounder < offers.Count;
-            if (partner && (_talent == null || _talent.People.Count >= TalentStore.PeopleMost))
+            if (partner && (_talent == null || _talent.PayrollCount() >= TalentStore.PayrollMost))
             {
                 Notifications.ShowError("reallife_found_why_team");
                 return false;

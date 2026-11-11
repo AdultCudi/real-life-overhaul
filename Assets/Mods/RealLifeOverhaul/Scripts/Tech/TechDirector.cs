@@ -40,11 +40,13 @@ namespace RealLifeOverhaul.Tech
             HiringGame.Logger = Logger;
             FirmsGame.Logger = Logger;
             SeatGame.Logger = Logger;
+            SeatShifts.Logger = Logger;
             MovesGame.Logger = Logger;
             _onSave = OnSave;
             _onHour = Guard.Wrap(OnHour);
             _onDay = Guard.Wrap(OnDay);
             _onRegChange = Guard.Wrap<Address>(OnRegistrationChange);
+            _places = new PlaceDays(TechBridges.ComfortAt, TechBridges.TeamWeekAt, PullOfPlace);
             StartCoroutine(Guard.Routine(Tick()));
         }
 

@@ -535,7 +535,7 @@ internal static partial class Program
         }
         Check(pulled > calm * 13 / 10 && backed > pulled && calm > 0, "rivals hiring: a funded rival in the niche makes an approach likelier through the talent rules (" + calm + ", " + pulled + ", " + backed + " in 20,000 days)");
         string d2 = ModSource(@"Tech\TechDirector.Sector.cs");
-        Check(d2.Contains("return Math.Max(pull, RivalryPull(place));") && d2.Contains("RivalAgainst(place, out _)") && ModSource(@"Tech\TechDirector.People.cs").Contains("SectorPull(p.Place, day)"),
+        Check(d2.Contains("return Math.Max(pull, RivalryPull(place));") && d2.Contains("RivalAgainst(place, out _)") && ModSource(@"Tech\TechDirector.People.cs").Contains("SectorPull(place, day)"),
             "rivals hiring: the pull and the name of the poacher reach the people part's approach through the sector's existing hooks");
     }
 

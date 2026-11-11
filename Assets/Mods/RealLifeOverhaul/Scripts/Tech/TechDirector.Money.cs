@@ -497,7 +497,7 @@ namespace RealLifeOverhaul.Tech
                 return;
             }
             long back = HasStock(c.Place) ? StockCancelUnvested(c, day) : StartupMoney.BadLeaver(c, day, Year);   // a firm whose shares trade: the stock says what is still to vest
-            bool replaced = string.IsNullOrEmpty(c.Ceo) && _talent.People.Count < TalentStore.PeopleMost;
+            bool replaced = string.IsNullOrEmpty(c.Ceo) && _talent.PayrollCount() < TalentStore.PayrollMost;
             if (replaced)
             {
                 ReplaceChief(c, firm, day);   // the board's own path: a professional on the payroll, and its story for the paper

@@ -62,6 +62,7 @@ namespace RealLifeOverhaul.Tech
         public const int StartLeast = 1, StartUnemployedMost = 3;
         public const int StartTries = 3;   // days past the first day that a start the game refuses is tried again before the applicant withdraws, and the player is told
         public const int ApplicantsMost = 120;
+        public const int CandidatesMost = 512;   // files made ahead for candidates of the game's (the office's waiting ones and the hires lately made): the table of them in the save
 
         // Buying out a notice: the hiring firm pays the employer to let them go early, the player for a hire, a rival for one of the player's staff
         public const int BuyoutBp = 15000;   // the price over the pay for the days saved: their pay in lieu of notice, and half as much again for the employer's cost of replacing them sooner

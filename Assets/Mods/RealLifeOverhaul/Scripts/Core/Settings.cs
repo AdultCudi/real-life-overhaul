@@ -217,6 +217,7 @@
         public const string TechPeopleId = "tech_people";
         public const string TechJobsId = "tech_jobs";
         public const string TechSearchRushId = "tech_search_rush";
+        public const string TechSeatHiresId = "tech_seat_hires";
         public const string TechSectorId = "tech_sector";
         public const string TechOfferNotesId = "tech_offer_notes";
         public const string TechInfraOfferId = "tech_infra_offer";
@@ -620,6 +621,7 @@
         public static bool TechPeople = true;            // professionals (off: the game's own staff alone; files are kept)
         public static bool TechJobs = true;              // the jobs board and the labour market (off: the game's own hiring alone)
         public static bool TechSearchRush = true;        // ...a search firm's search can be rushed for a share of its fee for each day saved (off: it takes its days)
+        public static bool TechSeatHires = true;         // a hire at a tech firm given a free desk and a week of shifts (off: the player gives every hire their shifts)
         public static bool TechSector = true;            // the tech sector (off: those businesses earn nothing of their own; their files are kept)
         public static bool TechOfferNotes = true;        // ...a notification for each client's contract offer and each council tender
         public static bool TechInfraOffer = true;        // ...asked whether a warehouse just taken is to be a data centre
@@ -1081,6 +1083,7 @@
             TechPeople = Bool(modId, TechPeopleId, TechPeople);
             TechJobs = Bool(modId, TechJobsId, TechJobs);
             TechSearchRush = Bool(modId, TechSearchRushId, TechSearchRush);
+            TechSeatHires = Bool(modId, TechSeatHiresId, TechSeatHires);
             TechSector = Bool(modId, TechSectorId, TechSector);
             TechOfferNotes = Bool(modId, TechOfferNotesId, TechOfferNotes);
             TechInfraOffer = Bool(modId, TechInfraOfferId, TechInfraOffer);

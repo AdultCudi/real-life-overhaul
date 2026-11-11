@@ -323,6 +323,6 @@ namespace RealLifeOverhaul.Tech
         };
 
         public const int GamesStored = 64;          // the studio's games the save reads back: past every product the firms may hold (FirmsCatalogue.ProductsStored)
-        public const int PeopleStored = 1200;       // professionals' genre experience the save reads back (twice the people part's most)
+        // (no bound on the professionals' genre experience: it follows the people part's files, which have none, and StudioRules.Prune lets go the experience of those who have gone)
     }
 }

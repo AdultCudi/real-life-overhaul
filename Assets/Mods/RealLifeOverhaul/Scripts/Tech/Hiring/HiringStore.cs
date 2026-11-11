@@ -176,7 +176,7 @@ namespace RealLifeOverhaul.Tech
                 c.P.School = x.Int();
                 c.P.Certs = x.Int();
                 c.P.Record = x.Bool();
-                if (f.Candidates.Count < 64)
+                if (f.Candidates.Count < HiringCatalogue.CandidatesMost)
                 {
                     f.Candidates.Add(c);
                 }

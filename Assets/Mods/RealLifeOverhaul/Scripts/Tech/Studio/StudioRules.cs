@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace RealLifeOverhaul.Tech
 {
@@ -147,7 +148,10 @@ namespace RealLifeOverhaul.Tech
             return e != null ? e.Days[Clamp(genre, 0, (int)Genre.Count - 1)] : 0;
         }
 
-        /// <summary>A day in a genre for a person who worked it: person-days, a full shift one, up to the most kept.</summary>
+        /// <summary>
+        /// A day in a genre for a person who worked it: person-days, a full shift one, up to the most kept. Everyone who works on a game is recorded, however
+        /// many there are (the programmers of a large studio are thousands); the list is the people who have a file, as <see cref="Prune"/> keeps it.
+        /// </summary>
         public static void Learn(StudioFile f, string id, int genre, int hours)
         {
             if (f == null || string.IsNullOrEmpty(id) || hours <= 0)
@@ -157,15 +161,20 @@ namespace RealLifeOverhaul.Tech
             GenreExperience e = f.ExperienceOf(id);
             if (e == null)
             {
-                if (f.People.Count >= StudioCatalogue.PeopleStored)
-                {
-                    return;
-                }
                 e = new GenreExperience { Id = id };
-                f.People.Add(e);
+                f.AddExperience(e);
             }
             int g = Clamp(genre, 0, (int)Genre.Count - 1);
             e.Days[g] = Math.Min(StudioCatalogue.ExperienceMost, e.Days[g] + Math.Max(1, hours / TalentCatalogue.DayHours));
+        }
+
+        /// <summary>
+        /// Lets go the genre experience of professionals who have gone (no file holds their id any more), so the list is no longer than the people the studio
+        /// has and a long game's saves do not grow with everyone who ever worked on it. Returns how many were let go.
+        /// </summary>
+        public static int Prune(StudioFile f, Dictionary<string, Profile> files)
+        {
+            return f != null && files != null ? f.PruneExperience(files) : 0;
         }
 
         /// <summary>A studio's people as a crew for a game of one genre: points by family and the craft each builds with.</summary>

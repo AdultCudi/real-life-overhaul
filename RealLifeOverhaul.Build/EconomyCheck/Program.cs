@@ -1211,6 +1211,29 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--tech-staff")
+        {
+            TechStaff();   // (the professionals' files without a bound, the hour's seating, the day's and the hour's cost at a save's size, the studio's people, the texts: TechStaffChecks.cs)
+            TechSeats();   // (with the older checks this work changed: the hire form's desk line, SeatChecks.cs, and the professionals' line of ten thousand, WorkPaceChecks.cs)
+            WorkPace();
+            Hiring();      // (the candidate files in the hiring part's save, and the sources of the day and the hour that read the people part)
+            Buyout();
+            Tech();
+            TechFixes();
+            DataEngineers();
+            StaffCentres();
+            Studio();      // (the game studio's experience list, its index and its save)
+            Sessions();    // (the older checks that read the people part's sources: the team meeting's week, the names, the wages, the rivals' offers and pull, the moves)
+            HeadhunterAndProducts();
+            Wages();
+            StaffWageChecks();
+            StaffLeaving();
+            RivalOffers();
+            StartupRivalsChecks();
+            TechMoves();
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--probe-start")
         {
             return 0;   // (TextsStartChecks: can this checker be started as a program on this PC)
@@ -1266,6 +1289,7 @@ internal static partial class Program
         StaffCentres();   // a raise for several picked in MyEmployees, a warehouse taken as a data centre, a data centre's crew by a search firm (PickedRaiseChecks.cs, CentreCrewChecks.cs)
         DataEngineers();   // data engineers hired for a data centre: who a place with no desks seats, the starts, the day's repair, the test and the texts (DataEngineerChecks.cs)
         TechSeats();   // every role at every kind of tech firm has a workstation the firm can furnish; the desks, the pages and the texts (SeatChecks.cs)
+        TechStaff();   // every professional has a file, whatever their number, and a hire at a tech firm is seated: the seat rule, its option and texts (TechStaffChecks.cs)
         AiModels();   // Your own AI and the model names: each default held to the documentation, an unknown model told to the player (AiModelChecks.cs)
         TechPoints();   // an AI lab's page never shows negative points to go, a product with no customers says why, and the sector's licence says its deals (TechPointsChecks.cs)
         StaffReference();   // the Staff and roles reference: generated from the code's tables, its figures held to the code, its texts and its search (StaffChecks.cs)

@@ -363,7 +363,8 @@ internal static partial class Program
         Check(a != null && a == b, "moves: the same save gives the same result whatever order its lists are in (" + a + " / " + b + ")");
     }
 
-    // Asked on each read of the firms and at the start of a day: a full save, 600 professionals, 60 products, 40 ads, 50 businesses.
+    // Asked on each read of the firms and at the start of a day: a full save, 6,000 professionals (a file for each of the game's employees, 600 of
+    // them the mod's own payroll), 60 products, 40 ads, 50 businesses.
     private static void MoveTiming()
     {
         var f = new FirmsFile();
@@ -375,9 +376,9 @@ internal static partial class Program
         {
             now.Add(new BusinessNow { Place = "Street%20" + i + "~" + i, Kind = i % 3 == 0 ? 0 : -1, Name = "B" + i });
         }
-        for (int i = 0; i < 600; i++)
+        for (int i = 0; i < 6000; i++)
         {
-            t.People.Add(new Profile { Id = "pro:" + i, Place = now[i % 50].Place });
+            t.People.Add(new Profile { Id = (i < 600 ? "pro:" : "emp_") + i, Place = now[i % 50].Place });
         }
         for (int i = 0; i < 16; i++)
         {

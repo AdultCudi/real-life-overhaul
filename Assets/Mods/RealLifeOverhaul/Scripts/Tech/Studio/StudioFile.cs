@@ -158,6 +158,8 @@ namespace RealLifeOverhaul.Tech
         public readonly List<GameDev> Games = new List<GameDev>(16);
         public readonly List<GameDraft> Drafts = new List<GameDraft>(4);
         public readonly List<GenreExperience> People = new List<GenreExperience>(32);
+        private readonly Dictionary<string, GenreExperience> _experienceById = new Dictionary<string, GenreExperience>(32);   // People by id (the first of an id)
+        private int _experienceIndexed;   // the length of People the index was made for: a different one means the list was changed from outside, and the index is made again
         public readonly List<StudioEngine> Engines = new List<StudioEngine>(2);
         public readonly List<RivalGame> Rivals = new List<RivalGame>(StudioCatalogue.RivalGamesKept);
         public readonly Dictionary<string, int> SnubUntil = new Dictionary<string, int>(2);   // a studio whose hit paid no bonus, and the day rivals stop pulling at its people
@@ -199,16 +201,66 @@ namespace RealLifeOverhaul.Tech
             return null;
         }
 
+        /// <summary>A professional's experience by their file's id (the first of an id), found in a dictionary and not by a pass over every professional who ever worked on a game.</summary>
         public GenreExperience ExperienceOf(string id)
         {
+            if (id == null)
+            {
+                return null;
+            }
+            if (_experienceIndexed != People.Count)
+            {
+                IndexExperience();   // the list was added to or taken from without the methods below
+            }
+            return _experienceById.TryGetValue(id, out GenreExperience found) ? found : null;
+        }
+
+        /// <summary>Adds a professional's experience, kept with the index; one for an id already there is not added (the first stands).</summary>
+        public void AddExperience(GenreExperience e)
+        {
+            if (_experienceIndexed != People.Count)
+            {
+                IndexExperience();
+            }
+            People.Add(e);
+            if (!_experienceById.ContainsKey(e.Id))
+            {
+                _experienceById.Add(e.Id, e);
+            }
+            _experienceIndexed = People.Count;
+        }
+
+        /// <summary>Lets go the experience of everyone whose id is not among the files given: the professionals who have left. Returns how many.</summary>
+        public int PruneExperience(Dictionary<string, Profile> files)
+        {
+            int kept = 0;
             for (int i = 0; i < People.Count; i++)
             {
-                if (People[i].Id == id)
+                if (files.ContainsKey(People[i].Id))
                 {
-                    return People[i];
+                    People[kept++] = People[i];   // one pass, the order kept
                 }
             }
-            return null;
+            int gone = People.Count - kept;
+            if (gone > 0)
+            {
+                People.RemoveRange(kept, gone);
+                IndexExperience();
+            }
+            return gone;
+        }
+
+        private void IndexExperience()
+        {
+            _experienceById.Clear();
+            for (int i = 0; i < People.Count; i++)
+            {
+                if (!_experienceById.ContainsKey(People[i].Id))
+                {
+                    _experienceById.Add(People[i].Id, People[i]);
+                }
+            }
+            _experienceIndexed = People.Count;
         }
     }
 
