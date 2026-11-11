@@ -156,6 +156,7 @@ namespace RealLifeOverhaul
                 }
                 return;   // the coroutine has it, or Law/Custody does
             }
+            DropGoneBody();
             if (now >= _nextLookup)
             {
                 _nextLookup = now + LookupInterval;
@@ -170,6 +171,20 @@ namespace RealLifeOverhaul
                 return;
             }
             Pursue(now);
+        }
+
+        // The car can be destroyed or swapped between two lookups: a destroyed body is dropped at once and looked up afresh, so
+        // nothing reads its velocity or position (Unity's == null is true for a destroyed object).
+        private bool DropGoneBody()
+        {
+            if (!_driving || _body != null)
+            {
+                return false;
+            }
+            _driving = false;
+            _body = null;
+            _nextLookup = 0f;
+            return true;
         }
 
         private void Lookup()
@@ -197,6 +212,10 @@ namespace RealLifeOverhaul
                 return;
             }
             OffenceSwitches on = Settings.Offences;
+            if (DropGoneBody())
+            {
+                return;   // the car is gone: the next tick looks it up afresh
+            }
             if (_driving)
             {
                 if (!on.Driving || !RoadMap.Ensure())
