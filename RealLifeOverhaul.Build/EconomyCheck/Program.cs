@@ -1174,6 +1174,12 @@ internal static partial class Program
             Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
             return _failed == 0 ? 0 : 1;
         }
+        if (args.Length == 1 && args[0] == "--tech-points")
+        {
+            TechPoints();   // (a model's wait for its training and a product's reason for no customers alone: TechPointsChecks.cs)
+            Console.WriteLine(_failed == 0 ? "ALL CHECKS PASSED (" + _run + ")" : _failed + " of " + _run + " CHECKS FAILED");
+            return _failed == 0 ? 0 : 1;
+        }
         if (args.Length == 1 && args[0] == "--clean-fixes")
         {
             RagdollLifeFixes();   // (the clean-up's fixes alone, while working on them: RagdollFixChecks.cs and the rest named in Main)
@@ -1249,6 +1255,7 @@ internal static partial class Program
         DataEngineers();   // data engineers hired for a data centre: who a place with no desks seats, the starts, the day's repair, the test and the texts (DataEngineerChecks.cs)
         TechSeats();   // every role at every kind of tech firm has a workstation the firm can furnish; the desks, the pages and the texts (SeatChecks.cs)
         AiModels();   // Your own AI and the model names: each default held to the documentation, an unknown model told to the player (AiModelChecks.cs)
+        TechPoints();   // an AI lab's page never shows negative points to go, a product with no customers says why, and the sector's licence says its deals (TechPointsChecks.cs)
         StaffReference();   // the Staff and roles reference: generated from the code's tables, its figures held to the code, its texts and its search (StaffChecks.cs)
         FontFix();   // What's new tells of the font stutter fix in all nine languages (FontFixChecks.cs)
         MapTreesFix();   // What's new tells of the city map fix in all eleven languages; the guard and its test are wired (MapTreeChecks.cs)

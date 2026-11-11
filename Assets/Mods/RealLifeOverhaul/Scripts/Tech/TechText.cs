@@ -144,6 +144,19 @@ namespace RealLifeOverhaul.Tech
             return b.Length > 0 ? b.ToString() : T("reallife_talent_none");
         }
 
+        /// <summary>A line of a screen written in the game's words (its key filled with its names and values); null for no line.</summary>
+        public static string Say(ViewLine line) => line == null ? null : Fill(line.Key, line.Pairs ?? System.Array.Empty<string>());
+
+        /// <summary>
+        /// The words about a product's next feature, for the old pages and the kit's alike (<see cref="ProductViews.NextFeature"/> chooses
+        /// the line): its points still to put in, or that a model's work is done and the training is what it waits for. Null for a
+        /// withdrawn product.
+        /// </summary>
+        public static string NextFeature(Product p, bool markets) => Say(ProductViews.NextFeature(p, markets));
+
+        /// <summary>The words about why a product not on sale yet has no customers (<see cref="ProductViews.OffSale"/>); null for any other.</summary>
+        public static string OffSale(Product p) => Say(ProductViews.OffSale(p));
+
         /// <summary>A game day as the Finance app writes one.</summary>
         public static string Day(int day) => FinanceText.Day(day);
     }

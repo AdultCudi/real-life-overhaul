@@ -226,6 +226,35 @@ namespace RealLifeOverhaul.Tech
         /// <summary>Work points a feature costs when so many are built.</summary>
         public static int FeatureCost(int built) => FirmsCatalogue.FeatureBase + FirmsCatalogue.FeatureStep * Math.Max(0, built);
 
+        /// <summary>
+        /// What a product's next feature still waits for. A feature is done when its work is in and, for an AI model, when its
+        /// generation's training has come too (<see cref="Build"/>), and the work keeps building while a model waits: a lab making
+        /// 529 points a day on the default 50 units of training a day had its work 882 points past a feature's cost, which a page
+        /// that wrote the cost less the work read as a negative number of points to go. This gives the pages three figures, none
+        /// below zero: the work still to put in, the work past the cost, and the training still to come with its days. A withdrawn
+        /// product waits for nothing (the day and the cloud skip it). COST: a few sums when a page is written, never per frame.
+        /// </summary>
+        public static FeatureWait Wait(Product p)
+        {
+            if (p.Stage >= 2)
+            {
+                return new FeatureWait(0, 0, 0L, 0, 0, true);
+            }
+            int cost = FeatureCost(p.Features), work = Math.Max(0, p.Progress);
+            long need = 0, training = 0;
+            int days = 0;
+            if (p.K == ProductKind.Model)
+            {
+                need = InfraRules.TrainNeed(p.Features);
+                training = Math.Max(0L, need - Math.Max(0L, p.Compute));
+                int level = InfraRules.TrainLevels[TalentCatalogue.Clamp(p.Train, 0, InfraRules.TrainLevels.Length - 1)];
+                days = training <= 0 ? 0 : level <= 0 ? -1 : (int)Math.Min(9999L, (training + level - 1) / level);
+            }
+            int worked = (int)Math.Min(1000L, (long)work * 1000 / cost);
+            int trained = need > 0 ? (int)Math.Min(1000L, Math.Max(0L, p.Compute) * 1000 / need) : 1000;
+            return new FeatureWait(Math.Max(0, cost - work), Math.Max(0, work - cost), training, days, Math.Min(worked, trained));
+        }
+
         /// <summary>How a product's bugs weigh on it, thousandths of a sound one: 1000 bug-free, 300 at the worst.</summary>
         public static int Quality(Product p)
         {

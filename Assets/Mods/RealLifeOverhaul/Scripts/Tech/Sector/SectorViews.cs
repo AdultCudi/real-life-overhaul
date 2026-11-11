@@ -59,7 +59,8 @@ namespace RealLifeOverhaul.Tech
     /// </summary>
     public static partial class SectorViews
     {
-        private const string Mod = "reallife", P = Mod + "_tech_mkt_", D = Mod + "_tech_desk_";   // the keys' start, written so the source holds no key prefix as a literal
+        // the keys' start, written so the source holds no key prefix as a literal
+        private const string Mod = "reallife", P = Mod + "_tech_mkt_", D = Mod + "_tech_desk_", Prod = Mod + "_tech_product_";
 
         public static string MarketKey(int market) => P + "market_" + ((SectorMarket)SectorRules.Clamp(market, 0, (int)SectorMarket.Count - 1)).ToString().ToLowerInvariant();
 
@@ -289,11 +290,13 @@ namespace RealLifeOverhaul.Tech
         // ---------------------------------------------------------------- a product's market
 
         /// <summary>
-        /// A product's market as a section of its page: who buys and how many, the share it holds and the share its pull
-        /// earns it (where its customers are heading), how many know of it, the market's going features and price, and the
-        /// three rivals with the most customers. The share is the only limit there is, and the section says so.
+        /// A product's market as a section of its page: who buys and how many, the share it holds and the share its pull earns it (where its customers are heading),
+        /// how many know of it, the market's going features and price, and the three rivals with the most customers. The share is the only limit there is, and the
+        /// section says so. The heading and a licence's deals (given the firm's selling points, <paramref name="selling"/>; none when not given) are said only of a market
+        /// that has been counted (buyers in it) and of a product on sale; they are worked in <paramref name="frame"/>, the market the sale weighs the product in (its niche's
+        /// view for a founded firm's, null for the whole market), with the appeal, awareness and selling the sale uses there.
         /// </summary>
-        public static ViewSection Market(SectorFile f, Product p, int appeal, int awareness, IStudioFormat fmt)
+        public static ViewSection Market(SectorFile f, Product p, int appeal, int awareness, IStudioFormat fmt, int selling = -1, SectorMarketDay frame = null)
         {
             int m = SectorRules.MarketOf(p);
             var sec = new ViewSection { TitleKey = P + "sec_market" };
@@ -301,21 +304,48 @@ namespace RealLifeOverhaul.Tech
             {
                 return sec;
             }
-            SectorMarketDay md = f.Markets[m];
+            SectorMarketDay md = f.Markets[m], sold = frame ?? md;
             long attraction = SectorRules.Attraction(appeal, awareness);
-            long target = SectorRules.Target(md, attraction);
+            long target = SectorRules.Target(sold, attraction);
             long have = SectorRules.Have(p);
-            int share = md.Buyers > 0 ? (int)Math.Min(1000L, have * 1000 / md.Buyers) : 0;
-            int heading = ScaleRules.Share(attraction, md.All);
+            int share = sold.Buyers > 0 ? (int)Math.Min(1000L, have * 1000 / sold.Buyers) : 0;
+            int heading = ScaleRules.Share(attraction, sold.All);
+            // A market with no buyers counted in it has no pull to speak of: a save just loaded has its markets counted by the next day (they are worked out each day and not saved), and
+            // what a pull earns against nothing counted is nothing, which says nothing of the product.
+            bool counted = sold.Buyers > 0;
             Line(sec, P + "product_buyers", ViewTone.Plain, "market", fmt.Text(MarketKey(m)), "buyers", fmt.Whole(md.Buyers), "who", fmt.Text(BuyersKey(md.Who)));
-            Line(sec, target > have ? P + "product_heading_up" : target < have ? P + "product_heading_down" : P + "product_heading_flat",
-                target > have ? ViewTone.Good : target < have ? ViewTone.Warn : ViewTone.Plain, "share", fmt.Mille(share), "heading", fmt.Mille(heading), "target", fmt.Whole(target));
+            if (p.Live && counted)
+            {
+                // where its customers are heading: a product not on sale yet has none to head anywhere, and its page says why it has none
+                Line(sec, target > have ? P + "product_heading_up" : target < have ? P + "product_heading_down" : P + "product_heading_flat",
+                    target > have ? ViewTone.Good : target < have ? ViewTone.Warn : ViewTone.Plain, "share", fmt.Mille(share), "heading", fmt.Mille(heading), "target", fmt.Whole(target));
+            }
             Line(sec, P + "product_known", awareness < 200 ? ViewTone.Warn : ViewTone.Plain, "known", fmt.Mille(awareness), "appeal", fmt.Mille(appeal));
             Line(sec, p.Features < md.Average ? P + "product_going_behind" : P + "product_going", p.Features < md.Average ? ViewTone.Warn : ViewTone.Plain,
                 "features", fmt.Whole(p.Features), "going", fmt.Whole(md.Average), "price", fmt.Mille(FirmsCatalogue.PriceTiers[SectorRules.Clamp(p.Tier, 0, 2)]), "going_price", fmt.Mille(md.Going));
+            if (p.K == ProductKind.Licence && p.Live && counted && selling >= 0)
+            {
+                Deals(sec, sold, p, appeal, target, selling, fmt);
+            }
             Rivals(sec, f, m, fmt);
             Line(sec, P + "product_no_cap", ViewTone.Plain);
             return sec;
+        }
+
+        // A licence sells a deal at a time, at the pace its appeal, the economy and its sellers give while it holds fewer companies than its pull earns it; once it holds them
+        // the section says what it has and what earns it more (a pull that earns less than one company says so, rather than leaving a product with no customers and no reason).
+        private static void Deals(ViewSection sec, SectorMarketDay sold, Product p, int appeal, long target, int selling, IStudioFormat fmt)
+        {
+            if (target <= p.Users)
+            {
+                Line(sec, P + "product_deals_full", ViewTone.Warn, "target", fmt.Whole(target), "have", fmt.Whole(p.Users), "who", fmt.Text(BuyersKey(sold.Who)));
+                return;
+            }
+            long rate = SectorRules.LicenceRate(appeal, sold.Spend, selling);
+            if (rate > 0)
+            {
+                Line(sec, Prod + (selling > 0 ? "deals" : "deals_none"), ViewTone.Plain, "days", fmt.Whole(FirmsRules.LicenceDealDays(rate)));
+            }
         }
 
         // The rivals in a market with the most customers, three at most.

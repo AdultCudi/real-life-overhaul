@@ -32,6 +32,7 @@ namespace RealLifeOverhaul.Tech
         private readonly long[] _nicheSoft = new long[NicheCatalogue.Count], _nicheAi = new long[NicheCatalogue.Count];   // buyers today for a software product and an AI one
         private int _nicheDay = -1;
         private readonly SectorMarketDay _nicheMd = new SectorMarketDay();
+        private readonly SectorMarketDay _nicheShown = new SectorMarketDay();   // the view a page weighs a product in, apart from the sale's (above), so a page never writes what the sale reads
         private int _servedNow;   // one bit per niche the product NicheView last weighed sells into; 0 when it sells into none
         private readonly List<CofounderOffer> _cofoundOffers = new List<CofounderOffer>(8);
         private int _cofoundDay = -1;
@@ -253,69 +254,34 @@ namespace RealLifeOverhaul.Tech
 
         /// <summary>
         /// The market a product of a founded firm sells into: the buyers of its niche (and the neighbours opened) in place of the whole market's, the rivals that sell there, the
-        /// price its businesses will bear and what the launch channel adds. The same market, unchanged, for every other product. The caller's appeal, awareness and crew are
-        /// worked again for the niche.
+        /// price its businesses will bear and what the launch channel adds (NicheRules.Market, which the product's page works out the same way). The same market, unchanged, for
+        /// every other product. The caller's appeal, awareness and crew are worked again for the niche, and the firm notes what its page shows of the sale.
         /// </summary>
         private SectorMarketDay NicheView(FirmPlace firm, Product p, SectorMarketDay md, int day, long pulled, ref int appeal, ref int aware, ref Crew crew)
         {
-            _servedNow = 0;
-            FoundedFirm f = _founding != null ? _founding.Of(firm.File.Place) : null;
-            if (f == null || !f.Counts || f.Niche < 0)
+            SectorMarketDay v = NicheFrame(firm, p, md, day, pulled, _nicheMd, ref appeal, ref aware, ref crew, out _servedNow);
+            if (!ReferenceEquals(v, md))
             {
-                return md;
+                FoundedFirm f = _founding.Of(firm.File.Place);
+                f.AppealNow = appeal;
+                f.SoundNow = SectorRules.Soundness(p.Bugs, FirmsRules.Allowance(p));
+                f.BuyersNow = v.Buyers;
+                f.ChurnNow = FirmsCatalogue.Churn[TalentCatalogue.Clamp(p.Segment, 0, 2)];
             }
-            int market = SectorRules.MarketOf(p);
-            bool ai = NicheRules.IsAi(market);
-            long[] today = ai ? _nicheAi : _nicheSoft;
-            long total = 0;
-            bool serves = false;
-            int bits = 0;
-            if (NicheRules.Serves(NicheCatalogue.Def(f.Niche), market))
-            {
-                total += today[f.Niche];
-                serves = true;
-                bits |= 1 << f.Niche;
-            }
-            for (int i = 0; i < f.Expanded.Count; i++)
-            {
-                if (NicheRules.Serves(NicheCatalogue.Def(f.Expanded[i].Niche), market))
-                {
-                    total += today[f.Expanded[i].Niche] * NicheRules.Ramp(day - f.Expanded[i].Day) / 1000;
-                    serves = true;
-                    bits |= 1 << f.Expanded[i].Niche;
-                }
-            }
-            if (!serves)
-            {
-                return md;
-            }
-            long buyers = Math.Min(total, md.Buyers);
-            SectorMarketDay v = _nicheMd;
-            NicheRules.View(v, md, buyers, (int)Math.Max(1L, (long)NicheRules.Going(NicheCatalogue.Def(f.Niche), md.Going) * FoundRules.Bear(f) / 1000));
-            buyers = v.Buyers;
-            appeal = SectorRules.Appeal(p, firm.File, crew, v);
-            SectorProduct sp = _sector.ProductAt(p.Id);
-            int marketing = FirmsCatalogue.MarketingDay[TalentCatalogue.Clamp(p.Marketing, 0, FirmsCatalogue.MarketingDay.Length - 1)];
-            aware = SectorRules.Awareness(marketing, buyers, SectorRules.Have(p), md.Who, SectorRules.Boost(sp, day) + FoundRules.Boost(f.Channel) + f.Wom);
-            _servedNow = bits;
-            if (RivalryOn)
-            {
-                // one pool of buyers for everyone who sells in the niche: the city's startups pull in the same buyers (RivalryRules.PlayerAll)
-                v.All = RivalryRules.PlayerAll(_world, bits, market, md.All, SectorRules.Attraction(appeal, aware), pulled, buyers, md.Buyers, day);
-            }
-            else
-            {
-                NicheRules.Pull(v, md, SectorRules.Attraction(appeal, aware), pulled);
-            }
-            if (f.Channel == FoundCatalogue.ChannelSales)
-            {
-                crew.Selling += FoundRules.FounderPoints(TechBridges.SkillNow(TalentCatalogue.Selling), TechBridges.SkillNow(TalentCatalogue.Relationships));
-            }
-            f.AppealNow = appeal;
-            f.SoundNow = SectorRules.Soundness(p.Bugs, FirmsRules.Allowance(p));
-            f.BuyersNow = buyers;
-            f.ChurnNow = FirmsCatalogue.Churn[TalentCatalogue.Clamp(p.Segment, 0, 2)];
             return v;
+        }
+
+        /// <summary>
+        /// The market a product is weighed in today the sale's way, with nothing noted: the sale writes into its own view (NicheView) and a page into one of its own, so a page reads
+        /// the sale's market and changes nothing. <paramref name="md"/> itself comes back for a product that sells into no niche. COST: a few sums.
+        /// </summary>
+        private SectorMarketDay NicheFrame(FirmPlace firm, Product p, SectorMarketDay md, int day, long pulled, SectorMarketDay into, ref int appeal, ref int aware, ref Crew crew, out int served)
+        {
+            FoundedFirm f = _founding != null ? _founding.Of(firm.File.Place) : null;
+            long[] today = NicheRules.IsAi(SectorRules.MarketOf(p)) ? _nicheAi : _nicheSoft;
+            int founder = f != null && f.Channel == FoundCatalogue.ChannelSales
+                ? FoundRules.FounderPoints(TechBridges.SkillNow(TalentCatalogue.Selling), TechBridges.SkillNow(TalentCatalogue.Relationships)) : 0;
+            return NicheRules.Market(into, f, p, firm.File, md, today, _sector.ProductAt(p.Id), RivalryOn ? _world : null, day, pulled, founder, ref appeal, ref aware, ref crew, out served);
         }
 
         private static bool NicheServes(FoundedFirm f, Product p)

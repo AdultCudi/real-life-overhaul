@@ -941,11 +941,12 @@ internal static partial class Program
 
     private static void RivalsWiring()
     {
-        string d = ModSource(@"Tech\TechDirector.Rivalry.cs"), sec = ModSource(@"Tech\TechDirector.Sector.cs"), found = ModSource(@"Tech\TechDirector.Founding.cs"), ven = ModSource(@"Tech\TechDirector.Venture.cs");
+        string d = ModSource(@"Tech\TechDirector.Rivalry.cs"), sec = ModSource(@"Tech\TechDirector.Sector.cs"), found = ModSource(@"Tech\TechDirector.Founding.cs"), ven = ModSource(@"Tech\TechDirector.Venture.cs"), niche = ModSource(@"Tech\Founding\NicheRules.cs");
         Check(d.Contains("public RivalryFile Competition => _ventureOn ? _rival : null;") && d.Contains("_rival != null && _world != null && _sectorOn && _sector != null && !SharedCity.Follows(SectorShare.Part)")
               && d.Contains("_rival = null;") && ven.Contains("StopRivalry();"),
             "rivals options: with Startups off there is no record and no rule runs; with the sector off, or on a Going Public guest (the host's city), none either");
-        Check(found.Contains("if (RivalryOn)") && found.Contains("NicheRules.Pull(v, md, SectorRules.Attraction(appeal, aware), pulled);") && sec.Contains("RivalryPrepare(day);") && sec.Contains("RivalryOwn(firm, p, md, day, i);")
+        Check(found.Contains("RivalryOn ? _world : null") && niche.Contains("if (world != null)") && niche.Contains("RivalryRules.PlayerAll(world, bits, market, md.All,") && niche.Contains("Pull(into, md, SectorRules.Attraction(appeal, aware), pulled);")
+              && sec.Contains("RivalryPrepare(day);") && sec.Contains("RivalryOwn(firm, p, md, day, i);")
               && sec.Contains("RivalryViews(day);"), "rivals options: the player's products and the rivals are weighed in one pool while it runs, and as they were when it does not");
         Check(d.Contains("ClearRivalry();") && d.Contains("r.Niche = -1;") && d.Contains("r.Frame = null;") && d.Contains("r.PushMarketing = 0;"), "rivals options: stopping leaves no niche, frame or push on a rival product");
         Check(sec.Contains("_keptRival") && ModSource(@"Tech\Sector\SectorRules.Rivals.cs").Contains("Func<RivalProduct, bool> kept = null"), "rivals options: a bought startup's product is kept only where competition says so");

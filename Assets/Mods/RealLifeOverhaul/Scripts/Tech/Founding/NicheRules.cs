@@ -279,6 +279,70 @@ namespace RealLifeOverhaul.Tech
             v.All = Math.Max(0L, own) + Math.Max(0L, md.All - Math.Max(0L, ownInMarket)) * RivalShare(v.Buyers, md.Buyers) / 1000;
         }
 
+        /// <summary>
+        /// The market a product of a founded firm is weighed in, worked out once for the day's sale and for the product's page, so the page says what the sale
+        /// does: the buyers of the firm's niche and of the neighbours it opened (<see cref="Ramp"/> in) in place of the market's, at the price the niche bears,
+        /// with the product's appeal, awareness and the firm's selling points worked again there (<paramref name="appeal"/>, <paramref name="aware"/> and
+        /// <paramref name="crew"/> come in as the whole market's and go out as the niche's) and its share of the pull among everyone who sells there. Returns
+        /// <paramref name="md"/> itself, changing nothing, for a firm whose founding does not count or whose niches do not buy in the product's market.
+        /// COST: a few sums.
+        /// </summary>
+        public static SectorMarketDay Market(SectorMarketDay into, FoundedFirm f, Product p, Firm firm, SectorMarketDay md, long[] today, SectorProduct record, RivalryWorld world, int day,
+            long pulled, int founder, ref int appeal, ref int aware, ref Crew crew, out int served)
+        {
+            // into: the view, written; today: each niche's buyers for this kind of product; record: the product's record in the sector (a launch's lift); world: the rivals' pool,
+            // null with competition off; pulled: its pull in the whole market; founder: the selling points a sales channel adds; served: one bit for each niche it sells into
+            served = 0;
+            if (f == null || !f.Counts || f.Niche < 0)
+            {
+                return md;
+            }
+            int market = SectorRules.MarketOf(p);
+            long total = 0;
+            bool serves = false;
+            int bits = 0;
+            if (Serves(NicheCatalogue.Def(f.Niche), market))
+            {
+                total += today[f.Niche];
+                serves = true;
+                bits |= 1 << f.Niche;
+            }
+            for (int i = 0; i < f.Expanded.Count; i++)
+            {
+                if (Serves(NicheCatalogue.Def(f.Expanded[i].Niche), market))
+                {
+                    total += today[f.Expanded[i].Niche] * Ramp(day - f.Expanded[i].Day) / 1000;
+                    serves = true;
+                    bits |= 1 << f.Expanded[i].Niche;
+                }
+            }
+            if (!serves)
+            {
+                return md;
+            }
+            long buyers = Math.Min(total, md.Buyers);
+            View(into, md, buyers, (int)Math.Max(1L, (long)Going(NicheCatalogue.Def(f.Niche), md.Going) * FoundRules.Bear(f) / 1000));
+            buyers = into.Buyers;
+            appeal = SectorRules.Appeal(p, firm, crew, into);
+            int marketing = FirmsCatalogue.MarketingDay[TalentCatalogue.Clamp(p.Marketing, 0, FirmsCatalogue.MarketingDay.Length - 1)];
+            aware = SectorRules.Awareness(marketing, buyers, SectorRules.Have(p), md.Who, SectorRules.Boost(record, day) + FoundRules.Boost(f.Channel) + f.Wom);
+            served = bits;
+            if (world != null)
+            {
+                // one pool of buyers for everyone who sells in the niche: the city's startups pull in the same buyers (RivalryRules.PlayerAll)
+                into.All = RivalryRules.PlayerAll(world, bits, market, md.All, SectorRules.Attraction(appeal, aware), pulled, buyers, md.Buyers, day);
+            }
+            else
+            {
+                Pull(into, md, SectorRules.Attraction(appeal, aware), pulled);
+            }
+            if (f.Channel == FoundCatalogue.ChannelSales)
+            {
+                crew.Selling += founder;
+            }
+            return into;
+        }
+
         // ---------------------------------------------------------------- expansion and the markets
 
         public static bool Neighbours(int from, int to) => from >= 0 && to >= 0 && from < NicheCatalogue.Count && to < NicheCatalogue.Count && (NicheCatalogue.Defs[from].Near & (1 << to)) != 0;
