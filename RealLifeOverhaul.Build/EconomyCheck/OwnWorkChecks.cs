@@ -261,7 +261,7 @@ internal static partial class Program
             s.Slide(s.Now);
         }
 
-        // What the reviewers saw: a pick of 6 hours on a 16 hour contract, two stints worked, the last with 4 hours left and then 2: the next contract starts at 6 and not at the 2.
+        // The case the first version got wrong: a pick of 6 hours on a 16 hour contract, two stints worked, the last with 4 hours left and then 2: the next contract starts at 6 and not at the 2.
         int kept = OwnRules.SittingHoursDefault, picks = 0;
         Action<int> keep = hours =>
         {
@@ -419,7 +419,7 @@ internal static partial class Program
         }
         Check(clicks == 32 && bad == 0 && silent == 0, "own work places: a click leads to a contract exactly when the tech firm's is up or a desk is free and no other part's click holds the place");
 
-        // The two dead ends the reviewers found: with the tech sector off (or its firms stood down) the web agency's contract is clicked like any office's, and the bank branch's counter holds the place.
+        // The two dead ends of the first version: with the tech sector off (or its firms stood down) the web agency's contract is clicked like any office's, and the bank branch's counter holds the place.
         bool webAgencyOff = OwnPlaceRules.ClickFor(true, true, false, true, false) == DeskClick.Own;
         bool techUp = OwnPlaceRules.ClickFor(true, true, true, true, false) == DeskClick.Tech && OwnPlaceRules.ClickFor(true, true, true, false, false) == DeskClick.Tech
                       && OwnPlaceRules.ClickFor(true, true, true, true, true) == DeskClick.Tech;
