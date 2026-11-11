@@ -27552,7 +27552,7 @@
   "reallife_tech_desk_training_about": "Trainiere die nächste Generation des Modells: die Rechenleistung, die Daten und die Sicherheitsprüfungen.",
   "reallife_tech_desk_training_step1": "Wessen Rechenleistung?",
   "reallife_tech_desk_training_own": "Dein eigenes Rechenzentrum",
-  "reallife_tech_desk_training_own_trade": "Deine eigenen Racks für KI zu deinem Preis; gemietet, wenn du keine hast.",
+  "reallife_tech_desk_training_own_trade": "Deine eigenen Racks für KI zu deinem Preis, soweit sie reichen; der Rest wird gemietet.",
   "reallife_tech_desk_training_rented": "Gemietet",
   "reallife_tech_desk_training_rented_trade": "Immer verfügbar, zum Preis der Rivalen-Clouds.",
   "reallife_tech_desk_training_smaller": "Ein kleinerer Lauf",
@@ -37205,9 +37205,11 @@
   "reallife_tech_product_train_split": "Training: {units} Recheneinheiten für KI pro Tag, {own} in deinen eigenen Racks für KI und {rented} gemietet für {cost} pro Tag",
   "reallife_tech_product_train_room": "Es kann bis zu {most} Einheiten pro Tag trainieren, mit {own} pro Tag aus der Rechenleistung deiner eigenen Racks für KI und bis zu {rent} gemietet. Eine höhere Stufe trainiert jede Generation schneller.",
   "reallife_tech_product_train_rent_room": "Es kann bis zu {most} Einheiten pro Tag trainieren, alles gemietet. Eine höhere Stufe trainiert jede Generation schneller.",
-  "reallife_tech_product_train_top": "Das ist das Maximum, das es mit {own} Einheiten pro Tag aus der Rechenleistung deiner eigenen Racks für KI und bis zu {rent} gemietet trainieren kann. Die nächste Stufe, {next} pro Tag, braucht {more} mehr aus deinen eigenen Racks, und ein jetzt gekaufter Rack bringt {per} pro Tag. Kaufe sie für ein Rechenzentrum auf dem Reiter Infra.",
+  "reallife_tech_product_train_top": "Das ist das Maximum, das es jetzt trainieren kann. Die nächste Stufe, {next} pro Tag, braucht {more} Einheiten pro Tag mehr Rechenleistung aus deinen eigenen Racks für KI, und ein jetzt gekauftes Rack bringt {per} pro Tag. Kaufe sie für ein Rechenzentrum auf dem Reiter Infra.",
   "reallife_tech_product_train_rent_top": "Ein Modell kann für sein Training bis zu {rent} Einheiten pro Tag mieten. Die nächste Stufe, {next} pro Tag, braucht {more} pro Tag aus deinen eigenen Racks für KI, und ein jetzt gekaufter Rack bringt {per} pro Tag. Kaufe sie für ein Rechenzentrum auf dem Reiter Infra.",
   "reallife_tech_product_train_peak": "Das ist die höchste Trainingsstufe, die es gibt.",
   "reallife_tech_product_train_short": "Deine eigenen Racks für KI geben ihm jetzt {own} Einheiten pro Tag, und bis zu {rent} können gemietet werden, also trainiert es mit {pace} pro Tag, weniger als diese Stufe. Senke die Stufe oder füge Racks auf dem Reiter Infra hinzu.",
-  "reallife_ui_tech_open_infra": "Infra öffnen"
+  "reallife_ui_tech_open_infra": "Infra öffnen",
+  "reallife_tech_product_train_over": "Deine eigenen Racks für KI decken nicht mehr jede Stufe der Modelle ab. Dieses hier trainiert trotzdem auf seiner Stufe, daher trainiert ein Modell, das du danach begonnen hast, weniger. Senke eine Stufe oder füge auf dem Reiter Infra Racks für KI hinzu.",
+  "reallife_infra_cloud_gpu_models": "Deine eigenen Modelle kommen auf deinen Racks für KI zuerst: {train} Einheiten am Tag trainieren sie und {run} bedienen ihre Kunden. Die Cloud verkauft Rechenleistung für KI aus dem Rest, gestern {sold} Einheiten."
 }

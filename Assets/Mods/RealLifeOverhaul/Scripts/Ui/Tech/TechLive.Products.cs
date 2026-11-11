@@ -253,13 +253,14 @@ namespace RealLifeOverhaul.Ui
                     Do(() => _d.SetProduct(id, -1, p.Marketing + 1, -1)));
                 if (p.K == ProductKind.Model)
                 {
-                    // up to the highest level its compute covers, then what holds it there and what raises it, with the way to the AI racks
-                    int most = _d.TrainingMost(p, out long own, out int perRack), train = InfraRules.TrainLevel(p.Train);
-                    card.Step(TechText.T("reallife_ui_tech_training"), Words(TrainingViews.Level(train, own, W)), null, train > 0, train < most, Do(() => _d.SetTraining(id, train - 1)),
+                    // up to the highest level its compute covers, as the day gives it, then what holds it there and what raises it, with the way to the AI racks
+                    TrainingLook t = _d.Training(p);
+                    int train = t.Level;
+                    card.Step(TechText.T("reallife_ui_tech_training"), Words(TrainingViews.Level(t, train, W)), null, train > 0, train < t.Most, Do(() => _d.SetTraining(id, train - 1)),
                         Do(() => _d.SetTraining(id, train + 1)));
-                    ViewLine room = TrainingViews.Room(train, own, perRack);
+                    ViewLine room = TrainingViews.Room(t);
                     card.Say(Words(room), Ink(room.Tone));
-                    if (TrainingViews.WantsRacks(train, own))
+                    if (TrainingViews.WantsRacks(t))
                     {
                         card.Go(TechText.T("reallife_ui_tech_open_infra"), Go(v => v.Open("tab:" + TabInfra)));
                     }

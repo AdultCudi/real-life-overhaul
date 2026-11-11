@@ -27552,7 +27552,7 @@
   "reallife_tech_desk_training_about": "Wytrenuj następną generację modelu: moc obliczeniową, dane i kontrole bezpieczeństwa.",
   "reallife_tech_desk_training_step1": "Czyja moc obliczeniowa?",
   "reallife_tech_desk_training_own": "Twoje własne centrum danych",
-  "reallife_tech_desk_training_own_trade": "Twoje własne szafy AI w twojej cenie; wynajęte, jeśli żadnych nie masz.",
+  "reallife_tech_desk_training_own_trade": "Twoje własne szafy AI w twojej cenie, o ile starczają; reszta jest wynajęta.",
   "reallife_tech_desk_training_rented": "Wynajęta",
   "reallife_tech_desk_training_rented_trade": "Zawsze dostępna, po cenie chmur rywali.",
   "reallife_tech_desk_training_smaller": "Mniejszy przebieg",
@@ -37205,9 +37205,11 @@
   "reallife_tech_product_train_split": "Trenowanie: {units} jednostek mocy AI dziennie, {own} na twoich własnych szafach AI i {rented} wynajęte za {cost} dziennie",
   "reallife_tech_product_train_room": "Może trenować do {most} jednostek dziennie, z {own} dziennie mocy obliczeniowej twoich własnych szaf AI i do {rent} wynajętych. Wyższy poziom trenuje każdą generację szybciej.",
   "reallife_tech_product_train_rent_room": "Może trenować do {most} jednostek dziennie, wszystkie wynajęte. Wyższy poziom trenuje każdą generację szybciej.",
-  "reallife_tech_product_train_top": "To najwięcej, ile może trenować przy {own} jednostkach dziennie z mocy twoich własnych szaf AI i do {rent} wynajętych. Następny poziom, {next} dziennie, wymaga {more} więcej z twoich szaf, a szafa AI kupiona teraz daje {per} dziennie. Kup je dla centrum danych na karcie Infra.",
+  "reallife_tech_product_train_top": "To najwięcej, ile może teraz trenować. Wyższy poziom, {next} dziennie, potrzebuje {more} jednostek dziennie więcej z mocy twoich własnych szaf AI, a szafa AI kupiona teraz daje {per} dziennie. Kup je dla centrum danych na karcie Infra.",
   "reallife_tech_product_train_rent_top": "Model może wynająć do {rent} jednostek dziennie na trening. Następny poziom, {next} dziennie, wymaga {more} dziennie z twoich własnych szaf AI, a szafa AI kupiona teraz daje {per} dziennie. Kup je dla centrum danych na karcie Infra.",
   "reallife_tech_product_train_peak": "To najwyższy poziom treningu, jaki istnieje.",
   "reallife_tech_product_train_short": "Twoje własne szafy AI dają mu teraz {own} jednostek dziennie, a do {rent} można wynająć, więc trenuje z tempem {pace} dziennie, mniej niż ten poziom. Obniż poziom albo dodaj szafy AI na karcie Infra.",
-  "reallife_ui_tech_open_infra": "Otwórz Infra"
+  "reallife_ui_tech_open_infra": "Otwórz Infra",
+  "reallife_tech_product_train_over": "Twoje własne szafy AI nie wystarczają już na poziom każdego modelu. Ten nadal trenuje na swoim poziomie, więc model, który zacząłeś później, trenuje mniej. Obniż poziom albo dodaj szafy AI na karcie Infra.",
+  "reallife_infra_cloud_gpu_models": "Twoje własne modele AI mają pierwszeństwo na twoich szafach AI: {train} jednostek dziennie je trenuje, a {run} obsługuje ich klientów. Chmura sprzedaje moc obliczeniową AI z tego, co zostaje, wczoraj {sold} jednostek."
 }

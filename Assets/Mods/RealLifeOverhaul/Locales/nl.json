@@ -27552,7 +27552,7 @@
   "reallife_tech_desk_training_about": "Train de volgende generatie van het model: de rekenkracht, de data en de veiligheidscontroles.",
   "reallife_tech_desk_training_step1": "Wiens rekenkracht?",
   "reallife_tech_desk_training_own": "Je eigen datacentrum",
-  "reallife_tech_desk_training_own_trade": "Je eigen AI racks tegen jouw prijs; gehuurd als je er geen hebt.",
+  "reallife_tech_desk_training_own_trade": "Je eigen AI racks tegen je eigen prijs, zolang ze reiken; de rest wordt gehuurd.",
   "reallife_tech_desk_training_rented": "Gehuurd",
   "reallife_tech_desk_training_rented_trade": "Altijd beschikbaar, tegen de prijs van de concurrerende clouds.",
   "reallife_tech_desk_training_smaller": "Een kleinere ronde",
@@ -37205,9 +37205,11 @@
   "reallife_tech_product_train_split": "Training: {units} AI rekeneenheden per dag, {own} op je eigen AI racks en {rented} gehuurd voor {cost} per dag",
   "reallife_tech_product_train_room": "Het kan trainen op maximaal {most} eenheden per dag, met {own} per dag aan rekenkracht van je eigen AI racks en tot {rent} gehuurd. Een hoger niveau traint elke generatie sneller.",
   "reallife_tech_product_train_rent_room": "Het kan trainen op maximaal {most} eenheden per dag, allemaal gehuurd. Een hoger niveau traint elke generatie sneller.",
-  "reallife_tech_product_train_top": "Dit is het meeste wat het kan trainen met {own} eenheden per dag aan rekenkracht van je eigen AI racks en tot {rent} gehuurd. Het volgende niveau, {next} per dag, heeft {more} meer van je eigen racks nodig, en een AI rack die je nu koopt geeft {per} per dag. Koop ze voor een datacenter op het tabblad Infra.",
+  "reallife_tech_product_train_top": "Dit is het meeste dat het nu kan trainen. Het niveau erboven, {next} per dag, heeft {more} meer rekeneenheden per dag nodig van je eigen AI racks, en een AI rack dat je nu koopt levert {per} per dag. Koop ze voor een datacenter op het tabblad Infra.",
   "reallife_tech_product_train_rent_top": "Een model kan voor zijn training tot {rent} eenheden per dag huren. Het volgende niveau, {next} per dag, heeft {more} per dag nodig van je eigen AI racks, en een AI rack die je nu koopt geeft {per} per dag. Koop ze voor een datacenter op het tabblad Infra.",
   "reallife_tech_product_train_peak": "Dit is het hoogste trainingsniveau dat er is.",
   "reallife_tech_product_train_short": "Je eigen AI racks geven het nu {own} eenheden per dag en tot {rent} kan gehuurd worden, dus het traint op {pace} per dag, minder dan dit niveau. Verlaag het niveau, of voeg AI racks toe op het tabblad Infra.",
-  "reallife_ui_tech_open_infra": "Infra openen"
+  "reallife_ui_tech_open_infra": "Infra openen",
+  "reallife_tech_product_train_over": "Je eigen AI racks dekken het niveau van elk model niet meer. Dit model traint nog steeds op zijn niveau, dus een model dat je erna bent begonnen traint minder. Verlaag een niveau of voeg AI racks toe op het tabblad Infra.",
+  "reallife_infra_cloud_gpu_models": "Je eigen AI modellen komen eerst op je AI racks: {train} rekeneenheden per dag trainen ze en {run} bedienen hun klanten. De cloud verkoopt AI rekenkracht van wat overblijft, gisteren {sold} eenheden."
 }

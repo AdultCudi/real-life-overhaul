@@ -27552,7 +27552,7 @@
   "reallife_tech_desk_training_about": "训练模型的下一代：算力、数据和安全检查。",
   "reallife_tech_desk_training_step1": "用谁的算力？",
   "reallife_tech_desk_training_own": "你自己的数据中心",
-  "reallife_tech_desk_training_own_trade": "使用你自己的AI机架，按你的价格；没有机架则租用。",
+  "reallife_tech_desk_training_own_trade": "只要自有AI机架够用，就按你自己的价格使用；其余的租用。",
   "reallife_tech_desk_training_rented": "租用",
   "reallife_tech_desk_training_rented_trade": "随时可用，按对手云的价格。",
   "reallife_tech_desk_training_smaller": "小规模训练",
@@ -37205,9 +37205,11 @@
   "reallife_tech_product_train_split": "训练：每天{units}个AI算力单位，其中{own}来自你自己的AI机架，{rented}租用，每天{cost}",
   "reallife_tech_product_train_room": "它每天最多可训练{most}个单位，其中{own}来自你自己AI机架的算力，最多可租用{rent}。等级越高，训练每一代越快。",
   "reallife_tech_product_train_rent_room": "它每天最多可训练{most}个单位，全部租用。等级越高，训练每一代越快。",
-  "reallife_tech_product_train_top": "在你自己AI机架每天{own}个单位算力加上最多{rent}个租用算力的情况下，这是它能训练的最大值。下一级为每天{next}，还需要你自己的机架增加{more}，现在购买一台AI机架可提供每天{per}。请在基础设施标签页为数据中心购买。",
+  "reallife_tech_product_train_top": "这是它现在能训练的上限。更高的等级每天需要{next}，要达到它，你自己的AI机架算力还需每天再增加{more}个单位，而现在购买的一个AI机架每天可提供{per}。请到Infra标签页为数据中心购买。",
   "reallife_tech_product_train_rent_top": "一个模型最多可租用每天{rent}个单位用于训练。下一级为每天{next}，需要你自己的AI机架每天增加{more}，现在购买一台AI机架可提供每天{per}。请在基础设施标签页为数据中心购买。",
   "reallife_tech_product_train_peak": "这是现有的最高训练等级。",
   "reallife_tech_product_train_short": "你自己的AI机架目前每天提供{own}个单位，最多可租用{rent}，因此它每天只能训练{pace}，低于此等级。请降低等级，或在基础设施标签页添加AI机架。",
-  "reallife_ui_tech_open_infra": "打开基础设施"
+  "reallife_ui_tech_open_infra": "打开基础设施",
+  "reallife_tech_product_train_over": "你自己的AI机架已经无法支撑每个模型的等级。这个模型仍按其等级训练，因此你在它之后开始的模型训练得更少。请降低一个等级，或在Infra标签页添加AI机架。",
+  "reallife_infra_cloud_gpu_models": "你自己的AI模型在你的AI机架上优先：每天{train}个单位用于训练它们，{run}个单位为其客户提供服务。云服务用剩下的部分出售AI算力，昨天售出{sold}个单位。"
 }

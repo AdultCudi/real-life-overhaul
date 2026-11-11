@@ -412,46 +412,93 @@ namespace RealLifeOverhaul.Tech
             return units;
         }
 
+        /// <summary>A product that trains on AI compute: an AI model being built or on sale (a withdrawn one takes none).</summary>
+        public static bool Trains(Product p) => p != null && p.K == ProductKind.Model && p.Stage < 2;
+
         /// <summary>
-        /// The own AI compute a model may train on: the racks' less what the player's other models still being built or on sale take of
-        /// them past what they may rent. Each model's part past the rent is kept for it, so raising one model never takes another's.
+        /// The day's AI compute for the player's AI models, in the products' order: the one rule the cloud's day, a model's page and a training run at
+        /// the desk go by. <paramref name="into"/> gets an entry for each product, an empty one for any that does not train (<see cref="Trains"/>).
+        /// <paramref name="at"/> and <paramref name="level"/> ask what the day would do with that product at another level (<paramref name="at"/> -1:
+        /// every model as set). Returns the racks' compute left, for the cloud to sell. Integers only. COST: two passes over the products.
         /// </summary>
-        public static long TrainOwnFor(IList<Product> products, Product p, long racks)
+        public static long ModelsDay(IList<Product> products, long racks, List<ModelCompute> into, int at = -1, int level = 0)
         {
-            long others = 0;
-            for (int i = 0; products != null && i < products.Count; i++)
+            // The player's own AI racks' compute (racks) is shared out in two passes. First each model's training past what it may rent (TrainBeyond)
+            // is kept for it, in the products' order while the racks are short. Then what is left goes, again in that order, to each model's training
+            // up to what it may rent and then to its customers' use (Inference). What the racks do not give is rented: a model's training never past
+            // InfraCatalogue.RentedMost a day, so a day short of own compute (an outage, a crew short, a throttled day) trains it less, and its
+            // customers' use in full. Each model's Keep is what its part past the rent may take without another's: the highest level it may be set
+            // to (TrainMost).
+            into.Clear();
+            int n = products != null ? products.Count : 0;
+            long all = Math.Max(0L, racks), left = all, beyond = 0;
+            for (int i = 0; i < n; i++)
             {
-                Product q = products[i];
-                if (q != p && q.K == ProductKind.Model && q.Stage < 2)
+                var m = new ModelCompute();
+                if (Trains(products[i]))
                 {
-                    others += TrainBeyond(q.Train);
+                    m.Level = TrainLevel(i == at ? level : products[i].Train);
+                    long past = TrainBeyond(m.Level);
+                    m.Kept = Math.Min(past, left);   // its part past the rent first, in the products' order while the racks are short
+                    left -= m.Kept;
+                    beyond += past;
+                }
+                into.Add(m);
+            }
+            for (int i = 0; i < n; i++)
+            {
+                Product p = products[i];
+                if (!Trains(p))
+                {
+                    continue;
+                }
+                ModelCompute m = into[i];
+                long units = TrainLevels[m.Level], past = TrainBeyond(m.Level);
+                long more = Math.Min(units - past, left);   // its training up to what it may rent, from what the racks have left
+                left -= more;
+                m.Own = m.Kept + more;
+                m.Rented = Math.Min(units - m.Own, InfraCatalogue.RentedMost);
+                long run = p.Live ? Inference(p) : 0;
+                m.RunOwn = Math.Min(run, left);
+                left -= m.RunOwn;
+                m.RunRented = run - m.RunOwn;
+                m.Keep = Math.Max(0L, all - (beyond - past));
+                into[i] = m;
+            }
+            return left;
+        }
+
+        /// <summary>A day's training added to each model's (what <see cref="ModelsDay"/> gave it, on the player's own AI racks and rented), as the cloud's day does after the share out.</summary>
+        public static void Train(IList<Product> products, List<ModelCompute> day)
+        {
+            for (int i = 0; products != null && i < products.Count && i < day.Count; i++)
+            {
+                if (Trains(products[i]))
+                {
+                    products[i].Compute += day[i].Trained;
                 }
             }
-            return Math.Max(0L, Math.Max(0L, racks) - others);
         }
 
         /// <summary>
-        /// A model's day of training: its level's units from the own AI compute left (<paramref name="free"/>, lowered by what it takes),
-        /// keeping for the models after it their parts past what they may rent (<paramref name="reserve"/>), then rented up to
-        /// <see cref="InfraCatalogue.RentedMost"/>. Short of own compute (an outage, a crew short, a throttled day) it trains on less
-        /// that day rather than rent past the most. Returns the units trained; <paramref name="rented"/> is the part rented.
+        /// A model's training level as set from its page: down freely, up to the highest its compute allows (<paramref name="most"/>, the
+        /// <see cref="TrainMost"/> of its <see cref="ModelCompute.Keep"/>). A level set when there was more compute stays until it is lowered.
         /// </summary>
-        public static long TrainDay(int train, ref long free, long reserve, out long rented)
-        {
-            long units = TrainLevels[TrainLevel(train)], left = Math.Max(0L, free);
-            long first = Math.Min(Math.Max(0L, units - InfraCatalogue.RentedMost), left);   // its part past the rent comes first, in the products' order while compute is short
-            long own = Math.Min(units, Math.Max(first, left - Math.Max(0L, reserve)));
-            free = left - own;
-            rented = Math.Min(units - own, InfraCatalogue.RentedMost);
-            return own + rented;
-        }
+        public static int TrainSet(int level, int current, int most) => TalentCatalogue.Clamp(level, 0, Math.Max(TrainLevel(current), TrainLevel(most)));
 
-        /// <summary>A lab with one model and its own AI compute (a rival's): it trains at the highest level that compute covers.
-        /// Returns the units a day; <paramref name="rented"/>, the part rented.</summary>
+        /// <summary>What so much AI compute a day rented from the rival clouds costs, cents at the start's prices.</summary>
+        public static long RentCost(long units) => Math.Max(0L, units) * InfraCatalogue.GpuUnitDay * InfraCatalogue.RentedGpuShare / 1000;
+
+        /// <summary>
+        /// A lab with one model and its own AI compute (a rival's): <see cref="ModelsDay"/>'s rule for it, at the highest level that compute
+        /// covers: the level's units on its own compute first and the rest rented, never past <see cref="InfraCatalogue.RentedMost"/>.
+        /// Returns the units a day; <paramref name="rented"/>, the part rented.
+        /// </summary>
         public static long TrainAlone(long own, out long rented)
         {
-            long free = Math.Max(0L, own);
-            return TrainDay(TrainMost(own), ref free, 0, out rented);
+            long units = TrainLevels[TrainMost(own)], mine = Math.Min(units, Math.Max(0L, own));
+            rented = Math.Min(units - mine, InfraCatalogue.RentedMost);
+            return mine + rented;
         }
 
         /// <summary>A model's customers' use of AI compute a day, units.</summary>

@@ -27552,7 +27552,7 @@
   "reallife_tech_desk_training_about": "Train the model's next generation: the compute, the data and the safety checks.",
   "reallife_tech_desk_training_step1": "Whose compute?",
   "reallife_tech_desk_training_own": "Your own data centre",
-  "reallife_tech_desk_training_own_trade": "Your own AI racks at your own price; rented if you have none.",
+  "reallife_tech_desk_training_own_trade": "Your own AI racks at your own price, as far as they go; the rest is rented.",
   "reallife_tech_desk_training_rented": "Rented",
   "reallife_tech_desk_training_rented_trade": "Always there, at the rival clouds' price.",
   "reallife_tech_desk_training_smaller": "A smaller run",
@@ -37205,9 +37205,11 @@
   "reallife_tech_product_train_split": "Training: {units} AI compute units a day, {own} on your own AI racks and {rented} rented for {cost} a day",
   "reallife_tech_product_train_room": "It can train on up to {most} units a day with {own} a day of your own AI racks' compute and up to {rent} rented. A higher level trains each generation faster.",
   "reallife_tech_product_train_rent_room": "It can train on up to {most} units a day, all rented. A higher level trains each generation faster.",
-  "reallife_tech_product_train_top": "This is the most it can train on with {own} units a day of your own AI racks' compute and up to {rent} rented. The level above, {next} a day, needs {more} more of your own, and an AI rack bought now gives {per} a day. Buy them for a data centre on the Infra tab.",
+  "reallife_tech_product_train_top": "This is the most it can train on now. The level above, {next} a day, needs {more} more units a day of your own AI racks' compute, and an AI rack bought now gives {per} a day. Buy them for a data centre on the Infra tab.",
   "reallife_tech_product_train_rent_top": "A model can rent up to {rent} units a day for its training. The level above, {next} a day, needs {more} a day from AI racks of your own, and an AI rack bought now gives {per} a day. Buy them for a data centre on the Infra tab.",
   "reallife_tech_product_train_peak": "This is the highest training level there is.",
   "reallife_tech_product_train_short": "Your own AI racks give it {own} units a day now and up to {rent} can be rented, so it trains on {pace} a day, less than this level. Lower the level, or add AI racks on the Infra tab.",
-  "reallife_ui_tech_open_infra": "Open Infra"
+  "reallife_ui_tech_open_infra": "Open Infra",
+  "reallife_tech_product_train_over": "Your own AI racks no longer cover every model's level. This one still trains at its level, so a model you started after it trains less. Lower a level, or add AI racks on the Infra tab.",
+  "reallife_infra_cloud_gpu_models": "Your own AI models come first on your AI racks: {train} units a day train them and {run} serve their customers. The cloud sells AI compute from what is left, {sold} units yesterday."
 }

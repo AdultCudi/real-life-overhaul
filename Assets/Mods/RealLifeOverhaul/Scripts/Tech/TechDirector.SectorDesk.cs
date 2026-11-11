@@ -214,7 +214,9 @@ namespace RealLifeOverhaul.Tech
                         p != null ? SectorRules.Soundness(p.Bugs, FirmsRules.Allowance(p)) : 1000);
                 case SectorRules.DeskOutage: return SectorRules.PickOutage(step, sf != null ? sf.LostToOutage : 0);
                 case SectorRules.DeskBigCustomer: return SectorRules.PickBigCustomer(firm != null ? firm.Crew.Engineering : 0);
-                case SectorRules.DeskTraining: return SectorRules.PickTraining(step, OwnGpu());
+                case SectorRules.DeskTraining:
+                    Product run = step == 0 ? TrainingModel(place) : null;
+                    return SectorRules.PickTraining(step, run != null && SectorRules.RunCovered(run, RunOwn(run)));
                 case SectorRules.DeskLaunch: return SectorRules.PickLaunch(step);
                 case SectorRules.DeskPitch: return SectorRules.PickPitch(step, Seniors(place));
                 case SectorRules.DeskScope: return SectorRules.PickScope(ActiveWhere(place, SectorRules.Creeps));
@@ -228,21 +230,17 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
-        // True when the player has AI racks to run a lab's training on, with a cloud or without, as the day's training does.
-        private bool OwnGpu()
+        // The AI compute a day the player's own AI racks give a model at its training run's level, with a cloud or without: its share by the day's
+        // own rule at full work (InfraRules.ModelsDay), so a run takes no more of them than the day gives it; the rest of a run is rented.
+        private long RunOwn(Product model)
         {
-            if (_infra == null)
+            int index = model != null && _firmsOn ? _firmsFile.Products.IndexOf(model) : -1;
+            if (index < 0)
             {
-                return false;
+                return 0;
             }
-            for (int i = 0; i < _infra.Centres.Count; i++)
-            {
-                if (_infra.Centres[i].GpuRacks > 0)
-                {
-                    return true;
-                }
-            }
-            return false;
+            InfraRules.ModelsDay(_firmsFile.Products, OwnRacks(), _modelsDay, index, SectorRules.RunLevel(model));
+            return _modelsDay[index].Own;
         }
 
         private int CloudCapacity()
@@ -296,7 +294,7 @@ namespace RealLifeOverhaul.Tech
                     Product model = TrainingModel(place);
                     subject = model.Name;
                     r = SectorRules.Training(_sector, model, _sector.ProductFor(model.Id), firm.File, SectorRules.Answer(choices, 0, 3, SectorRules.ComputeRented),
-                        SectorRules.Answer(choices, 1, 3, SectorRules.DataLicensed), SectorRules.Answer(choices, 2, 3, SectorRules.SafetyStandard), OwnGpu(), seed, day, strength);
+                        SectorRules.Answer(choices, 1, 3, SectorRules.DataLicensed), SectorRules.Answer(choices, 2, 3, SectorRules.SafetyStandard), RunOwn(model), seed, day, strength);
                     break;
                 case SectorRules.DeskLaunch:
                     Product launch = LaunchModel(place);

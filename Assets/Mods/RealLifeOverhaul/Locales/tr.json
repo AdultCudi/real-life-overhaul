@@ -27552,7 +27552,7 @@
   "reallife_tech_desk_training_about": "Modelin bir sonraki neslini eğitin: işlem gücü, veri ve güvenlik kontrolleri.",
   "reallife_tech_desk_training_step1": "Hangi işlem gücü?",
   "reallife_tech_desk_training_own": "Kendi veri merkeziniz",
-  "reallife_tech_desk_training_own_trade": "Kendi yapay zekâ raflarınız, sizin fiyatınızla; hiç yoksa kiralık.",
+  "reallife_tech_desk_training_own_trade": "Kendi yapay zeka raflarınız, yettiği sürece sizin fiyatınızdan; kalanı kiralanır.",
   "reallife_tech_desk_training_rented": "Kiralık",
   "reallife_tech_desk_training_rented_trade": "Her zaman hazır, rakip bulutların fiyatına.",
   "reallife_tech_desk_training_smaller": "Daha küçük bir çalışma",
@@ -37205,9 +37205,11 @@
   "reallife_tech_product_train_split": "Eğitim: günde {units} yapay zekâ işlem gücü birimi, bunun {own} kadarı kendi yapay zekâ raflarınızda, {rented} kadarı günde {cost} karşılığında kiralık",
   "reallife_tech_product_train_room": "Günde en fazla {most} birim üzerinde eğitebilir: kendi yapay zekâ raflarınızın işlem gücünden günde {own} ve kiralık olarak en fazla {rent}. Daha yüksek bir seviye her nesli daha hızlı eğitir.",
   "reallife_tech_product_train_rent_room": "Günde en fazla {most} birim üzerinde eğitebilir, hepsi kiralık. Daha yüksek bir seviye her nesli daha hızlı eğitir.",
-  "reallife_tech_product_train_top": "Kendi yapay zekâ raflarınızın işlem gücünden günde {own} birim ve kiralık olarak en fazla {rent} ile eğitebileceği en yüksek değer bu. Sonraki seviye, günde {next}, kendi raflarınızdan {more} daha fazlasını ister; şimdi satın alınan bir yapay zekâ rafı günde {per} verir. Bir veri merkezi için Altyapı sekmesinden satın alın.",
+  "reallife_tech_product_train_top": "Şu an en çok bu kadar eğitebilir. Bir üst seviye günde {next} ister; bunun için kendi yapay zeka raflarınızın hesaplamasından günde {more} birim daha gerekir. Şimdi alınan bir yapay zeka rafı günde {per} verir. Bunları Infra sekmesinden bir veri merkezi için satın alın.",
   "reallife_tech_product_train_rent_top": "Bir model eğitimi için günde en fazla {rent} birim kiralayabilir. Sonraki seviye, günde {next}, kendi yapay zekâ raflarınızdan günde {more} ister; şimdi satın alınan bir yapay zekâ rafı günde {per} verir. Bir veri merkezi için Altyapı sekmesinden satın alın.",
   "reallife_tech_product_train_peak": "Bu, var olan en yüksek eğitim seviyesi.",
   "reallife_tech_product_train_short": "Kendi yapay zekâ raflarınız ona şu an günde {own} birim veriyor ve kiralık olarak en fazla {rent} alınabiliyor; bu yüzden günde {pace} hızla eğitiyor, bu seviyeden düşük. Seviyeyi düşürün ya da Altyapı sekmesinden raf ekleyin.",
-  "reallife_ui_tech_open_infra": "Altyapıyı aç"
+  "reallife_ui_tech_open_infra": "Altyapıyı aç",
+  "reallife_tech_product_train_over": "Kendi yapay zeka raflarınız artık her modelin seviyesini karşılamıyor. Bu yine kendi seviyesinde eğitiliyor, bu yüzden ondan sonra başlattığınız bir model daha az eğitiliyor. Bir seviyeyi düşürün ya da Infra sekmesinde yapay zeka rafları ekleyin.",
+  "reallife_infra_cloud_gpu_models": "Kendi yapay zeka modelleriniz yapay zeka raflarınızda önceliklidir: günde {train} birim onları eğitir, {run} ise müşterilerine hizmet verir. Bulut, geriye kalan yapay zeka hesaplamasını satar; dün {sold} birim."
 }

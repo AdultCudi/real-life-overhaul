@@ -466,6 +466,11 @@ namespace RealLifeOverhaul.Ui
                     "hyper", c.Hyper ? TechText.T("reallife_infra_state_hyper") : _d.Needs(_d.HyperNeeds(), false)));
                 card.Say(TechText.Fill("reallife_infra_cloud_line", "sold", c.Sold.ToString(Inv), "own", c.Own.ToString(Inv), "gpu", c.GpuSold.ToString(Inv), "rival", TechText.Mille(c.RivalPrice),
                     "regions", InfraRules.Regions(f.Centres).ToString(Inv)));
+                ViewLine racks = _d.RacksLine();   // the AI racks train the player's own models first: the reason the cloud sells less of them
+                if (racks != null)
+                {
+                    card.Say(Words(racks));
+                }
                 if (share > 0)
                 {
                     card.Say(TechText.Fill("reallife_endscale_cloud_ops", "ops", c.Ops.ToString(Inv), "wages", Cents(_d.Level((long)c.Ops * InfraCatalogue.OpsWage)), "licence",

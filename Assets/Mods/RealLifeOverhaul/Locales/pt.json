@@ -27552,7 +27552,7 @@
   "reallife_tech_desk_training_about": "Treine a próxima geração do modelo: a computação, os dados e as verificações de segurança.",
   "reallife_tech_desk_training_step1": "Computação de quem?",
   "reallife_tech_desk_training_own": "Seu próprio data center",
-  "reallife_tech_desk_training_own_trade": "Seus próprios racks de IA ao seu preço; alugados se você não tiver nenhum.",
+  "reallife_tech_desk_training_own_trade": "Seus próprios racks de IA ao seu preço, enquanto derem conta; o resto é alugado.",
   "reallife_tech_desk_training_rented": "Alugado",
   "reallife_tech_desk_training_rented_trade": "Sempre disponível, ao preço das nuvens rivais.",
   "reallife_tech_desk_training_smaller": "Uma rodada menor",
@@ -37205,9 +37205,11 @@
   "reallife_tech_product_train_split": "Treinamento: {units} unidades de computação de IA por dia, {own} nos seus próprios racks de IA e {rented} alugadas por {cost} por dia",
   "reallife_tech_product_train_room": "Ele pode treinar até {most} unidades por dia, com {own} por dia de computação dos seus próprios racks de IA e até {rent} alugadas. Um nível mais alto treina cada geração mais rápido.",
   "reallife_tech_product_train_rent_room": "Ele pode treinar até {most} unidades por dia, todas alugadas. Um nível mais alto treina cada geração mais rápido.",
-  "reallife_tech_product_train_top": "Este é o máximo que ele pode treinar com {own} unidades por dia da computação dos seus próprios racks de IA e até {rent} alugadas. O próximo nível, {next} por dia, precisa de mais {more} dos seus racks, e um rack de IA comprado agora dá {per} por dia. Compre esses racks para um data center na aba Infra.",
+  "reallife_tech_product_train_top": "Este é o máximo que ele pode treinar agora. O nível acima, {next} por dia, precisa de {more} unidades a mais por dia da computação dos seus próprios racks de IA, e um rack de IA comprado agora dá {per} por dia. Compre racks para um data center na aba Infra.",
   "reallife_tech_product_train_rent_top": "Um modelo pode alugar até {rent} unidades por dia para o treinamento. O próximo nível, {next} por dia, precisa de {more} por dia de racks de IA próprios, e um rack de IA comprado agora dá {per} por dia. Compre esses racks para um data center na aba Infra.",
   "reallife_tech_product_train_peak": "Este é o nível de treinamento mais alto que existe.",
   "reallife_tech_product_train_short": "Seus próprios racks de IA dão a ele {own} unidades por dia agora e até {rent} podem ser alugadas, então ele treina a {pace} por dia, menos que este nível. Reduza o nível ou adicione racks de IA na aba Infra.",
-  "reallife_ui_tech_open_infra": "Abrir Infra"
+  "reallife_ui_tech_open_infra": "Abrir Infra",
+  "reallife_tech_product_train_over": "Seus próprios racks de IA não cobrem mais o nível de todos os modelos. Este ainda treina no seu nível, então um modelo que você começou depois treina menos. Baixe um nível ou adicione racks de IA na aba Infra.",
+  "reallife_infra_cloud_gpu_models": "Seus próprios modelos de IA vêm primeiro nos seus racks de IA: {train} unidades por dia os treinam e {run} atendem os clientes deles. A nuvem vende computação de IA com o que sobra, {sold} unidades ontem."
 }

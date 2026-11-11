@@ -27552,7 +27552,7 @@
   "reallife_tech_desk_training_about": "모델의 다음 세대를 학습시키세요. 연산, 데이터, 안전 점검을 정합니다.",
   "reallife_tech_desk_training_step1": "누구의 연산?",
   "reallife_tech_desk_training_own": "본인 데이터 센터",
-  "reallife_tech_desk_training_own_trade": "본인의 AI 랙을 본인 가격으로 사용하며, 없으면 임대합니다.",
+  "reallife_tech_desk_training_own_trade": "자체 AI 랙은 여유가 있는 만큼 귀하의 가격으로 사용하며, 나머지는 임대합니다.",
   "reallife_tech_desk_training_rented": "임대",
   "reallife_tech_desk_training_rented_trade": "언제나 쓸 수 있지만, 경쟁 클라우드의 가격입니다.",
   "reallife_tech_desk_training_smaller": "더 작은 실행",
@@ -37205,9 +37205,11 @@
   "reallife_tech_product_train_split": "학습: 하루 AI 컴퓨팅 {units}단위, 그중 {own}은 본인의 AI 랙에서, {rented}은 하루 {cost}에 임대",
   "reallife_tech_product_train_room": "하루 최대 {most}단위까지 학습할 수 있습니다. 본인 AI 랙의 컴퓨팅 하루 {own}과 임대 최대 {rent}을 사용합니다. 레벨이 높을수록 각 세대를 더 빨리 학습합니다.",
   "reallife_tech_product_train_rent_room": "하루 최대 {most}단위까지 학습할 수 있으며, 모두 임대입니다. 레벨이 높을수록 각 세대를 더 빨리 학습합니다.",
-  "reallife_tech_product_train_top": "본인 AI 랙의 컴퓨팅 하루 {own}단위와 임대 최대 {rent}단위로 학습할 수 있는 최대치입니다. 다음 레벨인 하루 {next}에는 본인 랙에서 {more}이 더 필요하고, 지금 구매하는 AI 랙 하나는 하루 {per}을 줍니다. 인프라 탭에서 데이터 센터용으로 구매하세요.",
+  "reallife_tech_product_train_top": "지금 학습할 수 있는 최대치입니다. 다음 단계는 하루 {next}입니다. 이를 위해서는 귀하의 AI 랙 컴퓨팅이 하루 {more}단위 더 필요합니다. 지금 구매하는 AI 랙 하나의 하루 산출량은 {per}입니다. 인프라 탭에서 데이터 센터용으로 구매하십시오.",
   "reallife_tech_product_train_rent_top": "모델은 학습에 하루 최대 {rent}단위까지 임대할 수 있습니다. 다음 레벨인 하루 {next}에는 본인 AI 랙에서 하루 {more}이 더 필요하고, 지금 구매하는 AI 랙 하나는 하루 {per}을 줍니다. 인프라 탭에서 데이터 센터용으로 구매하세요.",
   "reallife_tech_product_train_peak": "이것이 존재하는 가장 높은 학습 레벨입니다.",
   "reallife_tech_product_train_short": "본인 AI 랙이 지금 하루 {own}단위를 제공하고 임대는 최대 {rent}까지 가능해서, 이 레벨보다 낮은 하루 {pace}으로 학습합니다. 레벨을 낮추거나 인프라 탭에서 AI 랙을 추가하세요.",
-  "reallife_ui_tech_open_infra": "인프라 열기"
+  "reallife_ui_tech_open_infra": "인프라 열기",
+  "reallife_tech_product_train_over": "귀하의 자체 AI 랙으로는 모든 모델의 레벨을 더 이상 감당할 수 없습니다. 이 모델은 여전히 자신의 레벨로 학습하므로, 그 뒤에 시작한 모델은 덜 학습합니다. 레벨을 낮추거나 인프라 탭에서 AI 랙을 추가하십시오.",
+  "reallife_infra_cloud_gpu_models": "귀하의 자체 AI 모델이 AI 랙에서 가장 먼저 처리됩니다. 하루 {train}단위는 학습에, {run}단위는 고객 서비스에 쓰입니다. 클라우드는 남은 AI 컴퓨팅을 판매하며, 어제는 {sold}단위였습니다."
 }

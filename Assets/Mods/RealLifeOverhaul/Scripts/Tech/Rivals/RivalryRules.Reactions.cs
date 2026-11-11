@@ -244,28 +244,16 @@ namespace RealLifeOverhaul.Tech
 
         // ---------------------------------------------------------------- copying a lead
 
-        /// <summary>
-        /// The days a rival takes to build the features between its own and a target with the share of its team that copies, and for a lab
-        /// to train them too at its own pace (<see cref="InfraRules.TrainAlone"/>, less what it has trained already), as every model's
-        /// features are: never under a week, never over three months.
-        /// </summary>
+        /// <summary>The days a rival takes to build the features between its own and a target with the share of its team that copies: never under a week, never over three months.</summary>
         public static int CopyDelay(SectorFile f, RivalProduct r, int target)
         {
-            long cost = 0, train = 0;
-            bool lab = r.Market >= (int)SectorMarket.ConsumerAi;
+            long cost = 0;
             for (int k = Math.Max(0, r.Features); k < target && k < Math.Max(0, r.Features) + 200; k++)
             {
                 cost += FirmsRules.FeatureCost(k);
-                train = lab ? Math.Min(long.MaxValue / 4, train + InfraRules.TrainNeed(k)) : 0;
             }
             long perDay = Math.Max(1L, (long)SectorRules.RivalPoints(f, r) * RivalryCatalogue.CopyFocus / 1000);
-            long days = (cost + perDay - 1) / perDay;
-            if (lab)
-            {
-                long pace = Math.Max(1L, InfraRules.TrainAlone(SectorRules.LabOwn(r), out _));
-                days = Math.Max(days, (Math.Max(0L, train - Math.Max(0L, r.Compute)) + pace - 1) / pace);
-            }
-            return (int)Math.Max(RivalryCatalogue.CopyLeast, Math.Min(RivalryCatalogue.CopyMost, days));
+            return (int)Math.Max(RivalryCatalogue.CopyLeast, Math.Min(RivalryCatalogue.CopyMost, (cost + perDay - 1) / perDay));
         }
 
         private static void Copies(RivalryWorld w, int day)
@@ -308,10 +296,6 @@ namespace RealLifeOverhaul.Tech
                 if (r != null)
                 {
                     int gap = Math.Max(0, rec.CopyTarget - r.Features);
-                    for (int k = Math.Max(0, r.Features); r.Market >= (int)SectorMarket.ConsumerAi && k < rec.CopyTarget && r.Compute > 0; k++)
-                    {
-                        r.Compute = Math.Max(0L, r.Compute - InfraRules.TrainNeed(k));   // a lab's copied features spend their training as built ones do (SectorRules.RivalDay)
-                    }
                     if (gap > 0)
                     {
                         r.Features = rec.CopyTarget;

@@ -561,10 +561,11 @@ namespace RealLifeOverhaul.Tech
                 box.Selector(FirmsCatalogue.MarketingDay.Length, p.Marketing, TechText.MarketingLevel, i => Do(() => _director.SetProduct(id, -1, i, -1)));
                 if (p.K == ProductKind.Model)
                 {
-                    // the levels up to the highest its compute covers (one set before racks were sold stays listed until it is lowered), then what holds it there and what raises it
-                    int most = _director.TrainingMost(p, out long own, out int perRack), train = InfraRules.TrainLevel(p.Train);
-                    box.Selector(Mathf.Max(most, train) + 1, train, i => Words(TrainingViews.Level(i, own, _studioWords)), i => Do(() => _director.SetTraining(id, i)));
-                    ViewLine room = TrainingViews.Room(train, own, perRack);
+                    // the levels up to the highest its compute covers (one set before racks were sold stays listed until it is lowered), each as the day
+                    // gives it, then what holds it there and what raises it
+                    TrainingLook t = _director.Training(p);
+                    box.Selector(Mathf.Max(t.Most, t.Level) + 1, t.Level, i => Words(TrainingViews.Level(t, i, _studioWords)), i => Do(() => _director.SetTraining(id, i)));
+                    ViewLine room = TrainingViews.Room(t);
                     if (room.Tone == ViewTone.Warn)
                     {
                         box.Line(Words(room), CellTone.Yellow);
