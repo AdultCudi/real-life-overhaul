@@ -52,7 +52,7 @@ namespace RealLifeOverhaul.Parties
                 Closed = () => { },
                 Kit = () => new RealLifeOverhaul.Ui.VentScreen(RealLifeOverhaul.Ui.PartiesLive.Instance, RealLifeOverhaul.Ui.PartiesLive.ScreenId),
                 KitScreen = RealLifeOverhaul.Ui.PartiesLive.ScreenId,
-                KitIcon = RealLifeOverhaul.Ui.UiIcon.ForkKnife
+                KitIcon = RealLifeOverhaul.Ui.UiIcon.Star
             };
             _app = PhoneApp.Install(def, out bool tryAgain);
             if (_app == null)

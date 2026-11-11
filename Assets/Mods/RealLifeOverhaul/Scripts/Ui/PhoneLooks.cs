@@ -35,7 +35,7 @@ namespace RealLifeOverhaul.Ui
             UiIcon.Building, UiIcon.Tag, UiIcon.Headset, UiIcon.Rocket, UiIcon.ShoppingCart, UiIcon.Home, UiIcon.Car,
             UiIcon.Hammer, UiIcon.Cpu, UiIcon.ListChecks, UiIcon.Lightning,
             UiIcon.Lightbulb, UiIcon.Gear, UiIcon.IdBadge,
-            UiIcon.ForkKnife
+            UiIcon.Star
         };
 
         /// <summary>The five folders' glyphs, in the folders' order: money, work and study, social and life, business, settings.</summary>
