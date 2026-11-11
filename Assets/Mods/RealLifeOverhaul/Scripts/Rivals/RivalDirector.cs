@@ -428,6 +428,8 @@ namespace RealLifeOverhaul.Rivals
                     m.Second = (smear ? 1 : 0) | (paper ? 2 : 0);   // (which of its texts is true: a piece in the paper, or word round the city)
                     return true;
                 }
+                case RivalMoveKind.Shares:
+                    return t.Listed && RivalBridges.Shares != null && RivalBridges.Shares(m.Tycoon, m.Amount);   // (a real block, through the market's own rules)
                 default:
                     return false;
             }

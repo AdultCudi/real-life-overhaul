@@ -304,7 +304,8 @@ internal static partial class Program
             "exit basis: a deal, a buy-back and going private tell the tax of the founder's gain or cost, a firm's through its own bridge, on the founder's machine and never for a test's company");
         Check(Regex.IsMatch(director, @"long gain = ExitGains\.ForMarketDeal\(_gains,") && !director.Contains("ForMarketSale") && !Regex.IsMatch(director, @"if \(shares < 0\)\s*\{\s*// Before Align"),
             "exit basis: a firm's purchases reach the tax as well as its sales");
-        Check(tech.Contains("ExitGains.ForMarketDeal(file, 0L, ExitGains.CompanyPlace, name, money, fee, held, shares, Save.Day, Prices.Level)")
+        Check(tech.Contains("StakeDealt(ExitGains.CompanyPlace, 0L, name, shares, money, fee, held);")
+              && tech.Contains("ExitGains.ForMarketDeal(file, invested > 0 ? invested : 0L, place, name, money, fee, held, shares, Save.Day, Prices.Level)")
               && tech.Contains("ExitGains.ForTakeover(file, name, money, fixtures, founder, total, Save.Day, Prices.Level)") && tech.Contains("_gains ?? ExitGainStore.Load(Save.modData)"),
             "exit basis: the whole company's gains go in the same file as a firm's, read from the save when the venture part is off, and write back at once");
         Check(links.Contains("MarketBridges.CompanyDealt = CompanyDealt;") && links.Contains("MarketBridges.CompanyTaken = CompanyTaken;") && links.Contains("MarketBridges.CompanyDealt = null;")

@@ -94,7 +94,16 @@ namespace RealLifeOverhaul.Ui
                 "reallife_mkt_inv_yield", "reallife_mkt_inv_sec_year",
                 "reallife_mkt_inv_income_owed", "reallife_mkt_inv_income_all",
                 "reallife_ibox_sec_payments", "reallife_mkt_col_money", "reallife_mkt_col_commission",
-                "reallife_mkt_confirm_buy", "reallife_mkt_inv_work", "reallife_stk_hist_empty", "reallife_stk_hist_empty_body"
+                "reallife_mkt_confirm_buy", "reallife_mkt_inv_work", "reallife_stk_hist_empty", "reallife_stk_hist_empty_body",
+                // The market's extras (Stocks/StocksBuild.Extras.cs): the index fund, a block trade, the founder's split, the bank's listing.
+                "reallife_stx_fund", "reallife_stx_fund_sub", "reallife_stx_fund_units", "reallife_stx_cost", "reallife_stx_fund_paid", "reallife_stx_fund_fee", "reallife_stx_deal",
+                "reallife_stx_units", "reallife_stx_fund_price", "reallife_stx_total", "reallife_stx_fund_about", "reallife_stx_fund_buy", "reallife_stx_fund_sell", "reallife_stx_block",
+                "reallife_stk_none", "reallife_stx_block_holding", "reallife_stx_block_held", "reallife_stx_block_price",
+                "reallife_stx_block_moves", "reallife_stx_block_after", "reallife_stx_block_about", "reallife_stx_block_buy", "reallife_stx_block_sell", "reallife_stx_split",
+                "reallife_stx_split_yours", "reallife_stx_split_all", "reallife_stx_split_stake", "reallife_stx_split_ratio", "reallife_stx_split_price", "reallife_stx_split_mine",
+                "reallife_stx_split_notice", "reallife_stx_split_about", "reallife_stx_split_ask", "reallife_stx_bank", "reallife_stx_bank_raised", "reallife_stx_bank_others",
+                "reallife_stx_bank_listed_about", "reallife_lst_withdraw", "reallife_stx_bank_priced", "reallife_stx_bank_new", "reallife_stx_bank_fees", "reallife_stx_bank_way_about",
+                "reallife_stx_bank_worth", "reallife_stx_bank_float", "reallife_stx_bank_retainer", "reallife_stx_bank_days", "reallife_stx_bank_about", "reallife_lst_engage"
             }).Switch(UiScreenSwitches.Market));
         }
     }

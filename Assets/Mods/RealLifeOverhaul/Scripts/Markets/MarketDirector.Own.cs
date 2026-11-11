@@ -246,7 +246,7 @@ namespace RealLifeOverhaul.Markets
             {
                 return;
             }
-            int from = Math.Max(f.BooksDay + 1, day - Year * 3);
+            int from = Math.Max(f.BooksDay + 1, day - Year * ListingCatalogue.BooksLookBackYears);
             for (int d = from; d < day - 1; d++)
             {
                 OwnBooks b = books(d, d + 1);
@@ -494,6 +494,9 @@ namespace RealLifeOverhaul.Markets
                     break;
                 case MarketNewsKind.Split:
                     Queue(NotificationType.Info, "reallife_mkt_note_split", "name", k.Name, "ratio", news.A.ToString(), "day", news.B.ToString());
+                    break;
+                case MarketNewsKind.Reverse:
+                    Queue(NotificationType.Info, "reallife_stx_note_reverse", "name", k.Name, "ratio", news.A.ToString(), "day", news.B.ToString());
                     break;
             }
             return true;

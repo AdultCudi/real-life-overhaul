@@ -666,6 +666,7 @@ namespace RealLifeOverhaul.Markets
             {
                 Shared(s, kept, qty);
             }
+            State.Extras.Push(s.Id, kept);   // a bot's trade is the player's push too
             s.Last = s.MidCents;
             return true;
         }

@@ -174,6 +174,10 @@ namespace RealLifeOverhaul.Ui
                 rows.Add(new StocksRow { Label = w("reallife_stk_acc_div_paid", "Dividends you paid on shorts"), Value = Money(a.DividendsPaid) });
             }
             rows.Add(new StocksRow { Label = w("reallife_stk_acc_commission", "Commission paid"), Value = Money(a.Commission) });
+            if (FundRow(s, w, out StocksRow fund))
+            {
+                rows.Add(fund);   // units of the index fund (StocksBuild.Extras.cs)
+            }
             if (a.Interest > 0)
             {
                 rows.Add(new StocksRow { Label = w("reallife_stk_acc_interest", "Interest paid"), Value = Money(a.Interest) });

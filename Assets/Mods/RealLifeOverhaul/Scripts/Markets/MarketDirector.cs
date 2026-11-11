@@ -190,6 +190,7 @@ namespace RealLifeOverhaul.Markets
             BotsSecond();
             InvestSecond();   // worked orders, dividends put back and rollovers
             DerivsSecond();   // the raw materials exchange and the player's futures and options
+            ExtrasSecond();   // the extras' option, the bank's way to the market, the rivals' day (Extras/MarketDirector.Extras.cs)
             SendTrades();
             InstallApp();
         }
@@ -357,6 +358,7 @@ namespace RealLifeOverhaul.Markets
             HookInvest();
             HookDerivs();
             HookFirms();
+            HookExtras();
             _engine.HoldAfterLoad();
             OwnStarted(save);   // who the player is, and their company back if a save as a guest set it aside
             _frontierWritten = tape.Frontier;
@@ -364,6 +366,7 @@ namespace RealLifeOverhaul.Markets
             _save = save;
             _running = true;
             TradeLog.Load(save.modData, state);
+            ExtrasStore.Load(save.modData, state);
             if (fresh)
             {
                 RuleBots.SeedRivals(state);   // rivals run the same rules; a save that already has rules keeps them
@@ -414,6 +417,7 @@ namespace RealLifeOverhaul.Markets
                 }
                 MarketStore.Save(Save.modData, _engine.State);
                 TradeLog.Save(Save.modData, _engine.State);
+                ExtrasStore.Save(Save.modData, _engine.State);
                 MarketTapeFile.Rewrite(_engine.Tape.Id, _engine.Tape.Lines());
             }
             else if (_running)
@@ -491,6 +495,7 @@ namespace RealLifeOverhaul.Markets
                     Flush();   // the lines on their way, to the file and the guests, before the tape is written whole
                     MarketStore.Save(Save.modData, _engine.State);
                     TradeLog.Save(Save.modData, _engine.State);
+                    ExtrasStore.Save(Save.modData, _engine.State);
                     SaveTape();
                 }
             }

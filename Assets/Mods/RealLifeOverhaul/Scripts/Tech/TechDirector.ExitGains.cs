@@ -49,12 +49,21 @@ namespace RealLifeOverhaul.Tech
         /// </summary>
         internal void CompanyDealt(string name, long shares, long money, long fee, long held)
         {
+            StakeDealt(ExitGains.CompanyPlace, 0L, name, shares, money, fee, held);
+        }
+
+        /// <summary>
+        /// The same for any stake of the player's that trades on the market and has no cap table: the whole company (<see cref="ExitGains.CompanyPlace"/>) or their bank's own
+        /// stock (Markets/Extras), each with a basis line of its own. <paramref name="invested"/> is what the stake cost to found, cents at the start's prices; 0 for the company.
+        /// </summary>
+        internal void StakeDealt(string place, long invested, string name, long shares, long money, long fee, long held)
+        {
             if (Save == null)
             {
                 return;
             }
             GainFile file = _gains ?? ExitGainStore.Load(Save.modData) ?? new GainFile();
-            long gain = ExitGains.ForMarketDeal(file, 0L, ExitGains.CompanyPlace, name, money, fee, held, shares, Save.Day, Prices.Level);
+            long gain = ExitGains.ForMarketDeal(file, invested > 0 ? invested : 0L, place, name, money, fee, held, shares, Save.Day, Prices.Level);
             if (_gains == null)
             {
                 KeepGains(file, Save.modData);

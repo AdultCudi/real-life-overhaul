@@ -663,21 +663,48 @@ namespace RealLifeOverhaul.Tech
         /// <summary>What a firm is worth, cents: a year's recurring revenue by a multiple for growth and debt, plus three months' other takings.</summary>
         public static long Value(Firm firm, long arr, int growthBp)
         {
+            return Value(firm, arr, growthBp, firm.Revenue30);
+        }
+
+        /// <summary>
+        /// A firm's worth as above on a month's takings given: the way to the market prices on <see cref="Steady"/>, so one launch or one big contract does not
+        /// stand for the firm.
+        /// </summary>
+        public static long Value(Firm firm, long arr, int growthBp, long monthCents)
+        {
             int multiple = TalentCatalogue.Clamp(4000 + growthBp * 2 - firm.Debt * 2, 2000, 12000);
-            long other = Math.Max(0, firm.Revenue30 - arr / 12) * 3;
+            long other = Math.Max(0, monthCents - arr / 12) * 3;
             return arr * multiple / 1000 + other;
+        }
+
+        /// <summary>
+        /// A firm's month of takings that a listing may rely on, cents: the lesser of its last month and the month before it, both without what the player's own
+        /// other businesses paid it. A launch's payout or a bid's upfront lifts one month and not the other, so it never stands for the firm; a firm with
+        /// less than two months of takings behind it has none (the month before is still gathering).
+        /// </summary>
+        public static long Steady(Firm firm)
+        {
+            if (firm == null || firm.PrevDays < TechStatusRules.ChangeFromDays)
+            {
+                return 0L;
+            }
+            return Math.Min(Math.Max(0L, firm.Revenue30 - firm.Self30), Math.Max(0L, firm.Prev30 - firm.SelfPrev30));
         }
 
         /// <summary>A quarter's research and development relief: the extra deduction given on its qualifying costs, cents.</summary>
         public static long Relief(long qualifying) => Math.Max(0, qualifying) * FirmsCatalogue.ReliefShare / 1000;
 
-        /// <summary>A day's takings rolled into the firm's last thirty days.</summary>
-        public static void Roll(Firm firm, int day, long takings)
+        /// <summary>A day's takings rolled into the firm's last thirty days; <paramref name="self"/> is the part of them its owner's other businesses paid.</summary>
+        public static void Roll(Firm firm, int day, long takings, long self = 0)
         {
             int slot = ((day % FirmsCatalogue.MonthDays) + FirmsCatalogue.MonthDays) % FirmsCatalogue.MonthDays;
+            int days = firm.PrevDays;
+            TechStatusRules.Age(ref firm.SelfPrev30, ref days, firm.SelfDays[slot]);   // aged by the same days as the takings' month before
             TechStatusRules.Age(ref firm.Prev30, ref firm.PrevDays, firm.Days[slot]);
             firm.Revenue30 += takings - firm.Days[slot];
             firm.Days[slot] = takings;
+            firm.Self30 += Math.Min(takings, Math.Max(0L, self)) - firm.SelfDays[slot];
+            firm.SelfDays[slot] = Math.Min(takings, Math.Max(0L, self));
         }
 
         /// <summary>

@@ -373,7 +373,7 @@ internal static partial class Program
               && links.Contains("LedgerBridges.Beaten = Beaten;") && links.Contains("LedgerBridges.TestBeat = TestBeat;"),
             "milestones' sources: the wiring hands the paper the companies, the rivals taken over, the test's takeover and the bidder's name, only with the option on");
         string market = string.Join("\n", System.IO.Directory.GetFiles(System.IO.Path.GetDirectoryName(ModSourcePath(@"Markets\MarketModel.cs")), "*.cs").Select(System.IO.File.ReadAllText));
-        Check(!market.Contains("LedgerStories") && !market.Contains("reallife_ledger_mile") && (int)MarketNewsKind.Count == 34,
+        Check(!market.Contains("LedgerStories") && !market.Contains("reallife_ledger_mile") && (int)MarketNewsKind.Count == 36 && MarketNewsKind.Reverse == (MarketNewsKind)34 && MarketNewsKind.Block == (MarketNewsKind)35,   // (the two after 33 are the stock market extras' own)
             "milestones' sources: the market is untouched: no new kind of news on its tape or in its session's lines, the stories read on each machine from what it has");
         Check(MemberText(stories, "private void StoriesCheck(LedgerEdition e, int found)").Contains("Meta.Dev.Verbose") && stories.Contains("City Ledger check (milestones and rivals)"),
             "milestones' sources: the self-check is one line an edition, with Developer diagnostics on");

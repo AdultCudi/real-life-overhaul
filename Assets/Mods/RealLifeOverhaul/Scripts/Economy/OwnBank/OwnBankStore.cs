@@ -86,6 +86,7 @@ namespace RealLifeOverhaul.Economy
                 t.Append('|').Append(b.Crew[k].ToString(Inv));
             }
             t.Append('|').Append(b.FoundedLeast.ToString(Inv));
+            t.Append('|').Append(b.Public.ToString(Inv));
             t.Append("^k:").Append(b.CounterFees.ToString(Inv)).Append('|').Append(b.CounterHour.ToString(Inv));
             if (b.Branches.Count > 0)
             {
@@ -184,6 +185,7 @@ namespace RealLifeOverhaul.Economy
                                 b.Crew[k] = Math.Max(0, I(scale, k + 1));
                             }
                             b.FoundedLeast = Math.Max(0, L(scale, OwnBankCatalogue.CrewKinds + 1));
+                            b.Public = Math.Max(0, L(scale, OwnBankCatalogue.CrewKinds + 2));   // appended last: a line from before it keeps nothing for the public
                             break;
                         case 'k':
                             string[] counter = body.Split('|');

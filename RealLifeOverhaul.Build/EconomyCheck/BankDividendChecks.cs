@@ -238,7 +238,7 @@ internal static partial class Program
     private static void DividendSources()
     {
         string game = MemberText(EconomySource(@"OwnBank\OwnBankGame.cs"), "public static void BookDay(");
-        Check(game.Contains("Book(d.PaidOut, OwnBankCatalogue.CapitalOutKey, hq, bank, null, day, false, false)"),
+        Check(game.Contains("Book(Owner(d.PaidOut), OwnBankCatalogue.CapitalOutKey, hq, bank, null, day, false, false)"),
             "own bank's dividends: booked with the day into the player's cash as a dividend, under the bank's name");
         string director = EconomySource(@"OwnBank\Dividends\OwnBankDirector.Dividends.cs"), run = MemberText(EconomySource(@"OwnBank\OwnBankDirector.cs"), "private void RunDay(");
         Check(run.Contains("TellDividend(day);") && director.Contains("reallife_ob_toast_div_paid") && director.Contains("reallife_ob_toast_div_short") && director.Contains("reallife_ob_toast_div_none")

@@ -42,6 +42,17 @@ namespace RealLifeOverhaul.Markets
                 case MarketNewsKind.Split:
                     Queue(NotificationType.Info, "reallife_mkt_note_split", "name", name, "ratio", news.A.ToString(), "day", news.B.ToString());
                     break;
+                case MarketNewsKind.Reverse:
+                    Queue(NotificationType.Info, "reallife_stx_note_reverse", "name", name, "ratio", news.A.ToString(), "day", news.B.ToString());
+                    break;
+                case MarketNewsKind.Block:
+                    if (news.C > 0)
+                    {
+                        // A rival's block of a company the player holds or watches: the market's own sentence for it.
+                        string blockKey = MarketText.NewsKey(news, s, out string[] blockData);
+                        Queue(NotificationType.Info, blockKey, blockData);
+                    }
+                    break;
                 case MarketNewsKind.Builder:
                 {
                     // A builder the player holds or watches: the market's own sentence for it, as the paper prints it.

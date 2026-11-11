@@ -481,6 +481,31 @@ namespace RealLifeOverhaul.Tech
             return _bankNames;
         }
 
+        /// <summary>
+        /// A firm's month as the way to the market counts it: its recurring revenue or its steady takings (the lesser of its last two months, without what its
+        /// owner's other businesses paid it: <see cref="FirmsRules.Steady"/>), cents at the start's prices.
+        /// </summary>
+        internal long ListMonthOf(FirmPlace firm)
+        {
+            return firm == null ? 0L : ExitRules.ListMonth(FirmsRules.Arr(_firmsFile, firm.File.Place), FirmsRules.Steady(firm.File));
+        }
+
+        /// <summary>
+        /// A firm's worth for a listing: its books' value on its steady month and not on one good month (<see cref="FirmsRules.Steady"/>), or the market's own model
+        /// on its books when that is more.
+        /// </summary>
+        internal long ListValueOf(FirmPlace firm)
+        {
+            if (firm == null)
+            {
+                return 0L;
+            }
+            FirmValue(firm, out _, out int growthBp);
+            long value = FirmsRules.Value(firm.File, FirmsRules.Arr(_firmsFile, firm.File.Place), growthBp, FirmsRules.Steady(firm.File));
+            Func<string, long> books = ExitBridges.BooksWorth;
+            return ExitRules.ListValue(value, books != null ? books(firm.File.Place) : 0L);
+        }
+
         /// <summary>The bankers engaged: the retainer is paid by the firm, and the firm's worth is taken from its books.</summary>
         internal bool ExitBankers(string place, int index)
         {
@@ -498,8 +523,8 @@ namespace RealLifeOverhaul.Tech
             }
             IReadOnlyList<string> banks = ExitBanks();
             int bank = TalentCatalogue.Clamp(index, 0, banks.Count - 1);
-            long mrr = FirmsRules.Arr(_firmsFile, place) / 12;
-            FirmValue(firm, out long value, out _);
+            long mrr = ListMonthOf(firm);
+            long value = ListValueOf(firm);
             if (!ExitRules.ListReady(mrr, e) || value <= 0)
             {
                 Notifications.ShowError("reallife_exit_refuse_not_ready");

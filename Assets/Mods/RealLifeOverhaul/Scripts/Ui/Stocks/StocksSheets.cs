@@ -7,7 +7,8 @@ namespace RealLifeOverhaul.Ui
     public static class StocksSheets
     {
         public const byte None = 0, BondBuy = 1, Ladder = 2, BondHeld = 3, Material = 4, ShareOption = 5, Contract = 6, Firm = 7, Rule = 8, Order = 9,
-            Margin = 10, Publish = 11, Founder = 12, Own = 13, Alert = 14, Ticket = 15;
+            Margin = 10, Publish = 11, Founder = 12, Own = 13, Alert = 14, Ticket = 15,
+            Fund = 16, Block = 17, Split = 18, BankList = 19;   // the market's extras (StocksBuild.Extras.cs)
 
         // The slots of a bond's sheet.
         public const int Amount = 0, Reinvest = 1, Roll = 2;
@@ -26,6 +27,10 @@ namespace RealLifeOverhaul.Ui
         public const int Sum = 0, Side = 1, Float = 2, Walk = 3, Name = 4;
         // The founder's sheet about a firm of theirs that listed on its own: the stock's id (0: their whole company).
         public const int Target = 5;
+        // The index fund's: buying (0) or selling (1), and the units. A block's: which company of the list, buying or selling, the shares.
+        public const int FundSide = 0, FundUnits = 1, BlockPick = 0, BlockSide = 1, BlockQty = 2;
+        // The founder's split: which of the ratios. The bank's listing: which part of the bank is offered.
+        public const int SplitRatio = 0, BankFloatAt = 0;
 
         /// <summary>
         /// What the old Stocks app lets a player do, by the kit's handler: the page, the old tab's action and the sheet or button
@@ -43,7 +48,8 @@ namespace RealLifeOverhaul.Ui
             "ticket confirm:Ticket", "alert set:Alert", "alert under a drawn line:Page", "alert remove:Page", "portfolio views:Page", "market orders box:Page",
             "search:Page", "watch:Page", "ticket limit:Page", "ticket stop loss:Page", "ticket take profit:Page", "ticket put back:Page", "ticket worked:Page",
             "listing engage:Own", "listing audit:Own", "listing withdraw:Own", "listing publish:Publish", "listing name:Publish",
-            "founder pay:Founder", "founder dividend:Founder", "founder buy back:Founder", "founder issue:Founder", "founder private:Founder", "founder deal:Founder"
+            "founder pay:Founder", "founder dividend:Founder", "founder buy back:Founder", "founder issue:Founder", "founder private:Founder", "founder deal:Founder",
+            "fund buy:Fund", "fund sell:Fund", "block buy:Block", "block sell:Block", "founder split:Split", "bank engage:BankList", "bank withdraw:BankList"
         };
     }
 }

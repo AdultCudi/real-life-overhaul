@@ -240,6 +240,15 @@ namespace RealLifeOverhaul.Tech
 
         // ---------------------------------------------------------------- the way to the market
 
+        /// <summary>
+        /// A firm's month for the way to the market, cents: its recurring revenue, or its real takings of the last thirty days when those are more. A game studio's games
+        /// are sold by the copy and a consultancy's work by the project: neither is recurring, so a gate on recurring revenue alone never opened for them.
+        /// </summary>
+        public static long ListMonth(long arr, long revenue30) => Math.Max(Math.Max(0L, arr) / 12, Math.Max(0L, revenue30));
+
+        /// <summary>What a firm is worth for a listing: its usual value, or what the market's own model makes of its books when that is more (0 where no market can say).</summary>
+        public static long ListValue(long value, long booksWorth) => Math.Max(Math.Max(0L, value), Math.Max(0L, booksWorth));
+
         /// <summary>True while the firm may start the way to the market: takings of a Series B's, and not on the way or listed already.</summary>
         public static bool ListReady(long mrr, FirmExit e) => mrr >= ExitCatalogue.ListMrrLeast && !e.OnTheWay && e.Stage != ListStage.Listed;
 

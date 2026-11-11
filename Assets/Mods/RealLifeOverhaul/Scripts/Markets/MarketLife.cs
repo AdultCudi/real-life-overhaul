@@ -319,6 +319,7 @@ namespace RealLifeOverhaul.Markets
                 own.ProposedCents = (int)Math.Round(own.ProposedCents / (double)ratio);
                 own.ListedCents = Div(own.ListedCents, ratio);
                 own.YearCents = Div(own.YearCents, ratio);
+                own.YearDividendCents = (int)Math.Round(own.YearDividendCents / (double)ratio);   // declared since the last meeting, a share: read against its price
                 for (int i = 0; i < own.Deals.Count; i++)
                 {
                     OwnDeal d = own.Deals[i];

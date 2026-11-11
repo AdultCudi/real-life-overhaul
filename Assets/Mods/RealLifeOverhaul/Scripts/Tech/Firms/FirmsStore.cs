@@ -21,19 +21,24 @@ namespace RealLifeOverhaul.Tech
             w.Part('h').Record().Add(f.Seed).Add(f.FirstDay).Add(f.LastDay).Add(f.NextId).Add(f.LastTender);
             w.Part('f');
             var days = new StringBuilder(256);
+            var selfDays = new StringBuilder(256);
             foreach (Firm m in f.Firms)
             {
                 days.Length = 0;
+                selfDays.Length = 0;
                 for (int i = 0; i < m.Days.Length; i++)
                 {
                     if (i > 0)
                     {
                         days.Append(',');
+                        selfDays.Append(',');
                     }
                     days.Append(m.Days[i].ToString(System.Globalization.CultureInfo.InvariantCulture));
+                    selfDays.Append(m.SelfDays[i].ToString(System.Globalization.CultureInfo.InvariantCulture));
                 }
                 w.Record().Place(m.Place).Add(m.Kind).Add(m.Founded).Add(m.Focus).Add(m.Debt).Add(m.Reputation).Add(m.RegisteredUntil).Add(m.Breaches).Add(m.Outages).Add(m.RnD).Add(m.ReliefDay)
-                    .Add(m.Revenue30).Add(days.ToString()).Add(m.OwnDay).Add(m.OwnMinutes).Add(m.OwnPrevDay).Add(m.OwnPrevMinutes).Add(m.Prev30).Add(m.PrevDays);
+                    .Add(m.Revenue30).Add(days.ToString()).Add(m.OwnDay).Add(m.OwnMinutes).Add(m.OwnPrevDay).Add(m.OwnPrevMinutes).Add(m.Prev30).Add(m.PrevDays)
+                    .Add(selfDays.ToString()).Add(m.Self30).Add(m.SelfPrev30);
             }
             w.Part('p');
             foreach (Product p in f.Products)
@@ -82,6 +87,14 @@ namespace RealLifeOverhaul.Tech
                 // the month before the ring, appended last: a save from before it has none, and the table says the firm is new until a month has gathered
                 m.Prev30 = Math.Max(0, x.Long());
                 m.PrevDays = Math.Max(0, Math.Min(TechStatusRules.ChangeFromDays, x.Int()));
+                // what the player's own other businesses paid it, appended last: a save from before it has none, and counts all its takings as outside ones
+                string[] selfDays = x.Text().Split(',');
+                for (int i = 0; i < m.SelfDays.Length && i < selfDays.Length; i++)
+                {
+                    m.SelfDays[i] = long.TryParse(selfDays[i], System.Globalization.NumberStyles.Integer, System.Globalization.CultureInfo.InvariantCulture, out long v) ? Math.Max(0, v) : 0;
+                }
+                m.Self30 = Math.Max(0, x.Long());
+                m.SelfPrev30 = Math.Max(0, x.Long());
                 if (f.Firms.Count < 32)
                 {
                     f.Firms.Add(m);

@@ -7,7 +7,7 @@ using RealLifeOverhaul.Ui;
 /// </summary>
 internal static partial class UiSamples
 {
-    public static string[] StockStates => Join(Join(Join(StockBaseStates, StockCompanyStates), StockOfferStates), StockAuditStates);   // joined on asking: static fields of two files start in no fixed order
+    public static string[] StockStates => Join(Join(Join(Join(StockBaseStates, StockCompanyStates), StockOfferStates), StockAuditStates), StockExtrasStates);   // joined on asking: static fields of two files start in no fixed order
 
     private static string[] Join(string[] a, string[] b)
     {
@@ -29,7 +29,7 @@ internal static partial class UiSamples
         m.PromptBack = t("reallife_ui_prompt_back", "Back");
         m.PromptMove = t("reallife_ui_prompt_move", "Move");
         m.PromptSelect = t("reallife_ui_prompt_select", "Select");
-        if (StocksOffers(m, t, state) || StocksSheet(m, t, state) || StocksAudit(m, t, state))
+        if (StocksOffers(m, t, state) || StocksSheet(m, t, state) || StocksAudit(m, t, state) || StocksExtras(m, t, state))
         {
             Nav(m, t);
             return m;

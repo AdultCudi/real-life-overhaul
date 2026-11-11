@@ -134,6 +134,7 @@ namespace RealLifeOverhaul.Markets
             host.Bots.AddRange(mine.Bots);
             host.Bonds.Take(mine.Bonds);
             host.Derivs.Take(mine.Derivs);   // the player's own futures and options, on the host's exchange
+            host.Extras.CopyFrom(mine.Extras);   // their units of the fund, cents kept, their bank's way to the market: theirs, never the host's
             if (host.Materials.Count == 0)
             {
                 host.Materials.AddRange(mine.Materials);   // a host without the exchange: the guest's own goes on with the host's days

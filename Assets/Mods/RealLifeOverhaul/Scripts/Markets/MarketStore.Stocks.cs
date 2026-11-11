@@ -127,7 +127,7 @@ namespace RealLifeOverhaul.Markets
             {
                 // A firm that listed on its own: after the figures an older version reads, which stop at the founder's deals of the year.
                 t.Append(',').Append('1').Append(',').Append(o.Float.ToString(Inv)).Append(',').Append(o.VestBase.ToString(Inv)).Append(',').Append(o.VestDay.ToString(Inv)).Append(',')
-                    .Append(o.VestCliff.ToString(Inv)).Append(',').Append(o.VestSpan.ToString(Inv));
+                    .Append(o.VestCliff.ToString(Inv)).Append(',').Append(o.VestSpan.ToString(Inv)).Append(',').Append(o.CapCents.ToString(Inv));
             }
             t.Append('|');
             for (int i = 0; i < o.Deals.Count; i++)
@@ -193,6 +193,7 @@ namespace RealLifeOverhaul.Markets
                 o.VestDay = I(f, 37);
                 o.VestCliff = Math.Max(0, I(f, 38));
                 o.VestSpan = Math.Max(0, I(f, 39));
+                o.CapCents = Math.Max(0, L(f, 40));   // a bank's stock: after the figures an older version reads
                 o.Place = S(c, 68);
                 o.Mixed = false;
                 o.Rps = 0.0;   // a firm keeps no reserve here
@@ -267,14 +268,14 @@ namespace RealLifeOverhaul.Markets
             k.LastExDay = I(c, 43);
             k.Adv = Math.Max(1.0, F(c, 44, 1000.0));
             k.SplitDay = Math.Max(0, I(c, 45));
-            k.SplitRatio = Clamp(I(c, 46), 0, 10);
+            k.SplitRatio = Clamp(I(c, 46), -ExtrasCatalogue.RatioMost, 10);   // under nothing: so many old shares put together into one (Extras/SplitRules)
             k.BidDay = Math.Max(0, I(c, 47));
             k.BidEndDay = Math.Max(0, I(c, 48));
             k.BidCents = Math.Max(0, I(c, 49));
             k.BidderId = Math.Max(0, I(c, 50));
             k.ResultsBoostDay = I(c, 51);
             k.LowDays = Math.Max(0, I(c, 52));
-            if (k.SplitDay > 0 && k.SplitRatio < 2)
+            if (k.SplitDay > 0 && !SplitRules.Known(k.SplitRatio))
             {
                 k.SplitDay = 0;
             }

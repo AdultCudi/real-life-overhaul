@@ -25,6 +25,18 @@ namespace RealLifeOverhaul.Economy
         /// <summary>The bank moved the player's integrity (Standing): by how much, and whether as a scandal. Default: nobody hears.</summary>
         public static Action<int, bool> Moved;
 
+        /// <summary>
+        /// Of a sum the bank pays its owner (cents), the owner's own part: all of it, until the bank's shares trade on the stock market and other people hold
+        /// some (Markets/Extras). Default: all of it.
+        /// </summary>
+        public static Func<long, long> OwnerPart;
+
+        /// <summary>
+        /// A day of the bank's own books was booked: the day, its income and its profit in cents, and the capital it held that evening (the stock market keeps the bank's own
+        /// quarters). Default: nobody hears.
+        /// </summary>
+        public static Action<int, long, long, long> DayBooked;
+
         /// <summary>True if the bank has the qualified person its licence asks for (Careers). Default: yes.</summary>
         public static Func<bool> Qualified;
 
@@ -181,12 +193,21 @@ namespace RealLifeOverhaul.Economy
             }
             if (d.Pay > 0)
             {
-                Book(d.Pay, OwnBankCatalogue.PayKey, hq, bank, null, day, false, false);
+                Book(Owner(d.Pay), OwnBankCatalogue.PayKey, hq, bank, null, day, false, false);
             }
             if (d.PaidOut > 0)
             {
-                Book(d.PaidOut, OwnBankCatalogue.CapitalOutKey, hq, bank, null, day, false, false);   // an automatic dividend, booked as one taken by hand
+                Book(Owner(d.PaidOut), OwnBankCatalogue.CapitalOutKey, hq, bank, null, day, false, false);   // an automatic dividend, booked as one taken by hand
             }
+        }
+
+        /// <summary>
+        /// What the owner has of a sum the bank pays out of its capital (pay, a dividend, a sale, what a winding up left): all of it for a bank that is theirs alone, their
+        /// shares' part once the bank trades on the stock market. The rest is its other shareholders' and never reaches the player's cash.
+        /// </summary>
+        public static long Owner(long cents)
+        {
+            return OwnBankRules.OwnerShare(cents, OwnBankBridges.OwnerPart);
         }
 
         /// <summary>Money from the player's cash for the bank (the licence, capital put in), only if the cash covers it. False if not.</summary>
@@ -198,6 +219,10 @@ namespace RealLifeOverhaul.Economy
         /// <summary>Money into the player's cash from the bank: a dividend, a sale, what a winding up left; a payment given back in its category.</summary>
         public static void Give(long cents, string key, BuildingRegistration hq, string bank, string category = null)
         {
+            if (key == OwnBankCatalogue.CapitalOutKey || key == OwnBankCatalogue.SaleKey)
+            {
+                cents = Owner(cents);   // a dividend, a sale, a winding up: every holder's by their shares
+            }
             Book(cents, key, hq, bank, category, null, false, false);
         }
 

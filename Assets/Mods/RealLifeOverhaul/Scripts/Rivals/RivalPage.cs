@@ -218,6 +218,11 @@ namespace RealLifeOverhaul.Rivals
             {
                 box.Line(supply);
             }
+            string market = RivalBridges.MarketLine != null ? RivalBridges.MarketLine(who) : null;
+            if (!string.IsNullOrEmpty(market))
+            {
+                box.Line(market);
+            }
             if (director.HoldingShares(who, out long held, out long most, out long _, out int mid))
             {
                 box.Row("reallife_rival_label_holding", RivalText.Fill("reallife_rival_holding_value", "held", RivalText.N(held), "most", RivalText.N(most), "price", RivalText.MoneyCents(mid)));
@@ -392,6 +397,11 @@ namespace RealLifeOverhaul.Rivals
                     if (!string.IsNullOrEmpty(supplied))
                     {
                         rivals.Add(supplied);
+                    }
+                    string onMarket = RivalBridges.MarketLine != null ? RivalBridges.MarketLine(i) : null;
+                    if (!string.IsNullOrEmpty(onMarket))
+                    {
+                        rivals.Add(onMarket);
                     }
                 }
                 else if (t.DefeatedDay >= 0)

@@ -37,7 +37,9 @@ namespace RealLifeOverhaul.Markets
         {
             Dividends(day);
             Income(day);   // the player's bonds (MarketEngine.Bonds.cs)
+            ExtrasDues(day);   // the fund's fee and the dividends its units are owed: before a company leaves on its record day (Extras/MarketEngine.Extras.cs)
             Corporate(day);
+            ExtrasCorporate(day);   // splits by a board's own level and shares put together, decided after the companies' own lives
             BuildersClose(day);   // a listed builder's own news (MarketEngine.Builders.cs)
             Derivatives(day);   // the raw materials' prices, the futures and options (MarketEngine.Derivatives.cs)
             Variance();
@@ -389,6 +391,7 @@ namespace RealLifeOverhaul.Markets
         // A company leaves the market: what is left is paid to its holders (a short closed at the same price); its orders go.
         private void Leave(Stock s, int day, GoneReason reason, int centsEach, MarketNewsKind kind = MarketNewsKind.Count)
         {
+            FundRules.Left(State, s, centsEach);   // the fund held it: what its holders are paid is what the fund is
             Reweigh(s, false);
             s.Status = StockStatus.Gone;
             s.GoneDay = day;

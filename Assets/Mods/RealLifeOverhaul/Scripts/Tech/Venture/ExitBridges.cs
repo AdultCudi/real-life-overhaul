@@ -86,8 +86,12 @@ namespace RealLifeOverhaul.Tech
             }
         }
 
+        /// <summary>What the stock market's own model makes of a firm's books (the game's statements at its place), cents at the start's prices; 0 where it cannot say.</summary>
+        public static Func<string, long> BooksWorth;
+
         public static void Reset()
         {
+            BooksWorth = null;
             Banks = null;
             Listed = null;
             HandOver = null;

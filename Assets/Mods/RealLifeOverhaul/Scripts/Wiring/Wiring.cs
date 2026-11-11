@@ -100,6 +100,7 @@ namespace RealLifeOverhaul
             Step("health", HealthLinks.Connect);   // after giving's, the careers', the economy's and Home's: it wraps their doors
             Step("the smaller business asks", BizAsksLinks.Connect);   // parking spaces and the showroom's suppliers: wraps nothing
             Step("suppliers", SupplierLinks.Connect);   // after giving's: its piece of the paper goes on top of it
+            Step("the stock market's extras", StockExtrasLinks.Connect);   // after the listing's and the rivals': it wraps the company's books and adds to the rivals' page
             Step("Uptown's shops of the mod's own kinds", UptownShopsLinks.Connect);   // wraps nothing
             Step("the living population", PopulationLinks.Connect);   // after the business features: their levers become what people hear of a business
             Step("Flare in the city", FlareCityLinks.Connect);   // after the living population: its residents follow, hear and go where they heard good things
@@ -122,6 +123,7 @@ namespace RealLifeOverhaul
             Step("Flare in the city", FlareCityLinks.Disconnect);
             Step("the living population", PopulationLinks.Disconnect);
             Step("Uptown's shops of the mod's own kinds", UptownShopsLinks.Disconnect);
+            Step("the stock market's extras", StockExtrasLinks.Disconnect);   // first: the books it wrapped go back before the listing's own
             Step("health", HealthLinks.Disconnect);   // before giving's: what it wrapped goes back first
             Step("the smaller business asks", BizAsksLinks.Disconnect);
             Step("suppliers", SupplierLinks.Disconnect);   // before giving's: what it wrapped of the paper goes back first

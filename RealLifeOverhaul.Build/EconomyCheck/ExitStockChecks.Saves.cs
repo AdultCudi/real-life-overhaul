@@ -90,8 +90,8 @@ internal static partial class Program
             "saves: a record without the firm's fields reads as a player's company's did, every field an older version knows intact");
         string[] columns = SxRecord(line, s.Id);
         string[] figures = columns != null && columns.Length > 64 ? columns[64].Split(',') : new string[0];
-        Check(columns != null && columns.Length == 69 && figures.Length == 40 && figures[34] == "1" && columns[68] == MarketStore.Clean(SxPlace),
-            "saves: the firm's fields are written after every field an older version reads: six more figures after the founder's deals of the year, the firm's place after the mix");
+        Check(columns != null && columns.Length == 69 && figures.Length == 41 && figures[34] == "1" && figures[40] == "0" && columns[68] == MarketStore.Clean(SxPlace),
+            "saves: the firm's fields are written after every field an older version reads: six more figures after the founder's deals of the year (and a bank's cap after them), the firm's place after the mix");
         // the tech sector's line
         var file = new StockFile { LastDay = 321 };
         file.Firms.Add(new StockFirm { Place = "Elm%20Street~14", ListDay = 100, OpenDay = 100, EndDay = 0, Ended = StockEnd.None, Old = false, Ticker = "ELM" });

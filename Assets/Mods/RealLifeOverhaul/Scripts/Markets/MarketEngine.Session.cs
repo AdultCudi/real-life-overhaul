@@ -124,7 +124,7 @@ namespace RealLifeOverhaul.Markets
             }
             if (s.SplitDay > 0 && s.SplitDay <= day)
             {
-                MarketLife.Split(State, s, s.SplitRatio);
+                SplitNow(s, day);   // Extras/MarketEngine.Extras.cs: a split, or shares put together
             }
             if (TrustRules.Is(s))
             {
@@ -158,6 +158,7 @@ namespace RealLifeOverhaul.Markets
                 s.Sent = s.Sent * (1.0 - Kappa * night) + mood;
                 s.Mis += news + (s.Sent - was);
             }
+            ExtrasCap(s);   // a bank's stock is never worth more than three times the capital it holds (Extras/MarketEngine.Extras.cs)
             if (s.LastBarCount >= 0 && s.BarCount > 0)
             {
                 Array.Copy(s.Bars, s.LastBars, s.BarCount);
@@ -196,6 +197,7 @@ namespace RealLifeOverhaul.Markets
                 FixRivalDebt(env.RateBp);
             }
             State.RateSeenBp = env.RateBp;
+            State.Extras.Fade(Kappa * _openNight);   // the player's own push fades with the night's mood
             OpenOrders(day);
             BotsOpen();   // stops the night went through, and floors
             Margin(day, MarketCatalogue.PhaseOpen);
@@ -438,6 +440,7 @@ namespace RealLifeOverhaul.Markets
                     s.Impact = s.Impact > 1.0 ? s.Impact * decay : 0.0;
                 }
             }
+            State.Extras.Fade(fade);   // the player's own push fades as the mood does (usually nothing to fade)
             Index(out int index);
             int prev = State.IndexBarCount > 0 ? State.IndexBars[State.IndexBarCount - 1].C : State.IndexOpen;
             if (State.IndexBarCount < State.IndexBars.Length)

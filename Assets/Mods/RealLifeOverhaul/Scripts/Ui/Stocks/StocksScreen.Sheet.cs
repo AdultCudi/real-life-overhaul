@@ -149,6 +149,12 @@ namespace RealLifeOverhaul.Ui
                 case StocksSheets.Founder:
                     FounderDefaults(s, key);
                     break;
+                case StocksSheets.Fund:
+                case StocksSheets.Block:
+                case StocksSheets.Split:
+                case StocksSheets.BankList:
+                    ExtrasDefaults(s, kind, key);   // StocksScreen.Extras.cs
+                    break;
                 case StocksSheets.Alert:
                 {
                     Stock k = s.Stock(key);
@@ -352,6 +358,9 @@ namespace RealLifeOverhaul.Ui
                     break;
                 case StocksSheets.Firm:
                     FirmChanged(s, id);
+                    break;
+                case StocksSheets.Block:
+                    BlockChanged(s, id);
                     break;
                 case StocksSheets.Alert:
                 {
@@ -617,8 +626,24 @@ namespace RealLifeOverhaul.Ui
                 case StocksPage.Futures: return PayCall();
                 case StocksPage.Bots: return OpenRule(-1);
                 case StocksPage.Portfolio:
-                    OpenSheet(StocksSheets.Margin, s.Account.Margin ? arg : 0);
+                {
+                    var held = new List<int>(4);
+                    StocksBuild.PortfolioCodes(s, held);
+                    int what = arg >= 0 && arg < held.Count ? held[arg] : 0;
+                    if (what == StocksBuild.CodeFund)
+                    {
+                        OpenSheet(StocksSheets.Fund, 0);
+                    }
+                    else if (what == StocksBuild.CodeBlock)
+                    {
+                        OpenSheet(StocksSheets.Block, _stock);   // on the company last opened, when a block may be dealt in it
+                    }
+                    else
+                    {
+                        OpenSheet(StocksSheets.Margin, s.Account.Margin ? what : 0);
+                    }
                     return true;
+                }
                 case StocksPage.Listing:
                 {
                     var codes = new List<int>(8);
@@ -628,7 +653,11 @@ namespace RealLifeOverhaul.Ui
                         return false;
                     }
                     int code = codes[arg];
-                    if (code >= 100)
+                    if (code >= StocksBuild.CodeSplit)
+                    {
+                        OpenSheet(code == StocksBuild.CodeSplit ? StocksSheets.Split : StocksSheets.BankList, 0);
+                    }
+                    else if (code >= 100)
                     {
                         OpenSheet(StocksSheets.Founder, code - 100);
                     }
@@ -682,6 +711,10 @@ namespace RealLifeOverhaul.Ui
                 case StocksSheets.Founder: done = FounderStep(); break;
                 case StocksSheets.Alert: done = SetAlert(); break;
                 case StocksSheets.Ticket: done = PlaceTicket(); break;
+                case StocksSheets.Fund: done = DealFund(); break;
+                case StocksSheets.Block: done = DealBlock(); break;
+                case StocksSheets.Split: done = AskSplit(); break;
+                case StocksSheets.BankList: done = BankStep(); break;
                 default: done = false; break;
             }
             _dirty = true;

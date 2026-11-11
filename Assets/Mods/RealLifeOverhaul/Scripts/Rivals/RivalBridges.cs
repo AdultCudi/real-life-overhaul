@@ -37,6 +37,13 @@ namespace RealLifeOverhaul.Rivals
         public static Func<int, string> SpaceLine;
         /// <summary>A line on what supply has done to a tycoon's (by index) outlets this month; empty for nothing (Suppliers). Default: none.</summary>
         public static Func<int, string> SupplyLine;
+        /// <summary>What a tycoon (by index) holds on the stock market beside their holding: units of the fund, blocks, an arm they listed (Markets/Extras). Default: none.</summary>
+        public static Func<int, string> MarketLine;
+        /// <summary>
+        /// A tycoon's (by index) announced purchase of shares comes: a block of a listed company for the sum, bought through the market. True if one was
+        /// bought. Default: nothing is.
+        /// </summary>
+        public static Func<int, long, bool> Shares;
         /// <summary>The player's net worth as the Finance app shows it. Default: the game's own figure.</summary>
         public static Func<long> Worth;
         /// <summary>The city's cycle: 0 boom, 1 steady, 2 slowdown, 3 recession (Economy/City). Default: steady.</summary>
@@ -127,6 +134,8 @@ namespace RealLifeOverhaul.Rivals
             HealthLine = null;
             SpaceLine = null;
             SupplyLine = null;
+            MarketLine = null;
+            Shares = null;
             LeaseTrend = null;
             LeaseRenewed = null;
             Worth = null;
