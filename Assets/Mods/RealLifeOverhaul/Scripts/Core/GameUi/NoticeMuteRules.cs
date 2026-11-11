@@ -6,7 +6,8 @@ namespace RealLifeOverhaul.GameUi
     /// <summary>
     /// Which of the mod's notifications a kind's switch keeps from popping up (Options, "Notifications that pop up"). Never
     /// kept back: a notification that is not the mod's; a warning or an error; the kinds that have no switch, the police's
-    /// (an arrest, a fine, a court, prison, a scheme's inquiry) and health's (an illness, the doctor, the hospital); what is
+    /// (an arrest, a fine, a court and its texts, which come as a notification when the Legal contact is not on the phone, prison,
+    /// a scheme's inquiry) and health's (an illness, the doctor, the hospital); what is
     /// owed, the end of a life and the morning line's news; what the mod says of itself in answer to the player (the options
     /// page's replies, the Guide, Settings and Staff apps when they cannot open at once, the bug report, the performance
     /// tools, the texts service, Going Public's word on the session, who has the camera, an app moved on the phone) and its

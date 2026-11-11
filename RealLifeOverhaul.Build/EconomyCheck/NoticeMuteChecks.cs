@@ -12,9 +12,12 @@ using RealLifeOverhaul.GameUi;
 // whatever its sender asked, and is never made (Core/GameUi/NoticeMuteRules, Core/GameUi/NoticeMute). Warnings, errors, what
 // is owed, the end of a life, what the mod says of itself in answer to the player (the options page, its apps, tools and
 // services, Going Public, the camera), the driving test's words, the player's own reminders and the tests' answers always pop
-// up. First the rules on every mask of kinds; then every notification the sources raise, by its key as written at the call or
-// through a constant, a variable or a carrier's caller; the cost; the sources (the gate, the list, placing and taking off the
-// gate, the morning line, the options page); the texts. Run with --notice-mute.
+// up, and so do the police's, the court's texts among them, which come as a notification when the Legal contact is not on the
+// phone. First the rules on every mask of kinds, with what is owed, a death, the morning line and the court's texts each named
+// by its key, never read from the rules' own table; then every notification the sources raise, by its key as written at the
+// call or through a constant, a variable or a carrier's caller, every text sent through the Legal or a debt contact among them; the
+// cost; the sources (the gate, the list, placing and taking off the gate, the morning line, the options page); the texts.
+// Run with --notice-mute.
 internal static partial class Program
 {
     private static void NoticeMuting()
@@ -54,6 +57,38 @@ internal static partial class Program
         "reallife_gp_city_shared", "reallife_gp_hotel_no_skip", "reallife_phone_layout_reset_done", "reallife_phone_moved", "reallife_windows_reset_done",
         "reallife_meta_welcome_note_update", "reallife_beta_note", "reallife_lic_toast", "reallife_lic_theory_passed", "reallife_lic_car_step_out",
         "reallife_lic_fee_returned", "reallife_planner_reminder", "reallife_planner_reminder_leave", "reallife_planner_welcome"
+    };
+
+    // What is owed, the end of a life and the morning line's news, each key named here, never read from the rules' own table:
+    // each is of a kind with a switch, so a line taken out of NoticeMuteRules' table keeps its key back and fails here.
+    private static readonly string[] NoticeMuteOwed =
+    {
+        "reallife_util_toast",                                                    // every power, water and internet toast: the bills due, a supply cut off
+        "reallife_econ_note_statement",                                           // the card's statement: what is due, the minimum and the day it is taken
+        "reallife_econ_note_advice",                                              // debts long overdue, and the free advice
+        "reallife_co_note_return_due",                                            // a company's tax return for the quarter, to be filed by a day
+        "reallife_estate_note_trading_tax",                                       // the year's tax on the hotels and the car hire
+        "reallife_civic_charge_fine_up", "reallife_civic_charge_fine_down",       // a fine the city's policy changed
+        "reallife_civic_charge_ticket_up", "reallife_civic_charge_ticket_down",   // a parking ticket the city's policy changed
+        "reallife_dynasty_hand_death", "reallife_dynasty_hand_retire",            // a death or a retirement in the family, and the estate passing on
+        "reallife_dynasty_hand_done",
+        "reallife_dynasty_elder_died",                                            // the old founder's death, and what their fund leaves
+        "reallife_home_morning_news", "reallife_home_morning_more"                // the morning line with the news held while the player slept
+    };
+
+    // The court's and counsel's texts, each key named here: LegalPhone.Send puts them in the Legal contact's thread, or, when the
+    // contact is not on the phone (the phone's contacts or the Legal contact off), shows them as the game's notification, an
+    // information, under their own keys. A scheme's letter goes the same way. Each is the police's, which has no switch.
+    private static readonly string[] NoticeMuteCourt =
+    {
+        "reallife_text_justice_date", "reallife_text_justice_tomorrow", "reallife_text_justice_today", "reallife_text_justice_warrant",
+        "reallife_text_justice_judgment", "reallife_text_justice_dropped", "reallife_text_justice_dismissed", "reallife_text_justice_sealed",
+        "reallife_text_justice_community_missed", "reallife_text_justice_written_off_hours", "reallife_text_justice_written_off",
+        "reallife_text_justice_suit_property", "reallife_text_justice_suit_injury", "reallife_text_justice_suit_won", "reallife_text_justice_suit_lost",
+        "reallife_text_justice_suit_default", "reallife_text_justice_suit_debt", "reallife_text_justice_suit_withdrawn", "reallife_text_justice_suit_unpaid",
+        "reallife_text_justice_suit_build", "reallife_text_justice_suit_investor", "reallife_text_justice_suit_restraint", "reallife_text_justice_suit_rival",
+        "reallife_text_justice_suit_rival_withdrawn", "reallife_text_justice_suit_franchise", "reallife_text_justice_suit_franchise_withdrawn",
+        "reallife_text_justice_claim_filed", "reallife_text_justice_claim_won", "reallife_text_justice_claim_lost", "reallife_scheme_text_letter"
     };
 
     private const int NoticeMuteMasks = 1 << NoticeKinds.Count;   // every set of kinds, those without a switch among them
@@ -119,14 +154,66 @@ internal static partial class Program
         }
         Check(never, "notice mute: the police's, health's and anything not the mod's pop up under every one of " + NoticeMuteMasks + " sets of kinds off (" + caught + ")");
 
-        bool always = true;
+        // What is owed, a death and the morning line, key by key as named above (never the rules' own table): each asked of the rule
+        // the gate asks, as an information, under every set of kinds off.
+        bool owed = true, needed = true;
+        string owedOne = "none", spareOne = "none";
+        foreach (string key in NoticeMuteOwed)
+        {
+            if (!NoticeMuteRules.HasSwitch(NoticeKinds.Of(key)))
+            {
+                needed = false;
+                spareOne = key + " is " + NoticeKinds.Of(key);
+            }
+            for (int mask = 0; mask < NoticeMuteMasks; mask++)
+            {
+                if (NoticeMuteRules.Muted(key, false, mask))
+                {
+                    owed = false;
+                    owedOne = key + " under mask " + mask;
+                    break;
+                }
+            }
+        }
+        Check(owed, "notice mute: the bills, the card's statement, debts long overdue, a tax return, the trading tax, a fine or a ticket the city's policy changed, a death "
+                    + "or a retirement and the estate passing on, and the morning line's news pop up under every one of " + NoticeMuteMasks + " sets of kinds off, each key named ("
+                    + owedOne + ")");
+        Check(needed, "notice mute: each of those is of a kind with a switch, so only the table of what always pops up keeps it from the switches and the check above can fail ("
+                      + spareOne + ")");
+
+        // The court's and counsel's texts and a scheme's letter, key by key as named above: the police's, and so never kept back,
+        // also as the information they come as when the Legal contact is not on the phone.
+        bool court = true;
+        string courtOne = "none";
+        foreach (string key in NoticeMuteCourt)
+        {
+            if (NoticeKinds.Of(key) != NoticeKind.Police)
+            {
+                court = false;
+                courtOne = key + " is " + NoticeKinds.Of(key);
+                continue;
+            }
+            for (int mask = 0; mask < NoticeMuteMasks; mask++)
+            {
+                if (NoticeMuteRules.Muted(key, false, mask))
+                {
+                    court = false;
+                    courtOne = key + " under mask " + mask;
+                    break;
+                }
+            }
+        }
+        Check(court, "notice mute: a court date, a warrant, a judgment, a suit and the rest of the court's and counsel's texts, and a scheme's letter, are the police's and pop up "
+                     + "under every one of " + NoticeMuteMasks + " sets of kinds off, also as the notification they come as without the Legal contact, each key named (" + courtOne + ")");
+
+        bool table = true;
         foreach (string prefix in NoticeMuteRules.AlwaysPrefixes())
         {
             string key = NoticeKinds.ModPrefix + prefix + (prefix.EndsWith("_", StringComparison.Ordinal) ? "x" : string.Empty);
-            always &= NoticeMuteRules.Always(key) && !NoticeMuteRules.Muted(key, false, all) && NoticeMuteRules.HasSwitch(NoticeKinds.Of(key));
+            table &= NoticeMuteRules.Always(key) && NoticeMuteRules.HasSwitch(NoticeKinds.Of(key));
         }
-        Check(always && NoticeMuteRules.AlwaysPrefixes().Length >= 30,
-            "notice mute: what is owed, the end of a life, the morning line's news and the mod's answers pop up with every kind off (each of a kind with a switch, so each is needed)");
+        Check(table && NoticeMuteRules.AlwaysPrefixes().Length >= 30,
+            "notice mute: each line of the table of what always pops up is of a kind with a switch, so none stands there for nothing (the keys it keeps are each named in these checks)");
         Check(!NoticeMuteRules.Always("reallife_econ_note_lent") && !NoticeMuteRules.Always("reallife_util") && !NoticeMuteRules.Always("util_toast") && !NoticeMuteRules.Always(null)
               && !NoticeMuteRules.Always("xreallife_util_toast") && NoticeMuteRules.Always("reallife_util_toast"),
             "notice mute: only the mod's own keys that begin with what always pops up are kept from the switches");
@@ -178,6 +265,26 @@ internal static partial class Program
             }
             Check(matched > 0, "notice mute: what always pops up names keys the mod has (" + prefix + " matches " + matched + ")");
         }
+
+        // Each key named for what is owed, a death, the morning line and the court is a text of the mod's, and every court text the
+        // mod has is named, so a new one cannot be missed.
+        var courtKeys = new HashSet<string>(NoticeMuteCourt, StringComparer.Ordinal);
+        string untold = "none", unnamed = "none";
+        foreach (string key in NoticeMuteOwed)
+        {
+            untold = en.ContainsKey(key) ? untold : key;
+        }
+        foreach (string key in NoticeMuteCourt)
+        {
+            untold = en.ContainsKey(key) ? untold : key;
+        }
+        foreach (string key in en.Keys)
+        {
+            unnamed = key.StartsWith("reallife_text_justice_", StringComparison.Ordinal) && !courtKeys.Contains(key) ? key : unnamed;
+        }
+        Check(untold == "none" && unnamed == "none" && courtKeys.Count == NoticeMuteCourt.Length,
+            "notice mute: each key named for what is owed, a death, the morning line and the court has a text, and every court text in en.json is named (no text: "
+            + untold + "; not named: " + unnamed + ")");
 
         List<NoticeSite> sites = NoticeMuteSites();
         var keys = new HashSet<string>(StringComparer.Ordinal);
@@ -234,6 +341,46 @@ internal static partial class Program
         Check(missing == 0, "notice mute: no warning or error in the sources is kept back (" + missingOne + ")");
         Check(calm > 500 && calmKept * 2 > calm, "notice mute: most of the calm notifications of the kinds with a switch can be kept back ("
               + calmKept + " of " + calm + "): what always pops up is the exception");
+
+        // Every key the sources send through the Legal contact, read where it is sent (LegalPhone.Send, whose key is the
+        // notification's when the contact is not on the phone): a court text named here, never kept back with every kind off.
+        int legal = 0;
+        string stray = "none";
+        foreach (NoticeSite site in sites)
+        {
+            if (!NoticeSentBy(site, "LegalPhone."))
+            {
+                continue;
+            }
+            legal++;
+            if (!courtKeys.Contains(site.Key) || NoticeMuteRules.Muted(site.Key, false, all))
+            {
+                stray = site.Key + " at " + site.File + ":" + NoticeLine(site);
+            }
+        }
+        Check(legal >= 25 && stray == "none",
+            "notice mute: every text the sources send through the Legal contact, a notification when the contact is not on the phone, is a court text named here "
+            + "and pops up with every kind off (" + legal + " read; not: " + stray + ")");
+
+        // Every key the sources send through a debt contact (DebtPhone.Text: what the private lender says is owed and when), read
+        // where it is sent and asked of the rule as the gate asks it, by the type its notification has without the contact.
+        int debts = 0;
+        string loose = "none";
+        foreach (NoticeSite site in sites)
+        {
+            if (!NoticeSentBy(site, "DebtPhone."))
+            {
+                continue;
+            }
+            debts++;
+            if (NoticeMuteRules.Muted(site.Key, !site.Calm, all))
+            {
+                loose = site.Key + " at " + site.File + ":" + NoticeLine(site);
+            }
+        }
+        Check(debts >= 3 && loose == "none",
+            "notice mute: every text the sources send through a debt contact pops up with every kind off as the notification it is when the contact is not on the phone ("
+            + debts + " read; not: " + loose + ")");
 
         // The answers to the player's own presses, wherever their keys come from: nothing raised in these places is kept back
         // with every kind off (the options page and the mod's apps and tools in Meta, Going Public and the shared city, the
@@ -932,6 +1079,13 @@ internal static partial class Program
         {
             scan.Sites.Add(new NoticeSite { File = file.Name, Text = file.Text, At = at, Key = key, Calm = calm, How = how });
         }
+    }
+
+    // A key read at a call of a carrier of the class given ("LegalPhone.", "DebtPhone."): a contact's text, or the game's notification
+    // without the contact. The scan puts a carrier's caller at the method's name, so the class stands just before it.
+    private static bool NoticeSentBy(NoticeSite site, string sender)
+    {
+        return site.How == NoticeHow.Caller && site.At >= sender.Length && string.CompareOrdinal(site.Text, site.At - sender.Length, sender, 0, sender.Length) == 0;
     }
 
     private static int NoticeLine(NoticeSite site)
